@@ -207,7 +207,7 @@ body { background: #f0f0f0; }
 <p class="text-xs font-semibold text-gray-500 mb-2">예측 파이프라인 단계:</p>
 <div class="space-y-1 text-xs text-gray-400">
 <p>1. 입력 정규화 (호수→cm, 재료→매체/지지체 분류)</p>
-<p>2. 작가 통계 조회 (평균가, 최고가, 낙찰률)</p>
+<p>2. 작가 통계 조회 (평균가, 최고가, 낙찰 건수)</p>
 <p>3. 피처 벡터 조립 (22~35개 피처)</p>
 <p>4. 모델 추론 (CatBoost → exp(ln(P)))</p>
 <p>5. 후처리 & 신뢰도 산정 (A~D등급)</p>
@@ -276,7 +276,7 @@ body { background: #f0f0f0; }
 <div class="flex justify-between py-2 border-b"><span class="text-gray-500">학습 데이터</span><span class="font-medium">30,704건</span></div>
 <div class="flex justify-between py-2 border-b"><span class="text-gray-500">검증 데이터</span><span class="font-medium">6,580건</span></div>
 <div class="flex justify-between py-2 border-b"><span class="text-gray-500">테스트 데이터</span><span class="font-medium">6,582건</span></div>
-<div class="flex justify-between py-2 border-b"><span class="text-gray-500">피처 수</span><span class="font-medium">22개</span></div>
+<div class="flex justify-between py-2 border-b"><span class="text-gray-500">피처 수</span><span class="font-medium">21개</span></div>
 <div class="flex justify-between py-2 border-b"><span class="text-gray-500">최적 반복 수</span><span class="font-medium">948 iterations</span></div>
 <div class="flex justify-between py-2 border-b"><span class="text-gray-500">트리 깊이</span><span class="font-medium">8</span></div>
 <div class="flex justify-between py-2 border-b"><span class="text-gray-500">학습률</span><span class="font-medium">0.05</span></div>
@@ -488,10 +488,10 @@ function runPrediction() {
 
   // Step 3: 작가 통계 (시뮬레이션)
   const mockArtistStats = {
-    '김환기': { total_sold: 156, avg_price: 82447443, max_price: 1520000000, sell_rate: 0.92 },
-    '이중섭': { total_sold: 23, avg_price: 520000000, max_price: 3520000000, sell_rate: 0.95 },
-    '박수근': { total_sold: 18, avg_price: 380000000, max_price: 1200000000, sell_rate: 0.90 },
-    '김창열': { total_sold: 89, avg_price: 95000000, max_price: 860000000, sell_rate: 0.88 },
+    '김환기': { total_sold: 156, avg_price: 82447443, max_price: 1520000000 },
+    '이중섭': { total_sold: 23, avg_price: 520000000, max_price: 3520000000 },
+    '박수근': { total_sold: 18, avg_price: 380000000, max_price: 1200000000 },
+    '김창열': { total_sold: 89, avg_price: 95000000, max_price: 860000000 },
   };
   const artistData = mockArtistStats[artist] || null;
   const isNewArtist = !artistData;
@@ -521,12 +521,11 @@ function runPrediction() {
     artist_total_sold: artistData ? artistData.total_sold : 0,
     artist_avg_price: artistData ? artistData.avg_price : 0,
     artist_max_price: artistData ? artistData.max_price : 0,
-    artist_sell_rate: artistData ? artistData.sell_rate : 0,
     is_size_imputed: (width === 0 || height === 0) ? 1 : 0,
     is_year_missing: yearCreated ? 0 : 1,
     is_new_artist: isNewArtist ? 1 : 0
   };
-  addPipelineStep('Step 4: 피처 벡터', `22개 피처 조립 완료`, 'ok');
+  addPipelineStep('Step 4: 피처 벡터', `21개 피처 조립 완료`, 'ok');
 
   // Step 5: 모델 추론 (시뮬레이션)
   const predicted = simulatePrediction({
