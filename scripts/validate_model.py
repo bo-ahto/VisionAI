@@ -35,6 +35,22 @@ def main() -> None:
     logger.info("Loading baseline model...")
     model = load_model(ROOT / "model_test_results" / "baseline_catboost_v1.cbm")
 
+    # 0. Data manifest
+    print(f"\n{'='*60}")
+    print("0. Data Manifest")
+    print(f"{'='*60}")
+    print(f"  Total rows:    {len(df):,}")
+    print(f"  Split 분포:    {df['split'].value_counts().to_dict()}")
+    for atype in ["메이저", "프리미엄", "위클리"]:
+        n = len(df[(df["split"] == "test") & (df["타입"] == atype)])
+        print(f"  Test {atype}: {n}")
+    baseline_ref = {"메이저": 1025, "프리미엄": 1273, "위클리": 4284, "전체": 6582}
+    print(f"  Baseline 참조 N: {baseline_ref}")
+    test_n = len(df[df["split"] == "test"])
+    if test_n != baseline_ref["전체"]:
+        print(f"  ⚠️ Test N 불일치: {test_n} vs {baseline_ref['전체']}")
+        print(f"     → test set이 다르므로 MAPE 직접 비교는 부적절")
+
     # Test set만 사용
     test = df[df["split"] == "test"].copy()
     logger.info("Test set: %d rows", len(test))
@@ -46,17 +62,27 @@ def main() -> None:
     # 1. 전체 MAPE
     overall = compute_metrics(y_true, y_pred)
     print(f"\n{'='*60}")
-    print("1. Baseline 재현 검증")
+    print("1. Baseline 검증")
     print(f"{'='*60}")
-    print(f"  MAPE:      {overall.mape}%  (목표: 40.17% ± 0.5%p)")
+    print(f"  MAPE:      {overall.mape}%")
     print(f"  MdAPE:     {overall.mdape}%")
     print(f"  R²:        {overall.r2}")
     print(f"  Within±20%: {overall.within_20pct}%")
     print(f"  Within±30%: {overall.within_30pct}%")
     print(f"  N:         {overall.n}")
 
-    baseline_ok = abs(overall.mape - 40.17) <= 0.5
-    print(f"  {'✅' if baseline_ok else '❌'} Baseline 재현: {'Pass' if baseline_ok else 'Fail'}")
+    # 가중평균 정합성 체크
+    type_mapes = {}
+    type_ns = {}
+    for atype in ["메이저", "프리미엄", "위클리"]:
+        mask = test["타입"].values == atype
+        if mask.sum() > 0:
+            m = compute_metrics(y_true[mask], y_pred[mask])
+            type_mapes[atype] = m.mape
+            type_ns[atype] = m.n
+    if type_ns:
+        weighted_mape = sum(type_mapes[k] * type_ns[k] for k in type_ns) / sum(type_ns.values())
+        print(f"  가중평균 MAPE: {weighted_mape:.2f}% (전체와 차이: {abs(overall.mape - weighted_mape):.2f}%p)")
 
     # 2. 타입별 MAPE
     print(f"\n{'='*60}")
@@ -97,7 +123,7 @@ def main() -> None:
     print(f"\n{'='*60}")
     print("5. Calibration 테이블")
     print(f"{'='*60}")
-    grades = assign_confidence_grade(test)
+    grades = assign_confidence_grade(test, works_full=df)
     cal = compute_calibration_table(y_true, y_pred, grades)
     for _, row in cal.iterrows():
         print(f"  {row['grade']}등급: ±20%={row['within_20pct']:5.1f}%  ±30%={row['within_30pct']:5.1f}%  MAPE={row['mape']:6.2f}%  N={row['n']}")

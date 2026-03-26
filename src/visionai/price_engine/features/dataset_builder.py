@@ -93,6 +93,7 @@ def _join_artist_stats(
                 type_works,
                 cutoff_session=session,
                 auction_type=atype,
+                artist_col="artist_clean",  # artist_clean 키 통일
             )
 
             row_mask = type_mask & (out["회차"] == session)
