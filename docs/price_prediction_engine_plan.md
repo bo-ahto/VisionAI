@@ -1,6 +1,6 @@
 # K-Auction 가격 예측 엔진 기획서 (상세)
 
-> **문서 버전**: v2.0
+> **문서 버전**: v2.1 (Codex 리뷰 2회차 반영)
 > **작성일**: 2026-03-26
 > **리뷰 방식**: GitHub PR → Claude(아키텍처) + Codex(검증/보완) 듀얼 인라인 리뷰
 > **관련 문서**: `art_price_prediction_research.md`, `price_prediction_system_spec.md`, `data_feature_mapping.md`, `implementation_strategy.md`
@@ -153,9 +153,12 @@ log 공간 예측을 원래 스케일로 복원할 때 주의가 필요하다.
     여기서 e_i = y_i - ŷ_i (학습 잔차)
 
   실무 판단:
-    트리 모델(GBM)은 조건부 평균이 아닌 조건부 중앙값에 가까운 예측을
-    하므로, 선형 회귀 대비 재변환 편향이 작다. 그러나 고가 구간에서
-    체계적 과소추정 여부를 반드시 holdout에서 검증해야 한다.
+    RMSE 목적함수로 학습한 GBM은 log-space에서 조건부 평균을 추정한다.
+    따라서 exp(ŷ)는 기하 평균(geometric mean)에 가까우며,
+    산술 평균 E[P|X]보다 체계적으로 낮을 수 있다 (Jensen 부등식).
+    선형 회귀 대비 트리 모델의 잔차 분포가 더 좁은 경향이 있어
+    편향이 상대적으로 작지만, 고가 구간에서 과소추정 여부를
+    반드시 holdout에서 검증해야 한다.
     → Phase 1에서 "가격대별 예측/실제 비율 분포"를 확인하여 보정 필요성 판단
 ```
 
@@ -366,9 +369,14 @@ No  이름                      변환 공식                                   
 #### 3.2.4 작가 통계 조인 & Cold Start 처리
 
 ```
-조인: works.작가 = artists.작가명
-  성공: ~39,840건 (작가 결측 9.2% 제외 후 대부분)
-  실패:     39건 (works에만 있는 작가)
+⚠️ 중요: artists.csv는 탐색/참조용이다.
+  모델 학습 입력에는 artists.csv를 직접 조인하지 않는다.
+  대신 works 데이터로부터 fold별 train window 안에서
+  작가 통계를 동적으로 재계산하여 사용한다. (→ 3.3절 규칙 1)
+
+  참조용 조인 (데이터 탐색 단계):
+    works.작가 = artists.작가명
+    성공: ~39,840건 / 실패: 39건
 
 Cold Start 전략 (1,511명, 45.9%가 1건만 보유):
 
@@ -636,7 +644,9 @@ study.optimize(objective, n_trials=100)
 ┌──────────────────────────────────────────────┐
 │  Step 4: 모델 추론                             │
 │  ├── Phase 1: CatBoost 단독                   │
-│  └── Phase 2: Ensemble(Cat+LGB+XGB) → Ridge  │
+│  └── Phase 2: Champion 모델 (4.2절 비교 실험   │
+│       결과에 따라 단일/분리/Two-Step/Stacking   │
+│       중 선택)                                  │
 │                                                │
 │  출력: ln(P̂) → P̂ = exp(ln(P̂))               │
 └──────────────────────────────────────────────┘
@@ -684,7 +694,8 @@ Phase 1: 규칙 기반 (초기 버전 — calibration 검증 전)
     │ C      │ ?건      │ ?%       │ ?%       │
     │ D      │ ?건      │ ?%       │ ?%       │
     └────────┴──────────┴──────────┴──────────┘
-  → 이 테이블이 "A등급 70%+ within-20%"를 만족하지 않으면 규칙 재조정
+  → 이 테이블이 "A등급 65%+ within-20%"를 만족하지 않으면 규칙 재조정
+     (전환 게이트 기준과 동일: A등급 within-20% ≥ 65%)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 2: Calibration 기반 Reliability Model (목표)
@@ -694,13 +705,18 @@ Phase 2: Calibration 기반 Reliability Model (목표)
   입력 메타피처로 "이 예측이 얼마나 믿을 만한가"를 학습한다.
 
   Reliability Model 입력 피처:
+
+    항상 사용 가능 (모델 구조 무관):
     - artist_sold_count        (작가 낙찰 건수)
     - artist_premium_std       (작가 프리미엄 변동성)
     - artist_recent_count_2y   (최근 2년 거래 건수)
     - estimate_ratio           (추정가 불확실성)
     - is_new_artist            (Cold Start 여부)
-    - ensemble_disagreement    (앙상블 모델 간 예측 분산)
-    - quantile_width           (Q10-Q90 구간 크기)
+
+    Champion 모델 의존 (해당 모델 선택 시에만 사용):
+    - ensemble_disagreement    (앙상블 선택 시 — 모델 간 예측 분산)
+    - quantile_width           (분위수 모델 선택 시 — Q10-Q90 구간 크기)
+    → 단일 모델 선택 시 이 2개는 제외하고 상위 5개만으로 학습
 
   Reliability Model 타깃:
     Pr(APE ≤ 0.2 | X_meta)   → "±20% 이내일 확률"
@@ -1011,7 +1027,7 @@ Sprint 1.5 — 정적 JSON + 테스트 페이지
 ```
   □ 전체 MAPE < 38% AND 타입별 기준 충족 (메이저<19%, 프리미엄<30%)
   □ Leakage unit test 전체 통과
-  □ Confidence calibration: A등급 within-20% ≥ 60%
+  □ Confidence calibration: A등급 within-20% ≥ 65%
   □ Parser failure rate < 1%
   □ Cold Start fallback 검증 완료 (D등급 MAPE 보고)
   □ 워크포워드 백테스트 4회 이상 안정적
@@ -1040,55 +1056,26 @@ Sprint 3 — API 서비스화
   □ Shadow mode 배포 (retrospective scoring 시작)
 ```
 
-### Phase 2: 앙상블 + 실시간 API
-
-```
-Sprint 2 — 앙상블 구축
-  □ LightGBM / XGBoost 학습
-  □ 5-Fold Time Series Stacking
-  □ Optuna 최적화 (100 trials)
-  □ 목표 MAPE < 33% 달성 확인
-
-Sprint 3 — API 서비스화
-  □ FastAPI 서버 (src/visionai/price_engine/api/server.py)
-  □ engine_test.html → API 호출 전환
-  □ ONNX export (추론 최적화)
-  □ 모니터링 + 리트레이닝 파이프라인
-```
+<!-- 구버전 앙상블 마일스톤 삭제 — 4.2절 비교 실험 기반 Phase 2로 통합 완료 -->
 
 ---
 
 ## 10. Codex 리뷰 가이드
 
-### 10.1 PR 생성 후 Codex 리뷰 요청 프롬프트
+### 11.1 PR 생성 후 Codex 리뷰 요청 프롬프트
 
 ```
-이 PR은 K-Auction 경매 데이터 기반 가격 예측 엔진의 상세 기획서입니다.
-아래 관점에서 **섹션별 인라인 코멘트**를 달아주세요:
+이 PR은 K-Auction 경매 데이터 기반 가격 예측 엔진의 상세 기획서입니다 (v2.1).
+Codex 2회차 리뷰 피드백을 반영한 버전입니다. 아래 관점에서 검토해주세요:
 
-1. **수학적 정확성**: 2장의 공식과 논문 인용이 정확한가?
-   특히 헤도닉 모델 → CatBoost 확장 논리에 비약은 없는가?
+1. **수학적 정확성**: 2장의 재변환 편향 설명이 RMSE 목적함수와 일관적인가?
+2. **피처 누수 방지**: 3.2.4의 artists.csv 참조 vs fold snapshot 구분이 명확한가?
+3. **모델 전략 일관성**: 4.2절(비교 실험) → 5.1(파이프라인) → 10장(마일스톤)이 동일한 모델 경로를 가리키는가?
+4. **신뢰도 calibration**: 5.2절의 A등급 기준이 문서 전체에서 통일됐는가?
+5. **Reliability Model**: 메타피처가 Champion 모델 선택과 독립적으로 정의됐는가?
+6. **검증 전략**: 9장의 10개 검증 항목이 마일스톤 체크리스트에 반영됐는가?
 
-2. **피처 엔지니어링**: 3장의 35개 피처 구성에서
-   - 빠진 중요 피처가 있는가?
-   - 불필요하거나 중복인 피처가 있는가?
-   - 시계열 누수 방지 로직이 충분한가?
-
-3. **모델 전략**: 4장의 CatBoost → 3-model Stacking 접근이 적절한가?
-   - 다른 접근법 제안 (TabNet, Temporal Fusion Transformer 등)?
-   - Two-Step 모델을 Phase 1부터 적용하는 것이 더 나은가?
-
-4. **신뢰도 산정**: 5.2의 quality_score 공식이 합리적인가?
-   - 가중치 0.84/0.16/0.00의 Ablation 근거가 충분한가?
-
-5. **테스트 페이지**: 7장의 엔진 테스트 페이지 구성이
-   - 엔진 검증에 충분한 기능을 갖추고 있는가?
-   - 추가로 필요한 검증 도구가 있는가?
-
-6. **리스크**: 8장에서 놓친 리스크는?
-   - 특히 모델 배포 후 드리프트(drift) 대응이 충분한가?
-
-각 섹션에 인라인 코멘트 + 전체 Summary 작성해주세요.
+각 항목을 Pass/Partial/Fail로 판정하고 남은 이슈를 알려주세요.
 ```
 
 ### 10.2 리뷰 병합 프로세스
