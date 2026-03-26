@@ -1,9 +1,9 @@
-# 가격 예측 엔진 — 개발 실행 계획서 v2
+# 가격 예측 엔진 — 개발 실행 계획서 v2.1
 
 > **기반 문서**: `price_prediction_engine_plan.md` v3.1 (Codex 12회 Ready)
 > **개발 주체**: Claude (직접 구현)
 > **작성일**: 2026-03-26
-> **Codex 리뷰**: 1회차 피드백 전면 반영
+> **Codex 리뷰**: 3회차 (6 Pass / 1 Partial → 수정 반영)
 
 ---
 
@@ -404,27 +404,36 @@ Sprint 1.5 ───────────────────────
 
 ### Sprint 2 — 모델 비교 실험
 
-| # | 모듈 | 파일 | 내용 |
-|---|------|------|------|
-| 2-1 | features | Phase 2 동적 피처 13개 추가 (artist_premium_avg 등) | 기획서 3.1 Phase 2 |
-| 2-2 | models | `trainer.py` 확장 — LightGBM/XGBoost 학습 | 기획서 4.2 ①⑤ |
-| 2-3 | models | 타깃 변환 모델 `log(price/estimate_mid)` | 기획서 4.2 ② |
-| 2-4 | models | auction_type별 분리 모델 | 기획서 4.2 ③ |
-| 2-5 | models | Two-Step (분류→회귀) | 기획서 4.2 ④ |
-| 2-6 | experiments | `champion_challenger.py` — 5개 모델 동일 test set 비교 | 기획서 9장 #8 |
-| 2-7 | experiments | 최종 Champion 선택 + Optuna 최적화 | 기획서 4.3 |
+비교 대상 5개 모델 (기획서 4.2절 우선순위):
+```
+① CatBoost 단일 고도화 (21→34개 피처)
+② 타깃 변환: log(price/estimate_mid) — CatBoost
+③ auction_type별 분리 모델 (위클리/프리미엄/메이저 각각 CatBoost)
+④ Two-Step: 분류(추정가 초과 여부) → 조건부 회귀
+⑤ 3-Model Stacking: CatBoost + LightGBM + XGBoost → Ridge
+```
+
+| # | 모듈 | 내용 | 기획서 |
+|---|------|------|--------|
+| 2-1 | features | Phase 2 동적 피처 13개 추가 (artist_premium_avg 등) | 3.1 |
+| 2-2 | models | `trainer.py` 확장 — LightGBM/XGBoost 학습 지원 | 4.2 ①⑤ |
+| 2-3 | models | 타깃 변환 모델 ② 구현 | 4.2 ② |
+| 2-4 | models | auction_type별 분리 모델 ③ 구현 | 4.2 ③ |
+| 2-5 | models | Two-Step ④ 구현 | 4.2 ④ |
+| 2-6 | experiments | `champion_challenger.py` — 5개 모델 동일 test set 비교 | 9장 #8 |
+| 2-7 | experiments | 최종 Champion 선택 + Optuna 최적화 (100 trials) | 4.3 |
 
 ### Sprint 3 — Reliability + API + 운영 배포
 
-| # | 모듈 | 파일 | 내용 |
-|---|------|------|------|
-| 3-1 | reliability | `reliability_features.py` — 메타피처 추출 | 기획서 5.2 Phase 2 |
-| 3-2 | reliability | `reliability_model.py` — Pr(APE ≤ 0.2) 학습 | 기획서 5.2 Phase 2 |
-| 3-3 | api | `server.py` — FastAPI 서버 | 기획서 7.2 Phase 2 |
+| # | 모듈 | 내용 | 기획서 |
+|---|------|------|--------|
+| 3-1 | reliability | `reliability_features.py` — 메타피처 추출 (기본 5개) | 5.2 |
+| 3-2 | reliability | `reliability_model.py` — Pr(APE ≤ 0.2) 학습 | 5.2 |
+| 3-3 | api | `server.py` — FastAPI 서버 | 7.2 |
 | 3-4 | api | `schemas.py` — request/response 스키마 | — |
-| 3-5 | experiments | `shadow_runner.py` — Shadow mode | 기획서 9장 #10 |
-| 3-6 | validation | 드리프트 모니터링 (PSI/KS, rolling MAPE) | 기획서 8.3 |
-| 3-7 | — | engine_test.html → API 호출 전환 | 기획서 7.2 |
+| 3-5 | experiments | `shadow_runner.py` — Shadow mode retrospective scoring | 9장 #10 |
+| 3-6 | validation | 드리프트 모니터링 (PSI/KS, rolling MAPE) | 8.3 |
+| 3-7 | frontend | engine_test.html → API 호출 전환 | 7.2 |
 
 ---
 
