@@ -36,14 +36,30 @@ def assign_confidence_grade(
         df[estimate_high_col].fillna(0).astype(float) > 0
     )
 
+    # 추정가 범위 폭 (estimate_ratio)
+    est_low = df[estimate_low_col].fillna(0).astype(float)
+    est_high = df[estimate_high_col].fillna(0).astype(float)
+    est_mid = (est_low + est_high) / 2
+
     # 기본 등급: 건수 기반
     grade[has_estimate & (sold >= 1)] = "C"
     grade[has_estimate & (sold >= 6)] = "B"
-    grade[has_estimate & (sold >= 20)] = "A"
 
-    # A등급 추가 조건: 최근 20회차 내 거래 있음
-    if works_full is not None:
-        # 각 행에 대해 해당 작가가 최근 20회차 내 거래가 있는지 확인
+    # A등급: 강화된 조건 (Codex 2차 리뷰 + 데이터 기반 튜닝)
+    #   sold >= 20
+    #   + 추정가 있음
+    #   + 추정가 중앙값 3000만 이상 (within-20% 69.7% 실증)
+    #   + 10억 이하 (초고가 제외)
+    a_candidate = (
+        has_estimate
+        & (sold >= 20)
+        & (est_mid >= 30_000_000)
+        & (est_mid <= 1_000_000_000)
+    )
+    grade[a_candidate] = "A"
+
+    # A등급 추가 조건: 최근 10회차 내 거래 있음 (기존 20 → 10으로 강화)
+    if works_full is not None and artist_col in works_full.columns:
         a_mask = grade == "A"
         for idx in df.index[a_mask]:
             row = df.loc[idx]
@@ -51,18 +67,15 @@ def assign_confidence_grade(
             current_session = row[session_col]
             atype = row[type_col]
 
-            # 같은 타입에서 최근 20회차 내 해당 작가 거래
             recent = works_full[
                 (works_full[type_col] == atype)
                 & (works_full[artist_col] == artist)
-                & (works_full[session_col] >= current_session - 20)
+                & (works_full[session_col] >= current_session - 10)
                 & (works_full[session_col] < current_session)
             ]
             if len(recent) == 0:
-                grade.loc[idx] = "B"  # 최근 거래 없으면 B로 강등
+                grade.loc[idx] = "B"
     else:
-        # works_full 없으면 session 기반 근사: 마지막 회차 - 현재 회차로 판단 불가
-        # 이 경우 A등급을 sold >= 20으로만 유지 (보수적이지 않음 — 주의)
         pass
 
     return grade
