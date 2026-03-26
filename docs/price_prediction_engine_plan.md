@@ -625,7 +625,8 @@ study.optimize(objective, n_trials=100)
   ▼
 ┌──────────────────────────────────────────────┐
 │  Step 2: 작가 통계 조회                        │
-│  ├── 기존 작가 → artist_stats 테이블 조인      │
+│  ├── 기존 작가 → fold snapshot stats 조회      │
+│  │   (works 기반 cutoff 시점까지만 집계)        │
 │  ├── 신규 작가 → Cold Start 대체값             │
 │  └── 작자미상 → __UNKNOWN__ 그룹 통계          │
 └──────────────────────────────────────────────┘
@@ -648,7 +649,11 @@ study.optimize(objective, n_trials=100)
 │       결과에 따라 단일/분리/Two-Step/Stacking   │
 │       중 선택)                                  │
 │                                                │
-│  출력: ln(P̂) → P̂ = exp(ln(P̂))               │
+│  출력 (Champion 모델에 따라 복원식이 다름):      │
+│  ├── 기본: ln(P̂) → P̂ = exp(ln(P̂))           │
+│  ├── 타깃변환: ŷ=ln(P/est_mid)                │
+│  │   → P̂ = est_mid × exp(ŷ)                  │
+│  └── Two-Step: class→조건부회귀→P̂             │
 └──────────────────────────────────────────────┘
   │
   ▼
@@ -713,10 +718,12 @@ Phase 2: Calibration 기반 Reliability Model (목표)
     - estimate_ratio           (추정가 불확실성)
     - is_new_artist            (Cold Start 여부)
 
-    Champion 모델 의존 (해당 모델 선택 시에만 사용):
+  기본 Reliability Model은 위 5개 피처만으로 학습한다 (Champion 독립).
+
+  확장 버전 (Champion에 uncertainty 출력이 있는 경우에만):
     - ensemble_disagreement    (앙상블 선택 시 — 모델 간 예측 분산)
     - quantile_width           (분위수 모델 선택 시 — Q10-Q90 구간 크기)
-    → 단일 모델 선택 시 이 2개는 제외하고 상위 5개만으로 학습
+    → 확장 피처가 있으면 기본+확장으로 재학습하여 성능 비교 후 채택
 
   Reliability Model 타깃:
     Pr(APE ≤ 0.2 | X_meta)   → "±20% 이내일 확률"
@@ -926,6 +933,7 @@ Phase 2 — 실시간 API 기반:
   3. Calibration 드리프트
      - Grade별 within-20%/30% coverage 주간 계산
      - A등급 within-20%가 60% 미만이면 reliability model 재학습
+       (참고: 전환 게이트 승격 기준은 65%, 운영 중 재학습 트리거는 60%로 차등 적용)
 
   4. Parser 건전성
      - 크기/재료 파싱 실패율 주간 추적
@@ -1060,7 +1068,7 @@ Sprint 3 — API 서비스화
 
 ---
 
-## 10. Codex 리뷰 가이드
+## 11. Codex 리뷰 가이드
 
 ### 11.1 PR 생성 후 Codex 리뷰 요청 프롬프트
 
