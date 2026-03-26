@@ -170,7 +170,7 @@ log 공간 예측을 원래 스케일로 복원할 때 주의가 필요하다.
 
 ```
 미술 경매 데이터의 핵심 특성:
-  1. 고카디널리티 범주형 변수 — 작가명 3,289개, 매체 2,154개
+  1. 고카디널리티 범주형 변수 — 작가명 3,286명 (+ __UNKNOWN__, __NEW_ARTIST__), 매체 2,154개
   2. 순서형 데이터 — 시간 순서가 있는 경매 데이터
   3. 결측값 다수 — 제작연도 38.6%, 재료 6.2%
 
@@ -238,7 +238,7 @@ Step 2 — 조건부 회귀:
 ```
 No  이름                  타입    변환 공식                                   근거
 ── ──────────────────── ────── ──────────────────────────────────────────── ──────
- 1  artist_name          CAT    원본 작가명 (3,289 카테고리)                  헤도닉 모델 핵심 변수
+ 1  artist_name          CAT    원본 작가명 (3,286명 + 특수 카테고리)                  헤도닉 모델 핵심 변수
  2  medium_category      CAT    재료 텍스트 → 10종 매체 분류                  매체별 가격 수준 차이 유의
  3  support_category     CAT    재료 텍스트 → 7종 지지체 분류                 캔버스>종이 프리미엄
  4  auction_type         CAT    위클리/프리미엄/메이저 (3종)                  가격대 세그먼트
@@ -291,7 +291,7 @@ No  이름                      변환 공식                                   
 
 #### 3.2.1 크기 파싱 (dimension_parser)
 
-```python
+```
 # 5개 패턴 우선순위 (97.3% 파싱 성공률)
 
 패턴 1 — 2D 표준:     "81×116cm" or "81x116"
@@ -326,7 +326,7 @@ No  이름                      변환 공식                                   
 
 #### 3.2.2 재료 파싱 (medium_parser)
 
-```python
+```
 # 2,154개 고유값 → 10종 매체 + 7종 지지체로 정규화
 
 매체 분류 규칙 (우선순위 순):
@@ -377,7 +377,9 @@ No  이름                      변환 공식                                   
 
   참조용 조인 (데이터 탐색 단계):
     works.작가 = artists.작가명
-    성공: ~39,840건 / 실패: 39건
+    조인 대상: 작가 결측(9.2%, ~4,026건) 제외한 ~39,840건
+    성공: ~39,801건 / 실패(works에만 있는 작가): 39건
+    (전체 43,866건 - 작가 결측 4,026건 = 조인 대상 39,840건)
 
 Cold Start 전략 (1,511명, 45.9%가 1건만 보유):
 
@@ -389,7 +391,7 @@ Cold Start 전략 (1,511명, 45.9%가 1건만 보유):
     artist_name = "__NEW_ARTIST__"
     작가 통계 = 동일 estimate_tier + auction_type 그룹 평균
     → 모델은 주로 추정가, 크기, 재료에 의존하여 예측
-    → confidence = "D" (저신뢰)
+    → confidence_grade = "D" (저신뢰)
 
 작자미상 처리:
     "작자미상"|빈값|NaN → artist_name = "__UNKNOWN__"
@@ -626,8 +628,9 @@ study.optimize(objective, n_trials=100)
   ▼
 ┌──────────────────────────────────────────────┐
 │  Step 2: 작가 통계 조회                        │
-│  ├── 기존 작가 → fold snapshot stats 조회      │
-│  │   (works 기반 cutoff 시점까지만 집계)        │
+│  ├── 학습/평가: fold별 train window snapshot   │
+│  ├── 서빙(운영): 배포 시점 cutoff production   │
+│  │   snapshot (최신 경매 결과까지 집계)          │
 │  ├── 신규 작가 → Cold Start 대체값             │
 │  └── 작자미상 → __UNKNOWN__ 그룹 통계          │
 └──────────────────────────────────────────────┘
@@ -713,7 +716,7 @@ Phase 2: Calibration 기반 Reliability Model (목표)
   Reliability Model 입력 피처:
 
     항상 사용 가능 (모델 구조 무관):
-    - artist_sold_count        (작가 낙찰 건수)
+    - artist_total_sold        (작가 낙찰 건수)
     - artist_premium_std       (작가 프리미엄 변동성)
     - artist_recent_count_2y   (최근 2년 거래 건수)
     - estimate_ratio           (추정가 불확실성)
@@ -753,18 +756,20 @@ Phase 2: Calibration 기반 Reliability Model (목표)
     C등급: margin = 0.50  (±50%)
     D등급: margin = 0.70  (±70%)
 
-방법 2 — 모델 기반 (Phase 2):
-  CatBoost의 virtual_ensembles로 예측 분산 추정:
+방법 2 — 분위수 회귀 (Phase 2, 권장):
+  Q10 모델과 Q90 모델을 별도 학습하여 80% prediction interval 생성:
+    lower = exp(Q10_model.predict(X))   ← 10번째 백분위
+    upper = exp(Q90_model.predict(X))   ← 90번째 백분위
+    → 목표 coverage: 80% (9장 검증 항목 "prediction interval backtest"와 정렬)
+
+방법 3 — 모델 불확실성 기반 (Phase 2, 대안):
+  CatBoost virtual_ensembles로 예측 분산 추정:
     predictions = model.virtual_ensembles_predict(X, prediction_type='TotalUncertainty')
     mean_pred = predictions[:, 0]
     variance  = predictions[:, 1]
-    lower = exp(mean_pred - 1.96 * sqrt(variance))
-    upper = exp(mean_pred + 1.96 * sqrt(variance))
-
-방법 3 — 분위수 회귀 (Phase 2):
-  Q10 모델 (10번째 백분위)과 Q90 모델 (90번째 백분위)을 별도 학습:
-    lower = exp(Q10_model.predict(X))
-    upper = exp(Q90_model.predict(X))
+    lower = exp(mean_pred - 1.28 * sqrt(variance))   ← 80% 구간
+    upper = exp(mean_pred + 1.28 * sqrt(variance))
+    → z=1.28 (80% coverage), z=1.645 (90%), z=1.96 (95%)
 ```
 
 ---
@@ -1109,12 +1114,13 @@ Codex 4회차까지의 리뷰 피드백을 모두 반영한 최종 버전입니�
 | 3 | Prokhorenkova et al. (2018). "CatBoost: unbiased boosting with categorical features." *NeurIPS* | 2.3 CatBoost |
 | 4 | Kim & Kim (2024). "Two-step model based on XGBoost for predicting artwork prices." *KES* | 2.5, 8장 |
 | 5 | Wolpert (1992). "Stacked Generalization." *Neural Networks* | 4.2 앙상블 |
-| 6 | Lundberg & Lee (2017). "A Unified Approach to Interpreting Model Predictions." *NeurIPS* | SHAP 기여도 |
-| 7 | Aubry et al. (2025). "Deep Learning for Art Market Valuation." *arXiv:2512.23078* | 멀티모달 |
-| 8 | Bento et al. (2024). "Tabular Data Models for Predicting Art Auction Results." *Applied Sciences* | 모델 비교 |
-| 9 | Mei & Moses (2002). "Art as an Investment." *AER* | 반복 판매 모델 |
-| 10 | Cogent Economics (2018). Chinese Paintings Hedonic/Hybrid Models | 하이브리드 |
-| 11 | Artwork Pricing Model Integrating Popularity and Ability (2024). *AStA* | 작가 명성 |
+| 6 | Duan, N. (1983). "Smearing Estimate: A Nonparametric Retransformation Method." *JASA* | 2.2 재변환 편향 |
+| 7 | Lundberg & Lee (2017). "A Unified Approach to Interpreting Model Predictions." *NeurIPS* | SHAP 기여도 (research 문서 참조) |
+| 8 | Aubry et al. (2025). "Deep Learning for Art Market Valuation." *arXiv:2512.23078* | 멀티모달 (research 문서 참조) |
+| 9 | Bento et al. (2024). "Tabular Data Models for Predicting Art Auction Results." *Applied Sciences* | 모델 비교 (research 문서 참조) |
+| 10 | Mei & Moses (2002). "Art as an Investment." *AER* | 반복 판매 (research 문서 참조) |
+| 11 | Cogent Economics (2018). Chinese Paintings Hedonic/Hybrid Models | 하이브리드 (research 문서 참조) |
+| 12 | Artwork Pricing Model Integrating Popularity and Ability (2024). *AStA* | 작가 명성 (research 문서 참조) |
 
 ---
 
