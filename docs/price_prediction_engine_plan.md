@@ -82,33 +82,37 @@
 
 ## 2. 수학적 기반: 예측 공식의 이론적 근거
 
-### 2.1 헤도닉 가격 모델 (Hedonic Pricing Model)
+### 2.1 문제 정의 프레임: 헤도닉 가격 모델
 
-미술품 가격을 구성 특성들의 함수로 분해하는 경제학적 프레임워크다. 본 엔진의 이론적 출발점이다.
+헤도닉 가격 모델은 미술품 가격을 관찰 가능한 특성들의 함수로 분해하는 **경제학적 문제 정의 프레임워크**다.
+본 엔진에서는 이 프레임을 "가격이 특성의 함수다"라는 문제 정의로 채택하되, 함수의 구체적 형태는 ML 모델(CatBoost)이 데이터에서 학습한다.
 
-**공식**:
+**헤도닉 모델의 선형 공식** (참조용):
 ```
 ln(P_i) = α + Σ_{j=1}^{J} β_j · X_{ij} + Σ_{t=1}^{T} γ_t · D_{it} + ε_i
 
   P_i       : 작품 i의 낙찰가 (원)
   X_{ij}    : 작품 i의 j번째 특성 (크기, 매체, 작가 통계 등)
   D_{it}    : 시간 더미 변수 (시장 트렌드 반영)
-  β_j       : 특성 j의 암묵 가격 (implicit price) — "유화는 판화 대비 +β%"
+  β_j       : 특성 j의 암묵 가격 (implicit price)
   γ_t       : 시점 t의 시장 가격 지수
-  ε_i       : 오차항 ~ N(0, σ²)
+  ε_i       : 오차항 (분포는 데이터에서 검증 필요 — 정규성 가정하지 않음)
 ```
 
 **왜 ln(P)인가?**
-1. 미술품 가격은 극단적 우편향 → log 변환으로 정규 분포에 근사
-2. β_j를 "X가 1단위 증가 시 가격이 β_j × 100% 변화"로 해석 가능
+1. 미술품 가격은 극단적 우편향 → log 변환으로 분포 대칭화
+2. 계수 β_j의 해석:
+   - 근사식: β_j가 작을 때 "X가 1단위 증가 시 가격이 약 β_j × 100% 변화"
+   - **정확식: 가격 변화율 = 100 · (exp(β_j) - 1)%**  (β > 0.1이면 근사 오차 큼)
 3. 이분산성(heteroscedasticity) 완화 — 고가 작품의 절대 오차가 자연히 조정됨
+
+**중요: 이 선형 모델은 본 엔진에서 직접 사용하지 않는다.** 비선형 상호작용이 풍부한 미술 데이터에서는 GBM 계열이 더 적합하므로, 2.2절의 비선형 모델로 대체한다. 헤도닉 모델은 "왜 이런 피처를 쓰는가"의 경제학적 근거로만 참조한다.
 
 > **출처**: Rosen, S. (1974). "Hedonic Prices and Implicit Markets." *Journal of Political Economy*, 82(1), 34-55.
 
-### 2.2 비선형 확장: Gradient Boosted Trees
+### 2.2 함수 근사기: Gradient Boosted Trees
 
-헤도닉 모델은 선형이므로 피처 간 상호작용을 포착하지 못한다.
-GBM(Gradient Boosted Machine)은 이를 자동으로 학습한다.
+헤도닉 모델이 "가격 = f(특성)"이라는 문제를 정의한다면, GBM은 그 f를 데이터에서 비선형적으로 학습하는 **함수 근사기**다. 피처 간 상호작용, 비선형 효과를 자동으로 포착한다.
 
 **학습 목표**:
 ```
@@ -126,15 +130,37 @@ GBM(Gradient Boosted Machine)은 이를 자동으로 학습한다.
 
   L(y, ŷ) = (y - ŷ)²
 
-  이유: log-price에 RMSE를 적용하면, 원래 스케일에서의 MAPE와 근사적으로 정렬됨
-        — log 공간에서 RMSE 최소화 ≈ 원래 공간에서 MAPE 최소화
+  log-price 공간에서 RMSE를 최소화하면, 원래 스케일에서의 상대 오차를
+  줄이는 경향이 있다. 단, RMSE와 MAPE는 목적함수가 동치가 아니며,
+  MAPE 직접 최적화를 원하면 별도 커스텀 목적함수가 필요하다.
 
   대안 검토:
-    Huber Loss — 이상치에 강건하나, 미술품 초고가 "서프라이즈"를 과소학습할 위험
+    Huber Loss — 이상치에 강건하나, 초고가 "서프라이즈" 과소학습 위험
     Quantile Loss — 가격 범위 예측에 유용 (Phase 2에서 검토)
+    MAPE Loss — 직접 MAPE를 최적화하는 커스텀 목적함수 (CatBoost 지원)
+```
+
+**⚠️ 재변환 편향 (Retransformation Bias)**:
+```
+log 공간 예측을 원래 스케일로 복원할 때 주의가 필요하다.
+
+  문제: E[ln(P)|X] ≠ ln(E[P|X])
+        → exp(E[ln(P)|X]) < E[P|X]   (Jensen 부등식)
+        → 단순 exp() 복원은 체계적 과소추정을 유발
+
+  보정 방법 (Duan's Smearing Estimator):
+    P̂_corrected = exp(ŷ) × (1/N) Σ exp(e_i)
+    여기서 e_i = y_i - ŷ_i (학습 잔차)
+
+  실무 판단:
+    트리 모델(GBM)은 조건부 평균이 아닌 조건부 중앙값에 가까운 예측을
+    하므로, 선형 회귀 대비 재변환 편향이 작다. 그러나 고가 구간에서
+    체계적 과소추정 여부를 반드시 holdout에서 검증해야 한다.
+    → Phase 1에서 "가격대별 예측/실제 비율 분포"를 확인하여 보정 필요성 판단
 ```
 
 > **출처**: Friedman, J.H. (2001). "Greedy Function Approximation: A Gradient Boosting Machine." *Annals of Statistics*.
+> Duan, N. (1983). "Smearing Estimate: A Nonparametric Retransformation Method." *JASA*.
 
 ### 2.3 CatBoost가 본 도메인에 적합한 이유
 
@@ -145,9 +171,19 @@ GBM(Gradient Boosted Machine)은 이를 자동으로 학습한다.
   3. 결측값 다수 — 제작연도 38.6%, 재료 6.2%
 
 CatBoost의 대응 메커니즘:
-  1. Ordered Target Encoding — 범주형 변수를 타겟 기반으로 자동 인코딩
-     (작가명을 one-hot이 아닌 "해당 작가의 과거 평균 가격"으로 치환)
-  2. Ordered Boosting — 학습 데이터를 시간순으로 정렬하여 target leakage 방지
+
+  1. Ordered Target Statistics (OTS)
+     범주형 변수를 타겟 기반 수치로 인코딩하되, 랜덤 permutation 순서에
+     따라 "해당 샘플 이전에 등장한 동일 카테고리 샘플의 타겟 평균"만 사용.
+     이는 단순 "작가 평균 가격 치환"이 아니라, permutation 기반의 leakage 완화 메커니즘이다.
+
+  2. Ordered Boosting
+     각 부스팅 단계에서 잔차 계산에 사용하는 모델을 해당 샘플이
+     포함되지 않은 데이터로 학습하여 target leakage를 줄인다.
+     ⚠️ 이것은 "시간순 정렬"이 아니라 랜덤 permutation 기반이다.
+     시계열 미래 누수 방지는 CatBoost가 보장하지 않으며,
+     데이터 분할과 피처 생성에서 별도로 시간순 제약을 지켜야 한다. (→ 3.3절)
+
   3. 내장 NaN 처리 — 결측값을 최적 분기에 자동 할당
 ```
 
@@ -352,18 +388,60 @@ Cold Start 전략 (1,511명, 45.9%가 1건만 보유):
     → 고미술/골동품에서 "작자미상"은 특정 가격대를 형성 (학습 가능)
 ```
 
-### 3.3 시계열 누수(Leakage) 방지 원칙
+### 3.3 시계열 누수(Leakage) 방지 — 엄격 규칙
 
 ```
-핵심: 예측 시점(t) 이후의 데이터는 절대 사용 불가
+핵심 원칙: 예측 시점(t) 이후의 데이터는 절대 사용 불가
 
-구현 방식 (vectorized):
-  works_sorted = works.sort_values('session_number')
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+규칙 1: 모든 집계 피처는 fold별 train window 안에서 재계산
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  for 피처 in [artist_recent_avg_3, artist_premium_avg, ...]:
-    # expanding window: 해당 건의 회차 이전 데이터만 사용
-    past_mask = works_sorted['session_number'] < current_session
-    피처값 = compute(works_sorted[past_mask])
+  ❌ 잘못된 방식:
+    artist_stats 테이블을 전체 기간으로 사전 집계 → 조인
+    → 미래 낙찰 데이터가 포함되어 target leakage 발생
+
+  ✅ 올바른 방식:
+    각 fold(train/valid/test)별로, train window의 데이터만 사용하여
+    artist_avg_price, artist_total_sold 등을 동적으로 재계산
+
+    예: Fold k의 train 기간 = 회차 1~380인 경우
+        artist_avg_price = mean(낙찰가 | 작가=A, 회차 ≤ 380)
+        → 회차 381 이후 데이터는 절대 미포함
+
+  Cold Start fallback의 그룹 평균도 동일 규칙 적용:
+    estimate_tier + auction_type 그룹 평균 →
+    해당 fold의 train window 데이터로만 계산
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+규칙 2: auction_type별 독립 시간축 사용
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  session_number는 auction_type별로 별도 축이므로,
+  전체 데이터를 단일 session_number로 정렬하면 타입 간 시간축이 혼재.
+
+  ✅ auction_type별로 독립적인 시간축 정렬 후 피처 계산:
+    for atype in ['위클리', '프리미엄', '메이저']:
+      subset = works[works['auction_type'] == atype].sort_values('session_number')
+      # 이 subset 안에서만 rolling/expanding 피처 계산
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+규칙 3: 동일 회차 내 lot 간 정보 차단
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  같은 session_number 내 여러 lot가 있을 때:
+    past_mask = session_number < current_session  (strict <, not <=)
+  → 동일 세션 내 earlier lot 정보도 사용하지 않음 (보수적 접근)
+  → 실 운영에서는 예측 시점이 "경매 시작 전"이므로 이 접근이 정확함
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+규칙 4: 누수 단위 테스트 (leakage unit test)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  각 집계 피처가 미래 데이터 없이 생성됐는지 fold별 자동 검증:
+    for each sample in test_fold:
+      assert all aggregate features computed only from data
+             where session_number < sample.session_number
 
 데이터 분할 (시간축 기반):
   ╔═══════════════════════════════════════════════╗
@@ -379,6 +457,30 @@ Cold Start 전략 (1,511명, 45.9%가 1건만 보유):
 ```
 
 > **출처**: Spec 문서 5.3절, Implementation Strategy Step 1-1
+
+### 3.4 추가 검토 피처 (Codex 리뷰 반영)
+
+```
+Codex 리뷰에서 지적된 빠진 피처 — Phase 2에서 순차 추가 검토:
+
+  빠진 중요 피처:
+    - genre_category    작품 장르 (회화/조각/도자/고미술 등) — medium과 별도
+    - is_signed         서명 여부 (판화/사진에서 가격 영향 큼)
+    - edition_info      에디션 번호, AP/EA 여부
+    - ln_surface_area   log(면적+1) — 원값보다 안정적
+    - sale_month        경매 시점 월 (시즌성 반영)
+    - sale_quarter      분기 (봄/가을 메이저 시즌)
+    - artist_is_alive   작가 생존 여부 (사망 프리미엄 효과)
+    - artist_birth_year 작가 출생연도
+
+  중복 정리 검토 (ablation으로 결정):
+    - height/width/area/aspect_ratio 4개 → area + aspect_ratio 2개로 축소 검토
+    - estimate_mid/range/ratio/tier 4개 → ln_estimate_mid + estimate_ratio 2개로 축소 검토
+    - artist_avg/max/rank 3개 → 상관 분석 후 대표 1~2개 선택
+
+  ⚠️ 현재 데이터에 없는 피처(서명, 에디션, 생존여부)는
+     데이터 수집 가능성 확인 후 추가 여부 결정
+```
 
 ---
 
@@ -411,40 +513,63 @@ model.fit(
 # 실제 결과: 948 iterations에서 수렴
 ```
 
-### 4.2 Phase 2: 3-Model Stacking 앙상블
+### 4.2 Phase 2: 모델 개선 전략 — 우선순위별 비교 실험
+
+Codex 리뷰 반영: 3-model stacking을 기본 경로로 고정하지 않고, 아래 순서로 비교 실험을 수행한다.
+CatBoost/LightGBM/XGBoost는 편향 구조가 크게 다르지 않아 stacking 이득이 제한적일 수 있으므로, 더 직접적인 대안을 먼저 검증한다.
 
 ```
-Base Models:
-  ┌───────────┬──────────────────────────────────────┐
-  │ CatBoost  │ 범주형 자동 인코딩, 순서형 부스팅      │
-  │ LightGBM  │ Leaf-wise 성장, 대규모 데이터 빠름     │
-  │ XGBoost   │ L1/L2 정규화 강점                     │
-  └───────────┴──────────────────────────────────────┘
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+실험 우선순위 (Codex 권장 + Claude 설계)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Meta-Learner: Ridge Regression
-  → Base 모델들의 예측값 3개를 입력으로 최종 예측
+  ① CatBoost 단일모델 고도화 (Phase 2 피처 추가)
+     → Baseline 22개 → 35개 피처로 확장 후 재학습
+     → 이것만으로 MAPE 3~5%p 개선 기대
 
-학습 과정:
-  1. 5-Fold Time Series CV → 각 Base Model의 OOF 예측값 생성
-  2. OOF 예측값(3차원)을 피처로 Meta-Learner 학습
-  3. Test: 각 Base Model 예측 → Meta-Learner 최종 예측
+  ② 타깃 변환: log(price / estimate_mid) 회귀
+     → 절대 가격이 아닌 "추정가 대비 할인/프리미엄율" 직접 예측
+     → K-Auction의 핵심 패턴(추정가 60% 낙찰)과 정확히 정렬
+     → 추정가 지배력 문제를 구조적으로 해소
 
-  ┌────────────────────────────────────────┐
-  │ Fold 1: Train[────] Valid[──]          │
-  │ Fold 2: Train[──────] Valid[──]        │
-  │ Fold 3: Train[────────] Valid[──]      │
-  │ Fold 4: Train[──────────] Valid[──]    │
-  │ Fold 5: Train[────────────] Valid[──]  │
-  └────────────────────────────────────────┘
+     공식:
+       y_new = ln(P_i / estimate_mid_i)   ← 할인율의 log
+       P̂_i = estimate_mid_i × exp(ŷ_new)  ← 복원
 
-공식:
-  ŷ_final = Ridge(ŷ_catboost, ŷ_lightgbm, ŷ_xgboost)
-  = w₁·ŷ_cat + w₂·ŷ_lgb + w₃·ŷ_xgb + bias
+  ③ auction_type별 분리 모델
+     → 위클리/프리미엄/메이저의 가격 패턴이 완전히 다름
+     → 통합 모델 vs 분리 모델 MAPE 비교 후 결정
+     → 분리 모델이 위클리(47%→?) 개선에 효과적일 수 있음
 
-목표: 전체 MAPE 40.17% → 33~35%
+  ④ Two-Step (분류 → 조건부 회귀)
+     → Step 1: "추정가 이상 낙찰 여부" 이진 분류
+     → Step 2: 상향/하향 그룹별 회귀
+     → Kim & Kim(2024) 한국 경매 데이터에서 효과 보고
+
+  ⑤ 3-Model Stacking 앙상블 (위 실험 결과가 불충분할 때)
+     → CatBoost + LightGBM + XGBoost
+     → Meta-Learner: Ridge Regression
+     → 5-Fold Expanding Window CV (시계열 누수 방지)
+
+     주의: fold 설계가 시계열 expanding window여야 하며,
+           메타러너 학습 시에도 validation leakage 없어야 함
+
+     ┌────────────────────────────────────────┐
+     │ Fold 1: Train[────] Valid[──]          │
+     │ Fold 2: Train[──────] Valid[──]        │
+     │ Fold 3: Train[────────] Valid[──]      │
+     │ Fold 4: Train[──────────] Valid[──]    │
+     │ Fold 5: Train[────────────] Valid[──]  │
+     │  (Expanding window — 과거 누적 학습)    │
+     └────────────────────────────────────────┘
+
+비교 기준:
+  전체 MAPE, 타입별 MAPE, MdAPE, Within-20%를 동일 test set에서 비교
+  → 가장 좋은 전략 선택 (복합 전략도 가능)
 ```
 
 > **출처**: Wolpert, D.H. (1992). "Stacked Generalization." *Neural Networks*.
+> Kim & Kim (2024). Two-step XGBoost. *KES Journal*.
 
 ### 4.3 Optuna 하이퍼파라미터 최적화
 
@@ -530,34 +655,65 @@ study.optimize(objective, n_trials=100)
 테스트 페이지에 결과 표시
 ```
 
-### 5.2 신뢰도 등급 산정 공식
+### 5.2 신뢰도 등급 산정
+
+**⚠️ Codex 리뷰 반영**: 피처 중요도(feature importance)와 예측 신뢰도(confidence)는 다른 개념이다. Ablation 기반 가중치를 confidence 스코어로 직접 전용하는 것은 개념적 오류가 있으므로, 2단계 접근을 취한다.
 
 ```
-신뢰도는 데이터 품질과 예측 근거의 풍부함으로 결정한다:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 1: 규칙 기반 (초기 버전 — calibration 검증 전)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-quality_score = w₁·S_estimate + w₂·S_artist + w₃·S_physical
+  임시 규칙 (holdout calibration으로 가중치 조정 예정):
 
-  w₁ = 0.84  (추정가 가중치 — Ablation 실측 기반)
-  w₂ = 0.16  (작가 통계 가중치)
-  w₃ = 0.00  (크기 — 추정가에 이미 내포, 기여도 ~0)
+  confidence_grade 결정 기준:
+    A등급: 추정가 있음 + 작가 낙찰 ≥ 20건 + 최근 2년 내 거래 있음
+    B등급: 추정가 있음 + 작가 낙찰 ≥ 6건
+    C등급: 추정가 있음 + 작가 낙찰 1~5건
+    D등급: 추정가 있음 + 신규/미상 작가, 또는 데이터 부족
 
-각 항목 스코어 (0~1):
-  S_estimate:
-    추정가 있음 = 1.0
-    추정가 없음 = 0.0  (예측 거부)
+  ⚠️ 이 규칙은 초기 출발점일 뿐이며, Phase 1 완료 후
+     holdout에서 grade별 실제 커버리지를 검증하여 반드시 조정한다.
 
-  S_artist:
-    작가 과거 낙찰 건수 ≥ 20건 = 1.0
-    작가 과거 낙찰 건수 6~19건 = 0.7
-    작가 과거 낙찰 건수 2~5건  = 0.4
-    작가 과거 낙찰 건수 1건    = 0.2
-    신규/미상 작가             = 0.0
+  필수 검증 테이블 (Phase 1 산출물):
+    ┌────────┬──────────┬──────────┬──────────┐
+    │ 등급   │ 샘플 수   │ ±20% 적중│ ±30% 적중│
+    ├────────┼──────────┼──────────┼──────────┤
+    │ A      │ ?건      │ ?%       │ ?%       │
+    │ B      │ ?건      │ ?%       │ ?%       │
+    │ C      │ ?건      │ ?%       │ ?%       │
+    │ D      │ ?건      │ ?%       │ ?%       │
+    └────────┴──────────┴──────────┴──────────┘
+  → 이 테이블이 "A등급 70%+ within-20%"를 만족하지 않으면 규칙 재조정
 
-신뢰도 등급:
-  quality_score ≥ 0.90  →  A  "예측 오차 ±20% 이내 기대"
-  quality_score ≥ 0.70  →  B  "예측 오차 ±30% 이내 기대"
-  quality_score ≥ 0.40  →  C  "예측 오차 ±50% 이내, 참고용"
-  quality_score <  0.40  →  D  "근사 추정, 데이터 부족"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 2: Calibration 기반 Reliability Model (목표)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  holdout set에서 각 샘플의 실제 오차(APE)를 구한 뒤,
+  입력 메타피처로 "이 예측이 얼마나 믿을 만한가"를 학습한다.
+
+  Reliability Model 입력 피처:
+    - artist_sold_count        (작가 낙찰 건수)
+    - artist_premium_std       (작가 프리미엄 변동성)
+    - artist_recent_count_2y   (최근 2년 거래 건수)
+    - estimate_ratio           (추정가 불확실성)
+    - is_new_artist            (Cold Start 여부)
+    - ensemble_disagreement    (앙상블 모델 간 예측 분산)
+    - quantile_width           (Q10-Q90 구간 크기)
+
+  Reliability Model 타깃:
+    Pr(APE ≤ 0.2 | X_meta)   → "±20% 이내일 확률"
+    Pr(APE ≤ 0.3 | X_meta)   → "±30% 이내일 확률"
+
+  등급 산정:
+    Pr(APE ≤ 0.2) ≥ 0.65  →  A
+    Pr(APE ≤ 0.3) ≥ 0.60  →  B
+    Pr(APE ≤ 0.3) ≥ 0.40  →  C
+    나머지                  →  D
+
+  → 규칙이 아닌 데이터 기반으로 confidence를 산정하므로,
+    실제 커버리지와 grade가 자동 정렬됨
 ```
 
 ### 5.3 가격 범위 계산 방식
@@ -711,44 +867,177 @@ Phase 2 — 실시간 API 기반:
 
 ## 8. 리스크 & 완화 전략
 
-| # | 리스크 | 심각도 | 완화 전략 | 논문 근거 |
-|---|--------|--------|----------|----------|
-| 1 | **추정가 지배력** — 모델이 추정가 복사기가 됨 | 높음 | 추정가 제외 모델도 병행 학습. Ablation으로 독립 기여도 확인. 프론트에서 추정가 없는 케이스도 대응 | Baseline Ablation: 제거 시 +11.85%p |
-| 2 | **저가 MAPE 과대** — <100만 구간 56.44% | 중간 | 가격대별 MAPE 분리 보고. 신뢰도 등급(A~D) 표시. MdAPE 병행 | 연구 문헌 공통 — 저가 MAPE 과대 현상 |
-| 3 | **Cold Start** — 45.9% 작가가 1건만 | 중간 | estimate_tier + auction_type 그룹 평균 fallback. is_new_artist 플래그 | Kim & Kim(2024) Cold Start 전략 |
-| 4 | **유찰 데이터 부재** — 선택 편향 | 낮음 | 현재 "낙찰 기준" 명시. 유찰 데이터 확보 시 Heckman IMR 보정 | Cogent Economics(2018) 하이브리드 모델 |
-| 5 | **회차 ≠ 시간** — 시계열 근사 | 중간 | auction_date 필드 확보 추진. 현재는 회차로 근사 | Implementation Strategy 리스크 1 |
-| 6 | **고가 서프라이즈** — 추정가 상단 초과 예측 불가 | 중간 | Phase 2에서 작가별 동적 프리미엄 피처 추가. 추정가 초과 확률 분류기 검토 | Two-Step Model (Kim & Kim, 2024) |
+### 8.1 기존 식별 리스크
+
+| # | 리스크 | 심각도 | 완화 전략 |
+|---|--------|--------|----------|
+| 1 | **추정가 지배력** — 모델이 추정가 복사기가 됨 | 높음 | 추정가 제외 모델 병행. `log(price/estimate_mid)` 타깃 변환 실험 (4.2절 ②) |
+| 2 | **저가 MAPE 과대** — <100만 구간 56.44% | 중간 | 가격대별 MAPE 분리 보고. 신뢰도 등급(A~D). MdAPE 병행 |
+| 3 | **Cold Start** — 45.9% 작가가 1건만 | 중간 | estimate_tier + auction_type 그룹 평균 fallback (train window 한정) |
+| 4 | **유찰 데이터 부재** — 선택 편향 | 낮음 | "낙찰 기준" 명시. 유찰 데이터 확보 시 Heckman IMR 보정 |
+| 5 | **회차 ≠ 시간** — 시계열 근사 | 중간 | auction_date 필드 확보 추진. 타입별 독립 시간축 (3.3절 규칙 2) |
+| 6 | **고가 서프라이즈** — 추정가 상단 초과 예측 불가 | 중간 | Two-Step 분류기 (4.2절 ④). 작가별 동적 프리미엄 피처 |
+
+### 8.2 Codex 리뷰에서 추가 식별된 리스크
+
+| # | 리스크 | 심각도 | 완화 전략 |
+|---|--------|--------|----------|
+| 7 | **Schema Drift** — 재료 표기, 추정가 형식, 크기 문자열 패턴 변경 시 parser 조용히 실패 | 높음 | parser failure rate 모니터링. 파싱 실패 건수가 주간 1% 초과 시 알림. 정규식 패턴 버전 관리 |
+| 8 | **Distribution Shift** — 작가 사망, 전시 이벤트, 경기 충격 반영 부족 | 높음 | 입력 분포 드리프트 모니터링 (PSI/KS). segment별 rolling MAPE 추적 |
+| 9 | **Calibration Drift** — MAPE는 유지돼도 confidence grade 적중률 붕괴 | 중간 | grade별 within-20%/30% coverage를 주간 모니터링. 임계치 이탈 시 reliability model 재학습 |
+| 10 | **Feedback Loop** — 내부 사용자가 모델 예측을 참고해 추정가 조정 → 자기강화 | 중간 | 모델 예측이 추정가 설정에 사용되는지 추적. 필요 시 추정가 독립성 감사 |
+| 11 | **Fairness** — 신작가/작자미상에 구조적 저평가 강화 | 중간 | D등급 예측에 "데이터 부족으로 인한 근사치" 면책 문구 명시. Cold Start slice 별도 평가 |
+| 12 | **Re-training Policy 부재** — 재학습/롤백 기준 없음 | 높음 | 아래 8.3절에 명시적 정책 추가 |
+| 13 | **데이터 개정** — 경매 결과 사후 수정, 작가명 표준화 변경 | 낮음 | 학습 데이터 스냅샷 버전 고정. 변경 감지 시 파이프라인 재실행 |
+
+### 8.3 모델 드리프트 모니터링 & 재학습 정책
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+모니터링 항목 (Phase 2 서비스화 이후)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. 입력 분포 드리프트
+     - PSI (Population Stability Index) on ln_estimate_mid, surface_area
+     - KS test on artist_avg_price 분포
+     - 주간 계산, PSI > 0.2이면 경고
+
+  2. 성능 드리프트
+     - Rolling 4주 MAPE (전체 + auction_type별)
+     - Rolling 4주 MdAPE, Within-20%
+     - 기준: 전체 MAPE가 2주 연속 baseline+5%p 초과 시 재학습 트리거
+
+  3. Calibration 드리프트
+     - Grade별 within-20%/30% coverage 주간 계산
+     - A등급 within-20%가 60% 미만이면 reliability model 재학습
+
+  4. Parser 건전성
+     - 크기/재료 파싱 실패율 주간 추적
+     - 실패율 > 3%이면 정규식 패턴 검토
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+재학습 정책
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  정기: 월 1회 (새 경매 결과 누적 후)
+  이벤트: 성능 트리거 충족 시 즉시
+  롤백: 새 모델의 test MAPE가 기존 모델보다 나쁘면 배포하지 않음
+
+  Champion/Challenger 운영:
+    - 현재 운영 모델 = Champion
+    - 새로 학습한 모델 = Challenger
+    - Challenger가 동일 test set에서 Champion 대비 개선 확인 후에만 교체
+    - 학습 데이터 스냅샷 + 모델 버전 고정 (재현성 보장)
+```
 
 ---
 
-## 9. 마일스톤 & 체크리스트
-
-### Phase 1: 데이터 전처리 + 모델 개선 + 정적 JSON
+## 9. 검증 전략 (Codex 리뷰 반영 추가)
 
 ```
-Sprint 0 — 데이터 전처리 파이프라인
-  □ src/visionai/price_engine/preprocessing/dimension_parser.py
-  □ src/visionai/price_engine/preprocessing/medium_parser.py
-  □ src/visionai/price_engine/preprocessing/year_parser.py
-  □ src/visionai/price_engine/preprocessing/feature_pipeline.py
-  □ tests/price_engine/test_dimension_parser.py
-  □ tests/price_engine/test_medium_parser.py
-  □ tests/price_engine/test_feature_pipeline.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+필수 검증 항목 (각 Phase 완료 전 통과 필수)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. 워크포워드 백테스트
+     단일 train/valid/test 한 번이 아니라, 여러 cut-off 시점에서 반복 평가.
+     예: cut-off를 회차 350, 380, 410, 440으로 4번 실행하여 안정성 확인.
+
+  2. Leakage Unit Test
+     각 집계 피처가 미래 데이터 없이 생성됐는지 fold별 자동 검증.
+     → CI에 포함하여 파이프라인 변경 시마다 실행.
+
+  3. Calibration Test
+     confidence A/B/C/D별 실제 ±20%, ±30% 커버리지 테이블 생성.
+     → 5.2절의 필수 검증 테이블 채우기.
+
+  4. Prediction Interval Backtest
+     가격 범위(5.3절)가 실제 80%/90% 커버리지를 만족하는지 검증.
+
+  5. Cold Start Slice Test
+     신규 작가, 작자미상, 희소 매체만 따로 MAPE/MdAPE 평가.
+
+  6. Parser Robustness Test
+     크기/재료 텍스트 변형, 오타, 혼합 언어 입력에 대한 파싱 성공률.
+
+  7. Ablation 재현 Test
+     추정가 제거, 작가 제거, 동적 피처 추가 효과를 동일 split에서 비교.
+     → 피처 추가/제거 효과를 정량적으로 문서화.
+
+  8. Champion/Challenger 비교
+     CatBoost 단독 vs 타깃 변환 vs Two-Step vs Stacking을
+     동일 test set에서 전체/세그먼트별 비교.
+
+  9. Human Benchmark
+     내부 전문가(경매 담당자) 추정 vs 모델 추정 비교.
+     → 모델이 전문가 수준에 도달했는지 정성적 평가.
+
+  10. Shadow Mode (Phase 2 서비스화 시)
+      실제 경매 입력을 받아 예측만 기록하고, 결과 확정 후
+      retrospective scoring을 쌓는 구조. 온라인 A/B 이전에 필수.
+```
+
+---
+
+## 10. 마일스톤 & 체크리스트
+
+### Phase 1: 데이터 전처리 + Baseline 재현 + 정적 JSON
+
+```
+Sprint 0 — 데이터 전처리 + 누수 방지 파이프라인
+  □ dimension_parser.py — 크기 파싱 (5개 패턴)
+  □ medium_parser.py — 재료 → 매체/지지체 분류
+  □ year_parser.py — 제작연도 파싱 + 결측 플래그
+  □ feature_pipeline.py — fold별 snapshot 피처 생성 (3.3절 규칙 준수)
+  □ 단위 테스트 (parser + leakage unit test)
   □ preprocessed_features.parquet 생성 확인
 
-Sprint 1 — 모델 개선 + 정적 JSON
-  □ Baseline 재현 확인 (MAPE 40.17%)
-  □ Phase 2 동적 피처 13개 추가 (artist_premium_avg 등)
-  □ 개선 모델 학습 (목표 MAPE < 38%)
-  □ scripts/generate_predictions.py — 작가별/호수별 예측 JSON 생성
-  □ frontend/data/predictions.json 생성
-  □ frontend/engine_test.html — 엔진 테스트 페이지 작성
-
-Sprint 1.5 — 엔진 테스트 검증
-  □ 주요 작가 10명 수동 검증 (예측 vs 실제)
+Sprint 1 — Baseline 재현 + 최소 피처 CatBoost
+  □ Baseline 재현 확인 (MAPE 40.17% ± 0.5%p)
+  □ 재변환 편향 검증 (가격대별 예측/실제 비율 분포)
   □ 세그먼트별 MAPE 리포트 생성
-  □ 신뢰도 등급 분포 확인
+  □ Calibration 테이블 (grade별 ±20%/30% 커버리지)
+
+Sprint 1.5 — 정적 JSON + 테스트 페이지
+  □ generate_predictions.py — 작가별/호수별 예측 JSON 생성
+  □ predictions.json 생성
+  □ engine_test.html — 엔진 테스트 페이지
+  □ Cold Start slice 별도 평가
+  □ 주요 작가 10명 수동 검증
+```
+
+### Phase 1→2 전환 게이트 (모든 조건 충족 시 전환)
+
+```
+  □ 전체 MAPE < 38% AND 타입별 기준 충족 (메이저<19%, 프리미엄<30%)
+  □ Leakage unit test 전체 통과
+  □ Confidence calibration: A등급 within-20% ≥ 60%
+  □ Parser failure rate < 1%
+  □ Cold Start fallback 검증 완료 (D등급 MAPE 보고)
+  □ 워크포워드 백테스트 4회 이상 안정적
+  □ 추론 latency < 100ms (단건 기준)
+```
+
+### Phase 2: 모델 비교 실험 + 실시간 API
+
+```
+Sprint 2 — 모델 비교 실험 (4.2절 우선순위)
+  □ 피처 고도화 (동적 피처 13개 추가)
+  □ 실험 ①: CatBoost 단일모델 고도화
+  □ 실험 ②: log(price/estimate_mid) 타깃 변환
+  □ 실험 ③: auction_type별 분리 모델
+  □ 실험 ④: Two-Step (분류→회귀)
+  □ 실험 ⑤: 3-Model Stacking (필요 시)
+  □ Champion/Challenger 비교 테이블 작성
+  □ Optuna 최적화 (100 trials, 최종 선택 모델)
+
+Sprint 3 — API 서비스화
+  □ FastAPI 서버 구축
+  □ Calibration 기반 Reliability Model (5.2절 Phase 2)
+  □ engine_test.html → API 호출 전환
+  □ ONNX export (추론 최적화)
+  □ 드리프트 모니터링 파이프라인 (8.3절)
+  □ Shadow mode 배포 (retrospective scoring 시작)
 ```
 
 ### Phase 2: 앙상블 + 실시간 API
