@@ -1,6 +1,6 @@
 # K-Auction 가격 예측 엔진 기획서 (상세)
 
-> **문서 버전**: v2.3 (Codex 리뷰 7회차 반영)
+> **문서 버전**: v3.0 (Codex 9회차 최종 Ready 판정)
 > **작성일**: 2026-03-26
 > **리뷰 방식**: GitHub PR → Claude(아키텍처) + Codex(검증/보완) 듀얼 인라인 리뷰
 > **관련 문서**: `art_price_prediction_research.md`, `price_prediction_system_spec.md`, `data_feature_mapping.md`, `implementation_strategy.md`
@@ -286,6 +286,8 @@ No  이름                      변환 공식                                   
 34  artist_price_rank        작가 가격 순위 백분위                             작가 상대적 위치
                              percentile_rank(artist_avg_price)
 35  work_age                 경매시점 연도 - 제작연도                          작품 나이 (결측 시 NaN)
+                             ⚠️ auction_date 미확보 시: 해당 경매 타입의 마지막 회차 연도를 근사 사용
+                             예: 위클리 회차 486 → 2026년 근사. 제작연도 결측 시 work_age = NaN 유지
 
   (Reliability Model 전용 — 5.2절에서 사용)
 36  artist_recent_count_20s  해당 작가의 최근 20회차 내 낙찰 건수              최근 활동도
@@ -921,7 +923,7 @@ Phase 2 — 실시간 API 기반:
 
 | # | 리스크 | 심각도 | 완화 전략 |
 |---|--------|--------|----------|
-| 7 | **Schema Drift** — 재료 표기, 추정가 형식, 크기 문자열 패턴 변경 시 parser 조용히 실패 | 높음 | parser failure rate 모니터링. 파싱 실패 건수가 주간 1% 초과 시 알림. 정규식 패턴 버전 관리 |
+| 7 | **Schema Drift** — 재료 표기, 추정가 형식, 크기 문자열 패턴 변경 시 parser 조용히 실패 | 높음 | parser failure rate 3단계 모니터링: **>1% 자동 알림** / **>3% 수동 점검 및 정규식 패턴 검토** / **Phase 전환 게이트: <1% 필수** (10장). 정규식 패턴 버전 관리 |
 | 8 | **Distribution Shift** — 작가 사망, 전시 이벤트, 경기 충격 반영 부족 | 높음 | 입력 분포 드리프트 모니터링 (PSI/KS). segment별 rolling MAPE 추적 |
 | 9 | **Calibration Drift** — MAPE는 유지돼도 confidence grade 적중률 붕괴 | 중간 | grade별 within-20%/30% coverage를 주간 모니터링. 임계치 이탈 시 reliability model 재학습 |
 | 10 | **Feedback Loop** — 내부 사용자가 모델 예측을 참고해 추정가 조정 → 자기강화 | 중간 | 모델 예측이 추정가 설정에 사용되는지 추적. 필요 시 추정가 독립성 감사 |
@@ -953,7 +955,8 @@ Phase 2 — 실시간 API 기반:
 
   4. Parser 건전성
      - 크기/재료 파싱 실패율 주간 추적
-     - 실패율 > 3%이면 정규식 패턴 검토
+     - 실패율 > 1%이면 자동 알림, > 3%이면 수동 점검 및 정규식 패턴 검토
+       (Phase 전환 게이트 기준: < 1%)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 재학습 정책
@@ -1094,7 +1097,7 @@ Sprint 3 — API 운영 배포
 
 ```
 이 PR은 K-Auction 경매 데이터 기반 가격 예측 엔진의 상세 기획서입니다 (v2.3).
-Codex 8회차까지의 리뷰 피드백을 반영한 v2.3 버전입니다. 아래 관점에서 검토해주세요:
+Codex 9회차 최종 Ready 판정을 받은 v3.0 버전입니다. 아래 관점에서 검토해주세요:
 
 1. **수학적 정확성**: 2장의 재변환 편향 설명이 RMSE 목적함수와 일관적인가?
 2. **피처 누수 방지**: 3.2.4의 artists.csv 참조 vs fold snapshot 구분이 명확한가?
@@ -1129,12 +1132,12 @@ Codex 8회차까지의 리뷰 피드백을 반영한 v2.3 버전입니다. 아�
 | 4 | Kim & Kim (2024). "Two-step model based on XGBoost for predicting artwork prices." *KES* | 2.5, 8장 |
 | 5 | Wolpert (1992). "Stacked Generalization." *Neural Networks* | 4.2 앙상블 |
 | 6 | Duan, N. (1983). "Smearing Estimate: A Nonparametric Retransformation Method." *JASA* | 2.2 재변환 편향 |
-| 7 | Lundberg & Lee (2017). "A Unified Approach to Interpreting Model Predictions." *NeurIPS* | SHAP 기여도 (research 문서 참조) |
-| 8 | Aubry et al. (2025). "Deep Learning for Art Market Valuation." *arXiv:2512.23078* | 멀티모달 (research 문서 참조) |
-| 9 | Bento et al. (2024). "Tabular Data Models for Predicting Art Auction Results." *Applied Sciences* | 모델 비교 (research 문서 참조) |
-| 10 | Mei & Moses (2002). "Art as an Investment." *AER* | 반복 판매 (research 문서 참조) |
-| 11 | Cogent Economics (2018). Chinese Paintings Hedonic/Hybrid Models | 하이브리드 (research 문서 참조) |
-| 12 | Artwork Pricing Model Integrating Popularity and Ability (2024). *AStA* | 작가 명성 (research 문서 참조) |
+| 7 | Lundberg & Lee (2017). "A Unified Approach to Interpreting Model Predictions." *NeurIPS* | 1.4 피처 기여도 (SHAP 이론적 기반) |
+| 8 | Aubry et al. (2025). "Deep Learning for Art Market Valuation." *arXiv:2512.23078* | 2.1 헤도닉 모델 배경 (멀티모달 성능 벤치마크) |
+| 9 | Bento et al. (2024). "Tabular Data Models for Predicting Art Auction Results." *Applied Sciences* | 6.3 목표 성능 (GBM 계열 MAPE 참고치) |
+| 10 | Mei & Moses (2002). "Art as an Investment." *AER* | 2.1 배경 (반복 판매 모델의 시장 지수 추정) |
+| 11 | Cogent Economics (2018). Chinese Paintings Hedonic/Hybrid Models | 8.1 리스크 #4 (Heckman IMR 보정 근거) |
+| 12 | Artwork Pricing Model Integrating Popularity and Ability (2024). *AStA* | 3.1 작가 피처 설계 배경 (명성+능력 통합 모델) |
 
 ---
 
