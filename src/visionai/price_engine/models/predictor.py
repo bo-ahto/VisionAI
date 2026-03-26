@@ -63,12 +63,28 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
 def predict(
     model: CatBoostRegressor,
     df: pd.DataFrame,
+    apply_low_price_cap: bool = True,
 ) -> np.ndarray:
     """log-price 예측 → 원래 스케일(원)로 복원한다.
+
+    저가 과대추정 완충장치 (Codex 3차 권장):
+    - 추정가 중앙값 < 100만인 건: 예측값을 추정가 최고값으로 캡
+    - 이유: median(P̂/P)=1.53 과대추정 방지
 
     Returns:
         예측 낙찰가 (원 단위) ndarray.
     """
     X = prepare_features(df)
     y_log_pred = model.predict(X)
-    return np.exp(y_log_pred)
+    y_pred = np.exp(y_log_pred)
+
+    if apply_low_price_cap:
+        est_low = df["추정가(최저)"].astype(float).values
+        est_high = df["추정가(최고)"].astype(float).values
+        est_mid = (est_low + est_high) / 2
+
+        # 저가 구간: 예측값이 추정가 최고를 넘지 않도록 캡
+        low_price_mask = est_mid < 1_000_000
+        y_pred[low_price_mask] = np.minimum(y_pred[low_price_mask], est_high[low_price_mask])
+
+    return y_pred
