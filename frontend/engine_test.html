@@ -55,9 +55,9 @@ body { background: #f0f0f0; }
 <span class="badge badge-c ml-2">Phase 1 — Static JSON</span>
 </div>
 <div class="flex items-center gap-2">
-<div class="tab-btn active" onclick="switchTab('single')">단건 테스트</div>
-<div class="tab-btn" onclick="switchTab('batch')">배치 테스트</div>
-<div class="tab-btn" onclick="switchTab('model-info')">모델 정보</div>
+<div class="tab-btn active" onclick="switchTab('single', event)">단건 테스트</div>
+<div class="tab-btn" onclick="switchTab('batch', event)">배치 테스트</div>
+<div class="tab-btn" onclick="switchTab('model-info', event)">모델 정보</div>
 </div>
 </div>
 </div>
@@ -437,6 +437,12 @@ function simulatePrediction(input) {
 }
 
 // ─── 파이프라인 로그 ───
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
 function addPipelineStep(step, detail, status) {
   const log = document.getElementById('pipeline-log');
   const icon = status === 'ok' ? '<span class="text-green-500">&#10003;</span>'
@@ -444,7 +450,7 @@ function addPipelineStep(step, detail, status) {
     : '<span class="text-blue-500">&#9654;</span>';
   log.innerHTML += `<div class="flex items-start gap-2 py-1 border-b border-gray-100">
     <span class="flex-shrink-0 mt-0.5">${icon}</span>
-    <div><span class="font-medium">${step}</span><span class="text-gray-400 ml-2">${detail}</span></div>
+    <div><span class="font-medium">${escapeHtml(step)}</span><span class="text-gray-400 ml-2">${escapeHtml(detail)}</span></div>
   </div>`;
 }
 
@@ -586,11 +592,11 @@ function runPrediction() {
 }
 
 // ─── UI 유틸리티 ───
-function switchTab(tab) {
+function switchTab(tab, evt) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
   document.getElementById('tab-' + tab).classList.remove('hidden');
   document.querySelectorAll('nav .tab-btn').forEach(el => el.classList.remove('active'));
-  event.target.classList.add('active');
+  if (evt && evt.target) evt.target.classList.add('active');
   if (tab === 'model-info') renderGlobalImportance();
 }
 
