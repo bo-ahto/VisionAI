@@ -231,9 +231,9 @@ Step 2 — 조건부 회귀:
 
 ## 3. 피처 엔지니어링: 입력 변수 설계
 
-### 3.1 전체 피처 목록 (22개 → 35개)
+### 3.1 전체 피처 목록 (21개 → 34개)
 
-#### Phase 1 기본 피처 (22개)
+#### Phase 1 기본 피처 (21개 — artist_sell_rate 삭제 반영)
 
 ```
 No  이름                  타입    변환 공식                                   근거
@@ -286,6 +286,11 @@ No  이름                      변환 공식                                   
 34  artist_price_rank        작가 가격 순위 백분위                             작가 상대적 위치
                              percentile_rank(artist_avg_price)
 35  work_age                 경매시점 연도 - 제작연도                          작품 나이 (결측 시 NaN)
+
+  (Reliability Model 전용 — 5.2절에서 사용)
+36  artist_recent_count_20s  해당 작가의 최근 20회차 내 낙찰 건수              최근 활동도
+                             count(works | 작가=A, session ≥ current-20)
+                             ⚠️ auction_date 확보 시 → artist_recent_count_2y (최근 2년) 전환
 ```
 
 ### 3.2 피처 변환 상세 공식
@@ -538,7 +543,7 @@ CatBoost/LightGBM/XGBoost는 편향 구조가 크게 다르지 않아 stacking �
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ① CatBoost 단일모델 고도화 (Phase 2 피처 추가)
-     → Baseline 22개 → 35개 피처로 확장 후 재학습
+     → Baseline 21개 → 34개 피처로 확장 후 재학습
      → 이것만으로 MAPE 3~5%p 개선 기대
 
   ② 타깃 변환: log(price / estimate_mid) 회귀
@@ -640,7 +645,7 @@ study.optimize(objective, n_trials=100)
   │
   ▼
 ┌──────────────────────────────────────────────┐
-│  Step 3: 피처 벡터 조립 (22~35개)              │
+│  Step 3: 피처 벡터 조립 (21~34개)              │
 │  ├── 범주형: [artist, medium, support, type,   │
 │  │           is_3d, is_untitled]               │
 │  ├── 수치형: [ln_est_mid, est_ratio, ...,     │
@@ -869,7 +874,7 @@ frontend/engine_test.html  (독립 페이지)
 │                                                  │
 ├─────────────────────────────────────────────────┤
 │  [디버그 영역] (접을 수 있음)                       │
-│  ├── 파싱된 피처 벡터 (22개) JSON 표시              │
+│  ├── 파싱된 피처 벡터 (21개) JSON 표시              │
 │  ├── 작가 통계 조회 결과                           │
 │  ├── 모델 버전 / 학습 일자                         │
 │  ├── 추론 소요 시간                                │
@@ -987,7 +992,8 @@ Phase 2 — 실시간 API 기반:
      → 5.2절의 필수 검증 테이블 채우기.
 
   4. Prediction Interval Backtest
-     가격 범위(5.3절)가 실제 80%/90% 커버리지를 만족하는지 검증.
+     가격 범위(5.3절)가 실제 80% 커버리지를 만족하는지 검증.
+     (기준: Q10-Q90 구간에 실제 낙찰가의 80%가 포함되어야 함)
 
   5. Cold Start Slice Test
      신규 작가, 작자미상, 희소 매체만 따로 MAPE/MdAPE 평가.
@@ -1088,7 +1094,7 @@ Sprint 3 — API 운영 배포
 
 ```
 이 PR은 K-Auction 경매 데이터 기반 가격 예측 엔진의 상세 기획서입니다 (v2.3).
-Codex 4회차까지의 리뷰 피드백을 모두 반영한 최종 버전입니다. 아래 관점에서 검토해주세요:
+Codex 8회차까지의 리뷰 피드백을 반영한 v2.3 버전입니다. 아래 관점에서 검토해주세요:
 
 1. **수학적 정확성**: 2장의 재변환 편향 설명이 RMSE 목적함수와 일관적인가?
 2. **피처 누수 방지**: 3.2.4의 artists.csv 참조 vs fold snapshot 구분이 명확한가?
