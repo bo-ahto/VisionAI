@@ -1,6 +1,6 @@
 # K-Auction 가격 예측 엔진 기획서 (상세)
 
-> **문서 버전**: v2.2 (Codex 리뷰 4회차 최종 반영)
+> **문서 버전**: v2.3 (Codex 리뷰 7회차 반영)
 > **작성일**: 2026-03-26
 > **리뷰 방식**: GitHub PR → Claude(아키텍처) + Codex(검증/보완) 듀얼 인라인 리뷰
 > **관련 문서**: `art_price_prediction_research.md`, `price_prediction_system_spec.md`, `data_feature_mapping.md`, `implementation_strategy.md`
@@ -256,7 +256,8 @@ No  이름                  타입    변환 공식                             
 16  artist_total_sold    INT    작가 통계: 총 낙찰 건수                      작가 시장 활동도
 17  artist_avg_price     INT    작가 통계: 평균 낙찰가                       작가 가격 수준
 18  artist_max_price     INT    작가 통계: 최고 낙찰가                       작가 천장가
-19  artist_sell_rate     FLOAT  작가 통계: 낙찰률                            작가 인기도
+    (삭제) artist_sell_rate — 현재 데이터가 전량 낙찰이므로 낙찰률 계산 불가.
+    유찰 데이터 확보 시 재추가. 피처 번호 19는 비워둠.
 20  is_size_imputed      BOOL   크기 결측 대체 여부 플래그                    데이터 품질 신호
 21  is_year_missing      BOOL   제작연도 결측 여부 플래그                     고미술/공예 시그널
 22  is_new_artist        BOOL   학습 데이터에 없는 작가 여부                  Cold Start 식별
@@ -300,7 +301,9 @@ No  이름                      변환 공식                                   
 
 패턴 2 — 3D 표준:     "31×13×22(h)cm"
   정규식: r'(\d+\.?\d*)\s*[×xX]\s*(\d+\.?\d*)\s*[×xX]\s*(\d+\.?\d*)'
-  결과:   height=max(31,13), width=min(31,13) 중 첫 두 값, is_3d=True
+  결과:   (h) 표기가 있으면 해당 값이 height, 없으면 세 값 중 최대=height
+          나머지 두 값 중 큰 값=width, is_3d=True
+          예: "31×13×22(h)cm" → height=22, width=31
 
 패턴 3 — 높이만:      "高48" or "H48cm"
   정규식: r'[高Hh]\s*(\d+\.?\d*)'
@@ -629,7 +632,7 @@ study.optimize(objective, n_trials=100)
 ┌──────────────────────────────────────────────┐
 │  Step 2: 작가 통계 조회                        │
 │  ├── 학습/평가: fold별 train window snapshot   │
-│  ├── 서빙(운영): 배포 시점 cutoff production   │
+│  ├── 운영 추론: 배포 시점 cutoff production    │
 │  │   snapshot (최신 경매 결과까지 집계)          │
 │  ├── 신규 작가 → Cold Start 대체값             │
 │  └── 작자미상 → __UNKNOWN__ 그룹 통계          │
@@ -686,7 +689,8 @@ Phase 1: 규칙 기반 (초기 버전 — calibration 검증 전)
   임시 규칙 (holdout calibration으로 가중치 조정 예정):
 
   confidence_grade 결정 기준:
-    A등급: 추정가 있음 + 작가 낙찰 ≥ 20건 + 최근 2년 내 거래 있음
+    A등급: 추정가 있음 + 작가 낙찰 ≥ 20건 + 최근 20회차 내 거래 있음
+           (⚠️ auction_date 미확보 시 session_number 기반 근사 사용)
     B등급: 추정가 있음 + 작가 낙찰 ≥ 6건
     C등급: 추정가 있음 + 작가 낙찰 1~5건
     D등급: 추정가 있음 + 신규/미상 작가, 또는 데이터 부족
@@ -716,11 +720,12 @@ Phase 2: Calibration 기반 Reliability Model (목표)
   Reliability Model 입력 피처:
 
     항상 사용 가능 (모델 구조 무관):
-    - artist_total_sold        (작가 낙찰 건수)
-    - artist_premium_std       (작가 프리미엄 변동성)
-    - artist_recent_count_2y   (최근 2년 거래 건수)
-    - estimate_ratio           (추정가 불확실성)
-    - is_new_artist            (Cold Start 여부)
+    - artist_total_sold         (작가 낙찰 건수)
+    - artist_premium_std        (작가 프리미엄 변동성)
+    - artist_recent_count_20s   (최근 20회차 내 거래 건수 — session_number 기반)
+                                 ⚠️ auction_date 확보 시 artist_recent_count_2y로 전환
+    - estimate_ratio            (추정가 불확실성)
+    - is_new_artist             (Cold Start 여부)
 
   기본 Reliability Model은 위 5개 피처만으로 학습한다 (Champion 독립).
 
@@ -923,7 +928,7 @@ Phase 2 — 실시간 API 기반:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-모니터링 항목 (Phase 2 서비스화 이후)
+모니터링 항목 (Phase 2 운영 배포 이후)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   1. 입력 분포 드리프트
@@ -1002,7 +1007,7 @@ Phase 2 — 실시간 API 기반:
      내부 전문가(경매 담당자) 추정 vs 모델 추정 비교.
      → 모델이 전문가 수준에 도달했는지 정성적 평가.
 
-  10. Shadow Mode (Phase 2 서비스화 시)
+  10. Shadow Mode (Phase 2 운영 배포 시)
       실제 경매 입력을 받아 예측만 기록하고, 결과 확정 후
       retrospective scoring을 쌓는 구조. 온라인 A/B 이전에 필수.
 ```
@@ -1028,12 +1033,15 @@ Sprint 1 — Baseline 재현 + 최소 피처 CatBoost
   □ 세그먼트별 MAPE 리포트 생성
   □ Calibration 테이블 (grade별 ±20%/30% 커버리지)
 
-Sprint 1.5 — 정적 JSON + 테스트 페이지
+Sprint 1.5 — 정적 JSON + 테스트 페이지 + 검증 (9장 항목 반영)
   □ generate_predictions.py — 작가별/호수별 예측 JSON 생성
   □ predictions.json 생성
   □ engine_test.html — 엔진 테스트 페이지
   □ Cold Start slice 별도 평가
   □ 주요 작가 10명 수동 검증
+  □ Prediction Interval Backtest (5.3절 구간의 80% coverage 검증)
+  □ Ablation 재현 Test (추정가/작가/크기 제거 효과 동일 split 비교)
+  □ Human Benchmark (내부 전문가 추정 vs 모델 추정 비교)
 ```
 
 ### Phase 1→2 전환 게이트 (모든 조건 충족 시 전환)
@@ -1061,7 +1069,7 @@ Sprint 2 — 모델 비교 실험 (4.2절 우선순위)
   □ Champion/Challenger 비교 테이블 작성
   □ Optuna 최적화 (100 trials, 최종 선택 모델)
 
-Sprint 3 — API 서비스화
+Sprint 3 — API 운영 배포
   □ FastAPI 서버 구축
   □ Calibration 기반 Reliability Model (5.2절 Phase 2)
   □ engine_test.html → API 호출 전환
@@ -1079,7 +1087,7 @@ Sprint 3 — API 서비스화
 ### 11.1 PR 생성 후 Codex 리뷰 요청 프롬프트
 
 ```
-이 PR은 K-Auction 경매 데이터 기반 가격 예측 엔진의 상세 기획서입니다 (v2.2 최종).
+이 PR은 K-Auction 경매 데이터 기반 가격 예측 엔진의 상세 기획서입니다 (v2.3).
 Codex 4회차까지의 리뷰 피드백을 모두 반영한 최종 버전입니다. 아래 관점에서 검토해주세요:
 
 1. **수학적 정확성**: 2장의 재변환 편향 설명이 RMSE 목적함수와 일관적인가?
