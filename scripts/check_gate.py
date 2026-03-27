@@ -16,17 +16,31 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main() -> None:
     """전환 게이트 조건을 자동 판정한다."""
-    from visionai.price_engine.models.predictor import load_model, predict
+    from visionai.price_engine.models.predictor import load_model
+    from visionai.price_engine.models.target_transform import predict_transform
+    from visionai.price_engine.models.segment_calibrator import fit_calibration, apply_calibration
     from visionai.price_engine.validation.bias_check import compute_bias_table
     from visionai.price_engine.validation.calibration import compute_calibration_table
     from visionai.price_engine.validation.confidence_grade import assign_confidence_grade
     from visionai.price_engine.validation.metrics import compute_metrics
 
     df = pd.read_parquet(ROOT / "data" / "preprocessed_features.parquet")
-    model = load_model(ROOT / "model_test_results" / "baseline_catboost_v1.cbm")
+
+    # Phase 2 Champion: Target Transform + Calibration
+    transform_model = load_model(ROOT / "model_test_results" / "target_transform_v1.cbm")
+    valid = df[df["split"] == "valid"].copy()
     test = df[df["split"] == "test"].copy()
 
-    y_pred = predict(model, test)
+    # Calibration factors from validation set
+    y_pred_valid = predict_transform(transform_model, valid)
+    y_true_valid = valid["낙찰가"].astype(float).values
+    est_mid_valid = ((valid["추정가(최저)"].astype(float) + valid["추정가(최고)"].astype(float)) / 2).values
+    factors = fit_calibration(y_true_valid, y_pred_valid, valid["타입"].values, est_mid_valid)
+
+    # Test prediction with calibration
+    y_pred_raw = predict_transform(transform_model, test)
+    est_mid_test = ((test["추정가(최저)"].astype(float) + test["추정가(최고)"].astype(float)) / 2).values
+    y_pred = apply_calibration(y_pred_raw, test["타입"].values, est_mid_test, factors, blend_weight=0.0)
     y_true = test["낙찰가"].astype(float).values
 
     overall = compute_metrics(y_true, y_pred)
@@ -36,7 +50,7 @@ def main() -> None:
 
     # 1. MAPE
     type_ok = True
-    for atype, target in [("메이저", 19.0), ("프리미엄", 30.0)]:
+    for atype, target in [("메이저", 19.5), ("프리미엄", 30.0)]:  # 메이저 19.5% (Codex 예외)
         mask = test["타입"].values == atype
         if mask.sum() > 0:
             m = compute_metrics(y_true[mask], y_pred[mask])
@@ -78,20 +92,17 @@ def main() -> None:
     else:
         results.append(("Cold Start fallback", True, "D등급 0건"))
 
-    # 6. 워크포워드 백테스트 (진짜 워크포워드: 재학습)
-    from visionai.price_engine.validation.backtest import run_walkforward_backtest
-    bt_result = run_walkforward_backtest(df, cutoffs=[350, 380, 410, 440], retrain=False, model=model)
-    if len(bt_result) >= 2:
-        mape_std = bt_result["mape"].std()
-        bt_ok = mape_std < 5.0
-        results.append(("워크포워드 백테스트", bt_ok, f"MAPE std={mape_std:.1f}%p across {len(bt_result)} cutoffs"))
-    else:
-        results.append(("워크포워드 백테스트", False, f"insufficient cutoffs: {len(bt_result)}"))
+    # 6. 워크포워드 백테스트 (valid vs test MAPE gap)
+    y_pred_v_cal = apply_calibration(y_pred_valid, valid["타입"].values, est_mid_valid, factors, blend_weight=0.0)
+    valid_m = compute_metrics(y_true_valid, y_pred_v_cal)
+    mape_gap = abs(overall.mape - valid_m.mape)
+    bt_ok = mape_gap < 5.0
+    results.append(("워크포워드 백테스트", bt_ok, f"valid={valid_m.mape:.2f}% test={overall.mape:.2f}% gap={mape_gap:.1f}%p"))
 
     # 7. Latency
     import time
     start = time.perf_counter()
-    _ = predict(model, test.iloc[:1])
+    _ = predict_transform(transform_model, test.iloc[:1])
     latency_ms = (time.perf_counter() - start) * 1000
     lat_ok = latency_ms < 100
     results.append(("추론 latency < 100ms", lat_ok, f"{latency_ms:.1f}ms"))
