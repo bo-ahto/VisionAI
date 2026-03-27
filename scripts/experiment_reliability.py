@@ -23,8 +23,6 @@ def main() -> None:
     from visionai.price_engine.reliability.reliability_model import ReliabilityModel
     from visionai.price_engine.validation.calibration import compute_calibration_table
     from visionai.price_engine.validation.confidence_grade import assign_confidence_grade
-    from visionai.price_engine.validation.metrics import compute_metrics
-
     df = pd.read_parquet(ROOT / "data" / "preprocessed_features.parquet")
     model = load_model(ROOT / "model_test_results" / "target_transform_v1.cbm")
 
@@ -48,8 +46,11 @@ def main() -> None:
     reliability = ReliabilityModel(threshold=0.2)
     reliability.fit(meta_valid, y_true_v, y_pred_v_cal)
 
-    # === Test set 예측 ===
+    # === Test set 평가 (holdout AUC/Brier) ===
     meta_test = extract_reliability_features(test, works_full=df)
+    eval_result = reliability.evaluate(meta_test, y_true_t, y_pred_t)
+    print(f"\nTest set AUC: {eval_result['auc']:.4f}, Brier: {eval_result['brier']:.4f}")
+
     reliability_grades = reliability.assign_grades(meta_test)
 
     # === 규칙 기반 등급 (기존) ===

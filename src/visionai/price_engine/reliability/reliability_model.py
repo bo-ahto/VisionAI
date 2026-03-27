@@ -12,7 +12,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -61,11 +60,26 @@ class ReliabilityModel:
         self.model = CalibratedClassifierCV(base, cv=3, method="sigmoid")
         self.model.fit(meta_features.values, target)
 
-        # 학습 세트 성능
-        proba = self.model.predict_proba(meta_features.values)[:, 1]
-        from sklearn.metrics import roc_auc_score
-        auc = roc_auc_score(target, proba)
-        logger.info("Reliability AUC: %.4f", auc)
+        logger.info("Reliability model fitted (train AUC is not reported — use evaluate() on holdout)")
+
+    def evaluate(
+        self,
+        meta_features: pd.DataFrame,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+    ) -> dict[str, float]:
+        """holdout set에서 AUC, Brier score를 계산한다."""
+        from sklearn.metrics import brier_score_loss, roc_auc_score
+
+        ape = np.abs(y_true - y_pred) / y_true
+        target = (ape <= self.threshold).astype(int)
+        proba = self.predict_proba(meta_features)
+
+        auc = float(roc_auc_score(target, proba))
+        brier = float(brier_score_loss(target, proba))
+
+        logger.info("Reliability holdout: AUC=%.4f, Brier=%.4f", auc, brier)
+        return {"auc": round(auc, 4), "brier": round(brier, 4)}
 
     def predict_proba(self, meta_features: pd.DataFrame) -> np.ndarray:
         """Pr(APE ≤ threshold) 확률을 반환한다."""
@@ -77,17 +91,14 @@ class ReliabilityModel:
     def assign_grades(self, meta_features: pd.DataFrame) -> pd.Series:
         """확률 기반 A/B/C/D 등급을 산정한다.
 
-        기획서 5.2:
-          Pr(APE ≤ 0.2) ≥ 0.65  →  A
-          Pr(APE ≤ 0.3) ≥ 0.60  →  B  (threshold 0.3은 별도 모델 필요)
-          Pr(APE ≤ 0.3) ≥ 0.40  →  C
-          나머지                  →  D
+        단일 threshold(self.threshold) 기반 등급:
+          Pr(APE ≤ threshold) ≥ 0.65 → A
+          Pr(APE ≤ threshold) ≥ 0.45 → B
+          Pr(APE ≤ threshold) ≥ 0.25 → C
+          나머지                      → D
 
-        현재는 단일 threshold(0.2)로 간소화:
-          Pr ≥ 0.65 → A
-          Pr ≥ 0.45 → B
-          Pr ≥ 0.25 → C
-          나머지    → D
+        Note: 기획서 5.2에서는 B/C를 Pr(APE ≤ 0.3) 기반으로 정의하나,
+        현재는 단일 threshold로 간소화. 향후 dual-threshold 모델로 확장 가능.
         """
         proba = self.predict_proba(meta_features)
         grades = pd.Series("D", index=meta_features.index, dtype="object")
