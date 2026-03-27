@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from datetime import datetime
@@ -24,7 +25,13 @@ from visionai.price_engine.models.target_transform import predict_transform
 
 logger = logging.getLogger(__name__)
 
-SHADOW_DIR = Path("data/shadow_logs")
+SHADOW_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "data" / "shadow_logs"
+
+
+def _make_record_id(atype: str, session: int, lot: int, model_version: str) -> str:
+    """중복 방지용 idempotency 키."""
+    raw = f"{atype}:{session}:{lot}:{model_version}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
 def record_prediction(
@@ -62,14 +69,21 @@ def record_prediction(
         blend_weight=0.0,
     )
 
+    atype = str(input_row["타입"].iloc[0])
+    session = int(input_row["회차"].iloc[0])
+    lot = int(input_row["Lot"].iloc[0])
+    model_ver = getattr(model, "_shadow_version", "target_transform_v1+calibration")
+    rid = _make_record_id(atype, session, lot, model_ver)
+
     record = {
+        "record_id": rid,
         "timestamp": datetime.now().isoformat(),
-        "model_version": "target_transform_v1+calibration",
+        "model_version": model_ver,
         "input": {
             "작가": str(input_row["artist_clean"].iloc[0]) if "artist_clean" in input_row.columns else "",
-            "타입": str(input_row["타입"].iloc[0]),
-            "회차": int(input_row["회차"].iloc[0]),
-            "Lot": int(input_row["Lot"].iloc[0]),
+            "타입": atype,
+            "회차": session,
+            "Lot": lot,
             "추정가_최저": int(input_row["추정가(최저)"].iloc[0]),
             "추정가_최고": int(input_row["추정가(최고)"].iloc[0]),
         },
@@ -78,7 +92,7 @@ def record_prediction(
             "predicted_calibrated": int(y_pred_cal[0]),
             "estimate_mid": int(est_mid[0]),
         },
-        "actual": None,  # 경매 결과 확정 후 채움
+        "actual": None,
         "scored": False,
     }
 

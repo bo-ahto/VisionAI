@@ -63,6 +63,7 @@ class TestShadowScorer:
 
     def test_report_with_data(self) -> None:
         scored = pd.DataFrame({
+            "record_id": ["abc123", "def456"],
             "타입": ["메이저", "메이저"],
             "회차": [180, 180],
             "Lot": [1, 2],
@@ -74,3 +75,53 @@ class TestShadowScorer:
         report = generate_shadow_report(scored)
         assert "MAPE" in report
         assert "메이저" in report
+
+    def test_dedupe_removes_duplicates(self) -> None:
+        """동일 record_id는 중복 제거."""
+        records = [
+            {
+                "record_id": "same_id",
+                "input": {"타입": "메이저", "회차": 180, "Lot": 1},
+                "prediction": {"predicted_calibrated": 60000000},
+                "actual": None,
+            },
+            {
+                "record_id": "same_id",
+                "input": {"타입": "메이저", "회차": 180, "Lot": 1},
+                "prediction": {"predicted_calibrated": 60000000},
+                "actual": None,
+            },
+        ]
+        actuals = {("메이저", 180, 1): 65000000}
+        scored = score_shadow_logs(records, actuals)
+        assert len(scored) == 1
+
+    def test_invalid_actual_not_scored(self) -> None:
+        """actual ≤ 0은 scored=False."""
+        records = [
+            {
+                "record_id": "inv1",
+                "input": {"타입": "위클리", "회차": 450, "Lot": 3},
+                "prediction": {"predicted_calibrated": 500000},
+                "actual": None,
+            },
+        ]
+        actuals = {("위클리", 450, 3): 0}
+        scored = score_shadow_logs(records, actuals)
+        assert not scored["scored"].any()
+
+    def test_malformed_json_skipped(self) -> None:
+        """손상된 JSONL 라인은 건너뜀."""
+        import tempfile
+        from visionai.price_engine.experiments.shadow_scorer import load_shadow_logs
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_file = Path(tmpdir) / "shadow_20260327.jsonl"
+            log_file.write_text(
+                '{"record_id":"a","input":{"타입":"메이저","회차":180,"Lot":1},"prediction":{"predicted_calibrated":60000000}}\n'
+                'BROKEN LINE\n'
+                '{"record_id":"b","input":{"타입":"메이저","회차":180,"Lot":2},"prediction":{"predicted_calibrated":70000000}}\n',
+                encoding="utf-8",
+            )
+            records = load_shadow_logs(shadow_dir=Path(tmpdir))
+            assert len(records) == 2  # broken line skipped

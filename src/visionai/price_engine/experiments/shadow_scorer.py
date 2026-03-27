@@ -16,7 +16,7 @@ from visionai.price_engine.validation.metrics import compute_metrics
 
 logger = logging.getLogger(__name__)
 
-SHADOW_DIR = Path("data/shadow_logs")
+SHADOW_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "data" / "shadow_logs"
 
 
 def load_shadow_logs(
@@ -43,10 +43,14 @@ def load_shadow_logs(
             continue
 
         with open(f, encoding="utf-8") as fh:
-            for line in fh:
+            for line_num, line in enumerate(fh, 1):
                 line = line.strip()
-                if line:
+                if not line:
+                    continue
+                try:
                     records.append(json.loads(line))
+                except json.JSONDecodeError:
+                    logger.warning("Malformed JSON skipped: %s line %d", f.name, line_num)
 
     logger.info("Loaded %d shadow records", len(records))
     return records
@@ -65,8 +69,19 @@ def score_shadow_logs(
     Returns:
         DataFrame: 타입, 회차, Lot, predicted, actual, ape, scored.
     """
+    # dedupe by record_id (같은 경매 건의 중복 기록 제거)
+    seen_ids: set[str] = set()
     rows = []
+    duplicates = 0
+
     for r in records:
+        rid = r.get("record_id", "")
+        if rid and rid in seen_ids:
+            duplicates += 1
+            continue
+        if rid:
+            seen_ids.add(rid)
+
         inp = r["input"]
         pred = r["prediction"]["predicted_calibrated"]
 
@@ -77,9 +92,15 @@ def score_shadow_logs(
         elif r.get("actual") is not None:
             actual = r["actual"]
 
+        # actual ≤ 0은 scored=False 처리 (비정상 값)
+        if actual is not None and actual <= 0:
+            logger.warning("Invalid actual ≤ 0: %s 회차%d Lot%d", inp["타입"], inp["회차"], inp["Lot"])
+            actual = None
+
         ape = abs(actual - pred) / actual * 100 if actual and actual > 0 else None
 
         rows.append({
+            "record_id": rid,
             "타입": inp["타입"],
             "회차": inp["회차"],
             "Lot": inp["Lot"],
@@ -88,6 +109,9 @@ def score_shadow_logs(
             "ape": ape,
             "scored": actual is not None,
         })
+
+    if duplicates > 0:
+        logger.info("Deduplicated %d records", duplicates)
 
     return pd.DataFrame(rows)
 
