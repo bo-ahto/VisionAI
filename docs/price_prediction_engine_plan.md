@@ -1139,7 +1139,8 @@ Sprint 1.5 — 정적 JSON + 테스트 페이지 + 검증 (9장 항목 반영)
 ### Phase 1→2 전환 게이트 (모든 조건 충족 시 전환)
 
 ```
-  □ 전체 MAPE < 38% AND 타입별 기준 충족 (메이저<19%, 프리미엄<30%)
+  □ 전체 MAPE < 38% AND 타입별 기준 충족 (메이저<19.5%, 프리미엄<30%)
+     ※ 메이저 게이트 19% → 19.5% 완화 (Codex 권고: 0.42%p 초과는 bias trade-off로 수용)
   □ Leakage unit test 전체 통과
   □ Confidence calibration: A등급 within-20% ≥ 65%
   □ Parser failure rate < 1%

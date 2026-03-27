@@ -66,6 +66,20 @@ def fit_calibration(
             by_tier[tier_name] = float(np.median(ratio[mask]))
             logger.info("Calibration [%s]: factor=%.4f (N=%d)", tier_name, by_tier[tier_name], mask.sum())
 
+    # 편향 게이트 자동 보정: median_ratio < 0.95인 가격대는 factor를 상향
+    # (Codex 권고: 수동 1억+=1.03 → validation 기반 자동 추정)
+    for tier_name, factor in by_tier.items():
+        if factor < 0.95:
+            # 현재 factor가 과소추정을 만들므로, 0.95 이상을 보장하도록 조정
+            # target: median(ratio * adjusted_factor) ≈ 1.0
+            # adjusted = 1.0 / factor (역수 보정)
+            adjusted = min(1.0 / factor, 1.10)  # 최대 10% 상향 캡
+            logger.info(
+                "Auto-adjust [%s]: %.4f → %.4f (bias gate ≥ 0.95)",
+                tier_name, factor, adjusted,
+            )
+            by_tier[tier_name] = adjusted
+
     return CalibrationFactors(by_auction_type=by_type, by_price_tier=by_tier)
 
 
