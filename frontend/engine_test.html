@@ -479,7 +479,15 @@ function addPipelineStep(step, detail, status) {
 }
 
 // ─── 예측 실행 ───
+let _predictionRunning = false;
 async function runPrediction() {
+  // 중복 실행 방지
+  if (_predictionRunning) return;
+  _predictionRunning = true;
+  const btn = document.querySelector('.btn-primary[onclick*="runPrediction"]');
+  if (btn) { btn.disabled = true; btn.textContent = '예측 중...'; }
+
+  try {
   // predictions.json 로드 완료 대기 (레이스 방지)
   if (!predictionsLoaded) await predictionsPromise;
 
@@ -643,6 +651,11 @@ async function runPrediction() {
     meta: { model_version: 'catboost_baseline_v1', elapsed_ms: elapsed, mode: predictionSource }
   };
   document.getElementById('debug-json').textContent = JSON.stringify(debugInfo, null, 2);
+
+  } finally {
+    _predictionRunning = false;
+    if (btn) { btn.disabled = false; btn.textContent = '예측 실행'; }
+  }
 }
 
 // ─── UI 유틸리티 ───
