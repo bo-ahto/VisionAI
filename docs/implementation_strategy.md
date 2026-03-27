@@ -550,10 +550,10 @@
     → is_new_artist = 1
 
   예측 시 (완전 신규 작가):
-    → 작가명 = "__NEW_ARTIST__"
-    → 작가 통계 = 동일 estimate_tier + auction_type 그룹 평균
+    → [LEGACY — 실제 구현은 is_new_artist 불리언 기반으로 변경됨]
+    → 작가 통계 = 동일 estimate_tier + auction_type 그룹 평균 (cold_start fallback)
     → 모델은 주로 추정가, 크기, 재료에 의존하여 예측
-    → quality_grade = "C" (저신뢰) 표시
+    → confidence_grade = "D" (예측 불가) 표시
 ```
 
 ---

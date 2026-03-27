@@ -507,19 +507,32 @@ function runPrediction() {
 
   addPipelineStep('Step 2: 입력 정규화', `매체=${mediumCat}, 지지체=${supportCat}, 면적=${area.toFixed(0)}cm²`, 'ok');
 
-  // Step 3: 작가 통계 (시뮬레이션)
-  const mockArtistStats = {
-    '김환기': { total_sold: 156, avg_price: 82447443, max_price: 1520000000 },
-    '이중섭': { total_sold: 23, avg_price: 520000000, max_price: 3520000000 },
-    '박수근': { total_sold: 18, avg_price: 380000000, max_price: 1200000000 },
-    '김창열': { total_sold: 89, avg_price: 95000000, max_price: 860000000 },
-  };
-  const artistData = mockArtistStats[artist] || null;
-  const isNewArtist = !artistData;
-  if (isNewArtist) {
-    addPipelineStep('Step 3: 작가 통계', `"${artist}" → Cold Start (그룹 평균 대체)`, 'warn');
+  // Step 3: 작가 통계 (predictions.json lookup 우선, fallback: 시뮬레이션)
+  const jsonArtist = predictionsData ? predictionsData.artists[artist] : null;
+  let artistData = null;
+  let isNewArtist = true;
+  let predictionSource = 'simulation';
+
+  if (jsonArtist) {
+    artistData = { total_sold: jsonArtist.total_works, avg_price: jsonArtist.avg_price, max_price: 0 };
+    isNewArtist = false;
+    predictionSource = 'predictions.json';
+    addPipelineStep('Step 3: 작가 통계', `[JSON] ${artist} — ${jsonArtist.artist_tier}, 낙찰 ${jsonArtist.total_works}건`, 'ok');
   } else {
-    addPipelineStep('Step 3: 작가 통계', `낙찰 ${artistData.total_sold}건, 평균가 ${formatPrice(artistData.avg_price)}`, 'ok');
+    // fallback: 하드코딩 mock (JSON 미로드 시)
+    const mockArtistStats = {
+      '김환기': { total_sold: 156, avg_price: 82447443, max_price: 1520000000 },
+      '이중섭': { total_sold: 23, avg_price: 520000000, max_price: 3520000000 },
+      '박수근': { total_sold: 18, avg_price: 380000000, max_price: 1200000000 },
+      '김창열': { total_sold: 89, avg_price: 95000000, max_price: 860000000 },
+    };
+    artistData = mockArtistStats[artist] || null;
+    isNewArtist = !artistData;
+    if (isNewArtist) {
+      addPipelineStep('Step 3: 작가 통계', `"${artist}" → D등급 (미등록 작가)`, 'warn');
+    } else {
+      addPipelineStep('Step 3: 작가 통계', `[Mock] 낙찰 ${artistData.total_sold}건`, 'ok');
+    }
   }
 
   // Step 4: 피처 벡터 조립
@@ -548,12 +561,26 @@ function runPrediction() {
   };
   addPipelineStep('Step 4: 피처 벡터', `21개 피처 조립 완료`, 'ok');
 
-  // Step 5: 모델 추론 (시뮬레이션)
-  const predicted = simulatePrediction({
-    estLow, estHigh, auctionType, width, height, mediumCategory: mediumCat
-  });
-  const lnPredicted = Math.log(predicted).toFixed(4);
-  addPipelineStep('Step 5: 모델 추론', `ln(P̂)=${lnPredicted} → P̂=${formatPrice(predicted)}`, 'ok');
+  // Step 5: 모델 추론 (predictions.json lookup 우선 → fallback: 시뮬레이션)
+  let predicted;
+  const hoSelect = document.getElementById('input-ho');
+  const hoKey = hoSelect && hoSelect.value ? hoSelect.value + '호' : '20호';
+  const jsonPred = lookupPrediction(artist, hoKey);
+
+  if (jsonPred && !jsonPred.option_b_blocked) {
+    predicted = jsonPred.predicted_price;
+    predictionSource = 'predictions.json';
+    addPipelineStep('Step 5: 예측 조회', `[JSON] ${hoKey} → ${formatPrice(predicted)} (${jsonPred.confidence}등급, basis=${jsonPred.basis_count})`, 'ok');
+  } else if (jsonPred && jsonPred.option_b_blocked) {
+    predicted = estMid;
+    addPipelineStep('Step 5: 예측 조회', `[JSON] ${hoKey} → 예측 불가 (Option B: 데이터 부족)`, 'warn');
+  } else {
+    predicted = simulatePrediction({
+      estLow, estHigh, auctionType, width, height, mediumCategory: mediumCat
+    });
+    predictionSource = 'simulation';
+    addPipelineStep('Step 5: 모델 추론', `[시뮬레이션] P̂=${formatPrice(predicted)}`, 'ok');
+  }
 
   // Step 6: 신뢰도 산정
   const confidence = calcConfidence(artistData, estLow > 0);

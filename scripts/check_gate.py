@@ -66,15 +66,29 @@ def main() -> None:
     parser_ok = (100 - dim_rate) < 1.0  # 실패율 < 1%
     results.append(("Parser failure < 1%", parser_ok, f"실패율 {100-dim_rate:.1f}%"))
 
-    # 5. Cold Start fallback
+    # 5. Cold Start fallback — D등급 존재 + fallback 대체값 적용 확인
     d_mask = grades.values == "D"
     d_n = d_mask.sum()
-    cs_ok = d_n > 0  # D등급이 존재하고 처리됨
-    results.append(("Cold Start fallback", cs_ok, f"D등급 {d_n}건"))
+    if d_n > 0:
+        # D등급 중 artist_avg_price > 0인 건 = fallback 적용됨
+        d_with_fallback = (test.loc[d_mask, "artist_avg_price"].astype(float) > 0).sum()
+        fallback_rate = d_with_fallback / d_n * 100
+        cs_ok = fallback_rate > 50  # 과반수에 fallback 적용
+        results.append(("Cold Start fallback", cs_ok, f"D등급 {d_n}건, fallback {fallback_rate:.0f}%"))
+    else:
+        results.append(("Cold Start fallback", True, "D등급 0건"))
 
-    # 6. 워크포워드 백테스트 (간이: 현재 split 기준 MAPE 안정성)
-    bt_ok = True  # Sprint 1에서 수동 확인 — 자동화 미구현 시 수동 Pass
-    results.append(("워크포워드 백테스트", bt_ok, "수동 확인 필요"))
+    # 6. 워크포워드 백테스트 (간이: valid vs test MAPE 차이 < 5%p)
+    valid = df[df["split"] == "valid"].copy()
+    if len(valid) > 0:
+        y_pred_v = predict(model, valid)
+        y_true_v = valid["낙찰가"].astype(float).values
+        valid_m = compute_metrics(y_true_v, y_pred_v)
+        mape_gap = abs(overall.mape - valid_m.mape)
+        bt_ok = mape_gap < 5.0
+        results.append(("워크포워드 백테스트", bt_ok, f"valid MAPE={valid_m.mape}%, test={overall.mape}%, gap={mape_gap:.1f}%p"))
+    else:
+        results.append(("워크포워드 백테스트", False, "valid set 없음"))
 
     # 7. Latency
     import time
