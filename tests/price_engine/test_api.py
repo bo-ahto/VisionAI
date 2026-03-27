@@ -49,7 +49,7 @@ class TestSchemas:
         info = ModelInfoResponse(
             model_version="v1",
             model_type="CatBoost",
-            features_count=21,
+            features_count=22,
             test_mape=27.01,
             test_r2=0.936,
             a_grade_within_20pct=71.6,
