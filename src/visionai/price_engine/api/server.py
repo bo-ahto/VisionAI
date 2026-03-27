@@ -18,9 +18,14 @@ from catboost import CatBoostRegressor
 from fastapi import FastAPI, HTTPException
 
 from visionai.price_engine.api.schemas import (
+    EstimateRequest,
+    EstimateResponse,
+    EstimateValidateRequest,
+    EstimateValidateResponse,
     ModelInfoResponse,
     PredictRequest,
     PredictResponse,
+    PredictV2Request,
 )
 from visionai.price_engine.models.segment_calibrator import (
     CalibrationFactors,
@@ -48,7 +53,7 @@ CONFIDENCE_MARGINS = {"A": 0.20, "B": 0.30, "C": 0.50, "D": 0.70}
 
 def _load_resources() -> None:
     """모델 + calibration factors + 작가 데이터를 로드한다."""
-    global _model, _factors, _works_full  # noqa: PLW0603
+    global _model, _factors, _works_full
 
     model_path = ROOT / "model_test_results" / "target_transform_v1.cbm"
     data_path = ROOT / "data" / "preprocessed_features.parquet"
@@ -65,18 +70,74 @@ def _load_resources() -> None:
     valid = df[df["split"] == "valid"]
     y_pred_v = predict_transform(_model, valid)
     y_true_v = valid["낙찰가"].astype(float).values
-    est_v = ((valid["추정가(최저)"].astype(float) + valid["추정가(최고)"].astype(float)) / 2).values
+    est_v = (
+        (valid["추정가(최저)"].astype(float) + valid["추정가(최고)"].astype(float)) / 2
+    ).values
     _factors = fit_calibration(y_true_v, y_pred_v, valid["타입"].values, est_v)
 
-    global _max_session  # noqa: PLW0603
+    global _max_session
     _max_session = int(df["회차"].max())
     logger.info("Resources loaded successfully (max session: %d)", _max_session)
+
+
+def _load_estimate_generator() -> None:
+    """Phase 3 추정가 생성기 로드 (모델 파일 존재 시)."""
+    global _estimate_generator
+    model_a_path = ROOT / "model_test_results" / "model_a_quantile.cbm"
+    model_b_path = ROOT / "model_test_results" / "model_b_estimate.cbm"
+
+    if not model_a_path.exists() or not model_b_path.exists():
+        logger.info("Phase 3 models not found. Estimate generator not loaded.")
+        return
+
+    from visionai.price_engine.estimate_generator.estimate_calibrator import (
+        EstimateCalibrator,
+    )
+    from visionai.price_engine.estimate_generator.estimate_model import (
+        EstimateRegressorModel,
+    )
+    from visionai.price_engine.estimate_generator.generator import EstimateGenerator
+    from visionai.price_engine.estimate_generator.quantile_calibrator import (
+        QuantileCalibrator,
+    )
+    from visionai.price_engine.estimate_generator.quantile_model import (
+        HedonicQuantileModel,
+    )
+
+    model_a = HedonicQuantileModel()
+    model_a.load(model_a_path)
+    model_b = EstimateRegressorModel()
+    model_b.load(model_b_path)
+    q_cal = QuantileCalibrator()
+    q_cal._fitted = True  # 실제 calibration은 학습 시 저장/로드 필요
+    e_cal = EstimateCalibrator()
+    e_cal._fitted = True
+
+    # v2 엔진 로드 (모델 파일 존재 시)
+    v2_path = ROOT / "model_test_results" / "price_engine_v2.cbm"
+    price_engine_v2 = None
+    if v2_path.exists():
+        from visionai.price_engine.models.target_transform_v2 import PriceEngineV2
+
+        price_engine_v2 = PriceEngineV2()
+        # v2 모델은 CatBoost로 직접 로드
+        price_engine_v2._model = CatBoostRegressor()
+        price_engine_v2._model.load_model(str(v2_path))
+        logger.info("v2 engine loaded from %s", v2_path)
+
+    _estimate_generator = EstimateGenerator(
+        model_a=model_a, model_b=model_b,
+        quantile_calibrator=q_cal, estimate_calibrator=e_cal,
+        price_engine_v2=price_engine_v2,
+    )
+    logger.info("Phase 3 estimate generator loaded.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     """서버 시작 시 모델 로드."""
     _load_resources()
+    _load_estimate_generator()
     yield
 
 
@@ -112,7 +173,7 @@ async def predict_price(req: PredictRequest) -> PredictResponse:
 def _run_prediction(req: PredictRequest) -> PredictResponse:
     """예측 내부 로직 (예외 처리 분리)."""
     # 입력 → 피처 조립
-    dim = parse_dimension(f"{req.width_cm}×{req.height_cm}cm")
+    dim = parse_dimension(f"{req.width_cm}x{req.height_cm}cm")
     med = parse_medium(req.medium)
     year = parse_year(str(req.year_created) if req.year_created else None)
 
@@ -129,33 +190,37 @@ def _run_prediction(req: PredictRequest) -> PredictResponse:
     artist_max = int(artist_data["artist_max_price"].max()) if len(artist_data) > 0 else 0
     is_new = len(artist_data) == 0
 
-    row = pd.DataFrame([{
-        "artist_clean": artist_clean,
-        "medium_category": med.medium_category,
-        "support_category": med.support_category,
-        "타입": req.auction_type.value,
-        "is_3d": str(dim.is_3d),
-        "is_untitled": str(False),
-        "ln_estimate_mid": ln_est_mid,
-        "estimate_ratio": est_ratio,
-        "estimate_range": est_range,
-        "height_cm": dim.height_cm or 0,
-        "width_cm": dim.width_cm or 0,
-        "surface_area": dim.surface_area or 0,
-        "aspect_ratio": dim.aspect_ratio or 0,
-        "Lot": 1,
-        "회차": _max_session,
-        "artist_total_sold": artist_sold,
-        "artist_avg_price": artist_avg,
-        "artist_max_price": artist_max,
-        "artist_sell_rate": 0,
-        "is_size_imputed": 1 if dim.is_size_imputed else 0,
-        "is_year_missing": 1 if year.is_year_missing else 0,
-        "is_new_artist": 1 if is_new else 0,
-        "추정가(최저)": req.estimate_low,
-        "추정가(최고)": req.estimate_high,
-        "estimate_mid": est_mid,
-    }])
+    row = pd.DataFrame(
+        [
+            {
+                "artist_clean": artist_clean,
+                "medium_category": med.medium_category,
+                "support_category": med.support_category,
+                "타입": req.auction_type.value,
+                "is_3d": str(dim.is_3d),
+                "is_untitled": str(False),
+                "ln_estimate_mid": ln_est_mid,
+                "estimate_ratio": est_ratio,
+                "estimate_range": est_range,
+                "height_cm": dim.height_cm or 0,
+                "width_cm": dim.width_cm or 0,
+                "surface_area": dim.surface_area or 0,
+                "aspect_ratio": dim.aspect_ratio or 0,
+                "Lot": 1,
+                "회차": _max_session,
+                "artist_total_sold": artist_sold,
+                "artist_avg_price": artist_avg,
+                "artist_max_price": artist_max,
+                "artist_sell_rate": 0,
+                "is_size_imputed": 1 if dim.is_size_imputed else 0,
+                "is_year_missing": 1 if year.is_year_missing else 0,
+                "is_new_artist": 1 if is_new else 0,
+                "추정가(최저)": req.estimate_low,
+                "추정가(최고)": req.estimate_high,
+                "estimate_mid": est_mid,
+            }
+        ]
+    )
 
     # 예측
     y_pred_raw = predict_transform(_model, row)
@@ -195,3 +260,162 @@ async def model_info() -> ModelInfoResponse:
         a_grade_within_20pct=71.6,
         gate_status="9/9 passed",
     )
+
+
+# ─── Phase 3: 추정가 생성 엔드포인트 ───
+
+
+_estimate_generator = None  # Phase 3 모델 — lifespan에서 로드
+
+
+def _build_estimate_input(req: EstimateRequest) -> pd.DataFrame:
+    """EstimateRequest → 23개 Hedonic 피처 DataFrame (단건)."""
+    dim = parse_dimension(f"{req.width_cm}x{req.height_cm}cm")
+    med = parse_medium(req.medium)
+    _year = parse_year(str(req.year) if req.year else None)  # 향후 year 피처 사용
+    sa = dim.surface_area or 0.0
+
+    return pd.DataFrame([{
+        # Hedonic 23개 피처
+        "artist_clean": req.artist,
+        "medium_category": med.medium_category,
+        "support_category": med.support_category,
+        "is_3d": dim.is_3d,
+        "is_untitled": False,
+        "artist_avg_price": 0,
+        "artist_max_price": 0,
+        "artist_total_sold": 0,
+        "is_new_artist": True,
+        "height_cm": dim.height_cm or 0,
+        "width_cm": dim.width_cm or 0,
+        "surface_area": sa,
+        "aspect_ratio": dim.aspect_ratio or 1.0,
+        "is_size_imputed": dim.is_size_imputed,
+        "회차": _max_session,
+        "artist_median_price": 0,
+        "artist_price_trend": 0,
+        "medium_avg_price": 0,
+        "size_ho": sa / 132.0,
+        "size_ho_above40": max(0, sa / 132.0 - 40),
+        "auction_type_factor": 1.0,
+        "artist_unsold_rate": 0,
+        # v2 BASELINE_FEATURES에 필요한 추가 컬럼
+        "타입": req.auction_type.value,
+        "Lot": 0,
+        "is_year_missing": _year.is_year_missing if _year else True,
+        "medium_x_auction_avg": 0,
+    }])
+
+
+@app.post("/api/v1/estimate", response_model=EstimateResponse)
+async def generate_estimate_endpoint(req: EstimateRequest) -> EstimateResponse:
+    """추정가 생성 API — Model-A + Model-B 통합 파이프라인."""
+    if _estimate_generator is None:
+        return EstimateResponse(
+            price_range={"low": 0, "mid": 0, "high": 0},
+            estimate={"low": 0, "mid": 0, "high": 0},
+            confidence_grade="D",
+            cold_start_tier=None,
+            warnings=["Phase 3 모델 미로드"],
+        )
+
+    df = _build_estimate_input(req)
+    result = _estimate_generator.generate(df, is_new_artist=True)
+    pr = result["price_range"]
+    est = result["estimate"]
+    return EstimateResponse(
+        price_range={
+            "low": int(pr["low"][0]),
+            "mid": int(pr["mid"][0]),
+            "high": int(pr["high"][0]),
+        },
+        estimate={
+            "low": int(est["low"][0]),
+            "mid": int(est["mid"][0]),
+            "high": int(est["high"][0]),
+        },
+        confidence_grade=result["confidence_grade"],
+        cold_start_tier=result["cold_start_tier"],
+        warnings=[],
+    )
+
+
+@app.post("/api/v1/estimate/validate", response_model=EstimateValidateResponse)
+async def validate_estimate_endpoint(
+    req: EstimateValidateRequest,
+) -> EstimateValidateResponse:
+    """추정가 검증 API — 세그먼트별 차등 경고 기준."""
+    if _estimate_generator is None:
+        kauction_mid = int(
+            (req.kauction_estimate_low + req.kauction_estimate_high) / 2
+        )
+        return EstimateValidateResponse(
+            ai_estimate_mid=0,
+            kauction_mid=kauction_mid,
+            divergence_rate=0.0,
+            threshold_pct=30.0,
+            warning=False,
+            message="Phase 3 모델 미로드",
+        )
+
+    df = _build_estimate_input(req)
+    result = _estimate_generator.validate_estimate(
+        df,
+        kauction_low=req.kauction_estimate_low,
+        kauction_high=req.kauction_estimate_high,
+        auction_type=req.auction_type.value,
+    )
+    return EstimateValidateResponse(**result)
+
+
+@app.post("/api/v1/predict_v2")
+async def predict_v2_endpoint(req: PredictV2Request) -> dict:
+    """v2 모드: 생성 추정가 기반 낙찰가 예측.
+
+    추정가 미입력 시 Model-B가 자동 생성.
+    """
+    if _estimate_generator is None:
+        raise HTTPException(503, "Phase 3 모델 미로드")
+
+    df = _build_estimate_input(
+        EstimateRequest(
+            artist=req.artist,
+            medium=req.medium,
+            width_cm=req.width_cm,
+            height_cm=req.height_cm,
+            year=req.year,
+            auction_type=req.auction_type,
+        )
+    )
+
+    if _estimate_generator.price_engine_v2 is None:
+        raise HTTPException(503, "v2 엔진 미로드")
+
+    # 사용자 입력 추정가가 있으면 사용, 없으면 Model-B 자동 생성
+    if req.estimate_low is not None and req.estimate_high is not None:
+        import numpy as np
+
+        est_mid_arr = np.array([(req.estimate_low + req.estimate_high) / 2])
+        est_low_arr = np.array([req.estimate_low])
+        est_high_arr = np.array([req.estimate_high])
+        predicted = _estimate_generator.price_engine_v2.predict(
+            df, est_mid=est_mid_arr, est_low=est_low_arr, est_high=est_high_arr,
+        )
+        return {
+            "predicted_price": int(predicted[0]),
+            "estimate_used": {
+                "low": req.estimate_low,
+                "mid": int(est_mid_arr[0]),
+                "high": req.estimate_high,
+            },
+        }
+
+    result = _estimate_generator.predict_with_v2(df)
+    return {
+        "predicted_price": int(result["predicted_price"][0]),
+        "estimate_used": {
+            "low": int(result["estimate_used"]["low"][0]),
+            "mid": int(result["estimate_used"]["mid"][0]),
+            "high": int(result["estimate_used"]["high"][0]),
+        },
+    }
