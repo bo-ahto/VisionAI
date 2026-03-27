@@ -97,7 +97,7 @@ Segment Calibration (가격대별 보정)
 
 ## 7. 테스트 현황
 
-- **103 tests passed** (pytest)
+- **138 tests passed** (pytest — Phase 2 완료 후 최종 수치)
 - 파서 robustness 24개, 누수 방지 5개, 통합 14개 포함
 - 전처리 파이프라인 43,866건 전량 처리 확인
 
