@@ -341,16 +341,19 @@ body { background: #f0f0f0; }
 <script>
 // ─── predictions.json 로드 ───
 let predictionsData = null;
+let predictionsLoaded = false;
 async function loadPredictions() {
   try {
     const res = await fetch('./data/predictions.json');
     predictionsData = await res.json();
+    predictionsLoaded = true;
     console.log(`predictions.json loaded: ${Object.keys(predictionsData.artists).length} artists`);
   } catch (e) {
+    predictionsLoaded = true; // 실패도 완료 처리
     console.warn('predictions.json not found, using simulation mode');
   }
 }
-loadPredictions();
+const predictionsPromise = loadPredictions();
 
 function lookupPrediction(artistName, hoKey) {
   if (!predictionsData || !predictionsData.artists[artistName]) return null;
@@ -476,7 +479,10 @@ function addPipelineStep(step, detail, status) {
 }
 
 // ─── 예측 실행 ───
-function runPrediction() {
+async function runPrediction() {
+  // predictions.json 로드 완료 대기 (레이스 방지)
+  if (!predictionsLoaded) await predictionsPromise;
+
   const startTime = performance.now();
   document.getElementById('pipeline-log').innerHTML = '';
   document.getElementById('empty-state').style.display = 'none';
