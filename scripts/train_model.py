@@ -25,13 +25,20 @@ def main() -> None:
     logging.info("Train: %d, Valid: %d, Test: %d", len(train), len(valid), len(test))
 
     # 학습 — 산출물명을 baseline과 동일 패턴으로
+    # baseline 산출물명과 일치하는 고정 경로 + 날짜 버전 양쪽 저장
     import datetime
     timestamp = datetime.date.today().strftime("%Y%m%d")
+    save_path = ROOT / "model_test_results" / "baseline_catboost_v1.cbm"
+    versioned_path = ROOT / "model_test_results" / f"catboost_v{timestamp}.cbm"
     model = train_catboost(
         train_df=train,
         valid_df=valid,
-        save_path=ROOT / "model_test_results" / f"catboost_v{timestamp}.cbm",
+        save_path=save_path,
     )
+    # 버전 태깅 복사본
+    import shutil
+    shutil.copy2(save_path, versioned_path)
+    logging.info("Versioned copy: %s", versioned_path)
 
     # 평가
     import numpy as np

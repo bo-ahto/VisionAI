@@ -78,17 +78,15 @@ def main() -> None:
     else:
         results.append(("Cold Start fallback", True, "D등급 0건"))
 
-    # 6. 워크포워드 백테스트 (간이: valid vs test MAPE 차이 < 5%p)
-    valid = df[df["split"] == "valid"].copy()
-    if len(valid) > 0:
-        y_pred_v = predict(model, valid)
-        y_true_v = valid["낙찰가"].astype(float).values
-        valid_m = compute_metrics(y_true_v, y_pred_v)
-        mape_gap = abs(overall.mape - valid_m.mape)
-        bt_ok = mape_gap < 5.0
-        results.append(("워크포워드 백테스트", bt_ok, f"valid MAPE={valid_m.mape}%, test={overall.mape}%, gap={mape_gap:.1f}%p"))
+    # 6. 워크포워드 백테스트 (진짜 워크포워드: 재학습)
+    from visionai.price_engine.validation.backtest import run_walkforward_backtest
+    bt_result = run_walkforward_backtest(df, cutoffs=[350, 380, 410, 440], retrain=False, model=model)
+    if len(bt_result) >= 2:
+        mape_std = bt_result["mape"].std()
+        bt_ok = mape_std < 5.0
+        results.append(("워크포워드 백테스트", bt_ok, f"MAPE std={mape_std:.1f}%p across {len(bt_result)} cutoffs"))
     else:
-        results.append(("워크포워드 백테스트", False, "valid set 없음"))
+        results.append(("워크포워드 백테스트", False, f"insufficient cutoffs: {len(bt_result)}"))
 
     # 7. Latency
     import time
