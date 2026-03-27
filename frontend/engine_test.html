@@ -630,10 +630,10 @@ function runPrediction() {
     parsed: { mediumCat, supportCat, area, aspectRatio, estMid, estRange, estRatio, lnEstMid },
     artist_stats: artistData || 'Cold Start (그룹 평균 대체)',
     feature_vector: featureVector,
-    model_output: { ln_predicted: lnPredicted, predicted_price: predicted },
+    model_output: { ln_predicted: predicted > 0 ? Math.log(predicted).toFixed(4) : null, predicted_price: predicted },
     confidence: confidence,
     price_range: { low: priceLow, high: priceHigh, margin: `±${margin*100}%` },
-    meta: { model_version: 'catboost_baseline_v1', elapsed_ms: elapsed, mode: 'simulation' }
+    meta: { model_version: 'catboost_baseline_v1', elapsed_ms: elapsed, mode: predictionSource }
   };
   document.getElementById('debug-json').textContent = JSON.stringify(debugInfo, null, 2);
 }
