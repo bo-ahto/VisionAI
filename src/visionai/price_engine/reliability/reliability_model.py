@@ -3,11 +3,11 @@
 기획서 5.2 Phase 2: holdout에서 실제 APE를 구한 뒤,
 메타피처로 "이 예측이 얼마나 믿을 만한가"를 학습한다.
 
-등급 산정:
-  Pr(APE ≤ 0.2) ≥ 0.65  →  A
-  Pr(APE ≤ 0.3) ≥ 0.60  →  B
-  Pr(APE ≤ 0.3) ≥ 0.40  →  C
-  나머지                  →  D
+등급 산정 (단일 threshold 기반, 향후 dual-threshold 확장 가능):
+  Pr(APE ≤ threshold) ≥ 0.65  →  A
+  Pr(APE ≤ threshold) ≥ 0.45  →  B
+  Pr(APE ≤ threshold) ≥ 0.25  →  C
+  나머지                        →  D
 """
 from __future__ import annotations
 
@@ -75,8 +75,14 @@ class ReliabilityModel:
         target = (ape <= self.threshold).astype(int)
         proba = self.predict_proba(meta_features)
 
-        auc = float(roc_auc_score(target, proba))
         brier = float(brier_score_loss(target, proba))
+
+        # 단일 class인 경우 AUC 계산 불가 — NaN 반환
+        if len(np.unique(target)) < 2:
+            logger.warning("Single class in holdout — AUC undefined")
+            auc = float("nan")
+        else:
+            auc = float(roc_auc_score(target, proba))
 
         logger.info("Reliability holdout: AUC=%.4f, Brier=%.4f", auc, brier)
         return {"auc": round(auc, 4), "brier": round(brier, 4)}

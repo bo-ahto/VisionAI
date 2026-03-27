@@ -61,6 +61,51 @@ class TestReliabilityModel:
         assert len(proba) == n
         assert all(0 <= p <= 1 for p in proba)
 
+    def test_evaluate_returns_auc_and_brier(self) -> None:
+        np.random.seed(42)
+        n = 200
+        meta = pd.DataFrame({
+            "rel_artist_sold": np.random.randint(0, 100, n).astype(float),
+            "rel_premium_std": np.random.rand(n),
+            "rel_recent_count": np.random.randint(0, 20, n).astype(float),
+            "rel_estimate_ratio": 1.0 + np.random.rand(n),
+            "rel_is_new_artist": np.random.choice([0.0, 1.0], n),
+        })
+        y_true = np.random.uniform(1e6, 1e8, n)
+        y_pred = y_true * np.random.uniform(0.7, 1.3, n)
+
+        model = ReliabilityModel(threshold=0.2)
+        model.fit(meta, y_true, y_pred)
+
+        result = model.evaluate(meta, y_true, y_pred)
+        assert "auc" in result
+        assert "brier" in result
+        assert 0 <= result["brier"] <= 1
+
+    def test_evaluate_single_class(self) -> None:
+        """holdout에서 단일 class면 AUC=NaN, Brier는 계산됨."""
+        np.random.seed(42)
+        n = 200
+        meta = pd.DataFrame({
+            "rel_artist_sold": np.random.randint(0, 100, n).astype(float),
+            "rel_premium_std": np.random.rand(n),
+            "rel_recent_count": np.random.randint(0, 20, n).astype(float),
+            "rel_estimate_ratio": 1.0 + np.random.rand(n),
+            "rel_is_new_artist": np.random.choice([0.0, 1.0], n),
+        })
+        y_true = np.random.uniform(1e6, 1e8, n)
+        y_pred = y_true * np.random.uniform(0.7, 1.3, n)
+
+        model = ReliabilityModel(threshold=0.2)
+        model.fit(meta, y_true, y_pred)
+
+        # evaluate에 단일 class 데이터 전달
+        y_true_sc = np.ones(10) * 1e6
+        y_pred_sc = np.ones(10) * 1e6  # APE=0 → single class
+        meta_sc = meta.iloc[:10].copy()
+        result = model.evaluate(meta_sc, y_true_sc, y_pred_sc)
+        assert np.isnan(result["auc"])
+
     def test_grades_distribution(self) -> None:
         np.random.seed(42)
         n = 200
