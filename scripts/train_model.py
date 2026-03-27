@@ -24,11 +24,13 @@ def main() -> None:
 
     logging.info("Train: %d, Valid: %d, Test: %d", len(train), len(valid), len(test))
 
-    # 학습
+    # 학습 — 산출물명을 baseline과 동일 패턴으로
+    import datetime
+    timestamp = datetime.date.today().strftime("%Y%m%d")
     model = train_catboost(
         train_df=train,
         valid_df=valid,
-        save_path=ROOT / "model_test_results" / "trained_model.cbm",
+        save_path=ROOT / "model_test_results" / f"catboost_v{timestamp}.cbm",
     )
 
     # 평가
