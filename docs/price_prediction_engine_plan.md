@@ -188,7 +188,7 @@ log 공간 예측을 원래 스케일로 복원할 때 주의가 필요하다.
 
 ```
 미술 경매 데이터의 핵심 특성:
-  1. 고카디널리티 범주형 변수 — 작가명 3,286명 (+ __UNKNOWN__, __NEW_ARTIST__), 매체 2,154개
+  1. 고카디널리티 범주형 변수 — 작가명 3,286명 (+ __UNKNOWN__, is_new_artist=True), 매체 2,154개
   2. 순서형 데이터 — 시간 순서가 있는 경매 데이터
   3. 결측값 다수 — 제작연도 38.6%, 재료 6.2%
 
@@ -416,7 +416,7 @@ Cold Start 전략 (1,511명, 45.9%가 1건만 보유):
     is_new_artist = 1
 
   예측 시 (완전 신규 작가):
-    artist_name = "__NEW_ARTIST__"
+    artist_name = "is_new_artist=True"
     작가 통계 = 동일 estimate_tier + auction_type 그룹 평균
     → 모델은 주로 추정가, 크기, 재료에 의존하여 예측
     → confidence_grade = "D" (저신뢰)
@@ -749,7 +749,7 @@ Phase 1: 규칙 기반 (초기 버전 — calibration 검증 전)
            (⚠️ auction_date 미확보 시 session_number 기반 근사 사용)
     B등급: 추정가 있음 + 작가 낙찰 6~19건
     C등급: 추정가 있음 + 작가 낙찰 1~5건 (데이터 있으나 희소)
-    D등급: 추정가 있음 + 작가 낙찰 0건 (신규/__NEW_ARTIST__/__UNKNOWN__)
+    D등급: 추정가 있음 + 작가 낙찰 0건 (신규/is_new_artist=True/__UNKNOWN__)
 
   ⚠️ 이 규칙은 초기 출발점일 뿐이며, Phase 1 완료 후
      holdout에서 grade별 실제 커버리지를 검증하여 반드시 조정한다.
@@ -764,7 +764,7 @@ Phase 1: 규칙 기반 (초기 버전 — calibration 검증 전)
     1. D등급 slice만 분리하여 MAPE/MdAPE/Within-20% 산출
     2. D등급 내 세부 분류별 성능 비교:
        - __UNKNOWN__ (작자미상) → 고미술/골동품 가격 패턴 학습 여부
-       - __NEW_ARTIST__ (신규 작가) → 추정가 의존도가 90%+ 인지
+       - is_new_artist=True (신규 작가) → 추정가 의존도가 90%+ 인지
        - 1건만 보유 작가 (C등급) → 유의미한 예측이 되는지 (D등급은 아니지만 희소 데이터 검증 대상)
     3. D등급 예측의 "가격 범위 폭"이 과도하게 넓지 않은지 확인
        → D등급 margin=±70%가 사용자에게 의미있는 정보인지 판단

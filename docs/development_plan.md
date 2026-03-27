@@ -264,7 +264,7 @@ tests/price_engine/
 ```
 □ Cold Start / D등급 slice 리포트:
   - D등급 전체 MAPE/MdAPE/Within-20%
-  - __UNKNOWN__ / __NEW_ARTIST__ 별도 분석
+  - __UNKNOWN__ / is_new_artist=True 별도 분석
   - 1건 작가(C등급) 희소 데이터 검증
   - fallback 그룹 크기 및 대체값 품질
 □ D등급 UX 결정:
