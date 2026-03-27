@@ -1,0 +1,114 @@
+"""Reliability Model — Pr(APE ≤ threshold) 예측.
+
+기획서 5.2 Phase 2: holdout에서 실제 APE를 구한 뒤,
+메타피처로 "이 예측이 얼마나 믿을 만한가"를 학습한다.
+
+등급 산정 (단일 threshold 기반, 향후 dual-threshold 확장 가능):
+  Pr(APE ≤ threshold) ≥ 0.65  →  A
+  Pr(APE ≤ threshold) ≥ 0.45  →  B
+  Pr(APE ≤ threshold) ≥ 0.25  →  C
+  나머지                        →  D
+"""
+from __future__ import annotations
+
+import logging
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.calibration import CalibratedClassifierCV
+
+logger = logging.getLogger(__name__)
+
+
+class ReliabilityModel:
+    """Pr(APE ≤ threshold) 이진 분류 모델."""
+
+    def __init__(self, threshold: float = 0.2) -> None:
+        self.threshold = threshold
+        self.model: CalibratedClassifierCV | None = None
+
+    def fit(
+        self,
+        meta_features: pd.DataFrame,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+    ) -> None:
+        """holdout에서 학습한다.
+
+        Args:
+            meta_features: 메타피처 DataFrame (5개 컬럼).
+            y_true: 실제 낙찰가.
+            y_pred: 모델 예측 낙찰가.
+        """
+        ape = np.abs(y_true - y_pred) / y_true
+        target = (ape <= self.threshold).astype(int)
+
+        logger.info(
+            "Reliability training: N=%d, positive rate=%.1f%% (APE ≤ %.0f%%)",
+            len(target), target.mean() * 100, self.threshold * 100,
+        )
+
+        base = GradientBoostingClassifier(
+            n_estimators=200,
+            max_depth=4,
+            learning_rate=0.1,
+            random_state=42,
+        )
+
+        # Platt scaling으로 확률 calibration
+        self.model = CalibratedClassifierCV(base, cv=3, method="sigmoid")
+        self.model.fit(meta_features.values, target)
+
+        logger.info("Reliability model fitted (train AUC is not reported — use evaluate() on holdout)")
+
+    def evaluate(
+        self,
+        meta_features: pd.DataFrame,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+    ) -> dict[str, float]:
+        """holdout set에서 AUC, Brier score를 계산한다."""
+        from sklearn.metrics import brier_score_loss, roc_auc_score
+
+        ape = np.abs(y_true - y_pred) / y_true
+        target = (ape <= self.threshold).astype(int)
+        proba = self.predict_proba(meta_features)
+
+        brier = float(brier_score_loss(target, proba))
+
+        # 단일 class인 경우 AUC 계산 불가 — NaN 반환
+        if len(np.unique(target)) < 2:
+            logger.warning("Single class in holdout — AUC undefined")
+            auc = float("nan")
+        else:
+            auc = float(roc_auc_score(target, proba))
+
+        logger.info("Reliability holdout: AUC=%.4f, Brier=%.4f", auc, brier)
+        return {"auc": round(auc, 4), "brier": round(brier, 4)}
+
+    def predict_proba(self, meta_features: pd.DataFrame) -> np.ndarray:
+        """Pr(APE ≤ threshold) 확률을 반환한다."""
+        if self.model is None:
+            msg = "Model not fitted"
+            raise RuntimeError(msg)
+        return self.model.predict_proba(meta_features.values)[:, 1]
+
+    def assign_grades(self, meta_features: pd.DataFrame) -> pd.Series:
+        """확률 기반 A/B/C/D 등급을 산정한다.
+
+        단일 threshold(self.threshold) 기반 등급:
+          Pr(APE ≤ threshold) ≥ 0.65 → A
+          Pr(APE ≤ threshold) ≥ 0.45 → B
+          Pr(APE ≤ threshold) ≥ 0.25 → C
+          나머지                      → D
+
+        Note: 기획서 5.2에서는 B/C를 Pr(APE ≤ 0.3) 기반으로 정의하나,
+        현재는 단일 threshold로 간소화. 향후 dual-threshold 모델로 확장 가능.
+        """
+        proba = self.predict_proba(meta_features)
+        grades = pd.Series("D", index=meta_features.index, dtype="object")
+        grades[proba >= 0.25] = "C"
+        grades[proba >= 0.45] = "B"
+        grades[proba >= 0.65] = "A"
+        return grades
