@@ -67,3 +67,27 @@ class TestSchemas:
                 estimate_low=1000000,
                 estimate_high=2000000,
             )
+
+    def test_predict_request_rejects_low_gt_high(self) -> None:
+        """estimate_low > estimate_high는 거부."""
+        with pytest.raises(Exception):
+            PredictRequest(
+                artist_name="test",
+                auction_type="메이저",
+                width_cm=50,
+                height_cm=40,
+                estimate_low=5000000,
+                estimate_high=3000000,  # low > high
+            )
+
+    def test_predict_request_rejects_invalid_auction_type(self) -> None:
+        """유효하지 않은 경매 타입은 거부."""
+        with pytest.raises(Exception):
+            PredictRequest(
+                artist_name="test",
+                auction_type="존재하지않는타입",
+                width_cm=50,
+                height_cm=40,
+                estimate_low=1000000,
+                estimate_high=2000000,
+            )

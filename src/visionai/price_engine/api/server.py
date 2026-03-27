@@ -41,6 +41,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
 _model: CatBoostRegressor | None = None
 _factors: CalibrationFactors | None = None
 _works_full: pd.DataFrame | None = None
+_max_session: int = 486  # 데이터 로드 시 갱신
 
 CONFIDENCE_MARGINS = {"A": 0.20, "B": 0.30, "C": 0.50, "D": 0.70}
 
@@ -67,7 +68,9 @@ def _load_resources() -> None:
     est_v = ((valid["추정가(최저)"].astype(float) + valid["추정가(최고)"].astype(float)) / 2).values
     _factors = fit_calibration(y_true_v, y_pred_v, valid["타입"].values, est_v)
 
-    logger.info("Resources loaded successfully")
+    global _max_session  # noqa: PLW0603
+    _max_session = int(df["회차"].max())
+    logger.info("Resources loaded successfully (max session: %d)", _max_session)
 
 
 @asynccontextmanager
@@ -86,9 +89,9 @@ app = FastAPI(
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
+async def health() -> dict[str, object]:
     """헬스체크."""
-    return {"status": "ok", "model_loaded": str(_model is not None)}
+    return {"status": "ok", "model_loaded": _model is not None}
 
 
 @app.post("/api/v1/predict_price", response_model=PredictResponse)
@@ -97,6 +100,17 @@ async def predict_price(req: PredictRequest) -> PredictResponse:
     if _model is None or _factors is None or _works_full is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
+    try:
+        return _run_prediction(req)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Prediction failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Prediction error: {type(e).__name__}") from e
+
+
+def _run_prediction(req: PredictRequest) -> PredictResponse:
+    """예측 내부 로직 (예외 처리 분리)."""
     # 입력 → 피처 조립
     dim = parse_dimension(f"{req.width_cm}×{req.height_cm}cm")
     med = parse_medium(req.medium)
@@ -119,7 +133,7 @@ async def predict_price(req: PredictRequest) -> PredictResponse:
         "artist_clean": artist_clean,
         "medium_category": med.medium_category,
         "support_category": med.support_category,
-        "타입": req.auction_type,
+        "타입": req.auction_type.value,
         "is_3d": str(dim.is_3d),
         "is_untitled": str(False),
         "ln_estimate_mid": ln_est_mid,
@@ -130,7 +144,7 @@ async def predict_price(req: PredictRequest) -> PredictResponse:
         "surface_area": dim.surface_area or 0,
         "aspect_ratio": dim.aspect_ratio or 0,
         "Lot": 1,
-        "회차": 486,
+        "회차": _max_session,
         "artist_total_sold": artist_sold,
         "artist_avg_price": artist_avg,
         "artist_max_price": artist_max,
@@ -147,7 +161,7 @@ async def predict_price(req: PredictRequest) -> PredictResponse:
     y_pred_raw = predict_transform(_model, row)
     est_mid_arr = np.array([est_mid])
     y_pred = apply_calibration(
-        y_pred_raw, np.array([req.auction_type]), est_mid_arr, _factors, blend_weight=0.0
+        y_pred_raw, np.array([req.auction_type.value]), est_mid_arr, _factors, blend_weight=0.0
     )
     predicted = int(y_pred[0])
 
@@ -175,7 +189,7 @@ async def model_info() -> ModelInfoResponse:
     return ModelInfoResponse(
         model_version="target_transform_v1+calibration",
         model_type="CatBoost + Segment Calibration",
-        features_count=21,
+        features_count=22,  # BASELINE_FEATURES 22개 (artist_sell_rate 포함)
         test_mape=27.01,
         test_r2=0.936,
         a_grade_within_20pct=71.6,

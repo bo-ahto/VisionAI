@@ -4,20 +4,38 @@
 """
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from enum import Enum
+
+from pydantic import BaseModel, Field, model_validator
+
+
+class AuctionType(str, Enum):
+    """경매 타입."""
+
+    위클리 = "위클리"
+    프리미엄 = "프리미엄"
+    메이저 = "메이저"
 
 
 class PredictRequest(BaseModel):
     """가격 예측 요청."""
 
     artist_name: str = Field(..., description="작가명", examples=["김환기"])
-    auction_type: str = Field(..., description="경매 타입", examples=["메이저"])
+    auction_type: AuctionType = Field(..., description="경매 타입", examples=["메이저"])
     width_cm: float = Field(..., description="가로 cm", ge=0, examples=[72.7])
     height_cm: float = Field(..., description="세로 cm", ge=0, examples=[60.6])
     medium: str = Field("", description="재료", examples=["캔버스에 유채"])
     estimate_low: int = Field(..., description="추정가 최저 (원)", ge=0, examples=[50000000])
     estimate_high: int = Field(..., description="추정가 최고 (원)", ge=0, examples=[80000000])
     year_created: int | None = Field(None, description="제작연도", examples=[1970])
+
+    @model_validator(mode="after")
+    def check_estimate_order(self) -> "PredictRequest":
+        """estimate_low ≤ estimate_high 검증."""
+        if self.estimate_low > self.estimate_high:
+            msg = f"estimate_low({self.estimate_low}) > estimate_high({self.estimate_high})"
+            raise ValueError(msg)
+        return self
 
 
 class PredictResponse(BaseModel):
