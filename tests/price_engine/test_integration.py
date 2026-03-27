@@ -124,3 +124,94 @@ class TestColdStartReport:
         report = generate_cold_start_report(df, y_pred, grades)
         assert "is_new_artist=True" in report
         assert "__UNKNOWN__" in report
+
+
+class TestDatasetBuilderFallback:
+    """dataset_builder의 cold_start fallback이 실제로 주입되는지."""
+
+    def test_new_artist_gets_fallback_stats(self) -> None:
+        from visionai.price_engine.features.cold_start import (
+            build_cold_start_fallback,
+            compute_estimate_tier,
+        )
+
+        # 과거 데이터: 작가 A만 있음
+        works = pd.DataFrame({
+            "타입": ["위클리"] * 5,
+            "회차": [100, 150, 200, 250, 300],
+            "Lot": [1, 2, 3, 4, 5],
+            "작가": ["A"] * 5,
+            "artist_clean": ["A"] * 5,
+            "낙찰가": [1000000, 2000000, 3000000, 1500000, 2500000],
+            "추정가(최저)": [500000] * 5,
+            "추정가(최고)": [3000000] * 5,
+        })
+
+        fallback = build_cold_start_fallback(works, cutoff_session=400)
+        # fallback 테이블이 비어있지 않아야 함
+        assert not fallback.empty
+        # fallback에 avg/max/count 컬럼이 있어야 함
+        assert "fallback_avg_price" in fallback.columns
+        assert "fallback_max_price" in fallback.columns
+
+    def test_estimate_tier_classification(self) -> None:
+        from visionai.price_engine.features.cold_start import compute_estimate_tier
+
+        tiers = compute_estimate_tier(pd.Series([
+            1_000_000,      # 하위
+            10_000_000,     # 중하
+            50_000_000,     # 중상
+            200_000_000,    # 상위
+            2_000_000_000,  # 최상
+        ]))
+        assert list(tiers) == ["하위", "중하", "중상", "상위", "최상"]
+
+
+class TestPredictionsJsonSchema:
+    """predictions.json 메타 필드가 올바르게 생성되는지."""
+
+    def test_meta_fields_present(self) -> None:
+        import json
+        from pathlib import Path
+
+        json_path = Path("frontend/data/predictions.json")
+        if not json_path.exists():
+            pytest.skip("predictions.json not generated yet")
+
+        with open(json_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        # 필수 최상위 필드
+        assert "generated_at" in data
+        assert "model_version" in data
+        assert "model_metrics" in data
+        assert "artists" in data
+        assert "confidence_guide" in data
+        assert "low_price_warning" in data
+
+        # 작가별 예측에 메타 필드 존재
+        for artist_name, artist_data in list(data["artists"].items())[:5]:
+            for ho_name, pred in artist_data.get("predictions_by_size", {}).items():
+                assert "prediction_method" in pred, f"{artist_name}/{ho_name} missing prediction_method"
+                assert "is_recommended" in pred, f"{artist_name}/{ho_name} missing is_recommended"
+                assert "option_b_blocked" in pred, f"{artist_name}/{ho_name} missing option_b_blocked"
+                assert pred["prediction_method"] == "historical_aggregate"
+                break  # 첫 호수만 확인
+            break  # 첫 작가만 확인
+
+    def test_option_b_blocked_for_low_basis(self) -> None:
+        import json
+        from pathlib import Path
+
+        json_path = Path("frontend/data/predictions.json")
+        if not json_path.exists():
+            pytest.skip("predictions.json not generated yet")
+
+        with open(json_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        # basis_count < 3이면 option_b_blocked = True
+        for artist_data in data["artists"].values():
+            for pred in artist_data.get("predictions_by_size", {}).values():
+                if pred["basis_count"] < 3:
+                    assert pred["option_b_blocked"] is True

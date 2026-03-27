@@ -52,7 +52,7 @@ def main() -> None:
     artists_data: dict[str, dict] = {}
     for artist in valid_artists:
         adf = df[df["artist_clean"] == artist]
-        if artist in ("__UNKNOWN__", "__NEW_ARTIST__"):
+        if artist == "__UNKNOWN__":
             continue
 
         # 작가 기본 정보

@@ -65,7 +65,7 @@ class TestConfidenceGrade:
     def test_a_demoted_without_recent(self) -> None:
         """최근 거래 없으면 A→B 강등."""
         df = _make_df(sold=60)
-        # works_full에 최근 20회차 내 거래 없음
+        # works_full에 최근 10회차 내 거래 없음
         works = pd.DataFrame({
             "타입": ["위클리"],
             "artist_clean": ["TestArtist"],
