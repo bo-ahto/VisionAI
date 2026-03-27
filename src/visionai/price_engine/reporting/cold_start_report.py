@@ -35,21 +35,31 @@ def generate_cold_start_report(
     else:
         lines.append("\n1. D등급 없음")
 
-    # 2. D등급 내 세부 분류
+    # 2. D등급 내 세부 분류 (불리언 기반)
     lines.append("\n2. D등급 세부 분류:")
-    for subgroup, label in [
-        ("__UNKNOWN__", "작자미상"),
-        ("__NEW_ARTIST__", "신규 작가"),
-    ]:
-        mask = d_mask & (df["artist_clean"].values == subgroup)
-        if mask.sum() > 0:
-            m = compute_metrics(y_true[mask], y_pred[mask])
-            lines.append(f"   {label} ({subgroup}): N={m.n}  MAPE={m.mape}%  ±20%={m.within_20pct}%")
 
-    # 기타 D등급 (이름이 있지만 sold=0)
-    other_d = d_mask & ~df["artist_clean"].isin(["__UNKNOWN__", "__NEW_ARTIST__"])
+    # 작자미상
+    unknown_mask = d_mask & (df["artist_clean"].values == "__UNKNOWN__")
+    if unknown_mask.sum() > 0:
+        m = compute_metrics(y_true[unknown_mask], y_pred[unknown_mask])
+        lines.append(f"   작자미상 (__UNKNOWN__): N={m.n}  MAPE={m.mape}%  ±20%={m.within_20pct}%")
+
+    # 신규 작가 (is_new_artist 불리언 사용)
+    new_artist_col = df["is_new_artist"] if "is_new_artist" in df.columns else None
+    if new_artist_col is not None:
+        new_mask = d_mask & new_artist_col.astype(bool).values
+        # 작자미상과 겹치지 않는 신규 작가
+        new_only = new_mask & ~unknown_mask
+        if new_only.sum() > 0:
+            m = compute_metrics(y_true[new_only], y_pred[new_only])
+            lines.append(f"   신규 작가 (is_new_artist=True): N={m.n}  MAPE={m.mape}%  ±20%={m.within_20pct}%")
+
+    # 기타 D등급
+    other_d = d_mask & ~unknown_mask
+    if new_artist_col is not None:
+        other_d = other_d & ~new_mask
     if other_d.sum() > 0:
-        m = compute_metrics(y_true[other_d.values], y_pred[other_d.values])
+        m = compute_metrics(y_true[other_d], y_pred[other_d])
         lines.append(f"   기타 D등급: N={m.n}  MAPE={m.mape}%  ±20%={m.within_20pct}%")
 
     # 3. C등급 희소 작가 (1~5건)

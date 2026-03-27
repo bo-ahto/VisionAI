@@ -79,11 +79,17 @@ def main() -> None:
             grade_mode = similar["confidence_grade"].mode()
             confidence = grade_mode.iloc[0] if len(grade_mode) > 0 else "D"
 
+            is_recommended = confidence in ("A", "B") and len(similar) >= 5
+            option_b_blocked = confidence == "D" or len(similar) < 3
+
             predictions_by_size[ho_name] = {
                 "predicted_price": pred_median,
                 "price_range": [pred_low, pred_high],
                 "confidence": confidence,
                 "basis_count": len(similar),
+                "prediction_method": "historical_aggregate",
+                "is_recommended": is_recommended,
+                "option_b_blocked": option_b_blocked,
             }
 
         if not predictions_by_size:

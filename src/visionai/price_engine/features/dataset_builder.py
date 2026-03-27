@@ -110,6 +110,23 @@ def _join_artist_stats(
             is_new = ~artists_in_session.isin(known)
             out.loc[row_mask, "is_new_artist"] = is_new.values
 
+            # Cold Start fallback: 신규 작가에 그룹 평균 대체
+            new_idx = out.index[row_mask][is_new.values]
+            if len(new_idx) > 0:
+                fallback = build_cold_start_fallback(
+                    works_full, cutoff_session=session
+                )
+                if not fallback.empty:
+                    for idx in new_idx:
+                        est_mid_val = out.loc[idx, "estimate_mid"] if "estimate_mid" in out.columns else 0
+                        tier = compute_estimate_tier(pd.Series([est_mid_val])).iloc[0]
+                        key = (tier, atype)
+                        if key in fallback.index:
+                            fb = fallback.loc[key]
+                            out.loc[idx, "artist_avg_price"] = fb["fallback_avg_price"]
+                            out.loc[idx, "artist_max_price"] = fb["fallback_max_price"]
+                            out.loc[idx, "artist_total_sold"] = 0
+
     return out
 
 
