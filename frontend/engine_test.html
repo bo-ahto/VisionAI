@@ -573,6 +573,7 @@ function runPrediction() {
     addPipelineStep('Step 5: 예측 조회', `[JSON] ${hoKey} → ${formatPrice(predicted)} (${jsonPred.confidence}등급, basis=${jsonPred.basis_count})`, 'ok');
   } else if (jsonPred && jsonPred.option_b_blocked) {
     predicted = estMid;
+    predictionSource = 'predictions.json (Option B)';
     addPipelineStep('Step 5: 예측 조회', `[JSON] ${hoKey} → 예측 불가 (Option B: 데이터 부족)`, 'warn');
   } else {
     predicted = simulatePrediction({
