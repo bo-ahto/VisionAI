@@ -21,7 +21,7 @@ _SUBJECT_KEYWORDS: dict[str, list[str]] = {
                    "해변", "호수", "lake", "forest", "산수", "山水"],
     "figure": ["인물", "여인", "소녀", "portrait", "figure", "woman", "nude",
                "미인도", "자화상", "self-portrait", "인체", "무희"],
-    "flower": ["꽃", "flower", "rose", "장미", "매화", "목련", "연꽃", "lotus",
+    "flower": ["꽃병", "꽃다발", "flower", "rose", "장미", "매화", "목련", "연꽃", "lotus",
                "국화", "모란", "진달래", "난초", "orchid"],
     "animal": ["물고기", "horse", "bird", "고양이", "호랑이", "tiger", "사슴",
                "deer", "crane"],
