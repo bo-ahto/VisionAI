@@ -97,6 +97,14 @@ HEDONIC_FEATURES: list[str] = [
     "global_avg_price",
     "global_median_price",
     "global_auction_count",
+    # Phase 4 Tier 3: 제목 NLP 피처
+    "title_length",
+    "title_has_number",
+    "title_is_korean",
+    "title_is_english",
+    "title_has_hanja",
+    "title_subject",
+    "title_is_series",
 ]
 
 CAT_FEATURE_NAMES: list[str] = [
@@ -106,6 +114,7 @@ CAT_FEATURE_NAMES: list[str] = [
     "타입",
     "is_3d",
     "is_untitled",
+    "title_subject",
 ]
 
 
@@ -368,6 +377,13 @@ def build_hedonic_features(
     # 호수 피처 (시간 독립)
     df["size_ho"] = compute_size_ho(df["surface_area"].fillna(0))
     df["size_ho_above40"] = compute_size_ho_above40(df["size_ho"])
+
+    # 제목 NLP 피처 (시간 독립)
+    from visionai.price_engine.features.title_nlp import extract_title_features
+
+    title_feats = extract_title_features(df["제목"])
+    for col in title_feats.columns:
+        df[col] = title_feats[col]
 
     # 4-way split 라벨
     df["split"] = assign_split_4way(df)

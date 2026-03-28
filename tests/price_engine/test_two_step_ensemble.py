@@ -34,4 +34,4 @@ class TestEnsembleContract:
         assert not model._fitted
 
     def test_feature_count(self) -> None:
-        assert len(HEDONIC_FEATURES) == 42
+        assert len(HEDONIC_FEATURES) == 49
