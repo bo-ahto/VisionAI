@@ -45,8 +45,8 @@ from visionai.price_engine.preprocessing.year_parser import parse_year
 
 logger = logging.getLogger(__name__)
 
-# Phase 3 피처 목록 (유지 15개 + 신규 8개 = 23개)
-# 기획서 3.4절 기준. 추정가 4개(estimate_mid/range/ratio/ln_estimate_mid) 제거.
+# Hedonic 피처 목록 (Phase 3: 23개 + Phase 4: 16개 + Phase 4b: 3개 = 42개)
+# 추정가 4개(estimate_mid/range/ratio/ln_estimate_mid) 제거.
 HEDONIC_FEATURES: list[str] = [
     # 범주형 (5) — 기획서 유지 피처
     "artist_clean",

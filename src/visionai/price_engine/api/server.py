@@ -269,14 +269,14 @@ _estimate_generator = None  # Phase 3 모델 — lifespan에서 로드
 
 
 def _build_estimate_input(req: EstimateRequest) -> pd.DataFrame:
-    """EstimateRequest → 23개 Hedonic 피처 DataFrame (단건)."""
+    """EstimateRequest → 42개 Hedonic 피처 DataFrame (단건). Phase 4b 기준."""
     dim = parse_dimension(f"{req.width_cm}x{req.height_cm}cm")
     med = parse_medium(req.medium)
     _year = parse_year(str(req.year) if req.year else None)  # 향후 year 피처 사용
     sa = dim.surface_area or 0.0
 
     return pd.DataFrame([{
-        # Hedonic 23개 피처
+        # 42개 Hedonic 피처 (Phase 3: 23 + Phase 4: 16 + Phase 4b: 3)
         "artist_clean": req.artist,
         "medium_category": med.medium_category,
         "support_category": med.support_category,
