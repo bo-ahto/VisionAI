@@ -74,6 +74,7 @@ class EstimateRequest(BaseModel):
     width_cm: float = Field(..., description="가로 cm", ge=0, examples=[72.7])
     height_cm: float = Field(..., description="세로 cm", ge=0, examples=[60.6])
     year: int | None = Field(None, description="제작연도", examples=[2015])
+    title: str = Field("", description="작품 제목 (NLP 피처용)", examples=["Dialogue"])
     auction_type: AuctionType = Field(
         AuctionType.프리미엄, description="경매 타입"
     )

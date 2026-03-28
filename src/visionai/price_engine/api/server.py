@@ -280,14 +280,14 @@ _estimate_generator = None  # Phase 3 모델 — lifespan에서 로드
 
 
 def _build_estimate_input(req: EstimateRequest) -> pd.DataFrame:
-    """EstimateRequest → 42개 Hedonic 피처 DataFrame (단건). Phase 4b 기준."""
+    """EstimateRequest → 49개 Hedonic 피처 DataFrame (단건). Phase 4b 기준."""
     dim = parse_dimension(f"{req.width_cm}x{req.height_cm}cm")
     med = parse_medium(req.medium)
     _year = parse_year(str(req.year) if req.year else None)  # 향후 year 피처 사용
     sa = dim.surface_area or 0.0
 
-    return pd.DataFrame([{
-        # 42개 Hedonic 피처 (Phase 3: 23 + Phase 4: 16 + Phase 4b: 3)
+    df_input = pd.DataFrame([{
+        # 49개 Hedonic 피처 (Phase 3: 23 + Phase 4: 16 + Phase 4b: 3 + NLP: 7)
         "artist_clean": req.artist,
         "medium_category": med.medium_category,
         "support_category": med.support_category,
@@ -336,19 +336,17 @@ def _build_estimate_input(req: EstimateRequest) -> pd.DataFrame:
         "global_avg_price": np.nan,
         "global_median_price": np.nan,
         "global_auction_count": 0.0,
-        # Phase 4 NLP 피처 (제목에서 추출)
-        "title_length": len(req.medium) if req.medium else 0,
-        "title_has_number": False,
-        "title_is_korean": False,
-        "title_is_english": True,
-        "title_has_hanja": False,
-        "title_subject": "other",
-        "title_is_series": False,
     }])
 
-    # NLP 피처를 실제 제목에서 추출 (제목이 있을 경우)
-    # 현재 API 스키마에 title 필드가 없으므로 기본값 사용
-    # 추후 EstimateRequest에 title 필드 추가 시 활성화
+    # Phase 4 NLP 피처 — 실제 제목에서 추출
+    from visionai.price_engine.features.title_nlp import extract_title_features
+
+    title_text = req.title if hasattr(req, "title") and req.title else ""
+    nlp = extract_title_features(pd.Series([title_text]))
+    for col in nlp.columns:
+        df_input[col] = nlp[col].values
+
+    return df_input
 
 
 @app.post("/api/v1/estimate", response_model=EstimateResponse)
