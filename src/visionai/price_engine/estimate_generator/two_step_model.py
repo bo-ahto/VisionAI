@@ -151,12 +151,11 @@ class TwoStepModel:
                     preds = preds.reshape(-1, 1)
                 result[mask] = preds[:, :3] if preds.shape[1] >= 3 else preds
             elif self._regressors:
-                # fallback: 가장 많은 데이터로 학습된 regressor 사용
-                # (low bin이 가장 크므로 대개 low 선택)
-                fallback_label = max(
+                # fallback: 가장 많은 데이터로 학습된 regressor 사용 (low 우선)
+                fallback_label = min(
                     self._regressors.keys(),
                     key=lambda k: PRICE_LABELS.index(k)
-                    if k in PRICE_LABELS else 0,
+                    if k in PRICE_LABELS else 99,
                 )
                 fallback = self._regressors[fallback_label]
                 logger.warning(

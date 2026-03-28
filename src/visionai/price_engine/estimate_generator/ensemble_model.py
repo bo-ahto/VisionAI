@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 class EnsembleStackingModel:
-    """Level-0 4개 base + Level-1 Ridge meta-learner.
+    """Level-0 2개 base (CatBoost + RF) + Level-1 Ridge meta-learner.
 
-    q50 중앙값 예측 기준. 추후 quantile별 독립 앙상블로 확장 가능.
+    q50 중앙값 예측 기준. 추후 base learner 추가 가능.
     """
 
     def __init__(
@@ -74,13 +74,15 @@ class EnsembleStackingModel:
 
         # early stopping용 eval_set: calib 사용 (valid 아님)
         eval_set = None
+        x_calib = None
+        y_calib = None
         if calib_df is not None:
             x_calib = _prepare_hedonic_features(calib_df)
             y_calib = calib_df[target_col].values
             c_mask = np.isfinite(y_calib)
             x_calib = x_calib[c_mask]
             y_calib = y_calib[c_mask]
-            eval_set = (x_calib, y_calib)
+            eval_set = (x_calib, y_calib) if x_calib is not None else None
 
         logger.info("Training base: CatBoost (train=%d)", len(x_train))
         cb = CatBoostRegressor(
