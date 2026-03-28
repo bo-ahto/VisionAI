@@ -17,10 +17,22 @@ from visionai.price_engine.features.artist_stats_snapshot import (
     compute_artist_stats_snapshot,
 )
 from visionai.price_engine.features.hedonic_stats import (
+    compute_artist_auctions_since_last,
+    compute_artist_career_length,
+    compute_artist_last_hammer,
+    compute_artist_lot_count_trend,
     compute_artist_median_price,
+    compute_artist_premium_ratio,
+    compute_artist_price_momentum,
     compute_artist_price_trend,
+    compute_artist_price_volatility,
+    compute_artist_reappear_flag,
+    compute_artist_recent_avg_price,
+    compute_artist_sale_frequency,
     compute_artist_unsold_rate,
     compute_auction_type_factor,
+    compute_comparable_sales,
+    compute_market_price_index,
     compute_medium_avg_price,
     compute_medium_x_auction_avg,
     compute_size_ho,
@@ -64,6 +76,23 @@ HEDONIC_FEATURES: list[str] = [
     "auction_type_factor",
     "artist_unsold_rate",
     "medium_x_auction_avg",
+    # Phase 4 고도화 피처 (15)
+    "artist_recent_avg_price",
+    "artist_price_momentum",
+    "artist_sale_frequency",
+    "artist_auctions_since_last",
+    "artist_price_volatility",
+    "artist_lot_count_trend",
+    "artist_premium_ratio",
+    "artist_reappear_flag",
+    "artist_last_hammer_price",
+    "artist_career_length",
+    "market_price_index",
+    "comp_artist_avg",
+    "comp_medium_avg",
+    "comp_weighted",
+    "comp_match_level",
+    "comp_match_count",
 ]
 
 CAT_FEATURE_NAMES: list[str] = [
@@ -127,13 +156,30 @@ def _join_artist_stats_and_hedonic(
     out["artist_avg_price"] = 0.0
     out["artist_max_price"] = 0.0
     out["is_new_artist"] = False
-    # 신규 피처 초기화
+    # Phase 3 신규 피처 초기화
     out["artist_median_price"] = np.nan
     out["artist_price_trend"] = np.nan
     out["medium_avg_price"] = np.nan
     out["auction_type_factor"] = np.nan
     out["artist_unsold_rate"] = np.nan
     out["medium_x_auction_avg"] = np.nan
+    # Phase 4 신규 피처 초기화
+    out["artist_recent_avg_price"] = np.nan
+    out["artist_price_momentum"] = np.nan
+    out["artist_sale_frequency"] = np.nan
+    out["artist_auctions_since_last"] = np.nan
+    out["artist_price_volatility"] = np.nan
+    out["artist_lot_count_trend"] = np.nan
+    out["artist_premium_ratio"] = np.nan
+    out["artist_reappear_flag"] = False
+    out["artist_last_hammer_price"] = np.nan
+    out["artist_career_length"] = np.nan
+    out["market_price_index"] = 0.0
+    out["comp_artist_avg"] = np.nan
+    out["comp_medium_avg"] = np.nan
+    out["comp_weighted"] = np.nan
+    out["comp_match_level"] = 4.0
+    out["comp_match_count"] = 0.0
 
     for atype in out["타입"].unique():
         type_mask = out["타입"] == atype
@@ -216,6 +262,60 @@ def _join_artist_stats_and_hedonic(
                             key, "medium_x_auction_avg"
                         ]
 
+            # --- Phase 4 고도화 피처 (auction_type 필터 적용) ---
+            _p4_artist_funcs = [
+                ("artist_recent_avg_price", compute_artist_recent_avg_price),
+                ("artist_price_momentum", compute_artist_price_momentum),
+                ("artist_sale_frequency", compute_artist_sale_frequency),
+                ("artist_auctions_since_last", compute_artist_auctions_since_last),
+                ("artist_price_volatility", compute_artist_price_volatility),
+                ("artist_lot_count_trend", compute_artist_lot_count_trend),
+                ("artist_last_hammer_price", compute_artist_last_hammer),
+                ("artist_career_length", compute_artist_career_length),
+            ]
+            for col_name, func in _p4_artist_funcs:
+                vals = func(works_full, cutoff=session, auction_type=atype)
+                if not vals.empty:
+                    mapped = artists_in_session.map(vals)
+                    out.loc[row_mask, col_name] = mapped.values
+
+            # artist_premium_ratio (전체 타입에서 계산)
+            prem = compute_artist_premium_ratio(works_full, cutoff=session)
+            if not prem.empty:
+                mapped = artists_in_session.map(prem)
+                out.loc[row_mask, "artist_premium_ratio"] = mapped.values
+
+            # artist_reappear_flag
+            reappear = compute_artist_reappear_flag(
+                works_full, cutoff=session, auction_type=atype
+            )
+            if not reappear.empty:
+                mapped = artists_in_session.map(reappear)
+                out.loc[row_mask, "artist_reappear_flag"] = mapped.fillna(False).values
+
+            # market_price_index
+            mpi = compute_market_price_index(
+                works_full, cutoff=session, auction_type=atype
+            )
+            out.loc[row_mask, "market_price_index"] = mpi
+
+            # comparable sales (행별 계산)
+            for idx in out.index[row_mask]:
+                artist = out.loc[idx, "artist_clean"]
+                medium = out.loc[idx, "medium_category"]
+                area = out.loc[idx, "surface_area"] if "surface_area" in out.columns else 0
+                comp = compute_comparable_sales(
+                    works_full, cutoff=session,
+                    target_artist=artist, target_medium=medium,
+                    target_surface_area=float(area) if pd.notna(area) else 0.0,
+                    auction_type=atype,
+                )
+                out.loc[idx, "comp_artist_avg"] = comp["comp_artist_avg"]
+                out.loc[idx, "comp_medium_avg"] = comp["comp_medium_avg"]
+                out.loc[idx, "comp_weighted"] = comp["comp_weighted"]
+                out.loc[idx, "comp_match_level"] = comp["comp_match_level"]
+                out.loc[idx, "comp_match_count"] = comp["comp_match_count"]
+
     return out
 
 
@@ -223,7 +323,7 @@ def build_hedonic_features(
     works_path: str | Path,
     output_path: str | Path | None = None,
 ) -> pd.DataFrame:
-    """CSV로부터 추정가-독립 23개 피처 DataFrame을 생성한다.
+    """CSV로부터 추정가-독립 38개 피처 DataFrame을 생성한다 (Phase 3: 23개 + Phase 4: 15개).
 
     Args:
         works_path: k-auction-works CSV 경로.
