@@ -304,6 +304,27 @@ def _build_estimate_input(req: EstimateRequest) -> pd.DataFrame:
         "Lot": 0,
         "is_year_missing": _year.is_year_missing if _year else True,
         "medium_x_auction_avg": 0,
+        # Phase 4 고도화 피처 (기본값 0/NaN — CatBoost NaN 처리)
+        "artist_recent_avg_price": np.nan,
+        "artist_price_momentum": np.nan,
+        "artist_sale_frequency": np.nan,
+        "artist_auctions_since_last": np.nan,
+        "artist_price_volatility": np.nan,
+        "artist_lot_count_trend": np.nan,
+        "artist_premium_ratio": np.nan,
+        "artist_reappear_flag": False,
+        "artist_last_hammer_price": np.nan,
+        "artist_career_length": np.nan,
+        "market_price_index": 0.0,
+        "comp_artist_avg": np.nan,
+        "comp_medium_avg": np.nan,
+        "comp_weighted": np.nan,
+        "comp_match_level": 4.0,
+        "comp_match_count": 0.0,
+        # Phase 4b 글로벌 통계
+        "global_avg_price": np.nan,
+        "global_median_price": np.nan,
+        "global_auction_count": 0.0,
     }])
 
 

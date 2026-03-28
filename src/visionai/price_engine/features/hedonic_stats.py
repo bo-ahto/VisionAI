@@ -342,7 +342,14 @@ def compute_edition_adoption_rate(
 def load_global_artist_stats(
     path: str = "data/artsy_global_stats.csv",
 ) -> pd.DataFrame | None:
-    """Artsy 글로벌 경매 통계 로드."""
+    """Artsy 글로벌 경매 통계 로드.
+
+    주의: 글로벌 통계는 Artsy의 과거 36개월 집계값으로,
+    K-Auction 시계열과 독립적인 외부 시그널로 취급한다.
+    시계열 누수 관점에서 이 데이터는 "작가의 글로벌 평판 지표"로,
+    K-Auction 내부 미래 데이터가 아닌 외부 공개 데이터에 해당.
+    단, 엄밀한 as-of 보정이 필요하면 경매 날짜별 누적 집계로 전환해야 함.
+    """
     from pathlib import Path
 
     p = Path(path)

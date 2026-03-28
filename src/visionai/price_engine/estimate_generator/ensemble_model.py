@@ -1,7 +1,7 @@
 """앙상블 스태킹 모델 — Level-0 base learners + Level-1 meta-learner.
 
 Level-0: CatBoost + RandomForest (2개 base)
-Level-1: Ridge Regression (Calib set으로 메타 학습, Validation에서 평가)
+Level-1: Ridge Regression (Holdout stacking: Calib으로 메타 학습, Validation에서 평가)
 
 기획서 Phase 4 Tier 2, 2.6절 참조.
 """
