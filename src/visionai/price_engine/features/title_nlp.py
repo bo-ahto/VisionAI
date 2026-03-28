@@ -15,31 +15,34 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 # 주제 카테고리 키워드 매핑
+# 주제 카테고리 키워드 — 2음절 이상만 사용하여 부분문자열 충돌 방지
 _SUBJECT_KEYWORDS: dict[str, list[str]] = {
-    "landscape": ["산", "강", "바다", "풍경", "landscape", "mountain", "river", "sea",
-                   "계곡", "숲", "설경", "해변", "호수", "lake", "forest"],
-    "figure": ["인물", "여인", "소녀", "portrait", "figure", "woman", "girl", "nude",
-               "미인", "자화상", "self-portrait", "인체", "무희"],
-    "flower": ["꽃", "화", "flower", "rose", "장미", "매화", "목련", "연꽃", "lotus",
+    "landscape": ["풍경", "landscape", "mountain", "river", "계곡", "설경",
+                   "해변", "호수", "lake", "forest", "산수", "山水"],
+    "figure": ["인물", "여인", "소녀", "portrait", "figure", "woman", "nude",
+               "미인도", "자화상", "self-portrait", "인체", "무희"],
+    "flower": ["꽃", "flower", "rose", "장미", "매화", "목련", "연꽃", "lotus",
                "국화", "모란", "진달래", "난초", "orchid"],
-    "animal": ["말", "소", "개", "고양이", "새", "horse", "bird", "cat", "dog", "fish",
-               "물고기", "학", "crane", "호랑이", "tiger", "사슴", "deer"],
+    "animal": ["물고기", "horse", "bird", "고양이", "호랑이", "tiger", "사슴",
+               "deer", "crane"],
     "abstract": ["추상", "abstract", "composition", "구성", "untitled", "무제",
                   "dialogue", "relatum", "ecriture", "from line", "from point"],
-    "stilllife": ["정물", "still life", "과일", "fruit", "bottle", "병", "꽃병", "vase"],
-    "calligraphy": ["서", "書", "calligraphy", "문자", "letter", "글자"],
-    "religious": ["불", "佛", "buddha", "보살", "관음", "십자가", "cross"],
+    "stilllife": ["정물", "still life", "과일", "fruit", "꽃병", "vase"],
+    "calligraphy": ["서예", "calligraphy", "문자도"],
+    "religious": ["불상", "佛像", "buddha", "보살", "관음", "십자가", "cross"],
 }
 
 # 시리즈 패턴 (정규식)
+# 시리즈 패턴 — 실제 시리즈명만 (장르/화제어 제외)
 _SERIES_PATTERNS: list[tuple[str, str]] = [
     (r"ecriture", "ecriture"),
     (r"from\s+(?:line|point|wind|port)", "from_series"),
     (r"dialogue", "dialogue"),
     (r"relatum", "relatum"),
     (r"correspond", "correspondence"),
-    (r"水墨|수묵", "sumuk"),
-    (r"산수|山水", "sansu"),
+    (r"\b[IVX]{2,}\b", "roman_numeral"),  # II, III, IV 등
+    (r"\(\d+\)", "paren_number"),  # (3), (12) 등
+    (r"edition\s+\d", "edition"),  # Edition 2 등
 ]
 
 
@@ -85,13 +88,15 @@ def extract_title_features(titles: pd.Series) -> pd.DataFrame:
         lambda t: bool(re.search(r"[\u4e00-\u9fff]", t))
     )
 
-    # 주제 카테고리
+    # 주제 카테고리 — 키워드 매칭 수 기반 (0/1이 아닌 실제 count)
     subject_scores: dict[str, pd.Series] = {}
     for subject, keywords in _SUBJECT_KEYWORDS.items():
-        pattern = "|".join(re.escape(kw) for kw in keywords)
-        subject_scores[subject] = titles_str.str.contains(
-            pattern, regex=True, case=False, na=False
-        ).astype(int)
+        count = pd.Series(0, index=titles.index)
+        for kw in keywords:
+            count += titles_str.str.contains(
+                re.escape(kw), regex=True, case=False, na=False
+            ).astype(int)
+        subject_scores[subject] = count
 
     subject_df = pd.DataFrame(subject_scores, index=titles.index)
     result["title_subject"] = subject_df.idxmax(axis=1)
