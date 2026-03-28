@@ -109,9 +109,20 @@ def _load_estimate_generator() -> None:
     model_b = EstimateRegressorModel()
     model_b.load(model_b_path)
     q_cal = QuantileCalibrator()
-    q_cal._fitted = True  # 실제 calibration은 학습 시 저장/로드 필요
+    q_cal_path = ROOT / "model_test_results" / "quantile_calibrator.pkl"
+    if q_cal_path.exists():
+        q_cal.load(str(q_cal_path))
+    else:
+        logger.warning("Quantile calibrator not found. Using uncalibrated.")
+        q_cal._fitted = True
+
     e_cal = EstimateCalibrator()
-    e_cal._fitted = True
+    e_cal_path = ROOT / "model_test_results" / "estimate_calibrator.pkl"
+    if e_cal_path.exists():
+        e_cal.load(str(e_cal_path))
+    else:
+        logger.warning("Estimate calibrator not found. Using uncalibrated.")
+        e_cal._fitted = True
 
     # v2 엔진 로드 (모델 파일 존재 시)
     v2_path = ROOT / "model_test_results" / "price_engine_v2.cbm"
@@ -325,7 +336,19 @@ def _build_estimate_input(req: EstimateRequest) -> pd.DataFrame:
         "global_avg_price": np.nan,
         "global_median_price": np.nan,
         "global_auction_count": 0.0,
+        # Phase 4 NLP 피처 (제목에서 추출)
+        "title_length": len(req.medium) if req.medium else 0,
+        "title_has_number": False,
+        "title_is_korean": False,
+        "title_is_english": True,
+        "title_has_hanja": False,
+        "title_subject": "other",
+        "title_is_series": False,
     }])
+
+    # NLP 피처를 실제 제목에서 추출 (제목이 있을 경우)
+    # 현재 API 스키마에 title 필드가 없으므로 기본값 사용
+    # 추후 EstimateRequest에 title 필드 추가 시 활성화
 
 
 @app.post("/api/v1/estimate", response_model=EstimateResponse)

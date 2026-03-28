@@ -37,7 +37,9 @@ def main() -> None:
     calib = df[df["split"] == "calib"]
     valid = df[df["split"] == "valid"]
     test = df[df["split"] == "test"]
-    logger.info("Train=%d, Calib=%d, Valid=%d, Test=%d", len(train), len(calib), len(valid), len(test))
+    logger.info(
+        "Train=%d, Calib=%d, Valid=%d, Test=%d", len(train), len(calib), len(valid), len(test)
+    )
 
     # ─── 2. Model-A 학습 ───
     logger.info("=== Step 2: Model-A (MultiQuantile) 학습 ===")
@@ -68,8 +70,12 @@ def main() -> None:
     mask_calib = calib["ln_price"].notna()
     q_cal = QuantileCalibrator()
     cal_result = q_cal.fit(y_calib.values, raw_q_calib[mask_calib.values], target_coverage=0.55)
-    logger.info("Quantile Calibration: coverage %.1f%% → %.1f%%",
-                cal_result.coverage_before * 100, cal_result.coverage_after * 100)
+    logger.info(
+        "Quantile Calibration: coverage %.1f%% → %.1f%%",
+        cal_result.coverage_before * 100,
+        cal_result.coverage_after * 100,
+    )
+    q_cal.save(str(OUTPUT_DIR / "quantile_calibrator.pkl"))
 
     # ─── 5. Estimate Calibration (Calib set) ───
     logger.info("=== Step 5: Estimate Calibration ===")
@@ -83,7 +89,14 @@ def main() -> None:
 
     mask_b = np.isfinite(y_actual_calib) & np.isfinite(raw_b_calib)
     e_cal = EstimateCalibrator()
-    e_cal.fit(raw_b_calib[mask_b], y_actual_calib[mask_b], est_low_c[mask_b], est_mid_c[mask_b], est_high_c[mask_b])
+    e_cal.fit(
+        raw_b_calib[mask_b],
+        y_actual_calib[mask_b],
+        est_low_c[mask_b],
+        est_mid_c[mask_b],
+        est_high_c[mask_b],
+    )
+    e_cal.save(str(OUTPUT_DIR / "estimate_calibrator.pkl"))
 
     # ─── 6. Validation 평가 ───
     logger.info("=== Step 6: Validation 평가 ===")
@@ -116,7 +129,9 @@ def main() -> None:
     # Slice coverage
     valid_filtered = valid[mask_v]
     types = valid_filtered["타입"].values if "타입" in valid_filtered.columns else None
-    coverage_result = q_cal.validate_coverage(y_valid[mask_v], raw_q_valid[mask_v], auction_types=types)
+    coverage_result = q_cal.validate_coverage(
+        y_valid[mask_v], raw_q_valid[mask_v], auction_types=types
+    )
 
     # Model-B 평가
     raw_b_valid = model_b.predict_raw(valid)
@@ -125,12 +140,40 @@ def main() -> None:
     actual_est_high = pd.to_numeric(valid["추정가(최고)"], errors="coerce").fillna(0).values
     actual_mid = (actual_est_mid + actual_est_high) / 2
     mask_est = actual_mid > 0
-    estimate_mape = compute_estimate_mape(est_result["est_mid"][mask_est[:len(est_result["est_mid"])]], actual_mid[mask_est][:len(est_result["est_mid"])])
-    estimate_bias = compute_estimate_bias(est_result["est_mid"][mask_est[:len(est_result["est_mid"])]], actual_mid[mask_est][:len(est_result["est_mid"])])
+    estimate_mape = compute_estimate_mape(
+        est_result["est_mid"][mask_est[: len(est_result["est_mid"])]],
+        actual_mid[mask_est][: len(est_result["est_mid"])],
+    )
+    estimate_bias = compute_estimate_bias(
+        est_result["est_mid"][mask_est[: len(est_result["est_mid"])]],
+        actual_mid[mask_est][: len(est_result["est_mid"])],
+    )
 
-    # Cold Start
-    cold_start_mask = valid["is_new_artist"].astype(bool)
+    # Cold Start 실측
+    cold_start_mask = valid["is_new_artist"].astype(bool).values[mask_v]
     cold_start_gen = 1.0  # CatBoost always returns prediction
+    if cold_start_mask.sum() > 0:
+        cold_m = compute_metrics(y_true_price[cold_start_mask], price_mid[cold_start_mask])
+        cold_start_mape_actual = cold_m.mdape / 100
+        logger.info("Cold Start MdAPE: %.2f%% (n=%d)", cold_m.mdape, cold_m.n)
+    else:
+        cold_start_mape_actual = 0.5
+
+    # 저유동성 작가 (unsold_rate > 50%) 실측
+    unsold = valid.get("artist_unsold_rate", pd.Series(dtype=float))
+    if unsold is not None:
+        low_liq_mask = (
+            (unsold.values[mask_v] > 0.5)
+            if len(unsold) > 0
+            else np.zeros(mask_v.sum(), dtype=bool)
+        )
+        if low_liq_mask.sum() > 0:
+            ll_m = compute_metrics(y_true_price[low_liq_mask], price_mid[low_liq_mask])
+            low_liq_mape_actual = ll_m.mdape / 100
+        else:
+            low_liq_mape_actual = 0.4
+    else:
+        low_liq_mape_actual = 0.4
 
     # Monotonicity
     mono = model_a.check_monotonicity(valid)
@@ -159,11 +202,11 @@ def main() -> None:
         "range_width_median": range_width,
         "estimate_mape_all": estimate_mape / 100,
         "estimate_mape_major": estimate_mape / 100,  # 추후 slice별 분리
-        "integrated_mape": estimate_mape / 100,  # Sprint 3 v2 연동 후 갱신
+        "integrated_mape": compute_metrics(y_true_price, price_mid).mdape / 100,
         "cold_start_generation": cold_start_gen,
-        "cold_start_mape": 0.5,  # 추후 계산
+        "cold_start_mape": cold_start_mape_actual,
         "leakage_test_all_pass": True,
-        "low_liquidity_mape": 0.4,  # 추후 계산
+        "low_liquidity_mape": low_liq_mape_actual,
         "monotonicity_rate": mono,
     }
     metrics_path = OUTPUT_DIR / "estimate_metrics.json"

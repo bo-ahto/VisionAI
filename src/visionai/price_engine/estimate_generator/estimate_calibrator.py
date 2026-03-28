@@ -162,6 +162,34 @@ class EstimateCalibrator:
 
         return {"est_low": est_low, "est_mid": est_mid, "est_high": est_high}
 
+    def save(self, path: str) -> None:
+        """Calibration 파라미터 저장."""
+        import pickle
+        from pathlib import Path
+
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as f:
+            pickle.dump(
+                {"boundaries": self.boundaries, "smearing_factors": self.smearing_factors,
+                 "ratios_low": self.ratios_low, "ratios_high": self.ratios_high,
+                 "_fitted": self._fitted},
+                f,
+            )
+        logger.info("EstimateCalibrator saved to %s", path)
+
+    def load(self, path: str) -> None:
+        """Calibration 파라미터 로드."""
+        import pickle
+
+        with open(path, "rb") as f:
+            state = pickle.load(f)
+        self.boundaries = state["boundaries"]
+        self.smearing_factors = state["smearing_factors"]
+        self.ratios_low = state["ratios_low"]
+        self.ratios_high = state["ratios_high"]
+        self._fitted = state["_fitted"]
+        logger.info("EstimateCalibrator loaded from %s", path)
+
     def validate_stability(
         self,
         y_pred_calib: np.ndarray,

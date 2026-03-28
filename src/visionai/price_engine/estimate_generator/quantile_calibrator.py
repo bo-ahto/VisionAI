@@ -148,6 +148,32 @@ class QuantileCalibrator:
         out[:, 2] = np.maximum(out[:, 2], out[:, 1])
         return out
 
+    def save(self, path: str) -> None:
+        """Calibration 파라미터 저장."""
+        import pickle
+        from pathlib import Path
+
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as f:
+            pickle.dump(
+                {"delta_low": self.delta_low, "delta_mid": self.delta_mid,
+                 "delta_high": self.delta_high, "_fitted": self._fitted},
+                f,
+            )
+        logger.info("QuantileCalibrator saved to %s", path)
+
+    def load(self, path: str) -> None:
+        """Calibration 파라미터 로드."""
+        import pickle
+
+        with open(path, "rb") as f:
+            state = pickle.load(f)
+        self.delta_low = state["delta_low"]
+        self.delta_mid = state["delta_mid"]
+        self.delta_high = state["delta_high"]
+        self._fitted = state["_fitted"]
+        logger.info("QuantileCalibrator loaded from %s", path)
+
     def validate_coverage(
         self,
         y_valid: np.ndarray,
