@@ -150,14 +150,27 @@ class TwoStepModel:
                 if preds.ndim == 1:
                     preds = preds.reshape(-1, 1)
                 result[mask] = preds[:, :3] if preds.shape[1] >= 3 else preds
+            elif self._regressors:
+                # fallback: 가장 많은 데이터로 학습된 regressor 사용
+                # (low bin이 가장 크므로 대개 low 선택)
+                fallback_label = max(
+                    self._regressors.keys(),
+                    key=lambda k: PRICE_LABELS.index(k)
+                    if k in PRICE_LABELS else 0,
+                )
+                fallback = self._regressors[fallback_label]
+                logger.warning(
+                    "Bin '%s' has no regressor. Using fallback '%s'.",
+                    label, fallback_label,
+                )
+                preds = fallback.predict(x_feat[mask])
+                if preds.ndim == 1:
+                    preds = preds.reshape(-1, 1)
+                result[mask] = preds[:, :3] if preds.shape[1] >= 3 else preds
             else:
-                # fallback: 전체 데이터 기반 (가장 큰 bin의 regressor 사용)
-                fallback = next(iter(self._regressors.values()), None)
-                if fallback is not None:
-                    preds = fallback.predict(x_feat[mask])
-                    if preds.ndim == 1:
-                        preds = preds.reshape(-1, 1)
-                    result[mask] = preds[:, :3] if preds.shape[1] >= 3 else preds
+                # 모든 regressor 부재 → 전체 평균 ln_price 사용
+                logger.warning("No regressors available. Using global mean.")
+                result[mask] = 15.0  # ~3.3M원 (전체 평균 근사)
 
         result = _enforce_monotonicity(result)
         return result
