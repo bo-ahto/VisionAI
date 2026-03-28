@@ -12,7 +12,7 @@ class TestHedonicQuantileModelContract:
     """Model-A의 인터페이스 계약 검증 (실제 학습 없이)."""
 
     def test_hedonic_features_count(self) -> None:
-        assert len(HEDONIC_FEATURES) == 39
+        assert len(HEDONIC_FEATURES) == 42
 
     def test_cat_feature_indices(self) -> None:
         from visionai.price_engine.estimate_generator.quantile_model import HEDONIC_CAT_INDICES

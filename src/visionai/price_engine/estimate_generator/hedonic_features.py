@@ -93,6 +93,10 @@ HEDONIC_FEATURES: list[str] = [
     "comp_weighted",
     "comp_match_level",
     "comp_match_count",
+    # Phase 4b: 외부 데이터 (Artsy 글로벌 경매 통계)
+    "global_avg_price",
+    "global_median_price",
+    "global_auction_count",
 ]
 
 CAT_FEATURE_NAMES: list[str] = [
@@ -180,6 +184,28 @@ def _join_artist_stats_and_hedonic(
     out["comp_weighted"] = np.nan
     out["comp_match_level"] = 4.0
     out["comp_match_count"] = 0.0
+    # Phase 4b: 외부 데이터
+    out["global_avg_price"] = np.nan
+    out["global_median_price"] = np.nan
+    out["global_auction_count"] = 0.0
+
+    # 글로벌 통계 로드
+    from visionai.price_engine.features.hedonic_stats import load_global_artist_stats
+
+    global_stats = load_global_artist_stats()
+    if global_stats is not None:
+        for col_src, col_dst in [
+            ("global_avg_price_krw", "global_avg_price"),
+            ("global_median_price_krw", "global_median_price"),
+            ("global_auction_count", "global_auction_count"),
+        ]:
+            if col_src in global_stats.columns:
+                mapped = out["artist_clean"].map(
+                    global_stats[col_src]
+                    if col_src in global_stats.columns
+                    else pd.Series(dtype="float64")
+                )
+                out[col_dst] = mapped.values
 
     for atype in out["타입"].unique():
         type_mask = out["타입"] == atype

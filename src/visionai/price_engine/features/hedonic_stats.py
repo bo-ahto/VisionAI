@@ -336,6 +336,21 @@ def compute_edition_adoption_rate(
     return float(success.sum() / len(target))
 
 
+# ─── Phase 4b: 외부 데이터 피처 ───
+
+
+def load_global_artist_stats(
+    path: str = "data/artsy_global_stats.csv",
+) -> pd.DataFrame | None:
+    """Artsy 글로벌 경매 통계 로드."""
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.exists():
+        return None
+    return pd.read_csv(p, encoding="utf-8-sig", index_col="artist_kr")
+
+
 # ─── Phase 4: 고도화 피처 ───
 
 
