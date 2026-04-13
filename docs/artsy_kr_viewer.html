@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artsy 한국 작가 데이터 뷰어</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  /* Header */
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 20px 32px; position: sticky; top: 0; z-index: 100; }
+  .header h1 { font-size: 20px; margin-bottom: 8px; }
+  .header .stats { display: flex; gap: 24px; flex-wrap: wrap; }
+  .header .stat { font-size: 13px; color: var(--muted); }
+  .header .stat strong { color: var(--accent); font-size: 16px; }
+
+  /* Filters */
+  .filters { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 32px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .filters input, .filters select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; }
+  .filters input { width: 240px; }
+  .filters select { min-width: 120px; }
+  .filters label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+  .filter-group { display: flex; align-items: center; gap: 4px; }
+  .btn { background: var(--accent); color: #000; border: none; border-radius: 6px; padding: 6px 16px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  .btn:hover { opacity: 0.85; }
+  .btn-reset { background: var(--border); color: var(--text); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; background: var(--card); border-bottom: 1px solid var(--border); padding: 0 32px; }
+  .tab { padding: 10px 20px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Grid View */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 24px 32px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+  .card:hover { border-color: var(--accent); }
+  .card img { width: 100%; height: 200px; object-fit: cover; background: #21262d; }
+  .card .info { padding: 12px; }
+  .card .artist { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .card .title-line { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .meta { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  .card .price { color: var(--green); font-weight: 600; font-size: 14px; }
+  .card .dims { font-size: 11px; color: var(--muted); }
+  .card .badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; background: var(--border); color: var(--muted); margin-top: 4px; }
+
+  /* Table View */
+  .table-wrap { padding: 16px 32px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--card); position: sticky; top: 0; padding: 8px 10px; text-align: left; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; cursor: pointer; white-space: nowrap; }
+  th:hover { color: var(--accent); }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+  tr:hover td { background: rgba(88,166,255,0.05); }
+  td img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+
+  /* Detail Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; justify-content: center; align-items: center; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; max-width: 800px; width: 90%; max-height: 85vh; overflow-y: auto; }
+  .modal img { width: 100%; max-height: 400px; object-fit: contain; background: #000; }
+  .modal .detail { padding: 24px; }
+  .modal .detail h2 { font-size: 18px; margin-bottom: 4px; }
+  .modal .detail h3 { font-size: 15px; color: var(--muted); font-style: italic; margin-bottom: 16px; }
+  .modal .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal .detail-item { font-size: 13px; }
+  .modal .detail-item .label { color: var(--muted); font-size: 11px; }
+  .modal .detail-item .value { font-weight: 500; }
+  .modal .close-btn { position: absolute; top: 12px; right: 16px; font-size: 24px; color: var(--muted); cursor: pointer; background: none; border: none; }
+
+  /* Pagination */
+  .pagination { display: flex; justify-content: center; gap: 8px; padding: 24px; align-items: center; }
+  .pagination button { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .pagination button.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .page-info { font-size: 13px; color: var(--muted); }
+
+  /* Summary Cards */
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 16px 32px; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .summary-card .num { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .summary-card .desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .hidden { display: none !important; }
+  .loading { text-align: center; padding: 60px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Artsy 한국 작가 작품 데이터 뷰어</h1>
+  <div class="stats" id="headerStats"></div>
+</div>
+
+<div class="summary" id="summary"></div>
+
+<div class="filters">
+  <div class="filter-group">
+    <label>검색</label>
+    <input type="text" id="searchInput" placeholder="작가명, 작품명, 갤러리...">
+  </div>
+  <div class="filter-group">
+    <label>카테고리</label>
+    <select id="categoryFilter"><option value="">전체</option></select>
+  </div>
+  <div class="filter-group">
+    <label>통화</label>
+    <select id="currencyFilter"><option value="">전체</option></select>
+  </div>
+  <div class="filter-group">
+    <label>가격</label>
+    <select id="priceFilter">
+      <option value="">전체</option>
+      <option value="0-500000">~50만원</option>
+      <option value="500000-2000000">50만~200만</option>
+      <option value="2000000-10000000">200만~1000만</option>
+      <option value="10000000-50000000">1000만~5000만</option>
+      <option value="50000000-">5000만+</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>판매상태</label>
+    <select id="availFilter">
+      <option value="">전체</option>
+      <option value="priced">가격 공개</option>
+      <option value="sold">Sold (판매완료)</option>
+      <option value="request">Price on request</option>
+      <option value="noprice">가격 없음</option>
+    </select>
+  </div>
+  <button class="btn" onclick="applyFilters()">적용</button>
+  <button class="btn btn-reset" onclick="resetFilters()">초기화</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchView('grid')">갤러리 뷰</div>
+  <div class="tab" onclick="switchView('table')">테이블 뷰</div>
+</div>
+
+<div id="gridView" class="grid"></div>
+<div id="tableView" class="table-wrap hidden"></div>
+<div class="pagination" id="pagination"></div>
+
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="position:relative;">
+    <button class="close-btn" onclick="closeModal()">&times;</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div class="loading" id="loading">데이터 로딩 중...</div>
+
+<script>
+let allData = [];
+let filtered = [];
+let currentPage = 1;
+const PAGE_SIZE = 48;
+let currentView = 'grid';
+let sortCol = null;
+let sortAsc = true;
+
+// CSV 파서
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const headers = parseCSVLine(lines[0]);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const vals = parseCSVLine(lines[i]);
+    const obj = {};
+    headers.forEach((h, idx) => obj[h] = vals[idx] || '');
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i+1] === '"') { current += '"'; i++; }
+      else if (ch === '"') inQuotes = false;
+      else current += ch;
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { result.push(current); current = ''; }
+      else current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function formatKRW(val) {
+  const n = parseInt(val);
+  if (!n) return '-';
+  if (n >= 100000000) return (n / 100000000).toFixed(1) + '억';
+  if (n >= 10000) return (n / 10000).toFixed(0) + '만';
+  return n.toLocaleString();
+}
+
+function formatPrice(row) {
+  if (!row.price_raw || row.price_raw === 'Price on request' || row.price_raw === 'Sold') return row.price_raw || '-';
+  return row.price_raw;
+}
+
+// Load data
+async function loadData() {
+  try {
+    let resp = await fetch('artsy_kr_artworks.json');
+    if (!resp.ok) resp = await fetch('../data/artsy_kr_artworks.json');
+    allData = await resp.json();
+  } catch(e) {
+    try {
+      const resp = await fetch('../data/artsy_kr_artworks.json');
+      allData = await resp.json();
+    } catch(e2) {
+      document.getElementById('loading').textContent = 'artsy_kr_artworks.json 파일을 로드할 수 없습니다.';
+      return;
+    }
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  buildFilters();
+  buildSummary();
+  applyFilters();
+}
+
+function buildFilters() {
+  const cats = [...new Set(allData.map(d => d.category).filter(Boolean))].sort();
+  const catSel = document.getElementById('categoryFilter');
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o); });
+
+  const curs = [...new Set(allData.map(d => d.price_currency).filter(Boolean))].sort();
+  const curSel = document.getElementById('currencyFilter');
+  curs.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; curSel.appendChild(o); });
+}
+
+function buildSummary() {
+  const total = allData.length;
+  const priced = allData.filter(d => d.price_krw && parseInt(d.price_krw) > 0).length;
+  const artists = new Set(allData.map(d => d.artist_slug).filter(Boolean)).size;
+  const galleries = new Set(allData.map(d => d.gallery_name).filter(Boolean)).size;
+  const modelReady = allData.filter(d => d.price_krw && parseInt(d.price_krw) > 0 && d.width_cm && d.artist_birth_year).length;
+  const sold = allData.filter(d => (d.price_raw||'').includes('Sold')).length;
+  const requested = allData.filter(d => (d.price_raw||'').toLowerCase().includes('request')).length;
+
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-card"><div class="num">${total.toLocaleString()}</div><div class="desc">총 작품</div></div>
+    <div class="summary-card"><div class="num" style="color:var(--green)">${priced.toLocaleString()}</div><div class="desc">가격 공개 (${(priced*100/total).toFixed(0)}%)</div></div>
+    <div class="summary-card"><div class="num" style="color:var(--orange)">${sold.toLocaleString()}</div><div class="desc">Sold (가격 비공개)</div></div>
+    <div class="summary-card"><div class="num" style="color:var(--muted)">${requested.toLocaleString()}</div><div class="desc">Price on request</div></div>
+    <div class="summary-card"><div class="num">${artists.toLocaleString()}</div><div class="desc">고유 작가</div></div>
+    <div class="summary-card"><div class="num">${galleries.toLocaleString()}</div><div class="desc">갤러리</div></div>
+    <div class="summary-card"><div class="num">${modelReady.toLocaleString()}</div><div class="desc">모델 학습 가능</div></div>
+  `;
+
+  document.getElementById('headerStats').innerHTML = `
+    <span class="stat">작품 <strong>${total.toLocaleString()}</strong></span>
+    <span class="stat">가격공개 <strong style="color:var(--green)">${priced.toLocaleString()}</strong></span>
+    <span class="stat">Sold <strong style="color:var(--orange)">${sold.toLocaleString()}</strong></span>
+    <span class="stat">작가 <strong>${artists.toLocaleString()}</strong></span>
+    <span class="stat">갤러리 <strong>${galleries}</strong></span>
+  `;
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('categoryFilter').value;
+  const cur = document.getElementById('currencyFilter').value;
+  const priceRange = document.getElementById('priceFilter').value;
+  const avail = document.getElementById('availFilter').value;
+
+  filtered = allData.filter(d => {
+    if (search && !(
+      (d.artist_name || '').toLowerCase().includes(search) ||
+      (d.title || '').toLowerCase().includes(search) ||
+      (d.gallery_name || '').toLowerCase().includes(search) ||
+      (d.medium || '').toLowerCase().includes(search)
+    )) return false;
+    if (cat && d.category !== cat) return false;
+    if (cur && d.price_currency !== cur) return false;
+    if (avail === 'priced' && (!d.price_krw || parseInt(d.price_krw) <= 0)) return false;
+    if (avail === 'sold' && !((d.price_raw||'').includes('Sold'))) return false;
+    if (avail === 'request' && !((d.price_raw||'').toLowerCase().includes('request'))) return false;
+    if (avail === 'noprice' && (d.price_raw||'').trim() !== '') return false;
+    if (priceRange) {
+      const [lo, hi] = priceRange.split('-').map(Number);
+      const p = parseInt(d.price_krw) || 0;
+      if (lo && p < lo) return false;
+      if (hi && p >= hi) return false;
+    }
+    return true;
+  });
+
+  if (sortCol) {
+    filtered.sort((a, b) => {
+      let va = a[sortCol] || '', vb = b[sortCol] || '';
+      const na = parseFloat(va), nb = parseFloat(vb);
+      if (!isNaN(na) && !isNaN(nb)) return sortAsc ? na - nb : nb - na;
+      return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+  }
+
+  currentPage = 1;
+  render();
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('categoryFilter').value = '';
+  document.getElementById('currencyFilter').value = '';
+  document.getElementById('priceFilter').value = '';
+  document.getElementById('pricedOnly').checked = false;
+  sortCol = null;
+  applyFilters();
+}
+
+function render() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filtered.slice(start, start + PAGE_SIZE);
+
+  if (currentView === 'grid') renderGrid(page);
+  else renderTable(page);
+  renderPagination();
+}
+
+function renderGrid(page) {
+  const grid = document.getElementById('gridView');
+  grid.innerHTML = page.map((d, i) => `
+    <div class="card" onclick="showDetail(${(currentPage-1)*PAGE_SIZE + i})">
+      <img src="${d.image_url || ''}" alt="${d.title}" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <div class="artist">${d.artist_name || '?'}</div>
+        <div class="title-line">${d.title || 'Untitled'}, ${d.date || ''}</div>
+        <div class="price" style="color:${d.price_krw && parseInt(d.price_krw)>0 ? 'var(--green)' : (d.price_raw||'').includes('Sold') ? 'var(--orange)' : 'var(--muted)'}">${formatPrice(d)}</div>
+        ${d.price_krw && parseInt(d.price_krw) > 0 ? `<div class="dims">₩${formatKRW(d.price_krw)}원</div>` : ''}
+        <div class="meta">
+          <span>${d.dimensions_cm || ''}</span>
+          <span>${d.gallery_name || ''}</span>
+        </div>
+        <span class="badge">${d.category || ''}</span>
+        ${d.attribution_class ? `<span class="badge">${d.attribution_class}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTable(page) {
+  const cols = [
+    {key: 'image_url', label: '', render: v => v ? `<img src="${v}" loading="lazy">` : ''},
+    {key: 'artist_name', label: '작가'},
+    {key: 'title', label: '작품명'},
+    {key: 'date', label: '연도'},
+    {key: 'medium', label: '매체'},
+    {key: 'category', label: '카테고리'},
+    {key: 'dimensions_cm', label: '크기(cm)'},
+    {key: 'price_raw', label: '가격'},
+    {key: 'price_krw', label: 'KRW', render: v => formatKRW(v)},
+    {key: 'attribution_class', label: '유형'},
+    {key: 'gallery_name', label: '갤러리'},
+    {key: 'artist_birth_year', label: '생년'},
+    {key: 'artist_followers', label: '팔로워'},
+  ];
+
+  const table = document.getElementById('tableView');
+  table.innerHTML = `
+    <table>
+      <thead><tr>${cols.map(c =>
+        `<th onclick="sortBy('${c.key}')">${c.label} ${sortCol===c.key ? (sortAsc?'▲':'▼') : ''}</th>`
+      ).join('')}</tr></thead>
+      <tbody>${page.map((d, i) => `
+        <tr onclick="showDetail(${(currentPage-1)*PAGE_SIZE + i})" style="cursor:pointer">
+          ${cols.map(c => `<td>${c.render ? c.render(d[c.key]) : (d[c.key] || '')}</td>`).join('')}
+        </tr>
+      `).join('')}</tbody>
+    </table>
+  `;
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pag = document.getElementById('pagination');
+
+  let html = `<button onclick="goPage(1)" ${currentPage===1?'disabled':''}>&#171;</button>`;
+  html += `<button onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>&#8249;</button>`;
+
+  const start = Math.max(1, currentPage - 3);
+  const end = Math.min(totalPages, currentPage + 3);
+  for (let p = start; p <= end; p++) {
+    html += `<button class="${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  }
+
+  html += `<button onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>&#8250;</button>`;
+  html += `<button onclick="goPage(${totalPages})" ${currentPage===totalPages?'disabled':''}>&#187;</button>`;
+  html += `<span class="page-info">${filtered.length.toLocaleString()}건 중 ${((currentPage-1)*PAGE_SIZE+1).toLocaleString()}-${Math.min(currentPage*PAGE_SIZE, filtered.length).toLocaleString()}</span>`;
+
+  pag.innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  currentPage = Math.max(1, Math.min(p, totalPages));
+  render();
+  window.scrollTo(0, 300);
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+  applyFilters();
+}
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('gridView').classList.toggle('hidden', view !== 'grid');
+  document.getElementById('tableView').classList.toggle('hidden', view !== 'table');
+  render();
+}
+
+function showDetail(idx) {
+  const d = filtered[idx];
+  if (!d) return;
+
+  const fields = [
+    ['작가', d.artist_name],
+    ['국적/생년', `${d.artist_nationality || ''} ${d.artist_birth_year ? 'b.'+d.artist_birth_year : ''}`],
+    ['작품명', d.title],
+    ['제작연도', d.date],
+    ['매체', d.medium],
+    ['카테고리', d.category],
+    ['크기 (cm)', d.dimensions_cm],
+    ['크기 (in)', d.dimensions_in],
+    ['가격', d.price_raw],
+    ['KRW 환산', d.price_krw ? '₩' + parseInt(d.price_krw).toLocaleString() : '-'],
+    ['유형', d.attribution_class],
+    ['판매상태', d.availability],
+    ['갤러리', d.gallery_name],
+    ['갤러리 유형', d.gallery_type],
+    ['갤러리 도시', d.gallery_cities],
+    ['작가 작품수', d.artist_total_works],
+    ['판매중', d.artist_for_sale],
+    ['팔로워', d.artist_followers],
+    ['P1', d.artist_is_p1 === 'True' ? 'Yes' : 'No'],
+    ['시리즈', d.series],
+    ['Artsy', `<a href="${d.artwork_url}" target="_blank" style="color:var(--accent)">작품 페이지 열기</a>`],
+  ];
+
+  document.getElementById('modalContent').innerHTML = `
+    ${d.image_url ? `<img src="${d.image_url}" alt="${d.title}">` : ''}
+    <div class="detail">
+      <h2>${d.artist_name || '?'}</h2>
+      <h3>${d.title || 'Untitled'}, ${d.date || ''}</h3>
+      <div class="detail-grid">
+        ${fields.filter(f => f[1]).map(f => `
+          <div class="detail-item">
+            <div class="label">${f[0]}</div>
+            <div class="value">${f[1]}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') applyFilters(); });
+
+loadData();
+</script>
+</body>
+</html>
