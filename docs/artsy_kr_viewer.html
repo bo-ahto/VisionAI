@@ -109,8 +109,10 @@
 
   .hidden { display: none !important; }
   .loading { text-align: center; padding: 60px; color: var(--muted); }
-  .artist-link-inline { color: var(--accent); cursor: pointer; }
+  .artist-link-inline { color: var(--accent) !important; cursor: pointer; }
   .artist-link-inline:hover { text-decoration: underline; }
+  h2 .artist-link-inline { color: var(--accent) !important; font-size: inherit; }
+  .detail-item .artist-link-inline { color: var(--accent) !important; }
 </style>
 </head>
 <body>
@@ -392,8 +394,11 @@ function showDetail(idx) {
   if (!d) return;
   const hasProfile = artistProfiles[d.artist_slug];
   const artistLink = hasProfile
-    ? `<span class="artist-link-inline" onclick="closeModal();showArtist('${d.artist_slug}')">${d.artist_name} \u2192 CV \ubcf4\uae30</span>`
+    ? `<span class="artist-link-inline" onclick="closeModal();showArtist('${d.artist_slug}')">${d.artist_name}</span>`
     : d.artist_name;
+  const cvBtn = hasProfile
+    ? `<span class="artist-link-inline" style="background:rgba(88,166,255,0.1);padding:4px 10px;border-radius:4px;font-size:13px" onclick="closeModal();showArtist('${d.artist_slug}')">작가 프로필 / CV 보기 \u2192</span>`
+    : '';
 
   const fields = [
     ['작가', artistLink],
@@ -412,6 +417,7 @@ function showDetail(idx) {
     <div class="detail">
       <h2>${artistLink}</h2>
       <h3>${d.title||'Untitled'}, ${d.date||''}</h3>
+      ${cvBtn ? `<div style="margin-bottom:16px">${cvBtn}</div>` : ''}
       <div class="detail-grid">
         ${fields.filter(f=>f[1]).map(f=>`<div class="detail-item"><div class="label">${f[0]}</div><div class="value">${f[1]}</div></div>`).join('')}
       </div>
