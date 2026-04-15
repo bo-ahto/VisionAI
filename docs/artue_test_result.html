@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artue 1차 시장 가격 예측 테스트 결과</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --purple: #bc8cff;
+    --red: #f85149;
+    --max-w: 960px;
+    --radius: 8px;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 72px;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Sticky Nav */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13, 17, 23, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+  }
+
+  nav .nav-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    height: 52px;
+  }
+
+  nav .nav-inner::-webkit-scrollbar { display: none; }
+
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  nav a:hover, nav a:focus-visible {
+    color: var(--text);
+    background: rgba(88, 166, 255, 0.1);
+  }
+
+  nav a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Main content */
+  main {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* Header */
+  .report-header {
+    margin-bottom: 48px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .meta-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    font-size: 14px;
+    line-height: 2;
+    color: var(--text-muted);
+  }
+
+  .meta-block strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* Sections */
+  section {
+    margin-bottom: 48px;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 28px 0 14px;
+  }
+
+  p {
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* Tables */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  thead {
+    background: rgba(88, 166, 255, 0.06);
+  }
+
+  th {
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    text-transform: none;
+  }
+
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: rgba(88, 166, 255, 0.04);
+  }
+
+  /* Center-aligned columns for numeric data */
+  .tc { text-align: center; }
+  .tr { text-align: right; }
+
+  /* Row highlights */
+  .row-green {
+    background: rgba(63, 185, 80, 0.08) !important;
+  }
+  .row-green td {
+    color: var(--green);
+    font-weight: 600;
+  }
+  .row-green td:first-child { color: var(--green); }
+
+  .row-orange {
+    background: rgba(210, 153, 34, 0.08) !important;
+  }
+  .row-orange td {
+    color: var(--orange);
+  }
+
+  .row-accent {
+    background: rgba(88, 166, 255, 0.08) !important;
+  }
+  .row-accent td {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .row-purple {
+    background: rgba(188, 140, 255, 0.08) !important;
+  }
+  .row-purple td {
+    color: var(--purple);
+    font-weight: 600;
+  }
+
+  /* Column highlights for 3.2 */
+  .col-highlight-green {
+    color: var(--green) !important;
+    font-weight: 600;
+  }
+
+  .val-green {
+    color: var(--green) !important;
+    font-weight: 600;
+  }
+
+  /* Code blocks */
+  pre {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 16px 0 24px;
+  }
+
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+  }
+
+  /* Glossary cards */
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .glossary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+
+  .glossary-card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .glossary-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 0;
+    line-height: 1.65;
+  }
+
+  /* Bold styling */
+  strong {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* Lists */
+  ul {
+    padding-left: 20px;
+    margin-bottom: 14px;
+  }
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    body { font-size: 14px; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+    h3 { font-size: 15px; }
+
+    main { padding: 24px 14px 60px; }
+
+    nav a { font-size: 12px; padding: 5px 8px; }
+
+    .glossary-grid {
+      grid-template-columns: 1fr;
+    }
+
+    table { font-size: 12px; }
+    th, td { padding: 7px 10px; }
+
+    .meta-block { padding: 12px 14px; font-size: 13px; }
+  }
+
+  /* Print */
+  @media print {
+    body {
+      background: #fff;
+      color: #1a1a1a;
+      font-size: 11pt;
+    }
+
+    nav { display: none; }
+
+    main { max-width: 100%; padding: 0; }
+
+    .meta-block, .glossary-card, pre {
+      background: #f6f8fa;
+      border-color: #d0d7de;
+      color: #1a1a1a;
+    }
+
+    h1, h2, h3, strong, th {
+      color: #1a1a1a;
+    }
+
+    h3 { color: #0969da; }
+    .glossary-card h4 { color: #0969da; }
+
+    td, p, li, .meta-block, .meta-block strong {
+      color: #1a1a1a;
+    }
+
+    table { border: 1px solid #d0d7de; }
+    th { background: #f6f8fa; border-color: #d0d7de; }
+    td { border-color: #d0d7de; }
+
+    .row-green td { color: #1a7f37; }
+    .row-orange td { color: #9a6700; }
+    .row-accent td { color: #0969da; }
+    .row-purple td { color: #8250df; }
+    .col-highlight-green, .val-green { color: #1a7f37 !important; }
+
+    .glossary-grid { grid-template-columns: 1fr 1fr; }
+
+    section { page-break-inside: avoid; }
+    table { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<nav aria-label="Section navigation">
+  <div class="nav-inner">
+    <a href="#sec1">1. 개요</a>
+    <a href="#sec2">2. 분기 구조</a>
+    <a href="#sec3">3. 예측 결과</a>
+    <a href="#sec4">4. 분석</a>
+    <a href="#sec5">5. 다음 단계</a>
+    <a href="#sec6">6. 용어 설명</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- Header -->
+<div class="report-header">
+  <h1>Artue 1차 시장 가격 예측 테스트 결과</h1>
+  <div class="meta-block">
+    <strong>테스트일</strong>: 2026-04-13<br>
+    <strong>테스트 데이터</strong>: Artue 2,783건 / 362명 작가<br>
+    <strong>학습 데이터</strong>: Artsy 9,975건 / 930명 작가 (5개 카테고리)<br>
+    <strong>모델</strong>: XGBoost (기존 작가) + CatBoost v2 (Cold Start, 전시 피처 제외) 분기
+  </div>
+</div>
+
+<!-- Section 1 -->
+<section id="sec1">
+  <h2>1. 테스트 개요</h2>
+  <p>Artsy 데이터로 학습한 모델을 <strong>Artue 갤러리의 실제 판매 데이터</strong>에 적용하여 예측 정확도를 검증했다. Artue는 주로 신진 작가 중심의 온라인 갤러리로, Artsy와 가격대 및 작가 풀이 다르다.</p>
+
+  <h3>데이터 현황</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>항목</th><th>값</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>총 작품</td><td>2,783건</td></tr>
+        <tr><td>총 작가</td><td>362명</td></tr>
+        <tr><td>Artsy 가격 매칭 작가</td><td>46명 (579건, 20%)</td></tr>
+        <tr><td>Cold Start 작가</td><td>321명 (2,204건, 80%)</td></tr>
+        <tr><td>Birth Year 보유</td><td>73% (Artsy + Artue 프로필 합산)</td></tr>
+        <tr><td>실제 가격 중앙값</td><td>279만원</td></tr>
+        <tr><td>실제 가격 범위</td><td>2,000원 ~ 4.4억원</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Section 2 -->
+<section id="sec2">
+  <h2>2. 모델 분기 구조</h2>
+<pre>작가가 Artsy에 가격 데이터가 있음?
+  ├─ Yes (579건, 46명) → XGBoost -- 유사 작가 가격 기반 (전시 피처 포함)
+  └─ No  (2,204건, 321명) → CatBoost v2 -- 크기+매체+생년 기반 (전시 피처 제외)</pre>
+  <p>Cold Start 모델에서 전시 피처(solo_count, group_count, fair_count, request_ratio)를 제거했다. Cold Start 작가는 전시 데이터가 대부분 0이라 노이즈로 작용하여, 제거 시 정확도가 향상된다.</p>
+</section>
+
+<!-- Section 3 -->
+<section id="sec3">
+  <h2>3. 예측 결과</h2>
+
+  <h3>3.1 모델별 정확도</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>구분</th><th class="tc">건수</th><th class="tc">MdAPE</th><th class="tc">W30</th><th class="tc">W50</th><th class="tc">예측/실제 비율</th></tr>
+      </thead>
+      <tbody>
+        <tr class="row-green">
+          <td><strong>XGBoost 작가</strong></td><td class="tc">579</td><td class="tc">22.4%</td><td class="tc">60.4%</td><td class="tc">73.2%</td><td class="tc">1.05x</td>
+        </tr>
+        <tr>
+          <td>CatBoost v2 (BY 있음)</td><td class="tc">1,477</td><td class="tc">44.1%</td><td class="tc">36.9%</td><td class="tc">54.4%</td><td class="tc">1.13x</td>
+        </tr>
+        <tr class="row-orange">
+          <td>CatBoost v2 (BY 없음)</td><td class="tc">727</td><td class="tc">55.9%</td><td class="tc">23.7%</td><td class="tc">44.4%</td><td class="tc">1.19x</td>
+        </tr>
+        <tr class="row-accent">
+          <td><strong>전체 (분기)</strong></td><td class="tc">2,783</td><td class="tc">41.6%</td><td class="tc">38.3%</td><td class="tc">55.7%</td><td class="tc">1.12x</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.2 Cold Start 개선 효과 (전시 피처 제거)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>구분</th><th class="tc">이전 (전시 포함)</th><th class="tc">현재 (전시 제외)</th><th class="tc">개선</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cold Start 전체 MdAPE</td><td class="tc">48.6%</td><td class="tc col-highlight-green">48.1%</td><td class="tc val-green">-0.5%p</td>
+        </tr>
+        <tr>
+          <td>Cold Start BY있음 MdAPE</td><td class="tc">48.7%</td><td class="tc col-highlight-green">44.1%</td><td class="tc val-green">-4.6%p</td>
+        </tr>
+        <tr>
+          <td>전체 MdAPE</td><td class="tc">45.4%</td><td class="tc col-highlight-green">41.6%</td><td class="tc val-green">-3.8%p</td>
+        </tr>
+        <tr>
+          <td>전체 W30</td><td class="tc">35.2%</td><td class="tc col-highlight-green">38.3%</td><td class="tc val-green">+3.1%p</td>
+        </tr>
+        <tr>
+          <td>전체 비율</td><td class="tc">1.20x</td><td class="tc col-highlight-green">1.12x</td><td class="tc val-green">더 정확</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.3 정보 수준별 정확도</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>보유 정보</th><th class="tc">MdAPE</th><th class="tc">비율</th><th>의미</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>크기+매체만</td><td class="tc">55.9%</td><td class="tc">1.19x</td><td>최소 입력</td></tr>
+        <tr><td>+Birth Year</td><td class="tc"><strong>44.1%</strong></td><td class="tc">1.13x</td><td>생년 하나로 11.8%p 개선</td></tr>
+        <tr><td>+Artsy 프로필 (팔로워/가격 이력)</td><td class="tc"><strong>22.4%</strong></td><td class="tc">1.05x</td><td>거의 정확</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.4 가격대별 정확도</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>가격대</th><th class="tc">MdAPE</th><th class="tc">예측/실제 비율</th><th class="tc">W30</th><th class="tc">건수</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>~50만</td><td class="tc">119.5%</td><td class="tc">2.19x</td><td class="tc">16%</td><td class="tc">223</td></tr>
+        <tr><td>50~100만</td><td class="tc">66.7%</td><td class="tc">1.67x</td><td class="tc">27%</td><td class="tc">425</td></tr>
+        <tr class="row-green"><td><strong>100~300만</strong></td><td class="tc"><strong>30.6%</strong></td><td class="tc"><strong>1.15x</strong></td><td class="tc"><strong>49%</strong></td><td class="tc">836</td></tr>
+        <tr><td>300~500만</td><td class="tc">47.5%</td><td class="tc">1.27x</td><td class="tc">34%</td><td class="tc">420</td></tr>
+        <tr class="row-green"><td><strong>500만~1천만</strong></td><td class="tc"><strong>43.7%</strong></td><td class="tc"><strong>1.02x</strong></td><td class="tc"><strong>36%</strong></td><td class="tc">449</td></tr>
+        <tr><td>1천만+</td><td class="tc">47.7%</td><td class="tc">0.63x</td><td class="tc">27%</td><td class="tc">430</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.5 XGBoost 작가 (Artsy 매칭) 상세</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>작가</th><th class="tc">MdAPE</th><th class="tc">비율</th><th class="tr">실제 중앙</th><th class="tr">예측 중앙</th><th class="tc">건수</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Choongmok YOO</td><td class="tc">1.0%</td><td class="tc">1.01x</td><td class="tr">250만</td><td class="tr">253만</td><td class="tc">16</td></tr>
+        <tr><td>Jungkee Son</td><td class="tc">2.8%</td><td class="tc">1.02x</td><td class="tr">741만</td><td class="tr">683만</td><td class="tc">9</td></tr>
+        <tr><td>Seungwon Yang</td><td class="tc">3.8%</td><td class="tc">0.96x</td><td class="tr">200만</td><td class="tr">192만</td><td class="tc">10</td></tr>
+        <tr><td>Dain Lim</td><td class="tc">5.1%</td><td class="tc">1.05x</td><td class="tr">310만</td><td class="tr">388만</td><td class="tc">18</td></tr>
+        <tr><td>Hyunmo Yang</td><td class="tc">5.3%</td><td class="tc">1.05x</td><td class="tr">200만</td><td class="tr">211만</td><td class="tc">38</td></tr>
+        <tr><td>Jaeyeon Leem</td><td class="tc">5.5%</td><td class="tc">1.05x</td><td class="tr">140만</td><td class="tr">156만</td><td class="tc">6</td></tr>
+        <tr><td>Hyuckjin Oh</td><td class="tc">7.8%</td><td class="tc">1.03x</td><td class="tr">289만</td><td class="tr">318만</td><td class="tc">26</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Artsy에 가격 이력이 있는 작가는 <strong>MdAPE 1~8%</strong> 수준의 정밀 예측이 가능.</p>
+</section>
+
+<!-- Section 4 -->
+<section id="sec4">
+  <h2>4. 분석</h2>
+
+  <h3>4.1 정확한 구간</h3>
+  <ul>
+    <li><strong>Artsy 매칭 작가</strong>: 비율 1.05x, MdAPE 22.4% -- 실서비스 수준</li>
+    <li><strong>100~300만원 구간</strong>: 모델 학습 데이터(Artsy 중앙값 414만원)와 가장 겹치는 구간</li>
+    <li><strong>500만~1천만원</strong>: 비율 1.02x -- 거의 완벽한 추정</li>
+  </ul>
+
+  <h3>4.2 부정확한 구간과 원인</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>구간</th><th>문제</th><th>원인</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>~100만원 (648건)</td><td>2~4배 과대 예측</td><td>Artsy 학습 데이터에 저가 작품 부족</td></tr>
+        <tr><td>1천만원+ (430건)</td><td>0.63x 과소 예측</td><td>블루칩 작가 데이터 부족</td></tr>
+        <tr><td>Cold Start BY 없음 (727건)</td><td>1.19x 과대</td><td>작가 정보 없이 크기만으로 예측</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>4.3 전시 피처 제거가 효과적인 이유</h3>
+  <p>Cold Start 작가는 Artsy에 전시 데이터가 없어 solo_count=0, group_count=0, fair_count=0이 입력된다. 모델이 이 "0"을 "전시 이력이 전혀 없는 신진 작가"로 해석하여 가격을 과소 추정하거나, 노이즈로 작용한다. 전시 피처를 제거하면 모델이 크기, 생년, 팔로워 등 실제 유효한 정보에 집중하여 정확도가 올라간다.</p>
+  <p>학습 데이터(Artsy) 기준 Cold Start 시뮬레이션에서도 동일한 패턴:</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>추가 정보</th><th class="tc">MdAPE</th><th class="tc">개선 효과</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>크기만</td><td class="tc">48.1%</td><td class="tc">--</td></tr>
+        <tr><td>+매체</td><td class="tc">47.8%</td><td class="tc">+0.3%p</td></tr>
+        <tr class="row-purple"><td><strong>+Birth Year</strong></td><td class="tc"><strong>31.8%</strong></td><td class="tc"><strong>+16.0%p</strong></td></tr>
+        <tr class="row-orange"><td>+전시 횟수</td><td class="tc">33.1%</td><td class="tc">-1.3%p (악화)</td></tr>
+        <tr><td>+갤러리</td><td class="tc">31.3%</td><td class="tc">+1.8%p</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Birth Year가 MdAPE를 16%p 낮추는 반면, 전시 횟수는 오히려 1.3%p 악화시킨다.</p>
+
+  <h3>4.4 Birth Year의 영향</h3>
+  <p>미술 시장에서 <strong>작가의 나이/세대가 가격 수준의 가장 큰 결정 요인</strong>이다. 1960년대생과 1990년대생의 가격대가 근본적으로 다르다. 크기만으로는 "큰 그림 = 비싼 그림"만 학습하지만, 생년을 알면 "이 세대의 이 크기 = 이 가격대"로 좁혀진다.</p>
+</section>
+
+<!-- Section 5 -->
+<section id="sec5">
+  <h2>5. 다음 단계</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>과제</th><th>기대 효과</th><th class="tc">우선순위</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Artue 가격 데이터 학습 포함</td><td>저가 구간 과대 예측 해소</td><td class="tc">1</td></tr>
+        <tr><td>Birth Year 미보유 163명 보완</td><td>Cold Start 44.1% → 더 개선</td><td class="tc">1</td></tr>
+        <tr><td>Artue 작가 Artsy 프로필 매칭 확대</td><td>XGBoost 적용 범위 20% → 확대</td><td class="tc">2</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Section 6 -->
+<section id="sec6">
+  <h2>6. 용어 설명</h2>
+  <div class="glossary-grid">
+    <div class="glossary-card">
+      <h4>MdAPE (Median Absolute Percentage Error)</h4>
+      <p>예측 오차의 중앙값. MdAPE 22.4%는 전체 작품 중 절반이 이 오차보다 정확하다는 의미.</p>
+    </div>
+    <div class="glossary-card">
+      <h4>W30</h4>
+      <p>예측 오차가 30% 이내인 작품의 비율. W30=60.4%이면 10건 중 6건이 실제 가격 대비 30% 이내.</p>
+    </div>
+    <div class="glossary-card">
+      <h4>예측/실제 비율</h4>
+      <p>1.0x = 정확, 1.5x = 50% 과대 예측, 0.5x = 50% 과소 예측.</p>
+    </div>
+    <div class="glossary-card">
+      <h4>Cold Start</h4>
+      <p>학습 시 본 적 없는 작가의 가격을 예측하는 상황. 작가 개인 가격 이력이 없으므로 프로필(생년, 크기, 매체)만으로 예측.</p>
+    </div>
+    <div class="glossary-card" style="grid-column: 1 / -1;">
+      <h4>XGBoost / CatBoost</h4>
+      <p>Gradient Boosted Tree 계열 머신러닝 모델. XGBoost는 기존 작가 예측에서, CatBoost는 Cold Start에서 더 정확. Cold Start용 CatBoost v2는 전시 피처를 제거한 최적화 버전.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+</body>
+</html>

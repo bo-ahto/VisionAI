@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한국 작가 1차 시장(갤러리) 가격 예측 실험계획서</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --purple: #bc8cff;
+    --code-bg: #1a1f29;
+    --row-even: #1c2128;
+  }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- Sticky Nav --- */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13, 17, 23, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+  }
+  nav .nav-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 10px 0;
+  }
+  nav .nav-inner::-webkit-scrollbar { display: none; }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: color .15s, background .15s;
+  }
+  nav a:hover, nav a:focus { color: var(--accent); background: rgba(88,166,255,.08); }
+
+  /* --- Main --- */
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* --- Header --- */
+  .doc-header {
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+  .doc-header .meta {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 16px 20px;
+    font-size: 14px;
+    line-height: 1.9;
+    color: var(--text-muted);
+  }
+  .doc-header .meta strong { color: var(--text); }
+
+  /* --- Sections --- */
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 24px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--purple);
+    margin: 28px 0 14px;
+  }
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--orange);
+    margin: 20px 0 10px;
+  }
+
+  p { margin-bottom: 14px; }
+  strong { color: var(--text); }
+
+  /* --- Tables --- */
+  .table-wrap { overflow-x: auto; margin: 16px 0 24px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  thead th {
+    background: var(--card);
+    color: var(--accent);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--row-even); }
+  tbody tr:hover { background: rgba(88,166,255,.04); }
+  td code, th code {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+
+  /* --- Code Blocks --- */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.6;
+    margin: 16px 0 24px;
+  }
+  pre code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
+    color: var(--text);
+    background: none;
+    padding: 0;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--orange);
+  }
+
+  /* --- Lists --- */
+  ul, ol {
+    margin: 10px 0 18px 24px;
+  }
+  li { margin-bottom: 6px; }
+
+  /* --- Blockquote --- */
+  blockquote {
+    border-left: 3px solid var(--accent);
+    background: var(--card);
+    padding: 12px 20px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+    color: var(--text-muted);
+  }
+
+  /* --- HR --- */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* --- Scenario tags --- */
+  .scenario-a { color: var(--green); font-weight: 600; }
+  .scenario-b { color: var(--orange); font-weight: 600; }
+  .scenario-c { color: var(--purple); font-weight: 600; }
+
+  /* --- Responsive --- */
+  @media (max-width: 640px) {
+    body { font-size: 15px; }
+    main { padding: 24px 16px 60px; }
+    .doc-header h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.05rem; }
+    table { font-size: 13px; }
+    thead th, tbody td { padding: 7px 10px; }
+    pre { padding: 14px 14px; font-size: 12.5px; }
+    nav a { font-size: 12px; padding: 5px 8px; }
+  }
+
+  /* --- Print --- */
+  @media print {
+    nav { display: none !important; }
+    body { background: #fff; color: #1a1a1a; font-size: 11pt; }
+    main { max-width: 100%; padding: 0; }
+    .doc-header .meta { border-color: #ccc; background: #f9f9f9; color: #333; }
+    .doc-header .meta strong { color: #000; }
+    h2 { color: #0550ae; border-color: #ccc; }
+    h3 { color: #6e40c9; }
+    h4 { color: #9a6700; }
+    pre { background: #f6f8fa; border-color: #d0d7de; }
+    pre code, code { color: #1a1a1a; }
+    table { border-color: #d0d7de; }
+    thead th { background: #f6f8fa; color: #0550ae; border-color: #d0d7de; }
+    tbody td { border-color: #d0d7de; }
+    tbody tr:nth-child(even) { background: #f6f8fa; }
+    a { color: #0550ae; text-decoration: none; }
+    blockquote { background: #f6f8fa; border-color: #0550ae; color: #333; }
+    .scenario-a { color: #1a7f37; }
+    .scenario-b { color: #9a6700; }
+    .scenario-c { color: #6e40c9; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#sec1">1. 데이터 현황</a>
+    <a href="#sec2">2. 피처 설계</a>
+    <a href="#sec3">3. 호당 가격제 검증</a>
+    <a href="#sec4">4. 모델 아키텍처</a>
+    <a href="#sec5">5. 데이터 전처리</a>
+    <a href="#sec6">6. 평가 지표</a>
+    <a href="#sec7">7. 실험 로드맵</a>
+    <a href="#sec8">8. 데이터 갱신 전략</a>
+    <a href="#sec9">9. 리스크</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ HEADER ============ -->
+<div class="doc-header">
+  <h1>한국 작가 1차 시장(갤러리) 가격 예측 실험계획서</h1>
+  <div class="meta">
+    <strong>작성일</strong>: 2026-04-13<br>
+    <strong>범위</strong>: 한국 작가 한정, 갤러리 판매 가격 예측<br>
+    <strong>데이터</strong>: Artsy 수집 30,046건 / 가격 공개 11,118건 / 1,029명 작가
+  </div>
+</div>
+
+<!-- ============ SECTION 1 ============ -->
+<section id="sec1">
+<h2>1. 데이터 현황</h2>
+
+<h3>1.1 수집 결과 요약</h3>
+<p>Artsy GraphQL API를 통해 한국 작가(South Korean, Korean) 작품 데이터를 수집했다. 가격은 갤러리가 Artsy에 등록한 <strong>1차 시장 판매가</strong>이다.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>항목</th><th>값</th></tr></thead>
+<tbody>
+  <tr><td>총 작품</td><td>30,046건</td></tr>
+  <tr><td>가격 공개</td><td>11,118건 (37%)</td></tr>
+  <tr><td>가격 비공개 (Price on request)</td><td>8,247건 (27%)</td></tr>
+  <tr><td>판매 완료 (Sold)</td><td>7,421건 (25%)</td></tr>
+  <tr><td>가격 공개 작가</td><td>1,029명</td></tr>
+  <tr><td>작가 프로필 (전시 이력)</td><td>1,462명</td></tr>
+  <tr><td>갤러리</td><td>194개</td></tr>
+  <tr><td>가격 중앙값 (KRW 환산)</td><td>414만원</td></tr>
+  <tr><td>가격 범위</td><td>~1만원 ~ 552억원</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>1.2 수집 피처</h3>
+
+<h4>작품 피처</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>피처</th><th>수집률</th><th>원본 형태</th><th>예시</th></tr></thead>
+<tbody>
+  <tr><td>width_cm, height_cm</td><td>99%</td><td><code>"90.9 &times; 60.6 cm"</code></td><td>90.9, 60.6</td></tr>
+  <tr><td>depth_cm (3D)</td><td>28%</td><td><code>"27.3 &times; 22 &times; 3 cm"</code></td><td>3.0</td></tr>
+  <tr><td>medium</td><td>100%</td><td>영문 상세</td><td>"Oil on canvas"</td></tr>
+  <tr><td>category</td><td>100%</td><td>영문 대분류</td><td>"Painting", "Sculpture"</td></tr>
+  <tr><td>attribution_class</td><td>100%</td><td>유니크/에디션</td><td>"Unique", "Limited edition"</td></tr>
+  <tr><td>date (제작연도)</td><td>100%</td><td>문자열</td><td>"2025"</td></tr>
+  <tr><td>price (갤러리가)</td><td>37%</td><td>다중 통화</td><td>"US$3,900", "KRW &#x20A9;18,000,000"</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>작가 피처</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>피처</th><th>수집률</th><th>소스</th><th>비고</th></tr></thead>
+<tbody>
+  <tr><td>nationality</td><td>100%</td><td>Artsy API</td><td>"South Korean", "Korean"</td></tr>
+  <tr><td>birth_year</td><td>81%</td><td>Artsy API</td><td>birthday 필드 파싱</td></tr>
+  <tr><td>followers</td><td>85%</td><td>Artsy API</td><td>시장 관심도 대리변수</td></tr>
+  <tr><td>total_works</td><td>99%</td><td>Artsy API</td><td>등록 작품 수</td></tr>
+  <tr><td>for_sale_works</td><td>100%</td><td>Artsy API</td><td>현재 판매중</td></tr>
+  <tr><td>is_p1</td><td>2% (44명)</td><td>Artsy API</td><td>Artsy Target Supply (주목 작가)</td></tr>
+  <tr><td>solo_count</td><td>664명</td><td>Artsy API (showsConnection)</td><td>개인전 횟수</td></tr>
+  <tr><td>group_count</td><td>859명</td><td>Artsy API (showsConnection)</td><td>그룹전 횟수</td></tr>
+  <tr><td>fair_count</td><td>833명</td><td>Artsy API (showsConnection)</td><td>아트페어 참여</td></tr>
+  <tr><td>bio</td><td>679명</td><td>Artsy API (showsConnection)</td><td>영문 약력</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>갤러리 피처</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>피처</th><th>수집률</th><th>예시</th></tr></thead>
+<tbody>
+  <tr><td>gallery_name</td><td>100%</td><td>"Pontone Gallery", "Gallery Planet"</td></tr>
+  <tr><td>gallery_type</td><td>100%</td><td>"Gallery", "Institution"</td></tr>
+  <tr><td>gallery_cities</td><td>98%</td><td>"Seoul", "London, New York, Seoul"</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>1.3 통화 분포</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>통화</th><th>건수</th><th>비율</th><th>환산 기준</th></tr></thead>
+<tbody>
+  <tr><td>USD</td><td>9,691</td><td>87.2%</td><td>&times;1,380</td></tr>
+  <tr><td>KRW</td><td>1,221</td><td>11.0%</td><td>&times;1</td></tr>
+  <tr><td>EUR</td><td>103</td><td>0.9%</td><td>&times;1,530</td></tr>
+  <tr><td>GBP</td><td>102</td><td>0.9%</td><td>&times;1,780</td></tr>
+  <tr><td>HKD</td><td>1</td><td>0.0%</td><td>&times;178</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>KRW 표기 작품</strong>: Gallery Planet, Kimreeaa Gallery 등 <strong>국내 갤러리</strong> 작품. 호당 가격제 검증에 핵심 서브셋.</p>
+
+<h3>1.4 카테고리 분포</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>카테고리</th><th>전체</th><th>가격 공개</th><th>비율</th></tr></thead>
+<tbody>
+  <tr><td>Painting</td><td>20,616</td><td>7,725</td><td>69%</td></tr>
+  <tr><td>Sculpture</td><td>2,514</td><td>763</td><td>7%</td></tr>
+  <tr><td>Mixed Media</td><td>2,452</td><td>1,132</td><td>10%</td></tr>
+  <tr><td>Drawing/Paper</td><td>2,041</td><td>519</td><td>5%</td></tr>
+  <tr><td>Photography</td><td>950</td><td>416</td><td>4%</td></tr>
+  <tr><td>Print</td><td>910</td><td>417</td><td>4%</td></tr>
+  <tr><td>기타 (Installation, Video 등)</td><td>563</td><td>146</td><td>1%</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>1.5 지지체 분류 (가격 공개 작품)</h3>
+<p>medium 필드에서 파싱한 지지체 분류:</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>지지체</th><th>건수</th><th>비율</th><th>가격 보정 계수</th></tr></thead>
+<tbody>
+  <tr><td>Canvas</td><td>5,440</td><td>49%</td><td>1.0 (기준)</td></tr>
+  <tr><td>Paper/Korean paper</td><td>1,916</td><td>17%</td><td>0.3~0.5</td></tr>
+  <tr><td>Panel/Wood</td><td>606</td><td>5%</td><td>0.7</td></tr>
+  <tr><td>Linen</td><td>422</td><td>4%</td><td>1.0 (canvas 동급)</td></tr>
+  <tr><td>Silk</td><td>380</td><td>3%</td><td>별도</td></tr>
+  <tr><td>Other</td><td>2,354</td><td>21%</td><td>개별 판단</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>1.6 유니크/에디션 분류</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>분류</th><th>건수</th><th>비율</th></tr></thead>
+<tbody>
+  <tr><td>Unique</td><td>10,172</td><td>91.5%</td></tr>
+  <tr><td>Limited edition</td><td>890</td><td>8.0%</td></tr>
+  <tr><td>Unknown/Open edition</td><td>56</td><td>0.5%</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ SECTION 2 ============ -->
+<section id="sec2">
+<h2>2. 피처 설계</h2>
+
+<h3>2.1 수집 데이터에서 파생하는 피처</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>피처</th><th>Artsy 원본 필드</th><th>변환 방법</th></tr></thead>
+<tbody>
+  <tr><td>ho (호수)</td><td>width_cm &times; height_cm</td><td>area &rarr; 호수 테이블 매칭</td></tr>
+  <tr><td>canvas_type (F/P/M/S)</td><td>width_cm / height_cm</td><td>aspect_ratio로 추정</td></tr>
+  <tr><td>support_type (지지체)</td><td>medium</td><td>"canvas", "paper" 등 키워드 파싱</td></tr>
+  <tr><td>is_edition</td><td>attribution_class</td><td>"Unique" vs "Limited edition"</td></tr>
+  <tr><td>medium_category (매체 분류)</td><td>medium</td><td>영문 &rarr; 분류 매핑 (oil/acrylic/ink 등)</td></tr>
+  <tr><td>year_made</td><td>date</td><td>연도 파싱</td></tr>
+  <tr><td>work_age</td><td>date</td><td>2026 - year_made</td></tr>
+  <tr><td>career_stage (1~4)</td><td>birth_year + solo_count</td><td>나이+경력 기반 추정</td></tr>
+  <tr><td>career_age</td><td>shows의 첫 전시 연도</td><td>2026 - first_show_year</td></tr>
+  <tr><td>institutional_score</td><td>shows (기관명 포함)</td><td>기관 티어 DB 매칭 (부분 가능)</td></tr>
+  <tr><td>gallery_tier (1~5)</td><td>gallery_name + gallery_cities</td><td>갤러리별 통계로 추정</td></tr>
+  <tr><td>vintage_premium</td><td>date + birth_year</td><td>work_age &times; (career_stage &ge; 3)</td></tr>
+  <tr><td>freshness_discount</td><td>date + birth_year</td><td>work_age &times; (career_stage &lt; 3)</td></tr>
+  <tr><td>for_sale_ratio</td><td>for_sale / total_works</td><td>수요 지표</td></tr>
+  <tr><td>request_ratio</td><td>작가 내 "Price on request" 비율</td><td>고가 작가 지표</td></tr>
+  <tr><td>gallery_city_count</td><td>gallery_cities</td><td>쉼표 분리 후 카운트</td></tr>
+  <tr><td>is_small</td><td>ho</td><td>ho &le; 3 (소품 여부)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>2.2 향후 보완 가능한 피처</h3>
+<p>Phase 2 이후 추가 소스에서 보완할 피처:</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>피처</th><th>보완 방법</th></tr></thead>
+<tbody>
+  <tr><td>museum_collection_count</td><td>followers, is_p1으로 간접 추정 가능</td></tr>
+  <tr><td>residency_score</td><td>followers, is_p1으로 간접 추정 가능</td></tr>
+  <tr><td>award_score</td><td>followers, is_p1으로 간접 추정 가능</td></tr>
+  <tr><td>critic_review_count</td><td>네이버 뉴스 API</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ SECTION 3 ============ -->
+<section id="sec3">
+<h2>3. 호당 가격제 검증 실험</h2>
+
+<h3>3.1 핵심 가설</h3>
+<p>한국 갤러리 가격 체계의 핵심 구조인 <code>Price = &alpha; &times; Ho^&beta;</code>가 Artsy 데이터에서도 성립하는지 검증한다.</p>
+<p><strong>가설 H1</strong>: Painting 카테고리에서 <code>ln(Price) = ln(&alpha;) + &beta; &times; ln(Ho) + &epsilon;</code>의 &beta;가 0.6~0.9 범위에 있다.</p>
+<p><strong>가설 H2</strong>: KRW 표기 작품(국내 갤러리)에서 &beta;가 USD 표기 작품(국제 갤러리)보다 0.74에 더 가깝다.</p>
+<p><strong>가설 H3</strong>: 작가 내 호당가(Price/Ho^&beta;)의 CV가 0.3 이하인 작가가 전체의 50% 이상이다.</p>
+
+<h3>3.2 검증 방법</h3>
+<pre><code>Step 1: 필터링
+  - Painting + Unique + Canvas/Linen만 선택
+  - 가격 이상치 제거 (&lt; 10만원 or &gt; 50억원)
+  - 크기 이상치 제거 (&lt; 1cm&sup2; or &gt; 100,000cm&sup2;)
+
+Step 2: 호수 변환
+  area = width_cm &times; height_cm
+  aspect_ratio = max(w,h) / min(w,h)
+  canvas_type = aspect_to_type(aspect_ratio)  # F/P/M/S
+  ho = area_to_ho(area, canvas_type)
+
+Step 3: &beta; 추정 (전체)
+  OLS: ln(price_krw) = c + &beta; &times; ln(ho) + &epsilon;
+  &rarr; &beta; 추정값 및 95% CI
+
+Step 4: &beta; 추정 (작가별)
+  작품 5건 이상 작가 대상
+  작가별 OLS &rarr; &beta; 분포 히스토그램
+  &beta; &lt; 1 비율 (체감 효과 확인)
+
+Step 5: 시장 구분 (KRW vs USD)
+  KRW 서브셋 (국내): &beta;_domestic
+  USD 서브셋 (국제): &beta;_international
+  &rarr; 두 &beta; 비교
+
+Step 6: 호당가 일관성 (CV)
+  작가별 &alpha;_i = median(price / ho^&beta;)
+  CV_i = std(price / ho^&beta;) / mean(price / ho^&beta;)
+  &rarr; CV &lt; 0.3 비율</code></pre>
+
+<h3>3.3 검증 결과에 따른 모델 전략</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>시나리오</th><th>&beta; 결과</th><th>CV 결과</th><th>모델 전략</th></tr></thead>
+<tbody>
+  <tr><td><span class="scenario-a">A: 호당 성립</span></td><td>0.6~0.9</td><td>50%+ 안정</td><td>Two-Stage (&alpha; 예측 모델)</td></tr>
+  <tr><td><span class="scenario-b">B: 약하게 성립</span></td><td>범위 밖이나 유의미</td><td>30~50% 안정</td><td>Hybrid (호당 피처 + GBT)</td></tr>
+  <tr><td><span class="scenario-c">C: 불성립</span></td><td>유의미하지 않음</td><td>30% 미만 안정</td><td>Full GBT (크기는 피처로만)</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ SECTION 4 ============ -->
+<section id="sec4">
+<h2>4. 모델 아키텍처</h2>
+
+<h3>4.1 Hybrid 접근 (추천)</h3>
+<p>호당 가격 이론을 피처로 활용하되, GBT(CatBoost)가 자유롭게 학습하는 구조.</p>
+<pre><code>Target: ln(price_krw)
+
+피처 그룹 1 — 크기 (호당 이론 기반)
+  ho                    : 호수 (면적 &rarr; 호 변환)
+  ho_power              : ho^0.74 (이론적 크기 곡선)
+  ln_ho                 : ln(ho + 1)
+  area_cm2              : width &times; height (원본 면적)
+  aspect_ratio          : max/min (작품 형태)
+  canvas_type           : F/P/M/S (categorical)
+  is_small              : ho &lt;= 3 (소품 여부)
+
+피처 그룹 2 — 작품 속성
+  support_type          : canvas / paper / panel / linen / silk / other
+  medium_category       : oil / acrylic / ink / mixed / watercolor / etc
+  attribution_class     : Unique / Limited edition
+  year_made             : 제작연도
+  work_age              : 2026 - year_made
+  depth_cm              : 3D 깊이 (없으면 0)
+  is_3d                 : depth &gt; 0
+
+피처 그룹 3 — 작가
+  birth_year            : 생년
+  career_age            : 2026 - first_show_year (shows에서)
+  career_stage          : 1~4 (나이+경력 기반)
+  ln_followers          : ln(followers + 1)
+  total_works           : Artsy 등록 작품 수
+  for_sale_ratio        : for_sale / total_works
+  request_ratio         : "Price on request" 작품 비율
+  solo_count            : 개인전 횟수
+  group_count           : 그룹전 횟수
+  fair_count            : 아트페어 참여
+  is_p1                 : Artsy Target Supply (주목 작가)
+  artist_price_median   : 작가 내 가격 중앙값 (※ leakage 주의 — CV에서 제외)
+
+피처 그룹 4 — 갤러리
+  gallery_name          : 갤러리명 (categorical)
+  gallery_type          : Gallery / Institution
+  gallery_city_count    : 갤러리 도시 수
+  has_seoul             : 서울에 갤러리 있음
+  has_international     : 해외 도시에 갤러리 있음
+  gallery_avg_price     : 갤러리 평균 가격 (leakage 주의)
+
+피처 그룹 5 — 시장 컨텍스트
+  currency              : USD / KRW / EUR / GBP
+  vintage_premium       : work_age &times; (career_stage &gt;= 3)
+  freshness_discount    : work_age &times; (career_stage &lt; 3)
+
+Model: CatBoost Regressor
+  cat_features: [support_type, medium_category, attribution_class,
+                 canvas_type, gallery_name, gallery_type, currency]</code></pre>
+
+<h3>4.2 Leakage 방지</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>피처</th><th>Leakage 위험</th><th>대응</th></tr></thead>
+<tbody>
+  <tr><td>artist_price_median</td><td>높음</td><td>CV fold 내에서만 계산, 또는 제외</td></tr>
+  <tr><td>gallery_avg_price</td><td>높음</td><td>CV fold 내에서만 계산, 또는 제외</td></tr>
+  <tr><td>for_sale_ratio</td><td>낮음</td><td>수집 시점 고정값이므로 안전</td></tr>
+  <tr><td>request_ratio</td><td>낮음</td><td>수집 시점 고정값이므로 안전</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>4.3 Train/Val/Test 분할</h3>
+<pre><code>방법 1: 시간 기반 (권장)
+  Train: ~2023년 작품
+  Val:   2024년 작품
+  Test:  2025~2026년 작품
+
+방법 2: 작가 기반 (Cold Start 평가용)
+  Train: 작가 70%의 전체 작품
+  Val:   작가 15%의 전체 작품 (학습 시 본 적 없는 작가)
+  Test:  작가 15%의 전체 작품
+
+방법 3: 5-Fold CV (기본)
+  작가 단위 Stratified K-Fold (같은 작가가 train/val에 섞이지 않도록)</code></pre>
+</section>
+
+<!-- ============ SECTION 5 ============ -->
+<section id="sec5">
+<h2>5. 데이터 전처리</h2>
+
+<h3>5.1 이상치 제거</h3>
+<pre><code># 1. 프로모션 가격 제거 (Gallery SoSo $1 등)
+df = df[df.price_krw &gt;= 100000]  # 10만원 미만 제거
+
+# 2. 극단 고가 제거 (&gt; 50억원)
+df = df[df.price_krw &lt;= 5_000_000_000]
+
+# 3. 크기 이상치
+df = df[df.width_cm &gt; 1]
+df = df[df.height_cm &gt; 1]
+
+# 4. 가격 범위 표기 &rarr; 중간값
+# "US$12,500–US$13,750" &rarr; US$13,125</code></pre>
+
+<h3>5.2 매체 분류 매핑</h3>
+<pre><code>MEDIUM_MAP = {
+    'oil': ['oil on canvas', 'oil on linen', 'oil on panel', 'oil on wood'],
+    'acrylic': ['acrylic on canvas', 'acrylic on panel', 'acrylic on linen'],
+    'ink': ['ink and color on korean paper', 'ink on paper', 'sumi ink'],
+    'mixed': ['mixed media on canvas', 'mixed media', 'mixed technique'],
+    'watercolor': ['watercolor on paper', 'gouache'],
+    'pigment': ['pigments on jangji', 'color on korean paper'],
+    'print': ['screenprint', 'lithograph', 'etching', 'digital print'],
+    'photo': ['c-print', 'archival pigment print', 'gelatin silver print'],
+}
+
+SUPPORT_MAP = {
+    'canvas': ['canvas', 'linen'],         # factor 1.0
+    'paper': ['paper', 'korean paper', 'jangji', 'hanji'],  # factor 0.3~0.5
+    'panel': ['panel', 'wood', 'board'],    # factor 0.7
+    'silk': ['silk'],                       # factor 별도
+    'metal': ['aluminum', 'stainless'],     # factor 별도
+}</code></pre>
+
+<h3>5.3 갤러리 티어 추정</h3>
+<pre><code>def estimate_gallery_tier(gallery_name, gallery_cities, fair_count, avg_price):
+    """수집된 데이터로 갤러리 티어 추정."""
+    city_count = len(gallery_cities.split(',')) if gallery_cities else 0
+    score = 0
+
+    # 멀티 도시 갤러리 = 대형
+    if city_count &gt;= 4: score += 3
+    elif city_count &gt;= 2: score += 2
+
+    # 아트페어 참여 (소속 작가 fair_count 합산)
+    if fair_count &gt;= 50: score += 3
+    elif fair_count &gt;= 20: score += 2
+    elif fair_count &gt;= 5: score += 1
+
+    # 평균 가격
+    if avg_price &gt;= 50_000_000: score += 3  # 5천만+
+    elif avg_price &gt;= 10_000_000: score += 2
+    elif avg_price &gt;= 3_000_000: score += 1
+
+    # Tier 분류 (1=메가, 5=신생)
+    if score &gt;= 8: return 1
+    elif score &gt;= 6: return 2
+    elif score &gt;= 4: return 3
+    elif score &gt;= 2: return 4
+    else: return 5</code></pre>
+</section>
+
+<!-- ============ SECTION 6 ============ -->
+<section id="sec6">
+<h2>6. 평가 지표</h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>지표</th><th>정의</th><th>목표</th></tr></thead>
+<tbody>
+  <tr><td><strong>MdAPE</strong></td><td>절대 비율 오차 중앙값</td><td>&lt; 25%</td></tr>
+  <tr><td><strong>MAPE</strong></td><td>절대 비율 오차 평균</td><td>&lt; 35%</td></tr>
+  <tr><td><strong>W30</strong></td><td>30% 이내 비율</td><td>&gt; 60%</td></tr>
+  <tr><td><strong>W50</strong></td><td>50% 이내 비율</td><td>&gt; 75%</td></tr>
+  <tr><td><strong>R&sup2;</strong></td><td>결정 계수</td><td>&gt; 0.70</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ SECTION 7 ============ -->
+<section id="sec7">
+<h2>7. 실험 로드맵</h2>
+
+<h3>Phase 1: 데이터 준비 + EDA</h3>
+<ul>
+  <li>이상치 제거, 통화 정규화</li>
+  <li>피처 엔지니어링 (ho, support_type, medium_category, gallery_tier)</li>
+  <li>호당 가격제 검증 (섹션 3)</li>
+  <li>가격 분포 분석 (카테고리별, 작가별, 갤러리별)</li>
+</ul>
+
+<h3>Phase 2: 모델 학습</h3>
+<ul>
+  <li>CatBoost Hybrid 모델 학습</li>
+  <li>5-Fold CV (작가 단위 stratified)</li>
+  <li>SHAP 분석: 피처 기여도 확인</li>
+  <li>호당 구조 검증 결과에 따라 모델 구조 조정 (시나리오 A/B/C)</li>
+</ul>
+
+<h3>Phase 3: 검증</h3>
+<ul>
+  <li>Cold Start 평가 (학습에 없는 작가)</li>
+  <li>작가별 예측 일관성 검증</li>
+</ul>
+
+<h3>Phase 4: 통합</h3>
+<ul>
+  <li>기존 <code>estimate_generator</code> 파이프라인에 1차 시장 모델 추가</li>
+  <li>데이터 자동 갱신 파이프라인 (월 1회 Artsy API 수집)</li>
+  <li>API 서빙 (1차 시장 가격 예측 엔드포인트)</li>
+</ul>
+</section>
+
+<!-- ============ SECTION 8 ============ -->
+<section id="sec8">
+<h2>8. 데이터 갱신 전략</h2>
+
+<h3>8.1 자동 수집</h3>
+<pre><code>수집 주기: 월 1회
+방법: Artsy GraphQL API (scripts/crawl_artsy_complete.py)
+소요 시간: ~70분
+증분 처리: artwork_id 기준 중복 제거</code></pre>
+
+<h3>8.2 추가 피처 보완 (Phase 2+)</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>소스</th><th>목적</th><th>우선순위</th></tr></thead>
+<tbody>
+  <tr><td>Artsy bio NLP 추출</td><td>award, residency 정보 자동 추출 (679명 bio 보유)</td><td>1</td></tr>
+  <tr><td>네이버 뉴스 API</td><td>critic_review_count (미디어 언급)</td><td>2</td></tr>
+  <tr><td>갤러리 파트너십</td><td>실제 거래가 확보</td><td>3</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ SECTION 9 ============ -->
+<section id="sec9">
+<h2>9. 리스크</h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>리스크</th><th>영향</th><th>대응</th></tr></thead>
+<tbody>
+  <tr><td>Artsy 가격 = 호가(listing), 실거래가 아님</td><td>모델이 호가를 학습</td><td>Sold 비율로 거래 가능성 보정</td></tr>
+  <tr><td>가격 비공개 편향 (고가 &rarr; request)</td><td>저가 편향 학습</td><td>request_ratio 피처, 생존 분석 검토</td></tr>
+  <tr><td>USD 기반 국제 가격 &ne; 국내 호당가</td><td>한국 시장 직접 적용 어려움</td><td>KRW 서브셋(1,221건) 별도 분석</td></tr>
+  <tr><td>Artsy API 변경/차단</td><td>데이터 갱신 불가</td><td>수집 데이터 보관, 재수집 간격 조절</td></tr>
+  <tr><td>호당 구조 불성립</td><td>이론 프레임 무용</td><td>시나리오 C(Full GBT)로 전환</td></tr>
+  <tr><td>gallery_name categorical 과적합</td><td>194개 카테고리</td><td>갤러리 티어(1~5)로 압축, 또는 target encoding</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+</main>
+</body>
+</html>

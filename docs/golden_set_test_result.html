@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>골든셋 가격 예측 테스트 결과</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d1117;--card:#161b22;--border:#30363d;
+    --text:#e6edf3;--text-muted:#8b949e;--accent:#58a6ff;
+    --green:#3fb950;--orange:#d29922;--purple:#bc8cff;
+    --row-even:#1c2129;--row-odd:#161b22;
+  }
+  html{scroll-behavior:smooth;scroll-padding-top:64px}
+  body{
+    font-family:'Noto Sans KR',sans-serif;
+    background:var(--bg);color:var(--text);
+    line-height:1.7;font-size:15px;
+  }
+
+  /* Sticky Nav */
+  nav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(13,17,23,.92);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+    padding:12px 0;
+  }
+  nav ul{
+    list-style:none;display:flex;gap:6px;flex-wrap:wrap;
+    max-width:960px;margin:0 auto;padding:0 24px;
+    justify-content:center;
+  }
+  nav a{
+    color:var(--text-muted);text-decoration:none;
+    font-size:13px;font-weight:500;padding:4px 12px;
+    border-radius:6px;transition:all .2s;white-space:nowrap;
+  }
+  nav a:hover,nav a:focus{color:var(--accent);background:rgba(88,166,255,.1)}
+
+  /* Layout */
+  .container{max-width:960px;margin:0 auto;padding:32px 24px 80px}
+  h1{font-size:28px;font-weight:700;margin-bottom:8px}
+  h2{font-size:22px;font-weight:700;margin-top:56px;margin-bottom:4px;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:8px}
+  h3{font-size:17px;font-weight:600;margin-top:32px;margin-bottom:12px;color:var(--purple)}
+
+  /* Meta block */
+  .meta{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:16px 20px;margin:16px 0 32px;font-size:14px;color:var(--text-muted);line-height:2;
+  }
+  .meta strong{color:var(--text)}
+
+  p{margin:12px 0;color:var(--text)}
+  .highlight{font-weight:600}
+  .sep{border:none;border-top:1px solid var(--border);margin:40px 0}
+
+  /* Tables */
+  .table-wrap{overflow-x:auto;margin:16px 0 24px;border-radius:8px;border:1px solid var(--border)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  thead{background:#21262d}
+  th{
+    padding:10px 14px;text-align:left;font-weight:600;font-size:13px;
+    color:var(--text-muted);border-bottom:2px solid var(--border);white-space:nowrap;
+  }
+  th.num,td.num{text-align:center}
+  td{padding:10px 14px;border-bottom:1px solid var(--border)}
+  tbody tr:nth-child(odd){background:var(--row-odd)}
+  tbody tr:nth-child(even){background:var(--row-even)}
+  tbody tr:hover{background:#272d37}
+
+  /* Row accents */
+  .row-green td:first-child{border-left:4px solid var(--green);padding-left:10px}
+  .row-orange td:first-child{border-left:4px solid var(--orange);padding-left:10px}
+  .row-best{background:rgba(63,185,80,.08)!important}
+  .row-worst-over{background:rgba(210,153,34,.08)!important}
+  .row-worst-under{background:rgba(210,153,34,.08)!important}
+
+  .c-green{color:var(--green);font-weight:700}
+  .c-orange{color:var(--orange);font-weight:700}
+  .c-accent{color:var(--accent);font-weight:600}
+  .c-purple{color:var(--purple);font-weight:600}
+
+  /* Glossary cards */
+  .glossary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:16px}
+  .glossary-card{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:20px;
+  }
+  .glossary-card h4{font-size:16px;color:var(--accent);margin-bottom:8px;font-weight:700}
+  .glossary-card p{font-size:14px;color:var(--text-muted);margin:0;line-height:1.6}
+
+  /* Improvement table */
+  .improve-task{color:var(--accent);font-weight:600}
+
+  /* Print */
+  @media print{
+    nav{position:static;background:#fff;border-bottom:1px solid #ccc}
+    nav a{color:#333}
+    body{background:#fff;color:#111;font-size:12px}
+    .container{padding:16px}
+    .meta{background:#f5f5f5;border-color:#ccc}
+    table{font-size:11px}
+    thead{background:#eee}
+    th{color:#333;border-bottom-color:#999}
+    td{border-bottom-color:#ddd}
+    tbody tr:nth-child(odd){background:#fff}
+    tbody tr:nth-child(even){background:#f7f7f7}
+    .glossary-card{background:#f5f5f5;border-color:#ccc}
+    .glossary-card h4{color:#0366d6}
+    .glossary-card p{color:#333}
+    .c-green{color:#1a7f37}
+    .c-orange{color:#9a6700}
+    .c-accent{color:#0366d6}
+    .c-purple{color:#6f42c1}
+    h2{color:#0366d6}
+    h3{color:#6f42c1}
+    .row-green td:first-child{border-left-color:#1a7f37}
+    .row-orange td:first-child{border-left-color:#9a6700}
+    var{color:inherit}
+  }
+
+  /* Responsive */
+  @media(max-width:640px){
+    .container{padding:20px 16px 60px}
+    h1{font-size:22px}
+    h2{font-size:18px;margin-top:40px}
+    h3{font-size:15px}
+    nav ul{gap:4px;padding:0 12px}
+    nav a{font-size:11px;padding:4px 8px}
+    table{font-size:12px}
+    th,td{padding:8px 8px}
+    .glossary-grid{grid-template-columns:1fr}
+    .meta{font-size:13px;padding:12px 14px}
+  }
+</style>
+</head>
+<body>
+
+<nav aria-label="목차">
+  <ul>
+    <li><a href="#s1">1. 테스트 개요</a></li>
+    <li><a href="#s2">2. 예측 결과</a></li>
+    <li><a href="#s3">3. 대표 사례</a></li>
+    <li><a href="#s4">4. 분석</a></li>
+    <li><a href="#s5">5. 개선 방향</a></li>
+    <li><a href="#s6">6. 용어 설명</a></li>
+  </ul>
+</nav>
+
+<div class="container">
+
+<h1>골든셋 가격 예측 테스트 결과</h1>
+
+<div class="meta">
+  <strong>테스트일</strong>: 2026-04-15<br>
+  <strong>골든셋</strong>: 150건 / 130명 작가<br>
+  <strong>학습 데이터</strong>: Artsy 7,551건 + Artue 2,756건 = 10,307건<br>
+  <strong>모델</strong>: CatBoost v2 (Cold Start, 전시 피처 제외)<br>
+  <strong>특이사항</strong>: 130명 중 129명이 Cold Start (학습에 없는 작가)
+</div>
+
+<hr class="sep">
+
+<!-- ===== Section 1 ===== -->
+<h2 id="s1">1. 테스트 개요</h2>
+
+<h3>1.1 골든셋 특성</h3>
+<p>전문가가 선정한 한국 신진/중견 작가 150작품에 대해 모델의 가격 예측 정확도를 검증했다. 정답 가격은 전문가가 KRW로 통일 환산한 값.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>항목</th><th>값</th></tr></thead>
+  <tbody>
+    <tr><td>총 작품</td><td>150건</td></tr>
+    <tr><td>총 작가</td><td>130명</td></tr>
+    <tr><td>학습 매칭 작가</td><td>1명 (0.8%) &mdash; Abang</td></tr>
+    <tr><td>Cold Start 작가</td><td>129명 (99.2%)</td></tr>
+    <tr><td>정답 가격 중앙</td><td>404만원</td></tr>
+    <tr><td>정답 가격 범위</td><td>14만 ~ 1.38억원</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>1.2 데이터 클린징</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>이상 데이터</th><th class="num">건수</th><th>처리</th></tr></thead>
+  <tbody>
+    <tr><td>"1990년대 추정"</td><td class="num">7건</td><td>&rarr; 1995 (10년 중앙값)</td></tr>
+    <tr><td>"1980년대 추정"</td><td class="num">3건</td><td>&rarr; 1985</td></tr>
+    <tr><td>"출생연도 미상"</td><td class="num">2건</td><td>&rarr; NaN (모델이 결측 처리)</td></tr>
+    <tr><td>재료/기법 NaN</td><td class="num">1건</td><td>&rarr; "mixed media"</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>1.3 이력 텍스트 자동 추출</h3>
+<p>"작가 학력/이력" 텍스트에서 NLP로 피처를 추출:</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>추출 항목</th><th class="num">평균</th><th>비고</th></tr></thead>
+  <tbody>
+    <tr><td>개인전</td><td class="num">7.6회</td><td>최대 50회</td></tr>
+    <tr><td>단체전</td><td class="num">22.9회</td><td>최대 150회</td></tr>
+    <tr><td>아트페어</td><td class="num">3.2회</td><td></td></tr>
+    <tr><td>수상</td><td class="num">165건 (합계)</td><td></td></tr>
+    <tr><td>기관소장</td><td class="num">321건 (합계)</td><td></td></tr>
+    <tr><td>석사+ 학력</td><td class="num">81명</td><td>전체의 54%</td></tr>
+    <tr><td>유학/국제 활동</td><td class="num">36명</td><td>24%</td></tr>
+    <tr><td>미술관 언급</td><td class="num">54명</td><td>36%</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr class="sep">
+
+<!-- ===== Section 2 ===== -->
+<h2 id="s2">2. 예측 결과</h2>
+
+<h3>2.1 전체 정확도</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>지표</th><th class="num">결과</th></tr></thead>
+  <tbody>
+    <tr><td><strong>MdAPE</strong></td><td class="num"><strong>39.5%</strong></td></tr>
+    <tr><td>MAPE</td><td class="num">50.4%</td></tr>
+    <tr><td><strong>W30</strong></td><td class="num"><strong>36.0%</strong></td></tr>
+    <tr><td>W50</td><td class="num">64.7%</td></tr>
+    <tr><td>비율 중앙</td><td class="num"><strong>0.88x</strong></td></tr>
+    <tr><td>과대 / 과소</td><td class="num">43% / 57%</td></tr>
+  </tbody>
+</table>
+</div>
+<p>99%가 Cold Start(학습에 없는 작가)인 점을 고려하면, MdAPE 39.5%는 합리적인 수준이다. 비율 0.88x는 전반적으로 12% 과소 예측 경향.</p>
+
+<h3>2.2 가격대별 정확도</h3>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>가격대</th><th class="num">MdAPE</th><th class="num">비율</th><th class="num">W30</th><th class="num">과대</th><th class="num">건수</th></tr>
+  </thead>
+  <tbody>
+    <tr class="row-worst-over"><td>~100만</td><td class="num c-orange">73.3%</td><td class="num c-orange">1.73x</td><td class="num">19%</td><td class="num">94%</td><td class="num">16</td></tr>
+    <tr><td>100~300만</td><td class="num"><strong>33.6%</strong></td><td class="num">1.24x</td><td class="num"><strong>43%</strong></td><td class="num">76%</td><td class="num">42</td></tr>
+    <tr class="row-best"><td><span class="c-green">300~500만</span></td><td class="num c-green">25.6%</td><td class="num c-green">0.96x</td><td class="num c-green">64%</td><td class="num">46%</td><td class="num">28</td></tr>
+    <tr><td>500~1천만</td><td class="num">39.6%</td><td class="num">0.65x</td><td class="num">29%</td><td class="num">16%</td><td class="num">31</td></tr>
+    <tr><td>1천~3천만</td><td class="num">51.1%</td><td class="num">0.49x</td><td class="num">24%</td><td class="num">0%</td><td class="num">25</td></tr>
+    <tr class="row-worst-under"><td>3천만+</td><td class="num c-orange">77.2%</td><td class="num c-orange">0.23x</td><td class="num">0%</td><td class="num">0%</td><td class="num">8</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><span class="c-green">300~500만원 구간이 가장 정확</span> &mdash; MdAPE 25.6%, 비율 0.96x, W30 64%. 학습 데이터(Artsy+Artue)의 가격 중앙값(360만원)과 가장 겹치는 구간.</p>
+<p><span class="c-orange">저가(~100만)</span>: 1.73x 과대. 학습 데이터에 이 가격대가 상대적으로 부족.</p>
+<p><span class="c-orange">고가(1천만+)</span>: 0.49x 과소. 블루칩 작가의 학습 데이터가 부족하여 고가 예측이 보수적.</p>
+
+<h3>2.3 경력 단계별 정확도</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>경력 단계</th><th class="num">MdAPE</th><th class="num">비율</th><th class="num">건수</th></tr></thead>
+  <tbody>
+    <tr><td>1 (신진)</td><td class="num">34.9%</td><td class="num">1.22x</td><td class="num">16</td></tr>
+    <tr><td>2 (신진 후기)</td><td class="num">39.2%</td><td class="num">1.06x</td><td class="num">60</td></tr>
+    <tr><td>3 (중견)</td><td class="num">40.7%</td><td class="num">0.80x</td><td class="num">58</td></tr>
+    <tr><td>4 (원로)</td><td class="num">34.8%</td><td class="num">0.79x</td><td class="num">16</td></tr>
+  </tbody>
+</table>
+</div>
+<p>신진(1.22x 과대)과 원로(0.79x 과소)에서 편향. 신진 후기(비율 1.06x)가 가장 정확.</p>
+
+<h3>2.4 가격 분포 비교</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th></th><th class="num">정답</th><th class="num">예측</th></tr></thead>
+  <tbody>
+    <tr><td>중앙</td><td class="num">404만원</td><td class="num">360만원</td></tr>
+    <tr><td>평균</td><td class="num">993만원</td><td class="num">497만원</td></tr>
+  </tbody>
+</table>
+</div>
+<p>평균 차이가 크지만(993만 vs 497만), 이는 고가 작품(3천만+)의 과소 예측이 평균을 끌어내린 것. 중앙값은 404만 vs 360만으로 10% 차이.</p>
+
+<hr class="sep">
+
+<!-- ===== Section 3 ===== -->
+<h2 id="s3">3. 대표 예측 사례</h2>
+
+<h3>3.1 정확한 예측 (오차 10% 이내)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>작가</th><th class="num">정답</th><th class="num">예측</th><th class="num">오차</th><th>특성</th></tr></thead>
+  <tbody>
+    <tr class="row-green"><td>윤성광</td><td class="num">360만</td><td class="num">360만</td><td class="num c-green">0.0%</td><td>신진, 15호</td></tr>
+    <tr class="row-green"><td>Jooha Sim</td><td class="num">250만</td><td class="num">251만</td><td class="num c-green">0.2%</td><td>신진, 15호</td></tr>
+    <tr class="row-green"><td>조이스진</td><td class="num">380만</td><td class="num">388만</td><td class="num c-green">2.0%</td><td>신진후기, 30호</td></tr>
+    <tr class="row-green"><td>김바르</td><td class="num">216만</td><td class="num">226만</td><td class="num c-green">4.4%</td><td>신진후기, 10호</td></tr>
+    <tr class="row-green"><td>유정현</td><td class="num">1,800만</td><td class="num">1,716만</td><td class="num c-green">4.7%</td><td>원로, 100호</td></tr>
+    <tr class="row-green"><td>시즈</td><td class="num">180만</td><td class="num">188만</td><td class="num c-green">4.7%</td><td>신진후기, 10호</td></tr>
+    <tr class="row-green"><td>김기라</td><td class="num">150만</td><td class="num">142만</td><td class="num c-green">5.1%</td><td>중견, 6호</td></tr>
+    <tr class="row-green"><td>정지윤</td><td class="num">150만</td><td class="num">159만</td><td class="num c-green">5.7%</td><td>신진후기, 10호</td></tr>
+    <tr class="row-green"><td>로지박</td><td class="num">379만</td><td class="num">401만</td><td class="num c-green">5.9%</td><td>신진후기, 25호</td></tr>
+    <tr class="row-green"><td>풀림</td><td class="num">400만</td><td class="num">425만</td><td class="num c-green">6.2%</td><td>신진후기, 20호</td></tr>
+  </tbody>
+</table>
+</div>
+<p>공통점: 100~500만원 구간, 10~30호, 신진 후기~중견 작가. 모델이 가장 잘 학습한 구간.</p>
+
+<h3>3.2 부정확한 예측 (오차 100%+)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>작가</th><th class="num">정답</th><th class="num">예측</th><th class="num">비율</th><th>원인 분석</th></tr></thead>
+  <tbody>
+    <tr class="row-orange"><td>진희원</td><td class="num">200만</td><td class="num">1,506만</td><td class="num c-orange">7.5x</td><td>"1980년대 추정"&rarr;1985 + 개인전50 &rarr; 원로로 과대 분류</td></tr>
+    <tr class="row-orange"><td>김명진</td><td class="num">90만</td><td class="num">304만</td><td class="num c-orange">3.4x</td><td>저가 작품 학습 부족</td></tr>
+    <tr class="row-orange"><td>김재이</td><td class="num">225만</td><td class="num">725만</td><td class="num c-orange">3.2x</td><td>개인전20+단체전60 &rarr; 중견/원로급으로 과대 추정</td></tr>
+    <tr class="row-orange"><td>안나박</td><td class="num">1.38억</td><td class="num">499만</td><td class="num c-orange">0.04x</td><td>극고가 작가 학습 부족</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr class="sep">
+
+<!-- ===== Section 4 ===== -->
+<h2 id="s4">4. 분석</h2>
+
+<h3>4.1 Cold Start 성능 평가</h3>
+<p>골든셋 130명 중 129명이 학습에 없는 작가. Cold Start 모델(CatBoost v2)만으로 예측한 결과:</p>
+<ul style="margin:12px 0 12px 24px;color:var(--text)">
+  <li><strong>전체 MdAPE 39.5%</strong>: Artsy 학습 데이터 기준 Cold Start MdAPE(33.0%)보다 높음</li>
+  <li><strong>원인</strong>: 골든셋 작가의 가격대가 학습 데이터보다 더 넓음 (14만~1.38억 vs 학습 중앙 360만)</li>
+  <li><strong>비율 0.88x</strong>: 약간의 과소 경향이지만 체계적 편향은 크지 않음</li>
+</ul>
+
+<h3>4.2 정확한 구간 vs 부정확한 구간</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>구간</th><th>정확도</th><th>이유</th></tr></thead>
+  <tbody>
+    <tr class="row-green"><td><span class="c-green">100~500만 (70건)</span></td><td>MdAPE 26~34%</td><td>학습 데이터 중심 가격대</td></tr>
+    <tr><td>500~1천만 (31건)</td><td>MdAPE 40%</td><td>학습 범위 경계</td></tr>
+    <tr class="row-orange"><td><span class="c-orange">~100만 (16건)</span></td><td>MdAPE 73% 과대</td><td>저가 학습 부족</td></tr>
+    <tr class="row-orange"><td><span class="c-orange">1천만+ (33건)</span></td><td>MdAPE 51~77% 과소</td><td>고가 학습 부족</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>4.3 이력 추출의 한계</h3>
+<p>이력 텍스트에서 자동 추출된 개인전/단체전 횟수가 career_stage를 결정하는데, 일부 작가에서 오분류:</p>
+<ul style="margin:12px 0 12px 24px;color:var(--text)">
+  <li><strong>진희원</strong>: 개인전 50회 &rarr; 원로(stage 4)로 분류됐지만, 실제 가격은 200만원 (신진 수준)</li>
+  <li><strong>김재이</strong>: 개인전 20회 + 단체전 60회 &rarr; 중견으로 분류됐지만, 실제 가격은 225만원</li>
+</ul>
+<p>전시 횟수가 많다고 가격이 높은 것은 아님. 전시의 <strong>질</strong>(기관 급)이 중요한데, 현재 모델은 횟수만 반영.</p>
+
+<hr class="sep">
+
+<!-- ===== Section 5 ===== -->
+<h2 id="s5">5. 개선 방향</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>과제</th><th>기대 효과</th></tr></thead>
+  <tbody>
+    <tr><td class="improve-task">골든셋 작가 데이터 학습 포함</td><td>Cold Start 탈출 &rarr; MdAPE 39.5% &rarr; ~14% (Artue 사례 참고)</td></tr>
+    <tr><td class="improve-task">고가(1천만+) 데이터 보강</td><td>과소 예측(0.49x) 해소</td></tr>
+    <tr><td class="improve-task">전시 기관 급 반영</td><td>개인전 50회(카페) &ne; 개인전 5회(국제갤러리) 구분</td></tr>
+    <tr><td class="improve-task">이미지 피처 추가</td><td>작품 스타일/퀄리티 기반 가격 차별화</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr class="sep">
+
+<!-- ===== Section 6 ===== -->
+<h2 id="s6">6. 용어 설명</h2>
+<div class="glossary-grid">
+  <div class="glossary-card">
+    <h4>MdAPE</h4>
+    <p>예측 오차의 중앙값. 39.5%는 절반의 작품이 이 오차보다 정확하다는 의미.</p>
+  </div>
+  <div class="glossary-card">
+    <h4>W30</h4>
+    <p>오차 30% 이내 비율. 36.0%이면 150건 중 54건이 정답 대비 30% 이내.</p>
+  </div>
+  <div class="glossary-card">
+    <h4>비율 (예측/실제)</h4>
+    <p>1.0x = 정확. 0.88x = 12% 과소 예측. 1.73x = 73% 과대 예측.</p>
+  </div>
+  <div class="glossary-card">
+    <h4>Cold Start</h4>
+    <p>학습에 없는 작가의 예측. 작가 가격 이력 없이 크기+매체+생년+이력으로만 예측하므로 정확도에 한계.</p>
+  </div>
+</div>
+
+</div><!-- .container -->
+</body>
+</html>

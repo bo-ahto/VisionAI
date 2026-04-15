@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artsy + Artue 통합 모델 실험 결과</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+
+  body {
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    line-height: 1.7;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Sticky Nav ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #161b22ee;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #30363d;
+    padding: 0 16px;
+  }
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 4px;
+    max-width: 960px;
+    margin: 0 auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  nav ul::-webkit-scrollbar { display: none; }
+  nav a {
+    display: block;
+    padding: 12px 14px;
+    color: #8b949e;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+  }
+  nav a:hover, nav a:focus { color: #e6edf3; }
+  nav a.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+  /* ── Main Layout ── */
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+
+  /* ── Headings ── */
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #ffffff;
+  }
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 56px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #30363d;
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e6edf3;
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Section targets ── */
+  section { scroll-margin-top: 64px; }
+
+  /* ── Meta block ── */
+  .meta {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-left: 3px solid #58a6ff;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    color: #8b949e;
+  }
+  .meta strong { color: #e6edf3; }
+
+  /* ── Horizontal rule ── */
+  hr {
+    border: none;
+    border-top: 1px solid #30363d;
+    margin: 32px 0;
+  }
+
+  /* ── Paragraphs ── */
+  p { margin-bottom: 14px; }
+
+  /* ── Tables ── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  thead { background: #161b22; }
+  th {
+    padding: 10px 16px;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 2px solid #30363d;
+    color: #8b949e;
+    font-size: 13px;
+    text-transform: none;
+  }
+  th:first-child { text-align: left; }
+  td {
+    padding: 10px 16px;
+    text-align: center;
+    border-bottom: 1px solid #21262d;
+  }
+  td:first-child { text-align: left; font-weight: 500; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #1c2128; }
+
+  /* Row highlights */
+  tr.row-best { background: rgba(63, 185, 80, 0.08); }
+  tr.row-best td { color: #3fb950; font-weight: 600; }
+  tr.row-best td:first-child { color: #3fb950; }
+
+  /* Cell highlights */
+  .val-green { color: #3fb950; font-weight: 700; }
+  .val-orange { color: #d29922; font-weight: 600; }
+  .val-accent { color: #58a6ff; font-weight: 600; }
+  .val-hero {
+    color: #3fb950;
+    font-weight: 700;
+    font-size: 16px;
+    background: rgba(63, 185, 80, 0.12);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .val-green-ratio {
+    color: #3fb950;
+    font-weight: 700;
+    background: rgba(63, 185, 80, 0.12);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .val-neutral { color: #8b949e; }
+
+  /* Bold summary row */
+  tr.row-summary { background: #161b22; }
+  tr.row-summary td { font-weight: 700; color: #e6edf3; }
+
+  /* ── Highlight box ── */
+  .highlight-box {
+    background: rgba(63, 185, 80, 0.08);
+    border: 1px solid rgba(63, 185, 80, 0.3);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-weight: 600;
+    color: #3fb950;
+  }
+
+  /* ── Code Block ── */
+  pre {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #e6edf3;
+    margin: 16px 0 24px;
+  }
+  pre .comment { color: #8b949e; }
+  pre .keyword { color: #ff7b72; }
+  pre .value { color: #3fb950; }
+  pre .label { color: #d2a8ff; }
+  pre .arrow { color: #58a6ff; }
+
+  /* ── Glossary Cards ── */
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .glossary-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 20px;
+    transition: border-color .2s;
+  }
+  .glossary-card:hover { border-color: #58a6ff; }
+  .glossary-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #bc8cff;
+    margin-bottom: 8px;
+  }
+  .glossary-card p {
+    font-size: 14px;
+    color: #8b949e;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ── Discovery Cards (Section 4) ── */
+  .discovery-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .discovery-card h3 { margin-top: 0; }
+
+  /* ── Operation Table Section 6 ── */
+  .op-section { margin-top: 16px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    main { padding: 20px 16px 60px; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.2rem; }
+    nav a { padding: 10px 10px; font-size: 12px; }
+    table { font-size: 13px; }
+    th, td { padding: 8px 10px; }
+    .glossary-grid { grid-template-columns: 1fr; }
+    pre { padding: 14px 16px; font-size: 12px; }
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { background: #fff; color: #1a1a1a; font-size: 11pt; }
+    nav { display: none; }
+    main { max-width: 100%; padding: 0; }
+    h1, h2, h3 { color: #000; }
+    .meta { border-color: #ccc; background: #f8f8f8; color: #333; }
+    .meta strong { color: #000; }
+    .table-wrap { border-color: #ccc; }
+    thead { background: #f0f0f0; }
+    th { color: #333; border-bottom-color: #ccc; }
+    td { border-bottom-color: #eee; }
+    tr.row-best, tr.row-best td { color: #0a6e2e; background: #e6f9ec; }
+    .val-green, .val-hero, .val-green-ratio { color: #0a6e2e; background: none; }
+    .val-orange { color: #7a5b00; }
+    .val-accent { color: #0550ae; }
+    .val-neutral { color: #666; }
+    .highlight-box { background: #e6f9ec; border-color: #0a6e2e; color: #0a6e2e; }
+    pre { background: #f6f8fa; border-color: #ccc; color: #1a1a1a; }
+    .glossary-card { background: #f8f8f8; border-color: #ccc; }
+    .glossary-card h4 { color: #5b21b6; }
+    .glossary-card p { color: #333; }
+    .discovery-card { background: #f8f8f8; border-color: #ccc; }
+    section { break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Sticky Navigation ── -->
+<nav aria-label="Section navigation">
+  <ul role="list">
+    <li><a href="#sec1">1. 실험 목적</a></li>
+    <li><a href="#sec2">2. 데이터 구성</a></li>
+    <li><a href="#sec3">3. 모델 성능</a></li>
+    <li><a href="#sec4">4. 핵심 발견</a></li>
+    <li><a href="#sec5">5. 서비스 구조</a></li>
+    <li><a href="#sec6">6. 모델 운영</a></li>
+    <li><a href="#sec7">7. 용어 설명</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ── Title & Meta ── -->
+  <h1>Artsy + Artue 통합 모델 실험 결과</h1>
+  <div class="meta">
+    <strong>실험일</strong>: 2026-04-13 &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>학습 데이터</strong>: Artsy 7,551건 + Artue 2,756건 = 10,307건 / 1,078명 작가 &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>모델</strong>: XGBoost (기존 작가) + CatBoost (Cold Start) 분기
+  </div>
+
+  <hr>
+
+  <!-- ── 1. 실험 목적 ── -->
+  <section id="sec1">
+    <h2>1. 실험 목적</h2>
+    <p>Artsy 데이터만으로 학습한 모델은 Artue 작품을 예측할 때 <strong>저가 구간 과대 예측</strong>(MdAPE 41.6%)이 발생했다. Artue의 실제 가격 데이터를 학습에 포함하여 이 갭을 해소하고, Artue 작가/작품에 최적화된 모델을 구축한다.</p>
+  </section>
+
+  <hr>
+
+  <!-- ── 2. 데이터 구성 ── -->
+  <section id="sec2">
+    <h2>2. 데이터 구성</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>소스</th>
+            <th>건수</th>
+            <th>작가</th>
+            <th>가격 중앙값</th>
+            <th>특성</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Artsy</td>
+            <td>7,551</td>
+            <td>757</td>
+            <td>414만원</td>
+            <td style="text-align:left">국제 갤러리, USD 중심</td>
+          </tr>
+          <tr>
+            <td>Artue</td>
+            <td>2,756</td>
+            <td>363</td>
+            <td>279만원</td>
+            <td style="text-align:left">신진 작가, KRW 중심</td>
+          </tr>
+          <tr class="row-summary">
+            <td><strong>통합</strong></td>
+            <td><strong>10,307</strong></td>
+            <td><strong>1,078</strong></td>
+            <td>&mdash;</td>
+            <td style="text-align:left"><strong>가격대 커버리지 확대</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>통합으로 Artsy에 부족했던 <strong>저가(~100만원) 구간</strong>이 보강되었다.</p>
+  </section>
+
+  <hr>
+
+  <!-- ── 3. 모델 성능 ── -->
+  <section id="sec3">
+    <h2>3. 모델 성능</h2>
+
+    <h3>3.1 전체 성능</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>모델</th>
+            <th>KFold MdAPE</th>
+            <th>KFold R&sup2;</th>
+            <th>GroupKFold MdAPE</th>
+            <th>GroupKFold R&sup2;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-best">
+            <td>XGBoost</td>
+            <td>11.6%</td>
+            <td>0.917</td>
+            <td>33.0%</td>
+            <td>0.774</td>
+          </tr>
+          <tr>
+            <td>CatBoost</td>
+            <td>18.5%</td>
+            <td>0.887</td>
+            <td>33.2%</td>
+            <td>0.775</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>3.2 Artue 서브셋 성능</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>모델</th>
+            <th>MdAPE</th>
+            <th>W30</th>
+            <th>예측/실제 비율</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-best">
+            <td>XGBoost</td>
+            <td>14.2%</td>
+            <td>69.7%</td>
+            <td><span class="val-green-ratio">1.00x</span></td>
+          </tr>
+          <tr>
+            <td>CatBoost</td>
+            <td>24.3%</td>
+            <td>57.2%</td>
+            <td>1.02x</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>3.3 Artsy only 대비 개선</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>지표</th>
+            <th>Artsy only</th>
+            <th>통합 (Artsy+Artue)</th>
+            <th>개선</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Artue MdAPE</td>
+            <td>41.6%</td>
+            <td class="val-green">14.2%</td>
+            <td><span class="val-hero">-27.4%p</span></td>
+          </tr>
+          <tr>
+            <td>Artue W30</td>
+            <td>38.3%</td>
+            <td class="val-green">69.7%</td>
+            <td><span class="val-green">+31.4%p</span></td>
+          </tr>
+          <tr>
+            <td>Artue 비율</td>
+            <td>1.12x</td>
+            <td class="val-green">1.00x</td>
+            <td><span class="val-green">정확</span></td>
+          </tr>
+          <tr>
+            <td>전체 KFold MdAPE</td>
+            <td>9.7%</td>
+            <td>11.6%</td>
+            <td class="val-neutral">+1.9%p</td>
+          </tr>
+          <tr>
+            <td>전체 KFold R&sup2;</td>
+            <td>0.930</td>
+            <td>0.917</td>
+            <td class="val-neutral">-0.013</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight-box">
+      Artue 예측이 41.6% &rarr; 14.2%로 극적 개선. 전체 성능은 소폭 하락(9.7%&rarr;11.6%)했지만, Artue 가격대를 학습한 효과가 압도적.
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── 4. 핵심 발견 ── -->
+  <section id="sec4">
+    <h2>4. 핵심 발견</h2>
+
+    <div class="discovery-card">
+      <h3>4.1 저가 구간 과대 예측 해소</h3>
+      <p>Artsy only 모델의 가장 큰 문제였던 저가(~100만원) 과대 예측이 해소되었다. Artue 2,756건 중 상당수가 100만~300만원 구간이라, 이 가격대를 모델이 학습할 수 있게 되었다.</p>
+    </div>
+
+    <div class="discovery-card">
+      <h3>4.2 비율 1.00x</h3>
+      <p>Artue 서브셋의 예측/실제 비율이 <strong style="color:#3fb950">정확히 1.00x</strong>. Artsy only(1.12x, 12% 과대)에서 완전히 보정.</p>
+    </div>
+
+    <div class="discovery-card">
+      <h3>4.3 Cold Start 한계 유지</h3>
+      <p>GroupKFold(새 작가) MdAPE 33.0%는 Artsy only(31.0%)와 비슷. Cold Start는 데이터를 늘려도 구조적 한계가 존재. 작가의 가격 이력이 없으면 정확도에 한계.</p>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── 5. 실서비스 권장 구조 ── -->
+  <section id="sec5">
+    <h2>5. 실서비스 권장 구조</h2>
+    <pre><span class="label">작가의 가격 데이터가 학습에 포함됨?</span>
+  <span class="arrow">├─</span> <span class="keyword">Yes</span> <span class="arrow">&rarr;</span> XGBoost <span class="comment">&mdash; MdAPE 14.2%, 비율 1.00x</span>
+  <span class="arrow">└─</span> <span class="keyword">No</span>  <span class="arrow">&rarr;</span> CatBoost <span class="comment">&mdash; MdAPE 33.0% (Cold Start)</span>
+
+<span class="label">신규 작가 최소 입력:</span>
+  <span class="value">필수</span>: 작품 크기 (가로&times;세로), 매체
+  <span class="value">권장</span>: 작가 생년 (<span class="val-green">+11.8%p 개선</span>)</pre>
+  </section>
+
+  <hr>
+
+  <!-- ── 6. 모델 운영 ── -->
+  <section id="sec6">
+    <h2>6. 모델 운영</h2>
+
+    <h3>6.1 데이터 갱신</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>소스</th>
+            <th>주기</th>
+            <th>방법</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Artsy</td>
+            <td>월 1회</td>
+            <td style="text-align:left">GraphQL API 자동 수집</td>
+          </tr>
+          <tr>
+            <td>Artue</td>
+            <td>수시</td>
+            <td style="text-align:left">판매 데이터 추가 학습</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>6.2 학습 재실행</h3>
+    <p>Artue 신규 판매 데이터가 누적될수록 모델 정확도가 향상된다. 특히 Cold Start 작가가 1~2건만 판매되어도 XGBoost 경로로 전환되어 정확도가 급격히 올라간다.</p>
+  </section>
+
+  <hr>
+
+  <!-- ── 7. 용어 설명 ── -->
+  <section id="sec7">
+    <h2>7. 용어 설명</h2>
+    <div class="glossary-grid">
+      <div class="glossary-card">
+        <h4>MdAPE</h4>
+        <p>Median Absolute Percentage Error. 예측 오차의 중앙값. MdAPE 14.2%는 전체 작품 중 절반이 이 오차보다 정확하다는 의미.</p>
+      </div>
+      <div class="glossary-card">
+        <h4>W30</h4>
+        <p>예측 오차가 30% 이내인 작품의 비율. W30=69.7%이면 10건 중 7건이 실제 가격 대비 30% 이내.</p>
+      </div>
+      <div class="glossary-card">
+        <h4>예측/실제 비율</h4>
+        <p>1.0x = 정확, 1.5x = 50% 과대 예측. 통합 모델의 1.00x는 체계적 편향이 없다는 의미.</p>
+      </div>
+      <div class="glossary-card">
+        <h4>Cold Start</h4>
+        <p>학습 시 본 적 없는 작가의 가격을 예측하는 상황. GroupKFold로 평가.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── Active nav highlight ── -->
+<script>
+(function() {
+  var links = document.querySelectorAll('nav a');
+  var sections = [];
+  links.forEach(function(link) {
+    var id = link.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: link });
+  });
+
+  function update() {
+    var scrollY = window.scrollY + 80;
+    var current = null;
+    for (var i = sections.length - 1; i >= 0; i--) {
+      if (sections[i].el.offsetTop <= scrollY) {
+        current = sections[i];
+        break;
+      }
+    }
+    links.forEach(function(l) { l.classList.remove('active'); });
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+
+</body>
+</html>

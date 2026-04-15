@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1차 시장 가격 예측 종합 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0d1117; color: #e6edf3; line-height: 1.7;
+  font-size: 15px;
+}
+
+/* ── Sticky Nav ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: #161b22ee; backdrop-filter: blur(12px);
+  border-bottom: 1px solid #30363d;
+  padding: 0 16px;
+}
+nav .nav-inner {
+  max-width: 960px; margin: 0 auto;
+  display: flex; gap: 4px; overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+  padding: 8px 0;
+}
+nav .nav-inner::-webkit-scrollbar { display: none; }
+nav a {
+  color: #8b949e; text-decoration: none; font-size: 13px; font-weight: 500;
+  padding: 6px 12px; border-radius: 6px; white-space: nowrap;
+  transition: color .2s, background .2s;
+}
+nav a:hover, nav a:focus { color: #e6edf3; background: #30363d; }
+
+/* ── Layout ── */
+.container { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+
+/* ── Typography ── */
+h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
+.subtitle { color: #8b949e; font-size: 14px; line-height: 1.8; margin-bottom: 40px; }
+.subtitle strong { color: #e6edf3; }
+h2 {
+  font-size: 22px; font-weight: 700; color: #ffffff;
+  margin: 56px 0 20px; padding-bottom: 10px;
+  border-bottom: 2px solid #30363d;
+}
+h3 { font-size: 17px; font-weight: 600; color: #e6edf3; margin: 28px 0 14px; }
+p { margin-bottom: 14px; color: #c9d1d9; }
+code {
+  background: #21262d; padding: 2px 6px; border-radius: 4px;
+  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px;
+}
+
+/* ── Card ── */
+.card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+  padding: 20px 24px; margin-bottom: 20px;
+}
+
+/* ── Tables ── */
+table {
+  width: 100%; border-collapse: collapse; margin-bottom: 20px;
+  font-size: 14px;
+}
+th, td {
+  padding: 10px 14px; text-align: left;
+  border-bottom: 1px solid #21262d;
+}
+th {
+  background: #161b22; color: #8b949e; font-weight: 600;
+  font-size: 12px; text-transform: uppercase; letter-spacing: .3px;
+  position: sticky; top: 52px;
+}
+td { color: #c9d1d9; }
+tr:hover td { background: #1c2128; }
+td.center, th.center { text-align: center; }
+.badge-pass {
+  display: inline-block; background: #238636; color: #fff;
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+}
+
+/* ── Section 2.1: Model compare colors ── */
+.row-xgb td { color: #3fb950; font-weight: 600; }
+.row-xgb td:first-child { color: #3fb950; }
+.row-hedonic td { color: #8b949e; }
+
+/* ── Section 3: Visual distinction — orange accent, top border, background tint ── */
+.section-artue {
+  border-top: 3px solid #d29922;
+  margin-top: 56px; padding-top: 16px;
+  background: linear-gradient(180deg, #1a170f 0%, transparent 180px);
+  border-radius: 12px 12px 0 0;
+  padding-left: 4px; padding-right: 4px;
+}
+.section-artue h2 {
+  color: #d29922; border-bottom-color: #d2992244;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-artue h2::before {
+  content: ''; display: inline-block; width: 8px; height: 8px;
+  background: #d29922; border-radius: 50%; flex-shrink: 0;
+}
+.section-artue h3 { color: #d29922; }
+
+/* ── Hero Cards (Section 3.1) ── */
+.hero-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
+.hero-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+  padding: 24px 20px; text-align: center;
+  border-top: 3px solid #d29922;
+}
+.hero-card .hero-value { font-size: 32px; font-weight: 700; color: #d29922; margin-bottom: 4px; }
+.hero-card .hero-label { font-size: 13px; color: #8b949e; }
+.hero-card .hero-sub { font-size: 12px; color: #6e7681; margin-top: 6px; }
+
+/* ── SHAP Bar Chart (Section 4.1) — LEFT ALIGNED bars, pct RIGHT of bar ── */
+.shap-chart { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.shap-row { display: flex; align-items: center; gap: 12px; }
+.shap-label {
+  width: 110px; flex-shrink: 0; font-size: 13px; color: #c9d1d9;
+  text-align: right;
+}
+.shap-bar-wrap {
+  flex: 1; display: flex; align-items: center; gap: 10px;
+}
+.shap-bar {
+  height: 22px; border-radius: 4px;
+  background: linear-gradient(90deg, #58a6ff, #388bfd);
+  min-width: 4px; flex-shrink: 0;
+}
+.shap-pct {
+  font-size: 13px; font-weight: 600; color: #58a6ff;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── Code Blocks ── */
+.code-block {
+  background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+  padding: 16px 20px; font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px; line-height: 1.6; color: #c9d1d9;
+  overflow-x: auto; margin-bottom: 20px; white-space: pre;
+}
+
+/* ── Artsy Profile Table (Section 4.3) ── */
+.profile-table { border-left: 3px solid #58a6ff; }
+.profile-table th { background: #0d1117; }
+
+/* ── Section 6: Best values purple ── */
+.val-best { color: #bc8cff; font-weight: 700; }
+.callout-box {
+  background: #1c1d2e; border: 1px solid #bc8cff44; border-left: 3px solid #bc8cff;
+  border-radius: 8px; padding: 16px 20px; margin-top: 20px; margin-bottom: 20px;
+  font-size: 14px; color: #c9d1d9;
+}
+.callout-box strong { color: #bc8cff; }
+.note-banner {
+  background: #21262d; border: 1px solid #30363d; border-radius: 6px;
+  padding: 10px 16px; margin-bottom: 16px; font-size: 13px; color: #8b949e;
+}
+.note-banner strong { color: #e6edf3; }
+
+/* ── Section 7: Numbered Cards ── */
+.plan-cards { display: flex; flex-direction: column; gap: 16px; }
+.plan-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+  padding: 20px 24px; display: flex; gap: 20px; align-items: flex-start;
+}
+.plan-num {
+  flex-shrink: 0; width: 36px; height: 36px;
+  background: #58a6ff22; color: #58a6ff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700;
+}
+.plan-body h3 { margin: 0 0 8px; font-size: 16px; }
+.plan-body p { margin-bottom: 8px; font-size: 14px; }
+
+/* ── Section 8: Service UI Card ── */
+.service-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 28px; max-width: 440px; margin: 20px 0;
+}
+.service-card .sc-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.service-card .sc-subtitle { font-size: 14px; color: #8b949e; margin-bottom: 4px; }
+.service-card .sc-meta { font-size: 13px; color: #6e7681; margin-bottom: 16px; }
+.service-card .sc-price { font-size: 24px; font-weight: 700; color: #58a6ff; margin-bottom: 16px; }
+.sc-factors { margin-top: 12px; }
+.sc-factors .sc-label { font-size: 12px; color: #8b949e; margin-bottom: 6px; font-weight: 600; }
+.sc-factors .sc-item { font-size: 14px; padding: 3px 0; }
+.sc-factors .sc-item.up { color: #3fb950; }
+.sc-factors .sc-item.down { color: #f85149; }
+
+/* ── Section 9: Glossary Grid ── */
+.glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 14px; }
+.glossary-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+  padding: 16px 20px;
+}
+.glossary-card .gl-term { font-size: 15px; font-weight: 700; color: #58a6ff; margin-bottom: 6px; }
+.glossary-card .gl-def { font-size: 13px; color: #c9d1d9; line-height: 1.6; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  body { font-size: 14px; }
+  .container { padding: 20px 14px 60px; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 18px; margin-top: 40px; }
+  .hero-row { grid-template-columns: 1fr; }
+  .plan-card { flex-direction: column; gap: 10px; }
+  table { font-size: 12px; }
+  th, td { padding: 8px 8px; }
+  .shap-label { width: 80px; font-size: 12px; }
+  .glossary-grid { grid-template-columns: 1fr; }
+  nav a { font-size: 12px; padding: 5px 8px; }
+  .service-card { max-width: 100%; }
+  .section-artue { padding-left: 0; padding-right: 0; }
+}
+
+/* ── Print ── */
+@media print {
+  body { background: #fff; color: #000; font-size: 11pt; }
+  nav { display: none; }
+  .container { max-width: 100%; padding: 0; }
+  .card, .hero-card, .plan-card, .glossary-card, .service-card, .callout-box {
+    background: #fff; border-color: #ccc; break-inside: avoid;
+  }
+  h2 { border-bottom-color: #ccc; color: #000; }
+  h3 { color: #333; }
+  th { background: #f5f5f5; color: #333; }
+  td, p { color: #333; }
+  .hero-card .hero-value { color: #b45309; }
+  .shap-bar { background: #3b82f6; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .shap-pct { color: #1d4ed8; }
+  .val-best { color: #7c3aed; }
+  .row-xgb td { color: #15803d; }
+  .section-artue { background: none; border-top-color: #b45309; }
+  .section-artue h2, .section-artue h3 { color: #b45309; }
+  .note-banner { background: #f5f5f5; }
+  code { background: #f0f0f0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#sec1">1. 호당가격</a>
+    <a href="#sec2">2. 학습성능</a>
+    <a href="#sec3">3. 실서비스</a>
+    <a href="#sec4">4. 피처분석</a>
+    <a href="#sec5">5. 에러분석</a>
+    <a href="#sec6">6. 개선이력</a>
+    <a href="#sec7">7. 향후계획</a>
+    <a href="#sec8">8. 모델설명</a>
+    <a href="#sec9">9. 용어설명</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ── Title ── -->
+<h1>1차 시장 가격 예측 종합 보고서</h1>
+<div class="subtitle">
+  <strong>작성일</strong>: 2026-04-13<br>
+  <strong>학습 데이터</strong>: Artsy 7,551건 + Artue 2,756건 = 10,307건 / 1,078명 작가<br>
+  <strong>카테고리</strong>: Painting, Mixed Media, Drawing/Collage/Paper, Photography, Print<br>
+  <strong>모델</strong>: XGBoost (기존 작가) + CatBoost v2 (Cold Start) 분기
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 1 -->
+<!-- ════════════════════════════════════════════ -->
+<h2 id="sec1">1. 호당 가격제 검증</h2>
+<p>한국 갤러리 가격 체계의 핵심 구조 <code>Price = &alpha; &times; Ho^&beta;</code>를 Artsy 데이터(Canvas/Linen + Unique + ho &gt; 0, <strong>5,276건</strong>)로 검증했다.</p>
+
+<div class="card">
+<table>
+  <thead><tr><th>가설</th><th>결과</th><th class="center">판정</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>H1</strong>: &beta; &isin; [0.6, 0.9]</td>
+      <td><strong>&beta; = 0.817</strong> (CI: 0.799~0.836)</td>
+      <td class="center"><span class="badge-pass">성립</span></td>
+    </tr>
+    <tr>
+      <td><strong>H2</strong>: KRW가 0.74에 가까움</td>
+      <td>KRW <strong>&beta;=0.749</strong>, USD &beta;=0.840</td>
+      <td class="center"><span class="badge-pass">성립</span></td>
+    </tr>
+    <tr>
+      <td><strong>H3</strong>: CV&lt;0.3 작가 50%+</td>
+      <td><strong>71%</strong> (303명 중 217명 안정)</td>
+      <td class="center"><span class="badge-pass">성립</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>크기 2배 &rarr; 가격 1.76배 (체감 증가). 국내 갤러리(KRW) &beta;=0.749는 Shin(2010)의 0.74와 거의 일치.</p>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 2 -->
+<!-- ════════════════════════════════════════════ -->
+<h2 id="sec2">2. 모델 학습 성능</h2>
+<p>Artsy + Artue 통합 10,307건으로 학습. 동일 데이터 내에서 5-Fold 교차 검증한 결과.</p>
+
+<h3>2.1 모델 비교</h3>
+<div class="card">
+<table>
+  <thead>
+    <tr><th>모델</th><th class="center">기존 작가 MdAPE</th><th class="center">기존 작가 R&sup2;</th><th class="center">Cold Start MdAPE</th><th class="center">Cold Start R&sup2;</th></tr>
+  </thead>
+  <tbody>
+    <tr class="row-xgb">
+      <td>XGBoost</td><td class="center">11.6%</td><td class="center">0.917</td><td class="center">33.0%</td><td class="center">0.774</td>
+    </tr>
+    <tr>
+      <td>CatBoost</td><td class="center">18.5%</td><td class="center">0.887</td><td class="center">33.2%</td><td class="center">0.775</td>
+    </tr>
+    <tr class="row-hedonic">
+      <td>헤도닉 회귀</td><td class="center">40.5%</td><td class="center">0.732</td><td class="center">44.5%</td><td class="center">0.674</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>XGBoost가 기존 작가에서 가장 정확. 헤도닉 회귀 대비 <strong>28.9%p 격차</strong> &mdash; 인터랙션/비선형 항을 추가해도 20.7%p 차이가 남으며, 가중치 튜닝으로 해결 불가한 구조적 한계.</p>
+
+<h3>2.2 실서비스 분기 구조</h3>
+<div class="code-block">작가의 가격 데이터가 학습에 포함됨?
+  ├─ Yes &rarr; XGBoost &mdash; 기존 작가
+  └─ No  &rarr; CatBoost v2 &mdash; Cold Start (전시 피처 제외)</div>
+
+<h3>2.3 카테고리별 성능 (5-Fold 교차 검증 기준)</h3>
+<div class="card">
+<table>
+  <thead><tr><th>카테고리</th><th class="center">MdAPE</th><th class="center">W30</th><th class="center">건수</th></tr></thead>
+  <tbody>
+    <tr><td>Print</td><td class="center">12.2%</td><td class="center">75.7%</td><td class="center">411</td></tr>
+    <tr><td>Drawing/Collage/Paper</td><td class="center">12.9%</td><td class="center">79.8%</td><td class="center">510</td></tr>
+    <tr><td>Painting</td><td class="center">13.6%</td><td class="center">79.2%</td><td class="center">7,541</td></tr>
+    <tr><td>Photography</td><td class="center">14.4%</td><td class="center">81.9%</td><td class="center">409</td></tr>
+    <tr><td>Mixed Media</td><td class="center">16.1%</td><td class="center">73.4%</td><td class="center">1,104</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 3 — visually distinct: orange accent, gradient bg, dot indicator -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section-artue">
+<h2 id="sec3">3. Artue 실서비스 테스트</h2>
+<p>학습한 모델을 <strong>Artue 실제 판매 데이터 2,783건</strong>에 적용한 결과. 학습에 Artue 데이터를 포함하기 전/후를 비교.</p>
+
+<h3>3.1 Artue 통합 학습 효과</h3>
+
+<!-- Hero Cards -->
+<div class="hero-row">
+  <div class="hero-card">
+    <div class="hero-value">-27.4%p</div>
+    <div class="hero-label">MdAPE 개선</div>
+    <div class="hero-sub">41.6% &rarr; 14.2%</div>
+  </div>
+  <div class="hero-card">
+    <div class="hero-value">+31.4%p</div>
+    <div class="hero-label">W30 개선</div>
+    <div class="hero-sub">38.3% &rarr; 69.7%</div>
+  </div>
+  <div class="hero-card">
+    <div class="hero-value">1.00x</div>
+    <div class="hero-label">예측/실제 비율</div>
+    <div class="hero-sub">편향 완전 제거</div>
+  </div>
+</div>
+
+<div class="card">
+<table>
+  <thead><tr><th>지표</th><th class="center">Artsy만 학습</th><th class="center">Artsy + Artue 통합 학습</th><th class="center">개선</th></tr></thead>
+  <tbody>
+    <tr><td>Artue MdAPE</td><td class="center">41.6%</td><td class="center" style="color:#3fb950;font-weight:700">14.2%</td><td class="center" style="color:#3fb950;font-weight:700">-27.4%p</td></tr>
+    <tr><td>Artue W30</td><td class="center">38.3%</td><td class="center" style="color:#3fb950;font-weight:700">69.7%</td><td class="center" style="color:#3fb950;font-weight:700">+31.4%p</td></tr>
+    <tr><td>Artue 예측/실제 비율</td><td class="center">1.12x</td><td class="center" style="color:#3fb950;font-weight:700">1.00x</td><td class="center">편향 제거</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Artsy만으로 학습하면 Artue 저가 작품을 과대 예측(1.12x). Artue 가격을 학습에 포함하면 <strong>비율 1.00x로 편향이 완전히 해소</strong>.</p>
+
+<h3>3.2 Artue 모델별 정확도</h3>
+<div class="card">
+<table>
+  <thead><tr><th>구분</th><th class="center">건수</th><th class="center">MdAPE</th><th class="center">W30</th><th class="center">비율</th></tr></thead>
+  <tbody>
+    <tr style="color:#3fb950;font-weight:600"><td>XGBoost 작가 (Artsy 매칭)</td><td class="center">579</td><td class="center">22.4%</td><td class="center">60.4%</td><td class="center">1.05x</td></tr>
+    <tr><td>CatBoost Cold Start (BY 있음)</td><td class="center">1,477</td><td class="center">44.1%</td><td class="center">36.9%</td><td class="center">1.13x</td></tr>
+    <tr><td>CatBoost Cold Start (BY 없음)</td><td class="center">727</td><td class="center">55.9%</td><td class="center">23.7%</td><td class="center">1.19x</td></tr>
+    <tr style="border-top:2px solid #30363d;font-weight:600"><td>전체 (분기)</td><td class="center">2,783</td><td class="center">41.6%</td><td class="center">38.3%</td><td class="center">1.12x</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Artsy에 가격 이력이 있는 작가(579건)는 <strong>MdAPE 22.4%</strong>로 정확. Cold Start 작가는 Birth Year 유무에 따라 차이.</p>
+
+<h3>3.3 Artue 대표 작가 예측 정확도</h3>
+<div class="card">
+<table>
+  <thead><tr><th>작가</th><th class="center">MdAPE</th><th class="center">비율</th><th class="center">실제 중앙</th><th class="center">예측 중앙</th><th class="center">건수</th></tr></thead>
+  <tbody>
+    <tr><td>Choongmok YOO</td><td class="center">1.0%</td><td class="center">1.01x</td><td class="center">250만</td><td class="center">253만</td><td class="center">16</td></tr>
+    <tr><td>Jungkee Son</td><td class="center">2.8%</td><td class="center">1.02x</td><td class="center">741만</td><td class="center">683만</td><td class="center">9</td></tr>
+    <tr><td>Seungwon Yang</td><td class="center">3.8%</td><td class="center">0.96x</td><td class="center">200만</td><td class="center">192만</td><td class="center">10</td></tr>
+    <tr><td>Hyunmo Yang</td><td class="center">5.3%</td><td class="center">1.05x</td><td class="center">200만</td><td class="center">211만</td><td class="center">38</td></tr>
+    <tr><td>Hyuckjin Oh</td><td class="center">7.8%</td><td class="center">1.03x</td><td class="center">289만</td><td class="center">318만</td><td class="center">26</td></tr>
+  </tbody>
+</table>
+</div>
+</div><!-- end .section-artue -->
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 4 -->
+<!-- ════════════════════════════════════════════ -->
+<h2 id="sec4">4. 피처 분석</h2>
+
+<h3>4.1 SHAP 피처 기여도</h3>
+<p>모델이 가격을 결정할 때 각 요인이 차지하는 비중:</p>
+
+<div class="card">
+  <div class="shap-chart">
+    <div class="shap-row">
+      <div class="shap-label">작품 크기</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar" style="width:100%"></div>
+        <div class="shap-pct">34.4%</div>
+      </div>
+    </div>
+    <div class="shap-row">
+      <div class="shap-label">작가 세대</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar" style="width:44.8%"></div>
+        <div class="shap-pct">15.4%</div>
+      </div>
+    </div>
+    <div class="shap-row">
+      <div class="shap-label">갤러리</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar" style="width:25.6%"></div>
+        <div class="shap-pct">8.8%</div>
+      </div>
+    </div>
+    <div class="shap-row">
+      <div class="shap-label">아트페어</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar" style="width:11.0%"></div>
+        <div class="shap-pct">3.8%</div>
+      </div>
+    </div>
+    <div class="shap-row">
+      <div class="shap-label">지지체</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar" style="width:10.5%"></div>
+        <div class="shap-pct">3.6%</div>
+      </div>
+    </div>
+    <div class="shap-row">
+      <div class="shap-label">시장 관심도</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar" style="width:9.9%"></div>
+        <div class="shap-pct">3.4%</div>
+      </div>
+    </div>
+    <div class="shap-row">
+      <div class="shap-label">경력 단계</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar" style="width:9.6%"></div>
+        <div class="shap-pct">3.3%</div>
+      </div>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>요인</th><th class="center">비중</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>작품 크기</td><td class="center">34.4%</td><td>면적, 호수, 크기 곡선 등 합산</td></tr>
+      <tr><td>작가 세대</td><td class="center">15.4%</td><td>나이/세대가 가격의 가장 큰 단일 결정 요인</td></tr>
+      <tr><td>갤러리</td><td class="center">8.8%</td><td>어떤 갤러리에서 판매하는가</td></tr>
+      <tr><td>아트페어</td><td class="center">3.8%</td><td>국제 전시 참여 이력</td></tr>
+      <tr><td>지지체</td><td class="center">3.6%</td><td>캔버스/종이/패널</td></tr>
+      <tr><td>시장 관심도</td><td class="center">3.4%</td><td>Artsy 팔로워 수</td></tr>
+      <tr><td>경력 단계</td><td class="center">3.3%</td><td>신진/중견/원로</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>4.2 개별 작품 SHAP 분해</h3>
+<p>기준가(전체 평균 450만원)에서 출발하여 각 요인이 가격을 올리고 내리는 형태:</p>
+<div class="code-block">Suk Chuljoo &mdash; New-Scenery-in-Dream (40호, 원로)
+
+기준가:  4,504,000원
+  &uarr; 작가 세대 (1944년생): +105%  &rarr;  9,240,000원
+  &uarr; 경력 단계 (원로):      +17%  &rarr; 10,812,000원
+  &uarr; 그룹전 이력:           +10%  &rarr; 11,901,000원
+  &uarr; 갤러리:                +9%  &rarr; 12,941,000원
+  &darr; 총 작품수:             -4%  &rarr; 12,424,000원
+예측가: 17,574,000원 | 실제가: 16,560,000원 (오차 6.1%)</div>
+
+<p>서비스에서 보여줄 형태:</p>
+<div class="service-card">
+  <div class="sc-title">Suk Chuljoo</div>
+  <div class="sc-subtitle">New-Scenery-in-Dream 21-21</div>
+  <div class="sc-meta">40호 | 캔버스 유화</div>
+  <div class="sc-price">예측 가격: 17,574,000원</div>
+  <div class="sc-factors">
+    <div class="sc-label">가격을 올린 요인:</div>
+    <div class="sc-item up">&nbsp;&nbsp;+ 작가 세대 (원로): +105%</div>
+    <div class="sc-item up">&nbsp;&nbsp;+ 경력 단계: +17%</div>
+    <div class="sc-item up">&nbsp;&nbsp;+ 그룹전 이력: +10%</div>
+    <div class="sc-item up">&nbsp;&nbsp;+ 갤러리: +9%</div>
+  </div>
+  <div class="sc-factors" style="margin-top:10px">
+    <div class="sc-label">가격을 낮춘 요인:</div>
+    <div class="sc-item down">&nbsp;&nbsp;- 총 작품수: -4%</div>
+  </div>
+</div>
+
+<h3>4.3 Cold Start 최소 입력</h3>
+<div class="card">
+<table>
+  <thead><tr><th>보유 정보</th><th class="center">MdAPE</th><th class="center">개선 효과</th></tr></thead>
+  <tbody>
+    <tr><td>크기+매체만</td><td class="center">55.9%</td><td class="center">&mdash;</td></tr>
+    <tr><td><strong>+Birth Year</strong></td><td class="center" style="color:#3fb950;font-weight:700">44.1%</td><td class="center" style="color:#3fb950;font-weight:700">-11.8%p</td></tr>
+    <tr><td>+Artsy 프로필 (아래 12개 항목)</td><td class="center" style="color:#3fb950;font-weight:700">22.4%</td><td class="center" style="color:#3fb950;font-weight:700">-21.7%p</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Birth Year 하나가 MdAPE를 11.8%p 개선. 전시 횟수는 Cold Start 작가에게 대부분 0이라 오히려 노이즈(-1.3%p 악화).</p>
+
+<p><strong>Artsy 프로필에 포함되는 항목:</strong></p>
+<div class="card profile-table">
+<table>
+  <thead><tr><th>항목</th><th>피처명</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>팔로워 수</td><td><code>ln_followers</code></td><td>시장 관심도 대리변수</td></tr>
+    <tr><td>총 작품 수</td><td><code>artist_total_works</code></td><td>Artsy 등록 작품 수</td></tr>
+    <tr><td>판매중 비율</td><td><code>for_sale_ratio</code></td><td>수요 지표 (낮을수록 인기)</td></tr>
+    <tr><td>개인전 횟수</td><td><code>solo_count</code></td><td>커리어 레벨</td></tr>
+    <tr><td>그룹전 횟수</td><td><code>group_count</code></td><td>활동 이력</td></tr>
+    <tr><td>아트페어 참여</td><td><code>fair_count</code></td><td>국제적 인지도</td></tr>
+    <tr><td>경력 연수</td><td><code>career_age</code></td><td>첫 전시 ~ 현재</td></tr>
+    <tr><td>Target Supply</td><td><code>is_p1</code></td><td>Artsy 주목 작가 여부</td></tr>
+    <tr><td>MFA 보유</td><td><code>has_mfa</code></td><td>bio에서 추출</td></tr>
+    <tr><td>국제 활동</td><td><code>has_intl_city</code></td><td>bio에서 뉴욕/런던/파리 등 언급</td></tr>
+    <tr><td>미술관 언급</td><td><code>has_museum_mention</code></td><td>bio에서 MMCA/비엔날레 등</td></tr>
+    <tr><td>수상 이력</td><td><code>has_award_mention</code></td><td>bio에서 award/prize 등</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 5 -->
+<!-- ════════════════════════════════════════════ -->
+<h2 id="sec5">5. 에러 분석</h2>
+
+<h3>5.1 가격대별</h3>
+<div class="card">
+<table>
+  <thead><tr><th>가격대</th><th class="center">MdAPE</th><th class="center">W30</th><th class="center">과대 비율</th><th class="center">건수</th></tr></thead>
+  <tbody>
+    <tr><td>~100만</td><td class="center">22.8%</td><td class="center">60.0%</td><td class="center">72%</td><td class="center">948</td></tr>
+    <tr><td>100~500만</td><td class="center">14.6%</td><td class="center">75.1%</td><td class="center">53%</td><td class="center">3,365</td></tr>
+    <tr><td>500만~1천만</td><td class="center">16.4%</td><td class="center">77.3%</td><td class="center">46%</td><td class="center">1,296</td></tr>
+    <tr><td>1천~5천만</td><td class="center">14.7%</td><td class="center">78.1%</td><td class="center">35%</td><td class="center">1,717</td></tr>
+    <tr><td>5천만~1억</td><td class="center">17.9%</td><td class="center">65.7%</td><td class="center">25%</td><td class="center">204</td></tr>
+    <tr><td>1억+</td><td class="center">21.4%</td><td class="center">62.7%</td><td class="center">15%</td><td class="center">110</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>5.2 경력 단계별</h3>
+<div class="card">
+<table>
+  <thead><tr><th>경력 단계</th><th class="center">MdAPE</th><th class="center">W30</th><th class="center">건수</th></tr></thead>
+  <tbody>
+    <tr><td>1 (신진)</td><td class="center">19.7%</td><td class="center">67.7%</td><td class="center">1,820</td></tr>
+    <tr><td>2 (신진 후기)</td><td class="center">14.8%</td><td class="center">76.2%</td><td class="center">2,568</td></tr>
+    <tr><td>3 (중견)</td><td class="center">14.0%</td><td class="center">77.7%</td><td class="center">1,999</td></tr>
+    <tr><td>4 (원로)</td><td class="center">16.4%</td><td class="center">71.7%</td><td class="center">1,253</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 6 -->
+<!-- ════════════════════════════════════════════ -->
+<h2 id="sec6">6. 개선 이력</h2>
+
+<div class="note-banner">
+  <strong>참고:</strong> 모든 수치는 Artsy 학습 데이터 내 5-Fold 교차 검증 기준 (동일 조건 비교)
+</div>
+
+<div class="card">
+<table>
+  <thead><tr><th>단계</th><th>내용</th><th class="center">MdAPE</th><th>비고</th></tr></thead>
+  <tbody>
+    <tr><td>v1</td><td>CatBoost 기본 30피처</td><td class="center">16.3%</td><td>Painting only</td></tr>
+    <tr><td>v3</td><td>career_stage 개선 + bio NLP</td><td class="center">15.8%</td><td></td></tr>
+    <tr><td>v4</td><td>이상치 제거 + 튜닝</td><td class="center">13.7%</td><td></td></tr>
+    <tr><td class="val-best">XGBoost 전환</td><td class="val-best">모델 비교 후 전환</td><td class="center val-best">9.7%</td><td class="val-best">기존 작가 최적</td></tr>
+    <tr><td>5cat 확장</td><td>5개 카테고리 확장</td><td class="center">11.6%</td><td>+2,434건</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout-box">
+  <strong>Artue 통합 학습 효과 (별도 평가 &mdash; 섹션 3.1)</strong><br>
+  Artue 작품에 대한 MdAPE: 41.6% &rarr; <strong>14.2%</strong> (Artue 가격 데이터를 학습에 포함한 효과)
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 7 -->
+<!-- ════════════════════════════════════════════ -->
+<h2 id="sec7">7. 향후 계획</h2>
+
+<div class="plan-cards">
+
+  <div class="plan-card">
+    <div class="plan-num">1</div>
+    <div class="plan-body">
+      <h3>작가 프로필 자동 보강</h3>
+      <p>Artue에서 작품이 판매될 때마다 자동으로 학습 데이터에 추가한다. Cold Start 작가(MdAPE 33.0%)도 1~2건의 판매 이력만 쌓이면 XGBoost 경로(MdAPE 14.2%)로 전환.</p>
+      <div class="code-block">판매 발생 &rarr; 학습 데이터 추가 &rarr; 모델 재학습 &rarr; Cold Start 탈출
+
+현재: 362명 중 46명만 XGBoost (13%)
+1건 판매 후: XGBoost 비율 &rarr; 50%+
+3건 판매 후: XGBoost 비율 &rarr; 80%+</div>
+    </div>
+  </div>
+
+  <div class="plan-card">
+    <div class="plan-num">2</div>
+    <div class="plan-body">
+      <h3>이미지 피처 도입</h3>
+      <p>작품 이미지에서 스타일/색감/구도 정보를 추출하여 가격 예측에 활용한다.</p>
+      <div class="code-block">작품 이미지 &rarr; CLIP/ResNet embedding (512~2048차원)
+  &rarr; PCA 압축 (32~64차원)
+  &rarr; XGBoost 피처로 추가
+
+기대 효과:
+  - 같은 크기/같은 작가라도 "작품의 질"에 따른 가격 차이 학습
+  - Cold Start 작가도 이미지 스타일로 유사 작가 매칭 가능</div>
+      <p>Artsy에서 이미지 URL을 99% 수집했으므로, embedding 추출만 추가하면 된다. 딥러닝 직접 학습이 아니라 <strong>embedding을 트리 모델의 피처로 넣는 하이브리드 방식</strong>.</p>
+    </div>
+  </div>
+
+  <div class="plan-card">
+    <div class="plan-num">3</div>
+    <div class="plan-body">
+      <h3>가격 구간 예측 (Quantile Regression)</h3>
+      <p>단일 가격(점 예측) 대신 가격 구간을 제공하여 신뢰감 향상.</p>
+      <div class="code-block">현재: "예측 가격: 350만원"
+개선: "예측 가격: 280만~420만원 (80% 신뢰구간), 중앙 350만원"</div>
+      <p>활용:<br>
+      &bull; 갤러리: "이 작품은 280~420만원 사이가 적정합니다"<br>
+      &bull; 작가: "비슷한 작가 대비 상위 20% 가격대입니다"</p>
+    </div>
+  </div>
+
+  <div class="plan-card">
+    <div class="plan-num">4</div>
+    <div class="plan-body">
+      <h3>다른 갤러리 데이터 통합</h3>
+      <p>Artue 통합으로 MdAPE가 41.6% &rarr; 14.2%로 개선된 것처럼, 추가 갤러리 데이터가 곧 정확도 향상.</p>
+      <div class="card" style="margin-top:12px">
+      <table>
+        <thead><tr><th>갤러리</th><th>데이터 유형</th><th>기대 효과</th></tr></thead>
+        <tbody>
+          <tr><td>갤러리나우</td><td>온라인 갤러리 판매가</td><td>신진 작가 저가 구간 보강</td></tr>
+          <tr><td>오픈갤러리</td><td>렌탈/판매 가격</td><td>대중 시장 가격 학습</td></tr>
+          <tr><td>아트바젤/KIAF</td><td>아트페어 가격</td><td>국제 시장 가격 보정</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 8 -->
+<!-- ════════════════════════════════════════════ -->
+<h2 id="sec8">8. 모델 설명 방법</h2>
+
+<h3>8.1 왜 트리 모델인가</h3>
+<div class="card">
+<table>
+  <thead><tr><th>모델</th><th class="center">기존 작가 MdAPE</th><th>특징</th></tr></thead>
+  <tbody>
+    <tr class="row-hedonic"><td>헤도닉 회귀</td><td class="center">40.5%</td><td>공식 있음, 비선형 학습 불가</td></tr>
+    <tr class="row-hedonic"><td>헤도닉 + 인터랙션</td><td class="center">30.5%</td><td>강화해도 20.7%p 격차</td></tr>
+    <tr class="row-xgb"><td>XGBoost</td><td class="center">11.6%</td><td>비선형+인터랙션 자동 학습</td></tr>
+  </tbody>
+</table>
+</div>
+<p>헤도닉은 <code>ln(Price) = &beta;&#8320; + &beta;&#8321;&times;ln(Ho) + ...</code> 형태의 공식을 제공하지만, 비선형 관계와 조건부 인터랙션을 학습할 수 없다. 트리 모델은 공식이 없지만, SHAP으로 개별 예측을 %로 분해하여 설명 가능.</p>
+
+<h3>8.2 딥러닝을 쓰지 않는 이유</h3>
+<p>10,307건은 딥러닝에 부족한 데이터이며, 예측 근거 설명이 불가능하다. 향후 이미지 피처 추가 시 딥러닝으로 embedding만 추출하고, 트리 모델에 투입하는 하이브리드 방식이 현실적.</p>
+
+<p>서비스 UI에서의 설명 카드 예시:</p>
+<div class="service-card">
+  <div class="sc-title">Suk Chuljoo</div>
+  <div class="sc-subtitle">New-Scenery-in-Dream 21-21</div>
+  <div class="sc-meta">40호 | 캔버스 유화</div>
+  <div class="sc-price">예측 가격: 17,574,000원</div>
+  <div class="sc-factors">
+    <div class="sc-label">가격을 올린 요인:</div>
+    <div class="sc-item up">&nbsp;&nbsp;+ 작가 세대 (원로): +105%</div>
+    <div class="sc-item up">&nbsp;&nbsp;+ 경력 단계: +17%</div>
+    <div class="sc-item up">&nbsp;&nbsp;+ 그룹전 이력: +10%</div>
+    <div class="sc-item up">&nbsp;&nbsp;+ 갤러리: +9%</div>
+  </div>
+  <div class="sc-factors" style="margin-top:10px">
+    <div class="sc-label">가격을 낮춘 요인:</div>
+    <div class="sc-item down">&nbsp;&nbsp;- 총 작품수: -4%</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 9 -->
+<!-- ════════════════════════════════════════════ -->
+<h2 id="sec9">9. 용어 설명</h2>
+
+<div class="glossary-grid">
+  <div class="glossary-card">
+    <div class="gl-term">MdAPE</div>
+    <div class="gl-def">Median Absolute Percentage Error. 예측 오차의 중앙값. MdAPE 14.2%는 전체 작품 중 절반이 이 오차보다 정확하다는 의미.</div>
+  </div>
+  <div class="glossary-card">
+    <div class="gl-term">W30</div>
+    <div class="gl-def">예측 오차가 30% 이내인 작품의 비율. W30=69.7%이면 10건 중 7건이 실제 가격 대비 30% 이내.</div>
+  </div>
+  <div class="glossary-card">
+    <div class="gl-term">예측/실제 비율</div>
+    <div class="gl-def">1.0x = 정확, 1.5x = 50% 과대 예측. 1.00x는 체계적 편향이 없다는 의미.</div>
+  </div>
+  <div class="glossary-card">
+    <div class="gl-term">Cold Start</div>
+    <div class="gl-def">학습 시 본 적 없는 작가의 가격을 예측하는 상황. 판매 이력이 쌓이면 자동으로 해소.</div>
+  </div>
+  <div class="glossary-card">
+    <div class="gl-term">SHAP</div>
+    <div class="gl-def">SHapley Additive exPlanations. 기준가(전체 평균)에서 출발하여 각 피처가 가격을 올리고 내리는 정도를 %로 분해하는 설명 방법.</div>
+  </div>
+  <div class="glossary-card">
+    <div class="gl-term">XGBoost / CatBoost</div>
+    <div class="gl-def">Gradient Boosted Tree 계열 모델. XGBoost는 기존 작가(MdAPE 14.2%), CatBoost는 Cold Start(MdAPE 33.0%)에서 사용.</div>
+  </div>
+  <div class="glossary-card">
+    <div class="gl-term">호당 가격제</div>
+    <div class="gl-def">한국 갤러리의 가격 관행. Price = &alpha; &times; Ho^&beta;. &beta; = 0.817. 크기 2배이면 가격 1.76배.</div>
+  </div>
+  <div class="glossary-card">
+    <div class="gl-term">헤도닉 회귀</div>
+    <div class="gl-def">ln(Price) = &beta;&#8320; + &beta;&#8321;&times;ln(크기) + ... 형태의 선형 모델. 트리 모델 대비 20%p+ 부정확.</div>
+  </div>
+</div>
+
+</div><!-- .container -->
+</body>
+</html>

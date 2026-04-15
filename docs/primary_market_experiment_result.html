@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1차 시장 가격 예측 실험 결과 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --purple: #bc8cff;
+    --red: #f85149;
+    --max-w: 960px;
+    --nav-h: 52px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 16px); }
+
+  body {
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* Sticky Nav */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13, 17, 23, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav .nav-inner {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 4px;
+    width: 100%;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  nav a:hover, nav a:focus { color: var(--text); background: var(--card); }
+
+  /* Main */
+  main {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* Header */
+  .report-header {
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .report-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
+    font-size: 14px;
+  }
+  .meta-grid dt { color: var(--text-muted); font-weight: 500; }
+  .meta-grid dd { color: var(--text); }
+
+  /* Sections */
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
+    letter-spacing: -0.3px;
+  }
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 28px 0 12px;
+    color: var(--text);
+  }
+  h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 20px 0 8px;
+    color: var(--text-muted);
+  }
+
+  p { margin-bottom: 12px; color: var(--text); }
+  strong { font-weight: 600; }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  /* Tables */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead { background: var(--card); }
+  th {
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  th.center, td.center { text-align: center; }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: rgba(88, 166, 255, 0.04); }
+
+  /* Special row styles */
+  tr.row-green { background: rgba(63, 185, 80, 0.08); }
+  tr.row-green:hover { background: rgba(63, 185, 80, 0.14); }
+  tr.row-accent-border { border-left: 3px solid var(--accent); }
+  tr.row-accent-border td:first-child { padding-left: 11px; }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+  }
+  .badge-green { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+  .badge-orange { background: rgba(210, 153, 34, 0.15); color: var(--orange); }
+
+  /* Purple highlight */
+  .hl-purple { color: var(--purple); font-weight: 600; }
+  td.val-purple { background: rgba(188, 140, 255, 0.08); color: var(--purple); font-weight: 600; }
+
+  /* Code blocks */
+  pre {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    margin: 16px 0;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    background: rgba(110, 118, 129, 0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  pre code { background: none; padding: 0; }
+
+  /* SHAP bar backgrounds */
+  .shap-bar {
+    position: relative;
+    padding: 10px 14px;
+  }
+  .shap-bar-bg {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-radius: 0 4px 4px 0;
+    opacity: 0.13;
+    z-index: 0;
+  }
+  .shap-bar span { position: relative; z-index: 1; }
+
+  /* Waterfall card */
+  .waterfall-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin: 16px 0;
+    max-width: 520px;
+  }
+  .waterfall-card .wf-title { font-weight: 600; font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
+  .waterfall-card .wf-artwork { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .waterfall-card .wf-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+  .waterfall-card .wf-base {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .waterfall-card .wf-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 14px;
+  }
+  .wf-up { color: var(--green); }
+  .wf-down { color: var(--orange); }
+  .wf-result {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  /* Service UI card */
+  .service-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 16px 0;
+    max-width: 440px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+  .service-card .sc-artist { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .service-card .sc-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .service-card .sc-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .service-card .sc-price {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 20px;
+    letter-spacing: -0.5px;
+  }
+  .service-card .sc-section-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .service-card .sc-factor {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+  }
+  .service-card .sc-factor:last-child { border-bottom: none; }
+  .sc-factor-up { color: var(--green); font-weight: 500; }
+  .sc-factor-down { color: var(--orange); font-weight: 500; }
+  .sc-divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* Glossary */
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .glossary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .glossary-card.glossary-wide { grid-column: 1 / -1; }
+  .glossary-card .gc-term {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+    color: var(--accent);
+  }
+  .glossary-card .gc-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Scenario badge */
+  .scenario-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    background: rgba(63, 185, 80, 0.12);
+    color: var(--green);
+    border: 1px solid rgba(63, 185, 80, 0.3);
+  }
+
+  /* Highlighted gap */
+  .gap-highlight {
+    background: rgba(248, 81, 73, 0.08);
+    border: 1px solid rgba(248, 81, 73, 0.25);
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin: 12px 0;
+    font-weight: 600;
+    color: var(--red);
+    display: inline-block;
+  }
+
+  /* Lists */
+  ul, ol { margin: 8px 0 16px 20px; }
+  li { margin-bottom: 6px; }
+
+  /* Blockquote */
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    background: rgba(88, 166, 255, 0.04);
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    body { font-size: 14px; }
+    .report-header h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+    h3 { font-size: 15px; }
+    main { padding: 20px 14px 60px; }
+    nav a { font-size: 12px; padding: 5px 8px; }
+    .glossary-grid { grid-template-columns: 1fr; }
+    .waterfall-card, .service-card { max-width: 100%; }
+    th, td { padding: 8px 10px; font-size: 13px; }
+  }
+
+  /* Print */
+  @media print {
+    :root {
+      --bg: #fff;
+      --card: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --text-muted: #656d76;
+      --accent: #0969da;
+      --green: #1a7f37;
+      --orange: #9a6700;
+      --purple: #8250df;
+      --red: #cf222e;
+    }
+    nav { display: none; }
+    body { font-size: 11pt; }
+    main { max-width: 100%; padding: 0; }
+    section { page-break-inside: avoid; }
+    .table-wrap { border: 1px solid var(--border); }
+    pre { border: 1px solid var(--border); }
+    .service-card, .waterfall-card, .glossary-card, .card {
+      box-shadow: none;
+      border: 1px solid var(--border);
+    }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#s1">1. 호당 검증</a>
+    <a href="#s2">2. 모델 성능</a>
+    <a href="#s3">3. 피처 분석</a>
+    <a href="#s4">4. 에러 분석</a>
+    <a href="#s5">5. 개선 이력</a>
+    <a href="#s6">6. 데이터 품질</a>
+    <a href="#s7">7. 한계/과제</a>
+    <a href="#s8">8. 모델 선택</a>
+    <a href="#s9">9. 용어 설명</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- Header -->
+<header class="report-header">
+  <h1>1차 시장 가격 예측 실험 결과 보고서</h1>
+  <dl class="meta-grid">
+    <dt>실험일</dt><dd>2026-04-13</dd>
+    <dt>데이터</dt><dd>Artsy 한국 작가 5개 카테고리 9,975건 / 930명 작가</dd>
+    <dt>카테고리</dt><dd>Painting, Mixed Media, Drawing/Collage/Paper, Photography, Print</dd>
+    <dt>모델</dt><dd>XGBoost (기존 작가, MdAPE 9.7%) + CatBoost v2 (Cold Start, MdAPE 31.0%)</dd>
+  </dl>
+</header>
+
+<!-- Section 1 -->
+<section id="s1">
+  <h2>1. 호당 가격제 검증</h2>
+  <p>한국 갤러리 가격 체계의 핵심 구조 <code>Price = &alpha; &times; Ho^&beta;</code>를 Artsy 데이터로 검증했다.</p>
+
+  <h3>검증 조건</h3>
+  <p>Painting 중 Canvas/Linen + Unique + ho &gt; 0인 작품 <strong>5,276건</strong>으로 검증.</p>
+
+  <h3>가설 검증 결과</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>가설</th><th>기준</th><th>결과</th><th class="center">판정</th></tr></thead>
+      <tbody>
+        <tr><td><strong>H1</strong>: &beta; &isin; [0.6, 0.9]</td><td>OLS &beta; 추정</td><td><strong>&beta; = 0.817</strong> (CI: 0.799~0.836)</td><td class="center">성립</td></tr>
+        <tr><td><strong>H2</strong>: KRW &beta;가 0.74에 가까움</td><td>KRW vs USD 비교</td><td>KRW <strong>&beta;=0.749</strong>, USD &beta;=0.840</td><td class="center">성립</td></tr>
+        <tr><td><strong>H3</strong>: CV&lt;0.3 작가 50%+</td><td>303명 중 안정 비율</td><td><strong>71%</strong> (217명 안정)</td><td class="center">성립</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>핵심 발견</h3>
+  <ul>
+    <li><strong>&beta; = 0.817</strong>: 작품 크기가 커질수록 가격이 체감 증가 (크기 2배 &rarr; 가격 1.76배)</li>
+    <li><strong>KRW(국내) &beta; = 0.749</strong>: Shin(2010)의 0.74와 거의 일치. 국내 갤러리에서 호당 가격제가 실제로 작동</li>
+    <li><strong>USD(국제) &beta; = 0.840</strong>: 국제 갤러리는 크기 프리미엄이 국내보다 더 강함</li>
+    <li><strong>71% 안정</strong>: 대부분의 작가가 호당가 기준으로 일관된 가격 책정</li>
+  </ul>
+
+  <h3>시나리오 판정: <span class="scenario-badge">A (호당 성립)</span></h3>
+  <p>&rarr; 호당 이론 피처를 모델에 포함하는 Hybrid 접근이 유효함을 데이터로 확인.</p>
+</section>
+
+<!-- Section 2 -->
+<section id="s2">
+  <h2>2. 모델 성능</h2>
+
+  <h3>2.1 평가 방법</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>방법</th><th>설명</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td><strong>GroupKFold</strong></td><td>같은 작가가 train/val에 섞이지 않음</td><td>Cold Start (새 작가 예측)</td></tr>
+        <tr><td><strong>KFold</strong></td><td>같은 작가가 train/val에 섞일 수 있음</td><td>기존 작가 예측 (실서비스)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>2.2 모델 비교 (CatBoost vs XGBoost vs LightGBM)</h3>
+  <p>동일 피처/동일 조건에서 3개 모델을 비교한 결과:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>모델</th><th class="center">기존 작가 MdAPE</th><th class="center">기존 작가 R&sup2;</th><th class="center">Cold Start MdAPE</th><th class="center">Cold Start R&sup2;</th></tr></thead>
+      <tbody>
+        <tr class="row-green"><td><strong>XGBoost</strong></td><td class="center"><strong>9.7%</strong></td><td class="center"><strong>0.930</strong></td><td class="center">31.2%</td><td class="center">0.805</td></tr>
+        <tr><td>LightGBM</td><td class="center">11.2%</td><td class="center">0.927</td><td class="center">33.1%</td><td class="center">0.794</td></tr>
+        <tr class="row-accent-border"><td><strong>CatBoost</strong></td><td class="center">15.7%</td><td class="center">0.910</td><td class="center"><strong>31.0%</strong></td><td class="center"><strong>0.810</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>기존 작가에서는 XGBoost가 압도적. Cold Start에서는 CatBoost가 범주형 피처 직접 처리 강점으로 근소하게 우위.</p>
+
+  <h3>2.3 최종 성능 (상황별 모델 분기)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>지표</th><th class="center">Cold Start &mdash; CatBoost (새 작가)</th><th class="center">기존 작가 &mdash; XGBoost</th><th class="center">목표</th></tr></thead>
+      <tbody>
+        <tr><td><strong>MdAPE</strong></td><td class="center">31.0%</td><td class="center"><strong>9.7%</strong></td><td class="center">&lt; 25%</td></tr>
+        <tr><td><strong>MAPE</strong></td><td class="center">49.5%</td><td class="center"><strong>21.4%</strong></td><td class="center">&lt; 35%</td></tr>
+        <tr><td><strong>W30</strong></td><td class="center">49.0%</td><td class="center"><strong>82.2%</strong></td><td class="center">&gt; 60%</td></tr>
+        <tr><td><strong>W50</strong></td><td class="center">70.6%</td><td class="center"><strong>92.1%</strong></td><td class="center">&gt; 75%</td></tr>
+        <tr><td><strong>R&sup2;</strong></td><td class="center">0.810</td><td class="center"><strong>0.930</strong></td><td class="center">&gt; 0.70</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>2.4 목표 달성 현황</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>지표</th><th class="center">기존 작가 (XGBoost)</th><th class="center">Cold Start (CatBoost)</th></tr></thead>
+      <tbody>
+        <tr><td>MdAPE &lt; 25%</td><td class="center"><span class="badge badge-green">달성</span> (9.7%)</td><td class="center"><span class="badge badge-orange">미달</span> (31.0%)</td></tr>
+        <tr><td>MAPE &lt; 35%</td><td class="center"><span class="badge badge-green">달성</span> (21.4%)</td><td class="center"><span class="badge badge-orange">미달</span> (49.5%)</td></tr>
+        <tr><td>W30 &gt; 60%</td><td class="center"><span class="badge badge-green">달성</span> (82.2%)</td><td class="center"><span class="badge badge-orange">미달</span> (49.0%)</td></tr>
+        <tr><td>W50 &gt; 75%</td><td class="center"><span class="badge badge-green">달성</span> (92.1%)</td><td class="center"><span class="badge badge-orange">미달</span> (70.6%)</td></tr>
+        <tr><td>R&sup2; &gt; 0.70</td><td class="center"><span class="badge badge-green">달성</span> (0.930)</td><td class="center"><span class="badge badge-green">달성</span> (0.810)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>기존 작가 예측</strong>: 모든 목표 달성. 가격의 93.0%를 설명. 82.2%의 작품이 30% 이내로 예측.</p>
+  <p><strong>Cold Start</strong>: R&sup2;는 달성(0.810)이나 MdAPE/W30 미달. 한번도 본 적 없는 작가를 프로필만으로 예측하는 구조적 한계.</p>
+
+  <h3>2.5 실서비스 권장 구조</h3>
+  <pre><code>if 작가의 기존 가격 데이터가 있음:
+    &rarr; XGBoost 모델 &mdash; MdAPE 9.7%
+else:
+    &rarr; CatBoost 모델 &mdash; MdAPE 31.0%</code></pre>
+
+  <h3>2.6 카테고리별 성능 (v5 KFold 기준)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>카테고리</th><th class="center">MdAPE</th><th class="center">W30</th><th class="center">건수</th></tr></thead>
+      <tbody>
+        <tr><td>Print</td><td class="center">12.2%</td><td class="center">75.7%</td><td class="center">411</td></tr>
+        <tr><td>Drawing/Collage/Paper</td><td class="center">12.9%</td><td class="center">79.8%</td><td class="center">510</td></tr>
+        <tr><td>Painting</td><td class="center">13.6%</td><td class="center">79.2%</td><td class="center">7,541</td></tr>
+        <tr><td>Photography</td><td class="center">14.4%</td><td class="center">81.9%</td><td class="center">409</td></tr>
+        <tr><td>Mixed Media</td><td class="center">16.1%</td><td class="center">73.4%</td><td class="center">1,104</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Print와 Drawing이 가장 정확. Mixed Media는 매체 다양성으로 상대적으로 부정확.</p>
+</section>
+
+<!-- Section 3 -->
+<section id="s3">
+  <h2>3. 피처 분석</h2>
+
+  <h3>3.1 피처 중요도 &mdash; 기존 작가 모델 (v5)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="center">순위</th><th>피처</th><th class="center">중요도</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td class="center">1</td><td>knn_artist_price</td><td class="center">31.2</td><td>K-NN 유사 작가 가격 추정</td></tr>
+        <tr><td class="center">2</td><td>ho_x_career</td><td class="center">10.2</td><td>호수 &times; 경력 단계 인터랙션</td></tr>
+        <tr><td class="center">3</td><td>size_bucket</td><td class="center">6.3</td><td>크기 구간 (XS/S/M/L/XL)</td></tr>
+        <tr><td class="center">4</td><td>ln_area</td><td class="center">5.4</td><td>면적 (로그)</td></tr>
+        <tr><td class="center">5</td><td>artist_birth_year</td><td class="center">4.4</td><td>작가 생년</td></tr>
+        <tr><td class="center">6</td><td>cat_ho_power</td><td class="center">4.1</td><td>카테고리별 호당 곡선</td></tr>
+        <tr><td class="center">7</td><td>area_cm2</td><td class="center">3.4</td><td>면적 원본</td></tr>
+        <tr><td class="center">8</td><td>ho_power</td><td class="center">2.5</td><td>ho^0.74 (호당 이론)</td></tr>
+        <tr><td class="center">9</td><td>gallery_price_level</td><td class="center">2.4</td><td>갤러리 가격대</td></tr>
+        <tr><td class="center">10</td><td>artist_work_count</td><td class="center">2.4</td><td>데이터 내 작가 작품 수</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.2 피처 그룹별 기여도</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>그룹</th><th class="center">v5 (기존 작가)</th><th class="center">v4 (Cold Start)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>유사 작가 가격 (K-NN)</strong></td><td class="center"><strong>31.2%</strong></td><td class="center">&mdash;</td></tr>
+        <tr><td><strong>크기 (호당)</strong></td><td class="center">21.6%</td><td class="center"><strong>39.1%</strong></td></tr>
+        <tr><td><strong>작가 프로필</strong></td><td class="center">9.4%</td><td class="center"><strong>25.8%</strong></td></tr>
+        <tr><td><strong>갤러리</strong></td><td class="center">4.8%</td><td class="center">11.8%</td></tr>
+        <tr><td><strong>인터랙션</strong></td><td class="center">14.3%</td><td class="center">&mdash;</td></tr>
+        <tr><td><strong>카테고리</strong></td><td class="center">4.1%</td><td class="center">7.9%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.3 핵심 인사이트</h3>
+  <ol>
+    <li><strong>K-NN 유사 작가 가격</strong>(31.2%): 기존 작가 예측에서 압도적. "비슷한 경력의 작가가 얼마에 파는가"가 가장 강력한 예측 변수. 단, Cold Start에서는 작동하지 않음</li>
+    <li><strong>크기(호당) 피처</strong>(21.6%): 두 모델 모두 핵심. 호당 가격제가 데이터에서 확인됨</li>
+    <li><strong>cat_ho_power</strong>(4.1%): 카테고리별 크기-가격 관계 차이를 반영. Photography와 Print는 크기 프리미엄이 Painting보다 작음</li>
+    <li><strong>ho_x_career 인터랙션</strong>(10.2%): 같은 크기라도 경력 단계에 따라 가격이 다름</li>
+  </ol>
+
+  <h3>3.4 K-NN 최적화 결과</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="center">k값</th><th>거리 함수</th><th class="center">GroupKFold MdAPE</th></tr></thead>
+      <tbody>
+        <tr><td class="center">3</td><td>euclidean</td><td class="center">41.4%</td></tr>
+        <tr><td class="center">5</td><td>euclidean</td><td class="center">38.7%</td></tr>
+        <tr><td class="center">7</td><td>euclidean</td><td class="center">38.3%</td></tr>
+        <tr><td class="center">10</td><td>euclidean</td><td class="center">37.8%</td></tr>
+        <tr><td class="center">3</td><td>cosine</td><td class="center">41.9%</td></tr>
+        <tr><td class="center">10</td><td>cosine</td><td class="center">38.3%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>결론</strong>: K-NN은 k값/거리함수 변경으로도 GroupKFold(Cold Start) 개선 불가. K-NN 기반 Cold Start 개선 한계 확인.</p>
+</section>
+
+<!-- Section 4 -->
+<section id="s4">
+  <h2>4. 에러 분석</h2>
+
+  <h3>4.1 가격대별 에러</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>가격대</th><th class="center">MdAPE</th><th class="center">W30</th><th class="center">과대 예측 비율</th><th class="center">건수</th></tr></thead>
+      <tbody>
+        <tr><td>~100만</td><td class="center">22.8%</td><td class="center">60.0%</td><td class="center">72%</td><td class="center">948</td></tr>
+        <tr><td>100~500만</td><td class="center">14.6%</td><td class="center">75.1%</td><td class="center">53%</td><td class="center">3,365</td></tr>
+        <tr><td>500만~1천만</td><td class="center">16.4%</td><td class="center">77.3%</td><td class="center">46%</td><td class="center">1,296</td></tr>
+        <tr><td>1천~5천만</td><td class="center">14.7%</td><td class="center">78.1%</td><td class="center">35%</td><td class="center">1,717</td></tr>
+        <tr><td>5천만~1억</td><td class="center">17.9%</td><td class="center">65.7%</td><td class="center">25%</td><td class="center">204</td></tr>
+        <tr><td>1억+</td><td class="center">21.4%</td><td class="center">62.7%</td><td class="center">15%</td><td class="center">110</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>패턴</strong>: 저가 작품은 과대 예측(72%), 고가 작품은 과소 예측(85%) 경향. 100만~5천만 구간이 가장 정확.</p>
+
+  <h3>4.2 지지체별 에러</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>지지체</th><th class="center">MdAPE</th><th class="center">W30</th><th class="center">건수</th></tr></thead>
+      <tbody>
+        <tr><td>Canvas</td><td class="center">15.5%</td><td class="center">74.9%</td><td class="center">4,968</td></tr>
+        <tr><td>Linen</td><td class="center">11.4%</td><td class="center">83.5%</td><td class="center">399</td></tr>
+        <tr><td>Paper</td><td class="center">17.1%</td><td class="center">71.6%</td><td class="center">1,220</td></tr>
+        <tr><td>Panel</td><td class="center">24.4%</td><td class="center">61.6%</td><td class="center">276</td></tr>
+        <tr><td>Silk</td><td class="center">16.2%</td><td class="center">74.5%</td><td class="center">212</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>4.3 경력 단계별 에러</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>경력 단계</th><th class="center">MdAPE</th><th class="center">W30</th><th class="center">건수</th></tr></thead>
+      <tbody>
+        <tr><td>1 (신진)</td><td class="center">19.7%</td><td class="center">67.7%</td><td class="center">1,820</td></tr>
+        <tr><td>2 (신진 후기)</td><td class="center">14.8%</td><td class="center">76.2%</td><td class="center">2,568</td></tr>
+        <tr><td>3 (중견)</td><td class="center">14.0%</td><td class="center">77.7%</td><td class="center">1,999</td></tr>
+        <tr><td>4 (원로)</td><td class="center">16.4%</td><td class="center">71.7%</td><td class="center">1,253</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Section 5 -->
+<section id="s5">
+  <h2>5. 개선 이력</h2>
+
+  <h3>5.1 Painting Only (v1~v5)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>버전</th><th>개선 내용</th><th class="center">KFold MdAPE</th><th class="center">KFold R&sup2;</th><th class="center">Group MdAPE</th><th class="center">Group R&sup2;</th></tr></thead>
+      <tbody>
+        <tr><td>v1</td><td>기본 30피처</td><td class="center">16.3%</td><td class="center">0.908</td><td class="center">31.0%</td><td class="center">0.813</td></tr>
+        <tr><td>v3</td><td>career_stage + profile_score + bio NLP</td><td class="center">15.8%</td><td class="center">0.912</td><td class="center">31.0%</td><td class="center">0.818</td></tr>
+        <tr><td>v4</td><td>이상치 제거 + size_bucket + 튜닝</td><td class="center">13.7%</td><td class="center">0.934</td><td class="center val-purple"><strong>30.4%</strong></td><td class="center val-purple"><strong>0.821</strong></td></tr>
+        <tr><td>v5</td><td>K-NN 유사 작가 + 인터랙션</td><td class="center val-purple"><strong>12.4%</strong></td><td class="center val-purple"><strong>0.946</strong></td><td class="center">34.1%</td><td class="center">0.767</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>5.2 5개 카테고리 + 모델 비교 (최종)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>단계</th><th>모델</th><th class="center">KFold MdAPE</th><th class="center">KFold R&sup2;</th><th class="center">Group MdAPE</th><th class="center">Group R&sup2;</th></tr></thead>
+      <tbody>
+        <tr><td>CatBoost v4</td><td>CatBoost</td><td class="center">15.5%</td><td class="center">0.926</td><td class="center val-purple"><strong>31.0%</strong></td><td class="center val-purple"><strong>0.810</strong></td></tr>
+        <tr><td>CatBoost v5 (K-NN)</td><td>CatBoost</td><td class="center">13.6%</td><td class="center">0.938</td><td class="center">37.6%</td><td class="center">0.747</td></tr>
+        <tr><td>모델 비교</td><td>XGBoost</td><td class="center val-purple"><strong>9.7%</strong></td><td class="center">0.930</td><td class="center">31.2%</td><td class="center">0.805</td></tr>
+        <tr><td>모델 비교</td><td>LightGBM</td><td class="center">11.2%</td><td class="center">0.927</td><td class="center">33.1%</td><td class="center">0.794</td></tr>
+        <tr><td>3모델 앙상블</td><td>CB+XGB+LGB</td><td class="center">11.9%</td><td class="center">0.926</td><td class="center">31.4%</td><td class="center">0.811</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>최종 선택: 상황별 모델 분기</strong></p>
+  <ul>
+    <li>기존 작가 &rarr; XGBoost 단독 (MdAPE 9.7%) &mdash; 앙상블(11.9%)보다 단독이 더 우수</li>
+    <li>Cold Start &rarr; CatBoost 단독 (MdAPE 31.0%) &mdash; 범주형 피처 처리 강점</li>
+  </ul>
+
+  <h3>5.3 핵심 개선 기여</h3>
+  <ul>
+    <li><strong>v1&rarr;v3</strong>: career_stage 분류 개선 (중견 0명&rarr;1,999명)</li>
+    <li><strong>v3&rarr;v4</strong>: 작가 내 가격 이상치 제거 + 하이퍼파라미터 튜닝</li>
+    <li><strong>v4&rarr;v5</strong>: K-NN 유사 작가 가격 (기존 작가 CatBoost MdAPE 15.5%&rarr;13.6%)</li>
+    <li><strong>Painting&rarr;5cat</strong>: 카테고리 확장 + cat_ho_power 인터랙션</li>
+    <li><strong>모델 비교</strong>: XGBoost가 기존 작가에서 CatBoost 대비 6%p 우수 (15.7%&rarr;9.7%)</li>
+  </ul>
+
+  <h3>5.4 실패한 시도</h3>
+  <ul>
+    <li><strong>fold-safe artist 통계</strong> (v2): GroupKFold Cold Start에서 global fallback만 적용되어 MdAPE 48.8%로 급락</li>
+    <li><strong>K-NN Cold Start 개선</strong>: k값(3~10), 거리함수(euclidean/cosine) 전수 탐색했으나 GroupKFold 개선 불가</li>
+    <li><strong>3모델 앙상블</strong>: 균등(11.9%) 및 가중(11.1%) 모두 XGBoost 단독(9.7%)보다 낮은 성능. CatBoost가 앙상블 평균을 끌어내림</li>
+  </ul>
+</section>
+
+<!-- Section 6 -->
+<section id="s6">
+  <h2>6. 데이터 품질</h2>
+
+  <h3>6.1 클린징 결과</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>단계</th><th>건수</th><th>제거</th></tr></thead>
+      <tbody>
+        <tr><td>원본 (Artsy 전체)</td><td>30,046</td><td>&mdash;</td></tr>
+        <tr><td>5개 카테고리 + 가격 공개</td><td>10,209</td><td>19,837</td></tr>
+        <tr><td>가격 10만~50억 + 크기 유효</td><td>10,102</td><td>107</td></tr>
+        <tr><td>작가 내 이상치 제거</td><td>9,975</td><td>127</td></tr>
+        <tr><td><strong>최종</strong></td><td><strong>9,975</strong></td><td><strong>234건 (2.3%)</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>6.2 카테고리 분포</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>카테고리</th><th>건수</th><th>비율</th></tr></thead>
+      <tbody>
+        <tr><td>Painting</td><td>7,541</td><td>75.6%</td></tr>
+        <tr><td>Mixed Media</td><td>1,104</td><td>11.1%</td></tr>
+        <tr><td>Drawing/Collage/Paper</td><td>510</td><td>5.1%</td></tr>
+        <tr><td>Print</td><td>411</td><td>4.1%</td></tr>
+        <tr><td>Photography</td><td>409</td><td>4.1%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>6.3 피처 완성도</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>피처</th><th class="center">완성도</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td>크기, 매체, 카테고리</td><td class="center">99~100%</td><td></td></tr>
+        <tr><td>artist_birth_year</td><td class="center">80%</td><td></td></tr>
+        <tr><td>career_age</td><td class="center">76%</td><td>shows 데이터 없는 작가</td></tr>
+        <tr><td>bio NLP 피처</td><td class="center">100%</td><td>bio 없으면 0</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Section 7 -->
+<section id="s7">
+  <h2>7. 한계와 향후 과제</h2>
+
+  <h3>7.1 Cold Start 한계</h3>
+  <p>MdAPE 32.5%는 새 작가 예측의 구조적 한계. K-NN 최적화(k=3~10, euclidean/cosine)로도 개선되지 않음. 작가 2~3건 학습 후 MdAPE가 13.6%로 급격히 향상.</p>
+
+  <h3>7.2 Artsy 가격 = 호가 (Listing Price)</h3>
+  <p>Artsy 가격은 실거래가가 아닌 갤러리 호가. Sold 작품(6,891건)의 가격이 비공개라 실거래가 검증 불가.</p>
+
+  <h3>7.3 가격 비공개 편향</h3>
+  <p>"Price on request" 7,027건은 고가 작품일 가능성 높음. 고가(1억+) 작품의 과소 예측 경향(85%)이 이를 반영.</p>
+
+  <h3>7.4 향후 과제</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>과제</th><th>기대 효과</th><th class="center">우선순위</th></tr></thead>
+      <tbody>
+        <tr><td>이미지 피처 (작품 이미지 embedding)</td><td>Cold Start + 스타일 반영</td><td class="center">1</td></tr>
+        <tr><td>Artsy bio NLP 고도화 (수상명/학교명 추출)</td><td>Cold Start 개선</td><td class="center">1</td></tr>
+        <tr><td>가격대별 보정 (저가 과대/고가 과소)</td><td>극단값 정확도</td><td class="center">2</td></tr>
+        <tr><td>Two-Stage 모델 (호당 &alpha; 명시적 분리)</td><td>해석성 향상</td><td class="center">2</td></tr>
+        <tr><td>데이터 월 1회 자동 갱신</td><td>최신 시장 반영</td><td class="center">3</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Section 8 -->
+<section id="s8">
+  <h2>8. 모델 선택 근거</h2>
+
+  <h3>8.1 왜 트리 모델인가 &mdash; 헤도닉 회귀와의 비교</h3>
+  <p>헤도닉 회귀(<code>ln(Price) = &beta;&#8320; + &beta;&#8321;&times;ln(Ho) + &beta;&#8322;&times;birth_year + ...</code>)는 공식이 명확하지만, 동일 데이터에서 실측 비교한 결과 트리 모델과 큰 격차가 있다:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>모델</th><th class="center">기존 작가 MdAPE</th><th class="center">Cold Start MdAPE</th><th class="center">R&sup2;</th></tr></thead>
+      <tbody>
+        <tr><td>단순 헤도닉</td><td class="center">40.5%</td><td class="center">44.5%</td><td class="center">0.732</td></tr>
+        <tr><td>헤도닉 + 인터랙션</td><td class="center">30.5%</td><td class="center">34.3%</td><td class="center">0.812</td></tr>
+        <tr><td>헤도닉 + Spline(비선형)</td><td class="center">30.5%</td><td class="center">35.6%</td><td class="center">0.817</td></tr>
+        <tr class="row-green"><td><strong>XGBoost</strong></td><td class="center"><strong>9.7%</strong></td><td class="center"><strong>31.5%</strong></td><td class="center"><strong>0.931</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>헤도닉을 인터랙션, 비선형 항으로 강화해도 XGBoost와 <span class="gap-highlight">20.7%p 격차</span>. 이는 가중치 튜닝으로 해결할 수 없는 구조적 한계이다:</p>
+  <ul>
+    <li><strong>비선형</strong>: 호수 5&rarr;10의 가격 증가폭 &ne; 호수 50&rarr;100의 증가폭</li>
+    <li><strong>조건부 인터랙션</strong>: 원로 작가의 대형 캔버스 vs 신진 작가의 소형 종이는 크기-가격 관계가 완전히 다름</li>
+    <li><strong>갤러리 개별 효과</strong>: 66개 갤러리 각각의 가격 수준을 트리는 자동 학습하지만, 헤도닉은 데이터 부족으로 학습 불가</li>
+  </ul>
+
+  <h3>8.2 XGBoost / CatBoost / LightGBM 3모델 비교 (실측)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>모델</th><th class="center">기존 작가 MdAPE</th><th class="center">Cold Start MdAPE</th><th class="center">범주형 처리</th><th class="center">선택</th></tr></thead>
+      <tbody>
+        <tr><td><strong>XGBoost</strong></td><td class="center"><strong>9.7%</strong></td><td class="center">31.2%</td><td class="center">인코딩 필요</td><td class="center">기존 작가용</td></tr>
+        <tr><td>LightGBM</td><td class="center">11.2%</td><td class="center">33.1%</td><td class="center">인코딩 필요</td><td class="center">&mdash;</td></tr>
+        <tr><td><strong>CatBoost</strong></td><td class="center">15.7%</td><td class="center"><strong>31.0%</strong></td><td class="center">직접 처리</td><td class="center">Cold Start용</td></tr>
+        <tr><td>3모델 앙상블</td><td class="center">11.9%</td><td class="center">31.4%</td><td class="center">&mdash;</td><td class="center">단독보다 낮음</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>앙상블(3모델 평균)은 XGBoost 단독보다 성능이 낮아 채택하지 않았다.</p>
+
+  <h3>8.3 트리 모델의 설명: SHAP</h3>
+  <p>트리 모델은 하나의 공식이 없지만, <strong>SHAP(SHapley Additive exPlanations)</strong>으로 개별 예측을 피처별 기여도로 분해할 수 있다.</p>
+
+  <h4>전체 피처 기여도 (SHAP 기반)</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>요인</th><th class="center">비중</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>작품 크기</td>
+          <td class="shap-bar center" style="position:relative;"><div class="shap-bar-bg" style="width:100%;background:var(--accent);"></div><span><strong>34.4%</strong></span></td>
+          <td>면적, 호수, 크기 곡선 등 합산</td>
+        </tr>
+        <tr>
+          <td>작가 세대</td>
+          <td class="shap-bar center" style="position:relative;"><div class="shap-bar-bg" style="width:44.8%;background:var(--purple);"></div><span><strong>15.4%</strong></span></td>
+          <td>나이/세대가 가격의 가장 큰 단일 결정 요인</td>
+        </tr>
+        <tr>
+          <td>갤러리</td>
+          <td class="shap-bar center" style="position:relative;"><div class="shap-bar-bg" style="width:25.6%;background:var(--green);"></div><span>8.8%</span></td>
+          <td>어떤 갤러리에서 판매하는가</td>
+        </tr>
+        <tr>
+          <td>아트페어</td>
+          <td class="shap-bar center" style="position:relative;"><div class="shap-bar-bg" style="width:11.0%;background:var(--orange);"></div><span>3.8%</span></td>
+          <td>국제 전시 참여 이력</td>
+        </tr>
+        <tr>
+          <td>지지체</td>
+          <td class="shap-bar center" style="position:relative;"><div class="shap-bar-bg" style="width:10.5%;background:var(--accent);"></div><span>3.6%</span></td>
+          <td>캔버스/종이/패널</td>
+        </tr>
+        <tr>
+          <td>시장 관심도</td>
+          <td class="shap-bar center" style="position:relative;"><div class="shap-bar-bg" style="width:9.9%;background:var(--green);"></div><span>3.4%</span></td>
+          <td>Artsy 팔로워 수</td>
+        </tr>
+        <tr>
+          <td>경력 단계</td>
+          <td class="shap-bar center" style="position:relative;"><div class="shap-bar-bg" style="width:9.6%;background:var(--purple);"></div><span>3.3%</span></td>
+          <td>신진/중견/원로</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>개별 작품 SHAP 분해 예시</h4>
+  <div class="waterfall-card">
+    <div class="wf-title">Suk Chuljoo</div>
+    <div class="wf-artwork">New-Scenery-in-Dream 21-21</div>
+    <div class="wf-meta">40호 | 캔버스 유화 | 원로</div>
+    <div class="wf-base">기준가 (전체 평균): <strong>4,504,000원</strong></div>
+    <div class="wf-line"><span class="wf-up">&#8593; 작가 세대 (1944년생)</span><span class="wf-up">+105% &rarr; 9,240,000원</span></div>
+    <div class="wf-line"><span class="wf-up">&#8593; 경력 단계 (원로)</span><span class="wf-up">+17% &rarr; 10,812,000원</span></div>
+    <div class="wf-line"><span class="wf-up">&#8593; 그룹전 이력</span><span class="wf-up">+10% &rarr; 11,901,000원</span></div>
+    <div class="wf-line"><span class="wf-up">&#8593; 갤러리</span><span class="wf-up">+9% &rarr; 12,941,000원</span></div>
+    <div class="wf-line"><span class="wf-up">&#8593; 아트페어 참여</span><span class="wf-up">+9% &rarr; 14,044,000원</span></div>
+    <div class="wf-line"><span class="wf-up">&#8593; 크기 (40호)</span><span class="wf-up">+9% &rarr; 15,231,000원</span></div>
+    <div class="wf-result">
+      <span>예측가: 17,574,000원</span>
+      <span style="color:var(--green)">오차 6.1%</span>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">실제가: 16,560,000원</div>
+  </div>
+
+  <h4>서비스에서 보여줄 형태</h4>
+  <div class="service-card">
+    <div class="sc-artist">Suk Chuljoo</div>
+    <div class="sc-title">New-Scenery-in-Dream 21-21</div>
+    <div class="sc-meta">40호 | 캔버스 유화</div>
+    <div class="sc-price">17,574,000원</div>
+    <div class="sc-section-label">가격을 올린 요인</div>
+    <div class="sc-factor"><span>작가 세대 (원로)</span><span class="sc-factor-up">+105%</span></div>
+    <div class="sc-factor"><span>경력 단계</span><span class="sc-factor-up">+17%</span></div>
+    <div class="sc-factor"><span>그룹전 이력</span><span class="sc-factor-up">+10%</span></div>
+    <div class="sc-factor"><span>갤러리</span><span class="sc-factor-up">+9%</span></div>
+    <div class="sc-divider"></div>
+    <div class="sc-section-label">가격을 낮춘 요인</div>
+    <div class="sc-factor"><span>총 작품수</span><span class="sc-factor-down">-4%</span></div>
+  </div>
+
+  <p>헤도닉 공식은 없지만, <strong>"이 가격이 왜 이 수준인지"를 %로 명확하게 설명</strong> 가능.</p>
+
+  <h3>8.4 딥러닝을 쓰지 않는 이유</h3>
+  <p>9,975건은 딥러닝에 부족한 데이터이며, 예측 근거 설명이 불가능하다. 향후 이미지 피처(작품 스타일, 색감)를 추가할 때는 딥러닝으로 이미지 embedding을 추출한 뒤, 트리 모델의 피처로 투입하는 <strong>하이브리드 방식</strong>이 현실적이다.</p>
+</section>
+
+<!-- Section 9 -->
+<section id="s9">
+  <h2>9. 용어 설명</h2>
+
+  <div class="glossary-grid">
+
+    <div class="glossary-card glossary-wide">
+      <div class="gc-term">K-NN (K-Nearest Neighbors) 유사 작가 가격 추정</div>
+      <div class="gc-desc">
+        "이 작가와 경력이 비슷한 작가 K명을 찾아서, 그 작가들의 평균 가격을 참고값으로 쓴다"는 방법.
+        <pre><code>예시: 새 작가 A의 프로필
+  생년 1985, 팔로워 500, 개인전 3회, 그룹전 5회, 아트페어 2회
+
+&rarr; 데이터에서 프로필이 가장 비슷한 작가 7명을 탐색:
+  작가 B (생년 1983, 팔로워 450, 개인전 4회) &rarr; 평균 가격 500만원
+  작가 C (생년 1987, 팔로워 600, 개인전 2회) &rarr; 평균 가격 400만원
+  작가 D (생년 1984, 팔로워 520, 개인전 3회) &rarr; 평균 가격 480만원
+  ...
+
+&rarr; 7명의 가중 평균 = 460만원
+&rarr; 이 값이 "knn_artist_price" 피처로 모델에 입력됨</code></pre>
+        이 피처가 기존 작가 예측에서 <strong>중요도 31.2%로 1위</strong>인 이유는, 미술품 가격이 결국 <strong>"비슷한 급의 작가가 얼마에 파는가"</strong>에 가장 크게 좌우되기 때문이다.<br><br>
+        단, Cold Start(새 작가)에서는 학습에 없는 작가라 "비슷한 작가"를 찾아도 정확도가 떨어져 효과가 제한적이다.
+      </div>
+    </div>
+
+    <div class="glossary-card glossary-wide">
+      <div class="gc-term">호당 가격제 (Ho-based Pricing)</div>
+      <div class="gc-desc">
+        한국 갤러리의 가격 책정 관행. 캔버스 면적을 "호(號)" 단위로 환산하고, 작가별 "호당 단가(&alpha;)"를 곱해 가격을 산출한다.
+        <pre><code>Price = &alpha; &times; Ho^&beta;
+  &alpha;: 작가별 호당 기준가 (작가의 명성/경력에 따라 다름)
+  Ho: 작품의 호수 (면적 기반)
+  &beta;: 체감 계수 (크기가 커질수록 단위당 가격이 줄어드는 효과)</code></pre>
+        본 실험에서 &beta; = 0.817로 추정됨. 크기가 2배이면 가격은 2^0.817 &asymp; 1.76배 (2배가 아님).
+      </div>
+    </div>
+
+    <div class="glossary-card glossary-wide">
+      <div class="gc-term">SHAP (SHapley Additive exPlanations)</div>
+      <div class="gc-desc">
+        게임 이론의 Shapley Value를 머신러닝에 적용한 설명 방법. 기준가(전체 평균)에서 출발하여 각 피처가 가격을 얼마나 올리고 내리는지 %로 분해한다. 트리 모델에서 "공식" 대신 사용하는 설명 방법.
+      </div>
+    </div>
+
+    <div class="glossary-card glossary-wide">
+      <div class="gc-term">헤도닉 회귀 (Hedonic Regression)</div>
+      <div class="gc-desc">
+        <code>ln(Price) = &beta;&#8320; + &beta;&#8321;&times;ln(크기) + &beta;&#8322;&times;생년 + ...</code> 형태의 선형 모델. 공식이 명확하지만, 비선형 관계와 조건부 인터랙션을 학습할 수 없어 정확도가 트리 모델 대비 20%p+ 낮다.
+      </div>
+    </div>
+
+    <div class="glossary-card">
+      <div class="gc-term">Cold Start (콜드 스타트)</div>
+      <div class="gc-desc">
+        모델이 학습 시 한번도 본 적 없는 새 작가의 가격을 예측하는 상황. 작가 개인의 가격 이력이 없으므로 프로필(나이, 경력, 팔로워)만으로 예측해야 하며, 정확도가 제한적이다. GroupKFold로 평가.
+      </div>
+    </div>
+
+    <div class="glossary-card">
+      <div class="gc-term">CatBoost / XGBoost</div>
+      <div class="gc-desc">
+        Gradient Boosted Tree 계열 머신러닝 모델. 수백~수천 개의 결정 트리가 순차적으로 오차를 보정하며 학습한다. XGBoost는 기존 작가 예측(MdAPE 9.7%)에서, CatBoost는 Cold Start(MdAPE 31.0%)에서 더 정확.
+      </div>
+    </div>
+
+    <div class="glossary-card">
+      <div class="gc-term">MdAPE</div>
+      <div class="gc-desc">
+        Median Absolute Percentage Error. 예측 오차의 중앙값. 전체 작품 중 절반은 이 오차보다 정확하고, 절반은 이보다 부정확하다는 의미. 평균(MAPE)보다 극단 이상치에 강건한 지표.
+      </div>
+    </div>
+
+    <div class="glossary-card">
+      <div class="gc-term">R&sup2; (결정 계수)</div>
+      <div class="gc-desc">
+        모델이 가격 변동의 몇 %를 설명하는지를 나타내는 지표. R&sup2;=0.938이면 가격 변동의 93.8%를 모델이 설명한다는 의미. 1.0에 가까울수록 좋다.
+      </div>
+    </div>
+
+    <div class="glossary-card glossary-wide">
+      <div class="gc-term">W30, W50</div>
+      <div class="gc-desc">
+        예측 오차가 30% 이내(W30), 50% 이내(W50)인 작품의 비율. W30=78.5%이면 전체 작품 중 78.5%가 실제 가격 대비 30% 오차 이내로 예측되었다는 의미.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+</body>
+</html>
