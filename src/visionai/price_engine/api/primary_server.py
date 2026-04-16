@@ -23,10 +23,14 @@ from .primary_schemas import (
     PriceRange,
     ModelInfo,
     Processing,
+    BatchPredictRequest,
+    BatchPredictResponse,
+    BatchPredictResult,
 )
 from .artist_matcher import ArtistMatcher
 from .primary_feature_builder import build_features
 from .primary_predictor import PrimaryPredictor
+from . import external_collector
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -205,6 +209,16 @@ async def predict(req: PredictRequest):
     is_matched = match is not None
     training_count = match.training_count if match else 0
     profile = match.profile if match else {}
+    sources_used: list[str] = []
+    external_ms = 0
+
+    # 2.5 외부 수집 (DB 미매칭 시)
+    if not is_matched and not req.skip_external_lookup:
+        t_ext = time.time()
+        ext_profile, sources_used = external_collector.collect(req.artist_name)
+        external_ms = int((time.time() - t_ext) * 1000)
+        if ext_profile:
+            profile = ext_profile
 
     # 3. manual override 구성
     manual = {}
@@ -278,5 +292,80 @@ async def predict(req: PredictRequest):
             is_known_artist=result["is_known_artist"],
             training_count=result["training_count"],
         ),
-        processing=Processing(total_ms=total_ms),
+        processing=Processing(total_ms=total_ms, external_fetch_ms=external_ms),
+        external_sources_used=sources_used,
+    )
+
+
+@app.post("/api/v1/predict/batch", response_model=BatchPredictResponse)
+async def predict_batch(req: BatchPredictRequest):
+    """배치 예측 (최대 50건). 작가 중복 시 외부 수집 1회만."""
+    t0 = time.time()
+    results = []
+    success_count = 0
+    fail_count = 0
+
+    for i, item in enumerate(req.artworks):
+        try:
+            # 매칭
+            match = _matcher.match(item.artist_name)
+            is_matched = match is not None
+            training_count = match.training_count if match else 0
+            profile = match.profile if match else {}
+            sources = []
+
+            # 외부 수집
+            if not is_matched and not req.skip_external_lookup:
+                ext_profile, sources = external_collector.collect(item.artist_name)
+                if ext_profile:
+                    profile = ext_profile
+
+            # manual override
+            manual = {}
+            if item.artist_birth_year is not None:
+                manual["artist_birth_year"] = item.artist_birth_year
+            if item.artist_total_works is not None:
+                manual["artist_total_works"] = item.artist_total_works
+            if item.solo_count is not None:
+                manual["solo_count"] = item.solo_count
+            if item.group_count is not None:
+                manual["group_count"] = item.group_count
+            if item.followers is not None:
+                manual["followers"] = item.followers
+
+            features = build_features(
+                width_cm=item.width_cm, height_cm=item.height_cm,
+                medium=item.medium, artist_profile=profile,
+                target_market=item.target_market, manual_overrides=manual,
+            )
+            result = _predictor.predict(
+                features=features, is_matched=is_matched,
+                training_count=training_count, target_market=item.target_market,
+                has_manual_profile=len(manual) > 0,
+            )
+
+            results.append(BatchPredictResult(
+                index=i, status="success",
+                prediction=Prediction(
+                    price_krw=result["price_krw"], price_usd=result["price_usd"],
+                    price_range=PriceRange(low=result["price_range_low"], high=result["price_range_high"]),
+                    confidence_grade=result["confidence_grade"], margin=result["margin"],
+                ),
+                model_info=ModelInfo(
+                    model_type=result["model_type"], is_known_artist=result["is_known_artist"],
+                    training_count=result["training_count"],
+                ),
+                external_sources_used=sources,
+            ))
+            success_count += 1
+        except Exception as e:
+            results.append(BatchPredictResult(
+                index=i, status="error", error=str(e),
+            ))
+            fail_count += 1
+
+    total_ms = int((time.time() - t0) * 1000)
+    return BatchPredictResponse(
+        total=len(req.artworks), success=success_count, failed=fail_count,
+        results=results, processing=Processing(total_ms=total_ms),
     )

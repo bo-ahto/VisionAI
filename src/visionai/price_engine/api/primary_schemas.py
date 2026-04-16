@@ -10,6 +10,7 @@ class PredictRequest(BaseModel):
     height_cm: float = Field(..., gt=0, le=500, description="세로 cm")
     medium: str = Field(..., min_length=1, description="매체 (예: acrylic on canvas)")
     target_market: str = Field("gallery", description="gallery | online")
+    skip_external_lookup: bool = Field(False, description="외부 수집 스킵 여부")
 
     # 선택 (수동 입력, 미입력 시 DB 프로필 사용)
     artist_birth_year: int | None = Field(None, ge=1900, le=2010)
@@ -40,12 +41,49 @@ class ModelInfo(BaseModel):
 
 class Processing(BaseModel):
     total_ms: int
+    external_fetch_ms: int = 0
 
 
 class PredictResponse(BaseModel):
     status: str = "success"
     prediction: Prediction
     model_info: ModelInfo
+    processing: Processing
+    external_sources_used: list[str] = []
+
+
+class BatchItem(BaseModel):
+    artist_name: str = Field(..., min_length=1)
+    width_cm: float = Field(..., gt=0, le=500)
+    height_cm: float = Field(..., gt=0, le=500)
+    medium: str = Field(..., min_length=1)
+    target_market: str = Field("gallery")
+    artist_birth_year: int | None = None
+    artist_total_works: int | None = None
+    solo_count: int | None = None
+    group_count: int | None = None
+    followers: int | None = None
+
+
+class BatchPredictRequest(BaseModel):
+    artworks: list[BatchItem] = Field(..., max_length=50)
+    skip_external_lookup: bool = False
+
+
+class BatchPredictResult(BaseModel):
+    index: int
+    status: str
+    prediction: Prediction | None = None
+    model_info: ModelInfo | None = None
+    external_sources_used: list[str] = []
+    error: str | None = None
+
+
+class BatchPredictResponse(BaseModel):
+    total: int
+    success: int
+    failed: int
+    results: list[BatchPredictResult]
     processing: Processing
 
 
