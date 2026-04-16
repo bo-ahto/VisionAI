@@ -5,8 +5,10 @@ import json
 import logging
 import os
 import time
+import uuid
 import urllib.request
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -34,6 +36,26 @@ _matcher = ArtistMatcher()
 _predictor = PrimaryPredictor()
 _start_time = time.time()
 _model_version = "v3"
+
+# ─── 예측 로그 (JSONL 파일) ───
+_LOG_DIR = Path(os.getenv("LOG_DIR", "/app/logs"))
+_log_file = None
+
+
+def _init_log() -> None:
+    global _log_file
+    _LOG_DIR.mkdir(parents=True, exist_ok=True)
+    _log_file = open(_LOG_DIR / "predictions.jsonl", "a", encoding="utf-8")
+    logger.info("Prediction log: %s", _LOG_DIR / "predictions.jsonl")
+
+
+def _log_prediction(entry: dict) -> None:
+    if _log_file:
+        try:
+            _log_file.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            _log_file.flush()
+        except Exception as e:
+            logger.warning("Log write failed: %s", e)
 
 
 def _db_query(sql: str) -> dict:
@@ -124,6 +146,7 @@ async def lifespan(app: FastAPI):
 
     _load_models()
     _load_artist_index()
+    _init_log()
 
     logger.info("=== VisionAI Price Prediction API Ready ===")
     yield
@@ -218,6 +241,29 @@ async def predict(req: PredictRequest):
     )
 
     total_ms = int((time.time() - t0) * 1000)
+
+    # 예측 로그 (JSONL)
+    _log_prediction({
+        "id": str(uuid.uuid4()),
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "artist_name_input": req.artist_name,
+        "artist_id": match.artist_id if match else None,
+        "artist_matched": match.name if match else None,
+        "match_score": match.score if match else 0,
+        "width_cm": req.width_cm,
+        "height_cm": req.height_cm,
+        "medium": req.medium,
+        "target_market": req.target_market,
+        "predicted_krw": result["price_krw"],
+        "price_range_low": result["price_range_low"],
+        "price_range_high": result["price_range_high"],
+        "confidence_grade": result["confidence_grade"],
+        "model_type": result["model_type"],
+        "is_known_artist": result["is_known_artist"],
+        "training_count": result["training_count"],
+        "has_manual_profile": has_manual,
+        "total_ms": total_ms,
+    })
 
     return PredictResponse(
         prediction=Prediction(
