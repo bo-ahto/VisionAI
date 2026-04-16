@@ -94,11 +94,21 @@ def build_features(
     support_factor = SUPPORT_FACTORS.get(support_type, 0.85)
 
     # 작가 피처 (manual override > DB profile > 기본값)
-    birth_year = m.get("artist_birth_year") or p.get("birth_year") or p.get("birth_year_from_source")
-    total_works = m.get("artist_total_works") or p.get("total_works", 0) or 0
-    followers = m.get("followers") or p.get("followers", 0) or 0
-    solo = m.get("solo_count") or p.get("solo_count", 0) or 0
-    group = m.get("group_count") or p.get("group_count", 0) or 0
+    # None 체크 (0은 유효한 값이므로 `is not None` 사용)
+    def _pick(manual_key: str, profile_key: str, default=0):
+        mv = m.get(manual_key)
+        if mv is not None:
+            return mv
+        pv = p.get(profile_key)
+        if pv is not None:
+            return pv
+        return default
+
+    birth_year = _pick("artist_birth_year", "birth_year", None) or p.get("birth_year_from_source")
+    total_works = _pick("artist_total_works", "total_works", 0)
+    followers = _pick("followers", "followers", 0)
+    solo = _pick("solo_count", "solo_count", 0)
+    group = _pick("group_count", "group_count", 0)
     fair = p.get("fair_count", 0) or 0
     career_stage = p.get("career_stage", 1) or 1
     career_age = p.get("career_age", 0) or 0

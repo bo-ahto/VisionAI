@@ -68,22 +68,31 @@ def _load_artist_index() -> None:
             "LEFT JOIN artist_profiles p ON a.id = p.artist_id AND p.status = 'success'"
         )
         rows = result.get("rows", [])
-        # artists와 profiles를 분리해서 matcher에 전달
+        # artists와 profiles를 분리, 소스 우선순위 적용 (artsy > saatchi > web)
+        SOURCE_PRIORITY = {"artsy": 0, "saatchi": 1, "web": 2}
         artists = []
         profiles = []
         seen_artists = set()
+        best_profile: dict[int, tuple[int, dict]] = {}  # artist_id → (priority, profile)
+
         for r in rows:
             aid = r["id"]
             if aid not in seen_artists:
                 seen_artists.add(aid)
                 artists.append(r)
-            if r.get("total_works") is not None:  # profile join이 있는 경우
-                profiles.append({"artist_id": aid, **{k: r[k] for k in
+            if r.get("total_works") is not None:
+                src = r.get("source", "web")
+                prio = SOURCE_PRIORITY.get(src, 2)
+                prof = {"artist_id": aid, "source": src, **{k: r[k] for k in
                     ["birth_year_from_source", "total_works", "followers",
                      "solo_count", "group_count", "fair_count",
-                     "career_stage", "profile_completeness"] if k in r}})
+                     "career_stage", "profile_completeness"] if k in r}}
+                if aid not in best_profile or prio < best_profile[aid][0]:
+                    best_profile[aid] = (prio, prof)
+
+        profiles = [v[1] for v in best_profile.values()]
         _matcher.load_from_data(artists, profiles)
-        logger.info("Artist index loaded: %d artists (from %d rows)", _matcher.count, len(rows))
+        logger.info("Artist index loaded: %d artists, %d profiles", _matcher.count, len(profiles))
     except Exception as e:
         logger.error("DB load failed: %s (type: %s)", e, type(e).__name__)
         import traceback
@@ -138,8 +147,9 @@ async def health():
     except Exception as e:
         db_status = f"error: {e}"
 
+    status = "ok" if _matcher.count > 0 and db_status == "connected" else "degraded"
     return {
-        "status": "ok",
+        "status": status,
         "model_version": _model_version,
         "artists_loaded": _matcher.count,
         "uptime_seconds": round(time.time() - _start_time, 1),

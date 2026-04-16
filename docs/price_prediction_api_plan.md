@@ -677,17 +677,38 @@ predicted_krw = int(exp(ln_price_corrected))
 
 > 0.075 = Saatchi median ratio 1.078의 log값. 실험에서 측정된 값 (docs/saatchi_integration_result.md 참고).
 
-#### Phase 1 구현 목록
+#### Phase 1 구현 목록 (2026-04-16 완료)
 
-- [ ] FastAPI 서버 (`src/visionai/price_engine/api/primary_server.py`)
-- [ ] 요청/응답 Pydantic 스키마 (`primary_schemas.py`)
-- [ ] 작가 매칭 (`artist_matcher.py`) — DB pg_trgm 검색 + rapidfuzz
-- [ ] 피처 빌더 (`primary_feature_builder.py`) — 37개 피처 생성
-- [ ] 모델 라우팅 + 예측 (`primary_predictor.py`)
-- [ ] 신뢰도 결정 (`determine_confidence()`)
-- [ ] source ratio 보정
-- [ ] Dockerfile + Dokploy 배포 → `visionai-api.ahto.city`
-- [ ] 테스트: 학습 작가 예측, Cold Start 예측, 에러 케이스
+- [x] FastAPI 서버 (`src/visionai/price_engine/api/primary_server.py`)
+- [x] 요청/응답 Pydantic 스키마 (`primary_schemas.py`)
+- [x] 작가 매칭 (`artist_matcher.py`) — DB JOIN 쿼리 + rapidfuzz
+- [x] 피처 빌더 (`primary_feature_builder.py`) — 37개 피처 생성
+- [x] 모델 라우팅 + 예측 (`primary_predictor.py`)
+- [x] 신뢰도 결정 (`determine_confidence()`)
+- [x] source ratio 보정
+- [x] Dockerfile.api + Dokploy 배포 → `visionai-api.ahto.city`
+- [x] DB 생성 + 데이터 적재 (artists 1,589명, profiles 1,577건)
+- [x] 테스트: 학습 작가/Cold Start/수동 프로필/online 마켓 모두 통과
+
+#### Phase 1 배포 결과
+
+| 항목 | 값 |
+|------|-----|
+| **URL** | https://visionai-api.ahto.city |
+| **Dokploy** | dev.ahto.city, artsy-viewer 프로젝트 내 |
+| **DB** | postgres-proxy → visionai_dev |
+| **작가 로드** | 1,526명 (DB 1,589명 중 프로필 있는 작가) |
+| **모델** | CatBoost v3 (6.2MB) + XGBoost v3 (9.9MB) |
+| **응답 시간** | 3~80ms |
+
+#### Phase 1 테스트 결과
+
+| 테스트 | 예측 가격 | 모델 | 등급 | 마진 |
+|--------|:---------:|:----:|:----:|:----:|
+| Yoo Suntai (학습 70건, 10호 oil) | 579만원 | XGBoost | A | ±20% |
+| 미학습 작가 (20호 acrylic) | 118만원 | CatBoost | D | ±70% |
+| 미학습 + 수동 프로필 (1985생, solo 10회) | 312만원 | CatBoost | C | ±50% |
+| Yoo Suntai online | 565만원 (-2.5%) | XGBoost | A | ±20% |
 
 **범위 밖 (Phase 2+)**: 외부 수집, 배치 API, SHAP 설명, 이미지, training-data 적재
 
@@ -1154,11 +1175,22 @@ API 서비스에 필요한 데이터는 5가지: 작가 마스터, 외부 프로
 | 4 | source ratio 공식 없음 | `RATIO_CORRECTION` 딕셔너리 + 공식 명시 (0.075 = ln(1.078)) |
 | 5 | 입력 필드 중 Phase 1에서 미지원 필드 모호 | education/exhibitions/skip_external_lookup Phase 1에서 제거 |
 
-### 미반영 (의도적)
+### Round 6 (구현 코드 리뷰)
+
+> 3 High, 3 Medium, 2 Low. High 3건 + Medium 1건 수정.
+
+| # | 심각도 | 지적 | 수정 |
+|:-:|:------:|------|------|
+| 1 | **High** | XGBoost label map 미포함 (parquet 없음) | 하드코딩 fallback 추가 |
+| 2 | **High** | DB 실패 시 health가 OK 반환 | `status: "degraded"` 분기 |
+| 3 | **High** | 다중 소스 프로필 우선순위 미적용 | `SOURCE_PRIORITY` (artsy > saatchi > web) |
+| 5 | Medium | manual override 0값이 무시됨 | `is not None` 체크로 변경 |
+
+### 미반영 (의도적/향후)
 
 | # | 지적 | 사유 |
 |:-:|------|------|
-| R1-13 | 통화 처리 미정의 | 고정 환율 명시로 충분 |
-| R2-3 | 캐시 미스 시 동기 수집 | Phase 2 범위 |
-| R4-5 | POST /training-data 인증 | Phase 4 범위 |
-| R4-9 | 기존 문서 불일치 | 기존 문서는 2차시장 전용 |
+| R6-4 | ErrorResponse 미사용, medium 미검증 | MVP에서는 unknown→"other" 허용. Phase 2에서 강화 |
+| R6-6 | 동명이인 동일 이름 충돌 | 현재 1,589명 규모에서 실질적 영향 미미. Phase 2에서 개선 |
+| R6-7 | model_info 하드코딩 | model_versions DB에서 조회로 변경 예정 |
+| R6-8 | requirements 버전 고정, 컨테이너 non-root | Phase 2 배포 강화 시 적용 |

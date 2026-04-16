@@ -140,7 +140,10 @@ class PrimaryPredictor:
         }
 
     def build_xgb_label_maps(self, training_data_path: Path | None = None) -> None:
-        """학습 데이터에서 XGBoost label encoding 매핑 구축."""
+        """학습 데이터에서 XGBoost label encoding 매핑 구축.
+
+        학습 시 사용된 categorical 값 목록을 하드코딩 (parquet 미포함 환경 대비).
+        """
         if training_data_path and training_data_path.exists():
             df = pd.read_parquet(training_data_path)
             for col in CAT_FEATURES:
@@ -148,3 +151,21 @@ class PrimaryPredictor:
                     vals = df[col].astype(str).unique()
                     self._label_maps[col] = {v: i for i, v in enumerate(sorted(vals))}
             logger.info("XGBoost label maps built from %s", training_data_path)
+        else:
+            # 학습 시 사용된 값 하드코딩 (v3 모델 기준)
+            self._label_maps = {
+                "support_type": {v: i for i, v in enumerate(sorted(
+                    ["canvas", "linen", "metal", "other", "panel", "paper", "silk"]))},
+                "medium_category": {v: i for i, v in enumerate(sorted(
+                    ["acrylic", "ink", "mixed", "oil", "other", "pastel", "pencil", "pigment", "watercolor"]))},
+                "attribution_class": {v: i for i, v in enumerate(sorted(
+                    ["Limited edition", "Unique", "Unknown edition"]))},
+                "gallery_name": {},  # 동적 할당
+                "gallery_type": {v: i for i, v in enumerate(sorted(
+                    ["Gallery", "Online Gallery", "Unknown"]))},
+                "price_currency": {v: i for i, v in enumerate(sorted(
+                    ["KRW", "USD"]))},
+                "source": {v: i for i, v in enumerate(sorted(
+                    ["artsy", "artsy_artue", "manual", "printbakery", "saatchi"]))},
+            }
+            logger.info("XGBoost label maps built from hardcoded values (no parquet)")
