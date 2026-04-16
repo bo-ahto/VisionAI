@@ -84,7 +84,9 @@ def _load_artist_index() -> None:
         _matcher.load_from_data(artists, profiles)
         logger.info("Artist index loaded: %d artists (from %d rows)", _matcher.count, len(rows))
     except Exception as e:
-        logger.warning("DB load failed, starting with empty index: %s", e)
+        logger.error("DB load failed: %s (type: %s)", e, type(e).__name__)
+        import traceback
+        logger.error("Traceback: %s", traceback.format_exc())
 
 
 def _load_models() -> None:
@@ -125,14 +127,23 @@ app = FastAPI(
 )
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health")
 async def health():
-    return HealthResponse(
-        status="ok",
-        model_version=_model_version,
-        artists_loaded=_matcher.count,
-        uptime_seconds=round(time.time() - _start_time, 1),
-    )
+    # DB 연결 테스트
+    db_status = "unknown"
+    try:
+        r = _db_query("SELECT 1 AS ok")
+        db_status = "connected" if r.get("rows") else "empty"
+    except Exception as e:
+        db_status = f"error: {e}"
+
+    return {
+        "status": "ok",
+        "model_version": _model_version,
+        "artists_loaded": _matcher.count,
+        "uptime_seconds": round(time.time() - _start_time, 1),
+        "db_status": db_status,
+    }
 
 
 @app.get("/api/v1/model/info", response_model=ModelInfoResponse)
