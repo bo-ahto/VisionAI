@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saatchi Art 한국 작가 데이터 뷰어</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #e85d4a; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --teal: #39c5cf; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 20px 32px; position: sticky; top: 0; z-index: 100; }
+  .header h1 { font-size: 20px; margin-bottom: 8px; }
+  .header h1 .brand { color: var(--accent); }
+  .header .stats { display: flex; gap: 24px; flex-wrap: wrap; }
+  .header .stat { font-size: 13px; color: var(--muted); }
+  .header .stat strong { color: var(--accent); font-size: 16px; }
+
+  .filters { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 32px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .filters input, .filters select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; }
+  .filters input { width: 240px; }
+  .filters select { min-width: 120px; }
+  .filters label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+  .filter-group { display: flex; align-items: center; gap: 4px; }
+  .btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 16px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  .btn:hover { opacity: 0.85; }
+  .btn-reset { background: var(--border); color: var(--text); }
+
+  .tabs { display: flex; gap: 0; background: var(--card); border-bottom: 1px solid var(--border); padding: 0 32px; }
+  .tab { padding: 10px 20px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 24px 32px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+  .card:hover { border-color: var(--accent); }
+  .card img { width: 100%; height: 200px; object-fit: cover; background: #21262d; }
+  .card .info { padding: 12px; }
+  .card .artist { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .card .artist-link { color: var(--accent); cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color 0.2s; }
+  .card .artist-link:hover { text-decoration-color: var(--accent); }
+  .card .title-line { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .meta { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  .card .price { color: var(--green); font-weight: 600; font-size: 14px; }
+  .card .price.sold { color: var(--orange); }
+  .card .price.noprice { color: var(--muted); }
+  .card .dims { font-size: 11px; color: var(--muted); }
+  .card .badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; background: var(--border); color: var(--muted); margin-top: 4px; }
+
+  .table-wrap { padding: 16px 32px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--card); position: sticky; top: 0; padding: 8px 10px; text-align: left; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; cursor: pointer; white-space: nowrap; }
+  th:hover { color: var(--accent); }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+  tr:hover td { background: rgba(232,93,74,0.05); }
+  td img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; justify-content: center; align-items: center; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; max-width: 800px; width: 90%; max-height: 85vh; overflow-y: auto; position: relative; }
+  .modal img.artwork-img { width: 100%; max-height: 400px; object-fit: contain; background: #000; }
+  .modal .detail { padding: 24px; }
+  .modal .detail h2 { font-size: 18px; margin-bottom: 4px; }
+  .modal .detail h3 { font-size: 15px; color: var(--muted); font-style: italic; margin-bottom: 16px; }
+  .modal .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal .detail-item { font-size: 13px; }
+  .modal .detail-item .label { color: var(--muted); font-size: 11px; }
+  .modal .detail-item .value { font-weight: 500; }
+  .modal .close-btn { position: absolute; top: 12px; right: 16px; font-size: 24px; color: var(--muted); cursor: pointer; background: none; border: none; z-index: 10; }
+
+  .cv-header { padding: 24px; border-bottom: 1px solid var(--border); }
+  .cv-header h2 { font-size: 20px; margin-bottom: 4px; }
+  .cv-header .cv-sub { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+  .cv-header .cv-bio { font-size: 13px; color: var(--text); line-height: 1.6; max-height: 100px; overflow: hidden; transition: max-height 0.3s; }
+  .cv-header .cv-bio.expanded { max-height: 2000px; }
+  .cv-bio-toggle { font-size: 12px; color: var(--accent); cursor: pointer; margin-top: 4px; }
+  .cv-stats { display: flex; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .cv-stat { text-align: center; min-width: 70px; }
+  .cv-stat .num { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .cv-stat .lbl { font-size: 11px; color: var(--muted); }
+  .cv-section { padding: 16px 24px; }
+  .cv-section h4 { font-size: 14px; color: var(--purple); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .cv-section .cv-text { font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+  .cv-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .cv-badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: rgba(232,93,74,0.15); color: var(--accent); }
+  .cv-social { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .cv-social a { color: var(--accent); font-size: 13px; text-decoration: none; }
+  .cv-social a:hover { text-decoration: underline; }
+  .cv-works { padding: 0 24px 16px; }
+  .cv-works h4 { font-size: 14px; color: var(--orange); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .cv-works-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .cv-work-thumb { cursor: pointer; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+  .cv-work-thumb:hover { border-color: var(--accent); }
+  .cv-work-thumb img { width: 100%; height: 100px; object-fit: cover; }
+  .cv-work-thumb .cv-work-info { padding: 6px; font-size: 11px; }
+  .cv-work-thumb .cv-work-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cv-work-thumb .cv-work-price { color: var(--green); font-weight: 600; }
+
+  .pagination { display: flex; justify-content: center; gap: 8px; padding: 24px; align-items: center; }
+  .pagination button { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .pagination button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .page-info { font-size: 13px; color: var(--muted); }
+
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding: 16px 32px; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .summary-card .num { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .summary-card .desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .color-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; border: 1px solid var(--border); }
+
+  .hidden { display: none !important; }
+  .loading { text-align: center; padding: 60px; color: var(--muted); }
+  .artist-link-inline { color: var(--accent) !important; cursor: pointer; }
+  .artist-link-inline:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="brand">Saatchi Art</span> 한국 작가 작품 데이터 뷰어</h1>
+  <div class="stats" id="headerStats"></div>
+</div>
+
+<div class="summary" id="summary"></div>
+
+<div class="filters">
+  <div class="filter-group">
+    <label>검색</label>
+    <input type="text" id="searchInput" placeholder="작가명, 작품명, 매체...">
+  </div>
+  <div class="filter-group">
+    <label>카테고리</label>
+    <select id="categoryFilter"><option value="">전체</option></select>
+  </div>
+  <div class="filter-group">
+    <label>매체</label>
+    <select id="mediumFilter"><option value="">전체</option></select>
+  </div>
+  <div class="filter-group">
+    <label>가격(USD)</label>
+    <select id="priceFilter">
+      <option value="">전체</option>
+      <option value="0-500">~$500</option>
+      <option value="500-2000">$500~$2,000</option>
+      <option value="2000-5000">$2,000~$5,000</option>
+      <option value="5000-10000">$5,000~$10,000</option>
+      <option value="10000-">$10,000+</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>상태</label>
+    <select id="statusFilter">
+      <option value="">전체</option>
+      <option value="priced">가격 있음</option>
+      <option value="noprice">가격 없음 (sold 등)</option>
+    </select>
+  </div>
+  <button class="btn" onclick="applyFilters()">적용</button>
+  <button class="btn btn-reset" onclick="resetFilters()">초기화</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchView('grid')">갤러리 뷰</div>
+  <div class="tab" onclick="switchView('table')">테이블 뷰</div>
+</div>
+
+<div id="gridView" class="grid"></div>
+<div id="tableView" class="table-wrap hidden"></div>
+<div class="pagination" id="pagination"></div>
+
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()">&times;</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="artistModal" onclick="if(event.target===this)closeArtistModal()">
+  <div class="modal" style="max-width:900px;">
+    <button class="close-btn" onclick="closeArtistModal()">&times;</button>
+    <div id="artistModalContent"></div>
+  </div>
+</div>
+
+<div class="loading" id="loading">데이터 로딩 중...</div>
+
+<script>
+let allData = [];
+let artistProfiles = {};
+let filtered = [];
+let currentPage = 1;
+const PAGE_SIZE = 48;
+let currentView = 'grid';
+let sortCol = null;
+let sortAsc = true;
+
+function formatUSD(val) {
+  const n = parseFloat(val);
+  if (!n) return '-';
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+}
+
+function formatKRW(val) {
+  const n = parseInt(val);
+  if (!n) return '-';
+  if (n >= 100000000) return (n / 100000000).toFixed(1) + '억';
+  if (n >= 10000) return Math.round(n / 10000).toLocaleString() + '만';
+  return n.toLocaleString();
+}
+
+function artistName(d) {
+  return ((d.artist_first_name || '') + ' ' + (d.artist_last_name || '')).trim() || '?';
+}
+
+function dims(d) {
+  let s = '';
+  if (d.width_cm && d.height_cm) {
+    s = d.width_cm + ' × ' + d.height_cm;
+    if (d.depth_cm) s += ' × ' + d.depth_cm;
+    s += ' cm';
+  }
+  return s;
+}
+
+async function loadData() {
+  try {
+    let resp = await fetch('saatchi_kr_artworks.json');
+    if (!resp.ok) resp = await fetch('../data/saatchi_kr_artworks.json');
+    allData = await resp.json();
+  } catch(e) {
+    try {
+      const resp = await fetch('../data/saatchi_kr_artworks.json');
+      allData = await resp.json();
+    } catch(e2) {
+      document.getElementById('loading').textContent = 'saatchi_kr_artworks.json 로드 실패';
+      return;
+    }
+  }
+
+  try {
+    let resp = await fetch('saatchi_kr_artists.json');
+    if (!resp.ok) resp = await fetch('../data/saatchi_kr_artists.json');
+    const profilesList = await resp.json();
+    profilesList.forEach(p => { artistProfiles[p.artist_id] = p; });
+  } catch(e) { artistProfiles = {}; }
+
+  document.getElementById('loading').style.display = 'none';
+  buildFilters();
+  buildSummary();
+  applyFilters();
+}
+
+function buildFilters() {
+  const cats = [...new Set(allData.map(d => d.category).filter(Boolean))].sort();
+  const catSel = document.getElementById('categoryFilter');
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o); });
+
+  // Top mediums (from comma-separated field)
+  const medMap = {};
+  allData.forEach(d => {
+    (d.mediums || '').split(', ').forEach(m => { m = m.trim(); if (m) medMap[m] = (medMap[m]||0) + 1; });
+  });
+  const topMediums = Object.entries(medMap).sort((a,b) => b[1]-a[1]).slice(0, 20).map(e => e[0]);
+  const medSel = document.getElementById('mediumFilter');
+  topMediums.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; medSel.appendChild(o); });
+}
+
+function buildSummary() {
+  const total = allData.length;
+  const priced = allData.filter(d => d.price_usd > 0).length;
+  const noPriced = total - priced;
+  const artists = new Set(allData.map(d => d.artist_id).filter(Boolean)).size;
+  const profileCount = Object.keys(artistProfiles).length;
+  const prices = allData.filter(d => d.price_usd > 0).map(d => d.price_usd).sort((a,b) => a-b);
+  const medianUSD = prices.length ? prices[Math.floor(prices.length/2)] : 0;
+
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-card"><div class="num">${total.toLocaleString()}</div><div class="desc">총 작품</div></div>
+    <div class="summary-card"><div class="num" style="color:var(--green)">${priced.toLocaleString()}</div><div class="desc">가격 있음 (${(priced*100/total).toFixed(0)}%)</div></div>
+    <div class="summary-card"><div class="num" style="color:var(--orange)">${noPriced.toLocaleString()}</div><div class="desc">가격 없음 (sold 등)</div></div>
+    <div class="summary-card"><div class="num">${artists.toLocaleString()}</div><div class="desc">고유 작가</div></div>
+    <div class="summary-card"><div class="num" style="color:var(--purple)">${profileCount.toLocaleString()}</div><div class="desc">프로필 수집</div></div>
+    <div class="summary-card"><div class="num" style="color:var(--green)">${formatUSD(medianUSD)}</div><div class="desc">가격 중앙값</div></div>
+  `;
+  document.getElementById('headerStats').innerHTML = `
+    <span class="stat">작품 <strong>${total.toLocaleString()}</strong></span>
+    <span class="stat">가격있음 <strong style="color:var(--green)">${priced.toLocaleString()}</strong></span>
+    <span class="stat">작가 <strong>${artists.toLocaleString()}</strong></span>
+    <span class="stat">프로필 <strong style="color:var(--purple)">${profileCount.toLocaleString()}</strong></span>
+    <span class="stat">중앙 <strong style="color:var(--green)">${formatUSD(medianUSD)}</strong></span>
+  `;
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('categoryFilter').value;
+  const med = document.getElementById('mediumFilter').value;
+  const priceRange = document.getElementById('priceFilter').value;
+  const status = document.getElementById('statusFilter').value;
+
+  filtered = allData.filter(d => {
+    if (search && !(artistName(d).toLowerCase().includes(search) || (d.title||'').toLowerCase().includes(search) || (d.mediums||'').toLowerCase().includes(search) || (d.materials||'').toLowerCase().includes(search) || (d.styles||'').toLowerCase().includes(search))) return false;
+    if (cat && d.category !== cat) return false;
+    if (med && !(d.mediums||'').toLowerCase().includes(med.toLowerCase())) return false;
+    if (status === 'priced' && !(d.price_usd > 0)) return false;
+    if (status === 'noprice' && d.price_usd > 0) return false;
+    if (priceRange) {
+      const [lo, hi] = priceRange.split('-').map(Number);
+      const p = d.price_usd || 0;
+      if (lo && p < lo) return false;
+      if (hi && p >= hi) return false;
+      if (!hi && lo && p < lo) return false;
+    }
+    return true;
+  });
+
+  if (sortCol) {
+    filtered.sort((a, b) => {
+      let va = a[sortCol] || '', vb = b[sortCol] || '';
+      if (sortCol === 'name') { va = artistName(a); vb = artistName(b); }
+      const na = parseFloat(va), nb = parseFloat(vb);
+      if (!isNaN(na) && !isNaN(nb)) return sortAsc ? na - nb : nb - na;
+      return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+  }
+  currentPage = 1;
+  render();
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('categoryFilter').value = '';
+  document.getElementById('mediumFilter').value = '';
+  document.getElementById('priceFilter').value = '';
+  document.getElementById('statusFilter').value = '';
+  sortCol = null;
+  applyFilters();
+}
+
+function render() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filtered.slice(start, start + PAGE_SIZE);
+  if (currentView === 'grid') renderGrid(page);
+  else renderTable(page);
+  renderPagination();
+}
+
+function renderGrid(page) {
+  document.getElementById('gridView').innerHTML = page.map((d, i) => {
+    const name = artistName(d);
+    const hasProfile = artistProfiles[d.artist_id];
+    const artistHtml = hasProfile
+      ? `<span class="artist-link" onclick="event.stopPropagation();showArtist(${d.artist_id})">${name}</span>`
+      : name;
+    const priceClass = d.price_usd > 0 ? '' : 'noprice';
+    const priceText = d.price_usd > 0 ? formatUSD(d.price_usd) : 'No price';
+    return `
+    <div class="card" onclick="showDetail(${(currentPage-1)*PAGE_SIZE + i})">
+      <img src="${d.image_url || ''}" alt="${d.title}" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <div class="artist">${artistHtml}</div>
+        <div class="title-line">${d.title || 'Untitled'}</div>
+        <div class="price ${priceClass}">${priceText}</div>
+        ${d.price_krw ? `<div class="dims">\u20a9${formatKRW(d.price_krw)}원</div>` : ''}
+        <div class="meta">
+          <span>${dims(d)}</span>
+        </div>
+        <span class="badge">${d.category || ''}</span>
+        ${d.orientation ? `<span class="badge">${d.orientation}</span>` : ''}
+        ${d.size_bin ? `<span class="badge">${d.size_bin}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTable(page) {
+  const cols = [
+    {key:'image_url', label:'', render: v => v ? `<img src="${v}" loading="lazy" onerror="this.style.display='none'">` : ''},
+    {key:'name', label:'작가', render: (v,d) => {
+      const n = artistName(d);
+      return artistProfiles[d.artist_id] ? `<span class="artist-link-inline" onclick="event.stopPropagation();showArtist(${d.artist_id})">${n}</span>` : n;
+    }},
+    {key:'title', label:'작품명'},
+    {key:'mediums', label:'매체'},
+    {key:'category', label:'카테고리'},
+    {key:'_dims', label:'크기(cm)', render: (v,d) => dims(d)},
+    {key:'price_usd', label:'USD', render: v => formatUSD(v)},
+    {key:'price_krw', label:'KRW', render: v => formatKRW(v)},
+    {key:'materials', label:'재료'},
+    {key:'subject', label:'주제'},
+    {key:'orientation', label:'방향'},
+    {key:'size_bin', label:'사이즈'},
+  ];
+  document.getElementById('tableView').innerHTML = `
+    <table>
+      <thead><tr>${cols.map(c => `<th onclick="sortBy('${c.key}')">${c.label} ${sortCol===c.key?(sortAsc?'\u25b2':'\u25bc'):''}</th>`).join('')}</tr></thead>
+      <tbody>${page.map((d, i) => `
+        <tr onclick="showDetail(${(currentPage-1)*PAGE_SIZE+i})" style="cursor:pointer">
+          ${cols.map(c => `<td>${c.render ? c.render(d[c.key], d) : (d[c.key]||'')}</td>`).join('')}
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  if (totalPages <= 1) { document.getElementById('pagination').innerHTML = `<span class="page-info">${filtered.length.toLocaleString()}건</span>`; return; }
+  let html = `<button onclick="goPage(1)" ${currentPage===1?'disabled':''}>\u00ab</button>`;
+  html += `<button onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>\u2039</button>`;
+  const s = Math.max(1, currentPage-3), e = Math.min(totalPages, currentPage+3);
+  for (let p = s; p <= e; p++) html += `<button class="${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  html += `<button onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>\u203a</button>`;
+  html += `<button onclick="goPage(${totalPages})" ${currentPage===totalPages?'disabled':''}>\u00bb</button>`;
+  html += `<span class="page-info">${filtered.length.toLocaleString()}건 중 ${((currentPage-1)*PAGE_SIZE+1).toLocaleString()}-${Math.min(currentPage*PAGE_SIZE, filtered.length).toLocaleString()}</span>`;
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function goPage(p) { const t = Math.ceil(filtered.length/PAGE_SIZE); currentPage = Math.max(1, Math.min(p, t)); render(); window.scrollTo(0, 300); }
+function sortBy(col) { if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; } applyFilters(); }
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('gridView').classList.toggle('hidden', view !== 'grid');
+  document.getElementById('tableView').classList.toggle('hidden', view !== 'table');
+  render();
+}
+
+function showDetail(idx) {
+  const d = filtered[idx];
+  if (!d) return;
+  const name = artistName(d);
+  const hasProfile = artistProfiles[d.artist_id];
+  const artistLink = hasProfile
+    ? `<span class="artist-link-inline" onclick="closeModal();showArtist(${d.artist_id})">${name}</span>`
+    : name;
+  const cvBtn = hasProfile
+    ? `<span class="artist-link-inline" style="background:rgba(232,93,74,0.1);padding:4px 10px;border-radius:4px;font-size:13px" onclick="closeModal();showArtist(${d.artist_id})">작가 프로필 보기 \u2192</span>`
+    : '';
+
+  const fields = [
+    ['작가', artistLink],
+    ['성별', d.artist_gender || ''],
+    ['도시', d.artist_city || ''],
+    ['작품명', d.title],
+    ['카테고리', d.category],
+    ['매체', d.mediums],
+    ['재료', d.materials],
+    ['스타일', d.styles],
+    ['주제', d.subject],
+    ['크기 (cm)', dims(d)],
+    ['방향', d.orientation],
+    ['사이즈', d.size_bin],
+    ['액자', d.is_framed === true ? 'Yes' : d.is_framed === false ? 'No' : '-'],
+    ['색상', d.color ? `<span class="color-dot" style="background:${d.color}"></span> ${d.color}` : ''],
+    ['가격 (USD)', d.price_usd > 0 ? formatUSD(d.price_usd) : '-'],
+    ['가격 (KRW)', d.price_krw ? '\u20a9' + parseInt(d.price_krw).toLocaleString() : '-'],
+    ['Saatchi', d.artwork_url ? `<a href="${d.artwork_url}" target="_blank" style="color:var(--accent)">작품 페이지 열기</a>` : ''],
+  ];
+
+  document.getElementById('modalContent').innerHTML = `
+    ${d.image_url ? `<img class="artwork-img" src="${d.image_url}" alt="${d.title}">` : ''}
+    <div class="detail">
+      <h2>${artistLink}</h2>
+      <h3>${d.title || 'Untitled'}</h3>
+      ${cvBtn ? `<div style="margin-bottom:16px">${cvBtn}</div>` : ''}
+      <div class="detail-grid">
+        ${fields.filter(f => f[1]).map(f => `<div class="detail-item"><div class="label">${f[0]}</div><div class="value">${f[1]}</div></div>`).join('')}
+      </div>
+    </div>`;
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+function showArtist(artistId) {
+  const p = artistProfiles[artistId];
+  if (!p) return;
+
+  const works = allData.filter(w => w.artist_id === artistId);
+  const pricedWorks = works.filter(w => w.price_usd > 0);
+  const prices = pricedWorks.map(w => w.price_usd).sort((a,b) => a-b);
+  const medianPrice = prices.length ? prices[Math.floor(prices.length/2)] : 0;
+  const joinDate = p.joined_date ? new Date(p.joined_date * 1000).toLocaleDateString('ko-KR') : '';
+
+  const badgesHtml = (p.badges || []).filter(b => b).map(b => `<span class="cv-badge">${b}</span>`).join('');
+
+  const socialLinks = [];
+  const sl = p.social_links || {};
+  if (sl.instagram) socialLinks.push(`<a href="${sl.instagram}" target="_blank">Instagram</a>`);
+  if (sl.facebook) socialLinks.push(`<a href="${sl.facebook}" target="_blank">Facebook</a>`);
+  if (sl.artistHomepage) socialLinks.push(`<a href="${sl.artistHomepage}" target="_blank">Website</a>`);
+  if (sl.twitter) socialLinks.push(`<a href="${sl.twitter}" target="_blank">Twitter</a>`);
+  if (sl.tiktok) socialLinks.push(`<a href="${sl.tiktok}" target="_blank">TikTok</a>`);
+
+  const thumbs = works.slice(0, 12).map(w => `
+    <div class="cv-work-thumb" onclick="closeArtistModal();showDetailById('${w.artwork_id}')">
+      <img src="${w.image_url||''}" loading="lazy" onerror="this.style.display='none'">
+      <div class="cv-work-info">
+        <div class="cv-work-title">${w.title||'Untitled'}</div>
+        <div class="cv-work-price">${w.price_usd > 0 ? formatUSD(w.price_usd) : ''}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('artistModalContent').innerHTML = `
+    <div class="cv-header">
+      <h2>${p.display_name}</h2>
+      <div class="cv-sub">${p.country || ''}${p.state ? ', '+p.state : ''} ${joinDate ? '| 가입: '+joinDate : ''}</div>
+      ${badgesHtml ? `<div class="cv-badges">${badgesHtml}</div>` : ''}
+      ${p.bio ? `<div class="cv-bio" id="cvBio" style="margin-top:12px">${p.bio.replace(/\n/g,'<br>')}</div><div class="cv-bio-toggle" onclick="document.getElementById('cvBio').classList.toggle('expanded');this.textContent=this.textContent==='more...'?'less':'more...'">more...</div>` : ''}
+    </div>
+    <div class="cv-stats">
+      <div class="cv-stat"><div class="num">${p.total_artworks||0}</div><div class="lbl">총 작품</div></div>
+      <div class="cv-stat"><div class="num">${(p.followers||0).toLocaleString()}</div><div class="lbl">팔로워</div></div>
+      <div class="cv-stat"><div class="num">${works.length}</div><div class="lbl">수집 작품</div></div>
+      <div class="cv-stat"><div class="num" style="color:var(--green)">${pricedWorks.length}</div><div class="lbl">가격있음</div></div>
+      ${medianPrice ? `<div class="cv-stat"><div class="num" style="color:var(--green)">${formatUSD(medianPrice)}</div><div class="lbl">가격 중앙</div></div>` : ''}
+      ${prices.length >= 2 ? `<div class="cv-stat"><div class="num" style="color:var(--teal)">${formatUSD(prices[0])}</div><div class="lbl">최저</div></div>
+      <div class="cv-stat"><div class="num" style="color:var(--orange)">${formatUSD(prices[prices.length-1])}</div><div class="lbl">최고</div></div>` : ''}
+    </div>
+
+    ${thumbs ? `<div class="cv-works"><h4>작품 (${works.length}건)</h4><div class="cv-works-grid">${thumbs}</div></div>` : ''}
+
+    ${p.education ? `<div class="cv-section"><h4>Education</h4><div class="cv-text">${p.education.replace(/\n/g,'<br>')}</div></div>` : ''}
+    ${p.exhibitions ? `<div class="cv-section"><h4>Exhibitions</h4><div class="cv-text">${p.exhibitions.replace(/\n/g,'<br>')}</div></div>` : ''}
+    ${p.events ? `<div class="cv-section"><h4>Events</h4><div class="cv-text">${p.events.replace(/\n/g,'<br>')}</div></div>` : ''}
+
+    ${socialLinks.length ? `<div class="cv-section"><h4>Social</h4><div class="cv-social">${socialLinks.join('')}</div></div>` : ''}
+
+    <div class="cv-section">
+      <a href="https://www.saatchiart.com/account/profile/${artistId}" target="_blank" style="color:var(--accent);font-size:13px">Saatchi Art 프로필 페이지 열기 \u2192</a>
+    </div>
+  `;
+  document.getElementById('artistModal').classList.add('active');
+}
+
+function closeArtistModal() { document.getElementById('artistModal').classList.remove('active'); }
+
+function showDetailById(id) {
+  const idx = filtered.findIndex(w => w.artwork_id === id);
+  if (idx >= 0) { showDetail(idx); return; }
+  const allIdx = allData.findIndex(w => w.artwork_id === id);
+  if (allIdx >= 0) {
+    const d = allData[allIdx];
+    const tmp = filtered;
+    filtered = [d];
+    showDetail(0);
+    filtered = tmp;
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeArtistModal(); } });
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') applyFilters(); });
+
+loadData();
+</script>
+</body>
+</html>
