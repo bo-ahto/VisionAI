@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 
 from .primary_schemas import (
@@ -30,8 +31,9 @@ from .primary_schemas import (
 )
 from .artist_matcher import ArtistMatcher
 from .primary_feature_builder import build_features
-from .primary_predictor import PrimaryPredictor
+from .primary_predictor import PrimaryPredictor, CB_FEATURES, CAT_FEATURES
 from . import external_collector
+from . import shap_explainer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -153,6 +155,10 @@ async def lifespan(app: FastAPI):
     _load_artist_index()
     _init_log()
 
+    # SHAP explainer 초기화 (CatBoost 모델)
+    if _predictor.cb_model:
+        shap_explainer.init_explainer(_predictor.cb_model)
+
     logger.info("=== VisionAI Price Prediction API Ready ===")
     yield
     logger.info("=== Shutting down ===")
@@ -195,6 +201,51 @@ async def model_info():
         mdape_kfold=11.7,
         features_count=37,
     )
+
+
+@app.get("/api/v1/monitor")
+async def monitor():
+    """예측 로그 기반 모니터링 대시보드 데이터."""
+    log_path = _LOG_DIR / "predictions.jsonl"
+    stats = {
+        "total_predictions": 0,
+        "by_grade": {"A": 0, "B": 0, "C": 0, "D": 0},
+        "by_model": {},
+        "avg_ms": 0,
+        "external_lookup_count": 0,
+        "known_artist_count": 0,
+    }
+
+    if not log_path.exists():
+        return stats
+
+    total_ms = 0
+    try:
+        with open(log_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                    stats["total_predictions"] += 1
+                    grade = entry.get("confidence_grade", "D")
+                    stats["by_grade"][grade] = stats["by_grade"].get(grade, 0) + 1
+                    mt = entry.get("model_type", "unknown")
+                    stats["by_model"][mt] = stats["by_model"].get(mt, 0) + 1
+                    total_ms += entry.get("total_ms", 0)
+                    if entry.get("is_known_artist"):
+                        stats["known_artist_count"] += 1
+                except json.JSONDecodeError:
+                    continue
+
+        if stats["total_predictions"] > 0:
+            stats["avg_ms"] = round(total_ms / stats["total_predictions"], 1)
+
+    except Exception as e:
+        stats["error"] = str(e)
+
+    return stats
 
 
 @app.post("/api/v1/predict", response_model=PredictResponse)
@@ -258,6 +309,15 @@ async def predict(req: PredictRequest):
         has_manual_profile=has_manual,
     )
 
+    # SHAP 설명 (CatBoost 경로만)
+    feature_contributions = []
+    if result["model_type"] == "catboost_v3":
+        df_explain = pd.DataFrame([features])
+        for col in CAT_FEATURES:
+            if col in df_explain.columns:
+                df_explain[col] = df_explain[col].astype(str).fillna("unknown")
+        feature_contributions = shap_explainer.explain(df_explain[CB_FEATURES], CB_FEATURES)
+
     total_ms = int((time.time() - t0) * 1000)
 
     # 예측 로그 (JSONL)
@@ -298,6 +358,10 @@ async def predict(req: PredictRequest):
         ),
         processing=Processing(total_ms=total_ms, external_fetch_ms=external_ms),
         external_sources_used=sources_used,
+        feature_contributions=[
+            {"feature": c["feature"], "value": c["value"], "contribution": c["contribution"]}
+            for c in feature_contributions
+        ],
     )
 
 

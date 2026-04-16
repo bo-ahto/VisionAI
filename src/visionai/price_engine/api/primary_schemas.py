@@ -44,12 +44,19 @@ class Processing(BaseModel):
     external_fetch_ms: int = 0
 
 
+class FeatureContribution(BaseModel):
+    feature: str
+    value: str
+    contribution: str
+
+
 class PredictResponse(BaseModel):
     status: str = "success"
     prediction: Prediction
     model_info: ModelInfo
     processing: Processing
     external_sources_used: list[str] = []
+    feature_contributions: list[FeatureContribution] = []
 
 
 class BatchItem(BaseModel):
