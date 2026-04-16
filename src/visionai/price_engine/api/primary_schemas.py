@@ -57,7 +57,7 @@ class BatchItem(BaseModel):
     width_cm: float = Field(..., gt=0, le=500)
     height_cm: float = Field(..., gt=0, le=500)
     medium: str = Field(..., min_length=1)
-    target_market: str = Field("gallery")
+    target_market: str = Field("gallery", pattern="^(gallery|online)$")
     artist_birth_year: int | None = None
     artist_total_works: int | None = None
     solo_count: int | None = None

@@ -8,8 +8,9 @@ from . import artsy_client, saatchi_client, web_searcher
 
 logger = logging.getLogger(__name__)
 
-# 인메모리 캐시 (서버 수명 동안)
-_cache: dict[str, dict | None] = {}
+# 인메모리 캐시 (최대 5,000건, 성공만 캐시)
+_cache: dict[str, dict] = {}
+_CACHE_MAX = 5000
 
 
 def collect(artist_name: str, skip: bool = False) -> tuple[dict | None, list[str]]:
@@ -21,11 +22,11 @@ def collect(artist_name: str, skip: bool = False) -> tuple[dict | None, list[str
     if skip:
         return None, []
 
-    # 인메모리 캐시 확인
+    # 인메모리 캐시 확인 (성공 결과만 캐시)
     cache_key = artist_name.lower().strip()
     if cache_key in _cache:
         cached = _cache[cache_key]
-        sources = [cached["source"]] if cached else []
+        sources = cached.get("_sources_used", [cached.get("source", "")])
         logger.debug("Cache hit: %s", artist_name)
         return cached, sources
 
@@ -106,8 +107,10 @@ def collect(artist_name: str, skip: bool = False) -> tuple[dict | None, list[str
         sources_used,
     )
 
-    # 인메모리 캐시 저장
-    _cache[cache_key] = profile
+    # 인메모리 캐시 저장 (성공만, 실패는 캐시하지 않음)
+    if profile and len(_cache) < _CACHE_MAX:
+        profile["_sources_used"] = sources_used
+        _cache[cache_key] = profile
 
     return profile, sources_used
 

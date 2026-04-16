@@ -157,10 +157,6 @@ def search_birth_year(artist_name: str, medium: str = "") -> int | None:
             logger.info("Web search: %s → birth_year=%d (%d domains)", artist_name, year, domain_count)
             return year
 
-    # 1개 도메인이라도 미술 맥락에서 나왔으면 후보로 (낮은 신뢰도)
-    if year_counts:
-        most_common = year_counts.most_common(1)[0][0]
-        logger.info("Web search: %s → birth_year=%d (1 domain, low confidence)", artist_name, most_common)
-        return most_common
-
+    # 2개 독립 도메인 미충족 → 미채택 (동명이인 리스크)
+    logger.info("Web search: %s → no confident birth year (single domain only)", artist_name)
     return None

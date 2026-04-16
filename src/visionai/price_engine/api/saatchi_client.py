@@ -44,7 +44,7 @@ def _fetch_html(url: str, timeout: int = 5) -> str | None:
 
 def search_artist(name: str) -> dict | None:
     """Constructor.io autocomplete으로 작가 검색 → artist_id + 기본 정보."""
-    encoded = urllib.parse.quote(name)
+    encoded = urllib.parse.quote(name, safe="")
     url = (
         f"https://ac.cnstrc.com/autocomplete/{encoded}"
         f"?c=ciojs-client-2.64.2&key={CNSTRC_KEY}"

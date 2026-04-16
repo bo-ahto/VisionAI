@@ -1,6 +1,7 @@
 """Phase 1 1차 시장 가격 예측 API 서버."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -212,10 +213,13 @@ async def predict(req: PredictRequest):
     sources_used: list[str] = []
     external_ms = 0
 
-    # 2.5 외부 수집 (DB 미매칭 시)
+    # 2.5 외부 수집 (DB 미매칭 시, threadpool에서 실행)
     if not is_matched and not req.skip_external_lookup:
         t_ext = time.time()
-        ext_profile, sources_used = external_collector.collect(req.artist_name)
+        loop = asyncio.get_event_loop()
+        ext_profile, sources_used = await loop.run_in_executor(
+            None, external_collector.collect, req.artist_name, False
+        )
         external_ms = int((time.time() - t_ext) * 1000)
         if ext_profile:
             profile = ext_profile
