@@ -1,6 +1,6 @@
 """웹검색으로 작가 생년 보강 (Phase 3).
 
-WEB_SEARCH_API_KEY 환경변수가 없으면 스킵 (graceful degradation).
+DuckDuckGo (키 불필요) 기본 사용. Naver/Google API 키가 있으면 우선 사용.
 """
 from __future__ import annotations
 
@@ -13,21 +13,31 @@ import urllib.parse
 
 logger = logging.getLogger(__name__)
 
-# Naver Search API 또는 Google CSE
-_API_KEY = os.getenv("WEB_SEARCH_API_KEY", "")
-_API_TYPE = os.getenv("WEB_SEARCH_API_TYPE", "naver")  # naver | google
 _NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID", "")
 _NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "")
 
 # 미술 관련 키워드 (검증용)
 ART_KEYWORDS = {"전시", "갤러리", "작가", "painting", "exhibition", "gallery", "artist",
-                "미술", "개인전", "단체전", "아트", "art", "작품"}
+                "미술", "개인전", "단체전", "아트", "art", "작품", "화가", "유화", "수채"}
 EXCLUDE_KEYWORDS = {"배우", "가수", "영화", "드라마", "actor", "singer", "movie",
-                    "드라마", "방송", "연예", "스포츠", "선수"}
+                    "방송", "연예", "스포츠", "선수"}
+
+
+def _ddg_search(query: str) -> list[dict]:
+    """DuckDuckGo 검색 (키 불필요)."""
+    try:
+        from duckduckgo_search import DDGS
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=5))
+            return [{"title": r.get("title", ""), "description": r.get("body", ""),
+                      "link": r.get("href", "")} for r in results]
+    except Exception as e:
+        logger.warning("DuckDuckGo search error: %s", e)
+        return []
 
 
 def _naver_search(query: str) -> list[dict]:
-    """Naver Search API로 검색."""
+    """Naver Search API로 검색 (키 필요)."""
     if not _NAVER_CLIENT_ID:
         return []
     encoded = urllib.parse.quote(query)
@@ -46,41 +56,27 @@ def _naver_search(query: str) -> list[dict]:
         return []
 
 
-def _google_search(query: str) -> list[dict]:
-    """Google Custom Search API로 검색."""
-    if not _API_KEY:
-        return []
-    encoded = urllib.parse.quote(query)
-    cx = os.getenv("GOOGLE_CSE_ID", "")
-    url = f"https://www.googleapis.com/customsearch/v1?key={_API_KEY}&cx={cx}&q={encoded}&num=5"
-    req = urllib.request.Request(url, headers={"User-Agent": "VisionAI-API/1.0"})
-    try:
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            data = json.loads(resp.read().decode())
-            return [{"title": i.get("title", ""), "description": i.get("snippet", ""),
-                      "link": i.get("link", "")} for i in data.get("items", [])]
-    except Exception as e:
-        logger.warning("Google search error: %s", e)
-        return []
-
-
 def _extract_birth_years(text: str) -> list[int]:
     """텍스트에서 생년 후보 추출."""
     years = []
     patterns = [
         r"(\d{4})년\s*생",
         r"(\d{4})년\s*출생",
-        r"(?:born|b\.)\s*(?:in\s+)?(19\d{2}|20[01]\d)",
+        r"(\d{4})년\s*\d{1,2}월",  # 1913년 4월
+        r"(?:born|b\.)\s*(?:in\s+)?(?:on\s+)?(?:\w+\s+\d{1,2},?\s+)?(19\d{2}|20[01]\d)",
         r"Born.*?(19\d{2}|20[01]\d)",
-        r"\((\d{4})\s*[-~]\s*\)",  # (1985-)
-        r"\((\d{4})\s*[-~]\s*\d{4}\)",  # (1985-2020)
+        r"\((?:金煥基,\s*)?(\d{4})년",  # (金煥基, 1913년
+        r"\((\d{4})\s*[-~∼]\s*\)",  # (1985-)
+        r"\((\d{4})\s*[-~∼]\s*\d{4}\)",  # (1985-2020)
+        r",\s*(19\d{2})\s*[-~∼]",  # , 1913~1974
+        r"(\d{4})\s*[-~∼]\s*\d{4}\)\s*[은는이가]",  # 1913~1974)는
     ]
     for pat in patterns:
         for m in re.finditer(pat, text, re.I):
             y = int(m.group(1))
-            if 1930 <= y <= 2005:
+            if 1900 <= y <= 2005:
                 years.append(y)
-    return years
+    return list(set(years))
 
 
 def _has_art_context(text: str) -> bool:
@@ -96,19 +92,14 @@ def search_birth_year(artist_name: str, medium: str = "") -> int | None:
 
     Returns: birth_year if confident, None otherwise.
     """
-    # API 키 없으면 스킵
-    if not (_API_KEY or _NAVER_CLIENT_ID):
-        logger.debug("Web search skipped: no API key")
-        return None
-
     # 검색어: 작가 + 회화 한정어
-    query = f'"{artist_name}" 작가 회화 생년'
+    query = f'"{artist_name}" 작가 화가 생년'
 
-    # 검색 실행
-    if _API_TYPE == "naver" and _NAVER_CLIENT_ID:
+    # 검색 실행 (Naver API 우선, 없으면 DuckDuckGo)
+    if _NAVER_CLIENT_ID:
         results = _naver_search(query)
     else:
-        results = _google_search(query)
+        results = _ddg_search(query)
 
     if not results:
         return None
