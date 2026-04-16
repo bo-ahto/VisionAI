@@ -47,6 +47,7 @@ def _db_query(sql: str) -> dict:
     req = urllib.request.Request(url, data=data, headers={
         "x-api-key": api_key,
         "Content-Type": "application/json",
+        "User-Agent": "VisionAI-API/1.0",
     })
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read().decode())
