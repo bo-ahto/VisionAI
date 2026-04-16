@@ -1,0 +1,71 @@
+"""Phase 1 1차 시장 가격 예측 API 스키마."""
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+
+class PredictRequest(BaseModel):
+    artist_name: str = Field(..., min_length=1, description="작가명")
+    width_cm: float = Field(..., gt=0, le=500, description="가로 cm")
+    height_cm: float = Field(..., gt=0, le=500, description="세로 cm")
+    medium: str = Field(..., min_length=1, description="매체 (예: acrylic on canvas)")
+    target_market: str = Field("gallery", description="gallery | online")
+
+    # 선택 (수동 입력, 미입력 시 DB 프로필 사용)
+    artist_birth_year: int | None = Field(None, ge=1900, le=2010)
+    artist_total_works: int | None = Field(None, ge=0)
+    solo_count: int | None = Field(None, ge=0)
+    group_count: int | None = Field(None, ge=0)
+    followers: int | None = Field(None, ge=0)
+
+
+class PriceRange(BaseModel):
+    low: int
+    high: int
+
+
+class Prediction(BaseModel):
+    price_krw: int
+    price_usd: int
+    price_range: PriceRange
+    confidence_grade: str
+    margin: float
+
+
+class ModelInfo(BaseModel):
+    model_type: str
+    is_known_artist: bool
+    training_count: int
+
+
+class Processing(BaseModel):
+    total_ms: int
+
+
+class PredictResponse(BaseModel):
+    status: str = "success"
+    prediction: Prediction
+    model_info: ModelInfo
+    processing: Processing
+
+
+class ErrorResponse(BaseModel):
+    status: str = "error"
+    error_code: str
+    message: str
+
+
+class ModelInfoResponse(BaseModel):
+    model_version: str
+    training_count: int
+    artist_count: int
+    mdape_groupkfold: float
+    mdape_kfold: float
+    features_count: int
+
+
+class HealthResponse(BaseModel):
+    status: str = "ok"
+    model_version: str
+    artists_loaded: int
+    uptime_seconds: float
