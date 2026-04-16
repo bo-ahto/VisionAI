@@ -53,22 +53,36 @@ def _db_query(sql: str) -> dict:
 
 
 def _load_artist_index() -> None:
-    """DB에서 작가 + 프로필 데이터를 로드하여 인메모리 인덱스 구축."""
+    """DB에서 작가 + 프로필 데이터를 단일 JOIN 쿼리로 로드."""
     logger.info("Loading artist index from DB...")
     try:
-        artists_result = _db_query(
-            "SELECT id, name, name_ko, name_en, name_normalized, birth_year, "
-            "source, artsy_slug, saatchi_id, is_in_training, training_count "
-            "FROM artists"
+        result = _db_query(
+            "SELECT a.id, a.name, a.name_ko, a.name_en, a.name_normalized, "
+            "a.birth_year, a.source, a.artsy_slug, a.saatchi_id, "
+            "a.is_in_training, a.training_count, "
+            "p.birth_year_from_source, p.total_works, p.followers, "
+            "p.solo_count, p.group_count, p.fair_count, "
+            "p.career_stage, p.profile_completeness "
+            "FROM artists a "
+            "LEFT JOIN artist_profiles p ON a.id = p.artist_id AND p.status = 'success'"
         )
-        profiles_result = _db_query(
-            "SELECT artist_id, source, birth_year_from_source, total_works, "
-            "followers, solo_count, group_count, fair_count, career_stage, "
-            "profile_completeness "
-            "FROM artist_profiles WHERE status = 'success'"
-        )
-        _matcher.load_from_data(artists_result["rows"], profiles_result["rows"])
-        logger.info("Artist index loaded: %d artists", _matcher.count)
+        rows = result.get("rows", [])
+        # artists와 profiles를 분리해서 matcher에 전달
+        artists = []
+        profiles = []
+        seen_artists = set()
+        for r in rows:
+            aid = r["id"]
+            if aid not in seen_artists:
+                seen_artists.add(aid)
+                artists.append(r)
+            if r.get("total_works") is not None:  # profile join이 있는 경우
+                profiles.append({"artist_id": aid, **{k: r[k] for k in
+                    ["birth_year_from_source", "total_works", "followers",
+                     "solo_count", "group_count", "fair_count",
+                     "career_stage", "profile_completeness"] if k in r}})
+        _matcher.load_from_data(artists, profiles)
+        logger.info("Artist index loaded: %d artists (from %d rows)", _matcher.count, len(rows))
     except Exception as e:
         logger.warning("DB load failed, starting with empty index: %s", e)
 
