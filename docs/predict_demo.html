@@ -12,7 +12,30 @@
   .header h1 { font-size: 22px; color: var(--accent); }
   .header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
   .main { max-width: 1200px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 400px 1fr; gap: 24px; }
-  @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+    .header { padding: 16px; }
+    .header h1 { font-size: 18px; }
+    .form-card, .result-card { padding: 16px; }
+    .price-main { font-size: 32px; }
+    .price-usd { font-size: 15px; }
+    .grade { font-size: 18px; padding: 3px 12px; }
+    .info-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field-row3 { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .shap-bar .feat { width: 100px; font-size: 11px; }
+    .match-item { flex-direction: column; gap: 4px; }
+    .match-price { text-align: right; }
+  }
+  @media (max-width: 480px) {
+    .main { padding: 8px; }
+    .price-main { font-size: 26px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .field-row3 { grid-template-columns: 1fr; }
+    .shap-bar { flex-wrap: wrap; }
+    .shap-bar .feat { width: 100%; text-align: left; margin-bottom: 2px; }
+  }
 
   .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; height: fit-content; }
   .form-card h2 { font-size: 16px; margin-bottom: 16px; color: var(--purple); }
@@ -61,8 +84,7 @@
   .shap-bar .bar.neg { background: var(--red); }
   .shap-bar .pct { width: 60px; font-weight: 600; }
 
-  .artist-detail { display: none; }
-  .artist-detail.show { display: block; }
+  .artist-detail { display: block; }
   .loading { text-align: center; padding: 40px; color: var(--muted); }
   .error-msg { background: rgba(248,81,73,0.1); border: 1px solid var(--red); border-radius: 8px; padding: 16px; color: var(--red); }
   .history-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
@@ -293,10 +315,7 @@ function renderResult(d, req) {
   // ─── 4. 작가 정보 (접이식 상세 보기) ───
   if (hist) {
     html += `<div class="result-card">
-      <h2 style="cursor:pointer" onclick="document.getElementById('artistDetail').classList.toggle('show')">
-        작가 정보: ${hist.artist_name}
-        <span style="font-size:13px;color:var(--muted);margin-left:8px">▼ 상세 보기</span>
-      </h2>
+      <h2>작가 정보: ${hist.artist_name}</h2>
       <div class="info-grid">
         <div class="info-item"><div class="label">학습 작품수</div><div class="value">${hist.total_works_in_data}건</div></div>
         <div class="info-item"><div class="label">가격 범위</div><div class="value">₩${formatKRW(hist.price_min)} ~ ₩${formatKRW(hist.price_max)}</div></div>
