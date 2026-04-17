@@ -53,7 +53,7 @@ $$\ln(P) = \alpha + \sum_{k=1}^{K}\beta_k x_k + \epsilon$$
 
 헤도닉 모델은 각 특성 $x_k$의 가격 기여도 $\beta_k$를 **선형으로 추정**하는 방법이다.
 
-**본 모델은 헤도닉 모델을 사용하지 않는다.** 미술품 가격은 크기, 매체, 작가 명성 간의 복잡한 비선형 상호작용이 존재하여, 선형 헤도닉으로는 설명력이 제한적이다 (본 연구 실험에서 헤도닉 모델 R²=0.45, GBDT R²=0.78). 대신 **GBDT(Gradient Boosted Decision Trees)**를 사용하여 피처 간 비선형 관계를 자동으로 학습한다.
+**본 모델은 헤도닉 모델을 사용하지 않는다.** 미술품 가격은 크기, 매체, 작가 명성 간의 복잡한 비선형 상호작용이 존재하여, 선형 헤도닉으로는 설명력이 제한적이다. 대신 **GBDT(Gradient Boosted Decision Trees)**를 사용하여 피처 간 비선형 관계를 자동으로 학습한다. GBDT는 GroupKFold 평가에서 R²=0.774~0.775를 달성했다 (`model_test_results/integrated_metrics.json` 참고).
 
 다만 헤도닉 모델의 핵심 아이디어 — **작품 가격을 구성 특성으로 분해할 수 있다** — 는 피처 설계의 이론적 근거로 활용했다.
 
@@ -372,7 +372,7 @@ $$c_{market} = \begin{cases} 0.0 & \text{gallery} \\ -0.075 & \text{online} \end
 
 ### 5.3 가격대별 성능 (GroupKFold, CatBoost 단독)
 
-> 아래 수치는 29,361건 전체에 대한 CatBoost GroupKFold 5-Fold OOF 평가 결과.
+> 아래 수치는 29,361건 전체에 대한 CatBoost GroupKFold 5-Fold OOF 평가에서 직접 계산한 결과. 다른 문서의 수치와 차이가 있을 수 있다 (평가 시점, 모델 버전, 피처셋 차이).
 
 | 가격대 | MdAPE | 비율 | W30 | 건수 | 해석 |
 |--------|:-----:|:----:|:---:|:----:|------|
@@ -418,11 +418,11 @@ $$P_{low} = \hat{P} \times (1 - m), \quad P_{high} = \hat{P} \times (1 + m)$$
 
 미학습 작가 요청 시, Artsy → Saatchi → 웹검색 순서로 작가 프로필을 자동 수집한다.
 
-| 소스 | 방법 | 수집 정보 | 피처 기여 |
-|------|------|----------|:---------:|
-| Artsy | GraphQL API | 작품수, 팔로워, 전시, 생년 | ~54% |
-| Saatchi | Constructor.io + HTML 파싱 | bio, education, exhibitions | ~18% |
-| 웹검색 | DuckDuckGo | 생년 (보완) | ~9% |
+| 소스 | 방법 | 수집 정보 | 주요 피처 |
+|------|------|----------|----------|
+| Artsy | GraphQL API | 작품수, 팔로워, 전시, 생년 | artist_total_works, ln_followers, career_stage |
+| Saatchi | Constructor.io + HTML 파싱 | bio, education, exhibitions | profile_completeness, followers |
+| 웹검색 | DuckDuckGo | 생년 (보완) | artist_birth_year, has_birth_year |
 
 ### 7.2 웹검색 동명이인 처리
 
@@ -455,7 +455,7 @@ $$\hat{y}_i = \phi_0 + \sum_{k=1}^{K}\phi_k(\mathbf{x}_i)$$
 
 여기서 $\phi_0$는 기저값(학습 데이터 평균), $\phi_k$는 피처 $k$의 SHAP 값.
 
-기저값 $\phi_0 = 14.966$ ($\approx \exp(14.966) = 317만원$).
+아래는 v3 CatBoost 모델에 대한 SHAP TreeExplainer 실행 예시이다 (입력에 따라 값이 달라짐).
 
 ### 8.2 기여도 해석
 
