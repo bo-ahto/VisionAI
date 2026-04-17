@@ -266,18 +266,29 @@ def _find_matched_artworks(
 
     matched = []
 
-    # 1. 제목 정확 매칭 (대소문자/공백 무시)
+    # 1. 제목 + 호수 정확 매칭
     if title:
         title_norm = title.lower().strip()
         for item in items:
-            if title_norm in item["title"].lower():
+            if title_norm in item["title"].lower() and item["ho"] == ho:
                 matched.append(MatchedArtwork(
                     title=item["title"], price_krw=item["price_krw"],
                     price_usd=item["price_krw"] // 1380,
                     ho=item["ho"], medium=item["medium"],
                     gallery=item["gallery"], source=item.get("source", ""),
-                    match_type="exact_title",
+                    match_type="exact_title_size",
                 ))
+        # 제목만 매칭 (크기 다른 경우 참고용)
+        if not matched:
+            for item in items:
+                if title_norm in item["title"].lower():
+                    matched.append(MatchedArtwork(
+                        title=item["title"], price_krw=item["price_krw"],
+                        price_usd=item["price_krw"] // 1380,
+                        ho=item["ho"], medium=item["medium"],
+                        gallery=item["gallery"], source=item.get("source", ""),
+                        match_type="same_title_diff_size",
+                    ))
 
     # 2. 동일 호수 + 동일 매체
     if not matched:
