@@ -28,6 +28,8 @@ from .primary_schemas import (
     BatchPredictRequest,
     BatchPredictResponse,
     BatchPredictResult,
+    ArtistPriceHistory,
+    PriceHistoryItem,
 )
 from .artist_matcher import ArtistMatcher
 from .primary_feature_builder import build_features
@@ -43,6 +45,7 @@ _matcher = ArtistMatcher()
 _predictor = PrimaryPredictor()
 _start_time = time.time()
 _model_version = "v3"
+_price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
 
 # ─── 인메모리 모니터링 카운터 ───
 _monitor = {
@@ -151,6 +154,107 @@ def _load_artist_index() -> None:
         logger.error("Traceback: %s", traceback.format_exc())
 
 
+def _load_price_history() -> None:
+    """학습 데이터에서 작가별 가격 이력을 로드."""
+    global _price_history
+    data_dir = Path(os.getenv("DATA_DIR", "/app/data"))
+    paths = [
+        data_dir / "primary_market_dataset.parquet",
+        Path(__file__).resolve().parent.parent.parent.parent.parent / "data" / "primary_market_dataset.parquet",
+    ]
+    saatchi_paths = [
+        data_dir / "saatchi_cleaned.parquet",
+        Path(__file__).resolve().parent.parent.parent.parent.parent / "data" / "saatchi_cleaned.parquet",
+    ]
+
+    for p in paths:
+        if p.exists():
+            try:
+                df = pd.read_parquet(p, columns=[
+                    "artist_slug", "artist_name", "title", "price_krw", "ho",
+                    "medium_category", "gallery_name",
+                ])
+                for slug, grp in df.groupby("artist_slug"):
+                    _price_history[str(slug)] = [
+                        {"title": str(r.get("title", ""))[:50], "price_krw": int(r["price_krw"]),
+                         "ho": int(r.get("ho", 0)), "medium": str(r.get("medium_category", "")),
+                         "gallery": str(r.get("gallery_name", "")), "source": "artsy"}
+                        for _, r in grp.iterrows()
+                    ]
+                logger.info("Price history loaded: %d artists from %s", len(_price_history), p)
+                break
+            except Exception as e:
+                logger.warning("Price history load failed: %s", e)
+
+    for p in saatchi_paths:
+        if p.exists():
+            try:
+                df = pd.read_parquet(p, columns=[
+                    "artist_slug", "artist_name", "title", "price_krw", "ho",
+                    "medium_category", "gallery_name",
+                ])
+                for slug, grp in df.groupby("artist_slug"):
+                    key = str(slug)
+                    items = [
+                        {"title": str(r.get("title", ""))[:50], "price_krw": int(r["price_krw"]),
+                         "ho": int(r.get("ho", 0)), "medium": str(r.get("medium_category", "")),
+                         "gallery": "Saatchi Art", "source": "saatchi"}
+                        for _, r in grp.iterrows()
+                    ]
+                    if key in _price_history:
+                        _price_history[key].extend(items)
+                    else:
+                        _price_history[key] = items
+                logger.info("Saatchi history added: total %d artists", len(_price_history))
+                break
+            except Exception as e:
+                logger.warning("Saatchi history load failed: %s", e)
+
+
+def _get_artist_history(artist_slug: str, artist_name: str) -> ArtistPriceHistory | None:
+    """작가의 가격 이력 요약."""
+    items = _price_history.get(artist_slug, [])
+    if not items:
+        return None
+
+    prices = [i["price_krw"] for i in items]
+    hos = [i["ho"] for i in items]
+    mediums = list(set(i["medium"] for i in items if i["medium"]))
+    galleries = list(set(i["gallery"] for i in items if i["gallery"]))
+    sources = set(i.get("source", "") for i in items)
+
+    # 수집 날짜 (소스별)
+    dates = []
+    if "artsy" in sources:
+        dates.append("Artsy 2026-04-13")
+    if "saatchi" in sources:
+        dates.append("Saatchi 2026-04-16")
+    collected = ", ".join(dates) if dates else "2026-04"
+
+    # 비슷한 크기 순으로 정렬, 상위 5건
+    items_sorted = sorted(items, key=lambda x: x["price_krw"], reverse=True)
+    samples = [
+        PriceHistoryItem(
+            title=i["title"], price_krw=i["price_krw"], ho=i["ho"],
+            medium=i["medium"], gallery=i["gallery"], source=i.get("source", "")
+        )
+        for i in items_sorted[:5]
+    ]
+
+    return ArtistPriceHistory(
+        artist_name=artist_name,
+        total_works_in_data=len(items),
+        price_min=min(prices),
+        price_max=max(prices),
+        price_median=int(sorted(prices)[len(prices) // 2]),
+        ho_range=f"{min(hos)}~{max(hos)}호",
+        mediums=mediums[:5],
+        galleries=galleries[:5],
+        data_collected_date=collected,
+        samples=samples,
+    )
+
+
 def _load_models() -> None:
     """모델 파일 로드."""
     model_dir = Path(os.getenv("MODEL_DIR", "/app/models"))
@@ -176,6 +280,7 @@ async def lifespan(app: FastAPI):
 
     _load_models()
     _load_artist_index()
+    _load_price_history()
     _init_log()
 
     # SHAP explainer 초기화 (CatBoost 모델)
@@ -358,6 +463,9 @@ async def predict(req: PredictRequest):
             {"feature": c["feature"], "value": c["value"], "contribution": c["contribution"]}
             for c in feature_contributions
         ],
+        artist_price_history=_get_artist_history(
+            match.slug if match else "", match.name if match else req.artist_name
+        ) if is_matched else None,
     )
 
 

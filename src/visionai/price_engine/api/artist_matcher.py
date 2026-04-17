@@ -15,6 +15,7 @@ class MatchResult:
     training_count: int
     source: str
     profile: dict
+    slug: str = ""  # artsy_slug 또는 saatchi_id (가격 이력 조회용)
 
 
 def normalize_name(name: str) -> str:
@@ -65,6 +66,7 @@ class ArtistMatcher:
             info = {
                 "id": aid,
                 "name": name,
+                "slug": a.get("artsy_slug") or str(a.get("saatchi_id") or aid),
                 "training_count": a.get("training_count", 0) or 0,
                 "source": a.get("source", ""),
                 "is_in_training": a.get("is_in_training", False),
@@ -107,7 +109,7 @@ class ArtistMatcher:
                 return MatchResult(
                     artist_id=info["id"], name=info["name"], score=100.0,
                     training_count=info["training_count"], source=info["source"],
-                    profile=info["profile"],
+                    profile=info["profile"], slug=info.get("slug", ""),
                 )
 
         # 2. Fuzzy 매칭 (0.85+)
@@ -126,7 +128,7 @@ class ArtistMatcher:
             return MatchResult(
                 artist_id=info["id"], name=info["name"], score=best_score,
                 training_count=info["training_count"], source=info["source"],
-                profile=info["profile"],
+                profile=info["profile"], slug=info.get("slug", ""),
             )
 
         return None

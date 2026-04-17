@@ -44,6 +44,28 @@ class Processing(BaseModel):
     external_fetch_ms: int = 0
 
 
+class PriceHistoryItem(BaseModel):
+    title: str
+    price_krw: int
+    ho: int
+    medium: str
+    gallery: str
+    source: str
+
+
+class ArtistPriceHistory(BaseModel):
+    artist_name: str
+    total_works_in_data: int
+    price_min: int
+    price_max: int
+    price_median: int
+    ho_range: str
+    mediums: list[str]
+    galleries: list[str]
+    data_collected_date: str
+    samples: list[PriceHistoryItem]
+
+
 class FeatureContribution(BaseModel):
     feature: str
     value: str
@@ -57,6 +79,7 @@ class PredictResponse(BaseModel):
     processing: Processing
     external_sources_used: list[str] = []
     feature_contributions: list[FeatureContribution] = []
+    artist_price_history: ArtistPriceHistory | None = None
 
 
 class BatchItem(BaseModel):
