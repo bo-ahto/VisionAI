@@ -98,7 +98,26 @@
     </div>
     <div class="field">
       <label>매체 *</label>
-      <input type="text" id="medium" placeholder="예: oil on canvas, acrylic" value="oil on canvas">
+      <div class="field-row">
+        <select id="mediumType">
+          <option value="oil">유화 (Oil)</option>
+          <option value="acrylic">아크릴 (Acrylic)</option>
+          <option value="watercolor">수채 (Watercolor)</option>
+          <option value="ink">수묵/잉크 (Ink)</option>
+          <option value="gouache">과슈 (Gouache)</option>
+          <option value="pastel">파스텔 (Pastel)</option>
+          <option value="pencil">연필/드로잉 (Pencil)</option>
+          <option value="mixed media">혼합재료 (Mixed Media)</option>
+        </select>
+        <select id="supportType">
+          <option value="canvas">캔버스 (Canvas)</option>
+          <option value="linen">리넨 (Linen)</option>
+          <option value="paper">종이 (Paper)</option>
+          <option value="panel">패널/나무 (Panel)</option>
+          <option value="silk">비단 (Silk)</option>
+          <option value="">기타</option>
+        </select>
+      </div>
     </div>
     <div class="field">
       <label>시장</label>
@@ -167,7 +186,7 @@ async function predict() {
     artist_name: document.getElementById('artistName').value,
     width_cm: parseFloat(document.getElementById('width').value),
     height_cm: parseFloat(document.getElementById('height').value),
-    medium: document.getElementById('medium').value,
+    medium: document.getElementById('mediumType').value + (document.getElementById('supportType').value ? ' on ' + document.getElementById('supportType').value : ''),
     target_market: document.getElementById('market').value,
   };
 

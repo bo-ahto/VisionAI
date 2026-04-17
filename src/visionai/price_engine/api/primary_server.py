@@ -437,10 +437,19 @@ async def lifespan(app: FastAPI):
     logger.info("=== Shutting down ===")
 
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
     title="VisionAI 1차 시장 가격 예측 API",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
