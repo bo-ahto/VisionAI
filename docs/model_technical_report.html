@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionAI 1차 시장 가격 예측 모델 기술 보고서</title>
+<script>
+  window.MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; padding: 40px 20px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+  h2 { font-size: 22px; margin-top: 48px; margin-bottom: 16px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: var(--purple); }
+  h4 { font-size: 15px; margin-top: 24px; margin-bottom: 8px; color: var(--green); }
+  p { margin-bottom: 12px; }
+  blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 16px 0; background: var(--card); border-radius: 4px; color: var(--muted); font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--card); padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; }
+  td { padding: 6px 12px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: rgba(88,166,255,0.05); }
+  code { background: var(--card); padding: 2px 6px; border-radius: 3px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 16px 0; font-size: 13px; }
+  pre code { background: none; padding: 0; }
+  strong { color: var(--text); }
+  em { color: var(--muted); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  .meta { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .meta strong { color: var(--accent); }
+  ul, ol { margin: 12px 0; padding-left: 24px; }
+  li { margin-bottom: 4px; }
+  .mjx-container { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>VisionAI 1차 시장 가격 예측 모델 기술 보고서</h1>
+<blockquote>
+<p><strong>작성일</strong>: 2026-04-17</p>
+<p><strong>모델 버전</strong>: v3 (CatBoost + XGBoost 라우팅)</p>
+<p><strong>학습 데이터</strong>: 29,361건 / 1,589명 작가</p>
+<p><strong>대상</strong>: 한국 신진/중견 작가 회화 작품의 1차 시장(갤러리) 가격 예측</p>
+</blockquote>
+<hr>
+<h2>1. 문제 정의</h2>
+<h3>1.1 목적</h3>
+<p>미술 작품의 적정 가격을 산출하는 것은 정보 비대칭이 큰 1차 시장에서 핵심 과제이다. 본 모델은 작품의 물리적 속성(크기, 매체)과 작가의 경력 정보를 기반으로 <strong>갤러리 리스팅 가격</strong>을 예측한다.</p>
+<h3>1.2 수학적 정의</h3>
+<p>작품 $i$의 가격을 $P_i$ (KRW)라 하면, 예측 문제는 다음과 같다:</p>
+<p style="text-align:center">$$\hat{P}_i = f(\mathbf{x}_i; \theta)$$</p>
+<p>여기서 $\mathbf{x}_i \in \mathbb{R}^{37}$은 37차원 피처 벡터, $\theta$는 모델 파라미터.</p>
+<p>가격 분포는 강한 양의 왜도(right-skewed)를 보이므로, 로그 변환을 적용한다:</p>
+<p style="text-align:center">$$y_i = \ln(P_i)$$</p>
+<p>예측 모델은 $y_i$를 타겟으로 학습하며, 최종 가격은 역변환으로 구한다:</p>
+<p style="text-align:center">$$\hat{P}_i = \exp(\hat{y}_i)$$</p>
+<h3>1.3 평가 지표</h3>
+<p><strong>MdAPE (Median Absolute Percentage Error)</strong>:</p>
+<p style="text-align:center">$$\text{MdAPE} = \text{median}\left(\left|\frac{\hat{P}_i - P_i}{P_i}\right| \times 100\right)$$</p>
+<p>MdAPE를 사용하는 이유: 가격 분포가 극단적으로 왜곡되어(평균 993만원, 중앙 414만원) 평균 기반 MAPE보다 중앙값 기반 MdAPE가 모델의 "일반적 성능"을 더 정확히 반영한다.</p>
+<p><strong>W30 (Within 30% Error Rate)</strong>:</p>
+<p style="text-align:center">$$\text{W30} = \frac{1}{N}\sum_{i=1}^{N}\mathbb{1}\left[\left|\frac{\hat{P}_i - P_i}{P_i}\right| \leq 0.3\right] \times 100$$</p>
+<hr>
+<h2>2. 가격 결정 이론적 배경</h2>
+<h3>2.1 선행 연구와 본 모델의 관계</h3>
+<p>미술품 가격 결정에 관한 선행 연구로는 Rosen(1974)의 헤도닉 가격 모델이 있다:</p>
+<p style="text-align:center">$$\ln(P) = \alpha + \sum_{k=1}^{K}\beta_k x_k + \epsilon$$</p>
+<p>헤도닉 모델은 각 특성 $x_k$의 가격 기여도 $\beta_k$를 <strong>선형으로 추정</strong>하는 방법이다.</p>
+<p><strong>본 모델은 헤도닉 모델을 사용하지 않는다.</strong> 미술품 가격은 크기, 매체, 작가 명성 간의 복잡한 비선형 상호작용이 존재하여, 선형 헤도닉으로는 설명력이 제한적이다. 대신 <strong>GBDT(Gradient Boosted Decision Trees)</strong>를 사용하여 피처 간 비선형 관계를 자동으로 학습한다. GBDT는 GroupKFold 평가에서 R²=0.774~0.775를 달성했다 (<code>model_test_results/integrated_metrics.json</code> 참고).</p>
+<p>다만 헤도닉 모델의 핵심 아이디어 — <strong>작품 가격을 구성 특성으로 분해할 수 있다</strong> — 는 피처 설계의 이론적 근거로 활용했다.</p>
+<h3>2.2 한국 미술 시장의 호당 가격제 (號當 價格制)</h3>
+<p>한국 1차 시장에서는 전통적으로 <strong>호당 가격제</strong>가 사용된다:</p>
+<p style="text-align:center">$$P = \alpha \cdot H^{\beta}$$</p>
+<p>여기서 $H$는 호수(캔버스 번호), $\alpha$는 작가별 호당 기준가, $\beta$는 크기 탄력성.</p>
+<p>본 연구의 실증 분석 결과:</p>
+<table><thead><tr><th>항목</th><th>값</th><th>의미</th></tr></thead><tbody>
+<tr><td>$\beta$ (전체)</td><td>0.817</td><td>호수 1% 증가 시 가격 0.82% 증가</td></tr>
+<tr><td>$\beta$ (KRW 작품)</td><td>0.749</td><td>원화 작품은 크기 탄력성이 낮음</td></tr>
+</tbody></table>
+<p>$\beta < 1$은 <strong>크기에 대한 수확 체감</strong>을 의미한다. 즉, 호수가 2배가 되어도 가격은 2배가 되지 않고 약 1.76배($2^{0.817}$)가 된다.</p>
+<h3>2.3 작가 프리미엄 (Artist Premium)</h3>
+<p>동일 크기/매체라도 작가에 따라 가격이 크게 달라진다. 헤도닉 모델에서는 이를 작가 고정 효과 $\alpha_j$로 추정하지만, 본 모델에서는 <strong>작가를 직접 식별하지 않고</strong> 작가의 관측 가능한 속성(작품수, 팔로워, 전시 이력, 생년 등)을 피처로 사용한다.</p>
+<p>GBDT는 이 피처들의 비선형 조합으로 작가 프리미엄을 암묵적으로 학습한다. 예를 들어, "작품수 150 + 팔로워 2,000 + 개인전 10회"인 작가와 "작품수 5 + 팔로워 0 + 개인전 0회"인 작가의 가격 차이를 트리 분기로 포착한다.</p>
+<hr>
+<h2>3. 피처 엔지니어링</h2>
+<p>37개 피처를 5개 카테고리로 분류한다.</p>
+<h3>3.1 크기 피처 (9개, 중요도 합계 21.1%)</h3>
+<table><thead><tr><th>피처</th><th>수식</th><th>중요도</th><th>설명</th></tr></thead><tbody>
+<tr><td><code>ho</code></td><td>$H = \arg\min_h</td><td>A - A_h^{ref}</td><td>$</td><td>1.63%</td><td>F형 기준 호수</td></tr>
+<tr><td><code>ho_power</code></td><td>$H^{0.74}$</td><td>1.99%</td><td>호당 가격제 비선형 보정</td></tr>
+<tr><td><code>ln_ho</code></td><td>$\ln(H+1)$</td><td>3.13%</td><td>로그 호수</td></tr>
+<tr><td><code>area_cm2</code></td><td>$W \times H$ (cm²)</td><td>5.67%</td><td>면적</td></tr>
+<tr><td><code>ln_area</code></td><td>$\ln(A)$</td><td>3.75%</td><td>로그 면적</td></tr>
+<tr><td><code>aspect_ratio</code></td><td>$\frac{\max(W,H)}{\min(W,H)}$</td><td>1.46%</td><td>종횡비</td></tr>
+<tr><td><code>is_small</code></td><td>$\mathbb{1}[H \leq 3]$</td><td>0.73%</td><td>소품 여부</td></tr>
+<tr><td><code>support_factor</code></td><td>지지체별 계수</td><td>0.68%</td><td>캔버스=1.0, 종이=0.8, 리넨=1.1</td></tr>
+<tr><td><code>ho_x_support</code></td><td>$H \times f_{support}$</td><td>2.05%</td><td>호수×지지체 교차항</td></tr>
+</tbody></table>
+<p><strong>호수 변환 원리</strong>:</p>
+<p>한국 표준 캔버스 크기(F형)의 참조 면적 테이블을 사용한다:</p>
+<table><thead><tr><th>호수</th><th>면적(cm²)</th><th>대략 크기</th></tr></thead><tbody>
+<tr><td>1</td><td>364</td><td>22×16cm</td></tr>
+<tr><td>10</td><td>2,412</td><td>53×46cm</td></tr>
+<tr><td>20</td><td>4,304</td><td>73×61cm</td></tr>
+<tr><td>50</td><td>9,128</td><td>117×91cm</td></tr>
+<tr><td>100</td><td>21,245</td><td>162×130cm</td></tr>
+</tbody></table>
+<p>입력된 가로×세로에서 면적을 계산하고, 가장 가까운 참조 면적의 호수를 할당한다:</p>
+<p style="text-align:center">$$H = \arg\min_{h \in \mathcal{H}} |W_{cm} \times H_{cm} - A_h^{ref}|$$</p>
+<p>여기서 $\mathcal{H} = \{0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100, 120, 150, 200, 300, 500\}$은 F형 표준 캔버스 번호 집합 (24개).</p>
+<p><strong><code>ho_power</code> (0.74 거듭제곱)</strong>:</p>
+<p>실증 분석에서 가격-호수 관계의 탄력성이 약 0.74~0.82로 추정되었다. 이를 반영하여:</p>
+<p style="text-align:center">$$\text{ho\_power} = H^{0.74}$$</p>
+<p>이 변환은 큰 호수에서의 가격 증가 둔화를 직접 반영한다. 예:</p>
+<table><thead><tr><th>호수</th><th>ho_power</th><th>해석</th></tr></thead><tbody>
+<tr><td>10</td><td>5.5</td><td>기준</td></tr>
+<tr><td>20</td><td>9.3</td><td>호수 2배 → ho_power 1.7배</td></tr>
+<tr><td>50</td><td>18.7</td><td>호수 5배 → ho_power 3.4배</td></tr>
+<tr><td>100</td><td>30.2</td><td>호수 10배 → ho_power 5.5배</td></tr>
+</tbody></table>
+<p><strong><code>support_factor</code> (지지체 계수)</strong>:</p>
+<p>동일 호수라도 지지체에 따라 가격이 다르다. 학습 데이터에서 추정한 상대적 가격 계수:</p>
+<p style="text-align:center">$$f_{support} = \begin{cases} 1.0 & \text{캔버스} \\ 1.1 & \text{리넨} \\ 0.8 & \text{종이} \\ 0.9 & \text{패널} \\ 0.85 & \text{기타} \end{cases}$$</p>
+<p><strong><code>aspect_ratio</code> (종횡비)</strong>:</p>
+<p style="text-align:center">$$r = \frac{\max(W,H)}{\min(W,H)}$$</p>
+<p>정사각형($r \approx 1.0$)과 극단적 직사각형($r > 2.0$)은 가격에 다른 영향을 준다. 한국 전통 캔버스 타입과의 관계:</p>
+<table><thead><tr><th>타입</th><th>종횡비</th><th>용도</th></tr></thead><tbody>
+<tr><td>S (정방형)</td><td>~1.0</td><td>정사각</td></tr>
+<tr><td>F (인물형)</td><td>1.0~1.25</td><td>인물화</td></tr>
+<tr><td>P (풍경형)</td><td>1.25~1.45</td><td>풍경화</td></tr>
+<tr><td>M (해경형)</td><td>1.45+</td><td>파노라마</td></tr>
+</tbody></table>
+<h3>3.2 작가 피처 (8개, 중요도 합계 68.2%)</h3>
+<table><thead><tr><th>피처</th><th>수식</th><th>중요도</th><th>설명</th></tr></thead><tbody>
+<tr><td><code>artist_total_works</code></td><td>원본값</td><td>37.09%</td><td>플랫폼 등록 총 작품수</td></tr>
+<tr><td><code>ln_followers</code></td><td>$\ln(F+1)$</td><td>9.97%</td><td>로그 팔로워</td></tr>
+<tr><td><code>profile_completeness</code></td><td>$\sum \mathbb{1}[x_k \neq \emptyset]$</td><td>8.41%</td><td>프로필 충실도 (0~3)</td></tr>
+<tr><td><code>artist_birth_year</code></td><td>원본값</td><td>7.14%</td><td>출생 연도</td></tr>
+<tr><td><code>has_birth_year</code></td><td>$\mathbb{1}[\text{birth\_year} \neq \text{null}]$</td><td>2.24%</td><td>생년 존재 여부</td></tr>
+<tr><td><code>career_stage</code></td><td>1~4</td><td>1.77%</td><td>경력 단계</td></tr>
+<tr><td><code>for_sale_ratio</code></td><td>$\frac{N_{sale}}{N_{total}}$</td><td>0.82%</td><td>판매중 비율 (서빙 시 기본값 1.0)</td></tr>
+<tr><td><code>career_age</code></td><td>$2026 - Y_{first}$</td><td>0.77%</td><td>경력 연수 (서빙 시 기본값 0, 외부 수집으로 보강)</td></tr>
+</tbody></table>
+<p><strong><code>artist_total_works</code> (총 작품수) — 모델 최대 기여 피처 (37.1%)</strong>:</p>
+<p>이 피처가 가장 중요한 이유는, 작품수가 <strong>작가의 시장 활동 규모</strong>를 직접 반영하기 때문이다. Artsy에 150건 등록된 작가와 5건 등록된 작가는 시장 접근성과 인지도가 근본적으로 다르다.</p>
+<p>또한 이 피처는 <strong>데이터 소스를 암묵적으로 구분</strong>하는 역할도 한다:</p>
+<ul>
+<li>Artsy 작가: 평균 55건 (갤러리 기반)</li>
+<li>Saatchi 작가: 평균 201건 (온라인 직거래, 대량 등록)</li>
+</ul>
+<p>모델은 총 작품수가 많으면 Saatchi 스타일(저가)로, 적으면 Artsy 스타일(고가)로 예측하는 패턴을 학습했다.</p>
+<p><strong><code>ln_followers</code> (로그 팔로워)</strong>:</p>
+<p>팔로워 수는 극단적으로 왜곡되어 있어 로그 변환을 적용한다:</p>
+<p style="text-align:center">$$\text{ln\_followers} = \ln(F + 1)$$</p>
+<p>$+1$은 팔로워 0인 작가의 로그 발산을 방지한다.</p>
+<table><thead><tr><th>ln_followers</th><th>실제 팔로워</th><th>가격 영향</th></tr></thead><tbody>
+<tr><td>0</td><td>0</td><td>기준</td></tr>
+<tr><td>2.3</td><td>~10</td><td>소폭 상승</td></tr>
+<tr><td>4.6</td><td>~100</td><td>의미 있는 상승</td></tr>
+<tr><td>6.9</td><td>~1,000</td><td>큰 상승</td></tr>
+</tbody></table>
+<p><strong><code>profile_completeness</code> (프로필 충실도)</strong>:</p>
+<p>소스에 따라 구성이 다르다:</p>
+<p style="text-align:center">$$\text{PC}_{Artsy} = \mathbb{1}[\text{birth\_year} \neq \emptyset] + \mathbb{1}[\text{shows} > 0] + \mathbb{1}[\text{bio} \neq \emptyset]$$</p>
+<p style="text-align:center">$$\text{PC}_{Saatchi} = \mathbb{1}[\text{bio} \neq \emptyset] + \mathbb{1}[\text{education} \neq \emptyset] + \mathbb{1}[\text{exhibitions} \neq \emptyset]$$</p>
+<p>이 피처의 높은 중요도(8.41%)는 흥미로운 발견이다. <strong>"프로필을 성실히 작성하는 작가"가 더 높은 가격을 받는</strong> 경향이 있는데, 이는 프로필 충실도가 작가의 전문성과 시장 참여도의 프록시(proxy) 역할을 하기 때문이다.</p>
+<p><strong><code>has_birth_year</code> (생년 존재 여부)</strong>:</p>
+<p>생년 자체의 값(7.14%)뿐 아니라 <strong>생년이 있는지 없는지</strong>(2.24%)도 중요한 피처이다. 이는:</p>
+<ul>
+<li>생년 있음 → Artsy(갤러리 기반, 고가 경향)</li>
+<li>생년 없음 → Saatchi(온라인 직거래, 저가 경향)</li>
+</ul>
+<p>라는 <strong>데이터 소스 식별</strong> 역할을 하기 때문이다.</p>
+<p><strong><code>career_stage</code> (경력 단계)</strong>:</p>
+<p style="text-align:center">$$\text{stage} = \begin{cases} 4 & \text{age} \geq 60 \wedge \text{solo} \geq 5 \quad (\text{원로}) \\ 3 & \text{solo} \geq 3 \quad (\text{중견}) \\ 2 & \text{solo} \geq 1 \vee \text{group} \geq 5 \quad (\text{신진후기}) \\ 1 & \text{otherwise} \quad (\text{신진}) \end{cases}$$</p>
+<p><strong>생년-가격 관계 실증</strong>:</p>
+<table><thead><tr><th>출생 연대</th><th>가격 중앙</th><th>해석</th></tr></thead><tbody>
+<tr><td>1920~1940</td><td>4,416만원</td><td>원로 작가 프리미엄</td></tr>
+<tr><td>1940~1960</td><td>2,070만원</td><td>중견</td></tr>
+<tr><td>1960~1970</td><td>704만원</td><td>중견~신진후기</td></tr>
+<tr><td>1970~1980</td><td>690만원</td><td></td></tr>
+<tr><td>1980~1990</td><td>307만원</td><td>신진</td></tr>
+<tr><td>1990~2000</td><td>207만원</td><td>신진</td></tr>
+<tr><td>2000~2010</td><td>110만원</td><td>초신진</td></tr>
+</tbody></table>
+<p>한 세대(10년) 차이가 약 <strong>1.5~2배</strong> 가격 차이를 만든다.</p>
+<h3>3.3 갤러리/소스 피처 (6개, 중요도 합계 2.5%)</h3>
+<table><thead><tr><th>피처</th><th>중요도</th><th>설명</th></tr></thead><tbody>
+<tr><td><code>gallery_name</code></td><td>1.50%</td><td>갤러리명 (categorical)</td></tr>
+<tr><td><code>gallery_tier</code></td><td>0.30%</td><td>갤러리 등급 (1~5)</td></tr>
+<tr><td><code>has_seoul</code></td><td>0.46%</td><td>서울 소재 여부</td></tr>
+<tr><td><code>gallery_city_count</code></td><td>0.11%</td><td>갤러리 도시 수</td></tr>
+<tr><td><code>has_international</code></td><td>0.04%</td><td>국제 전시 여부</td></tr>
+<tr><td><code>gallery_type</code></td><td>0.03%</td><td>갤러리 유형</td></tr>
+</tbody></table>
+<h3>3.4 작품 속성 피처 (4개, 중요도 합계 0.6%)</h3>
+<table><thead><tr><th>피처</th><th>중요도</th><th>설명</th></tr></thead><tbody>
+<tr><td><code>work_age</code></td><td>0.30%</td><td>작품 연령 (2026 - 제작연도)</td></tr>
+<tr><td><code>has_depth</code></td><td>0.25%</td><td>3D 여부</td></tr>
+<tr><td><code>is_unique</code></td><td>0.00%</td><td>원작 여부</td></tr>
+<tr><td><code>is_edition</code></td><td>0.00%</td><td>에디션 여부</td></tr>
+</tbody></table>
+<h3>3.5 컨텍스트 피처 (8개, 중요도 합계 7.7%)</h3>
+<table><thead><tr><th>피처</th><th>중요도</th><th>설명</th></tr></thead><tbody>
+<tr><td><code>ho_price_level</code></td><td>2.93%</td><td>호수별 가격 중앙값 매핑</td></tr>
+<tr><td><code>medium_price_level</code></td><td>1.69%</td><td>매체별 가격 중앙값 매핑</td></tr>
+<tr><td><code>medium_category</code></td><td>1.68%</td><td>매체 카테고리 (categorical)</td></tr>
+<tr><td><code>support_type</code></td><td>1.00%</td><td>지지체 유형 (categorical)</td></tr>
+<tr><td><code>source</code></td><td>0.06%</td><td>데이터 소스 (artsy/saatchi)</td></tr>
+<tr><td><code>price_currency</code></td><td>0.11%</td><td>가격 통화</td></tr>
+<tr><td><code>is_krw</code></td><td>0.02%</td><td>원화 여부</td></tr>
+</tbody></table>
+<p><strong><code>ho_price_level</code> / <code>medium_price_level</code> (가격 레벨 매핑)</strong>:</p>
+<p>학습 데이터에서 호수별/매체별 가격 중앙값을 사전 계산하여 피처로 사용한다:</p>
+<p style="text-align:center">$$\text{ho\_price\_level}_i = \text{median}_{j \in \{H_j = H_i\}} \ln(P_j)$$</p>
+<p>이는 <strong>target encoding</strong>의 변형으로, 모델이 "이 호수/매체의 일반적 가격 수준"을 직접 참조할 수 있게 한다.</p>
+<hr>
+<h2>4. 모델 아키텍처</h2>
+<h3>4.1 GBDT (Gradient Boosted Decision Trees)</h3>
+<p>본 모델은 <strong>CatBoost</strong>와 <strong>XGBoost</strong> 두 가지 GBDT 앙상블을 사용한다.</p>
+<p>GBDT의 기본 원리:</p>
+<p style="text-align:center">$$\hat{y}_i^{(t)} = \hat{y}_i^{(t-1)} + \eta \cdot h_t(\mathbf{x}_i)$$</p>
+<p>여기서:</p>
+<ul>
+<li>$\hat{y}_i^{(t)}$: $t$번째 부스팅 라운드의 예측값</li>
+<li>$\eta$: 학습률 (learning rate)</li>
+<li>$h_t$: $t$번째 약한 학습기 (결정 트리)</li>
+</ul>
+<p>각 라운드에서 잔차(residual)를 학습한다:</p>
+<p style="text-align:center">$$h_t = \arg\min_{h} \sum_{i=1}^{N} L(y_i, \hat{y}_i^{(t-1)} + h(\mathbf{x}_i))$$</p>
+<p style="text-align:center">$$L(y, \hat{y}) = (y - \hat{y})^2 \quad \text{(MSE, regression)}$$</p>
+<h3>4.2 CatBoost 특성</h3>
+<p>CatBoost(Prokhorenkova et al., 2018)는 categorical 피처를 <strong>ordered target statistics</strong>로 인코딩한다:</p>
+<p style="text-align:center">$$\hat{x}_{i,k} = \frac{\sum_{j < \sigma(i)} \mathbb{1}[x_{j,k} = x_{i,k}] \cdot y_j + a \cdot P}{\sum_{j < \sigma(i)} \mathbb{1}[x_{j,k} = x_{i,k}] + a}$$</p>
+<p>여기서 $\sigma$는 무작위 순열, $a$는 smoothing 파라미터, $P$는 사전 확률.</p>
+<p>이 방식의 장점:</p>
+<ul>
+<li>target leakage 방지 (자기 자신의 타겟을 사용하지 않음)</li>
+<li>7개 categorical 피처 (gallery_name, medium_category 등)를 자연스럽게 처리</li>
+</ul>
+<h3>4.3 모델 라우팅</h3>
+<pre><code class="">입력 작품
+  │
+  ├─ 학습 작가 매칭 (training_count ≥ 5)?
+  │   ├─ Yes → XGBoost v3
+  │   │       (작가 패턴 학습, MdAPE 11.7%)
+  │   └─ No  → CatBoost v3
+  │           (categorical 피처 강점, MdAPE 38.9%)
+  │
+  └─ Source ratio 보정 (Cold Start만)
+      ln_price += correction[target_market]
+</code></pre>
+<p><strong>XGBoost를 학습 작가에 사용하는 이유</strong>: XGBoost는 수치 피처의 비선형 분할에 강하고, 학습된 작가의 작품수/팔로워 등 수치 피처가 풍부할 때 CatBoost보다 우수한 성능을 보였다 (KFold MdAPE: XGBoost 11.7% vs CatBoost 17.1%).</p>
+<p><strong>CatBoost를 Cold Start에 사용하는 이유</strong>: 미학습 작가는 수치 피처가 부족하고 categorical 피처(매체, 갤러리, 소스)에 의존해야 하는데, CatBoost의 ordered target statistics가 이 상황에서 더 안정적이다.</p>
+<h3>4.4 하이퍼파라미터</h3>
+<p>아래는 GroupKFold 평가 시 사용된 학습 파라미터이다. 최종 저장된 모델 아티팩트의 내부 파라미터와는 차이가 있을 수 있다 (early stopping으로 실제 트리 수가 다를 수 있음).</p>
+<table><thead><tr><th>파라미터</th><th>CatBoost v3</th><th>XGBoost v3</th></tr></thead><tbody>
+<tr><td>iterations / num_boost_round</td><td>1,500 (early stop)</td><td>1,500 (early stop)</td></tr>
+<tr><td>depth / max_depth</td><td>8</td><td>6</td></tr>
+<tr><td>learning_rate</td><td>0.03</td><td>0.03</td></tr>
+<tr><td>l2_leaf_reg / reg_lambda</td><td>3</td><td>5</td></tr>
+<tr><td>min_data_in_leaf / min_child_weight</td><td>20</td><td>30</td></tr>
+</tbody></table>
+<blockquote>
+<p>모델 아티팩트의 정확한 내부 파라미터는 <code>model_test_results/integrated_v3_catboost.cbm</code> 및 <code>integrated_v3_xgboost.json</code>에서 확인 가능.</p>
+</blockquote>
+<h3>4.5 Source Ratio 보정</h3>
+<p>학습 데이터에 Artsy(갤러리, 고가)와 Saatchi(온라인 직거래, 저가)가 혼합되어 있어, Cold Start 예측 시 소스별 체계적 편향이 발생한다.</p>
+<p>Saatchi 학습 데이터의 median ratio 1.078 (7.8% 과대 예측)을 사후 보정한다:</p>
+<p style="text-align:center">$$\ln(\hat{P}_{corrected}) = \ln(\hat{P}_{raw}) + c_{market}$$</p>
+<p style="text-align:center">$$c_{market} = \begin{cases} 0.0 & \text{gallery} \\ -0.075 & \text{online} \end{cases}$$</p>
+<p>여기서 $0.075 = \ln(1.078)$, 실험에서 측정된 Saatchi 편향의 로그값.</p>
+<hr>
+<h2>5. 학습 및 평가</h2>
+<h3>5.1 교차 검증 설계</h3>
+<p><strong>GroupKFold</strong> (작가 단위 분할, K=5):</p>
+<ul>
+<li>작가 $j$의 모든 작품을 같은 fold에 배치</li>
+<li>Cold Start 시뮬레이션: 검증 fold의 작가는 학습에 전혀 포함되지 않음</li>
+<li><strong>가장 현실적인 평가</strong>: 새 작가의 작품 가격을 예측하는 실제 상황과 동일</li>
+</ul>
+<p><strong>KFold</strong> (무작위 분할, K=5):</p>
+<ul>
+<li>동일 작가의 작품이 학습/검증에 분산</li>
+<li>학습된 작가의 새 작품 예측 성능 평가</li>
+</ul>
+<h3>5.2 성능 결과</h3>
+<table><thead><tr><th>평가</th><th>모델</th><th>MdAPE</th><th>W30</th></tr></thead><tbody>
+<tr><td><strong>KFold (학습 작가)</strong></td><td><strong>XGBoost</strong></td><td><strong>11.7%</strong></td><td><strong>78.8%</strong></td></tr>
+<tr><td>KFold</td><td>CatBoost</td><td>17.1%</td><td>70.1%</td></tr>
+<tr><td>GroupKFold (Cold Start)</td><td>CatBoost</td><td>38.9%</td><td>39.9%</td></tr>
+<tr><td>GroupKFold</td><td>XGBoost</td><td>39.4%</td><td>40.1%</td></tr>
+</tbody></table>
+<h3>5.3 가격대별 성능 (GroupKFold, CatBoost 단독)</h3>
+<blockquote>
+<p>아래 수치는 29,361건 전체에 대한 CatBoost GroupKFold 5-Fold OOF 평가에서 직접 계산한 결과. 다른 문서의 수치와 차이가 있을 수 있다 (평가 시점, 모델 버전, 피처셋 차이).</p>
+</blockquote>
+<table><thead><tr><th>가격대</th><th>MdAPE</th><th>비율</th><th>W30</th><th>건수</th><th>해석</th></tr></thead><tbody>
+<tr><td>~100만</td><td>80.9%</td><td>1.81x</td><td>23%</td><td>5,977</td><td>과대 예측 (학습 중앙값으로 회귀)</td></tr>
+<tr><td>100~300만</td><td>35.8%</td><td>1.26x</td><td>44%</td><td>9,036</td><td>양호</td></tr>
+<tr><td><strong>300~500만</strong></td><td><strong>26.2%</strong></td><td><strong>0.98x</strong></td><td><strong>55%</strong></td><td>4,524</td><td><strong>최적</strong></td></tr>
+<tr><td>500~1천만</td><td>33.5%</td><td>0.77x</td><td>44%</td><td>4,827</td><td>양호</td></tr>
+<tr><td>1천~3천만</td><td>48.3%</td><td>0.56x</td><td>27%</td><td>3,319</td><td>과소 예측</td></tr>
+<tr><td>3천만+</td><td>90.8%</td><td>0.09x</td><td>8%</td><td>1,678</td><td>극과소 (데이터 부족)</td></tr>
+</tbody></table>
+<p><strong>300~500만원 구간이 가장 정확한 이유</strong>: 통합 학습 데이터의 가격 중앙값(Artsy 414만, Saatchi 256만, 전체 ~300만)과 가장 겹치는 구간이며, 데이터 밀도가 높아 모델이 이 구간의 패턴을 가장 잘 학습했다.</p>
+<hr>
+<h2>6. 신뢰도 등급 체계</h2>
+<h3>6.1 결정 규칙</h3>
+<pre><code class="python">def determine_confidence(is_matched, training_count, has_birth_year, has_manual_profile):
+    if is_matched and training_count &gt;= 5:
+        return ("A", 0.20)   # 높은 신뢰도
+    if is_matched and training_count &gt;= 1:
+        return ("B", 0.30)   # 보통
+    if has_birth_year or has_manual_profile:
+        return ("C", 0.50)   # 참고용
+    return ("D", 0.70)       # 추정치
+</code></pre>
+<h3>6.2 가격 범위 산출</h3>
+<p style="text-align:center">$$P_{low} = \hat{P} \times (1 - m), \quad P_{high} = \hat{P} \times (1 + m)$$</p>
+<p>여기서 $m$은 등급별 마진: A=0.20, B=0.30, C=0.50, D=0.70.</p>
+<blockquote>
+<p>이 마진은 교정된 통계적 구간이 아닌, 모델 성능 기반의 경험적 밴드이다.</p>
+</blockquote>
+<hr>
+<h2>7. 외부 정보 수집 파이프라인</h2>
+<h3>7.1 수집 아키텍처</h3>
+<p>미학습 작가 요청 시, Artsy → Saatchi → 웹검색 순서로 작가 프로필을 자동 수집한다.</p>
+<table><thead><tr><th>소스</th><th>방법</th><th>수집 정보</th><th>주요 피처</th></tr></thead><tbody>
+<tr><td>Artsy</td><td>GraphQL API</td><td>작품수, 팔로워, 전시, 생년</td><td>artist_total_works, ln_followers, career_stage</td></tr>
+<tr><td>Saatchi</td><td>Constructor.io + HTML 파싱</td><td>bio, education, exhibitions</td><td>profile_completeness, followers</td></tr>
+<tr><td>웹검색</td><td>DuckDuckGo</td><td>생년 (보완)</td><td>artist_birth_year, has_birth_year</td></tr>
+</tbody></table>
+<h3>7.2 웹검색 동명이인 처리</h3>
+<p>동명이인 오매칭은 <strong>자신있게 틀린 예측</strong>을 생산하므로 엄격한 5단계 필터를 적용한다:</p>
+<p>1. 검색어에 <code>작가 회화</code> 한정어 포함</p>
+<p>2. 미술 키워드 확인 + 비미술 키워드(배우, 가수) 제외</p>
+<p>3. 추출 생년 범위 검증 (1930~2005)</p>
+<p>4. <strong>2개 이상 독립 도메인</strong>에서 동일 생년 확인</p>
+<p>5. pass/fail 이진 판정 (확률 점수 아닌 확실한 경우만 채택)</p>
+<h3>7.3 수집 효과</h3>
+<table><thead><tr><th>시나리오</th><th>등급</th><th>MdAPE (추정)</th></tr></thead><tbody>
+<tr><td>크기+매체만</td><td>D</td><td>~60%</td></tr>
+<tr><td>+ 생년</td><td>C</td><td>~50%</td></tr>
+<tr><td>+ 작품수/팔로워</td><td>B~C</td><td>~40%</td></tr>
+<tr><td>학습 작가 매칭</td><td>A</td><td>~12%</td></tr>
+</tbody></table>
+<hr>
+<h2>8. SHAP 기반 예측 설명</h2>
+<h3>8.1 SHAP (SHapley Additive exPlanations)</h3>
+<p>Lundberg & Lee(2017)의 SHAP 값을 사용하여 각 피처의 예측 기여도를 분해한다:</p>
+<p style="text-align:center">$$\hat{y}_i = \phi_0 + \sum_{k=1}^{K}\phi_k(\mathbf{x}_i)$$</p>
+<p>여기서 $\phi_0$는 기저값(학습 데이터 평균), $\phi_k$는 피처 $k$의 SHAP 값.</p>
+<p>아래는 v3 CatBoost 모델에 대한 SHAP TreeExplainer 실행 예시이다 (입력에 따라 값이 달라짐).</p>
+<h3>8.2 기여도 해석</h3>
+<p>SHAP 값은 log scale이므로, % 기여도로 변환한다:</p>
+<p style="text-align:center">$$\text{contribution}_k = (\exp(\phi_k) - 1) \times 100\%$$</p>
+<p>예시 (Cold Start, 20호 oil on canvas):</p>
+<ul>
+<li><code>artist_total_works = 0</code>: $\phi = -0.274$ → <strong>-24.0%</strong> (작품수 없으면 가격 하락)</li>
+<li><code>medium_category = oil</code>: $\phi = +0.151$ → <strong>+16.3%</strong> (유화 프리미엄)</li>
+<li><code>gallery_name = Unknown</code>: $\phi = +0.158$ → <strong>+17.1%</strong> (미지 갤러리 보정)</li>
+<li><code>ln_followers = 0</code>: $\phi = -0.134$ → <strong>-12.5%</strong> (팔로워 없으면 하락)</li>
+</ul>
+<hr>
+<h2>9. 모델 고도화 이력</h2>
+<h3>9.1 버전별 실험</h3>
+<table><thead><tr><th>버전</th><th>접근법</th><th>MdAPE</th><th>결과</th></tr></thead><tbody>
+<tr><td>v2</td><td>Artsy+Artue+Saatchi 단순 통합</td><td>43.8%</td><td>기준선</td></tr>
+<tr><td><strong>v3</strong></td><td><strong>+ source 피처 + has_birth_year + profile_completeness</strong></td><td><strong>38.7%</strong></td><td><strong>최적</strong></td></tr>
+<tr><td>v4</td><td>+ 46개 피처 확장</td><td>40.4%</td><td>과적합 (피처 과잉)</td></tr>
+<tr><td>v5</td><td>하이퍼파라미터 탐색</td><td>39.0%</td><td>한계 (데이터가 병목)</td></tr>
+<tr><td>v6</td><td>ratio 보정, stacking, source 분리</td><td>39.0%</td><td>구조적 한계 확인</td></tr>
+</tbody></table>
+<h3>9.2 핵심 발견</h3>
+<p><strong>효과 있었던 것</strong>:</p>
+<ul>
+<li><code>source</code> 피처 추가 (-5.1%p): 모델이 소스별 가격 수준을 직접 학습</li>
+<li><code>has_birth_year</code> (+2.2% 중요도): 결측 자체가 정보</li>
+<li><code>profile_completeness</code> (+8.4% 중요도): 프로필 성실도 = 가격 프록시</li>
+</ul>
+<p><strong>효과 없었던 것</strong>:</p>
+<ul>
+<li>피처 수 37→46 확장: 과적합으로 악화</li>
+<li>하이퍼파라미터 튜닝: <0.5%p 차이</li>
+<li>source별 별도 모델: 통합 모델이 데이터 공유 효과로 우수</li>
+</ul>
+<p><strong>구조적 한계 (~39%)</strong>:</p>
+<ul>
+<li>Cold Start MdAPE가 38~39% 근처에서 수렴</li>
+<li>원인: 생년 결측 72%, 고가 데이터 부족, 작가 이력 없이 크기/매체만으로 예측하는 한계</li>
+</ul>
+<hr>
+<h2>10. 참고 문헌</h2>
+<ul>
+<li>Lancaster, K.J. (1966). A new approach to consumer theory. *Journal of Political Economy*, 74(2), 132-157.</li>
+<li>Rosen, S. (1974). Hedonic prices and implicit markets: product differentiation in pure competition. *Journal of Political Economy*, 82(1), 34-55.</li>
+<li>Prokhorenkova, L., et al. (2018). CatBoost: unbiased boosting with categorical features. *NeurIPS*.</li>
+<li>Lundberg, S.M. & Lee, S.I. (2017). A unified approach to interpreting model predictions. *NeurIPS*.</li>
+<li>Chen, T. & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. *KDD*.</li>
+</ul>
+
+</div>
+</body>
+</html>
