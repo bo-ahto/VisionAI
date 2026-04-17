@@ -61,6 +61,8 @@
   .shap-bar .bar.neg { background: var(--red); }
   .shap-bar .pct { width: 60px; font-weight: 600; }
 
+  .artist-detail { display: none; }
+  .artist-detail.show { display: block; }
   .loading { text-align: center; padding: 40px; color: var(--muted); }
   .error-msg { background: rgba(248,81,73,0.1); border: 1px solid var(--red); border-radius: 8px; padding: 16px; color: var(--red); }
   .history-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
@@ -226,8 +228,37 @@ function renderResult(d, req) {
   const hist = d.artist_price_history;
   const src = d.external_sources_used || [];
 
-  let html = `<div class="result-card">
-    <h2>예측 결과</h2>
+  let html = '';
+
+  // ─── 1. 매칭 작품 (있으면 가장 먼저) ───
+  if (ma.length > 0) {
+    html += `<div class="result-card" style="border-color:var(--green)">
+      <h2 style="color:var(--green)">매칭된 실제 작품 (${ma.length}건)</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">학습 데이터에서 동일/유사 작품을 찾았습니다</p>
+      <div class="match-list">`;
+    for (const a of ma) {
+      const typeLabel = {
+        'exact_title_size': '제목+크기 일치',
+        'same_title_diff_size': '같은 제목',
+        'title_only_global': '제목 검색',
+        'same_size_medium': '같은 크기+매체',
+        'similar_size': '유사 크기',
+      }[a.match_type] || a.match_type;
+      html += `<div class="match-item">
+        <div>
+          <span class="match-type">${typeLabel}</span>
+          <strong>${a.title}</strong> (${a.ho}호, ${a.medium})
+          <span style="color:var(--muted);font-size:11px">${a.gallery||''}</span>
+        </div>
+        <div class="match-price">₩${formatKRW(a.price_krw)}원</div>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+
+  // ─── 2. AI 예측 결과 ───
+  html += `<div class="result-card">
+    <h2>AI 예측 가격</h2>
     <div>
       <span class="price-main">₩${formatKRW(p.price_krw)}원</span>
       <span class="price-usd">($${p.price_usd.toLocaleString()})</span>
@@ -242,21 +273,7 @@ function renderResult(d, req) {
     </div>
   </div>`;
 
-  // 매칭 작품
-  if (ma.length > 0) {
-    html += `<div class="result-card">
-      <h2>매칭된 실제 작품 (${ma.length}건)</h2>
-      <div class="match-list">`;
-    for (const a of ma) {
-      html += `<div class="match-item">
-        <div><span class="match-type">${a.match_type}</span> ${a.title} (${a.ho}호)</div>
-        <div class="match-price">₩${formatKRW(a.price_krw)}원</div>
-      </div>`;
-    }
-    html += '</div></div>';
-  }
-
-  // SHAP
+  // ─── 3. SHAP 피처 기여도 ───
   if (fc.length > 0) {
     html += `<div class="result-card"><h2>가격에 영향을 준 요인</h2>`;
     for (const c of fc) {
@@ -273,27 +290,36 @@ function renderResult(d, req) {
     html += '</div>';
   }
 
-  // 작가 이력
+  // ─── 4. 작가 정보 (접이식 상세 보기) ───
   if (hist) {
     html += `<div class="result-card">
-      <h2>작가 가격 이력</h2>
+      <h2 style="cursor:pointer" onclick="document.getElementById('artistDetail').classList.toggle('show')">
+        작가 정보: ${hist.artist_name}
+        <span style="font-size:13px;color:var(--muted);margin-left:8px">▼ 상세 보기</span>
+      </h2>
       <div class="info-grid">
         <div class="info-item"><div class="label">학습 작품수</div><div class="value">${hist.total_works_in_data}건</div></div>
         <div class="info-item"><div class="label">가격 범위</div><div class="value">₩${formatKRW(hist.price_min)} ~ ₩${formatKRW(hist.price_max)}</div></div>
         <div class="info-item"><div class="label">가격 중앙</div><div class="value">₩${formatKRW(hist.price_median)}원</div></div>
-        <div class="info-item"><div class="label">호수</div><div class="value">${hist.ho_range}</div></div>
-        <div class="info-item"><div class="label">매체</div><div class="value">${(hist.mediums||[]).join(', ')}</div></div>
-        <div class="info-item"><div class="label">갤러리</div><div class="value">${(hist.galleries||[]).join(', ')}</div></div>
         <div class="info-item"><div class="label">수집일</div><div class="value">${hist.data_collected_date}</div></div>
-      </div>`;
+      </div>
+      <div class="artist-detail" id="artistDetail">
+        <div class="info-grid" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="info-item"><div class="label">호수 범위</div><div class="value">${hist.ho_range}</div></div>
+          <div class="info-item"><div class="label">매체</div><div class="value">${(hist.mediums||[]).join(', ')}</div></div>
+          <div class="info-item"><div class="label">갤러리</div><div class="value">${(hist.galleries||[]).join(', ')}</div></div>
+        </div>`;
     if (hist.samples && hist.samples.length) {
-      html += '<div class="history-section"><h3>대표 작품</h3><div class="match-list">';
-      for (const s of hist.samples.slice(0,3)) {
-        html += `<div class="match-item"><div>${s.title} (${s.ho}호, ${s.medium})</div><div class="match-price">₩${formatKRW(s.price_krw)}원</div></div>`;
+      html += '<div class="history-section"><h3>전체 작품 이력 (상위 5건)</h3><div class="match-list">';
+      for (const s of hist.samples) {
+        html += `<div class="match-item">
+          <div>${s.title} (${s.ho}호, ${s.medium}) <span style="color:var(--muted);font-size:11px">${s.gallery||''}</span></div>
+          <div class="match-price">₩${formatKRW(s.price_krw)}원</div>
+        </div>`;
       }
       html += '</div></div>';
     }
-    html += '</div>';
+    html += '</div></div>';
   }
 
   document.getElementById('resultArea').innerHTML = html;
