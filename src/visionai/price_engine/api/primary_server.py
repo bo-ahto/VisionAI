@@ -256,21 +256,53 @@ def _get_artist_history(artist_slug: str, artist_name: str) -> ArtistPriceHistor
     )
 
 
+def _normalize_title(title: str) -> str:
+    """제목 정규화: 소문자, 공백/특수문자 제거."""
+    import re
+    t = title.lower().strip()
+    t = re.sub(r"[^\w가-힣]", "", t)  # 알파벳+한글+숫자만
+    return t
+
+
+def _title_score(query: str, candidate: str) -> float:
+    """제목 유사도 점수 (0~100)."""
+    from rapidfuzz import fuzz
+    q_norm = _normalize_title(query)
+    c_norm = _normalize_title(candidate)
+    if not q_norm or not c_norm:
+        return 0
+    # 정규화된 정확 매칭
+    if q_norm == c_norm:
+        return 100
+    # 부분 포함
+    if q_norm in c_norm or c_norm in q_norm:
+        return 95
+    # fuzzy
+    return fuzz.ratio(q_norm, c_norm)
+
+
 def _find_matched_artworks(
     artist_slug: str, title: str | None, ho: int, medium_category: str
 ) -> list[MatchedArtwork]:
-    """학습 데이터에서 동일/유사 작품 매칭."""
+    """학습 데이터에서 동일/유사 작품 매칭.
+
+    매칭 우선순위:
+    1. 제목+작가+크기 정확 매칭
+    2. 제목+작가 (크기 다름, 참고용)
+    3. 작가+크기+매체 (제목 없을 때)
+    4. 제목만 (작가 DB에 없을 때) — 전체 데이터 검색
+    5. 유사 호수 (±1단계)
+    """
+    # 작가 매칭된 경우: 해당 작가 작품에서 검색
     items = _price_history.get(artist_slug, [])
-    if not items:
-        return []
 
     matched = []
 
-    # 1. 제목 + 호수 정확 매칭
-    if title:
-        title_norm = title.lower().strip()
+    if title and items:
+        # 1. 제목+크기 정확 매칭 (fuzzy 90+)
         for item in items:
-            if title_norm in item["title"].lower() and item["ho"] == ho:
+            score = _title_score(title, item["title"])
+            if score >= 90 and item["ho"] == ho:
                 matched.append(MatchedArtwork(
                     title=item["title"], price_krw=item["price_krw"],
                     price_usd=item["price_krw"] // 1380,
@@ -278,10 +310,12 @@ def _find_matched_artworks(
                     gallery=item["gallery"], source=item.get("source", ""),
                     match_type="exact_title_size",
                 ))
-        # 제목만 매칭 (크기 다른 경우 참고용)
+
+        # 2. 제목만 매칭 (크기 다름, 참고용)
         if not matched:
             for item in items:
-                if title_norm in item["title"].lower():
+                score = _title_score(title, item["title"])
+                if score >= 80:
                     matched.append(MatchedArtwork(
                         title=item["title"], price_krw=item["price_krw"],
                         price_usd=item["price_krw"] // 1380,
@@ -290,8 +324,24 @@ def _find_matched_artworks(
                         match_type="same_title_diff_size",
                     ))
 
-    # 2. 동일 호수 + 동일 매체
-    if not matched:
+    # 3. 제목만 있고 작가 매칭 안 된 경우 — 전체 데이터 검색
+    if title and not items and not matched:
+        for slug, slug_items in _price_history.items():
+            for item in slug_items:
+                score = _title_score(title, item["title"])
+                if score >= 90:
+                    matched.append(MatchedArtwork(
+                        title=item["title"], price_krw=item["price_krw"],
+                        price_usd=item["price_krw"] // 1380,
+                        ho=item["ho"], medium=item["medium"],
+                        gallery=item["gallery"], source=item.get("source", ""),
+                        match_type="title_only_global",
+                    ))
+            if len(matched) >= 10:
+                break
+
+    # 4. 동일 호수 + 동일 매체 (작가 매칭된 경우)
+    if not matched and items:
         for item in items:
             if item["ho"] == ho and item["medium"] == medium_category:
                 matched.append(MatchedArtwork(
@@ -302,8 +352,8 @@ def _find_matched_artworks(
                     match_type="same_size_medium",
                 ))
 
-    # 3. 유사 호수 (±1단계)
-    if not matched:
+    # 5. 유사 호수 (±1단계)
+    if not matched and items:
         from .primary_feature_builder import HO_TABLE_F
         ho_list = sorted(HO_TABLE_F.keys())
         idx = min(range(len(ho_list)), key=lambda i: abs(ho_list[i] - ho))
@@ -322,7 +372,9 @@ def _find_matched_artworks(
                     match_type="similar_size",
                 ))
 
-    # 중복 제거 + 가격순 정렬, 최대 5건
+    # 중복 제거 + 매칭 품질순 정렬, 최대 5건
+    TYPE_ORDER = {"exact_title_size": 0, "same_title_diff_size": 1,
+                  "title_only_global": 2, "same_size_medium": 3, "similar_size": 4}
     seen = set()
     unique = []
     for m in matched:
@@ -330,7 +382,7 @@ def _find_matched_artworks(
         if key not in seen:
             seen.add(key)
             unique.append(m)
-    unique.sort(key=lambda x: abs(x.ho - ho))
+    unique.sort(key=lambda x: (TYPE_ORDER.get(x.match_type, 9), abs(x.ho - ho)))
     return unique[:5]
 
 
@@ -545,7 +597,7 @@ async def predict(req: PredictRequest):
         matched_artworks=_find_matched_artworks(
             match.slug if match else "", req.title,
             features.get("ho", 0), features.get("medium_category", "")
-        ) if is_matched else [],
+        ),
         artist_price_history=_get_artist_history(
             match.slug if match else "", match.name if match else req.artist_name
         ) if is_matched else None,
