@@ -177,7 +177,7 @@ def _load_price_history() -> None:
                 ])
                 for slug, grp in df.groupby("artist_slug"):
                     _price_history[str(slug)] = [
-                        {"title": str(r.get("title", ""))[:50], "price_krw": int(r["price_krw"]),
+                        {"title": str(r.get("title", ""))[:200], "price_krw": int(r["price_krw"]),
                          "ho": int(r.get("ho", 0)), "medium": str(r.get("medium_category", "")),
                          "gallery": str(r.get("gallery_name", "")), "source": "artsy"}
                         for _, r in grp.iterrows()
@@ -197,7 +197,7 @@ def _load_price_history() -> None:
                 for slug, grp in df.groupby("artist_slug"):
                     key = str(slug)
                     items = [
-                        {"title": str(r.get("title", ""))[:50], "price_krw": int(r["price_krw"]),
+                        {"title": str(r.get("title", ""))[:200], "price_krw": int(r["price_krw"]),
                          "ho": int(r.get("ho", 0)), "medium": str(r.get("medium_category", "")),
                          "gallery": "Saatchi Art", "source": "saatchi"}
                         for _, r in grp.iterrows()
@@ -259,9 +259,27 @@ def _get_artist_history(artist_slug: str, artist_name: str) -> ArtistPriceHistor
 def _normalize_title(title: str) -> str:
     """제목 정규화: 소문자, 공백/특수문자 제거."""
     import re
-    t = title.lower().strip()
-    t = re.sub(r"[^\w가-힣]", "", t)  # 알파벳+한글+숫자만
+    t = title.lower().strip()[:200]  # 200자 제한 (DoS 방지)
+    t = re.sub(r"[^\w가-힣]", "", t)
     return t
+
+
+# 전역 제목 인덱스 (startup 시 구축)
+_title_index: dict[str, list[tuple[str, int]]] = {}  # normalized_title → [(artist_slug, item_idx)]
+
+
+def _build_title_index() -> None:
+    """제목 정규화 인덱스 구축 (global scan 최적화)."""
+    global _title_index
+    _title_index = {}
+    for slug, items in _price_history.items():
+        for i, item in enumerate(items):
+            norm = _normalize_title(item["title"])
+            if len(norm) >= 3:  # 너무 짧은 제목 제외 (과매칭 방지)
+                if norm not in _title_index:
+                    _title_index[norm] = []
+                _title_index[norm].append((slug, i))
+    logger.info("Title index built: %d unique titles", len(_title_index))
 
 
 def _title_score(query: str, candidate: str) -> float:
@@ -271,13 +289,11 @@ def _title_score(query: str, candidate: str) -> float:
     c_norm = _normalize_title(candidate)
     if not q_norm or not c_norm:
         return 0
-    # 정규화된 정확 매칭
     if q_norm == c_norm:
         return 100
-    # 부분 포함
-    if q_norm in c_norm or c_norm in q_norm:
+    # 부분 포함 (최소 4자 이상일 때만, 과매칭 방지)
+    if len(q_norm) >= 4 and (q_norm in c_norm or c_norm in q_norm):
         return 95
-    # fuzzy
     return fuzz.ratio(q_norm, c_norm)
 
 
@@ -299,37 +315,36 @@ def _find_matched_artworks(
     matched = []
 
     if title and items:
-        # 1. 제목+크기 정확 매칭 (fuzzy 90+)
+        # 1회 스캔으로 제목+크기 매칭과 제목만 매칭 동시 수집
+        title_size_matches = []
+        title_only_matches = []
         for item in items:
             score = _title_score(title, item["title"])
             if score >= 90 and item["ho"] == ho:
-                matched.append(MatchedArtwork(
+                title_size_matches.append(MatchedArtwork(
                     title=item["title"], price_krw=item["price_krw"],
                     price_usd=item["price_krw"] // 1380,
                     ho=item["ho"], medium=item["medium"],
                     gallery=item["gallery"], source=item.get("source", ""),
                     match_type="exact_title_size",
                 ))
+            elif score >= 80:
+                title_only_matches.append(MatchedArtwork(
+                    title=item["title"], price_krw=item["price_krw"],
+                    price_usd=item["price_krw"] // 1380,
+                    ho=item["ho"], medium=item["medium"],
+                    gallery=item["gallery"], source=item.get("source", ""),
+                    match_type="same_title_diff_size",
+                ))
+        matched = title_size_matches if title_size_matches else title_only_matches
 
-        # 2. 제목만 매칭 (크기 다름, 참고용)
-        if not matched:
-            for item in items:
-                score = _title_score(title, item["title"])
-                if score >= 80:
-                    matched.append(MatchedArtwork(
-                        title=item["title"], price_krw=item["price_krw"],
-                        price_usd=item["price_krw"] // 1380,
-                        ho=item["ho"], medium=item["medium"],
-                        gallery=item["gallery"], source=item.get("source", ""),
-                        match_type="same_title_diff_size",
-                    ))
-
-    # 3. 제목만 있고 작가 매칭 안 된 경우 — 전체 데이터 검색
+    # 3. 제목만 있고 작가 매칭 안 된 경우 — 인덱스 기반 검색 (O(1))
     if title and not items and not matched:
-        for slug, slug_items in _price_history.items():
-            for item in slug_items:
-                score = _title_score(title, item["title"])
-                if score >= 90:
+        title_norm = _normalize_title(title)
+        if title_norm in _title_index:
+            for slug, idx in _title_index[title_norm][:10]:
+                item = _price_history.get(slug, [None])[idx] if slug in _price_history and idx < len(_price_history[slug]) else None
+                if item:
                     matched.append(MatchedArtwork(
                         title=item["title"], price_krw=item["price_krw"],
                         price_usd=item["price_krw"] // 1380,
@@ -337,8 +352,6 @@ def _find_matched_artworks(
                         gallery=item["gallery"], source=item.get("source", ""),
                         match_type="title_only_global",
                     ))
-            if len(matched) >= 10:
-                break
 
     # 4. 동일 호수 + 동일 매체 (작가 매칭된 경우)
     if not matched and items:
@@ -412,6 +425,7 @@ async def lifespan(app: FastAPI):
     _load_models()
     _load_artist_index()
     _load_price_history()
+    _build_title_index()
     _init_log()
 
     # SHAP explainer 초기화 (CatBoost 모델)
