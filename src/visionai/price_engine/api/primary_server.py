@@ -438,6 +438,7 @@ async def lifespan(app: FastAPI):
 
 
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 app = FastAPI(
     title="VisionAI 1차 시장 가격 예측 API",
@@ -451,6 +452,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/demo", response_class=HTMLResponse)
+async def demo():
+    """가격 예측 데모 페이지."""
+    demo_path = Path(__file__).resolve().parent / "demo.html"
+    if not demo_path.exists():
+        # 컨테이너 내 경로
+        demo_path = Path("/app/demo.html")
+    if demo_path.exists():
+        return demo_path.read_text(encoding="utf-8")
+    return HTMLResponse("<h1>Demo page not found</h1>", status_code=404)
 
 
 @app.get("/health")

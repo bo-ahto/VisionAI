@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionAI 가격 예측 데모</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --red: #f85149; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 20px 32px; }
+  .header h1 { font-size: 22px; color: var(--accent); }
+  .header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .main { max-width: 1200px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 400px 1fr; gap: 24px; }
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+    .header { padding: 16px; }
+    .header h1 { font-size: 18px; }
+    .form-card, .result-card { padding: 16px; }
+    .price-main { font-size: 32px; }
+    .price-usd { font-size: 15px; }
+    .grade { font-size: 18px; padding: 3px 12px; }
+    .info-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field-row3 { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .shap-bar .feat { width: 100px; font-size: 11px; }
+    .match-item { flex-direction: column; gap: 4px; }
+    .match-price { text-align: right; }
+  }
+  @media (max-width: 480px) {
+    .main { padding: 8px; }
+    .price-main { font-size: 26px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .field-row3 { grid-template-columns: 1fr; }
+    .shap-bar { flex-wrap: wrap; }
+    .shap-bar .feat { width: 100%; text-align: left; margin-bottom: 2px; }
+  }
+
+  .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; height: fit-content; }
+  .form-card h2 { font-size: 16px; margin-bottom: 16px; color: var(--purple); }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field input, .field select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 14px; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .btn { width: 100%; background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .toggle-section { margin-top: 12px; }
+  .toggle-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+  .toggle-btn:hover { color: var(--text); border-color: var(--accent); }
+  .optional { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .optional.show { display: block; }
+
+  .result-area { min-height: 200px; }
+  .result-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+  .result-card h2 { font-size: 16px; margin-bottom: 16px; }
+  .price-main { font-size: 42px; font-weight: 800; color: var(--green); }
+  .price-usd { font-size: 18px; color: var(--muted); margin-left: 8px; }
+  .price-range { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .grade { display: inline-block; font-size: 24px; font-weight: 800; padding: 4px 16px; border-radius: 8px; margin-left: 12px; }
+  .grade-A { background: rgba(63,185,80,0.2); color: var(--green); }
+  .grade-B { background: rgba(88,166,255,0.2); color: var(--accent); }
+  .grade-C { background: rgba(210,153,34,0.2); color: var(--orange); }
+  .grade-D { background: rgba(248,81,73,0.2); color: var(--red); }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .info-item { font-size: 13px; }
+  .info-item .label { color: var(--muted); font-size: 11px; }
+  .info-item .value { font-weight: 600; }
+
+  .match-list { margin-top: 12px; }
+  .match-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .match-item:last-child { border: none; }
+  .match-price { color: var(--green); font-weight: 600; }
+  .match-type { font-size: 10px; color: var(--muted); background: var(--bg); padding: 2px 6px; border-radius: 3px; }
+
+  .shap-bar { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
+  .shap-bar .feat { width: 140px; text-align: right; color: var(--muted); }
+  .shap-bar .bar { height: 16px; border-radius: 3px; min-width: 2px; }
+  .shap-bar .bar.pos { background: var(--green); }
+  .shap-bar .bar.neg { background: var(--red); }
+  .shap-bar .pct { width: 60px; font-weight: 600; }
+
+  .artist-detail { display: block; }
+  .loading { text-align: center; padding: 40px; color: var(--muted); }
+  .error-msg { background: rgba(248,81,73,0.1); border: 1px solid var(--red); border-radius: 8px; padding: 16px; color: var(--red); }
+  .history-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .history-section h3 { font-size: 14px; color: var(--orange); margin-bottom: 8px; }
+  .ms { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>VisionAI 1차 시장 가격 예측</h1>
+  <p>작가명 + 크기 + 매체를 입력하면 AI가 갤러리 가격을 예측합니다</p>
+</div>
+
+<div class="main">
+  <div class="form-card">
+    <h2>작품 정보 입력</h2>
+    <div class="field">
+      <label>작가명 *</label>
+      <input type="text" id="artistName" placeholder="예: Yoo Suntai, 김환기" value="Yoo Suntai">
+    </div>
+    <div class="field">
+      <label>작품 제목 (선택)</label>
+      <input type="text" id="title" placeholder="예: The Words">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>가로 (cm) *</label>
+        <input type="number" id="width" value="53" step="0.1" min="1" max="500">
+      </div>
+      <div class="field">
+        <label>세로 (cm) *</label>
+        <input type="number" id="height" value="45.5" step="0.1" min="1" max="500">
+      </div>
+    </div>
+    <div class="field">
+      <label>매체 *</label>
+      <div class="field-row">
+        <select id="mediumType">
+          <option value="oil">유화 (Oil)</option>
+          <option value="acrylic">아크릴 (Acrylic)</option>
+          <option value="watercolor">수채 (Watercolor)</option>
+          <option value="ink">수묵/잉크 (Ink)</option>
+          <option value="gouache">과슈 (Gouache)</option>
+          <option value="pastel">파스텔 (Pastel)</option>
+          <option value="pencil">연필/드로잉 (Pencil)</option>
+          <option value="mixed media">혼합재료 (Mixed Media)</option>
+        </select>
+        <select id="supportType">
+          <option value="canvas">캔버스 (Canvas)</option>
+          <option value="linen">리넨 (Linen)</option>
+          <option value="paper">종이 (Paper)</option>
+          <option value="panel">패널/나무 (Panel)</option>
+          <option value="silk">비단 (Silk)</option>
+          <option value="">기타</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>시장</label>
+      <select id="market">
+        <option value="gallery">갤러리 (Gallery)</option>
+        <option value="online">온라인 (Online)</option>
+      </select>
+    </div>
+
+    <div class="toggle-section">
+      <button class="toggle-btn" onclick="document.getElementById('optional').classList.toggle('show')">
+        + 추가 정보 (선택)
+      </button>
+      <div class="optional" id="optional">
+        <div class="field">
+          <label>작가 생년</label>
+          <input type="number" id="birthYear" placeholder="예: 1985" min="1900" max="2010">
+        </div>
+        <div class="field-row3">
+          <div class="field">
+            <label>개인전</label>
+            <input type="number" id="soloCount" placeholder="횟수" min="0">
+          </div>
+          <div class="field">
+            <label>총 작품수</label>
+            <input type="number" id="totalWorks" placeholder="건수" min="0">
+          </div>
+          <div class="field">
+            <label>팔로워</label>
+            <input type="number" id="followers" placeholder="수" min="0">
+          </div>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label><input type="checkbox" id="skipExternal"> 외부 검색 스킵 (빠른 응답)</label>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn" id="predictBtn" onclick="predict()">가격 예측</button>
+  </div>
+
+  <div class="result-area" id="resultArea">
+    <div class="result-card" style="text-align:center;color:var(--muted);padding:60px">
+      <p>작품 정보를 입력하고 "가격 예측" 버튼을 눌러주세요</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';  // 같은 서버
+
+function formatKRW(n) {
+  if (n >= 100000000) return (n/100000000).toFixed(1) + '억';
+  if (n >= 10000) return Math.round(n/10000).toLocaleString() + '만';
+  return n.toLocaleString();
+}
+
+async function predict() {
+  const btn = document.getElementById('predictBtn');
+  const area = document.getElementById('resultArea');
+  btn.disabled = true;
+  btn.textContent = '예측 중...';
+  area.innerHTML = '<div class="loading">AI가 가격을 예측하고 있습니다...</div>';
+
+  const body = {
+    artist_name: document.getElementById('artistName').value,
+    width_cm: parseFloat(document.getElementById('width').value),
+    height_cm: parseFloat(document.getElementById('height').value),
+    medium: document.getElementById('mediumType').value + (document.getElementById('supportType').value ? ' on ' + document.getElementById('supportType').value : ''),
+    target_market: document.getElementById('market').value,
+  };
+
+  const title = document.getElementById('title').value;
+  if (title) body.title = title;
+
+  const by = document.getElementById('birthYear').value;
+  if (by) body.artist_birth_year = parseInt(by);
+  const solo = document.getElementById('soloCount').value;
+  if (solo) body.solo_count = parseInt(solo);
+  const tw = document.getElementById('totalWorks').value;
+  if (tw) body.artist_total_works = parseInt(tw);
+  const fl = document.getElementById('followers').value;
+  if (fl) body.followers = parseInt(fl);
+  if (document.getElementById('skipExternal').checked) body.skip_external_lookup = true;
+
+  try {
+    const resp = await fetch(API + '/api/v1/predict', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const d = await resp.json();
+    if (d.status === 'success') renderResult(d, body);
+    else area.innerHTML = `<div class="error-msg">오류: ${JSON.stringify(d)}</div>`;
+  } catch(e) {
+    area.innerHTML = `<div class="error-msg">API 연결 실패: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '가격 예측';
+}
+
+function renderResult(d, req) {
+  const p = d.prediction;
+  const m = d.model_info;
+  const pr = d.processing;
+  const fc = d.feature_contributions || [];
+  const ma = d.matched_artworks || [];
+  const hist = d.artist_price_history;
+  const src = d.external_sources_used || [];
+
+  let html = '';
+
+  // ─── 1. 매칭 작품 (있으면 가장 먼저) ───
+  if (ma.length > 0) {
+    html += `<div class="result-card" style="border-color:var(--green)">
+      <h2 style="color:var(--green)">매칭된 실제 작품 (${ma.length}건)</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">학습 데이터에서 동일/유사 작품을 찾았습니다</p>
+      <div class="match-list">`;
+    for (const a of ma) {
+      const typeLabel = {
+        'exact_title_size': '제목+크기 일치',
+        'same_title_diff_size': '같은 제목',
+        'title_only_global': '제목 검색',
+        'same_size_medium': '같은 크기+매체',
+        'similar_size': '유사 크기',
+      }[a.match_type] || a.match_type;
+      html += `<div class="match-item">
+        <div>
+          <span class="match-type">${typeLabel}</span>
+          <strong>${a.title}</strong> (${a.ho}호, ${a.medium})
+          <span style="color:var(--muted);font-size:11px">${a.gallery||''}</span>
+        </div>
+        <div class="match-price">₩${formatKRW(a.price_krw)}원</div>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+
+  // ─── 2. AI 예측 결과 ───
+  html += `<div class="result-card">
+    <h2>AI 예측 가격</h2>
+    <div>
+      <span class="price-main">₩${formatKRW(p.price_krw)}원</span>
+      <span class="price-usd">($${p.price_usd.toLocaleString()})</span>
+      <span class="grade grade-${p.confidence_grade}">${p.confidence_grade}</span>
+    </div>
+    <div class="price-range">범위: ₩${formatKRW(p.price_range.low)} ~ ₩${formatKRW(p.price_range.high)}원 (±${(p.margin*100).toFixed(0)}%)</div>
+    <div class="info-grid">
+      <div class="info-item"><div class="label">모델</div><div class="value">${m.model_type}</div></div>
+      <div class="info-item"><div class="label">학습 작가</div><div class="value">${m.is_known_artist ? '매칭 (' + m.training_count + '건)' : '미매칭 (Cold Start)'}</div></div>
+      <div class="info-item"><div class="label">외부 수집</div><div class="value">${src.length ? src.join(', ') : '없음'}</div></div>
+      <div class="info-item"><div class="label">응답 시간</div><div class="value">${pr.total_ms}ms${pr.external_fetch_ms ? ' (외부 ' + pr.external_fetch_ms + 'ms)' : ''}</div></div>
+    </div>
+  </div>`;
+
+  // ─── 3. SHAP 피처 기여도 ───
+  if (fc.length > 0) {
+    html += `<div class="result-card"><h2>가격에 영향을 준 요인</h2>`;
+    for (const c of fc) {
+      const val = parseFloat(c.contribution);
+      const isPos = val >= 0;
+      const width = Math.min(Math.abs(val) * 3, 200);
+      html += `<div class="shap-bar">
+        <span class="feat">${c.feature}</span>
+        <span class="bar ${isPos?'pos':'neg'}" style="width:${width}px"></span>
+        <span class="pct" style="color:${isPos?'var(--green)':'var(--red)'}"> ${c.contribution}</span>
+        <span style="color:var(--muted);font-size:11px">(${c.value})</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // ─── 4. 작가 정보 (접이식 상세 보기) ───
+  if (hist) {
+    html += `<div class="result-card">
+      <h2>작가 정보: ${hist.artist_name}</h2>
+      <div class="info-grid">
+        <div class="info-item"><div class="label">학습 작품수</div><div class="value">${hist.total_works_in_data}건</div></div>
+        <div class="info-item"><div class="label">가격 범위</div><div class="value">₩${formatKRW(hist.price_min)} ~ ₩${formatKRW(hist.price_max)}</div></div>
+        <div class="info-item"><div class="label">가격 중앙</div><div class="value">₩${formatKRW(hist.price_median)}원</div></div>
+        <div class="info-item"><div class="label">수집일</div><div class="value">${hist.data_collected_date}</div></div>
+      </div>
+      <div class="artist-detail" id="artistDetail">
+        <div class="info-grid" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="info-item"><div class="label">호수 범위</div><div class="value">${hist.ho_range}</div></div>
+          <div class="info-item"><div class="label">매체</div><div class="value">${(hist.mediums||[]).join(', ')}</div></div>
+          <div class="info-item"><div class="label">갤러리</div><div class="value">${(hist.galleries||[]).join(', ')}</div></div>
+        </div>`;
+    if (hist.samples && hist.samples.length) {
+      html += '<div class="history-section"><h3>전체 작품 이력 (상위 5건)</h3><div class="match-list">';
+      for (const s of hist.samples) {
+        html += `<div class="match-item">
+          <div>${s.title} (${s.ho}호, ${s.medium}) <span style="color:var(--muted);font-size:11px">${s.gallery||''}</span></div>
+          <div class="match-price">₩${formatKRW(s.price_krw)}원</div>
+        </div>`;
+      }
+      html += '</div></div>';
+    }
+    html += '</div></div>';
+  }
+
+  document.getElementById('resultArea').innerHTML = html;
+}
+
+// Enter 키로 예측
+document.querySelectorAll('input').forEach(el => {
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') predict(); });
+});
+</script>
+</body>
+</html>
