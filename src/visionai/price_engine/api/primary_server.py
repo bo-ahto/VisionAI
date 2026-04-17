@@ -30,6 +30,7 @@ from .primary_schemas import (
     BatchPredictResult,
     ArtistPriceHistory,
     PriceHistoryItem,
+    MatchedArtwork,
 )
 from .artist_matcher import ArtistMatcher
 from .primary_feature_builder import build_features
@@ -255,6 +256,73 @@ def _get_artist_history(artist_slug: str, artist_name: str) -> ArtistPriceHistor
     )
 
 
+def _find_matched_artworks(
+    artist_slug: str, title: str | None, ho: int, medium_category: str
+) -> list[MatchedArtwork]:
+    """학습 데이터에서 동일/유사 작품 매칭."""
+    items = _price_history.get(artist_slug, [])
+    if not items:
+        return []
+
+    matched = []
+
+    # 1. 제목 정확 매칭 (대소문자/공백 무시)
+    if title:
+        title_norm = title.lower().strip()
+        for item in items:
+            if title_norm in item["title"].lower():
+                matched.append(MatchedArtwork(
+                    title=item["title"], price_krw=item["price_krw"],
+                    price_usd=item["price_krw"] // 1380,
+                    ho=item["ho"], medium=item["medium"],
+                    gallery=item["gallery"], source=item.get("source", ""),
+                    match_type="exact_title",
+                ))
+
+    # 2. 동일 호수 + 동일 매체
+    if not matched:
+        for item in items:
+            if item["ho"] == ho and item["medium"] == medium_category:
+                matched.append(MatchedArtwork(
+                    title=item["title"], price_krw=item["price_krw"],
+                    price_usd=item["price_krw"] // 1380,
+                    ho=item["ho"], medium=item["medium"],
+                    gallery=item["gallery"], source=item.get("source", ""),
+                    match_type="same_size_medium",
+                ))
+
+    # 3. 유사 호수 (±1단계)
+    if not matched:
+        from .primary_feature_builder import HO_TABLE_F
+        ho_list = sorted(HO_TABLE_F.keys())
+        idx = min(range(len(ho_list)), key=lambda i: abs(ho_list[i] - ho))
+        nearby = set()
+        if idx > 0: nearby.add(ho_list[idx - 1])
+        nearby.add(ho_list[idx])
+        if idx < len(ho_list) - 1: nearby.add(ho_list[idx + 1])
+
+        for item in items:
+            if item["ho"] in nearby and item["medium"] == medium_category:
+                matched.append(MatchedArtwork(
+                    title=item["title"], price_krw=item["price_krw"],
+                    price_usd=item["price_krw"] // 1380,
+                    ho=item["ho"], medium=item["medium"],
+                    gallery=item["gallery"], source=item.get("source", ""),
+                    match_type="similar_size",
+                ))
+
+    # 중복 제거 + 가격순 정렬, 최대 5건
+    seen = set()
+    unique = []
+    for m in matched:
+        key = (m.title, m.price_krw, m.ho)
+        if key not in seen:
+            seen.add(key)
+            unique.append(m)
+    unique.sort(key=lambda x: abs(x.ho - ho))
+    return unique[:5]
+
+
 def _load_models() -> None:
     """모델 파일 로드."""
     model_dir = Path(os.getenv("MODEL_DIR", "/app/models"))
@@ -463,6 +531,10 @@ async def predict(req: PredictRequest):
             {"feature": c["feature"], "value": c["value"], "contribution": c["contribution"]}
             for c in feature_contributions
         ],
+        matched_artworks=_find_matched_artworks(
+            match.slug if match else "", req.title,
+            features.get("ho", 0), features.get("medium_category", "")
+        ) if is_matched else [],
         artist_price_history=_get_artist_history(
             match.slug if match else "", match.name if match else req.artist_name
         ) if is_matched else None,

@@ -9,6 +9,7 @@ class PredictRequest(BaseModel):
     width_cm: float = Field(..., gt=0, le=500, description="가로 cm")
     height_cm: float = Field(..., gt=0, le=500, description="세로 cm")
     medium: str = Field(..., min_length=1, description="매체 (예: acrylic on canvas)")
+    title: str | None = Field(None, description="작품 제목 (기존 작품 매칭용)")
     target_market: str = Field("gallery", description="gallery | online")
     skip_external_lookup: bool = Field(False, description="외부 수집 스킵 여부")
 
@@ -42,6 +43,18 @@ class ModelInfo(BaseModel):
 class Processing(BaseModel):
     total_ms: int
     external_fetch_ms: int = 0
+
+
+class MatchedArtwork(BaseModel):
+    title: str
+    price_krw: int
+    price_usd: int
+    ho: int
+    medium: str
+    gallery: str
+    source: str
+    artwork_url: str = ""
+    match_type: str = ""  # exact_title | same_size_medium | similar_size
 
 
 class PriceHistoryItem(BaseModel):
@@ -79,6 +92,7 @@ class PredictResponse(BaseModel):
     processing: Processing
     external_sources_used: list[str] = []
     feature_contributions: list[FeatureContribution] = []
+    matched_artworks: list[MatchedArtwork] = []
     artist_price_history: ArtistPriceHistory | None = None
 
 
