@@ -2,7 +2,7 @@
 
 > **작성일**: 2026-04-17
 > **API URL**: https://visionai-api.ahto.city
-> **코덱스 리뷰**: 10회 통과 (57건 지적, 47건 수정)
+> **Phase**: 1~3 완료 (Phase 4~5 미착수)
 
 ---
 
@@ -155,16 +155,220 @@
 
 ---
 
-## 6. 코덱스 리뷰 이력
+## 6. API 호출 가이드
 
-| Round | 대상 | 지적 | 수정 | 주요 수정 |
-|:-----:|------|:----:|:----:|-----------|
-| 1~5 | API 기획 문서 | 33 | 28 | Phase 1 스펙 분리, 신뢰도 공식, ratio 보정 |
-| 6 | Phase 1 코드 | 8 | 4 | XGBoost label map, 소스 우선순위 |
-| 7 | Phase 2+3 코드 | 5 | 5 | threadpool, 캐시 제한, 웹검색 엄격화 |
-| 8 | SHAP + 모니터 | 4 | 4 | SHAP→threadpool, 모니터→인메모리 |
-| 9 | 작품 매칭 | 7 | 6 | 제목 인덱스 O(1), DoS 방지, 과매칭 수정 |
-| **총** | | **57** | **47** | |
+### 6.1 기본 예측 (작가명 + 크기 + 매체)
+
+```bash
+curl -X POST "https://visionai-api.ahto.city/api/v1/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist_name": "Yoo Suntai",
+    "width_cm": 53,
+    "height_cm": 45.5,
+    "medium": "oil on canvas"
+  }'
+```
+
+**응답 예시**:
+```json
+{
+  "status": "success",
+  "prediction": {
+    "price_krw": 5230175,
+    "price_usd": 3789,
+    "price_range": {"low": 4184140, "high": 6276210},
+    "confidence_grade": "A",
+    "margin": 0.2
+  },
+  "model_info": {
+    "model_type": "xgboost_v3",
+    "is_known_artist": true,
+    "training_count": 70
+  },
+  "processing": {"total_ms": 36, "external_fetch_ms": 0},
+  "external_sources_used": [],
+  "feature_contributions": [],
+  "matched_artworks": [],
+  "artist_price_history": {
+    "artist_name": "Yoo Suntai",
+    "total_works_in_data": 70,
+    "price_min": 2911800,
+    "price_max": 68061600,
+    "price_median": 37853400,
+    "ho_range": "1~100호",
+    "mediums": ["acrylic", "oil"],
+    "galleries": ["Galerie GAIA", "Art Works Paris Seoul Gallery"],
+    "data_collected_date": "Artsy 2026-04-13",
+    "samples": [
+      {"title": "The Words", "price_krw": 68061600, "ho": 100, "medium": "acrylic", "gallery": "Galerie GAIA", "source": "artsy"}
+    ]
+  }
+}
+```
+
+> XGBoost 경로는 `feature_contributions`가 빈 배열. CatBoost 경로(Cold Start)에서만 SHAP 기여도 반환.
+
+### 6.2 작품 제목으로 검색
+
+```bash
+curl -X POST "https://visionai-api.ahto.city/api/v1/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist_name": "Yoo Suntai",
+    "width_cm": 116.8,
+    "height_cm": 91,
+    "medium": "acrylic",
+    "title": "The Words"
+  }'
+```
+
+제목+작가+크기가 학습 데이터에 있으면 **실제 가격**을 `matched_artworks`로 반환:
+```json
+{
+  "matched_artworks": [
+    {
+      "title": "The Words",
+      "price_krw": 39481800,
+      "price_usd": 28610,
+      "ho": 50,
+      "medium": "acrylic",
+      "gallery": "Galerie GAIA",
+      "source": "artsy",
+      "match_type": "exact_title_size"
+    }
+  ]
+}
+```
+
+제목은 띄어쓰기/오타/한글 모두 매칭: `"thewords"`, `"말과글"`, `"Words"` 등.
+
+### 6.3 수동 프로필 입력 (D→C등급 상향)
+
+```bash
+curl -X POST "https://visionai-api.ahto.city/api/v1/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist_name": "신진작가",
+    "width_cm": 72.7,
+    "height_cm": 60.6,
+    "medium": "oil on canvas",
+    "artist_birth_year": 1990,
+    "solo_count": 5,
+    "followers": 200
+  }'
+```
+
+Cold Start(CatBoost)에서는 `feature_contributions`로 **가격에 가장 큰 영향을 준 피처**를 확인 가능:
+```json
+{
+  "feature_contributions": [
+    {"feature": "ln_followers", "value": "5.30", "contribution": "+20.1%"},
+    {"feature": "artist_total_works", "value": "0", "contribution": "-24.0%"}
+  ]
+}
+```
+
+### 6.4 온라인 마켓 가격 (갤러리 대비 저렴)
+
+```bash
+curl -X POST "https://visionai-api.ahto.city/api/v1/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist_name": "작가명",
+    "width_cm": 50,
+    "height_cm": 50,
+    "medium": "acrylic",
+    "target_market": "online"
+  }'
+```
+
+`target_market`: `"gallery"` (기본, 갤러리 가격) 또는 `"online"` (온라인 플랫폼, ~7% 저렴)
+
+### 6.5 외부 수집 스킵
+
+```bash
+curl -X POST "https://visionai-api.ahto.city/api/v1/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist_name": "작가명",
+    "width_cm": 50,
+    "height_cm": 50,
+    "medium": "oil",
+    "skip_external_lookup": true
+  }'
+```
+
+`skip_external_lookup: true`면 Artsy/Saatchi/웹검색을 하지 않음 (응답 속도 < 100ms).
+
+### 6.6 배치 예측 (최대 50건)
+
+```bash
+curl -X POST "https://visionai-api.ahto.city/api/v1/predict/batch" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artworks": [
+      {"artist_name": "Yoo Suntai", "width_cm": 53, "height_cm": 45.5, "medium": "oil"},
+      {"artist_name": "Abang", "width_cm": 72.7, "height_cm": 60.6, "medium": "acrylic"},
+      {"artist_name": "unknown", "width_cm": 50, "height_cm": 50, "medium": "watercolor"}
+    ],
+    "skip_external_lookup": true
+  }'
+```
+
+**배치 응답 예시**:
+```json
+{
+  "total": 3,
+  "success": 3,
+  "failed": 0,
+  "results": [
+    {"index": 0, "status": "success", "prediction": {"price_krw": 5398412, "confidence_grade": "A"}, "model_info": {"model_type": "xgboost_v3"}},
+    {"index": 1, "status": "success", "prediction": {"price_krw": 2105716, "confidence_grade": "A"}, "model_info": {"model_type": "xgboost_v3"}},
+    {"index": 2, "status": "success", "prediction": {"price_krw": 1795971, "confidence_grade": "D"}, "model_info": {"model_type": "catboost_v3"}}
+  ],
+  "processing": {"total_ms": 60}
+}
+```
+
+### 6.7 모니터링
+
+```bash
+# 서버 상태
+curl "https://visionai-api.ahto.city/health"
+
+# 모델 정보
+curl "https://visionai-api.ahto.city/api/v1/model/info"
+
+# 예측 통계
+curl "https://visionai-api.ahto.city/api/v1/monitor"
+```
+
+### 6.8 신뢰도 등급
+
+| 등급 | 조건 | 마진 | 의미 |
+|:----:|------|:----:|------|
+| **A** | 학습 작가, 5건+ 이력 | ±20% | 높은 신뢰도 |
+| **B** | 학습 작가 소량 (1~4건) | ±30% | 보통 신뢰도 |
+| **C** | 외부 프로필 확보 또는 수동 입력 | ±50% | 참고용 |
+| **D** | 프로필 없음 | ±70% | 추정치 |
+
+### 6.9 입력 필드
+
+| 필드 | 필수 | 타입 | 설명 |
+|------|:----:|------|------|
+| artist_name | O | string | 작가명 (한/영 모두 가능) |
+| width_cm | O | float | 가로 cm (1~500) |
+| height_cm | O | float | 세로 cm (1~500) |
+| medium | O | string | 매체 (예: "oil on canvas", "acrylic") |
+| title | | string | 작품 제목 (기존 작품 매칭용) |
+| target_market | | string | "gallery" (기본) 또는 "online" |
+| skip_external_lookup | | bool | true면 외부 수집 스킵 |
+| artist_birth_year | | int | 작가 생년 (1900~2010) |
+| artist_total_works | | int | 총 작품 수 |
+| solo_count | | int | 개인전 횟수 |
+| group_count | | int | 단체전 횟수 |
+| followers | | int | 팔로워 수 |
 
 ---
 
