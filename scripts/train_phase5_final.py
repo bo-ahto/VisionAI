@@ -34,14 +34,28 @@ def main() -> None:
         build_hedonic_features,
     )
 
-    cache_path = OUTPUT_DIR / "hedonic_features_cache.parquet"
+    # 코덱스 P2 (2026-04-18): cache를 source dataset stat(path + mtime + size)으로 keying.
+    # 다른 데이터셋이나 갱신된 원본으로 돌릴 때 stale cache 재사용 방지.
+    _data_stat = DATA_PATH.stat() if DATA_PATH.exists() else None
+    _cache_tag = (
+        f"{DATA_PATH.name}_{int(_data_stat.st_mtime)}_{_data_stat.st_size}"
+        if _data_stat else "no_data"
+    )
+    cache_path = OUTPUT_DIR / f"hedonic_features_cache__{_cache_tag}.parquet"
+    legacy_cache = OUTPUT_DIR / "hedonic_features_cache.parquet"
     if cache_path.exists():
-        logger.info("Loading cached features: %s", cache_path)
+        logger.info("Loading cached features (keyed): %s", cache_path)
         df = pd.read_parquet(cache_path)
-        # URL/이미지 경로 컬럼 제거 (피처로 사용 불가)
         drop_cols = [c for c in df.columns if "img_file" in c or "img_src" in c or "page_index" in c]
         if drop_cols:
             df = df.drop(columns=drop_cols, errors="ignore")
+    elif legacy_cache.exists():
+        logger.warning(
+            "Legacy cache found (%s). 데이터 변경 여부 불명확 → 재빌드하여 keyed cache 저장.",
+            legacy_cache,
+        )
+        df = build_hedonic_features(DATA_PATH)
+        df.to_parquet(cache_path, index=False)
     else:
         df = build_hedonic_features(DATA_PATH)
         df.to_parquet(cache_path, index=False)
@@ -86,19 +100,59 @@ def main() -> None:
         find_similar_artists,
     )
 
-    train_only = df[df["split"] == "train"]
+    train_only = df[df["split"] == "train"].copy()
     # 통합 스키마 호환: session_col, price_col 자동 감지
     _sim_session = "sale_date" if "sale_date" in df.columns else "회차"
     _sim_price = "price" if "price" in df.columns else "낙찰가"
-    _sim_cutoff = "9999-12-31" if _sim_session == "sale_date" else 999999
     _sim_type = "source" if "source" in df.columns else "타입"
-    vectors = build_artist_feature_vectors(
-        train_only, cutoff=_sim_cutoff,
+
+    # 코덱스 P2 (2026-04-18): 모든 행에 단일 unbounded vectors 사용하면
+    # train 내부에서 미래 sale이 donor 벡터에 포함되어 temporal leak 발생.
+    # 월(또는 session) 단위로 cutoff를 버킷팅 → 각 행의 버킷 이전 데이터로만 vectors 빌드.
+    if _sim_session == "sale_date":
+        df["_sim_bucket"] = (
+            pd.to_datetime(df[_sim_session], errors="coerce")
+            .dt.to_period("M").astype(str)
+        )
+        train_only["_sim_bucket"] = (
+            pd.to_datetime(train_only[_sim_session], errors="coerce")
+            .dt.to_period("M").astype(str)
+        )
+        bucket_to_cutoff = lambda b: f"{b}-01"
+    else:
+        df["_sim_bucket"] = df[_sim_session].astype(str)
+        train_only["_sim_bucket"] = train_only[_sim_session].astype(str)
+        bucket_to_cutoff = lambda b: int(b) if str(b).isdigit() else b
+
+    unique_buckets = sorted(df["_sim_bucket"].dropna().unique())
+    logger.info("Similarity: building per-bucket vectors (%d buckets)", len(unique_buckets))
+
+    _fallback_cutoff = "9999-12-31" if _sim_session == "sale_date" else 999999
+    _fallback_vectors = build_artist_feature_vectors(
+        train_only, cutoff=_fallback_cutoff,
         session_col=_sim_session, type_col=_sim_type, price_col=_sim_price,
     )
 
+    vectors_cache: dict[str, pd.DataFrame] = {}
+    for bucket in unique_buckets:
+        cutoff_val = bucket_to_cutoff(bucket)
+        if _sim_session == "sale_date":
+            subset = train_only[
+                pd.to_datetime(train_only[_sim_session], errors="coerce")
+                < pd.Timestamp(cutoff_val)
+            ]
+        else:
+            subset = train_only[train_only[_sim_session] < cutoff_val]
+        if len(subset) >= 50:
+            vectors_cache[bucket] = build_artist_feature_vectors(
+                subset, cutoff=cutoff_val,
+                session_col=_sim_session, type_col=_sim_type, price_col=_sim_price,
+            )
+
     sim_features = []
     for _, row in df.iterrows():
+        bucket = row.get("_sim_bucket")
+        vectors = vectors_cache.get(bucket, _fallback_vectors)
         artist = row.get("artist_clean", "")
         medium = row.get("medium_category", None)
         similar = find_similar_artists(
@@ -106,6 +160,9 @@ def main() -> None:
             medium_filter=str(medium) if medium else None,
         )
         sim_features.append(compute_similarity_features(str(artist), similar))
+
+    # 정리
+    df = df.drop(columns=["_sim_bucket"], errors="ignore")
 
     sim_df = pd.DataFrame(sim_features, index=df.index)
     for col in sim_df.columns:

@@ -105,10 +105,22 @@ def join_macro_features(
         out = out.drop(columns=["join_session"])
 
     # 5. 누락 피처 기본값 + forward-fill
-    for col in MACRO_FEATURES:
-        if col not in out.columns:
-            out[col] = 0.0
-        else:
-            out[col] = out[col].ffill().fillna(0.0)
+    # 코덱스 P1 (2026-04-18): ffill은 입력 행 순서 의존. session 미정렬이면 누락된 행이
+    # 미래 session 값을 받을 수 있음(누수). session 정렬 후 ffill, 원본 순서 복원.
+    if len(out) > 0 and session_col in out.columns:
+        original_index = out.index.copy()
+        out = out.sort_values(session_col, kind="mergesort").copy()
+        for col in MACRO_FEATURES:
+            if col not in out.columns:
+                out[col] = 0.0
+            else:
+                out[col] = out[col].ffill().fillna(0.0)
+        out = out.reindex(original_index)
+    else:
+        for col in MACRO_FEATURES:
+            if col not in out.columns:
+                out[col] = 0.0
+            else:
+                out[col] = out[col].fillna(0.0)
 
     return out
