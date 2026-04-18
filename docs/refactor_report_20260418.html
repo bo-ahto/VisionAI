@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>2026-04-17~18 Estimate Generator 리팩터 종합 리포트</title>
+<title>2026-04-17~18 경매 낙찰가 모델 (estimate_generator) 리팩터 종합 리포트</title>
 <style>
   :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; --purple: #bc8cff; --tldr-bg: #1f2a3a; --tldr-border: #58a6ff; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,10 +44,17 @@
 <body>
 <div class="container">
 
-<h1>2026-04-17~18 Estimate Generator 리팩터 종합 리포트</h1>
+<h1>2026-04-17~18 경매 낙찰가 모델 (estimate_generator) 리팩터 종합 리포트</h1>
+
+<div style="background: rgba(210,153,34,0.1); border-left: 4px solid var(--orange); padding: 14px 18px; margin: 16px 0; border-radius: 6px; font-size: 14px;">
+<p><strong style="color: var(--orange);">⚠ 범위 명시</strong>: 본 보고서는 <strong>경매 낙찰가 예측 모델 (B, <code>estimate_generator</code>)</strong> 의 리팩터 retrospective이다. <strong>1차 시장(갤러리) 예측 모델 (A, <code>primary_predictor</code> + <code>integrated_v3_*</code>)</strong> 과는 별개의 파이프라인을 다룬다.</p>
+<p><strong>현재 상태</strong>: 경매 낙찰가 모델(B)는 <strong style="color: var(--orange);">잠정 중단</strong> — 1차 시장 모델(A) 작업이 선행 진행 중.</p>
+<p><strong>A-B 관계 정확히</strong>: 런타임·서빙·아티팩트는 분리되어 있으나, 일부 보조 스크립트 (<code>scripts/predict_primary_market.py</code>) 는 B 모듈을 import해서 A 데이터를 경매 예측 스타일로 재해석하는 용도로 씀. "완전 독립"은 아님.</p>
+</div>
+
 <blockquote>
 <p><strong>작성일</strong>: 2026-04-18</p>
-<p><strong>대상</strong>: VisionAI estimate_generator 파이프라인 (Hedonic, Model-A, Ensemble, API)</p>
+<p><strong>대상</strong>: VisionAI estimate_generator 파이프라인 (Hedonic, Model-A, Ensemble, API <code>/api/v1/estimate</code>)</p>
 <p><strong>관련 PR</strong>: <a href="https://github.com/bo-ahto/VisionAI/pull/7" target="_blank">#7</a>, <a href="https://github.com/bo-ahto/VisionAI/pull/8" target="_blank">#8</a></p>
 <p><strong>베이스 브랜치</strong>: <code>main</code> (commit <code>c9a12b6</code>)</p>
 </blockquote>
