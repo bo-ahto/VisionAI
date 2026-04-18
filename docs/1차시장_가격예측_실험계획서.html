@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한국 1차 시장(갤러리) 미술품 가격 예측 실험계획서</title>
+<style>
+  :root { --bg: #0d1117; --fg: #c9d1d9; --accent: #58a6ff; --border: #30363d; --card: #161b22; --green: #3fb950; --yellow: #d29922; --red: #f85149; --purple: #bc8cff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.7; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+  h1 { color: var(--accent); font-size: 2rem; margin-bottom: 0.3rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; }
+  h2 { color: var(--accent); font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  h3 { color: var(--green); font-size: 1.15rem; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  h4 { color: var(--purple); font-size: 1rem; margin-top: 1rem; margin-bottom: 0.3rem; }
+  .meta { color: #8b949e; font-size: 0.9rem; margin-bottom: 2rem; }
+  blockquote { border-left: 3px solid var(--yellow); padding: 0.8rem 1rem; margin: 1rem 0; background: rgba(210,153,34,0.08); border-radius: 4px; font-style: italic; }
+  .info-box { border-left: 3px solid var(--accent); padding: 0.8rem 1rem; margin: 1rem 0; background: rgba(88,166,255,0.08); border-radius: 4px; }
+  .warn-box { border-left: 3px solid var(--red); padding: 0.8rem 1rem; margin: 1rem 0; background: rgba(248,81,73,0.08); border-radius: 4px; }
+  .ok-box { border-left: 3px solid var(--green); padding: 0.8rem 1rem; margin: 1rem 0; background: rgba(63,185,80,0.08); border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: var(--card); color: var(--accent); text-align: left; padding: 0.6rem 0.8rem; border: 1px solid var(--border); }
+  td { padding: 0.5rem 0.8rem; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: rgba(22,27,34,0.5); }
+  pre { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 1rem 0; font-size: 0.85rem; line-height: 1.5; }
+  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; color: #e6edf3; }
+  p { margin: 0.5rem 0; }
+  strong { color: #f0f6fc; }
+  .best { color: var(--green); font-weight: bold; }
+  .fail { color: var(--red); font-weight: bold; }
+  .partial { color: var(--yellow); font-weight: bold; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  ul, ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin: 0.3rem 0; }
+  .arch-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+  .metric-card .value { font-size: 1.8rem; font-weight: bold; margin: 0.3rem 0; }
+  .metric-card .label { font-size: 0.8rem; color: #8b949e; }
+  .metric-card.pass { border-color: var(--green); }
+  .metric-card.pass .value { color: var(--green); }
+  .metric-card.warn { border-color: var(--yellow); }
+  .metric-card.warn .value { color: var(--yellow); }
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+  .badge-pass { background: rgba(63,185,80,0.2); color: var(--green); border: 1px solid var(--green); }
+  .badge-fail { background: rgba(248,81,73,0.2); color: var(--red); border: 1px solid var(--red); }
+  .badge-warn { background: rgba(210,153,34,0.2); color: var(--yellow); border: 1px solid var(--yellow); }
+  .badge-dead { background: rgba(248,81,73,0.15); color: #8b949e; border: 1px solid #8b949e; text-decoration: line-through; }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1.5rem 0; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>한국 1차 시장(갤러리) 미술품 가격 예측 실험계획서</h1>
+<div class="meta">
+  호당 가격 모델링 기반 가격 예측 및 외부 데이터 수집 전략<br>
+  VisionAI &nbsp;|&nbsp; 2026년 4월
+</div>
+
+<div class="toc">
+<strong>목차</strong>
+<ol>
+  <li><a href="#s1">현재 데이터 현황</a></li>
+  <li><a href="#s2">한국 갤러리 가격 책정 구조</a></li>
+  <li><a href="#s3">실험 방법론 &mdash; 3가지 접근법</a></li>
+  <li><a href="#s4">실험 설계</a></li>
+  <li><a href="#s5">실험 결과 &mdash; 파일럿 검증</a></li>
+  <li><a href="#s6">경매 데이터의 1차 시장 활용 방안</a></li>
+  <li><a href="#s7">데이터 확장 전략</a></li>
+  <li><a href="#s8">권장 로드맵</a></li>
+  <li><a href="#s9">외부 데이터 수집 및 검증 결과</a></li>
+  <li><a href="#s10">참고 문헌</a></li>
+</ol>
+</div>
+
+<!-- 핵심 지표 카드 -->
+<div class="metric-grid">
+  <div class="metric-card warn">
+    <div class="label">현재 데이터</div>
+    <div class="value">94건</div>
+    <div class="label">11명 작가 / 8개 갤러리</div>
+  </div>
+  <div class="metric-card pass">
+    <div class="label">파일럿 MdAPE</div>
+    <div class="value">28.0%</div>
+    <div class="label">호당가 역산 모델 (LOO)</div>
+  </div>
+  <div class="metric-card warn">
+    <div class="label">가격 범위</div>
+    <div class="value">30만~1억</div>
+    <div class="label">중앙값 300만원</div>
+  </div>
+  <div class="metric-card pass">
+    <div class="label">핵심 공식</div>
+    <div class="value" style="font-size:1.2rem;">P = &alpha; &times; Ho<sup>0.74</sup></div>
+    <div class="label">비선형 호당가 모델</div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ===== 1 ===== -->
+<h2 id="s1">1. 현재 데이터 현황</h2>
+
+<h3>1.1 데이터 요약</h3>
+<table>
+  <tr><th>항목</th><th>값</th></tr>
+  <tr><td>총 건수</td><td>94건 (11명 작가)</td></tr>
+  <tr><td>가격 범위</td><td>30만 ~ 1억 56만원</td></tr>
+  <tr><td>중앙값 / 평균</td><td>300만원 / 810만원</td></tr>
+  <tr><td>전시 유형</td><td>개인전 54, 그룹전 27, 단체전 10, 아트페어 3</td></tr>
+  <tr><td>참여 갤러리</td><td>8개 (워크스워크스, 갤러리기체, 더써드갤러리 등)</td></tr>
+</table>
+
+<h3>1.2 작가별 가격 분포</h3>
+<table>
+  <tr><th>작가</th><th>건수</th><th>중앙가</th><th>범위</th><th>비고</th></tr>
+  <tr><td><strong>김윤신</strong></td><td>3</td><td>8,620만</td><td>8,620~1억</td><td>원로, 최고가</td></tr>
+  <tr><td>김주리</td><td>5</td><td>2,000만</td><td>1,600~2,000만</td><td>안정적</td></tr>
+  <tr><td>임노식</td><td>4</td><td>1,800만</td><td>500~1,800만</td><td></td></tr>
+  <tr><td>이진주</td><td>3</td><td>1,400만</td><td>1,400~3,000만</td><td></td></tr>
+  <tr><td>주연수</td><td>12</td><td>816만</td><td>437~1,899만</td><td>최다 건수</td></tr>
+  <tr><td>정수정</td><td>8</td><td>500만</td><td>200~2,500만</td><td>높은 변동성</td></tr>
+  <tr><td>조이솝</td><td>4</td><td>250만</td><td>150~450만</td><td></td></tr>
+  <tr><td>이동혁</td><td>3</td><td>120만</td><td>120~1,400만</td><td>극단적 범위</td></tr>
+  <tr><td>남석우</td><td>8</td><td>115만</td><td>50~480만</td><td></td></tr>
+  <tr><td>이시현</td><td>10</td><td>90만</td><td>40~450만</td><td></td></tr>
+  <tr><td>순이지</td><td>34</td><td>60만</td><td>30~900만</td><td>최다, 저가</td></tr>
+</table>
+
+<h3>1.3 관찰된 특징</h3>
+<ol>
+  <li><strong>작가 간 가격 차이 지배적</strong>: 김윤신(8,620만) vs 순이지(60만) = 143배</li>
+  <li><strong>같은 작가 내 변동성도 큼</strong>: 정수정 200~2,500만(12.5배)</li>
+  <li><strong>데이터 불균형</strong>: 순이지 34건(36%) vs 김윤신 3건(3%)</li>
+  <li><strong>11명으로는 일반화 어려움</strong> &mdash; 규칙 기반 접근이 현실적</li>
+</ol>
+
+<hr>
+
+<!-- ===== 2 ===== -->
+<h2 id="s2">2. 한국 갤러리 가격 책정 구조</h2>
+
+<h3>2.1 호당 가격제 (한국 고유)</h3>
+<p>한국 갤러리(1차 시장)의 전통적 가격 산정 방식. 작품의 캔버스 크기를 "호" 단위로 환산하고, 작가의 경력/명성에 따른 "호당 가격"을 곱하여 최종 가격을 산출.</p>
+
+<div class="arch-box">
+<pre><code>기본 구조: 갤러리 판매가 = 호수 &times; 호당 가격
+
+단, 실측 결과 크기-가격 관계는 비선형 (&beta;=0.74):
+  정확한 공식: Price = &alpha; &times; Ho<sup>0.74</sup>  (Shin 2010 참조)
+  큰 작품일수록 호당가 할인 (체감 효과)</code></pre>
+</div>
+
+<h4>경력별 호당 가격 기준 (업계 관행)</h4>
+<table>
+  <tr><th>작가 경력</th><th>나이대</th><th>호당 가격</th><th>10호 기준가</th></tr>
+  <tr><td>신진</td><td>20대</td><td>5~8만원</td><td>50~80만원</td></tr>
+  <tr><td>신진 후기</td><td>30대</td><td>10~15만원</td><td>100~150만원</td></tr>
+  <tr><td>중견 초기</td><td>40대</td><td>15~20만원</td><td>150~200만원</td></tr>
+  <tr><td>중견</td><td>50대</td><td>25~30만원</td><td>250~300만원</td></tr>
+  <tr><td>원로</td><td>60대+</td><td>40~50만원+</td><td>400~500만원+</td></tr>
+  <tr><td><strong>블루칩</strong></td><td>&mdash;</td><td><strong>100만원+</strong></td><td><strong>1,000만원+</strong></td></tr>
+</table>
+
+<h3>2.2 호당 가격 결정 요인</h3>
+<ul>
+  <li>경력 단계 (신진/중견/원로)</li>
+  <li>학력 (미대, 대학원 &mdash; 한국 특수)</li>
+  <li>전시 이력 (개인전 횟수, 미술관 전시)</li>
+  <li>소속 갤러리 등급 (메이저 = 높은 호당가)</li>
+  <li>수상 이력 (비엔날레, 공모전)</li>
+  <li>소장처 (국립현대미술관, 기업 컬렉션)</li>
+  <li>경매 실적 (2차 시장 검증)</li>
+  <li>시장 트렌드 (현재 인기도)</li>
+</ul>
+
+<h3>2.3 학술 근거</h3>
+<table>
+  <tr><th>연구</th><th>핵심 발견</th><th>적용</th></tr>
+  <tr><td><strong>Rengers & Velthuis (2002)</strong></td><td><code>ln(P) = &beta;₀ + &beta;₁&middot;size + &beta;₂&middot;material + &beta;₃&middot;artist_age + &beta;₄&middot;gallery + &beta;₅&middot;recognition + &epsilon;</code></td><td>1차 시장 hedonic 원형</td></tr>
+  <tr><td><strong>Beckert & R&ouml;ssel (2013)</strong></td><td>가격은 상호주관적 명성 인정 과정에서 결정</td><td>명성 피처 학술 근거</td></tr>
+  <tr><td><strong>Sch&ouml;nfeld (2007)</strong></td><td>작가 명성 &harr; 가격 (+), 갤러리 명성 &harr; 가격 (&minus;)</td><td>gallery_tier 방향성</td></tr>
+  <tr><td><strong>Park et al. (2024)</strong></td><td>Popularity + Ability 통합, 시간 변화하는 명성</td><td>시간 가변 명성 지표</td></tr>
+  <tr><td><strong>Shin (2010)</strong></td><td>P = &alpha; &times; Ho<sup>&beta;</sup>, &beta; &lt; 1 &mdash; 한국 비선형 크기-가격</td><td>호수 모델 학술 지지</td></tr>
+  <tr><td><strong>Fraiberger et al. (2018)</strong></td><td>고위 기관 접근 &rarr; 전시 2&times;, 최고가 5.2&times;</td><td>기관 위신 피처 근거</td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 3 ===== -->
+<h2 id="s3">3. 실험 방법론 &mdash; 3가지 접근법</h2>
+
+<h3>3.1 Option A: 호당 가격 역산 (즉시 적용)</h3>
+<div class="arch-box">
+<pre><code>Step 1. 호당가격_실측 = 판매가 / 호수  (선형 근사)
+Step 2. 작가_호당가격 = median(호당가격_실측)
+Step 3-기본. 예측가 = 작가_호당가격 &times; 호수 &times; 매체_보정
+Step 3-개선. 예측가 = &alpha; &times; Ho<sup>0.74</sup> &times; 매체_보정 (비선형)
+
+※ 선형식은 업계 관행 1차 근사. 실측 &beta;=0.74이므로 비선형 권장.</code></pre>
+</div>
+<p><strong>장점:</strong> 업계 관행과 동일, 해석 가능, 적은 데이터로 작동<br>
+<strong>단점:</strong> 신규 작가 호당가 불명, 작가 내 가격 변동 설명 부족</p>
+
+<h3>3.2 Option B: 작가 명성 회귀 (수집 후)</h3>
+<div class="arch-box">
+<pre><code>ln(호당가격) = &beta;₀
+  + &beta;₁ &times; career_stage       (신진 1 ~ 원로 4)
+  + &beta;₂ &times; ln(exhibition_count) (전시 횟수)
+  + &beta;₃ &times; museum_shows        (미술관 전시)
+  + &beta;₄ &times; gallery_tier        (갤러리 등급)
+  + &beta;₅ &times; has_auction_record  (경매 이력)
+  + &beta;₆ &times; collection_count    (소장처 수)
+  + &beta;₇ &times; award_count         (수상 이력)
+  + &epsilon;</code></pre>
+</div>
+<div class="info-box">
+  <strong>필요 데이터:</strong> 50~100명 작가 프로필. 독립변수가 대부분 작가-수준이므로 유효 표본은 작가 수에 가까움. mixed-effects 모델 고려 필요.
+</div>
+
+<h3>3.3 Option C: 앵커 + 업리프트</h3>
+<div class="arch-box">
+<pre><code>gallery_price = auction_anchor &times; exp(uplift)
+uplift = f(gallery_tier, exhibition_type, career_stage, is_new_work)</code></pre>
+</div>
+<p>경매 모델 예측값을 앵커로, 갤러리 프리미엄을 별도 학습. Sch&ouml;nfeld(2007) 이중 명성 모델의 실용화.</p>
+
+<h3>3.4 접근법 비교</h3>
+<table>
+  <tr><th>항목</th><th>Option A (호당가 역산)</th><th>Option B (명성 회귀)</th><th>Option C (앵커+업리프트)</th></tr>
+  <tr><td><strong>필요 데이터</strong></td><td>현재 94건 충분</td><td>150~500건 + 프로필</td><td>동일작가 경매+갤러리</td></tr>
+  <tr><td><strong>신규 작가</strong></td><td>불가</td><td>프로필로 예측</td><td>경매 이력 필수</td></tr>
+  <tr><td><strong>해석 가능성</strong></td><td class="best">매우 높음</td><td>높음 (&beta; 계수)</td><td>중간</td></tr>
+  <tr><td><strong>기대 정확도</strong></td><td>MdAPE ~28%</td><td>MdAPE ~40%</td><td>MdAPE ~30%</td></tr>
+  <tr><td><strong>구현 난이도</strong></td><td class="best">즉시</td><td>중간</td><td>높음</td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 4 ===== -->
+<h2 id="s4">4. 실험 설계</h2>
+
+<h3>4.1 호당 가격 역산 절차</h3>
+<div class="arch-box">
+<pre><code>for 작가 in 11명:
+    ho = area_to_ho(width &times; height)   # F형 기준 변환
+    price_per_ho = price / ho
+    작가_호당가 = median(price_per_ho)
+
+주의: F형 기준 단순 변환. P/M/S형은 면적이 달라 편향 가능.</code></pre>
+</div>
+
+<h3>4.2 검증 가설</h3>
+<table>
+  <tr><th>가설</th><th>검증 방법</th><th>판정 기준</th></tr>
+  <tr><td><strong>1. 호당가 일정성</strong></td><td>작가별 CV (변동계수)</td><td>CV &lt; 0.3: 안정, &gt; 0.5: 불안정</td></tr>
+  <tr><td><strong>2. 크기-가격 비선형</strong></td><td>ln(P) = a + &beta;&middot;ln(Ho)</td><td>&beta; &lt; 1이면 체감 효과</td></tr>
+  <tr><td><strong>3. 전시 유형 영향</strong></td><td>개인전 vs 그룹전 호당가 비교</td><td>유의미한 차이 여부</td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 5 ===== -->
+<h2 id="s5">5. 실험 결과 &mdash; 파일럿 검증 (94건)</h2>
+
+<h3>5.1 호당 가격 역산 결과</h3>
+<div class="info-box">
+  <strong>CV (Coefficient of Variation, 변동계수)</strong> = 표준편차 / 평균.<br>
+  같은 작가의 여러 작품에서 역산한 호당 가격이 얼마나 <strong>일관적인지</strong> 측정하는 지표.<br><br>
+  <strong>예시:</strong> 김윤신의 3건 호당가가 176만, 215만, 215만이면 평균 202만, 표준편차 28만 &rarr; CV = 28/202 = <strong>0.14</strong> (안정).<br>
+  이동혁의 3건이 17만, 30만, 120만이면 평균 56만, 표준편차 56만 &rarr; CV = 56/56 = <strong>1.00</strong> (편차가 평균만큼 큼).<br><br>
+  <strong>판정 기준:</strong><br>
+  &nbsp;&nbsp;CV &lt; 0.3 = <span class="badge badge-pass">안정</span> &mdash; 호당가 모델이 잘 맞는 작가<br>
+  &nbsp;&nbsp;CV 0.3~0.5 = <span class="badge badge-warn">보통</span> &mdash; 어느 정도 변동<br>
+  &nbsp;&nbsp;CV &gt; 0.5 = <span class="badge badge-fail">불안정</span> &mdash; 호당가만으로 부족, 크기/매체/전시유형 등 추가 요인 필요<br><br>
+  CV가 높은 주원인은 <strong>크기 체감 효과</strong>: 작은 작품(1호)은 호당가가 높고, 큰 작품(30호+)은 호당가가 낮아지는 경향.
+</div>
+<table>
+  <tr><th>작가</th><th>건수</th><th>호당가 중앙</th><th>CV</th><th>판정</th></tr>
+  <tr><td>김윤신</td><td>3</td><td>215만</td><td>0.14</td><td><span class="badge badge-pass">안정</span></td></tr>
+  <tr><td>김주리</td><td>5</td><td>17만</td><td>0.10</td><td><span class="badge badge-pass">안정</span></td></tr>
+  <tr><td>이진주</td><td>3</td><td>117만</td><td>0.33</td><td><span class="badge badge-warn">보통</span></td></tr>
+  <tr><td>임노식</td><td>4</td><td>9만</td><td>0.35</td><td><span class="badge badge-warn">보통</span></td></tr>
+  <tr><td>남석우</td><td>8</td><td>12만</td><td>0.44</td><td><span class="badge badge-warn">보통</span></td></tr>
+  <tr><td>주연수</td><td>12</td><td>33만</td><td>0.52</td><td><span class="badge badge-fail">불안정</span></td></tr>
+  <tr><td>정수정</td><td>8</td><td>56만</td><td>0.58</td><td><span class="badge badge-fail">불안정</span></td></tr>
+  <tr><td>이시현</td><td>10</td><td>6만</td><td>0.64</td><td><span class="badge badge-fail">불안정</span></td></tr>
+  <tr><td>조이솝</td><td>4</td><td>15만</td><td>0.78</td><td><span class="badge badge-fail">불안정</span></td></tr>
+  <tr><td>이동혁</td><td>3</td><td>30만</td><td>1.00</td><td><span class="badge badge-fail">불안정</span></td></tr>
+  <tr><td>순이지</td><td>34</td><td>12만</td><td>0.55</td><td><span class="badge badge-fail">불안정</span></td></tr>
+</table>
+<p>안정 2 / 보통 3 / 불안정 6. idx 112 (10x10cm) 1건은 0호 매핑 &rarr; price/0 = inf 발생하여 제외 후 CV 산출.<br>
+순이지의 1호(50만/호) vs 30호+(10만/호) 차이는 크기 체감 효과가 주원인.</p>
+
+<h3>5.2 가설 검증</h3>
+
+<h4>가설 1 (호당가 일정성): PARTIAL</h4>
+<p>11명 중 5명 안정/보통, 6명 불안정. 호당가만으로는 부족, 추가 요인 필요.</p>
+
+<h4>가설 2 (크기-가격 비선형): <span class="best">CONFIRMED</span></h4>
+<div class="arch-box">
+<pre><code>ln(Price) = 12.94 + 0.74 &times; ln(Ho)
+&rarr; &beta; = 0.74 (Shin 2010의 0.8~0.9보다 낮음, 체감 효과 더 강함)</code></pre>
+</div>
+
+<h4>가설 3 (전시 유형 영향): PARTIAL</h4>
+<table>
+  <tr><th>전시 유형</th><th>호당가 중앙</th><th>건수</th><th>비고</th></tr>
+  <tr><td>아트페어</td><td>215만원</td><td>3</td><td class="fail">김윤신 1명 &mdash; 작가 혼동 주의</td></tr>
+  <tr><td>단체전</td><td>35만원</td><td>10</td><td></td></tr>
+  <tr><td>개인전</td><td>27만원</td><td>54</td><td></td></tr>
+  <tr><td>그룹전</td><td>9만원</td><td>27</td><td></td></tr>
+</table>
+<p>개인전 &gt; 그룹전은 유의미하나, 아트페어는 김윤신 단독이라 전시 유형 효과로 단정 불가.</p>
+
+<h3>5.3 LOO 교차 검증</h3>
+<div class="metric-grid">
+  <div class="metric-card pass">
+    <div class="label">MdAPE</div>
+    <div class="value">28.0%</div>
+  </div>
+  <div class="metric-card warn">
+    <div class="label">W30</div>
+    <div class="value">51.6%</div>
+  </div>
+  <div class="metric-card warn">
+    <div class="label">W50</div>
+    <div class="value">58.1%</div>
+  </div>
+</div>
+<p>호당가만으로 MdAPE 28%. 같은 작가 참조이므로 비교매출 접근과 유사. 11명 한정 과적합 위험.</p>
+
+<h3>5.4 개선 방향</h3>
+<ol>
+  <li>전시 유형 보정: 개인전 vs 그룹전에 따라 호당가 조정</li>
+  <li>비선형 적용: Price = &alpha; &times; Ho<sup>0.74</sup></li>
+  <li>매체 보정 계수 추출: 유화/아크릴/수채</li>
+</ol>
+
+<hr>
+
+<!-- ===== 6 ===== -->
+<h2 id="s6">6. 경매 데이터의 1차 시장 활용 방안</h2>
+
+<h3>6.1 경매 데이터가 주는 도움</h3>
+
+<h4>A. 작가 시장 가치의 객관적 앵커</h4>
+<p>경매 낙찰가는 공개 경쟁 입찰의 결과로 객관적 시장 평가. 갤러리 가격의 합리성 검증 기준.</p>
+
+<h4>B. 작가 명성의 정량적 피처</h4>
+<div class="arch-box">
+<pre><code>has_auction_record    경매 이력 유무 (boolean)
+auction_avg_price     경매 평균 낙찰가
+auction_max_price     경매 최고 낙찰가
+auction_total_sold    경매 총 낙찰 건수
+auction_unsold_rate   경매 유찰률
+auction_price_trend   경매 가격 추세</code></pre>
+</div>
+
+<h4>C. Cold Start 해소 &mdash; 유사 작가 매칭</h4>
+<p>경매 DB에서 유사 프로필 작가 K-NN 탐색 &rarr; 가격 참조점 제공.</p>
+
+<h4>D. 채널 프리미엄 학습 (Option C)</h4>
+<div class="arch-box">
+<pre><code>uplift = ln(gallery_price) - ln(auction_price)
+uplift = f(gallery_tier, career_stage, exhibition_type)</code></pre>
+</div>
+
+<h3>6.2 연결 방법 &mdash; 3단계</h3>
+
+<h4>Step 1: 작가 매칭</h4>
+<p>1차 시장 작가 &harr; 경매 DB 이름 매칭 (한글 &rarr; 영문 &rarr; fuzzy matching)</p>
+
+<h4>Step 2: 크로스 채널 피처</h4>
+<table>
+  <tr><th>피처</th><th>정의</th><th>활용</th></tr>
+  <tr><td>has_auction_record</td><td>경매 이력 유무</td><td>호당가 회귀 독립변수</td></tr>
+  <tr><td>auction_avg_price</td><td>경매 평균 낙찰가</td><td>가격 앵커 (하한)</td></tr>
+  <tr><td>auction_max_price</td><td>경매 최고가</td><td>천장 참조</td></tr>
+  <tr><td>auction_total_sold</td><td>낙찰 건수</td><td>시장 검증도</td></tr>
+  <tr><td>channel_uplift</td><td>ln(갤러리/경매) 평균</td><td>채널 프리미엄</td></tr>
+</table>
+
+<h4>Step 3: 통합 예측</h4>
+<div class="arch-box">
+<pre><code>경매 이력 있는 작가:
+  예측 = auction_anchor &times; channel_uplift &times; size_factor &times; medium_factor
+
+경매 이력 없는 작가:
+  예측 = 호당가(프로필 기반) &times; 호수 &times; 매체_보정</code></pre>
+</div>
+
+<h3>6.3 유의 사항</h3>
+<div class="warn-box">
+  <strong>1)</strong> 1차/2차 시장은 가격 형성이 근본적으로 다름. 경매가 &ne; 갤러리가 정답.<br>
+  <strong>2)</strong> 갤러리 게시가와 실거래가는 10~50% 괴리 일반적.<br>
+  <strong>3)</strong> 경매는 재판매, 갤러리는 신작 위주 &mdash; 작품 성격 차이.<br>
+  <strong>4)</strong> 경매 이력은 중견~원로에 집중. 신진 작가에는 제한적.
+</div>
+
+<hr>
+
+<!-- ===== 7 ===== -->
+<h2 id="s7">7. 데이터 확장 전략</h2>
+
+<table>
+  <tr><th>우선순위</th><th>데이터</th><th>소스</th><th>난이도</th><th>기대 건수</th></tr>
+  <tr><td>1</td><td><strong>갤러리 판매 데이터</strong></td><td>갤러리 협업, 아트페어</td><td>높음</td><td>+500건</td></tr>
+  <tr><td>2</td><td><strong>작가 프로필</strong></td><td>KADA, 갤러리 웹</td><td>중간</td><td>100명+</td></tr>
+  <tr><td>3</td><td>경매 데이터 매칭</td><td>K-ARTMARKET</td><td>낮음</td><td>기존 DB</td></tr>
+  <tr><td>4</td><td>호당 가격 히스토리</td><td>갤러리, 매체</td><td>높음</td><td>50명+</td></tr>
+</table>
+
+<h3>작가 프로필 수집 항목</h3>
+<table>
+  <tr><th>항목</th><th>설명</th><th>타입</th></tr>
+  <tr><td>name_kor / name_eng</td><td>작가명</td><td>str</td></tr>
+  <tr><td>birth_year</td><td>생년</td><td>int</td></tr>
+  <tr><td>education</td><td>학력 (미대 = 중요)</td><td>str</td></tr>
+  <tr><td>career_stage</td><td>1=신진 ~ 4=원로</td><td>int</td></tr>
+  <tr><td>solo/group_count</td><td>개인/그룹전 횟수</td><td>int</td></tr>
+  <tr><td>museum_show_count</td><td>미술관 전시</td><td>int</td></tr>
+  <tr><td>gallery_tier</td><td>갤러리 등급</td><td>int</td></tr>
+  <tr><td>auction_record</td><td>경매 이력</td><td>bool</td></tr>
+  <tr><td>collection_count</td><td>소장처 수</td><td>int</td></tr>
+  <tr><td>award_count</td><td>수상 이력</td><td>int</td></tr>
+</table>
+
+<h3>경력 자동 분류</h3>
+<div class="arch-box">
+<pre><code>if age &ge; 60 and solo &ge; 20:  return 4  # 원로
+elif solo &ge; 10 or museum &ge; 3 or auction:  return 3  # 중견
+elif age &ge; 30 or solo &ge; 3:  return 2  # 신진 후기
+else:  return 1  # 신진</code></pre>
+</div>
+
+<hr>
+
+<!-- ===== 8 ===== -->
+<h2 id="s8">8. 권장 로드맵</h2>
+
+<table>
+  <tr><th>단계</th><th>작업</th><th>기대 결과</th><th>선행 조건</th></tr>
+  <tr><td><strong>Phase 0</strong></td><td>Option A 호당가 역산<br>매체 보정, 비선형 확인</td><td>MdAPE 28%<br>호당가 테이블</td><td>현재 94건</td></tr>
+  <tr><td><strong>Phase 1</strong></td><td>KADA 프로필 50명+<br>Option B 파일럿<br>경매 DB 매칭</td><td>호당가 회귀<br>가능 여부 확인</td><td>프로필 50명+</td></tr>
+  <tr><td><strong>Phase 2</strong></td><td>갤러리 데이터 확대<br>Option B 본격 학습<br>크로스 채널 피처</td><td>신규 작가 예측<br>MdAPE ~40%</td><td>갤러리 500건+</td></tr>
+  <tr><td><strong>Phase 3</strong></td><td>Option C 앵커+업리프트<br>통합 모델</td><td>MdAPE ~30%<br>채널 프리미엄 학습</td><td>동일작가 페어<br>20명+</td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 9 ===== -->
+<h2 id="s9">9. 외부 데이터 수집 및 검증 결과</h2>
+
+<h3>9.1 국내 소스</h3>
+<table>
+  <tr><th>소스</th><th>데이터</th><th>접근</th><th>검증</th></tr>
+  <tr><td><strong>KADA</strong></td><td>작가 프로필 (학력/전시/소장처)</td><td>웹 크롤링</td><td><span class="badge badge-pass">VERIFIED</span></td></tr>
+  <tr><td>K-ARTMARKET 경매</td><td>경매 개별 lot (갤러리는 집계만)</td><td>웹 크롤링</td><td><span class="badge badge-warn">PARTIAL</span></td></tr>
+  <tr><td>공공데이터 전시 API</td><td>14개 기관 전시</td><td>REST API 무료</td><td><span class="badge badge-warn">PARTIAL</span></td></tr>
+  <tr><td><strong>네이버 뉴스 API</strong></td><td>미디어 언급</td><td>REST API 25K/일</td><td><span class="badge badge-pass">VERIFIED</span></td></tr>
+</table>
+
+<h3>9.2 글로벌 소스</h3>
+<table>
+  <tr><th>소스</th><th>데이터</th><th>비용</th><th>검증</th></tr>
+  <tr><td>Artsy API</td><td>13.5만 작가</td><td>무료 (비상업)</td><td><span class="badge badge-warn">PARTIAL (retirement)</span></td></tr>
+  <tr><td>MutualArt</td><td>93만 작가 경매</td><td>$24~39/월</td><td><span class="badge badge-warn">PARTIAL</span></td></tr>
+  <tr><td>ArtFacts</td><td>30만 작가 랭킹</td><td>유료</td><td><span class="badge badge-warn">PARTIAL</span></td></tr>
+  <tr><td>Artnet</td><td>1,800만 경매</td><td>$50~500/월</td><td><span class="badge badge-warn">미확인</span></td></tr>
+</table>
+
+<h3>9.3 소스별 URL 및 검증 결과 (2026-04-06 실측)</h3>
+<div class="info-box">
+  독립 AI 리뷰(OpenAI Codex)로 18개 URL의 실제 접근 가능성을 검증.
+</div>
+<table>
+  <tr><th>#</th><th>소스</th><th>URL</th><th>검증</th></tr>
+  <tr><td>1</td><td>KADA</td><td><a href="https://k-artmarket.kr/kada/katEn/main/index.do" target="_blank">k-artmarket.kr/kada/...</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>2</td><td>K-ARTMARKET 경매</td><td><a href="https://k-artmarket.kr/member/work/WorkList.do" target="_blank">k-artmarket.kr/member/work/...</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>3</td><td>K-ARTMARKET 통계</td><td><a href="https://k-artmarket.kr/member/stats/timeseries/MarketWorkProgress.do" target="_blank">k-artmarket.kr/member/stats/...</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>4</td><td>공공데이터 전시 API</td><td><a href="https://www.data.go.kr/data/15105037/openapi.do" target="_blank">data.go.kr/data/15105037/...</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>5</td><td>문화공공데이터</td><td><a href="https://www.culture.go.kr/data/openapi/openapiList.do" target="_blank">culture.go.kr/data/...</a></td><td><span class="badge badge-fail">DEAD (category=I)</span></td></tr>
+  <tr><td>6</td><td>네이버 뉴스 API</td><td><a href="https://developers.naver.com/docs/serviceapi/search/news/news.md" target="_blank">developers.naver.com/...</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>7</td><td>Artsy API</td><td><a href="https://developers.artsy.net/" target="_blank">developers.artsy.net/</a></td><td><span class="badge badge-warn">LIVE (retirement)</span></td></tr>
+  <tr><td>8</td><td>Artsy Artists</td><td><a href="https://developers.artsy.net/v2/docs/artists" target="_blank">developers.artsy.net/v2/docs/artists</a></td><td><span class="badge badge-warn">LIVE (retirement)</span></td></tr>
+  <tr><td>9</td><td>MutualArt</td><td><a href="https://www.mutualart.com/" target="_blank">mutualart.com/</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>10</td><td>MutualArt 요금</td><td><a href="https://www.mutualart.com/plans" target="_blank">mutualart.com/plans</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>11</td><td>ArtFacts 랭킹</td><td><a href="https://artfacts.net/lists/global_top_100_artists" target="_blank">artfacts.net/lists/...</a></td><td><span class="badge badge-warn">LIVE (JS)</span></td></tr>
+  <tr><td>12</td><td>Artnet Price DB</td><td><a href="https://www.artnet.com/price-database/" target="_blank">artnet.com/price-database/</a></td><td><span class="badge badge-warn">PAYWALL</span></td></tr>
+  <tr><td>13</td><td>서울옥션</td><td><a href="https://www.seoulauction.com/auction-list/results" target="_blank">seoulauction.com/...</a></td><td><span class="badge badge-fail">LIVE (크롤링 금지)</span></td></tr>
+  <tr><td>14</td><td>아이옥션</td><td><a href="https://www.insaauction.com/auction/offline_past_list_all.html" target="_blank">insaauction.com/...</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>15</td><td>K옥션</td><td><a href="https://www.k-auction.com/" target="_blank">k-auction.com/</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>16</td><td>마이아트옥션</td><td><a href="https://myartauction.com/" target="_blank">myartauction.com/</a></td><td><span class="badge badge-pass">LIVE</span></td></tr>
+  <tr><td>17</td><td>Korean Artist Project</td><td><a href="http://www.koreanartistproject.com/" target="_blank">koreanartistproject.com/</a></td><td><span class="badge badge-dead">DEAD</span></td></tr>
+  <tr><td>18</td><td>Google Trends</td><td><a href="https://trends.google.com/" target="_blank">trends.google.com/</a></td><td><span class="badge badge-fail">UNRELIABLE</span></td></tr>
+</table>
+
+<div class="ok-box">
+  <strong>Phase 0에서 실제 작동 확인된 무료 소스:</strong> KADA + 네이버 뉴스 API (2개)
+</div>
+
+<h3>9.4 피처 매핑</h3>
+<table>
+  <tr><th>소스</th><th>피처</th><th>중요도</th></tr>
+  <tr><td>KADA</td><td>career_stage, award_count, education</td><td>높음</td></tr>
+  <tr><td>전시 API</td><td>exhibition_count, museum_shows</td><td>높음</td></tr>
+  <tr><td>K-ARTMARKET</td><td>auction_avg_price</td><td>매우 높음</td></tr>
+  <tr><td>Artsy</td><td>global_exhibition_count</td><td>높음</td></tr>
+  <tr><td>네이버 뉴스</td><td>media_mention_count</td><td>중간</td></tr>
+  <tr><td>MutualArt</td><td>global_auction_avg, price_trend</td><td>매우 높음</td></tr>
+  <tr><td>갤러리 파트너</td><td>gallery_net_price (타깃)</td><td><strong>핵심</strong></td></tr>
+</table>
+
+<h3>9.5 비용</h3>
+<table>
+  <tr><th>소스</th><th>비용</th><th>검증</th></tr>
+  <tr><td>KADA</td><td>무료</td><td><span class="badge badge-pass">VERIFIED</span></td></tr>
+  <tr><td>전시 API</td><td>무료</td><td><span class="badge badge-warn">PARTIAL</span></td></tr>
+  <tr><td>네이버 뉴스</td><td>무료 (25K/일)</td><td><span class="badge badge-pass">VERIFIED</span></td></tr>
+  <tr><td>K-ARTMARKET 경매</td><td>무료 (크롤링)</td><td><span class="badge badge-warn">PARTIAL</span></td></tr>
+  <tr><td>Artsy</td><td>무료 (비상업)</td><td><span class="badge badge-warn">PARTIAL</span></td></tr>
+  <tr><td>MutualArt</td><td>$24~39/월</td><td><span class="badge badge-warn">PARTIAL</span></td></tr>
+  <tr><td>Artnet</td><td>$50~500/월</td><td><span class="badge badge-warn">미확인</span></td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 10 ===== -->
+<h2 id="s10">10. 참고 문헌</h2>
+<ol>
+  <li>Rengers, M. & Velthuis, O. (2002). Determinants of Prices for Contemporary Art in Dutch Galleries. <em>JCE</em>, 26(1), 1-28.</li>
+  <li>Beckert, J. & R&ouml;ssel, J. (2013). The Price of Art: Uncertainty and Reputation. <em>European Societies</em>, 15(2), 178-195.</li>
+  <li>Sch&ouml;nfeld, S. & Reinstaller, A. (2007). Effects of Gallery and Artist Reputation on Prices. <em>JCE</em>, 31(2), 143-153.</li>
+  <li>Park, S. et al. (2024). Artwork Pricing Model Integrating Popularity and Ability. <em>AStA</em>.</li>
+  <li>Shin, J. (2010). Price Determinants and Genre Effects in the Korean Art Market. <em>JCE</em>, 35(4).</li>
+  <li>Fraiberger, S.P. et al. (2018). Quantifying Reputation and Success in Art. <em>Science</em>, 362(6416).</li>
+  <li>Rosen, S. (1974). Hedonic Prices and Implicit Markets. <em>JPE</em>, 82(1), 34-55.</li>
+  <li>월간 ANDA (2019). 그림값, 어떻게 책정되나.</li>
+</ol>
+
+<hr>
+
+<div class="meta" style="margin-top: 2rem; text-align: center;">
+  VisionAI &mdash; 한국 1차 시장 가격 예측 실험계획서<br>
+  2026-04-07 &nbsp;|&nbsp; URL 18개 실측 검증 완료
+</div>
+
+</body></html>
