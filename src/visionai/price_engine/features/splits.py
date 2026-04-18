@@ -1,9 +1,10 @@
-"""시계열 데이터 분할 스펙.
+"""시계열 데이터 분할.
 
-auction_type별 독립 시간축으로 train/valid/test를 분할한다.
+다중 출처 지원:
+- assign_split_by_date(): 날짜 기반 비율 분할 (다중 경매사/갤러리)
+- assign_split_4way(): 레거시 — K-Auction 타입별 하드코딩 분할
+
 기획서 참조: 3.3 규칙 2, Implementation Strategy Step 1-1
-
-Phase 3 확장: 4-way 분할 (Train/Calib/Valid/Test)
 """
 from __future__ import annotations
 
@@ -143,5 +144,77 @@ def assign_split_4way(
             & (session <= spec.valid_max_session)
         ] = "valid"
         result.loc[mask & (session > spec.valid_max_session)] = "test"
+
+    # 미지정 타입에 대해 회차 기반 비율 분할 (80/5/5/10)
+    unknown_mask = result == "unknown"
+    if unknown_mask.any():
+        for atype in df.loc[unknown_mask, type_col].unique():
+            type_mask = unknown_mask & (df[type_col] == atype)
+            sessions = df.loc[type_mask, session_col].sort_values()
+            if sessions.empty:
+                continue
+            unique_sessions = sorted(sessions.unique())
+            n = len(unique_sessions)
+            train_cut = unique_sessions[int(n * 0.80) - 1] if n > 4 else unique_sessions[-1]
+            calib_cut = unique_sessions[int(n * 0.85) - 1] if n > 4 else train_cut
+            valid_cut = unique_sessions[int(n * 0.90) - 1] if n > 4 else calib_cut
+            s = df.loc[type_mask, session_col]
+            result.loc[type_mask & (s <= train_cut)] = "train"
+            result.loc[type_mask & (s > train_cut) & (s <= calib_cut)] = "calib"
+            result.loc[type_mask & (s > calib_cut) & (s <= valid_cut)] = "valid"
+            result.loc[type_mask & (s > valid_cut)] = "test"
+
+    return result
+
+
+def assign_split_by_date(
+    df: pd.DataFrame,
+    date_col: str = "sale_date",
+    train_ratio: float = 0.80,
+    calib_ratio: float = 0.05,
+    valid_ratio: float = 0.05,
+) -> pd.Series:
+    """날짜 기반 4-way 비율 분할 (다중 출처 지원).
+
+    타입·회차 의존 없이, 날짜 순서만으로 분할한다.
+    test_ratio = 1 - train - calib - valid.
+
+    Args:
+        df: DataFrame with date_col.
+        date_col: 날짜 컬럼명 (YYYY-MM-DD 문자열 또는 datetime).
+        train_ratio: train 비율 (기본 80%).
+        calib_ratio: calib 비율 (기본 5%).
+        valid_ratio: valid 비율 (기본 5%).
+
+    Returns:
+        pd.Series with 'train'/'calib'/'valid'/'test' labels.
+    """
+    dates = pd.to_datetime(df[date_col], errors="coerce")
+    result = pd.Series("train", index=df.index, dtype="object")
+
+    # 유효 날짜가 있는 행만 분할
+    valid_dates = dates.dropna()
+    if valid_dates.empty:
+        return result
+
+    unique_dates = sorted(valid_dates.unique())
+    n = len(unique_dates)
+    if n < 5:
+        return result
+
+    train_cut = unique_dates[int(n * train_ratio) - 1]
+    calib_cut = unique_dates[int(n * (train_ratio + calib_ratio)) - 1]
+    valid_cut = unique_dates[int(n * (train_ratio + calib_ratio + valid_ratio)) - 1]
+
+    result.loc[dates <= train_cut] = "train"
+    result.loc[(dates > train_cut) & (dates <= calib_cut)] = "calib"
+    result.loc[(dates > calib_cut) & (dates <= valid_cut)] = "valid"
+    result.loc[dates > valid_cut] = "test"
+
+    # 날짜 결측 행은 "unknown"으로 라벨링 (코덱스 P2 2026-04-17):
+    # 이전엔 모두 train으로 강제 분류했으나, K-Auction 날짜 추론 실패 행이
+    # test 기간일 수도 있어 train 오염 위험.
+    # 호출자가 session_col 대체 로직이나 exclusion을 처리해야 함.
+    result.loc[dates.isna()] = "unknown"
 
     return result

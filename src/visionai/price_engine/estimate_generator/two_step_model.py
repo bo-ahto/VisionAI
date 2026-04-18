@@ -21,9 +21,9 @@ from visionai.price_engine.estimate_generator.quantile_model import (
 
 logger = logging.getLogger(__name__)
 
-# 3-bin 경계: 저가 < 500만, 중가 500만~3000만, 고가 3000만+
-PRICE_BINS = [0, 5_000_000, 30_000_000, float("inf")]
-PRICE_LABELS = ["low", "mid", "high"]
+# 5-bin 경계: 가격대별 전문 모델 (Kim & Kim 2024 기반)
+PRICE_BINS = [0, 1_000_000, 5_000_000, 20_000_000, 100_000_000, float("inf")]
+PRICE_LABELS = ["budget", "low", "mid", "high", "premium"]
 
 
 class TwoStepModel:
@@ -46,13 +46,14 @@ class TwoStepModel:
         self.random_seed = random_seed
         self._classifier: CatBoostClassifier | None = None
         self._regressors: dict[str, CatBoostRegressor] = {}
+        self._bin_sample_counts: dict[str, int] = {}  # fallback 선택에 사용
 
     def fit(
         self,
         train_df: pd.DataFrame,
         valid_df: pd.DataFrame | None = None,
         target_col: str = "ln_price",
-        price_col: str = "낙찰가",
+        price_col: str | None = None,
     ) -> dict[str, int]:
         """Two-Step 학습.
 
@@ -61,13 +62,15 @@ class TwoStepModel:
         """
         x_train = _prepare_hedonic_features(train_df)
         y_train = train_df[target_col].values
+        if price_col is None:
+            price_col = "낙찰가" if "낙찰가" in train_df.columns else "price"
         prices = pd.to_numeric(train_df[price_col], errors="coerce").values
 
         # bin 라벨 생성
-        bin_labels = pd.cut(
+        bin_labels = np.array(pd.cut(
             prices, bins=PRICE_BINS, labels=PRICE_LABELS, right=True
-        ).astype(str)
-        bin_labels[pd.isna(prices) | (prices <= 0)] = "low"
+        ).astype(str))  # numpy array로 변환 (CatBoost 호환)
+        bin_labels[pd.isna(prices) | (prices <= 0)] = "budget"
 
         # Step 1: Classifier 학습
         logger.info("Step 1: Training price-class classifier")
@@ -122,6 +125,11 @@ class TwoStepModel:
             reg.fit(x_bin, y_bin, eval_set=eval_set, use_best_model=True)
             self._regressors[label] = reg
 
+        # 추론 시 fallback 선택을 위해 학습 샘플 수 저장 (학습 안 된 bin은 제외)
+        self._bin_sample_counts = {
+            label: bin_counts[label]
+            for label in self._regressors
+        }
         logger.info("Two-Step training complete. Bin counts: %s", bin_counts)
         return bin_counts
 
@@ -151,16 +159,27 @@ class TwoStepModel:
                     preds = preds.reshape(-1, 1)
                 result[mask] = preds[:, :3] if preds.shape[1] >= 3 else preds
             elif self._regressors:
-                # fallback: 가장 많은 데이터로 학습된 regressor 사용 (low 우선)
-                fallback_label = min(
-                    self._regressors.keys(),
-                    key=lambda k: PRICE_LABELS.index(k)
-                    if k in PRICE_LABELS else 99,
-                )
+                # fallback: 가장 많은 샘플로 학습된 regressor 사용.
+                # 기존 로직은 PRICE_LABELS.index 최소값(=lowest price bin)을 골라
+                # premium 작품을 budget regressor가 scoring → 고가 예측 붕괴 (codex P1).
+                if self._bin_sample_counts:
+                    fallback_label = max(
+                        self._bin_sample_counts,
+                        key=lambda k: self._bin_sample_counts[k],
+                    )
+                else:
+                    # 과거 모델(샘플 수 미저장) 호환: 중간 bin 우선
+                    mid_idx = len(PRICE_LABELS) // 2
+                    fallback_label = next(
+                        (PRICE_LABELS[i] for i in [mid_idx, *range(len(PRICE_LABELS))]
+                         if PRICE_LABELS[i] in self._regressors),
+                        next(iter(self._regressors)),
+                    )
                 fallback = self._regressors[fallback_label]
                 logger.warning(
-                    "Bin '%s' has no regressor. Using fallback '%s'.",
+                    "Bin '%s' has no regressor. Using fallback '%s' (n=%d).",
                     label, fallback_label,
+                    self._bin_sample_counts.get(fallback_label, -1),
                 )
                 preds = fallback.predict(x_feat[mask])
                 if preds.ndim == 1:

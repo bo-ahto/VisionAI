@@ -280,62 +280,87 @@ _estimate_generator = None  # Phase 3 모델 — lifespan에서 로드
 
 
 def _build_estimate_input(req: EstimateRequest) -> pd.DataFrame:
-    """EstimateRequest → 49개 Hedonic 피처 DataFrame (단건). Phase 4b 기준."""
+    """EstimateRequest → 50개 HEDONIC_FEATURES DataFrame (단건).
+
+    HEDONIC_FEATURES 스키마 변경 시 이 함수도 반드시 동기화할 것.
+    현재 50개 피처 + API 내부용 보조 컬럼(타입/회차/Lot 등)을 함께 생성.
+    """
     dim = parse_dimension(f"{req.width_cm}x{req.height_cm}cm")
     med = parse_medium(req.medium)
     _year = parse_year(str(req.year) if req.year else None)  # 향후 year 피처 사용
     sa = dim.surface_area or 0.0
+    width = dim.width_cm or 0.0
+    height = dim.height_cm or 0.0
+    short_side = float(min(width, height)) if (width > 0 and height > 0) else float(max(width, height))
+    long_side = float(max(width, height))
+    size_ho_val = sa / 132.0 if sa > 0 else 0.0
 
     df_input = pd.DataFrame([{
-        # 49개 Hedonic 피처 (Phase 3: 23 + Phase 4: 16 + Phase 4b: 3 + NLP: 7)
+        # ── 선두 범주형 (5) ──
         "artist_clean": req.artist,
         "medium_category": med.medium_category,
         "support_category": med.support_category,
         "is_3d": dim.is_3d,
         "is_untitled": False,
-        "artist_avg_price": 0,
-        "artist_max_price": 0,
+        # ── 작가 집계/프로필 (서빙 시 기본값, 엔진 내부 조인으로 덮어씀) ──
+        "artist_avg_price": 0.0,
+        "artist_median_price": 0.0,
+        "artist_max_price": 0.0,
+        "artist_price_volatility": np.nan,
         "artist_total_sold": 0,
         "is_new_artist": True,
-        "height_cm": dim.height_cm or 0,
-        "width_cm": dim.width_cm or 0,
-        "surface_area": sa,
+        "is_deceased": False,
+        "artist_birth_year": np.nan,
+        "artist_age_at_sale": np.nan,
+        # ── 인터랙션 ──
+        "artist_medium_price_ratio": 1.0,
+        "artist_medium_frequency": 0.0,
+        "medium_size_avg_price": np.nan,
+        "medium_avg_price": np.nan,
+        "price_segment_median": np.nan,
+        "auction_house_tier": 3,
+        # ── 크기 블록 ──
+        "ln_surface_area": float(np.log(sa)) if sa > 0 else 0.0,
+        "short_side_cm": short_side,
+        "long_side_cm": long_side,
+        "size_ho": size_ho_val,
+        "size_ho_above40": max(0.0, size_ho_val - 40.0),
         "aspect_ratio": dim.aspect_ratio or 1.0,
+        # ── 시장/작가 시계열 ──
+        "market_price_index": 0.0,
+        "artist_price_trend": np.nan,
+        "artist_price_momentum": np.nan,
+        "artist_auctions_since_last": np.nan,
+        "artist_last_hammer_price": np.nan,
+        "artist_recent_avg_price": np.nan,
+        "artist_sale_frequency": np.nan,
+        "artist_lot_count_trend": np.nan,
+        "artist_career_length": np.nan,
+        "artist_unsold_rate": np.nan,
+        # ── 비교 거래 ──
+        "comp_artist_avg": np.nan,
+        "title_subject": "",
+        "comp_weighted": np.nan,
+        "comp_match_count": 0.0,
+        "comp_medium_avg": np.nan,
+        "size_bucket": "",
+        "orientation": "",
+        "comp_to_avg_ratio": np.nan,
+        "comp_match_level": 4.0,
+        "source_count": 0,
+        "global_median_price": np.nan,
+        "global_auction_count": 0.0,
+        "has_global_price": 0,
+        "artist_nationality": "UN",
+        # ── API 내부용 보조 컬럼 (HEDONIC_FEATURES에는 없지만 파이프라인/로그용) ──
+        "height_cm": height,
+        "width_cm": width,
+        "surface_area": sa,
         "is_size_imputed": dim.is_size_imputed,
         "회차": _max_session,
-        "artist_median_price": 0,
-        "artist_price_trend": 0,
-        "medium_avg_price": 0,
-        "size_ho": sa / 132.0,
-        "size_ho_above40": max(0, sa / 132.0 - 40),
-        "auction_type_factor": 1.0,
-        "artist_unsold_rate": 0,
-        # v2 BASELINE_FEATURES에 필요한 추가 컬럼
         "타입": req.auction_type.value,
         "Lot": 0,
         "is_year_missing": _year.is_year_missing if _year else True,
-        "medium_x_auction_avg": 0,
-        # Phase 4 고도화 피처 (기본값 0/NaN — CatBoost NaN 처리)
-        "artist_recent_avg_price": np.nan,
-        "artist_price_momentum": np.nan,
-        "artist_sale_frequency": np.nan,
-        "artist_auctions_since_last": np.nan,
-        "artist_price_volatility": np.nan,
-        "artist_lot_count_trend": np.nan,
-        "artist_premium_ratio": np.nan,
-        "artist_reappear_flag": False,
-        "artist_last_hammer_price": np.nan,
-        "artist_career_length": np.nan,
-        "market_price_index": 0.0,
-        "comp_artist_avg": np.nan,
-        "comp_medium_avg": np.nan,
-        "comp_weighted": np.nan,
-        "comp_match_level": 4.0,
-        "comp_match_count": 0.0,
-        # Phase 4b 글로벌 통계
-        "global_avg_price": np.nan,
-        "global_median_price": np.nan,
-        "global_auction_count": 0.0,
     }])
 
     # Phase 4 NLP 피처 — 실제 제목에서 추출
