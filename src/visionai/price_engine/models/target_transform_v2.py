@@ -143,7 +143,20 @@ class PriceEngineV2:
                     .values
                 )
                 est_mid_c = (est_low_c + est_high_c) / 2
-                calibrator_k.fit(y_pred_calib, y_actual_calib, est_low_c, est_mid_c, est_high_c)
+                # NaN/inf 필터링
+                calib_valid = (
+                    np.isfinite(y_pred_calib)
+                    & np.isfinite(y_actual_calib)
+                    & np.isfinite(est_mid_c)
+                )
+                if calib_valid.sum() > 0:
+                    calibrator_k.fit(
+                        y_pred_calib[calib_valid],
+                        y_actual_calib[calib_valid],
+                        est_low_c[calib_valid],
+                        est_mid_c[calib_valid],
+                        est_high_c[calib_valid],
+                    )
 
             # Predict 구간에 OOF 추정가 생성
             predict_df = data.loc[predict_mask]

@@ -15,8 +15,8 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 _SHRINKAGE_M = 10
-_HO_UNIT_CM2 = 132.0
-_HO_HINGE = 40.0
+_HO_UNIT_CM2 = 132.0  # deprecated — 하위 호환용, 신규는 area_to_ho_f 사용
+_HO_HINGE = 40.0  # deprecated — 하위 호환용
 
 
 def _bayesian_shrinkage_ln(
@@ -29,18 +29,45 @@ def _bayesian_shrinkage_ln(
     return (n * group_mean_ln + m * global_mean_ln) / (n + m)
 
 
+def _subtract_periods(cutoff: int | str, n: int, session_col: str = "회차") -> int | str:
+    """cutoff에서 N 기간을 빼는 헬퍼. 날짜면 N개월, 정수면 N 그대로."""
+    if isinstance(cutoff, str) and session_col == "sale_date":
+        dt = pd.Timestamp(cutoff) - pd.DateOffset(months=n)
+        return dt.strftime("%Y-%m-%d")
+    return cutoff - n
+
+
 def _filter_by_cutoff_and_type(
     works: pd.DataFrame,
-    cutoff: int,
+    cutoff: int | str,
     auction_type: str | None = None,
     session_col: str = "회차",
     type_col: str = "타입",
     price_col: str = "낙찰가",
     require_sold: bool = True,
 ) -> pd.DataFrame:
-    """strict < cutoff + auction_type 필터 공통 헬퍼."""
-    mask = works[session_col] < cutoff
-    if auction_type is not None:
+    """strict < cutoff 필터 공통 헬퍼.
+
+    cutoff가 문자열(날짜)이면 날짜 비교, 정수면 세션 번호 비교.
+    auction_type이 None이면 타입 필터 생략 (다중 출처 모드).
+    컬럼 자동 감지: 지정 컬럼이 없으면 레거시 컬럼명으로 fallback.
+    """
+    # 컬럼 자동 감지 (통합 스키마 ↔ 레거시 호환)
+    if session_col not in works.columns:
+        session_col = "회차" if "회차" in works.columns else session_col
+    if type_col not in works.columns:
+        type_col = "타입" if "타입" in works.columns else type_col
+    if price_col not in works.columns:
+        price_col = "낙찰가" if "낙찰가" in works.columns else price_col
+
+    if isinstance(cutoff, str) and session_col in ("sale_date",):
+        # 날짜 기반 모드
+        dates = pd.to_datetime(works[session_col], errors="coerce")
+        cutoff_dt = pd.Timestamp(cutoff)
+        mask = dates < cutoff_dt
+    else:
+        mask = works[session_col] < cutoff
+    if auction_type is not None and type_col in works.columns:
         mask = mask & (works[type_col] == auction_type)
     if require_sold:
         mask = mask & (works[price_col] > 0)
@@ -98,7 +125,7 @@ def compute_artist_price_trend(
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_price_trend")
 
-    recent_cutoff = cutoff - recent_sessions
+    recent_cutoff = _subtract_periods(cutoff, recent_sessions, session_col)
     results: dict[str, float] = {}
     for artist, grp in subset.groupby(artist_col):
         if len(grp) < 5:
@@ -150,13 +177,56 @@ def compute_medium_avg_price(
 
 
 def compute_size_ho(surface_area: pd.Series) -> pd.Series:
-    """surface_area(cm2) -> 호수 변환. 시간 독립. 1호 = 132cm2."""
+    """surface_area(cm2) -> 호수 변환. 시간 독립. 1호 = 132cm2.
+
+    deprecated: 하위 호환용. 신규 코드는 compute_estimated_ho() 사용.
+    """
     return (surface_area / _HO_UNIT_CM2).rename("size_ho")
 
 
 def compute_size_ho_above40(size_ho: pd.Series) -> pd.Series:
-    """max(0, size_ho - 40): 40호 변곡점 hinge (Lee & Kim 2011)."""
+    """max(0, size_ho - 40): 40호 변곡점 hinge.
+
+    deprecated: 하위 호환용. 신규 코드는 ln_surface_area + CatBoost 비선형 사용.
+    """
     return (size_ho - _HO_HINGE).clip(lower=0.0).rename("size_ho_above40")
+
+
+def compute_estimated_ho(surface_area: pd.Series) -> pd.Series:
+    """면적(cm²) → F 타입 기준 실제 호수 보간. 시간 독립."""
+    from visionai.price_engine.preprocessing.dimension_parser import area_to_ho_f
+
+    return surface_area.apply(
+        lambda x: area_to_ho_f(x) if pd.notna(x) and x > 0 else 0.0
+    ).rename("estimated_ho")
+
+
+def compute_ln_surface_area(surface_area: pd.Series) -> pd.Series:
+    """ln(surface_area). CatBoost 비선형 처리용. 시간 독립."""
+    return np.log(surface_area.clip(lower=1)).rename("ln_surface_area")
+
+
+def compute_size_bucket(surface_area: pd.Series) -> pd.Series:
+    """면적 → 소형/중형/대형/초대형 버킷. 시간 독립."""
+    # m3-fix: include_lowest=True로 면적=0도 소형에 포함
+    return pd.cut(
+        surface_area.fillna(0),
+        bins=[0, 2720, 7320, 22000, float("inf")],
+        labels=["소형", "중형", "대형", "초대형"],
+        include_lowest=True,
+    ).rename("size_bucket")
+
+
+def compute_orientation(
+    height_cm: pd.Series, width_cm: pd.Series,
+) -> pd.Series:
+    """가로/세로/정방형 방향. 시간 독립."""
+    ratio = height_cm / width_cm.replace(0, np.nan)
+    return pd.Series(
+        np.where(ratio > 1.2, "portrait",
+                 np.where(ratio < 0.83, "landscape", "square")),
+        index=height_cm.index, name="orientation",
+    )
 
 
 def compute_auction_type_factor(
@@ -206,17 +276,24 @@ def compute_artist_unsold_rate(
     artist_col: str = "artist_clean",
     status_col: str = "상태",
 ) -> pd.Series:
-    """strict < cutoff, auction_type별 작가 유찰률. 출품 < 3건: NaN."""
+    """작가 유찰률. status_col 없거나 비어있으면 NaN. 출품 < 3건: NaN."""
+    if status_col not in works.columns:
+        return pd.Series(dtype="float64", name="artist_unsold_rate")
+    # status 데이터가 있는 행만 사용
+    has_status = works[status_col].notna() & (works[status_col].astype(str).str.strip() != "")
+    works_with_status = works[has_status]
     subset = _filter_by_cutoff_and_type(
-        works, cutoff, auction_type, session_col, type_col,
+        works_with_status, cutoff, auction_type, session_col, type_col,
         price_col=status_col, require_sold=False,
     )
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_unsold_rate")
 
     total = subset.groupby(artist_col)[status_col].count()
+    # 다중 출처 지원: "유찰" 외에 "unsold", "패스" 등도 인식
+    unsold_pattern = r"유찰|unsold|패스|미낙찰|부매|응찰없음"
     unsold = (
-        subset.loc[subset[status_col].str.contains("유찰", na=False)]
+        subset.loc[subset[status_col].str.contains(unsold_pattern, na=False, case=False)]
         .groupby(artist_col)[status_col]
         .count()
     )
@@ -264,6 +341,10 @@ def compute_medium_x_auction_avg(
             result[idx] = means_ln[idx]
         else:
             result[idx] = _bayesian_shrinkage_ln(float(means_ln[idx]), tier2_prior, n)
+    # 의도적으로 log 스케일 유지: CatBoost 트리 기반 모델에서 log 스케일이
+    # ln_price 타깃과 일관적이며, exp() 변환 시 오히려 성능 악화 확인됨.
+    # compute_medium_avg_price()는 exp()를 적용하지만, 이 피처는 medium×auction_type
+    # 교차 통계로 용도가 다르므로 별도 스케일 정책 적용.
     return result.to_frame()
 
 
@@ -291,7 +372,7 @@ def compute_group_unsold_rate(
     grouped = subset.groupby([medium_col, type_col])
     total = grouped[status_col].count()
     unsold = (
-        subset.loc[subset[status_col].str.contains("유찰", na=False)]
+        subset.loc[subset[status_col].str.contains(r"유찰|unsold|패스|미낙찰|부매|응찰없음", na=False, case=False)]
         .groupby([medium_col, type_col])[status_col]
         .count()
     )
@@ -300,7 +381,7 @@ def compute_group_unsold_rate(
     # 그룹 < 10건: auction_type 전체 유찰률로 fallback
     atype_total = subset.groupby(type_col)[status_col].count()
     atype_unsold = (
-        subset.loc[subset[status_col].str.contains("유찰", na=False)]
+        subset.loc[subset[status_col].str.contains(r"유찰|unsold|패스|미낙찰|부매|응찰없음", na=False, case=False)]
         .groupby(type_col)[status_col]
         .count()
     )
@@ -378,7 +459,7 @@ def compute_artist_recent_avg_price(
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_recent_avg_price")
 
-    recent_cutoff = cutoff - recent_n
+    recent_cutoff = _subtract_periods(cutoff, recent_n, session_col)
     recent = subset[subset[session_col] >= recent_cutoff]
     if recent.empty:
         return pd.Series(dtype="float64", name="artist_recent_avg_price")
@@ -406,7 +487,7 @@ def compute_artist_price_momentum(
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_price_momentum")
 
-    recent_cutoff = cutoff - recent_n
+    recent_cutoff = _subtract_periods(cutoff, recent_n, session_col)
     results: dict[str, float] = {}
     for artist, grp in subset.groupby(artist_col):
         if len(grp) < 3:
@@ -429,11 +510,19 @@ def compute_artist_sale_frequency(
     artist_col: str = "artist_clean",
     status_col: str = "상태",
 ) -> pd.Series:
-    """회차당 평균 출품 수 (낙찰+유찰 포함). 출품 < 2건: NaN."""
-    subset = _filter_by_cutoff_and_type(
-        works, cutoff, auction_type, session_col, type_col,
-        price_col=status_col, require_sold=False,
-    )
+    """기간당 평균 판매 수. status_col 없으면 price > 0 기반. 판매 < 2건: NaN."""
+    # status_col이 없으면 price 기반 (require_sold=True)
+    if status_col not in works.columns:
+        subset = _filter_by_cutoff_and_type(
+            works, cutoff, auction_type, session_col, type_col,
+            price_col="price" if "price" in works.columns else "낙찰가",
+            require_sold=True,
+        )
+    else:
+        subset = _filter_by_cutoff_and_type(
+            works, cutoff, auction_type, session_col, type_col,
+            price_col=status_col, require_sold=False,
+        )
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_sale_frequency")
 
@@ -459,8 +548,13 @@ def compute_artist_auctions_since_last(
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_auctions_since_last")
 
-    last_session = subset.groupby(artist_col)[session_col].max()
-    return (cutoff - last_session).rename("artist_auctions_since_last")
+    last_val = subset.groupby(artist_col)[session_col].max()
+    if isinstance(cutoff, str) and session_col == "sale_date":
+        # 날짜 모드: 일수 차이
+        cutoff_dt = pd.Timestamp(cutoff)
+        last_dt = pd.to_datetime(last_val)
+        return (cutoff_dt - last_dt).dt.days.rename("artist_auctions_since_last")
+    return (cutoff - last_val).rename("artist_auctions_since_last")
 
 
 def compute_artist_price_volatility(
@@ -495,15 +589,22 @@ def compute_artist_lot_count_trend(
     status_col: str = "상태",
     recent_n: int = 5,
 ) -> pd.Series:
-    """최근 N회차 출품 수 / 전체 출품 수 - 1 (낙찰+유찰 포함)."""
-    subset = _filter_by_cutoff_and_type(
-        works, cutoff, auction_type, session_col, type_col,
-        price_col=status_col, require_sold=False,
-    )
+    """최근 N기간 출품 수 / 전체 출품 수 - 1. status_col 없으면 price 기반."""
+    if status_col not in works.columns:
+        subset = _filter_by_cutoff_and_type(
+            works, cutoff, auction_type, session_col, type_col,
+            price_col="price" if "price" in works.columns else "낙찰가",
+            require_sold=True,
+        )
+    else:
+        subset = _filter_by_cutoff_and_type(
+            works, cutoff, auction_type, session_col, type_col,
+            price_col=status_col, require_sold=False,
+        )
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_lot_count_trend")
 
-    recent_cutoff = cutoff - recent_n
+    recent_cutoff = _subtract_periods(cutoff, recent_n, session_col)
     results: dict[str, float] = {}
     for artist, grp in subset.groupby(artist_col):
         total = len(grp)
@@ -518,13 +619,19 @@ def compute_artist_lot_count_trend(
 
 def compute_artist_premium_ratio(
     works: pd.DataFrame,
-    cutoff: int,
+    cutoff: int | str,
     session_col: str = "회차",
     type_col: str = "타입",
     artist_col: str = "artist_clean",
     price_col: str = "낙찰가",
+    premium_types: set[str] | None = None,
 ) -> pd.Series:
-    """메이저 경매 비중. 전체 auction_type에서 계산."""
+    """프리미엄 경매 비중. 전체 데이터에서 계산.
+
+    premium_types가 None이면 {"메이저"}. 다중 출처에서는
+    premium_types={"메이저", "Major", "프리미엄"} 등으로 확장 가능.
+    type_col이 없으면 전체 0.0 반환 (갤러리 등 타입 없는 출처).
+    """
     subset = _filter_by_cutoff_and_type(
         works, cutoff, auction_type=None, session_col=session_col,
         type_col=type_col, price_col=price_col,
@@ -533,13 +640,20 @@ def compute_artist_premium_ratio(
         return pd.Series(dtype="float64", name="artist_premium_ratio")
 
     total = subset.groupby(artist_col)[price_col].count()
-    major = (
-        subset[subset[type_col] == "메이저"]
+
+    if type_col not in subset.columns:
+        return pd.Series(0.0, index=total.index, name="artist_premium_ratio")
+
+    if premium_types is None:
+        premium_types = {"메이저"}
+
+    premium = (
+        subset[subset[type_col].isin(premium_types)]
         .groupby(artist_col)[price_col]
         .count()
         .reindex(total.index, fill_value=0)
     )
-    return (major / total).rename("artist_premium_ratio")
+    return (premium / total).rename("artist_premium_ratio")
 
 
 def compute_artist_last_hammer(
@@ -558,8 +672,10 @@ def compute_artist_last_hammer(
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_last_hammer_price")
 
-    idx = subset.groupby(artist_col)[session_col].idxmax()
-    return subset.loc[idx].set_index(artist_col)[price_col].rename(
+    # M3-fix: 최근 회차에 여러 작품이 있을 경우 중앙값 사용 (비결정성 해소)
+    max_sessions = subset.groupby(artist_col)[session_col].transform("max")
+    latest = subset[subset[session_col] == max_sessions]
+    return latest.groupby(artist_col)[price_col].median().rename(
         "artist_last_hammer_price"
     )
 
@@ -573,15 +689,27 @@ def compute_artist_career_length(
     artist_col: str = "artist_clean",
     status_col: str = "상태",
 ) -> pd.Series:
-    """첫 출품 ~ cutoff 회차 수 (낙찰+유찰 포함)."""
-    subset = _filter_by_cutoff_and_type(
-        works, cutoff, auction_type, session_col, type_col,
-        price_col=status_col, require_sold=False,
-    )
+    """첫 판매 ~ cutoff 기간. status_col 없으면 price > 0 기반."""
+    if status_col not in works.columns:
+        subset = _filter_by_cutoff_and_type(
+            works, cutoff, auction_type, session_col, type_col,
+            price_col="price" if "price" in works.columns else "낙찰가",
+            require_sold=True,
+        )
+    else:
+        subset = _filter_by_cutoff_and_type(
+            works, cutoff, auction_type, session_col, type_col,
+            price_col=status_col, require_sold=False,
+        )
     if subset.empty:
         return pd.Series(dtype="float64", name="artist_career_length")
 
     first = subset.groupby(artist_col)[session_col].min()
+    if isinstance(cutoff, str) and session_col == "sale_date":
+        # 날짜 모드: 일수 차이
+        cutoff_dt = pd.Timestamp(cutoff)
+        first_dt = pd.to_datetime(first)
+        return (cutoff_dt - first_dt).dt.days.rename("artist_career_length")
     return (cutoff - first).rename("artist_career_length")
 
 
@@ -623,7 +751,7 @@ def compute_market_price_index(
     if subset.empty:
         return 0.0
 
-    recent_cutoff = cutoff - recent_n
+    recent_cutoff = _subtract_periods(cutoff, recent_n, session_col)
     recent = subset[subset[session_col] >= recent_cutoff]
     return float(recent[price_col].mean()) if not recent.empty else 0.0
 
@@ -673,10 +801,11 @@ def compute_comparable_sales(
         & (subset[area_col] <= area_high)
     ]
     if len(l1) >= 3:
-        result["comp_artist_avg"] = float(l1.sort_values(session_col)[price_col].tail(3).mean())
+        avg = float(l1.sort_values(session_col)[price_col].tail(3).mean())
+        result["comp_artist_avg"] = avg
         result["comp_match_count"] = float(len(l1))
         result["comp_match_level"] = 1.0
-        result["comp_weighted"] = result["comp_artist_avg"]
+        result["comp_weighted"] = avg
         return result
 
     # Level 2: 작가 + 매체 (크기 완화)
@@ -684,10 +813,11 @@ def compute_comparable_sales(
         (subset[artist_col] == target_artist) & (subset[medium_col] == target_medium)
     ]
     if len(l2) >= 3:
-        result["comp_artist_avg"] = float(l2.sort_values(session_col)[price_col].tail(3).mean())
+        avg = float(l2.sort_values(session_col)[price_col].tail(3).mean())
+        result["comp_artist_avg"] = avg
         result["comp_match_count"] = float(len(l2))
         result["comp_match_level"] = 2.0
-        result["comp_weighted"] = result["comp_artist_avg"]
+        result["comp_weighted"] = avg
         return result
 
     # Level 3: 매체 + 크기 (작가 제거)
@@ -697,18 +827,97 @@ def compute_comparable_sales(
         & (subset[area_col] <= area_high)
     ]
     if len(l3) >= 10:
-        result["comp_medium_avg"] = float(l3.sort_values(session_col)[price_col].tail(10).mean())
+        avg = float(l3.sort_values(session_col)[price_col].tail(10).mean())
+        result["comp_medium_avg"] = avg
         result["comp_match_count"] = float(len(l3))
         result["comp_match_level"] = 3.0
-        result["comp_weighted"] = result["comp_medium_avg"]
+        result["comp_weighted"] = avg
         return result
 
     # Level 4: 매체 전체 평균 (최소 5건)
     l4 = subset[subset[medium_col] == target_medium]
     if len(l4) >= 5:
-        result["comp_medium_avg"] = float(l4[price_col].mean())
+        avg = float(l4[price_col].mean())
+        result["comp_medium_avg"] = avg
         result["comp_match_count"] = float(len(l4))
         result["comp_match_level"] = 4.0
-        result["comp_weighted"] = result["comp_medium_avg"]
+        result["comp_weighted"] = avg
 
     return result
+
+
+# ═══════════════════════════════════════════════════════════
+# 인터랙션 피처 (Phase 6: 모델 구조 개선)
+# ═══════════════════════════════════════════════════════════
+
+
+def compute_artist_medium_features(
+    target_artist: str,
+    target_medium: str,
+    works_past: pd.DataFrame,
+    *,
+    artist_col: str = "artist_clean",
+    medium_col: str = "medium_category",
+    price_col: str = "ln_price",
+) -> dict[str, float]:
+    """작가×매체 인터랙션 피처.
+
+    - artist_medium_price_ratio: 작가의 해당 매체 평균가 / 작가 전체 평균가
+    - artist_medium_frequency: 작가의 해당 매체 작품 비율 (전문화 지표)
+    """
+    result = {
+        "artist_medium_price_ratio": 1.0,
+        "artist_medium_frequency": 0.0,
+    }
+
+    artist_works = works_past[works_past[artist_col] == target_artist]
+    if len(artist_works) < 2:
+        return result
+
+    prices = pd.to_numeric(artist_works[price_col], errors="coerce").dropna()
+    if len(prices) < 2:
+        return result
+
+    artist_avg = float(prices.mean())
+
+    medium_works = artist_works[artist_works[medium_col] == target_medium]
+    medium_prices = pd.to_numeric(medium_works[price_col], errors="coerce").dropna()
+
+    if len(medium_prices) >= 1 and artist_avg > 0:
+        result["artist_medium_price_ratio"] = float(medium_prices.mean()) / artist_avg
+
+    result["artist_medium_frequency"] = len(medium_works) / len(artist_works)
+
+    return result
+
+
+def compute_medium_size_avg_price(
+    target_medium: str,
+    target_size_bucket: str,
+    works_past: pd.DataFrame,
+    *,
+    medium_col: str = "medium_category",
+    size_col: str = "size_bucket",
+    price_col: str = "ln_price",
+) -> float:
+    """매체×크기 조합의 평균 가격.
+
+    해당 조합이 충분하지 않으면 매체만으로 폴백.
+    """
+    medium_mask = works_past[medium_col] == target_medium
+    prices = pd.to_numeric(works_past[price_col], errors="coerce")
+
+    # 매체×크기 조합
+    combo = works_past[medium_mask & (works_past[size_col] == target_size_bucket)]
+    combo_prices = prices[combo.index].dropna()
+    if len(combo_prices) >= 5:
+        return float(combo_prices.mean())
+
+    # 폴백: 매체만
+    medium_prices = prices[medium_mask].dropna()
+    if len(medium_prices) >= 5:
+        return float(medium_prices.mean())
+
+    # 전체 평균
+    all_prices = prices.dropna()
+    return float(all_prices.mean()) if len(all_prices) > 0 else 0.0
