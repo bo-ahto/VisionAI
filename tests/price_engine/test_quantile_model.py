@@ -12,12 +12,16 @@ class TestHedonicQuantileModelContract:
     """Model-A의 인터페이스 계약 검증 (실제 학습 없이)."""
 
     def test_hedonic_features_count(self) -> None:
-        assert len(HEDONIC_FEATURES) == 49
+        # 2026-04-17 Cold Start SHAP 분석 후 해로운 4개 제거 (50 → 46).
+        assert len(HEDONIC_FEATURES) == 46
 
     def test_cat_feature_indices(self) -> None:
         from visionai.price_engine.estimate_generator.quantile_model import HEDONIC_CAT_INDICES
-        # 범주형: artist_clean(0), medium_category(1), support_category(2), is_3d(3), is_untitled(4)
-        assert HEDONIC_CAT_INDICES == [0, 1, 2, 3, 4, 47]
+        # 범주형: artist_clean(0), medium_category(1), support_category(2), is_3d(3),
+        # is_untitled(4), title_subject(35), size_bucket(39), orientation(40),
+        # artist_nationality(45)
+        expected = [0, 1, 2, 3, 4, 35, 39, 40, 45]
+        assert HEDONIC_CAT_INDICES == expected
 
     def test_predict_without_fit_raises(self) -> None:
         from visionai.price_engine.estimate_generator.quantile_model import HedonicQuantileModel
@@ -32,8 +36,8 @@ class TestHedonicQuantileModelContract:
         df["is_3d"] = True
         df["is_untitled"] = False
         result = _prepare_hedonic_features(df)
-        assert result["is_3d"].dtype == object
-        assert result["is_untitled"].dtype == object
+        assert pd.api.types.is_string_dtype(result["is_3d"])
+        assert pd.api.types.is_string_dtype(result["is_untitled"])
 
 
 class TestMonotonicity:

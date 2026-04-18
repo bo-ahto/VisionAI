@@ -45,9 +45,15 @@ from visionai.price_engine.preprocessing.year_parser import parse_year
 
 logger = logging.getLogger(__name__)
 
-# Hedonic 피처 목록 (총 50개, 추정가 4개 제외).
-# 순서 계약: 범주형 인덱스 = [0, 1, 2, 3, 4, 37, 41, 42, 49]
+# Hedonic 피처 목록 (총 46개, 추정가 4개 제외).
+# 순서 계약: 범주형 인덱스 = [0, 1, 2, 3, 4, 35, 39, 40, 45]
 # (test_quantile_model::test_cat_feature_indices 및 HEDONIC_CAT_INDICES가 의존)
+#
+# Cold Start SHAP 분석(2026-04-17) 결과 해로운 4개 피처 제거:
+#  - global_median_price (cold_helpfulness=-0.303)
+#  - global_auction_count (cold_helpfulness=-0.263)
+#  - medium_avg_price (cold_helpfulness=-0.207)
+#  - artist_price_volatility (cold_helpfulness=-0.099)
 HEDONIC_FEATURES: list[str] = [
     # ── 0-4: 선두 범주형 (5 cat) ──
     "artist_clean",              # 0  작가 ID (cat)
@@ -55,57 +61,53 @@ HEDONIC_FEATURES: list[str] = [
     "support_category",          # 2  지지체 8분류 (cat)
     "is_3d",                     # 3  3D 여부 (cat bool)
     "is_untitled",               # 4  무제 플래그 (cat bool)
-    # ── 5-36: 수치형 중심 블록 (32 num) ──
+    # ── 5-34: 수치형 중심 블록 (30 num) ──
     "artist_avg_price",          # 5  작가 평균가
     "artist_median_price",       # 6  작가 중앙가 (shrinkage)
     "artist_max_price",          # 7  작가 최고가
-    "artist_price_volatility",   # 8  작가 변동성
-    "artist_total_sold",         # 9  작가 거래 건수
-    "is_new_artist",             # 10 신규 작가 플래그
-    "is_deceased",               # 11 작고 여부 (0/1)
-    "artist_birth_year",         # 12 작가 출생 연도
-    "artist_age_at_sale",        # 13 작가 나이
-    "artist_medium_price_ratio", # 14 작가×매체 가격비
-    "artist_medium_frequency",   # 15 작가×매체 출품 빈도
-    "medium_size_avg_price",     # 16 매체×크기 평균가
-    "medium_avg_price",          # 17 매체 평균가 (cutoff 이전)
-    "price_segment_median",      # 18 매체별 기준가 (train split만)
-    "auction_house_tier",        # 19 경매사 등급
-    "ln_surface_area",           # 20 log 표면적
-    "short_side_cm",             # 21 단변 크기
-    "long_side_cm",              # 22 장변 크기
-    "size_ho",                   # 23 호 환산 크기
-    "size_ho_above40",           # 24 40호 초과 구간
-    "aspect_ratio",              # 25 종횡비
-    "market_price_index",        # 26 시장 시계열 앵커
-    "artist_price_trend",        # 27 작가 추세
-    "artist_price_momentum",     # 28 작가 모멘텀
-    "artist_auctions_since_last",# 29 마지막 거래 경과
-    "artist_last_hammer_price",  # 30 최근 낙찰가
-    "artist_recent_avg_price",   # 31 최근 N회 작가 평균가
-    "artist_sale_frequency",     # 32 연간 출품 빈도
-    "artist_lot_count_trend",    # 33 작가 출품량 추세
-    "artist_career_length",      # 34 작가 커리어 기간
-    "artist_unsold_rate",        # 35 작가 유찰률
-    "comp_artist_avg",           # 36 비교 작가 평균가
-    # ── 37: 범주형 ──
-    "title_subject",             # 37 주제 카테고리 (cat)
-    # ── 38-40: 수치형 (3 num) ──
-    "comp_weighted",             # 38 비교 매출 가중
-    "comp_match_count",          # 39 비교 매칭 건수
-    "comp_medium_avg",           # 40 비교 매체 평균
-    # ── 41-42: 범주형 2개 ──
-    "size_bucket",               # 41 크기 구간 (cat)
-    "orientation",               # 42 방향 (cat)
-    # ── 43-48: 수치형 (6 num) ──
-    "comp_to_avg_ratio",         # 43 비교가-작가평균 비율
-    "comp_match_level",          # 44 매칭 단계(1~4)
-    "source_count",              # 45 출품 경매사 수
-    "global_median_price",       # 46 글로벌 시장 중앙가
-    "global_auction_count",      # 47 글로벌 경매 건수
-    "has_global_price",          # 48 글로벌 데이터 가용 플래그
-    # ── 49: 범주형 ──
-    "artist_nationality",        # 49 작가 국적 KR/WS (cat)
+    "artist_total_sold",         # 8  작가 거래 건수
+    "is_new_artist",             # 9  신규 작가 플래그
+    "is_deceased",               # 10 작고 여부 (0/1)
+    "artist_birth_year",         # 11 작가 출생 연도
+    "artist_age_at_sale",        # 12 작가 나이
+    "artist_medium_price_ratio", # 13 작가×매체 가격비
+    "artist_medium_frequency",   # 14 작가×매체 출품 빈도
+    "medium_size_avg_price",     # 15 매체×크기 평균가
+    "price_segment_median",      # 16 매체별 기준가 (train split만)
+    "auction_house_tier",        # 17 경매사 등급
+    "ln_surface_area",           # 18 log 표면적
+    "short_side_cm",             # 19 단변 크기
+    "long_side_cm",              # 20 장변 크기
+    "size_ho",                   # 21 호 환산 크기
+    "size_ho_above40",           # 22 40호 초과 구간
+    "aspect_ratio",              # 23 종횡비
+    "market_price_index",        # 24 시장 시계열 앵커
+    "artist_price_trend",        # 25 작가 추세
+    "artist_price_momentum",     # 26 작가 모멘텀
+    "artist_auctions_since_last",# 27 마지막 거래 경과
+    "artist_last_hammer_price",  # 28 최근 낙찰가
+    "artist_recent_avg_price",   # 29 최근 N회 작가 평균가
+    "artist_sale_frequency",     # 30 연간 출품 빈도
+    "artist_lot_count_trend",    # 31 작가 출품량 추세
+    "artist_career_length",      # 32 작가 커리어 기간
+    "artist_unsold_rate",        # 33 작가 유찰률
+    "comp_artist_avg",           # 34 비교 작가 평균가
+    # ── 35: 범주형 ──
+    "title_subject",             # 35 주제 카테고리 (cat)
+    # ── 36-38: 수치형 (3 num) ──
+    "comp_weighted",             # 36 비교 매출 가중
+    "comp_match_count",          # 37 비교 매칭 건수
+    "comp_medium_avg",           # 38 비교 매체 평균
+    # ── 39-40: 범주형 2개 ──
+    "size_bucket",               # 39 크기 구간 (cat)
+    "orientation",               # 40 방향 (cat)
+    # ── 41-44: 수치형 (4 num) ──
+    "comp_to_avg_ratio",         # 41 비교가-작가평균 비율
+    "comp_match_level",          # 42 매칭 단계(1~4)
+    "source_count",              # 43 출품 경매사 수
+    "has_global_price",          # 44 글로벌 데이터 가용 플래그
+    # ── 45: 범주형 ──
+    "artist_nationality",        # 45 작가 국적 KR/WS (cat)
 ]
 
 CAT_FEATURE_NAMES: list[str] = [
@@ -270,6 +272,9 @@ def _join_artist_stats_and_hedonic(
     out["artist_medium_price_ratio"] = 1.0
     out["artist_medium_frequency"] = 0.0
     out["medium_size_avg_price"] = np.nan
+    # price_segment_median은 build_hedonic_features에서 train split 기반 broadcast로 계산.
+    # Ablation F (2026-04-17): train-only broadcast가 expanding-window보다 cold -1.42pp, test -0.37pp 우수.
+    # variance 증가 비용이 time-adaptation bias 감소분을 초과하기 때문.
 
     # 글로벌 통계 로드
     from visionai.price_engine.features.hedonic_stats import load_global_artist_stats
@@ -408,6 +413,7 @@ def _join_artist_stats_and_hedonic(
             out.loc[row_mask, "medium_avg_price"] = out.loc[
                 row_mask, "medium_category"
             ].map(vals).values
+        # price_segment_median은 이 루프 밖에서 build_hedonic_features가 train split 기반으로 일괄 계산.
 
         if status_col_actual in wf.columns:
             vals = compute_artist_unsold_rate(wf, **_status_kw)
@@ -656,35 +662,32 @@ def build_hedonic_features(
         df["sale_month"] = 0
         df["sale_quarter"] = 0
 
-    # 4-way split 라벨 — 날짜 기반 또는 레거시 (price_segment_median보다 먼저 할당해야 누수 방지)
+    # 4-way split 라벨 — 날짜 기반 또는 레거시 (price_segment_median보다 먼저 할당)
     if "sale_date" in df.columns:
         from visionai.price_engine.features.splits import assign_split_by_date
         df["split"] = assign_split_by_date(df, date_col="sale_date")
     else:
         df["split"] = assign_split_4way(df)
 
-    # price_segment_median: 매체별 중앙 가격 (가격대 참고용)
-    # 누수 방지: train split 행의 가격으로만 매체별 median 계산 후 모든 행에 브로드캐스트.
+    # price_segment_median: train split 기반 매체별 ln(price) 중앙값 broadcast.
+    # Ablation F (2026-04-17): train-only broadcast가 expanding-window보다 cold, test 모두 우수.
+    # 누수 없음 (train split만 참조). variance도 가장 낮음.
     price_col_ps = "price" if "price" in df.columns else "낙찰가"
     _prices = pd.to_numeric(df[price_col_ps], errors="coerce")
-    _train_mask = df["split"] == "train"
+    _train_mask = (df["split"] == "train") & (_prices > 0)
     if "medium_category" in df.columns:
-        train_medians = (
-            _prices.where(_train_mask & (_prices > 0))
-            .groupby(df["medium_category"])
-            .median()
-        )
-        global_train_median = float(_prices.where(_train_mask & (_prices > 0)).median())
-        if not np.isfinite(global_train_median) or global_train_median <= 0:
-            global_train_median = 1.0
+        _ln_train = np.log(_prices.where(_train_mask).clip(lower=1))
+        train_medians = _ln_train.groupby(df["medium_category"]).median()
+        _global_fallback = float(_ln_train.median())
+        if not np.isfinite(_global_fallback):
+            _global_fallback = 0.0
         mapped = df["medium_category"].map(train_medians)
-        mapped = mapped.where(mapped.notna() & (mapped > 0), global_train_median)
-        df["price_segment_median"] = np.log(mapped.clip(lower=1))
+        df["price_segment_median"] = mapped.where(
+            mapped.notna(), _global_fallback
+        ).astype(float)
     else:
-        train_median = float(_prices.where(_train_mask & (_prices > 0)).median())
-        df["price_segment_median"] = (
-            np.log(train_median) if np.isfinite(train_median) and train_median > 0 else 0.0
-        )
+        _med = float(np.log(_prices.where(_train_mask).clip(lower=1)).median())
+        df["price_segment_median"] = _med if np.isfinite(_med) else 0.0
 
     # 작가 통계 + Hedonic 피처 조인
     df = _join_artist_stats_and_hedonic(df, works_full=df)

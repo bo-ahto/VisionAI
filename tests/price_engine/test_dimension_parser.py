@@ -14,23 +14,24 @@ class TestParseDimension:
     """5개 패턴별 파싱 테스트."""
 
     def test_2d_standard(self) -> None:
+        # 2026-04-17 코덱스 P2: 원본 순서 보존 (v1=width, v2=height) — K-Auction 관행 "가로×세로"
         r = parse_dimension("81×116cm")
-        assert r.height_cm == 116.0
         assert r.width_cm == 81.0
+        assert r.height_cm == 116.0
         assert r.surface_area == pytest.approx(116.0 * 81.0)
         assert r.is_3d is False
         assert r.pattern_used == "2d"
 
     def test_2d_lowercase_x(self) -> None:
         r = parse_dimension("53.0x45.5cm")
-        assert r.height_cm == 53.0
-        assert r.width_cm == 45.5
+        assert r.width_cm == 53.0
+        assert r.height_cm == 45.5
         assert r.pattern_used == "2d"
 
     def test_2d_with_spaces(self) -> None:
         r = parse_dimension("72.7 × 60.6 cm")
-        assert r.height_cm == 72.7
-        assert r.width_cm == 60.6
+        assert r.width_cm == 72.7
+        assert r.height_cm == 60.6
 
     def test_3d_with_h_marker(self) -> None:
         r = parse_dimension("31×13×22(h)cm")

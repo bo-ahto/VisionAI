@@ -13,16 +13,18 @@ from visionai.price_engine.estimate_generator.two_step_model import (
 
 class TestTwoStepContract:
     def test_price_bins(self) -> None:
-        assert len(PRICE_BINS) == 4
-        assert len(PRICE_LABELS) == 3
-        assert PRICE_LABELS == ["low", "mid", "high"]
+        assert len(PRICE_BINS) == 6
+        assert len(PRICE_LABELS) == 5
+        assert PRICE_LABELS == ["budget", "low", "mid", "high", "premium"]
 
     def test_bin_boundaries(self) -> None:
-        prices = pd.Series([1_000_000, 10_000_000, 50_000_000])
+        prices = pd.Series([500_000, 3_000_000, 10_000_000, 50_000_000, 200_000_000])
         cuts = pd.cut(prices, bins=PRICE_BINS, labels=PRICE_LABELS)
-        assert cuts.iloc[0] == "low"
-        assert cuts.iloc[1] == "mid"
-        assert cuts.iloc[2] == "high"
+        assert cuts.iloc[0] == "budget"   # 500K
+        assert cuts.iloc[1] == "low"     # 3M
+        assert cuts.iloc[2] == "mid"     # 10M
+        assert cuts.iloc[3] == "high"    # 50M
+        assert cuts.iloc[4] == "premium" # 200M
 
 
 class TestEnsembleContract:
@@ -34,4 +36,5 @@ class TestEnsembleContract:
         assert not model._fitted
 
     def test_feature_count(self) -> None:
-        assert len(HEDONIC_FEATURES) == 49
+        # 2026-04-17 Cold Start SHAP 분석 후 해로운 4개 제거 (50 → 46).
+        assert len(HEDONIC_FEATURES) == 46

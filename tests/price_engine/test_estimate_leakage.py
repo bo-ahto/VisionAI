@@ -99,7 +99,8 @@ class TestRule4EstimateFeaturesExcluded:
 
     def test_feature_count_is_23(self) -> None:
         from visionai.price_engine.estimate_generator.hedonic_features import HEDONIC_FEATURES
-        assert len(HEDONIC_FEATURES) == 49
+        # 2026-04-17 Cold Start SHAP 분석 후 해로운 4개 제거 (50 → 46).
+        assert len(HEDONIC_FEATURES) == 46
 
 
 class TestRule5SmearingFromCalibOnly:

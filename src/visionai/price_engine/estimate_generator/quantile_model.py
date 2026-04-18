@@ -61,9 +61,24 @@ HEDONIC_CAT_INDICES: list[int] = [
 ]
 
 
-def _prepare_hedonic_features(df: pd.DataFrame) -> pd.DataFrame:
-    """HEDONIC_FEATURES 순서로 피처를 추출하고 범주형을 str로 변환."""
-    out = df[HEDONIC_FEATURES].copy()
+def _prepare_hedonic_features(
+    df: pd.DataFrame, extra_features: list[str] | None = None,
+) -> pd.DataFrame:
+    """HEDONIC_FEATURES (+extra) 순서로 피처 추출, 범주형 str 변환.
+
+    predict 시 extra_features가 df에 없으면 NaN으로 채워 추가한다.
+    CatBoost는 학습 시점의 피처 개수/순서와 일치해야 하므로 silent drop 금지.
+    """
+    features = list(HEDONIC_FEATURES)
+    if extra_features:
+        features = [*features, *extra_features]
+    out = pd.DataFrame(index=df.index)
+    for col in features:
+        if col in df.columns:
+            out[col] = df[col]
+        else:
+            # 학습 시 있었지만 추론 입력에 없는 extra feature → NaN 기본값
+            out[col] = np.nan
     for col in CAT_FEATURE_NAMES:
         if col in out.columns:
             out[col] = out[col].astype(str)
@@ -79,10 +94,10 @@ class HedonicQuantileModel:
 
     def __init__(
         self,
-        iterations: int = 2000,
-        depth: int = 8,
-        learning_rate: float = 0.05,
-        l2_leaf_reg: float = 5.0,
+        iterations: int = 2500,
+        depth: int = 9,
+        learning_rate: float = 0.03,
+        l2_leaf_reg: float = 4.0,
         early_stopping_rounds: int = 100,
         random_seed: int = 42,
     ) -> None:
@@ -95,23 +110,36 @@ class HedonicQuantileModel:
         self._model: CatBoostRegressor | None = None
         self._models_independent: list[CatBoostRegressor] | None = None
         self._use_multi: bool = True
+        self._extra_features: list[str] | None = None
 
     def fit(
         self,
         train_df: pd.DataFrame,
         valid_df: pd.DataFrame | None = None,
         target_col: str = "ln_price",
+        extra_features: list[str] | None = None,
+        sample_weight_col: str | None = None,
     ) -> None:
         """CatBoost MultiQuantile 학습."""
-        x_train = _prepare_hedonic_features(train_df)
+        self._extra_features = extra_features
+        x_train = _prepare_hedonic_features(train_df, extra_features)
         y_train = train_df[target_col].values
         mask = ~np.isnan(y_train)
         x_train = x_train[mask]
         y_train = y_train[mask]
+        w_train = None
+        if sample_weight_col and sample_weight_col in train_df.columns:
+            w_train = train_df[sample_weight_col].values[mask]
+
+        # 동적 cat_features 계산 (extra 포함)
+        cat_indices = [
+            i for i, col in enumerate(x_train.columns)
+            if col in CAT_FEATURE_NAMES
+        ]
 
         eval_set = None
         if valid_df is not None:
-            x_valid = _prepare_hedonic_features(valid_df)
+            x_valid = _prepare_hedonic_features(valid_df, extra_features)
             y_valid = valid_df[target_col].values
             v_mask = ~np.isnan(y_valid)
             eval_set = (x_valid[v_mask], y_valid[v_mask])
@@ -124,14 +152,15 @@ class HedonicQuantileModel:
             learning_rate=self.learning_rate,
             l2_leaf_reg=self.l2_leaf_reg,
             loss_function="MultiQuantile:alpha=0.25,0.5,0.75",
-            cat_features=HEDONIC_CAT_INDICES,
+            cat_features=cat_indices,
             random_seed=self.random_seed,
             verbose=100,
             early_stopping_rounds=self.early_stopping_rounds,
         )
 
         try:
-            self._model.fit(x_train, y_train, eval_set=eval_set, use_best_model=True)
+            self._model.fit(x_train, y_train, eval_set=eval_set, use_best_model=True,
+                            sample_weight=w_train)
             logger.info("Model-A (MultiQuantile) best iteration: %d", self._model.best_iteration_)
             self._use_multi = True
         except (CatBoostError, ValueError) as exc:
@@ -148,7 +177,7 @@ class HedonicQuantileModel:
                     learning_rate=self.learning_rate,
                     l2_leaf_reg=self.l2_leaf_reg,
                     loss_function=f"Quantile:alpha={tau}",
-                    cat_features=HEDONIC_CAT_INDICES,
+                    cat_features=cat_indices,
                     random_seed=self.random_seed,
                     verbose=100,
                     early_stopping_rounds=self.early_stopping_rounds,
@@ -167,7 +196,7 @@ class HedonicQuantileModel:
             msg = "Model not fitted. Call fit() first."
             raise RuntimeError(msg)
 
-        x_feat = _prepare_hedonic_features(df)
+        x_feat = _prepare_hedonic_features(df, self._extra_features)
 
         if self._use_multi and self._model is not None:
             preds = self._model.predict(x_feat)
@@ -205,7 +234,9 @@ class HedonicQuantileModel:
         return float(monotone.mean())
 
     def save(self, path: str | Path) -> None:
-        """모델 저장. fallback 시 3개 모델을 개별 저장."""
+        """모델 저장. fallback 시 3개 모델 개별 저장. extra_features 메타도 저장."""
+        import json as _json
+
         p = Path(path)
         if self._use_multi and self._model is not None:
             self._model.save_model(str(p))
@@ -216,12 +247,19 @@ class HedonicQuantileModel:
                 m.save_model(str(tau_path))
             logger.info("Model-A (3 independent) saved to %s_q*", p.stem)
 
+        # extra_features ���타 저장
+        meta_path = p.with_suffix(".meta.json")
+        meta = {"extra_features": self._extra_features}
+        with open(meta_path, "w") as f:
+            _json.dump(meta, f)
+
     def load(self, path: str | Path) -> None:
-        """모델 로드. fallback 파일 존재 시 3개 모델 로드."""
+        """모델 로드. fallback 파일 존재 시 3개 모델 로드. 메타도 복원."""
+        import json as _json
+
         p = Path(path)
         q0_path = p.with_stem(f"{p.stem}_q0")
         if q0_path.exists():
-            # 독립 3모델 fallback 로드
             self._use_multi = False
             self._models_independent = []
             for i in range(3):
@@ -235,3 +273,12 @@ class HedonicQuantileModel:
             self._model = CatBoostRegressor()
             self._model.load_model(str(p))
             logger.info("Model-A (multi) loaded from %s", p)
+
+        # extra_features 메타 복원
+        meta_path = p.with_suffix(".meta.json")
+        if meta_path.exists():
+            with open(meta_path) as f:
+                meta = _json.load(f)
+            self._extra_features = meta.get("extra_features")
+        else:
+            self._extra_features = None
