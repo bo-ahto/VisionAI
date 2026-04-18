@@ -157,19 +157,36 @@ def _infer_kauction_dates(
     # 작가+제목+가격으로 매칭 (제목 중복 회차 충돌 방지 — 코덱스 P1 2026-04-18)
     # 작가|제목만 쓰면 "김환기|무제" 등 반복 제목이 여러 회차에 걸쳐 동일 key로 묶여
     # 잘못된 날짜로 매칭됨. 가격을 포함해 구체적 판매 행 단위로 매칭.
+    # 가격 컬럼은 데이터셋에 따라 price/price_krw/낙찰가로 다름 → 자동 감지.
     kauction_df = kauction_df.copy()
-    kauction_df["_key"] = (
-        kauction_df["작가"].fillna("").str.strip()
-        + "|" + kauction_df["제목"].fillna("").str.strip()
-        + "|" + pd.to_numeric(kauction_df.get("낙찰가", 0), errors="coerce")
-        .fillna(0).astype(int).astype(str)
+    _ka_price_col = next(
+        (c for c in ["price", "price_krw", "낙찰가"] if c in ka.columns), None
     )
-    ka["_key"] = (
-        ka["name_kor"].fillna("").str.strip()
-        + "|" + ka["title"].fillna("").str.strip()
-        + "|" + pd.to_numeric(ka.get("price_krw", 0), errors="coerce")
-        .fillna(0).astype(int).astype(str)
-    )
+    if _ka_price_col is None:
+        logger.warning(
+            "artmarket에 price 컬럼 없음 — 제목+작가만 매칭 (정확도 저하)",
+        )
+        kauction_df["_key"] = (
+            kauction_df["작가"].fillna("").str.strip()
+            + "|" + kauction_df["제목"].fillna("").str.strip()
+        )
+        ka["_key"] = (
+            ka["name_kor"].fillna("").str.strip()
+            + "|" + ka["title"].fillna("").str.strip()
+        )
+    else:
+        kauction_df["_key"] = (
+            kauction_df["작가"].fillna("").str.strip()
+            + "|" + kauction_df["제목"].fillna("").str.strip()
+            + "|" + pd.to_numeric(kauction_df.get("낙찰가", 0), errors="coerce")
+            .fillna(0).astype(int).astype(str)
+        )
+        ka["_key"] = (
+            ka["name_kor"].fillna("").str.strip()
+            + "|" + ka["title"].fillna("").str.strip()
+            + "|" + pd.to_numeric(ka[_ka_price_col], errors="coerce")
+            .fillna(0).astype(int).astype(str)
+        )
 
     matched = kauction_df[["_key", "회차", "타입"]].merge(
         ka[["_key", "auction_date"]].drop_duplicates("_key"),

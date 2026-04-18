@@ -37,55 +37,64 @@ def _load_gap_diagnosis() -> dict | None:
 
 
 class TestPerformanceGates:
-    """모델 성능 기반 Gate. metrics JSON이 없으면 skip."""
+    """모델 성능 기반 Gate. metrics JSON이 없으면 skip.
 
+    코덱스 P2 (2026-04-18): 이전엔 threshold 위반 시 pytest.skip()으로 넘겨
+    CI에서 regression이 silent로 감춰졌음. 이제 위반은 AssertionError를 발생시킨다.
+    현재 미달 게이트는 @pytest.mark.xfail(strict=False)로 명시적 기록
+    — 기준 달성 시 "unexpected pass"로 알림 받아 threshold 재검토 트리거.
+    """
+
+    @pytest.mark.xfail(
+        strict=False,
+        reason="현재 baseline test_mdape ~41% (재학습 후 40%대). 32% 기준은 장기 목표.",
+    )
     def test_g1_test_mdape(self) -> None:
         """G1: Test MdAPE <= 32%."""
         diag = _load_gap_diagnosis()
         if diag is None:
             pytest.skip("gap_diagnosis.json not found")
-        # 통합 모델 재학습 후 엄격 기준 적용
-        # 현재 Phase 4 baseline: 35.16% — 재학습 후 <= 32% 확인
-        if diag["test_mdape"] > 32:
-            pytest.skip(
-                f"Test MdAPE {diag['test_mdape']:.1f}% > 32% "
-                "(통합 모델 재학습 후 재검증 필요)"
-            )
+        assert diag["test_mdape"] <= 32, (
+            f"G1 violation: test_mdape={diag['test_mdape']:.2f}% > 32%"
+        )
 
+    @pytest.mark.xfail(
+        strict=False,
+        reason="현재 gap ~4pp (time-split 고질적 격차). 2.5pp는 장기 목표.",
+    )
     def test_g2_vt_gap(self) -> None:
         """G2: Val-Test Gap <= 2.5%p."""
         diag = _load_gap_diagnosis()
         if diag is None:
             pytest.skip("gap_diagnosis.json not found")
-        if diag["gap"] > 2.5:
-            pytest.skip(
-                f"Gap {diag['gap']:.2f}%p > 2.5%p "
-                "(통합 모델 재학습 후 재검증 필요)"
-            )
+        assert diag["gap"] <= 2.5, (
+            f"G2 violation: gap={diag['gap']:.2f}pp > 2.5pp"
+        )
 
+    @pytest.mark.xfail(
+        strict=False,
+        reason="segment R2 가중평균은 현재 ~0.21로 미달. overall R2는 0.47로 통과.",
+    )
     def test_g3_test_r2(self) -> None:
-        """G3: Test R2 >= 0.40."""
+        """G3: Test R2 >= 0.40 (segment-weighted)."""
         diag = _load_gap_diagnosis()
         if diag is None:
             pytest.skip("gap_diagnosis.json not found")
         seg_test = diag.get("segment_type_test", {})
         if not seg_test:
             pytest.skip("Test segment data not available")
-        # 세그먼트별 R2의 가중 평균 계산
         total_n = sum(v.get("n", 0) for v in seg_test.values())
         if total_n == 0:
             pytest.skip("No test samples")
         weighted_r2 = sum(
             v.get("r2", 0) * v.get("n", 0) for v in seg_test.values()
         ) / total_n
-        if weighted_r2 < 0.40:
-            pytest.skip(
-                f"Test R2 {weighted_r2:.3f} < 0.40 "
-                "(통합 모델 재학습 후 재검증 필요)"
-            )
+        assert weighted_r2 >= 0.40, (
+            f"G3 violation: test_r2={weighted_r2:.3f} < 0.40"
+        )
 
     def test_g4_cold_mdape(self) -> None:
-        """G4: Cold MdAPE <= 58%."""
+        """G4: Cold MdAPE <= 58%. (게이트 PASS 기대)"""
         diag = _load_gap_diagnosis()
         if diag is None:
             pytest.skip("gap_diagnosis.json not found")
@@ -96,41 +105,35 @@ class TestPerformanceGates:
                 cold_mdape = val.get("mdape")
         if cold_mdape is None:
             pytest.skip("Cold segment not found")
-        if cold_mdape > 58:
-            pytest.skip(
-                f"Cold MdAPE {cold_mdape:.1f}% > 58% "
-                "(통합 모델 + similarity 피처 적용 후 재검증)"
-            )
+        assert cold_mdape <= 58, (
+            f"G4 violation: cold_mdape={cold_mdape:.2f}% > 58%"
+        )
 
     def test_g5_coverage(self) -> None:
-        """G5: Coverage >= 55%."""
+        """G5: Coverage >= 55%. (게이트 PASS 기대)"""
         metrics = _load_metrics()
         if metrics is None:
             pytest.skip("metrics not found")
         coverage = metrics.get("coverage_overall", 0)
-        if coverage < 0.55:
-            pytest.skip(
-                f"Coverage {coverage:.1%} < 55% "
-                "(CQR 적용 후 재검증 필요)"
-            )
+        assert coverage >= 0.55, (
+            f"G5 violation: coverage={coverage:.1%} < 55%"
+        )
 
+    @pytest.mark.xfail(
+        strict=False,
+        reason="현재 within_30_pct ~37% (time-split + distribution mismatch). 53%는 장기 목표.",
+    )
     def test_g6_within_30(self) -> None:
         """G6: Within 30% >= 53%."""
         diag = _load_gap_diagnosis()
         if diag is None:
             pytest.skip("gap_diagnosis.json not found")
-        # within_30 지표는 통합 모델 학습 후 gap_diagnosis에 추가 예정
         within_30 = diag.get("within_30_pct")
         if within_30 is None:
-            pytest.skip(
-                "within_30_pct not in gap_diagnosis "
-                "(통합 모델 재학습 후 추가 필요)"
-            )
-        if within_30 < 53:
-            pytest.skip(
-                f"Within 30% = {within_30:.1f}% < 53% "
-                "(통합 모델 재학습 후 재검증)"
-            )
+            pytest.skip("within_30_pct not in gap_diagnosis")
+        assert within_30 >= 53, (
+            f"G6 violation: within_30_pct={within_30:.2f}% < 53%"
+        )
 
     def test_g8_monotonicity(self) -> None:
         """G8: Monotonicity >= 0.99."""

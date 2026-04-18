@@ -187,12 +187,15 @@ class DistillationTrainer:
         iterations: int = 2000,
         depth: int = 8,
         learning_rate: float = 0.05,
+        features: list[str] | None = None,
     ) -> CatBoostRegressor:
         """Distilled target으로 Student 학습.
 
         Student는 STRICT_FEATURES만 사용 (추정가 피처 없음).
+        features가 명시되면 해당 리스트 사용 (feature selection 결과 적용 가능 — 코덱스 P2 2026-04-18).
         """
-        features = STRICT_FEATURES
+        if features is None:
+            features = STRICT_FEATURES
         cat_features = [
             i for i, f in enumerate(features)
             if f in CAT_FEATURE_NAMES

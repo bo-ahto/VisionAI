@@ -148,6 +148,11 @@ def get_cold_start_fallback_v2(
     if price_col not in works.columns:
         price_col = "낙찰가" if "낙찰가" in works.columns else price_col
 
+    # 코덱스 P1 (2026-04-18): v1과 동일하게 session 기반 데이터(int)에 str cutoff 쓰면
+    # TypeError. session_col dtype에 맞춰 cutoff 기본값 자동 coerce.
+    if pd.api.types.is_numeric_dtype(works[session_col]) and isinstance(cutoff, str):
+        cutoff = 10**9
+
     mask = (works[session_col] < cutoff)
     sold_mask = mask & (pd.to_numeric(works[price_col], errors="coerce") > 0)
     subset = works.loc[sold_mask].copy()

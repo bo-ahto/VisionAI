@@ -199,8 +199,15 @@ def main() -> None:
         HedonicQuantileModel,
     )
 
+    # 코덱스 P1 (2026-04-18): macro/similarity/PSI 피처를 실제 학습에 넘기도록 extra_features 추가.
+    # 이전엔 위 단계에서 컬럼은 추가되지만 Model-A가 기본 HEDONIC_FEATURES만 학습해서 dead code였음.
+    from visionai.price_engine.features.macro_indicators import MACRO_FEATURES
+    _sim_cols = ["sim_avg_price_ln", "sim_weighted_price_ln", "sim_count", "sim_avg_distance"]
+    extra_features = [c for c in (list(MACRO_FEATURES) + _sim_cols) if c in train.columns]
+    logger.info("Model-A extra_features: %d개 (%s)", len(extra_features), extra_features)
+
     model_a = HedonicQuantileModel(iterations=2000, depth=8, learning_rate=0.05)
-    model_a.fit(train, valid_df=calib, target_col="ln_price")
+    model_a.fit(train, valid_df=calib, target_col="ln_price", extra_features=extra_features)
     model_a.save(OUTPUT_DIR / "model_a_quantile.cbm")
 
     # ─── 7. CQR alpha=0.38 (Coverage G5) ───
@@ -262,17 +269,18 @@ def main() -> None:
         selected = select_features_by_importance(temp_model, all_features, top_n=35)
         logger.info("Top features: %s", selected[:10])
 
-        # Student 학습 (STRICT_FEATURES 전체 — CatBoost 내부 중요도 활용)
+        # 코덱스 P2 (2026-04-18): 실제로 selected를 student에 전달. 이전엔 선별 결과가
+        # 사용되지 않아 feature_selection_top35가 no-op였음.
         valid_y = np.log(
             pd.to_numeric(valid["낙찰가"], errors="coerce").values
         )
         student = distiller.fit_student(
             train, train_distilled, valid_df=valid, y_valid=valid_y,
+            features=selected,
         )
         student.save_model(str(OUTPUT_DIR / "distilled_student.cbm"))
 
-        # Student는 STRICT_FEATURES 전체로 학습됨 (fit_student 내부)
-        student_features = STRICT_FEATURES
+        student_features = selected
     else:
         logger.warning("Teacher not found.")
         student_features = []
