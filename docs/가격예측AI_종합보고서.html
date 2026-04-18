@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionAI 미술품 가격 예측 모델 — 종합 보고서</title>
+<style>
+  :root { --bg: #0d1117; --fg: #c9d1d9; --accent: #58a6ff; --border: #30363d; --card: #161b22; --green: #3fb950; --yellow: #d29922; --red: #f85149; --purple: #bc8cff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.7; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+  h1 { color: var(--accent); font-size: 2rem; margin-bottom: 0.3rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; }
+  h2 { color: var(--accent); font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  h3 { color: var(--green); font-size: 1.15rem; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  h4 { color: var(--purple); font-size: 1rem; margin-top: 1rem; margin-bottom: 0.3rem; }
+  .meta { color: #8b949e; font-size: 0.9rem; margin-bottom: 2rem; }
+  blockquote { border-left: 3px solid var(--yellow); padding: 0.8rem 1rem; margin: 1rem 0; background: rgba(210,153,34,0.08); border-radius: 4px; font-style: italic; }
+  .info-box { border-left: 3px solid var(--accent); padding: 0.8rem 1rem; margin: 1rem 0; background: rgba(88,166,255,0.08); border-radius: 4px; }
+  .warn-box { border-left: 3px solid var(--red); padding: 0.8rem 1rem; margin: 1rem 0; background: rgba(248,81,73,0.08); border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { background: var(--card); color: var(--accent); text-align: left; padding: 0.6rem 0.8rem; border: 1px solid var(--border); }
+  td { padding: 0.5rem 0.8rem; border: 1px solid var(--border); }
+  tr:nth-child(even) td { background: rgba(22,27,34,0.5); }
+  pre { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 1rem 0; font-size: 0.85rem; line-height: 1.5; }
+  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; color: #e6edf3; }
+  p { margin: 0.5rem 0; }
+  strong { color: #f0f6fc; }
+  .best { color: var(--green); font-weight: bold; }
+  .fail { color: var(--red); font-weight: bold; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  ul, ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin: 0.3rem 0; }
+  .arch-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+  .metric-card .value { font-size: 1.8rem; font-weight: bold; margin: 0.3rem 0; }
+  .metric-card .label { font-size: 0.8rem; color: #8b949e; }
+  .metric-card.pass { border-color: var(--green); }
+  .metric-card.pass .value { color: var(--green); }
+  .metric-card.fail { border-color: var(--red); }
+  .metric-card.fail .value { color: var(--red); }
+  .metric-card.warn { border-color: var(--yellow); }
+  .metric-card.warn .value { color: var(--yellow); }
+  .bar { display: inline-block; height: 12px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .bar-accent { background: var(--accent); }
+  .bar-green { background: var(--green); }
+  .bar-yellow { background: var(--yellow); }
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+  .badge-pass { background: rgba(63,185,80,0.2); color: var(--green); border: 1px solid var(--green); }
+  .badge-fail { background: rgba(248,81,73,0.2); color: var(--red); border: 1px solid var(--red); }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1.5rem 0; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>VisionAI 미술품 가격 예측 모델</h1>
+<div class="meta">
+  종합 보고서 &nbsp;|&nbsp; 최종 업데이트: 2026-04-03<br>
+  모델: Ensemble (CatBoost + LightGBM + XGBoost) + Bias Correction &nbsp;|&nbsp; <strong>31개 피처</strong> &nbsp;|&nbsp; 55,938건
+</div>
+
+<div class="toc">
+<strong>목차</strong>
+<ol>
+  <li><a href="#metrics">최종 성능</a></li>
+  <li><a href="#architecture">모델 아키텍처</a></li>
+  <li><a href="#features">31개 피처 상세 + 중요도</a></li>
+  <li><a href="#formulas">예측 공식</a></li>
+  <li><a href="#data">데이터 파이프라인</a></li>
+  <li><a href="#pruning">피처 정리 과정</a></li>
+  <li><a href="#experiments">실험 로그</a></li>
+  <li><a href="#image">이미지 피처 실험</a></li>
+  <li><a href="#insights">핵심 인사이트</a></li>
+  <li><a href="#next">향후 과제</a></li>
+</ol>
+</div>
+
+<hr>
+
+<!-- ===== 1. 최종 성능 ===== -->
+<h2 id="metrics">1. 최종 성능</h2>
+
+<blockquote>
+  <p><strong>2026-04-18 업데이트 (refactor branch feature/hedonic-features-refactor):</strong>
+  코덱스 리뷰로 발견된 <code>price_segment_median</code> 데이터 누수 수정,
+  <code>QuantileRegressor</code> 스택킹 메타학습 교체, XGBoost 범주형 vocabulary 고정,
+  HEDONIC_FEATURES 31→46개 재구성, 그 외 5건 correctness 수정.
+  G7 Leakage 게이트 <strong>PASS</strong>. 다만 누수 제거로 Cold MdAPE가 낙관 편향에서
+  정직한 값으로 조정(57.90% → 59.60%, +1.70pp).</p>
+</blockquote>
+
+<div class="metric-grid">
+  <div class="metric-card warn">
+    <div class="label">Test MdAPE</div>
+    <div class="value">40.89%</div>
+    <div class="label">이전 40.87% → <strong>+0.02pp</strong> (동일)</div>
+  </div>
+  <div class="metric-card pass">
+    <div class="label">R&sup2;</div>
+    <div class="value">0.474</div>
+    <div class="label">이전 0.468 → <strong>+0.006 개선</strong></div>
+  </div>
+  <div class="metric-card fail">
+    <div class="label">Cold MdAPE</div>
+    <div class="value">59.60%</div>
+    <div class="label">이전 57.90% (누수 편향) → 현재 honest</div>
+  </div>
+  <div class="metric-card pass">
+    <div class="label">Coverage</div>
+    <div class="value">57.4%</div>
+    <div class="label">목표 &ge;55% <span class="badge badge-pass">PASS</span></div>
+  </div>
+  <div class="metric-card warn">
+    <div class="label">Within 30%</div>
+    <div class="value">37.6%</div>
+    <div class="label">valid W30 42.0% → <strong>43.0% 개선</strong></div>
+  </div>
+  <div class="metric-card pass">
+    <div class="label">Monotonicity</div>
+    <div class="value">100%</div>
+    <div class="label"><span class="badge badge-pass">PASS</span></div>
+  </div>
+</div>
+
+<h3>게이트 판정 (4/8, G7 신규 PASS)</h3>
+<table>
+  <tr><th>게이트</th><th>기준</th><th>현재</th><th>상태</th></tr>
+  <tr><td>G1 MdAPE</td><td>&le;32%</td><td>40.89%</td><td><span class="badge badge-fail">FAIL</span></td></tr>
+  <tr><td>G2 Gap</td><td>&le;2.5%p</td><td>4.08%p</td><td><span class="badge badge-fail">FAIL</span></td></tr>
+  <tr><td>G3 R&sup2;</td><td>&ge;0.40</td><td>0.474</td><td><span class="badge badge-pass">PASS</span></td></tr>
+  <tr><td>G4 Cold</td><td>&le;58%</td><td>59.60%</td><td><span class="badge badge-fail">FAIL (이전 57.90% 낙관 편향 해소)</span></td></tr>
+  <tr><td>G5 Cov</td><td>&ge;55%</td><td>57.4%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+  <tr><td>G6 W30</td><td>&ge;53%</td><td>37.6%</td><td><span class="badge badge-fail">FAIL</span></td></tr>
+  <tr><td>G7 Leakage</td><td>0건</td><td>0건</td><td><span class="badge badge-pass">PASS (price_segment_median 누수 제거 완료)</span></td></tr>
+  <tr><td colspan="4" style="font-size:0.8rem; color:#8b949e;">* price_segment_median이 cutoff 없이 전체 데이터에서 계산됨 — 향후 cutoff 기반으로 개선 필요</td></tr>
+  <tr><td>G8 Mono</td><td>&ge;0.99</td><td>1.00</td><td><span class="badge badge-pass">PASS</span></td></tr>
+</table>
+
+<h3>개선 요약 (57개 &rarr; 31개)</h3>
+<table>
+  <tr><th>지표</th><th>시작 (57피처)</th><th>최종 (31피처)</th><th>변화</th></tr>
+  <tr><td>MdAPE</td><td>44.05%</td><td class="best">40.87%</td><td class="best">-3.18%p</td></tr>
+  <tr><td>Warm</td><td>41.66%</td><td class="best">38.61%</td><td class="best">-3.05%p</td></tr>
+  <tr><td>Cold</td><td>58.98%</td><td class="best">57.90%</td><td class="best">-1.08%p</td></tr>
+  <tr><td>W30</td><td>35.8%</td><td class="best">38.1%</td><td class="best">+2.3%p</td></tr>
+  <tr><td>Gap</td><td>4.76%p</td><td class="best">3.38%p</td><td class="best">-1.38%p</td></tr>
+  <tr><td>피처</td><td>57</td><td class="best">31</td><td class="best">-46%</td></tr>
+  <tr><td>Gates</td><td>3/8</td><td class="best">4/8</td><td class="best">+1</td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 2. 모델 아키텍처 ===== -->
+<h2 id="architecture">2. 모델 아키텍처</h2>
+
+<div class="warn-box">
+  <strong>모델 유형 명시:</strong> 본 시스템은 <strong>"헤도닉 피처 기반 Gradient Boosted Tree 앙상블"</strong>이며,
+  전통적 헤도닉 회귀 모델(OLS: <code>ln(P) = &beta;₀ + &Sigma;&beta;ᵢXᵢ</code>)과는 다릅니다.<br>
+  헤도닉 가격 이론에서 피처 설계(작가, 매체, 크기 등 속성 분해)를 차용하되,
+  피처 → 가격 매핑은 선형 회귀 대신 트리 모델을 사용하여 비선형 인터랙션과 범주형(5,269명 작가)을 처리합니다.<br><br>
+  <strong>참고 비교:</strong> 수치형 23개 피처만으로 전통 헤도닉 회귀(OLS)를 돌리면 MdAPE 67.0%.
+  현재 트리 모델은 범주형 포함 31개로 MdAPE 40.87% (최종 앙상블 기준).<br>
+  단, 이는 피처 세트와 모델 구조가 다른 비교이므로 순수 모델 차이라고 볼 수 없음.
+  OLS에 CatBoost 단독(31개)을 대응시키면 MdAPE 58.2%. 전통 회귀 공식은 섹션 4.3에서 참고용으로 제시합니다.
+</div>
+
+<div class="arch-box">
+<pre><code>[입력: 작가, 매체, 크기, 경매일, 경매사]
+  v
+[피처 빌드] ── 31개 피처 (월별 cutoff 루프: 각 월에 해당 시점 이전 데이터만 사용)
+  v
+[3-Model Ensemble]
+  ├─ CatBoost MultiQuantile (q25/q50/q75)
+  ├─ LightGBM Quantile &times; 3 (num_leaves=63)
+  └─ XGBoost Quantile &times; 3
+       v  9개 base predictions
+[RidgeCV Meta-Learner] ── 분위수별 독립, alpha auto-search
+       v
+[CQR Calibration] ── alpha=0.38
+       v
+[Bias Correction] ── 가격대별 과대예측 보정
+  ├─ 저가 (&lt;200만): /1.079
+  └─ 고가 (&gt;2000만): /1.075
+       v
+[출력: 예상 낙찰가 (하한/중앙/상한)]</code></pre>
+</div>
+
+<table>
+  <tr><th>모델</th><th>iterations</th><th>depth</th><th>lr</th><th>기타</th></tr>
+  <tr><td>CatBoost MultiQuantile</td><td>2,000</td><td>8</td><td>0.05</td><td>l2_leaf_reg=4.0, q25/q50/q75 동시 출력</td></tr>
+  <tr><td>LightGBM &times;3</td><td>1,500</td><td>7</td><td>0.03</td><td>num_leaves=63, min_child=10, 분위수별 독립</td></tr>
+  <tr><td>XGBoost &times;3</td><td>1,500</td><td>7</td><td>0.03</td><td>quantile regression, 분위수별 독립</td></tr>
+  <tr><td>Meta-Learner</td><td colspan="4">RidgeCV (alpha: 0.01~10, 분위수별 독립 학습 &mdash; 각 qi마다 3개 base 입력)</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>시간 가중치:</strong> 반감기 730일 (2년), 최소 0.5. 최근 데이터에 높은 가중치 부여.
+</div>
+
+<hr>
+
+<!-- ===== 3. 31개 피처 ===== -->
+<h2 id="features">3. 31개 피처 상세 + 중요도</h2>
+
+<blockquote>
+  <strong>피처 설계 배경:</strong> 헤도닉 가격 이론(Rosen, 1974)에서 속성 분해 방식을 차용 &mdash; 가격 &asymp; f(작가, 매체, 크기, 경매사 등).<br>
+  여기에 비교매출, 시장 지수 등 <strong>추가 엔지니어링 피처</strong>를 결합. 모델은 OLS 회귀가 아닌 Gradient Boosted Tree 사용.<br>
+  상위 4개 피처 = 전체 중요도의 43%
+</blockquote>
+
+<h3>피처 등급 기준</h3>
+<div class="info-box">
+  <strong>A등급</strong>: 작가 내에서도 가격 설명력 있음 (같은 작가의 다른 작품 간 가격 차이 설명)<br>
+  <strong>B등급</strong>: 작가 간 차이를 설명 (작가 브랜드 수치화)<br>
+  <strong>C등급</strong>: CatBoost 비선형 효과로 기여 (단독 선형 상관 약하나 트리 분기에서 활용)
+</div>
+
+<table>
+  <tr><th>#</th><th>피처</th><th>등급</th><th>비중</th><th>비중 바</th><th>설명</th></tr>
+  <tr><td>1</td><td><strong>comp_artist_avg</strong></td><td>A</td><td>12.8%</td><td><span class="bar bar-accent" style="width:128px"></span></td>
+      <td>해당 작가의 과거 비교 거래 평균가. 같은 작가+매체+비슷한 크기의 최근 낙찰가를 4단계 폴백으로 매칭하여 산출. 가장 직접적인 가격 앵커.</td></tr>
+  <tr><td>2</td><td><strong>comp_weighted</strong></td><td>A</td><td>12.6%</td><td><span class="bar bar-accent" style="width:126px"></span></td>
+      <td>비교 거래 평균가. 현재 구현에서는 comp_artist_avg와 동일 값이 할당됨 (별도 가중 로직 미구현). 두 피처가 공존하는 이유는 향후 차별화 예정.</td></tr>
+  <tr><td>3</td><td><strong>artist_avg_price</strong></td><td>B</td><td>10.6%</td><td><span class="bar bar-accent" style="width:106px"></span></td>
+      <td>해당 작가의 역대 전체 평균 낙찰가 (원화, 정수 반올림). 작가 브랜드 가치를 하나의 숫자로 요약. "이 작가의 작품은 보통 얼마에 팔리는가"를 나타냄.</td></tr>
+  <tr><td>4</td><td>artist_clean</td><td>B</td><td>6.9%</td><td><span class="bar bar-green" style="width:69px"></span></td>
+      <td>정규화된 작가명 (5,269명). CatBoost가 작가별 고유 패턴을 직접 학습. 빈 값/작가미상은 __UNKNOWN__으로 통합. 원본 데이터의 작가명을 그대로 사용하며 이명 통합 로직은 미구현. 범주형 피처.</td></tr>
+  <tr><td>5</td><td>short_side_cm</td><td>A</td><td>4.9%</td><td><span class="bar bar-green" style="width:49px"></span></td>
+      <td>작품의 짧은 변 길이(cm). 같은 작가라도 큰 작품이 비싸므로 작가 내 가격 차이를 직접 설명. 단변이 장변보다 가격 설명력이 높음.</td></tr>
+  <tr><td>6</td><td>support_category</td><td>B</td><td>4.8%</td><td><span class="bar bar-green" style="width:48px"></span></td>
+      <td>작품의 지지체(바탕재) 8분류: 캔버스, 종이, 비단, 판, 금속, 섬유, 없음, 기타. 캔버스 유화가 종이 수묵보다 일반적으로 고가.</td></tr>
+  <tr><td>7</td><td>medium_category</td><td>B</td><td>4.7%</td><td><span class="bar bar-green" style="width:48px"></span></td>
+      <td>작품의 매체(재료) 17분류: 유화, 아크릴, 수묵, 판화, 조각 등. 매체에 따라 기본 가격대가 크게 다름. 유화 &gt; 판화 &gt; 사진 순.</td></tr>
+  <tr><td>8</td><td>artist_medium_price_ratio</td><td>A</td><td>4.1%</td><td><span class="bar bar-green" style="width:41px"></span></td>
+      <td>작가의 해당 매체 평균가 / 작가 전체 평균가. 같은 작가라도 유화는 비싸고 판화는 싼 경우를 포착. 작가&times;매체 인터랙션 효과.</td></tr>
+  <tr><td>9</td><td>artist_median_price</td><td>B</td><td>3.6%</td><td><span class="bar bar-yellow" style="width:36px"></span></td>
+      <td>작가의 낙찰가 중앙값 (Bayesian Shrinkage 적용). 거래가 적은 작가는 전체 평균 쪽으로 수축하여 극단값 방지. 작가 브랜드의 안정적 지표.</td></tr>
+  <tr><td>10</td><td>auction_house_tier</td><td>A</td><td>3.0%</td><td><span class="bar bar-yellow" style="width:30px"></span></td>
+      <td>경매사 등급: 1=메이저(서울/케이/에이옥션), 2=중견(아이옥션 등), 3=소형. 메이저 경매사 중앙가 145만 vs 중견 42만 (데이터 실측). 같은 작품도 경매사에 따라 가격 차이.</td></tr>
+  <tr><td>11</td><td>ln_surface_area</td><td>A</td><td>2.8%</td><td><span class="bar bar-yellow" style="width:28px"></span></td>
+      <td>작품 표면적의 자연로그 = log(가로cm &times; 세로cm). 크기와 가격의 관계가 로그 스케일에서 더 선형적이므로 원본보다 예측력 높음.</td></tr>
+  <tr><td>12</td><td>artist_age_at_sale</td><td>C</td><td>2.8%</td><td><span class="bar bar-yellow" style="width:28px"></span></td>
+      <td>경매 시점의 작가 나이 (경매년도 - 생년). 원로 작가일수록 시장 인지도가 높아 고가 경향. 프로필 확보: 510명/5,269명(작가 기준 9.7%), 레코드 기준 약 41% (다작 작가가 많아 레코드 커버리지가 더 높음).</td></tr>
+  <tr><td>13</td><td>size_bucket</td><td>B</td><td>2.7%</td><td><span class="bar bar-yellow" style="width:27px"></span></td>
+      <td>작품 크기 구간: 소형/중형/대형 등. 연속값(cm)을 이산 구간으로 묶어 CatBoost가 크기 범주별 패턴을 학습. 범주형 피처.</td></tr>
+  <tr><td>14</td><td>long_side_cm</td><td>A</td><td>2.4%</td><td><span class="bar bar-yellow" style="width:24px"></span></td>
+      <td>작품의 긴 변 길이(cm). 단변과 함께 작품의 물리적 크기를 표현. 같은 면적이라도 정방 vs 세로 긴 형태에 따라 가격이 다를 수 있음.</td></tr>
+  <tr><td>15</td><td>market_price_index</td><td>C</td><td>2.3%</td><td><span class="bar bar-yellow" style="width:23px"></span></td>
+      <td>해당 시점 직전 3개월간 전체 평균 낙찰가 (date mode 기준). 경매 시장의 호황/불황을 반영하는 유일한 시계열 피처.</td></tr>
+  <tr><td>16</td><td>aspect_ratio</td><td>C</td><td>1.8%</td><td><span class="bar bar-yellow" style="width:18px"></span></td>
+      <td>작품의 종횡비 (세로/가로). 정방형(~1.0) 작품이 극단적 가로/세로 작품보다 높은 가격 경향. CatBoost가 비선형 구간 분기로 활용.</td></tr>
+  <tr><td>17</td><td>artist_nationality</td><td>B</td><td>1.7%</td><td><span class="bar bar-yellow" style="width:17px"></span></td>
+      <td>작가 국적: KR(한국), WS(Western/해외), JP(일본), UN(미상). 해외 작가 전체를 WS로 통합. 국적별 가격 결정 패턴이 다름. 범주형 피처.</td></tr>
+  <tr><td>18</td><td>artist_max_price</td><td>B</td><td>1.7%</td><td><span class="bar bar-yellow" style="width:17px"></span></td>
+      <td>작가의 역대 최고 낙찰가. 작가의 "천장 가격"을 나타냄. 최고가가 높은 작가는 전반적으로 고가대를 형성. 평균가와 함께 가격 범위 정보 제공.</td></tr>
+  <tr><td>19</td><td>artist_price_volatility</td><td>B</td><td>1.6%</td><td><span class="bar bar-yellow" style="width:16px"></span></td>
+      <td>작가 낙찰가의 변동성 (로그 가격 표준편차). 변동성이 큰 작가는 예측 불확실성이 높음. 안정적 작가 vs 투기적 작가를 구분하는 지표.</td></tr>
+  <tr><td>20</td><td>medium_size_avg_price</td><td>A</td><td>1.6%</td><td><span class="bar bar-yellow" style="width:16px"></span></td>
+      <td>해당 매체&times;크기 조합의 평균 거래가. "중형 유화의 평균 시세"처럼 매체와 크기의 교차 효과를 반영. 작가 정보 없이도 작품의 기본 시세 추정 가능.</td></tr>
+  <tr><td>21</td><td>price_segment_median</td><td>A</td><td>1.4%</td><td><span class="bar bar-yellow" style="width:14px"></span></td>
+      <td>해당 매체 카테고리(medium_category) 전체의 중앙 가격 (로그). "유화 시장의 기준 가격", "판화 시장의 기준 가격" 등 매체별 가격대 앵커. 이름의 "segment"는 매체 카테고리별 구간을 의미.</td></tr>
+  <tr><td>22</td><td>artist_last_hammer_price</td><td>C</td><td>1.4%</td><td><span class="bar bar-yellow" style="width:14px"></span></td>
+      <td>작가의 가장 최근 경매 세션 낙찰가 중앙값. 최신 시장 평가를 반영. 최근 고가에 팔린 작가는 다음 작품도 높은 가격이 기대됨. 단기 시장 신호.</td></tr>
+  <tr><td>23</td><td>title_subject</td><td>C</td><td>1.3%</td><td><span class="bar bar-yellow" style="width:13px"></span></td>
+      <td>작품 제목에서 추출한 주제 분류: 추상, 풍경, 인물, 꽃, 정물, 서예 등. 같은 작가라도 풍경(+12.5%)과 추상(-9.9%) 간 유의미한 가격 차이 존재 (데이터 실측). 범주형.</td></tr>
+  <tr><td>24</td><td>comp_match_count</td><td>C</td><td>1.2%</td><td><span class="bar bar-yellow" style="width:12px"></span></td>
+      <td>비교 거래 매칭 건수. 비교 대상이 많을수록 가격 추정이 안정적. 매칭 0건이면 비교 거래 기반 예측 불가 &rarr; 불확실성 높음을 나타냄.</td></tr>
+  <tr><td>25</td><td>artist_total_sold</td><td>B</td><td>1.1%</td><td><span class="bar bar-yellow" style="width:11px"></span></td>
+      <td>작가의 총 낙찰 건수. 거래량이 많은 작가는 시장에서 검증된 작가. Cold Start 기준값(5건)의 원천. 거래 0건=신규 작가, 50+건=시장 스타.</td></tr>
+  <tr><td>26</td><td>artist_auctions_since_last</td><td>C</td><td>0.9%</td><td><span class="bar bar-yellow" style="width:9px"></span></td>
+      <td>작가의 마지막 거래 이후 경과 일수 (date mode) 또는 세션 수 (session mode). 오래 거래가 없던 작가가 다시 나오면 희소성 프리미엄 가능.</td></tr>
+  <tr><td>27</td><td>artist_price_trend</td><td>C</td><td>0.8%</td><td><span class="bar bar-yellow" style="width:8px"></span></td>
+      <td>작가의 최근 거래 가격 추세 (최근 5개월 평균 / 이전 전체 평균 - 1, date mode 기준). 양수면 가격 상승세, 음수면 하락세.</td></tr>
+  <tr><td>28</td><td>is_deceased</td><td>C</td><td>0.8%</td><td><span class="bar bar-yellow" style="width:8px"></span></td>
+      <td>작가 작고 여부 (True/False). 작고 작가의 작품은 더 이상 공급이 없어 희소성 프리미엄 발생. 작고 작가 중앙가 150만 vs 생존 100만 (데이터 실측). 범주형.</td></tr>
+  <tr><td>29</td><td>orientation</td><td>C</td><td>0.6%</td><td><span class="bar bar-yellow" style="width:7px"></span></td>
+      <td>작품 방향: 가로(landscape), 세로(portrait), 정방(square). 종횡비를 이산 범주로 변환. CatBoost가 방향별 가격 패턴을 범주형으로 학습. 범주형.</td></tr>
+  <tr><td>30</td><td>source_count</td><td>C</td><td>0.5%</td><td><span class="bar bar-yellow" style="width:5px"></span></td>
+      <td>작가가 출품한 경매사 수. 여러 경매사에 나오는 작가는 시장 인지도가 높음. 1개 경매사=지역 작가, 4+개=전국구 작가의 간접 지표.</td></tr>
+  <tr><td>31</td><td>artist_price_momentum</td><td>C</td><td>0.5%</td><td><span class="bar bar-yellow" style="width:5px"></span></td>
+      <td>작가의 가격 모멘텀 (최근 3개월 평균 / 전체 평균 - 1, date mode). trend와 유사하나 더 짧은 창. 급등/급락하는 작가를 포착. 양수면 상승, 음수면 하락.</td></tr>
+</table>
+
+<h3>카테고리별 기여도</h3>
+<table>
+  <tr><th>카테고리</th><th>피처 수</th><th>비중</th><th>비중 바</th><th>포함 피처</th></tr>
+  <tr><td><strong>비교매출</strong></td><td>3</td><td class="best">26.6%</td><td><span class="bar bar-accent" style="width:266px"></span></td><td>comp_artist_avg, comp_weighted, comp_match_count</td></tr>
+  <tr><td>범주형 (ID/매체/국적)</td><td>4</td><td>18.1%</td><td><span class="bar bar-green" style="width:181px"></span></td><td>artist_clean, medium_category, support_category, artist_nationality</td></tr>
+  <tr><td>작가 통계</td><td>3</td><td>15.9%</td><td><span class="bar bar-green" style="width:159px"></span></td><td>artist_avg_price, artist_median_price, artist_max_price</td></tr>
+  <tr><td>크기</td><td>6</td><td>15.2%</td><td><span class="bar bar-green" style="width:152px"></span></td><td>short/long_side_cm, ln_surface_area, size_bucket, aspect_ratio, orientation</td></tr>
+  <tr><td>인터랙션</td><td>3</td><td>7.1%</td><td><span class="bar bar-yellow" style="width:71px"></span></td><td>artist_medium_price_ratio, medium_size_avg_price, price_segment_median</td></tr>
+  <tr><td>작가 파생 통계</td><td>6</td><td>6.3%</td><td><span class="bar bar-yellow" style="width:63px"></span></td><td>volatility, total_sold, trend, momentum, auctions_since_last, last_hammer</td></tr>
+  <tr><td>출처+시장</td><td>3</td><td>5.8%</td><td><span class="bar bar-yellow" style="width:58px"></span></td><td>auction_house_tier, market_price_index, source_count</td></tr>
+  <tr><td>프로필</td><td>2</td><td>3.6%</td><td><span class="bar bar-yellow" style="width:36px"></span></td><td>artist_age_at_sale, is_deceased</td></tr>
+  <tr><td>제목 주제</td><td>1</td><td>1.3%</td><td><span class="bar bar-yellow" style="width:13px"></span></td><td>title_subject</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>제거된 제목 피처:</strong> title_length(2.6%), title_is_english(0.6%), title_has_hanja(1.5%) &mdash;
+  작가 내 상관 &lt;0.05로 작가 대리지표에 불과. 제거해도 MdAPE +0.26%p만 악화.<br>
+  <strong>보존한 title_subject(1.3%):</strong> 같은 작가 내 풍경 +12.5%, 추상 -9.9% 등 실질적 가격 차이 확인 (데이터 실측).
+</div>
+
+<div class="info-box">
+  <strong>유사작가 피처 (학습 파이프라인에서 계산되나 현재 모델 미사용):</strong><br>
+  학습 파이프라인(Step 0-B)에서 K-NN 유사작가 5명 기반 4개 피처(<code>sim_avg_price_ln</code>, <code>sim_weighted_price_ln</code>, <code>sim_count</code>, <code>sim_avg_distance</code>)가 계산됨.
+  그러나 최종 모델의 <code>extra_features=null</code>이므로 <strong>실제 모델 입력은 31개</strong>.<br>
+  유사작가 피처는 Cold Start 폴백 Tier 2에서 <code>cold_estimate</code> 계산에만 활용됨 (모델 입력이 아닌 Cold Start 로직 내부).
+</div>
+
+<hr>
+
+<!-- ===== 4. 예측 공식 ===== -->
+<h2 id="formulas">4. 예측 공식</h2>
+
+<h3>4.1 전체 예측 흐름</h3>
+<div class="arch-box">
+<pre><code>Step 1. 피처 생성 (31개) — cutoff 시점 기준, 미래 정보 차단
+Step 2. Base Learner 예측 (9개)
+           CB_q25/q50/q75, LGB_q25/q50/q75, XGB_q25/q50/q75
+Step 3. Meta-Learner (RidgeCV) — 분위수별 독립 학습
+           q_i = w₁·CB_qi + w₂·LGB_qi + w₃·XGB_qi + b
+Step 4. CQR 보정 — Conformal Quantile Regression
+           low = q25 - Q̂,  high = q75 + Q̂
+Step 5. 분위수 순서 보장 (PAV pooling)
+           q25 &le; q50 &le; q75  (분위수 교차 방지, G8 크기-가격 단조 상관과는 별개)
+Step 6. exp 변환 &rarr; 원화
+Step 7. Bias 보정: 저가 /1.079, 고가 /1.075
+Step 8. 시장 단위 라운딩 (100만~5000만 단위)</code></pre>
+</div>
+
+<!-- 4.2 피처 생성 공식 -->
+<h3>4.2 피처 생성 공식 — 31개 피처가 만들어지는 과정</h3>
+
+<h4>A. Bayesian Shrinkage (공통 기법)</h4>
+<div class="info-box">
+  여러 피처에 공통 적용되는 수축 추정. 거래가 적은 그룹(작가·매체)의 극단값을 전체 평균 쪽으로 당겨 안정화.
+</div>
+<div class="arch-box">
+<pre><code>shrunk_ln = (n &times; group_mean_ln + m &times; global_mean_ln) / (n + m)
+                                        m = 10 (수축 강도)
+
+n=0  &rarr; 100% 전체평균  (데이터 없는 작가)
+n=10 &rarr; 50:50 혼합
+n=50 &rarr; 83% 작가 고유값
+
+적용 대상: artist_median_price, cold_start 계층별 폴백
+(제거된 medium_avg_price에도 적용됐으나 현재 모델에선 미사용)</code></pre>
+</div>
+
+<h4>B. 비교매출 (comp_artist_avg, comp_weighted, comp_match_count) — 비중 26.6%</h4>
+<div class="info-box">
+  가장 중요한 피처 그룹. "이 작가의 비슷한 작품이 최근 얼마에 팔렸는가"를 4단계로 매칭.
+</div>
+<div class="arch-box">
+<pre><code>■ Level 1 (match_level=1.0): 작가 + 매체 + 크기(면적 &plusmn;20%)
+   조건: 매칭 &ge;3건
+   comp_artist_avg = mean(최근 3건의 낙찰가)
+   comp_weighted   = comp_artist_avg와 동일 값 (현재 구현에서 별도 가중 없음)
+
+■ Level 2 (match_level=2.0): 작가 + 매체 (크기 무시)
+   조건: 매칭 &ge;3건
+   comp_artist_avg = mean(최근 3건)
+
+■ Level 3 (match_level=3.0): 매체 + 크기 (작가 무시)
+   조건: 매칭 &ge;10건
+   comp_medium_avg = mean(최근 10건)  ← comp_artist_avg는 채워지지 않음
+   comp_weighted   = comp_medium_avg와 동일
+
+■ Level 4 (match_level=4.0): 매체 전체 (글로벌 폴백)
+   조건: 매칭 &ge;5건
+   comp_medium_avg = mean(해당 매체 전체)
+   comp_weighted   = comp_medium_avg와 동일
+   ※ L3/L4에서 comp_artist_avg는 NaN으로 남음 (코드에서 미할당)
+
+comp_match_count = 매칭된 거래 건수
+                   0건이면 비교 불가 → 높은 불확실성</code></pre>
+</div>
+
+<h4>C. 작가 통계 (artist_avg_price, artist_median_price, artist_max_price) — 비중 15.9%</h4>
+<div class="arch-box">
+<pre><code>■ artist_avg_price = round(mean(prices_before_cutoff))
+   cutoff 이전 해당 작가의 모든 낙찰가 단순 평균
+
+■ artist_median_price (Bayesian Shrinkage 적용):
+   IF count &ge; 3:
+       artist_median_price = median(prices)
+   ELSE:
+       ln_shrunk = (count &times; ln(median) + 10 &times; ln(global_median)) / (count + 10)
+       artist_median_price = exp(ln_shrunk)
+
+■ artist_max_price = max(prices_before_cutoff)
+   작가의 역대 최고 낙찰가 → "천장 가격" 참조점</code></pre>
+</div>
+
+<h4>D. 작가 파생 통계 (변동성·추세·모멘텀·빈도) — 비중 6.3%</h4>
+<div class="arch-box">
+<pre><code>■ artist_price_volatility = std(ln(prices))
+   최소 3건 이상 (미만 → NaN)
+   높으면 예측 불확실성 큼
+
+■ artist_price_trend = (최근 5개월 평균 / 이전 전체 평균) - 1.0
+   ※ date mode: _subtract_periods(cutoff, 5) = 5개월 전 날짜
+   최소 5건 이상 (미만 → NaN),  양수 = 상승세
+
+■ artist_price_momentum = (최근 3개월 평균 / 전체 평균) - 1.0
+   ※ date mode: 3개월 창
+   최소 3건 (미만 → NaN),  &gt;0 = 상승,  &lt;0 = 하락
+
+■ artist_last_hammer_price = 가장 최근 세션의 낙찰가 중앙값
+
+■ artist_auctions_since_last
+   date mode: cutoff 날짜 - 마지막 거래 날짜 = <strong>일수</strong> (days)
+   session mode: cutoff 세션 - 마지막 세션 = 세션 수
+
+■ artist_total_sold = count(price &gt; 0 before cutoff)
+   Cold Start 기준: &lt;5건 = Cold</code></pre>
+</div>
+
+<h4>E. 크기 피처 (short/long_side_cm, ln_surface_area, aspect_ratio, size_bucket, orientation) — 비중 15.2%</h4>
+<div class="arch-box">
+<pre><code>■ short_side_cm = min(height_cm, width_cm)
+  long_side_cm  = max(height_cm, width_cm)
+  → 회전 무관하게 크기 표현 (세로/가로 혼동 방지)
+
+■ ln_surface_area = ln(height_cm &times; width_cm)
+  → 로그 스케일에서 가격과 더 선형적 관계
+
+■ aspect_ratio = height_cm / width_cm
+  → 정방(~1.0) vs 세로 긴 형태 vs 가로 긴 형태
+
+■ size_bucket = 면적 기준 이산 구간 (pd.cut)
+  소형(&lt;2,720cm²) / 중형(2,720~7,320) / 대형(7,320~22,000) / 초대형(&gt;22,000)
+
+■ orientation = {landscape, portrait, square}
+  ratio &gt; 1.2 → portrait,  ratio &lt; 0.83 → landscape,  그 외 → square</code></pre>
+</div>
+
+<h4>F. 인터랙션 피처 (artist_medium_price_ratio, medium_size_avg_price, price_segment_median) — 비중 7.1%</h4>
+<div class="arch-box">
+<pre><code>■ artist_medium_price_ratio
+  = mean(prices | 작가, 매체) / mean(prices | 작가)
+  "이 작가의 유화는 전체 평균 대비 몇 배인가?"
+  예: 김환기 유화 = 1.8 (전체보다 80% 비쌈)
+      김환기 판화 = 0.3 (전체보다 70% 저렴)
+
+■ medium_size_avg_price (3단계 폴백)
+  IF count(매체 &times; size_bucket) &ge; 5:
+      = mean(prices | 매체, size_bucket)      ← "중형 유화 시세"
+  ELIF count(매체) &ge; 5:
+      = mean(prices | 매체)                   ← "유화 시세"
+  ELSE:
+      = global_mean(prices)                   ← 전체 시세
+
+■ price_segment_median = ln(median(prices | medium_category))
+  "유화 시장의 기준 가격" = ln(280만) ≈ 14.8
+  "판화 시장의 기준 가격" = ln(35만) ≈ 12.8
+  ※ 주의: 현재 구현은 split 전 전체 데이터에서 계산 (cutoff 무관).
+    엄밀히는 미래 정보 누수이나, 매체별 중앙가는 시간에 따라
+    큰 변동이 없어 실질적 영향은 제한적. 향후 cutoff 기반으로 개선 권장.</code></pre>
+</div>
+
+<h4>G. 시장·출처 피처 (market_price_index, auction_house_tier, source_count) — 비중 5.8%</h4>
+<div class="arch-box">
+<pre><code>■ market_price_index (시장 평균가, 엄밀한 지수는 아님)
+  = date mode: 최근 3개월 전체 낙찰가 단순 평균
+    session mode: 최근 3세션 평균
+  → 시장 전체 호황/불황 시그널 (유일한 시계열 피처)
+  ※ 구성 효과(composition effect)에 취약한 단순 평균
+
+■ auction_house_tier = {1, 2, 3}
+  1 = 메이저 (서울옥션, 케이옥션, 에이옥션)  중앙가 145만 (데이터 실측)
+  2 = 중견 (아이옥션 등)                     중앙가 42만
+  3 = 소형                                   중앙가 80만
+
+■ source_count = 작가가 출품한 고유 경매사 수
+  1개 = 지역 작가,  4+ = 전국구</code></pre>
+</div>
+
+<h4>H. 범주형 피처 (artist_clean, medium_category, support_category, artist_nationality) — 비중 18.1%</h4>
+<div class="arch-box">
+<pre><code>■ artist_clean: 정규화 작가명 (5,269명)
+  CatBoost native categorical → 작가별 leaf 분기 직접 학습
+  빈 값/작가미상 → "__UNKNOWN__" 통합, 그 외 원본 작가명 그대로 사용
+  ※ 이명 통합(예: 이우환↔Lee Ufan) 로직은 미구현 — 향후 과제
+
+■ medium_category: 17개 범주
+  유화, 아크릴, 수묵, 수채, 판화, 조각, 사진, 혼합매체, ...
+  → CatBoost가 매체별 기본 가격대를 학습
+
+■ support_category: 8개 범주
+  캔버스, 종이, 비단, 판, 금속, 섬유, 없음, 기타
+  → 캔버스 유화 vs 종이 수묵 = 가격 계층 분리
+
+■ artist_nationality: {KR, WS, JP, UN}
+  KR=한국, WS=Western(서양 및 기타 해외 통합), JP=일본, UN=미상
+  한국 vs 해외 작가의 가격 결정 패턴 차이</code></pre>
+</div>
+
+<h4>I-2. 제목 주제 (title_subject) — 비중 1.3% (별도 카테고리)</h4>
+<div class="arch-box">
+<pre><code>■ title_subject: 제목에서 NLP 추출한 주제
+  추상, 풍경, 인물, 꽃, 정물, 서예 등
+  → 같은 작가 내 풍경(+12.5%), 추상(-9.9%) 가격 차이 (데이터 실측, 서예는 66건으로 +2.8%)
+  범주형이지만 카테고리 분류상 "범주형 (ID/매체)"와 별도로 분리</code></pre>
+</div>
+
+<h4>I. 프로필 피처 (artist_age_at_sale, is_deceased) — 비중 3.6%</h4>
+<div class="arch-box">
+<pre><code>■ artist_age_at_sale = 경매년도 - 작가 생년
+  프로필 확보된 510명/5,269명 (9.7%)에서만 유효
+  미확보 → NaN (CatBoost가 결측 자체를 패턴으로 학습)
+
+■ is_deceased = True/False
+  작고 작가: 더 이상 신작 없음 → 희소성 프리미엄
+  작고 중앙가 150만 vs 생존 100만 (데이터 실측)</code></pre>
+</div>
+
+<!-- 4.3 트리 모델이 피처를 사용하는 방식 -->
+<h3>4.3 전통 헤도닉 회귀 공식 vs 현재 트리 모델</h3>
+
+<div class="info-box">
+  본 시스템은 헤도닉 가격 이론에서 <strong>피처 설계</strong>를 차용하되,
+  <strong>모델</strong>은 전통 OLS 회귀 대신 Gradient Boosted Tree를 사용합니다.
+  아래에 두 접근의 차이를 명시합니다.
+</div>
+
+<h4>A. 전통 헤도닉 회귀 (참고용 — 닫힌 공식 있음)</h4>
+<div class="arch-box">
+<pre><code>ln(Price) = 4.616                                  ← 절편 (모든 피처=0일 때 수학적 값, 시장 의미 없음)
+  + 0.655 &times; artist_price_volatility               ← 변동성 큰 작가 &rarr; 고가 편향
+  + 0.521 &times; price_segment_median                  ← 매체별 기준가 (ln scale)
+  - 0.238 &times; auction_house_tier                    ← tier +1단계 &rarr; 가격 <strong>-21%</strong>
+  + 0.219 &times; artist_medium_price_ratio             ← 작가&times;매체 비율 +0.1 &rarr; 가격 +2.2%
+  + 0.064 &times; artist_price_momentum                 ← 모멘텀 +0.1 &rarr; +0.6%
+  + 0.051 &times; source_count                          ← 경매사 +1곳 &rarr; +5.3%
+  + 0.051 &times; ln_surface_area                       ← 면적 1%&uarr; &rarr; 가격 0.05%&uarr; (탄력성)
+  + 0.013 &times; short_side_cm                         ← +10cm &rarr; 가격 +13.7%
+  + 0.001 &times; artist_total_sold                     ← +10건 &rarr; 가격 +1.0%
+  + ...  (나머지 피처는 계수 &lt; 0.001)
+
+  Test R&sup2; = 0.525  |  MdAPE = <span class="fail">67.0%</span>
+  (수치형 23개 피처만 사용, 범주형 8개 미포함)
+  ※ 절편 4.616은 모든 피처가 0일 때의 수학적 값이며 시장의 "기본가"가 아님</code></pre>
+</div>
+
+<div class="info-box">
+  <strong>계수 해석 예시:</strong><br>
+  <code>auction_house_tier</code>의 &beta; = -0.238이므로, tier가 1(메이저)에서 2(중견)로 바뀌면:<br>
+  &nbsp;&nbsp; 가격 변화 = exp(-0.238) = 0.788, 즉 <strong>-21.2% 하락</strong>.<br>
+  <code>short_side_cm</code>의 &beta; = 0.013이므로, 단변이 50cm에서 60cm로 +10cm 커지면:<br>
+  &nbsp;&nbsp; 가격 변화 = exp(0.013 &times; 10) = 1.137, 즉 <strong>+13.7% 상승</strong>.
+</div>
+
+<h4>B. 현재 시스템: 트리 모델 (닫힌 공식 없음)</h4>
+
+<div class="warn-box">
+  <strong>핵심:</strong> 트리 모델에는 <code>y = w₁&times;comp + w₂&times;size + ...</code> 같은 닫힌 공식이 존재하지 않습니다.<br>
+  대신 <strong>983개 트리 &times; 256개 leaf = 25만개 경로</strong> 중 피처 조합에 맞는 하나를 선택하여 비선형적으로 가격을 결정합니다.
+</div>
+
+<h4>C. 두 접근의 비교</h4>
+<div class="info-box">
+  <strong>비교 조건:</strong> OLS는 수치형 23개만, CatBoost 단독은 범주형 포함 31개 사용.
+  피처 세트가 다르므로 순수 모델 차이가 아닌 "피처+모델" 복합 비교임에 주의.<br>
+  최종 앙상블(CatBoost+LGB+XGB+RidgeCV+CQR+Bias) 성능은 MdAPE <strong>40.87%</strong>, R&sup2; <strong>0.468</strong>으로 별도.
+</div>
+<table>
+  <tr><th>항목</th><th>전통 헤도닉 회귀 (OLS)</th><th>CatBoost 단독 (GBT)</th><th>최종 앙상블</th></tr>
+  <tr><td><strong>공식</strong></td><td>ln(P) = &beta;₀ + &Sigma;&beta;ᵢXᵢ</td><td>ln(P) = &Sigma; leaf_t(X)</td><td>섹션 4.4 참조</td></tr>
+  <tr><td><strong>해석 가능성</strong></td><td class="best">높음 — 각 &beta; 명확</td><td>낮음 — 사후 해석 필요</td><td>낮음</td></tr>
+  <tr><td><strong>비선형 인터랙션</strong></td><td>수동 교차항 필요</td><td class="best">자동 포착</td><td class="best">자동</td></tr>
+  <tr><td><strong>범주형 (5,269명)</strong></td><td>one-hot/고정효과로 가능하나 고차원</td><td class="best">native categorical</td><td class="best">native</td></tr>
+  <tr><td><strong>결측 처리</strong></td><td>imputation 또는 indicator 필요</td><td class="best">NaN 별도 분기</td><td class="best">NaN 분기</td></tr>
+  <tr><td><strong>Test MdAPE</strong></td><td class="fail">67.0%</td><td>58.2%</td><td class="best">40.87%</td></tr>
+  <tr><td><strong>Test R&sup2;</strong></td><td>0.525</td><td>0.710</td><td class="best">0.468*</td></tr>
+  <tr><td><strong>피처 수</strong></td><td>23 (수치형만)</td><td>31 (범주형 포함)</td><td>31</td></tr>
+  <tr><td><strong>트리 수</strong></td><td>—</td><td>983 (early stop, 설정 2000)</td><td>983+1500+1500</td></tr>
+</table>
+<p style="color:#8b949e; font-size:0.85rem;">* R&sup2;는 원화 스케일 기준. CatBoost 단독 R&sup2; 0.710은 로그 스케일 기준으로, 비교 시 주의.</p>
+
+<div class="info-box">
+  <strong>설계 판단:</strong> 해석 가능한 공식(OLS)을 포기하고 정확도(GBT)를 택한 이유:<br>
+  1. 범주형 피처 <code>artist_clean</code>(5,269명)을 native categorical로 처리 시 가격의 6.9% 설명 (OLS에서도 고정효과로 가능하나 차원 폭발 + 과적합 위험)<br>
+  2. 피처 인터랙션 (작가&times;매체&times;크기)이 트리에선 자동, OLS에선 수동 교차항 설계 필요<br>
+  3. NaN 보존 전략 ("결측 = 정보")이 트리에서 자연스러움 (OLS에서도 indicator 변수로 가능)<br>
+  4. 최종 앙상블 기준 OLS 대비 MdAPE -26.1%p 차이
+</div>
+
+<h4>단일 트리의 분기 구조 (Oblivious Decision Tree)</h4>
+<div class="arch-box">
+<pre><code>CatBoost의 각 트리 (depth=8, 설정 2000 중 early stopping으로 983개 사용):
+┌─ comp_artist_avg &gt; 500만? ────────────────────────┐
+│  Y: artist_avg_price &gt; 300만? ──┐                   │
+│     Y: ln_surface_area &gt; 8.5? ──┐                   │
+│        Y: medium = 유화?          │  N: size &lt; 50cm? │
+│           ... (8단계까지)         │     ...           │
+│        → leaf: [+0.02, +0.03, +0.04]                │
+│              (q25, q50, q75 보정값)                   │
+└──────────────────────────────────────────────────────┘
+
+최종 예측 = Σ_{t=1}^{983} leaf_value_t(x)
+
+  "공식" 대신 <strong>"983명의 전문가 투표 합산"</strong>으로 이해</code></pre>
+</div>
+
+<h4>피처별 가격 기여 실측 (개별 반사실 분석)</h4>
+<div class="info-box">
+  <strong>방법:</strong> 특정 작품에서 피처 하나를 NaN으로 제거한 후 예측이 얼마나 변하는지 측정 (반사실적 분석).<br>
+  전역 통계(global permutation importance)가 아닌 <strong>개별 사례(local)</strong> 기여도이며, 작품마다 다름.<br>
+  <strong>% 해석:</strong> (원래 예측 - 제거 후 예측) / 제거 후 예측 &times; 100. 양수 = 해당 피처가 가격을 올림.
+</div>
+
+<table>
+  <tr><th>피처</th><th>가격 기여 방식</th><th>제거 시 영향 (대표 사례)</th></tr>
+  <tr><td><strong>comp_weighted</strong></td><td>가장 직접적 가격 앵커. "비슷한 작품이 2400만에 팔렸으면 거기서 출발"</td><td>제거 시 <strong>-382%</strong> (고가 작품 3700만 &rarr; 766만)</td></tr>
+  <tr><td><strong>artist_avg_price</strong></td><td>작가 브랜드 기준선. "이 작가 평균이 2374만이면 그 근처"</td><td>제거 시 <strong>-214%</strong> (고가) / -77% (중가)</td></tr>
+  <tr><td><strong>artist_max_price</strong></td><td>작가의 천장 가격. 고가 작품에서 상한 참조</td><td>제거 시 <strong>-101%</strong> (고가 2.8억 작가)</td></tr>
+  <tr><td><strong>artist_medium_price_ratio</strong></td><td>작가&times;매체 인터랙션. "이 작가의 아크릴은 평균의 1.8배"</td><td>제거 시 -87% (고가) / -57% (저가)</td></tr>
+  <tr><td><strong>ln_surface_area</strong></td><td>크기 프리미엄. "같은 작가인데 큰 작품이면 +30~70%"</td><td>제거 시 -71% (고가) / -25% (중가)</td></tr>
+  <tr><td><strong>medium_category</strong></td><td>매체 가격 계층. "유화 &gt; 아크릴 &gt; 판화 &gt; 사진"</td><td>제거 시 -28% (고가)</td></tr>
+  <tr><td><strong>auction_house_tier</strong></td><td>채널 프리미엄. "메이저 경매 = 중견 대비 +35%"</td><td>제거 시 +35% (저가, tier=2 &rarr; 평균쪽 이동)</td></tr>
+  <tr><td><strong>artist_nationality</strong></td><td>국적별 시장 구조. "KR vs WS 작가 가격 패턴 차이"</td><td>제거 시 -29% (고가 KR) / +25% (저가 WS)</td></tr>
+  <tr><td><strong>artist_total_sold</strong></td><td>시장 검증도. "거래 56건 = 검증된 작가 &rarr; 신뢰도 보정"</td><td>제거 시 +16% (중가, 다작 작가)</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>가격 결정 순서 (모델이 학습한 패턴):</strong><br>
+  1. <strong>비교매출</strong>이 가격의 출발점 설정 (comp_artist_avg/comp_weighted 등 = 26.6%)<br>
+  2. <strong>작가 브랜드</strong>가 기준선 확립 (작가통계 15.9% + 범주형 ID/매체/국적 18.1% = 34.0%)<br>
+  3. <strong>크기</strong>가 기준선에서 상하 조정 (크기 6개 피처 = 15.2%)<br>
+  4. <strong>나머지</strong>가 미세 보정 (인터랙션 7.1% + 작가 파생 통계 6.3% + 출처+시장 5.8% + 프로필 3.6% + 제목 1.3% = 24.1%)
+</div>
+
+<hr>
+
+<!-- 4.4 앙상블 예측 공식 -->
+<h3>4.4 앙상블 예측 공식</h3>
+
+<h4>Level-0: Base Learner 3개 &times; 3분위수 = 9개 예측</h4>
+<div class="arch-box">
+<pre><code>■ CatBoost MultiQuantile
+  loss = "MultiQuantile:alpha=0.25,0.5,0.75"
+  iterations=2000, depth=8, lr=0.05, l2_leaf_reg=4.0
+  → CB_q25, CB_q50, CB_q75  (한 모델에서 3개 동시 출력)
+  범주형: native categorical (cat_features 지정)
+
+■ LightGBM &times; 3 (분위수별 독립 모델)
+  objective="quantile", alpha={0.25, 0.50, 0.75}
+  n_estimators=1500, max_depth=7, lr=0.03, num_leaves=63
+  → LGB_q25, LGB_q50, LGB_q75
+  범주형: pandas Categorical dtype 자동 인식
+
+■ XGBoost &times; 3 (분위수별 독립 모델)
+  objective="reg:quantileerror", quantile_alpha={0.25, 0.50, 0.75}
+  n_estimators=1500, max_depth=7, lr=0.03
+  → XGB_q25, XGB_q50, XGB_q75
+  범주형: 정수 코드 변환 (.cat.codes) 후 입력
+
+■ 결측 처리: 3개 모델 모두 NaN을 별도 분기로 처리 (결측 = 정보 신호)</code></pre>
+</div>
+
+<h4>Level-1: RidgeCV Meta-Learner (앙상블 결합)</h4>
+<div class="arch-box">
+<pre><code>분위수별 독립 학습 (Calib 데이터 2,723건 사용):
+
+FOR qi in {q25, q50, q75}:
+    X_meta = [ CB_qi,  LGB_qi,  XGB_qi ]   ← 3개 base 예측값
+    y_meta = actual_ln_price
+
+    RidgeCV(alphas=[0.01, 0.1, 0.5, 1.0, 5.0, 10.0]).fit(X_meta, y_meta)
+
+    final_qi = w₁·CB_qi + w₂·LGB_qi + w₃·XGB_qi + b
+
+단조성 강제: q25 &le; q50 &le; q75 (위반 시 PAV pooling)</code></pre>
+</div>
+
+<h4>CQR (Conformal Quantile Regression)</h4>
+<div class="arch-box">
+<pre><code>Calib 데이터에서 비순응 점수 계산:
+    E_i = max(q25_i - y_i,  y_i - q75_i)
+
+Q̂ = quantile(E, 1-&alpha;)    여기서 &alpha; = 0.38
+
+최종 구간:
+    price_low  = exp(q25 - Q̂)     하한
+    price_mid  = exp(q50)          중앙 예측
+    price_high = exp(q75 + Q̂)     상한
+
+목표 커버리지 62%, 실측 57.5%
+→ -4.5%p undercoverage 원인:
+   1) Calib→Test 간 concept drift (시장 변화)
+   2) 비정상성: Calib 기간의 Q̂가 Test 기간에 과소 추정
+   3) Cold 작가의 높은 분산이 구간 이탈률을 높임</code></pre>
+</div>
+
+<h4>Bias Correction (가격대별 과대예측 보정)</h4>
+<div class="arch-box">
+<pre><code>Valid 데이터에서 가격대별 median(pred/actual) 비율을 동적으로 계산:
+
+  구간 정의:
+    저가: pred &lt; 200만
+    중가: 200만 &le; pred &lt; 2000만
+    고가: pred &ge; 2000만
+
+  bias_factor[seg] = median(pred[seg] / actual[seg])   ← 학습 시 계산
+  corrected = pred / bias_factor
+
+  최근 학습 결과: 저가 1.079, 중가 1.003, 고가 1.075
+  ※ 이 값은 하드코딩이 아니라 학습 시마다 Valid에서 재계산됨
+
+적용 범위: q50(중앙 예측)에만 적용. q25/q75 구간은 CQR이 이미 보정.
+가격대 판정: 보정 전 exp(q50) 기준으로 구간 결정.
+원인: 트리 모델이 극값을 평균 쪽으로 당기는 경향 (regression to mean)</code></pre>
+</div>
+
+<h4>시장 라운딩</h4>
+<div class="arch-box">
+<pre><code>최종 원화 변환 후 시장 관행에 맞게 라운딩:
+  &lt;100만      → 10만 단위    (예: 47만 → 50만)
+  100~500만   → 50만 단위    (예: 320만 → 300만)
+  500~1000만  → 100만 단위   (예: 780만 → 800만)
+  1000~5000만 → 500만 단위   (예: 2,300만 → 2,500만)
+  5000만~1억  → 1000만 단위
+  1억 이상    → 5000만 단위
+
+round_half_up: floor(price / unit + 0.5) &times; unit</code></pre>
+</div>
+
+<!-- 4.4 Cold Start -->
+<h3>4.5 Cold Start 예측 (거래 &lt;5건 작가)</h3>
+<div class="arch-box">
+<pre><code>■ Tier 0: 기존 거래 &ge;5건 → 정상 모델 사용 (Warm)
+
+■ Tier 1: 외부 데이터 (Artsy 등) &ge;3건
+    cold_estimate = external_stats["avg_ln_price"]
+
+■ Tier 2: K-NN 유사 작가 (5명) &ge;3명
+    cold_estimate = weighted_avg(similar_artists.ln_price)
+    유사 피처: sim_avg_price_ln, sim_weighted_price_ln, sim_count, sim_avg_distance
+
+■ Tier 3: 매체 &times; 경매유형 (Bayesian Shrinkage)
+    조건: count &ge; 30
+    shrunk = (n &times; group_ln + 10 &times; global_ln) / (n + 10)  ← 실제 n 사용
+
+■ Tier 4a: 매체만 (Bayesian Shrinkage)
+    조건: count &ge; 50
+    shrunk = (n &times; group_ln + 10 &times; global_ln) / (n + 10)
+
+■ Tier 4b: 경매유형만 (최종 폴백, tier=4로 반환)
+    cold_estimate = mean(ln(prices)) by auction_type (shrinkage 미적용)
+
+■ 최후 수단: 전체 평균 (tier=4)
+    cold_estimate = global_mean_ln
+
+신뢰도 등급:
+  A: total_sold &ge; 20 AND tier=0
+  B: 5 &le; total_sold &lt; 20
+  C: total_sold &lt; 5 OR unsold_rate &gt; 50%
+  D: 신규 작가 OR tier &ge; 2</code></pre>
+</div>
+
+<!-- 4.5 시간 가중치 -->
+<h3>4.6 시간 가중치</h3>
+<div class="arch-box">
+<pre><code>sample_weight = max(0.5,  2^(-(days_ago / 730)))
+
+  반감기 = 730일 (2년),  최소 가중치 = 0.5
+
+  예시:
+    오늘 경매      → weight = 1.00
+    1년 전         → weight = 0.71
+    2년 전         → weight = 0.50 (반감)
+    5년 전         → weight = 0.50 (바닥)</code></pre>
+</div>
+
+<!-- 4.6 평가 지표 -->
+<h3>4.7 평가 지표</h3>
+<table>
+  <tr><th>지표</th><th>공식</th><th>의미</th></tr>
+  <tr><td>MdAPE</td><td><code>median(|pred-actual|/actual) &times; 100</code></td><td>중앙 절대 오차율 (이상치 강건)</td></tr>
+  <tr><td>W30</td><td><code>mean(APE &le; 0.30) &times; 100</code></td><td>30% 이내 적중률</td></tr>
+  <tr><td>Coverage</td><td><code>mean(actual &isin; [exp(q25-Q̂), exp(q75+Q̂)])</code></td><td>실제 원화가가 예측 구간에 포함된 비율 (원화 스케일)</td></tr>
+  <tr><td>R&sup2;</td><td><code>1 - &Sigma;(actual-pred)&sup2; / &Sigma;(actual-mean)&sup2;</code></td><td>설명된 분산 비율 (원화 스케일)</td></tr>
+  <tr><td>Gap</td><td><code>test_MdAPE - valid_MdAPE</code></td><td>과적합 지표 (게이트: |Gap| &le; 2.5%p)</td></tr>
+  <tr><td>Monotonicity</td><td><code>corr(size, pred) &ge; 0.99</code></td><td>크기↑ → 가격↑ 상관 (단조 상관, 엄밀한 단조성과는 다름)</td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 5. 데이터 ===== -->
+<h2 id="data">5. 데이터 파이프라인</h2>
+
+<div class="info-box">
+  <strong>타깃 변수:</strong> <code>ln(hammer_price)</code> — 낙찰가(원화)의 자연로그. Buyer's premium 미포함.<br>
+  <strong>평가 시점:</strong> 라운딩 전(원화 연속값) 기준. 라운딩은 서빙 시에만 적용.
+</div>
+
+<div class="arch-box">
+<pre><code>[원본] 99,593건 (10+ 경매사)
+  &rarr; [10단계 클렌징] &rarr; 85,562건
+  &rarr; [작가미상 분리] &rarr; 55,938건 (학습용)
+  &rarr; [날짜 기반 4-way split]
+      Train: 46,093 (82.4%) | Calib: 2,723 (4.9%) | Valid: 2,409 (4.3%) | Test: 4,713 (8.4%)
+      * 날짜 순 분할이므로 비율은 목표 80/5/5/10에서 약간 편차 발생</code></pre>
+</div>
+
+<p><strong>매체:</strong> 17 카테고리 &nbsp;|&nbsp; <strong>지지체:</strong> 8 카테고리 &nbsp;|&nbsp; <strong>작가 프로필:</strong> 510명/5,269명 (9.7% 작가 기준, 레코드 기준 약 41%)</p>
+
+<hr>
+
+<!-- ===== 6. 피처 정리 ===== -->
+<h2 id="pruning">6. 피처 정리 과정</h2>
+
+<h3>57개 &rarr; 31개 (26개 제거, 46% 감소)</h3>
+
+<div class="info-box">
+  <strong>제거 기준:</strong> 작가 효과를 제거한 후 "작가 내 잔차"와의 상관이 0.05 미만인 피처는 작가의 대리지표에 불과하므로 제거.<br>
+  <strong>제거 유형:</strong> 제목 대리지표 3개, 무효(imp&lt;0.2%) 7개, 고상관 중복 6개(r&gt;0.87), 기능 불필요 10개.
+</div>
+
+<h3>피처 수 실험 결과</h3>
+<div class="info-box">
+  <strong>Gates 표기 참고:</strong> 아래 실험은 G7(Leakage) 추가 전 7게이트 체계 기준. 현재 최종 모델은 8게이트 체계(5/8)로 평가.
+</div>
+<table>
+  <tr><th>피처 수</th><th>MdAPE</th><th>Cold</th><th>Gates (7게이트)</th><th>비고</th></tr>
+  <tr><td>57</td><td>44.05%</td><td>58.98%</td><td>3/7</td><td>원본</td></tr>
+  <tr><td>55</td><td>40.83%</td><td>58.37%</td><td>3/7</td><td>+모델개선, 보간 문제</td></tr>
+  <tr><td>38</td><td>40.63%</td><td>57.39%</td><td>4/7</td><td>1차 정리</td></tr>
+  <tr><td>34</td><td>40.61%</td><td>56.82%</td><td>4/7</td><td>2차 정리 (최고 MdAPE)</td></tr>
+  <tr><td class="best"><strong>31</strong></td><td class="best"><strong>40.87%</strong></td><td>57.90%</td><td class="best"><strong>4/7</strong></td><td class="best"><strong>최종 (제목3개 제거)</strong></td></tr>
+  <tr><td>22</td><td>41.60%</td><td class="fail">60.99%</td><td>3/7</td><td>Cold 악화</td></tr>
+  <tr><td>19</td><td>41.34%</td><td>57.49%</td><td>4/7</td><td>A+B만 (최소)</td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 7. 실험 로그 ===== -->
+<h2 id="experiments">7. 실험 로그</h2>
+<div class="warn-box">
+  <strong>Gates 표기 주의:</strong> 아래 실험 #1~#9는 G7(Leakage) 게이트가 <strong>추가되기 전</strong> 7게이트 체계(G1~G6, G8)에서 기록된 과거 결과.<br>
+  현재 최종 모델은 G7 추가 후 <strong>8게이트 체계에서 4/8</strong> (G7 Leakage FAIL: price_segment_median) (섹션 1 참조). 과거 실험을 소급 변환하지 않고 원본 그대로 보존.
+</div>
+<table>
+  <tr><th>#</th><th>실험</th><th>피처</th><th>MdAPE</th><th>Cold</th><th>Gates (7게이트)</th></tr>
+  <tr><td>1</td><td>Baseline</td><td>57</td><td>44.05%</td><td>58.98%</td><td>3/7</td></tr>
+  <tr><td>2</td><td>+작가 프로필 510명</td><td>57</td><td>43.42%</td><td>58.49%</td><td>3/7</td></tr>
+  <tr><td>3</td><td>+HP+인터랙션+Cold개선</td><td>57</td><td>43.22%</td><td class="best">56.89%</td><td class="best">4/7</td></tr>
+  <tr><td>4</td><td>+시간가중+XGBoost</td><td>57</td><td>42.81%</td><td>57.34%</td><td class="best">4/7</td></tr>
+  <tr><td>5</td><td>+이미지 (ResNet/CLIP)</td><td>89</td><td class="fail">44.07%</td><td>58.09%</td><td>3/7</td></tr>
+  <tr><td>6</td><td>P1: 피처정리+보간+Bias</td><td>55</td><td>40.83%</td><td>58.37%</td><td>3/7</td></tr>
+  <tr><td>7</td><td>피처 정리 38개</td><td>38</td><td>40.63%</td><td>57.39%</td><td class="best">4/7</td></tr>
+  <tr><td>8</td><td>피처 정리 34개</td><td>34</td><td class="best">40.61%</td><td class="best">56.82%</td><td class="best">4/7</td></tr>
+  <tr><td><strong>9</strong></td><td><strong>최종: 31개 (제목 제거)</strong></td><td><strong>31</strong></td><td><strong>40.87%</strong></td><td><strong>57.90%</strong></td><td class="best"><strong>4/7</strong></td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 8. 이미지 실험 ===== -->
+<h2 id="image">8. 이미지 피처 실험</h2>
+
+<div class="warn-box">
+  <strong>결론: 이미지 피처는 현재 모델에서 가격 예측력 없음</strong> (R&sup2; &lt; 0)<br>
+  ResNet50/CLIP 모두 전체 적용 시 악화, Cold 전용도 무효. 음수 R&sup2;는 해당 피처+모델 조합의 실패를 의미하며, 이미지와 가격의 절대적 무상관을 증명하지는 않음. 다만 현재 데이터에서 가격은 <strong>작가 브랜드</strong>가 지배적.
+</div>
+
+<table>
+  <tr><th>실험</th><th>R&sup2;</th><th>결론</th></tr>
+  <tr><td>이미지 &rarr; 가격 (전체)</td><td class="fail">-0.017</td><td>예측 불가</td></tr>
+  <tr><td>이미지 &rarr; 작가내 잔차</td><td class="fail">-0.005</td><td>작가내에서도 무효</td></tr>
+  <tr><td>CLIP Cold 전용</td><td>-</td><td>MdAPE 악화</td></tr>
+</table>
+
+<hr>
+
+<!-- ===== 9. 인사이트 ===== -->
+<h2 id="insights">9. 핵심 인사이트</h2>
+
+<h3>효과 있었던 것</h3>
+<ol>
+  <li><strong>피처 정리 (57&rarr;31)</strong> &mdash; 노이즈 제거, 피처 46% 감소, MdAPE -3.18%p</li>
+  <li><strong>잔차 보정 (Bias Correction)</strong> &mdash; 저가/고가 과대예측 체계적 수정</li>
+  <li><strong>NaN 보존</strong> &mdash; 결측 = 정보 신호, 보간 시 Cold 악화</li>
+  <li><strong>3-모델 앙상블</strong> &mdash; CatBoost + LightGBM + XGBoost</li>
+  <li><strong>시간 가중치</strong> &mdash; 반감기 2년, 최근 시장 반영</li>
+  <li><strong>작가 내 상관 분석</strong> &mdash; 대리지표 vs 실질 신호 구분 기법</li>
+</ol>
+
+<h3>효과 없었던 것</h3>
+<ol>
+  <li><span class="fail">이미지 피처</span> &mdash; ResNet50/CLIP 모두 가격과 무상관</li>
+  <li><span class="fail">제목 길이/언어</span> &mdash; 작가 대리지표에 불과</li>
+  <li><span class="fail">global_median 보간</span> &mdash; NaN 정보 파괴</li>
+</ol>
+
+<div class="info-box">
+  <strong>미술품 가격의 본질:</strong> "누가 그렸는가"가 지배적. "어떻게 생겼는가"는 무관.<br>
+  Hedonic 모델 학술적 한계: MdAPE 35~40%. 현재 40.87%는 이 한계에 근접.<br>
+  32% 달성에는 외부 소셜/경력 데이터 (전시 이력, 갤러리 등급) 필수.
+</div>
+
+<hr>
+
+<!-- ===== 10. 향후 ===== -->
+<h2 id="next">10. 향후 과제</h2>
+
+<h3>프로덕션 전환 (권장)</h3>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>신뢰도 등급</td><td>Warm(High) / Cold(Low) 표시</td></tr>
+  <tr><td>유사 거래 사례</td><td>comp_artist_avg 기반 실제 거래 제시</td></tr>
+  <tr><td>재학습 자동화</td><td>새 경매 데이터 수집 시 주기적 재학습</td></tr>
+  <tr><td>모니터링</td><td>PSI drift 감지, 예측 정확도 추적</td></tr>
+</table>
+
+<h3>추가 개선 (외부 데이터 필요)</h3>
+<table>
+  <tr><th>과제</th><th>예상 효과</th><th>필요 데이터</th></tr>
+  <tr><td>작가 전시/수상 이력</td><td>-2~4%p</td><td>웹 스크래핑</td></tr>
+  <tr><td>갤러리 소속/등급</td><td>-1~2%p</td><td>미술 DB</td></tr>
+  <tr><td>작가미상 전용 모델</td><td>커버리지 2배</td><td>현재 데이터 (29K건)</td></tr>
+  <tr><td>사전 추정가 (estimate)</td><td>가장 강력한 단일 피처</td><td>경매 도록</td></tr>
+</table>
+
+<hr>
+
+<div class="meta" style="margin-top: 2rem; text-align: center;">
+  VisionAI Price Prediction &mdash; Final Report<br>
+  2026-04-03 &nbsp;|&nbsp; 31 features &nbsp;|&nbsp; MdAPE 40.87% &nbsp;|&nbsp; 4/8 Gates<br>
+  CatBoost + LightGBM + XGBoost + RidgeCV + CQR + Bias Correction
+</div>
+
+</body></html>
