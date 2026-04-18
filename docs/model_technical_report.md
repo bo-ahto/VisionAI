@@ -1,9 +1,18 @@
 # VisionAI 1차 시장 가격 예측 모델 기술 보고서
 
-> **작성일**: 2026-04-17
+> **작성일**: 2026-04-17 (2026-04-18 provenance/배포 섹션 보강)
 > **모델 버전**: v3 (CatBoost + XGBoost 라우팅)
 > **학습 데이터**: 29,361건 / 1,589명 작가
 > **대상**: 한국 신진/중견 작가 회화 작품의 1차 시장(갤러리) 가격 예측
+>
+> **⚠ 범위**: 본 문서는 **1차 시장 예측 모델(A, `primary_predictor` + `integrated_v3_*`) 전용**. 경매 낙찰가 모델(B, `estimate_generator`)은 별도 문서 (`가격예측AI_종합보고서.html`, `refactor_report_20260418.html`) 참조.
+>
+> **Provenance (2026-04-18 보강 대상 범위)**: 아래 항목은 2026-04-18 보강 작업의 **직접 인용 대상**이며, 본 보강 작업에서 측정을 다시 수행하지 않았다:
+> - 배포 스택/엔드포인트/파일 경로 (Section 10): 코드베이스 상태 기준
+> - API hardcoded 성능 (`mdape_groupkfold=38.7`, `mdape_kfold=11.7`): `primary_server.py:491-498`
+> - GroupKFold/KFold 숫자: `model_test_results/integrated_v3_metrics.json` (git commit `39f7e6e`, 2026-04-16 16:39 KST)
+>
+> 기존 본문 (2026-04-17 작성분, 예: Section 2의 R²=0.774~0.775, Section 5.3의 가격대별 성능)은 **원저자 작성 당시 집계**를 그대로 보존한 것으로, 본 보강 작업의 인용 범위 밖이다. 상세 provenance 감사: [`primary_market_provenance_audit.md`](primary_market_provenance_audit.md).
 
 ---
 
@@ -266,6 +275,16 @@ $$\text{ho\_price\_level}_i = \text{median}_{j \in \{H_j = H_i\}} \ln(P_j)$$
 
 이는 **target encoding**의 변형으로, 모델이 "이 호수/매체의 일반적 가격 수준"을 직접 참조할 수 있게 한다.
 
+### 3.6 본 문서에 표로 서술되지 않은 피처 3개
+
+`primary_predictor.py:22-39` 기준 `CB_FEATURES` 37개 중 아래 3개는 위 표들에 포함하지 않았다 (중요도 낮아 생략됐으나 모델 입력에는 포함됨):
+
+- `attribution_class` (범주형, CAT) — 작품 귀속 분류 (by/after/attributed to 등)
+- `vintage_premium` (수치형) — 제작연도 기반 빈티지 프리미엄 계수
+- `freshness_discount` (수치형) — 경매 노출 피로도 할인 계수
+
+즉 표에 서술된 피처는 34개, 모델 입력은 37개.
+
 ---
 
 ## 4. 모델 아키텍처
@@ -501,7 +520,66 @@ $$\text{contribution}_k = (\exp(\phi_k) - 1) \times 100\%$$
 
 ---
 
-## 10. 참고 문헌
+## 10. 배포 및 운영
+
+### 10.1 배포 스택
+
+| 계층 | 내용 | 근거 |
+|---|---|---|
+| 컨테이너 빌드 | `Dockerfile.api` 가 `integrated_v3_catboost.cbm` + `integrated_v3_xgboost.json` 을 `/app/models/` 로 COPY | `Dockerfile.api:13-14` |
+| 서버 기동 | FastAPI `primary_server.py`, lifespan에서 모델 로드 | `primary_server.py:420-438` |
+| 모델 로딩 | `PrimaryPredictor.load_models(model_dir)` — 모델 아티팩트만 로드. CatBoost는 37 피처를 native categorical로 학습됐고, XGBoost는 동일한 37 피처를 받되 범주형을 label-encoding 후 입력 | `primary_predictor.py:66-75`, 인코딩은 `primary_predictor.py:99-109, 142-170` |
+| 공개 도메인 | `visionai-api.ahto.city` | `docs/project_status_20260417.md` |
+
+### 10.2 주요 엔드포인트
+
+| Method | Path | 용도 |
+|---|---|---|
+| GET | `/health` | DB 연결 + 모델 로드 상태 확인 |
+| GET | `/api/v1/model/info` | 모델 버전/학습 규모/성능 수치 (하드코딩) |
+| GET | `/api/v1/monitor` | 인메모리 예측 카운터 |
+| POST | `/api/v1/predict` | 단일 작품 예측 |
+| POST | `/api/v1/predict/batch` | 배치 예측 (최대 50건) |
+| GET | `/demo` | 브라우저 데모 페이지 |
+
+상세 스키마는 `docs/api_reference.html` 참조.
+
+### 10.3 추론 경로 (request → response)
+
+1. Request 수신 (`artist_name, width_cm, height_cm, medium, ...`)
+2. 작가 매칭 (`ArtistMatcher.match()` — DB 로드된 1,589 작가 인덱스와 퍼지 매칭)
+3. 미매칭 + `skip_external_lookup=false` 시 외부 수집 (Artsy/Saatchi/웹검색, threadpool 비동기)
+4. 피처 빌드 (`primary_feature_builder.build_features()` — 37 피처 생성)
+5. 예측 (`PrimaryPredictor.predict()` — 학습작가 판정 후 XGBoost 또는 CatBoost 라우팅)
+6. SHAP 설명 계산 (CatBoost 경로만, `shap_explainer` 사용, threadpool 비동기)
+7. 유사 작품 매칭 + 작가 가격 이력 조회
+8. 응답 구성 (`price_krw, price_range, confidence_grade, feature_contributions, matched_artworks, artist_price_history`)
+9. JSONL 로그 적재 (`/app/logs/predictions.jsonl`) + 인메모리 모니터링 카운터 갱신
+
+### 10.4 데이터 저장소
+
+| 저장소 | 용도 | 근거 |
+|---|---|---|
+| postgres-proxy (`postgres-proxy.ahto.city`) | 작가 인덱스 (artists + artist_profiles JOIN) | `primary_server.py:95-109` |
+| 로컬 parquet (`primary_market_dataset.parquet`, `saatchi_cleaned.parquet`) | 가격 이력 조회 | `primary_server.py:160-212` |
+| JSONL (`/app/logs/predictions.jsonl`) | 예측 로그 (idempotent 아님, 단순 append) | `primary_server.py:62-93` |
+
+### 10.5 운영 주의사항
+
+- **Model info 하드코딩**: `primary_server.py:491-498` 의 `training_count=29361`, `mdape_groupkfold=38.7` 등은 코드에 박혀 있다. 모델 업데이트 시 서버 코드도 수동 갱신 필요.
+- **학습 스크립트 gap**: 현재 repo에는 `integrated_v3_catboost.cbm` / `integrated_v3_xgboost.json` 을 생성하는 스크립트가 없다 (Provenance audit Section 5 참조). 재학습 재현성 확보는 follow-up 과제.
+- **CORS `allow_origins=["*"]`**: 배포 단계에선 편의상 전체 허용. 운영 전환 시 도메인 제한 필요.
+- **로그 파일 크기**: 단순 append로 회전/보존 정책 없음. 장기 운영 시 logrotate 또는 구조화된 저장소로 이관 필요.
+
+### 10.6 Known limitations (Provenance 감사 결과 반영)
+
+1. 학습 스크립트 부재 — 재학습 자동화 불가
+2. 가끔 외부 수집이 Artsy/Saatchi 제한에 걸리면 응답 지연 (2~5초). `skip_external_lookup=true` 로 회피.
+3. 배치 엔드포인트는 `matched_artworks`, `artist_price_history`, `feature_contributions`, `title` 파라미터를 지원 안 함 (단건만 지원).
+
+---
+
+## 11. 참고 문헌
 
 - Lancaster, K.J. (1966). A new approach to consumer theory. *Journal of Political Economy*, 74(2), 132-157.
 - Rosen, S. (1974). Hedonic prices and implicit markets: product differentiation in pure competition. *Journal of Political Economy*, 82(1), 34-55.

@@ -1,7 +1,14 @@
-# 2026-04-17~18 Estimate Generator 리팩터 종합 리포트
+# 2026-04-17~18 경매 낙찰가 모델 (estimate_generator) 리팩터 종합 리포트
 
+> **⚠ 범위 명시**: 본 보고서는 **경매 낙찰가 예측 모델 (B, `estimate_generator`)** 의 리팩터 retrospective이다.
+> **1차 시장(갤러리) 예측 모델 (A, `primary_predictor` + `integrated_v3_*`)** 과는 별개의 파이프라인을 다룬다.
+>
+> **현재 상태**: 경매 낙찰가 모델(B)는 **잠정 중단** — 1차 시장 모델(A) 작업이 선행 진행 중.
+>
+> **A-B 관계 정확히**: 런타임·서빙·아티팩트는 분리되어 있으나, 일부 보조 스크립트 (`scripts/predict_primary_market.py`) 는 B 모듈을 import해서 A 데이터를 경매 예측 스타일로 재해석하는 용도로 씀. "완전 독립"은 아님.
+>
 > **작성일**: 2026-04-18
-> **대상**: VisionAI estimate_generator 파이프라인 (Hedonic, Model-A, Ensemble, API)
+> **대상**: VisionAI estimate_generator 파이프라인 (Hedonic, Model-A, Ensemble, API `/api/v1/estimate`)
 > **관련 PR**: [#7](https://github.com/bo-ahto/VisionAI/pull/7), [#8](https://github.com/bo-ahto/VisionAI/pull/8)
 > **베이스 브랜치**: `main` (commit `c9a12b6`)
 
