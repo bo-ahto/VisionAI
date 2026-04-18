@@ -154,15 +154,21 @@ def _infer_kauction_dates(
         logger.warning("No K-Auction data in artmarket for date inference")
         return pd.Series("", index=kauction_df.index)
 
-    # 작가+제목으로 매칭
+    # 작가+제목+가격으로 매칭 (제목 중복 회차 충돌 방지 — 코덱스 P1 2026-04-18)
+    # 작가|제목만 쓰면 "김환기|무제" 등 반복 제목이 여러 회차에 걸쳐 동일 key로 묶여
+    # 잘못된 날짜로 매칭됨. 가격을 포함해 구체적 판매 행 단위로 매칭.
     kauction_df = kauction_df.copy()
     kauction_df["_key"] = (
         kauction_df["작가"].fillna("").str.strip()
         + "|" + kauction_df["제목"].fillna("").str.strip()
+        + "|" + pd.to_numeric(kauction_df.get("낙찰가", 0), errors="coerce")
+        .fillna(0).astype(int).astype(str)
     )
     ka["_key"] = (
         ka["name_kor"].fillna("").str.strip()
         + "|" + ka["title"].fillna("").str.strip()
+        + "|" + pd.to_numeric(ka.get("price_krw", 0), errors="coerce")
+        .fillna(0).astype(int).astype(str)
     )
 
     matched = kauction_df[["_key", "회차", "타입"]].merge(
@@ -281,19 +287,28 @@ def merge_and_cleanse(
     new = new[new["price"] > 0]
 
     # 3. 중복 제거 (K-Auction과 K-Artmarket의 케이옥션 데이터)
-    old["_dedup"] = (
-        old["artist"] + "|" + old["title"] + "|"
-        + old["material"] + "|" + old["price"].astype(str)
-    )
-    new["_dedup"] = (
-        new["artist"] + "|" + new["title"] + "|"
-        + new["material"] + "|" + new["price"].astype(str)
-    )
+    # 코덱스 P2 (2026-04-18): sale_date도 dedup key에 포함.
+    # 이전엔 artist|title|material|price만 보아서 동일 조건으로 팔린 서로 다른 회차
+    # (예: 실크스크린 에디션 재판매)의 resale history가 통째로 날아갔음.
+    def _dedup_key(frame: pd.DataFrame) -> pd.Series:
+        date_part = frame.get("sale_date")
+        if date_part is None:
+            date_part = pd.Series("", index=frame.index)
+        return (
+            frame["artist"].astype(str)
+            + "|" + frame["title"].astype(str)
+            + "|" + frame["material"].astype(str)
+            + "|" + frame["price"].astype(str)
+            + "|" + date_part.fillna("").astype(str)
+        )
+
+    old["_dedup"] = _dedup_key(old)
+    new["_dedup"] = _dedup_key(new)
     ka_mask = new["source"] == "케이옥션"
     is_dup = ka_mask & new["_dedup"].isin(set(old["_dedup"]))
     dup_count = is_dup.sum()
     new = new[~is_dup]
-    logger.info("Dedup: removed %d K-Auction duplicates", dup_count)
+    logger.info("Dedup: removed %d K-Auction duplicates (key: artist|title|material|price|date)", dup_count)
 
     # 4. 통합
     merged = pd.concat([old, new], ignore_index=True)

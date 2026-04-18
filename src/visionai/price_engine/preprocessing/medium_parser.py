@@ -65,9 +65,18 @@ _MEDIUM_RULES: list[tuple[re.Pattern[str], str]] = [
         re.IGNORECASE,
     ), "실크스크린"),
     # 사진/디지털 (인쇄/복제보다 먼저 — C-프린트, 디지털 프린트 등)
+    # 코덱스 P2 (2026-04-18): Artsy 영문 데이터의 archival pigment print,
+    # gelatin silver print, chromogenic print 등이 이전 정규식에서 누락되어
+    # 아크릴/혼합재료/기타로 오분류되던 문제 복원.
     (re.compile(
-        r"사진|c-print|C-프린트|디지털|digital|피그먼트|젤라틴|"
-        r"photograph|lambda|람다|크로모제닉",
+        r"사진|photograph|"
+        r"c-print|c\s*print|C-프린트|"
+        r"digital\s*print|디지털|"
+        r"archival\s*pigment|pigment\s*print|피그먼트|"
+        r"gelatin\s*silver|gelatin|젤라틴|"
+        r"chromogenic|크로모제닉|"
+        r"lambda|람다|"
+        r"silver\s*print",
         re.IGNORECASE,
     ), "사진/디지털"),
     # 인쇄/복제
