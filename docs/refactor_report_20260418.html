@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026-04-17~18 Estimate Generator 리팩터 종합 리포트</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; --purple: #bc8cff; --tldr-bg: #1f2a3a; --tldr-border: #58a6ff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.75; padding: 40px 20px; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+  h2 { font-size: 22px; margin-top: 48px; margin-bottom: 16px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: var(--purple); }
+  h4 { font-size: 15px; margin-top: 24px; margin-bottom: 8px; color: var(--green); }
+  p { margin-bottom: 12px; }
+  blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 16px 0; background: var(--card); border-radius: 4px; color: var(--muted); font-size: 14px; }
+  blockquote p { margin-bottom: 4px; }
+  .summary-box { border-left: 4px solid var(--tldr-border); background: var(--tldr-bg); padding: 14px 18px; margin: 18px 0; border-radius: 6px; font-size: 15px; }
+  .summary-box strong { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--card); padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; }
+  td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: rgba(88,166,255,0.05); }
+  code { background: var(--card); padding: 2px 6px; border-radius: 3px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 16px 0; font-size: 13px; }
+  pre code { background: none; padding: 0; }
+  strong { color: var(--text); }
+  em { color: var(--muted); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  ul, ol { margin: 12px 0; padding-left: 24px; }
+  li { margin-bottom: 4px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc li { margin-bottom: 6px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; font-family: 'SF Mono', monospace; }
+  .badge-pass { background: #1a3a2b; color: var(--green); }
+  .badge-fail { background: #3a1e1e; color: var(--red); }
+  .badge-interim { background: #3a2a1a; color: var(--orange); }
+  .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>2026-04-17~18 Estimate Generator 리팩터 종합 리포트</h1>
+<blockquote>
+<p><strong>작성일</strong>: 2026-04-18</p>
+<p><strong>대상</strong>: VisionAI estimate_generator 파이프라인 (Hedonic, Model-A, Ensemble, API)</p>
+<p><strong>관련 PR</strong>: <a href="https://github.com/bo-ahto/VisionAI/pull/7" target="_blank">#7</a>, <a href="https://github.com/bo-ahto/VisionAI/pull/8" target="_blank">#8</a></p>
+<p><strong>베이스 브랜치</strong>: <code>main</code> (commit <code>c9a12b6</code>)</p>
+</blockquote>
+
+<div class="summary-box">
+<p><strong>한 문단 요약</strong></p>
+<p>2일에 걸친 리팩터로 <code>price_segment_median</code> 데이터 누수를 포함한 <strong>correctness 21건</strong>을 수정했고(severity 분류는 commit 메시지 집계로만 제한됨), Ensemble 순수 test MdAPE를 <strong>1.63pp 개선</strong>했으며 (43.16% → 41.53%, Bias correction 전) 최종 Ens+Bias test 지표는 archived와 <strong>사실상 동일</strong> (test 40.89 vs 40.87, warm 38.64 vs 38.61). Cold MdAPE는 57.90% → <strong>59.60%</strong>, test_within_30은 −0.49pp 이동. 이 변화는 여러 refactor 변화가 동시에 들어간 비교이므로 <strong>어느 단일 요인에 귀속하지 않는다</strong>. G7 Leakage 게이트는 severe session-correlation 기준 FAIL → <span class="badge badge-pass">PASS</span>, drift warning 7건은 별도. PSM 유지 결정은 <span class="badge badge-interim">잠정</span>.</p>
+</div>
+
+<hr>
+
+<h2 id="overview">1. 개요</h2>
+<p>본 리팩터는 <code>main</code> 직전 상태 (commit <code>6473c3a</code>) 대비 두 단계 PR로 진행됐다.</p>
+<table>
+<tr><th>단계</th><th>PR</th><th>머지 커밋</th><th>주된 변화</th></tr>
+<tr><td>Phase A</td><td>#7</td><td><code>105d2b1</code></td><td>HEDONIC_FEATURES 재구성 + 10건 correctness fix + Cold Start ablation 실험</td></tr>
+<tr><td>Phase B</td><td>#8</td><td><code>c9a12b6</code></td><td>보조 모듈 정리 + 3라운드 코덱스 리뷰로 11건 추가 수정</td></tr>
+</table>
+<p><strong>Total correctness 개선 21건</strong> (commit 메시지 집계 기반: <code>759c20a</code> 6 + <code>953fcbf</code> 4 + <code>63beb4f</code> 3 + <code>e47988f</code> 3 + <code>ab387c8</code> 5 = 21). 일부 초기 커밋은 severity(P1/P2) 분류 없이 기록됐으므로 본 리포트는 심각도별 총계를 주장하지 않는다.</p>
+
+<hr>
+
+<h2 id="problem">2. 문제 의식</h2>
+<p>리팩터의 트리거는 코덱스 리뷰가 최초로 감지한 다음 이슈들이었다.</p>
+<ol>
+<li><strong><code>price_segment_median</code> 데이터 누수</strong> — 테스트 기간 가격까지 포함한 매체별 median을 train에 사용</li>
+<li><strong>Ridge 메타학습기의 분위수 훼손</strong> — 스택킹 결과가 조건부 평균으로 회귀되어 <code>price_low</code>/<code>price_high</code>가 <code>price_mid</code>로 수렴</li>
+<li><strong>XGBoost 범주형 코드 불안정</strong> — train/calib/inference마다 동일 값이 다른 정수 코드로 매핑</li>
+<li><strong>HEDONIC_FEATURES 미반영</strong> — 피처 확장 의도가 실제 학습에 연결 안 됨</li>
+</ol>
+<p>이 4건을 포함해 최초 P1 × 3, P2 × 1으로 출발.</p>
+
+<hr>
+
+<h2 id="phase-a">3. Phase A 변경 내역 (PR #7)</h2>
+
+<h3>3.1 HEDONIC_FEATURES 재구성 (50 → 46)</h3>
+<ul>
+<li>CAT 인덱스 계약: <code>[0, 1, 2, 3, 4, 35, 39, 40, 45]</code> (test 강제 검증)</li>
+<li>SHAP 분석에서 cold에 유해 판정된 4개 제거: <code>global_median_price</code>, <code>global_auction_count</code>, <code>medium_avg_price</code>, <code>artist_price_volatility</code></li>
+</ul>
+
+<h3>3.2 <code>price_segment_median</code> 누수 수정 (최종: train-only broadcast)</h3>
+<p><strong>Ablation F</strong> (3-seed Model-A 기준, cold = <code>artist_total_sold &lt; 5</code>). 근거 아티팩트: <code>model_test_results/ablation_f_psm.json</code>.</p>
+<table>
+<tr><th>Variant</th><th>Model-A cold</th><th>판정</th></tr>
+<tr><td>V_expanding (per-cutoff past-only, 코덱스 최초 제안)</td><td>62.48%</td><td><span class="badge badge-fail">FAIL</span> materially worse (+1.42pp)</td></tr>
+<tr><td><strong>V_trainonly (train split broadcast)</strong></td><td><strong>61.06%</strong></td><td><span class="badge badge-pass">채택</span></td></tr>
+<tr><td>V_leaky (누수 포함, 옛 방식)</td><td>61.37%</td><td>— V_trainonly와 차이 +0.32pp (seed 변동 범위 내, noisy)</td></tr>
+</table>
+<p><strong>별도 실험 (V_no_PSM, PSM 제거)</strong>: Model-A 3-seed 60.20% (근거: <code>model_test_results/step_12_comparison.json</code>, 다른 cache/run).</p>
+<p>Ens+Bias에서 V_no_PSM이 V_trainonly보다 불리하다고 판단한 근거는 <strong>persist 되지 않은 일회성 측정</strong>이었다. 따라서 "PSM 유지"는 <span class="badge badge-interim">잠정 결정</span> (interim) 이며 audit 가능한 근거에 기반한 최종 결정이 아니다. <strong>Follow-up 과제</strong>: 동일 cache에서 HEDONIC_FEATURES를 45개로 바꿔 phase5_final을 한 번 더 돌려 Ens+Bias 결과를 persist하고 재확인 필요.</p>
+<p>현재는 Model-A 차이 (+PSM 61.06% vs −PSM 60.20%) 와 Ensemble/Bias 층이 feature 분포에 민감할 수 있다는 이론적 우려 때문에 보수적으로 <strong>잠정 유지</strong>한 상태.</p>
+<blockquote>
+<p><strong>Ablation F의 좁은 결론</strong>: 이 설정(Model-A, 3 seed, 본 cache)에서 V_trainonly (61.06%) 와 V_leaky (61.37%) 의 cold_mdape 차이 0.32pp는 seed 변동 범위 내. <strong>본 실험만으로는 PSM 누수의 영향이 명확히 감지되지 않았음</strong> (다른 모델/설정/표본에서는 다를 수 있으므로 일반화하지 않는다). 초기 "3.27pp regression" 해석은 <strong>Model-A vs Ens+Bias</strong> 를 혼용한 apples-to-oranges 비교였으며, 이 점은 설정과 무관하게 방법론 오류.</p>
+</blockquote>
+
+<h3>3.3 QuantileRegressor 스택킹 메타학습기</h3>
+<p>Ridge(MSE) → <code>sklearn.linear_model.QuantileRegressor</code> 교체. pinball loss로 각 분위수 별도 학습.</p>
+<p><strong>효과</strong>: Ensemble 순수 test_mdape 43.16% → 41.53% (<strong>−1.63pp</strong>, 단일 최대 이득).</p>
+
+<h3>3.4 XGBoost 범주형 vocabulary 고정</h3>
+<p><code>self._xgb_cat_vocab</code> 딕셔너리에 학습 시 categories 저장 → calib/inference에서 재사용. 카테고리 순서 바뀌어도 동일 값 = 동일 코드 보장.</p>
+
+<h3>3.5 API <code>_build_estimate_input</code> 스키마 동기화</h3>
+<p>50개 → 46개 피처 기본값 (대부분 NaN, cat은 <code>"unknown"</code> 또는 <code>False</code>). <code>ln_surface_area</code>, <code>short_side_cm</code>, <code>long_side_cm</code>, <code>size_ho</code> 등 파생 필드는 요청 크기로부터 직접 계산.</p>
+
+<h3>3.6 기타 edge case fix</h3>
+<ul>
+<li><code>sale_date</code> NaT 가드 (레거시 CSV 대응)</li>
+<li><code>cold_start.get_cold_start_fallback</code> cutoff 타입 자동 coerce (session int vs date str)</li>
+<li><code>artist_similarity</code> datetime64 <code>career_length</code> 처리</li>
+<li>XGBoost 선택 backend의 <code>XGBoostError</code> 포함 광역 예외</li>
+<li>cleansed 데이터의 <code>title</code>/<code>제목</code> 컬럼 fallback</li>
+<li><code>two_step_model</code> fallback regressor를 <strong>최빈 bin</strong>으로 (기존: 최저가 label — premium 작품이 budget regressor로 붕괴되던 버그)</li>
+<li><code>dimension_parser</code> 2D 원본 순서 보존 (WxH) — orientation landscape 감지 복원 (이전 max/min swap으로 landscape 0건)</li>
+<li><code>splits.py</code> NaT <code>sale_date</code> 행을 <code>train</code> 강제 → <code>"unknown"</code> 변경</li>
+<li><code>quantile_model._prepare_hedonic_features</code> extra_features 누락 시 NaN 채움 (silent column drop 방지)</li>
+</ul>
+
+<hr>
+
+<h2 id="phase-b">4. Phase B 변경 내역 (PR #8)</h2>
+
+<h3>4.1 주변 코드 정리</h3>
+<p>PR #7에서 작업 scope 밖이라 유보했던 파일들을 주제별로 9개 커밋으로 분할:</p>
+<ol>
+<li>Phase 3 hedonic/parser 모듈 개선 (<code>hedonic_stats</code>, <code>medium_parser</code>, <code>artist_stats_snapshot</code>, <code>target_transform_v2</code>, <code>market_rounder</code>)</li>
+<li><code>.gitignore</code> 보강 (data, model_test_results, 툴 캐시)</li>
+<li>docs 34개 정리 (연구노트, 기획서, 결과 보고, API 레퍼런스 등)</li>
+<li>scripts 27개 추가 (크롤러, 학습, 진단, embeddings)</li>
+<li>estimate_generator 신규 모듈 + 11개 테스트 (conformal, distillation, macro_indicators, track_config, data_cleanser 등)</li>
+<li><code>data/*.xlsx</code> gitignore 추가</li>
+</ol>
+
+<h3>4.2 코덱스 리뷰 3라운드 11건</h3>
+<p>PR #8 기간 동안 3회의 코덱스 리뷰가 개별 버그를 추가 발견.</p>
+
+<h4>4.2.1 1차 리뷰 (P1 × 1, P2 × 2)</h4>
+<table>
+<tr><th>#</th><th>파일</th><th>문제</th><th>수정</th></tr>
+<tr><td><span class="badge badge-fail">P1</span></td><td><code>features/macro_indicators.py:107-112</code></td><td><code>ffill()</code>이 입력 행 순서 의존 → 누락 session이 미래 값 상속</td><td>session 기준 mergesort 정렬 후 ffill, 원본 인덱스 복원</td></tr>
+<tr><td>P2</td><td><code>scripts/train_phase5_final.py:37-40</code></td><td>cache가 dataset 무관하게 재사용됨</td><td>filename + mtime + size로 cache 파일명 키잉</td></tr>
+<tr><td>P2</td><td><code>scripts/train_phase5_final.py:95-98</code></td><td>similarity donor vectors를 모든 train 행에 단일 unbounded cutoff로 사용 → train 내부 temporal leak</td><td>월 단위 bucket별 vectors 캐시, 각 행의 bucket 이전 데이터로만 빌드</td></tr>
+</table>
+
+<h4>4.2.2 2차 리뷰 (P1 × 1, P2 × 2)</h4>
+<table>
+<tr><th>#</th><th>파일</th><th>문제</th><th>수정</th></tr>
+<tr><td><span class="badge badge-fail">P1</span></td><td><code>preprocessing/data_schema.py:157-170</code></td><td>K-Auction 날짜 추론이 <code>artist|title</code>만 매칭 → "김환기|무제" 같은 반복 제목이 여러 회차 동일 key로 묶여 오매칭</td><td>가격 포함 (<code>artist|title|price</code>)</td></tr>
+<tr><td>P2</td><td><code>preprocessing/data_schema.py:283-295</code></td><td>dedup key에 sale_date 미포함 → 재판매 이력이 duplicate로 제거</td><td>key에 sale_date 추가</td></tr>
+<tr><td>P2</td><td><code>preprocessing/medium_parser.py:67-72</code></td><td>"archival pigment print", "gelatin silver print" 등 영문 사진 용어가 사진/디지털이 아닌 아크릴/혼합재료/기타로 오분류</td><td>영문 regex 패턴 확장</td></tr>
+</table>
+
+<h4>4.2.3 3차 리뷰 (P1 × 3, P2 × 2)</h4>
+<table>
+<tr><th>#</th><th>파일</th><th>문제</th><th>수정</th></tr>
+<tr><td><span class="badge badge-fail">P1</span></td><td><code>preprocessing/data_schema.py:167-171</code></td><td>2차 수정 시 <code>ka['price_krw']</code> 하드코딩 — 실제 CSV는 <code>price</code> 컬럼 사용</td><td>price/price_krw/낙찰가 자동 감지</td></tr>
+<tr><td><span class="badge badge-fail">P1</span></td><td><code>estimate_generator/cold_start.py:151-152</code></td><td><code>get_cold_start_fallback_v2</code>가 session int 데이터에 str cutoff 기본값 → TypeError</td><td>v1과 동일하게 session dtype 체크 후 coerce</td></tr>
+<tr><td><span class="badge badge-fail">P1</span></td><td><code>scripts/train_phase5_v3.py:202-203</code></td><td>위 단계에서 macro/similarity/PSI 컬럼 추가하지만 Model-A는 기본 HEDONIC만 학습 → dead code</td><td><code>extra_features=MACRO_FEATURES + sim_cols</code> 전달</td></tr>
+<tr><td>P2</td><td><code>scripts/train_phase5_v3.py:262-270</code></td><td><code>select_features_by_importance(top_n=35)</code>가 계산만 되고 student는 STRICT_FEATURES 전체 사용</td><td><code>distillation.fit_student</code>에 <code>features</code> 파라미터 추가 + <code>selected</code> 전달</td></tr>
+<tr><td>P2</td><td><code>tests/price_engine/test_gate_report.py:49-52</code></td><td>gate 미달 시 <code>pytest.skip()</code> — CI green으로 regression 은폐</td><td><code>assert</code> + 현재 미달 게이트는 <code>@pytest.mark.xfail(strict=False, reason=...)</code></td></tr>
+</table>
+
+<hr>
+
+<h2 id="methodology">5. 실험 방법론 요약</h2>
+
+<h3>5.1 Ablation F: PSM variant 비교</h3>
+<p>동일 cache + 3 seed × 3 variant (V_expanding, V_trainonly, V_leaky) → Model-A cold_mdape 측정 (cold = <code>artist_total_sold &lt; 5</code>). <strong>seed 표준편차 0.3~0.9pp</strong> 대비 variant 간 차이:</p>
+<ul>
+<li>V_trainonly vs V_leaky: 0.32pp (seed 변동 범위 내, 결론 불가)</li>
+<li>V_expanding vs V_trainonly: +1.42pp (variant간 격차가 seed 변동 초과, materially worse로 판정)</li>
+</ul>
+<p>3-seed는 통계적 유의성 검정에 부족한 표본이므로 "통계적으로 유의"라고 주장하지 않는다. 다만 seed별 결과가 V_expanding 내부 (62.21~62.83%)와 V_trainonly 내부 (60.68~61.51%)가 overlap하지 않을 만큼 분리되므로, <strong>practical 관점에서는 V_expanding이 열등</strong>하다고 결론.</p>
+
+<h3>5.2 Ens+Bias 최종 비교</h3>
+<p>Phase5 final pipeline (CatBoost MultiQuantile + LightGBM Quantile + XGBoost Quantile + QuantileRegressor meta + CQR + Bias correction).</p>
+<p><strong>근거 아티팩트</strong>: 양쪽 모두 <code>phase5_final_metrics.json</code> 필드 기준. cold 정의는 <code>artist_total_sold &lt; _COLD_THRESHOLD</code> (5) — <code>train_phase5_final.py:454</code> 참조.</p>
+<ul>
+<li>Current: <code>model_test_results/phase5_final_metrics.json</code></li>
+<li>Archived: <code>model_test_results/baseline_pre_retrain_20260417/phase5_final_metrics.json</code></li>
+</ul>
+<table>
+<tr><th>지표</th><th>Archived (pre-refactor)</th><th>Current (V_trainonly, 46f)</th><th>Δ</th></tr>
+<tr><td>test_mdape</td><td>40.87%</td><td><strong>40.89%</strong></td><td>+0.02pp (동일)</td></tr>
+<tr><td>cold_mdape (총 test)</td><td>57.90%</td><td>59.60%</td><td>+1.70pp</td></tr>
+<tr><td>warm_mdape (총 test)</td><td>38.61%</td><td>38.64%</td><td>+0.03pp (동일)</td></tr>
+<tr><td>test_r2 (phase5 output)</td><td>0.468</td><td><strong>0.474</strong></td><td>+0.006 ✅</td></tr>
+<tr><td>test_within_30</td><td>38.13%</td><td>37.64%</td><td><strong>−0.49pp</strong> ❌</td></tr>
+<tr><td>valid_within_30</td><td>42.01%</td><td><strong>42.96%</strong></td><td>+0.95pp ✅</td></tr>
+<tr><td><strong>ensemble_test_mdape</strong> (단일 앙상블, Bias 전)</td><td><strong>43.16%</strong></td><td><strong>41.53%</strong></td><td><strong>−1.63pp ✅</strong></td></tr>
+<tr><td>model_a_test_mdape</td><td>43.70%</td><td><strong>42.90%</strong></td><td>−0.80pp ✅</td></tr>
+</table>
+<p><strong>G7 Leakage 게이트 (severe session-correlation 기준)</strong>: FAIL → <span class="badge badge-pass">PASS</span>. 참고: <code>gap_diagnosis.json</code>에는 여전히 7건의 drift-style 경고가 남아 있으며 이는 <code>test_g7_leakage</code>에서 의도적으로 허용된 범위. "모든 누수 종결"은 아님.</p>
+
+<h3>5.3 주요 통찰</h3>
+<ul>
+<li><strong>"Cold 3.27pp regression"은 비교 오류였음</strong>. Model-A vs Ens+Bias, 단일 seed vs 3-seed mean이 섞여 있었음.</li>
+<li><strong>Refactor 전체의 net effect</strong> — archived vs current 비교는 <strong>여러 변화가 동시에 바뀐 diff</strong>이므로 개별 요인으로 귀속 불가. 관찰된 차이: test/warm 동일, cold +1.70pp, test_within_30 −0.49pp, R² +0.006, ensemble_test −1.63pp. 이를 "누수 제거의 비용"으로 단일 귀속할 수 없음 (Ablation F는 Model-A PSM variant만 격리했고 Ens+Bias 전체 refactor 영향은 격리 안 됨).</li>
+<li><strong>Ridge → QuantileRegressor가 단일 명확한 이득</strong> (ensemble test −1.63pp).</li>
+<li><strong>코덱스의 첫 가설 반박 사례</strong>: expanding-window가 cold를 회복한다는 주장이 실험으로 반증됨.</li>
+</ul>
+
+<hr>
+
+<h2 id="tests">6. 최종 테스트 상태</h2>
+<pre><code>=========== 411 passed, 4 xfailed in 3.83s ===========</code></pre>
+<ul>
+<li><strong>411 passing</strong> — HEDONIC contract, parser, quantile model, ensemble, CQR, two-step, cold start, similarity, macro indicators, entity resolution, calibration, conformal, distillation 등</li>
+<li><strong>4 xfailed</strong> — 현재 모델이 목표 미달인 게이트들 (G1 MdAPE≤32, G2 gap≤2.5pp, G3 segment R²≥0.40, G6 W30≥53)를 명시적으로 기록. 달성 시 "unexpected pass" 알림.</li>
+</ul>
+
+<p>게이트 <span class="badge badge-pass">PASS</span> (test 판정):</p>
+<ul>
+<li>G4 Cold ≤ 58% — <strong>주의</strong>: <code>tests/price_engine/test_gate_report.py:87-103</code> 구현은 <code>gap_diagnosis.json</code>의 <code>segment_cold_test.True</code> (<code>is_new_artist</code> 기반 cohort, 49.82%) 를 본다. 반면 Section 5.2의 cold 59.60%는 <code>phase5_final_metrics.json</code> (<code>artist_total_sold &lt; 5</code> cohort). <strong>두 지표는 cohort 정의가 달라서 동일 "cold"가 아님</strong>. 각자 정의에 맞춰 독립 해석 필요.</li>
+<li>G5 Coverage ≥ 55%</li>
+<li>G7 Leakage — <strong>severe session-correlation 기준만 PASS</strong>. drift warning 7건은 별도. <code>price_segment_median</code>의 split-wise 누수는 구조적으로 제거됨 — 이 부분만 "누수 closed".</li>
+<li>G8 Monotonicity ≥ 0.99</li>
+<li>G9~G14 구조 게이트 (Cold 생성, Strict 피처, CQR temporal, OOF split, attribution drift, holdout)</li>
+<li>G15~G17 참조 게이트 (match precision, macro months, cold subgroup coverage)</li>
+</ul>
+
+<hr>
+
+<h2 id="followup">7. 미해결 / 후속 과제</h2>
+<ol>
+<li><strong>G1, G2, G3, G6 목표 미달</strong> — 현재 xfail 표기. 개선 방향:
+  <ul>
+    <li>cold-specific 라우팅/expert 모델</li>
+    <li>외부 작가 프로필 수집 확대 (Artsy/Saatchi/웹검색 필터 강화)</li>
+    <li>매크로 지표 추가 수집 (ECOS 외)</li>
+  </ul>
+</li>
+<li><strong><code>model_test_results</code> tracked 상태</strong> — 이진 모델 아티팩트가 여전히 git 추적 중. 장기적으로 untrack 권장.</li>
+<li><strong>Distillation v3 student</strong> — <code>selected</code> 피처셋 반영 후 재학습 필요 (스크립트 수정만 완료, 학습은 미실행).</li>
+<li><strong>배포 연동</strong> — 새로 재학습한 <code>model_a_quantile.cbm</code>을 운영 서버 (<code>visionai-api.ahto.city</code>)에 반영 필요.</li>
+<li><strong>V_no_PSM Ens+Bias 재측정 + persist</strong> — PSM 유지 결정의 audit 근거 확보. Section 3.2 각주 참조.</li>
+</ol>
+
+<hr>
+
+<h2 id="appendix">8. Appendix A: Canonical artifact map</h2>
+<p>본 리포트의 각 수치가 어떤 파일에서 왔는지.</p>
+<table>
+<tr><th>섹션</th><th>항목</th><th>원본 파일</th><th>Cohort/field</th></tr>
+<tr><td>3.2 Ablation F 3 variant</td><td>V_expanding/V_trainonly/V_leaky cold</td><td><code>model_test_results/ablation_f_psm.json</code></td><td><code>artist_total_sold &lt; 5</code>, <code>cold</code> field</td></tr>
+<tr><td>3.2 V_no_PSM Model-A</td><td>60.20%</td><td><code>model_test_results/step_12_comparison.json</code> (별도 run, cache 공유)</td><td>Model-A only, 3-seed mean</td></tr>
+<tr><td>3.2 V_no_PSM Ens+Bias</td><td>—</td><td><strong>audit 불가</strong> (persist 안 된 일회성 측정, follow-up에서 재측정 필요)</td><td>Ens+Bias</td></tr>
+<tr><td>5.2 Ens+Bias 비교</td><td>모든 지표</td><td><code>model_test_results/phase5_final_metrics.json</code> ↔ <code>baseline_pre_retrain_20260417/phase5_final_metrics.json</code></td><td>cold = <code>artist_total_sold &lt; 5</code></td></tr>
+<tr><td>6. 게이트 판정</td><td>G1~G8</td><td><code>tests/price_engine/test_gate_report.py</code> 실행 결과</td><td><code>gap_diagnosis.json</code> 기반, cold = <code>is_new_artist</code> (다른 cohort)</td></tr>
+<tr><td>6. G7 Leakage</td><td>PASS 여부</td><td><code>test_gate_report.py::test_g7_leakage</code></td><td>severe session-correlation만. drift 경고 7건 별도</td></tr>
+</table>
+<p><strong>중요</strong>: cold MdAPE 수치가 59.60% (Section 5.2) 와 49.82% (Section 6 G4 판정 근거) 로 다른 것은 <strong>서로 다른 cohort 정의 (<code>artist_total_sold&lt;5</code> vs <code>is_new_artist</code>)</strong> 때문이며 동일 지표가 아니다.</p>
+
+<div class="footer">
+<p><strong>Prepared by</strong>: Claude Opus 4.7 (1M context) with codex review cross-checks</p>
+<p><strong>Repository</strong>: <code>bo-ahto/VisionAI</code> main @ <code>c9a12b6</code></p>
+<p><strong>Codex review status</strong>: PASS (4회 반복 리뷰 후 사실관계 수정 완료)</p>
+</div>
+
+</div>
+</body>
+</html>
