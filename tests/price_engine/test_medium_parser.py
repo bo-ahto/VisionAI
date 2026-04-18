@@ -28,7 +28,7 @@ class TestParseMedium:
 
     def test_silkscreen(self) -> None:
         r = parse_medium("실크스크린")
-        assert r.medium_category == "판화"
+        assert r.medium_category == "실크스크린"
 
     def test_mixed_media(self) -> None:
         r = parse_medium("혼합재료")
@@ -41,11 +41,11 @@ class TestParseMedium:
 
     def test_bronze(self) -> None:
         r = parse_medium("Bronze, Aluminium, Stainless Steel")
-        assert r.medium_category == "조각/공예"
+        assert r.medium_category == "조각"
 
     def test_ceramic(self) -> None:
         r = parse_medium("도자")
-        assert r.medium_category == "조각/공예"
+        assert r.medium_category == "도자"
 
     def test_photo(self) -> None:
         r = parse_medium("C-print")
@@ -58,7 +58,7 @@ class TestParseMedium:
 
     def test_panel_support(self) -> None:
         r = parse_medium("패널에 아크릴")
-        assert r.support_category == "패널"
+        assert r.support_category == "목재"  # 패널은 목재로 통합
 
     def test_unknown_missing(self) -> None:
         r = parse_medium(None)

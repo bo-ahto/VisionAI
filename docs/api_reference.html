@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionAI 1차 시장 가격 예측 API 레퍼런스</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; --purple: #bc8cff; --tldr-bg: #1f2a3a; --tldr-border: #58a6ff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; padding: 40px 20px; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+  h2 { font-size: 22px; margin-top: 48px; margin-bottom: 16px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: var(--purple); }
+  h4 { font-size: 15px; margin-top: 24px; margin-bottom: 8px; color: var(--green); }
+  p { margin-bottom: 12px; }
+  blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 16px 0; background: var(--card); border-radius: 4px; color: var(--muted); font-size: 14px; }
+  .tldr { border-left: 4px solid var(--tldr-border); background: var(--tldr-bg); padding: 14px 18px; margin: 18px 0; border-radius: 6px; }
+  .tldr strong { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--card); padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; }
+  td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: rgba(88,166,255,0.05); }
+  code { background: var(--card); padding: 2px 6px; border-radius: 3px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 16px 0; font-size: 13px; }
+  pre code { background: none; padding: 0; }
+  strong { color: var(--text); }
+  em { color: var(--muted); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  ul, ol { margin: 12px 0; padding-left: 24px; }
+  li { margin-bottom: 4px; }
+  .method { display: inline-block; padding: 3px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; font-family: 'SF Mono', monospace; margin-right: 8px; vertical-align: middle; }
+  .method-get { background: #1f3a50; color: var(--accent); }
+  .method-post { background: #1a3a2b; color: var(--green); }
+  .endpoint-path { font-family: 'SF Mono', monospace; color: var(--text); font-size: 16px; }
+  .required { color: var(--red); font-weight: 600; font-size: 11px; margin-left: 4px; }
+  .optional { color: var(--muted); font-size: 11px; margin-left: 4px; }
+  .deprecated { text-decoration: line-through; color: var(--muted); }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>VisionAI 1차 시장 가격 예측 API 레퍼런스</h1>
+<blockquote>
+<p><strong>API 버전</strong>: 1.0.0</p>
+<p><strong>모델 버전</strong>: v3 (CatBoost + XGBoost 라우팅)</p>
+<p><strong>베이스 URL</strong>: <code>https://visionai-api.ahto.city</code></p>
+<p><strong>최종 업데이트</strong>: 2026-04-17</p>
+</blockquote>
+
+<div class="tldr">
+<p><strong>이 API는 무엇인가</strong></p>
+<p>그림 한 점의 <strong>작가 이름 · 가로세로 크기 · 재료</strong>를 주면, 그 작품의 <strong>갤러리 적정 판매가(원/달러)</strong>와 <strong>신뢰도 등급(A/B/C/D)</strong>을 돌려주는 REST API입니다. 학습된 작가는 평균 오차 11.7%, 처음 보는 작가는 약 38.7% 수준입니다. 처음 보는 작가의 경우 Artsy/Saatchi/웹검색으로 작가 프로필을 <strong>실시간 자동 수집</strong>하여 예측에 반영합니다. 모든 응답은 JSON, 인증 없음(공개 데모 단계).</p>
+</div>
+
+<hr>
+<h2>목차</h2>
+<div class="toc">
+<ol>
+<li><a href="#overview">개요와 기본 정보</a></li>
+<li><a href="#endpoints">엔드포인트 요약표</a></li>
+<li><a href="#health">GET /health</a></li>
+<li><a href="#model-info">GET /api/v1/model/info</a></li>
+<li><a href="#monitor">GET /api/v1/monitor</a></li>
+<li><a href="#predict">POST /api/v1/predict <em>(핵심)</em></a></li>
+<li><a href="#batch">POST /api/v1/predict/batch</a></li>
+<li><a href="#demo">GET /demo</a></li>
+<li><a href="#schemas">데이터 스키마 상세</a></li>
+<li><a href="#errors">오류 처리</a></li>
+<li><a href="#examples">전체 예시 (curl/Python/JavaScript)</a></li>
+<li><a href="#reference">참조 자료</a></li>
+</ol>
+</div>
+
+<hr>
+<h2 id="overview">1. 개요와 기본 정보</h2>
+
+<h3>1.1 API가 해결하는 문제</h3>
+<p>한국 미술 1차 시장(작가 → 갤러리 → 첫 구매자)은 가격 공개성이 매우 낮습니다. 갤러리가 신인 작품에 가격을 매길 때, 컬렉터가 구매 전 "이 값이 맞냐"를 따질 때, 모두 비교 기준이 부족합니다. 본 API는 <strong>29,361건의 실제 거래 데이터</strong>로 학습된 모델에 작품 정보만 넣으면 적정 가격과 신뢰도를 즉시 돌려줍니다.</p>
+
+<h3>1.2 베이스 URL과 인증</h3>
+<table>
+<tr><th>항목</th><th>값</th></tr>
+<tr><td>Production URL</td><td><code>https://visionai-api.ahto.city</code></td></tr>
+<tr><td>Content-Type (요청)</td><td><code>application/json</code></td></tr>
+<tr><td>Content-Type (응답)</td><td><code>application/json</code></td></tr>
+<tr><td>인증</td><td>없음 (현재 공개 데모 단계)</td></tr>
+<tr><td>CORS</td><td>모든 Origin 허용 (<code>*</code>)</td></tr>
+</table>
+
+<h3>1.3 Rate Limit / Quota</h3>
+<p>현재는 명시적 제한이 없습니다. 배치 엔드포인트는 요청당 최대 <strong>50건</strong>으로 제한됩니다. 운영 단계로 이행하면서 API 키·쿼터가 추가될 예정입니다.</p>
+
+<h3>1.4 응답 시간 참고치</h3>
+<table>
+<tr><th>시나리오</th><th>평균 소요</th></tr>
+<tr><td>학습 작가(DB 매칭, 외부 수집 없음)</td><td>~100~200ms</td></tr>
+<tr><td>처음 보는 작가(외부 수집 포함)</td><td>~2~5초</td></tr>
+<tr><td><code>skip_external_lookup=true</code>로 외부 수집 스킵</td><td>~100~200ms</td></tr>
+</table>
+<p>외부 수집은 Artsy GraphQL + Saatchi HTML 파싱 + 웹검색을 포함하므로 초기 비용이 큽니다. 대량 호출 시엔 배치 엔드포인트를 권장합니다(동일 작가 반복은 1회만 수집).</p>
+
+<hr>
+<h2 id="endpoints">2. 엔드포인트 요약표</h2>
+
+<table>
+<tr><th>Method</th><th>Path</th><th>용도</th><th>인증</th></tr>
+<tr><td><span class="method method-get">GET</span></td><td><code>/health</code></td><td>서비스 생존 확인, DB 연결 상태</td><td>없음</td></tr>
+<tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/model/info</code></td><td>모델 메타(버전, 학습 규모, 성능)</td><td>없음</td></tr>
+<tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/monitor</code></td><td>인메모리 카운터(예측 횟수, 등급 분포 등)</td><td>없음</td></tr>
+<tr><td><span class="method method-post">POST</span></td><td><code>/api/v1/predict</code></td><td><strong>단일 작품 가격 예측</strong></td><td>없음</td></tr>
+<tr><td><span class="method method-post">POST</span></td><td><code>/api/v1/predict/batch</code></td><td>배치 예측(최대 50건)</td><td>없음</td></tr>
+<tr><td><span class="method method-get">GET</span></td><td><code>/demo</code></td><td>브라우저 데모 페이지(HTML)</td><td>없음</td></tr>
+</table>
+
+<hr>
+<h2 id="health">3. <span class="method method-get">GET</span><span class="endpoint-path">/health</span></h2>
+
+<div class="tldr">
+<p>서비스가 살아있는지 모니터링, CI/CD의 배포 확인 훅, 로드 밸런서 헬스체크.</p>
+</div>
+
+<h4>응답 (200 OK)</h4>
+<pre><code>{
+  "status": "ok",
+  "model_version": "v3",
+  "artists_loaded": 1589,
+  "uptime_seconds": 3281.5,
+  "db_status": "connected"
+}</code></pre>
+
+<table>
+<tr><th>필드</th><th>타입</th><th>의미</th></tr>
+<tr><td><code>status</code></td><td>string</td><td><code>ok</code>(정상) 또는 <code>degraded</code>(DB 연결 실패 또는 작가 인덱스 0건)</td></tr>
+<tr><td><code>model_version</code></td><td>string</td><td>서빙 중인 모델 버전 (예: <code>v3</code>)</td></tr>
+<tr><td><code>artists_loaded</code></td><td>int</td><td>DB에서 로드된 작가 인덱스 건수</td></tr>
+<tr><td><code>uptime_seconds</code></td><td>float</td><td>서버 시작 후 경과 초</td></tr>
+<tr><td><code>db_status</code></td><td>string</td><td><code>connected</code> / <code>empty</code> / <code>error: ...</code></td></tr>
+</table>
+
+<h4>예시</h4>
+<pre><code>curl https://visionai-api.ahto.city/health</code></pre>
+
+<hr>
+<h2 id="model-info">4. <span class="method method-get">GET</span><span class="endpoint-path">/api/v1/model/info</span></h2>
+
+<div class="tldr">
+<p>클라이언트가 어떤 모델에 접속 중인지 표시, 운영 중인 모델 성능 수치를 UI에 노출할 때.</p>
+</div>
+
+<h4>응답 (200 OK)</h4>
+<pre><code>{
+  "model_version": "v3",
+  "training_count": 29361,
+  "artist_count": 1589,
+  "mdape_groupkfold": 38.7,
+  "mdape_kfold": 11.7,
+  "features_count": 37
+}</code></pre>
+
+<table>
+<tr><th>필드</th><th>타입</th><th>의미</th></tr>
+<tr><td><code>model_version</code></td><td>string</td><td>모델 버전 태그</td></tr>
+<tr><td><code>training_count</code></td><td>int</td><td>학습에 사용된 작품 수</td></tr>
+<tr><td><code>artist_count</code></td><td>int</td><td>학습 데이터 내 고유 작가 수</td></tr>
+<tr><td><code>mdape_groupkfold</code></td><td>float</td><td>Cold Start 평가 MdAPE (%) — 처음 보는 작가 기준</td></tr>
+<tr><td><code>mdape_kfold</code></td><td>float</td><td>학습 작가 평가 MdAPE (%) — 이미 학습된 작가 기준</td></tr>
+<tr><td><code>features_count</code></td><td>int</td><td>모델 입력 피처 수</td></tr>
+</table>
+
+<hr>
+<h2 id="monitor">5. <span class="method method-get">GET</span><span class="endpoint-path">/api/v1/monitor</span></h2>
+
+<div class="tldr">
+<p>운영 대시보드에서 "지금까지 몇 건 예측했고 등급 분포가 어떤지"를 실시간 확인.</p>
+<p><strong>유의</strong>: 인메모리 카운터입니다. 서버 재시작 시 리셋됩니다. 장기 집계는 <code>/app/logs/predictions.jsonl</code>(JSONL 파일)을 별도로 분석하세요.</p>
+</div>
+
+<h4>응답 (200 OK)</h4>
+<pre><code>{
+  "total_predictions": 1243,
+  "by_grade": {"A": 412, "B": 531, "C": 198, "D": 102},
+  "by_model": {"xgboost_v3": 412, "catboost_v3": 831},
+  "avg_ms": 187.3,
+  "external_lookup_count": 298,
+  "known_artist_count": 412,
+  "uptime_seconds": 54291.2
+}</code></pre>
+
+<table>
+<tr><th>필드</th><th>의미</th></tr>
+<tr><td><code>total_predictions</code></td><td>서버 가동 후 총 예측 건수</td></tr>
+<tr><td><code>by_grade</code></td><td>신뢰도 등급별 건수 (A/B/C/D)</td></tr>
+<tr><td><code>by_model</code></td><td>내부 라우팅된 모델별 건수 (xgboost_v3 / catboost_v3)</td></tr>
+<tr><td><code>avg_ms</code></td><td>총 처리시간 평균(ms)</td></tr>
+<tr><td><code>external_lookup_count</code></td><td>외부 프로필 수집을 수행한 요청 수</td></tr>
+<tr><td><code>known_artist_count</code></td><td>DB 매칭이 성공한 요청 수</td></tr>
+</table>
+
+<hr>
+<h2 id="predict">6. <span class="method method-post">POST</span><span class="endpoint-path">/api/v1/predict</span> <em>— 핵심 엔드포인트</em></h2>
+
+<div class="tldr">
+<p>작가·크기·재료를 주고 <strong>단일 작품의 예상 가격</strong>을 받고 싶을 때. 제목까지 함께 넘기면 학습 데이터 내 <strong>동일/유사 작품의 실제 가격</strong>도 매칭해서 돌려줍니다.</p>
+</div>
+
+<h3>6.1 요청 본문 (Request Body)</h3>
+<table>
+<tr><th>필드</th><th>타입</th><th>필수</th><th>제약</th><th>설명</th></tr>
+<tr><td><code>artist_name</code></td><td>string</td><td><span class="required">필수</span></td><td>길이 ≥ 1</td><td>작가명 (한국어/영어 모두 가능, 자동 정규화)</td></tr>
+<tr><td><code>width_cm</code></td><td>float</td><td><span class="required">필수</span></td><td>0 &lt; x ≤ 500</td><td>가로 길이 (cm)</td></tr>
+<tr><td><code>height_cm</code></td><td>float</td><td><span class="required">필수</span></td><td>0 &lt; x ≤ 500</td><td>세로 길이 (cm)</td></tr>
+<tr><td><code>medium</code></td><td>string</td><td><span class="required">필수</span></td><td>길이 ≥ 1</td><td>재료 (예: <code>acrylic on canvas</code>, <code>oil on canvas</code>, <code>mixed media on paper</code>)</td></tr>
+<tr><td><code>title</code></td><td>string</td><td><span class="optional">선택</span></td><td>길이 ≤ 200</td><td>작품 제목 (같은 작품/유사 제목의 실제 거래가 매칭에 사용)</td></tr>
+<tr><td><code>target_market</code></td><td>string</td><td><span class="optional">선택</span></td><td><code>gallery</code> / <code>online</code></td><td>유통 경로. 기본 <code>gallery</code>. <code>online</code> 선택 시 Saatchi 기반 보정(-7.5%) 적용</td></tr>
+<tr><td><code>skip_external_lookup</code></td><td>bool</td><td><span class="optional">선택</span></td><td>—</td><td>외부 수집 스킵 여부. 기본 <code>false</code>. 대량 호출/빠른 응답이 필요할 때 <code>true</code></td></tr>
+<tr><td><code>artist_birth_year</code></td><td>int</td><td><span class="optional">선택</span></td><td>1900~2010</td><td>작가 출생 연도 수동 입력 (DB/외부 수집값을 덮어씀)</td></tr>
+<tr><td><code>artist_total_works</code></td><td>int</td><td><span class="optional">선택</span></td><td>≥ 0</td><td>작가 총 작품 수 수동 입력</td></tr>
+<tr><td><code>solo_count</code></td><td>int</td><td><span class="optional">선택</span></td><td>≥ 0</td><td>개인전 횟수 수동 입력</td></tr>
+<tr><td><code>group_count</code></td><td>int</td><td><span class="optional">선택</span></td><td>≥ 0</td><td>단체전 횟수 수동 입력</td></tr>
+<tr><td><code>followers</code></td><td>int</td><td><span class="optional">선택</span></td><td>≥ 0</td><td>플랫폼 팔로워 수 수동 입력</td></tr>
+</table>
+
+<h4>요청 예시 — 최소 필수 필드만</h4>
+<pre><code>{
+  "artist_name": "김창열",
+  "width_cm": 73,
+  "height_cm": 60,
+  "medium": "oil on canvas"
+}</code></pre>
+
+<h4>요청 예시 — 전체 옵션 사용</h4>
+<pre><code>{
+  "artist_name": "박서보",
+  "width_cm": 162,
+  "height_cm": 130,
+  "medium": "mixed media on canvas",
+  "title": "Ecriture No. 070803",
+  "target_market": "gallery",
+  "skip_external_lookup": false,
+  "artist_birth_year": 1931,
+  "artist_total_works": 340,
+  "solo_count": 45,
+  "group_count": 120,
+  "followers": 12500
+}</code></pre>
+
+<h3>6.2 응답 본문 (Response Body, 200 OK)</h3>
+
+<pre><code>{
+  "status": "success",
+  "prediction": {
+    "price_krw": 8450000,
+    "price_usd": 6123,
+    "price_range": {"low": 6760000, "high": 10140000},
+    "confidence_grade": "A",
+    "margin": 0.20
+  },
+  "model_info": {
+    "model_type": "xgboost_v3",
+    "is_known_artist": true,
+    "training_count": 87
+  },
+  "processing": {
+    "total_ms": 142,
+    "external_fetch_ms": 0
+  },
+  "external_sources_used": [],
+  "feature_contributions": [
+    {"feature": "artist_total_works", "value": "340", "contribution": "+24.1%"},
+    {"feature": "ln_followers", "value": "9.4", "contribution": "+18.7%"},
+    {"feature": "medium_category", "value": "oil", "contribution": "+14.2%"}
+  ],
+  "matched_artworks": [
+    {
+      "title": "Ecriture No. 050915",
+      "price_krw": 9200000,
+      "price_usd": 6666,
+      "ho": 100,
+      "medium": "mixed media",
+      "gallery": "국제갤러리",
+      "source": "artsy",
+      "match_type": "same_title_diff_size"
+    }
+  ],
+  "artist_price_history": {
+    "artist_name": "박서보",
+    "total_works_in_data": 87,
+    "price_min": 1200000,
+    "price_max": 45000000,
+    "price_median": 6800000,
+    "ho_range": "10~150호",
+    "mediums": ["mixed media", "oil"],
+    "galleries": ["국제갤러리", "PKM 갤러리"],
+    "data_collected_date": "Artsy 2026-04-13",
+    "samples": [...]
+  }
+}</code></pre>
+
+<h4>prediction 객체 — 핵심 결과</h4>
+<table>
+<tr><th>필드</th><th>타입</th><th>의미</th></tr>
+<tr><td><code>price_krw</code></td><td>int</td><td>예측 가격(원)</td></tr>
+<tr><td><code>price_usd</code></td><td>int</td><td>달러 환산(참고용, 환율 1,380원/$)</td></tr>
+<tr><td><code>price_range.low</code></td><td>int</td><td>신뢰구간 하한(원) = price_krw × (1 − margin)</td></tr>
+<tr><td><code>price_range.high</code></td><td>int</td><td>신뢰구간 상한(원) = price_krw × (1 + margin)</td></tr>
+<tr><td><code>confidence_grade</code></td><td>string</td><td><code>A</code>/<code>B</code>/<code>C</code>/<code>D</code> — 아래 표 참조</td></tr>
+<tr><td><code>margin</code></td><td>float</td><td>등급별 가격 범위 비율 (A=0.20, B=0.30, C=0.50, D=0.70)</td></tr>
+</table>
+
+<h4>신뢰도 등급 결정 규칙</h4>
+<table>
+<tr><th>등급</th><th>조건</th><th>가격 범위</th><th>해석</th></tr>
+<tr><td><strong>A</strong></td><td>학습 데이터에 해당 작가 <strong>5건 이상</strong></td><td>±20%</td><td>높은 신뢰도 — 패턴을 충분히 학습함</td></tr>
+<tr><td><strong>B</strong></td><td>학습 데이터에 <strong>1~4건</strong></td><td>±30%</td><td>보통 — 표본 부족, 참고 수준</td></tr>
+<tr><td><strong>C</strong></td><td>학습 데이터엔 없지만 생년 또는 수동 프로필 확보</td><td>±50%</td><td>참고용 — 외부 수집 기반 추정</td></tr>
+<tr><td><strong>D</strong></td><td>크기·매체 외 정보 없음</td><td>±70%</td><td>단순 추정치 — 구매 의사결정에 단독 사용 비권장</td></tr>
+</table>
+
+<h4>model_info 객체 — 내부 라우팅 정보</h4>
+<table>
+<tr><th>필드</th><th>타입</th><th>의미</th></tr>
+<tr><td><code>model_type</code></td><td>string</td><td><code>xgboost_v3</code>(학습 작가 경로) 또는 <code>catboost_v3</code>(Cold Start 경로)</td></tr>
+<tr><td><code>is_known_artist</code></td><td>bool</td><td>DB 매칭 성공 여부</td></tr>
+<tr><td><code>training_count</code></td><td>int</td><td>학습 데이터 내 이 작가의 작품 수 (미매칭 시 0)</td></tr>
+</table>
+
+<h4>processing 객체</h4>
+<table>
+<tr><th>필드</th><th>타입</th><th>의미</th></tr>
+<tr><td><code>total_ms</code></td><td>int</td><td>요청 전체 처리 시간(ms)</td></tr>
+<tr><td><code>external_fetch_ms</code></td><td>int</td><td>외부 수집에 쓴 시간(ms), 없으면 0</td></tr>
+</table>
+
+<h4>external_sources_used 배열</h4>
+<p>외부 수집이 실제로 사용한 소스명 리스트. 예: <code>["artsy"]</code>, <code>["saatchi", "web_search"]</code>. 빈 배열이면 DB 매칭만 사용.</p>
+
+<h4>feature_contributions 배열 — SHAP 기반 가격 근거</h4>
+<p>CatBoost 경로(Cold Start)에서만 제공됩니다. 각 피처가 예측 가격에 몇 % 기여했는지를 풀어줍니다.</p>
+<table>
+<tr><th>필드</th><th>타입</th><th>의미</th></tr>
+<tr><td><code>feature</code></td><td>string</td><td>피처 이름 (예: <code>artist_total_works</code>)</td></tr>
+<tr><td><code>value</code></td><td>string</td><td>해당 요청의 피처 값</td></tr>
+<tr><td><code>contribution</code></td><td>string</td><td>기여도 퍼센트 (예: <code>+24.1%</code>, <code>-12.5%</code>)</td></tr>
+</table>
+
+<h4>matched_artworks 배열 — 학습 데이터 내 유사 작품</h4>
+<p>최대 5건. 매칭 우선순위(품질 좋은 순):</p>
+<table>
+<tr><th>match_type</th><th>의미</th></tr>
+<tr><td><code>exact_title_size</code></td><td>같은 제목 + 같은 호수 (거의 동일 작품)</td></tr>
+<tr><td><code>same_title_diff_size</code></td><td>같은 제목 + 다른 호수 (시리즈)</td></tr>
+<tr><td><code>title_only_global</code></td><td>제목만 일치 (작가 미매칭 시)</td></tr>
+<tr><td><code>same_size_medium</code></td><td>같은 호수 + 같은 매체 (참고용)</td></tr>
+<tr><td><code>similar_size</code></td><td>인접 호수 + 같은 매체 (보조 참고)</td></tr>
+</table>
+
+<h4>artist_price_history 객체 — 해당 작가의 학습 데이터 내 가격 이력 요약</h4>
+<p>매칭된 작가에 한해 제공. 미매칭이면 <code>null</code>.</p>
+<table>
+<tr><th>필드</th><th>의미</th></tr>
+<tr><td><code>total_works_in_data</code></td><td>학습 데이터 내 이 작가 작품 수</td></tr>
+<tr><td><code>price_min</code> / <code>price_max</code> / <code>price_median</code></td><td>가격 최저/최고/중앙값 (원)</td></tr>
+<tr><td><code>ho_range</code></td><td>호수 범위 (예: <code>10~150호</code>)</td></tr>
+<tr><td><code>mediums</code></td><td>사용된 매체 목록 (최대 5종)</td></tr>
+<tr><td><code>galleries</code></td><td>거래 갤러리 목록 (최대 5개)</td></tr>
+<tr><td><code>data_collected_date</code></td><td>데이터 수집 시점 (예: <code>Artsy 2026-04-13</code>)</td></tr>
+<tr><td><code>samples</code></td><td>대표 작품 샘플 최대 5건 (고가순)</td></tr>
+</table>
+
+<h3>6.3 호출 예시</h3>
+
+<h4>curl</h4>
+<pre><code>curl -X POST "https://visionai-api.ahto.city/api/v1/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist_name": "김창열",
+    "width_cm": 73,
+    "height_cm": 60,
+    "medium": "oil on canvas"
+  }'</code></pre>
+
+<h4>Python (requests)</h4>
+<pre><code>import requests
+
+r = requests.post(
+    "https://visionai-api.ahto.city/api/v1/predict",
+    json={
+        "artist_name": "김창열",
+        "width_cm": 73,
+        "height_cm": 60,
+        "medium": "oil on canvas",
+        "title": "회귀",
+    },
+    timeout=30,
+)
+r.raise_for_status()
+data = r.json()
+print(f"예측가: {data['prediction']['price_krw']:,}원")
+print(f"신뢰도: {data['prediction']['confidence_grade']}")</code></pre>
+
+<h4>JavaScript (fetch)</h4>
+<pre><code>const resp = await fetch("https://visionai-api.ahto.city/api/v1/predict", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({
+    artist_name: "김창열",
+    width_cm: 73,
+    height_cm: 60,
+    medium: "oil on canvas",
+  }),
+});
+const data = await resp.json();
+console.log(`예측가: ${data.prediction.price_krw.toLocaleString()}원`);</code></pre>
+
+<hr>
+<h2 id="batch">7. <span class="method method-post">POST</span><span class="endpoint-path">/api/v1/predict/batch</span></h2>
+
+<div class="tldr">
+<p>여러 작품을 한 번에 예측하고 싶을 때. 같은 작가가 여러 번 포함되어 있으면 외부 수집을 <strong>작가당 1회</strong>만 수행해서 비용을 절약합니다.</p>
+</div>
+
+<h3>7.1 요청 본문</h3>
+<table>
+<tr><th>필드</th><th>타입</th><th>필수</th><th>제약</th><th>설명</th></tr>
+<tr><td><code>artworks</code></td><td>array of BatchItem</td><td><span class="required">필수</span></td><td>최대 50건</td><td>예측할 작품 리스트</td></tr>
+<tr><td><code>skip_external_lookup</code></td><td>bool</td><td><span class="optional">선택</span></td><td>—</td><td>전체 요청에 대해 외부 수집 스킵</td></tr>
+</table>
+
+<h4>BatchItem 스키마 — <code>/api/v1/predict</code>와 유사, 단 <code>title</code> 필드 없음</h4>
+<p><code>artist_name</code>, <code>width_cm</code>, <code>height_cm</code>, <code>medium</code>은 필수. 나머지 옵션(출생연도·작품수 등)은 동일하게 선택 입력 가능. <strong>단 <code>target_market</code>은 패턴 검증(<code>^(gallery|online)$</code>)이 걸려 있어 그 외 값은 422 오류</strong>입니다.</p>
+
+<h4>요청 예시</h4>
+<pre><code>{
+  "artworks": [
+    {
+      "artist_name": "김창열",
+      "width_cm": 73, "height_cm": 60,
+      "medium": "oil on canvas"
+    },
+    {
+      "artist_name": "김창열",
+      "width_cm": 116, "height_cm": 91,
+      "medium": "oil on canvas"
+    },
+    {
+      "artist_name": "홍길동",
+      "width_cm": 60, "height_cm": 60,
+      "medium": "acrylic on canvas",
+      "target_market": "online"
+    }
+  ],
+  "skip_external_lookup": false
+}</code></pre>
+
+<h3>7.2 응답 본문</h3>
+<pre><code>{
+  "total": 3,
+  "success": 3,
+  "failed": 0,
+  "results": [
+    {
+      "index": 0,
+      "status": "success",
+      "prediction": { "price_krw": 5400000, ... },
+      "model_info": { ... },
+      "external_sources_used": []
+    },
+    {
+      "index": 1,
+      "status": "success",
+      ...
+    },
+    {
+      "index": 2,
+      "status": "success",
+      "external_sources_used": ["artsy", "saatchi"]
+    }
+  ],
+  "processing": {"total_ms": 3214, "external_fetch_ms": 0}
+}</code></pre>
+
+<table>
+<tr><th>필드</th><th>의미</th></tr>
+<tr><td><code>total</code></td><td>요청 항목 수</td></tr>
+<tr><td><code>success</code></td><td>예측 성공 항목 수</td></tr>
+<tr><td><code>failed</code></td><td>예측 실패 항목 수</td></tr>
+<tr><td><code>results[i].status</code></td><td><code>success</code> 또는 <code>error</code></td></tr>
+<tr><td><code>results[i].error</code></td><td>실패 시 에러 메시지(문자열)</td></tr>
+</table>
+
+<blockquote>
+<p>배치 엔드포인트는 단건 API와 달리 <code>matched_artworks</code>, <code>artist_price_history</code>, <code>feature_contributions</code>, <code>title</code>을 지원하지 않습니다. 필요하면 단건으로 재호출하세요.</p>
+</blockquote>
+
+<hr>
+<h2 id="demo">8. <span class="method method-get">GET</span><span class="endpoint-path">/demo</span></h2>
+
+<div class="tldr">
+<p>브라우저에서 직접 작동 확인하거나 영업·시연 용도로. 페이지가 HTML로 반환되어 별도 프론트엔드 없이 바로 사용 가능.</p>
+</div>
+
+<p>브라우저에서 <a href="https://visionai-api.ahto.city/demo" target="_blank">https://visionai-api.ahto.city/demo</a>에 접속하면 입력 폼 UI가 뜹니다. 작가명·크기·재료를 입력하면 내부적으로 <code>/api/v1/predict</code>를 호출하여 결과를 카드 형태로 보여줍니다.</p>
+<p>응답은 HTML. 이 엔드포인트는 외부 통합용이 아니라 사용자 체험용입니다.</p>
+
+<hr>
+<h2 id="schemas">9. 데이터 스키마 상세</h2>
+
+<h3>9.1 medium(재료) 입력 규칙</h3>
+<p>자유 문자열이지만 모델이 잘 이해하는 표준 패턴을 권장합니다. 내부적으로 정규화되어 <code>medium_category</code>와 <code>support_type</code>으로 변환됩니다.</p>
+<table>
+<tr><th>표준 패턴</th><th>예시</th><th>medium_category</th><th>support_type</th></tr>
+<tr><td><code>{paint} on {support}</code></td><td><code>oil on canvas</code></td><td><code>oil</code></td><td><code>canvas</code></td></tr>
+<tr><td></td><td><code>acrylic on canvas</code></td><td><code>acrylic</code></td><td><code>canvas</code></td></tr>
+<tr><td></td><td><code>watercolor on paper</code></td><td><code>watercolor</code></td><td><code>paper</code></td></tr>
+<tr><td></td><td><code>mixed media on paper</code></td><td><code>mixed</code></td><td><code>paper</code></td></tr>
+<tr><td></td><td><code>ink on paper</code></td><td><code>ink</code></td><td><code>paper</code></td></tr>
+<tr><td></td><td><code>gouache on panel</code></td><td><code>gouache</code></td><td><code>panel</code></td></tr>
+</table>
+<p>인식 가능한 paint: <code>oil, acrylic, watercolor, gouache, ink, mixed, pastel, tempera</code>. support: <code>canvas, paper, panel, linen, board</code>. 알 수 없는 값은 <code>unknown</code> 카테고리로 폴백.</p>
+
+<h3>9.2 작가명 매칭 규칙</h3>
+<ul>
+<li>한글/영문/혼합 모두 허용 (예: <code>김창열</code>, <code>Kim Tschang-Yeul</code>, <code>Kim, Tschang-Yeul</code>)</li>
+<li>내부적으로 공백/특수문자 제거 및 소문자화 후 퍼지 매칭(rapidfuzz)</li>
+<li>매칭 점수가 임계값 이상이면 <code>is_known_artist=true</code>, 아니면 외부 수집 시도</li>
+<li>동명이인 방지: 외부 수집 시 <strong>2개 이상 독립 소스에서 동일 생년 확인</strong>된 경우만 채택</li>
+</ul>
+
+<h3>9.3 호수 변환 참조</h3>
+<p>사용자는 cm로 입력하지만 내부에선 F형 표준 캔버스 호수로 변환합니다. 대표 매핑:</p>
+<table>
+<tr><th>호수</th><th>대략 크기</th><th>면적(cm²)</th></tr>
+<tr><td>1호</td><td>22×16cm</td><td>364</td></tr>
+<tr><td>10호</td><td>53×46cm</td><td>2,412</td></tr>
+<tr><td>20호</td><td>73×61cm</td><td>4,304</td></tr>
+<tr><td>50호</td><td>117×91cm</td><td>9,128</td></tr>
+<tr><td>100호</td><td>162×130cm</td><td>21,245</td></tr>
+</table>
+
+<h3>9.4 target_market 값별 차이</h3>
+<table>
+<tr><th>값</th><th>의미</th><th>내부 보정</th></tr>
+<tr><td><code>gallery</code>(기본)</td><td>오프라인 갤러리 리스팅가</td><td>보정 없음</td></tr>
+<tr><td><code>online</code></td><td>Saatchi 같은 온라인 직거래 플랫폼</td><td>log-price에 −0.075 (약 −7.5%) 보정</td></tr>
+</table>
+
+<hr>
+<h2 id="errors">10. 오류 처리</h2>
+
+<h3>10.1 HTTP 상태 코드</h3>
+<table>
+<tr><th>코드</th><th>의미</th><th>언제</th></tr>
+<tr><td><strong>200 OK</strong></td><td>성공</td><td>예측 응답 정상 반환</td></tr>
+<tr><td><strong>400 Bad Request</strong></td><td>잘못된 요청</td><td><code>target_market</code>이 gallery/online이 아닐 때</td></tr>
+<tr><td><strong>422 Unprocessable Entity</strong></td><td>스키마 검증 실패</td><td>필수 필드 누락, 타입 불일치, 범위 초과 (FastAPI 기본)</td></tr>
+<tr><td><strong>500 Internal Server Error</strong></td><td>서버 오류</td><td>모델 로드 실패, 의존 서비스 장애</td></tr>
+<tr><td><strong>503 Service Unavailable</strong></td><td>서비스 사용 불가</td><td>헬스체크 degraded 상태 (참고용, 현재 500으로 통일되어 나올 수 있음)</td></tr>
+</table>
+
+<h3>10.2 오류 응답 예시</h3>
+<pre><code>{
+  "detail": "target_market must be 'gallery' or 'online'"
+}</code></pre>
+
+<p>FastAPI 422 (Pydantic validation error)는 좀 더 구조적입니다.</p>
+<pre><code>{
+  "detail": [
+    {
+      "type": "greater_than",
+      "loc": ["body", "width_cm"],
+      "msg": "Input should be greater than 0",
+      "input": -10,
+      "ctx": {"gt": 0}
+    }
+  ]
+}</code></pre>
+
+<h3>10.3 알아둘 실패 케이스</h3>
+<ul>
+<li><strong>작가명이 완전 가상이거나 오타</strong>: DB 미매칭 + 외부 수집 실패 → D등급으로 반환. 에러 아님.</li>
+<li><strong>크기 500cm 초과</strong>: 422 오류. 한국 표준 호수 테이블 범위를 넘으면 모델이 신뢰할 수 없음.</li>
+<li><strong>재료 파싱 실패</strong>: <code>medium_category=unknown</code>으로 폴백, 예측은 여전히 반환되지만 정확도 저하.</li>
+<li><strong>외부 수집 타임아웃</strong>: 외부 수집이 실패해도 전체 요청은 성공. <code>external_sources_used</code>가 비어 돌아옴.</li>
+</ul>
+
+<hr>
+<h2 id="examples">11. 전체 예시</h2>
+
+<h3>11.1 curl — 전형적 갤러리 예측</h3>
+<pre><code>curl -X POST "https://visionai-api.ahto.city/api/v1/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist_name": "박서보",
+    "width_cm": 162,
+    "height_cm": 130,
+    "medium": "mixed media on canvas",
+    "title": "Ecriture No. 070803"
+  }' | jq .</code></pre>
+
+<h3>11.2 curl — 외부 수집 스킵(빠른 응답)</h3>
+<pre><code>curl -X POST "https://visionai-api.ahto.city/api/v1/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist_name": "김환기",
+    "width_cm": 90,
+    "height_cm": 72,
+    "medium": "oil on canvas",
+    "skip_external_lookup": true
+  }'</code></pre>
+
+<h3>11.3 Python — 배치로 10건 처리</h3>
+<pre><code>import requests
+
+artworks = [
+    {"artist_name": "김창열", "width_cm": 73, "height_cm": 60, "medium": "oil on canvas"},
+    {"artist_name": "박서보", "width_cm": 162, "height_cm": 130, "medium": "mixed media on canvas"},
+    # ... 추가
+]
+
+r = requests.post(
+    "https://visionai-api.ahto.city/api/v1/predict/batch",
+    json={"artworks": artworks, "skip_external_lookup": False},
+    timeout=120,
+)
+data = r.json()
+for res in data["results"]:
+    if res["status"] == "success":
+        p = res["prediction"]
+        print(f"[{res['index']}] {p['price_krw']:,}원 ({p['confidence_grade']})")
+    else:
+        print(f"[{res['index']}] 실패: {res['error']}")</code></pre>
+
+<h3>11.4 Python — 수동 프로필 강제 주입</h3>
+<pre><code>r = requests.post(
+    "https://visionai-api.ahto.city/api/v1/predict",
+    json={
+        "artist_name": "홍길동",  # DB/외부에 없는 가상 작가
+        "width_cm": 73,
+        "height_cm": 60,
+        "medium": "oil on canvas",
+        "artist_birth_year": 1985,
+        "artist_total_works": 30,
+        "solo_count": 2,
+        "group_count": 8,
+        "followers": 250,
+        "skip_external_lookup": true
+    }
+)
+</code></pre>
+<p>수동 override를 넣으면 외부 수집을 타지 않고도 신뢰도 C 예측을 얻을 수 있습니다.</p>
+
+<hr>
+<h2 id="reference">12. 참조 자료</h2>
+<ul>
+<li><strong>모델 기술 보고서</strong>: <code>docs/model_technical_report.html</code> — 내부 피처/아키텍처/성능 상세</li>
+<li><strong>SHAP 설명</strong>: <code>docs/model_explanation_shap.html</code> — 피처 기여도 해석</li>
+<li><strong>1차 시장 실험 결과</strong>: <code>docs/primary_market_final_report.html</code></li>
+<li><strong>프로젝트 현황</strong>: <code>docs/project_status_20260417.md</code> — 배포 주소/상태 포함</li>
+<li><strong>데모 페이지</strong>: <a href="https://visionai-api.ahto.city/demo" target="_blank">https://visionai-api.ahto.city/demo</a></li>
+<li><strong>OpenAPI 스펙</strong>: <code>https://visionai-api.ahto.city/docs</code> (FastAPI Swagger UI, 자동 생성) — 인터랙티브 테스트 가능</li>
+<li><strong>OpenAPI JSON</strong>: <code>https://visionai-api.ahto.city/openapi.json</code></li>
+</ul>
+
+<blockquote>
+<p>본 문서는 <code>primary_server.py</code>와 <code>primary_schemas.py</code>를 직접 근거로 작성되었습니다. 코드와 문서가 달라질 경우 코드가 우선입니다 — FastAPI의 Swagger UI(<code>/docs</code>)에서 항상 최신 실제 스키마를 확인하세요.</p>
+</blockquote>
+</div>
+</body>
+</html>

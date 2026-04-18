@@ -29,7 +29,7 @@ def round_to_market_unit(price: float) -> int:
     Returns:
         라운딩된 금액 (int). 음수 입력은 0 반환.
     """
-    if price <= 0:
+    if not math.isfinite(price) or price <= 0:
         return 0
 
     if price < 1_000_000:

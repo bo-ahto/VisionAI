@@ -35,7 +35,7 @@ class TestLeakageSnapshot:
     def test_snapshot_excludes_future(self, sample_works: pd.DataFrame) -> None:
         """cutoff=300이면 회차 300 이상 데이터는 미포함."""
         stats = compute_artist_stats_snapshot(
-            sample_works, cutoff_session=300, auction_type="위클리"
+            sample_works, session_col="회차", type_col="타입", price_col="낙찰가", cutoff_session=300, auction_type="위클리"
         )
         # 작가 A: 회차 100, 200만 포함 (300은 strict <이므로 미포함)
         assert stats.loc["A", "artist_total_sold"] == 2
@@ -48,14 +48,14 @@ class TestLeakageSnapshot:
     ) -> None:
         """첫 회차에서는 스냅샷이 비어있어야 한다."""
         stats = compute_artist_stats_snapshot(
-            sample_works, cutoff_session=100, auction_type="위클리"
+            sample_works, session_col="회차", type_col="타입", price_col="낙찰가", cutoff_session=100, auction_type="위클리"
         )
         assert stats.empty
 
     def test_no_same_session_leakage(self, sample_works: pd.DataFrame) -> None:
         """같은 회차 데이터는 포함되지 않는다 (strict <)."""
         stats = compute_artist_stats_snapshot(
-            sample_works, cutoff_session=200, auction_type="위클리"
+            sample_works, session_col="회차", type_col="타입", price_col="낙찰가", cutoff_session=200, auction_type="위클리"
         )
         # 회차 200은 미포함, 회차 100만 포함
         assert stats.loc["A", "artist_total_sold"] == 1

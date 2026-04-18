@@ -29,14 +29,14 @@ def _sample_works() -> pd.DataFrame:
 class TestArtistMedianPrice:
     def test_basic(self) -> None:
         works = _sample_works()
-        result = compute_artist_median_price(works, cutoff=50)
+        result = compute_artist_median_price(works, cutoff=50, session_col="회차", type_col="타입", price_col="낙찰가")
         assert "A" in result.index
         assert "B" in result.index
         assert result["A"] > 0
 
     def test_strict_cutoff(self) -> None:
         works = _sample_works()
-        result = compute_artist_median_price(works, cutoff=20)
+        result = compute_artist_median_price(works, cutoff=20, session_col="회차", type_col="타입", price_col="낙찰가")
         # 회차 < 20 → 회차 10만 포함
         assert "A" in result.index
         # A의 회차 10 데이터만: 1M, 2M → 중앙값 1.5M
@@ -44,20 +44,20 @@ class TestArtistMedianPrice:
 
     def test_empty_returns_empty(self) -> None:
         works = _sample_works()
-        result = compute_artist_median_price(works, cutoff=1)
+        result = compute_artist_median_price(works, cutoff=1, session_col="회차", type_col="타입", price_col="낙찰가")
         assert len(result) == 0
 
 
 class TestArtistPriceTrend:
     def test_insufficient_data_returns_nan(self) -> None:
         works = _sample_works()
-        result = compute_artist_price_trend(works, cutoff=30)
+        result = compute_artist_price_trend(works, cutoff=30, session_col="회차", type_col="타입", price_col="낙찰가")
         # A: 2건 (< 5) → NaN
         assert np.isnan(result.get("A", np.nan))
 
     def test_sufficient_data(self) -> None:
         works = _sample_works()
-        result = compute_artist_price_trend(works, cutoff=50)
+        result = compute_artist_price_trend(works, cutoff=50, session_col="회차", type_col="타입", price_col="낙찰가")
         # B: 5건 → trend 계산 가능
         assert "B" in result.index
 
@@ -65,13 +65,13 @@ class TestArtistPriceTrend:
 class TestMediumAvgPrice:
     def test_basic(self) -> None:
         works = _sample_works()
-        result = compute_medium_avg_price(works, cutoff=50)
+        result = compute_medium_avg_price(works, cutoff=50, session_col="회차", type_col="타입", price_col="낙찰가")
         assert "유화" in result.index or "수채" in result.index
 
     def test_strict_cutoff(self) -> None:
         works = _sample_works()
-        r1 = compute_medium_avg_price(works, cutoff=20)
-        r2 = compute_medium_avg_price(works, cutoff=50)
+        r1 = compute_medium_avg_price(works, cutoff=20, session_col="회차", type_col="타입", price_col="낙찰가")
+        r2 = compute_medium_avg_price(works, cutoff=50, session_col="회차", type_col="타입", price_col="낙찰가")
         if "유화" in r1.index and "유화" in r2.index:
             assert r1["유화"] != r2["유화"]
 
@@ -107,14 +107,14 @@ class TestSizeHo:
 class TestArtistUnsoldRate:
     def test_basic(self) -> None:
         works = _sample_works()
-        result = compute_artist_unsold_rate(works, cutoff=50)
+        result = compute_artist_unsold_rate(works, cutoff=50, session_col="회차", type_col="타입", status_col="상태")
         # B: 1 유찰 / 5 출품 = 0.2
         assert "B" in result.index
         assert abs(result["B"] - 0.2) < 0.01
 
     def test_insufficient_returns_nan(self) -> None:
         works = _sample_works()
-        result = compute_artist_unsold_rate(works, cutoff=15)
+        result = compute_artist_unsold_rate(works, cutoff=15, session_col="회차", type_col="타입", status_col="상태")
         # A: 2건 (< 3) → NaN
         if "A" in result.index:
             assert np.isnan(result["A"])
