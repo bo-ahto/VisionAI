@@ -146,6 +146,60 @@ def test_carved_frame_resin_whitelist():
     assert r.is_excluded_for_training is False
 
 
+# ─── 추가 화이트리스트 (실 Artsy 데이터 48건 분석 기반) ───────────────────
+def test_carving_with_colors_planar_technique():
+    """'carving with colors' = 캔버스 표면 깎기로 색 표현 = 평면 회화 기법."""
+    r = parse_artsy_medium("Acrylic on canvas, carving with colors", "Painting")
+    assert r.is_excluded_for_training is False
+    assert r.medium_leaf == "아크릴릭"
+
+
+def test_carving_with_colors_no_comma():
+    r = parse_artsy_medium("Acrylic on canvas carving with colors", "Painting")
+    assert r.is_excluded_for_training is False
+
+
+def test_carving_in_wood_frame():
+    """'Carving in wood/wooden frame' = 액자만 carved → 작품은 평면."""
+    r = parse_artsy_medium("Oil on canvas, Carving in wood", "Painting")
+    assert r.is_excluded_for_training is False
+
+    r2 = parse_artsy_medium("Oil on canvas, Carving in wooden frame", "Painting")
+    assert r2.is_excluded_for_training is False
+
+
+def test_carved_on_resin_whitelist():
+    """'Carved on resin' = 레진 액자/부속 → 평면 작품."""
+    r = parse_artsy_medium("Oil on canvas, Carved on resin", "Painting")
+    assert r.is_excluded_for_training is False
+
+
+def test_carved_wooden_frame_word_order():
+    """'Carved wooden frame' (어순 변형) — 기존 'carved frame' 패턴 보강."""
+    r = parse_artsy_medium("Oil on canvas, Carved wooden frame", "Painting")
+    assert r.is_excluded_for_training is False
+
+
+def test_black_mirror_carved_on_resin():
+    """'Black mirror, carved on resin' — 평면 거울 작품 + 레진 액자."""
+    r = parse_artsy_medium("Black mirror, carved on resin", "Painting")
+    assert r.is_excluded_for_training is False
+
+
+def test_woodblock_carving_remains_excluded():
+    """'woodblock carving'은 모호 — 보수적으로 EXCLUDE 유지."""
+    r = parse_artsy_medium("Mixed media on woodblock carving", "Painting")
+    assert r.is_excluded_for_training is True
+
+
+def test_carving_knives_is_tool_not_3d():
+    """'carving knives'는 도구 이름. 단 wood panel은 별 사유로 EXCLUDE."""
+    r = parse_artsy_medium("Oil stick, carving knives, acrylic on wood panel", "Painting")
+    # carving는 false positive로 잡혀야 하지만 wood panel 사유로 어차피 EXCLUDE
+    assert r.is_excluded_for_training is True
+    assert r.exclude_reason == "support_excluded"  # not keyword_3d:carving
+
+
 # ─── Saatchi: 분리 컬럼 ───────────────────────────────────────────────
 @pytest.mark.parametrize(
     "materials,mediums,exp_med_leaf,exp_sup_leaf",

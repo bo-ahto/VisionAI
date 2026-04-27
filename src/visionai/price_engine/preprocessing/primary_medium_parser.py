@@ -66,10 +66,25 @@ _PLANAR_OVERRIDE_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\bscratched\s+and\s+painted\s+on\s+stainless", re.IGNORECASE),
 )
 
-# False-positive 화이트리스트 (액자만 carved이지 작품은 평면)
+# False-positive 화이트리스트 (carved/carving 키워드가 평면 작품에 사용된 경우)
+# 실 Artsy 데이터 분석 (2026-04-27, 48건) 기반:
+# - "carving with colors" — 평면 회화 기법 (캔버스 표면 깎기로 색 표현)
+# - "carved/carving frame" — 액자만 carved, 작품은 평면
+# - "carved on resin" — 레진 부속(액자 등)이 carved, 작품은 평면
+# - "carving knives" — 도구 이름, 작품 형태 정보 아님
+# - "carved acrylic plate" — 평면 작품의 carved 부속
 _THREE_D_FALSE_POSITIVE_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"carved\s+frame", re.IGNORECASE),
+    # 액자 패턴 (다양한 어순)
+    re.compile(r"carved\s+(\w+\s+){0,2}?frame", re.IGNORECASE),
+    re.compile(r"carving\s+in\s+(wood\b|wooden\s+frame|frame\b)", re.IGNORECASE),
     re.compile(r"frame\s+on\s+(wood|resin)", re.IGNORECASE),
+    # 레진 부속
+    re.compile(r"carved\s+on\s+resin", re.IGNORECASE),
+    # 평면 회화 기법
+    re.compile(r"carving\s+with\s+colors?\b", re.IGNORECASE),
+    # 도구·부품
+    re.compile(r"carving\s+knives?\b", re.IGNORECASE),
+    re.compile(r"carved\s+acrylic\s+plate", re.IGNORECASE),
 )
 
 # 특수 마감/가공 — primary 금지 (Codex 권고). 다른 생성 매체와 같이 나오면 secondary
