@@ -322,8 +322,8 @@ def main() -> None:
     # career_age (전시 횟수 기반 추정, 정확한 첫 전시 연도 없음)
     df["career_age"] = np.nan
 
-    # career_stage v2 (Codex review 2026-04-27 — multi-factor 연속 0~10)
-    # 기존 int 분류 대체. Saatchi에서도 동일 정의 사용 (학습/추론 일관성)
+    # career_stage v2 (Codex review 2026-04-27 — multi-factor 연속 0~8)
+    # 기존 int 분류 대체. career_age 항은 학습/서빙 드리프트 회피 위해 제거됨.
     from visionai.price_engine.api.primary_feature_builder import career_stage_v2_score
     df["career_stage"] = df.apply(
         lambda r: career_stage_v2_score(
@@ -331,7 +331,6 @@ def main() -> None:
             solo_count=r.get("solo_count", 0),
             group_count=r.get("group_count", 0),
             fair_count=r.get("fair_count", 0),
-            career_age=r.get("career_age"),
             ln_followers=r.get("ln_followers", 0.0),
         ),
         axis=1,

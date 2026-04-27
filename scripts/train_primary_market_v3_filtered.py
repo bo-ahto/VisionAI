@@ -294,28 +294,60 @@ def cv_kfold(
                 "ensemble": _summary(y_price[mask], ens[mask], int(mask.sum())),
             }
 
-    # warm slice (artist_count>=5) — 서빙 라우팅 일치
-    if groups is not None:
-        wmask = _warm_mask(groups)
-        n_warm = int(wmask.sum())
-        if n_warm > 0:
-            out["warm_slice"] = {
-                "n": n_warm,
-                "n_artists": int(pd.Series(groups[wmask]).nunique()),
-                "catboost_v3_filtered": _summary(y_price[wmask], cb_pred[wmask], n_warm),
-                "xgboost_v3_filtered": _summary(y_price[wmask], xgb_pred[wmask], n_warm),
-                "ensemble": _summary(y_price[wmask], ens[wmask], n_warm),
+    # 위 warm subset은 'XGB trained on full data, evaluated on warm subset' — 서빙과 다름.
+    # 서빙 라우팅 일치 평가는 cv_kfold_warm()에서 별도 수행 (XGB warm-only 학습).
+    return out
+
+
+def cv_kfold_warm(
+    X: pd.DataFrame, y: np.ndarray, groups: np.ndarray,
+    source: np.ndarray | None = None, n_splits: int = 5,
+) -> dict:
+    """warm slice (artist_count>=5) 만으로 XGBoost CV 학습/평가.
+
+    서빙 라우팅(XGBoost on artist_count>=5)과 완전 정렬. tune script와 동일 정책.
+    """
+    wmask = _warm_mask(groups)
+    if wmask.sum() == 0:
+        return {}
+    X_warm = X.iloc[wmask].reset_index(drop=True)
+    y_warm = y[wmask]
+    src_warm = source[wmask] if source is not None else None
+    n_warm = len(y_warm)
+
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    xgb_preds = np.zeros(n_warm)
+    for fold, (tr, te) in enumerate(kf.split(X_warm), 1):
+        logger.info("[KFold-warm %d/%d] train=%d test=%d", fold, n_splits, len(tr), len(te))
+        Xtr_e, Xte_e, _ = _label_encode_xgb(X_warm.iloc[tr], X_warm.iloc[te])
+        dtrain = xgb.DMatrix(Xtr_e, label=y_warm[tr])
+        dtest = xgb.DMatrix(Xte_e, label=y_warm[te])
+        xgbm = xgb.train(
+            params={
+                "objective": "reg:squarederror", "eta": 0.05, "max_depth": 6, "verbosity": 0,
+                "seed": 42,
+            },
+            dtrain=dtrain, num_boost_round=1000,
+            evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
+        )
+        xgb_preds[te] = xgbm.predict(dtest)
+
+    y_price = np.exp(y_warm)
+    xgb_pred = np.exp(xgb_preds)
+    out = {
+        "n": n_warm,
+        "n_artists": int(pd.Series(groups[wmask]).nunique()),
+        "xgboost_v3_filtered": _summary(y_price, xgb_pred, n_warm),
+        "_note": "Trained and evaluated on warm slice only (artist_count>=5) — 서빙 라우팅 일치",
+    }
+    if src_warm is not None:
+        for src_name in sorted(set(src_warm)):
+            smask = src_warm == src_name
+            if smask.sum() == 0:
+                continue
+            out[src_name] = {
+                "xgboost_v3_filtered": _summary(y_price[smask], xgb_pred[smask], int(smask.sum())),
             }
-            if source is not None:
-                for src_name in sorted(set(source)):
-                    smask = wmask & (source == src_name)
-                    if smask.sum() == 0:
-                        continue
-                    out["warm_slice"][src_name] = {
-                        "catboost_v3_filtered": _summary(y_price[smask], cb_pred[smask], int(smask.sum())),
-                        "xgboost_v3_filtered": _summary(y_price[smask], xgb_pred[smask], int(smask.sum())),
-                        "ensemble": _summary(y_price[smask], ens[smask], int(smask.sum())),
-                    }
     return out
 
 
@@ -373,8 +405,12 @@ def main() -> None:
     logger.info("--- GroupKFold CV (Cold Start, 새 작가) ---")
     gkf_metrics = cv_groupkfold(X, y, groups, source)
 
-    logger.info("--- KFold CV (Warm, 학습 작가의 새 작품) ---")
+    logger.info("--- KFold CV (full data — CatBoost 학습/평가용) ---")
     kf_metrics = cv_kfold(X, y, groups=groups, source=source)
+
+    logger.info("--- KFold CV (warm slice — XGBoost 서빙 라우팅 일치) ---")
+    kf_warm_metrics = cv_kfold_warm(X, y, groups, source=source)
+    kf_metrics["warm_slice"] = kf_warm_metrics  # 서빙 라우팅과 일치한 metric 덮어쓰기
 
     logger.info("--- 전체 데이터로 최종 모델 학습 ---")
     # 서빙 라우팅 일치: XGBoost는 warm slice로 학습 (tune script와 동일)
@@ -419,9 +455,9 @@ def main() -> None:
                 gkf_metrics["catboost_v3_filtered"]["MdAPE"],
                 gkf_metrics.get("artsy", {}).get("catboost_v3_filtered", {}).get("MdAPE", float('nan')),
                 gkf_metrics.get("saatchi", {}).get("catboost_v3_filtered", {}).get("MdAPE", float('nan')))
-    if "warm_slice" in kf_metrics:
+    if "warm_slice" in kf_metrics and kf_metrics["warm_slice"]:
         ws = kf_metrics["warm_slice"]
-        logger.info("KFold warm-slice XGBoost (warm serving): All=%.1f / Artsy=%.1f / Saatchi=%.1f (n=%d, artists=%d)",
+        logger.info("KFold warm-slice XGBoost (warm serving, warm-only train): All=%.1f / Artsy=%.1f / Saatchi=%.1f (n=%d, artists=%d)",
                     ws["xgboost_v3_filtered"]["MdAPE"],
                     ws.get("artsy", {}).get("xgboost_v3_filtered", {}).get("MdAPE", float('nan')),
                     ws.get("saatchi", {}).get("xgboost_v3_filtered", {}).get("MdAPE", float('nan')),

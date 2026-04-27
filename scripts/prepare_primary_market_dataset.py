@@ -327,10 +327,12 @@ def main() -> None:
         axis=1,
     )
 
-    # career_stage v2 (multi-factor 연속 점수, 0~10) — Codex review 2026-04-27
+    # career_stage v2 (multi-factor 연속 점수, 0~8) — Codex review 2026-04-27
     # 기존 4단계 분류는 Artsy에서 Stage 3=0건, 4=0.2%로 죽음. v2는 연속 점수.
-    # 검증 (5-fold CV, untuned): cold 43.7→40.9 (-2.8%p), warm slice 12.4→11.7 (-0.7%p)
-    # P1 fix (PR #20 review): 이전엔 row.get("followers")로 컬럼 못 찾아 항상 0. ln_followers 직접 사용.
+    # career_age 항은 v2에서 제거 — 학습 데이터는 변수이지만 서빙은 항상 0이라 드리프트.
+    # P1 fix history:
+    #  - 초기 followers 컬럼명 버그 (row.get("followers") → 항상 0)
+    #  - 그 후 career_age 학습/서빙 드리프트 → formula에서 제거
     def _v2(row: pd.Series) -> float:
         ln_followers = row.get("ln_followers", 0.0)
         if ln_followers is None or pd.isna(ln_followers):
@@ -340,7 +342,6 @@ def main() -> None:
             solo_count=row.get("solo_count", 0),
             group_count=row.get("group_count", 0),
             fair_count=row.get("fair_count", 0),
-            career_age=row.get("career_age"),
             ln_followers=float(ln_followers),
         )
 
