@@ -465,6 +465,26 @@ def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = F
     return None
 
 
+_MOUNTED_ON_PATTERN = re.compile(r"\bmounted\s+on\b", re.IGNORECASE)
+
+
+def _detect_mounted_support(
+    text: str, rules: tuple[_LeafRule, ...]
+) -> _LeafRule | None:
+    """'X mounted on Y' 패턴이면 X(mounted 앞부분)에서 첫 support를 찾는다.
+
+    'Oil on paper mounted on canvas' → mounted 앞 = 'Oil on paper' → 종이 leaf
+    painted surface가 paper, canvas는 backing.
+    """
+    if not text:
+        return None
+    m = _MOUNTED_ON_PATTERN.search(text)
+    if not m:
+        return None
+    before_mount = text[: m.start()]
+    return _find_first_leaf(before_mount, rules, loose=True)
+
+
 # 호환 우선순위 (구 SUPPORT_RULES 순서, primary_feature_builder.py:19-26 참조)
 # 다중 매칭 시 painted surface 우선 — canvas가 가장 먼저, metal이 가장 나중.
 _SUPPORT_COMPAT_PRIORITY: dict[str, int] = {
@@ -650,9 +670,14 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
     all_supports = _find_all_leaves(raw, support_rules, loose=True)
     all_tools = _find_all_leaves(raw, tool_rules)
 
-    # primary 선정 — 다중 매칭 시 호환 우선순위(canvas > linen > paper > panel > ...)
-    # 적용. painted surface 우선이 v3 모델 학습 분포와 일치.
-    all_supports = _apply_support_priority(all_supports)
+    # primary 선정 — 'mounted on' 패턴이 있으면 mounted 앞이 painted surface,
+    # 아니면 다중 매칭 호환 우선순위(canvas > linen > paper > panel > ...)
+    mounted = _detect_mounted_support(raw, support_rules)
+    if mounted:
+        # mounted 앞 support를 primary로 강제
+        all_supports = [mounted] + [s for s in all_supports if s.leaf != mounted.leaf]
+    else:
+        all_supports = _apply_support_priority(all_supports)
     primary_support = all_supports[0] if all_supports else None
     primary_tool, secondary_tools = _pick_primary_tool(all_tools)
 
@@ -738,6 +763,10 @@ def parse_saatchi_medium(
 
     # leaf 매칭 (분리, support는 loose 매칭)
     all_supports = _find_all_leaves(mat_raw, support_rules, loose=True)
+    # materials에 support 미매칭 시 mediums 컬럼에서도 찾는다 (Codex review #6)
+    # Saatchi 데이터에서 materials='other'이고 mediums에 paper 등이 들어 있는 케이스
+    if not all_supports and med_raw:
+        all_supports = _find_all_leaves(med_raw, support_rules, loose=True)
     all_tools = _find_all_leaves(med_raw, tool_rules)
 
     # primary 선정 — 다중 support 매칭 시 호환 우선순위 (canvas > linen > paper > ...)

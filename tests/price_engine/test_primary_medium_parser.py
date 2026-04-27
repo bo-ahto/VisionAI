@@ -352,6 +352,37 @@ def test_truly_unknown_medium_not_excluded():
     assert r.is_excluded_for_training is False
 
 
+# ─── Codex Review #6: mounted on + Saatchi mediums fallback ────────────
+def test_mounted_paper_on_canvas():
+    """'paper mounted on canvas' — paper가 painted surface."""
+    r = parse_artsy_medium("Oil on paper mounted on canvas", "Painting")
+    assert r.support_leaf == "종이"
+    assert r.support_type == "paper"
+
+
+def test_mounted_korean_paper_on_canvas():
+    r = parse_artsy_medium("Mixed media on Korean paper mounted on canvas", "Painting")
+    assert r.support_leaf == "한지"
+
+
+def test_mounted_linen_on_board():
+    """linen이 painted surface, board는 backing."""
+    r = parse_artsy_medium("Acrylic on linen mounted on board", "Painting")
+    assert r.support_type == "linen"
+
+
+def test_saatchi_mediums_fallback_for_paper():
+    """Saatchi materials='other'이지만 mediums에 paper → support=paper."""
+    r = parse_saatchi_medium("other", "paper, gouache", "painting")
+    assert r.support_leaf == "종이"
+    assert r.support_type == "paper"
+
+
+def test_saatchi_mediums_fallback_with_multiple():
+    r = parse_saatchi_medium("other", "watercolor, paper, wax", "painting")
+    assert r.support_type == "paper"
+
+
 def test_woodblock_carving_remains_excluded():
     """'woodblock carving'은 모호 — 보수적으로 EXCLUDE 유지."""
     r = parse_artsy_medium("Mixed media on woodblock carving", "Painting")
