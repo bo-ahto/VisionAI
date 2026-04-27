@@ -313,7 +313,7 @@ _EN_SUPPORT_KEYWORD_PATCHES: dict[str, list[str]] = {
     "동판": ["copper plate"],
     "유리": ["glass"],
     "거울": ["mirror"],
-    "섬유": ["fabric", "cotton", "yarn", "felt", "velvet"],
+    "섬유": ["fabric", "yarn", "felt", "velvet"],  # 'cotton'은 캔버스 leaf 우선이므로 제외
     "태피스트리": ["tapestry"],
     "플라스틱 패널": ["frp", "polycarbonate"],
     "아크릴 패널": ["acrylic panel", "plexiglass"],
@@ -322,11 +322,30 @@ _EN_SUPPORT_KEYWORD_PATCHES: dict[str, list[str]] = {
 # v3 추론 모델 호환 — linen은 캔버스 leaf로 매칭되지만 호환 컬럼은 'linen' 별도 유지
 # (모델 학습 시 support_factor=1.1로 별도 카테고리)
 _LINEN_PATTERN = re.compile(r"\blinen\b", re.IGNORECASE)
+_ON_LINEN_PATTERN = re.compile(r"\bon\s+linen\b", re.IGNORECASE)
+_ON_OTHER_SUPPORT_PATTERN = re.compile(
+    r"\bon\s+(canvas|panel|board|paper|silk|wood|aluminum|aluminium|stainless|glass|mirror)",
+    re.IGNORECASE,
+)
 
 
-def _adjust_compat_for_linen(raw: str, support_compat: str) -> str:
-    """raw에 'linen' 명시되어 있으면 호환 라벨을 'linen'으로 (v3 모델 호환)."""
-    if support_compat == "canvas" and raw and _LINEN_PATTERN.search(raw):
+def _adjust_compat_for_linen(raw: str, support_compat: str, support_leaf: str) -> str:
+    """raw에 'linen' 명시 + 다른 명시적 'on X' 없을 때만 호환 라벨을 'linen'으로.
+
+    예시:
+    - 'Oil on linen' → on linen 명시 → linen ✓
+    - 'PLATINUM LEAF ANIMAL GLUE LINEN ON CANVAS' → on canvas 우선 → canvas 유지
+    - 'Acrylic on canvas' → linen 없음 → canvas 유지
+    """
+    if support_compat != "canvas" or support_leaf != "캔버스":
+        return support_compat
+    if not raw or not _LINEN_PATTERN.search(raw):
+        return support_compat
+    # 'on linen'이 명시되어 있으면 우선
+    if _ON_LINEN_PATTERN.search(raw):
+        return "linen"
+    # linen 언급 + 다른 명시적 'on X' 없음 → linen이 유일 support
+    if not _ON_OTHER_SUPPORT_PATTERN.search(raw):
         return "linen"
     return support_compat
 
@@ -432,6 +451,26 @@ def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...]) -> _LeafRule | Non
             if _kw_matches(kw, text_l):
                 return rule
     return None
+
+
+# 'X on Y' 패턴 — Y는 actual support
+_ON_PATTERN = re.compile(r"\bon\s+([^,;]+?)(?:\s+(?:and|with)\s+|[,;]|$)", re.IGNORECASE)
+
+
+def _detect_on_support(text: str, rules: tuple[_LeafRule, ...]) -> _LeafRule | None:
+    """raw에서 마지막 'on X' 패턴의 X를 찾아 그 안에서 첫 leaf 매칭 반환.
+
+    'Mixed Media on Unbleached cotton canvas' → 'Unbleached cotton canvas'에서
+    canvas leaf 매칭. 'Acrylic, paste board, canvas on panel' → 'panel'에서
+    패널 leaf 매칭. 다중 'on'이 있을 경우 마지막 것이 actual support.
+    """
+    if not text:
+        return None
+    matches = list(_ON_PATTERN.finditer(text))
+    if not matches:
+        return None
+    after_on = matches[-1].group(1).strip()
+    return _find_first_leaf(after_on, rules)
 
 
 def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...]) -> list[_LeafRule]:
@@ -590,7 +629,11 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
     all_supports = _find_all_leaves(raw, support_rules)
     all_tools = _find_all_leaves(raw, tool_rules)
 
-    # primary 선정
+    # primary 선정 — 'X on Y' 패턴이 있으면 Y가 actual support (Codex Q2 권고)
+    on_support = _detect_on_support(raw, support_rules)
+    if on_support:
+        # Move on_support to front of all_supports (preserve list)
+        all_supports = [on_support] + [s for s in all_supports if s.leaf != on_support.leaf]
     primary_support = all_supports[0] if all_supports else None
     primary_tool, secondary_tools = _pick_primary_tool(all_tools)
 
@@ -617,7 +660,7 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
         support_compat = "other"
 
     # 호환 보정 (v3 모델은 linen을 별도 카테고리로 학습)
-    support_compat = _adjust_compat_for_linen(raw, support_compat)
+    support_compat = _adjust_compat_for_linen(raw, support_compat, support_leaf)
 
     # 특수 마감/가공 플래그
     has_special = any(r.l1 == _SPECIAL_FINISH_L1 for r in all_tools)
@@ -702,7 +745,7 @@ def parse_saatchi_medium(
         support_compat = "other"
 
     # 호환 보정 (v3 모델은 linen을 별도 카테고리로 학습)
-    support_compat = _adjust_compat_for_linen(raw, support_compat)
+    support_compat = _adjust_compat_for_linen(raw, support_compat, support_leaf)
 
     has_special = any(r.l1 == _SPECIAL_FINISH_L1 for r in all_tools)
 

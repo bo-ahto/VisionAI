@@ -227,6 +227,40 @@ def test_jangji_korean_paper_leaf():
     assert r.support_l1 == "종이"
 
 
+# ─── Codex Review #2 (PR #12) — 'X on Y' 패턴 인식 ──────────────────────
+def test_on_pattern_canvas_with_cotton_precursor():
+    """'Mixed Media on Unbleached cotton canvas' — 'on canvas'가 actual support."""
+    r = parse_artsy_medium("Mixed Media on Unbleached cotton canvas", "Painting")
+    assert r.support_leaf == "캔버스"
+    assert r.support_type == "canvas"
+
+
+def test_on_pattern_panel_with_canvas_precursor():
+    """'Acrylic, paste board, canvas on panel' — 'on panel'이 actual support."""
+    r = parse_artsy_medium("Acrylic, paste board, canvas on panel", "Painting")
+    assert r.support_leaf == "패널"
+    # 패널 leaf는 입체 제외 사유, primary_feature_builder 호환은 'panel'
+    # 단, support_excluded로 학습 제외됨
+
+
+def test_linen_compat_only_when_actual_support():
+    """linen이 raw에 있어도 'on canvas'면 canvas 유지."""
+    r = parse_artsy_medium("PLATINUM LEAF ANIMAL GLUE LINEN ON CANVAS", "Painting")
+    assert r.support_type == "canvas"  # NOT linen
+
+
+def test_linen_compat_with_on_linen_explicit():
+    """'on linen'이 명시되면 linen."""
+    r = parse_artsy_medium("Oil on linen", "Painting")
+    assert r.support_type == "linen"
+
+
+def test_linen_compat_when_only_linen_mentioned():
+    """raw에 linen만 있고 다른 'on X' 없으면 linen."""
+    r = parse_artsy_medium("Acrylic linen", "Painting")
+    assert r.support_type == "linen"
+
+
 def test_woodblock_carving_remains_excluded():
     """'woodblock carving'은 모호 — 보수적으로 EXCLUDE 유지."""
     r = parse_artsy_medium("Mixed media on woodblock carving", "Painting")

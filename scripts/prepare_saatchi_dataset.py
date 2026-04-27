@@ -287,6 +287,12 @@ def main() -> None:
     n_excl = int(df["is_excluded_for_training"].sum())
     logger.info("학습 제외 후보: %d (사유: %s)", n_excl, dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6)))
 
+    # 학습 제외 필터 — 후속 통계/aggregation 전에 적용 (Codex review #2)
+    if n_excl > 0:
+        n_before = len(df)
+        df = df[df["is_excluded_for_training"] == 0].copy()
+        logger.info("학습 제외 필터 적용: %d → %d (%d건 제거)", n_before, len(df), n_before - len(df))
+
     # 4.3 작품 속성
     df["is_unique"] = 1  # Saatchi는 원작 직거래
     df["is_edition"] = 0
@@ -397,17 +403,7 @@ def main() -> None:
         "dimensions_cm", "medium", "image_url", "artwork_url",
     ]
 
-    # 학습 제외 필터 적용 (입체 sneak-in 등 — primary_medium_parser 정책)
-    n_before = len(df)
-    excluded = df[df["is_excluded_for_training"] == 1]
-    if len(excluded) > 0:
-        reason_counts = dict(excluded["exclude_reason"].value_counts().head(6))
-        logger.info(
-            "학습 제외 필터 적용: %d → %d (%d건 제거, 사유: %s)",
-            n_before, n_before - len(excluded), len(excluded), reason_counts,
-        )
-        df = df[df["is_excluded_for_training"] == 0].copy()
-
+    # 학습 제외 필터는 4.2 medium 파싱 직후 이미 적용됨
     out = df[meta_cols + feature_cols + ["ln_price", "source"]].copy()
 
     # 6. 저장

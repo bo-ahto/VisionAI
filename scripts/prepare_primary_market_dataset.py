@@ -236,6 +236,14 @@ def main() -> None:
     n_excl = int(df["is_excluded_for_training"].sum())
     logger.info("학습 제외 후보: %d (사유: %s)", n_excl, dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6)))
 
+    # 4.2.1 학습 제외 필터 — gallery_tier/통계 계산 전에 적용
+    # (Codex review #2 권고: 제외될 행이 통계에 포함되면 안 됨)
+    if n_excl > 0:
+        n_before = len(df)
+        reason_counts = dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6))
+        df = df[df["is_excluded_for_training"] == 0].copy()
+        logger.info("학습 제외 필터 적용: %d → %d (%d건 제거)", n_before, len(df), n_before - len(df))
+
     # 4.3 제작연도 → work_age
     df["year_made"] = df["date"].apply(lambda d: int(re.match(r"(\d{4})", str(d)).group(1)) if re.match(r"(\d{4})", str(d)) else None)
     df["work_age"] = df["year_made"].apply(lambda y: 2026 - y if y else None)
@@ -359,18 +367,7 @@ def main() -> None:
         "dimensions_cm", "medium", "image_url", "artwork_url",
     ]
 
-    # 6. 학습 제외 필터 적용 (입체 sneak-in 등 — primary_medium_parser 정책)
-    n_before = len(df)
-    excluded = df[df["is_excluded_for_training"] == 1]
-    if len(excluded) > 0:
-        reason_counts = dict(excluded["exclude_reason"].value_counts().head(6))
-        logger.info(
-            "학습 제외 필터 적용: %d → %d (%d건 제거, 사유: %s)",
-            n_before, n_before - len(excluded), len(excluded), reason_counts,
-        )
-        df = df[df["is_excluded_for_training"] == 0].copy()
-
-    # 7. 저장
+    # 6. 저장 (학습 제외 필터는 4.2.1에서 이미 적용됨)
     out = df[meta_cols + feature_cols + ["ln_price"]].copy()
     out_path = DATA_DIR / "primary_market_dataset.parquet"
     out.to_parquet(out_path, index=False)
