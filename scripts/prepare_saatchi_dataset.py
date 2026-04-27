@@ -264,13 +264,16 @@ def main() -> None:
     df["is_small"] = (df["ho"] <= 3).astype(int)
     logger.info("호수: min=%d, max=%d, median=%d", df["ho"].min(), df["ho"].max(), df["ho"].median())
 
-    # 4.2 지지체/매체 분류 — 새 시트 기반 파서 (PR1 통합)
+    # 4.2 지지체/매체 분류
+    # support_type/medium_category는 v3 모델 호환을 위해 구 classify_* 유지
+    df["medium_text"] = df["materials"].fillna("") + " " + df["mediums"].fillna("")
+    df["support_type"] = df["medium_text"].apply(classify_support)
+    df["medium_category"] = df["mediums"].fillna("").apply(classify_medium)
+    # 신규 metadata 컬럼은 새 파서로
     parsed_saatchi = df.apply(
         lambda r: parse_saatchi_medium(r.get("materials"), r.get("mediums"), r.get("category")),
         axis=1,
     )
-    df["support_type"] = parsed_saatchi.apply(lambda p: p.support_type)
-    df["medium_category"] = parsed_saatchi.apply(lambda p: p.medium_category)
     df["medium_l1"] = parsed_saatchi.apply(lambda p: p.medium_l1)
     df["medium_leaf"] = parsed_saatchi.apply(lambda p: p.medium_leaf)
     df["support_l1"] = parsed_saatchi.apply(lambda p: p.support_l1)

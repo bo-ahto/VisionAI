@@ -298,7 +298,7 @@ _EN_TOOL_KEYWORD_PATCHES: dict[str, list[str]] = {
 }
 
 _EN_SUPPORT_KEYWORD_PATCHES: dict[str, list[str]] = {
-    "캔버스": ["canvas", "linen", "hemp cloth"],
+    "캔버스": ["canvas", "linen", "hemp cloth", "cottonade"],
     "한지": ["korean paper", "hanji", "washi", "japanese paper"],
     "장지": ["jangji"],
     "순지": ["sunji"],
@@ -439,21 +439,28 @@ def _ensure_rules() -> tuple[tuple[_LeafRule, ...], tuple[_LeafRule, ...]]:
 _PURE_ENG_RE = re.compile(r"[a-z][a-z\-]*$")
 
 
+# 컴파운드 suffix 매칭 가능 keyword (loose mode 시): newspaper, wallpaper, woodpanel 등
+# 영어로 합성어의 끝에 나타나는 일반 명사들
+_COMPOUND_SUFFIX_KEYWORDS = frozenset({"paper", "panel"})
+
+
 def _kw_matches(kw: str, text_l: str, *, loose: bool = False) -> bool:
     """keyword가 text_l(이미 lower) 안에 있는지.
 
-    - loose=True (support 매칭용): pure 영문도 substring 매칭 — compound 단어
-      (newspaper, woodpanel, ricepaper)도 매칭. False positive 위험 낮음 (support
-      어휘가 한정적이고 구체적).
-    - loose=False (tool 매칭용 기본): 영문은 word boundary + 단복수 (\\bword s?\\b),
-      한국어는 substring. False positive 방지가 더 중요 (oil→boiling 등).
+    한국어/혼합: substring 매칭.
+    영문 단어:
+    - loose=True + keyword ∈ {paper, panel}: 합성어 suffix 매칭
+      (\\b\\w*paper s?\\b → newspaper/wallpaper/ricepaper 매칭, papering은 안 됨)
+    - 그 외: word boundary + 단복수 (\\bword s?\\b)
+    이 규칙은 'wood' / 'glass' 같은 generic 단어가 'Woodcut' / 'plexiglass'
+    내부에서 잘못 매칭되는 것을 방지 (Codex review #8).
     """
     kw_l = kw.lower()
-    if loose:
+    if not _PURE_ENG_RE.fullmatch(kw_l):
         return kw_l in text_l
-    if _PURE_ENG_RE.fullmatch(kw_l):
-        return bool(re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l))
-    return kw_l in text_l
+    if loose and kw_l in _COMPOUND_SUFFIX_KEYWORDS:
+        return bool(re.search(r"\b\w*" + re.escape(kw_l) + r"s?\b", text_l))
+    return bool(re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l))
 
 
 def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = False) -> _LeafRule | None:
@@ -511,13 +518,26 @@ def _apply_support_priority(supports: list[_LeafRule]) -> list[_LeafRule]:
     )
 
 
+def _kw_match_pos(kw: str, text_l: str, *, loose: bool = False) -> int:
+    """_kw_matches와 동일 규칙으로 매칭 위치 반환. -1이면 매칭 없음."""
+    kw_l = kw.lower()
+    if not _PURE_ENG_RE.fullmatch(kw_l):
+        return text_l.find(kw_l) if kw_l in text_l else -1
+    if loose and kw_l in _COMPOUND_SUFFIX_KEYWORDS:
+        m = re.search(r"\b\w*" + re.escape(kw_l) + r"s?\b", text_l)
+        return m.start() if m else -1
+    m = re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l)
+    return m.start() if m else -1
+
+
 def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = False) -> list[_LeafRule]:
     """text에 매칭되는 모든 leaf rule. **raw-first 정렬** (Codex 권고 Q3).
 
     leaf 중복 제거 + 텍스트 내 매칭 위치 오름차순 정렬.
     동일 위치(시작점) 시 시트 순서 fallback.
 
-    loose=True: 영문 keyword도 substring 매칭 (support용, compound 처리).
+    loose=True: paper/panel은 합성어 suffix 매칭 (newspaper, woodpanel),
+                기타 영문 단어는 word boundary (wood, glass 단독은 strict).
     """
     if not text:
         return []
@@ -528,17 +548,7 @@ def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = F
         if rule.leaf in seen:
             continue
         for kw in rule.keywords:
-            kw_l = kw.lower()
-            pos = -1
-            if loose:
-                if kw_l in text_l:
-                    pos = text_l.find(kw_l)
-            elif _PURE_ENG_RE.fullmatch(kw_l):
-                m = re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l)
-                if m:
-                    pos = m.start()
-            elif kw_l in text_l:
-                pos = text_l.find(kw_l)
+            pos = _kw_match_pos(kw, text_l, loose=loose)
             if pos >= 0:
                 found.append((pos, sheet_idx, rule))
                 seen.add(rule.leaf)

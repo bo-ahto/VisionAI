@@ -212,14 +212,16 @@ def main() -> None:
     df["is_small"] = (df["ho"] <= 3).astype(int)
     logger.info("호수 변환 완료 (min=%d, max=%d, median=%d)", df["ho"].min(), df["ho"].max(), df["ho"].median())
 
-    # 4.2 지지체/매체 분류 — 새 시트 기반 파서 (PR1 통합)
+    # 4.2 지지체/매체 분류
+    # support_type/medium_category는 v3 모델 호환을 위해 구 classify_* 유지
+    # (Codex review #8: train/serve skew 방지 — 모델 재학습 PR에서 전환).
+    df["support_type"] = df["medium"].fillna("").apply(classify_support)
+    df["medium_category"] = df["medium"].fillna("").apply(classify_medium)
+    # 신규 metadata 컬럼은 새 파서로 (additive — 모델 입력 X, downstream 점진 활용)
     parsed_artsy = df.apply(
         lambda r: parse_artsy_medium(r.get("medium"), r.get("category")),
         axis=1,
     )
-    df["support_type"] = parsed_artsy.apply(lambda p: p.support_type)
-    df["medium_category"] = parsed_artsy.apply(lambda p: p.medium_category)
-    # 신규 leaf/list 컬럼 (downstream에서 점진적 활용)
     df["medium_l1"] = parsed_artsy.apply(lambda p: p.medium_l1)
     df["medium_leaf"] = parsed_artsy.apply(lambda p: p.medium_leaf)
     df["support_l1"] = parsed_artsy.apply(lambda p: p.support_l1)
