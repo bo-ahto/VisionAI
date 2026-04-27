@@ -68,12 +68,24 @@ def _cb_groupkfold_mdape(
     return _mdape(y_price, pred_price)
 
 
+# XGBoost 튜닝/평가는 warm slice만 (PrimaryPredictor 라우팅: training_count>=5)
+WARM_MIN_COUNT = 5
+
+
+def _warm_mask(groups: np.ndarray) -> np.ndarray:
+    """artist별 작품 수 >= WARM_MIN_COUNT 인 행만 True."""
+    counts = pd.Series(groups).value_counts()
+    warm_set = set(counts[counts >= WARM_MIN_COUNT].index)
+    return np.array([g in warm_set for g in groups])
+
+
 def _xgb_kfold_mdape(
     X: pd.DataFrame, y: np.ndarray, params: dict, n_splits: int = 3,
 ) -> float:
-    """XGBoost KFold MdAPE (warm artists — primary_predictor 라우팅: matched + count>=5).
+    """XGBoost KFold MdAPE.
 
-    PrimaryPredictor가 XGBoost를 'warm' 케이스에 사용하므로 KFold로 튜닝.
+    Codex review: warm slice(training_count>=5)에서만 평가해야 production 라우팅과 일치.
+    호출부에서 X, y는 이미 warm-filter 통과된 슬라이스로 받는다.
     """
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     preds = np.zeros(len(y))
@@ -246,22 +258,46 @@ def main(n_trials: int) -> None:
     logger.info("CatBoost best MdAPE: %.2f%%", cb_study.best_value)
     logger.info("CatBoost best params: %s", cb_best)
 
-    # XGBoost 튜닝 (warm 대상 → KFold)
-    logger.info("--- XGBoost study (KFold, warm) ---")
+    # XGBoost 튜닝 (warm 슬라이스: artist 작품 수 >= 5, primary_predictor 라우팅 일치)
+    warm_mask = _warm_mask(groups)
+    X_warm = X.iloc[warm_mask].reset_index(drop=True)
+    y_warm = y[warm_mask]
+    n_warm = int(warm_mask.sum())
+    n_warm_artists = int(pd.Series(groups[warm_mask]).nunique())
+    logger.info("--- XGBoost study (KFold, warm slice: %d works, %d artists) ---",
+                n_warm, n_warm_artists)
     xgb_study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(seed=42))
-    xgb_study.optimize(lambda t: _objective_xgb(t, X, y), n_trials=n_trials, show_progress_bar=False)
+    xgb_study.optimize(lambda t: _objective_xgb(t, X_warm, y_warm),
+                       n_trials=n_trials, show_progress_bar=False)
     xgb_best = dict(xgb_study.best_params)
-    logger.info("XGBoost best MdAPE: %.2f%%", xgb_study.best_value)
+    logger.info("XGBoost best MdAPE (warm KFold): %.2f%%", xgb_study.best_value)
     logger.info("XGBoost best params: %s", xgb_best)
 
     # 최종 5-fold CV 메트릭
+    # CatBoost는 cold(GroupKFold) 전체에서 평가, XGBoost는 warm(KFold) slice에서 평가
     logger.info("--- Final 5-fold CV with best params ---")
     gkf_metrics = _final_cv_groupkfold_5(X, y, groups, source, cb_best, xgb_best)
-    kf_metrics = _final_cv_kfold_5(X, y, cb_best, xgb_best)
+    # KFold는 warm slice로 평가 (라우팅 일치)
+    kf_metrics = _final_cv_kfold_5(X_warm, y_warm, cb_best, xgb_best)
+    kf_metrics["_note"] = (
+        f"Evaluated on warm slice only ({n_warm} works, {n_warm_artists} artists, "
+        f"artist 작품수>={WARM_MIN_COUNT})"
+    )
 
-    # 전체 데이터로 최종 학습
+    # 전체 데이터로 최종 학습 — CatBoost는 전체, XGBoost는 warm slice (라우팅 일치)
     logger.info("--- Final training on full data ---")
-    cb_final, xgb_final, label_maps = _train_final(X, y, cb_best, xgb_best)
+    cb_final = CatBoostRegressor(
+        **cb_best, loss_function="RMSE", verbose=100, random_seed=42, allow_writing_files=False,
+    )
+    cb_final.fit(_cb_pool(X, y))
+
+    Xe_warm, _, label_maps = _label_encode_xgb(X_warm, X_warm.iloc[:1])
+    dtrain = xgb.DMatrix(Xe_warm, label=y_warm)
+    xgb_p = {k: v for k, v in xgb_best.items() if k != "num_boost_round"}
+    xgb_final = xgb.train(
+        params={**xgb_p, "objective": "reg:squarederror", "verbosity": 1, "seed": 42},
+        dtrain=dtrain, num_boost_round=xgb_best.get("num_boost_round", 1000),
+    )
 
     # 저장
     OUT_DIR.mkdir(parents=True, exist_ok=True)
