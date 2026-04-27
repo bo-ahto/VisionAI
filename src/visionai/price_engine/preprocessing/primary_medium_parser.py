@@ -306,7 +306,7 @@ _EN_SUPPORT_KEYWORD_PATCHES: dict[str, list[str]] = {
     "종이": ["paper"],  # 'korean paper'면 한지가 먼저 매칭 (sheet 순서)
     "보드": ["cardboard", "board"],
     "비단": ["silk"],
-    "패널": ["panel", "wood panel", "wooden panel", "mdf"],
+    "패널": ["panel", "wood panel", "wooden panel", "mdf", "wood", "wooden"],
     "알루미늄 패널": ["aluminum", "aluminium"],
     "철판": ["steel"],
     "스테인리스": ["stainless steel", "stainless"],
@@ -330,6 +330,9 @@ _ON_OTHER_SUPPORT_PATTERN = re.compile(
 
 
 _CANVAS_PATTERN = re.compile(r"\bcanvas\b", re.IGNORECASE)
+
+# 'cotton paper'는 paper 변종 (cotton-fiber paper), canvas 아님. canvas leaf 제외.
+_COTTON_PAPER_PATTERN = re.compile(r"\bcotton[\s-]+paper\b", re.IGNORECASE)
 
 
 def _adjust_compat_for_linen(raw: str, support_compat: str, support_leaf: str) -> str:
@@ -669,6 +672,10 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
     # support는 loose 매칭 (newspaper, woodpanel 같은 compound 단어 처리)
     all_supports = _find_all_leaves(raw, support_rules, loose=True)
     all_tools = _find_all_leaves(raw, tool_rules)
+
+    # 'cotton paper' 같은 compound는 paper 변종 → canvas leaf 제거
+    if _COTTON_PAPER_PATTERN.search(raw):
+        all_supports = [s for s in all_supports if s.leaf != "캔버스"]
 
     # primary 선정 — 'mounted on' 패턴이 있으면 mounted 앞이 painted surface,
     # 아니면 다중 매칭 호환 우선순위(canvas > linen > paper > panel > ...)

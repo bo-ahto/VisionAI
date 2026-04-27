@@ -90,10 +90,11 @@ def build_features(
     aspect_ratio = max(width_cm, height_cm) / max(min(width_cm, height_cm), 0.1)
     ho = area_to_ho(area_cm2)
 
-    # 매체/지지체 — 새 시트 파서로 통합 (PR1). 호환 컬럼만 추출하여 기존 모델 호환.
-    parsed = parse_artsy_medium(medium, category="Painting")
-    support_type = parsed.support_type
-    medium_category = parsed.medium_category
+    # 매체/지지체 — 추론 경로는 v3 모델 호환을 위해 구 분류기 유지.
+    # 새 parse_artsy_medium은 학습 데이터 prep에서만 사용 (Codex review #7).
+    # 모델 재학습 PR에서 전환 예정.
+    support_type = classify_support(medium)
+    medium_category = classify_medium(medium)
     support_factor = SUPPORT_FACTORS.get(support_type, 0.85)
 
     # 작가 피처 (manual override > DB profile > 기본값)

@@ -383,6 +383,38 @@ def test_saatchi_mediums_fallback_with_multiple():
     assert r.support_type == "paper"
 
 
+# ─── Codex Review #7: wood 단독 누출 + cotton paper 예외 ──────────────
+def test_wood_alone_excluded():
+    """'Acrylic on Wood' — wood 단독은 입체 후보 → 학습 제외."""
+    for med in ["Acrylic on Wood", "Mixed Media on Wood", "Oil on wood"]:
+        r = parse_artsy_medium(med, "Painting")
+        assert r.is_excluded_for_training is True, f"failed: {med}"
+        assert r.exclude_reason == "support_excluded"
+
+
+def test_cotton_paper_is_paper_not_canvas():
+    """'cotton paper'는 paper 변종 — canvas 아님."""
+    for med in ["Acrylic on Arches cotton paper",
+                "Watercolor on cotton paper",
+                "Mixed media on cotton-paper"]:
+        r = parse_artsy_medium(med, "Painting")
+        assert r.support_type == "paper", f"failed: {med} → {r.support_type}"
+        assert r.support_leaf == "종이"
+
+
+def test_cottonade_still_canvas():
+    """cottonade(cotton fabric)는 cotton paper와 다름 — canvas 유지."""
+    r = parse_artsy_medium("Watercolors on cottonade", "Painting")
+    assert r.support_leaf == "캔버스"
+
+
+def test_carved_frame_on_wood_whitelist_with_wood_patch():
+    """wood patch 추가 후에도 'Carved frame on wood' 화이트리스트 동작."""
+    r = parse_artsy_medium("Oil on canvas, Carved frame on wood", "Painting")
+    assert r.is_excluded_for_training is False
+    assert r.support_leaf == "캔버스"
+
+
 def test_woodblock_carving_remains_excluded():
     """'woodblock carving'은 모호 — 보수적으로 EXCLUDE 유지."""
     r = parse_artsy_medium("Mixed media on woodblock carving", "Painting")
