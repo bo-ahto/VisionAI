@@ -436,26 +436,31 @@ def _ensure_rules() -> tuple[tuple[_LeafRule, ...], tuple[_LeafRule, ...]]:
 _PURE_ENG_RE = re.compile(r"[a-z][a-z\-]*$")
 
 
-def _kw_matches(kw: str, text_l: str) -> bool:
+def _kw_matches(kw: str, text_l: str, *, loose: bool = False) -> bool:
     """keyword가 text_l(이미 lower) 안에 있는지.
 
-    - pure 영문 단어(특수문자 없음): word boundary + 단복수 매칭 (\\bword s?\\b)
-    - 한국어/혼합: substring 매칭
+    - loose=True (support 매칭용): pure 영문도 substring 매칭 — compound 단어
+      (newspaper, woodpanel, ricepaper)도 매칭. False positive 위험 낮음 (support
+      어휘가 한정적이고 구체적).
+    - loose=False (tool 매칭용 기본): 영문은 word boundary + 단복수 (\\bword s?\\b),
+      한국어는 substring. False positive 방지가 더 중요 (oil→boiling 등).
     """
     kw_l = kw.lower()
+    if loose:
+        return kw_l in text_l
     if _PURE_ENG_RE.fullmatch(kw_l):
         return bool(re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l))
     return kw_l in text_l
 
 
-def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...]) -> _LeafRule | None:
+def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = False) -> _LeafRule | None:
     """text에 매칭되는 첫 leaf rule."""
     if not text:
         return None
     text_l = text.lower()
     for rule in rules:
         for kw in rule.keywords:
-            if _kw_matches(kw, text_l):
+            if _kw_matches(kw, text_l, loose=loose):
                 return rule
     return None
 
@@ -483,11 +488,13 @@ def _apply_support_priority(supports: list[_LeafRule]) -> list[_LeafRule]:
     )
 
 
-def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...]) -> list[_LeafRule]:
+def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = False) -> list[_LeafRule]:
     """text에 매칭되는 모든 leaf rule. **raw-first 정렬** (Codex 권고 Q3).
 
     leaf 중복 제거 + 텍스트 내 매칭 위치 오름차순 정렬.
     동일 위치(시작점) 시 시트 순서 fallback.
+
+    loose=True: 영문 keyword도 substring 매칭 (support용, compound 처리).
     """
     if not text:
         return []
@@ -500,7 +507,10 @@ def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...]) -> list[_LeafRule]
         for kw in rule.keywords:
             kw_l = kw.lower()
             pos = -1
-            if _PURE_ENG_RE.fullmatch(kw_l):
+            if loose:
+                if kw_l in text_l:
+                    pos = text_l.find(kw_l)
+            elif _PURE_ENG_RE.fullmatch(kw_l):
                 m = re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l)
                 if m:
                     pos = m.start()
@@ -611,10 +621,10 @@ def _decide_exclusion(
     #    keyword 미매칭이지만 평면 패턴이 있으므로 포함)
     if has_planar:
         return False, None
-    if not supports:
-        if raw and raw.strip():
-            return True, "support_excluded"
-    elif all(s in EXCLUDED_SUPPORT_L1 for s in supports):
+    # supports가 모두 제외 set일 때만 학습 제외 (Codex review #5 완화)
+    # parser 미매칭(supports 비어있음)은 입체 증거 부재이므로 통과시킨다.
+    # 입체는 위 1/2/3 규칙 (category/tool/keyword)로 잡힌다.
+    if supports and all(s in EXCLUDED_SUPPORT_L1 for s in supports):
         return True, "support_excluded"
     return False, None
 
@@ -636,7 +646,8 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
         return PrimaryMediumResult(raw=raw)
 
     # leaf 매칭
-    all_supports = _find_all_leaves(raw, support_rules)
+    # support는 loose 매칭 (newspaper, woodpanel 같은 compound 단어 처리)
+    all_supports = _find_all_leaves(raw, support_rules, loose=True)
     all_tools = _find_all_leaves(raw, tool_rules)
 
     # primary 선정 — 다중 매칭 시 호환 우선순위(canvas > linen > paper > panel > ...)
@@ -725,8 +736,8 @@ def parse_saatchi_medium(
     med_raw = (mediums or "").strip()
     raw = f"{mat_raw} | {med_raw}".strip()
 
-    # leaf 매칭 (분리)
-    all_supports = _find_all_leaves(mat_raw, support_rules)
+    # leaf 매칭 (분리, support는 loose 매칭)
+    all_supports = _find_all_leaves(mat_raw, support_rules, loose=True)
     all_tools = _find_all_leaves(med_raw, tool_rules)
 
     # primary 선정 — 다중 support 매칭 시 호환 우선순위 (canvas > linen > paper > ...)

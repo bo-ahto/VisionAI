@@ -304,6 +304,54 @@ def test_saatchi_support_priority(materials, exp_support):
     assert r.support_type == exp_support
 
 
+# ─── Codex Review #5: over-exclusion 완화 + compound 단어 ──────────────
+def test_unparsed_support_not_excluded():
+    """parser 미매칭 ≠ 입체. 평면 회화일 가능성 보존."""
+    # 불어 'sur toile' — 미매칭이지만 평면 회화
+    r = parse_artsy_medium("Pigments naturels sur toile", "Painting")
+    assert r.is_excluded_for_training is False  # NOT excluded
+
+
+def test_unparsed_ramie_cottonade_not_excluded():
+    """미커버 support 동의어 — 통과."""
+    r1 = parse_artsy_medium("Coloring on Artificial Ramie", "Painting")
+    assert r1.is_excluded_for_training is False
+    # cottonade는 cotton 포함 → 캔버스 매칭
+    r2 = parse_artsy_medium("Watercolors on cottonade", "Painting")
+    assert r2.is_excluded_for_training is False
+    assert r2.support_leaf == "캔버스"
+
+
+def test_compound_paper_words():
+    """newspaper, wallpaper, ricepaper 등 compound paper 단어."""
+    for med in ["Mixed media on Old French newspaper",
+                "Print on wallpaper",
+                "Watercolor on ricepaper"]:
+        r = parse_artsy_medium(med, "Painting")
+        assert r.support_l1 == "종이", f"failed: {med} → {r.support_leaf}"
+
+
+def test_compound_panel_word():
+    """woodpanel 등 compound panel 단어 — paper가 우선이라면 paper, 아니면 panel."""
+    r = parse_artsy_medium("Oil on woodpanel", "Painting")
+    # 'panel' substring 매칭 → 패널 leaf. 단독이라 wood support_excluded.
+    assert r.support_leaf == "패널"
+
+
+def test_3d_still_caught_when_no_support_match():
+    """미매칭이어도 3D 키워드/카테고리는 잡혀야 함."""
+    r = parse_artsy_medium("Bronze sculpture", "Painting")  # category=Painting이지만 bronze
+    assert r.is_excluded_for_training is True
+    # bronze 키워드로 잡힘
+    assert "bronze" in (r.exclude_reason or "")
+
+
+def test_truly_unknown_medium_not_excluded():
+    """완전히 알 수 없는 medium은 통과 (parser 한계 ≠ 학습 제외)."""
+    r = parse_artsy_medium("totally unknown medium xyz", "Painting")
+    assert r.is_excluded_for_training is False
+
+
 def test_woodblock_carving_remains_excluded():
     """'woodblock carving'은 모호 — 보수적으로 EXCLUDE 유지."""
     r = parse_artsy_medium("Mixed media on woodblock carving", "Painting")
@@ -345,10 +393,13 @@ def test_saatchi_multi_medium_raw_first():
     assert r2.medium_leaf == "유채"
 
 
-def test_saatchi_other_excluded():
-    """materials='other' + mediums='other' → support 미매칭, 학습 제외."""
+def test_saatchi_other_not_excluded():
+    """materials='other' + mediums='other' (Saatchi unknown) — Codex review #5
+    완화 후 학습 제외 안 함 (parser 한계 ≠ 입체 증거)."""
     r = parse_saatchi_medium("other", "other", "painting")
-    assert r.is_excluded_for_training is True
+    assert r.is_excluded_for_training is False
+    assert r.support_type == "other"
+    assert r.medium_category == "other"
 
 
 def test_saatchi_sculpture_category():
