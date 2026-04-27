@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from visionai.price_engine.api.primary_feature_builder import career_stage_v2_score
 from visionai.price_engine.preprocessing.primary_medium_parser import parse_artsy_medium
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -298,35 +299,50 @@ def main() -> None:
 
     df["career_age"] = df["artist_slug"].apply(get_career_age)
 
-    # career_stage (1~4)
-    def estimate_career_stage(row: pd.Series) -> int:
+    # career_stage_int (구 1~4 분류) — vintage_premium/freshness_discount 파생용으로 보존
+    # 학습 모델의 career_stage 피처는 아래 v2 score로 교체됨.
+    def estimate_career_stage_int(row: pd.Series) -> int:
         birth = row.get("artist_birth_year")
         solo = row.get("solo_count", 0)
         career_age = row.get("career_age")
-        if birth:
-            age = 2026 - birth
-        else:
-            age = None
-
+        age = (2026 - birth) if birth else None
         if age and age >= 60 and solo >= 5:
-            return 4  # 원로
+            return 4
         if career_age and career_age >= 15 and solo >= 3:
-            return 3  # 중견
+            return 3
         if career_age and career_age >= 5:
-            return 2  # 신진 후기
-        return 1  # 신진
+            return 2
+        return 1
 
-    df["career_stage"] = df.apply(estimate_career_stage, axis=1)
+    df["career_stage_int"] = df.apply(estimate_career_stage_int, axis=1)
 
-    # vintage_premium / freshness_discount
+    # vintage_premium / freshness_discount는 기존 int 분류 기반 유지
+    # (career_stage v2는 0~10 연속이라 임계값 의미가 다름 → semantic 보존)
     df["vintage_premium"] = df.apply(
-        lambda r: r["work_age"] if r.get("work_age") and r["career_stage"] >= 3 else 0,
+        lambda r: r["work_age"] if r.get("work_age") and r["career_stage_int"] >= 3 else 0,
         axis=1,
     )
     df["freshness_discount"] = df.apply(
-        lambda r: r["work_age"] if r.get("work_age") and r["career_stage"] < 3 else 0,
+        lambda r: r["work_age"] if r.get("work_age") and r["career_stage_int"] < 3 else 0,
         axis=1,
     )
+
+    # career_stage v2 (multi-factor 연속 점수, 0~10) — Codex review 2026-04-27
+    # 기존 4단계 분류는 Artsy에서 Stage 3=0건, 4=0.2%로 죽음. v2는 연속 점수.
+    # 검증 (5-fold CV, untuned): cold 43.7→40.9 (-2.8%p), warm slice 12.4→11.7 (-0.7%p)
+    def _v2(row: pd.Series) -> float:
+        followers = row.get("followers", 0) or 0
+        ln_followers = math.log1p(followers) if followers else 0.0
+        return career_stage_v2_score(
+            artist_birth_year=row.get("artist_birth_year"),
+            solo_count=row.get("solo_count", 0),
+            group_count=row.get("group_count", 0),
+            fair_count=row.get("fair_count", 0),
+            career_age=row.get("career_age"),
+            ln_followers=ln_followers,
+        )
+
+    df["career_stage"] = df.apply(_v2, axis=1)
 
     # 4.7 갤러리 피처
     gallery_stats = compute_gallery_stats(df)

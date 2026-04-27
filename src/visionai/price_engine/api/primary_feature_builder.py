@@ -44,6 +44,55 @@ SUPPORT_FACTORS = {
 }
 
 
+# ─── career_stage v2 (multi-factor 연속 점수, 0~10) ─────────────────────
+def career_stage_v2_score(
+    artist_birth_year: float | int | None,
+    solo_count: float | int | None,
+    group_count: float | int | None,
+    fair_count: float | int | None,
+    career_age: float | int | None,
+    ln_followers: float | None,
+    current_year: int = 2026,
+) -> float:
+    """기존 4단계 분류 대체 — 연령/활동량/경력기간/시장존재감 통합 점수.
+
+    배경 (Codex review, 2026-04-27): 기존 career_stage가 Artsy에서 Stage 3=0건,
+    Stage 4=0.2%로 사실상 binary. v2는 0~10 연속 점수로 모델이 임계값을 학습.
+
+    검증 결과 (untuned 5-fold CV, baseline vs v2):
+    - Cold CatBoost MdAPE: 43.7 → 40.9 (-2.8%p)
+    - Warm slice XGBoost MdAPE: 12.4 → 11.7 (-0.7%p)
+    - Artsy/Saatchi 둘 다 개선
+
+    구성 요소 (각 cap):
+    - age_score (0~3):   (age - 30) / 12, cap [0, 3]
+    - activity_score (0~3): log1p(solo + 0.7*fair + 0.3*group), cap 3
+    - career_duration (0~2): career_age / 8, cap 2
+    - market_presence (0~2): ln_followers / 6, cap 2
+    """
+    score = 0.0
+    if artist_birth_year is not None and not _is_nan(artist_birth_year) and artist_birth_year > 0:
+        age = current_year - float(artist_birth_year)
+        score += min(max((age - 30) / 12, 0), 3)
+    solo = float(solo_count or 0)
+    group = float(group_count or 0)
+    fair = float(fair_count or 0)
+    activity = solo + 0.7 * fair + 0.3 * group
+    score += min(math.log1p(activity), 3)
+    if career_age is not None and not _is_nan(career_age):
+        score += min(float(career_age) / 8, 2)
+    if ln_followers is not None and not _is_nan(ln_followers):
+        score += min(float(ln_followers) / 6, 2)
+    return float(score)
+
+
+def _is_nan(v) -> bool:
+    try:
+        return v != v  # NaN != NaN
+    except Exception:
+        return False
+
+
 def area_to_ho(area_cm2: float) -> int:
     best_ho, best_diff = 0, float("inf")
     for ho, ref in HO_TABLE_F.items():
@@ -114,8 +163,16 @@ def build_features(
     solo = _pick("solo_count", "solo_count", 0)
     group = _pick("group_count", "group_count", 0)
     fair = p.get("fair_count", 0) or 0
-    career_stage = p.get("career_stage", 1) or 1
     career_age = p.get("career_age", 0) or 0
+    # career_stage v2 (continuous 0~10) — 기존 int(1~4) 대체
+    career_stage = career_stage_v2_score(
+        artist_birth_year=birth_year,
+        solo_count=solo,
+        group_count=group,
+        fair_count=fair,
+        career_age=career_age,
+        ln_followers=math.log(followers + 1) if followers else 0.0,
+    )
     for_sale_ratio = p.get("for_sale_ratio", 1.0) or 1.0
     profile_completeness = p.get("profile_completeness", 0) or 0
 

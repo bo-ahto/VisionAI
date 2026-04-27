@@ -186,7 +186,12 @@ def _final_cv_groupkfold_5(
 
 def _final_cv_kfold_5(
     X: pd.DataFrame, y: np.ndarray, cb_params: dict, xgb_params: dict,
+    groups: np.ndarray | None = None, source: np.ndarray | None = None,
 ) -> dict:
+    """5-fold KFold + warm slice (artist_count>=5) + by-source 분리 메트릭.
+
+    서빙 라우팅과 정렬: warm은 XGBoost on artist_count>=5.
+    """
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
     cb_preds = np.zeros(len(y))
     xgb_preds = np.zeros(len(y))
@@ -214,11 +219,43 @@ def _final_cv_kfold_5(
     xgb_pred = np.exp(xgb_preds)
     ens = np.exp((cb_preds + xgb_preds) / 2)
     n = len(y)
-    return {
+    out = {
         "catboost_v3_filtered_tuned": _summary(y_price, cb_pred, n),
         "xgboost_v3_filtered_tuned": _summary(y_price, xgb_pred, n),
         "ensemble": _summary(y_price, ens, n),
     }
+    if source is not None:
+        for src in sorted(set(source)):
+            m_ = source == src
+            if m_.sum() == 0:
+                continue
+            out[src] = {
+                "catboost_v3_filtered_tuned": _summary(y_price[m_], cb_pred[m_], int(m_.sum())),
+                "xgboost_v3_filtered_tuned": _summary(y_price[m_], xgb_pred[m_], int(m_.sum())),
+                "ensemble": _summary(y_price[m_], ens[m_], int(m_.sum())),
+            }
+    if groups is not None:
+        wmask = _warm_mask(groups)
+        n_warm = int(wmask.sum())
+        if n_warm > 0:
+            out["warm_slice"] = {
+                "n": n_warm,
+                "n_artists": int(pd.Series(groups[wmask]).nunique()),
+                "catboost_v3_filtered_tuned": _summary(y_price[wmask], cb_pred[wmask], n_warm),
+                "xgboost_v3_filtered_tuned": _summary(y_price[wmask], xgb_pred[wmask], n_warm),
+                "ensemble": _summary(y_price[wmask], ens[wmask], n_warm),
+            }
+            if source is not None:
+                for src in sorted(set(source)):
+                    smask = wmask & (source == src)
+                    if smask.sum() == 0:
+                        continue
+                    out["warm_slice"][src] = {
+                        "catboost_v3_filtered_tuned": _summary(y_price[smask], cb_pred[smask], int(smask.sum())),
+                        "xgboost_v3_filtered_tuned": _summary(y_price[smask], xgb_pred[smask], int(smask.sum())),
+                        "ensemble": _summary(y_price[smask], ens[smask], int(smask.sum())),
+                    }
+    return out
 
 
 def _train_final(X: pd.DataFrame, y: np.ndarray, cb_params: dict, xgb_params: dict):
@@ -277,8 +314,11 @@ def main(n_trials: int) -> None:
     # CatBoost는 cold(GroupKFold) 전체에서 평가, XGBoost는 warm(KFold) slice에서 평가
     logger.info("--- Final 5-fold CV with best params ---")
     gkf_metrics = _final_cv_groupkfold_5(X, y, groups, source, cb_best, xgb_best)
-    # KFold는 warm slice로 평가 (라우팅 일치)
-    kf_metrics = _final_cv_kfold_5(X_warm, y_warm, cb_best, xgb_best)
+    # KFold는 warm slice로 평가 (라우팅 일치) + by-source 분리
+    warm_groups = groups[warm_mask]
+    warm_source = source[warm_mask]
+    kf_metrics = _final_cv_kfold_5(X_warm, y_warm, cb_best, xgb_best,
+                                    groups=warm_groups, source=warm_source)
     kf_metrics["_note"] = (
         f"Evaluated on warm slice only ({n_warm} works, {n_warm_artists} artists, "
         f"artist 작품수>={WARM_MIN_COUNT})"
