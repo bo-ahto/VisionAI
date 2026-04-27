@@ -729,7 +729,9 @@ def parse_saatchi_medium(
     all_supports = _find_all_leaves(mat_raw, support_rules)
     all_tools = _find_all_leaves(med_raw, tool_rules)
 
-    # primary 선정
+    # primary 선정 — 다중 support 매칭 시 호환 우선순위 (canvas > linen > paper > ...)
+    # Saatchi materials='aluminum, canvas' 같은 케이스: canvas가 painted surface
+    all_supports = _apply_support_priority(all_supports)
     primary_support = all_supports[0] if all_supports else None
     primary_tool, secondary_tools = _pick_primary_tool(all_tools)
 

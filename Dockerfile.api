@@ -14,6 +14,9 @@ COPY model_test_results/integrated_v3_catboost.cbm ./models/integrated_v3_catboo
 COPY model_test_results/integrated_v3_xgboost.json ./models/integrated_v3_xgboost.json
 COPY data/primary_market_dataset.parquet ./data/primary_market_dataset.parquet
 COPY data/saatchi_cleaned.parquet ./data/saatchi_cleaned.parquet
+# primary_medium_parser 룰 시트 (추론 시 lazy load)
+COPY ["data/k-artmarket 1차 데이터 정제 - 지지체(바탕재) 분류.csv", "./data/"]
+COPY ["data/k-artmarket 1차 데이터 정제 - 도구_기법 분류.csv", "./data/"]
 
 ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1

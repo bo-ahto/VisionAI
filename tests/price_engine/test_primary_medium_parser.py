@@ -287,6 +287,23 @@ def test_saatchi_canvas_linen_wood():
     assert r.support_type == "canvas"  # canvas 우선
 
 
+# ─── Codex Review #4: Saatchi 다중 support priority ────────────────────
+@pytest.mark.parametrize(
+    "materials,exp_support",
+    [
+        ("aluminum, canvas", "canvas"),
+        ("paper, canvas", "canvas"),
+        ("silk, canvas", "canvas"),
+        ("wood, canvas", "canvas"),
+        ("canvas, aluminum", "canvas"),
+    ],
+)
+def test_saatchi_support_priority(materials, exp_support):
+    """다중 materials에서 canvas painted surface 우선 (v3 호환)."""
+    r = parse_saatchi_medium(materials, "oil", "painting")
+    assert r.support_type == exp_support
+
+
 def test_woodblock_carving_remains_excluded():
     """'woodblock carving'은 모호 — 보수적으로 EXCLUDE 유지."""
     r = parse_artsy_medium("Mixed media on woodblock carving", "Painting")
