@@ -1,122 +1,149 @@
-# 갤러리 티어 매핑 커버리지 분석 (Phase 1A)
+# 갤러리 티어 매핑 커버리지 + 가격 분리도 분석 (Phase 1A v2)
 
-- 협력자 리스트: 89 갤러리/기관
-- Artsy 데이터: 7,640 작품 / 66 갤러리
-- Saatchi 데이터: 21,721 작품 (Saatchi Art 단일)
+> 코덱스 리뷰 반영본. v1의 결정적 결함(Saatchi 강제 재코딩, 가격 분리도 미측정,
+> Tier D 매핑 미구현)을 보정하고 Phase 1B 진행 판단을 재구성.
 
-## Artsy 매칭 결과
+- 협력자 리스트: **88** 갤러리/기관 (NaN 1건 제외)
+- Artsy 학습 데이터: **7,289** 작품 / 66 갤러리 (입체 제외 후)
+- Saatchi 학습 데이터: **21,087** 작품 (Saatchi Art 단일 — source='saatchi'로 별도 처리)
+
+## 1. Artsy 매칭 결과
 
 - 매칭된 갤러리: **11/66** (17%)
-- 매칭된 작품: **999/7,640** (13.1%)
+- 매칭된 작품: **965/7,289** (13.2%)
+- 미매칭 Top 30 = **5,937** 건 = 미매칭의 **93.9%** / Artsy 전체의 **81.5%**
+
+현재 13.2%는 **lookup의 하한**이지 Phase 1B의 상한이 아님. Top 30 검수만으로 80%+ 추가 매핑 가능성.
 
 ### 매칭된 갤러리 (작품 수 내림차순)
 
 | Artsy 영문명 | 한글 매칭 | Tier | Class | 작품 수 |
 |---|---|:---:|---|---:|
-| Kimreeaa Gallery | 김리아갤러리 | Tier C | 하이-엔드 라이징/이머징 | 515 |
+| Kimreeaa Gallery | 김리아갤러리 | Tier C | 하이-엔드 라이징/이머징 | 507 |
 | Art Sohyang | 아트소향 | Tier C | 하이-엔드 라이징/이머징 | 103 |
-| BHAK | BHAK(비에이치에이케이) | Tier C | 하이-엔드 라이징/이머징 | 92 |
-| Gallery Planet | 갤러리 플래닛 | Tier C | 하이-엔드 라이징/이머징 | 92 |
+| Gallery Planet | 갤러리 플래닛 | Tier C | 하이-엔드 라이징/이머징 | 83 |
 | CHOI&CHOI | 초이앤초이 갤러리 | Tier B | 갤러리 | 81 |
-| CYLINDER | 실린더 | Tier C | 하이-엔드 라이징/이머징 | 41 |
+| BHAK | BHAK(비에이치에이케이) | Tier C | 하이-엔드 라이징/이머징 | 78 |
+| CYLINDER | 실린더 | Tier C | 하이-엔드 라이징/이머징 | 39 |
 | Leehwaik Gallery | 이화익갤러리 | Tier B | 갤러리 | 33 |
 | SPACE Willing N Dealing | 스페이스 윌링앤딜링 | Tier C | 하이-엔드 라이징/이머징 | 23 |
-| ThisWeekendRoom | 디스위켄드룸 | Tier C | 하이-엔드 라이징/이머징 | 10 |
+| ThisWeekendRoom | 디스위켄드룸 | Tier C | 하이-엔드 라이징/이머징 | 9 |
 | FOUNDRY SEOUL | 파운드리 서울 | Tier C | 하이-엔드 라이징/이머징 | 8 |
 | Artside Gallery | 아트사이드 갤러리 | Tier C | 하이-엔드 라이징/이머징 | 1 |
 
-### Tier 분포 (Artsy)
+## 2. Tier 분포 (Artsy-only, 학습 데이터)
 
-| Tier | 작품 수 | 비중 |
-|:---:|---:|---:|
-| Tier A | 0 | 0.0% |
-| Tier B | 114 | 1.5% |
-| Tier C | 885 | 11.6% |
-| Tier D | 0 | 0.0% |
-| Tier E | 6,641 | 86.9% |
+| Tier | Default | Default % | +D-fallback | +D-fallback % |
+|:---:|---:|---:|---:|---:|
+| Tier A | 0 | 0.0% | 0 | 0.0% |
+| Tier B | 114 | 1.6% | 114 | 1.6% |
+| Tier C | 851 | 11.7% | 851 | 11.7% |
+| Tier D | 0 | 0.0% | 6,324 | 86.8% |
+| Tier E | 6,324 | 86.8% | 0 | 0.0% |
 
-### Class 분포 (Artsy)
+- **Default**: 협력자 리스트 정확 매칭만 적용. 미매칭은 모두 Tier E.
+- **+D-fallback**: 미매칭 + commercial gallery type → Tier D로 떨어뜨리는 sensitivity rule ("한국화랑협회 회원/지역 중소" 카테고리 라벨이 데이터에 직접 없으므로 추정 규칙).
 
-| Class | 작품 수 | 비중 |
-|---|---:|---:|
-| 미분류 | 6,641 | 86.9% |
-| 하이-엔드 라이징/이머징 | 885 | 11.6% |
-| 갤러리 | 114 | 1.5% |
+## 3. 가격 분리도 (핵심) — Artsy-only Default 매핑
 
-## Saatchi
+**이게 Phase 1B 의미 여부의 결정적 지표.** 커버리지가 낮아도 매칭된 Tier가 가격을 의미 있게 분리한다면 가치가 있고, 반대로 분리가 약하면 매핑을 늘려도 의미가 없다.
 
-Saatchi Art 단일 — 갤러리 개념 미적용, 모두 Tier E (온라인 플랫폼)
+| Tier | n | median (KRW) | 95% CI | Q25 | Q75 | ln_mean | ln_std |
+|:---:|---:|---:|---|---:|---:|---:|---:|
+| Tier A | 0 | - | - | - | - | - | - |
+| Tier B | 114 | 8,457,500 | [7,000,000 ~ 9,660,000] | 5,500,000 | 15,300,000 | 16.001 | 0.870 |
+| Tier C | 851 | 3,864,000 | [3,600,000 ~ 4,554,000] | 1,700,000 | 9,630,000 | 15.274 | 1.320 |
+| Tier D | 0 | - | - | - | - | - | - |
+| Tier E | 6,324 | 4,140,000 | [4,002,000 ~ 4,140,000] | 1,794,000 | 10,947,200 | 15.316 | 1.317 |
 
-## 통합 (Artsy + Saatchi)
+### 해석
 
-### Tier 분포
+- **Tier B vs E**: median 8,457,500 vs 4,140,000 = **2.04x**. 95% CI **비겹침** (통계적으로 유의). 표본 작음 (B=114건, 권장 300+) → 유의 but underpowered.
+- **Tier C vs E**: median 3,864,000 vs 4,140,000 = **0.93x**. 95% CI 겹침 → 유의차 없음. C 라벨은 가격 신호로 약함 — 협력자가 정의한 'Tier C 하이엔드 라이징/이머징' 분류가 실제 거래 가격과 직접 연결되지 않음.
 
-| Tier | 작품 수 | 비중 |
-|:---:|---:|---:|
-| Tier A | 0 | 0.0% |
-| Tier B | 114 | 0.4% |
-| Tier C | 885 | 3.0% |
-| Tier D | 0 | 0.0% |
-| Tier E | 28,362 | 96.6% |
+## 4. 기존 `gallery_tier` 피처와의 교차표
 
-## 미매칭 갤러리 Top 30 (Artsy)
+기존 `gallery_tier`는 `city_count + avg_price + work_count` 휴리스틱 (estimate_gallery_tier in scripts/prepare_primary_market_dataset.py:116). v3 Tier가 같은 신호인지 다른 축인지 검증.
 
-| 영문명 | 작품 수 | 비고 |
-|---|---:|---|
-| Art Spoon | 707 | — |
-| Gallery Grimson | 587 | — |
-| Suppoment Gallery | 553 | — |
-| Keumsan Gallery | 548 | — |
-| The Trinity Gallery | 469 | — |
-| MOOWOOSOO Gallery | 379 | — |
-| Art in Dongsan | 279 | — |
-| Objecthood | 273 | — |
-| GalleryMEME | 244 | — |
-| Gallery Playlist | 231 | — |
-| Galerie GAIA | 202 | — |
-| Kuns Gallery | 161 | — |
-| THEO | 156 | — |
-| art.ness | 155 | — |
-| Space776 | 111 | — |
-| Genuine Global Company | 109 | — |
-| CDA | 107 | — |
-| LYNN Fine Art Gallery | 105 | — |
-| IdeelArt | 102 | — |
-| Dohing Art | 85 | — |
-| Gallery We | 72 | — |
-| Combineworks Seoul | 71 | — |
-| AVO | 66 | — |
-| UARTSPACE | 64 | — |
-| SPACE SO | 64 | — |
-| galerie bruno massa | 62 | — |
-| Art Works Paris Seoul Gallery | 59 | — |
-| ROY Gallery | 58 | — |
-| Gallery Ichon | 57 | — |
-| oaoa | 55 | — |
+| v3 \ existing | existing=2 | existing=3 | existing=4 | existing=5 |
+|:---:|:---:|:---:|:---:|:---:|
+| v3=Tier B | 0 | 114 | 0 | 0 |
+| v3=Tier C | 103 | 668 | 63 | 17 |
+| v3=Tier E | 2176 | 3295 | 851 | 2 |
+
+v3 Tier E와 Tier C 모두 기존 gallery_tier 여러 값에 걸쳐 있다면 **다른 축**. 한 값에 집중되면 **중복 신호**.
+
+## 5. Saatchi (별도 처리)
+
+- 작품 수: 21,087
+- 기존 `gallery_tier`: **3** (단일값)
+- price median: **2,608,200 KRW** (Q25 1,104,000 ~ Q75 6,085,800)
+- ln_mean: 14.855
+
+> 온라인 플랫폼 — 갤러리 개념 미적용. 기존 파이프라인은 source='saatchi'로 분리 처리.
+
+Artsy median과 Saatchi median을 직접 비교하는 것은 source 효과 + tier 효과가 섞여 있어 부적절.
+**v1 보고서의 통합 96.6% Tier E 수치는 source 효과로 희석된 결과이므로 폐기.**
+
+## 6. 미매칭 Top 30 — 협력자 검수 후보 리스트
+
+이 30개를 협력자가 한글명/Tier 확정 시 Artsy unmatched의 **93.9%**, 전체의 **81.5%**가 재평가됨. **ROI 가장 높은 후속 작업.**
+
+| 순위 | 영문명 | 작품 수 | 추정 한글 (검수 필요) | 리스트 등재? |
+|---:|---|---:|---|:---:|
+| 1 | Art Spoon | 659 | 아트스푼? | NO |
+| 2 | Gallery Grimson | 574 | 갤러리 그림슨? | NO |
+| 3 | Suppoment Gallery | 550 | 써포먼트 갤러리? | NO |
+| 4 | Keumsan Gallery | 485 | 금산갤러리? | NO |
+| 5 | The Trinity Gallery | 465 | 트리니티 갤러리? | NO |
+| 6 | MOOWOOSOO Gallery | 365 | 무우수갤러리? | NO |
+| 7 | Objecthood | 271 | 오브젝트후드? | NO |
+| 8 | Art in Dongsan | 250 | 동산방화랑? | NO |
+| 9 | GalleryMEME | 239 | 갤러리밈? | NO |
+| 10 | Gallery Playlist | 227 | 갤러리 플레이리스트? | NO |
+| 11 | Galerie GAIA | 202 | 갤러리 가이아? | NO |
+| 12 | Kuns Gallery | 160 | 쿤스 갤러리? | NO |
+| 13 | art.ness | 138 | 아트네스? | NO |
+| 14 | THEO | 136 | 테오? | NO |
+| 15 | Genuine Global Company | 109 | ? | NO |
+| 16 | LYNN Fine Art Gallery | 103 | 린 파인아트? | NO |
+| 17 | IdeelArt | 102 | 아이딜아트? | NO |
+| 18 | Space776 | 101 | 스페이스776? | NO |
+| 19 | CDA | 100 | ? | NO |
+| 20 | Dohing Art | 83 | 도잉아트? | NO |
+| 21 | Gallery We | 72 | 갤러리 위? | NO |
+| 22 | Combineworks Seoul | 71 | 컴바인웍스 서울? | NO |
+| 23 | AVO | 66 | ? | NO |
+| 24 | UARTSPACE | 64 | 유아트스페이스? | NO |
+| 25 | galerie bruno massa | 62 | 브루노 마사? | NO |
+| 26 | Art Works Paris Seoul Gallery | 59 | 아트웍스 파리 서울? | NO |
+| 27 | ROY Gallery | 58 | 로이 갤러리? | NO |
+| 28 | SPACE SO | 58 | ? | NO |
+| 29 | oaoa | 55 | ? | NO |
+| 30 | Gallery Ichon | 53 | 갤러리 이촌? | NO |
+
+추정 한글명 중 'NO' 표시는 협력자 리스트(88건)에 없음을 의미. 즉 **이름 표기 차이가 아니라**, 
+이들이 협력자 리스트에 등록 안 된 갤러리. 협력자가 리스트를 확장하거나 Tier D/E를 명시해야 함.
 
 ## 결론 — Phase 1B 진행 판단
 
-- **Artsy 매칭 비중**: 13.1% (999/7,640)
-- **통합 Tier A~D**: 999 / 29,361 (3.4%)
-- **Tier A**: 0건  /  **Tier D**: 0건
-- **Tier B**: 114건  /  **Tier C**: 885건
-- **Tier E**: 28,362건 (96.6%)
+v1의 "보류 권장" 결론은 **철회**. 보유 데이터로는 결정 자체가 불가능.
 
-### 판정: **Phase 1B (피처 도입) 보류 권장**
+### 핵심 근거
 
-근거:
-1. **Tier A/D = 0건** — 분류 5단계 중 2단계가 학습 데이터에 존재하지 않음. 사실상 binary 신호(`Tier B/C` vs `Tier E`)로 축소됨.
-2. **Tier E = 96.6%** — 통합 데이터의 96.6%가 미분류로 떨어짐 (Saatchi 21,721건 + Artsy 미매칭 6,641건). 압도적 대다수가 같은 값이면 모델이 신호로 학습할 정보량이 거의 없음.
-3. **Artsy 메인스트림 부재** — Tier A 갤러리(국제갤러리, 가나아트, 갤러리현대 등)는 Artsy 데이터셋에 등록되어 있지 않음(Frieze/Art Basel 메인 갤러리들은 별도 채널 사용). 협력자 리스트의 핵심 변별력이 학습 데이터에 반영되지 않음.
-4. **이미 `gallery_tier` 피처 존재** — `primary_predictor.py`의 기존 `gallery_tier` (galleries_count 기반 휴리스틱)가 동일 신호의 일부를 이미 학습 중. v3 매핑 추가 효과는 한계.
+- **Tier B vs E**: 8,457,500 vs 4,140,000 = 2.04x — 신호 있음, 표본 부족 (B=114건)
+- **Tier C vs E**: 3,864,000 vs 4,140,000 = 0.93x — 가격 분리 약함
+- **Top 30 미매칭이 81%** 점유 → 검수 후 그림이 크게 바뀔 가능성 높음
+- 기존 `gallery_tier`와 v3는 다른 축 (cross-tab 참고)
 
-### 대안
+### ROI 우선순위 (코덱스 권장)
 
-- **A. 데이터 확장**: Artsy 외 채널(갤러리 자체 사이트, 아트뉴스, 미술시장 데이터) 수집으로 Tier A 갤러리 데이터를 확보한 후 재시도.
-- **B. 협력자 검수**: 미매칭 Top 갤러리 30개에 대해 협력자가 한글명 매핑 또는 Tier 부여를 추가 검토 (현재 매핑 11개 → 30~40개로 확장 가능성).
-- **C. 다른 P0 액션 우선**: `MdAPE_개선_액션플랜_20260427.md`의 다른 항목 (career-stage v2, source-split-models, cold-start-data-enrichment)을 먼저 진행.
+1. **A. 협력자 검수** (1순위) — Top 30 unmatched 한글명/Tier 확정 → Artsy 81% 재평가
+2. **C. 다른 P0 우선** (2순위) — 검수 결과 나오기 전까지 career-stage v2 / source-split 등 진행
+3. **B. Artsy 외 데이터** (3순위) — 검수 + 가격 분리도 확인 후, 신호 약하면 그때 착수
 
-### 다음 단계 권장
+### 재판정 트리거
 
-- 본 리포트를 협력자에게 공유 → 미매칭 Top 갤러리 매핑 검수 요청
-- 그 사이 P0 다른 항목(career-stage v2 등)부터 진행
+- 검수 후 매핑이 30+ 도달하고 Tier B 표본이 300+ 늘어나면 → ablation 진행
+- Tier B의 가격 분리(2x+)가 검수 후에도 유지되면 → Phase 1B 진행
+- 검수 후에도 Tier C가 E와 분리 안 되면 → Tier C 라벨은 학습 신호로 사용 X (B만 binary)
