@@ -236,11 +236,26 @@ def test_on_pattern_canvas_with_cotton_precursor():
 
 
 def test_on_pattern_panel_with_canvas_precursor():
-    """'Acrylic, paste board, canvas on panel' — 'on panel'이 actual support."""
+    """'Acrylic, paste board, canvas on panel' — painted surface는 canvas
+    (panel은 backing). v3 모델 호환성.
+    """
     r = parse_artsy_medium("Acrylic, paste board, canvas on panel", "Painting")
-    assert r.support_leaf == "패널"
-    # 패널 leaf는 입체 제외 사유, primary_feature_builder 호환은 'panel'
-    # 단, support_excluded로 학습 제외됨
+    assert r.support_leaf == "캔버스"
+    assert r.support_type == "canvas"
+    assert r.is_excluded_for_training is False
+
+
+def test_mounted_canvas_on_board():
+    """'canvas on board' — canvas가 painted surface, board는 backing."""
+    r = parse_artsy_medium("Real gold leaf and acrylic on canvas on board", "Painting")
+    assert r.support_leaf == "캔버스"
+    assert r.support_type == "canvas"
+
+
+def test_mounted_linen_on_board():
+    """'linen on board' — linen이 painted surface, linen 호환 유지."""
+    r = parse_artsy_medium("Oil on linen on board", "Painting")
+    assert r.support_type == "linen"
 
 
 def test_linen_compat_only_when_actual_support():
@@ -259,6 +274,17 @@ def test_linen_compat_when_only_linen_mentioned():
     """raw에 linen만 있고 다른 'on X' 없으면 linen."""
     r = parse_artsy_medium("Acrylic linen", "Painting")
     assert r.support_type == "linen"
+
+
+def test_saatchi_canvas_with_linen_keeps_canvas():
+    """Saatchi materials='canvas, linen' — canvas 동시 언급 시 canvas 유지."""
+    r = parse_saatchi_medium("canvas, linen", "oil", "painting")
+    assert r.support_type == "canvas"
+
+
+def test_saatchi_canvas_linen_wood():
+    r = parse_saatchi_medium("canvas, linen, wood", "oil", "painting")
+    assert r.support_type == "canvas"  # canvas 우선
 
 
 def test_woodblock_carving_remains_excluded():

@@ -329,17 +329,24 @@ _ON_OTHER_SUPPORT_PATTERN = re.compile(
 )
 
 
+_CANVAS_PATTERN = re.compile(r"\bcanvas\b", re.IGNORECASE)
+
+
 def _adjust_compat_for_linen(raw: str, support_compat: str, support_leaf: str) -> str:
-    """raw에 'linen' 명시 + 다른 명시적 'on X' 없을 때만 호환 라벨을 'linen'으로.
+    """raw에 'linen' 명시 + 다른 painted surface(canvas) 없을 때만 호환 라벨을 'linen'으로.
 
     예시:
-    - 'Oil on linen' → on linen 명시 → linen ✓
-    - 'PLATINUM LEAF ANIMAL GLUE LINEN ON CANVAS' → on canvas 우선 → canvas 유지
+    - 'Oil on linen' → linen만 있음 → linen ✓
+    - 'PLATINUM LEAF ANIMAL GLUE LINEN ON CANVAS' → canvas 동시 언급 → canvas 유지
+    - 'canvas, linen' (Saatchi) → canvas 동시 언급 → canvas 유지
     - 'Acrylic on canvas' → linen 없음 → canvas 유지
     """
     if support_compat != "canvas" or support_leaf != "캔버스":
         return support_compat
     if not raw or not _LINEN_PATTERN.search(raw):
+        return support_compat
+    # canvas가 raw에 동시 언급되면 canvas 유지 (mixed materials 우선)
+    if _CANVAS_PATTERN.search(raw):
         return support_compat
     # 'on linen'이 명시되어 있으면 우선
     if _ON_LINEN_PATTERN.search(raw):
@@ -453,24 +460,27 @@ def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...]) -> _LeafRule | Non
     return None
 
 
-# 'X on Y' 패턴 — Y는 actual support
-_ON_PATTERN = re.compile(r"\bon\s+([^,;]+?)(?:\s+(?:and|with)\s+|[,;]|$)", re.IGNORECASE)
+# 호환 우선순위 (구 SUPPORT_RULES 순서, primary_feature_builder.py:19-26 참조)
+# 다중 매칭 시 painted surface 우선 — canvas가 가장 먼저, metal이 가장 나중.
+_SUPPORT_COMPAT_PRIORITY: dict[str, int] = {
+    "canvas": 0, "linen": 1, "paper": 2, "panel": 3, "silk": 4, "metal": 5, "other": 6,
+}
 
 
-def _detect_on_support(text: str, rules: tuple[_LeafRule, ...]) -> _LeafRule | None:
-    """raw에서 마지막 'on X' 패턴의 X를 찾아 그 안에서 첫 leaf 매칭 반환.
+def _apply_support_priority(supports: list[_LeafRule]) -> list[_LeafRule]:
+    """다중 support leaf 매칭을 호환 우선순위로 재정렬.
 
-    'Mixed Media on Unbleached cotton canvas' → 'Unbleached cotton canvas'에서
-    canvas leaf 매칭. 'Acrylic, paste board, canvas on panel' → 'panel'에서
-    패널 leaf 매칭. 다중 'on'이 있을 경우 마지막 것이 actual support.
+    예시:
+    - 'Acrylic, paste board, canvas on panel' → [보드(paper), 캔버스(canvas), 패널(panel)]
+      → 우선순위 적용 → [캔버스, 보드, 패널] (painted surface = canvas)
+    - 'Real gold leaf and acrylic on canvas on board' → [캔버스, 보드] → 캔버스 primary
     """
-    if not text:
-        return None
-    matches = list(_ON_PATTERN.finditer(text))
-    if not matches:
-        return None
-    after_on = matches[-1].group(1).strip()
-    return _find_first_leaf(after_on, rules)
+    return sorted(
+        supports,
+        key=lambda s: _SUPPORT_COMPAT_PRIORITY.get(
+            _SUPPORT_LEAF_TO_COMPAT.get(s.leaf, "other"), 99,
+        ),
+    )
 
 
 def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...]) -> list[_LeafRule]:
@@ -629,11 +639,9 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
     all_supports = _find_all_leaves(raw, support_rules)
     all_tools = _find_all_leaves(raw, tool_rules)
 
-    # primary 선정 — 'X on Y' 패턴이 있으면 Y가 actual support (Codex Q2 권고)
-    on_support = _detect_on_support(raw, support_rules)
-    if on_support:
-        # Move on_support to front of all_supports (preserve list)
-        all_supports = [on_support] + [s for s in all_supports if s.leaf != on_support.leaf]
+    # primary 선정 — 다중 매칭 시 호환 우선순위(canvas > linen > paper > panel > ...)
+    # 적용. painted surface 우선이 v3 모델 학습 분포와 일치.
+    all_supports = _apply_support_priority(all_supports)
     primary_support = all_supports[0] if all_supports else None
     primary_tool, secondary_tools = _pick_primary_tool(all_tools)
 
