@@ -359,13 +359,12 @@ def _adjust_compat_for_linen(raw: str, support_compat: str, support_leaf: str) -
     if not raw or not _LINEN_PATTERN.search(raw):
         return support_compat
 
-    # 'mounted on' 케이스: linen이 mount 앞에 있고 canvas가 mount 뒤에 있으면
-    # linen이 painted surface (canvas는 backing).
+    # 'mounted on' 케이스: linen이 mount 앞에 있으면 painted surface = linen.
+    # 'Linen mounted on board', 'Oil on linen mounted on canvas' 모두 linen.
     mounted_match = _MOUNTED_ON_PATTERN.search(raw)
     if mounted_match:
         pre_mount = raw[: mounted_match.start()]
-        post_mount = raw[mounted_match.end():]
-        if _LINEN_PATTERN.search(pre_mount) and _CANVAS_PATTERN.search(post_mount):
+        if _LINEN_PATTERN.search(pre_mount):
             return "linen"
 
     # multi-on 케이스: 'X on linen on canvas' — linen이 painted surface
@@ -529,12 +528,23 @@ def _detect_substrate_in_complex_on(
     if not on_matches:
         return None
 
-    # Multi-on / mounted: 첫번째 on 뒤가 substrate
-    if has_mounted or len(on_matches) >= 2:
+    # mounted on 케이스: substrate는 'mounted on' 앞 텍스트의 마지막 support
+    # 'on'이 mounted 이전에 있으면 그 'on' 뒤가 substrate, 없으면 mounted 앞 전체
+    if has_mounted:
+        mounted_match = _MOUNTED_ON_PATTERN.search(text)
+        pre_mounted = text[: mounted_match.start()]
+        pre_on_matches = list(_ON_WORD_PATTERN.finditer(pre_mounted))
+        if pre_on_matches:
+            substrate_text = pre_mounted[pre_on_matches[-1].end():].strip()
+        else:
+            substrate_text = pre_mounted.strip()
+        return _find_first_leaf(substrate_text, rules, loose=True)
+
+    # Multi-on (mounted 없음): 첫번째 on과 두번째 on 사이가 substrate
+    if len(on_matches) >= 2:
         first_on_end = on_matches[0].end()
-        after_first = text[first_on_end:]
-        next_boundary = re.search(r"\b(?:on|mounted\s+on)\b", after_first, re.IGNORECASE)
-        substrate_text = (after_first[: next_boundary.start()] if next_boundary else after_first).strip()
+        second_on_start = on_matches[1].start()
+        substrate_text = text[first_on_end:second_on_start].strip()
         return _find_first_leaf(substrate_text, rules, loose=True)
 
     # Single 'on': pre-on에 painted-surface 카테고리(종이/섬유)의 explicit support
@@ -738,14 +748,15 @@ def _decide_exclusion(
     is_3d, kw = _has_3d_keyword(raw)
     if is_3d:
         return True, f"keyword_3d:{kw}"
-    # 4. support 단독 기반 — 평면 override 시 면제 (예: "Acrylic on glass"는 유리 leaf
-    #    keyword 미매칭이지만 평면 패턴이 있으므로 포함)
+    # 4. support 단독 기반 — 평면 override 시 면제
     if has_planar:
         return False, None
-    # supports가 모두 제외 set일 때만 학습 제외 (Codex review #5 완화)
-    # parser 미매칭(supports 비어있음)은 입체 증거 부재이므로 통과시킨다.
-    # 입체는 위 1/2/3 규칙 (category/tool/keyword)로 잡힌다.
-    if supports and all(s in EXCLUDED_SUPPORT_L1 for s in supports):
+    # **Primary support_l1**이 제외 set에 있으면 제외 (Codex review #13).
+    # priority sort + substrate detection으로 primary가 painted surface로 결정됨.
+    # 'wood panel + canvas' → primary canvas → not excluded
+    # 'wood panel, newspaper' → primary panel (explicit > compound) → excluded
+    # 'paper mounted on wood panel' → primary paper (mounted substrate) → not excluded
+    if support_l1 and support_l1 in EXCLUDED_SUPPORT_L1:
         return True, "support_excluded"
     return False, None
 
