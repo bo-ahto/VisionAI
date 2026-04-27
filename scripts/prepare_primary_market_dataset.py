@@ -238,13 +238,15 @@ def main() -> None:
     n_excl = int(df["is_excluded_for_training"].sum())
     logger.info("학습 제외 후보: %d (사유: %s)", n_excl, dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6)))
 
-    # 4.2.1 학습 제외 필터 — gallery_tier/통계 계산 전에 적용
-    # (Codex review #2 권고: 제외될 행이 통계에 포함되면 안 됨)
+    # 4.2.1 학습 제외는 컬럼(is_excluded_for_training)으로만 표기.
+    # 행 자체는 제거하지 않는다 — primary_server._load_price_history()도 이 parquet을
+    # 서빙용 작가 이력/타이틀 매칭에 사용하므로, 학습 제외 작품도 history에 보존되어야 함
+    # (Codex review #12). 학습 스크립트가 학습 시점에 컬럼으로 직접 필터링한다.
     if n_excl > 0:
-        n_before = len(df)
-        reason_counts = dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6))
-        df = df[df["is_excluded_for_training"] == 0].copy()
-        logger.info("학습 제외 필터 적용: %d → %d (%d건 제거)", n_before, len(df), n_before - len(df))
+        logger.info(
+            "학습 제외 후보 %d건은 컬럼으로 표기됨 (parquet 자체는 미필터링, 서빙 호환).",
+            n_excl,
+        )
 
     # 4.3 제작연도 → work_age
     df["year_made"] = df["date"].apply(lambda d: int(re.match(r"(\d{4})", str(d)).group(1)) if re.match(r"(\d{4})", str(d)) else None)
@@ -370,11 +372,12 @@ def main() -> None:
     ]
 
     # 신규 parser metadata (PR1 통합) — additive, 모델 입력 X, downstream 점진 활용
+    # is_excluded_for_training은 학습 스크립트가 필터링에 사용 (parquet 자체는 미필터링).
     parser_meta_cols = [
         "medium_l1", "medium_leaf", "support_l1", "support_leaf",
         "mediums_json", "supports_json",
         "has_multimedia", "has_special_finish",
-        "exclude_reason", "value_grade_note",
+        "is_excluded_for_training", "exclude_reason", "value_grade_note",
     ]
 
     # 6. 저장 (학습 제외 필터는 4.2.1에서 이미 적용됨)

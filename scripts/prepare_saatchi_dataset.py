@@ -290,11 +290,13 @@ def main() -> None:
     n_excl = int(df["is_excluded_for_training"].sum())
     logger.info("학습 제외 후보: %d (사유: %s)", n_excl, dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6)))
 
-    # 학습 제외 필터 — 후속 통계/aggregation 전에 적용 (Codex review #2)
+    # 학습 제외는 컬럼(is_excluded_for_training)으로만 표기.
+    # parquet 자체는 미필터링 — primary_server._load_price_history()가 Saatchi 이력
+    # 조회에 동일 parquet 사용 (Codex review #12).
     if n_excl > 0:
-        n_before = len(df)
-        df = df[df["is_excluded_for_training"] == 0].copy()
-        logger.info("학습 제외 필터 적용: %d → %d (%d건 제거)", n_before, len(df), n_before - len(df))
+        logger.info(
+            "학습 제외 후보 %d건은 컬럼으로 표기됨 (서빙 호환).", n_excl,
+        )
 
     # 4.3 작품 속성
     df["is_unique"] = 1  # Saatchi는 원작 직거래
@@ -407,11 +409,12 @@ def main() -> None:
     ]
 
     # 신규 parser metadata (PR1 통합) — additive, 모델 입력 X
+    # is_excluded_for_training은 학습 시점 필터용 (parquet 미필터링, 서빙 호환).
     parser_meta_cols = [
         "medium_l1", "medium_leaf", "support_l1", "support_leaf",
         "mediums_json", "supports_json",
         "has_multimedia", "has_special_finish",
-        "exclude_reason", "value_grade_note",
+        "is_excluded_for_training", "exclude_reason", "value_grade_note",
     ]
 
     # 학습 제외 필터는 4.2 medium 파싱 직후 이미 적용됨
