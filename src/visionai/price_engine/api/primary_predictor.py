@@ -65,8 +65,14 @@ class PrimaryPredictor:
         self._label_maps: dict[str, dict[str, int]] = {}
 
     def load_models(self, model_dir: Path) -> None:
-        cb_path = model_dir / "integrated_v3_catboost.cbm"
-        xgb_path = model_dir / "integrated_v3_xgboost.json"
+        """v3-filtered-tuned 모델 로드.
+
+        - CatBoost: 입체 985건 제외 + Optuna 30 trials 튜닝 (cold start GroupKFold 최적)
+        - XGBoost: 입체 제외 + warm slice(작품 수≥5) Optuna 튜닝 (warm KFold 최적)
+        - label_maps: 학습 시 매핑 그대로 보존된 아티팩트
+        """
+        cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
+        xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
 
         self.cb_model = CatBoostRegressor()
         self.cb_model.load_model(str(cb_path))
@@ -91,9 +97,9 @@ class PrimaryPredictor:
             if col in df.columns:
                 df[col] = df[col].astype(str).fillna("unknown")
 
-        # 모델 라우팅
+        # 모델 라우팅 (v3-filtered-tuned: 입체 985건 제외 + Optuna 튜닝)
         use_xgb = is_matched and training_count >= 5
-        model_type = "xgboost_v3" if use_xgb else "catboost_v3"
+        model_type = "xgboost_v3_filtered_tuned" if use_xgb else "catboost_v3_filtered_tuned"
 
         if use_xgb:
             # XGBoost는 categorical을 label encoding
