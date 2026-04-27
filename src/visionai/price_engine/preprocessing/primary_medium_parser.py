@@ -336,18 +336,38 @@ _COTTON_PAPER_PATTERN = re.compile(r"\bcotton[\s-]+paper\b", re.IGNORECASE)
 
 
 def _adjust_compat_for_linen(raw: str, support_compat: str, support_leaf: str) -> str:
-    """raw에 'linen' 명시 + 다른 painted surface(canvas) 없을 때만 호환 라벨을 'linen'으로.
+    """raw에 'linen' 명시 + linen이 painted surface일 때 호환 라벨을 'linen'으로.
 
     예시:
     - 'Oil on linen' → linen만 있음 → linen ✓
-    - 'PLATINUM LEAF ANIMAL GLUE LINEN ON CANVAS' → canvas 동시 언급 → canvas 유지
-    - 'canvas, linen' (Saatchi) → canvas 동시 언급 → canvas 유지
-    - 'Acrylic on canvas' → linen 없음 → canvas 유지
+    - 'Oil on linen mounted on canvas' → linen이 substrate, canvas는 mount → linen
+    - 'PLATINUM LEAF ANIMAL GLUE LINEN ON CANVAS' → on canvas 명시 → canvas 유지
+    - 'canvas, linen' (Saatchi) → canvas 동시 언급, mount 없음 → canvas 유지
     """
     if support_compat != "canvas" or support_leaf != "캔버스":
         return support_compat
     if not raw or not _LINEN_PATTERN.search(raw):
         return support_compat
+
+    # 'mounted on' 케이스: linen이 mount 앞에 있고 canvas가 mount 뒤에 있으면
+    # linen이 painted surface (canvas는 backing).
+    mounted_match = _MOUNTED_ON_PATTERN.search(raw)
+    if mounted_match:
+        pre_mount = raw[: mounted_match.start()]
+        post_mount = raw[mounted_match.end():]
+        if _LINEN_PATTERN.search(pre_mount) and _CANVAS_PATTERN.search(post_mount):
+            return "linen"
+
+    # multi-on 케이스: 'X on linen on canvas' — linen이 painted surface
+    on_matches = list(_ON_WORD_PATTERN.finditer(raw))
+    if len(on_matches) >= 2:
+        first_on_end = on_matches[0].end()
+        second_on_start = on_matches[1].start()
+        substrate_text = raw[first_on_end:second_on_start]
+        post_second_on = raw[second_on_start:]
+        if _LINEN_PATTERN.search(substrate_text) and _CANVAS_PATTERN.search(post_second_on):
+            return "linen"
+
     # canvas가 raw에 동시 언급되면 canvas 유지 (mixed materials 우선)
     if _CANVAS_PATTERN.search(raw):
         return support_compat
@@ -476,23 +496,34 @@ def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = F
 
 
 _MOUNTED_ON_PATTERN = re.compile(r"\bmounted\s+on\b", re.IGNORECASE)
+_ON_WORD_PATTERN = re.compile(r"\bon\b", re.IGNORECASE)
 
 
-def _detect_mounted_support(
+def _detect_substrate_in_complex_on(
     text: str, rules: tuple[_LeafRule, ...]
 ) -> _LeafRule | None:
-    """'X mounted on Y' 패턴이면 X(mounted 앞부분)에서 첫 support를 찾는다.
+    """'X on Y on Z' 또는 'X on Y mounted on Z' 패턴에서 Y(painted surface)를 추출.
 
-    'Oil on paper mounted on canvas' → mounted 앞 = 'Oil on paper' → 종이 leaf
-    painted surface가 paper, canvas는 backing.
+    예시:
+    - 'Oil on paper mounted on canvas' → 'paper' → 종이 leaf
+    - 'Oil on linen on canvas' → 'linen' → 캔버스 leaf (linen keyword)
+    - 'Oil on canvas' (single on) → None (priority sort에 위임)
     """
     if not text:
         return None
-    m = _MOUNTED_ON_PATTERN.search(text)
-    if not m:
+    has_mounted = bool(_MOUNTED_ON_PATTERN.search(text))
+    on_matches = list(_ON_WORD_PATTERN.finditer(text))
+    is_complex = has_mounted or len(on_matches) >= 2
+    if not is_complex:
         return None
-    before_mount = text[: m.start()]
-    return _find_first_leaf(before_mount, rules, loose=True)
+    if not on_matches:
+        return None
+    # 첫번째 'on' 뒤 텍스트에서 다음 'on' / 'mounted on' 전까지를 substrate로
+    first_on_end = on_matches[0].end()
+    after_first = text[first_on_end:]
+    next_boundary = re.search(r"\b(?:on|mounted\s+on)\b", after_first, re.IGNORECASE)
+    substrate_text = (after_first[: next_boundary.start()] if next_boundary else after_first).strip()
+    return _find_first_leaf(substrate_text, rules, loose=True)
 
 
 # 호환 우선순위 (구 SUPPORT_RULES 순서, primary_feature_builder.py:19-26 참조)
@@ -502,60 +533,86 @@ _SUPPORT_COMPAT_PRIORITY: dict[str, int] = {
 }
 
 
-def _apply_support_priority(supports: list[_LeafRule]) -> list[_LeafRule]:
+def _has_exact_support_match(rule: _LeafRule, text_l: str) -> bool:
+    """rule이 text에 explicit(word boundary) 매칭되는지. compound 매칭은 False."""
+    for kw in rule.keywords:
+        kw_l = kw.lower()
+        if not _PURE_ENG_RE.fullmatch(kw_l):
+            if kw_l in text_l:
+                return True
+        elif re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l):
+            return True
+    return False
+
+
+def _apply_support_priority(
+    supports: list[_LeafRule], compound_leaves: set[str] | None = None,
+) -> list[_LeafRule]:
     """다중 support leaf 매칭을 호환 우선순위로 재정렬.
 
-    예시:
-    - 'Acrylic, paste board, canvas on panel' → [보드(paper), 캔버스(canvas), 패널(panel)]
-      → 우선순위 적용 → [캔버스, 보드, 패널] (painted surface = canvas)
-    - 'Real gold leaf and acrylic on canvas on board' → [캔버스, 보드] → 캔버스 primary
+    1차 정렬: explicit(0) > compound(1) — newspaper의 paper match보다 explicit 'wood panel' 우선
+    2차 정렬: 호환 우선순위 (canvas > linen > paper > panel > silk > metal)
+
+    Codex review #9: compound suffix 매칭(newspaper의 paper)은 explicit 매칭에 밀려야 함.
     """
+    cs = compound_leaves or set()
     return sorted(
         supports,
-        key=lambda s: _SUPPORT_COMPAT_PRIORITY.get(
-            _SUPPORT_LEAF_TO_COMPAT.get(s.leaf, "other"), 99,
+        key=lambda s: (
+            1 if s.leaf in cs else 0,
+            _SUPPORT_COMPAT_PRIORITY.get(_SUPPORT_LEAF_TO_COMPAT.get(s.leaf, "other"), 99),
         ),
     )
 
 
-def _kw_match_pos(kw: str, text_l: str, *, loose: bool = False) -> int:
-    """_kw_matches와 동일 규칙으로 매칭 위치 반환. -1이면 매칭 없음."""
+def _kw_match_pos(kw: str, text_l: str, *, loose: bool = False) -> tuple[int, bool]:
+    """매칭 위치 + compound 여부 반환. (-1, False)면 미매칭.
+
+    compound=True: loose mode에서 \\b\\w*KW\\b 매칭으로 잡힌 경우 (newspaper의 paper).
+    explicit과 구분하여 support priority에서 후순위 처리 (Codex review #9).
+    """
     kw_l = kw.lower()
     if not _PURE_ENG_RE.fullmatch(kw_l):
-        return text_l.find(kw_l) if kw_l in text_l else -1
+        return (text_l.find(kw_l), False) if kw_l in text_l else (-1, False)
+    # 영문 단어: 먼저 exact word boundary 시도
+    m = re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l)
+    if m:
+        return m.start(), False
+    # exact 매칭 실패 시 loose+compound suffix 시도
     if loose and kw_l in _COMPOUND_SUFFIX_KEYWORDS:
         m = re.search(r"\b\w*" + re.escape(kw_l) + r"s?\b", text_l)
-        return m.start() if m else -1
-    m = re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l)
-    return m.start() if m else -1
+        if m:
+            return m.start(), True
+    return -1, False
 
 
 def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = False) -> list[_LeafRule]:
-    """text에 매칭되는 모든 leaf rule. **raw-first 정렬** (Codex 권고 Q3).
+    """text에 매칭되는 모든 leaf rule.
 
-    leaf 중복 제거 + 텍스트 내 매칭 위치 오름차순 정렬.
-    동일 위치(시작점) 시 시트 순서 fallback.
-
-    loose=True: paper/panel은 합성어 suffix 매칭 (newspaper, woodpanel),
-                기타 영문 단어는 word boundary (wood, glass 단독은 strict).
+    정렬 우선순위 (Codex review #9):
+    1. explicit 매칭 (word boundary) > compound 매칭 (newspaper의 paper)
+    2. 동일 매칭 타입 내에서는 raw 등장 순서
+    3. 시트 순서 fallback
     """
     if not text:
         return []
     text_l = text.lower()
     seen: set[str] = set()
-    found: list[tuple[int, int, _LeafRule]] = []  # (pos, sheet_idx, rule)
+    found: list[tuple[int, int, int, _LeafRule]] = []  # (compound_flag, pos, sheet_idx, rule)
     for sheet_idx, rule in enumerate(rules):
         if rule.leaf in seen:
             continue
+        # 첫번째로 매칭된 keyword의 (pos, compound) 사용
         for kw in rule.keywords:
-            pos = _kw_match_pos(kw, text_l, loose=loose)
+            pos, is_compound = _kw_match_pos(kw, text_l, loose=loose)
             if pos >= 0:
-                found.append((pos, sheet_idx, rule))
+                # explicit(0) 우선, compound(1) 후순위
+                found.append((1 if is_compound else 0, pos, sheet_idx, rule))
                 seen.add(rule.leaf)
                 break
-    # raw-first: position asc, sheet_idx asc fallback
-    found.sort(key=lambda t: (t[0], t[1]))
-    return [r for _, _, r in found]
+    # 정렬: explicit 우선 → 위치 → 시트 순서
+    found.sort(key=lambda t: (t[0], t[1], t[2]))
+    return [r for _, _, _, r in found]
 
 
 # ─── 입체 검출 ─────────────────────────────────────────────────────────
@@ -687,14 +744,20 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
     if _COTTON_PAPER_PATTERN.search(raw):
         all_supports = [s for s in all_supports if s.leaf != "캔버스"]
 
-    # primary 선정 — 'mounted on' 패턴이 있으면 mounted 앞이 painted surface,
-    # 아니면 다중 매칭 호환 우선순위(canvas > linen > paper > panel > ...)
-    mounted = _detect_mounted_support(raw, support_rules)
-    if mounted:
-        # mounted 앞 support를 primary로 강제
-        all_supports = [mounted] + [s for s in all_supports if s.leaf != mounted.leaf]
+    # explicit vs compound 매칭 분류 (Codex review #9)
+    text_l = raw.lower()
+    compound_leaves = {
+        s.leaf for s in all_supports if not _has_exact_support_match(s, text_l)
+    }
+
+    # primary 선정 — 'X on Y on Z' / 'X on Y mounted on Z' 패턴이면 Y가 painted surface,
+    # 아니면 explicit > compound + 호환 우선순위(canvas > linen > paper > panel > ...)
+    substrate = _detect_substrate_in_complex_on(raw, support_rules)
+    if substrate:
+        # 검출된 substrate를 primary로 강제
+        all_supports = [substrate] + [s for s in all_supports if s.leaf != substrate.leaf]
     else:
-        all_supports = _apply_support_priority(all_supports)
+        all_supports = _apply_support_priority(all_supports, compound_leaves)
     primary_support = all_supports[0] if all_supports else None
     primary_tool, secondary_tools = _pick_primary_tool(all_tools)
 
