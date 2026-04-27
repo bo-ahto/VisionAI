@@ -341,6 +341,22 @@ _ON_WOOD_SUBSTRATE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+# 'on <excluded>' 명시 패턴 → 해당 leaf 추가하여 학습 제외 트리거 (Codex review #14)
+# 'Mixed media on plastic and wood', 'Oil on copper' 등.
+_ON_EXCLUDED_SUBSTRATE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"\bon\s+plastic\b", re.IGNORECASE), "플라스틱 패널"),
+    (re.compile(r"\bon\s+(?:copper|brass)\b", re.IGNORECASE), "동판"),
+    (re.compile(r"\bon\s+steel\b", re.IGNORECASE), "철판"),
+    (re.compile(r"\bon\s+(?:aluminum|aluminium)\b", re.IGNORECASE), "알루미늄 패널"),
+    (re.compile(r"\bon\s+metal\b", re.IGNORECASE), "스테인리스"),
+]
+
+# 특수 마감 trailing suffix — pre-on에서 'and gold leaf' 같은 finish 부분만 제거
+_FINISH_SUFFIX_PATTERN = re.compile(
+    r"\s+and\s+(?:gold\s+leaf|silver\s+leaf|diasec|epoxy|glitter|emboss\w*)\s*$",
+    re.IGNORECASE,
+)
+
 # component-list 패턴 — pre-on에 'with'/'and' 있으면 substrate 검출 skip
 _COMPONENT_CONJUNCTION_PATTERN = re.compile(r"\b(?:with|and)\b", re.IGNORECASE)
 
@@ -472,9 +488,13 @@ _PURE_ENG_RE = re.compile(r"[a-z][a-z\-]*$")
 # 영어로 합성어의 끝에 나타나는 일반 명사들
 _COMPOUND_SUFFIX_KEYWORDS = frozenset({"paper", "panel"})
 
-# Painted surface가 될 수 있는 l1 카테고리 (substrate 검출 시 glass/plastic/metal 같은
-# 객체 부착 케이스를 substrate로 잘못 잡지 않도록).
+# Painted surface가 될 수 있는 l1 카테고리.
 _PAINTED_SURFACE_L1S = frozenset({"종이", "섬유"})
+
+# painted_l1 외에 specific하게 substrate 인정되는 leaves (Codex review #14).
+# 'mirror PET film on panel' 케이스 — 거울/플라스틱 시트는 painted surface로 사용됨.
+# 단 '유리'는 제외 (대부분 객체 부착/장식, keyword_3d 처리 위임).
+_PRE_ON_SUBSTRATE_LEAVES = frozenset({"거울", "플라스틱 필름", "아크릴 패널", "플라스틱 패널"})
 
 
 def _kw_matches(kw: str, text_l: str, *, loose: bool = False) -> bool:
@@ -547,20 +567,22 @@ def _detect_substrate_in_complex_on(
         substrate_text = text[first_on_end:second_on_start].strip()
         return _find_first_leaf(substrate_text, rules, loose=True)
 
-    # Single 'on': pre-on에 painted-surface 카테고리(종이/섬유)의 explicit support
-    # 있으면 → pre-on이 substrate. glass/metal/plastic 같은 객체는 substrate로
-    # 인정하지 않음 (그쪽은 priority sort + keyword_3d 처리에 위임).
+    # Single 'on': pre-on에 painted-surface 카테고리(종이/섬유/기타/플라스틱)의
+    # explicit support 있으면 → pre-on이 substrate.
     on_match = on_matches[0]
     pre_on = text[: on_match.start()]
+    # 특수 마감 trailing suffix 제거 (Codex review #14: 'and gold leaf'는 finish이지 component 아님)
+    pre_on_stripped = _FINISH_SUFFIX_PATTERN.sub("", pre_on).strip()
     # 'with'/'and'가 pre-on에 있으면 component-list — substrate 검출 skip (Codex review #11)
     # 예: 'Mixed media with Korean paper on canvas' — Korean paper는 component, canvas는 substrate
-    if _COMPONENT_CONJUNCTION_PATTERN.search(pre_on):
+    if _COMPONENT_CONJUNCTION_PATTERN.search(pre_on_stripped):
         return None
-    pre_text_l = pre_on.lower()
-    pre_supports = _find_all_leaves(pre_on, rules, loose=True)
+    pre_text_l = pre_on_stripped.lower()
+    pre_supports = _find_all_leaves(pre_on_stripped, rules, loose=True)
     pre_painted_explicit = [
         s for s in pre_supports
-        if _has_exact_support_match(s, pre_text_l) and s.l1 in _PAINTED_SURFACE_L1S
+        if _has_exact_support_match(s, pre_text_l)
+        and (s.l1 in _PAINTED_SURFACE_L1S or s.leaf in _PRE_ON_SUBSTRATE_LEAVES)
     ]
     if pre_painted_explicit:
         return _apply_support_priority(pre_painted_explicit, set())[0]
@@ -792,6 +814,13 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
         panel_rule = next((r for r in support_rules if r.leaf == "패널"), None)
         if panel_rule and not any(s.leaf == "패널" for s in all_supports):
             all_supports.append(panel_rule)
+
+    # 'on plastic'/'on copper'/'on metal' 등 명시적 excluded substrate (Codex review #14)
+    for pattern, leaf_name in _ON_EXCLUDED_SUBSTRATE_PATTERNS:
+        if pattern.search(raw):
+            target_rule = next((r for r in support_rules if r.leaf == leaf_name), None)
+            if target_rule and not any(s.leaf == leaf_name for s in all_supports):
+                all_supports.append(target_rule)
 
     # explicit vs compound 매칭 분류 (Codex review #9)
     text_l = raw.lower()
