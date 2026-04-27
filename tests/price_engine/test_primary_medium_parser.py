@@ -186,6 +186,47 @@ def test_black_mirror_carved_on_resin():
     assert r.is_excluded_for_training is False
 
 
+# ─── Codex Review (PR #12) 수정 ─────────────────────────────────────
+def test_linen_compat_preserved():
+    """v3 모델 호환 — linen은 캔버스 leaf로 매칭되지만 support_type='linen' 유지."""
+    r = parse_artsy_medium("Oil on linen", "Painting")
+    assert r.support_type == "linen"  # NOT 'canvas'
+    assert r.support_l1 == "섬유"     # 캔버스 leaf 매칭은 유지
+    assert r.support_leaf == "캔버스"
+
+    r2 = parse_artsy_medium("Acrylic on linen", "Painting")
+    assert r2.support_type == "linen"
+    assert r2.medium_category == "acrylic"
+
+
+def test_saatchi_linen_compat_preserved():
+    r = parse_saatchi_medium("linen", "oil", "painting")
+    assert r.support_type == "linen"
+
+
+def test_canvas_not_linen_when_only_canvas():
+    """canvas는 그대로 canvas 유지."""
+    r = parse_artsy_medium("Oil on canvas", "Painting")
+    assert r.support_type == "canvas"
+
+
+def test_plural_keyword_match():
+    """English keyword 단복수 둘 다 매칭 (\\bword s?\\b)."""
+    # pigments → pigment (채색 leaf keyword "pigment")
+    r = parse_artsy_medium("Pigments on Jangji", "Painting")
+    assert r.medium_leaf == "채색"
+    assert r.support_leaf == "장지"
+    assert r.medium_category == "pigment"
+    assert r.support_type == "paper"
+
+
+def test_jangji_korean_paper_leaf():
+    """Jangji 영문 표기 → 장지 leaf."""
+    r = parse_artsy_medium("Color on Jangji", "Painting")
+    assert r.support_leaf == "장지"
+    assert r.support_l1 == "종이"
+
+
 def test_woodblock_carving_remains_excluded():
     """'woodblock carving'은 모호 — 보수적으로 EXCLUDE 유지."""
     r = parse_artsy_medium("Mixed media on woodblock carving", "Painting")

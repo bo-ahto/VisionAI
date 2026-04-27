@@ -300,6 +300,9 @@ _EN_TOOL_KEYWORD_PATCHES: dict[str, list[str]] = {
 _EN_SUPPORT_KEYWORD_PATCHES: dict[str, list[str]] = {
     "캔버스": ["canvas", "linen", "hemp cloth"],
     "한지": ["korean paper", "hanji", "washi", "japanese paper"],
+    "장지": ["jangji"],
+    "순지": ["sunji"],
+    "닥지": ["dakji"],
     "종이": ["paper"],  # 'korean paper'면 한지가 먼저 매칭 (sheet 순서)
     "보드": ["cardboard", "board"],
     "비단": ["silk"],
@@ -315,6 +318,17 @@ _EN_SUPPORT_KEYWORD_PATCHES: dict[str, list[str]] = {
     "플라스틱 패널": ["frp", "polycarbonate"],
     "아크릴 패널": ["acrylic panel", "plexiglass"],
 }
+
+# v3 추론 모델 호환 — linen은 캔버스 leaf로 매칭되지만 호환 컬럼은 'linen' 별도 유지
+# (모델 학습 시 support_factor=1.1로 별도 카테고리)
+_LINEN_PATTERN = re.compile(r"\blinen\b", re.IGNORECASE)
+
+
+def _adjust_compat_for_linen(raw: str, support_compat: str) -> str:
+    """raw에 'linen' 명시되어 있으면 호환 라벨을 'linen'으로 (v3 모델 호환)."""
+    if support_compat == "canvas" and raw and _LINEN_PATTERN.search(raw):
+        return "linen"
+    return support_compat
 
 
 def _load_sheet(
@@ -399,12 +413,12 @@ _PURE_ENG_RE = re.compile(r"[a-z][a-z\-]*$")
 def _kw_matches(kw: str, text_l: str) -> bool:
     """keyword가 text_l(이미 lower) 안에 있는지.
 
-    - pure 영문 단어(특수문자 없음): word boundary 매칭
+    - pure 영문 단어(특수문자 없음): word boundary + 단복수 매칭 (\\bword s?\\b)
     - 한국어/혼합: substring 매칭
     """
     kw_l = kw.lower()
     if _PURE_ENG_RE.fullmatch(kw_l):
-        return bool(re.search(r"\b" + re.escape(kw_l) + r"\b", text_l))
+        return bool(re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l))
     return kw_l in text_l
 
 
@@ -438,7 +452,7 @@ def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...]) -> list[_LeafRule]
             kw_l = kw.lower()
             pos = -1
             if _PURE_ENG_RE.fullmatch(kw_l):
-                m = re.search(r"\b" + re.escape(kw_l) + r"\b", text_l)
+                m = re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l)
                 if m:
                     pos = m.start()
             elif kw_l in text_l:
@@ -602,6 +616,9 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
         support_leaf = ""
         support_compat = "other"
 
+    # 호환 보정 (v3 모델은 linen을 별도 카테고리로 학습)
+    support_compat = _adjust_compat_for_linen(raw, support_compat)
+
     # 특수 마감/가공 플래그
     has_special = any(r.l1 == _SPECIAL_FINISH_L1 for r in all_tools)
 
@@ -683,6 +700,9 @@ def parse_saatchi_medium(
         support_l1 = ""
         support_leaf = ""
         support_compat = "other"
+
+    # 호환 보정 (v3 모델은 linen을 별도 카테고리로 학습)
+    support_compat = _adjust_compat_for_linen(raw, support_compat)
 
     has_special = any(r.l1 == _SPECIAL_FINISH_L1 for r in all_tools)
 
