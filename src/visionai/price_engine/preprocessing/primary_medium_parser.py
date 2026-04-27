@@ -306,7 +306,8 @@ _EN_SUPPORT_KEYWORD_PATCHES: dict[str, list[str]] = {
     "종이": ["paper"],  # 'korean paper'면 한지가 먼저 매칭 (sheet 순서)
     "보드": ["cardboard", "board"],
     "비단": ["silk"],
-    "패널": ["panel", "wood panel", "wooden panel", "mdf", "wood", "wooden"],
+    "패널": ["panel", "wood panel", "wooden panel", "mdf"],
+    # 'wood'/'wooden' 단독은 _ON_WOOD_SUBSTRATE_PATTERN으로 처리 (Wood engraving 등 tool 회피)
     "알루미늄 패널": ["aluminum", "aluminium"],
     "철판": ["steel"],
     "스테인리스": ["stainless steel", "stainless"],
@@ -333,6 +334,15 @@ _CANVAS_PATTERN = re.compile(r"\bcanvas\b", re.IGNORECASE)
 
 # 'cotton paper'는 paper 변종 (cotton-fiber paper), canvas 아님. canvas leaf 제외.
 _COTTON_PAPER_PATTERN = re.compile(r"\bcotton[\s-]+paper\b", re.IGNORECASE)
+
+# 'on wood' substrate 패턴 (engraving/cut/block/panel 등 tool/multi-word 회피)
+_ON_WOOD_SUBSTRATE_PATTERN = re.compile(
+    r"\bon\s+wood\b(?!\s+(?:engrav|cut|block|panel))",
+    re.IGNORECASE,
+)
+
+# component-list 패턴 — pre-on에 'with'/'and' 있으면 substrate 검출 skip
+_COMPONENT_CONJUNCTION_PATTERN = re.compile(r"\b(?:with|and)\b", re.IGNORECASE)
 
 
 def _adjust_compat_for_linen(raw: str, support_compat: str, support_leaf: str) -> str:
@@ -532,6 +542,10 @@ def _detect_substrate_in_complex_on(
     # 인정하지 않음 (그쪽은 priority sort + keyword_3d 처리에 위임).
     on_match = on_matches[0]
     pre_on = text[: on_match.start()]
+    # 'with'/'and'가 pre-on에 있으면 component-list — substrate 검출 skip (Codex review #11)
+    # 예: 'Mixed media with Korean paper on canvas' — Korean paper는 component, canvas는 substrate
+    if _COMPONENT_CONJUNCTION_PATTERN.search(pre_on):
+        return None
     pre_text_l = pre_on.lower()
     pre_supports = _find_all_leaves(pre_on, rules, loose=True)
     pre_painted_explicit = [
@@ -761,6 +775,13 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
     if _COTTON_PAPER_PATTERN.search(raw):
         all_supports = [s for s in all_supports if s.leaf != "캔버스"]
 
+    # 'on wood' substrate 패턴 — wood/wooden 키워드가 너무 광범위 (Wood engraving 등
+    # 도구 매칭 회피). 'on wood' 명시 시에만 패널 leaf 추가.
+    if _ON_WOOD_SUBSTRATE_PATTERN.search(raw):
+        panel_rule = next((r for r in support_rules if r.leaf == "패널"), None)
+        if panel_rule and not any(s.leaf == "패널" for s in all_supports):
+            all_supports.append(panel_rule)
+
     # explicit vs compound 매칭 분류 (Codex review #9)
     text_l = raw.lower()
     compound_leaves = {
@@ -871,6 +892,12 @@ def parse_saatchi_medium(
     # Saatchi 데이터에서 materials='other'이고 mediums에 paper 등이 들어 있는 케이스
     if not all_supports and med_raw:
         all_supports = _find_all_leaves(med_raw, support_rules, loose=True)
+    # Saatchi materials의 'wood'/'wooden' 단독은 wood substrate (Artsy 'on wood'와 동등).
+    # _find_all_leaves가 wood/wooden 키워드를 안 잡으므로 (Wood engraving 회피) 별도 처리.
+    if mat_raw and re.search(r"\b(?:wood|wooden)\b", mat_raw, re.IGNORECASE):
+        panel_rule = next((r for r in support_rules if r.leaf == "패널"), None)
+        if panel_rule and not any(s.leaf == "패널" for s in all_supports):
+            all_supports.append(panel_rule)
     all_tools = _find_all_leaves(med_raw, tool_rules)
 
     # primary 선정 — 다중 support 매칭 시 호환 우선순위 (canvas > linen > paper > ...)
