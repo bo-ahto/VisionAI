@@ -138,16 +138,21 @@ def _cb_pool(X: pd.DataFrame, y: np.ndarray | None = None) -> Pool:
 def _label_encode_xgb(
     X_train: pd.DataFrame, X_test: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, dict[str, int]]]:
-    """XGBoost용 categorical label encoding."""
+    """XGBoost용 categorical label encoding.
+
+    Codex review: train fold만으로 매핑 빌드. test fold의 unseen 카테고리는
+    sentinel 인덱스(=len(mapping))로 매핑하여 leakage 방지.
+    """
     X_train_e = X_train.copy()
     X_test_e = X_test.copy()
     label_maps: dict[str, dict[str, int]] = {}
     for col in CAT_FEATURES:
-        all_vals = pd.concat([X_train_e[col], X_test_e[col]]).unique()
-        mapping = {v: i for i, v in enumerate(sorted(all_vals))}
+        train_vals = X_train_e[col].unique()
+        mapping = {v: i for i, v in enumerate(sorted(train_vals))}
+        unseen_idx = len(mapping)  # train에 없는 test 값은 동일 sentinel로
         label_maps[col] = mapping
         X_train_e[col] = X_train_e[col].map(mapping).astype(float)
-        X_test_e[col] = X_test_e[col].map(mapping).astype(float)
+        X_test_e[col] = X_test_e[col].map(mapping).fillna(unseen_idx).astype(float)
     return X_train_e, X_test_e, label_maps
 
 
@@ -311,11 +316,16 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     cb_path = OUT_DIR / "integrated_v3_filtered_catboost.cbm"
     xgb_path = OUT_DIR / "integrated_v3_filtered_xgboost.json"
+    label_maps_path = OUT_DIR / "integrated_v3_filtered_xgboost_label_maps.json"
     metrics_path = OUT_DIR / "integrated_v3_filtered_metrics.json"
     cb_final.save_model(str(cb_path))
     xgb_final.save_model(str(xgb_path))
     logger.info("CatBoost saved: %s", cb_path)
     logger.info("XGBoost saved: %s", xgb_path)
+    # Codex review: XGBoost label_maps를 별도 아티팩트로 저장 (PrimaryPredictor 호환)
+    with label_maps_path.open("w", encoding="utf-8") as f:
+        json.dump(label_maps, f, ensure_ascii=False, indent=2)
+    logger.info("XGBoost label maps saved: %s", label_maps_path)
 
     metrics_doc = {
         "model": "integrated_v3_filtered",
