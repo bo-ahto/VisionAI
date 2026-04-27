@@ -466,10 +466,11 @@ def main() -> None:
                 filled = out[col].notna().sum()
             print(f"  {col}: {filled:,}/{len(out):,} ({filled/len(out)*100:.1f}%)")
 
-    print(f"\n  [경력 단계]")
-    for stage, cnt in out["career_stage"].value_counts().sort_index().items():
-        labels_map = {1: "신진", 2: "신진후기", 3: "중견", 4: "원로"}
-        print(f"  Stage {stage} ({labels_map.get(stage, '?')}): {cnt:,}건")
+    print(f"\n  [career_stage v2 (연속 점수 0~10) 분포 — quartile]")
+    cs = out["career_stage"]
+    print(f"  min={cs.min():.2f}, max={cs.max():.2f}, mean={cs.mean():.2f}")
+    for q in [0.25, 0.5, 0.75, 0.95]:
+        print(f"  q{int(q*100)}={cs.quantile(q):.2f}")
 
     print(f"\n  [기존 데이터 비교]")
     try:

@@ -330,16 +330,18 @@ def main() -> None:
     # career_stage v2 (multi-factor 연속 점수, 0~10) — Codex review 2026-04-27
     # 기존 4단계 분류는 Artsy에서 Stage 3=0건, 4=0.2%로 죽음. v2는 연속 점수.
     # 검증 (5-fold CV, untuned): cold 43.7→40.9 (-2.8%p), warm slice 12.4→11.7 (-0.7%p)
+    # P1 fix (PR #20 review): 이전엔 row.get("followers")로 컬럼 못 찾아 항상 0. ln_followers 직접 사용.
     def _v2(row: pd.Series) -> float:
-        followers = row.get("followers", 0) or 0
-        ln_followers = math.log1p(followers) if followers else 0.0
+        ln_followers = row.get("ln_followers", 0.0)
+        if ln_followers is None or pd.isna(ln_followers):
+            ln_followers = 0.0
         return career_stage_v2_score(
             artist_birth_year=row.get("artist_birth_year"),
             solo_count=row.get("solo_count", 0),
             group_count=row.get("group_count", 0),
             fair_count=row.get("fair_count", 0),
             career_age=row.get("career_age"),
-            ln_followers=ln_followers,
+            ln_followers=float(ln_followers),
         )
 
     df["career_stage"] = df.apply(_v2, axis=1)
@@ -422,7 +424,9 @@ def main() -> None:
     print(f"  호수 중앙: {out['ho'].median():.0f}")
     print(f"  지지체: {dict(out['support_type'].value_counts().head(5))}")
     print(f"  매체: {dict(out['medium_category'].value_counts().head(5))}")
-    print(f"  career_stage: {dict(out['career_stage'].value_counts().sort_index())}")
+    cs = out["career_stage"]
+    print(f"  career_stage v2 (연속 0~10): min={cs.min():.2f}, max={cs.max():.2f}, mean={cs.mean():.2f}, "
+          f"q25={cs.quantile(0.25):.2f}, q50={cs.quantile(0.5):.2f}, q75={cs.quantile(0.75):.2f}")
     print(f"  gallery_tier: {dict(out['gallery_tier'].value_counts().sort_index())}")
     print(f"  유니크: {out['is_unique'].sum():,} / 에디션: {out['is_edition'].sum():,}")
     print(f"  KRW 작품: {out['is_krw'].sum():,}")
