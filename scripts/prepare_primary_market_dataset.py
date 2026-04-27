@@ -369,8 +369,16 @@ def main() -> None:
         "dimensions_cm", "medium", "image_url", "artwork_url",
     ]
 
+    # 신규 parser metadata (PR1 통합) — additive, 모델 입력 X, downstream 점진 활용
+    parser_meta_cols = [
+        "medium_l1", "medium_leaf", "support_l1", "support_leaf",
+        "mediums_json", "supports_json",
+        "has_multimedia", "has_special_finish",
+        "exclude_reason", "value_grade_note",
+    ]
+
     # 6. 저장 (학습 제외 필터는 4.2.1에서 이미 적용됨)
-    out = df[meta_cols + feature_cols + ["ln_price"]].copy()
+    out = df[meta_cols + feature_cols + parser_meta_cols + ["ln_price"]].copy()
     out_path = DATA_DIR / "primary_market_dataset.parquet"
     out.to_parquet(out_path, index=False)
     logger.info("Parquet 저장: %s (%d건, %d컬럼)", out_path, len(out), len(out.columns))

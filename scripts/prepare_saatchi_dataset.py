@@ -406,8 +406,16 @@ def main() -> None:
         "dimensions_cm", "medium", "image_url", "artwork_url",
     ]
 
+    # 신규 parser metadata (PR1 통합) — additive, 모델 입력 X
+    parser_meta_cols = [
+        "medium_l1", "medium_leaf", "support_l1", "support_leaf",
+        "mediums_json", "supports_json",
+        "has_multimedia", "has_special_finish",
+        "exclude_reason", "value_grade_note",
+    ]
+
     # 학습 제외 필터는 4.2 medium 파싱 직후 이미 적용됨
-    out = df[meta_cols + feature_cols + ["ln_price", "source"]].copy()
+    out = df[meta_cols + feature_cols + parser_meta_cols + ["ln_price", "source"]].copy()
 
     # 6. 저장
     out_path = DATA_DIR / "saatchi_cleaned.parquet"

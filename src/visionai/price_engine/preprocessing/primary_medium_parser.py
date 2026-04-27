@@ -463,6 +463,10 @@ _PURE_ENG_RE = re.compile(r"[a-z][a-z\-]*$")
 # 영어로 합성어의 끝에 나타나는 일반 명사들
 _COMPOUND_SUFFIX_KEYWORDS = frozenset({"paper", "panel"})
 
+# Painted surface가 될 수 있는 l1 카테고리 (substrate 검출 시 glass/plastic/metal 같은
+# 객체 부착 케이스를 substrate로 잘못 잡지 않도록).
+_PAINTED_SURFACE_L1S = frozenset({"종이", "섬유"})
+
 
 def _kw_matches(kw: str, text_l: str, *, loose: bool = False) -> bool:
     """keyword가 text_l(이미 lower) 안에 있는지.
@@ -502,28 +506,41 @@ _ON_WORD_PATTERN = re.compile(r"\bon\b", re.IGNORECASE)
 def _detect_substrate_in_complex_on(
     text: str, rules: tuple[_LeafRule, ...]
 ) -> _LeafRule | None:
-    """'X on Y on Z' 또는 'X on Y mounted on Z' 패턴에서 Y(painted surface)를 추출.
+    """'X on Y on Z' / 'X on Y mounted on Z' 패턴에서 Y(painted surface)를 추출.
 
-    예시:
-    - 'Oil on paper mounted on canvas' → 'paper' → 종이 leaf
-    - 'Oil on linen on canvas' → 'linen' → 캔버스 leaf (linen keyword)
-    - 'Oil on canvas' (single on) → None (priority sort에 위임)
+    또한 single 'on' 케이스에서 pre-on에 explicit support가 있으면 (예:
+    'JangJi paper on Canvas') pre-on의 첫 explicit support를 painted surface로.
+    Codex review #10.
     """
     if not text:
         return None
     has_mounted = bool(_MOUNTED_ON_PATTERN.search(text))
     on_matches = list(_ON_WORD_PATTERN.finditer(text))
-    is_complex = has_mounted or len(on_matches) >= 2
-    if not is_complex:
-        return None
     if not on_matches:
         return None
-    # 첫번째 'on' 뒤 텍스트에서 다음 'on' / 'mounted on' 전까지를 substrate로
-    first_on_end = on_matches[0].end()
-    after_first = text[first_on_end:]
-    next_boundary = re.search(r"\b(?:on|mounted\s+on)\b", after_first, re.IGNORECASE)
-    substrate_text = (after_first[: next_boundary.start()] if next_boundary else after_first).strip()
-    return _find_first_leaf(substrate_text, rules, loose=True)
+
+    # Multi-on / mounted: 첫번째 on 뒤가 substrate
+    if has_mounted or len(on_matches) >= 2:
+        first_on_end = on_matches[0].end()
+        after_first = text[first_on_end:]
+        next_boundary = re.search(r"\b(?:on|mounted\s+on)\b", after_first, re.IGNORECASE)
+        substrate_text = (after_first[: next_boundary.start()] if next_boundary else after_first).strip()
+        return _find_first_leaf(substrate_text, rules, loose=True)
+
+    # Single 'on': pre-on에 painted-surface 카테고리(종이/섬유)의 explicit support
+    # 있으면 → pre-on이 substrate. glass/metal/plastic 같은 객체는 substrate로
+    # 인정하지 않음 (그쪽은 priority sort + keyword_3d 처리에 위임).
+    on_match = on_matches[0]
+    pre_on = text[: on_match.start()]
+    pre_text_l = pre_on.lower()
+    pre_supports = _find_all_leaves(pre_on, rules, loose=True)
+    pre_painted_explicit = [
+        s for s in pre_supports
+        if _has_exact_support_match(s, pre_text_l) and s.l1 in _PAINTED_SURFACE_L1S
+    ]
+    if pre_painted_explicit:
+        return _apply_support_priority(pre_painted_explicit, set())[0]
+    return None
 
 
 # 호환 우선순위 (구 SUPPORT_RULES 순서, primary_feature_builder.py:19-26 참조)
@@ -789,10 +806,17 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
     # 특수 마감/가공 플래그
     has_special = any(r.l1 == _SPECIAL_FINISH_L1 for r in all_tools)
 
-    # 학습 제외 결정 — default support 적용 후 supports list로 평가
-    eval_supports = [s.l1 for s in all_supports] if all_supports else (
-        [support_l1] if support_l1 else []
-    )
+    # 학습 제외 결정 — explicit support만으로 평가 (Codex review #10).
+    # compound suffix 매칭(newspaper의 paper)은 false positive 위험으로 검사 대상 제외.
+    explicit_l1s = [s.l1 for s in all_supports if s.leaf not in compound_leaves]
+    if explicit_l1s:
+        eval_supports = explicit_l1s
+    elif all_supports:
+        eval_supports = [s.l1 for s in all_supports]  # 전부 compound만이면 fallback
+    elif support_l1:
+        eval_supports = [support_l1]
+    else:
+        eval_supports = []
     is_excl, excl_reason = _decide_exclusion(
         raw=raw,
         support_l1=support_l1,
@@ -850,8 +874,12 @@ def parse_saatchi_medium(
     all_tools = _find_all_leaves(med_raw, tool_rules)
 
     # primary 선정 — 다중 support 매칭 시 호환 우선순위 (canvas > linen > paper > ...)
-    # Saatchi materials='aluminum, canvas' 같은 케이스: canvas가 painted surface
-    all_supports = _apply_support_priority(all_supports)
+    # explicit > compound (Codex review #9, #10)
+    combined_text_l = (mat_raw + " " + med_raw).lower()
+    compound_leaves = {
+        s.leaf for s in all_supports if not _has_exact_support_match(s, combined_text_l)
+    }
+    all_supports = _apply_support_priority(all_supports, compound_leaves)
     primary_support = all_supports[0] if all_supports else None
     primary_tool, secondary_tools = _pick_primary_tool(all_tools)
 
@@ -879,9 +907,16 @@ def parse_saatchi_medium(
 
     has_special = any(r.l1 == _SPECIAL_FINISH_L1 for r in all_tools)
 
-    eval_supports = [s.l1 for s in all_supports] if all_supports else (
-        [support_l1] if support_l1 else []
-    )
+    # explicit only (compound 제외) for exclusion check (Codex review #10)
+    explicit_l1s = [s.l1 for s in all_supports if s.leaf not in compound_leaves]
+    if explicit_l1s:
+        eval_supports = explicit_l1s
+    elif all_supports:
+        eval_supports = [s.l1 for s in all_supports]
+    elif support_l1:
+        eval_supports = [support_l1]
+    else:
+        eval_supports = []
     is_excl, excl_reason = _decide_exclusion(
         raw=raw,
         support_l1=support_l1,
