@@ -186,6 +186,235 @@ def test_black_mirror_carved_on_resin():
     assert r.is_excluded_for_training is False
 
 
+# ─── Codex Review (PR #12) 수정 ─────────────────────────────────────
+def test_linen_compat_preserved():
+    """v3 모델 호환 — linen은 캔버스 leaf로 매칭되지만 support_type='linen' 유지."""
+    r = parse_artsy_medium("Oil on linen", "Painting")
+    assert r.support_type == "linen"  # NOT 'canvas'
+    assert r.support_l1 == "섬유"     # 캔버스 leaf 매칭은 유지
+    assert r.support_leaf == "캔버스"
+
+    r2 = parse_artsy_medium("Acrylic on linen", "Painting")
+    assert r2.support_type == "linen"
+    assert r2.medium_category == "acrylic"
+
+
+def test_saatchi_linen_compat_preserved():
+    r = parse_saatchi_medium("linen", "oil", "painting")
+    assert r.support_type == "linen"
+
+
+def test_canvas_not_linen_when_only_canvas():
+    """canvas는 그대로 canvas 유지."""
+    r = parse_artsy_medium("Oil on canvas", "Painting")
+    assert r.support_type == "canvas"
+
+
+def test_plural_keyword_match():
+    """English keyword 단복수 둘 다 매칭 (\\bword s?\\b)."""
+    # pigments → pigment (채색 leaf keyword "pigment")
+    r = parse_artsy_medium("Pigments on Jangji", "Painting")
+    assert r.medium_leaf == "채색"
+    assert r.support_leaf == "장지"
+    assert r.medium_category == "pigment"
+    assert r.support_type == "paper"
+
+
+def test_jangji_korean_paper_leaf():
+    """Jangji 영문 표기 → 장지 leaf."""
+    r = parse_artsy_medium("Color on Jangji", "Painting")
+    assert r.support_leaf == "장지"
+    assert r.support_l1 == "종이"
+
+
+# ─── Codex Review #2 (PR #12) — 'X on Y' 패턴 인식 ──────────────────────
+def test_on_pattern_canvas_with_cotton_precursor():
+    """'Mixed Media on Unbleached cotton canvas' — 'on canvas'가 actual support."""
+    r = parse_artsy_medium("Mixed Media on Unbleached cotton canvas", "Painting")
+    assert r.support_leaf == "캔버스"
+    assert r.support_type == "canvas"
+
+
+def test_on_pattern_panel_with_canvas_precursor():
+    """'Acrylic, paste board, canvas on panel' — painted surface는 canvas
+    (panel은 backing). v3 모델 호환성.
+    """
+    r = parse_artsy_medium("Acrylic, paste board, canvas on panel", "Painting")
+    assert r.support_leaf == "캔버스"
+    assert r.support_type == "canvas"
+    assert r.is_excluded_for_training is False
+
+
+def test_mounted_canvas_on_board():
+    """'canvas on board' — canvas가 painted surface, board는 backing."""
+    r = parse_artsy_medium("Real gold leaf and acrylic on canvas on board", "Painting")
+    assert r.support_leaf == "캔버스"
+    assert r.support_type == "canvas"
+
+
+def test_mounted_linen_on_board():
+    """'linen on board' — linen이 painted surface, linen 호환 유지."""
+    r = parse_artsy_medium("Oil on linen on board", "Painting")
+    assert r.support_type == "linen"
+
+
+def test_linen_compat_only_when_actual_support():
+    """linen이 raw에 있어도 'on canvas'면 canvas 유지."""
+    r = parse_artsy_medium("PLATINUM LEAF ANIMAL GLUE LINEN ON CANVAS", "Painting")
+    assert r.support_type == "canvas"  # NOT linen
+
+
+def test_linen_compat_with_on_linen_explicit():
+    """'on linen'이 명시되면 linen."""
+    r = parse_artsy_medium("Oil on linen", "Painting")
+    assert r.support_type == "linen"
+
+
+def test_linen_compat_when_only_linen_mentioned():
+    """raw에 linen만 있고 다른 'on X' 없으면 linen."""
+    r = parse_artsy_medium("Acrylic linen", "Painting")
+    assert r.support_type == "linen"
+
+
+def test_saatchi_canvas_with_linen_keeps_canvas():
+    """Saatchi materials='canvas, linen' — canvas 동시 언급 시 canvas 유지."""
+    r = parse_saatchi_medium("canvas, linen", "oil", "painting")
+    assert r.support_type == "canvas"
+
+
+def test_saatchi_canvas_linen_wood():
+    r = parse_saatchi_medium("canvas, linen, wood", "oil", "painting")
+    assert r.support_type == "canvas"  # canvas 우선
+
+
+# ─── Codex Review #4: Saatchi 다중 support priority ────────────────────
+@pytest.mark.parametrize(
+    "materials,exp_support",
+    [
+        ("aluminum, canvas", "canvas"),
+        ("paper, canvas", "canvas"),
+        ("silk, canvas", "canvas"),
+        ("wood, canvas", "canvas"),
+        ("canvas, aluminum", "canvas"),
+    ],
+)
+def test_saatchi_support_priority(materials, exp_support):
+    """다중 materials에서 canvas painted surface 우선 (v3 호환)."""
+    r = parse_saatchi_medium(materials, "oil", "painting")
+    assert r.support_type == exp_support
+
+
+# ─── Codex Review #5: over-exclusion 완화 + compound 단어 ──────────────
+def test_unparsed_support_not_excluded():
+    """parser 미매칭 ≠ 입체. 평면 회화일 가능성 보존."""
+    # 불어 'sur toile' — 미매칭이지만 평면 회화
+    r = parse_artsy_medium("Pigments naturels sur toile", "Painting")
+    assert r.is_excluded_for_training is False  # NOT excluded
+
+
+def test_unparsed_ramie_cottonade_not_excluded():
+    """미커버 support 동의어 — 통과."""
+    r1 = parse_artsy_medium("Coloring on Artificial Ramie", "Painting")
+    assert r1.is_excluded_for_training is False
+    # cottonade는 cotton 포함 → 캔버스 매칭
+    r2 = parse_artsy_medium("Watercolors on cottonade", "Painting")
+    assert r2.is_excluded_for_training is False
+    assert r2.support_leaf == "캔버스"
+
+
+def test_compound_paper_words():
+    """newspaper, wallpaper, ricepaper 등 compound paper 단어."""
+    for med in ["Mixed media on Old French newspaper",
+                "Print on wallpaper",
+                "Watercolor on ricepaper"]:
+        r = parse_artsy_medium(med, "Painting")
+        assert r.support_l1 == "종이", f"failed: {med} → {r.support_leaf}"
+
+
+def test_compound_panel_word():
+    """woodpanel 등 compound panel 단어 — paper가 우선이라면 paper, 아니면 panel."""
+    r = parse_artsy_medium("Oil on woodpanel", "Painting")
+    # 'panel' substring 매칭 → 패널 leaf. 단독이라 wood support_excluded.
+    assert r.support_leaf == "패널"
+
+
+def test_3d_still_caught_when_no_support_match():
+    """미매칭이어도 3D 키워드/카테고리는 잡혀야 함."""
+    r = parse_artsy_medium("Bronze sculpture", "Painting")  # category=Painting이지만 bronze
+    assert r.is_excluded_for_training is True
+    # bronze 키워드로 잡힘
+    assert "bronze" in (r.exclude_reason or "")
+
+
+def test_truly_unknown_medium_not_excluded():
+    """완전히 알 수 없는 medium은 통과 (parser 한계 ≠ 학습 제외)."""
+    r = parse_artsy_medium("totally unknown medium xyz", "Painting")
+    assert r.is_excluded_for_training is False
+
+
+# ─── Codex Review #6: mounted on + Saatchi mediums fallback ────────────
+def test_mounted_paper_on_canvas():
+    """'paper mounted on canvas' — paper가 painted surface."""
+    r = parse_artsy_medium("Oil on paper mounted on canvas", "Painting")
+    assert r.support_leaf == "종이"
+    assert r.support_type == "paper"
+
+
+def test_mounted_korean_paper_on_canvas():
+    r = parse_artsy_medium("Mixed media on Korean paper mounted on canvas", "Painting")
+    assert r.support_leaf == "한지"
+
+
+def test_mounted_linen_on_board():
+    """linen이 painted surface, board는 backing."""
+    r = parse_artsy_medium("Acrylic on linen mounted on board", "Painting")
+    assert r.support_type == "linen"
+
+
+def test_saatchi_mediums_fallback_for_paper():
+    """Saatchi materials='other'이지만 mediums에 paper → support=paper."""
+    r = parse_saatchi_medium("other", "paper, gouache", "painting")
+    assert r.support_leaf == "종이"
+    assert r.support_type == "paper"
+
+
+def test_saatchi_mediums_fallback_with_multiple():
+    r = parse_saatchi_medium("other", "watercolor, paper, wax", "painting")
+    assert r.support_type == "paper"
+
+
+# ─── Codex Review #7: wood 단독 누출 + cotton paper 예외 ──────────────
+def test_wood_alone_excluded():
+    """'Acrylic on Wood' — wood 단독은 입체 후보 → 학습 제외."""
+    for med in ["Acrylic on Wood", "Mixed Media on Wood", "Oil on wood"]:
+        r = parse_artsy_medium(med, "Painting")
+        assert r.is_excluded_for_training is True, f"failed: {med}"
+        assert r.exclude_reason == "support_excluded"
+
+
+def test_cotton_paper_is_paper_not_canvas():
+    """'cotton paper'는 paper 변종 — canvas 아님."""
+    for med in ["Acrylic on Arches cotton paper",
+                "Watercolor on cotton paper",
+                "Mixed media on cotton-paper"]:
+        r = parse_artsy_medium(med, "Painting")
+        assert r.support_type == "paper", f"failed: {med} → {r.support_type}"
+        assert r.support_leaf == "종이"
+
+
+def test_cottonade_still_canvas():
+    """cottonade(cotton fabric)는 cotton paper와 다름 — canvas 유지."""
+    r = parse_artsy_medium("Watercolors on cottonade", "Painting")
+    assert r.support_leaf == "캔버스"
+
+
+def test_carved_frame_on_wood_whitelist_with_wood_patch():
+    """wood patch 추가 후에도 'Carved frame on wood' 화이트리스트 동작."""
+    r = parse_artsy_medium("Oil on canvas, Carved frame on wood", "Painting")
+    assert r.is_excluded_for_training is False
+    assert r.support_leaf == "캔버스"
+
+
 def test_woodblock_carving_remains_excluded():
     """'woodblock carving'은 모호 — 보수적으로 EXCLUDE 유지."""
     r = parse_artsy_medium("Mixed media on woodblock carving", "Painting")
@@ -227,10 +456,13 @@ def test_saatchi_multi_medium_raw_first():
     assert r2.medium_leaf == "유채"
 
 
-def test_saatchi_other_excluded():
-    """materials='other' + mediums='other' → support 미매칭, 학습 제외."""
+def test_saatchi_other_not_excluded():
+    """materials='other' + mediums='other' (Saatchi unknown) — Codex review #5
+    완화 후 학습 제외 안 함 (parser 한계 ≠ 입체 증거)."""
     r = parse_saatchi_medium("other", "other", "painting")
-    assert r.is_excluded_for_training is True
+    assert r.is_excluded_for_training is False
+    assert r.support_type == "other"
+    assert r.medium_category == "other"
 
 
 def test_saatchi_sculpture_category():

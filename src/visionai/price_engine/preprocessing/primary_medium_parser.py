@@ -298,23 +298,111 @@ _EN_TOOL_KEYWORD_PATCHES: dict[str, list[str]] = {
 }
 
 _EN_SUPPORT_KEYWORD_PATCHES: dict[str, list[str]] = {
-    "캔버스": ["canvas", "linen", "hemp cloth"],
+    "캔버스": ["canvas", "linen", "hemp cloth", "cottonade"],
     "한지": ["korean paper", "hanji", "washi", "japanese paper"],
+    "장지": ["jangji"],
+    "순지": ["sunji"],
+    "닥지": ["dakji"],
     "종이": ["paper"],  # 'korean paper'면 한지가 먼저 매칭 (sheet 순서)
     "보드": ["cardboard", "board"],
     "비단": ["silk"],
     "패널": ["panel", "wood panel", "wooden panel", "mdf"],
+    # 'wood'/'wooden' 단독은 _ON_WOOD_SUBSTRATE_PATTERN으로 처리 (Wood engraving 등 tool 회피)
     "알루미늄 패널": ["aluminum", "aluminium"],
     "철판": ["steel"],
     "스테인리스": ["stainless steel", "stainless"],
     "동판": ["copper plate"],
     "유리": ["glass"],
     "거울": ["mirror"],
-    "섬유": ["fabric", "cotton", "yarn", "felt", "velvet"],
+    "섬유": ["fabric", "yarn", "felt", "velvet"],  # 'cotton'은 캔버스 leaf 우선이므로 제외
     "태피스트리": ["tapestry"],
     "플라스틱 패널": ["frp", "polycarbonate"],
     "아크릴 패널": ["acrylic panel", "plexiglass"],
 }
+
+# v3 추론 모델 호환 — linen은 캔버스 leaf로 매칭되지만 호환 컬럼은 'linen' 별도 유지
+# (모델 학습 시 support_factor=1.1로 별도 카테고리)
+_LINEN_PATTERN = re.compile(r"\blinen\b", re.IGNORECASE)
+_ON_LINEN_PATTERN = re.compile(r"\bon\s+linen\b", re.IGNORECASE)
+_ON_OTHER_SUPPORT_PATTERN = re.compile(
+    r"\bon\s+(canvas|panel|board|paper|silk|wood|aluminum|aluminium|stainless|glass|mirror)",
+    re.IGNORECASE,
+)
+
+
+_CANVAS_PATTERN = re.compile(r"\bcanvas\b", re.IGNORECASE)
+
+# 'cotton paper'는 paper 변종 (cotton-fiber paper), canvas 아님. canvas leaf 제외.
+_COTTON_PAPER_PATTERN = re.compile(r"\bcotton[\s-]+paper\b", re.IGNORECASE)
+
+# 'on wood' substrate 패턴 (engraving/cut/block/panel 등 tool/multi-word 회피)
+_ON_WOOD_SUBSTRATE_PATTERN = re.compile(
+    r"\bon\s+wood\b(?!\s+(?:engrav|cut|block|panel))",
+    re.IGNORECASE,
+)
+
+# 'on <excluded>' 명시 패턴 → 해당 leaf 추가하여 학습 제외 트리거 (Codex review #14)
+# 'Mixed media on plastic and wood', 'Oil on copper' 등.
+_ON_EXCLUDED_SUBSTRATE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"\bon\s+plastic\b", re.IGNORECASE), "플라스틱 패널"),
+    (re.compile(r"\bon\s+(?:copper|brass)\b", re.IGNORECASE), "동판"),
+    (re.compile(r"\bon\s+steel\b", re.IGNORECASE), "철판"),
+    (re.compile(r"\bon\s+(?:aluminum|aluminium)\b", re.IGNORECASE), "알루미늄 패널"),
+    (re.compile(r"\bon\s+metal\b", re.IGNORECASE), "스테인리스"),
+]
+
+# 특수 마감 trailing suffix — pre-on에서 'and gold leaf' 같은 finish 부분만 제거
+_FINISH_SUFFIX_PATTERN = re.compile(
+    r"\s+and\s+(?:gold\s+leaf|silver\s+leaf|diasec|epoxy|glitter|emboss\w*)\s*$",
+    re.IGNORECASE,
+)
+
+# component-list 패턴 — pre-on에 'with'/'and' 있으면 substrate 검출 skip
+_COMPONENT_CONJUNCTION_PATTERN = re.compile(r"\b(?:with|and)\b", re.IGNORECASE)
+
+
+def _adjust_compat_for_linen(raw: str, support_compat: str, support_leaf: str) -> str:
+    """raw에 'linen' 명시 + linen이 painted surface일 때 호환 라벨을 'linen'으로.
+
+    예시:
+    - 'Oil on linen' → linen만 있음 → linen ✓
+    - 'Oil on linen mounted on canvas' → linen이 substrate, canvas는 mount → linen
+    - 'PLATINUM LEAF ANIMAL GLUE LINEN ON CANVAS' → on canvas 명시 → canvas 유지
+    - 'canvas, linen' (Saatchi) → canvas 동시 언급, mount 없음 → canvas 유지
+    """
+    if support_compat != "canvas" or support_leaf != "캔버스":
+        return support_compat
+    if not raw or not _LINEN_PATTERN.search(raw):
+        return support_compat
+
+    # 'mounted on' 케이스: linen이 mount 앞에 있으면 painted surface = linen.
+    # 'Linen mounted on board', 'Oil on linen mounted on canvas' 모두 linen.
+    mounted_match = _MOUNTED_ON_PATTERN.search(raw)
+    if mounted_match:
+        pre_mount = raw[: mounted_match.start()]
+        if _LINEN_PATTERN.search(pre_mount):
+            return "linen"
+
+    # multi-on 케이스: 'X on linen on canvas' — linen이 painted surface
+    on_matches = list(_ON_WORD_PATTERN.finditer(raw))
+    if len(on_matches) >= 2:
+        first_on_end = on_matches[0].end()
+        second_on_start = on_matches[1].start()
+        substrate_text = raw[first_on_end:second_on_start]
+        post_second_on = raw[second_on_start:]
+        if _LINEN_PATTERN.search(substrate_text) and _CANVAS_PATTERN.search(post_second_on):
+            return "linen"
+
+    # canvas가 raw에 동시 언급되면 canvas 유지 (mixed materials 우선)
+    if _CANVAS_PATTERN.search(raw):
+        return support_compat
+    # 'on linen'이 명시되어 있으면 우선
+    if _ON_LINEN_PATTERN.search(raw):
+        return "linen"
+    # linen 언급 + 다른 명시적 'on X' 없음 → linen이 유일 support
+    if not _ON_OTHER_SUPPORT_PATTERN.search(raw):
+        return "linen"
+    return support_compat
 
 
 def _load_sheet(
@@ -396,60 +484,198 @@ def _ensure_rules() -> tuple[tuple[_LeafRule, ...], tuple[_LeafRule, ...]]:
 _PURE_ENG_RE = re.compile(r"[a-z][a-z\-]*$")
 
 
-def _kw_matches(kw: str, text_l: str) -> bool:
+# 컴파운드 suffix 매칭 가능 keyword (loose mode 시): newspaper, wallpaper, woodpanel 등
+# 영어로 합성어의 끝에 나타나는 일반 명사들
+_COMPOUND_SUFFIX_KEYWORDS = frozenset({"paper", "panel"})
+
+# Painted surface가 될 수 있는 l1 카테고리.
+_PAINTED_SURFACE_L1S = frozenset({"종이", "섬유"})
+
+# painted_l1 외에 specific하게 substrate 인정되는 leaves (Codex review #14).
+# 'mirror PET film on panel' 케이스 — 거울/플라스틱 시트는 painted surface로 사용됨.
+# 단 '유리'는 제외 (대부분 객체 부착/장식, keyword_3d 처리 위임).
+_PRE_ON_SUBSTRATE_LEAVES = frozenset({"거울", "플라스틱 필름", "아크릴 패널", "플라스틱 패널"})
+
+
+def _kw_matches(kw: str, text_l: str, *, loose: bool = False) -> bool:
     """keyword가 text_l(이미 lower) 안에 있는지.
 
-    - pure 영문 단어(특수문자 없음): word boundary 매칭
-    - 한국어/혼합: substring 매칭
+    한국어/혼합: substring 매칭.
+    영문 단어:
+    - loose=True + keyword ∈ {paper, panel}: 합성어 suffix 매칭
+      (\\b\\w*paper s?\\b → newspaper/wallpaper/ricepaper 매칭, papering은 안 됨)
+    - 그 외: word boundary + 단복수 (\\bword s?\\b)
+    이 규칙은 'wood' / 'glass' 같은 generic 단어가 'Woodcut' / 'plexiglass'
+    내부에서 잘못 매칭되는 것을 방지 (Codex review #8).
     """
     kw_l = kw.lower()
-    if _PURE_ENG_RE.fullmatch(kw_l):
-        return bool(re.search(r"\b" + re.escape(kw_l) + r"\b", text_l))
-    return kw_l in text_l
+    if not _PURE_ENG_RE.fullmatch(kw_l):
+        return kw_l in text_l
+    if loose and kw_l in _COMPOUND_SUFFIX_KEYWORDS:
+        return bool(re.search(r"\b\w*" + re.escape(kw_l) + r"s?\b", text_l))
+    return bool(re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l))
 
 
-def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...]) -> _LeafRule | None:
+def _find_first_leaf(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = False) -> _LeafRule | None:
     """text에 매칭되는 첫 leaf rule."""
     if not text:
         return None
     text_l = text.lower()
     for rule in rules:
         for kw in rule.keywords:
-            if _kw_matches(kw, text_l):
+            if _kw_matches(kw, text_l, loose=loose):
                 return rule
     return None
 
 
-def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...]) -> list[_LeafRule]:
-    """text에 매칭되는 모든 leaf rule. **raw-first 정렬** (Codex 권고 Q3).
+_MOUNTED_ON_PATTERN = re.compile(r"\bmounted\s+on\b", re.IGNORECASE)
+_ON_WORD_PATTERN = re.compile(r"\bon\b", re.IGNORECASE)
 
-    leaf 중복 제거 + 텍스트 내 매칭 위치 오름차순 정렬.
-    동일 위치(시작점) 시 시트 순서 fallback.
+
+def _detect_substrate_in_complex_on(
+    text: str, rules: tuple[_LeafRule, ...]
+) -> _LeafRule | None:
+    """'X on Y on Z' / 'X on Y mounted on Z' 패턴에서 Y(painted surface)를 추출.
+
+    또한 single 'on' 케이스에서 pre-on에 explicit support가 있으면 (예:
+    'JangJi paper on Canvas') pre-on의 첫 explicit support를 painted surface로.
+    Codex review #10.
+    """
+    if not text:
+        return None
+    has_mounted = bool(_MOUNTED_ON_PATTERN.search(text))
+    on_matches = list(_ON_WORD_PATTERN.finditer(text))
+    if not on_matches:
+        return None
+
+    # mounted on 케이스: substrate는 'mounted on' 앞 텍스트의 마지막 support
+    # 'on'이 mounted 이전에 있으면 그 'on' 뒤가 substrate, 없으면 mounted 앞 전체
+    if has_mounted:
+        mounted_match = _MOUNTED_ON_PATTERN.search(text)
+        pre_mounted = text[: mounted_match.start()]
+        pre_on_matches = list(_ON_WORD_PATTERN.finditer(pre_mounted))
+        if pre_on_matches:
+            substrate_text = pre_mounted[pre_on_matches[-1].end():].strip()
+        else:
+            substrate_text = pre_mounted.strip()
+        return _find_first_leaf(substrate_text, rules, loose=True)
+
+    # Multi-on (mounted 없음): 첫번째 on과 두번째 on 사이가 substrate
+    if len(on_matches) >= 2:
+        first_on_end = on_matches[0].end()
+        second_on_start = on_matches[1].start()
+        substrate_text = text[first_on_end:second_on_start].strip()
+        return _find_first_leaf(substrate_text, rules, loose=True)
+
+    # Single 'on': pre-on에 painted-surface 카테고리(종이/섬유/기타/플라스틱)의
+    # explicit support 있으면 → pre-on이 substrate.
+    on_match = on_matches[0]
+    pre_on = text[: on_match.start()]
+    # 특수 마감 trailing suffix 제거 (Codex review #14: 'and gold leaf'는 finish이지 component 아님)
+    pre_on_stripped = _FINISH_SUFFIX_PATTERN.sub("", pre_on).strip()
+    # 'with'/'and'가 pre-on에 있으면 component-list — substrate 검출 skip (Codex review #11)
+    # 예: 'Mixed media with Korean paper on canvas' — Korean paper는 component, canvas는 substrate
+    if _COMPONENT_CONJUNCTION_PATTERN.search(pre_on_stripped):
+        return None
+    pre_text_l = pre_on_stripped.lower()
+    pre_supports = _find_all_leaves(pre_on_stripped, rules, loose=True)
+    pre_painted_explicit = [
+        s for s in pre_supports
+        if _has_exact_support_match(s, pre_text_l)
+        and (s.l1 in _PAINTED_SURFACE_L1S or s.leaf in _PRE_ON_SUBSTRATE_LEAVES)
+    ]
+    if pre_painted_explicit:
+        return _apply_support_priority(pre_painted_explicit, set())[0]
+    return None
+
+
+# 호환 우선순위 (구 SUPPORT_RULES 순서, primary_feature_builder.py:19-26 참조)
+# 다중 매칭 시 painted surface 우선 — canvas가 가장 먼저, metal이 가장 나중.
+_SUPPORT_COMPAT_PRIORITY: dict[str, int] = {
+    "canvas": 0, "linen": 1, "paper": 2, "panel": 3, "silk": 4, "metal": 5, "other": 6,
+}
+
+
+def _has_exact_support_match(rule: _LeafRule, text_l: str) -> bool:
+    """rule이 text에 explicit(word boundary) 매칭되는지. compound 매칭은 False."""
+    for kw in rule.keywords:
+        kw_l = kw.lower()
+        if not _PURE_ENG_RE.fullmatch(kw_l):
+            if kw_l in text_l:
+                return True
+        elif re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l):
+            return True
+    return False
+
+
+def _apply_support_priority(
+    supports: list[_LeafRule], compound_leaves: set[str] | None = None,
+) -> list[_LeafRule]:
+    """다중 support leaf 매칭을 호환 우선순위로 재정렬.
+
+    1차 정렬: explicit(0) > compound(1) — newspaper의 paper match보다 explicit 'wood panel' 우선
+    2차 정렬: 호환 우선순위 (canvas > linen > paper > panel > silk > metal)
+
+    Codex review #9: compound suffix 매칭(newspaper의 paper)은 explicit 매칭에 밀려야 함.
+    """
+    cs = compound_leaves or set()
+    return sorted(
+        supports,
+        key=lambda s: (
+            1 if s.leaf in cs else 0,
+            _SUPPORT_COMPAT_PRIORITY.get(_SUPPORT_LEAF_TO_COMPAT.get(s.leaf, "other"), 99),
+        ),
+    )
+
+
+def _kw_match_pos(kw: str, text_l: str, *, loose: bool = False) -> tuple[int, bool]:
+    """매칭 위치 + compound 여부 반환. (-1, False)면 미매칭.
+
+    compound=True: loose mode에서 \\b\\w*KW\\b 매칭으로 잡힌 경우 (newspaper의 paper).
+    explicit과 구분하여 support priority에서 후순위 처리 (Codex review #9).
+    """
+    kw_l = kw.lower()
+    if not _PURE_ENG_RE.fullmatch(kw_l):
+        return (text_l.find(kw_l), False) if kw_l in text_l else (-1, False)
+    # 영문 단어: 먼저 exact word boundary 시도
+    m = re.search(r"\b" + re.escape(kw_l) + r"s?\b", text_l)
+    if m:
+        return m.start(), False
+    # exact 매칭 실패 시 loose+compound suffix 시도
+    if loose and kw_l in _COMPOUND_SUFFIX_KEYWORDS:
+        m = re.search(r"\b\w*" + re.escape(kw_l) + r"s?\b", text_l)
+        if m:
+            return m.start(), True
+    return -1, False
+
+
+def _find_all_leaves(text: str, rules: tuple[_LeafRule, ...], *, loose: bool = False) -> list[_LeafRule]:
+    """text에 매칭되는 모든 leaf rule.
+
+    정렬 우선순위 (Codex review #9):
+    1. explicit 매칭 (word boundary) > compound 매칭 (newspaper의 paper)
+    2. 동일 매칭 타입 내에서는 raw 등장 순서
+    3. 시트 순서 fallback
     """
     if not text:
         return []
     text_l = text.lower()
     seen: set[str] = set()
-    found: list[tuple[int, int, _LeafRule]] = []  # (pos, sheet_idx, rule)
+    found: list[tuple[int, int, int, _LeafRule]] = []  # (compound_flag, pos, sheet_idx, rule)
     for sheet_idx, rule in enumerate(rules):
         if rule.leaf in seen:
             continue
+        # 첫번째로 매칭된 keyword의 (pos, compound) 사용
         for kw in rule.keywords:
-            kw_l = kw.lower()
-            pos = -1
-            if _PURE_ENG_RE.fullmatch(kw_l):
-                m = re.search(r"\b" + re.escape(kw_l) + r"\b", text_l)
-                if m:
-                    pos = m.start()
-            elif kw_l in text_l:
-                pos = text_l.find(kw_l)
+            pos, is_compound = _kw_match_pos(kw, text_l, loose=loose)
             if pos >= 0:
-                found.append((pos, sheet_idx, rule))
+                # explicit(0) 우선, compound(1) 후순위
+                found.append((1 if is_compound else 0, pos, sheet_idx, rule))
                 seen.add(rule.leaf)
                 break
-    # raw-first: position asc, sheet_idx asc fallback
-    found.sort(key=lambda t: (t[0], t[1]))
-    return [r for _, _, r in found]
+    # 정렬: explicit 우선 → 위치 → 시트 순서
+    found.sort(key=lambda t: (t[0], t[1], t[2]))
+    return [r for _, _, _, r in found]
 
 
 # ─── 입체 검출 ─────────────────────────────────────────────────────────
@@ -544,14 +770,15 @@ def _decide_exclusion(
     is_3d, kw = _has_3d_keyword(raw)
     if is_3d:
         return True, f"keyword_3d:{kw}"
-    # 4. support 단독 기반 — 평면 override 시 면제 (예: "Acrylic on glass"는 유리 leaf
-    #    keyword 미매칭이지만 평면 패턴이 있으므로 포함)
+    # 4. support 단독 기반 — 평면 override 시 면제
     if has_planar:
         return False, None
-    if not supports:
-        if raw and raw.strip():
-            return True, "support_excluded"
-    elif all(s in EXCLUDED_SUPPORT_L1 for s in supports):
+    # **Primary support_l1**이 제외 set에 있으면 제외 (Codex review #13).
+    # priority sort + substrate detection으로 primary가 painted surface로 결정됨.
+    # 'wood panel + canvas' → primary canvas → not excluded
+    # 'wood panel, newspaper' → primary panel (explicit > compound) → excluded
+    # 'paper mounted on wood panel' → primary paper (mounted substrate) → not excluded
+    if support_l1 and support_l1 in EXCLUDED_SUPPORT_L1:
         return True, "support_excluded"
     return False, None
 
@@ -573,10 +800,42 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
         return PrimaryMediumResult(raw=raw)
 
     # leaf 매칭
-    all_supports = _find_all_leaves(raw, support_rules)
+    # support는 loose 매칭 (newspaper, woodpanel 같은 compound 단어 처리)
+    all_supports = _find_all_leaves(raw, support_rules, loose=True)
     all_tools = _find_all_leaves(raw, tool_rules)
 
-    # primary 선정
+    # 'cotton paper' 같은 compound는 paper 변종 → canvas leaf 제거
+    if _COTTON_PAPER_PATTERN.search(raw):
+        all_supports = [s for s in all_supports if s.leaf != "캔버스"]
+
+    # 'on wood' substrate 패턴 — wood/wooden 키워드가 너무 광범위 (Wood engraving 등
+    # 도구 매칭 회피). 'on wood' 명시 시에만 패널 leaf 추가.
+    if _ON_WOOD_SUBSTRATE_PATTERN.search(raw):
+        panel_rule = next((r for r in support_rules if r.leaf == "패널"), None)
+        if panel_rule and not any(s.leaf == "패널" for s in all_supports):
+            all_supports.append(panel_rule)
+
+    # 'on plastic'/'on copper'/'on metal' 등 명시적 excluded substrate (Codex review #14)
+    for pattern, leaf_name in _ON_EXCLUDED_SUBSTRATE_PATTERNS:
+        if pattern.search(raw):
+            target_rule = next((r for r in support_rules if r.leaf == leaf_name), None)
+            if target_rule and not any(s.leaf == leaf_name for s in all_supports):
+                all_supports.append(target_rule)
+
+    # explicit vs compound 매칭 분류 (Codex review #9)
+    text_l = raw.lower()
+    compound_leaves = {
+        s.leaf for s in all_supports if not _has_exact_support_match(s, text_l)
+    }
+
+    # primary 선정 — 'X on Y on Z' / 'X on Y mounted on Z' 패턴이면 Y가 painted surface,
+    # 아니면 explicit > compound + 호환 우선순위(canvas > linen > paper > panel > ...)
+    substrate = _detect_substrate_in_complex_on(raw, support_rules)
+    if substrate:
+        # 검출된 substrate를 primary로 강제
+        all_supports = [substrate] + [s for s in all_supports if s.leaf != substrate.leaf]
+    else:
+        all_supports = _apply_support_priority(all_supports, compound_leaves)
     primary_support = all_supports[0] if all_supports else None
     primary_tool, secondary_tools = _pick_primary_tool(all_tools)
 
@@ -602,13 +861,23 @@ def parse_artsy_medium(medium: str | None, category: str | None = None) -> Prima
         support_leaf = ""
         support_compat = "other"
 
+    # 호환 보정 (v3 모델은 linen을 별도 카테고리로 학습)
+    support_compat = _adjust_compat_for_linen(raw, support_compat, support_leaf)
+
     # 특수 마감/가공 플래그
     has_special = any(r.l1 == _SPECIAL_FINISH_L1 for r in all_tools)
 
-    # 학습 제외 결정 — default support 적용 후 supports list로 평가
-    eval_supports = [s.l1 for s in all_supports] if all_supports else (
-        [support_l1] if support_l1 else []
-    )
+    # 학습 제외 결정 — explicit support만으로 평가 (Codex review #10).
+    # compound suffix 매칭(newspaper의 paper)은 false positive 위험으로 검사 대상 제외.
+    explicit_l1s = [s.l1 for s in all_supports if s.leaf not in compound_leaves]
+    if explicit_l1s:
+        eval_supports = explicit_l1s
+    elif all_supports:
+        eval_supports = [s.l1 for s in all_supports]  # 전부 compound만이면 fallback
+    elif support_l1:
+        eval_supports = [support_l1]
+    else:
+        eval_supports = []
     is_excl, excl_reason = _decide_exclusion(
         raw=raw,
         support_l1=support_l1,
@@ -657,11 +926,27 @@ def parse_saatchi_medium(
     med_raw = (mediums or "").strip()
     raw = f"{mat_raw} | {med_raw}".strip()
 
-    # leaf 매칭 (분리)
-    all_supports = _find_all_leaves(mat_raw, support_rules)
+    # leaf 매칭 (분리, support는 loose 매칭)
+    all_supports = _find_all_leaves(mat_raw, support_rules, loose=True)
+    # materials에 support 미매칭 시 mediums 컬럼에서도 찾는다 (Codex review #6)
+    # Saatchi 데이터에서 materials='other'이고 mediums에 paper 등이 들어 있는 케이스
+    if not all_supports and med_raw:
+        all_supports = _find_all_leaves(med_raw, support_rules, loose=True)
+    # Saatchi materials의 'wood'/'wooden' 단독은 wood substrate (Artsy 'on wood'와 동등).
+    # _find_all_leaves가 wood/wooden 키워드를 안 잡으므로 (Wood engraving 회피) 별도 처리.
+    if mat_raw and re.search(r"\b(?:wood|wooden)\b", mat_raw, re.IGNORECASE):
+        panel_rule = next((r for r in support_rules if r.leaf == "패널"), None)
+        if panel_rule and not any(s.leaf == "패널" for s in all_supports):
+            all_supports.append(panel_rule)
     all_tools = _find_all_leaves(med_raw, tool_rules)
 
-    # primary 선정
+    # primary 선정 — 다중 support 매칭 시 호환 우선순위 (canvas > linen > paper > ...)
+    # explicit > compound (Codex review #9, #10)
+    combined_text_l = (mat_raw + " " + med_raw).lower()
+    compound_leaves = {
+        s.leaf for s in all_supports if not _has_exact_support_match(s, combined_text_l)
+    }
+    all_supports = _apply_support_priority(all_supports, compound_leaves)
     primary_support = all_supports[0] if all_supports else None
     primary_tool, secondary_tools = _pick_primary_tool(all_tools)
 
@@ -684,11 +969,21 @@ def parse_saatchi_medium(
         support_leaf = ""
         support_compat = "other"
 
+    # 호환 보정 (v3 모델은 linen을 별도 카테고리로 학습)
+    support_compat = _adjust_compat_for_linen(raw, support_compat, support_leaf)
+
     has_special = any(r.l1 == _SPECIAL_FINISH_L1 for r in all_tools)
 
-    eval_supports = [s.l1 for s in all_supports] if all_supports else (
-        [support_l1] if support_l1 else []
-    )
+    # explicit only (compound 제외) for exclusion check (Codex review #10)
+    explicit_l1s = [s.l1 for s in all_supports if s.leaf not in compound_leaves]
+    if explicit_l1s:
+        eval_supports = explicit_l1s
+    elif all_supports:
+        eval_supports = [s.l1 for s in all_supports]
+    elif support_l1:
+        eval_supports = [support_l1]
+    else:
+        eval_supports = []
     is_excl, excl_reason = _decide_exclusion(
         raw=raw,
         support_l1=support_l1,

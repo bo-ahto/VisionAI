@@ -14,6 +14,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from visionai.price_engine.preprocessing.primary_medium_parser import parse_saatchi_medium
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -262,12 +264,39 @@ def main() -> None:
     df["is_small"] = (df["ho"] <= 3).astype(int)
     logger.info("호수: min=%d, max=%d, median=%d", df["ho"].min(), df["ho"].max(), df["ho"].median())
 
-    # 4.2 지지체/매체 분류 (materials + mediums 결합)
+    # 4.2 지지체/매체 분류
+    # support_type/medium_category는 v3 모델 호환을 위해 구 classify_* 유지
     df["medium_text"] = df["materials"].fillna("") + " " + df["mediums"].fillna("")
     df["support_type"] = df["medium_text"].apply(classify_support)
     df["medium_category"] = df["mediums"].fillna("").apply(classify_medium)
+    # 신규 metadata 컬럼은 새 파서로
+    parsed_saatchi = df.apply(
+        lambda r: parse_saatchi_medium(r.get("materials"), r.get("mediums"), r.get("category")),
+        axis=1,
+    )
+    df["medium_l1"] = parsed_saatchi.apply(lambda p: p.medium_l1)
+    df["medium_leaf"] = parsed_saatchi.apply(lambda p: p.medium_leaf)
+    df["support_l1"] = parsed_saatchi.apply(lambda p: p.support_l1)
+    df["support_leaf"] = parsed_saatchi.apply(lambda p: p.support_leaf)
+    df["mediums_json"] = parsed_saatchi.apply(lambda p: json.dumps(p.mediums, ensure_ascii=False))
+    df["supports_json"] = parsed_saatchi.apply(lambda p: json.dumps(p.supports, ensure_ascii=False))
+    df["has_multimedia"] = parsed_saatchi.apply(lambda p: int(p.has_multimedia))
+    df["has_special_finish"] = parsed_saatchi.apply(lambda p: int(p.has_special_finish))
+    df["is_excluded_for_training"] = parsed_saatchi.apply(lambda p: int(p.is_excluded_for_training))
+    df["exclude_reason"] = parsed_saatchi.apply(lambda p: p.exclude_reason or "")
+    df["value_grade_note"] = parsed_saatchi.apply(lambda p: p.value_grade_note or "")
     logger.info("지지체: %s", dict(df["support_type"].value_counts().head(6)))
     logger.info("매체: %s", dict(df["medium_category"].value_counts().head(6)))
+    n_excl = int(df["is_excluded_for_training"].sum())
+    logger.info("학습 제외 후보: %d (사유: %s)", n_excl, dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6)))
+
+    # 학습 제외는 컬럼(is_excluded_for_training)으로만 표기.
+    # parquet 자체는 미필터링 — primary_server._load_price_history()가 Saatchi 이력
+    # 조회에 동일 parquet 사용 (Codex review #12).
+    if n_excl > 0:
+        logger.info(
+            "학습 제외 후보 %d건은 컬럼으로 표기됨 (서빙 호환).", n_excl,
+        )
 
     # 4.3 작품 속성
     df["is_unique"] = 1  # Saatchi는 원작 직거래
@@ -379,7 +408,17 @@ def main() -> None:
         "dimensions_cm", "medium", "image_url", "artwork_url",
     ]
 
-    out = df[meta_cols + feature_cols + ["ln_price", "source"]].copy()
+    # 신규 parser metadata (PR1 통합) — additive, 모델 입력 X
+    # is_excluded_for_training은 학습 시점 필터용 (parquet 미필터링, 서빙 호환).
+    parser_meta_cols = [
+        "medium_l1", "medium_leaf", "support_l1", "support_leaf",
+        "mediums_json", "supports_json",
+        "has_multimedia", "has_special_finish",
+        "is_excluded_for_training", "exclude_reason", "value_grade_note",
+    ]
+
+    # 학습 제외 필터는 4.2 medium 파싱 직후 이미 적용됨
+    out = df[meta_cols + feature_cols + parser_meta_cols + ["ln_price", "source"]].copy()
 
     # 6. 저장
     out_path = DATA_DIR / "saatchi_cleaned.parquet"

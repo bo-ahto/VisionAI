@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from visionai.price_engine.preprocessing.primary_medium_parser import parse_artsy_medium
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -211,10 +213,40 @@ def main() -> None:
     logger.info("호수 변환 완료 (min=%d, max=%d, median=%d)", df["ho"].min(), df["ho"].max(), df["ho"].median())
 
     # 4.2 지지체/매체 분류
+    # support_type/medium_category는 v3 모델 호환을 위해 구 classify_* 유지
+    # (Codex review #8: train/serve skew 방지 — 모델 재학습 PR에서 전환).
     df["support_type"] = df["medium"].fillna("").apply(classify_support)
     df["medium_category"] = df["medium"].fillna("").apply(classify_medium)
+    # 신규 metadata 컬럼은 새 파서로 (additive — 모델 입력 X, downstream 점진 활용)
+    parsed_artsy = df.apply(
+        lambda r: parse_artsy_medium(r.get("medium"), r.get("category")),
+        axis=1,
+    )
+    df["medium_l1"] = parsed_artsy.apply(lambda p: p.medium_l1)
+    df["medium_leaf"] = parsed_artsy.apply(lambda p: p.medium_leaf)
+    df["support_l1"] = parsed_artsy.apply(lambda p: p.support_l1)
+    df["support_leaf"] = parsed_artsy.apply(lambda p: p.support_leaf)
+    df["mediums_json"] = parsed_artsy.apply(lambda p: json.dumps(p.mediums, ensure_ascii=False))
+    df["supports_json"] = parsed_artsy.apply(lambda p: json.dumps(p.supports, ensure_ascii=False))
+    df["has_multimedia"] = parsed_artsy.apply(lambda p: int(p.has_multimedia))
+    df["has_special_finish"] = parsed_artsy.apply(lambda p: int(p.has_special_finish))
+    df["is_excluded_for_training"] = parsed_artsy.apply(lambda p: int(p.is_excluded_for_training))
+    df["exclude_reason"] = parsed_artsy.apply(lambda p: p.exclude_reason or "")
+    df["value_grade_note"] = parsed_artsy.apply(lambda p: p.value_grade_note or "")
     logger.info("지지체: %s", dict(df["support_type"].value_counts().head(6)))
     logger.info("매체: %s", dict(df["medium_category"].value_counts().head(6)))
+    n_excl = int(df["is_excluded_for_training"].sum())
+    logger.info("학습 제외 후보: %d (사유: %s)", n_excl, dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6)))
+
+    # 4.2.1 학습 제외는 컬럼(is_excluded_for_training)으로만 표기.
+    # 행 자체는 제거하지 않는다 — primary_server._load_price_history()도 이 parquet을
+    # 서빙용 작가 이력/타이틀 매칭에 사용하므로, 학습 제외 작품도 history에 보존되어야 함
+    # (Codex review #12). 학습 스크립트가 학습 시점에 컬럼으로 직접 필터링한다.
+    if n_excl > 0:
+        logger.info(
+            "학습 제외 후보 %d건은 컬럼으로 표기됨 (parquet 자체는 미필터링, 서빙 호환).",
+            n_excl,
+        )
 
     # 4.3 제작연도 → work_age
     df["year_made"] = df["date"].apply(lambda d: int(re.match(r"(\d{4})", str(d)).group(1)) if re.match(r"(\d{4})", str(d)) else None)
@@ -339,8 +371,17 @@ def main() -> None:
         "dimensions_cm", "medium", "image_url", "artwork_url",
     ]
 
-    # 6. 저장
-    out = df[meta_cols + feature_cols + ["ln_price"]].copy()
+    # 신규 parser metadata (PR1 통합) — additive, 모델 입력 X, downstream 점진 활용
+    # is_excluded_for_training은 학습 스크립트가 필터링에 사용 (parquet 자체는 미필터링).
+    parser_meta_cols = [
+        "medium_l1", "medium_leaf", "support_l1", "support_leaf",
+        "mediums_json", "supports_json",
+        "has_multimedia", "has_special_finish",
+        "is_excluded_for_training", "exclude_reason", "value_grade_note",
+    ]
+
+    # 6. 저장 (학습 제외 필터는 4.2.1에서 이미 적용됨)
+    out = df[meta_cols + feature_cols + parser_meta_cols + ["ln_price"]].copy()
     out_path = DATA_DIR / "primary_market_dataset.parquet"
     out.to_parquet(out_path, index=False)
     logger.info("Parquet 저장: %s (%d건, %d컬럼)", out_path, len(out), len(out.columns))

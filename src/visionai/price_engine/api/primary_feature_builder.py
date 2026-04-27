@@ -6,6 +6,8 @@ import re
 
 import numpy as np
 
+from visionai.price_engine.preprocessing.primary_medium_parser import parse_artsy_medium
+
 # ─── 호수 변환 테이블 (F형 기준) ───
 HO_TABLE_F = {
     0: 180, 1: 364, 2: 520, 3: 727, 4: 1084,
@@ -88,7 +90,9 @@ def build_features(
     aspect_ratio = max(width_cm, height_cm) / max(min(width_cm, height_cm), 0.1)
     ho = area_to_ho(area_cm2)
 
-    # 매체/지지체
+    # 매체/지지체 — 추론 경로는 v3 모델 호환을 위해 구 분류기 유지.
+    # 새 parse_artsy_medium은 학습 데이터 prep에서만 사용 (Codex review #7).
+    # 모델 재학습 PR에서 전환 예정.
     support_type = classify_support(medium)
     medium_category = classify_medium(medium)
     support_factor = SUPPORT_FACTORS.get(support_type, 0.85)
