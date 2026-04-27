@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 _matcher = ArtistMatcher()
 _predictor = PrimaryPredictor()
 _start_time = time.time()
-_model_version = "v3"
+_model_version = "v3-filtered-tuned"
 _price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
 
 # ─── 인메모리 모니터링 카운터 ───
@@ -408,12 +408,16 @@ def _load_models() -> None:
 
     _predictor.load_models(model_dir)
 
-    # XGBoost label map 구축
+    # XGBoost label map 구축 — 학습 시 저장된 매핑 아티팩트 우선 (Codex review #14)
+    label_maps_path = model_dir / "integrated_v3_filtered_tuned_xgboost_label_maps.json"
     data_dir = Path(os.getenv("DATA_DIR", "/app/data"))
     training_path = data_dir / "primary_market_dataset.parquet"
     if not training_path.exists():
         training_path = Path(__file__).resolve().parent.parent.parent.parent.parent / "data" / "primary_market_dataset.parquet"
-    _predictor.build_xgb_label_maps(training_path)
+    _predictor.build_xgb_label_maps(
+        training_data_path=training_path,
+        label_maps_path=label_maps_path if label_maps_path.exists() else None,
+    )
 
 
 @asynccontextmanager
@@ -488,12 +492,14 @@ async def health():
 
 @app.get("/api/v1/model/info", response_model=ModelInfoResponse)
 async def model_info():
+    # v3-filtered-tuned: 입체 985건 제외 + Optuna 튜닝
+    # 출처: model_test_results/integrated_v3_filtered_tuned_metrics.json
     return ModelInfoResponse(
         model_version=_model_version,
-        training_count=29361,
-        artist_count=1589,
-        mdape_groupkfold=38.7,
-        mdape_kfold=11.7,
+        training_count=28376,  # 29,361 - 985 입체 제외
+        artist_count=1551,
+        mdape_groupkfold=38.6,  # XGBoost on full GroupKFold (production: cold uses CatBoost 40.6)
+        mdape_kfold=10.3,  # XGBoost on warm slice (production warm path)
         features_count=37,
     )
 

@@ -10,6 +10,11 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY src/ ./src/
+# v3-filtered-tuned 모델 (입체 985건 제외 + Optuna 튜닝, 2026-04-27 배포)
+COPY model_test_results/integrated_v3_filtered_tuned_catboost.cbm ./models/integrated_v3_filtered_tuned_catboost.cbm
+COPY model_test_results/integrated_v3_filtered_tuned_xgboost.json ./models/integrated_v3_filtered_tuned_xgboost.json
+COPY model_test_results/integrated_v3_filtered_tuned_xgboost_label_maps.json ./models/integrated_v3_filtered_tuned_xgboost_label_maps.json
+# v3 fallback (구 모델 보존, 회귀 시 quick rollback 용)
 COPY model_test_results/integrated_v3_catboost.cbm ./models/integrated_v3_catboost.cbm
 COPY model_test_results/integrated_v3_xgboost.json ./models/integrated_v3_xgboost.json
 COPY data/primary_market_dataset.parquet ./data/primary_market_dataset.parquet
