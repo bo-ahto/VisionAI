@@ -1,6 +1,7 @@
 """Phase 1 모델 라우팅 + 예측."""
 from __future__ import annotations
 
+import json
 import math
 import logging
 from pathlib import Path
@@ -139,11 +140,25 @@ class PrimaryPredictor:
             "training_count": training_count,
         }
 
-    def build_xgb_label_maps(self, training_data_path: Path | None = None) -> None:
-        """학습 데이터에서 XGBoost label encoding 매핑 구축.
+    def build_xgb_label_maps(
+        self,
+        training_data_path: Path | None = None,
+        label_maps_path: Path | None = None,
+    ) -> None:
+        """XGBoost label encoding 매핑 구축. 우선순위:
 
-        학습 시 사용된 categorical 값 목록을 하드코딩 (parquet 미포함 환경 대비).
+        1. label_maps_path (튜닝 PR이 산출하는 JSON 아티팩트) — 학습 시 사용된 매핑 그대로 보존
+        2. training_data_path (학습 parquet에서 재구축)
+        3. 하드코딩 (v3 모델 기준 default)
+
+        Codex review (PR #14): 튜닝/재학습된 모델의 categorical ID 일관성을 위해
+        매핑 아티팩트 직접 로드를 우선한다.
         """
+        if label_maps_path and label_maps_path.exists():
+            with label_maps_path.open(encoding="utf-8") as f:
+                self._label_maps = json.load(f)
+            logger.info("XGBoost label maps loaded from artifact: %s", label_maps_path)
+            return
         if training_data_path and training_data_path.exists():
             df = pd.read_parquet(training_data_path)
             for col in CAT_FEATURES:
@@ -151,21 +166,21 @@ class PrimaryPredictor:
                     vals = df[col].astype(str).unique()
                     self._label_maps[col] = {v: i for i, v in enumerate(sorted(vals))}
             logger.info("XGBoost label maps built from %s", training_data_path)
-        else:
-            # 학습 시 사용된 값 하드코딩 (v3 모델 기준)
-            self._label_maps = {
-                "support_type": {v: i for i, v in enumerate(sorted(
-                    ["canvas", "linen", "metal", "other", "panel", "paper", "silk"]))},
-                "medium_category": {v: i for i, v in enumerate(sorted(
-                    ["acrylic", "ink", "mixed", "oil", "other", "pastel", "pencil", "pigment", "watercolor"]))},
-                "attribution_class": {v: i for i, v in enumerate(sorted(
-                    ["Limited edition", "Unique", "Unknown edition"]))},
-                "gallery_name": {},  # 동적 할당
-                "gallery_type": {v: i for i, v in enumerate(sorted(
-                    ["Gallery", "Online Gallery", "Unknown"]))},
-                "price_currency": {v: i for i, v in enumerate(sorted(
-                    ["KRW", "USD"]))},
-                "source": {v: i for i, v in enumerate(sorted(
-                    ["artsy", "artsy_artue", "manual", "printbakery", "saatchi"]))},
-            }
-            logger.info("XGBoost label maps built from hardcoded values (no parquet)")
+            return
+        # 학습 시 사용된 값 하드코딩 (v3 모델 기준)
+        self._label_maps = {
+            "support_type": {v: i for i, v in enumerate(sorted(
+                ["canvas", "linen", "metal", "other", "panel", "paper", "silk"]))},
+            "medium_category": {v: i for i, v in enumerate(sorted(
+                ["acrylic", "ink", "mixed", "oil", "other", "pastel", "pencil", "pigment", "watercolor"]))},
+            "attribution_class": {v: i for i, v in enumerate(sorted(
+                ["Limited edition", "Unique", "Unknown edition"]))},
+            "gallery_name": {},  # 동적 할당
+            "gallery_type": {v: i for i, v in enumerate(sorted(
+                ["Gallery", "Online Gallery", "Unknown"]))},
+            "price_currency": {v: i for i, v in enumerate(sorted(
+                ["KRW", "USD"]))},
+            "source": {v: i for i, v in enumerate(sorted(
+                ["artsy", "artsy_artue", "manual", "printbakery", "saatchi"]))},
+        }
+        logger.info("XGBoost label maps built from hardcoded values (no parquet)")
