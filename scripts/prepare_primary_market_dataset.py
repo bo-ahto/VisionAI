@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from visionai.price_engine.preprocessing.primary_medium_parser import parse_artsy_medium
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -210,11 +212,29 @@ def main() -> None:
     df["is_small"] = (df["ho"] <= 3).astype(int)
     logger.info("호수 변환 완료 (min=%d, max=%d, median=%d)", df["ho"].min(), df["ho"].max(), df["ho"].median())
 
-    # 4.2 지지체/매체 분류
-    df["support_type"] = df["medium"].fillna("").apply(classify_support)
-    df["medium_category"] = df["medium"].fillna("").apply(classify_medium)
+    # 4.2 지지체/매체 분류 — 새 시트 기반 파서 (PR1 통합)
+    parsed_artsy = df.apply(
+        lambda r: parse_artsy_medium(r.get("medium"), r.get("category")),
+        axis=1,
+    )
+    df["support_type"] = parsed_artsy.apply(lambda p: p.support_type)
+    df["medium_category"] = parsed_artsy.apply(lambda p: p.medium_category)
+    # 신규 leaf/list 컬럼 (downstream에서 점진적 활용)
+    df["medium_l1"] = parsed_artsy.apply(lambda p: p.medium_l1)
+    df["medium_leaf"] = parsed_artsy.apply(lambda p: p.medium_leaf)
+    df["support_l1"] = parsed_artsy.apply(lambda p: p.support_l1)
+    df["support_leaf"] = parsed_artsy.apply(lambda p: p.support_leaf)
+    df["mediums_json"] = parsed_artsy.apply(lambda p: json.dumps(p.mediums, ensure_ascii=False))
+    df["supports_json"] = parsed_artsy.apply(lambda p: json.dumps(p.supports, ensure_ascii=False))
+    df["has_multimedia"] = parsed_artsy.apply(lambda p: int(p.has_multimedia))
+    df["has_special_finish"] = parsed_artsy.apply(lambda p: int(p.has_special_finish))
+    df["is_excluded_for_training"] = parsed_artsy.apply(lambda p: int(p.is_excluded_for_training))
+    df["exclude_reason"] = parsed_artsy.apply(lambda p: p.exclude_reason or "")
+    df["value_grade_note"] = parsed_artsy.apply(lambda p: p.value_grade_note or "")
     logger.info("지지체: %s", dict(df["support_type"].value_counts().head(6)))
     logger.info("매체: %s", dict(df["medium_category"].value_counts().head(6)))
+    n_excl = int(df["is_excluded_for_training"].sum())
+    logger.info("학습 제외 후보: %d (사유: %s)", n_excl, dict(df.loc[df["is_excluded_for_training"] == 1, "exclude_reason"].value_counts().head(6)))
 
     # 4.3 제작연도 → work_age
     df["year_made"] = df["date"].apply(lambda d: int(re.match(r"(\d{4})", str(d)).group(1)) if re.match(r"(\d{4})", str(d)) else None)

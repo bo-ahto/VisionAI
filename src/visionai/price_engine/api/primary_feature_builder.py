@@ -6,6 +6,8 @@ import re
 
 import numpy as np
 
+from visionai.price_engine.preprocessing.primary_medium_parser import parse_artsy_medium
+
 # ─── 호수 변환 테이블 (F형 기준) ───
 HO_TABLE_F = {
     0: 180, 1: 364, 2: 520, 3: 727, 4: 1084,
@@ -88,9 +90,10 @@ def build_features(
     aspect_ratio = max(width_cm, height_cm) / max(min(width_cm, height_cm), 0.1)
     ho = area_to_ho(area_cm2)
 
-    # 매체/지지체
-    support_type = classify_support(medium)
-    medium_category = classify_medium(medium)
+    # 매체/지지체 — 새 시트 파서로 통합 (PR1). 호환 컬럼만 추출하여 기존 모델 호환.
+    parsed = parse_artsy_medium(medium, category="Painting")
+    support_type = parsed.support_type
+    medium_category = parsed.medium_category
     support_factor = SUPPORT_FACTORS.get(support_type, 0.85)
 
     # 작가 피처 (manual override > DB profile > 기본값)
