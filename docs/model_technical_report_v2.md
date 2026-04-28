@@ -34,12 +34,13 @@
 | Warm 작가 (≥5건) | 명시 안됨 | **930명 / 27,062건** | 라우팅 정합 확보 |
 | **Warm 전체 MdAPE (KFold)** | 11.7% (XGB) / 17.1% (CB) | **9.7% (XGB) / 11.9% (CB) / 10.5% (앙상블)** | -2.0%p (XGB) |
 | Warm Artsy MdAPE (KFold) | 명시 안됨 | **8.3% (XGB) / 8.7% (앙상블)** | A 목표(8%) 도달 |
-| **Cold 전체 MdAPE (GroupKFold)** | 38.9% (CB) / 39.4% (XGB) | **38.7% (앙상블, 보정 전) / 38.3% (보정 후, cross-fit guarded)** | -0.6%p |
-| Cold Artsy MdAPE | ≈40% | **33.2% (앙상블)** | -7%p |
+| **Cold 전체 MdAPE (GroupKFold)** — production path = CatBoost | 38.9% (CB) / 39.4% (XGB) | **CatBoost 39.4% (보정 전) → 38.3% (보정 후, cross-fit guarded)** | -1.1%p |
+| Cold 전체 — offline ensemble (참고용, production 경로 아님) | — | 38.7% | — |
+| Cold Artsy MdAPE — offline ensemble (참고용) | ≈40% | 33.2% (앙상블) | -7%p |
 | Production-time A 등급 MdAPE | 보고 없음 | **9.8%** | 신규 측정 |
 | Source 보정 방식 | 단일 상수 -0.075 (online) | **셀별 ratio (artsy_online=0.943, saatchi_online=0.957)** | per-cell guard 도입 |
 
-**해석**: 단일 매개변수 보정에서 **source × target_market 셀별 보정**으로 갈아탔고, 생산 시점 라우팅 함수와 동일한 조건으로 측정한 **production-time MdAPE**를 처음 도입했다. 콜드 전 영역의 -0.6%p는 작아 보이지만, **artsy_gallery 셀에서 1.0 (skip)** 처럼 보정이 회귀를 일으키는 셀을 자동 가드하면서 얻은 **안정적인** 개선이다.
+**해석**: 단일 매개변수 보정에서 **source × target_market 셀별 보정**으로 갈아탔다. **production cold path는 CatBoost 단일 경로**이므로 보정 전후 비교는 CatBoost OOF 기준(`source_calibration.json` `cold_overall`): 39.38 → 38.29 (-1.09%p, cross-fit guarded). 앙상블/Artsy 슬라이스 수치는 offline 비교용이며 운영 경로와 다르므로 별도 표기. **artsy_gallery 셀은 cross-fit에서 보정이 회귀를 일으켜 factor=1.0 (skip)** — 자동 가드로 안정성 확보.
 
 ---
 
@@ -187,12 +188,16 @@ factor[cell] = median(actual_price / predicted_price | cell)
 
 ### 5.1 source 결측값 정규화
 
-`primary_feature_builder.build_features()`에서 `source`가 None/NaN/'None'/`''` 일 때 학습 시 vocab `{artsy, saatchi}` 외 값이 들어갔다 → 서빙 시 unseen → sentinel encoding.
+`source` 등 categorical 피처가 서빙 시 `None`/`NaN`/`'None'`/`''`로 들어오면 학습 vocab 외 값이 되어 sentinel encoding으로 떨어졌다. 학습/서빙이 동일하게 처리되도록 **predictor에서 모든 CAT_FEATURES에 일괄 정규화** 적용 ([`primary_predictor.py:317-322`](../src/visionai/price_engine/api/primary_predictor.py)):
 
 ```python
-src = (raw or '').strip().lower()
-if src not in {'artsy', 'saatchi'}: src = 'unknown'  # 학습 vocab 외 single bucket
+for col in CAT_FEATURES:
+    df[col] = df[col].astype(str).fillna("unknown").replace(
+        {"nan": "unknown", "None": "unknown", "": "unknown"}
+    )
 ```
+
+추가로 cold calibration cell key 산출에서도 `source`만 동일 룰로 한 번 더 정규화 ([`primary_predictor.py:367-370`](../src/visionai/price_engine/api/primary_predictor.py)) — `cell = f"{src}_{target_market}"` 안정화. **`lower()`/`strip()`은 적용하지 않는다** (학습 vocab도 case-sensitive로 일관 유지).
 
 ### 5.2 등급 마진 production-time 재캘리브레이션
 
@@ -200,9 +205,11 @@ v1 마진은 **모델 OOS MdAPE**(38~39%)에서 도출 → 실제 라우팅된 �
 
 새 절차 ([`scripts/calibrate_grade_margins.py`](../scripts/calibrate_grade_margins.py)):
 
-1. Production 라우팅 그대로 재현 — `is_warm_artist` JSON, source calibration factor 적용, target_market 추론.
-2. 등급(A/B/C/D)을 production 함수로 부여.
-3. 등급별 |APE| 분포에서 80% 커버리지 m을 산출.
+1. **5-fold CV의 OOF 모델 weights**로 가격 예측.
+2. 라우팅(`warm_artist_slugs.json`)과 cold 보정(`source_calibration.json` `cold_factors`)은 **production full-data artifacts** 그대로 사용.
+3. 등급(A/B/C/D)을 production 함수로 부여, 등급별 |APE| 분포에서 80% 커버리지 m을 산출.
+
+**caveat (스크립트 [§해석](../scripts/calibrate_grade_margins.py) 그대로)**: "OOF model weights + full-data routing artifacts" 결합 평가이므로 **순수 OOF는 아니며**, 운영 시 메트릭의 **추정치**로 해석한다. Routing/calibration artifact 자체의 OOS 일반화는 PR #20+#21 산출물에서 별도 평가됐다.
 
 **production-time per-grade 결과** (n=28,376):
 
@@ -260,11 +267,16 @@ v1 마진은 **모델 OOS MdAPE**(38~39%)에서 도출 → 실제 라우팅된 �
 
 ### 7.2 Cold slice (GroupKFold, 28,376건 / 1,551 작가)
 
-| 분할 | 모델 | n | MdAPE (보정 전) | MdAPE (보정 후, cross-fit guarded) |
-|---|---|---:|---:|---:|
-| Cold 전체 | 앙상블 | 28,376 | 38.7% | **38.3%** |
-| Cold Artsy | 앙상블 | 7,289 | 33.2% | (artsy_gallery skip + artsy_online -5.7%) |
-| Cold Saatchi | 앙상블 | 21,087 | 41.1% | (saatchi_online -4.3%) |
+> **production cold path = CatBoost 단일 경로**. 따라서 보정 전후 비교는 CatBoost OOF 기준이며 (`source_calibration.json` `cold_overall`), 앙상블/소스 슬라이스는 offline 비교 참고용이다.
+
+| 분할 | 모델 | n | MdAPE | 비고 |
+|---|---|---:|---:|---|
+| **Cold 전체 (production path)** | **CatBoost (보정 전)** | 28,376 | **39.4%** | `cold_overall.baseline_mdape=39.38` |
+| **Cold 전체 (production path)** | **CatBoost + cell calibration (cross-fit guarded)** | 28,376 | **38.3%** | `cold_overall.calibrated_mdape_cross_fit_guarded=38.29` (-1.09%p) |
+| Cold 전체 — offline only | XGBoost | 28,376 | 39.1% | production cold path 아님 |
+| Cold 전체 — offline only | 앙상블 | 28,376 | 38.7% | production cold path 아님 |
+| Cold Artsy — offline only | 앙상블 | 7,289 | 33.2% | 슬라이스 비교 참고용 |
+| Cold Saatchi — offline only | 앙상블 | 21,087 | 41.1% | 슬라이스 비교 참고용 |
 
 ### 7.3 Production-time grade MdAPE (전체 28,376)
 
@@ -280,7 +292,7 @@ v1 마진은 **모델 OOS MdAPE**(38~39%)에서 도출 → 실제 라우팅된 �
 2. **DB schema 마이그레이션 (운영 협조)**: `artist_profiles.career_stage`가 INT(1..4) CHECK 제약 — career_stage v2(연속 0~8) 와 충돌. 현재는 학습/서빙이 JSON으로 우회 중.
 3. **갤러리 티어 v3 매칭 81% 미해결 (협력자 협조)**: Artsy 갤러리 66개 중 11개만 협력자 리스트와 매칭. Top 30 미매칭 명단(영문명+한글 추정) 검수 필요 — 완료 시 Phase 1B에서 갤러리 등급 신호 회복.
 4. **Cold-start 자동 수집 강화 (운영 협조)**: 한국 갤러리 사이트 크롤링 추가, 5단계→7단계 필터로 정확도 향상.
-5. **PredictRequest에 optional `gallery_name`/`gallery_type` 추가**: 사용자가 명시적으로 전달 시 학습 vocab 신호 회복 (현재는 sentinel encoding).
+5. **PredictRequest에 optional `gallery_name`/`gallery_type` 추가 + 모델 재학습**: `gallery_name`은 v2 모델에서 **이미 제거**된 상태이므로 API 필드만 추가해도 신호가 살아나지 않는다. 회복하려면 (a) PredictRequest 스키마 추가, (b) feature builder에 `gallery_name` 재도입, (c) 모델 재학습이 모두 필요하다. `gallery_type`은 현재도 모델 입력이지만 서빙 vocab이 좁아 효과 제한적.
 6. **m 값 정책 결정**: 권장치 적용 시 C/D는 m≈0.9 — 가격 범위 표시 정책 변경 영향 검토 필요.
 
 ---

@@ -84,14 +84,15 @@
 <tr><td>Warm 작가 (≥5건)</td><td class="num">명시 안됨</td><td class="num"><strong>930명 / 27,062건</strong></td><td class="num">라우팅 정합</td></tr>
 <tr><td><strong>Warm 전체 MdAPE (KFold)</strong></td><td class="num">11.7% (XGB) / 17.1% (CB)</td><td class="num"><strong>9.7% (XGB) / 11.9% (CB) / 10.5% (앙상블)</strong></td><td class="num delta-pos">-2.0%p (XGB)</td></tr>
 <tr><td>Warm Artsy MdAPE (KFold)</td><td class="num">명시 안됨</td><td class="num"><strong>8.3% (XGB) / 8.7% (앙상블)</strong></td><td class="num delta-pos">A 목표(8%) 도달</td></tr>
-<tr><td><strong>Cold 전체 MdAPE (GroupKFold)</strong></td><td class="num">38.9% (CB) / 39.4% (XGB)</td><td class="num"><strong>38.7% (앙상블, 보정 전) / 38.3% (보정 후, cross-fit guarded)</strong></td><td class="num delta-pos">-0.6%p</td></tr>
-<tr><td>Cold Artsy MdAPE</td><td class="num">≈40%</td><td class="num"><strong>33.2% (앙상블)</strong></td><td class="num delta-pos">-7%p</td></tr>
+<tr><td><strong>Cold 전체 MdAPE (GroupKFold)</strong> — production path = CatBoost</td><td class="num">38.9% (CB) / 39.4% (XGB)</td><td class="num"><strong>CatBoost 39.4% (보정 전) → 38.3% (보정 후, cross-fit guarded)</strong></td><td class="num delta-pos">-1.1%p</td></tr>
+<tr><td>Cold 전체 — offline ensemble (참고용, production 경로 아님)</td><td class="num">—</td><td class="num">38.7%</td><td class="num">—</td></tr>
+<tr><td>Cold Artsy MdAPE — offline ensemble (참고용)</td><td class="num">≈40%</td><td class="num">33.2% (앙상블)</td><td class="num delta-pos">-7%p</td></tr>
 <tr><td>Production-time A 등급 MdAPE</td><td class="num">보고 없음</td><td class="num"><strong>9.8%</strong></td><td class="num">신규 측정</td></tr>
 <tr><td>Source 보정 방식</td><td class="num">단일 상수 -0.075 (online)</td><td class="num"><strong>셀별 ratio (artsy_online=0.943, saatchi_online=0.957)</strong></td><td class="num">per-cell guard 도입</td></tr>
 </tbody>
 </table>
 
-<p><strong>해석</strong>: 단일 매개변수 보정에서 <strong>source × target_market 셀별 보정</strong>으로 갈아탔고, 생산 시점 라우팅 함수와 동일한 조건으로 측정한 <strong>production-time MdAPE</strong>를 처음 도입했습니다. 콜드 전 영역의 -0.6%p는 작아 보이지만, <strong>artsy_gallery 셀에서 1.0 (skip)</strong>처럼 보정이 회귀를 일으키는 셀을 자동 가드하면서 얻은 <strong>안정적인</strong> 개선입니다.</p>
+<p><strong>해석</strong>: 단일 매개변수 보정에서 <strong>source × target_market 셀별 보정</strong>으로 갈아탔습니다. <strong>production cold path는 CatBoost 단일 경로</strong>이므로 보정 전후 비교는 CatBoost OOF 기준(<code>source_calibration.json</code> <code>cold_overall</code>): 39.38 → 38.29 (-1.09%p, cross-fit guarded). 앙상블/Artsy 슬라이스 수치는 offline 비교용이며 운영 경로와 다르므로 별도 표기. <strong>artsy_gallery 셀은 cross-fit에서 보정이 회귀를 일으켜 factor=1.0 (skip)</strong> — 자동 가드로 안정성 확보.</p>
 
 <hr>
 <h2>2. 협력자 피드백 → 모델 변경 매트릭스</h2>
@@ -217,18 +218,22 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <h2>5. PR #22 — Source 정규화 + 등급 마진 재캘리브레이션 (8회 코덱스 리뷰)</h2>
 
 <h3>5.1 source 결측값 정규화</h3>
-<p><code>primary_feature_builder.build_features()</code>에서 <code>source</code>가 None/NaN/'None'/<code>''</code> 일 때 학습 시 vocab <code>{artsy, saatchi}</code> 외 값이 들어갔습니다 → 서빙 시 unseen → sentinel encoding.</p>
-<pre><code>src = (raw or '').strip().lower()
-if src not in {'artsy', 'saatchi'}: src = 'unknown'  # 학습 vocab 외 single bucket</code></pre>
+<p><code>source</code> 등 categorical 피처가 서빙 시 <code>None</code>/<code>NaN</code>/<code>'None'</code>/<code>''</code>로 들어오면 학습 vocab 외 값이 되어 sentinel encoding으로 떨어졌습니다. 학습/서빙이 동일하게 처리되도록 <strong>predictor에서 모든 CAT_FEATURES에 일괄 정규화</strong> 적용 (<code>primary_predictor.py:317-322</code>):</p>
+<pre><code>for col in CAT_FEATURES:
+    df[col] = df[col].astype(str).fillna("unknown").replace(
+        {"nan": "unknown", "None": "unknown", "": "unknown"}
+    )</code></pre>
+<p>추가로 cold calibration cell key 산출에서도 <code>source</code>만 동일 룰로 한 번 더 정규화 (<code>primary_predictor.py:367-370</code>) — <code>cell = f"{src}_{target_market}"</code> 안정화. <strong><code>lower()</code>/<code>strip()</code>은 적용하지 않습니다</strong> (학습 vocab도 case-sensitive로 일관 유지).</p>
 
 <h3>5.2 등급 마진 production-time 재캘리브레이션</h3>
 <p>v1 마진은 <strong>모델 OOS MdAPE</strong>(38~39%)에서 도출 → 실제 라우팅된 등급별 분포와 어긋났습니다.</p>
 <p>새 절차 (<code>scripts/calibrate_grade_margins.py</code>):</p>
 <ol>
-<li>Production 라우팅 그대로 재현 — <code>is_warm_artist</code> JSON, source calibration factor 적용, target_market 추론.</li>
-<li>등급(A/B/C/D)을 production 함수로 부여.</li>
-<li>등급별 |APE| 분포에서 80% 커버리지 m을 산출.</li>
+<li><strong>5-fold CV의 OOF 모델 weights</strong>로 가격 예측.</li>
+<li>라우팅(<code>warm_artist_slugs.json</code>)과 cold 보정(<code>source_calibration.json</code> <code>cold_factors</code>)은 <strong>production full-data artifacts</strong> 그대로 사용.</li>
+<li>등급(A/B/C/D)을 production 함수로 부여, 등급별 |APE| 분포에서 80% 커버리지 m을 산출.</li>
 </ol>
+<p><strong>caveat (스크립트 §해석 그대로)</strong>: "OOF model weights + full-data routing artifacts" 결합 평가이므로 <strong>순수 OOF는 아니며</strong>, 운영 시 메트릭의 <strong>추정치</strong>로 해석합니다. Routing/calibration artifact 자체의 OOS 일반화는 PR #20+#21 산출물에서 별도 평가됐습니다.</p>
 <p><strong>production-time per-grade 결과</strong> (n=28,376):</p>
 <table>
 <thead><tr><th class="center">등급</th><th class="num">n</th><th class="num">MdAPE</th><th class="num">평균 APE</th><th class="num">현재 m</th><th class="num">현재 80% 커버리지</th><th class="num">권장 m</th><th class="num">Δ</th></tr></thead>
@@ -288,12 +293,16 @@ if src not in {'artsy', 'saatchi'}: src = 'unknown'  # 학습 vocab 외 single b
 <p><strong>A 등급 8% 목표</strong>: warm Artsy XGB 8.3% / 앙상블 8.7%로 사실상 도달. (A 목표는 "warm Artsy" 슬라이스 정의에서 8.0~9.0% 밴드.)</p>
 
 <h3>7.2 Cold slice (GroupKFold, 28,376건 / 1,551 작가)</h3>
+<blockquote><p><strong>production cold path = CatBoost 단일 경로</strong>. 따라서 보정 전후 비교는 CatBoost OOF 기준이며 (<code>source_calibration.json</code> <code>cold_overall</code>), 앙상블/소스 슬라이스는 offline 비교 참고용입니다.</p></blockquote>
 <table>
-<thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE (보정 전)</th><th>MdAPE (보정 후, cross-fit guarded)</th></tr></thead>
+<thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE</th><th>비고</th></tr></thead>
 <tbody>
-<tr><td>Cold 전체</td><td>앙상블</td><td class="num">28,376</td><td class="num">38.7%</td><td><strong>38.3%</strong></td></tr>
-<tr><td>Cold Artsy</td><td>앙상블</td><td class="num">7,289</td><td class="num">33.2%</td><td>(artsy_gallery skip + artsy_online -5.7%)</td></tr>
-<tr><td>Cold Saatchi</td><td>앙상블</td><td class="num">21,087</td><td class="num">41.1%</td><td>(saatchi_online -4.3%)</td></tr>
+<tr><td><strong>Cold 전체 (production path)</strong></td><td><strong>CatBoost (보정 전)</strong></td><td class="num">28,376</td><td class="num"><strong>39.4%</strong></td><td><code>cold_overall.baseline_mdape=39.38</code></td></tr>
+<tr><td><strong>Cold 전체 (production path)</strong></td><td><strong>CatBoost + cell calibration (cross-fit guarded)</strong></td><td class="num">28,376</td><td class="num"><strong>38.3%</strong></td><td><code>cold_overall.calibrated_mdape_cross_fit_guarded=38.29</code> (-1.09%p)</td></tr>
+<tr><td>Cold 전체 — offline only</td><td>XGBoost</td><td class="num">28,376</td><td class="num">39.1%</td><td>production cold path 아님</td></tr>
+<tr><td>Cold 전체 — offline only</td><td>앙상블</td><td class="num">28,376</td><td class="num">38.7%</td><td>production cold path 아님</td></tr>
+<tr><td>Cold Artsy — offline only</td><td>앙상블</td><td class="num">7,289</td><td class="num">33.2%</td><td>슬라이스 비교 참고용</td></tr>
+<tr><td>Cold Saatchi — offline only</td><td>앙상블</td><td class="num">21,087</td><td class="num">41.1%</td><td>슬라이스 비교 참고용</td></tr>
 </tbody>
 </table>
 
@@ -308,7 +317,7 @@ if src not in {'artsy', 'saatchi'}: src = 'unknown'  # 학습 vocab 외 single b
 <li><strong>DB schema 마이그레이션 (운영 협조)</strong>: <code>artist_profiles.career_stage</code>가 INT(1..4) CHECK 제약 — career_stage v2(연속 0~8) 와 충돌. 현재는 학습/서빙이 JSON으로 우회 중.</li>
 <li><strong>갤러리 티어 v3 매칭 81% 미해결 (협력자 협조)</strong>: Artsy 갤러리 66개 중 11개만 협력자 리스트와 매칭. Top 30 미매칭 명단(영문명+한글 추정) 검수 필요 — 완료 시 Phase 1B에서 갤러리 등급 신호 회복.</li>
 <li><strong>Cold-start 자동 수집 강화 (운영 협조)</strong>: 한국 갤러리 사이트 크롤링 추가, 5단계→7단계 필터로 정확도 향상.</li>
-<li><strong>PredictRequest에 optional <code>gallery_name</code>/<code>gallery_type</code> 추가</strong>: 사용자가 명시적으로 전달 시 학습 vocab 신호 회복 (현재는 sentinel encoding).</li>
+<li><strong>PredictRequest에 optional <code>gallery_name</code>/<code>gallery_type</code> 추가 + 모델 재학습</strong>: <code>gallery_name</code>은 v2 모델에서 <strong>이미 제거</strong>된 상태이므로 API 필드만 추가해도 신호가 살아나지 않습니다. 회복하려면 (a) PredictRequest 스키마 추가, (b) feature builder에 <code>gallery_name</code> 재도입, (c) 모델 재학습이 모두 필요합니다. <code>gallery_type</code>은 현재도 모델 입력이지만 서빙 vocab이 좁아 효과 제한적.</li>
 <li><strong>m 값 정책 결정</strong>: 권장치 적용 시 C/D는 m≈0.9 — 가격 범위 표시 정책 변경 영향 검토 필요.</li>
 </ol>
 
