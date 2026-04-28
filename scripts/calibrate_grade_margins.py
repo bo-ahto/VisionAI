@@ -108,12 +108,15 @@ def _load_tuned_params() -> tuple[dict, dict]:
     return data["catboost"], data["xgboost"]
 
 
-def _load_warm_artists() -> set[str]:
-    """Production warm artist slug set (PR #20). Schema 검증 — primary_predictor.load_models와 동일.
+def _load_warm_artists() -> tuple[set[str], bool]:
+    """Production warm artist slug set (PR #20). Schema 검증.
+
+    Returns: (slugs, loaded). loaded=True 는 'artifact 존재 + schema valid' 의미.
+    Empty list도 valid artifact 로 간주 (production primary_predictor와 동일 정책).
     """
     p = OUT_DIR / "integrated_v3_filtered_tuned_warm_artists.json"
     if not p.exists():
-        return set()
+        return set(), False
     with p.open(encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, dict) or "warm_artist_slugs" not in data:
@@ -125,11 +128,11 @@ def _load_warm_artists() -> set[str]:
         raise RuntimeError(
             f"warm artifact schema invalid ({p}): 'warm_artist_slugs' must be list"
         )
-    return {str(s) for s in slugs}
+    return {str(s) for s in slugs}, True
 
 
-def _load_production_cold_factors() -> dict[str, float]:
-    """PR #21 production guarded cold_factors 로드.
+def _load_production_cold_factors() -> tuple[dict[str, float], bool]:
+    """PR #21 production guarded cold_factors 로드. Returns (factors, loaded).
 
     Schema 검증은 primary_predictor.load_models와 동등 (Codex 6차 P1):
     - top-level dict
@@ -146,7 +149,7 @@ def _load_production_cold_factors() -> dict[str, float]:
 
     p = OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json"
     if not p.exists():
-        return {}
+        return {}, False
     with p.open(encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, dict):
@@ -186,7 +189,7 @@ def _load_production_cold_factors() -> dict[str, float]:
                 f"calibration cold_factors[{k!r}]={v} out of bounds [0.1, 10.0]"
             )
         out[key] = float(v)
-    return out
+    return out, True
 
 
 def _train_predict_fold(
@@ -212,11 +215,11 @@ def _train_predict_fold(
     cb_pred = cb.predict(_cb_pool(X_te))
 
     # XGBoost: warm_set membership으로 train 필터 (production tune script와 동일)
+    # warm_set이 비어 있으면 (production에 warm artist 0명) 모든 fold에서 zero-warm fallback
     if warm_set:
         warm_mask_tr = np.array([str(g) in warm_set for g in groups_tr])
     else:
-        # Fallback (warm artifact 없을 때) — fold-local count 사용
-        warm_mask_tr = _warm_mask(groups_tr)
+        warm_mask_tr = np.zeros(len(groups_tr), dtype=bool)
     if warm_mask_tr.sum() == 0:
         logger.warning("zero-warm train fold — XGBoost를 full fold로 학습 (fallback)")
         X_tr_warm, y_tr_warm = X_tr, y_tr
@@ -257,21 +260,20 @@ def calibrate(target_coverage: float = 0.80) -> dict:
                 cb_params.get("iterations"), cb_params.get("depth"),
                 xgb_params.get("num_boost_round"), xgb_params.get("max_depth"))
 
-    # PR #20 warm artist set — production grade A 결정 + XGB train slice 정합
-    # Codex 4차 P3: production fail-closed contract 정렬 — artifact 누락 시 raise
-    warm_set = _load_warm_artists()
-    if not warm_set:
+    # PR #20 warm artist set + PR #21 cold calibration — production fail-closed
+    # Codex 7차 P1: '미존재' vs 'loaded but empty' 구분 (production 정합)
+    warm_set, warm_loaded = _load_warm_artists()
+    if not warm_loaded:
         raise RuntimeError(
-            "warm_artists.json 누락 — production fail-closed contract 정합 위해 필수. "
+            "warm_artists.json 미존재 — production fail-closed contract 정합 위해 필수. "
             f"({OUT_DIR}/integrated_v3_filtered_tuned_warm_artists.json)"
         )
     logger.info("Warm artists loaded: %d (production A 등급 + XGB train slice)", len(warm_set))
 
-    # PR #21 production cold calibration factors — guarded factors 직접 사용
-    production_cold_factors = _load_production_cold_factors()
-    if not production_cold_factors:
+    production_cold_factors, calib_loaded = _load_production_cold_factors()
+    if not calib_loaded:
         raise RuntimeError(
-            "source_calibration.json 누락 — production fail-closed contract 정합 위해 필수. "
+            "source_calibration.json 미존재 — production fail-closed contract 정합 위해 필수. "
             f"({OUT_DIR}/integrated_v3_filtered_tuned_source_calibration.json)"
         )
     logger.info("Production cold calibration factors: %s", production_cold_factors)
@@ -297,12 +299,10 @@ def calibrate(target_coverage: float = 0.80) -> dict:
 
             # Grade A 결정: production primary_predictor.determine_confidence와 동일 계약
             # is_A = is_matched AND is_warm_artist (matched = train fold에 작가 row 존재)
-            # warm_set 없을 때만 fallback (PR #20 이전 동작)
+            # warm artifact는 fail-closed로 항상 로드된 상태 (caller에서 보장).
+            # warm_set이 비어 있어도 그건 production의 'loaded but empty' 상태와 동일.
             is_matched = train_count >= 1
-            if warm_set:
-                is_A = is_matched and (artist in warm_set)
-            else:
-                is_A = is_matched and (train_count >= 5)
+            is_A = is_matched and (artist in warm_set)
             grade = (
                 "A" if is_A
                 else "B" if is_matched
@@ -314,7 +314,8 @@ def calibrate(target_coverage: float = 0.80) -> dict:
             xgb_p = float(np.exp(xgb_pred[i]))
             use_xgb = grade == "A"
             # Cold path: production guarded factors 직접 사용 (서비스 동작과 동일)
-            if not use_xgb and production_cold_factors:
+            # calibration artifact는 fail-closed (loaded 보장), 빈 dict이면 모든 cell factor 1.0
+            if not use_xgb:
                 cb_p = cb_p * production_cold_factors.get(cells[te_idx], 1.0)
             pred_price = xgb_p if use_xgb else cb_p
 
