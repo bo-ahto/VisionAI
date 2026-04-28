@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 USD_TO_KRW = 1380
 
-RATIO_CORRECTION = {
-    "gallery": 0.0,
-    "online": -0.075,
-}
+# RATIO_CORRECTION 폐기 (Codex P1, 2026-04-28):
+# 이전 target_market='online' -0.075 보정은 source-specific median-ratio calibration의
+# (source, target_market) cell 기반 factor에 흡수됨. 별도 ln_price 보정 제거.
+# Cell 정의: f"{source}_{target_market}" — 예: "saatchi_online", "artsy_gallery"
 
 CB_FEATURES = [
     "ho", "ho_power", "ln_ho", "area_cm2", "ln_area", "aspect_ratio", "is_small",
@@ -192,16 +192,39 @@ class PrimaryPredictor:
                         f"'{col}[{k!r}]' value must be int, got {type(v).__name__}"
                     )
 
-        # source calibration (선택 — 누락 시 fallback factor=1.0, no correction)
+        # source × target_market calibration (선택 — 누락 시 fallback factor=1.0, no correction)
+        # Codex P2 schema 검증: model_target 일치, version, factors 타입+범위 검증
         new_cold_calib: dict[str, float] = {}
         if calib_path.exists():
             with calib_path.open(encoding="utf-8") as f:
                 calib_data = json.load(f)
+            if not isinstance(calib_data, dict):
+                raise RuntimeError(
+                    f"calibration schema invalid ({calib_path}): top-level must be dict"
+                )
+            target = calib_data.get("model_target")
+            if target and target != "integrated_v3_filtered_tuned":
+                raise RuntimeError(
+                    f"calibration model_target mismatch ({calib_path}): "
+                    f"expected 'integrated_v3_filtered_tuned', got {target!r}"
+                )
             cold_factors = calib_data.get("cold_factors", {})
-            if isinstance(cold_factors, dict):
-                for k, v in cold_factors.items():
-                    if isinstance(v, (int, float)) and v > 0:
-                        new_cold_calib[str(k)] = float(v)
+            if not isinstance(cold_factors, dict):
+                raise RuntimeError(
+                    f"calibration schema invalid ({calib_path}): cold_factors must be dict"
+                )
+            for k, v in cold_factors.items():
+                if not isinstance(v, (int, float)):
+                    raise RuntimeError(
+                        f"calibration schema invalid ({calib_path}): "
+                        f"cold_factors[{k!r}] must be numeric, got {type(v).__name__}"
+                    )
+                if not (0.1 <= float(v) <= 10.0):  # sanity bounds (10x correction max)
+                    raise RuntimeError(
+                        f"calibration schema invalid ({calib_path}): "
+                        f"cold_factors[{k!r}]={v} out of sanity bounds [0.1, 10.0]"
+                    )
+                new_cold_calib[str(k)] = float(v)
 
         # 3) 모든 build + 검증 성공 시 instance state로 swap
         self.cb_model = new_cb
@@ -283,19 +306,19 @@ class PrimaryPredictor:
             X = df[CB_FEATURES]
             ln_price = float(self.cb_model.predict(X)[0])
 
-        # Source ratio 보정 (Cold Start만)
-        if not use_xgb:
-            correction = RATIO_CORRECTION.get(target_market, 0.0)
-            ln_price += correction
-
         price_krw = int(math.exp(ln_price))
 
-        # Source-specific median-ratio 후처리 보정 (Cold path만, Codex 권장 P2)
-        # 측정 결과: cold all MdAPE 39.41 → 37.48 (-1.93%p, Saatchi 41.62→40.01)
-        # warm은 factor가 1.0 근처라 효과 noise 수준 → 적용 안 함
+        # Cell-based source × target_market calibration (Codex 권장, cross-fit 검증)
+        # 측정 결과 (cross-fit out-of-sample): cold MdAPE 39.41 → 38.11 (-1.30%p)
+        # Cell factors:
+        #   artsy_gallery: 0.890 (12% 감소), artsy_online: 1.009 (no change),
+        #   saatchi_online: 0.927 (8% 감소), saatchi_gallery: 학습 데이터 없음 → 1.0
+        # warm은 factor 1.0 근처라 적용 안 함.
+        # RATIO_CORRECTION은 이 cell calibration에 흡수됨 (별도 ln 보정 제거).
         if not use_xgb and self._cold_calibration_factors:
             src = str(features.get("source", "")) or "unknown"
-            factor = self._cold_calibration_factors.get(src, 1.0)
+            cell = f"{src}_{target_market}"
+            factor = self._cold_calibration_factors.get(cell, 1.0)
             price_krw = int(price_krw * factor)
         price_usd = int(price_krw / USD_TO_KRW)
 

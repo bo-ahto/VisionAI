@@ -1,16 +1,19 @@
-"""Source-specific median-ratio calibration (Codex 권장 P2).
+"""Cell-level calibration: (source × target_market) median-ratio + cross-fit 평가.
 
-배경:
-- v3-filtered-tuned 모델의 source별 mean(predicted/actual) 비율:
-  · Cold CatBoost: Artsy 1.19, Saatchi 1.31 (12%p 격차)
-  · Warm XGBoost: Artsy 1.06, Saatchi 1.05 (격차 작음)
-- 모델이 source 컬럼을 입력으로 쓰지만 여전히 source별 잔여 bias 존재
-- split-model보다 안전: 모델 분리 없이 후처리 보정
+Codex P1 review (2026-04-28):
+- 이전 버전: in-sample calibration (factor 학습/평가가 같은 fold) → 효과 과대평가
+- 이전 버전: source-only calibration이 RATIO_CORRECTION (target_market='online' -0.075)과
+  entangle → double-correct 위험
+  · Saatchi 학습 데이터는 100% online이라 source factor에 online 효과 흡수됨
+  · 서빙 시 사용자가 Saatchi 작가의 gallery 가격 요청하면 잘못된 보정 적용
 
-방법:
-- 5-fold GroupKFold (cold) + KFold warm slice (warm) 각각 OOF predictions 수집
-- 각 (route × source) 별로 median(actual / predicted) 계산
-- predicted *= median_ratio → 가격 보정
+수정:
+1. Cross-fit 5-fold: 각 held-out fold마다 다른 4개 fold에서 factor 계산 후 적용
+   → 정직한 out-of-sample MdAPE 측정
+2. Cell 결합: (source × target_market) 기준 factor 계산
+   · is_krw=1 → target_market='gallery' / else → 'online'
+   · cell 4개: artsy_gallery, artsy_online, saatchi_gallery (training X), saatchi_online
+3. 적용 시 학습 시점의 RATIO_CORRECTION을 흡수 → 별도 처리
 
 산출물:
 - model_test_results/integrated_v3_filtered_tuned_source_calibration.json
@@ -43,6 +46,8 @@ logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "model_test_results"
 
+CALIBRATION_VERSION = "v1-cross-fit-cell"
+
 
 def _load_tuned_params() -> tuple[dict, dict]:
     params_path = OUT_DIR / "integrated_v3_filtered_tuned_best_params.json"
@@ -55,33 +60,49 @@ def _load_tuned_params() -> tuple[dict, dict]:
     return data["catboost"], data["xgboost"]
 
 
-def _cold_oof_predictions(
-    X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, cb_params: dict,
-    n_splits: int = 5,
-) -> np.ndarray:
-    """GroupKFold (cold start) CV → CatBoost OOF predictions (ln_price)."""
+def _cell_key(source: str, target_market: str) -> str:
+    """Calibration cell key — (source, target_market) 결합."""
+    return f"{source}_{target_market}"
+
+
+def _compute_factor(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """median(actual / predicted) — predicted * factor → actual에 가까워짐."""
+    valid = (y_pred > 0) & (y_true > 0)
+    if valid.sum() == 0:
+        return 1.0
+    return float(np.median(y_true[valid] / y_pred[valid]))
+
+
+def _mdape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    valid = y_true > 0
+    if valid.sum() == 0:
+        return float("nan")
+    return float(np.median(np.abs(y_true[valid] - y_pred[valid]) / y_true[valid]) * 100)
+
+
+def _cold_oof_with_fold_id(
+    X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, cb_params: dict, n_splits: int = 5,
+) -> tuple[np.ndarray, np.ndarray]:
+    """GroupKFold (cold start) → CatBoost OOF predictions + fold ID per row."""
     gkf = GroupKFold(n_splits=n_splits)
     cb_preds = np.zeros(len(y))
-    for fold, (tr, te) in enumerate(gkf.split(X, y, groups), 1):
-        logger.info("[Cold fold %d/%d] train=%d test=%d", fold, n_splits, len(tr), len(te))
+    fold_ids = np.full(len(y), -1, dtype=int)
+    for fold, (tr, te) in enumerate(gkf.split(X, y, groups)):
+        logger.info("[Cold fold %d/%d] train=%d test=%d", fold + 1, n_splits, len(tr), len(te))
         cb = CatBoostRegressor(
-            **cb_params, loss_function="RMSE", verbose=0, random_seed=42,
-            allow_writing_files=False,
+            **cb_params, loss_function="RMSE", verbose=0, random_seed=42, allow_writing_files=False,
         )
         cb.fit(_cb_pool(X.iloc[tr], y[tr]), eval_set=_cb_pool(X.iloc[te], y[te]),
                early_stopping_rounds=50)
         cb_preds[te] = cb.predict(_cb_pool(X.iloc[te]))
-    return cb_preds
+        fold_ids[te] = fold
+    return cb_preds, fold_ids
 
 
-def _warm_oof_predictions(
-    X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, xgb_params: dict,
-    n_splits: int = 5,
-) -> tuple[np.ndarray, np.ndarray]:
-    """warm slice 만으로 KFold CV → XGBoost OOF predictions.
-
-    Returns (oof_preds, warm_indices_in_original_X).
-    """
+def _warm_oof_with_fold_id(
+    X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, xgb_params: dict, n_splits: int = 5,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """warm slice KFold → XGBoost OOF predictions + fold ID + warm indices."""
     wmask = _warm_mask(groups)
     X_warm = X.iloc[wmask].reset_index(drop=True)
     y_warm = y[wmask]
@@ -89,8 +110,9 @@ def _warm_oof_predictions(
 
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     xgb_preds = np.zeros(n_warm)
-    for fold, (tr, te) in enumerate(kf.split(X_warm), 1):
-        logger.info("[Warm fold %d/%d] train=%d test=%d", fold, n_splits, len(tr), len(te))
+    fold_ids = np.full(n_warm, -1, dtype=int)
+    for fold, (tr, te) in enumerate(kf.split(X_warm)):
+        logger.info("[Warm fold %d/%d] train=%d test=%d", fold + 1, n_splits, len(tr), len(te))
         Xtr_e, Xte_e, _ = _label_encode_xgb(X_warm.iloc[tr], X_warm.iloc[te])
         dtrain = xgb.DMatrix(Xtr_e, label=y_warm[tr])
         dtest = xgb.DMatrix(Xte_e, label=y_warm[te])
@@ -101,28 +123,67 @@ def _warm_oof_predictions(
             evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
         )
         xgb_preds[te] = m.predict(dtest)
+        fold_ids[te] = fold
 
     warm_indices = np.where(wmask)[0]
-    return xgb_preds, warm_indices
+    return xgb_preds, fold_ids, warm_indices
 
 
-def _compute_median_ratio(y_true_price: np.ndarray, y_pred_price: np.ndarray) -> float:
-    """median(actual / predicted) — 보정 시 multiplier 직접 사용."""
-    valid = (y_pred_price > 0) & (y_true_price > 0)
-    if valid.sum() == 0:
-        return 1.0
-    return float(np.median(y_true_price[valid] / y_pred_price[valid]))
+def _cross_fit_eval(
+    y_price: np.ndarray, pred_price: np.ndarray, cells: np.ndarray, fold_ids: np.ndarray,
+    n_splits: int = 5,
+) -> tuple[dict[str, float], float, float]:
+    """Cross-fit calibrator 평가.
 
+    각 fold k 마다:
+    1. OTHER fold (1..K) 의 predictions로 cell별 factor 학습
+    2. 그 factor를 fold k에 적용
+    3. 모든 fold 통합해서 calibrated MdAPE 계산
 
-def _mdape(y_true_price: np.ndarray, y_pred_price: np.ndarray) -> float:
-    valid = y_true_price > 0
-    return float(np.median(np.abs(y_true_price[valid] - y_pred_price[valid]) / y_true_price[valid]) * 100)
+    Returns: (final_factors_per_cell, baseline_mdape, calibrated_mdape)
+    final_factors는 전체 데이터로 fit한 production용 factor.
+    """
+    baseline_mdape = _mdape(y_price, pred_price)
+
+    calibrated_pred = pred_price.copy()
+    for k in range(n_splits):
+        held_out = fold_ids == k
+        train_mask = (fold_ids != k) & (fold_ids >= 0)
+        if held_out.sum() == 0 or train_mask.sum() == 0:
+            continue
+        # cell별 factor를 train fold에서만 fit
+        cell_factors_for_this_split: dict[str, float] = {}
+        for cell in set(cells[train_mask]):
+            cell_train = train_mask & (cells == cell)
+            if cell_train.sum() == 0:
+                cell_factors_for_this_split[cell] = 1.0
+                continue
+            cell_factors_for_this_split[cell] = _compute_factor(
+                y_price[cell_train], pred_price[cell_train]
+            )
+        # held-out fold에 적용
+        for i in np.where(held_out)[0]:
+            cell = cells[i]
+            factor = cell_factors_for_this_split.get(cell, 1.0)
+            calibrated_pred[i] = pred_price[i] * factor
+
+    calibrated_mdape = _mdape(y_price, calibrated_pred)
+
+    # Production용 factor: 전체 데이터로 fit
+    final_factors: dict[str, float] = {}
+    for cell in sorted(set(cells)):
+        cell_mask = cells == cell
+        if cell_mask.sum() == 0:
+            continue
+        final_factors[cell] = _compute_factor(y_price[cell_mask], pred_price[cell_mask])
+
+    return final_factors, baseline_mdape, calibrated_mdape
 
 
 def calibrate() -> dict:
-    """Source-specific median-ratio calibration."""
+    """Cross-fit cell-level calibration."""
     logger.info("=" * 70)
-    logger.info("Source-specific median-ratio calibration")
+    logger.info("Cell-level (source × target_market) median-ratio calibration + cross-fit")
     logger.info("=" * 70)
 
     cb_params, xgb_params = _load_tuned_params()
@@ -130,87 +191,86 @@ def calibrate() -> dict:
     df = df[df["is_excluded_for_training"] == 0].reset_index(drop=True)
     X, y, groups = prepare_features(df)
     source = df["source"].astype(str).to_numpy()
-    logger.info("Data: %d rows, %d artists", len(df), len(set(groups)))
+    # target_market: is_krw=1 → 'gallery', else 'online' (학습 시 정의 일관)
+    target_market = np.where(df["is_krw"].fillna(0).astype(int) == 1, "gallery", "online")
+    cells = np.array([_cell_key(s, tm) for s, tm in zip(source, target_market)])
+    logger.info("Data: %d rows, %d artists, cells=%s",
+                len(df), len(set(groups)), dict(pd.Series(cells).value_counts()))
 
-    # Cold OOF (GroupKFold, full data)
-    logger.info("--- Cold CatBoost OOF predictions ---")
-    cb_preds_ln = _cold_oof_predictions(X, y, groups, cb_params)
+    # Cold OOF
+    logger.info("--- Cold CatBoost OOF predictions (GroupKFold 5) ---")
+    cb_preds_ln, cold_fold_ids = _cold_oof_with_fold_id(X, y, groups, cb_params)
     y_price = np.exp(y)
     cb_pred_price = np.exp(cb_preds_ln)
 
-    # Warm OOF (KFold on warm slice)
-    logger.info("--- Warm XGBoost OOF predictions (warm slice) ---")
-    xgb_preds_ln, warm_indices = _warm_oof_predictions(X, y, groups, xgb_params)
+    # Warm OOF
+    logger.info("--- Warm XGBoost OOF predictions (KFold 5, warm slice) ---")
+    xgb_preds_ln, warm_fold_ids, warm_indices = _warm_oof_with_fold_id(X, y, groups, xgb_params)
     y_warm_price = np.exp(y[warm_indices])
     xgb_pred_price = np.exp(xgb_preds_ln)
-    source_warm = source[warm_indices]
+    cells_warm = cells[warm_indices]
 
-    # Per-source median ratio
-    cold_factors: dict[str, float] = {}
-    warm_factors: dict[str, float] = {}
-    cold_baseline_mdape: dict[str, float] = {}
-    cold_calibrated_mdape: dict[str, float] = {}
-    warm_baseline_mdape: dict[str, float] = {}
-    warm_calibrated_mdape: dict[str, float] = {}
+    # Cross-fit evaluation
+    logger.info("--- Cold cross-fit evaluation ---")
+    cold_factors, cold_baseline, cold_calibrated = _cross_fit_eval(
+        y_price, cb_pred_price, cells, cold_fold_ids
+    )
+    logger.info("Cold baseline MdAPE=%.2f → calibrated (cross-fit)=%.2f (Δ=%+.2f)",
+                cold_baseline, cold_calibrated, cold_calibrated - cold_baseline)
+    logger.info("Cold final factors: %s", cold_factors)
 
-    for src in sorted(set(source)):
-        mask = source == src
+    logger.info("--- Warm cross-fit evaluation ---")
+    warm_factors, warm_baseline, warm_calibrated = _cross_fit_eval(
+        y_warm_price, xgb_pred_price, cells_warm, warm_fold_ids
+    )
+    logger.info("Warm baseline MdAPE=%.2f → calibrated (cross-fit)=%.2f (Δ=%+.2f)",
+                warm_baseline, warm_calibrated, warm_calibrated - warm_baseline)
+    logger.info("Warm final factors: %s", warm_factors)
+
+    # Per-cell breakdown
+    cold_breakdown = {}
+    for cell in sorted(set(cells)):
+        mask = cells == cell
         if mask.sum() == 0:
             continue
-        # Cold
-        ratio = _compute_median_ratio(y_price[mask], cb_pred_price[mask])
-        cold_factors[src] = ratio
-        baseline = _mdape(y_price[mask], cb_pred_price[mask])
-        calibrated = _mdape(y_price[mask], cb_pred_price[mask] * ratio)
-        cold_baseline_mdape[src] = baseline
-        cold_calibrated_mdape[src] = calibrated
-        logger.info("Cold %s: ratio=%.4f, baseline MdAPE=%.2f → calibrated=%.2f (Δ=%+.2f)",
-                    src, ratio, baseline, calibrated, calibrated - baseline)
+        b = _mdape(y_price[mask], cb_pred_price[mask])
+        f = cold_factors.get(cell, 1.0)
+        c = _mdape(y_price[mask], cb_pred_price[mask] * f)
+        cold_breakdown[cell] = {"n": int(mask.sum()), "factor": f, "baseline_mdape": b, "calibrated_mdape": c}
 
-    for src in sorted(set(source_warm)):
-        mask = source_warm == src
+    warm_breakdown = {}
+    for cell in sorted(set(cells_warm)):
+        mask = cells_warm == cell
         if mask.sum() == 0:
             continue
-        ratio = _compute_median_ratio(y_warm_price[mask], xgb_pred_price[mask])
-        warm_factors[src] = ratio
-        baseline = _mdape(y_warm_price[mask], xgb_pred_price[mask])
-        calibrated = _mdape(y_warm_price[mask], xgb_pred_price[mask] * ratio)
-        warm_baseline_mdape[src] = baseline
-        warm_calibrated_mdape[src] = calibrated
-        logger.info("Warm %s: ratio=%.4f, baseline MdAPE=%.2f → calibrated=%.2f (Δ=%+.2f)",
-                    src, ratio, baseline, calibrated, calibrated - baseline)
-
-    # Overall (calibration applied per-row via source)
-    cold_overall_baseline = _mdape(y_price, cb_pred_price)
-    cb_pred_calibrated = cb_pred_price * np.array([cold_factors.get(s, 1.0) for s in source])
-    cold_overall_cal = _mdape(y_price, cb_pred_calibrated)
-    warm_overall_baseline = _mdape(y_warm_price, xgb_pred_price)
-    xgb_pred_calibrated = xgb_pred_price * np.array([warm_factors.get(s, 1.0) for s in source_warm])
-    warm_overall_cal = _mdape(y_warm_price, xgb_pred_calibrated)
-
-    logger.info("=" * 70)
-    logger.info("Cold overall: baseline=%.2f → calibrated=%.2f (Δ=%+.2f)",
-                cold_overall_baseline, cold_overall_cal, cold_overall_cal - cold_overall_baseline)
-    logger.info("Warm overall: baseline=%.2f → calibrated=%.2f (Δ=%+.2f)",
-                warm_overall_baseline, warm_overall_cal, warm_overall_cal - warm_overall_baseline)
+        b = _mdape(y_warm_price[mask], xgb_pred_price[mask])
+        f = warm_factors.get(cell, 1.0)
+        c = _mdape(y_warm_price[mask], xgb_pred_price[mask] * f)
+        warm_breakdown[cell] = {"n": int(mask.sum()), "factor": f, "baseline_mdape": b, "calibrated_mdape": c}
 
     return {
+        "version": CALIBRATION_VERSION,
+        "model_target": "integrated_v3_filtered_tuned",
+        "method": "median(actual_price / predicted_price), cell = source × target_market",
+        "cells_definition": "is_krw==1 → target_market='gallery', else 'online'",
         "cold_factors": cold_factors,
         "warm_factors": warm_factors,
-        "cold_baseline_mdape_by_source": cold_baseline_mdape,
-        "cold_calibrated_mdape_by_source": cold_calibrated_mdape,
-        "warm_baseline_mdape_by_source": warm_baseline_mdape,
-        "warm_calibrated_mdape_by_source": warm_calibrated_mdape,
-        "cold_overall_baseline_mdape": cold_overall_baseline,
-        "cold_overall_calibrated_mdape": cold_overall_cal,
-        "warm_overall_baseline_mdape": warm_overall_baseline,
-        "warm_overall_calibrated_mdape": warm_overall_cal,
-        "method": "median(actual_price / predicted_price)",
+        "cold_overall": {
+            "baseline_mdape": cold_baseline, "calibrated_mdape_cross_fit": cold_calibrated,
+            "delta": cold_calibrated - cold_baseline,
+        },
+        "warm_overall": {
+            "baseline_mdape": warm_baseline, "calibrated_mdape_cross_fit": warm_calibrated,
+            "delta": warm_calibrated - warm_baseline,
+        },
+        "cold_breakdown": cold_breakdown,
+        "warm_breakdown": warm_breakdown,
         "n_total": len(y),
         "n_warm": len(y_warm_price),
         "note": (
-            "predicted_price *= factors[source] for cold and warm routes. "
-            "Source unknown → factor=1.0. seed=42, KFold shuffle=True."
+            "Cross-fit 5-fold: factor를 train fold에서만 fit, held-out fold에 적용 → 정직한 out-of-sample. "
+            "Final factors는 전체 데이터 fit (production용). "
+            "Server는 features['source'] + target_market 기반으로 cell key 결정."
         ),
     }
 

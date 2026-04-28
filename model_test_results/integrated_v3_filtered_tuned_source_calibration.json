@@ -1,34 +1,69 @@
 {
+  "version": "v1-cross-fit-cell",
+  "model_target": "integrated_v3_filtered_tuned",
+  "method": "median(actual_price / predicted_price), cell = source × target_market",
+  "cells_definition": "is_krw==1 → target_market='gallery', else 'online'",
   "cold_factors": {
-    "artsy": 0.9823385778240921,
-    "saatchi": 0.9274347544253237
+    "artsy_gallery": 0.8896105142840111,
+    "artsy_online": 1.0092796670151574,
+    "saatchi_online": 0.9274347544253237
   },
   "warm_factors": {
-    "artsy": 1.004637783274802,
-    "saatchi": 1.0005459984492515
+    "artsy_gallery": 0.9999902618542379,
+    "artsy_online": 1.0050339831435708,
+    "saatchi_online": 1.0005459984492515
   },
-  "cold_baseline_mdape_by_source": {
-    "artsy": 33.28326487954,
-    "saatchi": 41.62120964914766
+  "cold_overall": {
+    "baseline_mdape": 39.410330017362206,
+    "calibrated_mdape_cross_fit": 38.10847819444825,
+    "delta": -1.301851822913953
   },
-  "cold_calibrated_mdape_by_source": {
-    "artsy": 33.08233461872667,
-    "saatchi": 40.00557208036764
+  "warm_overall": {
+    "baseline_mdape": 9.758887627832259,
+    "calibrated_mdape_cross_fit": 9.776502371866084,
+    "delta": 0.017614744033824792
   },
-  "warm_baseline_mdape_by_source": {
-    "artsy": 8.353698342668036,
-    "saatchi": 10.286173628594424
+  "cold_breakdown": {
+    "artsy_gallery": {
+      "n": 868,
+      "factor": 0.8896105142840111,
+      "baseline_mdape": 27.711820235218987,
+      "calibrated_mdape": 21.526349081970896
+    },
+    "artsy_online": {
+      "n": 6421,
+      "factor": 1.0092796670151574,
+      "baseline_mdape": 34.22111391026268,
+      "calibrated_mdape": 34.17513091521124
+    },
+    "saatchi_online": {
+      "n": 21087,
+      "factor": 0.9274347544253237,
+      "baseline_mdape": 41.62120964914766,
+      "calibrated_mdape": 40.00557208036764
+    }
   },
-  "warm_calibrated_mdape_by_source": {
-    "artsy": 8.326686531813083,
-    "saatchi": 10.299245010457971
+  "warm_breakdown": {
+    "artsy_gallery": {
+      "n": 778,
+      "factor": 0.9999902618542379,
+      "baseline_mdape": 6.113320966839091,
+      "calibrated_mdape": 6.113261434428427
+    },
+    "artsy_online": {
+      "n": 5825,
+      "factor": 1.0050339831435708,
+      "baseline_mdape": 8.717415726327435,
+      "calibrated_mdape": 8.65090036492607
+    },
+    "saatchi_online": {
+      "n": 20459,
+      "factor": 1.0005459984492515,
+      "baseline_mdape": 10.286173628594424,
+      "calibrated_mdape": 10.299245010457971
+    }
   },
-  "cold_overall_baseline_mdape": 39.410330017362206,
-  "cold_overall_calibrated_mdape": 37.47637838920595,
-  "warm_overall_baseline_mdape": 9.758887627832259,
-  "warm_overall_calibrated_mdape": 9.787573243801969,
-  "method": "median(actual_price / predicted_price)",
   "n_total": 28376,
   "n_warm": 27062,
-  "note": "predicted_price *= factors[source] for cold and warm routes. Source unknown → factor=1.0. seed=42, KFold shuffle=True."
+  "note": "Cross-fit 5-fold: factor를 train fold에서만 fit, held-out fold에 적용 → 정직한 out-of-sample. Final factors는 전체 데이터 fit (production용). Server는 features['source'] + target_market 기반으로 cell key 결정."
 }

@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 _matcher = ArtistMatcher()
 _predictor = PrimaryPredictor()
 _start_time = time.time()
-_model_version = "v3-filtered-tuned"
+_model_version = "v3-filtered-tuned-cal"  # PR #21 cell-level cross-fit calibration 적용
 _price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
 
 # ─── 인메모리 모니터링 카운터 ───
@@ -490,29 +490,41 @@ async def health():
 
 @app.get("/api/v1/model/info", response_model=ModelInfoResponse)
 async def model_info():
-    """모델 정보 — metrics file에서 동적 로드 (Codex 5차 P2: stale-prone 상수 제거).
+    """모델 정보 — metrics + calibration 동적 로드 (Codex 5차 P2 + PR #21).
 
-    서빙 라우팅 일치 메트릭:
-    - cold: CatBoost MdAPE (groupkfold)
-    - warm: XGBoost on warm slice MdAPE (kfold.warm_slice)
+    서빙 라우팅 + 후처리 일치 메트릭:
+    - cold: CatBoost MdAPE × cell calibration (cross-fit 5-fold 평가)
+    - warm: XGBoost MdAPE on warm slice (calibration 적용 X — factor 1.0 근처)
     """
-    # _load_models와 동일한 resolver 사용 (Codex 6차 P2 — 경로 정합)
-    metrics_path = _resolve_model_dir() / "integrated_v3_filtered_tuned_metrics.json"
+    model_dir = _resolve_model_dir()
+    metrics_path = model_dir / "integrated_v3_filtered_tuned_metrics.json"
+    calib_path = model_dir / "integrated_v3_filtered_tuned_source_calibration.json"
 
     if metrics_path.exists():
         with metrics_path.open(encoding="utf-8") as f:
             metrics = json.load(f)
         cold_cb = metrics.get("groupkfold", {}).get("catboost_v3_filtered_tuned", {})
         warm_xgb = metrics.get("kfold", {}).get("warm_slice", {}).get("xgboost_v3_filtered_tuned", {})
-        # warm_slice가 없으면 fallback (구 metric 형식)
         if not warm_xgb:
             warm_xgb = metrics.get("kfold", {}).get("xgboost_v3_filtered_tuned", {})
+
+        # Calibration MdAPE (cross-fit) 우선 사용 (있으면)
+        cold_mdape = float(cold_cb.get("MdAPE", 0.0))
+        warm_mdape = float(warm_xgb.get("MdAPE", 0.0))
+        if calib_path.exists():
+            with calib_path.open(encoding="utf-8") as f:
+                cal = json.load(f)
+            cold_cal = cal.get("cold_overall", {}).get("calibrated_mdape_cross_fit")
+            if isinstance(cold_cal, (int, float)) and cold_cal > 0:
+                cold_mdape = float(cold_cal)
+            # warm은 calibration 적용 안 함 — baseline 그대로
+
         return ModelInfoResponse(
             model_version=_model_version,
             training_count=int(cold_cb.get("n", 0)),
             artist_count=int(metrics.get("artists", 0)),
-            mdape_groupkfold=float(cold_cb.get("MdAPE", 0.0)),
-            mdape_kfold=float(warm_xgb.get("MdAPE", 0.0)),
+            mdape_groupkfold=cold_mdape,
+            mdape_kfold=warm_mdape,
             features_count=int(metrics.get("features", 0)),
         )
     # metrics file 없음 — fallback (운영 중 안정성)
