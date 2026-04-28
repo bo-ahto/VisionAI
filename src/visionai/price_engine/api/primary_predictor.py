@@ -98,77 +98,70 @@ class PrimaryPredictor:
         self._warm_artifact_loaded: bool = False
 
     def load_models(self, model_dir: Path, training_data_path: Path | None = None) -> None:
-        """v3-filtered-tuned 모델 로드 — atomic-ish (Codex 10차 P2).
+        """v3-filtered-tuned 모델 로드 — fail-closed + atomic swap (Codex 11차).
 
-        Build new state in local vars first, then atomically swap to instance state.
+        Required artifacts (모두 필수, 누락 시 RuntimeError):
+        - integrated_v3_filtered_tuned_catboost.cbm
+        - integrated_v3_filtered_tuned_xgboost.json
+        - integrated_v3_filtered_tuned_xgboost_label_maps.json
+            · 학습 시 warm-slice 기준 categorical 매핑. parquet fallback은 학습 데이터
+              (Artsy+Saatchi 합본 + 입체 제외 + warm 필터)와 정확히 일치해야 하는데
+              서버 환경에서 그 보장이 없어 폐기. artifact 누락 시 fail-closed.
+        - integrated_v3_filtered_tuned_warm_artists.json
+            · 학습 시 warm slice 작가 set. 누락 시 라우팅이 DB raw count로 떨어져
+              학습/서빙 mismatch 발생 → fail-closed.
+
+        Build new state in local vars first, then swap to instance state at end.
         중간 실패 시 instance state는 이전 값 그대로 유지.
 
-        Aritfacts:
-        - CatBoost: 입체 985건 제외 + Optuna 30 trials 튜닝 (cold start GroupKFold)
-        - XGBoost: 입체 제외 + warm slice(작품 수≥5) Optuna 튜닝 (warm KFold)
-        - label_maps: 학습 시 매핑 그대로 보존된 아티팩트 (warm slice 기준)
-        - warm_artists: 학습 시 warm slice에 포함된 작가 slug 집합
+        Note (Codex 11차 P2): 진짜 thread-safe atomicity 아님 (no lock, sequential
+        attribute swap). 현재 _load_models는 startup-only 호출이라 race 위험 적음.
+        런타임 reload 도입 시 별도 lock 필요.
         """
-        # 1) 모든 state를 local vars에 build (instance에 아직 안 씀)
+        # 1) artifact 경로 — 모두 필수
         cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
         xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
         warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
         label_maps_path = model_dir / "integrated_v3_filtered_tuned_xgboost_label_maps.json"
 
+        for path, label in (
+            (cb_path, "CatBoost model"),
+            (xgb_path, "XGBoost model"),
+            (warm_path, "warm artists"),
+            (label_maps_path, "XGBoost label maps"),
+        ):
+            if not path.exists():
+                raise RuntimeError(
+                    f"{label} artifact 미존재: {path} — fail-closed (학습/서빙 정합 보장 불가)"
+                )
+
+        # 2) 모든 state를 local vars에 build
         new_cb = CatBoostRegressor()
         new_cb.load_model(str(cb_path))
 
         new_xgb = xgb.Booster()
         new_xgb.load_model(str(xgb_path))
 
-        new_warm_slugs: set[str] = set()
-        new_warm_loaded = False
-        if warm_path.exists():
-            with warm_path.open(encoding="utf-8") as f:
-                data = json.load(f)
-            new_warm_slugs = set(data.get("warm_artist_slugs", []))
-            new_warm_loaded = True
+        with warm_path.open(encoding="utf-8") as f:
+            warm_data = json.load(f)
+        new_warm_slugs: set[str] = set(warm_data.get("warm_artist_slugs", []))
+        new_warm_loaded = True
 
-        new_label_maps: dict[str, dict[str, int]] = {}
-        if label_maps_path.exists():
-            with label_maps_path.open(encoding="utf-8") as f:
-                new_label_maps = json.load(f)
-        elif training_data_path and training_data_path.exists():
-            # warm slice 필터 fallback (Codex 10차 P1): warm-only XGBoost와 일치
-            import pandas as pd_local
-            df = pd_local.read_parquet(training_data_path)
-            if "is_excluded_for_training" in df.columns:
-                df = df[df["is_excluded_for_training"] == 0].copy()
-            if new_warm_loaded and new_warm_slugs and "artist_slug" in df.columns:
-                df = df[df["artist_slug"].astype(str).isin(new_warm_slugs)].copy()
-            for col in CAT_FEATURES:
-                if col in df.columns:
-                    vals = df[col].astype(str).unique()
-                    new_label_maps[col] = {v: i for i, v in enumerate(sorted(vals))}
-        else:
-            raise RuntimeError(
-                f"label_maps.json 미존재 ({label_maps_path}) and training_data_path 미제공 — "
-                "warm XGBoost categorical ID 일관성 보장 불가"
-            )
+        with label_maps_path.open(encoding="utf-8") as f:
+            new_label_maps = json.load(f)
 
-        # 2) 모든 build 성공 시에만 instance state에 atomic swap
+        # 3) 모든 build 성공 시 instance state로 swap (sequential — startup OK)
         self.cb_model = new_cb
         self.xgb_model = new_xgb
         self._warm_artist_slugs = new_warm_slugs
         self._warm_artifact_loaded = new_warm_loaded
         self._label_maps = new_label_maps
 
-        # 3) 로깅
+        # 4) 로깅
         logger.info("CatBoost loaded: %s", cb_path)
         logger.info("XGBoost loaded: %s", xgb_path)
-        if new_warm_loaded:
-            logger.info("Warm artists loaded: %d (학습 시 warm slice 작가)", len(new_warm_slugs))
-        else:
-            logger.warning("Warm artist list 없음 — DB training_count로 fallback (라우팅 불일치 위험)")
-        if label_maps_path.exists():
-            logger.info("XGBoost label maps loaded from artifact: %s", label_maps_path)
-        else:
-            logger.warning("XGBoost label maps fallback path 사용 (ID shift 위험)")
+        logger.info("Warm artists loaded: %d (학습 시 warm slice 작가)", len(new_warm_slugs))
+        logger.info("XGBoost label maps loaded: %s", label_maps_path)
 
     def is_warm_artist(self, artist_slug: str | None) -> bool:
         """학습 시 warm slice 정의를 그대로 사용 (라우팅 정합)."""
@@ -256,64 +249,7 @@ class PrimaryPredictor:
             "training_count": training_count,
         }
 
-    def build_xgb_label_maps(
-        self,
-        training_data_path: Path | None = None,
-        label_maps_path: Path | None = None,
-    ) -> None:
-        """XGBoost label encoding 매핑 구축.
-
-        우선순위 (Codex 10차 P1):
-        1. label_maps_path JSON 아티팩트 — 학습 시 사용된 매핑 그대로 보존 (필수)
-        2. training_data_path + warm artist set 필터 — XGBoost가 warm-only로 학습되므로
-           full parquet으로 fallback하면 categorical ID shift 발생 (warm vs full
-           sorted unique 순서가 다름 → 'attribution_class', 'gallery_name' 등 ID mismatch)
-
-        Codex 10차 P1: warm-slice 학습 도입으로 full parquet fallback이 invalid.
-        warm_artifact_loaded일 때는 warm artist set으로 parquet을 필터링해서 매핑 빌드.
-        """
-        if label_maps_path and label_maps_path.exists():
-            with label_maps_path.open(encoding="utf-8") as f:
-                self._label_maps = json.load(f)
-            logger.info("XGBoost label maps loaded from artifact: %s", label_maps_path)
-            return
-        # Fallback path: warm slice 정합 보장
-        if training_data_path and training_data_path.exists():
-            df = pd.read_parquet(training_data_path)
-            # is_excluded_for_training 적용 (production train과 동일)
-            if "is_excluded_for_training" in df.columns:
-                df = df[df["is_excluded_for_training"] == 0].copy()
-            # warm artifact 로드된 경우 warm slice로 필터 (XGBoost 학습 정합)
-            if self._warm_artifact_loaded and self._warm_artist_slugs and "artist_slug" in df.columns:
-                df = df[df["artist_slug"].astype(str).isin(self._warm_artist_slugs)].copy()
-                logger.info("XGBoost label maps fallback: warm slice 필터 적용 (%d rows)", len(df))
-            else:
-                logger.warning(
-                    "XGBoost label maps fallback: warm artifact 미로드 — full parquet 사용 (ID shift 위험)"
-                )
-            for col in CAT_FEATURES:
-                if col in df.columns:
-                    vals = df[col].astype(str).unique()
-                    self._label_maps[col] = {v: i for i, v in enumerate(sorted(vals))}
-            logger.info("XGBoost label maps built from %s", training_data_path)
-            return
-        # 학습 시 사용된 값 하드코딩 (마지막 fallback — 운영에서는 발생 X)
-        logger.error(
-            "XGBoost label maps: artifact + parquet 모두 없음 → 하드코딩 default 사용 "
-            "(ID shift 위험 — warm 예측 신뢰 불가)"
-        )
-        self._label_maps = {
-            "support_type": {v: i for i, v in enumerate(sorted(
-                ["canvas", "linen", "metal", "other", "panel", "paper", "silk"]))},
-            "medium_category": {v: i for i, v in enumerate(sorted(
-                ["acrylic", "ink", "mixed", "oil", "other", "pastel", "pencil", "pigment", "watercolor"]))},
-            "attribution_class": {v: i for i, v in enumerate(sorted(
-                ["Limited edition", "Unique", "Unknown edition"]))},
-            "gallery_name": {},  # 동적 할당
-            "gallery_type": {v: i for i, v in enumerate(sorted(
-                ["Gallery", "Online Gallery", "Unknown"]))},
-            "price_currency": {v: i for i, v in enumerate(sorted(
-                ["KRW", "USD"]))},
-            "source": {v: i for i, v in enumerate(sorted(
-                ["artsy", "artsy_artue", "manual", "printbakery", "saatchi"]))},
-        }
+    # build_xgb_label_maps 제거 (Codex 11차):
+    # 학습은 Artsy+Saatchi 합본 + warm 필터로 label_maps 빌드. 서버 fallback이
+    # 동일 데이터 합본을 보장하기 어려워 폐기. label_maps.json artifact가 필수.
+    # load_models()에서 fail-closed 처리.
