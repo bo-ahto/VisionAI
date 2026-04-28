@@ -9,10 +9,10 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 <style>
-  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --tldr-bg: #1f2a3a; --tldr-border: #58a6ff; }
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --tldr-bg: #1f2a3a; --tldr-border: #58a6ff; --policy-bg: #2a1f3a; --policy-border: #bc8cff; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.75; padding: 40px 20px; }
-  .container { max-width: 900px; margin: 0 auto; }
+  .container { max-width: 940px; margin: 0 auto; }
   h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
   h2 { font-size: 22px; margin-top: 48px; margin-bottom: 16px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
   h3 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: var(--purple); }
@@ -21,11 +21,13 @@
   blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 16px 0; background: var(--card); border-radius: 4px; color: var(--muted); font-size: 14px; }
   .tldr { border-left: 4px solid var(--tldr-border); background: var(--tldr-bg); padding: 14px 18px; margin: 18px 0; border-radius: 6px; }
   .tldr strong { color: var(--accent); }
+  .policy-note { border-left: 4px solid var(--policy-border); background: var(--policy-bg); padding: 14px 18px; margin: 18px 0; border-radius: 6px; font-size: 14px; }
+  .policy-note strong { color: var(--purple); }
   .scope-warn { background: rgba(210,153,34,0.08); border-left: 4px solid var(--orange); padding: 14px 18px; margin: 16px 0; border-radius: 6px; font-size: 14px; }
   .scope-warn strong.title { color: var(--orange); }
   table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
   th { background: var(--card); padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; }
-  td { padding: 6px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
   tr:hover td { background: rgba(88,166,255,0.05); }
   td.num, th.num { text-align: right; }
   td.center, th.center { text-align: center; }
@@ -40,6 +42,9 @@
   .mjx-container { overflow-x: auto; }
   .delta-pos { color: var(--green); }
   .delta-neg { color: var(--orange); }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 24px 0; font-size: 14px; }
+  .toc strong { color: var(--accent); }
+  .toc ol { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -49,32 +54,64 @@
 <p><strong>작성일</strong>: 2026-04-28</p>
 <p><strong>모델 버전</strong>: v3-tuned-cal (<code>integrated_v3_filtered_tuned</code> + cell calibration)</p>
 <p><strong>학습 데이터</strong>: 28,376건 (29,361건에서 입체/3D 985건 제외) / 1,551명 작가 (warm 930명, ≥5건)</p>
-<p><strong>대상</strong>: 한국 신진/중견 작가 회화 작품의 1차 시장(갤러리) 가격 예측</p>
+<p><strong>대상</strong>: 한국 회화 작품의 1차 시장(갤러리) 가격 예측</p>
 </blockquote>
 
 <div class="scope-warn">
-<p><strong class="title">⚠ 본 문서의 위치</strong>: v1 보고서(<a href="model_technical_report.html"><code>model_technical_report.html</code></a>)의 <strong>개선 후속편</strong>입니다. v1의 이론·아키텍처 본문은 그대로 유효하며, 본 문서는 2026-04-17~28 사이 협력자 피드백 → 4건의 PR(#20·#21·#22 모델·#19 분석) → 32회 코덱스 리뷰를 거쳐 적용된 <strong>변경 사항만</strong> 정리합니다. 처음 읽는 독자는 v1을 먼저 보고 본 문서로 이어 보길 권합니다.</p>
+<p><strong class="title">⚠ 본 문서의 위치</strong>: v1 보고서(<a href="model_technical_report.html"><code>model_technical_report.html</code></a>)의 <strong>개선 후속편</strong>입니다. v1의 이론·아키텍처 본문은 그대로 유효하며, 본 문서는 2026-04-07~28 사이 협력자 피드백 24건(기술보고서 10건 + 실험계획서 14건) → 4건의 모델 PR(#19·#20·#21·#22) → <strong>32회 코덱스 리뷰</strong>를 거쳐 적용된 <strong>변경 사항·실험·실패한 시도</strong>를 자세히 정리합니다. 처음 읽는 독자는 v1을 먼저 보고 본 문서로 이어 보길 권합니다.</p>
 <p><strong>📌 범위</strong>: 1차 시장 예측 모델(A, <code>primary_predictor</code> + <code>integrated_v3_filtered_tuned_*</code>) 전용. 경매 낙찰가 모델(B)은 별도 문서.</p>
-<p><strong>출처(Provenance)</strong>: 본 문서가 인용하는 모든 수치는 머지된 산출물 기준입니다.</p>
+</div>
+
+<div class="policy-note">
+<p><strong>📐 명칭 표기 정책 (협력자 피드백 Q9 반영)</strong></p>
+<p>2026-04-24 협력자 피드백: <em>"실제 시장에서 나이만을 기준으로 경력(원로/중견/신진)을 구분하지 않는다. 명칭을 수정하는 게 좋겠다."</em></p>
+<p>본 문서는 작가 분류 시 <strong>"신진/중견/원로" 같은 시장 통념적 라벨을 사용하지 않습니다.</strong> 모든 분류는 다음 두 체계로만 표기합니다:</p>
+<ul>
+<li><strong>수치형 <code>career_stage</code> (0~8)</strong> — 모델 입력 피처. 연속값. v1의 4단계 int 분류는 <strong>완전 폐기</strong>.</li>
+<li><strong>운영 등급 (A/B/C/D)</strong> — 모델 신뢰도 라벨. 작가 능력이 아니라 <strong>예측 가능 정보량</strong>에 따른 분류.</li>
+</ul>
+<p>본 문서 본문에서 시장 통념 라벨을 인용하는 경우는 (a) v1 정의를 명시적으로 비교할 때, (b) 협력자 인용문 자체를 옮길 때로 한정합니다.</p>
+</div>
+
+<div class="scope-warn">
+<p><strong class="title">출처(Provenance)</strong>: 본 문서가 인용하는 모든 수치는 머지된 산출물 기준입니다.</p>
 <ul>
 <li>핵심 metrics: <code>model_test_results/integrated_v3_filtered_tuned_metrics.json</code></li>
 <li>셀 캘리브레이션: <code>model_test_results/integrated_v3_filtered_tuned_source_calibration.json</code></li>
 <li>등급 마진: <code>model_test_results/grade_margin_calibration.json</code></li>
 <li>워밍 작가 셋: <code>model_test_results/integrated_v3_filtered_tuned_warm_artists.json</code> (930명 / 27,062건)</li>
+<li>갤러리 티어 매핑: <code>model_test_results/gallery_tier_coverage_report.md</code></li>
 </ul>
 </div>
 
+<div class="toc">
+<strong>목차</strong>
+<ol>
+<li>한 문단 요약</li>
+<li>v1 → v2 핵심 지표 변화</li>
+<li>협력자 피드백 24건 → 모델 변경 매트릭스</li>
+<li>PR #19 — 갤러리 티어 v3 매핑 분석 (1회 코덱스)</li>
+<li>PR #20 — career_stage v2 + 5개 drift 제거 (15회 코덱스)</li>
+<li>PR #21 — Source × target_market 셀 캘리브레이션 (8회 코덱스)</li>
+<li>PR #22 — Source 정규화 + 등급 마진 재캘리브레이션 (8회 코덱스)</li>
+<li>시도했지만 채택하지 않은 실험 (Negative Results)</li>
+<li>최종 production 메트릭 + 정직성</li>
+<li>32회 코덱스 리뷰가 막아낸 것</li>
+<li>알려진 제약·잔존 협조 사항</li>
+<li>운영 변경 사항</li>
+<li>한 줄 요약 + 참고 문서 + 변경 이력</li>
+</ol>
+</div>
+
+<hr>
+<h2>0. 한 문단 요약</h2>
 <div class="tldr">
-<p><strong>한 문단 요약</strong></p>
-<p>협력자가 v1 모델에 던진 10개 질문(고가 작품 미흡·생년 결측·갤러리 등급·신진 작가 등)을 <strong>데이터로 검증</strong>한 결과, "단순 피처 추가"보다 <strong>train/serve 정합</strong>이 더 큰 병목임이 드러났습니다. 4건의 PR로 (1) <code>career_stage</code>를 사문화 분기에서 <strong>연속 0~8 다요인 점수</strong>로 재설계, (2) <strong>학습엔 있지만 서빙엔 0인 5개 피처(드리프트)</strong>를 모델에서 제거, (3) <code>source × target_market</code> 셀 단위 <strong>교차 검증 캘리브레이션</strong>(per-cell guard)으로 콜드 MdAPE를 39.4 → 38.3%로 끌어내리고, (4) <code>source</code> 정규화·등급 마진 재캘리브레이션으로 <strong>production-time</strong> A 등급 9.8% / 워밍 Artsy 8.3%를 달성했습니다. 코덱스 리뷰 <strong>32회</strong>가 공정 누수·정규화 불일치·폴드 멤버십 어긋남 같은 잡음을 차단했습니다.</p>
+<p>협력자가 v1 모델에 던진 24개 질문(기술보고서 10건 + 실험계획서 14건)을 <strong>데이터로 검증</strong>한 결과, "단순 피처 추가"보다 <strong>train/serve 정합</strong>이 더 큰 병목임이 드러났습니다. 4건의 PR로 (1) <code>career_stage</code>를 사문화 분기에서 <strong>연속 0~8 다요인 점수</strong>로 재설계(라벨은 수치형으로만), (2) <strong>학습엔 분포가 있지만 서빙엔 0으로 하드코딩되던 5개 피처(drift)</strong>를 모델에서 제거, (3) <code>source × target_market</code> 셀 단위 <strong>교차 검증 캘리브레이션</strong>(per-cell guard)으로 cold path MdAPE를 39.4 → 38.3%로 끌어내리고, (4) <code>source</code> 정규화·등급 마진 production-time 재캘리브레이션으로 <strong>A 등급 9.8% / warm Artsy 8.3%</strong>를 달성했습니다. 코덱스 리뷰 <strong>32회</strong>가 평가-라우팅 불일치·cross-fit leakage·폴드 멤버십 어긋남 같은 잡음을 차단했습니다.</p>
 </div>
 
 <hr>
 <h2>1. v1 → v2 핵심 지표 변화</h2>
-
-<blockquote>
-<p><strong>읽는 법</strong>: v1 라인은 <code>integrated_v3_metrics.json</code> (29,361건 전체 학습), v2 라인은 <code>integrated_v3_filtered_tuned_metrics.json</code> (입체 985건 제외 후 28,376건, Optuna n_trials=30 튜닝, cell calibration 적용)을 옮긴 것입니다.</p>
-</blockquote>
+<blockquote><p><strong>읽는 법</strong>: v1 라인은 <code>integrated_v3_metrics.json</code> (29,361건 전체 학습), v2 라인은 <code>integrated_v3_filtered_tuned_metrics.json</code> (입체 985건 제외 후 28,376건, Optuna n_trials=30 튜닝, cell calibration 적용)을 옮긴 것입니다.</p></blockquote>
 
 <table>
 <thead><tr><th>지표</th><th class="num">v1 (2026-04-17)</th><th class="num">v2 (2026-04-28)</th><th class="num">Δ</th></tr></thead>
@@ -95,90 +132,236 @@
 <p><strong>해석</strong>: 단일 매개변수 보정에서 <strong>source × target_market 셀별 보정</strong>으로 갈아탔습니다. <strong>production cold path는 CatBoost 단일 경로</strong>이므로 보정 전후 비교는 CatBoost OOF 기준(<code>source_calibration.json</code> <code>cold_overall</code>): 39.38 → 38.29 (-1.09%p, cross-fit guarded). 앙상블/Artsy 슬라이스 수치는 offline 비교용이며 운영 경로와 다르므로 별도 표기. <strong>artsy_gallery 셀은 cross-fit에서 보정이 회귀를 일으켜 factor=1.0 (skip)</strong> — 자동 가드로 안정성 확보.</p>
 
 <hr>
-<h2>2. 협력자 피드백 → 모델 변경 매트릭스</h2>
+<h2>2. 협력자 피드백 24건 → 모델 변경 매트릭스</h2>
 
-<p>협력자가 v1 보고서에 제기한 10개 질문이 어떻게 처리됐는지 한눈에 정리합니다 (자세한 액션은 <code>docs/MdAPE_개선_액션플랜_20260427.md</code> 참조).</p>
+<p>협력자 피드백은 두 차례에 걸쳐 들어왔습니다.</p>
+<ol>
+<li><strong>2026-04-07~08 실험계획서 피드백 14건</strong> (<code>실험계획서_피드백_답변.md</code>) — 모델 설계 단계</li>
+<li><strong>2026-04-24~26 기술보고서 피드백 10건</strong> (<code>기술보고서_피드백_답변_20260427.md</code>) — production 모델 평가 단계</li>
+</ol>
 
+<h3>2.1 기술보고서 피드백 10건 (Q1~Q10)</h3>
 <table>
-<thead><tr><th class="center">#</th><th>협력자 질문</th><th>데이터 검증 결과</th><th>적용된 변경</th><th class="center">PR</th></tr></thead>
+<thead><tr><th class="center">#</th><th>협력자 질문 (요약)</th><th>데이터 검증 결과</th><th>적용된 변경</th><th class="center">PR</th></tr></thead>
 <tbody>
-<tr><td class="center">Q1</td><td>"고가(3천만+) 예측이 약하다"</td><td>학습 분포 1,678건(5.7%)으로 데이터 구조 한계 — 피처 추가로 해결 불가</td><td>알림: 등급별 m 재캘리브레이션으로 <strong>가격 범위</strong>를 더 정직하게 표시</td><td class="center">#22</td></tr>
-<tr><td class="center">Q2</td><td>"생년 결측 72%가 너무 크다"</td><td>사실 — 외부 수집 보강 필요</td><td>Cold-start 자동 수집 강화 항목으로 운영팀 협조 요청 (대기)</td><td class="center">(운영)</td></tr>
-<tr><td class="center">Q3</td><td>"career_stage가 너무 거칠다"</td><td>Stage 3=0건 (사문화) — 분기 자체가 작동 안 함</td><td><strong>career_stage v2</strong> 도입: 연속 0~8 다요인 점수 (생년·활동성·시장 진입)</td><td class="center">#20</td></tr>
-<tr><td class="center">Q4</td><td>"갤러리 등급이 1.5%만 기여하나"</td><td>협력자 리스트 88개 vs Artsy 갤러리 66개 중 11개만 매칭</td><td>Top 30 미매칭 명단 산출 → 협력자 검수 대기 (Phase 1B)</td><td class="center">#19</td></tr>
-<tr><td class="center">Q5</td><td>"Saatchi가 가격을 끌어내린다"</td><td>사실 — source × target_market 4셀 모두 다른 편향</td><td><strong>셀별 cross-fit calibration</strong> (per-cell guard)</td><td class="center">#21</td></tr>
-<tr><td class="center">Q6</td><td>"신진(20대) 작가 예측이 튄다"</td><td>career_age=0 결측 비율 높음 + has_birth_year sentinel</td><td>career_age는 <strong>train/serve drift로 분류 → 제거</strong>, 신진 보강은 cold-start 운영 의제</td><td class="center">#20</td></tr>
-<tr><td class="center">Q7</td><td>"디지털/프린트 케이스 분류가 모호"</td><td>24건(0.08%) — MdAPE 영향 미미</td><td>정책 결정 사안으로 협력자 협의 항목에 등록</td><td class="center">(정책)</td></tr>
-<tr><td class="center">Q8</td><td>"에디션 vs 원작 분류가 섞여 있다"</td><td>99.9% 원작 (Edition 34건)</td><td>printbakery 별 모델 후보로 분리 검토</td><td class="center">(정책)</td></tr>
-<tr><td class="center">Q9</td><td>"예측 가격이 좁은 구간에 회귀한다"</td><td>사실 — 등급 마진이 실제 분포보다 좁음</td><td><strong>production-time MdAPE 기반 m 권장치 산출</strong> (A 0.20→0.286 등). 적용은 정책 결정 대기</td><td class="center">#22</td></tr>
-<tr><td class="center">Q10</td><td>"여러 학습 코드 중 어느 게 진짜인가"</td><td><code>train_primary_market_v3_filtered.py</code> + <code>tune_*</code> 단일 경로</td><td>leakage 방지(<code>eval_set</code>/early stopping 제거), warm slug JSON 산출, fail-closed 아티팩트 검증</td><td class="center">#20</td></tr>
+<tr><td class="center">Q1</td><td>"profile_completeness 8.41%는 운영 정책에 반영해야"</td><td>사실 — 프로필 충실도가 작가 전문성 프록시</td><td>운영 가이드 작성 의제로 분리 (모델 변경 없음)</td><td class="center">(운영)</td></tr>
+<tr><td class="center">Q2</td><td>"갤러리 티어 v3 리스트 89개 공유. 모델에 반영해달라"</td><td>Artsy 갤러리 66개 중 11개만 매칭 (13.2%)</td><td><strong>PR #19에서 매칭 분석 → Top 30 미매칭 명단 산출</strong></td><td class="center">#19</td></tr>
+<tr><td class="center">Q3</td><td>"원작/에디션 0.00% 중요도는 데이터 편향 의심"</td><td>99.9% Unique (Saatchi=100%, Artsy=99.5%, Edition=34건/0.1%)</td><td>분산 부족 → printbakery 별 모델로 분리 검토</td><td class="center">(정책)</td></tr>
+<tr><td class="center">Q4</td><td>"한국 갤러리 직접 등록 작가는 어떻게 처리?"</td><td>Cold path (CatBoost) 분기 + manual_overrides API 존재</td><td>Cold-start 데이터 보강(갤러리 입력 UX) — 운영 협조 의제</td><td class="center">(운영)</td></tr>
+<tr><td class="center">Q5</td><td>"외부 플랫폼 등록 작품수는 시장 활동 0.2%만"</td><td>사실 — <code>artist_total_works</code>는 온라인 활동성 + 데이터 소스 식별 시그널 혼합</td><td>갤러리 직접 입력 데이터 수집 의제</td><td class="center">(운영)</td></tr>
+<tr><td class="center">Q6</td><td>"플랫폼은 Artsy + Saatchi만?"</td><td>v3-filtered-tuned 기준 정확히 두 개. printbakery/Artue/manual은 카테고리 슬롯만</td><td>보고서 정정. v2 본문 §3 명시.</td><td class="center">(문서)</td></tr>
+<tr><td class="center">Q7</td><td>"C/D 가격 범위 너무 넓음 (50%/70%)"</td><td>A 등급 m=0.20에서 80% 커버리지 71.5% (좁음)</td><td><strong>PR #22 production-time m 권장치 산출</strong> (적용은 정책 결정)</td><td class="center">#22</td></tr>
+<tr><td class="center">Q8</td><td>"개인전/단체전 직접 피처에 있나?"</td><td><code>solo_count</code>/<code>group_count</code>/<code>fair_count</code>는 학습 데이터에 컬럼은 있지만 모델 입력 37개에 미포함</td><td><strong>PR #20에서 <code>career_stage_v2_score</code> 입력으로 통합</strong> (직접 피처화는 v4 실험에서 과적합 사례 있어 보류)</td><td class="center">#20</td></tr>
+<tr><td class="center">Q9</td><td>"career_stage 명칭 변경. 시장 통념 라벨(원로/중견/신진) 부적절"</td><td>Stage 3=0건으로 사문화. 명명도 시장 합의 없음</td><td><strong>PR #20에서 v2 정의(연속 0~8 점수) 도입 + 라벨 수치형으로 통일</strong></td><td class="center">#20</td></tr>
+<tr><td class="center">Q10</td><td>"갤러리 유형/서울 가중치/해외 갤러리 합리성"</td><td>단순 휴리스틱(<code>has_seoul</code>, <code>has_international</code> 등 합 2.5%)</td><td>PR #19 갤러리 티어 분석 + Phase 1B(협력자 검수 대기)</td><td class="center">#19</td></tr>
+</tbody>
+</table>
+
+<h3>2.2 실험계획서 피드백 14건 (P-Q1~P-Q14)</h3>
+<table>
+<thead><tr><th class="center">#</th><th>협력자 제안</th><th>처리</th></tr></thead>
+<tbody>
+<tr><td class="center">P-Q1</td><td>"Career Age 추가 (첫 개인전 후 경과 연수)"</td><td>초안에 포함 → 학습/서빙 drift 발견(서빙은 0 하드코딩, DB 스키마 컬럼 없음) → <strong>PR #20에서 제거</strong>. age는 birth_year 기반 <code>age_score</code>만 유지.</td></tr>
+<tr><td class="center">P-Q2</td><td>"전시 갤러리 티어 가중 합산 (국제갤러리 vs 카페갤러리)"</td><td>PR #19 갤러리 티어 v3 분석에 반영. 협력자 리스트 매칭 11/66, Phase 1B 대기.</td></tr>
+<tr><td class="center">P-Q3</td><td>"1호 작품 점당 가격 (호당가 아님)"</td><td>작가별 소품 케이스. v1 <code>is_small</code> 피처(중요도 0.73%)로 부분 반영. 향후 작가별 점당가 룩업 도입 검토.</td></tr>
+<tr><td class="center">P-Q4</td><td>"3호 미만 = 10호 가격의 50~60%"</td><td>v1 <code>support_factor</code> + <code>ho_x_support</code> 교차항으로 일부 반영. 명시 룩업은 미반영.</td></tr>
+<tr><td class="center">P-Q5</td><td>"F/P/M/S 호수 변환 면적 차이"</td><td>v1 면적 → F형 호수 매칭(24개 표준 캔버스). aspect_ratio로 타입 추정 가능하나 미반영.</td></tr>
+<tr><td class="center">P-Q6</td><td>"지지체(canvas/paper) + 유니크/에디션 구분 필수"</td><td><code>support_factor</code> 5단계 + <code>is_unique</code>/<code>is_edition</code> 피처. 단 99.9% Unique로 분산 부족(Q3).</td></tr>
+<tr><td class="center">P-Q7</td><td>"서울옥션 크롤러 활용?"</td><td>B 모델(경매 낙찰가) 영역. 본 1차 시장 모델은 갤러리 데이터 전용.</td></tr>
+<tr><td class="center">P-Q8</td><td>"갤러리 명성 ↔ 가격(+) 한국 시장 방향"</td><td>v1 보고서 §2.3에 한국 시장 맥락 추가. PR #19에서 갤러리 티어 매칭 분석.</td></tr>
+<tr><td class="center">P-Q9</td><td>"전시 갤러리/아트페어 티어"</td><td>Q2/Q10과 동일 — 갤러리 티어 v3 Phase 1B에 통합.</td></tr>
+<tr><td class="center">P-Q10</td><td>"서울옥션 크롤러"</td><td>P-Q7과 동일.</td></tr>
+<tr><td class="center">P-Q11</td><td>"비평(전문가 평가) 정량화"</td><td>Phase 2+ 의제. 본 v2 미반영.</td></tr>
+<tr><td class="center">P-Q12</td><td>"김윤신 1명 작가 편향"</td><td>갤러리 데이터 확장 의제. v2 미반영.</td></tr>
+<tr><td class="center">P-Q13</td><td>"작품 연식 × 경력 인터랙션"</td><td>v1 <code>vintage_premium</code>, <code>freshness_discount</code> 피처 시도 → <strong>PR #20에서 train/serve drift로 제거</strong>.</td></tr>
+<tr><td class="center">P-Q14</td><td>"레지던시 선정 횟수"</td><td>데이터 수집 미완. v2 미반영.</td></tr>
 </tbody>
 </table>
 
 <hr>
-<h2>3. PR #20 — career_stage v2 + 학습/서빙 드리프트 정리 (15회 코덱스 리뷰)</h2>
+<h2>3. PR #19 — 갤러리 티어 v3 매핑 분석 (Phase 1A, 1회 코덱스 리뷰)</h2>
 
-<h3>3.1 Dead feature: career_stage v1</h3>
-<p>v1 정의: <code>if age≥60 ∧ solo≥5 → 4 else if solo≥3 → 3 else if solo≥1 ∨ group≥5 → 2 else 1</code>.</p>
-<p>학습 데이터 실제 분포:</p>
+<h3>3.1 배경</h3>
+<p>협력자(2026-04-26)가 갤러리/기관 티어 리스트 v3 (<code>data/art_gallery_tier_list_v3.xlsx</code>, 89개)를 공유. v1 모델의 <code>gallery_tier</code>는 도시 수·평균가·작품 수 휴리스틱(중요도 0.30%)이었기에 협력자 리스트로 대체 가능성을 탐색.</p>
+
+<h3>3.2 매핑 결과 (Artsy-only)</h3>
 <table>
-<thead><tr><th class="center">stage</th><th class="num">건수</th><th class="num">비율</th></tr></thead>
+<thead><tr><th>항목</th><th class="num">값</th></tr></thead>
 <tbody>
-<tr><td class="center">1 (신진)</td><td class="num">14,205</td><td class="num">50.1%</td></tr>
-<tr><td class="center">2 (신진후기)</td><td class="num">14,156</td><td class="num">49.9%</td></tr>
-<tr><td class="center"><strong>3 (중견)</strong></td><td class="num"><strong>0</strong></td><td class="num"><strong>0.0%</strong></td></tr>
-<tr><td class="center">4 (원로)</td><td class="num">0</td><td class="num">0.0%</td></tr>
+<tr><td>협력자 리스트</td><td class="num">88개</td></tr>
+<tr><td>Artsy 학습 데이터 갤러리</td><td class="num">66개</td></tr>
+<tr><td>매칭된 갤러리</td><td class="num"><strong>11/66 (17%)</strong></td></tr>
+<tr><td>매칭된 작품</td><td class="num">965 / 7,289 (<strong>13.2%</strong>)</td></tr>
+<tr><td>미매칭 Top 30</td><td class="num">5,937건 = 미매칭의 <strong>93.9%</strong> / Artsy 전체의 <strong>81.5%</strong></td></tr>
 </tbody>
 </table>
-<p><code>solo</code>/<code>group</code> 횟수 정보가 28,376건 학습 데이터에 거의 비어 있어 <strong>분기 자체가 작동하지 않았습니다.</strong> 중요도 1.77%는 사실상 1↔2 이진 신호에서 나온 것입니다.</p>
 
-<h3>3.2 career_stage v2 — 연속 다요인 점수</h3>
-<p>실제 구현 (<code>primary_feature_builder.py:48-82</code>):</p>
-<pre><code>score = age_score + activity_score + market_presence    ∈ [0, 8]
-
-age_score        = clip((birth_year_to_age - 30) / 12, 0, 3)            # 0~3, 연속
-activity_score   = min(log1p(solo + 0.7*fair + 0.3*group), 3)           # 0~3, 연속
-market_presence  = min(ln_followers / 6, 2)                             # 0~2, 연속</code></pre>
-<p><strong>왜 합산인가</strong>: 단일 분기는 한 축이 결측되면 0으로 무너집니다. 합산은 <strong>부분적 신호도 살립니다.</strong> 예) 생년 없는 작가도 작품 수와 팔로워가 있으면 score>0.</p>
-<p><strong>왜 연속값인가</strong>: GBDT 트리가 임계값을 자유롭게 학습 → v1의 4단계처럼 분기가 사문화되지 않습니다.</p>
-<p><strong>career_age는 의도적으로 제외</strong>: 초안에는 <code>career_duration</code> 항이 있었으나 학습 데이터(<code>prepare_primary_market_dataset.py</code>의 artist shows에서 도출)와 서빙 프로필(<code>artist_matcher.py</code>는 항상 0 고정, DB 스키마에 컬럼 없음) 간 드리프트 → 코덱스 후속 P1에서 제거하고 0~8 스케일 확정.</p>
-
-<h3>3.3 5개 피처 train/serve 드리프트 제거</h3>
-<p><strong>증상</strong>: 학습 데이터에는 값이 들어가 있지만, <code>primary_feature_builder.build_features()</code>가 서빙 시 <strong>상수(주로 0)를 하드코딩</strong>하던 피처 5개. 모델은 "분포 있는 신호"로 학습됐고, 서빙 시 모든 요청이 같은 값으로 들어가면서 <strong>silent하게 다른 패턴</strong>을 적용했습니다.</p>
+<h3>3.3 Tier 분포 (Default 매핑)</h3>
 <table>
-<thead><tr><th>제거된 피처</th><th>카테고리</th><th>학습 데이터</th><th>서빙 시 값</th><th>근거</th></tr></thead>
+<thead><tr><th class="center">Tier</th><th class="num">n</th><th class="num">%</th></tr></thead>
 <tbody>
-<tr><td><code>career_age</code></td><td>작가</td><td><code>2026 - first_show_year</code></td><td>0 (DB에 컬럼 없음)</td><td>Codex 4차 P1</td></tr>
-<tr><td><code>work_age</code></td><td>작품</td><td><code>2026 - work_year</code></td><td>0 (요청에 미포함)</td><td>Codex 4차 P1</td></tr>
-<tr><td><code>vintage_premium</code></td><td>갤러리/시점</td><td>학습 시 계산</td><td>0</td><td>Codex 4차 P1</td></tr>
-<tr><td><code>freshness_discount</code></td><td>갤러리/시점</td><td>학습 시 계산</td><td>0</td><td>Codex 4차 P1</td></tr>
-<tr><td><code>gallery_name</code></td><td>categorical</td><td>학습 vocab 59개 (예: "Kukje Gallery")</td><td><code>'Gallery'</code>/<code>'Saatchi Art'</code> 2개로 하드코딩 → 매번 sentinel</td><td>Codex 14차 P1</td></tr>
+<tr><td class="center">Tier A</td><td class="num">0</td><td class="num">0.0%</td></tr>
+<tr><td class="center">Tier B</td><td class="num">114</td><td class="num">1.6%</td></tr>
+<tr><td class="center">Tier C</td><td class="num">851</td><td class="num">11.7%</td></tr>
+<tr><td class="center">Tier D</td><td class="num">0</td><td class="num">0.0%</td></tr>
+<tr><td class="center">Tier E (미매칭)</td><td class="num">6,324</td><td class="num">86.8%</td></tr>
 </tbody>
 </table>
-<p>37 → <strong>32 피처</strong>. <strong>train/serve contract drift는 모델이 침묵으로 잘못된 패턴을 학습</strong>하므로 정확도 하락보다 더 위험합니다 (운영 후 디버깅 비용 폭발). <code>solo_count</code>/<code>group_count</code>/<code>fair_count</code>/<code>followers</code> 등은 CB_FEATURES에 직접 들어가지 않고 <strong><code>career_stage_v2_score</code> 입력으로만</strong> 사용합니다 — 단일 점수로 합쳐지면 부분 결측 영향이 분산됩니다.</p>
 
-<h3>3.4 Warm artist routing 정합</h3>
-<p><strong>문제</strong>: <code>artist_matcher.py</code>는 DB의 <code>training_count</code> 컬럼으로 warm 판정 → 학습 시 fold-local 카운트와 불일치. 32명 작가가 production에서 잘못 라우팅됐습니다.</p>
-<p><strong>수정</strong>: 학습 파이프라인이 <code>integrated_v3_filtered_tuned_warm_artists.json</code>(930개 slug)을 산출 → 서빙은 이 JSON을 권위 있는 set으로 사용.</p>
-<pre><code># primary_predictor.py
-WARM_ARTIST_SLUGS = load_warm_set(...)
-def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1:1</code></pre>
+<h3>3.4 가격 분리도 — Phase 1B 진행 여부의 결정적 지표</h3>
+<p>매칭률(13.2%)이 낮아도 매칭된 Tier가 가격을 의미 있게 분리하면 가치가 있습니다. 측정 결과:</p>
+<table>
+<thead><tr><th class="center">Tier</th><th class="num">n</th><th class="num">중앙값 (KRW)</th><th class="num">Q25</th><th class="num">Q75</th><th class="num">ln_std</th></tr></thead>
+<tbody>
+<tr><td class="center">Tier B</td><td class="num">114</td><td class="num">8,457,500</td><td class="num">5.5M</td><td class="num">15.3M</td><td class="num">0.870</td></tr>
+<tr><td class="center">Tier C</td><td class="num">851</td><td class="num">3,864,000</td><td class="num">1.7M</td><td class="num">9.6M</td><td class="num">1.320</td></tr>
+<tr><td class="center">Tier E (미매칭)</td><td class="num">6,324</td><td class="num">4,140,000</td><td class="num">1.8M</td><td class="num">10.9M</td><td class="num">1.317</td></tr>
+</tbody>
+</table>
+<p><strong>해석</strong>: Tier B vs C는 중앙값 2배 차이로 의미 있는 분리. Tier E (미매칭)와 Tier C는 중앙값이 거의 같아 분리도 약함 → <strong>Top 30 미매칭 검수가 Phase 1B 효과의 결정적 변수</strong>.</p>
 
-<h3>3.5 그 외 코덱스 리뷰 15회에서 막은 잡음</h3>
+<h3>3.5 PR #19 결론 (분석 only)</h3>
 <ul>
-<li><strong><code>eval_set</code> / early stopping</strong>: 학습/검증 폴드 누수 → 제거 후 <code>iterations</code>는 Optuna 튜닝값 고정.</li>
-<li><strong>categorical 정규화 비대칭</strong>: 학습 시 <code>nan</code>/<code>None</code>/<code>''</code>을 <code>unknown</code> bucket으로 모아 학습했지만 서빙은 raw 값을 그대로 모델에 넘김 → 서빙 측에 동일한 <code>astype(str).fillna("unknown").replace({...})</code> 룰 적용 (자세한 룰은 §5.1).</li>
-<li><strong><code>gallery_name</code> vocab 불일치</strong>: 학습 vocab 59개, 서빙은 <code>'Gallery'</code>/<code>'Saatchi Art'</code> 2개 하드코딩 → 피처에서 제거(차후 PredictRequest에 optional 추가 예정).</li>
-<li><strong><code>load_models</code> 부분 실패</strong>: 5개 아티팩트 중 1개라도 실패하면 partial 상태 → fail-closed (<code>RuntimeError</code>).</li>
-<li><strong>label_maps fallback</strong>: 학습 시 사용한 vocab을 매번 산출 가능한 path가 없어 mandatory 아티팩트로 승격.</li>
+<li><strong>매핑 13.2%만으로는 학습 적용 비추천</strong> — Tier E가 86.8%로 사실상 단일 카테고리.</li>
+<li><strong>Top 30 미매칭 명단을 협력자에게 송부</strong> → 검수 후 Phase 1B 진입 판정.</li>
+<li>정확도 영향 0 (분석 PR). 다만 후속 PR의 의사결정 근거 제공.</li>
+</ul>
+
+<h3>3.6 코덱스 리뷰 1차 (1회 만에 GO)</h3>
+<ul>
+<li><strong>차단 항목</strong>: 초안에서 Saatchi 21,087건을 강제로 Tier E로 재코딩한 게 발견 → 가격 분리도가 인위적으로 부풀려진 상태였음. Saatchi는 별도 source로 분리 처리하도록 수정.</li>
+<li>가격 분리도 측정을 별도로 추가(초안에는 매칭률만 있었음).</li>
 </ul>
 
 <hr>
-<h2>4. PR #21 — Source × target_market 셀 캘리브레이션 (8회 코덱스 리뷰)</h2>
+<h2>4. PR #20 — career_stage v2 + 5개 train/serve drift 제거 (15회 코덱스 리뷰)</h2>
 
-<h3>4.1 v1의 단일 상수 보정 한계</h3>
+<h3>4.1 출발: 액션 플랜 P0-2</h3>
+<p><code>MdAPE_개선_액션플랜_20260427.md</code>에서 두 가지 목표로 시작:</p>
+<ol>
+<li><strong>개인전·페어 직접 피처화</strong> (Q8) — <code>solo_count</code>/<code>group_count</code>/<code>fair_count</code>를 직접 모델 입력에 추가</li>
+<li><strong><code>career_stage</code> v2 재정의</strong> (Q9) — 다요인 점수로 대체</li>
+</ol>
+<p>진행하면서 <strong>코덱스 리뷰가 단계적으로 더 본질적인 문제</strong>(평가-라우팅 불일치, train/serve contract drift)를 발견 → PR 범위가 처음 의도보다 훨씬 커짐.</p>
+
+<h3>4.2 죽은 피처 발견: <code>career_stage</code> v1</h3>
+<p>v1 정의 (시장 통념 라벨이 붙어 있던 형태):</p>
+<pre><code>stage = 4: age ≥ 60 ∧ solo ≥ 5
+stage = 3: solo ≥ 3
+stage = 2: solo ≥ 1 ∨ group ≥ 5
+stage = 1: otherwise</code></pre>
+<p>학습 데이터(28,376건) 실제 분포:</p>
+<table>
+<thead><tr><th class="center">stage (v1)</th><th class="num">건수</th><th class="num">비율</th></tr></thead>
+<tbody>
+<tr><td class="center">1</td><td class="num">14,205</td><td class="num">50.1%</td></tr>
+<tr><td class="center">2</td><td class="num">14,156</td><td class="num">49.9%</td></tr>
+<tr><td class="center"><strong>3</strong></td><td class="num"><strong>0</strong></td><td class="num"><strong>0.0%</strong></td></tr>
+<tr><td class="center">4</td><td class="num">0</td><td class="num">0.0%</td></tr>
+</tbody>
+</table>
+<p><strong>원인</strong>: <code>solo_count</code>/<code>group_count</code>가 학습 데이터에서 거의 비어 있음(Artsy shows 데이터 한계). 그 결과 stage=3 분기 조건(<code>solo ≥ 3</code>)이 만족되지 않아 사문화. 4단계 분류가 사실상 1↔2 binary로 압축. v1 보고서 importance 1.77%는 binary 신호에서 나온 것.</p>
+
+<h3>4.3 <code>career_stage</code> v2 — 연속 다요인 점수</h3>
+<p>실제 구현 (<code>primary_feature_builder.py:48-82</code>):</p>
+<pre><code>def career_stage_v2_score(birth_year, solo, group, fair, ln_followers, current_year=2026):
+    score = 0.0
+    # age_score: birth_year → 30+ 기준 + 12년당 +1, [0, 3] cap
+    if birth_year and birth_year > 0:
+        age = current_year - birth_year
+        score += min(max((age - 30) / 12, 0), 3)
+    # activity_score: solo + 0.7×fair + 0.3×group, log1p, cap 3
+    activity = solo + 0.7 * fair + 0.3 * group
+    score += min(math.log1p(activity), 3)
+    # market_presence: ln_followers / 6, cap 2
+    if ln_followers is not None:
+        score += min(ln_followers / 6, 2)
+    return score   # 최종: [0, 8]</code></pre>
+
+<p><strong>왜 합산인가</strong>: 단일 분기는 한 축이 결측되면 0으로 무너집니다. 합산은 <strong>부분 신호도 살립니다</strong>. 예) 생년 없는 작가도 작품 수와 팔로워가 있으면 score>0.</p>
+<p><strong>왜 연속값인가</strong>: GBDT 트리가 임계값을 자유롭게 학습 → v1의 4단계처럼 분기가 사문화되지 않습니다.</p>
+<p><strong>왜 명칭이 수치형인가</strong> (Q9 반영): 시장 통념 라벨은 정의가 사람마다 다르고, 협력자 지적대로 나이 기준만으로는 시장 인식과 어긋납니다 → <strong>수치형 <code>career_stage</code> (0~8)</strong>만 노출. 운영 등급은 별도 A/B/C/D 체계 사용.</p>
+<p><strong><code>career_age</code>(첫 활동 연도 기반) 의도적 제외</strong>: 초안 v2에는 <code>career_duration</code> 항이 있었으나 학습 데이터(<code>prepare_primary_market_dataset.py</code>)와 서빙 프로필(<code>artist_matcher.py</code>는 항상 0 고정, DB 스키마에 컬럼 없음) 간 drift → 코덱스 3차에서 제거하고 0~8 스케일 확정.</p>
+
+<h3>4.4 5개 피처 train/serve drift 제거</h3>
+<p><strong>증상</strong>: 학습 데이터에는 분포가 있지만, <code>primary_feature_builder.build_features()</code>가 서빙 시 <strong>상수(주로 0)를 하드코딩</strong>하던 피처 5개. 모델은 분포를 가진 신호로 학습됐고, 서빙 시 모든 요청이 같은 값으로 들어가면서 <strong>silent하게 다른 패턴을 적용</strong>했습니다.</p>
+<table>
+<thead><tr><th>제거된 피처</th><th>카테고리</th><th>학습 데이터</th><th>서빙 시 값</th><th class="num">모델 importance (XGB gain)</th><th>근거</th></tr></thead>
+<tbody>
+<tr><td><code>career_age</code></td><td>작가</td><td><code>2026 - first_show_year</code> (Artsy 76% non-null, range 0~16)</td><td>0 (DB에 컬럼 없음)</td><td class="num">2.03</td><td>Codex 3차+4차 P1</td></tr>
+<tr><td><code>work_age</code></td><td>작품</td><td><code>2026 - work_year</code></td><td>0 (요청에 미포함)</td><td class="num">0.40</td><td>Codex 4차 P1</td></tr>
+<tr><td><code>vintage_premium</code></td><td>갤러리/시점</td><td>학습 시 계산</td><td>0</td><td class="num"><strong>1.53</strong></td><td>Codex 4차 P1</td></tr>
+<tr><td><code>freshness_discount</code></td><td>갤러리/시점</td><td>학습 시 계산</td><td>0</td><td class="num">0.19</td><td>Codex 4차 P1</td></tr>
+<tr><td><code>gallery_name</code></td><td>categorical</td><td>학습 vocab 59개 (예: "Kukje Gallery")</td><td><code>'Gallery'</code>/<code>'Saatchi Art'</code> 2개로 하드코딩 → 매번 sentinel</td><td class="num">0.5% (XGB warm)</td><td>Codex 14차 P1</td></tr>
+</tbody>
+</table>
+
+<p>37 → <strong>32 피처</strong>.</p>
+
+<p><strong>놀라운 발견</strong>: 5개 drift 피처를 제거하니 metric이 <strong>개선</strong>됐습니다 (cold 40.6→39.4). 즉 학습한 신호가 서빙에서 활용 불가한 상태에서 노이즈로 작동하던 것 — production에선 도움이 되지 않거나 해를 끼치고 있었습니다.</p>
+<p><strong>train/serve contract drift는 정확도 하락보다 더 위험합니다</strong>: 모델 정확도 그래프엔 안 잡히지만 production에서 <strong>silent하게 다른 패턴을 학습</strong>시킵니다. 운영 후 디버깅 비용이 폭발합니다.</p>
+<p>(<code>solo_count</code>/<code>group_count</code>/<code>fair_count</code>/<code>followers</code> 등은 CB_FEATURES에 직접 들어가지 않고 <strong><code>career_stage_v2_score</code> 입력으로만</strong> 사용합니다 — 단일 점수로 합쳐지면 부분 결측 영향이 분산됩니다. Q8에서 협력자가 직접 피처화를 요청했으나 v4 실험에서 피처 46개로 늘렸을 때 MdAPE 38.7→40.4 악화 사례가 있어 압축 형태 유지.)</p>
+
+<h3>4.5 평가-라우팅 불일치 정렬 (Codex 1차 P1)</h3>
+<p><strong>문제</strong>: v1 보고서까지는 ensemble MdAPE만 보고됐지만, 실제 서빙은:</p>
+<ul>
+<li>cold (<code>training_count&lt;5</code>) → CatBoost only</li>
+<li>warm (<code>training_count≥5</code>) → XGBoost only</li>
+</ul>
+<p>Ensemble 평균으로 의사결정하면 <strong>잘못된 목표를 최적화</strong>하게 됩니다.</p>
+<p><strong>수정</strong>: <code>cv_kfold</code> 결과에 by-source(Artsy/Saatchi) + warm_slice 메트릭 추가. 실제 서빙 라우팅과 동일한 조건의 MdAPE를 보고. <code>cv_kfold_warm</code>은 <strong>warm-only로 학습/평가</strong> (이전엔 full로 학습 후 warm subset 평가 — post-hoc).</p>
+
+<h3>4.6 Warm artist routing 정합</h3>
+<p><strong>문제</strong>: <code>artist_matcher.py</code>는 DB의 <code>training_count</code> 컬럼으로 warm 판정 → 학습 시 fold-local 카운트와 불일치. 32명 작가가 production에서 잘못 라우팅됐습니다.</p>
+<p><strong>수정</strong>: 학습 파이프라인이 <code>integrated_v3_filtered_tuned_warm_artists.json</code>(930개 slug)을 산출 → 서빙은 이 JSON을 권위 있는 set으로 사용.</p>
+<pre><code># primary_predictor.py
+WARM_ARTIST_SLUGS = load_warm_set(...)  # 930 slug
+def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1:1</code></pre>
+
+<h3>4.7 <code>followers</code> 컬럼명 버그 (Codex 2차 P1)</h3>
+<p><strong>문제</strong>: <code>prepare_primary_market_dataset.py:334</code>가 <code>row.get("followers", 0)</code>로 호출했지만 실제 컬럼명은 <code>artist_followers</code> 또는 파생된 <code>ln_followers</code>. v2 score의 <code>market_presence</code> 항이 학습 데이터에서 항상 0. Saatchi prepare는 정상이었고 Artsy만 영향.</p>
+<p><strong>수정</strong>: <code>row.get("ln_followers", 0.0)</code>로 통일. <code>market_presence</code> 항이 정상 작동하기 시작.</p>
+
+<h3>4.8 그 외 코덱스 리뷰 15회에서 막은 잡음</h3>
+<table>
+<thead><tr><th class="center">Codex 회차</th><th>발견</th><th>수정</th></tr></thead>
+<tbody>
+<tr><td class="center">1차</td><td>평가 ensemble vs 서빙 분리 라우팅 불일치</td><td>by-source + warm-slice 메트릭 추가</td></tr>
+<tr><td class="center">1차</td><td><code>career_stage</code> v1 사문화 (Stage 3=0건)</td><td>v2 연속 점수 도입</td></tr>
+<tr><td class="center">2차</td><td><code>followers</code> 컬럼명 버그</td><td><code>ln_followers</code>로 정정</td></tr>
+<tr><td class="center">2차</td><td>train/tune 최종 XGB slice 불일치 (full vs warm)</td><td>두 스크립트 다 warm-only로 정렬</td></tr>
+<tr><td class="center">3차</td><td><code>career_age</code> train/serve drift</td><td>v2 공식에서 제거, 0~8 스케일</td></tr>
+<tr><td class="center">3차</td><td>XGB warm CV (full로 학습 후 warm 평가는 post-hoc)</td><td>warm-only로 학습/평가 분리</td></tr>
+<tr><td class="center">4차</td><td><code>career_age</code>가 <code>CB_FEATURES</code>에는 잔존</td><td>CB_FEATURES에서 제거</td></tr>
+<tr><td class="center">4차</td><td><code>work_age</code>/<code>vintage_premium</code>/<code>freshness_discount</code> drift</td><td>모두 제거</td></tr>
+<tr><td class="center">5차~12차</td><td>label_maps fallback, categorical 정규화 비대칭, eval_set 누수, sentinel encoding 등</td><td>단계적 정정</td></tr>
+<tr><td class="center">13차</td><td><code>predict()</code> 런타임 mapping mutation 위험</td><td>학습 시 만든 sentinel 인덱스 그대로 사용</td></tr>
+<tr><td class="center">14차</td><td><code>gallery_name</code> vocab 59 vs 서빙 2개 hardcoded → 매번 sentinel</td><td>피처 자체에서 제거</td></tr>
+<tr><td class="center">15차</td><td><code>model_version</code> 정적 <code>"v3"</code> 하드코딩</td><td><code>model_version_label()</code> 동적화 (calibration 로드 여부 반영)</td></tr>
+</tbody>
+</table>
+<p><strong>공통 패턴</strong>: 모델 정확도 그래프엔 안 잡히지만 production에서 silent하게 다른 패턴을 학습시킬 정합 문제. 단순 코드 리뷰로는 발견 어려움 — 학습 데이터 분포와 서빙 코드를 동시에 봐야 잡힙니다.</p>
+
+<h3>4.9 PR #20 결과 요약</h3>
+<table>
+<thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE (PR #20 종착)</th></tr></thead>
+<tbody>
+<tr><td>Cold 전체</td><td>CatBoost</td><td class="num">28,376</td><td class="num">39.4</td></tr>
+<tr><td>Cold Artsy</td><td>CatBoost</td><td class="num">7,289</td><td class="num">33.3</td></tr>
+<tr><td>Cold Saatchi</td><td>CatBoost</td><td class="num">21,087</td><td class="num">41.6</td></tr>
+<tr><td>Warm 전체</td><td>XGBoost</td><td class="num">27,062</td><td class="num">9.8</td></tr>
+<tr><td><strong>Warm Artsy</strong></td><td>XGBoost</td><td class="num">6,603</td><td class="num"><strong>8.4 ← A 등급 8% 도달</strong></td></tr>
+<tr><td>Warm Saatchi</td><td>XGBoost</td><td class="num">20,459</td><td class="num">10.3</td></tr>
+</tbody>
+</table>
+<p>vs 직전 production: cold 40.6→39.4 (<strong>-1.2%p</strong>), warm 10.3→9.8 (<strong>-0.5%p</strong>).</p>
+
+<hr>
+<h2>5. PR #21 — Source × target_market 셀 캘리브레이션 (8회 코덱스 리뷰)</h2>
+
+<h3>5.1 v1의 단일 상수 보정 한계</h3>
 <p>v1: <code>c = -0.075 if target_market=='online' else 0.0</code> — <strong>모든 online을 같은 값으로</strong> 보정.</p>
-<p>문제: Artsy online과 Saatchi online은 다른 분포를 가집니다.</p>
+<p>문제: Artsy online과 Saatchi online은 분포가 다릅니다.</p>
 <table>
 <thead><tr><th>셀</th><th class="num">n</th><th class="num">baseline MdAPE</th><th class="num">v2 cross-fit calibrated MdAPE</th><th class="num">적용 factor</th></tr></thead>
 <tbody>
@@ -189,35 +372,57 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 </table>
 <p>(MdAPE는 cold GroupKFold OOF, <code>integrated_v3_filtered_tuned_source_calibration.json</code> <code>cold_breakdown</code> 기준.)</p>
 
-<h3>4.2 Cross-fit cell calibration with per-cell guard</h3>
+<h3>5.2 셀 정의</h3>
+<p><code>cell = f"{source}_{target_market}"</code>. <code>target_market</code>은 <code>is_krw==1 → 'gallery'</code> (한국 갤러리), 그 외 → <code>'online'</code>. 학습 시점과 서빙 시점에 동일한 룰 적용.</p>
+<p>가능한 셀:</p>
+<ul>
+<li><code>artsy_gallery</code> (Artsy 데이터 중 KRW 표기) — 868건</li>
+<li><code>artsy_online</code> (Artsy 데이터 중 USD/EUR/GBP 등) — 6,421건</li>
+<li><code>saatchi_online</code> (Saatchi 데이터, 100% USD) — 21,087건</li>
+<li><code>saatchi_gallery</code> — 0건 (Saatchi는 KRW 표기 거의 없음)</li>
+</ul>
+
+<h3>5.3 Cross-fit cell calibration with per-cell guard</h3>
 <p style="text-align:center">$$\text{factor}[\text{cell}] = \text{median}\left(\frac{P_{\text{actual}}}{P_{\text{predicted}}} \mid \text{cell}\right)$$</p>
 <p><strong>핵심 안전장치 3개</strong>:</p>
 <ol>
-<li><strong>Cross-fit (5-fold)</strong>: 인-샘플로 factor를 추정하고 같은 데이터로 보정 → 평가가 부풀려집니다. 따라서 train fold에서만 fit, OOF에서 평가.</li>
-<li><strong>Per-cell guard</strong>: cross-fit 평가가 baseline보다 <strong>악화되는 셀</strong>은 <code>factor=1.0</code> 적용 (skip). <code>artsy_gallery</code>가 여기 해당 (baseline 24.3 < calibrated 31.2).</li>
-<li><strong>Schema validation</strong>: <code>version</code>/<code>model_target</code>/허용 셀 키 일치 확인. 불일치 시 RuntimeError.</li>
+<li><strong>Cross-fit (5-fold)</strong> (<code>scripts/calibrate_source_bias.py</code>): in-sample으로 factor를 추정하고 같은 데이터로 보정 → 평가가 부풀려집니다. 따라서 train fold에서만 fit, OOF에서 평가.</li>
+<li><strong>Per-cell guard</strong>: cross-fit 평가가 baseline보다 <strong>악화되는 셀은 <code>factor=1.0</code> 적용 (skip)</strong>. <code>artsy_gallery</code>가 여기 해당:
+  <ul>
+  <li>baseline 24.3 &lt; calibrated 31.2 → skip</li>
+  <li>이유 추정: artsy_gallery는 KRW 표기 한국 1차 갤러리 작품 → 이미 모델이 잘 학습. 추가 보정이 오히려 오버슈트.</li>
+  </ul></li>
+<li><strong>Schema validation</strong> (<code>primary_predictor.py:233-262</code>): <code>version</code>/<code>model_target</code>/허용 셀 키 일치 확인. factor 값이 [0.1, 10.0] 범위 외이면 RuntimeError. 불일치 시 서버 시작 실패.</li>
 </ol>
 
-<h3>4.3 Production 적용 factor</h3>
+<h3>5.4 Production 적용 factor</h3>
 <pre><code>"cold_factors": {
   "artsy_gallery": 1.0,                  // skipped (regression cell)
   "artsy_online": 0.9425943416620021,    // -5.7%
   "saatchi_online": 0.9568847727800011   // -4.3%
 }</code></pre>
-<p><strong>Cold 전체 효과</strong>: baseline 39.38 → calibrated cross-fit guarded <strong>38.29</strong> (-1.09%p).</p>
-<p><strong>Warm은 보정 미적용 효과 (factor≈1.0)</strong>: warm은 이미 작가 패턴이 학습됐기에 셀별 편향이 작습니다 (8.7~10.3%).</p>
+<p><strong>Cold 전체 효과</strong> (<code>source_calibration.json</code> <code>cold_overall</code>): baseline <strong>39.38</strong> → calibrated cross-fit guarded <strong>38.29</strong> (-1.09%p).</p>
+<p><strong>Warm은 보정 미적용</strong>: warm path는 이미 작가 패턴이 학습됐기에 셀별 편향이 작습니다 (warm_factors 모두 1.0 근처: 0.99~1.005). <code>predict()</code> 함수에서 <code>not use_xgb and self._cold_calibration_factors:</code> 조건으로 cold path만 적용.</p>
 
-<h3>4.4 코덱스 리뷰 8회에서 막은 잡음</h3>
-<ul>
-<li><strong>In-sample evaluation</strong>: 처음엔 같은 데이터로 fit/eval → cross-fit으로 전환.</li>
-<li><strong>Cell key parser 버그</strong>: <code>split('_', 1)</code>이 <code>"artsy_artue"</code> 같은 셀에서 잘못 분할 → <code>rsplit</code>으로 수정.</li>
-<li><strong>wording 혼란</strong>: "True OOS guarded MdAPE" → guard cell selection이 같은 OOF 결과 보고 결정되어 post-hoc bias 잔존 → "production-time MdAPE"로 일관 정정.</li>
-</ul>
+<h3>5.5 코덱스 리뷰 8회에서 막은 잡음</h3>
+<table>
+<thead><tr><th class="center">회차</th><th>발견</th><th>수정</th></tr></thead>
+<tbody>
+<tr><td class="center">1차</td><td>In-sample evaluation (같은 데이터로 fit/eval)</td><td>cross-fit 5-fold 도입</td></tr>
+<tr><td class="center">2차</td><td>source × target_market entanglement (단순 source factor만 추정)</td><td>셀 단위로 분리</td></tr>
+<tr><td class="center">3차</td><td>early stopping leakage 잔존</td><td>완전 제거, schema rsplit 정합</td></tr>
+<tr><td class="center">4차</td><td>per-cell guard 부재 (회귀 cell 무조건 적용)</td><td>cross-fit 결과 보고 cell별 1.0 vs proposed 결정</td></tr>
+<tr><td class="center">5차</td><td>True cross-fit guarded — guard cell selection이 같은 OOF 결과 보고 결정되어 post-hoc bias 잔존</td><td>"production-time MdAPE"로 정정, caveat 명시</td></tr>
+<tr><td class="center">6차</td><td>warm metric 계산 오류</td><td>정정 + OOS bias 명시</td></tr>
+<tr><td class="center">7차</td><td>OOS bias caveat 산출물/스키마 미노출</td><td>JSON <code>note</code> 필드에 명시</td></tr>
+<tr><td class="center">8차</td><td>cell key parser 버그 (<code>split('_', 1)</code> → <code>"artsy_artue"</code> 잘못 분할)</td><td><code>rsplit</code>으로 수정</td></tr>
+</tbody>
+</table>
 
 <hr>
-<h2>5. PR #22 — Source 정규화 + 등급 마진 재캘리브레이션 (8회 코덱스 리뷰)</h2>
+<h2>6. PR #22 — Source 정규화 + 등급 마진 production-time 재캘리브레이션 (8회 코덱스 리뷰)</h2>
 
-<h3>5.1 source 결측값 정규화</h3>
+<h3>6.1 source 결측값 정규화</h3>
 <p><code>source</code> 등 categorical 피처가 서빙 시 <code>None</code>/<code>NaN</code>/<code>'None'</code>/<code>''</code>로 들어오면 학습 vocab 외 값이 되어 sentinel encoding으로 떨어졌습니다. 학습/서빙이 동일하게 처리되도록 <strong>predictor에서 모든 CAT_FEATURES에 일괄 정규화</strong> 적용 (<code>primary_predictor.py:317-322</code>):</p>
 <pre><code>for col in CAT_FEATURES:
     df[col] = df[col].astype(str).fillna("unknown").replace(
@@ -225,8 +430,8 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
     )</code></pre>
 <p>추가로 cold calibration cell key 산출에서도 <code>source</code>만 동일 룰로 한 번 더 정규화 (<code>primary_predictor.py:367-370</code>) — <code>cell = f"{src}_{target_market}"</code> 안정화. <strong><code>lower()</code>/<code>strip()</code>은 적용하지 않습니다</strong> (학습 vocab도 case-sensitive로 일관 유지).</p>
 
-<h3>5.2 등급 마진 production-time 재캘리브레이션</h3>
-<p>v1 마진은 <strong>모델 OOS MdAPE</strong>(38~39%)에서 도출 → 실제 라우팅된 등급별 분포와 어긋났습니다.</p>
+<h3>6.2 등급 마진 production-time 재캘리브레이션</h3>
+<p>v1 마진은 <strong>모델 OOS MdAPE</strong>(38~39%)에서 도출 → 실제 라우팅된 등급별 분포와 어긋났습니다. 새로 production 라우팅·보정을 동일하게 재현하여 등급별 MdAPE를 측정.</p>
 <p>새 절차 (<code>scripts/calibrate_grade_margins.py</code>):</p>
 <ol>
 <li><strong>5-fold CV의 OOF 모델 weights</strong>로 가격 예측.</li>
@@ -236,48 +441,68 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <p><strong>caveat (스크립트 §해석 그대로)</strong>: "OOF model weights + full-data routing artifacts" 결합 평가이므로 <strong>순수 OOF는 아니며</strong>, 운영 시 메트릭의 <strong>추정치</strong>로 해석합니다. Routing/calibration artifact 자체의 OOS 일반화는 PR #20+#21 산출물에서 별도 평가됐습니다.</p>
 <p><strong>production-time per-grade 결과</strong> (n=28,376):</p>
 <table>
-<thead><tr><th class="center">등급</th><th class="num">n</th><th class="num">MdAPE</th><th class="num">평균 APE</th><th class="num">현재 m</th><th class="num">현재 80% 커버리지</th><th class="num">권장 m</th><th class="num">Δ</th></tr></thead>
+<thead><tr><th class="center">등급</th><th>정의</th><th class="num">n</th><th class="num">MdAPE</th><th class="num">평균 APE</th><th class="num">현재 m</th><th class="num">현재 80% 커버리지</th><th class="num">권장 m</th><th class="num">Δ</th></tr></thead>
 <tbody>
-<tr><td class="center">A</td><td class="num">27,062</td><td class="num"><strong>9.8%</strong></td><td class="num">19.7%</td><td class="num">0.20</td><td class="num">71.5%</td><td class="num">0.286</td><td class="num">+0.086</td></tr>
-<tr><td class="center">B</td><td class="num">1,006</td><td class="num"><strong>29.7%</strong></td><td class="num">44.9%</td><td class="num">0.30</td><td class="num">50.6%</td><td class="num">0.609</td><td class="num">+0.309</td></tr>
-<tr><td class="center">C</td><td class="num">128</td><td class="num"><strong>39.0%</strong></td><td class="num">56.6%</td><td class="num">0.50</td><td class="num">60.2%</td><td class="num">0.896</td><td class="num">+0.396</td></tr>
-<tr><td class="center">D</td><td class="num">180</td><td class="num"><strong>43.6%</strong></td><td class="num">64.6%</td><td class="num">0.70</td><td class="num">72.8%</td><td class="num">0.827</td><td class="num">+0.127</td></tr>
+<tr><td class="center">A</td><td>matched + warm artist (slug ∈ warm set)</td><td class="num">27,062</td><td class="num"><strong>9.8%</strong></td><td class="num">19.7%</td><td class="num">0.20</td><td class="num">71.5%</td><td class="num">0.286</td><td class="num">+0.086</td></tr>
+<tr><td class="center">B</td><td>matched + warm 아님 (training_count≥1)</td><td class="num">1,006</td><td class="num"><strong>29.7%</strong></td><td class="num">44.9%</td><td class="num">0.30</td><td class="num">50.6%</td><td class="num">0.609</td><td class="num">+0.309</td></tr>
+<tr><td class="center">C</td><td>unmatched + birth_year 또는 manual_profile 있음</td><td class="num">128</td><td class="num"><strong>39.0%</strong></td><td class="num">56.6%</td><td class="num">0.50</td><td class="num">60.2%</td><td class="num">0.896</td><td class="num">+0.396</td></tr>
+<tr><td class="center">D</td><td>unmatched + birth_year/manual_profile 모두 없음</td><td class="num">180</td><td class="num"><strong>43.6%</strong></td><td class="num">64.6%</td><td class="num">0.70</td><td class="num">72.8%</td><td class="num">0.827</td><td class="num">+0.127</td></tr>
 </tbody>
 </table>
 <p><strong>해석</strong>:</p>
 <ul>
-<li><strong>A 등급은 현재 m=0.20에서 71.5%만 커버</strong> → 80% 커버리지를 위해선 m=0.286 필요. 현재 가격 범위가 좁게 표시되고 있다는 뜻.</li>
+<li><strong>A 등급은 현재 m=0.20에서 71.5%만 커버</strong> → 80% 커버리지를 위해선 m=0.286 필요. 현재 가격 범위가 좁게 표시되고 있다는 뜻 (사용자에게 신뢰도 낮은 약속).</li>
+<li><strong>B 등급은 현재 m=0.30에서 50.6%만 커버</strong> — 절반 이상이 범위 밖. 권장 m=0.609로 두 배 가까이 넓어져야 함.</li>
 <li><strong>C/D는 m≈0.9</strong> — 사실상 가격 범위 의미가 없을 정도로 넓어집니다. 적용 여부는 정책 결정 사안 (사용자 신뢰도 영향).</li>
 </ul>
-<p><strong>권장 m 적용은 보류 중</strong> — 사용자 요청에 따라 적용 결정은 별도 정책 결정 후 진행 예정.</p>
-
-<h3>5.3 코덱스 리뷰 8회에서 막은 잡음</h3>
+<p><strong>권장 m 적용은 보류 중</strong>. 옵션:</p>
 <ul>
-<li><strong>A/B 등급 폴드 멤버십 942건 차이</strong>: warm slug JSON과 KFold 학습 슬라이스가 어긋남 → <code>warm_set</code> membership으로 통일.</li>
-<li><strong>Calibration factor leakage in grade margin</strong>: 등급별 m 산출 시 production guarded factor를 그대로 사용 → 통일.</li>
-<li><strong><code>loaded</code> vs empty dict</strong>: 빈 JSON을 missing으로 처리 → tuple 반환 <code>(data, loaded)</code>로 명시적 분리.</li>
+<li><strong>옵션 1 (보수적 노출)</strong>: A/B만 가격 범위 표시, C/D는 단일 참고가 + "정확도 낮음" 라벨, 또는 D는 미노출.</li>
+<li><strong>옵션 2 (정직한 범위)</strong>: 권장 m 그대로 적용 → C/D는 ±90%대 → 사실상 무용.</li>
+<li><strong>옵션 3 (현재 유지)</strong>: m을 안 바꾸고 coverage 부족을 알면서 노출.</li>
 </ul>
 
-<hr>
-<h2>6. 32회 코덱스 리뷰가 막아낸 것</h2>
+<h3>6.3 코덱스 리뷰 8회에서 막은 잡음</h3>
 <table>
-<thead><tr><th class="center">PR</th><th class="center">리뷰 회차</th><th>주요 차단 항목</th></tr></thead>
+<thead><tr><th class="center">회차</th><th>발견</th><th>수정</th></tr></thead>
 <tbody>
-<tr><td class="center">#20</td><td class="center">15회</td><td>career_stage v1 사문화, 5개 드리프트 피처, gallery_name vocab, eval_set 누수, label_maps fallback, categorical 정규화 비대칭, model_version 정적</td></tr>
-<tr><td class="center">#21</td><td class="center">8회</td><td>in-sample calibration evaluation, cell key parser, schema validation, "True OOS" wording</td></tr>
-<tr><td class="center">#22</td><td class="center">8회</td><td>A/B 폴드 멤버십, calibration factor leakage, schema parity, empty artifact 분리</td></tr>
-<tr><td class="center">#23·#24</td><td class="center">1회</td><td>문서 정합</td></tr>
+<tr><td class="center">1차</td><td>warm_set vs KFold slice 어긋남 (A/B 등급 폴드 멤버십 942건 차이)</td><td>warm slug JSON membership으로 통일</td></tr>
+<tr><td class="center">2차</td><td>XGB train slice + production calibration factors 정합 미흡</td><td>warm-only train + production guarded factor 적용</td></tr>
+<tr><td class="center">3차</td><td>A 등급 matched 요구 누락 (factor leakage disclosure)</td><td>A는 matched + warm 둘 다 요구</td></tr>
+<tr><td class="center">4차</td><td>wording 정리 ("실측" → production-time) + fail-closed validation</td><td>일관 정정</td></tr>
+<tr><td class="center">5차</td><td>calibration runtime 필수 + schema 검증 + "실측" 잔재</td><td>산출물에 caveat 명시</td></tr>
+<tr><td class="center">6차</td><td>calibrate_grade_margins schema validator를 production과 동등화</td><td>동일 룰 적용</td></tr>
+<tr><td class="center">7차</td><td>loaded vs empty 구분 (production 정합)</td><td>tuple 반환 <code>(data, loaded)</code></td></tr>
+<tr><td class="center">8차</td><td>source 정규화 → cell key 안정화</td><td>predict() 시 동일 룰 한 번 더 적용</td></tr>
 </tbody>
 </table>
-<p><strong>공통 패턴</strong>: 모델 정확도 그래프엔 안 잡히지만 production에서 <strong>silent하게 다른 패턴을 학습</strong>시킬 train/serve 정합 문제. 32회 리뷰 없이 머지됐다면 metrics는 그대로 38~39%였을 것이고, 운영 중 디버깅 비용이 폭발했을 것입니다.</p>
 
 <hr>
-<h2>7. 최종 production 메트릭 (v3-tuned-cal)</h2>
-<blockquote>
-<p><strong>측정 절차</strong>: production 코드 경로 그대로 재현. <code>is_warm_artist</code>(930 slug JSON), source calibration cold factor, target_market 추론까지 동일.</p>
-</blockquote>
+<h2>7. 시도했지만 채택하지 않은 실험 (Negative Results)</h2>
+<p>정확도를 떨어뜨리거나 다른 비용이 컸던 실험. v1 보고서 §9.1과 액션 플랜에서 검증된 한계:</p>
+<table>
+<thead><tr><th>실험</th><th>결과</th><th class="center">채택 여부</th></tr></thead>
+<tbody>
+<tr><td><strong>v4 — 피처 46개 확장</strong></td><td>MdAPE 38.7→40.4 (악화)</td><td class="center">❌ 과적합 — 피처 ≠ 정확도</td></tr>
+<tr><td><strong>v5 — 하이퍼파라미터 그리드 서치</strong></td><td>&lt;0.5%p 개선</td><td class="center">❌ 데이터가 병목, 튜닝은 한계</td></tr>
+<tr><td><strong>v6 — source별 분리 모델</strong> (Artsy 모델 + Saatchi 모델)</td><td>통합 모델 우수</td><td class="center">❌ split 후 sample 반감으로 과적합. 액션 플랜 P1-2도 코덱스가 risky 평가</td></tr>
+<tr><td><strong>v6 — stacking</strong></td><td>효과 없음</td><td class="center">❌ 단일 GBDT가 충분</td></tr>
+<tr><td><strong><code>career_age</code> 직접 피처</strong></td><td>XGB gain 2.03이지만 train/serve drift</td><td class="center">❌ DB 컬럼 없음 → drift</td></tr>
+<tr><td><strong><code>work_age</code>/<code>vintage_premium</code>/<code>freshness_discount</code></strong></td><td>학습 시 신호 있으나 서빙 0 하드코딩</td><td class="center">❌ drift</td></tr>
+<tr><td><strong><code>gallery_name</code> 직접 피처</strong></td><td>학습 vocab 59개 vs 서빙 2개 hardcoded</td><td class="center">❌ 매번 sentinel → drift</td></tr>
+<tr><td><strong>5 카테고리 확장</strong> (장르/스타일 등)</td><td>계약 변경 위험 큼, -0.5%p 추정</td><td class="center">❌ ROI 낮음</td></tr>
+<tr><td><strong>단일 상수 source 보정</strong> (-0.075 ln)</td><td>모든 online 동일 처리, 셀 분포 차이 미반영</td><td class="center">❌ 셀별 보정으로 대체 (PR #21)</td></tr>
+<tr><td><strong>In-sample calibration</strong></td><td>평가 부풀려짐</td><td class="center">❌ cross-fit으로 대체</td></tr>
+<tr><td><strong>개인전/페어 직접 피처화</strong></td><td>v4 실험에서 과적합 + warm 데이터 부족</td><td class="center">❌ <code>career_stage_v2_score</code> 입력으로 통합</td></tr>
+</tbody>
+</table>
+<p><strong>시사점</strong>: 1차 시장 가격 모델의 정확도 한계는 <strong>모델 코드보다 데이터</strong>에 있습니다. 액션 플랜의 큰 폭 개선 후보는 모두 협력자/운영 데이터 협조 의존(Phase 1B 갤러리 티어 검수, 갤러리 입력 UX, DB schema career_age 추가).</p>
 
-<h3>7.1 Warm slice (KFold, 27,062건 / 930 작가, ≥5건)</h3>
+<hr>
+<h2>8. 최종 production 메트릭 (v3-tuned-cal)</h2>
+<blockquote><p><strong>측정 절차</strong>: production 코드 경로 그대로 재현. <code>is_warm_artist</code>(930 slug JSON), source calibration cold factor, target_market 추론까지 동일.</p></blockquote>
+
+<h3>8.1 Warm slice (KFold, 27,062건 / 930 작가, ≥5건)</h3>
 <table>
 <thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE</th><th class="num">W30</th><th class="num">W50</th></tr></thead>
 <tbody>
@@ -292,7 +517,7 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 </table>
 <p><strong>A 등급 8% 목표</strong>: warm Artsy XGB 8.3% / 앙상블 8.7%로 사실상 도달. (A 목표는 "warm Artsy" 슬라이스 정의에서 8.0~9.0% 밴드.)</p>
 
-<h3>7.2 Cold slice (GroupKFold, 28,376건 / 1,551 작가)</h3>
+<h3>8.2 Cold slice (GroupKFold, 28,376건 / 1,551 작가)</h3>
 <blockquote><p><strong>production cold path = CatBoost 단일 경로</strong>. 따라서 보정 전후 비교는 CatBoost OOF 기준이며 (<code>source_calibration.json</code> <code>cold_overall</code>), 앙상블/소스 슬라이스는 offline 비교 참고용입니다.</p></blockquote>
 <table>
 <thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE</th><th>비고</th></tr></thead>
@@ -306,25 +531,63 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 </tbody>
 </table>
 
-<h3>7.3 Production-time grade MdAPE (전체 28,376)</h3>
-<p>위 §5.2 표 참조.</p>
+<h3>8.3 Production-time grade MdAPE</h3>
+<p>위 §6.2 표 참조.</p>
+
+<h3>8.4 정직성 — 메트릭이 "진짜"인가</h3>
+<p><strong>학습/서빙 contract 정합 완료</strong> (PR #20+#21+#22 효과):</p>
+<ul>
+<li>✅ feature drift 5건 제거 (career_age, work_age, vintage, freshness, gallery_name)</li>
+<li>✅ warm 라우팅 학습/서빙 동일 (<code>warm_artist_slugs.json</code> 권위)</li>
+<li>✅ source calibration 학습 시점 fit, 서빙 적용 일관</li>
+<li>✅ categorical 정규화 학습/서빙 동일</li>
+</ul>
+<p><strong>잔존 post-hoc bias</strong> (코덱스 검증·문서화):</p>
+<ul>
+<li>⚠️ Cross-fit calibration: factor 추정은 OOF지만 <strong>guard cell selection은 동일 OOF 결과 보고 결정</strong> → post-hoc selection bias 잔존.</li>
+<li>⚠️ Production-time MdAPE: 모델 OOF + full-data routing/calibration artifact → 순수 OOF 아님.</li>
+<li>결론: <strong>38.3% / 9.7%는 보수적 추정치</strong>. 실제 production 정확도는 그 이상일 수도.</li>
+<li>추가 검증 필요시: nested CV (outer fold guard 결정, inner fold factor 추정) — 미시행.</li>
+</ul>
 
 <hr>
-<h2>8. 알려진 제약·잔존 협조 사항</h2>
-<p>본 v2 모델이 <strong>여전히 해결하지 못하는 것</strong>과 후속 협조 필요 항목 (<code>docs/협조_필요사항_정리_20260428.md</code> 전체 12건 중 핵심):</p>
+<h2>9. 32회 코덱스 리뷰가 막아낸 것 (요약)</h2>
+<table>
+<thead><tr><th class="center">PR</th><th class="center">코덱스 회차</th><th>핵심 차단 항목</th></tr></thead>
+<tbody>
+<tr><td class="center">#19</td><td class="center">1회</td><td>Saatchi 강제 Tier E 재코딩 (가격 분리도 부풀림 방지) + 가격 분리도 측정 추가</td></tr>
+<tr><td class="center">#20</td><td class="center"><strong>15회</strong></td><td>평가-라우팅 불일치, career_stage v1 사문화, 5개 train/serve drift 피처(career_age/work_age/vintage_premium/freshness_discount/gallery_name), followers 컬럼명 버그, train/tune slice 정렬, warm artist routing JSON, label_maps fail-closed, categorical 정규화 비대칭, sentinel encoding, model_version 동적화</td></tr>
+<tr><td class="center">#21</td><td class="center">8회</td><td>in-sample calibration, source × target_market entanglement, per-cell guard, true cross-fit guarded wording, schema validation, cell key parser 버그</td></tr>
+<tr><td class="center">#22</td><td class="center">8회</td><td>warm_set 폴드 멤버십 942건 차이, calibration factor leakage, schema parity, "실측" → "production-time" wording, empty artifact 분리</td></tr>
+<tr><td class="center">#23·#24</td><td class="center">1회</td><td>문서 정합</td></tr>
+</tbody>
+</table>
+<p><strong>공통 패턴</strong>: 모델 정확도 그래프엔 안 잡히지만 production에서 silent하게 다른 패턴을 학습시킬 train/serve 정합 문제. 32회 리뷰 없이 머지됐다면 metrics는 그대로 38~39%였을 것이고, 운영 중 디버깅 비용이 폭발했을 것.</p>
+<p><strong>코덱스 기여 핵심 발견</strong> (사람 리뷰만으로는 잡기 어려움):</p>
+<ul>
+<li>PR #19: ratio 분리 평가 (Saatchi 강제 Tier E 폐기)</li>
+<li>PR #20: career_age 학습/서빙 드리프트, gallery_name vocab mismatch, label_maps fail-closed</li>
+<li>PR #21: cross-fit leakage, source × target_market entanglement, per-cell guard</li>
+<li>PR #22: warm artist set vs train_count, factor in-sample bias, 빈 artifact vs missing 구분</li>
+</ul>
+<p>→ <strong>코덱스 없었다면 38.9% 메트릭은 misleading</strong>이었을 것. 학습/서빙 드리프트로 실제 production은 다른 수치였을 것이고, 디버깅 후 metric은 더 악화됐을 가능성이 큽니다.</p>
+
+<hr>
+<h2>10. 알려진 제약·잔존 협조 사항</h2>
+<p>본 v2 모델이 <strong>여전히 해결하지 못하는 것</strong>과 후속 협조 필요 항목 (<code>docs/협조_필요사항_정리_20260428.md</code> 전체 12건 중 핵심 6건):</p>
 <ol>
-<li><strong>Cold-start MdAPE 38%대 수렴</strong>: 생년 결측 72%, 고가 1,678건(5.7%), 신진 작가 외부 수집 정확도 한계 — 데이터 구조적 한계로 모델만으론 추가 개선 어려움.</li>
-<li><strong>DB schema 마이그레이션 (운영 협조)</strong>: <code>artist_profiles.career_stage</code>가 INT(1..4) CHECK 제약 — career_stage v2(연속 0~8) 와 충돌. 현재는 학습/서빙이 JSON으로 우회 중.</li>
-<li><strong>갤러리 티어 v3 매칭 81% 미해결 (협력자 협조)</strong>: Artsy 갤러리 66개 중 11개만 협력자 리스트와 매칭. Top 30 미매칭 명단(영문명+한글 추정) 검수 필요 — 완료 시 Phase 1B에서 갤러리 등급 신호 회복.</li>
-<li><strong>Cold-start 자동 수집 강화 (운영 협조)</strong>: 한국 갤러리 사이트 크롤링 추가, 5단계→7단계 필터로 정확도 향상.</li>
-<li><strong>PredictRequest에 optional <code>gallery_name</code>/<code>gallery_type</code> 추가 + 모델 재학습</strong>: <code>gallery_name</code>은 v2 모델에서 <strong>이미 제거</strong>된 상태이므로 API 필드만 추가해도 신호가 살아나지 않습니다. 회복하려면 (a) PredictRequest 스키마 추가, (b) feature builder에 <code>gallery_name</code> 재도입, (c) 모델 재학습이 모두 필요합니다. <code>gallery_type</code>은 현재도 모델 입력이지만 서빙 vocab이 좁아 효과 제한적.</li>
-<li><strong>m 값 정책 결정</strong>: 권장치 적용 시 C/D는 m≈0.9 — 가격 범위 표시 정책 변경 영향 검토 필요.</li>
+<li><strong>Cold-start MdAPE 38%대 수렴</strong> (모델 한계): 생년 결측 72%, 고가 1,678건(5.7%), 신규 작가 외부 수집 정확도 한계 — 데이터 구조적 한계로 모델만으론 추가 개선 어려움.</li>
+<li><strong>DB schema 마이그레이션</strong> (운영 협조): <code>artist_profiles.career_stage</code>가 INT(1..4) CHECK 제약 — career_stage v2(연속 0~8)와 충돌. 현재는 학습/서빙이 JSON으로 우회 중. 또한 <code>career_age</code> 컬럼 신설 시 신호 회복 가능.</li>
+<li><strong>갤러리 티어 v3 매칭 81% 미해결</strong> (협력자 협조): Artsy 갤러리 66개 중 11개만 협력자 리스트와 매칭. PR #19 Top 30 미매칭 명단(영문명+한글 추정) 검수 필요 — 완료 시 Phase 1B에서 갤러리 등급 신호 회복(예상 -1~2%p A 등급 MdAPE 개선).</li>
+<li><strong>Cold-start 자동 수집 강화</strong> (운영 협조): 한국 갤러리 사이트 크롤링 추가, 5단계→7단계 필터로 정확도 향상. C/D 등급 인구 감소 + MdAPE 41~43% → 30~35% (5~10%p) 가능.</li>
+<li><strong>PredictRequest에 optional <code>gallery_name</code>/<code>gallery_type</code> 추가 + 모델 재학습</strong>: <code>gallery_name</code>은 v2 모델에서 <strong>이미 제거</strong>된 상태이므로 API 필드만 추가해도 신호가 살아나지 않습니다. 회복하려면 (a) PredictRequest 스키마 추가, (b) feature builder에 <code>gallery_name</code> 재도입, (c) 모델 재학습이 모두 필요. <code>gallery_type</code>은 현재도 모델 입력이지만 서빙 vocab이 좁아 효과 제한적.</li>
+<li><strong>m 값 정책 결정</strong>: 권장치 적용 시 C/D는 m≈0.9 — 가격 범위 표시 정책 변경 영향 검토 필요. 옵션은 §6.2 참조.</li>
 </ol>
 
 <hr>
-<h2>9. 운영 변경 사항 (v1 대비)</h2>
+<h2>11. 운영 변경 사항 (v1 대비)</h2>
 
-<h3>9.1 모델 아티팩트 5종 (Dockerfile.api COPY 대상)</h3>
+<h3>11.1 모델 아티팩트 5종 (Dockerfile.api COPY 대상)</h3>
 <pre><code>model_test_results/
 ├── integrated_v3_filtered_tuned_catboost.cbm
 ├── integrated_v3_filtered_tuned_xgboost.json
@@ -333,7 +596,7 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 └── integrated_v3_filtered_tuned_source_calibration.json    # cell factor</code></pre>
 <p><strong>fail-closed</strong>: 5개 중 1개라도 누락·schema 불일치 시 서버 시작 시점에 <code>RuntimeError</code>. v1은 partial 로드 후 잘못된 예측을 침묵으로 반환할 수 있었음 — v2에서 차단.</p>
 
-<h3>9.2 model_version 동적화</h3>
+<h3>11.2 model_version 동적화</h3>
 <pre><code># primary_predictor.py
 def model_version_label(self, base: str = "v3-tuned") -> str:
     if self._cold_calibration_factors:
@@ -341,7 +604,7 @@ def model_version_label(self, base: str = "v3-tuned") -> str:
     return base                # uncalibrated 상태도 거짓 보고하지 않음</code></pre>
 <p>v1은 하드코딩된 <code>"v3"</code> — 모델 업데이트 시 코드 수동 갱신 필요했음. v2는 <strong>실제 로드된 artifact 기반</strong>으로 라벨 산출 (calibration 누락 시 <code>v3-tuned</code>, 로드 시 <code>v3-tuned-cal</code>).</p>
 
-<h3>9.3 라우팅 경로 (변경 없음 + 명시화)</h3>
+<h3>11.3 라우팅 경로 (변경 없음 + 명시화)</h3>
 <pre><code>입력 → ArtistMatcher.match() → slug
        │
        ├─ slug ∈ WARM_ARTIST_SLUGS (930)?
@@ -351,21 +614,69 @@ def model_version_label(self, base: str = "v3-tuned") -> str:
        └─ predict() 후 cold path만 cell calibration 적용
               (cell = source × target_market, factor JSON 참조)</code></pre>
 
+<h3>11.4 grade 결정 (warm artist tri-state)</h3>
+<pre><code># determine_confidence (primary_predictor.py:52)
+# is_warm_artist: True / False / None (warm set 미로드 시)
+if is_warm_artist is True and is_matched:  return ("A", 0.20)
+if is_warm_artist is False:
+    if is_matched and training_count >= 1:  return ("B", 0.30)
+    if has_birth_year or has_manual_profile: return ("C", 0.50)
+    return ("D", 0.70)
+# is_warm_artist is None: 구 legacy fallback (training_count >= 5 → A)</code></pre>
+<p>PR #20 Codex 6차에서 발견: warm set 외부 + DB training_count≥5인 작가가 CatBoost+A 모순 발생할 수 있어 tri-state로 분리.</p>
+
 <hr>
-<h2>10. 참고 문서</h2>
+<h2>12. 한 줄 요약</h2>
+<div class="tldr">
+<p><strong>v2 모델은 학습 작가의 작품 가격을 평균 9.7% 오차(warm Artsy는 8.3%)로 예측한다. 신규 작가는 38.3% 오차 — 데이터 부족으로 본질적 한계. 다음 큰 개선은 모델이 아니라 협력자 갤러리 정보 수집·DB schema 정합·갤러리 입력 UX에 달림.</strong></p>
+</div>
+
+<hr>
+<h2>13. 참고 문서</h2>
+
+<h3>협력자 피드백</h3>
 <ul>
-<li>v1 본문 (이론·아키텍처·SHAP): <a href="model_technical_report.html"><code>model_technical_report.html</code></a></li>
-<li>액션 플랜 전체 (10 항목): <code>MdAPE_개선_액션플랜_20260427.md</code></li>
-<li>PR #20 여정 (15회 리뷰): <code>PR20_요약_및_코덱스리뷰_여정_20260428.md</code></li>
-<li>정확도 종합 리포트: <code>예측정확도_종합리포트_20260428.md</code></li>
-<li>협조 필요 사항: <code>협조_필요사항_정리_20260428.md</code></li>
-<li>PR 머지 완료: #19, #20, #21, #22, #23, #24</li>
+<li><code>실험계획서_피드백_답변.md</code> — 2026-04-07~08, 14건 (모델 설계 단계)</li>
+<li><code>기술보고서_피드백_답변_20260427.md</code> — 2026-04-24~26, 10건 (production 평가 단계)</li>
+</ul>
+
+<h3>v1 본문 (이론·아키텍처·SHAP)</h3>
+<ul>
+<li><a href="model_technical_report.html"><code>model_technical_report.html</code></a> — v1 보고서</li>
+</ul>
+
+<h3>액션 플랜·실행 기록</h3>
+<ul>
+<li><code>MdAPE_개선_액션플랜_20260427.md</code> — 액션 매트릭스(P0~P3)</li>
+<li><code>PR20_요약_및_코덱스리뷰_여정_20260428.md</code> — PR #20 15회 리뷰 여정 상세</li>
+<li><code>예측정확도_종합리포트_20260428.md</code> — 정확도 시작점→현재 비교</li>
+<li><code>협조_필요사항_정리_20260428.md</code> — 협력자/운영/정책 협조 12건</li>
+</ul>
+
+<h3>산출물 (수치 출처)</h3>
+<ul>
+<li><code>model_test_results/integrated_v3_filtered_tuned_metrics.json</code> — 핵심 metrics</li>
+<li><code>model_test_results/integrated_v3_filtered_tuned_source_calibration.json</code> — cell calibration factor</li>
+<li><code>model_test_results/grade_margin_calibration.json</code> — production-time 등급별 m</li>
+<li><code>model_test_results/integrated_v3_filtered_tuned_warm_artists.json</code> — warm 930 slug</li>
+<li><code>model_test_results/gallery_tier_coverage_report.md</code> — PR #19 매핑 분석</li>
+</ul>
+
+<h3>머지된 PR</h3>
+<ul>
+<li>PR #19 (<code>52a0315</code>) — 갤러리 티어 v3 매핑 분석</li>
+<li>PR #20 (<code>71b363e</code>) — career_stage v2 + drift 정리</li>
+<li>PR #21 (<code>e1d033d</code>) — source × target_market 셀 캘리브레이션</li>
+<li>PR #22 (<code>6f47ec2</code>) — source 정규화 + grade margin 재캘리브레이션</li>
+<li>PR #23 (<code>4a3588a</code>) — 협조 필요 사항 문서화</li>
+<li>PR #24 (<code>cfce8a6</code>) — 정확도 종합 리포트</li>
 </ul>
 
 <hr>
-<h2>11. 변경 이력</h2>
+<h2>14. 변경 이력</h2>
 <ul>
-<li><strong>2026-04-28</strong> v2 초안 — career_stage v2, 5개 드리프트 피처 제거, source × target_market 셀 캘리브레이션, 등급 마진 production-time 재산출 반영. 32회 코덱스 리뷰 소화 후 머지된 산출물 기준.</li>
+<li><strong>2026-04-28 (v2 1차)</strong> — career_stage v2, 5개 drift 피처 제거, source × target_market 셀 캘리브레이션, 등급 마진 production-time 재산출 반영. 32회 코덱스 리뷰 소화 후 머지된 산출물 기준.</li>
+<li><strong>2026-04-28 (v2 2차)</strong> — 명칭 정책 반영(Q9: "신진/중견/원로" 라벨 제거 → 수치형 <code>career_stage</code> 0~8 + 운영 등급 A/B/C/D만 사용). 협력자 피드백 24건(기술보고서 10 + 실험계획서 14) 트레이서빌리티 표 추가. PR #19 갤러리 티어 분석, 코덱스 리뷰 회차별 발견 항목 상세, negative results 표 추가.</li>
 </ul>
 
 </div>
