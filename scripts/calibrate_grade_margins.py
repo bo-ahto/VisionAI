@@ -2,16 +2,19 @@
 
 배경 (협력자 피드백 Q7 → Q-margin):
 - 보고서 §6.2의 등급 마진 m (A=0.20, B=0.30, C=0.50, D=0.70)은 임의 휴리스틱.
-- 보고서 §7.3의 "MdAPE (추정)" 표는 A 외에 실측 아님.
+- 보고서 §7.3의 "MdAPE (추정)" 표는 A 외에 measurement 아님.
 - 본 스크립트는 production model + calibration을 적용한 5-fold CV 등급별 MdAPE +
   현재 m 적용 시 coverage 측정 + 목표 coverage 기반 m 재조정값을 산출한다.
 
 평가 방식 (Codex P1 disclosure, 2026-04-28):
-- 5-fold KFold로 CB/XGB 모델은 fold-out 학습/예측 (정직한 OOF)
-- 단, source × target_market calibration은 PR #21 production guarded factors
-  (full-data fit) 직접 적용 → factor 자체는 OOF 보장 X (production 동작과 정합)
-- 따라서 'production-time MdAPE' (운영 시 사용자가 받을 메트릭) 추정으로 해석.
-  Calibrator의 OOS 일반화 평가는 PR #21 calibrate_source_bias.py 별도 산출물.
+- 5-fold KFold로 CB/XGB 모델 weights는 fold-out 학습/예측 (model OOF)
+- BUT routing/calibration은 production full-data artifacts 사용:
+  · warm_artist_slugs.json (PR #20) — A 등급 + XGB train slice 결정
+  · source_calibration.json cold_factors (PR #21) — cold path 후처리
+- 따라서 측정값은 'OOF model weights + full-data routing artifacts' 결합 평가.
+  순수 OOF 평가가 아니므로 'production-time MdAPE' (운영 시 메트릭 추정치)로 해석.
+- Calibrator/routing artifact의 OOS 일반화 별도 평가는 PR #20+#21 산출물 참고
+  (단 그 산출물도 post-hoc selection bias 잔존 — calibrate_source_bias.py 참고).
 
 산출물:
 - model_test_results/grade_margin_calibration.json — 등급별 production-time + 권장 m
@@ -183,7 +186,7 @@ def _train_predict_fold(
 
 
 def calibrate(target_coverage: float = 0.80) -> dict:
-    """등급별 실측 MdAPE + 현재 m 적용 coverage + 목표 coverage 기반 신규 m 산출."""
+    """등급별 production-time MdAPE + 현재 m 적용 coverage + 목표 coverage 기반 신규 m 산출."""
     logger.info("=" * 70)
     logger.info("등급별 마진 캘리브레이션 시작 — 목표 coverage %.0f%%", target_coverage * 100)
     logger.info("=" * 70)
@@ -204,23 +207,23 @@ def calibrate(target_coverage: float = 0.80) -> dict:
                 xgb_params.get("num_boost_round"), xgb_params.get("max_depth"))
 
     # PR #20 warm artist set — production grade A 결정 + XGB train slice 정합
-    # 기존: per-fold train_count>=5 → 942행 (3.48%) misclassification
-    # 수정: full-data warm_artist_slugs membership 사용 (서비스 라우팅과 동일)
+    # Codex 4차 P3: production fail-closed contract 정렬 — artifact 누락 시 raise
     warm_set = _load_warm_artists()
-    if warm_set:
-        logger.info("Warm artists loaded: %d (production A 등급 + XGB train slice)", len(warm_set))
-    else:
-        logger.warning("Warm artists JSON 없음 → fallback to per-fold train_count>=5")
+    if not warm_set:
+        raise RuntimeError(
+            "warm_artists.json 누락 — production fail-closed contract 정합 위해 필수. "
+            f"({OUT_DIR}/integrated_v3_filtered_tuned_warm_artists.json)"
+        )
+    logger.info("Warm artists loaded: %d (production A 등급 + XGB train slice)", len(warm_set))
 
-    # PR #21 production cold calibration factors — guarded factors 직접 사용 (Codex 2차 P1)
-    # 기존: per-fold refit은 leakage 작지만 production behavior와 다른 factors 적용
-    # 수정: production guarded factors (artsy_gallery=1.0 skip 포함) 그대로 사용 →
-    #       grade margin이 실제 서빙 동작을 평가
+    # PR #21 production cold calibration factors — guarded factors 직접 사용
     production_cold_factors = _load_production_cold_factors()
-    if production_cold_factors:
-        logger.info("Production cold calibration factors: %s", production_cold_factors)
-    else:
-        logger.warning("Production cold calibration JSON 없음 → cold prediction 후처리 skip")
+    if not production_cold_factors:
+        raise RuntimeError(
+            "source_calibration.json 누락 — production fail-closed contract 정합 위해 필수. "
+            f"({OUT_DIR}/integrated_v3_filtered_tuned_source_calibration.json)"
+        )
+    logger.info("Production cold calibration factors: %s", production_cold_factors)
 
     # 5-Fold KFold (작가가 fold에 걸쳐 분포 → 등급 결정에 자연스러움)
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -329,7 +332,7 @@ def write_report(result: dict, out_md: Path) -> None:
         "",
         "## 등급별 결과",
         "",
-        "| 등급 | 표본 | 실측 MdAPE | 현재 m | 현재 coverage | 권장 m | 변화 |",
+        "| 등급 | 표본 | production-time MdAPE | 현재 m | 현재 coverage | 권장 m | 변화 |",
         "|:---:|---:|---:|---:|---:|---:|---:|",
     ]
     for g in ["A", "B", "C", "D"]:
@@ -346,11 +349,13 @@ def write_report(result: dict, out_md: Path) -> None:
         "",
         "## 해석",
         "",
-        "- **production-time MdAPE**: 5-fold CV로 measured. 모델 prediction은 fold-out (OOF), "
-        "단 source × target_market calibration은 PR #21 production guarded factors "
-        "(full-data fit) 직접 적용 → factor는 OOF 보장 X. ",
-        "  운영 시 사용자가 받을 메트릭의 추정치로 해석. Calibrator의 OOS 일반화 평가는 "
-        "별도 산출물 (`integrated_v3_filtered_tuned_source_calibration.json`의 `cold_overall`).",
+        "- **production-time MdAPE**: 5-fold CV. 단, OOF는 모델 weights에만 적용되고 "
+        "routing/calibration은 production full-data artifacts 사용:",
+        "  · `warm_artist_slugs.json` (PR #20) — A 등급 + XGB train slice 결정",
+        "  · `source_calibration.json cold_factors` (PR #21) — cold path 후처리",
+        "  → 결과는 'OOF model weights + full-data routing artifacts' 결합 평가. "
+        "운영 시 메트릭의 추정치로 해석. 순수 OOF 평가는 아님.",
+        "  · Routing/calibration artifact 자체의 OOS 일반화 별도 평가는 PR #20+#21 산출물 참고.",
         "- **현재 coverage**: 현재 m 값으로 계산한 가격 범위에 실제 가격이 들어가는 비율.",
         f"  - {target}% 미만이면 m이 너무 좁음 (사용자에게 신뢰도 낮은 약속).",
         f"  - {target}% 훨씬 초과면 m이 너무 넓음 (불필요하게 보수적).",
@@ -392,7 +397,7 @@ def main() -> None:
         if s.get("n", 0) == 0:
             continue
         logger.info(
-            "%s: 현재 m=%.2f → 권장 m=%.3f  (실측 MdAPE %.1f%%, 현재 coverage %.1f%%)",
+            "%s: 현재 m=%.2f → 권장 m=%.3f  (production-time MdAPE %.1f%%, 현재 coverage %.1f%%)",
             g, s["current_m"], s["recommended_m"], s["mdape_pct"], s["current_coverage_pct"],
         )
 
