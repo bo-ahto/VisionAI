@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 _matcher = ArtistMatcher()
 _predictor = PrimaryPredictor()
 _start_time = time.time()
-_model_version = "v3-filtered-tuned-cal"  # PR #21 cell-level cross-fit calibration 적용
+_model_version = "v3-tuned-cal"  # PR #21 cell-level cross-fit calibration (DB VARCHAR(20) 호환)
 _price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
 
 # ─── 인메모리 모니터링 카운터 ───

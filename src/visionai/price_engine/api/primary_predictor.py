@@ -193,7 +193,14 @@ class PrimaryPredictor:
                     )
 
         # source × target_market calibration (선택 — 누락 시 fallback factor=1.0, no correction)
-        # Codex P2 schema 검증: model_target 일치, version, factors 타입+범위 검증
+        # Codex 2차 P2 schema 검증 강화:
+        # - model_target 필수 (누락도 거부)
+        # - version 필수 (artifact 구조 변경 추적)
+        # - cell key 알려진 set ({source}_{target_market}) 형식 검증
+        # - factor 타입 + 범위 sanity bounds [0.1, 10.0]
+        ALLOWED_SOURCES = {"artsy", "saatchi", "manual", "printbakery", "artsy_artue", "unknown"}
+        ALLOWED_MARKETS = {"gallery", "online"}
+        EXPECTED_TARGET = "integrated_v3_filtered_tuned"
         new_cold_calib: dict[str, float] = {}
         if calib_path.exists():
             with calib_path.open(encoding="utf-8") as f:
@@ -202,11 +209,21 @@ class PrimaryPredictor:
                 raise RuntimeError(
                     f"calibration schema invalid ({calib_path}): top-level must be dict"
                 )
+            # model_target 필수
             target = calib_data.get("model_target")
-            if target and target != "integrated_v3_filtered_tuned":
+            if not target:
+                raise RuntimeError(
+                    f"calibration schema invalid ({calib_path}): 'model_target' key 필수"
+                )
+            if target != EXPECTED_TARGET:
                 raise RuntimeError(
                     f"calibration model_target mismatch ({calib_path}): "
-                    f"expected 'integrated_v3_filtered_tuned', got {target!r}"
+                    f"expected {EXPECTED_TARGET!r}, got {target!r}"
+                )
+            # version 필수
+            if "version" not in calib_data:
+                raise RuntimeError(
+                    f"calibration schema invalid ({calib_path}): 'version' key 필수"
                 )
             cold_factors = calib_data.get("cold_factors", {})
             if not isinstance(cold_factors, dict):
@@ -214,17 +231,32 @@ class PrimaryPredictor:
                     f"calibration schema invalid ({calib_path}): cold_factors must be dict"
                 )
             for k, v in cold_factors.items():
-                if not isinstance(v, (int, float)):
+                # cell key 형식 검증: {source}_{target_market}
+                key = str(k)
+                parts = key.split("_", 1)
+                if len(parts) != 2:
+                    raise RuntimeError(
+                        f"calibration schema invalid ({calib_path}): "
+                        f"cold_factors key {k!r} must be '{{source}}_{{target_market}}'"
+                    )
+                src_part, market_part = parts
+                if src_part not in ALLOWED_SOURCES or market_part not in ALLOWED_MARKETS:
+                    raise RuntimeError(
+                        f"calibration schema invalid ({calib_path}): "
+                        f"cold_factors key {k!r} not in allowed cells "
+                        f"(sources={ALLOWED_SOURCES}, markets={ALLOWED_MARKETS})"
+                    )
+                if not isinstance(v, (int, float)) or isinstance(v, bool):
                     raise RuntimeError(
                         f"calibration schema invalid ({calib_path}): "
                         f"cold_factors[{k!r}] must be numeric, got {type(v).__name__}"
                     )
-                if not (0.1 <= float(v) <= 10.0):  # sanity bounds (10x correction max)
+                if not (0.1 <= float(v) <= 10.0):
                     raise RuntimeError(
                         f"calibration schema invalid ({calib_path}): "
                         f"cold_factors[{k!r}]={v} out of sanity bounds [0.1, 10.0]"
                     )
-                new_cold_calib[str(k)] = float(v)
+                new_cold_calib[key] = float(v)
 
         # 3) 모든 build + 검증 성공 시 instance state로 swap
         self.cb_model = new_cb

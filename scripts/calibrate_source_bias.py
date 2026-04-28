@@ -83,7 +83,13 @@ def _mdape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 def _cold_oof_with_fold_id(
     X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, cb_params: dict, n_splits: int = 5,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """GroupKFold (cold start) → CatBoost OOF predictions + fold ID per row."""
+    """GroupKFold (cold start) → CatBoost OOF predictions + fold ID per row.
+
+    Codex P1 (2026-04-28): early stopping leakage 방지 — 학습 fold의 test split(eval_set)을
+    early_stopping_rounds로 쓰면 test labels가 모델 선택에 leak.
+    수정: tuned 'iterations'를 그대로 사용 (early stopping 제거). production tune 시점에
+    이미 한 번 검증된 iteration count.
+    """
     gkf = GroupKFold(n_splits=n_splits)
     cb_preds = np.zeros(len(y))
     fold_ids = np.full(len(y), -1, dtype=int)
@@ -92,8 +98,8 @@ def _cold_oof_with_fold_id(
         cb = CatBoostRegressor(
             **cb_params, loss_function="RMSE", verbose=0, random_seed=42, allow_writing_files=False,
         )
-        cb.fit(_cb_pool(X.iloc[tr], y[tr]), eval_set=_cb_pool(X.iloc[te], y[te]),
-               early_stopping_rounds=50)
+        # No eval_set → no leakage from test fold to early stopping
+        cb.fit(_cb_pool(X.iloc[tr], y[tr]))
         cb_preds[te] = cb.predict(_cb_pool(X.iloc[te]))
         fold_ids[te] = fold
     return cb_preds, fold_ids
@@ -102,7 +108,10 @@ def _cold_oof_with_fold_id(
 def _warm_oof_with_fold_id(
     X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, xgb_params: dict, n_splits: int = 5,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """warm slice KFold → XGBoost OOF predictions + fold ID + warm indices."""
+    """warm slice KFold → XGBoost OOF predictions + fold ID + warm indices.
+
+    Codex P1: early stopping leakage 방지 — eval_set 제거.
+    """
     wmask = _warm_mask(groups)
     X_warm = X.iloc[wmask].reset_index(drop=True)
     y_warm = y[wmask]
@@ -120,7 +129,6 @@ def _warm_oof_with_fold_id(
         m = xgb.train(
             params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": 42},
             dtrain=dtrain, num_boost_round=xgb_params.get("num_boost_round", 1000),
-            evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
         )
         xgb_preds[te] = m.predict(dtest)
         fold_ids[te] = fold
@@ -132,7 +140,7 @@ def _warm_oof_with_fold_id(
 def _cross_fit_eval(
     y_price: np.ndarray, pred_price: np.ndarray, cells: np.ndarray, fold_ids: np.ndarray,
     n_splits: int = 5,
-) -> tuple[dict[str, float], float, float]:
+) -> tuple[dict[str, float], float, float, np.ndarray]:
     """Cross-fit calibrator 평가.
 
     각 fold k 마다:
@@ -140,8 +148,9 @@ def _cross_fit_eval(
     2. 그 factor를 fold k에 적용
     3. 모든 fold 통합해서 calibrated MdAPE 계산
 
-    Returns: (final_factors_per_cell, baseline_mdape, calibrated_mdape)
+    Returns: (final_factors_per_cell, baseline_mdape, calibrated_mdape, calibrated_pred)
     final_factors는 전체 데이터로 fit한 production용 factor.
+    calibrated_pred는 cross-fit으로 계산된 fold-별 factor 적용 결과 (per-cell breakdown용).
     """
     baseline_mdape = _mdape(y_price, pred_price)
 
@@ -151,7 +160,6 @@ def _cross_fit_eval(
         train_mask = (fold_ids != k) & (fold_ids >= 0)
         if held_out.sum() == 0 or train_mask.sum() == 0:
             continue
-        # cell별 factor를 train fold에서만 fit
         cell_factors_for_this_split: dict[str, float] = {}
         for cell in set(cells[train_mask]):
             cell_train = train_mask & (cells == cell)
@@ -161,7 +169,6 @@ def _cross_fit_eval(
             cell_factors_for_this_split[cell] = _compute_factor(
                 y_price[cell_train], pred_price[cell_train]
             )
-        # held-out fold에 적용
         for i in np.where(held_out)[0]:
             cell = cells[i]
             factor = cell_factors_for_this_split.get(cell, 1.0)
@@ -169,7 +176,6 @@ def _cross_fit_eval(
 
     calibrated_mdape = _mdape(y_price, calibrated_pred)
 
-    # Production용 factor: 전체 데이터로 fit
     final_factors: dict[str, float] = {}
     for cell in sorted(set(cells)):
         cell_mask = cells == cell
@@ -177,7 +183,7 @@ def _cross_fit_eval(
             continue
         final_factors[cell] = _compute_factor(y_price[cell_mask], pred_price[cell_mask])
 
-    return final_factors, baseline_mdape, calibrated_mdape
+    return final_factors, baseline_mdape, calibrated_mdape, calibrated_pred
 
 
 def calibrate() -> dict:
@@ -212,7 +218,7 @@ def calibrate() -> dict:
 
     # Cross-fit evaluation
     logger.info("--- Cold cross-fit evaluation ---")
-    cold_factors, cold_baseline, cold_calibrated = _cross_fit_eval(
+    cold_factors, cold_baseline, cold_calibrated, cold_calibrated_pred = _cross_fit_eval(
         y_price, cb_pred_price, cells, cold_fold_ids
     )
     logger.info("Cold baseline MdAPE=%.2f → calibrated (cross-fit)=%.2f (Δ=%+.2f)",
@@ -220,23 +226,28 @@ def calibrate() -> dict:
     logger.info("Cold final factors: %s", cold_factors)
 
     logger.info("--- Warm cross-fit evaluation ---")
-    warm_factors, warm_baseline, warm_calibrated = _cross_fit_eval(
+    warm_factors, warm_baseline, warm_calibrated, warm_calibrated_pred = _cross_fit_eval(
         y_warm_price, xgb_pred_price, cells_warm, warm_fold_ids
     )
     logger.info("Warm baseline MdAPE=%.2f → calibrated (cross-fit)=%.2f (Δ=%+.2f)",
                 warm_baseline, warm_calibrated, warm_calibrated - warm_baseline)
     logger.info("Warm final factors: %s", warm_factors)
 
-    # Per-cell breakdown
+    # Per-cell breakdown — cross-fit predictions 사용 (Codex P2: post-hoc 적용 X)
+    # baseline은 raw OOF pred, calibrated는 cross-fit factor 적용 결과 (held-out factor)
     cold_breakdown = {}
     for cell in sorted(set(cells)):
         mask = cells == cell
         if mask.sum() == 0:
             continue
         b = _mdape(y_price[mask], cb_pred_price[mask])
-        f = cold_factors.get(cell, 1.0)
-        c = _mdape(y_price[mask], cb_pred_price[mask] * f)
-        cold_breakdown[cell] = {"n": int(mask.sum()), "factor": f, "baseline_mdape": b, "calibrated_mdape": c}
+        c = _mdape(y_price[mask], cold_calibrated_pred[mask])  # cross-fit
+        cold_breakdown[cell] = {
+            "n": int(mask.sum()),
+            "final_factor_full_data": cold_factors.get(cell, 1.0),
+            "baseline_mdape": b,
+            "calibrated_mdape_cross_fit": c,
+        }
 
     warm_breakdown = {}
     for cell in sorted(set(cells_warm)):
@@ -244,9 +255,13 @@ def calibrate() -> dict:
         if mask.sum() == 0:
             continue
         b = _mdape(y_warm_price[mask], xgb_pred_price[mask])
-        f = warm_factors.get(cell, 1.0)
-        c = _mdape(y_warm_price[mask], xgb_pred_price[mask] * f)
-        warm_breakdown[cell] = {"n": int(mask.sum()), "factor": f, "baseline_mdape": b, "calibrated_mdape": c}
+        c = _mdape(y_warm_price[mask], warm_calibrated_pred[mask])  # cross-fit
+        warm_breakdown[cell] = {
+            "n": int(mask.sum()),
+            "final_factor_full_data": warm_factors.get(cell, 1.0),
+            "baseline_mdape": b,
+            "calibrated_mdape_cross_fit": c,
+        }
 
     return {
         "version": CALIBRATION_VERSION,
