@@ -52,7 +52,11 @@ OUT_DIR = ROOT / "model_test_results"
 def _cb_groupkfold_mdape(
     X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, params: dict, n_splits: int = 3,
 ) -> float:
-    """CatBoost GroupKFold ensemble MdAPE (price 기준, %)."""
+    """CatBoost GroupKFold MdAPE (price 기준, %).
+
+    Codex 4차 P1: Optuna objective도 leakage 제거 — eval_set/early_stopping 사용 시
+    test labels가 iteration 선택에 leak. tuned 'iterations' suggested 그대로 사용.
+    """
     gkf = GroupKFold(n_splits=n_splits)
     preds = np.zeros(len(y))
     for tr, te in gkf.split(X, y, groups):
@@ -60,8 +64,7 @@ def _cb_groupkfold_mdape(
             **params, loss_function="RMSE", verbose=0, random_seed=42,
             allow_writing_files=False,
         )
-        cb.fit(_cb_pool(X.iloc[tr], y[tr]), eval_set=_cb_pool(X.iloc[te], y[te]),
-               early_stopping_rounds=50)
+        cb.fit(_cb_pool(X.iloc[tr], y[tr]))
         preds[te] = cb.predict(_cb_pool(X.iloc[te]))
     y_price = np.exp(y)
     pred_price = np.exp(preds)
@@ -87,6 +90,7 @@ def _xgb_kfold_mdape(
     Codex review: warm slice(training_count>=5)에서만 평가해야 production 라우팅과 일치.
     호출부에서 X, y는 이미 warm-filter 통과된 슬라이스로 받는다.
     """
+    # Codex 4차 P1: Optuna XGBoost objective도 leakage 제거
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     preds = np.zeros(len(y))
     n_rounds = params.pop("num_boost_round", 1000)
@@ -97,8 +101,7 @@ def _xgb_kfold_mdape(
         m = xgb.train(
             params={**params, "objective": "reg:squarederror", "verbosity": 0, "seed": 42},
             dtrain=dtrain, num_boost_round=n_rounds,
-            evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
-        )
+        )  # no evals/early_stopping
         preds[te] = m.predict(dtest)
     y_price = np.exp(y)
     pred_price = np.exp(preds)
@@ -136,7 +139,11 @@ def _final_cv_groupkfold_5(
     X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, source: np.ndarray,
     cb_params: dict, xgb_params: dict,
 ) -> dict:
-    """확정된 best params로 5-fold GroupKFold (train 스크립트와 동일 메트릭)."""
+    """확정된 best params로 5-fold GroupKFold (train 스크립트와 동일 메트릭).
+
+    Codex P1 (2026-04-28): early stopping leakage 제거 — eval_set 사용 시 test labels가
+    iteration 선택에 leak. tuned 'iterations' 그대로 사용 (production tune 검증 완료).
+    """
     gkf = GroupKFold(n_splits=5)
     cb_preds = np.zeros(len(y))
     xgb_preds = np.zeros(len(y))
@@ -145,8 +152,7 @@ def _final_cv_groupkfold_5(
             **cb_params, loss_function="RMSE", verbose=0, random_seed=42,
             allow_writing_files=False,
         )
-        cb.fit(_cb_pool(X.iloc[tr], y[tr]), eval_set=_cb_pool(X.iloc[te], y[te]),
-               early_stopping_rounds=50)
+        cb.fit(_cb_pool(X.iloc[tr], y[tr]))  # no eval_set — leakage 방지
         cb_preds[te] = cb.predict(_cb_pool(X.iloc[te]))
 
         Xtr_e, Xte_e, _ = _label_encode_xgb(X.iloc[tr], X.iloc[te])
@@ -156,8 +162,7 @@ def _final_cv_groupkfold_5(
         m = xgb.train(
             params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": 42},
             dtrain=dtrain, num_boost_round=xgb_params.get("num_boost_round", 1000),
-            evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
-        )
+        )  # no evals/early_stopping — leakage 방지
         xgb_preds[te] = m.predict(dtest)
 
     y_price = np.exp(y)
@@ -196,12 +201,12 @@ def _final_cv_kfold_5(
     cb_preds = np.zeros(len(y))
     xgb_preds = np.zeros(len(y))
     for tr, te in kf.split(X):
+        # Codex P1: leakage 방지 — eval_set / early_stopping 제거
         cb = CatBoostRegressor(
             **cb_params, loss_function="RMSE", verbose=0, random_seed=42,
             allow_writing_files=False,
         )
-        cb.fit(_cb_pool(X.iloc[tr], y[tr]), eval_set=_cb_pool(X.iloc[te], y[te]),
-               early_stopping_rounds=50)
+        cb.fit(_cb_pool(X.iloc[tr], y[tr]))
         cb_preds[te] = cb.predict(_cb_pool(X.iloc[te]))
 
         Xtr_e, Xte_e, _ = _label_encode_xgb(X.iloc[tr], X.iloc[te])
@@ -211,7 +216,6 @@ def _final_cv_kfold_5(
         m = xgb.train(
             params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": 42},
             dtrain=dtrain, num_boost_round=xgb_params.get("num_boost_round", 1000),
-            evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
         )
         xgb_preds[te] = m.predict(dtest)
     y_price = np.exp(y)

@@ -1,0 +1,93 @@
+{
+  "version": "v1-cross-fit-cell",
+  "model_target": "integrated_v3_filtered_tuned",
+  "method": "median(actual_price / predicted_price), cell = source × target_market, per-cell guard (cross-fit 악화 cell은 factor=1.0 적용)",
+  "cells_definition": "is_krw==1 → target_market='gallery', else 'online'",
+  "cold_factors": {
+    "artsy_gallery": 1.0,
+    "artsy_online": 0.9425943416620021,
+    "saatchi_online": 0.9568847727800011
+  },
+  "warm_factors": {
+    "artsy_gallery": 0.9999902618542379,
+    "artsy_online": 1.0050275147105072,
+    "saatchi_online": 1.0
+  },
+  "cold_factors_proposed_full_data": {
+    "artsy_gallery": 1.0370614179485151,
+    "artsy_online": 0.9425943416620021,
+    "saatchi_online": 0.9568847727800011
+  },
+  "warm_factors_proposed_full_data": {
+    "artsy_gallery": 0.9999902618542379,
+    "artsy_online": 1.0050275147105072,
+    "saatchi_online": 0.9999464105492065
+  },
+  "cold_overall": {
+    "baseline_mdape": 39.3767703371767,
+    "calibrated_mdape_cross_fit_unguarded": 38.31627952154923,
+    "calibrated_mdape_cross_fit_guarded": 38.28973677147977,
+    "delta_guarded": -1.0870335656969345
+  },
+  "warm_overall": {
+    "baseline_mdape": 9.701765452424613,
+    "calibrated_mdape_cross_fit_unguarded": 9.718613760270689,
+    "calibrated_mdape_cross_fit_guarded": 9.71396725768286,
+    "delta_guarded": 0.012201805258246878
+  },
+  "cold_breakdown": {
+    "artsy_gallery": {
+      "n": 868,
+      "proposed_factor_full_data": 1.0370614179485151,
+      "applied_factor": 1.0,
+      "baseline_mdape": 24.33558481605723,
+      "calibrated_mdape_cross_fit": 31.158701524859932,
+      "skipped_due_to_regression": true
+    },
+    "artsy_online": {
+      "n": 6421,
+      "proposed_factor_full_data": 0.9425943416620021,
+      "applied_factor": 0.9425943416620021,
+      "baseline_mdape": 35.044583310176954,
+      "calibrated_mdape_cross_fit": 34.13375278909016,
+      "skipped_due_to_regression": false
+    },
+    "saatchi_online": {
+      "n": 21087,
+      "proposed_factor_full_data": 0.9568847727800011,
+      "applied_factor": 0.9568847727800011,
+      "baseline_mdape": 41.70253109826572,
+      "calibrated_mdape_cross_fit": 40.108864265522556,
+      "skipped_due_to_regression": false
+    }
+  },
+  "warm_breakdown": {
+    "artsy_gallery": {
+      "n": 778,
+      "proposed_factor_full_data": 0.9999902618542379,
+      "applied_factor": 0.9999902618542379,
+      "baseline_mdape": 6.119693908788547,
+      "calibrated_mdape_cross_fit": 6.068557798003184,
+      "skipped_due_to_regression": false
+    },
+    "artsy_online": {
+      "n": 5825,
+      "proposed_factor_full_data": 1.0050275147105072,
+      "applied_factor": 1.0050275147105072,
+      "baseline_mdape": 8.71227555555521,
+      "calibrated_mdape_cross_fit": 8.658996105302302,
+      "skipped_due_to_regression": false
+    },
+    "saatchi_online": {
+      "n": 20459,
+      "proposed_factor_full_data": 0.9999464105492065,
+      "applied_factor": 1.0,
+      "baseline_mdape": 10.265611563700618,
+      "calibrated_mdape_cross_fit": 10.27661787892363,
+      "skipped_due_to_regression": true
+    }
+  },
+  "n_total": 28376,
+  "n_warm": 27062,
+  "note": "Cross-fit 5-fold: factor 추정은 train fold에서만 fit (OOF 평가). 단, guard cell selection이 같은 OOF 결과 보고 결정되므로 post-hoc selection bias 잔존. 'calibrated_mdape_cross_fit_guarded'는 보수적 추정치 (truly OOS 아님). Final factors는 전체 데이터 fit (production용). Server는 features['source'] + target_market 기반으로 cell key 결정."
+}

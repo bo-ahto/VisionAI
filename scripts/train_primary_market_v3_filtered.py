@@ -174,7 +174,7 @@ def cv_groupkfold(
             iterations=1000, learning_rate=0.05, depth=6, loss_function="RMSE",
             verbose=0, random_seed=42, allow_writing_files=False,
         )
-        cb.fit(_cb_pool(X_tr, y_tr), eval_set=_cb_pool(X_te, y_te), early_stopping_rounds=50)
+        cb.fit(_cb_pool(X_tr, y_tr))  # Codex P1: leakage 방지
         cb_preds[te] = cb.predict(_cb_pool(X_te))
 
         # XGBoost
@@ -187,7 +187,6 @@ def cv_groupkfold(
                 "seed": 42,
             },
             dtrain=dtrain, num_boost_round=1000,
-            evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
         )
         xgb_preds[te] = xgbm.predict(dtest)
 
@@ -255,7 +254,7 @@ def cv_kfold(
             iterations=1000, learning_rate=0.05, depth=6, loss_function="RMSE",
             verbose=0, random_seed=42, allow_writing_files=False,
         )
-        cb.fit(_cb_pool(X_tr, y_tr), eval_set=_cb_pool(X_te, y_te), early_stopping_rounds=50)
+        cb.fit(_cb_pool(X_tr, y_tr))  # Codex P1: leakage 방지
         cb_preds[te] = cb.predict(_cb_pool(X_te))
 
         Xtr_e, Xte_e, _ = _label_encode_xgb(X_tr, X_te)
@@ -267,7 +266,6 @@ def cv_kfold(
                 "seed": 42,
             },
             dtrain=dtrain, num_boost_round=1000,
-            evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
         )
         xgb_preds[te] = xgbm.predict(dtest)
 
@@ -328,7 +326,6 @@ def cv_kfold_warm(
                 "seed": 42,
             },
             dtrain=dtrain, num_boost_round=1000,
-            evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
         )
         xgb_preds[te] = xgbm.predict(dtest)
 

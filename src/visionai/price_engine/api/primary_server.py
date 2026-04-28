@@ -45,7 +45,8 @@ logger = logging.getLogger(__name__)
 _matcher = ArtistMatcher()
 _predictor = PrimaryPredictor()
 _start_time = time.time()
-_model_version = "v3-filtered-tuned"
+_model_version = "v3-tuned"  # 기본값. calibration artifact 로드 시 'v3-tuned-cal' (DB VARCHAR(20) 호환)
+_model_info_cache: ModelInfoResponse | None = None  # startup에서 캐시 (Codex 5차 P2: stale 방지)
 _price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
 
 # ─── 인메모리 모니터링 카운터 ───
@@ -413,9 +414,58 @@ def _load_models() -> None:
 
     PrimaryPredictor.load_models가 4개 artifact (cb/xgb/warm/label_maps)를
     한 번에 로드 + schema 검증. 누락 또는 invalid 시 RuntimeError.
+
+    Codex 5차 P2: 같은 model_dir 스냅샷에서 model_info를 캐시 (런타임 disk 변경 무관).
     """
     model_dir = _resolve_model_dir()
     _predictor.load_models(model_dir)
+    _build_model_info_cache(model_dir)
+
+
+def _build_model_info_cache(model_dir: Path) -> None:
+    """startup 시점의 metrics + calibration으로 model_info 응답 캐시.
+
+    이후 disk가 바뀌어도 메모리 cache 사용 → version과 metrics가 같은 세대 보장.
+    """
+    global _model_info_cache
+    metrics_path = model_dir / "integrated_v3_filtered_tuned_metrics.json"
+    calib_path = model_dir / "integrated_v3_filtered_tuned_source_calibration.json"
+    if not metrics_path.exists():
+        logger.warning("metrics file 없음 (%s) — model_info cache fallback", metrics_path)
+        _model_info_cache = ModelInfoResponse(
+            model_version=_predictor.model_version_label(_model_version),
+            training_count=0, artist_count=0,
+            mdape_groupkfold=0.0, mdape_kfold=0.0,
+            features_count=len(CB_FEATURES),
+        )
+        return
+    with metrics_path.open(encoding="utf-8") as f:
+        metrics = json.load(f)
+    cold_cb = metrics.get("groupkfold", {}).get("catboost_v3_filtered_tuned", {})
+    warm_xgb = metrics.get("kfold", {}).get("warm_slice", {}).get("xgboost_v3_filtered_tuned", {})
+    if not warm_xgb:
+        warm_xgb = metrics.get("kfold", {}).get("xgboost_v3_filtered_tuned", {})
+    cold_mdape = float(cold_cb.get("MdAPE", 0.0))
+    warm_mdape = float(warm_xgb.get("MdAPE", 0.0))
+    if calib_path.exists():
+        with calib_path.open(encoding="utf-8") as f:
+            cal = json.load(f)
+        # Cold만 calibration 적용 — warm은 baseline 그대로 보고 (Codex 6차 P2)
+        cold_cal = cal.get("cold_overall", {}).get("calibrated_mdape_cross_fit_guarded")
+        if isinstance(cold_cal, (int, float)) and cold_cal > 0:
+            cold_mdape = float(cold_cal)
+        # warm은 predict()에서 calibration 적용 안 하므로 baseline metric 유지
+    _model_info_cache = ModelInfoResponse(
+        model_version=_predictor.model_version_label(_model_version),
+        training_count=int(cold_cb.get("n", 0)),
+        artist_count=int(metrics.get("artists", 0)),
+        mdape_groupkfold=cold_mdape,
+        mdape_kfold=warm_mdape,
+        features_count=int(metrics.get("features", 0)),
+    )
+    logger.info("model_info cache built: version=%s, cold=%.2f, warm=%.2f, features=%d",
+                _model_info_cache.model_version, cold_mdape, warm_mdape,
+                _model_info_cache.features_count)
 
 
 @asynccontextmanager
@@ -481,7 +531,7 @@ async def health():
     status = "ok" if _matcher.count > 0 and db_status == "connected" else "degraded"
     return {
         "status": status,
-        "model_version": _model_version,
+        "model_version": _predictor.model_version_label(_model_version),
         "artists_loaded": _matcher.count,
         "uptime_seconds": round(time.time() - _start_time, 1),
         "db_status": db_status,
@@ -490,41 +540,20 @@ async def health():
 
 @app.get("/api/v1/model/info", response_model=ModelInfoResponse)
 async def model_info():
-    """모델 정보 — metrics file에서 동적 로드 (Codex 5차 P2: stale-prone 상수 제거).
+    """모델 정보 — startup cache 사용 (Codex 5차 P2: 런타임 disk 변경 무관).
 
-    서빙 라우팅 일치 메트릭:
-    - cold: CatBoost MdAPE (groupkfold)
-    - warm: XGBoost on warm slice MdAPE (kfold.warm_slice)
+    같은 model_dir 스냅샷의 metrics + calibration을 _load_models() 시점에 캐시.
+    version과 metrics가 항상 같은 세대 보장. 재배포 시 컨테이너 재기동으로 갱신.
     """
-    # _load_models와 동일한 resolver 사용 (Codex 6차 P2 — 경로 정합)
-    metrics_path = _resolve_model_dir() / "integrated_v3_filtered_tuned_metrics.json"
-
-    if metrics_path.exists():
-        with metrics_path.open(encoding="utf-8") as f:
-            metrics = json.load(f)
-        cold_cb = metrics.get("groupkfold", {}).get("catboost_v3_filtered_tuned", {})
-        warm_xgb = metrics.get("kfold", {}).get("warm_slice", {}).get("xgboost_v3_filtered_tuned", {})
-        # warm_slice가 없으면 fallback (구 metric 형식)
-        if not warm_xgb:
-            warm_xgb = metrics.get("kfold", {}).get("xgboost_v3_filtered_tuned", {})
+    if _model_info_cache is None:
+        # 발생할 일 없음 (lifespan에서 _load_models 호출됨) — defensive
         return ModelInfoResponse(
-            model_version=_model_version,
-            training_count=int(cold_cb.get("n", 0)),
-            artist_count=int(metrics.get("artists", 0)),
-            mdape_groupkfold=float(cold_cb.get("MdAPE", 0.0)),
-            mdape_kfold=float(warm_xgb.get("MdAPE", 0.0)),
-            features_count=int(metrics.get("features", 0)),
+            model_version=_predictor.model_version_label(_model_version),
+            training_count=0, artist_count=0,
+            mdape_groupkfold=0.0, mdape_kfold=0.0,
+            features_count=len(CB_FEATURES),
         )
-    # metrics file 없음 — fallback (운영 중 안정성)
-    logger.warning("metrics file 없음 (%s) — model_info fallback", metrics_path)
-    return ModelInfoResponse(
-        model_version=_model_version,
-        training_count=0,
-        artist_count=0,
-        mdape_groupkfold=0.0,
-        mdape_kfold=0.0,
-        features_count=len(CB_FEATURES),
-    )
+    return _model_info_cache
 
 
 @app.get("/api/v1/monitor")
