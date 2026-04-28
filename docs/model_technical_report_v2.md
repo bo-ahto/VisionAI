@@ -608,7 +608,7 @@ PR #20 Codex 6차에서 발견: warm set 외부 + DB training_count≥5인 작�
 - `model_test_results/gallery_tier_coverage_report.md` — PR #19 매핑 분석
 
 ### 머지된 PR
-- PR #19 (`52a0315`) — 갤러리 티어 v3 매핑 분석
+- PR #19 (`e73f967`) — 갤러리 티어 v3 매핑 분석
 - PR #20 (`71b363e`) — career_stage v2 + drift 정리
 - PR #21 (`e1d033d`) — source × target_market 셀 캘리브레이션
 - PR #22 (`6f47ec2`) — source 정규화 + grade margin 재캘리브레이션
