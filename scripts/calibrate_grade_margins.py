@@ -1,13 +1,23 @@
-"""1차 시장 모델 — 등급별 실측 MdAPE + coverage 기반 마진(m) 재조정.
+"""1차 시장 모델 — 등급별 production-time MdAPE + coverage 기반 마진(m) 재조정.
 
 배경 (협력자 피드백 Q7 → Q-margin):
 - 보고서 §6.2의 등급 마진 m (A=0.20, B=0.30, C=0.50, D=0.70)은 임의 휴리스틱.
-- 보고서 §7.3의 "MdAPE (추정)" 표는 A 외에 실측 아님.
-- 본 스크립트는 v3-filtered-tuned 모델로 등급별 실측 MdAPE + 현재 m 적용 시 coverage
-  측정 + 목표 coverage 기반 m 재조정값을 산출한다.
+- 보고서 §7.3의 "MdAPE (추정)" 표는 A 외에 measurement 아님.
+- 본 스크립트는 production model + calibration을 적용한 5-fold CV 등급별 MdAPE +
+  현재 m 적용 시 coverage 측정 + 목표 coverage 기반 m 재조정값을 산출한다.
+
+평가 방식 (Codex P1 disclosure, 2026-04-28):
+- 5-fold KFold로 CB/XGB 모델 weights는 fold-out 학습/예측 (model OOF)
+- BUT routing/calibration은 production full-data artifacts 사용:
+  · warm_artist_slugs.json (PR #20) — A 등급 + XGB train slice 결정
+  · source_calibration.json cold_factors (PR #21) — cold path 후처리
+- 따라서 측정값은 'OOF model weights + full-data routing artifacts' 결합 평가.
+  순수 OOF 평가가 아니므로 'production-time MdAPE' (운영 시 메트릭 추정치)로 해석.
+- Calibrator/routing artifact의 OOS 일반화 별도 평가는 PR #20+#21 산출물 참고
+  (단 그 산출물도 post-hoc selection bias 잔존 — calibrate_source_bias.py 참고).
 
 산출물:
-- model_test_results/grade_margin_calibration.json — 등급별 실측 + 권장 m
+- model_test_results/grade_margin_calibration.json — 등급별 production-time + 권장 m
 - model_test_results/grade_margin_calibration_report.md — 사람 친화 요약
 
 Usage:
@@ -98,30 +108,120 @@ def _load_tuned_params() -> tuple[dict, dict]:
     return data["catboost"], data["xgboost"]
 
 
+def _load_warm_artists() -> tuple[set[str], bool]:
+    """Production warm artist slug set (PR #20). Schema 검증.
+
+    Returns: (slugs, loaded). loaded=True 는 'artifact 존재 + schema valid' 의미.
+    Empty list도 valid artifact 로 간주 (production primary_predictor와 동일 정책).
+    """
+    p = OUT_DIR / "integrated_v3_filtered_tuned_warm_artists.json"
+    if not p.exists():
+        return set(), False
+    with p.open(encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict) or "warm_artist_slugs" not in data:
+        raise RuntimeError(
+            f"warm artifact schema invalid ({p}): 'warm_artist_slugs' key 필요"
+        )
+    slugs = data["warm_artist_slugs"]
+    if not isinstance(slugs, list):
+        raise RuntimeError(
+            f"warm artifact schema invalid ({p}): 'warm_artist_slugs' must be list"
+        )
+    return {str(s) for s in slugs}, True
+
+
+def _load_production_cold_factors() -> tuple[dict[str, float], bool]:
+    """PR #21 production guarded cold_factors 로드. Returns (factors, loaded).
+
+    Schema 검증은 primary_predictor.load_models와 동등 (Codex 6차 P1):
+    - top-level dict
+    - model_target 필수 + 일치
+    - version 필수
+    - cold_factors dict
+    - cell key 형식 '{source}_{target_market}' (rsplit('_',1))
+    - ALLOWED_SOURCES/MARKETS 일치
+    - factor numeric (bool 거부) + bounds [0.1, 10.0]
+    """
+    ALLOWED_SOURCES = {"artsy", "saatchi", "manual", "printbakery", "artsy_artue", "web", "unknown"}
+    ALLOWED_MARKETS = {"gallery", "online"}
+    EXPECTED_TARGET = "integrated_v3_filtered_tuned"
+
+    p = OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json"
+    if not p.exists():
+        return {}, False
+    with p.open(encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise RuntimeError(f"calibration schema invalid ({p}): top-level must be dict")
+    if not data.get("model_target"):
+        raise RuntimeError(f"calibration schema invalid ({p}): 'model_target' key 필수")
+    if data["model_target"] != EXPECTED_TARGET:
+        raise RuntimeError(
+            f"calibration model_target mismatch ({p}): "
+            f"expected {EXPECTED_TARGET!r}, got {data['model_target']!r}"
+        )
+    if "version" not in data:
+        raise RuntimeError(f"calibration schema invalid ({p}): 'version' key 필수")
+    factors = data.get("cold_factors", {})
+    if not isinstance(factors, dict):
+        raise RuntimeError(f"calibration cold_factors invalid ({p}): must be dict")
+    out: dict[str, float] = {}
+    for k, v in factors.items():
+        key = str(k)
+        parts = key.rsplit("_", 1)
+        if len(parts) != 2:
+            raise RuntimeError(
+                f"calibration cold_factors key {k!r} must be '{{source}}_{{target_market}}'"
+            )
+        src_part, market_part = parts
+        if src_part not in ALLOWED_SOURCES or market_part not in ALLOWED_MARKETS:
+            raise RuntimeError(
+                f"calibration cold_factors key {k!r} not in allowed cells "
+                f"(sources={ALLOWED_SOURCES}, markets={ALLOWED_MARKETS})"
+            )
+        if not isinstance(v, (int, float)) or isinstance(v, bool):
+            raise RuntimeError(
+                f"calibration cold_factors[{k!r}] must be numeric, got {type(v).__name__}"
+            )
+        if not (0.1 <= float(v) <= 10.0):
+            raise RuntimeError(
+                f"calibration cold_factors[{k!r}]={v} out of bounds [0.1, 10.0]"
+            )
+        out[key] = float(v)
+    return out, True
+
+
 def _train_predict_fold(
     X_tr, y_tr, X_te, y_te,
-    groups_tr, cb_params: dict, xgb_params: dict, seed=42,
+    groups_tr, cb_params: dict, xgb_params: dict,
+    warm_set: set[str] | None = None, seed=42,
 ):
     """v3-filtered-tuned 사양으로 fold 학습 + 예측 (production tuned params 적용).
 
-    primary_predictor 라우팅 정합 (Codex 7차 P2):
+    primary_predictor 라우팅 정합 (Codex 2차 P1):
     - CatBoost: full fold 학습 (production cold route)
-    - XGBoost: warm slice (artist_count>=5) 만으로 학습 (production warm route)
+    - XGBoost: warm_artist_slugs membership으로 train 필터 (production warm route 정합)
+      · 기존 fold-local _warm_mask는 942행 misclassification (production과 다른 train slice)
+      · 수정: full warm_set으로 train fold 필터 → production과 정확히 같은 학습 데이터
+
+    Codex P1: leakage 방지 — eval_set/early_stopping 제거.
     """
     cb = CatBoostRegressor(
         **cb_params, loss_function="RMSE", verbose=0, random_seed=seed,
         allow_writing_files=False,
     )
-    cb.fit(_cb_pool(X_tr, y_tr), eval_set=_cb_pool(X_te, y_te), early_stopping_rounds=50)
+    cb.fit(_cb_pool(X_tr, y_tr))
     cb_pred = cb.predict(_cb_pool(X_te))
 
-    # XGBoost: warm slice만으로 학습 (production tune script와 동일)
-    # zero-warm fold edge case: artist 5건 중 1건 test로 빠지면 train 4건으로 warm 미달.
-    # 모든 warm 후보가 그러면 zero-warm fold 발생 가능 → full fold로 fallback (해당 fold에
-    # warm test row 자체가 없어 결과 왜곡은 minimal).
-    warm_mask_tr = _warm_mask(groups_tr)
+    # XGBoost: warm_set membership으로 train 필터 (production tune script와 동일)
+    # warm_set이 비어 있으면 (production에 warm artist 0명) 모든 fold에서 zero-warm fallback
+    if warm_set:
+        warm_mask_tr = np.array([str(g) in warm_set for g in groups_tr])
+    else:
+        warm_mask_tr = np.zeros(len(groups_tr), dtype=bool)
     if warm_mask_tr.sum() == 0:
-        logger.warning("zero-warm fold — XGBoost를 full fold로 학습 (fallback)")
+        logger.warning("zero-warm train fold — XGBoost를 full fold로 학습 (fallback)")
         X_tr_warm, y_tr_warm = X_tr, y_tr
     else:
         X_tr_warm = X_tr.iloc[warm_mask_tr].reset_index(drop=True)
@@ -134,14 +234,13 @@ def _train_predict_fold(
     m = xgb.train(
         params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": seed},
         dtrain=dtrain, num_boost_round=xgb_params.get("num_boost_round", 1000),
-        evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
     )
     xgb_pred = m.predict(dtest)
     return cb_pred, xgb_pred
 
 
 def calibrate(target_coverage: float = 0.80) -> dict:
-    """등급별 실측 MdAPE + 현재 m 적용 coverage + 목표 coverage 기반 신규 m 산출."""
+    """등급별 production-time MdAPE + 현재 m 적용 coverage + 목표 coverage 기반 신규 m 산출."""
     logger.info("=" * 70)
     logger.info("등급별 마진 캘리브레이션 시작 — 목표 coverage %.0f%%", target_coverage * 100)
     logger.info("=" * 70)
@@ -149,13 +248,35 @@ def calibrate(target_coverage: float = 0.80) -> dict:
     df = load_data()
     df = df[df["is_excluded_for_training"] == 0].copy().reset_index(drop=True)
     X, y, groups = prepare_features(df)
+    source = df["source"].astype(str).fillna("unknown").replace(
+        {"nan": "unknown", "None": "unknown", "": "unknown"}
+    ).to_numpy()
+    target_market = np.where(df["is_krw"].fillna(0).astype(int) == 1, "gallery", "online")
+    cells = np.array([f"{s}_{tm}" for s, tm in zip(source, target_market)])
     logger.info("Data: %d rows, %d artists", len(df), len(set(groups)))
 
-    # production tuned params 로드 (Codex 6차 P2 — calibration이 진짜 production model 평가)
     cb_params, xgb_params = _load_tuned_params()
     logger.info("Tuned params: CatBoost iter=%s depth=%s, XGBoost rounds=%s depth=%s",
                 cb_params.get("iterations"), cb_params.get("depth"),
                 xgb_params.get("num_boost_round"), xgb_params.get("max_depth"))
+
+    # PR #20 warm artist set + PR #21 cold calibration — production fail-closed
+    # Codex 7차 P1: '미존재' vs 'loaded but empty' 구분 (production 정합)
+    warm_set, warm_loaded = _load_warm_artists()
+    if not warm_loaded:
+        raise RuntimeError(
+            "warm_artists.json 미존재 — production fail-closed contract 정합 위해 필수. "
+            f"({OUT_DIR}/integrated_v3_filtered_tuned_warm_artists.json)"
+        )
+    logger.info("Warm artists loaded: %d (production A 등급 + XGB train slice)", len(warm_set))
+
+    production_cold_factors, calib_loaded = _load_production_cold_factors()
+    if not calib_loaded:
+        raise RuntimeError(
+            "source_calibration.json 미존재 — production fail-closed contract 정합 위해 필수. "
+            f"({OUT_DIR}/integrated_v3_filtered_tuned_source_calibration.json)"
+        )
+    logger.info("Production cold calibration factors: %s", production_cold_factors)
 
     # 5-Fold KFold (작가가 fold에 걸쳐 분포 → 등급 결정에 자연스러움)
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -166,23 +287,36 @@ def calibrate(target_coverage: float = 0.80) -> dict:
         cb_pred, xgb_pred = _train_predict_fold(
             X.iloc[tr], y[tr], X.iloc[te], y[te],
             groups_tr=groups[tr], cb_params=cb_params, xgb_params=xgb_params,
+            warm_set=warm_set,  # production 정합 — XGB train slice
         )
 
-        # 학습 fold에 해당 작가가 몇 건 있는지 카운트 (등급 결정용)
         train_artist_counts = pd.Series(groups[tr]).value_counts()
 
         for i, te_idx in enumerate(te):
-            artist = groups[te_idx]
+            artist = str(groups[te_idx])
             train_count = int(train_artist_counts.get(artist, 0))
             has_by = bool(X.iloc[te_idx]["has_birth_year"] >= 0.5)
-            grade = determine_grade_for_row(train_count, has_by)
+
+            # Grade A 결정: production primary_predictor.determine_confidence와 동일 계약
+            # is_A = is_matched AND is_warm_artist (matched = train fold에 작가 row 존재)
+            # warm artifact는 fail-closed로 항상 로드된 상태 (caller에서 보장).
+            # warm_set이 비어 있어도 그건 production의 'loaded but empty' 상태와 동일.
+            is_matched = train_count >= 1
+            is_A = is_matched and (artist in warm_set)
+            grade = (
+                "A" if is_A
+                else "B" if is_matched
+                else ("C" if has_by else "D")
+            )
 
             actual_price = float(np.exp(y[te_idx]))
             cb_p = float(np.exp(cb_pred[i]))
             xgb_p = float(np.exp(xgb_pred[i]))
-            # primary_predictor 라우팅 정렬 (Codex 5차 P2):
-            # 실제 서빙은 training_count >= 5 (A 등급)만 XGBoost, B/C/D는 CatBoost
             use_xgb = grade == "A"
+            # Cold path: production guarded factors 직접 사용 (서비스 동작과 동일)
+            # calibration artifact는 fail-closed (loaded 보장), 빈 dict이면 모든 cell factor 1.0
+            if not use_xgb:
+                cb_p = cb_p * production_cold_factors.get(cells[te_idx], 1.0)
             pred_price = xgb_p if use_xgb else cb_p
 
             all_records.append({
@@ -243,14 +377,14 @@ def write_report(result: dict, out_md: Path) -> None:
     """사람 친화 요약 보고서 .md 작성."""
     target = int(result["target_coverage"] * 100)
     lines = [
-        f"# 등급별 마진 실측 캘리브레이션 보고서 — 목표 coverage {target}%",
+        f"# 등급별 마진 캘리브레이션 보고서 (production-time MdAPE) — 목표 coverage {target}%",
         "",
         f"- 총 평가 샘플: {result['n_total']:,}",
         f"- 목표 coverage: {target}% (가격이 예측 범위 안에 들어올 비율)",
         "",
         "## 등급별 결과",
         "",
-        "| 등급 | 표본 | 실측 MdAPE | 현재 m | 현재 coverage | 권장 m | 변화 |",
+        "| 등급 | 표본 | production-time MdAPE | 현재 m | 현재 coverage | 권장 m | 변화 |",
         "|:---:|---:|---:|---:|---:|---:|---:|",
     ]
     for g in ["A", "B", "C", "D"]:
@@ -267,7 +401,13 @@ def write_report(result: dict, out_md: Path) -> None:
         "",
         "## 해석",
         "",
-        "- **실측 MdAPE**: 5-Fold CV로 측정한 등급별 실제 오차율의 중앙값 (가격 기준).",
+        "- **production-time MdAPE**: 5-fold CV. 단, OOF는 모델 weights에만 적용되고 "
+        "routing/calibration은 production full-data artifacts 사용:",
+        "  · `warm_artist_slugs.json` (PR #20) — A 등급 + XGB train slice 결정",
+        "  · `source_calibration.json cold_factors` (PR #21) — cold path 후처리",
+        "  → 결과는 'OOF model weights + full-data routing artifacts' 결합 평가. "
+        "운영 시 메트릭의 추정치로 해석. 순수 OOF 평가는 아님.",
+        "  · Routing/calibration artifact 자체의 OOS 일반화 별도 평가는 PR #20+#21 산출물 참고.",
         "- **현재 coverage**: 현재 m 값으로 계산한 가격 범위에 실제 가격이 들어가는 비율.",
         f"  - {target}% 미만이면 m이 너무 좁음 (사용자에게 신뢰도 낮은 약속).",
         f"  - {target}% 훨씬 초과면 m이 너무 넓음 (불필요하게 보수적).",
@@ -275,9 +415,9 @@ def write_report(result: dict, out_md: Path) -> None:
         "",
         "## 권장 적용",
         "",
-        "1. `primary_predictor.determine_confidence`의 margin을 권장값으로 교체",
+        "1. `primary_predictor.determine_confidence`의 margin을 권장값으로 교체 (서비스 정책 결정)",
         "2. 보고서 §6.2 등급 마진 표 갱신 + 본 결과 인용",
-        "3. 보고서 §7.3 \"MdAPE (추정)\" → 실측값으로 정정",
+        "3. 보고서 §7.3 \"MdAPE (추정)\" → 본 production-time 측정치로 정정",
         "",
     ])
     out_md.write_text("\n".join(lines), encoding="utf-8")
@@ -309,7 +449,7 @@ def main() -> None:
         if s.get("n", 0) == 0:
             continue
         logger.info(
-            "%s: 현재 m=%.2f → 권장 m=%.3f  (실측 MdAPE %.1f%%, 현재 coverage %.1f%%)",
+            "%s: 현재 m=%.2f → 권장 m=%.3f  (production-time MdAPE %.1f%%, 현재 coverage %.1f%%)",
             g, s["current_m"], s["recommended_m"], s["mdape_pct"], s["current_coverage_pct"],
         )
 

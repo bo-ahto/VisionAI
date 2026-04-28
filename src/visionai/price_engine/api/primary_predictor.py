@@ -121,7 +121,7 @@ class PrimaryPredictor:
         현재 _load_models는 startup-only 호출이라 race 위험 적음.
         런타임 reload 도입 시 별도 lock 필요.
         """
-        # 1) artifact 경로 — 4개 필수 + 1개 선택 (calibration)
+        # 1) artifact 경로 — 5개 모두 필수 (Codex PR #22 5차 P1: fail-closed 정합)
         cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
         xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
         warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
@@ -133,6 +133,7 @@ class PrimaryPredictor:
             (xgb_path, "XGBoost model"),
             (warm_path, "warm artists"),
             (label_maps_path, "XGBoost label maps"),
+            (calib_path, "source calibration"),  # PR #22 5차: fail-closed
         ):
             if not path.exists():
                 raise RuntimeError(
@@ -312,12 +313,12 @@ class PrimaryPredictor:
         없으면 fallback으로 DB training_count >= 5.
         Codex 13차 P1: categorical normalization을 학습과 일치 (nan/None → 'unknown').
         """
-        # 피처 DataFrame 생성 — 학습 train_primary_market_v3_filtered.py:120과 동일 정규화
+        # 피처 DataFrame 생성 — 학습 train_primary_market_v3_filtered.py와 동일 정규화
         df = pd.DataFrame([features])
         for col in CAT_FEATURES:
             if col in df.columns:
                 df[col] = df[col].astype(str).fillna("unknown").replace(
-                    {"nan": "unknown", "None": "unknown"}
+                    {"nan": "unknown", "None": "unknown", "": "unknown"}
                 )
 
         # 모델 라우팅 (학습 시 warm slice와 정합) — Codex 9차 P1 정합 강화
@@ -361,7 +362,12 @@ class PrimaryPredictor:
         # 회귀 가드 적용된 결과지만 cold만 predict()에서 사용).
         # RATIO_CORRECTION은 cell calibration에 흡수 (별도 ln 보정 제거).
         if not use_xgb and self._cold_calibration_factors:
-            src = str(features.get("source", "")) or "unknown"
+            # source 정규화 — 모델 입력 categorical 처리와 동일 (Codex PR #21 비차단 리스크)
+            # df[col].astype(str).fillna("unknown").replace({"nan":"unknown","None":"unknown"})
+            raw_src = features.get("source")
+            src = str(raw_src) if raw_src is not None else "unknown"
+            if src in ("nan", "None", ""):
+                src = "unknown"
             cell = f"{src}_{target_market}"
             factor = self._cold_calibration_factors.get(cell, 1.0)
             price_krw = int(price_krw * factor)
