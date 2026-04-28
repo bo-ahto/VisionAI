@@ -276,10 +276,11 @@ def calibrate() -> dict:
         }
         warm_applied_factors[cell] = applied_factor
 
-    # 진정한 cross-fit guarded MdAPE (Codex 5차 P1):
-    # 이전 구현은 full-data proposed_factor를 row에 곱해 in-sample이었음.
-    # 정정: cross-fit calibrated_pred (per-fold factor 적용된)를 사용하되,
-    # 회귀 cell은 baseline pred로 되돌림 → 정직한 out-of-sample guarded.
+    # Guarded cross-fit MdAPE (서빙 정책 시뮬레이션):
+    # cross-fit calibrated_pred (per-fold factor 적용)를 사용하되, 회귀 cell은
+    # baseline pred로 revert. factor 추정은 OOF지만 guard 선택이 같은 OOF 결과를
+    # 보고 결정되므로 post-hoc selection bias가 약간 남음 (truly OOS 아님).
+    # 보고용 reference metric — 절대 신뢰 X, 방향성 검증용으로만 사용.
     cold_pred_guarded = cb_pred_price.copy()
     for cell in set(cells):
         if cold_applied_factors.get(cell, 1.0) != 1.0:

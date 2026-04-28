@@ -450,12 +450,11 @@ def _build_model_info_cache(model_dir: Path) -> None:
     if calib_path.exists():
         with calib_path.open(encoding="utf-8") as f:
             cal = json.load(f)
+        # Cold만 calibration 적용 — warm은 baseline 그대로 보고 (Codex 6차 P2)
         cold_cal = cal.get("cold_overall", {}).get("calibrated_mdape_cross_fit_guarded")
         if isinstance(cold_cal, (int, float)) and cold_cal > 0:
             cold_mdape = float(cold_cal)
-        warm_cal = cal.get("warm_overall", {}).get("calibrated_mdape_cross_fit_guarded")
-        if isinstance(warm_cal, (int, float)) and warm_cal > 0:
-            warm_mdape = float(warm_cal)
+        # warm은 predict()에서 calibration 적용 안 하므로 baseline metric 유지
     _model_info_cache = ModelInfoResponse(
         model_version=_predictor.model_version_label(_model_version),
         training_count=int(cold_cb.get("n", 0)),
