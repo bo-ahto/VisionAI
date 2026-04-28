@@ -111,50 +111,53 @@ def _load_warm_artists() -> set[str]:
     return {str(s) for s in data.get("warm_artist_slugs", [])}
 
 
-def _compute_fold_factors(
-    y_price_tr: np.ndarray, cb_pred_price_tr: np.ndarray, cells_tr: np.ndarray,
-) -> dict[str, float]:
-    """Train fold에서만 cell별 median(actual/predicted) factor 계산 (per-fold cross-fit).
+def _load_production_cold_factors() -> dict[str, float]:
+    """PR #21 production guarded cold_factors 로드 — 서빙과 동일.
 
-    PR #21 cold_factors는 full-data fit이므로 calibrate_grade_margins에서 그대로 쓰면
-    leakage. 여기서는 매 fold마다 train split에서만 fit해서 held-out fold에 적용.
+    Codex 2차 P1 (PR #22): 이전 per-fold refit은 production behavior와 다름.
+    production은 guarded factors (예: artsy_gallery=1.0 skip) 사용.
+    grade margin은 production 행동을 평가해야 하므로 같은 factor 적용.
     """
-    factors: dict[str, float] = {}
-    for cell in set(cells_tr):
-        mask = cells_tr == cell
-        if mask.sum() == 0:
-            continue
-        valid = (cb_pred_price_tr[mask] > 0) & (y_price_tr[mask] > 0)
-        if valid.sum() == 0:
-            factors[str(cell)] = 1.0
-            continue
-        ratio = float(np.median(y_price_tr[mask][valid] / cb_pred_price_tr[mask][valid]))
-        factors[str(cell)] = ratio
-    return factors
+    p = OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json"
+    if not p.exists():
+        return {}
+    with p.open(encoding="utf-8") as f:
+        data = json.load(f)
+    factors = data.get("cold_factors", {})
+    return {str(k): float(v) for k, v in factors.items()
+            if isinstance(v, (int, float))}
 
 
 def _train_predict_fold(
     X_tr, y_tr, X_te, y_te,
-    groups_tr, cb_params: dict, xgb_params: dict, seed=42,
+    groups_tr, cb_params: dict, xgb_params: dict,
+    warm_set: set[str] | None = None, seed=42,
 ):
     """v3-filtered-tuned 사양으로 fold 학습 + 예측 (production tuned params 적용).
 
-    primary_predictor 라우팅 정합:
+    primary_predictor 라우팅 정합 (Codex 2차 P1):
     - CatBoost: full fold 학습 (production cold route)
-    - XGBoost: warm slice (artist_count>=5) 만으로 학습 (production warm route)
+    - XGBoost: warm_artist_slugs membership으로 train 필터 (production warm route 정합)
+      · 기존 fold-local _warm_mask는 942행 misclassification (production과 다른 train slice)
+      · 수정: full warm_set으로 train fold 필터 → production과 정확히 같은 학습 데이터
 
-    Codex P1: leakage 방지 — eval_set/early_stopping 제거 (tune/train script와 동일).
+    Codex P1: leakage 방지 — eval_set/early_stopping 제거.
     """
     cb = CatBoostRegressor(
         **cb_params, loss_function="RMSE", verbose=0, random_seed=seed,
         allow_writing_files=False,
     )
-    cb.fit(_cb_pool(X_tr, y_tr))  # no eval_set
+    cb.fit(_cb_pool(X_tr, y_tr))
     cb_pred = cb.predict(_cb_pool(X_te))
 
-    warm_mask_tr = _warm_mask(groups_tr)
+    # XGBoost: warm_set membership으로 train 필터 (production tune script와 동일)
+    if warm_set:
+        warm_mask_tr = np.array([str(g) in warm_set for g in groups_tr])
+    else:
+        # Fallback (warm artifact 없을 때) — fold-local count 사용
+        warm_mask_tr = _warm_mask(groups_tr)
     if warm_mask_tr.sum() == 0:
-        logger.warning("zero-warm fold — XGBoost를 full fold로 학습 (fallback)")
+        logger.warning("zero-warm train fold — XGBoost를 full fold로 학습 (fallback)")
         X_tr_warm, y_tr_warm = X_tr, y_tr
     else:
         X_tr_warm = X_tr.iloc[warm_mask_tr].reset_index(drop=True)
@@ -167,7 +170,7 @@ def _train_predict_fold(
     m = xgb.train(
         params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": seed},
         dtrain=dtrain, num_boost_round=xgb_params.get("num_boost_round", 1000),
-    )  # no evals/early_stopping
+    )
     xgb_pred = m.predict(dtest)
     return cb_pred, xgb_pred
 
@@ -193,14 +196,24 @@ def calibrate(target_coverage: float = 0.80) -> dict:
                 cb_params.get("iterations"), cb_params.get("depth"),
                 xgb_params.get("num_boost_round"), xgb_params.get("max_depth"))
 
-    # PR #20 warm artist set — production grade A 결정 기준 정합 (Codex 7차 P1)
+    # PR #20 warm artist set — production grade A 결정 + XGB train slice 정합
     # 기존: per-fold train_count>=5 → 942행 (3.48%) misclassification
     # 수정: full-data warm_artist_slugs membership 사용 (서비스 라우팅과 동일)
     warm_set = _load_warm_artists()
     if warm_set:
-        logger.info("Warm artists loaded: %d (production A 등급 기준)", len(warm_set))
+        logger.info("Warm artists loaded: %d (production A 등급 + XGB train slice)", len(warm_set))
     else:
         logger.warning("Warm artists JSON 없음 → fallback to per-fold train_count>=5")
+
+    # PR #21 production cold calibration factors — guarded factors 직접 사용 (Codex 2차 P1)
+    # 기존: per-fold refit은 leakage 작지만 production behavior와 다른 factors 적용
+    # 수정: production guarded factors (artsy_gallery=1.0 skip 포함) 그대로 사용 →
+    #       grade margin이 실제 서빙 동작을 평가
+    production_cold_factors = _load_production_cold_factors()
+    if production_cold_factors:
+        logger.info("Production cold calibration factors: %s", production_cold_factors)
+    else:
+        logger.warning("Production cold calibration JSON 없음 → cold prediction 후처리 skip")
 
     # 5-Fold KFold (작가가 fold에 걸쳐 분포 → 등급 결정에 자연스러움)
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -211,20 +224,7 @@ def calibrate(target_coverage: float = 0.80) -> dict:
         cb_pred, xgb_pred = _train_predict_fold(
             X.iloc[tr], y[tr], X.iloc[te], y[te],
             groups_tr=groups[tr], cb_params=cb_params, xgb_params=xgb_params,
-        )
-
-        # Per-fold cell calibration factors (Codex 7차 P1: leakage 방지)
-        # train fold에서만 fit → held-out fold에 적용 (cross-fit)
-        cb_pred_price_tr_only = np.exp(cb_pred[:0])  # placeholder
-        # 정확하게: train fold의 cb prediction이 필요하지만 _train_predict_fold가 te만 반환.
-        # 별도 sub-CV 없이 가까운 근사: 같은 fold의 train rows에서 CatBoost predict + factor fit.
-        cb_for_factors = CatBoostRegressor(
-            **cb_params, loss_function="RMSE", verbose=0, random_seed=42, allow_writing_files=False,
-        )
-        cb_for_factors.fit(_cb_pool(X.iloc[tr], y[tr]))
-        tr_pred = cb_for_factors.predict(_cb_pool(X.iloc[tr]))
-        fold_factors = _compute_fold_factors(
-            np.exp(y[tr]), np.exp(tr_pred), cells[tr],
+            warm_set=warm_set,  # production 정합 — XGB train slice
         )
 
         train_artist_counts = pd.Series(groups[tr]).value_counts()
@@ -249,9 +249,9 @@ def calibrate(target_coverage: float = 0.80) -> dict:
             cb_p = float(np.exp(cb_pred[i]))
             xgb_p = float(np.exp(xgb_pred[i]))
             use_xgb = grade == "A"
-            # Cold path source × target_market calibration — per-fold factor (cross-fit)
-            if not use_xgb:
-                cb_p = cb_p * fold_factors.get(cells[te_idx], 1.0)
+            # Cold path: production guarded factors 직접 사용 (서비스 동작과 동일)
+            if not use_xgb and production_cold_factors:
+                cb_p = cb_p * production_cold_factors.get(cells[te_idx], 1.0)
             pred_price = xgb_p if use_xgb else cb_p
 
             all_records.append({
