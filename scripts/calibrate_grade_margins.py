@@ -116,9 +116,12 @@ def _train_predict_fold(
     cb_pred = cb.predict(_cb_pool(X_te))
 
     # XGBoost: warm slice만으로 학습 (production tune script와 동일)
+    # zero-warm fold edge case: artist 5건 중 1건 test로 빠지면 train 4건으로 warm 미달.
+    # 모든 warm 후보가 그러면 zero-warm fold 발생 가능 → full fold로 fallback (해당 fold에
+    # warm test row 자체가 없어 결과 왜곡은 minimal).
     warm_mask_tr = _warm_mask(groups_tr)
     if warm_mask_tr.sum() == 0:
-        # warm 데이터 없는 fold (이론상 발생 X) — fallback: full fold
+        logger.warning("zero-warm fold — XGBoost를 full fold로 학습 (fallback)")
         X_tr_warm, y_tr_warm = X_tr, y_tr
     else:
         X_tr_warm = X_tr.iloc[warm_mask_tr].reset_index(drop=True)

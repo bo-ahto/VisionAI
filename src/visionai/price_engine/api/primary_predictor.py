@@ -102,6 +102,8 @@ class PrimaryPredictor:
         - XGBoost: 입체 제외 + warm slice(작품 수≥5) Optuna 튜닝 (warm KFold 최적)
         - label_maps: 학습 시 매핑 그대로 보존된 아티팩트
         - warm_artists: 학습 시 warm slice에 포함된 작가 slug 집합 (라우팅 정합)
+
+        Codex 8차 P1: 재로딩 시 stale state 방지. warm artifact 미존재면 set을 비움.
         """
         cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
         xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
@@ -114,7 +116,8 @@ class PrimaryPredictor:
         self.xgb_model.load_model(str(xgb_path))
         logger.info("XGBoost loaded: %s", xgb_path)
 
-        # Codex 5차 P1: warm artist slug list 로드 (서빙 라우팅 정합)
+        # 재로딩 시 stale 방지: 항상 비운 후 재로드
+        self._warm_artist_slugs = set()
         warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
         if warm_path.exists():
             with warm_path.open(encoding="utf-8") as f:
@@ -151,11 +154,12 @@ class PrimaryPredictor:
             if col in df.columns:
                 df[col] = df[col].astype(str).fillna("unknown")
 
-        # 모델 라우팅 (학습 시 warm slice와 정합)
-        # is_warm: True/False (set 권위) / None (set 미보유 — legacy training_count fallback)
-        if self._warm_artist_slugs and artist_slug:
-            is_warm = self.is_warm_artist(artist_slug)
-            use_xgb = is_warm
+        # 모델 라우팅 (학습 시 warm slice와 정합) — Codex 8차 P1 정합 강화
+        # warm set이 로드된 상태면 권위적 — slug 누락은 곧 'cold' (set 외부)로 간주
+        # 라우팅 + grade 양쪽에서 같은 결정 사용 (self-consistency 보장)
+        if self._warm_artist_slugs:
+            is_warm = bool(artist_slug) and self.is_warm_artist(artist_slug)
+            use_xgb = bool(is_matched) and is_warm  # 매칭 + warm 둘 다 필요
         else:
             is_warm = None  # warm set 정보 없음 → grade도 legacy fallback
             use_xgb = is_matched and training_count >= 5
