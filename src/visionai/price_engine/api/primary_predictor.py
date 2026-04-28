@@ -50,9 +50,19 @@ def determine_confidence(
     training_count: int,
     has_birth_year: bool,
     has_manual_profile: bool,
+    is_warm_artist: bool = False,
 ) -> tuple[str, float]:
-    """(grade, margin) 반환."""
-    if is_matched and training_count >= 5:
+    """(grade, margin) 반환.
+
+    Codex 6차 P1 (2026-04-28): 등급 A 결정에 학습 시 warm artist set lookup 사용.
+    - 기존: training_count >= 5 (DB raw count, 학습 데이터와 드리프트)
+    - 수정: is_warm_artist=True (학습 시 warm slice에 포함된 작가) 우선
+    is_warm_artist 정보 없을 때만 training_count로 fallback (구버전 호환).
+    """
+    if is_matched and is_warm_artist:
+        return ("A", 0.20)
+    if is_matched and training_count >= 5 and not is_warm_artist:
+        # warm set 정보 없는 fallback path. 라우팅과 일관성 유지 위해 같은 임계값.
         return ("A", 0.20)
     if is_matched and training_count >= 1:
         return ("B", 0.30)
@@ -128,8 +138,9 @@ class PrimaryPredictor:
                 df[col] = df[col].astype(str).fillna("unknown")
 
         # 모델 라우팅 (학습 시 warm slice와 정합)
+        is_warm = self.is_warm_artist(artist_slug) if (self._warm_artist_slugs and artist_slug) else False
         if self._warm_artist_slugs and artist_slug:
-            use_xgb = self.is_warm_artist(artist_slug)
+            use_xgb = is_warm
         else:
             # fallback: DB training_count 기준 (드리프트 위험)
             use_xgb = is_matched and training_count >= 5
@@ -161,9 +172,12 @@ class PrimaryPredictor:
         price_krw = int(math.exp(ln_price))
         price_usd = int(price_krw / USD_TO_KRW)
 
-        # 신뢰도
+        # 신뢰도 (Codex 6차 P1: is_warm_artist로 라우팅과 grade 정렬)
         has_birth = bool(features.get("artist_birth_year") and not math.isnan(features["artist_birth_year"]))
-        grade, margin = determine_confidence(is_matched, training_count, has_birth, has_manual_profile)
+        grade, margin = determine_confidence(
+            is_matched, training_count, has_birth, has_manual_profile,
+            is_warm_artist=is_warm,
+        )
 
         price_low = int(price_krw * (1 - margin))
         price_high = int(price_krw * (1 + margin))

@@ -399,13 +399,18 @@ def _find_matched_artworks(
     return unique[:5]
 
 
-def _load_models() -> None:
-    """모델 파일 로드."""
+def _resolve_model_dir() -> Path:
+    """MODEL_DIR 환경변수 → repo-relative fallback. 모든 곳에서 동일 resolver 사용
+    (Codex 6차 P2 — model_info와 _load_models 경로 정합 보장)."""
     model_dir = Path(os.getenv("MODEL_DIR", "/app/models"))
     if not model_dir.exists():
-        # 로컬 개발 환경 폴백
         model_dir = Path(__file__).resolve().parent.parent.parent.parent.parent / "model_test_results"
+    return model_dir
 
+
+def _load_models() -> None:
+    """모델 파일 로드."""
+    model_dir = _resolve_model_dir()
     _predictor.load_models(model_dir)
 
     # XGBoost label map 구축 — 학습 시 저장된 매핑 아티팩트 우선 (Codex review #14)
@@ -498,10 +503,8 @@ async def model_info():
     - cold: CatBoost MdAPE (groupkfold)
     - warm: XGBoost on warm slice MdAPE (kfold.warm_slice)
     """
-    metrics_path = Path(os.environ.get("MODEL_DIR", "models")) / "integrated_v3_filtered_tuned_metrics.json"
-    # Fallback: project model_test_results
-    if not metrics_path.exists():
-        metrics_path = Path("model_test_results") / "integrated_v3_filtered_tuned_metrics.json"
+    # _load_models와 동일한 resolver 사용 (Codex 6차 P2 — 경로 정합)
+    metrics_path = _resolve_model_dir() / "integrated_v3_filtered_tuned_metrics.json"
 
     if metrics_path.exists():
         with metrics_path.open(encoding="utf-8") as f:

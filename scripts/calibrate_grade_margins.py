@@ -71,11 +71,43 @@ def determine_grade_for_row(
     return "D"
 
 
-def _train_predict_fold(X_tr, y_tr, X_te, y_te, seed=42):
-    """v3-filtered-tuned 사양으로 fold 학습 + 예측. ensemble (CatBoost + XGBoost) 반환."""
+def _load_tuned_params() -> tuple[dict, dict]:
+    """integrated_v3_filtered_tuned_best_params.json 로드 (Codex 6차 P2).
+
+    이 스크립트는 production tuned model을 평가해야 하므로, 학습 시 Optuna가
+    찾은 best params를 그대로 fold 학습에 적용한다. 기존엔 untuned 하드코딩.
+    """
+    params_path = OUT_DIR / "integrated_v3_filtered_tuned_best_params.json"
+    if not params_path.exists():
+        logger.warning(
+            "tuned params 없음 (%s) → untuned 기본값 사용 (calibration 정확도 떨어짐)",
+            params_path,
+        )
+        cb_default = {
+            "iterations": 1000, "learning_rate": 0.05, "depth": 6,
+            "l2_leaf_reg": 3.0, "bagging_temperature": 1.0,
+        }
+        xgb_default = {
+            "num_boost_round": 1000, "eta": 0.05, "max_depth": 6,
+            "gamma": 0.0, "reg_alpha": 0.0, "reg_lambda": 1.0,
+            "subsample": 1.0, "colsample_bytree": 1.0,
+        }
+        return cb_default, xgb_default
+    with params_path.open(encoding="utf-8") as f:
+        data = json.load(f)
+    return data["catboost"], data["xgboost"]
+
+
+def _train_predict_fold(X_tr, y_tr, X_te, y_te, cb_params: dict, xgb_params: dict, seed=42):
+    """v3-filtered-tuned 사양으로 fold 학습 + 예측 (production tuned params 적용).
+
+    primary_predictor 라우팅 정합:
+    - warm (A 등급) → XGBoost
+    - cold (B/C/D) → CatBoost
+    """
     cb = CatBoostRegressor(
-        iterations=1000, learning_rate=0.05, depth=6, loss_function="RMSE",
-        verbose=0, random_seed=seed, allow_writing_files=False,
+        **cb_params, loss_function="RMSE", verbose=0, random_seed=seed,
+        allow_writing_files=False,
     )
     cb.fit(_cb_pool(X_tr, y_tr), eval_set=_cb_pool(X_te, y_te), early_stopping_rounds=50)
     cb_pred = cb.predict(_cb_pool(X_te))
@@ -83,17 +115,13 @@ def _train_predict_fold(X_tr, y_tr, X_te, y_te, seed=42):
     Xtr_e, Xte_e, _ = _label_encode_xgb(X_tr, X_te)
     dtrain = xgb.DMatrix(Xtr_e, label=y_tr)
     dtest = xgb.DMatrix(Xte_e, label=y_te)
+    xgb_p = {k: v for k, v in xgb_params.items() if k != "num_boost_round"}
     m = xgb.train(
-        params={
-            "objective": "reg:squarederror", "eta": 0.05, "max_depth": 6, "verbosity": 0,
-            "seed": seed,
-        },
-        dtrain=dtrain, num_boost_round=1000,
+        params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": seed},
+        dtrain=dtrain, num_boost_round=xgb_params.get("num_boost_round", 1000),
         evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
     )
     xgb_pred = m.predict(dtest)
-    # primary_predictor 라우팅: warm은 XGBoost, cold는 CatBoost.
-    # 캘리브레이션은 ensemble 평균값으로 대표 사용 (per-row routing은 이후 분석 단계에서 적용).
     return cb_pred, xgb_pred
 
 
@@ -108,13 +136,21 @@ def calibrate(target_coverage: float = 0.80) -> dict:
     X, y, groups = prepare_features(df)
     logger.info("Data: %d rows, %d artists", len(df), len(set(groups)))
 
+    # production tuned params 로드 (Codex 6차 P2 — calibration이 진짜 production model 평가)
+    cb_params, xgb_params = _load_tuned_params()
+    logger.info("Tuned params: CatBoost iter=%s depth=%s, XGBoost rounds=%s depth=%s",
+                cb_params.get("iterations"), cb_params.get("depth"),
+                xgb_params.get("num_boost_round"), xgb_params.get("max_depth"))
+
     # 5-Fold KFold (작가가 fold에 걸쳐 분포 → 등급 결정에 자연스러움)
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
     all_records = []
     for fold_idx, (tr, te) in enumerate(kf.split(X), 1):
         logger.info("[Fold %d/5] train=%d test=%d", fold_idx, len(tr), len(te))
-        cb_pred, xgb_pred = _train_predict_fold(X.iloc[tr], y[tr], X.iloc[te], y[te])
+        cb_pred, xgb_pred = _train_predict_fold(
+            X.iloc[tr], y[tr], X.iloc[te], y[te], cb_params, xgb_params,
+        )
 
         # 학습 fold에 해당 작가가 몇 건 있는지 카운트 (등급 결정용)
         train_artist_counts = pd.Series(groups[tr]).value_counts()
