@@ -115,9 +115,11 @@ def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, np.nda
         raise ValueError(f"Missing features in dataset: {missing}")
 
     X = df[CB_FEATURES].copy()
-    # 범주형: 결측치 → 'unknown' 문자열
+    # 범주형: 결측치 → 'unknown' 문자열 (Codex P2: 빈 문자열도 포함, predict() 정합)
     for col in CAT_FEATURES:
-        X[col] = X[col].astype(str).fillna("unknown").replace({"nan": "unknown", "None": "unknown"})
+        X[col] = X[col].astype(str).fillna("unknown").replace(
+            {"nan": "unknown", "None": "unknown", "": "unknown"}
+        )
     # 수치형: NaN → 0 (artist_birth_year 같은 컬럼은 has_birth_year 플래그가 보완)
     for col in CB_FEATURES:
         if col not in CAT_FEATURES:

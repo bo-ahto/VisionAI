@@ -312,12 +312,12 @@ class PrimaryPredictor:
         없으면 fallback으로 DB training_count >= 5.
         Codex 13차 P1: categorical normalization을 학습과 일치 (nan/None → 'unknown').
         """
-        # 피처 DataFrame 생성 — 학습 train_primary_market_v3_filtered.py:120과 동일 정규화
+        # 피처 DataFrame 생성 — 학습 train_primary_market_v3_filtered.py와 동일 정규화
         df = pd.DataFrame([features])
         for col in CAT_FEATURES:
             if col in df.columns:
                 df[col] = df[col].astype(str).fillna("unknown").replace(
-                    {"nan": "unknown", "None": "unknown"}
+                    {"nan": "unknown", "None": "unknown", "": "unknown"}
                 )
 
         # 모델 라우팅 (학습 시 warm slice와 정합) — Codex 9차 P1 정합 강화
