@@ -11,8 +11,8 @@
 <style>
   :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --tldr-bg: #1f2a3a; --tldr-border: #58a6ff; --policy-bg: #2a1f3a; --policy-border: #bc8cff; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.75; padding: 40px 20px; }
-  .container { max-width: 940px; margin: 0 auto; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.75; padding: 40px 20px; word-break: keep-all; overflow-wrap: break-word; }
+  .container { max-width: 1180px; margin: 0 auto; }
   h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
   h2 { font-size: 22px; margin-top: 48px; margin-bottom: 16px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
   h3 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: var(--purple); }
@@ -25,12 +25,22 @@
   .policy-note strong { color: var(--purple); }
   .scope-warn { background: rgba(210,153,34,0.08); border-left: 4px solid var(--orange); padding: 14px 18px; margin: 16px 0; border-radius: 6px; font-size: 14px; }
   .scope-warn strong.title { color: var(--orange); }
-  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
-  th { background: var(--card); padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; }
-  td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  /* 한글 가독성: 단어 단위 줄바꿈 + 표 자동 레이아웃 */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; word-break: keep-all; overflow-wrap: break-word; table-layout: auto; }
+  th { background: var(--card); padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; word-break: keep-all; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: keep-all; overflow-wrap: break-word; }
   tr:hover td { background: rgba(88,166,255,0.05); }
-  td.num, th.num { text-align: right; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
   td.center, th.center { text-align: center; }
+  td.status, th.status { white-space: normal; min-width: 160px; }
+  /* 가로 스크롤 가능한 wide 표 wrapper */
+  .wide-table-wrap { overflow-x: auto; margin: 16px 0; }
+  .wide-table-wrap table { margin: 0; }
+  .wide-table-wrap table th, .wide-table-wrap table td { white-space: normal; }
+  .wide-table-wrap col.col-num { width: 36px; }
+  .wide-table-wrap col.col-q { width: 180px; }
+  .wide-table-wrap col.col-status { width: 170px; }
+  .wide-table-wrap col.col-pr { width: 64px; }
   code { background: var(--card); padding: 2px 6px; border-radius: 3px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; }
   pre { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 16px 0; font-size: 13px; }
   pre code { background: none; padding: 0; }
@@ -42,6 +52,8 @@
   .mjx-container { overflow-x: auto; }
   .delta-pos { color: var(--green); }
   .delta-neg { color: var(--orange); }
+  .muted { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  td.status .muted { display: block; margin-top: 2px; }
   .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 24px 0; font-size: 14px; }
   .toc strong { color: var(--accent); }
   .toc ol { margin-top: 8px; }
@@ -129,6 +141,7 @@
 <h2>1. v1 → v2 핵심 지표 변화</h2>
 <blockquote><p><strong>읽는 법</strong>: v1 라인은 <code>integrated_v3_metrics.json</code> (29,361건 전체 학습), v2 라인은 <code>integrated_v3_filtered_tuned_metrics.json</code> (입체 985건 제외 후 28,376건, Optuna n_trials=30 튜닝, cell calibration 적용)을 옮긴 것입니다.</p></blockquote>
 
+<div class="wide-table-wrap">
 <table>
 <thead><tr><th>지표</th><th class="num">v1 (2026-04-17)</th><th class="num">v2 (2026-04-28)</th><th class="num">Δ</th></tr></thead>
 <tbody>
@@ -144,12 +157,15 @@
 <tr><td>Source 보정 방식</td><td class="num">단일 상수 -0.075 (online)</td><td class="num"><strong>셀별 ratio (artsy_online=0.943, saatchi_online=0.957)</strong></td><td class="num">per-cell guard 도입</td></tr>
 </tbody>
 </table>
+</div>
 
 <p><strong>해석</strong>: 단일 매개변수 보정에서 <strong>source × target_market 셀별 보정</strong>으로 갈아탔습니다. <strong>production cold path는 CatBoost 단일 경로</strong>이므로 보정 전후 비교는 CatBoost OOF 기준(<code>source_calibration.json</code> <code>cold_overall</code>): 39.38 → 38.29 (-1.09%p, cross-fit guarded). 앙상블/Artsy 슬라이스 수치는 offline 비교용이며 운영 경로와 다르므로 별도 표기. <strong>artsy_gallery 셀은 cross-fit에서 보정이 회귀를 일으켜 factor=1.0 (skip)</strong> — 자동 가드로 안정성 확보.</p>
 
 <h3>⑤ 제거된 5개 피처 — 무엇을, 왜?</h3>
 <p>위 표의 "피처 수 37 → 32" 변화를 자세히. 자세한 진단·발견 경위는 §4.4 참조.</p>
+<div class="wide-table-wrap">
 <table>
+<colgroup><col class="col-num"><col style="width:140px"><col><col><col><col></colgroup>
 <thead><tr><th class="center">#</th><th>제거된 피처</th><th>의미</th><th>학습 데이터 분포</th><th>서빙 시점 값</th><th>왜 제거?</th></tr></thead>
 <tbody>
 <tr><td class="center">1</td><td><code>career_age</code></td><td>첫 활동 후 경과 연수 (=2026 - 첫 전시 연도)</td><td>Artsy 76% non-null, range 0~16</td><td><strong>0 고정</strong> — DB에 컬럼 없음, <code>artist_matcher.py</code>가 항상 0 반환</td><td>학습은 분포가 있는 신호로 학습됐는데 서빙은 모두 0 → silent drift. age 정보는 <code>career_stage_v2_score</code>의 <code>age_score</code> (birth_year 기반)로 흡수.</td></tr>
@@ -159,6 +175,7 @@
 <tr><td class="center">5</td><td><code>gallery_name</code></td><td>갤러리명 (categorical, 학습 vocab 59개)</td><td>59개 갤러리명 (예: "Kukje Gallery", "Gallery Hyundai")</td><td><strong><code>'Gallery'</code> 또는 <code>'Saatchi Art'</code> 2개로 하드코딩</strong> — <code>artist_matcher.py</code>가 vocab의 작은 부분만 사용</td><td>학습 vocab과 서빙 vocab 불일치 → 매번 unseen sentinel encoding. 신호 활용 0.</td></tr>
 </tbody>
 </table>
+</div>
 <p><strong>왜 줄였더니 정확도가 좋아졌나?</strong> 이 5개 피처는 학습 시 의미 있는 신호로 사용됐지만, 서빙 시 모두 같은 값(주로 0)이 들어가면서 모델은 "이 값이 0이면 X" 같은 잘못된 패턴을 적용하고 있었습니다. 즉 학습한 신호가 production에서 노이즈로 변질된 상태 → 제거하니 noise가 사라지면서 cold MdAPE 40.6 → 39.4로 개선. <strong>train/serve drift는 정확도 그래프엔 안 잡히지만 production에서 silent하게 해를 끼칩니다.</strong></p>
 
 <hr>
@@ -172,43 +189,53 @@
 
 <h3>2.1 기술보고서 피드백 10건 (Q1~Q10)</h3>
 <blockquote><p><strong>반영 상태 범례</strong>: ✅ 반영 완료(모델/문서) · 🔄 부분 반영(코어는 반영, 일부 후속) · 📋 추후 계획(운영/콜론30/정책 협조 후) · ❌ 미반영(검토 후 미채택)</p></blockquote>
+<div class="wide-table-wrap">
 <table>
-<thead><tr><th class="center">#</th><th>콜론30 질문 (요약)</th><th>데이터 검증 결과</th><th>적용된 변경</th><th class="center">반영 상태</th><th class="center">PR</th></tr></thead>
+<colgroup>
+<col class="col-num"><col class="col-q"><col><col><col class="col-status"><col class="col-pr">
+</colgroup>
+<thead><tr><th class="center">#</th><th>콜론30 질문 (요약)</th><th>데이터 검증 결과</th><th>적용된 변경</th><th class="status">반영 상태</th><th class="center">PR</th></tr></thead>
 <tbody>
-<tr><td class="center">Q1</td><td>"profile_completeness 8.41%는 운영 정책에 반영해야"</td><td>사실 — 프로필 충실도가 작가 전문성 프록시</td><td>모델 변경 없음 (피처는 v1부터 이미 사용 중). <strong>운영 가이드 작성</strong>(작가 등록 가이드 강화)은 별도 의제</td><td class="center">📋 운영 가이드 추후</td><td class="center">(운영)</td></tr>
-<tr><td class="center">Q2</td><td>"갤러리 티어 v3 리스트 89개 공유. 모델에 반영해달라"</td><td>Artsy 갤러리 66개 중 11개만 매칭 (13.2%)</td><td>PR #19에서 매칭 분석 + 가격 분리도 측정 → Top 30 미매칭 명단 산출. <strong>Phase 1B(실 학습 적용)는 콜론30 Top 30 검수 후 진행</strong></td><td class="center">🔄 분석 완료, 학습 적용은 콜론30 검수 대기</td><td class="center">#19</td></tr>
-<tr><td class="center">Q3</td><td>"원작/에디션 0.00% 중요도는 데이터 편향 의심"</td><td>99.9% Unique (Saatchi=100%, Artsy=99.5%, Edition=34건/0.1%). 분산 부족이 원인</td><td>v2 모델은 그대로 (분산 부족이라 학습 불가). <strong>Edition 케이스는 printbakery 별 모델로 분리 검토</strong> 의제</td><td class="center">📋 정책 결정 + 별 모델 검토</td><td class="center">(정책)</td></tr>
-<tr><td class="center">Q4</td><td>"한국 갤러리 직접 등록 작가는 어떻게 처리?"</td><td>현재 Cold path(CatBoost) 분기 + <code>manual_overrides</code> API로 이미 처리 가능</td><td>코드는 v1부터 존재 — UX/UI 보강이 필요. <strong>갤러리 입력 폼</strong>(생년·솔로전·페어 등)은 운영팀 협조 의제</td><td class="center">📋 갤러리 입력 UX 추후</td><td class="center">(운영)</td></tr>
-<tr><td class="center">Q5</td><td>"외부 플랫폼 등록 작품수는 시장 활동 0.2%만"</td><td>사실 — <code>artist_total_works</code>는 온라인 활동성 + 데이터 소스 식별 시그널 혼합</td><td>모델 자체 변경 없음 (피처 의미 보고서에 caveat 추가). <strong>갤러리 자체 전시·페어 입력 데이터 수집</strong> 시 신호 보강 가능</td><td class="center">📋 갤러리 입력 데이터 수집 추후</td><td class="center">(운영)</td></tr>
-<tr><td class="center">Q6</td><td>"플랫폼은 Artsy + Saatchi만?"</td><td>v3-filtered-tuned 기준 정확히 두 개</td><td><strong>본 v2 본문 §3·§5에 명시</strong></td><td class="center">✅ 문서 정정 완료</td><td class="center">(문서)</td></tr>
-<tr><td class="center">Q7</td><td>"C/D 가격 범위 너무 넓음 (50%/70%)"</td><td>A 등급 m=0.20에서 80% 커버리지 71.5% (좁음). C/D 권장 m≈0.9 (사실상 무용)</td><td>PR #22에서 production-time per-grade m 권장치 산출 (§6.2). <strong>권장치 적용은 정책 결정 보류 중</strong> (옵션 1/2/3 §6.2 참조)</td><td class="center">🔄 측정·권장치 산출 완료, 적용은 정책 결정 대기</td><td class="center">#22</td></tr>
-<tr><td class="center">Q8</td><td>"개인전/단체전 직접 피처에 있나?"</td><td><code>solo_count</code>/<code>group_count</code>/<code>fair_count</code>는 학습 데이터 컬럼은 있지만 v1 37개 모델 입력에 미포함</td><td>PR #20에서 <code>career_stage_v2_score</code> <strong>입력으로 통합</strong> (직접 피처화는 v4 실험에서 과적합 사례 있어 보류). 콜론30 의문 해소를 위해 본 v2 §4.4에 명시</td><td class="center">✅ 통합 완료 (직접 피처화는 미채택)</td><td class="center">#20</td></tr>
-<tr><td class="center">Q9</td><td>"career_stage 명칭 변경. 시장 통념 라벨 부적절"</td><td>Stage 3=0건으로 사문화. 명명도 시장 합의 없음</td><td>PR #20에서 v2 정의(연속 0~8 점수) + 라벨 수치형으로 통일. <strong>본 v2 본문 전체에서 시장 통념 라벨 사용 금지</strong></td><td class="center">✅ 모델·문서 모두 반영 완료</td><td class="center">#20</td></tr>
-<tr><td class="center">Q10</td><td>"갤러리 유형/서울 가중치/해외 갤러리 합리성"</td><td>단순 휴리스틱 (<code>has_seoul</code>, <code>has_international</code> 등 합 2.5%)</td><td>PR #19 갤러리 티어 분석. <strong>Phase 1B(콜론30 리스트 직접 적용 + Frieze/Art Basel 글로벌 피처)는 콜론30 검수 후 진행</strong></td><td class="center">🔄 분석 완료, 학습 적용은 콜론30 검수 대기</td><td class="center">#19</td></tr>
+<tr><td class="center">Q1</td><td>"profile_completeness 8.41%는 운영 정책에 반영해야"</td><td>사실 — 프로필 충실도가 작가 전문성 프록시</td><td>모델 변경 없음 (피처는 v1부터 이미 사용 중). <strong>운영 가이드 작성</strong>(작가 등록 가이드 강화)은 별도 의제</td><td class="status">📋 <strong>추후 계획</strong><br><span class="muted">운영 가이드 작성</span></td><td class="center">(운영)</td></tr>
+<tr><td class="center">Q2</td><td>"갤러리 티어 v3 리스트 89개 공유. 모델에 반영해달라"</td><td>Artsy 갤러리 66개 중 11개만 매칭 (13.2%)</td><td>PR #19에서 매칭 분석 + 가격 분리도 측정 → Top 30 미매칭 명단 산출. <strong>Phase 1B(실 학습 적용)는 콜론30 Top 30 검수 후 진행</strong></td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted">분석 완료 / 학습 적용은 콜론30 검수 대기</span></td><td class="center">#19</td></tr>
+<tr><td class="center">Q3</td><td>"원작/에디션 0.00% 중요도는 데이터 편향 의심"</td><td>99.9% Unique (Saatchi=100%, Artsy=99.5%, Edition=34건/0.1%). 분산 부족이 원인</td><td>v2 모델은 그대로 (분산 부족이라 학습 불가). <strong>Edition 케이스는 printbakery 별 모델로 분리 검토</strong> 의제</td><td class="status">📋 <strong>추후 계획</strong><br><span class="muted">정책 결정 + 별 모델 검토</span></td><td class="center">(정책)</td></tr>
+<tr><td class="center">Q4</td><td>"한국 갤러리 직접 등록 작가는 어떻게 처리?"</td><td>현재 Cold path(CatBoost) 분기 + <code>manual_overrides</code> API로 이미 처리 가능</td><td>코드는 v1부터 존재 — UX/UI 보강이 필요. <strong>갤러리 입력 폼</strong>(생년·솔로전·페어 등)은 운영팀 협조 의제</td><td class="status">📋 <strong>추후 계획</strong><br><span class="muted">갤러리 입력 UX</span></td><td class="center">(운영)</td></tr>
+<tr><td class="center">Q5</td><td>"외부 플랫폼 등록 작품수는 시장 활동 0.2%만"</td><td>사실 — <code>artist_total_works</code>는 온라인 활동성 + 데이터 소스 식별 시그널 혼합</td><td>모델 자체 변경 없음 (피처 의미 보고서에 caveat 추가). <strong>갤러리 자체 전시·페어 입력 데이터 수집</strong> 시 신호 보강 가능</td><td class="status">📋 <strong>추후 계획</strong><br><span class="muted">갤러리 입력 데이터 수집</span></td><td class="center">(운영)</td></tr>
+<tr><td class="center">Q6</td><td>"플랫폼은 Artsy + Saatchi만?"</td><td>v3-filtered-tuned 기준 정확히 두 개</td><td><strong>본 v2 본문 §3·§5에 명시</strong></td><td class="status">✅ <strong>완료</strong><br><span class="muted">문서 정정</span></td><td class="center">(문서)</td></tr>
+<tr><td class="center">Q7</td><td>"C/D 가격 범위 너무 넓음 (50%/70%)"</td><td>A 등급 m=0.20에서 80% 커버리지 71.5% (좁음). C/D 권장 m≈0.9 (사실상 무용)</td><td>PR #22에서 production-time per-grade m 권장치 산출 (§6.2). <strong>권장치 적용은 정책 결정 보류 중</strong> (옵션 1/2/3 §6.2 참조)</td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted">측정·권장치 산출 완료 / 적용은 정책 결정 대기</span></td><td class="center">#22</td></tr>
+<tr><td class="center">Q8</td><td>"개인전/단체전 직접 피처에 있나?"</td><td><code>solo_count</code>/<code>group_count</code>/<code>fair_count</code>는 학습 데이터 컬럼은 있지만 v1 37개 모델 입력에 미포함</td><td>PR #20에서 <code>career_stage_v2_score</code> <strong>입력으로 통합</strong> (직접 피처화는 v4 실험에서 과적합 사례 있어 보류). 콜론30 의문 해소를 위해 본 v2 §4.4에 명시</td><td class="status">✅ <strong>완료</strong><br><span class="muted">통합 완료 (직접 피처화는 미채택)</span></td><td class="center">#20</td></tr>
+<tr><td class="center">Q9</td><td>"career_stage 명칭 변경. 시장 통념 라벨 부적절"</td><td>Stage 3=0건으로 사문화. 명명도 시장 합의 없음</td><td>PR #20에서 v2 정의(연속 0~8 점수) + 라벨 수치형으로 통일. <strong>본 v2 본문 전체에서 시장 통념 라벨 사용 금지</strong></td><td class="status">✅ <strong>완료</strong><br><span class="muted">모델·문서 모두 반영</span></td><td class="center">#20</td></tr>
+<tr><td class="center">Q10</td><td>"갤러리 유형/서울 가중치/해외 갤러리 합리성"</td><td>단순 휴리스틱 (<code>has_seoul</code>, <code>has_international</code> 등 합 2.5%)</td><td>PR #19 갤러리 티어 분석. <strong>Phase 1B(콜론30 리스트 직접 적용 + Frieze/Art Basel 글로벌 피처)는 콜론30 검수 후 진행</strong></td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted">분석 완료 / 학습 적용은 콜론30 검수 대기</span></td><td class="center">#19</td></tr>
 </tbody>
 </table>
+</div>
 <p><strong>반영 상태 집계</strong>: ✅ 완료 3건 (Q6, Q8, Q9) · 🔄 부분 반영 3건 (Q2, Q7, Q10) · 📋 추후 계획 4건 (Q1, Q3, Q4, Q5)</p>
 
 <h3>2.2 실험계획서 피드백 14건 (P-Q1~P-Q14)</h3>
+<div class="wide-table-wrap">
 <table>
-<thead><tr><th class="center">#</th><th>콜론30 제안</th><th>처리</th><th class="center">반영 상태</th></tr></thead>
+<colgroup>
+<col class="col-num"><col class="col-q"><col><col class="col-status">
+</colgroup>
+<thead><tr><th class="center">#</th><th>콜론30 제안</th><th>처리</th><th class="status">반영 상태</th></tr></thead>
 <tbody>
-<tr><td class="center">P-Q1</td><td>"Career Age 추가 (첫 개인전 후 경과 연수)"</td><td>초안에 포함 → 학습/서빙 drift 발견(서빙 시 0, DB 스키마 컬럼 없음) → PR #20에서 <strong>제거</strong>. age 정보는 birth_year 기반 <code>age_score</code>로 흡수</td><td class="center">🔄 부분 — age는 흡수, career_age 자체는 미반영 (DB 협조 필요)</td></tr>
-<tr><td class="center">P-Q2</td><td>"전시 갤러리 티어 가중 합산 (국제갤러리 vs 카페갤러리)"</td><td>PR #19 매핑 분석 + 가격 분리도 측정. 매칭 11/66 → Phase 1B 대기</td><td class="center">🔄 분석 완료, 학습 적용은 콜론30 검수 후</td></tr>
-<tr><td class="center">P-Q3</td><td>"1호 작품 점당 가격 (호당가 아님)"</td><td>v1 <code>is_small</code> 피처(중요도 0.73%)로 부분 반영. 작가별 점당가 룩업은 미반영</td><td class="center">🔄 부분 — <code>is_small</code>만, 작가별 룩업 추후</td></tr>
-<tr><td class="center">P-Q4</td><td>"3호 미만 = 10호 가격의 50~60%"</td><td>v1 <code>support_factor</code> + <code>ho_x_support</code> 교차항으로 일부 반영. 명시 룩업 미반영</td><td class="center">🔄 부분</td></tr>
-<tr><td class="center">P-Q5</td><td>"F/P/M/S 호수 변환 면적 차이"</td><td>v1: 면적 → F형 호수 매칭(24개 표준 캔버스). aspect_ratio로 타입 추정 가능하나 미반영</td><td class="center">🔄 F형 매칭만, 타입별 분리 미반영</td></tr>
-<tr><td class="center">P-Q6</td><td>"지지체(canvas/paper) + 유니크/에디션 구분 필수"</td><td>v1: <code>support_factor</code> 5단계 + <code>is_unique</code>/<code>is_edition</code> 피처. 단 99.9% Unique로 분산 부족</td><td class="center">✅ 지지체 반영 / 🔄 에디션은 분산 부족</td></tr>
-<tr><td class="center">P-Q7</td><td>"서울옥션 크롤러 활용?"</td><td>B 모델(경매 낙찰가) 영역. 본 1차 시장 모델은 갤러리 데이터 전용</td><td class="center">❌ 범위 외 (B 모델 의제)</td></tr>
-<tr><td class="center">P-Q8</td><td>"갤러리 명성 ↔ 가격(+) 한국 시장 방향"</td><td>v1 보고서 §2.3에 한국 시장 맥락 추가. PR #19에서 갤러리 티어 매칭 분석</td><td class="center">✅ 문서 + 분석 반영</td></tr>
-<tr><td class="center">P-Q9</td><td>"전시 갤러리/아트페어 티어"</td><td>Q2/Q10과 동일 — Phase 1B에 통합</td><td class="center">🔄 분석 완료, 적용은 검수 후</td></tr>
-<tr><td class="center">P-Q10</td><td>"서울옥션 크롤러"</td><td>P-Q7과 동일</td><td class="center">❌ 범위 외</td></tr>
-<tr><td class="center">P-Q11</td><td>"비평(전문가 평가) 정량화"</td><td>Phase 2+ 의제</td><td class="center">📋 추후 (Phase 2+)</td></tr>
-<tr><td class="center">P-Q12</td><td>"김윤신 1명 작가 편향"</td><td>갤러리 데이터 확장 의제</td><td class="center">📋 추후</td></tr>
-<tr><td class="center">P-Q13</td><td>"작품 연식 × 경력 인터랙션"</td><td>v1 <code>vintage_premium</code>, <code>freshness_discount</code> 피처 시도 → <strong>PR #20에서 train/serve drift로 제거</strong></td><td class="center">❌ drift로 제거. 재도입 시 작품 연도 입력 필드 + 모델 재학습 필요</td></tr>
-<tr><td class="center">P-Q14</td><td>"레지던시 선정 횟수"</td><td>데이터 수집 미완</td><td class="center">📋 추후 (데이터 수집 의존)</td></tr>
+<tr><td class="center">P-Q1</td><td>"Career Age 추가 (첫 개인전 후 경과 연수)"</td><td>초안에 포함 → 학습/서빙 drift 발견(서빙 시 0, DB 스키마 컬럼 없음) → PR #20에서 <strong>제거</strong>. age 정보는 birth_year 기반 <code>age_score</code>로 흡수</td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted">age는 흡수 / career_age 자체는 DB 협조 필요</span></td></tr>
+<tr><td class="center">P-Q2</td><td>"전시 갤러리 티어 가중 합산 (국제갤러리 vs 카페갤러리)"</td><td>PR #19 매핑 분석 + 가격 분리도 측정. 매칭 11/66 → Phase 1B 대기</td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted">분석 완료 / 학습 적용은 콜론30 검수 후</span></td></tr>
+<tr><td class="center">P-Q3</td><td>"1호 작품 점당 가격 (호당가 아님)"</td><td>v1 <code>is_small</code> 피처(중요도 0.73%)로 부분 반영. 작가별 점당가 룩업은 미반영</td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted"><code>is_small</code>만 / 작가별 룩업 추후</span></td></tr>
+<tr><td class="center">P-Q4</td><td>"3호 미만 = 10호 가격의 50~60%"</td><td>v1 <code>support_factor</code> + <code>ho_x_support</code> 교차항으로 일부 반영. 명시 룩업 미반영</td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted">교차항만 / 명시 룩업 추후</span></td></tr>
+<tr><td class="center">P-Q5</td><td>"F/P/M/S 호수 변환 면적 차이"</td><td>v1: 면적 → F형 호수 매칭(24개 표준 캔버스). aspect_ratio로 타입 추정 가능하나 미반영</td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted">F형 매칭만 / 타입별 분리 미반영</span></td></tr>
+<tr><td class="center">P-Q6</td><td>"지지체(canvas/paper) + 유니크/에디션 구분 필수"</td><td>v1: <code>support_factor</code> 5단계 + <code>is_unique</code>/<code>is_edition</code> 피처. 단 99.9% Unique로 분산 부족</td><td class="status">✅ <strong>지지체 반영</strong><br><span class="muted">🔄 에디션은 분산 부족으로 학습 불가</span></td></tr>
+<tr><td class="center">P-Q7</td><td>"서울옥션 크롤러 활용?"</td><td>B 모델(경매 낙찰가) 영역. 본 1차 시장 모델은 갤러리 데이터 전용</td><td class="status">❌ <strong>범위 외</strong><br><span class="muted">B 모델 의제</span></td></tr>
+<tr><td class="center">P-Q8</td><td>"갤러리 명성 ↔ 가격(+) 한국 시장 방향"</td><td>v1 보고서 §2.3에 한국 시장 맥락 추가. PR #19에서 갤러리 티어 매칭 분석</td><td class="status">✅ <strong>완료</strong><br><span class="muted">문서 + 분석 반영</span></td></tr>
+<tr><td class="center">P-Q9</td><td>"전시 갤러리/아트페어 티어"</td><td>Q2/Q10과 동일 — Phase 1B에 통합</td><td class="status">🔄 <strong>부분 반영</strong><br><span class="muted">분석 완료 / 적용은 검수 후</span></td></tr>
+<tr><td class="center">P-Q10</td><td>"서울옥션 크롤러"</td><td>P-Q7과 동일</td><td class="status">❌ <strong>범위 외</strong></td></tr>
+<tr><td class="center">P-Q11</td><td>"비평(전문가 평가) 정량화"</td><td>Phase 2+ 의제</td><td class="status">📋 <strong>추후 계획</strong><br><span class="muted">Phase 2+</span></td></tr>
+<tr><td class="center">P-Q12</td><td>"김윤신 1명 작가 편향"</td><td>갤러리 데이터 확장 의제</td><td class="status">📋 <strong>추후 계획</strong></td></tr>
+<tr><td class="center">P-Q13</td><td>"작품 연식 × 경력 인터랙션"</td><td>v1 <code>vintage_premium</code>, <code>freshness_discount</code> 피처 시도 → <strong>PR #20에서 train/serve drift로 제거</strong></td><td class="status">❌ <strong>drift로 제거</strong><br><span class="muted">재도입 시 작품 연도 입력 필드 + 재학습 필요</span></td></tr>
+<tr><td class="center">P-Q14</td><td>"레지던시 선정 횟수"</td><td>데이터 수집 미완</td><td class="status">📋 <strong>추후 계획</strong><br><span class="muted">데이터 수집 의존</span></td></tr>
 </tbody>
 </table>
+</div>
 <p><strong>반영 상태 집계</strong>: ✅ 완료 1건(P-Q8) + ✅/🔄 혼합 1건(P-Q6) · 🔄 부분 6건 · 📋 추후 3건 · ❌ 미반영/범위외 3건</p>
 
 <hr>
@@ -318,6 +345,7 @@ stage = 1: otherwise</code></pre>
 
 <h3>4.4 5개 피처 train/serve drift 제거</h3>
 <p><strong>증상</strong>: 학습 데이터에는 분포가 있지만, <code>primary_feature_builder.build_features()</code>가 서빙 시 <strong>상수(주로 0)를 하드코딩</strong>하던 피처 5개. 모델은 분포를 가진 신호로 학습됐고, 서빙 시 모든 요청이 같은 값으로 들어가면서 <strong>silent하게 다른 패턴을 적용</strong>했습니다.</p>
+<div class="wide-table-wrap">
 <table>
 <thead><tr><th>제거된 피처</th><th>카테고리</th><th>학습 데이터</th><th>서빙 시 값</th><th class="num">모델 importance (XGB gain)</th><th>근거</th></tr></thead>
 <tbody>
@@ -328,6 +356,7 @@ stage = 1: otherwise</code></pre>
 <tr><td><code>gallery_name</code></td><td>categorical</td><td>학습 vocab 59개 (예: "Kukje Gallery")</td><td><code>'Gallery'</code>/<code>'Saatchi Art'</code> 2개로 하드코딩 → 매번 sentinel</td><td class="num">0.5% (XGB warm)</td><td>Codex 14차 P1</td></tr>
 </tbody>
 </table>
+</div>
 
 <p>37 → <strong>32 피처</strong>.</p>
 
@@ -473,6 +502,7 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 </ol>
 <p><strong>caveat (스크립트 §해석 그대로)</strong>: "OOF model weights + full-data routing artifacts" 결합 평가이므로 <strong>순수 OOF는 아니며</strong>, 운영 시 메트릭의 <strong>추정치</strong>로 해석합니다. Routing/calibration artifact 자체의 OOS 일반화는 PR #20+#21 산출물에서 별도 평가됐습니다.</p>
 <p><strong>production-time per-grade 결과</strong> (n=28,376):</p>
+<div class="wide-table-wrap">
 <table>
 <thead><tr><th class="center">등급</th><th>정의</th><th class="num">n</th><th class="num">MdAPE</th><th class="num">평균 APE</th><th class="num">현재 m</th><th class="num">현재 80% 커버리지</th><th class="num">권장 m</th><th class="num">Δ</th></tr></thead>
 <tbody>
@@ -482,6 +512,7 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <tr><td class="center">D</td><td>unmatched + birth_year/manual_profile 모두 없음</td><td class="num">180</td><td class="num"><strong>43.6%</strong></td><td class="num">64.6%</td><td class="num">0.70</td><td class="num">72.8%</td><td class="num">0.827</td><td class="num">+0.127</td></tr>
 </tbody>
 </table>
+</div>
 <p><strong>해석</strong>:</p>
 <ul>
 <li><strong>A 등급은 현재 m=0.20에서 71.5%만 커버</strong> → 80% 커버리지를 위해선 m=0.286 필요. 현재 가격 범위가 좁게 표시되고 있다는 뜻 (사용자에게 신뢰도 낮은 약속).</li>
@@ -711,6 +742,7 @@ if is_warm_artist is False:
 <li><strong>2026-04-28 (v2 1차)</strong> — career_stage v2, 5개 drift 피처 제거, source × target_market 셀 캘리브레이션, 등급 마진 production-time 재산출 반영. 32회 코덱스 리뷰 소화 후 머지된 산출물 기준.</li>
 <li><strong>2026-04-28 (v2 2차)</strong> — 명칭 정책 반영(Q9: "신진/중견/원로" 라벨 제거 → 수치형 <code>career_stage</code> 0~8 + 운영 등급 A/B/C/D만 사용). 콜론30 피드백 24건(기술보고서 10 + 실험계획서 14) 트레이서빌리티 표 추가. PR #19 갤러리 티어 분석, 코덱스 리뷰 회차별 발견 항목 상세, negative results 표 추가.</li>
 <li><strong>2026-04-28 (v2 3차)</strong> — 비개발자 독자 가독성 개선: ① 용어 미니 가이드 추가(PR/MdAPE/W30/drift/warm-cold/OOF 풀어 설명), ② §1 "5개 피처 제거"를 무엇·왜 표로 본문에 직접 노출(이전엔 §4.4까지 가야 보였음), ③ 피드백 매트릭스(Q1~Q10, P-Q1~P-Q14)에 <strong>반영 상태 컬럼</strong>(✅/🔄/📋/❌) 추가, ④ "협력자" 표기를 회사명 <strong>"콜론30"</strong>으로 통일.</li>
+<li><strong>2026-04-28 (v2 4차)</strong> — 표 직관성 개선: ① 컨테이너 폭 940→1180px로 확대, ② 한글 단어 단위 줄바꿈(<code>word-break: keep-all</code>) 적용으로 "글자 단위 세로 wrap" 해소, ③ 넓은 표(피드백 매트릭스, 5개 피처 제거, 등급 마진 등)에 <code>.wide-table-wrap</code> + <code>colgroup</code> 적용으로 컬럼 폭 명시, ④ 반영 상태 셀을 2단(<strong>상태</strong> + <span class="muted">상세</span>) 구조로 재포맷.</li>
 </ul>
 
 </div>
