@@ -100,6 +100,8 @@ class PrimaryPredictor:
         self._warm_artist_slugs: set[str] = set()
         # Codex 9차 P1: artifact 로드 여부 별도 플래그 — set 비어있음과 미로드 구분
         self._warm_artifact_loaded: bool = False
+        # Source-specific calibration (Codex 권장 P2): cold path 후처리 보정
+        self._cold_calibration_factors: dict[str, float] = {}
 
     def load_models(self, model_dir: Path) -> None:
         """v3-filtered-tuned 모델 로드 — fail-closed + schema 검증 (Codex 12차).
@@ -119,11 +121,12 @@ class PrimaryPredictor:
         현재 _load_models는 startup-only 호출이라 race 위험 적음.
         런타임 reload 도입 시 별도 lock 필요.
         """
-        # 1) artifact 경로 — 모두 필수
+        # 1) artifact 경로 — 4개 필수 + 1개 선택 (calibration)
         cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
         xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
         warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
         label_maps_path = model_dir / "integrated_v3_filtered_tuned_xgboost_label_maps.json"
+        calib_path = model_dir / "integrated_v3_filtered_tuned_source_calibration.json"
 
         for path, label in (
             (cb_path, "CatBoost model"),
@@ -189,12 +192,24 @@ class PrimaryPredictor:
                         f"'{col}[{k!r}]' value must be int, got {type(v).__name__}"
                     )
 
+        # source calibration (선택 — 누락 시 fallback factor=1.0, no correction)
+        new_cold_calib: dict[str, float] = {}
+        if calib_path.exists():
+            with calib_path.open(encoding="utf-8") as f:
+                calib_data = json.load(f)
+            cold_factors = calib_data.get("cold_factors", {})
+            if isinstance(cold_factors, dict):
+                for k, v in cold_factors.items():
+                    if isinstance(v, (int, float)) and v > 0:
+                        new_cold_calib[str(k)] = float(v)
+
         # 3) 모든 build + 검증 성공 시 instance state로 swap
         self.cb_model = new_cb
         self.xgb_model = new_xgb
         self._warm_artist_slugs = new_warm_slugs
         self._warm_artifact_loaded = new_warm_loaded
         self._label_maps = new_label_maps
+        self._cold_calibration_factors = new_cold_calib
 
         # 4) 로깅
         logger.info("CatBoost loaded: %s", cb_path)
@@ -202,6 +217,10 @@ class PrimaryPredictor:
         logger.info("Warm artists loaded: %d (학습 시 warm slice 작가)", len(new_warm_slugs))
         logger.info("XGBoost label maps loaded: %d categories",
                     sum(len(v) for v in new_label_maps.values() if isinstance(v, dict)))
+        if new_cold_calib:
+            logger.info("Source calibration loaded: cold factors=%s", new_cold_calib)
+        else:
+            logger.info("Source calibration 없음 — cold prediction 후처리 보정 skip")
 
     def is_warm_artist(self, artist_slug: str | None) -> bool:
         """학습 시 warm slice 정의를 그대로 사용 (라우팅 정합)."""
@@ -270,6 +289,14 @@ class PrimaryPredictor:
             ln_price += correction
 
         price_krw = int(math.exp(ln_price))
+
+        # Source-specific median-ratio 후처리 보정 (Cold path만, Codex 권장 P2)
+        # 측정 결과: cold all MdAPE 39.41 → 37.48 (-1.93%p, Saatchi 41.62→40.01)
+        # warm은 factor가 1.0 근처라 효과 noise 수준 → 적용 안 함
+        if not use_xgb and self._cold_calibration_factors:
+            src = str(features.get("source", "")) or "unknown"
+            factor = self._cold_calibration_factors.get(src, 1.0)
+            price_krw = int(price_krw * factor)
         price_usd = int(price_krw / USD_TO_KRW)
 
         # 신뢰도 (Codex 6차 P1: is_warm_artist로 라우팅과 grade 정렬)
