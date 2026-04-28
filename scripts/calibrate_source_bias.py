@@ -235,48 +235,83 @@ def calibrate() -> dict:
 
     # Per-cell breakdown — cross-fit predictions 사용 (Codex P2: post-hoc 적용 X)
     # baseline은 raw OOF pred, calibrated는 cross-fit factor 적용 결과 (held-out factor)
+    # Codex 4차 P2: per-cell guard — calibration이 MdAPE 악화시키는 cell은 factor=1.0
     cold_breakdown = {}
+    cold_applied_factors: dict[str, float] = {}
     for cell in sorted(set(cells)):
         mask = cells == cell
         if mask.sum() == 0:
             continue
         b = _mdape(y_price[mask], cb_pred_price[mask])
-        c = _mdape(y_price[mask], cold_calibrated_pred[mask])  # cross-fit
+        c = _mdape(y_price[mask], cold_calibrated_pred[mask])
+        proposed_factor = cold_factors.get(cell, 1.0)
+        applied_factor = proposed_factor if c <= b else 1.0
         cold_breakdown[cell] = {
             "n": int(mask.sum()),
-            "final_factor_full_data": cold_factors.get(cell, 1.0),
+            "proposed_factor_full_data": proposed_factor,
+            "applied_factor": applied_factor,  # cross-fit 결과 보고 결정
             "baseline_mdape": b,
             "calibrated_mdape_cross_fit": c,
+            "skipped_due_to_regression": applied_factor == 1.0 and proposed_factor != 1.0,
         }
+        cold_applied_factors[cell] = applied_factor
 
     warm_breakdown = {}
+    warm_applied_factors: dict[str, float] = {}
     for cell in sorted(set(cells_warm)):
         mask = cells_warm == cell
         if mask.sum() == 0:
             continue
         b = _mdape(y_warm_price[mask], xgb_pred_price[mask])
-        c = _mdape(y_warm_price[mask], warm_calibrated_pred[mask])  # cross-fit
+        c = _mdape(y_warm_price[mask], warm_calibrated_pred[mask])
+        proposed_factor = warm_factors.get(cell, 1.0)
+        applied_factor = proposed_factor if c <= b else 1.0
         warm_breakdown[cell] = {
             "n": int(mask.sum()),
-            "final_factor_full_data": warm_factors.get(cell, 1.0),
+            "proposed_factor_full_data": proposed_factor,
+            "applied_factor": applied_factor,
             "baseline_mdape": b,
             "calibrated_mdape_cross_fit": c,
+            "skipped_due_to_regression": applied_factor == 1.0 and proposed_factor != 1.0,
         }
+        warm_applied_factors[cell] = applied_factor
 
+    # Per-cell guard 적용한 final overall MdAPE (서빙과 동일 동작)
+    cold_pred_guarded = cb_pred_price * np.array(
+        [cold_applied_factors.get(c, 1.0) for c in cells]
+    )
+    cold_calibrated_guarded_mdape = _mdape(y_price, cold_pred_guarded)
+    warm_pred_guarded = xgb_pred_price * np.array(
+        [warm_applied_factors.get(c, 1.0) for c in cells_warm]
+    )
+    warm_calibrated_guarded_mdape = _mdape(y_warm_price, warm_pred_guarded)
+    logger.info("Cold guarded overall MdAPE=%.2f (vs cross-fit unguarded=%.2f)",
+                cold_calibrated_guarded_mdape, cold_calibrated)
+    logger.info("Warm guarded overall MdAPE=%.2f (vs cross-fit unguarded=%.2f)",
+                warm_calibrated_guarded_mdape, warm_calibrated)
+
+    # 서버에 보내는 factors는 per-cell guard 적용된 applied_factors (cross-fit 회귀 cell 제외)
     return {
         "version": CALIBRATION_VERSION,
         "model_target": "integrated_v3_filtered_tuned",
-        "method": "median(actual_price / predicted_price), cell = source × target_market",
+        "method": "median(actual_price / predicted_price), cell = source × target_market, "
+                  "per-cell guard (cross-fit 악화 cell은 factor=1.0 적용)",
         "cells_definition": "is_krw==1 → target_market='gallery', else 'online'",
-        "cold_factors": cold_factors,
-        "warm_factors": warm_factors,
+        "cold_factors": cold_applied_factors,
+        "warm_factors": warm_applied_factors,
+        "cold_factors_proposed_full_data": cold_factors,
+        "warm_factors_proposed_full_data": warm_factors,
         "cold_overall": {
-            "baseline_mdape": cold_baseline, "calibrated_mdape_cross_fit": cold_calibrated,
-            "delta": cold_calibrated - cold_baseline,
+            "baseline_mdape": cold_baseline,
+            "calibrated_mdape_cross_fit_unguarded": cold_calibrated,
+            "calibrated_mdape_cross_fit_guarded": cold_calibrated_guarded_mdape,
+            "delta_guarded": cold_calibrated_guarded_mdape - cold_baseline,
         },
         "warm_overall": {
-            "baseline_mdape": warm_baseline, "calibrated_mdape_cross_fit": warm_calibrated,
-            "delta": warm_calibrated - warm_baseline,
+            "baseline_mdape": warm_baseline,
+            "calibrated_mdape_cross_fit_unguarded": warm_calibrated,
+            "calibrated_mdape_cross_fit_guarded": warm_calibrated_guarded_mdape,
+            "delta_guarded": warm_calibrated_guarded_mdape - warm_baseline,
         },
         "cold_breakdown": cold_breakdown,
         "warm_breakdown": warm_breakdown,

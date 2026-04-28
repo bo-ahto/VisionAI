@@ -1,66 +1,90 @@
 {
   "version": "v1-cross-fit-cell",
   "model_target": "integrated_v3_filtered_tuned",
-  "method": "median(actual_price / predicted_price), cell = source × target_market",
+  "method": "median(actual_price / predicted_price), cell = source × target_market, per-cell guard (cross-fit 악화 cell은 factor=1.0 적용)",
   "cells_definition": "is_krw==1 → target_market='gallery', else 'online'",
   "cold_factors": {
-    "artsy_gallery": 0.9756592606775484,
-    "artsy_online": 0.9666462891151968,
-    "saatchi_online": 0.9441730774825303
+    "artsy_gallery": 1.0,
+    "artsy_online": 0.9425943416620021,
+    "saatchi_online": 0.9568847727800011
   },
   "warm_factors": {
+    "artsy_gallery": 0.9999902618542379,
+    "artsy_online": 1.0050275147105072,
+    "saatchi_online": 1.0
+  },
+  "cold_factors_proposed_full_data": {
+    "artsy_gallery": 1.0370614179485151,
+    "artsy_online": 0.9425943416620021,
+    "saatchi_online": 0.9568847727800011
+  },
+  "warm_factors_proposed_full_data": {
     "artsy_gallery": 0.9999902618542379,
     "artsy_online": 1.0050275147105072,
     "saatchi_online": 0.9999464105492065
   },
   "cold_overall": {
-    "baseline_mdape": 39.05173362016536,
-    "calibrated_mdape_cross_fit": 37.81205520323756,
-    "delta": -1.239678416927795
+    "baseline_mdape": 39.3767703371767,
+    "calibrated_mdape_cross_fit_unguarded": 38.31627952154923,
+    "calibrated_mdape_cross_fit_guarded": 38.14983665593103,
+    "delta_guarded": -1.2269336812456686
   },
   "warm_overall": {
     "baseline_mdape": 9.701765452424613,
-    "calibrated_mdape_cross_fit": 9.718613760270689,
-    "delta": 0.016848307846075272
+    "calibrated_mdape_cross_fit_unguarded": 9.718613760270689,
+    "calibrated_mdape_cross_fit_guarded": 9.716677633535532,
+    "delta_guarded": 0.014912181110918965
   },
   "cold_breakdown": {
     "artsy_gallery": {
       "n": 868,
-      "final_factor_full_data": 0.9756592606775484,
-      "baseline_mdape": 24.26441253503565,
-      "calibrated_mdape_cross_fit": 27.247215798032137
+      "proposed_factor_full_data": 1.0370614179485151,
+      "applied_factor": 1.0,
+      "baseline_mdape": 24.33558481605723,
+      "calibrated_mdape_cross_fit": 31.158701524859932,
+      "skipped_due_to_regression": true
     },
     "artsy_online": {
       "n": 6421,
-      "final_factor_full_data": 0.9666462891151968,
-      "baseline_mdape": 33.3725894515598,
-      "calibrated_mdape_cross_fit": 32.988237160729284
+      "proposed_factor_full_data": 0.9425943416620021,
+      "applied_factor": 0.9425943416620021,
+      "baseline_mdape": 35.044583310176954,
+      "calibrated_mdape_cross_fit": 34.13375278909016,
+      "skipped_due_to_regression": false
     },
     "saatchi_online": {
       "n": 21087,
-      "final_factor_full_data": 0.9441730774825303,
-      "baseline_mdape": 41.83634913386667,
-      "calibrated_mdape_cross_fit": 40.27210765982168
+      "proposed_factor_full_data": 0.9568847727800011,
+      "applied_factor": 0.9568847727800011,
+      "baseline_mdape": 41.70253109826572,
+      "calibrated_mdape_cross_fit": 40.108864265522556,
+      "skipped_due_to_regression": false
     }
   },
   "warm_breakdown": {
     "artsy_gallery": {
       "n": 778,
-      "final_factor_full_data": 0.9999902618542379,
+      "proposed_factor_full_data": 0.9999902618542379,
+      "applied_factor": 0.9999902618542379,
       "baseline_mdape": 6.119693908788547,
-      "calibrated_mdape_cross_fit": 6.068557798003184
+      "calibrated_mdape_cross_fit": 6.068557798003184,
+      "skipped_due_to_regression": false
     },
     "artsy_online": {
       "n": 5825,
-      "final_factor_full_data": 1.0050275147105072,
+      "proposed_factor_full_data": 1.0050275147105072,
+      "applied_factor": 1.0050275147105072,
       "baseline_mdape": 8.71227555555521,
-      "calibrated_mdape_cross_fit": 8.658996105302302
+      "calibrated_mdape_cross_fit": 8.658996105302302,
+      "skipped_due_to_regression": false
     },
     "saatchi_online": {
       "n": 20459,
-      "final_factor_full_data": 0.9999464105492065,
+      "proposed_factor_full_data": 0.9999464105492065,
+      "applied_factor": 1.0,
       "baseline_mdape": 10.265611563700618,
-      "calibrated_mdape_cross_fit": 10.27661787892363
+      "calibrated_mdape_cross_fit": 10.27661787892363,
+      "skipped_due_to_regression": true
     }
   },
   "n_total": 28376,

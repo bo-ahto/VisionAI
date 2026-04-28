@@ -530,7 +530,7 @@ async def model_info():
     # metrics file 없음 — fallback (운영 중 안정성)
     logger.warning("metrics file 없음 (%s) — model_info fallback", metrics_path)
     return ModelInfoResponse(
-        model_version=_model_version,
+        model_version=_predictor.model_version_label(_model_version),  # fallback도 동적 (Codex 4차 P2)
         training_count=0,
         artist_count=0,
         mdape_groupkfold=0.0,
