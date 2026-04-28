@@ -354,13 +354,12 @@ class PrimaryPredictor:
 
         price_krw = int(math.exp(ln_price))
 
-        # Cell-based source × target_market calibration (Codex 권장, cross-fit 검증)
-        # 측정 결과 (cross-fit out-of-sample): cold MdAPE 39.41 → 38.11 (-1.30%p)
-        # Cell factors:
-        #   artsy_gallery: 0.890 (12% 감소), artsy_online: 1.009 (no change),
-        #   saatchi_online: 0.927 (8% 감소), saatchi_gallery: 학습 데이터 없음 → 1.0
-        # warm은 factor 1.0 근처라 적용 안 함.
-        # RATIO_CORRECTION은 이 cell calibration에 흡수됨 (별도 ln 보정 제거).
+        # Cell-based source × target_market calibration (Codex 권장, cross-fit + per-cell guard)
+        # 실제 적용 factor는 calibration JSON 'cold_factors' 값. 회귀 cell은 1.0 (skip).
+        # Snapshot: 학습 시점에 따라 factor 변동 — JSON이 source of truth.
+        # warm은 factor 1.0 근처라 별도 적용 안 함 (cell calibration JSON 'warm_factors'도
+        # 회귀 가드 적용된 결과지만 cold만 predict()에서 사용).
+        # RATIO_CORRECTION은 cell calibration에 흡수 (별도 ln 보정 제거).
         if not use_xgb and self._cold_calibration_factors:
             src = str(features.get("source", "")) or "unknown"
             cell = f"{src}_{target_market}"

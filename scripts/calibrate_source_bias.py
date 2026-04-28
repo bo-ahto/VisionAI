@@ -276,14 +276,22 @@ def calibrate() -> dict:
         }
         warm_applied_factors[cell] = applied_factor
 
-    # Per-cell guard 적용한 final overall MdAPE (서빙과 동일 동작)
-    cold_pred_guarded = cb_pred_price * np.array(
-        [cold_applied_factors.get(c, 1.0) for c in cells]
-    )
+    # 진정한 cross-fit guarded MdAPE (Codex 5차 P1):
+    # 이전 구현은 full-data proposed_factor를 row에 곱해 in-sample이었음.
+    # 정정: cross-fit calibrated_pred (per-fold factor 적용된)를 사용하되,
+    # 회귀 cell은 baseline pred로 되돌림 → 정직한 out-of-sample guarded.
+    cold_pred_guarded = cb_pred_price.copy()
+    for cell in set(cells):
+        if cold_applied_factors.get(cell, 1.0) != 1.0:
+            mask = cells == cell
+            cold_pred_guarded[mask] = cold_calibrated_pred[mask]
     cold_calibrated_guarded_mdape = _mdape(y_price, cold_pred_guarded)
-    warm_pred_guarded = xgb_pred_price * np.array(
-        [warm_applied_factors.get(c, 1.0) for c in cells_warm]
-    )
+
+    warm_pred_guarded = xgb_pred_price.copy()
+    for cell in set(cells_warm):
+        if warm_applied_factors.get(cell, 1.0) != 1.0:
+            mask = cells_warm == cell
+            warm_pred_guarded[mask] = warm_calibrated_pred[mask]
     warm_calibrated_guarded_mdape = _mdape(y_warm_price, warm_pred_guarded)
     logger.info("Cold guarded overall MdAPE=%.2f (vs cross-fit unguarded=%.2f)",
                 cold_calibrated_guarded_mdape, cold_calibrated)
