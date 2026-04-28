@@ -98,27 +98,42 @@ def _load_tuned_params() -> tuple[dict, dict]:
     return data["catboost"], data["xgboost"]
 
 
+def _load_source_calibration() -> dict[str, float]:
+    """Production source × target_market calibration (PR #21).
+
+    Cold path 후처리 적용용. predict()와 동일 계약:
+    - 누락 시 빈 dict (factor=1.0 fallback per cell)
+    - cold_factors만 사용 (warm은 적용 안 함)
+    """
+    p = OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json"
+    if not p.exists():
+        return {}
+    with p.open(encoding="utf-8") as f:
+        data = json.load(f)
+    factors = data.get("cold_factors", {})
+    return {str(k): float(v) for k, v in factors.items()
+            if isinstance(v, (int, float))}
+
+
 def _train_predict_fold(
     X_tr, y_tr, X_te, y_te,
     groups_tr, cb_params: dict, xgb_params: dict, seed=42,
 ):
     """v3-filtered-tuned 사양으로 fold 학습 + 예측 (production tuned params 적용).
 
-    primary_predictor 라우팅 정합 (Codex 7차 P2):
+    primary_predictor 라우팅 정합:
     - CatBoost: full fold 학습 (production cold route)
     - XGBoost: warm slice (artist_count>=5) 만으로 학습 (production warm route)
+
+    Codex P1: leakage 방지 — eval_set/early_stopping 제거 (tune/train script와 동일).
     """
     cb = CatBoostRegressor(
         **cb_params, loss_function="RMSE", verbose=0, random_seed=seed,
         allow_writing_files=False,
     )
-    cb.fit(_cb_pool(X_tr, y_tr), eval_set=_cb_pool(X_te, y_te), early_stopping_rounds=50)
+    cb.fit(_cb_pool(X_tr, y_tr))  # no eval_set
     cb_pred = cb.predict(_cb_pool(X_te))
 
-    # XGBoost: warm slice만으로 학습 (production tune script와 동일)
-    # zero-warm fold edge case: artist 5건 중 1건 test로 빠지면 train 4건으로 warm 미달.
-    # 모든 warm 후보가 그러면 zero-warm fold 발생 가능 → full fold로 fallback (해당 fold에
-    # warm test row 자체가 없어 결과 왜곡은 minimal).
     warm_mask_tr = _warm_mask(groups_tr)
     if warm_mask_tr.sum() == 0:
         logger.warning("zero-warm fold — XGBoost를 full fold로 학습 (fallback)")
@@ -134,8 +149,7 @@ def _train_predict_fold(
     m = xgb.train(
         params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": seed},
         dtrain=dtrain, num_boost_round=xgb_params.get("num_boost_round", 1000),
-        evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
-    )
+    )  # no evals/early_stopping
     xgb_pred = m.predict(dtest)
     return cb_pred, xgb_pred
 
@@ -149,6 +163,11 @@ def calibrate(target_coverage: float = 0.80) -> dict:
     df = load_data()
     df = df[df["is_excluded_for_training"] == 0].copy().reset_index(drop=True)
     X, y, groups = prepare_features(df)
+    # source + target_market (cold path source calibration cell key용)
+    source = df["source"].astype(str).fillna("unknown").replace(
+        {"nan": "unknown", "None": "unknown", "": "unknown"}
+    ).to_numpy()
+    target_market = np.where(df["is_krw"].fillna(0).astype(int) == 1, "gallery", "online")
     logger.info("Data: %d rows, %d artists", len(df), len(set(groups)))
 
     # production tuned params 로드 (Codex 6차 P2 — calibration이 진짜 production model 평가)
@@ -156,6 +175,13 @@ def calibrate(target_coverage: float = 0.80) -> dict:
     logger.info("Tuned params: CatBoost iter=%s depth=%s, XGBoost rounds=%s depth=%s",
                 cb_params.get("iterations"), cb_params.get("depth"),
                 xgb_params.get("num_boost_round"), xgb_params.get("max_depth"))
+
+    # production source × target_market calibration (PR #21 — cold path 후처리)
+    source_cal_factors = _load_source_calibration()
+    if source_cal_factors:
+        logger.info("Source calibration loaded: %s", source_cal_factors)
+    else:
+        logger.warning("Source calibration JSON 없음 → cold prediction 후처리 skip")
 
     # 5-Fold KFold (작가가 fold에 걸쳐 분포 → 등급 결정에 자연스러움)
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -183,6 +209,10 @@ def calibrate(target_coverage: float = 0.80) -> dict:
             # primary_predictor 라우팅 정렬 (Codex 5차 P2):
             # 실제 서빙은 training_count >= 5 (A 등급)만 XGBoost, B/C/D는 CatBoost
             use_xgb = grade == "A"
+            # cold path는 source × target_market calibration 적용 (PR #21 정합)
+            if not use_xgb and source_cal_factors:
+                cell = f"{source[te_idx]}_{target_market[te_idx]}"
+                cb_p = cb_p * source_cal_factors.get(cell, 1.0)
             pred_price = xgb_p if use_xgb else cb_p
 
             all_records.append({

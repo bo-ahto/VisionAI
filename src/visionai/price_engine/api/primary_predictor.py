@@ -361,7 +361,12 @@ class PrimaryPredictor:
         # 회귀 가드 적용된 결과지만 cold만 predict()에서 사용).
         # RATIO_CORRECTION은 cell calibration에 흡수 (별도 ln 보정 제거).
         if not use_xgb and self._cold_calibration_factors:
-            src = str(features.get("source", "")) or "unknown"
+            # source 정규화 — 모델 입력 categorical 처리와 동일 (Codex PR #21 비차단 리스크)
+            # df[col].astype(str).fillna("unknown").replace({"nan":"unknown","None":"unknown"})
+            raw_src = features.get("source")
+            src = str(raw_src) if raw_src is not None else "unknown"
+            if src in ("nan", "None", ""):
+                src = "unknown"
             cell = f"{src}_{target_market}"
             factor = self._cold_calibration_factors.get(cell, 1.0)
             price_krw = int(price_krw * factor)
