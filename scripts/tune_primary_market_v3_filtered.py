@@ -347,6 +347,18 @@ def main(n_trials: int) -> None:
         json.dump(label_maps, f, ensure_ascii=False, indent=2)
     with (OUT_DIR / "integrated_v3_filtered_tuned_best_params.json").open("w") as f:
         json.dump({"catboost": cb_best, "xgboost": xgb_best}, f, ensure_ascii=False, indent=2)
+    # Codex 5차 P1: 학습 시 warm artist slug list 저장 → 서빙 라우팅이 동일 기준 사용
+    # (DB의 raw training_count가 학습 데이터 필터 후 count와 안 맞아 32명 미스라우팅 가능)
+    warm_artists_set = sorted(set(groups[warm_mask].tolist()))
+    with (OUT_DIR / "integrated_v3_filtered_tuned_warm_artists.json").open("w") as f:
+        json.dump({
+            "warm_artist_slugs": warm_artists_set,
+            "n_artists": len(warm_artists_set),
+            "n_warm_works": int(warm_mask.sum()),
+            "min_count": int(WARM_MIN_COUNT),
+            "note": "학습 시 artist_count>=5 (filtered) 작가 목록. 서빙 라우팅 시 lookup",
+        }, f, ensure_ascii=False, indent=2)
+    logger.info("Warm artist list saved: %d artists, %d works", len(warm_artists_set), int(warm_mask.sum()))
     metrics_doc = {
         "model": "integrated_v3_filtered_tuned",
         "data": f"{len(df)} = filtered from 29361 (excluded 985), tuning n_trials={n_trials}",

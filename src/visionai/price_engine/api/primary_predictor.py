@@ -68,6 +68,8 @@ class PrimaryPredictor:
         self.cb_model: CatBoostRegressor | None = None
         self.xgb_model: xgb.Booster | None = None
         self._label_maps: dict[str, dict[str, int]] = {}
+        # Codex 5차 P1: 학습 시 저장된 warm artist set (서빙 라우팅 정합)
+        self._warm_artist_slugs: set[str] = set()
 
     def load_models(self, model_dir: Path) -> None:
         """v3-filtered-tuned 모델 로드.
@@ -75,6 +77,7 @@ class PrimaryPredictor:
         - CatBoost: 입체 985건 제외 + Optuna 30 trials 튜닝 (cold start GroupKFold 최적)
         - XGBoost: 입체 제외 + warm slice(작품 수≥5) Optuna 튜닝 (warm KFold 최적)
         - label_maps: 학습 시 매핑 그대로 보존된 아티팩트
+        - warm_artists: 학습 시 warm slice에 포함된 작가 slug 집합 (라우팅 정합)
         """
         cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
         xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
@@ -87,6 +90,23 @@ class PrimaryPredictor:
         self.xgb_model.load_model(str(xgb_path))
         logger.info("XGBoost loaded: %s", xgb_path)
 
+        # Codex 5차 P1: warm artist slug list 로드 (서빙 라우팅 정합)
+        warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
+        if warm_path.exists():
+            with warm_path.open(encoding="utf-8") as f:
+                data = json.load(f)
+            self._warm_artist_slugs = set(data.get("warm_artist_slugs", []))
+            logger.info("Warm artists loaded: %d (학습 시 warm slice 작가)",
+                        len(self._warm_artist_slugs))
+        else:
+            logger.warning("Warm artist list 없음 — DB training_count로 fallback (라우팅 불일치 위험)")
+
+    def is_warm_artist(self, artist_slug: str | None) -> bool:
+        """학습 시 warm slice 정의를 그대로 사용 (라우팅 정합)."""
+        if not artist_slug or not self._warm_artist_slugs:
+            return False
+        return str(artist_slug) in self._warm_artist_slugs
+
     def predict(
         self,
         features: dict,
@@ -94,16 +114,25 @@ class PrimaryPredictor:
         training_count: int,
         target_market: str = "gallery",
         has_manual_profile: bool = False,
+        artist_slug: str | None = None,
     ) -> dict:
-        """예측 수행. dict로 결과 반환."""
+        """예측 수행. dict로 결과 반환.
+
+        라우팅 (Codex 5차 P1 정렬): warm_artist_slugs lookup 우선,
+        없으면 fallback으로 DB training_count >= 5.
+        """
         # 피처 DataFrame 생성
         df = pd.DataFrame([features])
         for col in CAT_FEATURES:
             if col in df.columns:
                 df[col] = df[col].astype(str).fillna("unknown")
 
-        # 모델 라우팅 (v3-filtered-tuned: 입체 985건 제외 + Optuna 튜닝)
-        use_xgb = is_matched and training_count >= 5
+        # 모델 라우팅 (학습 시 warm slice와 정합)
+        if self._warm_artist_slugs and artist_slug:
+            use_xgb = self.is_warm_artist(artist_slug)
+        else:
+            # fallback: DB training_count 기준 (드리프트 위험)
+            use_xgb = is_matched and training_count >= 5
         model_type = "xgboost_v3_filtered_tuned" if use_xgb else "catboost_v3_filtered_tuned"
 
         if use_xgb:

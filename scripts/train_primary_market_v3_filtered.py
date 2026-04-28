@@ -432,6 +432,18 @@ def main() -> None:
     with label_maps_path.open("w", encoding="utf-8") as f:
         json.dump(label_maps, f, ensure_ascii=False, indent=2)
     logger.info("XGBoost label maps saved: %s", label_maps_path)
+    # Codex 5차 P1: 학습 시 warm artist slug list 저장 → 서빙 라우팅이 동일 기준 사용
+    warm_artists_set = sorted(set(groups[wmask].tolist()))
+    warm_artists_path = OUT_DIR / "integrated_v3_filtered_warm_artists.json"
+    with warm_artists_path.open("w", encoding="utf-8") as f:
+        json.dump({
+            "warm_artist_slugs": warm_artists_set,
+            "n_artists": len(warm_artists_set),
+            "n_warm_works": int(wmask.sum()),
+            "min_count": int(WARM_MIN_COUNT),
+            "note": "학습 시 artist_count>=5 (filtered) 작가 목록. 서빙 라우팅 시 lookup",
+        }, f, ensure_ascii=False, indent=2)
+    logger.info("Warm artists saved: %d artists", len(warm_artists_set))
 
     metrics_doc = {
         "model": "integrated_v3_filtered",

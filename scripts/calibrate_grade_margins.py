@@ -128,8 +128,9 @@ def calibrate(target_coverage: float = 0.80) -> dict:
             actual_price = float(np.exp(y[te_idx]))
             cb_p = float(np.exp(cb_pred[i]))
             xgb_p = float(np.exp(xgb_pred[i]))
-            # primary_predictor 라우팅 그대로
-            use_xgb = grade in ("A", "B")  # matched (warm) → XGBoost
+            # primary_predictor 라우팅 정렬 (Codex 5차 P2):
+            # 실제 서빙은 training_count >= 5 (A 등급)만 XGBoost, B/C/D는 CatBoost
+            use_xgb = grade == "A"
             pred_price = xgb_p if use_xgb else cb_p
 
             all_records.append({
