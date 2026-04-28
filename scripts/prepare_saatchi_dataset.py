@@ -178,22 +178,6 @@ def extract_exhibition_counts(exhibitions: str, bio: str = "") -> dict:
     return {"solo_count": solo, "group_count": group, "fair_count": fair}
 
 
-def estimate_career_stage(birth_year: float | None, solo_count: int, career_age: float | None) -> int:
-    """경력 단계 추정 (1=신진, 2=신진후기, 3=중견, 4=원로)."""
-    age = 2026 - birth_year if birth_year else None
-    if age and age >= 60 and solo_count >= 5:
-        return 4
-    if career_age and career_age >= 15 and solo_count >= 3:
-        return 3
-    if career_age and career_age >= 5:
-        return 2
-    if solo_count >= 10:
-        return 3
-    if solo_count >= 3:
-        return 2
-    return 1
-
-
 # ─── 메인 ───
 
 def main() -> None:
@@ -338,16 +322,21 @@ def main() -> None:
     # career_age (전시 횟수 기반 추정, 정확한 첫 전시 연도 없음)
     df["career_age"] = np.nan
 
-    # career_stage
+    # career_stage v2 (Codex review 2026-04-27 — multi-factor 연속 0~8)
+    # 기존 int 분류 대체. career_age 항은 학습/서빙 드리프트 회피 위해 제거됨.
+    from visionai.price_engine.api.primary_feature_builder import career_stage_v2_score
     df["career_stage"] = df.apply(
-        lambda r: estimate_career_stage(
-            r.get("artist_birth_year"),
-            r.get("solo_count", 0),
-            r.get("career_age"),
+        lambda r: career_stage_v2_score(
+            artist_birth_year=r.get("artist_birth_year"),
+            solo_count=r.get("solo_count", 0),
+            group_count=r.get("group_count", 0),
+            fair_count=r.get("fair_count", 0),
+            ln_followers=r.get("ln_followers", 0.0),
         ),
         axis=1,
     )
-    logger.info("경력 단계: %s", dict(df["career_stage"].value_counts().sort_index()))
+    logger.info("career_stage v2 분포: min=%.2f, max=%.2f, mean=%.2f",
+                df["career_stage"].min(), df["career_stage"].max(), df["career_stage"].mean())
 
     # 작가 통계
     df["artist_total_works"] = df["total_artworks_profile"].fillna(0).astype(int)
@@ -476,10 +465,11 @@ def main() -> None:
                 filled = out[col].notna().sum()
             print(f"  {col}: {filled:,}/{len(out):,} ({filled/len(out)*100:.1f}%)")
 
-    print(f"\n  [경력 단계]")
-    for stage, cnt in out["career_stage"].value_counts().sort_index().items():
-        labels_map = {1: "신진", 2: "신진후기", 3: "중견", 4: "원로"}
-        print(f"  Stage {stage} ({labels_map.get(stage, '?')}): {cnt:,}건")
+    print(f"\n  [career_stage v2 (연속 점수 0~10) 분포 — quartile]")
+    cs = out["career_stage"]
+    print(f"  min={cs.min():.2f}, max={cs.max():.2f}, mean={cs.mean():.2f}")
+    for q in [0.25, 0.5, 0.75, 0.95]:
+        print(f"  q{int(q*100)}={cs.quantile(q):.2f}")
 
     print(f"\n  [기존 데이터 비교]")
     try:

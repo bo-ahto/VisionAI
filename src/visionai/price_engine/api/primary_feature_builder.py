@@ -44,6 +44,51 @@ SUPPORT_FACTORS = {
 }
 
 
+# ─── career_stage v2 (multi-factor 연속 점수, 0~8) ─────────────────────
+def career_stage_v2_score(
+    artist_birth_year: float | int | None,
+    solo_count: float | int | None,
+    group_count: float | int | None,
+    fair_count: float | int | None,
+    ln_followers: float | None,
+    current_year: int = 2026,
+) -> float:
+    """기존 4단계 분류 대체 — 연령/활동량/시장존재감 통합 점수.
+
+    배경 (Codex review, 2026-04-27): 기존 career_stage가 Artsy에서 Stage 3=0건,
+    Stage 4=0.2%로 사실상 binary. v2는 0~8 연속 점수로 모델이 임계값을 학습.
+
+    Codex 후속 P1 (2026-04-27): 초안에 포함됐던 career_age 항은 제거.
+    학습 데이터(prepare_primary_market_dataset.py: artist shows에서 도출)와
+    서빙 프로필(artist_matcher.py:83 — 항상 0 고정, DB 스키마에도 컬럼 없음)
+    간 학습/서빙 드리프트 발생 → career_duration 항 (0~2) 제외하고 0~8 스케일.
+
+    구성 요소 (각 cap):
+    - age_score (0~3):     (age - 30) / 12, cap [0, 3]
+    - activity_score (0~3): log1p(solo + 0.7*fair + 0.3*group), cap 3
+    - market_presence (0~2): ln_followers / 6, cap 2
+    """
+    score = 0.0
+    if artist_birth_year is not None and not _is_nan(artist_birth_year) and artist_birth_year > 0:
+        age = current_year - float(artist_birth_year)
+        score += min(max((age - 30) / 12, 0), 3)
+    solo = float(solo_count or 0)
+    group = float(group_count or 0)
+    fair = float(fair_count or 0)
+    activity = solo + 0.7 * fair + 0.3 * group
+    score += min(math.log1p(activity), 3)
+    if ln_followers is not None and not _is_nan(ln_followers):
+        score += min(float(ln_followers) / 6, 2)
+    return float(score)
+
+
+def _is_nan(v) -> bool:
+    try:
+        return v != v  # NaN != NaN
+    except Exception:
+        return False
+
+
 def area_to_ho(area_cm2: float) -> int:
     best_ho, best_diff = 0, float("inf")
     for ho, ref in HO_TABLE_F.items():
@@ -114,15 +159,21 @@ def build_features(
     solo = _pick("solo_count", "solo_count", 0)
     group = _pick("group_count", "group_count", 0)
     fair = p.get("fair_count", 0) or 0
-    career_stage = p.get("career_stage", 1) or 1
-    career_age = p.get("career_age", 0) or 0
+    # career_stage v2 (continuous 0~8) — 기존 int(1~4) 대체. career_age는 학습/서빙
+    # 드리프트 회피 위해 v2 formula에서 제거 (Codex 재리뷰 P1, 2026-04-27).
+    career_stage = career_stage_v2_score(
+        artist_birth_year=birth_year,
+        solo_count=solo,
+        group_count=group,
+        fair_count=fair,
+        ln_followers=math.log(followers + 1) if followers else 0.0,
+    )
     for_sale_ratio = p.get("for_sale_ratio", 1.0) or 1.0
     profile_completeness = p.get("profile_completeness", 0) or 0
 
     has_birth_year = 1 if birth_year else 0
 
-    # 갤러리 피처
-    gallery_name = p.get("gallery_name", "Unknown")
+    # 갤러리 피처 — gallery_name 제거 (Codex 14차 P1: train/serve 드리프트)
     gallery_type = p.get("gallery_type", "Unknown")
     gallery_tier = p.get("gallery_tier", 4)
     source = p.get("source", "manual")
@@ -138,15 +189,13 @@ def build_features(
         "is_small": 1 if ho <= 3 else 0,
         "support_factor": support_factor,
         "ho_x_support": ho * support_factor,
-        # 작품 (4)
+        # 작품 (3) — work_age 제거 (서빙=0 드리프트, Codex 4차 P1)
         "is_unique": 1,
         "is_edition": 0,
-        "work_age": 0.0,
         "has_depth": 0,
-        # 작가 (10)
+        # 작가 (6) — career_age 제거 (서빙=0 드리프트, Codex 4차 P1)
         "artist_birth_year": float(birth_year) if birth_year else float("nan"),
         "has_birth_year": has_birth_year,
-        "career_age": float(career_age),
         "career_stage": career_stage,
         "ln_followers": math.log(followers + 1),
         "artist_total_works": total_works,
@@ -156,19 +205,16 @@ def build_features(
         "medium_price_level": 0.0,
         # 프로필 (1)
         "profile_completeness": profile_completeness,
-        # 갤러리 (6)
+        # 갤러리 (5) — vintage_premium/freshness_discount 제거 (서빙=0 드리프트)
         "gallery_tier": gallery_tier,
         "gallery_city_count": 1,
         "has_seoul": 0,
         "has_international": 0,
         "is_krw": 1 if target_market == "gallery" else 0,
-        "vintage_premium": 0.0,
-        "freshness_discount": 0.0,
-        # categorical (7)
+        # categorical (6) — gallery_name 제거 (Codex 14차 P1)
         "support_type": support_type,
         "medium_category": medium_category,
         "attribution_class": "Unique",
-        "gallery_name": gallery_name,
         "gallery_type": gallery_type,
         "price_currency": "KRW" if target_market == "gallery" else "USD",
         "source": source,

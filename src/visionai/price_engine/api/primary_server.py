@@ -399,25 +399,23 @@ def _find_matched_artworks(
     return unique[:5]
 
 
-def _load_models() -> None:
-    """모델 파일 로드."""
+def _resolve_model_dir() -> Path:
+    """MODEL_DIR 환경변수 → repo-relative fallback. 모든 곳에서 동일 resolver 사용
+    (Codex 6차 P2 — model_info와 _load_models 경로 정합 보장)."""
     model_dir = Path(os.getenv("MODEL_DIR", "/app/models"))
     if not model_dir.exists():
-        # 로컬 개발 환경 폴백
         model_dir = Path(__file__).resolve().parent.parent.parent.parent.parent / "model_test_results"
+    return model_dir
 
+
+def _load_models() -> None:
+    """모델 파일 로드 — fail-closed (Codex 12차).
+
+    PrimaryPredictor.load_models가 4개 artifact (cb/xgb/warm/label_maps)를
+    한 번에 로드 + schema 검증. 누락 또는 invalid 시 RuntimeError.
+    """
+    model_dir = _resolve_model_dir()
     _predictor.load_models(model_dir)
-
-    # XGBoost label map 구축 — 학습 시 저장된 매핑 아티팩트 우선 (Codex review #14)
-    label_maps_path = model_dir / "integrated_v3_filtered_tuned_xgboost_label_maps.json"
-    data_dir = Path(os.getenv("DATA_DIR", "/app/data"))
-    training_path = data_dir / "primary_market_dataset.parquet"
-    if not training_path.exists():
-        training_path = Path(__file__).resolve().parent.parent.parent.parent.parent / "data" / "primary_market_dataset.parquet"
-    _predictor.build_xgb_label_maps(
-        training_data_path=training_path,
-        label_maps_path=label_maps_path if label_maps_path.exists() else None,
-    )
 
 
 @asynccontextmanager
@@ -492,15 +490,40 @@ async def health():
 
 @app.get("/api/v1/model/info", response_model=ModelInfoResponse)
 async def model_info():
-    # v3-filtered-tuned: 입체 985건 제외 + Optuna 튜닝
-    # 출처: model_test_results/integrated_v3_filtered_tuned_metrics.json
+    """모델 정보 — metrics file에서 동적 로드 (Codex 5차 P2: stale-prone 상수 제거).
+
+    서빙 라우팅 일치 메트릭:
+    - cold: CatBoost MdAPE (groupkfold)
+    - warm: XGBoost on warm slice MdAPE (kfold.warm_slice)
+    """
+    # _load_models와 동일한 resolver 사용 (Codex 6차 P2 — 경로 정합)
+    metrics_path = _resolve_model_dir() / "integrated_v3_filtered_tuned_metrics.json"
+
+    if metrics_path.exists():
+        with metrics_path.open(encoding="utf-8") as f:
+            metrics = json.load(f)
+        cold_cb = metrics.get("groupkfold", {}).get("catboost_v3_filtered_tuned", {})
+        warm_xgb = metrics.get("kfold", {}).get("warm_slice", {}).get("xgboost_v3_filtered_tuned", {})
+        # warm_slice가 없으면 fallback (구 metric 형식)
+        if not warm_xgb:
+            warm_xgb = metrics.get("kfold", {}).get("xgboost_v3_filtered_tuned", {})
+        return ModelInfoResponse(
+            model_version=_model_version,
+            training_count=int(cold_cb.get("n", 0)),
+            artist_count=int(metrics.get("artists", 0)),
+            mdape_groupkfold=float(cold_cb.get("MdAPE", 0.0)),
+            mdape_kfold=float(warm_xgb.get("MdAPE", 0.0)),
+            features_count=int(metrics.get("features", 0)),
+        )
+    # metrics file 없음 — fallback (운영 중 안정성)
+    logger.warning("metrics file 없음 (%s) — model_info fallback", metrics_path)
     return ModelInfoResponse(
         model_version=_model_version,
-        training_count=28376,  # 29,361 - 985 입체 제외
-        artist_count=1551,
-        mdape_groupkfold=38.6,  # XGBoost on full GroupKFold (production: cold uses CatBoost 40.6)
-        mdape_kfold=10.3,  # XGBoost on warm slice (production warm path)
-        features_count=37,
+        training_count=0,
+        artist_count=0,
+        mdape_groupkfold=0.0,
+        mdape_kfold=0.0,
+        features_count=len(CB_FEATURES),
     )
 
 
@@ -571,13 +594,15 @@ async def predict(req: PredictRequest):
         manual_overrides=manual,
     )
 
-    # 5. 예측
+    # 5. 예측 — artist_slug 전달 (학습 시 warm artist set lookup용, Codex 5차 P1)
+    artist_slug_for_routing = match.slug if match else None
     result = _predictor.predict(
         features=features,
         is_matched=is_matched,
         training_count=training_count,
         target_market=req.target_market,
         has_manual_profile=has_manual,
+        artist_slug=artist_slug_for_routing,
     )
 
     # SHAP 설명 (CatBoost 경로만, threadpool에서 실행)
@@ -691,6 +716,7 @@ async def predict_batch(req: BatchPredictRequest):
                 features=features, is_matched=is_matched,
                 training_count=training_count, target_market=item.target_market,
                 has_manual_profile=len(manual) > 0,
+                artist_slug=match.slug if match else None,
             )
 
             results.append(BatchPredictResult(

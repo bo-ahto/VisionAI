@@ -186,7 +186,12 @@ def _final_cv_groupkfold_5(
 
 def _final_cv_kfold_5(
     X: pd.DataFrame, y: np.ndarray, cb_params: dict, xgb_params: dict,
+    groups: np.ndarray | None = None, source: np.ndarray | None = None,
 ) -> dict:
+    """5-fold KFold + warm slice (artist_count>=5) + by-source 분리 메트릭.
+
+    서빙 라우팅과 정렬: warm은 XGBoost on artist_count>=5.
+    """
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
     cb_preds = np.zeros(len(y))
     xgb_preds = np.zeros(len(y))
@@ -214,11 +219,43 @@ def _final_cv_kfold_5(
     xgb_pred = np.exp(xgb_preds)
     ens = np.exp((cb_preds + xgb_preds) / 2)
     n = len(y)
-    return {
+    out = {
         "catboost_v3_filtered_tuned": _summary(y_price, cb_pred, n),
         "xgboost_v3_filtered_tuned": _summary(y_price, xgb_pred, n),
         "ensemble": _summary(y_price, ens, n),
     }
+    if source is not None:
+        for src in sorted(set(source)):
+            m_ = source == src
+            if m_.sum() == 0:
+                continue
+            out[src] = {
+                "catboost_v3_filtered_tuned": _summary(y_price[m_], cb_pred[m_], int(m_.sum())),
+                "xgboost_v3_filtered_tuned": _summary(y_price[m_], xgb_pred[m_], int(m_.sum())),
+                "ensemble": _summary(y_price[m_], ens[m_], int(m_.sum())),
+            }
+    if groups is not None:
+        wmask = _warm_mask(groups)
+        n_warm = int(wmask.sum())
+        if n_warm > 0:
+            out["warm_slice"] = {
+                "n": n_warm,
+                "n_artists": int(pd.Series(groups[wmask]).nunique()),
+                "catboost_v3_filtered_tuned": _summary(y_price[wmask], cb_pred[wmask], n_warm),
+                "xgboost_v3_filtered_tuned": _summary(y_price[wmask], xgb_pred[wmask], n_warm),
+                "ensemble": _summary(y_price[wmask], ens[wmask], n_warm),
+            }
+            if source is not None:
+                for src in sorted(set(source)):
+                    smask = wmask & (source == src)
+                    if smask.sum() == 0:
+                        continue
+                    out["warm_slice"][src] = {
+                        "catboost_v3_filtered_tuned": _summary(y_price[smask], cb_pred[smask], int(smask.sum())),
+                        "xgboost_v3_filtered_tuned": _summary(y_price[smask], xgb_pred[smask], int(smask.sum())),
+                        "ensemble": _summary(y_price[smask], ens[smask], int(smask.sum())),
+                    }
+    return out
 
 
 def _train_final(X: pd.DataFrame, y: np.ndarray, cb_params: dict, xgb_params: dict):
@@ -277,8 +314,11 @@ def main(n_trials: int) -> None:
     # CatBoost는 cold(GroupKFold) 전체에서 평가, XGBoost는 warm(KFold) slice에서 평가
     logger.info("--- Final 5-fold CV with best params ---")
     gkf_metrics = _final_cv_groupkfold_5(X, y, groups, source, cb_best, xgb_best)
-    # KFold는 warm slice로 평가 (라우팅 일치)
-    kf_metrics = _final_cv_kfold_5(X_warm, y_warm, cb_best, xgb_best)
+    # KFold는 warm slice로 평가 (라우팅 일치) + by-source 분리
+    warm_groups = groups[warm_mask]
+    warm_source = source[warm_mask]
+    kf_metrics = _final_cv_kfold_5(X_warm, y_warm, cb_best, xgb_best,
+                                    groups=warm_groups, source=warm_source)
     kf_metrics["_note"] = (
         f"Evaluated on warm slice only ({n_warm} works, {n_warm_artists} artists, "
         f"artist 작품수>={WARM_MIN_COUNT})"
@@ -307,6 +347,18 @@ def main(n_trials: int) -> None:
         json.dump(label_maps, f, ensure_ascii=False, indent=2)
     with (OUT_DIR / "integrated_v3_filtered_tuned_best_params.json").open("w") as f:
         json.dump({"catboost": cb_best, "xgboost": xgb_best}, f, ensure_ascii=False, indent=2)
+    # Codex 5차 P1: 학습 시 warm artist slug list 저장 → 서빙 라우팅이 동일 기준 사용
+    # (DB의 raw training_count가 학습 데이터 필터 후 count와 안 맞아 32명 미스라우팅 가능)
+    warm_artists_set = sorted(set(groups[warm_mask].tolist()))
+    with (OUT_DIR / "integrated_v3_filtered_tuned_warm_artists.json").open("w") as f:
+        json.dump({
+            "warm_artist_slugs": warm_artists_set,
+            "n_artists": len(warm_artists_set),
+            "n_warm_works": int(warm_mask.sum()),
+            "min_count": int(WARM_MIN_COUNT),
+            "note": "학습 시 artist_count>=5 (filtered) 작가 목록. 서빙 라우팅 시 lookup",
+        }, f, ensure_ascii=False, indent=2)
+    logger.info("Warm artist list saved: %d artists, %d works", len(warm_artists_set), int(warm_mask.sum()))
     metrics_doc = {
         "model": "integrated_v3_filtered_tuned",
         "data": f"{len(df)} = filtered from 29361 (excluded 985), tuning n_trials={n_trials}",

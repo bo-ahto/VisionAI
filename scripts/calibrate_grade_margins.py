@@ -32,7 +32,7 @@ from sklearn.model_selection import KFold, GroupKFold
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from train_primary_market_v3_filtered import (
     CB_FEATURES, CAT_FEATURES, _cb_pool, _label_encode_xgb,
-    _mdape, load_data, prepare_features,
+    _mdape, _warm_mask, load_data, prepare_features,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -71,29 +71,72 @@ def determine_grade_for_row(
     return "D"
 
 
-def _train_predict_fold(X_tr, y_tr, X_te, y_te, seed=42):
-    """v3-filtered-tuned 사양으로 fold 학습 + 예측. ensemble (CatBoost + XGBoost) 반환."""
+def _load_tuned_params() -> tuple[dict, dict]:
+    """integrated_v3_filtered_tuned_best_params.json 로드 (Codex 6차 P2).
+
+    이 스크립트는 production tuned model을 평가해야 하므로, 학습 시 Optuna가
+    찾은 best params를 그대로 fold 학습에 적용한다. 기존엔 untuned 하드코딩.
+    """
+    params_path = OUT_DIR / "integrated_v3_filtered_tuned_best_params.json"
+    if not params_path.exists():
+        logger.warning(
+            "tuned params 없음 (%s) → untuned 기본값 사용 (calibration 정확도 떨어짐)",
+            params_path,
+        )
+        cb_default = {
+            "iterations": 1000, "learning_rate": 0.05, "depth": 6,
+            "l2_leaf_reg": 3.0, "bagging_temperature": 1.0,
+        }
+        xgb_default = {
+            "num_boost_round": 1000, "eta": 0.05, "max_depth": 6,
+            "gamma": 0.0, "reg_alpha": 0.0, "reg_lambda": 1.0,
+            "subsample": 1.0, "colsample_bytree": 1.0,
+        }
+        return cb_default, xgb_default
+    with params_path.open(encoding="utf-8") as f:
+        data = json.load(f)
+    return data["catboost"], data["xgboost"]
+
+
+def _train_predict_fold(
+    X_tr, y_tr, X_te, y_te,
+    groups_tr, cb_params: dict, xgb_params: dict, seed=42,
+):
+    """v3-filtered-tuned 사양으로 fold 학습 + 예측 (production tuned params 적용).
+
+    primary_predictor 라우팅 정합 (Codex 7차 P2):
+    - CatBoost: full fold 학습 (production cold route)
+    - XGBoost: warm slice (artist_count>=5) 만으로 학습 (production warm route)
+    """
     cb = CatBoostRegressor(
-        iterations=1000, learning_rate=0.05, depth=6, loss_function="RMSE",
-        verbose=0, random_seed=seed, allow_writing_files=False,
+        **cb_params, loss_function="RMSE", verbose=0, random_seed=seed,
+        allow_writing_files=False,
     )
     cb.fit(_cb_pool(X_tr, y_tr), eval_set=_cb_pool(X_te, y_te), early_stopping_rounds=50)
     cb_pred = cb.predict(_cb_pool(X_te))
 
-    Xtr_e, Xte_e, _ = _label_encode_xgb(X_tr, X_te)
-    dtrain = xgb.DMatrix(Xtr_e, label=y_tr)
+    # XGBoost: warm slice만으로 학습 (production tune script와 동일)
+    # zero-warm fold edge case: artist 5건 중 1건 test로 빠지면 train 4건으로 warm 미달.
+    # 모든 warm 후보가 그러면 zero-warm fold 발생 가능 → full fold로 fallback (해당 fold에
+    # warm test row 자체가 없어 결과 왜곡은 minimal).
+    warm_mask_tr = _warm_mask(groups_tr)
+    if warm_mask_tr.sum() == 0:
+        logger.warning("zero-warm fold — XGBoost를 full fold로 학습 (fallback)")
+        X_tr_warm, y_tr_warm = X_tr, y_tr
+    else:
+        X_tr_warm = X_tr.iloc[warm_mask_tr].reset_index(drop=True)
+        y_tr_warm = y_tr[warm_mask_tr]
+
+    Xtr_e, Xte_e, _ = _label_encode_xgb(X_tr_warm, X_te)
+    dtrain = xgb.DMatrix(Xtr_e, label=y_tr_warm)
     dtest = xgb.DMatrix(Xte_e, label=y_te)
+    xgb_p = {k: v for k, v in xgb_params.items() if k != "num_boost_round"}
     m = xgb.train(
-        params={
-            "objective": "reg:squarederror", "eta": 0.05, "max_depth": 6, "verbosity": 0,
-            "seed": seed,
-        },
-        dtrain=dtrain, num_boost_round=1000,
+        params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": seed},
+        dtrain=dtrain, num_boost_round=xgb_params.get("num_boost_round", 1000),
         evals=[(dtest, "test")], early_stopping_rounds=50, verbose_eval=False,
     )
     xgb_pred = m.predict(dtest)
-    # primary_predictor 라우팅: warm은 XGBoost, cold는 CatBoost.
-    # 캘리브레이션은 ensemble 평균값으로 대표 사용 (per-row routing은 이후 분석 단계에서 적용).
     return cb_pred, xgb_pred
 
 
@@ -108,13 +151,22 @@ def calibrate(target_coverage: float = 0.80) -> dict:
     X, y, groups = prepare_features(df)
     logger.info("Data: %d rows, %d artists", len(df), len(set(groups)))
 
+    # production tuned params 로드 (Codex 6차 P2 — calibration이 진짜 production model 평가)
+    cb_params, xgb_params = _load_tuned_params()
+    logger.info("Tuned params: CatBoost iter=%s depth=%s, XGBoost rounds=%s depth=%s",
+                cb_params.get("iterations"), cb_params.get("depth"),
+                xgb_params.get("num_boost_round"), xgb_params.get("max_depth"))
+
     # 5-Fold KFold (작가가 fold에 걸쳐 분포 → 등급 결정에 자연스러움)
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
     all_records = []
     for fold_idx, (tr, te) in enumerate(kf.split(X), 1):
         logger.info("[Fold %d/5] train=%d test=%d", fold_idx, len(tr), len(te))
-        cb_pred, xgb_pred = _train_predict_fold(X.iloc[tr], y[tr], X.iloc[te], y[te])
+        cb_pred, xgb_pred = _train_predict_fold(
+            X.iloc[tr], y[tr], X.iloc[te], y[te],
+            groups_tr=groups[tr], cb_params=cb_params, xgb_params=xgb_params,
+        )
 
         # 학습 fold에 해당 작가가 몇 건 있는지 카운트 (등급 결정용)
         train_artist_counts = pd.Series(groups[tr]).value_counts()
@@ -128,8 +180,9 @@ def calibrate(target_coverage: float = 0.80) -> dict:
             actual_price = float(np.exp(y[te_idx]))
             cb_p = float(np.exp(cb_pred[i]))
             xgb_p = float(np.exp(xgb_pred[i]))
-            # primary_predictor 라우팅 그대로
-            use_xgb = grade in ("A", "B")  # matched (warm) → XGBoost
+            # primary_predictor 라우팅 정렬 (Codex 5차 P2):
+            # 실제 서빙은 training_count >= 5 (A 등급)만 XGBoost, B/C/D는 CatBoost
+            use_xgb = grade == "A"
             pred_price = xgb_p if use_xgb else cb_p
 
             all_records.append({
