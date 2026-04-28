@@ -409,18 +409,13 @@ def _resolve_model_dir() -> Path:
 
 
 def _load_models() -> None:
-    """모델 파일 로드 (atomic-ish — Codex 10차 P2).
+    """모델 파일 로드 — fail-closed (Codex 12차).
 
-    PrimaryPredictor.load_models가 cb/xgb/warm/label_maps를 한 번에 로드.
-    중간 실패 시 instance state는 이전 값 유지.
+    PrimaryPredictor.load_models가 4개 artifact (cb/xgb/warm/label_maps)를
+    한 번에 로드 + schema 검증. 누락 또는 invalid 시 RuntimeError.
     """
     model_dir = _resolve_model_dir()
-    # label_maps fallback path 위해 training data path 전달 (artifact 미존재 시에만 사용)
-    data_dir = Path(os.getenv("DATA_DIR", "/app/data"))
-    training_path = data_dir / "primary_market_dataset.parquet"
-    if not training_path.exists():
-        training_path = Path(__file__).resolve().parent.parent.parent.parent.parent / "data" / "primary_market_dataset.parquet"
-    _predictor.load_models(model_dir, training_data_path=training_path)
+    _predictor.load_models(model_dir)
 
 
 @asynccontextmanager
