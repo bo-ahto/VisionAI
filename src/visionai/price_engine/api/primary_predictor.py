@@ -94,6 +94,8 @@ class PrimaryPredictor:
         self._label_maps: dict[str, dict[str, int]] = {}
         # Codex 5차 P1: 학습 시 저장된 warm artist set (서빙 라우팅 정합)
         self._warm_artist_slugs: set[str] = set()
+        # Codex 9차 P1: artifact 로드 여부 별도 플래그 — set 비어있음과 미로드 구분
+        self._warm_artifact_loaded: bool = False
 
     def load_models(self, model_dir: Path) -> None:
         """v3-filtered-tuned 모델 로드.
@@ -103,8 +105,15 @@ class PrimaryPredictor:
         - label_maps: 학습 시 매핑 그대로 보존된 아티팩트
         - warm_artists: 학습 시 warm slice에 포함된 작가 slug 집합 (라우팅 정합)
 
-        Codex 8차 P1: 재로딩 시 stale state 방지. warm artifact 미존재면 set을 비움.
+        Codex 9차 P1+P2:
+        - 모든 state 초기화를 loading 시작 전에 수행 (CB/XGB 로드 실패해도 stale 방지)
+        - _warm_artifact_loaded 플래그로 'loaded with empty list' vs '미로드' 구분
         """
+        # 1) state 선제 초기화 (atomic-ish reload 보장)
+        self._warm_artist_slugs = set()
+        self._warm_artifact_loaded = False
+
+        # 2) 모델 로드
         cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
         xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
 
@@ -116,13 +125,13 @@ class PrimaryPredictor:
         self.xgb_model.load_model(str(xgb_path))
         logger.info("XGBoost loaded: %s", xgb_path)
 
-        # 재로딩 시 stale 방지: 항상 비운 후 재로드
-        self._warm_artist_slugs = set()
+        # 3) warm artifact 로드 (미존재 시 _warm_artifact_loaded=False로 legacy fallback)
         warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
         if warm_path.exists():
             with warm_path.open(encoding="utf-8") as f:
                 data = json.load(f)
             self._warm_artist_slugs = set(data.get("warm_artist_slugs", []))
+            self._warm_artifact_loaded = True
             logger.info("Warm artists loaded: %d (학습 시 warm slice 작가)",
                         len(self._warm_artist_slugs))
         else:
@@ -154,14 +163,15 @@ class PrimaryPredictor:
             if col in df.columns:
                 df[col] = df[col].astype(str).fillna("unknown")
 
-        # 모델 라우팅 (학습 시 warm slice와 정합) — Codex 8차 P1 정합 강화
-        # warm set이 로드된 상태면 권위적 — slug 누락은 곧 'cold' (set 외부)로 간주
+        # 모델 라우팅 (학습 시 warm slice와 정합) — Codex 9차 P1 정합 강화
+        # _warm_artifact_loaded 플래그로 'loaded(empty 포함)' vs 'not loaded' 구분
+        # loaded면 권위적: slug 누락 = cold, set 외부 = cold
         # 라우팅 + grade 양쪽에서 같은 결정 사용 (self-consistency 보장)
-        if self._warm_artist_slugs:
+        if self._warm_artifact_loaded:
             is_warm = bool(artist_slug) and self.is_warm_artist(artist_slug)
             use_xgb = bool(is_matched) and is_warm  # 매칭 + warm 둘 다 필요
         else:
-            is_warm = None  # warm set 정보 없음 → grade도 legacy fallback
+            is_warm = None  # warm set 미로드 → grade도 legacy fallback
             use_xgb = is_matched and training_count >= 5
         model_type = "xgboost_v3_filtered_tuned" if use_xgb else "catboost_v3_filtered_tuned"
 
