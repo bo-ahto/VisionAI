@@ -23,16 +23,21 @@ RATIO_CORRECTION = {
 CB_FEATURES = [
     "ho", "ho_power", "ln_ho", "area_cm2", "ln_area", "aspect_ratio", "is_small",
     "support_factor", "ho_x_support",
-    "is_unique", "is_edition", "work_age", "has_depth",
-    "artist_birth_year", "has_birth_year", "career_age", "career_stage",
+    "is_unique", "is_edition", "has_depth",
+    "artist_birth_year", "has_birth_year", "career_stage",
     "ln_followers", "artist_total_works", "for_sale_ratio",
     "ho_price_level", "medium_price_level",
     "profile_completeness",
     "gallery_tier", "gallery_city_count", "has_seoul", "has_international",
-    "is_krw", "vintage_premium", "freshness_discount",
+    "is_krw",
     "support_type", "medium_category", "attribution_class",
     "gallery_name", "gallery_type", "price_currency", "source",
 ]
+# Removed (Codex 4차 리뷰 P1, 2026-04-28):
+# - career_age, work_age, vintage_premium, freshness_discount
+#   학습 데이터는 정상 계산, 서빙은 0 하드코딩 (artist_matcher/feature_builder).
+#   모델이 활용 중이라 (importance: career_age 2.0, vintage 1.5, work_age 0.4 XGB gain)
+#   학습/서빙 드리프트 → offline metric ≠ serving accuracy. 제거로 정렬 보장.
 
 CAT_FEATURES = [
     "support_type", "medium_category", "attribution_class",

@@ -492,15 +492,19 @@ async def health():
 
 @app.get("/api/v1/model/info", response_model=ModelInfoResponse)
 async def model_info():
-    # v3-filtered-tuned: 입체 985건 제외 + Optuna 튜닝
-    # 출처: model_test_results/integrated_v3_filtered_tuned_metrics.json
+    # v3-filtered-tuned + career_stage v2 + drift-free 33 features (Codex 4차 리뷰 후속)
+    # 출처: model_test_results/integrated_v3_filtered_tuned_metrics.json (2026-04-28)
+    # 학습/서빙 contract 정합 (career_age, work_age, vintage_premium, freshness_discount 제거)
+    # 서빙 라우팅 일치 메트릭:
+    # - cold (CatBoost on GroupKFold): MdAPE 40.0 (Artsy 35.5 / Saatchi 41.5)
+    # - warm slice (XGBoost on artist_count>=5): MdAPE 9.7 (Artsy 8.1 / Saatchi 10.3)
     return ModelInfoResponse(
         model_version=_model_version,
         training_count=28376,  # 29,361 - 985 입체 제외
         artist_count=1551,
-        mdape_groupkfold=38.6,  # XGBoost on full GroupKFold (production: cold uses CatBoost 40.6)
-        mdape_kfold=10.3,  # XGBoost on warm slice (production warm path)
-        features_count=37,
+        mdape_groupkfold=40.0,  # cold 서빙 (CatBoost) — drift-free 33 features
+        mdape_kfold=9.7,  # warm slice 서빙 (XGBoost on artist_count>=5)
+        features_count=33,
     )
 
 

@@ -159,7 +159,6 @@ def build_features(
     solo = _pick("solo_count", "solo_count", 0)
     group = _pick("group_count", "group_count", 0)
     fair = p.get("fair_count", 0) or 0
-    career_age = p.get("career_age", 0) or 0
     # career_stage v2 (continuous 0~8) — 기존 int(1~4) 대체. career_age는 학습/서빙
     # 드리프트 회피 위해 v2 formula에서 제거 (Codex 재리뷰 P1, 2026-04-27).
     career_stage = career_stage_v2_score(
@@ -191,15 +190,13 @@ def build_features(
         "is_small": 1 if ho <= 3 else 0,
         "support_factor": support_factor,
         "ho_x_support": ho * support_factor,
-        # 작품 (4)
+        # 작품 (3) — work_age 제거 (서빙=0 드리프트, Codex 4차 P1)
         "is_unique": 1,
         "is_edition": 0,
-        "work_age": 0.0,
         "has_depth": 0,
-        # 작가 (10)
+        # 작가 (6) — career_age 제거 (서빙=0 드리프트, Codex 4차 P1)
         "artist_birth_year": float(birth_year) if birth_year else float("nan"),
         "has_birth_year": has_birth_year,
-        "career_age": float(career_age),
         "career_stage": career_stage,
         "ln_followers": math.log(followers + 1),
         "artist_total_works": total_works,
@@ -209,14 +206,12 @@ def build_features(
         "medium_price_level": 0.0,
         # 프로필 (1)
         "profile_completeness": profile_completeness,
-        # 갤러리 (6)
+        # 갤러리 (5) — vintage_premium/freshness_discount 제거 (서빙=0 드리프트)
         "gallery_tier": gallery_tier,
         "gallery_city_count": 1,
         "has_seoul": 0,
         "has_international": 0,
         "is_krw": 1 if target_market == "gallery" else 0,
-        "vintage_premium": 0.0,
-        "freshness_discount": 0.0,
         # categorical (7)
         "support_type": support_type,
         "medium_category": medium_category,
