@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 _matcher = ArtistMatcher()
 _predictor = PrimaryPredictor()
 _start_time = time.time()
-_model_version = "v3-tuned-cal"  # PR #21 cell-level cross-fit calibration (DB VARCHAR(20) 호환)
+_model_version = "v3-tuned"  # 기본값. calibration artifact 로드 시 'v3-tuned-cal' (DB VARCHAR(20) 호환)
 _price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
 
 # ─── 인메모리 모니터링 카운터 ───
@@ -481,7 +481,7 @@ async def health():
     status = "ok" if _matcher.count > 0 and db_status == "connected" else "degraded"
     return {
         "status": status,
-        "model_version": _model_version,
+        "model_version": _predictor.model_version_label(_model_version),
         "artists_loaded": _matcher.count,
         "uptime_seconds": round(time.time() - _start_time, 1),
         "db_status": db_status,
@@ -520,7 +520,7 @@ async def model_info():
             # warm은 calibration 적용 안 함 — baseline 그대로
 
         return ModelInfoResponse(
-            model_version=_model_version,
+            model_version=_predictor.model_version_label(_model_version),
             training_count=int(cold_cb.get("n", 0)),
             artist_count=int(metrics.get("artists", 0)),
             mdape_groupkfold=cold_mdape,

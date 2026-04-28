@@ -193,12 +193,16 @@ class PrimaryPredictor:
                     )
 
         # source × target_market calibration (선택 — 누락 시 fallback factor=1.0, no correction)
-        # Codex 2차 P2 schema 검증 강화:
+        # Codex 3차 P2 schema 검증:
         # - model_target 필수 (누락도 거부)
         # - version 필수 (artifact 구조 변경 추적)
-        # - cell key 알려진 set ({source}_{target_market}) 형식 검증
+        # - cell key 형식 검증: rsplit('_', 1) — source가 underscore 포함 가능 ("artsy_artue")
+        # - ALLOWED_SOURCES는 실제 producer/consumer 집합 일치 (artsy_client, saatchi_client,
+        #   external_collector 'web', artist_matcher 'manual')
         # - factor 타입 + 범위 sanity bounds [0.1, 10.0]
-        ALLOWED_SOURCES = {"artsy", "saatchi", "manual", "printbakery", "artsy_artue", "unknown"}
+        ALLOWED_SOURCES = {
+            "artsy", "saatchi", "manual", "printbakery", "artsy_artue", "web", "unknown",
+        }
         ALLOWED_MARKETS = {"gallery", "online"}
         EXPECTED_TARGET = "integrated_v3_filtered_tuned"
         new_cold_calib: dict[str, float] = {}
@@ -231,9 +235,9 @@ class PrimaryPredictor:
                     f"calibration schema invalid ({calib_path}): cold_factors must be dict"
                 )
             for k, v in cold_factors.items():
-                # cell key 형식 검증: {source}_{target_market}
+                # cell key 형식 검증: source_market (rsplit으로 source가 underscore 포함 가능)
                 key = str(k)
-                parts = key.split("_", 1)
+                parts = key.rsplit("_", 1)
                 if len(parts) != 2:
                     raise RuntimeError(
                         f"calibration schema invalid ({calib_path}): "
@@ -282,6 +286,16 @@ class PrimaryPredictor:
         if not artist_slug or not self._warm_artist_slugs:
             return False
         return str(artist_slug) in self._warm_artist_slugs
+
+    def model_version_label(self, base: str = "v3-tuned") -> str:
+        """실제 로드된 artifact 기반 model version label.
+
+        Codex 3차 P1: calibration artifact 누락 시 'v3-tuned' (uncalibrated) 반환,
+        로드되었을 때만 'v3-tuned-cal' 반환. 서버가 거짓 버전 보고하지 않도록 정합.
+        """
+        if self._cold_calibration_factors:
+            return f"{base}-cal"
+        return base
 
     def predict(
         self,
