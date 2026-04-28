@@ -1,10 +1,17 @@
 """학습 작가 fuzzy 매칭.
 
-NOTE (Codex 4차 P2, 2026-04-28): warm 라우팅 기준이 학습/CV와 정렬되려면
-DB의 artists.training_count 값이 학습 데이터(is_excluded_for_training=0 적용 후)
-의 row count와 일치해야 한다. 현재 DB 값이 raw count (필터 전)면, 입체 985건 제외로
-인해 32명 작가가 미스라우팅 가능 (필터 전 ≥5, 필터 후 <5). 데이터 파이프라인에서
-artists.training_count를 학습 직전 데이터 기준으로 동기화해야 함.
+KNOWN ISSUES (사전 존재, 후속 PR 대상):
+
+1. (Codex 4차 P2) DB artists.training_count vs 학습 row count 불일치
+   warm 라우팅 정합은 PR #20에서 warm_artist_slugs JSON으로 우회. 단 DB count 자체는
+   별도 동기화 필요 (32명/44행 미스라우팅 후보).
+
+2. (Codex 13차 P1) gallery_name/gallery_type 하드코딩
+   info["profile"]에서 gallery_name="Saatchi Art" 또는 "Gallery"로 고정.
+   학습 데이터는 실제 갤러리명 (예: "Kukje Gallery", "Gana Art" 등 59개)을 가짐.
+   결과: warm Artsy 작가의 gallery_name="Gallery"가 학습 vocab에 없어 sentinel 처리
+   → gallery_name 신호 활용 불가. PredictRequest에 gallery_name 필드 추가 + DB schema
+   확장 필요. PR #20 범위 외.
 """
 from __future__ import annotations
 

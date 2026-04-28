@@ -159,18 +159,31 @@ class PrimaryPredictor:
             raise RuntimeError(
                 f"label_maps schema invalid ({label_maps_path}): must be dict"
             )
-        # CAT_FEATURES 모든 카테고리 매핑 존재 검증 (gallery_name은 빈 dict일 수도)
+        # Codex 13차 P2: schema 검증을 predict() 요구사항과 정합 — non-empty + int values
         for col in CAT_FEATURES:
             if col not in new_label_maps:
                 raise RuntimeError(
                     f"label_maps schema invalid ({label_maps_path}): '{col}' key 누락 "
                     f"(CAT_FEATURES={CAT_FEATURES})"
                 )
-            if not isinstance(new_label_maps[col], dict):
+            cat_map = new_label_maps[col]
+            if not isinstance(cat_map, dict):
                 raise RuntimeError(
                     f"label_maps schema invalid ({label_maps_path}): "
                     f"'{col}' value must be dict[str, int]"
                 )
+            if not cat_map:
+                raise RuntimeError(
+                    f"label_maps schema invalid ({label_maps_path}): "
+                    f"'{col}' mapping is empty — predict() requires non-empty"
+                )
+            # inner value 타입 검증 (int 외 타입은 sentinel encoding 시 astype(float) 실패)
+            for k, v in cat_map.items():
+                if not isinstance(v, int):
+                    raise RuntimeError(
+                        f"label_maps schema invalid ({label_maps_path}): "
+                        f"'{col}[{k!r}]' value must be int, got {type(v).__name__}"
+                    )
 
         # 3) 모든 build + 검증 성공 시 instance state로 swap
         self.cb_model = new_cb
@@ -205,12 +218,15 @@ class PrimaryPredictor:
 
         라우팅 (Codex 5차 P1 정렬): warm_artist_slugs lookup 우선,
         없으면 fallback으로 DB training_count >= 5.
+        Codex 13차 P1: categorical normalization을 학습과 일치 (nan/None → 'unknown').
         """
-        # 피처 DataFrame 생성
+        # 피처 DataFrame 생성 — 학습 train_primary_market_v3_filtered.py:120과 동일 정규화
         df = pd.DataFrame([features])
         for col in CAT_FEATURES:
             if col in df.columns:
-                df[col] = df[col].astype(str).fillna("unknown")
+                df[col] = df[col].astype(str).fillna("unknown").replace(
+                    {"nan": "unknown", "None": "unknown"}
+                )
 
         # 모델 라우팅 (학습 시 warm slice와 정합) — Codex 9차 P1 정합 강화
         # _warm_artifact_loaded 플래그로 'loaded(empty 포함)' vs 'not loaded' 구분
