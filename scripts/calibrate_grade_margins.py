@@ -1,13 +1,20 @@
-"""1차 시장 모델 — 등급별 실측 MdAPE + coverage 기반 마진(m) 재조정.
+"""1차 시장 모델 — 등급별 production-time MdAPE + coverage 기반 마진(m) 재조정.
 
 배경 (협력자 피드백 Q7 → Q-margin):
 - 보고서 §6.2의 등급 마진 m (A=0.20, B=0.30, C=0.50, D=0.70)은 임의 휴리스틱.
 - 보고서 §7.3의 "MdAPE (추정)" 표는 A 외에 실측 아님.
-- 본 스크립트는 v3-filtered-tuned 모델로 등급별 실측 MdAPE + 현재 m 적용 시 coverage
-  측정 + 목표 coverage 기반 m 재조정값을 산출한다.
+- 본 스크립트는 production model + calibration을 적용한 5-fold CV 등급별 MdAPE +
+  현재 m 적용 시 coverage 측정 + 목표 coverage 기반 m 재조정값을 산출한다.
+
+평가 방식 (Codex P1 disclosure, 2026-04-28):
+- 5-fold KFold로 CB/XGB 모델은 fold-out 학습/예측 (정직한 OOF)
+- 단, source × target_market calibration은 PR #21 production guarded factors
+  (full-data fit) 직접 적용 → factor 자체는 OOF 보장 X (production 동작과 정합)
+- 따라서 'production-time MdAPE' (운영 시 사용자가 받을 메트릭) 추정으로 해석.
+  Calibrator의 OOS 일반화 평가는 PR #21 calibrate_source_bias.py 별도 산출물.
 
 산출물:
-- model_test_results/grade_margin_calibration.json — 등급별 실측 + 권장 m
+- model_test_results/grade_margin_calibration.json — 등급별 production-time + 권장 m
 - model_test_results/grade_margin_calibration_report.md — 사람 친화 요약
 
 Usage:
@@ -234,14 +241,17 @@ def calibrate(target_coverage: float = 0.80) -> dict:
             train_count = int(train_artist_counts.get(artist, 0))
             has_by = bool(X.iloc[te_idx]["has_birth_year"] >= 0.5)
 
-            # Grade A 결정: warm_set 사용 (production 정합)
+            # Grade A 결정: production primary_predictor.determine_confidence와 동일 계약
+            # is_A = is_matched AND is_warm_artist (matched = train fold에 작가 row 존재)
+            # warm_set 없을 때만 fallback (PR #20 이전 동작)
+            is_matched = train_count >= 1
             if warm_set:
-                is_A = artist in warm_set
+                is_A = is_matched and (artist in warm_set)
             else:
-                is_A = train_count >= 5
+                is_A = is_matched and (train_count >= 5)
             grade = (
                 "A" if is_A
-                else "B" if train_count >= 1
+                else "B" if is_matched
                 else ("C" if has_by else "D")
             )
 
@@ -336,7 +346,11 @@ def write_report(result: dict, out_md: Path) -> None:
         "",
         "## 해석",
         "",
-        "- **실측 MdAPE**: 5-Fold CV로 측정한 등급별 실제 오차율의 중앙값 (가격 기준).",
+        "- **production-time MdAPE**: 5-fold CV로 measured. 모델 prediction은 fold-out (OOF), "
+        "단 source × target_market calibration은 PR #21 production guarded factors "
+        "(full-data fit) 직접 적용 → factor는 OOF 보장 X. ",
+        "  운영 시 사용자가 받을 메트릭의 추정치로 해석. Calibrator의 OOS 일반화 평가는 "
+        "별도 산출물 (`integrated_v3_filtered_tuned_source_calibration.json`의 `cold_overall`).",
         "- **현재 coverage**: 현재 m 값으로 계산한 가격 범위에 실제 가격이 들어가는 비율.",
         f"  - {target}% 미만이면 m이 너무 좁음 (사용자에게 신뢰도 낮은 약속).",
         f"  - {target}% 훨씬 초과면 m이 너무 넓음 (불필요하게 보수적).",
@@ -344,7 +358,7 @@ def write_report(result: dict, out_md: Path) -> None:
         "",
         "## 권장 적용",
         "",
-        "1. `primary_predictor.determine_confidence`의 margin을 권장값으로 교체",
+        "1. `primary_predictor.determine_confidence`의 margin을 권장값으로 교체 (서비스 정책 결정)",
         "2. 보고서 §6.2 등급 마진 표 갱신 + 본 결과 인용",
         "3. 보고서 §7.3 \"MdAPE (추정)\" → 실측값으로 정정",
         "",
