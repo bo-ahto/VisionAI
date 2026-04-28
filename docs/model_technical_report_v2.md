@@ -127,7 +127,7 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 ### 3.5 그 외 코덱스 리뷰 15회에서 막은 잡음
 
 - **`eval_set` / early stopping**: 학습/검증 폴드 누수 → 제거 후 `iterations`는 Optuna 튜닝값 고정.
-- **categorical 정규화 비대칭**: 학습은 `lower().strip()`, 서빙은 raw → 서빙 측에 동일 적용.
+- **categorical 정규화 비대칭**: 학습 시 `nan`/`None`/`''`을 `unknown` bucket으로 모아 학습했지만 서빙은 raw 값을 그대로 모델에 넘김 → 서빙 측에 동일한 `astype(str).fillna("unknown").replace({...})` 룰 적용 (자세한 룰은 §5.1).
 - **`gallery_name` vocab 불일치**: 학습 vocab 59개, 서빙은 `'Gallery'`/`'Saatchi Art'` 2개 하드코딩 → 피처에서 제거(차후 PredictRequest에 optional 추가 예정).
 - **`load_models` 부분 실패**: 5개 아티팩트 중 1개라도 실패하면 partial 상태 → fail-closed (`RuntimeError`).
 - **label_maps fallback**: 학습 시 사용한 vocab을 매번 산출 가능한 path가 없어 mandatory 아티팩트로 승격.
