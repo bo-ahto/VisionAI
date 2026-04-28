@@ -1,4 +1,4 @@
-# 등급별 마진 실측 캘리브레이션 보고서 — 목표 coverage 80%
+# 등급별 마진 캘리브레이션 보고서 (production-time MdAPE) — 목표 coverage 80%
 
 - 총 평가 샘플: 28,376
 - 목표 coverage: 80% (가격이 예측 범위 안에 들어올 비율)
@@ -28,4 +28,4 @@
 
 1. `primary_predictor.determine_confidence`의 margin을 권장값으로 교체 (서비스 정책 결정)
 2. 보고서 §6.2 등급 마진 표 갱신 + 본 결과 인용
-3. 보고서 §7.3 "MdAPE (추정)" → 실측값으로 정정
+3. 보고서 §7.3 "MdAPE (추정)" → 본 production-time 측정치로 정정

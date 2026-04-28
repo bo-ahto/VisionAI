@@ -109,33 +109,55 @@ def _load_tuned_params() -> tuple[dict, dict]:
 
 
 def _load_warm_artists() -> set[str]:
-    """Production warm artist slug set (PR #20).
-
-    primary_predictor.is_warm_artist 와 동일 계약 — A 등급 결정.
+    """Production warm artist slug set (PR #20). Schema 검증 — primary_predictor.load_models와 동일.
     """
     p = OUT_DIR / "integrated_v3_filtered_tuned_warm_artists.json"
     if not p.exists():
         return set()
     with p.open(encoding="utf-8") as f:
         data = json.load(f)
-    return {str(s) for s in data.get("warm_artist_slugs", [])}
+    if not isinstance(data, dict) or "warm_artist_slugs" not in data:
+        raise RuntimeError(
+            f"warm artifact schema invalid ({p}): 'warm_artist_slugs' key 필요"
+        )
+    slugs = data["warm_artist_slugs"]
+    if not isinstance(slugs, list):
+        raise RuntimeError(
+            f"warm artifact schema invalid ({p}): 'warm_artist_slugs' must be list"
+        )
+    return {str(s) for s in slugs}
 
 
 def _load_production_cold_factors() -> dict[str, float]:
-    """PR #21 production guarded cold_factors 로드 — 서빙과 동일.
-
-    Codex 2차 P1 (PR #22): 이전 per-fold refit은 production behavior와 다름.
-    production은 guarded factors (예: artsy_gallery=1.0 skip) 사용.
-    grade margin은 production 행동을 평가해야 하므로 같은 factor 적용.
+    """PR #21 production guarded cold_factors 로드. primary_predictor.load_models와 동일 schema.
     """
     p = OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json"
     if not p.exists():
         return {}
     with p.open(encoding="utf-8") as f:
         data = json.load(f)
+    if not isinstance(data, dict):
+        raise RuntimeError(f"calibration schema invalid ({p}): top-level must be dict")
+    if data.get("model_target") != "integrated_v3_filtered_tuned":
+        raise RuntimeError(
+            f"calibration model_target mismatch ({p}): "
+            f"expected 'integrated_v3_filtered_tuned', got {data.get('model_target')!r}"
+        )
     factors = data.get("cold_factors", {})
-    return {str(k): float(v) for k, v in factors.items()
-            if isinstance(v, (int, float))}
+    if not isinstance(factors, dict):
+        raise RuntimeError(f"calibration cold_factors invalid ({p}): must be dict")
+    out: dict[str, float] = {}
+    for k, v in factors.items():
+        if not isinstance(v, (int, float)) or isinstance(v, bool):
+            raise RuntimeError(
+                f"calibration cold_factors[{k!r}] must be numeric, got {type(v).__name__}"
+            )
+        if not (0.1 <= float(v) <= 10.0):
+            raise RuntimeError(
+                f"calibration cold_factors[{k!r}]={v} out of bounds [0.1, 10.0]"
+            )
+        out[str(k)] = float(v)
+    return out
 
 
 def _train_predict_fold(
@@ -325,7 +347,7 @@ def write_report(result: dict, out_md: Path) -> None:
     """사람 친화 요약 보고서 .md 작성."""
     target = int(result["target_coverage"] * 100)
     lines = [
-        f"# 등급별 마진 실측 캘리브레이션 보고서 — 목표 coverage {target}%",
+        f"# 등급별 마진 캘리브레이션 보고서 (production-time MdAPE) — 목표 coverage {target}%",
         "",
         f"- 총 평가 샘플: {result['n_total']:,}",
         f"- 목표 coverage: {target}% (가격이 예측 범위 안에 들어올 비율)",
@@ -365,7 +387,7 @@ def write_report(result: dict, out_md: Path) -> None:
         "",
         "1. `primary_predictor.determine_confidence`의 margin을 권장값으로 교체 (서비스 정책 결정)",
         "2. 보고서 §6.2 등급 마진 표 갱신 + 본 결과 인용",
-        "3. 보고서 §7.3 \"MdAPE (추정)\" → 실측값으로 정정",
+        "3. 보고서 §7.3 \"MdAPE (추정)\" → 본 production-time 측정치로 정정",
         "",
     ])
     out_md.write_text("\n".join(lines), encoding="utf-8")

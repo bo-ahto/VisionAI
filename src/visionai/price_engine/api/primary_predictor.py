@@ -121,7 +121,7 @@ class PrimaryPredictor:
         현재 _load_models는 startup-only 호출이라 race 위험 적음.
         런타임 reload 도입 시 별도 lock 필요.
         """
-        # 1) artifact 경로 — 4개 필수 + 1개 선택 (calibration)
+        # 1) artifact 경로 — 5개 모두 필수 (Codex PR #22 5차 P1: fail-closed 정합)
         cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
         xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
         warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
@@ -133,6 +133,7 @@ class PrimaryPredictor:
             (xgb_path, "XGBoost model"),
             (warm_path, "warm artists"),
             (label_maps_path, "XGBoost label maps"),
+            (calib_path, "source calibration"),  # PR #22 5차: fail-closed
         ):
             if not path.exists():
                 raise RuntimeError(
