@@ -50,19 +50,33 @@ def determine_confidence(
     training_count: int,
     has_birth_year: bool,
     has_manual_profile: bool,
-    is_warm_artist: bool = False,
+    is_warm_artist: bool | None = None,
 ) -> tuple[str, float]:
     """(grade, margin) 반환.
 
-    Codex 6차 P1 (2026-04-28): 등급 A 결정에 학습 시 warm artist set lookup 사용.
-    - 기존: training_count >= 5 (DB raw count, 학습 데이터와 드리프트)
-    - 수정: is_warm_artist=True (학습 시 warm slice에 포함된 작가) 우선
-    is_warm_artist 정보 없을 때만 training_count로 fallback (구버전 호환).
+    Codex 7차 P1 (2026-04-28): is_warm_artist tri-state (True/False/None).
+    - None: warm set 정보 미보유 → 구 legacy fallback (training_count >= 5)
+    - True: 학습 시 warm slice 포함 → A 등급
+    - False: 학습 시 warm slice 미포함 (set 권위적) → A 부여 X (B 이하)
+      → 라우팅(CatBoost)과 grade가 일관되게 정합
+
+    이전 6차 fix는 is_warm=False일 때도 training_count fallback이 열려 있어
+    warm set 외부 + DB training_count>=5인 작가가 CatBoost+A 모순 발생.
     """
-    if is_matched and is_warm_artist:
-        return ("A", 0.20)
-    if is_matched and training_count >= 5 and not is_warm_artist:
-        # warm set 정보 없는 fallback path. 라우팅과 일관성 유지 위해 같은 임계값.
+    # warm set authoritative branch
+    if is_warm_artist is True:
+        if is_matched:
+            return ("A", 0.20)
+        # 매칭 안 됐는데 warm 표기? 이론상 발생 X — 안전하게 fallthrough
+    if is_warm_artist is False:
+        # warm set 권위적: 매칭 됐으면 B 이하 (A 부여 X)
+        if is_matched and training_count >= 1:
+            return ("B", 0.30)
+        if has_birth_year or has_manual_profile:
+            return ("C", 0.50)
+        return ("D", 0.70)
+    # is_warm_artist is None — 구 legacy fallback (warm set 미보유 환경)
+    if is_matched and training_count >= 5:
         return ("A", 0.20)
     if is_matched and training_count >= 1:
         return ("B", 0.30)
@@ -138,11 +152,12 @@ class PrimaryPredictor:
                 df[col] = df[col].astype(str).fillna("unknown")
 
         # 모델 라우팅 (학습 시 warm slice와 정합)
-        is_warm = self.is_warm_artist(artist_slug) if (self._warm_artist_slugs and artist_slug) else False
+        # is_warm: True/False (set 권위) / None (set 미보유 — legacy training_count fallback)
         if self._warm_artist_slugs and artist_slug:
+            is_warm = self.is_warm_artist(artist_slug)
             use_xgb = is_warm
         else:
-            # fallback: DB training_count 기준 (드리프트 위험)
+            is_warm = None  # warm set 정보 없음 → grade도 legacy fallback
             use_xgb = is_matched and training_count >= 5
         model_type = "xgboost_v3_filtered_tuned" if use_xgb else "catboost_v3_filtered_tuned"
 

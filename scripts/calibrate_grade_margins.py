@@ -32,7 +32,7 @@ from sklearn.model_selection import KFold, GroupKFold
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from train_primary_market_v3_filtered import (
     CB_FEATURES, CAT_FEATURES, _cb_pool, _label_encode_xgb,
-    _mdape, load_data, prepare_features,
+    _mdape, _warm_mask, load_data, prepare_features,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -98,12 +98,15 @@ def _load_tuned_params() -> tuple[dict, dict]:
     return data["catboost"], data["xgboost"]
 
 
-def _train_predict_fold(X_tr, y_tr, X_te, y_te, cb_params: dict, xgb_params: dict, seed=42):
+def _train_predict_fold(
+    X_tr, y_tr, X_te, y_te,
+    groups_tr, cb_params: dict, xgb_params: dict, seed=42,
+):
     """v3-filtered-tuned 사양으로 fold 학습 + 예측 (production tuned params 적용).
 
-    primary_predictor 라우팅 정합:
-    - warm (A 등급) → XGBoost
-    - cold (B/C/D) → CatBoost
+    primary_predictor 라우팅 정합 (Codex 7차 P2):
+    - CatBoost: full fold 학습 (production cold route)
+    - XGBoost: warm slice (artist_count>=5) 만으로 학습 (production warm route)
     """
     cb = CatBoostRegressor(
         **cb_params, loss_function="RMSE", verbose=0, random_seed=seed,
@@ -112,8 +115,17 @@ def _train_predict_fold(X_tr, y_tr, X_te, y_te, cb_params: dict, xgb_params: dic
     cb.fit(_cb_pool(X_tr, y_tr), eval_set=_cb_pool(X_te, y_te), early_stopping_rounds=50)
     cb_pred = cb.predict(_cb_pool(X_te))
 
-    Xtr_e, Xte_e, _ = _label_encode_xgb(X_tr, X_te)
-    dtrain = xgb.DMatrix(Xtr_e, label=y_tr)
+    # XGBoost: warm slice만으로 학습 (production tune script와 동일)
+    warm_mask_tr = _warm_mask(groups_tr)
+    if warm_mask_tr.sum() == 0:
+        # warm 데이터 없는 fold (이론상 발생 X) — fallback: full fold
+        X_tr_warm, y_tr_warm = X_tr, y_tr
+    else:
+        X_tr_warm = X_tr.iloc[warm_mask_tr].reset_index(drop=True)
+        y_tr_warm = y_tr[warm_mask_tr]
+
+    Xtr_e, Xte_e, _ = _label_encode_xgb(X_tr_warm, X_te)
+    dtrain = xgb.DMatrix(Xtr_e, label=y_tr_warm)
     dtest = xgb.DMatrix(Xte_e, label=y_te)
     xgb_p = {k: v for k, v in xgb_params.items() if k != "num_boost_round"}
     m = xgb.train(
@@ -149,7 +161,8 @@ def calibrate(target_coverage: float = 0.80) -> dict:
     for fold_idx, (tr, te) in enumerate(kf.split(X), 1):
         logger.info("[Fold %d/5] train=%d test=%d", fold_idx, len(tr), len(te))
         cb_pred, xgb_pred = _train_predict_fold(
-            X.iloc[tr], y[tr], X.iloc[te], y[te], cb_params, xgb_params,
+            X.iloc[tr], y[tr], X.iloc[te], y[te],
+            groups_tr=groups[tr], cb_params=cb_params, xgb_params=xgb_params,
         )
 
         # 학습 fold에 해당 작가가 몇 건 있는지 카운트 (등급 결정용)
