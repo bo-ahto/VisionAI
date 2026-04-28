@@ -89,5 +89,5 @@
   },
   "n_total": 28376,
   "n_warm": 27062,
-  "note": "Cross-fit 5-fold: factor를 train fold에서만 fit, held-out fold에 적용 → 정직한 out-of-sample. Final factors는 전체 데이터 fit (production용). Server는 features['source'] + target_market 기반으로 cell key 결정."
+  "note": "Cross-fit 5-fold: factor 추정은 train fold에서만 fit (OOF 평가). 단, guard cell selection이 같은 OOF 결과 보고 결정되므로 post-hoc selection bias 잔존. 'calibrated_mdape_cross_fit_guarded'는 보수적 추정치 (truly OOS 아님). Final factors는 전체 데이터 fit (production용). Server는 features['source'] + target_market 기반으로 cell key 결정."
 }

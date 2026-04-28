@@ -8,8 +8,9 @@ Codex P1 review (2026-04-28):
   · 서빙 시 사용자가 Saatchi 작가의 gallery 가격 요청하면 잘못된 보정 적용
 
 수정:
-1. Cross-fit 5-fold: 각 held-out fold마다 다른 4개 fold에서 factor 계산 후 적용
-   → 정직한 out-of-sample MdAPE 측정
+1. Cross-fit 5-fold: 각 held-out fold에서 다른 4개 fold로 factor 추정 후 적용
+   · factor 추정은 OOF, guard cell selection은 동일 OOF 결과 보고 결정
+   · post-hoc selection bias 잔존 → 보고 메트릭은 보수적 추정치 (truly OOS 아님)
 2. Cell 결합: (source × target_market) 기준 factor 계산
    · is_krw=1 → target_market='gallery' / else → 'online'
    · cell 4개: artsy_gallery, artsy_online, saatchi_gallery (training X), saatchi_online
@@ -327,7 +328,9 @@ def calibrate() -> dict:
         "n_total": len(y),
         "n_warm": len(y_warm_price),
         "note": (
-            "Cross-fit 5-fold: factor를 train fold에서만 fit, held-out fold에 적용 → 정직한 out-of-sample. "
+            "Cross-fit 5-fold: factor 추정은 train fold에서만 fit (OOF 평가). "
+            "단, guard cell selection이 같은 OOF 결과 보고 결정되므로 post-hoc selection "
+            "bias 잔존. 'calibrated_mdape_cross_fit_guarded'는 보수적 추정치 (truly OOS 아님). "
             "Final factors는 전체 데이터 fit (production용). "
             "Server는 features['source'] + target_market 기반으로 cell key 결정."
         ),

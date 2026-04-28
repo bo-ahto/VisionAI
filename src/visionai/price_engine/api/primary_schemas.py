@@ -138,6 +138,17 @@ class ErrorResponse(BaseModel):
 
 
 class ModelInfoResponse(BaseModel):
+    """모델 정보 응답.
+
+    NOTE on metrics interpretation:
+    - mdape_groupkfold: cold path (CatBoost) MdAPE.
+      v3-tuned-cal 모델인 경우 source × target_market cell calibration 적용된
+      cross-fit guarded 추정치. guard cell selection이 동일 OOF 결과 보고 결정되어
+      post-hoc selection bias 잔존 — 보수적 추정치로 해석 권장.
+    - mdape_kfold: warm path (XGBoost) MdAPE on warm slice (artist_count>=5) baseline.
+      서빙은 warm path에 calibration 적용 안 함 (factor 1.0 근처, noise).
+    """
+
     model_version: str
     training_count: int
     artist_count: int
