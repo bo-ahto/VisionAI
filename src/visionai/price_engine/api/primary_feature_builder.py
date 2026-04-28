@@ -173,8 +173,7 @@ def build_features(
 
     has_birth_year = 1 if birth_year else 0
 
-    # 갤러리 피처
-    gallery_name = p.get("gallery_name", "Unknown")
+    # 갤러리 피처 — gallery_name 제거 (Codex 14차 P1: train/serve 드리프트)
     gallery_type = p.get("gallery_type", "Unknown")
     gallery_tier = p.get("gallery_tier", 4)
     source = p.get("source", "manual")
@@ -212,11 +211,10 @@ def build_features(
         "has_seoul": 0,
         "has_international": 0,
         "is_krw": 1 if target_market == "gallery" else 0,
-        # categorical (7)
+        # categorical (6) — gallery_name 제거 (Codex 14차 P1)
         "support_type": support_type,
         "medium_category": medium_category,
         "attribution_class": "Unique",
-        "gallery_name": gallery_name,
         "gallery_type": gallery_type,
         "price_currency": "KRW" if target_market == "gallery" else "USD",
         "source": source,

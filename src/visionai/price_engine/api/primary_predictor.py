@@ -31,17 +31,21 @@ CB_FEATURES = [
     "gallery_tier", "gallery_city_count", "has_seoul", "has_international",
     "is_krw",
     "support_type", "medium_category", "attribution_class",
-    "gallery_name", "gallery_type", "price_currency", "source",
+    "gallery_type", "price_currency", "source",
 ]
-# Removed (Codex 4차 리뷰 P1, 2026-04-28):
-# - career_age, work_age, vintage_premium, freshness_discount
-#   학습 데이터는 정상 계산, 서빙은 0 하드코딩 (artist_matcher/feature_builder).
-#   모델이 활용 중이라 (importance: career_age 2.0, vintage 1.5, work_age 0.4 XGB gain)
-#   학습/서빙 드리프트 → offline metric ≠ serving accuracy. 제거로 정렬 보장.
+# Removed for train/serve drift consistency:
+# - career_age, work_age, vintage_premium, freshness_discount (Codex 4차 P1, 2026-04-28)
+#   학습 데이터는 정상 계산, 서빙은 0 하드코딩.
+# - gallery_name (Codex 14차 P1, 2026-04-28)
+#   학습 vocab은 실제 갤러리명 59개 (예: "Kukje Gallery"), 서빙은 artist_matcher가
+#   "Gallery"/"Saatchi Art"로 하드코딩. Saatchi는 vocab에 있지만 Artsy 작가는 매번
+#   sentinel → 신호 활용 불가. 제거로 정렬.
+#   (Note: importance XGB warm 0.5%, CB cold 1.5% — 영향 작음. 추후 PredictRequest에
+#    gallery_name 필드 추가 시 다시 도입 검토.)
 
 CAT_FEATURES = [
     "support_type", "medium_category", "attribution_class",
-    "gallery_name", "gallery_type", "price_currency", "source",
+    "gallery_type", "price_currency", "source",
 ]
 
 
