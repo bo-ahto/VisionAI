@@ -129,8 +129,21 @@ def _load_warm_artists() -> set[str]:
 
 
 def _load_production_cold_factors() -> dict[str, float]:
-    """PR #21 production guarded cold_factors 로드. primary_predictor.load_models와 동일 schema.
+    """PR #21 production guarded cold_factors 로드.
+
+    Schema 검증은 primary_predictor.load_models와 동등 (Codex 6차 P1):
+    - top-level dict
+    - model_target 필수 + 일치
+    - version 필수
+    - cold_factors dict
+    - cell key 형식 '{source}_{target_market}' (rsplit('_',1))
+    - ALLOWED_SOURCES/MARKETS 일치
+    - factor numeric (bool 거부) + bounds [0.1, 10.0]
     """
+    ALLOWED_SOURCES = {"artsy", "saatchi", "manual", "printbakery", "artsy_artue", "web", "unknown"}
+    ALLOWED_MARKETS = {"gallery", "online"}
+    EXPECTED_TARGET = "integrated_v3_filtered_tuned"
+
     p = OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json"
     if not p.exists():
         return {}
@@ -138,16 +151,32 @@ def _load_production_cold_factors() -> dict[str, float]:
         data = json.load(f)
     if not isinstance(data, dict):
         raise RuntimeError(f"calibration schema invalid ({p}): top-level must be dict")
-    if data.get("model_target") != "integrated_v3_filtered_tuned":
+    if not data.get("model_target"):
+        raise RuntimeError(f"calibration schema invalid ({p}): 'model_target' key 필수")
+    if data["model_target"] != EXPECTED_TARGET:
         raise RuntimeError(
             f"calibration model_target mismatch ({p}): "
-            f"expected 'integrated_v3_filtered_tuned', got {data.get('model_target')!r}"
+            f"expected {EXPECTED_TARGET!r}, got {data['model_target']!r}"
         )
+    if "version" not in data:
+        raise RuntimeError(f"calibration schema invalid ({p}): 'version' key 필수")
     factors = data.get("cold_factors", {})
     if not isinstance(factors, dict):
         raise RuntimeError(f"calibration cold_factors invalid ({p}): must be dict")
     out: dict[str, float] = {}
     for k, v in factors.items():
+        key = str(k)
+        parts = key.rsplit("_", 1)
+        if len(parts) != 2:
+            raise RuntimeError(
+                f"calibration cold_factors key {k!r} must be '{{source}}_{{target_market}}'"
+            )
+        src_part, market_part = parts
+        if src_part not in ALLOWED_SOURCES or market_part not in ALLOWED_MARKETS:
+            raise RuntimeError(
+                f"calibration cold_factors key {k!r} not in allowed cells "
+                f"(sources={ALLOWED_SOURCES}, markets={ALLOWED_MARKETS})"
+            )
         if not isinstance(v, (int, float)) or isinstance(v, bool):
             raise RuntimeError(
                 f"calibration cold_factors[{k!r}] must be numeric, got {type(v).__name__}"
@@ -156,7 +185,7 @@ def _load_production_cold_factors() -> dict[str, float]:
             raise RuntimeError(
                 f"calibration cold_factors[{k!r}]={v} out of bounds [0.1, 10.0]"
             )
-        out[str(k)] = float(v)
+        out[key] = float(v)
     return out
 
 
