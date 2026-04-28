@@ -409,20 +409,18 @@ def _resolve_model_dir() -> Path:
 
 
 def _load_models() -> None:
-    """모델 파일 로드."""
-    model_dir = _resolve_model_dir()
-    _predictor.load_models(model_dir)
+    """모델 파일 로드 (atomic-ish — Codex 10차 P2).
 
-    # XGBoost label map 구축 — 학습 시 저장된 매핑 아티팩트 우선 (Codex review #14)
-    label_maps_path = model_dir / "integrated_v3_filtered_tuned_xgboost_label_maps.json"
+    PrimaryPredictor.load_models가 cb/xgb/warm/label_maps를 한 번에 로드.
+    중간 실패 시 instance state는 이전 값 유지.
+    """
+    model_dir = _resolve_model_dir()
+    # label_maps fallback path 위해 training data path 전달 (artifact 미존재 시에만 사용)
     data_dir = Path(os.getenv("DATA_DIR", "/app/data"))
     training_path = data_dir / "primary_market_dataset.parquet"
     if not training_path.exists():
         training_path = Path(__file__).resolve().parent.parent.parent.parent.parent / "data" / "primary_market_dataset.parquet"
-    _predictor.build_xgb_label_maps(
-        training_data_path=training_path,
-        label_maps_path=label_maps_path if label_maps_path.exists() else None,
-    )
+    _predictor.load_models(model_dir, training_data_path=training_path)
 
 
 @asynccontextmanager

@@ -97,45 +97,78 @@ class PrimaryPredictor:
         # Codex 9차 P1: artifact 로드 여부 별도 플래그 — set 비어있음과 미로드 구분
         self._warm_artifact_loaded: bool = False
 
-    def load_models(self, model_dir: Path) -> None:
-        """v3-filtered-tuned 모델 로드.
+    def load_models(self, model_dir: Path, training_data_path: Path | None = None) -> None:
+        """v3-filtered-tuned 모델 로드 — atomic-ish (Codex 10차 P2).
 
-        - CatBoost: 입체 985건 제외 + Optuna 30 trials 튜닝 (cold start GroupKFold 최적)
-        - XGBoost: 입체 제외 + warm slice(작품 수≥5) Optuna 튜닝 (warm KFold 최적)
-        - label_maps: 학습 시 매핑 그대로 보존된 아티팩트
-        - warm_artists: 학습 시 warm slice에 포함된 작가 slug 집합 (라우팅 정합)
+        Build new state in local vars first, then atomically swap to instance state.
+        중간 실패 시 instance state는 이전 값 그대로 유지.
 
-        Codex 9차 P1+P2:
-        - 모든 state 초기화를 loading 시작 전에 수행 (CB/XGB 로드 실패해도 stale 방지)
-        - _warm_artifact_loaded 플래그로 'loaded with empty list' vs '미로드' 구분
+        Aritfacts:
+        - CatBoost: 입체 985건 제외 + Optuna 30 trials 튜닝 (cold start GroupKFold)
+        - XGBoost: 입체 제외 + warm slice(작품 수≥5) Optuna 튜닝 (warm KFold)
+        - label_maps: 학습 시 매핑 그대로 보존된 아티팩트 (warm slice 기준)
+        - warm_artists: 학습 시 warm slice에 포함된 작가 slug 집합
         """
-        # 1) state 선제 초기화 (atomic-ish reload 보장)
-        self._warm_artist_slugs = set()
-        self._warm_artifact_loaded = False
-
-        # 2) 모델 로드
+        # 1) 모든 state를 local vars에 build (instance에 아직 안 씀)
         cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
         xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
-
-        self.cb_model = CatBoostRegressor()
-        self.cb_model.load_model(str(cb_path))
-        logger.info("CatBoost loaded: %s", cb_path)
-
-        self.xgb_model = xgb.Booster()
-        self.xgb_model.load_model(str(xgb_path))
-        logger.info("XGBoost loaded: %s", xgb_path)
-
-        # 3) warm artifact 로드 (미존재 시 _warm_artifact_loaded=False로 legacy fallback)
         warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
+        label_maps_path = model_dir / "integrated_v3_filtered_tuned_xgboost_label_maps.json"
+
+        new_cb = CatBoostRegressor()
+        new_cb.load_model(str(cb_path))
+
+        new_xgb = xgb.Booster()
+        new_xgb.load_model(str(xgb_path))
+
+        new_warm_slugs: set[str] = set()
+        new_warm_loaded = False
         if warm_path.exists():
             with warm_path.open(encoding="utf-8") as f:
                 data = json.load(f)
-            self._warm_artist_slugs = set(data.get("warm_artist_slugs", []))
-            self._warm_artifact_loaded = True
-            logger.info("Warm artists loaded: %d (학습 시 warm slice 작가)",
-                        len(self._warm_artist_slugs))
+            new_warm_slugs = set(data.get("warm_artist_slugs", []))
+            new_warm_loaded = True
+
+        new_label_maps: dict[str, dict[str, int]] = {}
+        if label_maps_path.exists():
+            with label_maps_path.open(encoding="utf-8") as f:
+                new_label_maps = json.load(f)
+        elif training_data_path and training_data_path.exists():
+            # warm slice 필터 fallback (Codex 10차 P1): warm-only XGBoost와 일치
+            import pandas as pd_local
+            df = pd_local.read_parquet(training_data_path)
+            if "is_excluded_for_training" in df.columns:
+                df = df[df["is_excluded_for_training"] == 0].copy()
+            if new_warm_loaded and new_warm_slugs and "artist_slug" in df.columns:
+                df = df[df["artist_slug"].astype(str).isin(new_warm_slugs)].copy()
+            for col in CAT_FEATURES:
+                if col in df.columns:
+                    vals = df[col].astype(str).unique()
+                    new_label_maps[col] = {v: i for i, v in enumerate(sorted(vals))}
+        else:
+            raise RuntimeError(
+                f"label_maps.json 미존재 ({label_maps_path}) and training_data_path 미제공 — "
+                "warm XGBoost categorical ID 일관성 보장 불가"
+            )
+
+        # 2) 모든 build 성공 시에만 instance state에 atomic swap
+        self.cb_model = new_cb
+        self.xgb_model = new_xgb
+        self._warm_artist_slugs = new_warm_slugs
+        self._warm_artifact_loaded = new_warm_loaded
+        self._label_maps = new_label_maps
+
+        # 3) 로깅
+        logger.info("CatBoost loaded: %s", cb_path)
+        logger.info("XGBoost loaded: %s", xgb_path)
+        if new_warm_loaded:
+            logger.info("Warm artists loaded: %d (학습 시 warm slice 작가)", len(new_warm_slugs))
         else:
             logger.warning("Warm artist list 없음 — DB training_count로 fallback (라우팅 불일치 위험)")
+        if label_maps_path.exists():
+            logger.info("XGBoost label maps loaded from artifact: %s", label_maps_path)
+        else:
+            logger.warning("XGBoost label maps fallback path 사용 (ID shift 위험)")
 
     def is_warm_artist(self, artist_slug: str | None) -> bool:
         """학습 시 warm slice 정의를 그대로 사용 (라우팅 정합)."""
@@ -228,29 +261,47 @@ class PrimaryPredictor:
         training_data_path: Path | None = None,
         label_maps_path: Path | None = None,
     ) -> None:
-        """XGBoost label encoding 매핑 구축. 우선순위:
+        """XGBoost label encoding 매핑 구축.
 
-        1. label_maps_path (튜닝 PR이 산출하는 JSON 아티팩트) — 학습 시 사용된 매핑 그대로 보존
-        2. training_data_path (학습 parquet에서 재구축)
-        3. 하드코딩 (v3 모델 기준 default)
+        우선순위 (Codex 10차 P1):
+        1. label_maps_path JSON 아티팩트 — 학습 시 사용된 매핑 그대로 보존 (필수)
+        2. training_data_path + warm artist set 필터 — XGBoost가 warm-only로 학습되므로
+           full parquet으로 fallback하면 categorical ID shift 발생 (warm vs full
+           sorted unique 순서가 다름 → 'attribution_class', 'gallery_name' 등 ID mismatch)
 
-        Codex review (PR #14): 튜닝/재학습된 모델의 categorical ID 일관성을 위해
-        매핑 아티팩트 직접 로드를 우선한다.
+        Codex 10차 P1: warm-slice 학습 도입으로 full parquet fallback이 invalid.
+        warm_artifact_loaded일 때는 warm artist set으로 parquet을 필터링해서 매핑 빌드.
         """
         if label_maps_path and label_maps_path.exists():
             with label_maps_path.open(encoding="utf-8") as f:
                 self._label_maps = json.load(f)
             logger.info("XGBoost label maps loaded from artifact: %s", label_maps_path)
             return
+        # Fallback path: warm slice 정합 보장
         if training_data_path and training_data_path.exists():
             df = pd.read_parquet(training_data_path)
+            # is_excluded_for_training 적용 (production train과 동일)
+            if "is_excluded_for_training" in df.columns:
+                df = df[df["is_excluded_for_training"] == 0].copy()
+            # warm artifact 로드된 경우 warm slice로 필터 (XGBoost 학습 정합)
+            if self._warm_artifact_loaded and self._warm_artist_slugs and "artist_slug" in df.columns:
+                df = df[df["artist_slug"].astype(str).isin(self._warm_artist_slugs)].copy()
+                logger.info("XGBoost label maps fallback: warm slice 필터 적용 (%d rows)", len(df))
+            else:
+                logger.warning(
+                    "XGBoost label maps fallback: warm artifact 미로드 — full parquet 사용 (ID shift 위험)"
+                )
             for col in CAT_FEATURES:
                 if col in df.columns:
                     vals = df[col].astype(str).unique()
                     self._label_maps[col] = {v: i for i, v in enumerate(sorted(vals))}
             logger.info("XGBoost label maps built from %s", training_data_path)
             return
-        # 학습 시 사용된 값 하드코딩 (v3 모델 기준)
+        # 학습 시 사용된 값 하드코딩 (마지막 fallback — 운영에서는 발생 X)
+        logger.error(
+            "XGBoost label maps: artifact + parquet 모두 없음 → 하드코딩 default 사용 "
+            "(ID shift 위험 — warm 예측 신뢰 불가)"
+        )
         self._label_maps = {
             "support_type": {v: i for i, v in enumerate(sorted(
                 ["canvas", "linen", "metal", "other", "panel", "paper", "silk"]))},
@@ -266,4 +317,3 @@ class PrimaryPredictor:
             "source": {v: i for i, v in enumerate(sorted(
                 ["artsy", "artsy_artue", "manual", "printbakery", "saatchi"]))},
         }
-        logger.info("XGBoost label maps built from hardcoded values (no parquet)")
