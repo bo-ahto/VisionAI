@@ -28,7 +28,7 @@ import xgboost as xgb
 from catboost import CatBoostRegressor, Pool
 from sklearn.model_selection import GroupKFold, KFold
 
-from visionai.price_engine.api.primary_predictor import CB_FEATURES, CAT_FEATURES
+from visionai.price_engine.api.primary_predictor import CAT_FEATURES, CB_FEATURES
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -212,8 +212,10 @@ def cv_groupkfold(
     return out
 
 
-from visionai.price_engine._eval_helpers import (  # noqa: E402
+from visionai.price_engine._eval_helpers import (
     WARM_MIN_COUNT,
+)
+from visionai.price_engine._eval_helpers import (
     warm_mask as _warm_mask,
 )
 

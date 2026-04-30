@@ -21,7 +21,6 @@ from visionai.price_engine._eval_helpers import (
     warm_mask,
 )
 
-
 # ─── warm_mask ─────────────────────────────────────────────────────────
 
 
@@ -178,7 +177,7 @@ def test_normalize_categoricals_missing_column_skipped() -> None:
 
 
 def test_normalize_categoricals_map_constant() -> None:
-    assert CATEGORICAL_NORMALIZE_MAP == {"nan": "unknown", "None": "unknown", "": "unknown"}
+    assert {"nan": "unknown", "None": "unknown", "": "unknown"} == CATEGORICAL_NORMALIZE_MAP
 
 
 # ─── label_encode_xgb ──────────────────────────────────────────────────

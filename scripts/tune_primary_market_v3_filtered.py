@@ -36,8 +36,13 @@ from sklearn.model_selection import GroupKFold, KFold
 # 같은 디렉토리의 train 스크립트에서 helper 임포트
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from train_primary_market_v3_filtered import (
-    CB_FEATURES, CAT_FEATURES, _cb_pool, _label_encode_xgb,
-    _mdape, _summary, load_data, prepare_features,
+    CB_FEATURES,
+    _cb_pool,
+    _label_encode_xgb,
+    _mdape,
+    _summary,
+    load_data,
+    prepare_features,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -73,8 +78,10 @@ def _cb_groupkfold_mdape(
 
 # XGBoost 튜닝/평가는 warm slice만 (PrimaryPredictor 라우팅: training_count>=5).
 # Codex Phase 2 P2: 공용 helper 위임으로 진단/학습/서빙 정합 보장.
-from visionai.price_engine._eval_helpers import (  # noqa: E402
+from visionai.price_engine._eval_helpers import (
     WARM_MIN_COUNT,
+)
+from visionai.price_engine._eval_helpers import (
     warm_mask as _warm_mask,
 )
 

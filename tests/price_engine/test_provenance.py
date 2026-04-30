@@ -6,8 +6,6 @@ import json
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from visionai.price_engine._provenance import (
     DEFAULT_DEPENDENCY_PACKAGES,
     _dependency_versions,
@@ -20,7 +18,6 @@ from visionai.price_engine._provenance import (
     stamp_artifact_with_provenance,
     write_provenance_manifest,
 )
-
 
 # ─── _file_sha256 / _file_meta ─────────────────────────────────────────
 

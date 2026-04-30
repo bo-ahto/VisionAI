@@ -45,11 +45,17 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import (
-    CB_FEATURES, CAT_FEATURES, _cb_pool,
-    load_data, prepare_features,
+    CAT_FEATURES,
+    _cb_pool,
+    load_data,
+    prepare_features,
 )
+
 from visionai.price_engine._eval_helpers import (
-    WARM_MIN_COUNT, apply_cell_calibration, cell_keys, derive_target_market,
+    WARM_MIN_COUNT,
+    apply_cell_calibration,
+    cell_keys,
+    derive_target_market,
     label_encode_xgb,
 )
 

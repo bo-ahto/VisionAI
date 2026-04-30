@@ -42,8 +42,13 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import load_data, prepare_features
+
 from visionai.price_engine._eval_helpers import (
-    cell_keys, derive_target_market, warm_mask as _warm_mask,
+    cell_keys,
+    derive_target_market,
+)
+from visionai.price_engine._eval_helpers import (
+    warm_mask as _warm_mask,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -132,13 +137,13 @@ def _plot_signed_by_stratum(
     ns = [s["n"] for s in stats]
 
     x = np.arange(len(labels))
-    err_low = [m - lo for m, lo in zip(medians, p10)]
-    err_high = [hi - m for m, hi in zip(medians, p90)]
+    err_low = [m - lo for m, lo in zip(medians, p10, strict=False)]
+    err_high = [hi - m for m, hi in zip(medians, p90, strict=False)]
     ax.errorbar(x, medians, yerr=[err_low, err_high], fmt="o", color="#4FC3F7",
                 ecolor="#4FC3F7", elinewidth=1.5, capsize=4, markersize=8,
                 label="median (P10–P90)")
     ax.axhline(0, color="#888", linestyle="--", linewidth=1)
-    for xi, yi, ni in zip(x, medians, ns):
+    for xi, yi, ni in zip(x, medians, ns, strict=False):
         ax.annotate(f"n={ni}", (xi, yi), textcoords="offset points", xytext=(0, -18),
                     ha="center", color="white", fontsize=8)
     ax.set_xticks(x)

@@ -29,8 +29,9 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
-from datetime import datetime, timezone
-from importlib.metadata import PackageNotFoundError, version as pkg_version
+from datetime import UTC, datetime
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as pkg_version
 from pathlib import Path
 from typing import Any
 
@@ -176,7 +177,7 @@ def _provenance_dict(
         "model_target": model_target,
         "git_sha": _git_sha(repo_root),
         "git_dirty": _git_dirty(repo_root),
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "data_hashes": {name: _file_meta(path) for name, path in data_paths.items()},
         "dependency_versions": _dependency_versions(dependency_packages),
         "parser_rule_version": _parser_rule_version(repo_root, parser_rule_files),

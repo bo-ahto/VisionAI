@@ -34,20 +34,20 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import xgboost as xgb
-from catboost import CatBoostRegressor
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import (
-    CB_FEATURES, CAT_FEATURES, _cb_pool,
-    load_data, prepare_features,
+    load_data,
+    prepare_features,
 )
-from visionai.price_engine._eval_helpers import WARM_MIN_COUNT, derive_target_market
+
 # 1.8과 동일 routing/metric 헬퍼 재사용
-from v3_loo_gallery import _train_cb_xgb, _predict_production, mdape, w30  # noqa: E402
+from v3_loo_gallery import _predict_production, _train_cb_xgb, mdape, w30
+
+from visionai.price_engine._eval_helpers import WARM_MIN_COUNT, derive_target_market
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

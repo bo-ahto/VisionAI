@@ -55,6 +55,13 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# sklearn 관례: X_train / X_test capitalization (N803, N806).
+# Korean docstring 안의 × (MULTIPLICATION SIGN) 같은 ambiguous unicode 허용 (RUF002).
+"src/visionai/price_engine/_eval_helpers.py" = ["N803", "N806", "RUF002"]
+# 기존 scripts/ 는 v3.0 작업 중 ruff 도입 → strict 통과 v3.1 로 점진 정리.
+"scripts/*.py" = ["E402", "E501", "F541", "F841", "N803", "N806", "RUF001", "RUF002", "RUF003", "B007", "SIM102", "SIM108", "UP032", "UP038"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["visionai"]
 

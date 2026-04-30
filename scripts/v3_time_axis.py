@@ -38,17 +38,23 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import load_data, prepare_features
+
 from visionai.price_engine._eval_helpers import (
     apply_cell_calibration as _apply_cell_calibration_helper,
+)
+from visionai.price_engine._eval_helpers import (
     cell_keys as _cell_keys_helper,
+)
+from visionai.price_engine._eval_helpers import (
     derive_target_market,
+)
+from visionai.price_engine._eval_helpers import (
     warm_mask as _warm_mask,
 )
 
@@ -262,7 +268,7 @@ def main() -> None:
         bars = ax.bar(x, mdapes, color="#4FC3F7")
         ax.axhline(spread["artsy_baseline_mdape"], color="#FFB74D", linestyle="--", linewidth=1.5,
                    label=f"Artsy baseline ({spread['artsy_baseline_mdape']:.1f}%)")
-        for xi, mi, ni in zip(x, mdapes, ns):
+        for xi, mi, ni in zip(x, mdapes, ns, strict=False):
             ax.annotate(f"n={ni}", (xi, mi), textcoords="offset points", xytext=(0, 4),
                         ha="center", color="white", fontsize=9)
         ax.set_xticks(x)

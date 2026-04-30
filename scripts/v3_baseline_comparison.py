@@ -33,7 +33,10 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import (
-    CB_FEATURES, CAT_FEATURES, _warm_mask, load_data, prepare_features,
+    CAT_FEATURES,
+    _warm_mask,
+    load_data,
+    prepare_features,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

@@ -26,7 +26,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -60,7 +59,11 @@ def _apply_cell_calibration(
 ) -> np.ndarray:
     """primary_predictor.py 와 동일하게 cell factor 적용 — _eval_helpers wrapper."""
     from visionai.price_engine._eval_helpers import (
-        apply_cell_calibration as _ac, cell_keys, derive_target_market,
+        apply_cell_calibration as _ac,
+    )
+    from visionai.price_engine._eval_helpers import (
+        cell_keys,
+        derive_target_market,
     )
     target_market = derive_target_market(is_krw)
     cells = cell_keys(source, target_market)

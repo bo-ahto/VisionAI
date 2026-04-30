@@ -44,8 +44,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import (
-    CB_FEATURES, CAT_FEATURES, _cb_pool, _label_encode_xgb,
-    _warm_mask, load_data, prepare_features,
+    CB_FEATURES,
+    _cb_pool,
+    _label_encode_xgb,
+    _warm_mask,
+    load_data,
+    prepare_features,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -90,7 +94,7 @@ def _build_artist_permutation(
     unique_groups = np.unique(train_groups)
     perm = rng.permutation(unique_groups)
     by_artist: dict[str, list[int]] = {g: [] for g in unique_groups}
-    for i, g in zip(train_idx, train_groups):
+    for i, g in zip(train_idx, train_groups, strict=False):
         by_artist[g].append(int(i))
     return [np.array(by_artist[g], dtype=np.int64) for g in perm]
 
@@ -486,7 +490,7 @@ def main() -> None:
     print(f"\n{'Fraction':>9} {'n_train (avg)':>14} {'Cold MdAPE':>12} {'Cold W30':>10} "
           f"{'Warm MdAPE':>12} {'Warm W30':>10}")
     print("-" * 90)
-    for cr, wr in zip(cold_results, warm_results):
+    for cr, wr in zip(cold_results, warm_results, strict=False):
         print(f"{cr['fraction']:>9.2f} {cr['n_train_per_fold_mean']:>14,.0f} "
               f"{cr['ensemble']['MdAPE']:>11.2f}% {cr['ensemble']['W30']:>9.2f}% "
               f"{wr['ensemble']['MdAPE']:>11.2f}% {wr['ensemble']['W30']:>9.2f}%")

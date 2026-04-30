@@ -16,7 +16,7 @@ Production routing 정합 기준 (`primary_predictor.py:328-371`):
 """
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 import numpy as np
 import pandas as pd
@@ -70,7 +70,7 @@ def cell_key(source: str, target_market: str) -> str:
 
 def cell_keys(source: np.ndarray, target_market: np.ndarray) -> np.ndarray:
     """벡터화 cell key. 학습/진단용."""
-    return np.array([f"{s}_{t}" for s, t in zip(source, target_market)])
+    return np.array([f"{s}_{t}" for s, t in zip(source, target_market, strict=False)])
 
 
 def apply_cell_calibration(
@@ -83,15 +83,15 @@ def apply_cell_calibration(
     """Cell 기반 multiplicative calibration. server `primary_predictor.py:359-373` 정합.
 
     Args:
-        pred_price: KRW 가격 array (n,) — exp 후 가격 단위.
-        cell: cell key array (n,) — `cell_keys()` 결과.
-        factors: dict of cell → factor (e.g. {"artsy_online": 0.9426}).
+        pred_price: KRW 가격 array (n,) - exp 후 가격 단위.
+        cell: cell key array (n,) - `cell_keys()` 결과.
+        factors: dict of cell -> factor (e.g. {"artsy_online": 0.9426}).
                  cell 미존재 시 factor=1.0 (변경 없음).
-        only_mask: optional boolean mask — True 행만 보정 (e.g. cold path 만 적용
+        only_mask: optional boolean mask - True 행만 보정 (e.g. cold path 만 적용
                    하고 싶을 때). None 이면 모든 행에 적용.
 
     Returns:
-        보정된 가격 array (n,) — 입력 dtype 보존.
+        보정된 가격 array (n,) - 입력 dtype 보존.
     """
     out = pred_price.copy()
     for k, f in factors.items():
@@ -129,7 +129,7 @@ def normalize_categoricals(
 # ─── XGBoost label encoding ─────────────────────────────────────────────
 
 
-def label_encode_xgb(
+def label_encode_xgb(  # (sklearn 관례: X_train, X_test capitalization)
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
     *,
