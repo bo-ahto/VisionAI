@@ -1,0 +1,250 @@
+{
+  "config": {
+    "loo_n": 10,
+    "rng_seed": 42,
+    "warm_min_count": 5,
+    "evaluation": "production routing (warm=XGB / cold=CB+cell calibration)",
+    "baseline_cold_full_groupkfold": 38.28973677147977,
+    "baseline_warm_full_kfold": 9.701765452424613,
+    "interpretation": "각 갤러리를 학습에서 제외 후 그 갤러리 작품 예측. baseline (full OOF) 보다 MdAPE가 크게 악화되면 모델이 갤러리별 패턴에 과도하게 의존했다는 신호. MdAPE가 비슷하면 새 갤러리에도 일반화 가능. Scope: top-10 Artsy 갤러리 (거래량 ~60% 차지) 한정 — 66개 전체 일반화 결론으로 확장 금지. Warm 비교 caveat: baseline warm 9.7%는 KFold이고 이번 LOO warm은 '같은 작가라도 해당 갤러리 작품은 전부 제거된 더 어려운 과제'라 직접 apples-to-apples 비교 아님. 정확한 해석: warm cross-gallery transfer가 baseline warm보다 훨씬 어려움 (18.9%p vs 9.7%).",
+    "acceptance_gate": {
+      "type": "SOFT (observe-and-report)",
+      "result": "SOFT PASS",
+      "framing": "평균 cold 성능은 baseline 대비 큰 붕괴 없음 (+1.56%p) — 새 갤러리 cold 일반화는 대체로 유지. 단, 갤러리별 분산 12.25%p 큼, Art Spoon (67.85%) 같은 실패 사례 존재. 운영 gate가 아니라 관찰/리포트용 진단으로 해석. Art Spoon outlier (cold 651/659): 새 갤러리 cold transfer failure 사례 — v3.1 후속 분석 권고."
+    }
+  },
+  "per_gallery": [
+    {
+      "gallery": "Art Spoon",
+      "n_total": 659,
+      "n_warm": 8,
+      "n_cold": 651,
+      "n_train": 27717,
+      "train_seconds": 18.489471912384033,
+      "overall": {
+        "MdAPE": 66.93917886404846,
+        "W30": 25.341426403641883
+      },
+      "warm": {
+        "MdAPE": 5.241248850291196,
+        "W30": 100.0,
+        "n": 8
+      },
+      "cold": {
+        "MdAPE": 67.85228537374151,
+        "W30": 24.42396313364055,
+        "n": 651
+      }
+    },
+    {
+      "gallery": "Gallery Grimson",
+      "n_total": 574,
+      "n_warm": 8,
+      "n_cold": 566,
+      "n_train": 27802,
+      "train_seconds": 18.384818077087402,
+      "overall": {
+        "MdAPE": 39.60925601560371,
+        "W30": 43.90243902439025
+      },
+      "warm": {
+        "MdAPE": 18.945447781742082,
+        "W30": 100.0,
+        "n": 8
+      },
+      "cold": {
+        "MdAPE": 40.38847543234916,
+        "W30": 43.109540636042404,
+        "n": 566
+      }
+    },
+    {
+      "gallery": "Suppoment Gallery",
+      "n_total": 550,
+      "n_warm": 0,
+      "n_cold": 550,
+      "n_train": 27826,
+      "train_seconds": 18.214407920837402,
+      "overall": {
+        "MdAPE": 42.98887392093575,
+        "W30": 32.54545454545455
+      },
+      "warm": {
+        "MdAPE": null,
+        "W30": null,
+        "n": 0
+      },
+      "cold": {
+        "MdAPE": 42.98887392093575,
+        "W30": 32.54545454545455,
+        "n": 550
+      }
+    },
+    {
+      "gallery": "Kimreeaa Gallery",
+      "n_total": 507,
+      "n_warm": 35,
+      "n_cold": 472,
+      "n_train": 27869,
+      "train_seconds": 19.55969476699829,
+      "overall": {
+        "MdAPE": 44.6890198738292,
+        "W30": 33.72781065088758
+      },
+      "warm": {
+        "MdAPE": 31.244769120589446,
+        "W30": 48.57142857142857,
+        "n": 35
+      },
+      "cold": {
+        "MdAPE": 48.516636160271595,
+        "W30": 32.6271186440678,
+        "n": 472
+      }
+    },
+    {
+      "gallery": "Keumsan Gallery",
+      "n_total": 485,
+      "n_warm": 19,
+      "n_cold": 466,
+      "n_train": 27891,
+      "train_seconds": 17.690712928771973,
+      "overall": {
+        "MdAPE": 27.087872766576325,
+        "W30": 56.90721649484536
+      },
+      "warm": {
+        "MdAPE": 25.917353085453556,
+        "W30": 73.68421052631578,
+        "n": 19
+      },
+      "cold": {
+        "MdAPE": 27.547592312552283,
+        "W30": 56.22317596566524,
+        "n": 466
+      }
+    },
+    {
+      "gallery": "The Trinity Gallery",
+      "n_total": 465,
+      "n_warm": 15,
+      "n_cold": 450,
+      "n_train": 27911,
+      "train_seconds": 17.95587396621704,
+      "overall": {
+        "MdAPE": 40.37945147674,
+        "W30": 29.677419354838708
+      },
+      "warm": {
+        "MdAPE": 25.860152902315527,
+        "W30": 60.0,
+        "n": 15
+      },
+      "cold": {
+        "MdAPE": 40.78685099369802,
+        "W30": 28.666666666666668,
+        "n": 450
+      }
+    },
+    {
+      "gallery": "MOOWOOSOO Gallery",
+      "n_total": 365,
+      "n_warm": 2,
+      "n_cold": 363,
+      "n_train": 28011,
+      "train_seconds": 18.05621600151062,
+      "overall": {
+        "MdAPE": 38.836322257422104,
+        "W30": 38.9041095890411
+      },
+      "warm": {
+        "MdAPE": 37.662512699249284,
+        "W30": 50.0,
+        "n": 2
+      },
+      "cold": {
+        "MdAPE": 38.836322257422104,
+        "W30": 38.84297520661157,
+        "n": 363
+      }
+    },
+    {
+      "gallery": "Objecthood",
+      "n_total": 271,
+      "n_warm": 65,
+      "n_cold": 206,
+      "n_train": 28105,
+      "train_seconds": 18.166691064834595,
+      "overall": {
+        "MdAPE": 15.296308921472829,
+        "W30": 71.95571955719558
+      },
+      "warm": {
+        "MdAPE": 8.28759246897548,
+        "W30": 96.92307692307692,
+        "n": 65
+      },
+      "cold": {
+        "MdAPE": 19.403594496210097,
+        "W30": 64.07766990291263,
+        "n": 206
+      }
+    },
+    {
+      "gallery": "Art in Dongsan",
+      "n_total": 250,
+      "n_warm": 1,
+      "n_cold": 249,
+      "n_train": 28126,
+      "train_seconds": 18.10979986190796,
+      "overall": {
+        "MdAPE": 32.14966994880004,
+        "W30": 45.2
+      },
+      "warm": {
+        "MdAPE": 3.043577673736216,
+        "W30": 100.0,
+        "n": 1
+      },
+      "cold": {
+        "MdAPE": 32.14966994880004,
+        "W30": 44.97991967871486,
+        "n": 249
+      }
+    },
+    {
+      "gallery": "GalleryMEME",
+      "n_total": 239,
+      "n_warm": 11,
+      "n_cold": 228,
+      "n_train": 28137,
+      "train_seconds": 18.07831597328186,
+      "overall": {
+        "MdAPE": 38.9883505917226,
+        "W30": 35.98326359832636
+      },
+      "warm": {
+        "MdAPE": 13.861913477877383,
+        "W30": 90.9090909090909,
+        "n": 11
+      },
+      "cold": {
+        "MdAPE": 39.99523106442273,
+        "W30": 33.33333333333333,
+        "n": 228
+      }
+    }
+  ],
+  "aggregate": {
+    "n_galleries": 10,
+    "overall_mdape_mean": 38.696430463715096,
+    "overall_mdape_std": 12.573559585132957,
+    "overall_mdape_min": 15.296308921472829,
+    "overall_mdape_max": 66.93917886404846,
+    "cold_mdape_mean": 39.84655319604033,
+    "cold_mdape_std": 12.24747759829935,
+    "warm_mdape_mean": 18.896063117803354,
+    "warm_mdape_std": 11.441188883234435
+  },
+  "wall_seconds_total": 182.84866428375244
+}

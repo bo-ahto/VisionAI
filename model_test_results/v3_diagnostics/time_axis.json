@@ -1,0 +1,168 @@
+{
+  "config": {
+    "purpose": "Temporal-feasibility limitation report + Artsy year_made cohort/age observational stratification. (파일명에 'time_axis'가 들어 있으나 실제 분석은 market-time holdout이 아닌 cohort stratification — limitation 첫 항목 참조)",
+    "method": "production routing OOF 예측 (warm=XGB / cold=CB+cell calibration)을 Artsy year_made 버킷으로 stratify. 진정한 temporal holdout 아님 — GroupKFold는 작가 단위 split, time split 아님. year_made = 작품 제작연도 (cohort/age). listing/sale time과 무관.",
+    "year_window": [
+      2000,
+      2026
+    ],
+    "limitations": [
+      "year_made 자체가 listing/sale time proxy 아님 — 작품 제작연도. 본 분석은 market-time stability가 아니라 cohort/age stratification.",
+      "Saatchi (74%, n=21,087): year_made / 게시일 / 거래일 컬럼 없음 — temporal eval 불가",
+      "Artsy year_made: 99.2% 가용 (정제 후 7,166 valid, 65 dirty 제외, range guard ≥2000 ≤2026)",
+      "artwork_id ObjectId timestamp는 crawl 시점 — 가격 형성 시점과 무관",
+      "현재 OOF는 GroupKFold (artist split) — 작가별 cold-start 시뮬은 맞으나 time drift 시뮬 아님",
+      "→ 진정한 temporal eval은 v3.1에서 가격 시점 (listing_date / sold_date) 컬럼 신규 수집 후 가능"
+    ],
+    "acceptance_gate": "SOFT (limitation report) — 1.10은 평가 가능 범위와 후속 작업 식별이 목표",
+    "metric_note": "MdAPE 표는 production-routed OOF 기준 (warm artist 행은 XGB, cold artist 행은 CB+cell calibration). 'cold MdAPE'는 별도 per_year_artsy_warm_cold_split에서 warm/cold 분리 결과로만 보고.",
+    "title_clarification": "이 산출물의 본질은 '진정한 temporal evaluation의 가능 범위 점검 + Artsy 제작연도 cohort 관찰'이며, market-time stability를 평가하지 않는다. v3.1에서 listing/sale time 컬럼 신규 수집 후 정식 temporal holdout 가능."
+  },
+  "data_coverage": {
+    "total": 28376,
+    "artsy_total": 7289,
+    "saatchi_total": 21087,
+    "artsy_with_valid_year": 7166,
+    "artsy_with_valid_year_pct": 98.31252572369323,
+    "saatchi_with_year_made": 0,
+    "year_made_dirty_values_excluded": 65
+  },
+  "per_year_artsy_overall": [
+    {
+      "bucket": "2000-2014",
+      "n": 146,
+      "MdAPE": 15.774529165763951,
+      "W30": 73.28767123287672
+    },
+    {
+      "bucket": "2015-2019",
+      "n": 508,
+      "MdAPE": 10.123955450476881,
+      "W30": 79.7244094488189
+    },
+    {
+      "bucket": "2020",
+      "n": 220,
+      "MdAPE": 8.106190387082618,
+      "W30": 79.54545454545455
+    },
+    {
+      "bucket": "2021",
+      "n": 440,
+      "MdAPE": 8.184771940283065,
+      "W30": 81.5909090909091
+    },
+    {
+      "bucket": "2022",
+      "n": 736,
+      "MdAPE": 11.3675379238816,
+      "W30": 77.44565217391305
+    },
+    {
+      "bucket": "2023",
+      "n": 1122,
+      "MdAPE": 7.9453647568867245,
+      "W30": 85.11586452762924
+    },
+    {
+      "bucket": "2024",
+      "n": 1679,
+      "MdAPE": 8.9518966902244,
+      "W30": 83.97855866587254
+    },
+    {
+      "bucket": "2025-2026",
+      "n": 2315,
+      "MdAPE": 9.790685029642374,
+      "W30": 81.33909287257019
+    }
+  ],
+  "per_year_artsy_warm_cold_split": [
+    {
+      "bucket": "2000-2014",
+      "n_total": 146,
+      "n_warm": 121,
+      "n_cold": 25,
+      "overall_MdAPE": 15.774529165763951,
+      "warm_MdAPE": 11.590498279320432,
+      "cold_MdAPE": 69.42629216091416
+    },
+    {
+      "bucket": "2015-2019",
+      "n_total": 508,
+      "n_warm": 464,
+      "n_cold": 44,
+      "overall_MdAPE": 10.123955450476881,
+      "warm_MdAPE": 8.231319201675657,
+      "cold_MdAPE": 44.96715264776966
+    },
+    {
+      "bucket": "2020",
+      "n_total": 220,
+      "n_warm": 204,
+      "n_cold": 16,
+      "overall_MdAPE": 8.106190387082618,
+      "warm_MdAPE": 6.434997663172533,
+      "cold_MdAPE": 32.22694566185999
+    },
+    {
+      "bucket": "2021",
+      "n_total": 440,
+      "n_warm": 407,
+      "n_cold": 33,
+      "overall_MdAPE": 8.184771940283065,
+      "warm_MdAPE": 7.207962564543662,
+      "cold_MdAPE": 34.16533443038139
+    },
+    {
+      "bucket": "2022",
+      "n_total": 736,
+      "n_warm": 666,
+      "n_cold": 70,
+      "overall_MdAPE": 11.3675379238816,
+      "warm_MdAPE": 10.169966486267896,
+      "cold_MdAPE": 46.27080289576527
+    },
+    {
+      "bucket": "2023",
+      "n_total": 1122,
+      "n_warm": 1038,
+      "n_cold": 84,
+      "overall_MdAPE": 7.9453647568867245,
+      "warm_MdAPE": 7.049006202810474,
+      "cold_MdAPE": 35.24548498491006
+    },
+    {
+      "bucket": "2024",
+      "n_total": 1679,
+      "n_warm": 1544,
+      "n_cold": 135,
+      "overall_MdAPE": 8.9518966902244,
+      "warm_MdAPE": 7.980083713834875,
+      "cold_MdAPE": 38.21550597095655
+    },
+    {
+      "bucket": "2025-2026",
+      "n_total": 2315,
+      "n_warm": 2079,
+      "n_cold": 236,
+      "overall_MdAPE": 9.790685029642374,
+      "warm_MdAPE": 8.728862764471863,
+      "cold_MdAPE": 36.84899374335214
+    }
+  ],
+  "spread_overall": {
+    "min": 7.9453647568867245,
+    "max": 15.774529165763951,
+    "range_pp": 7.829164408877227,
+    "std": 2.4358940899230244,
+    "artsy_baseline_mdape": 9.495433989402319
+  },
+  "v31_followup": [
+    "listing_date / sold_date / first_seen_date 같은 time-aware 컬럼 신규 수집 (Artsy + Saatchi)",
+    "수집 후 temporal holdout (year T 이전 train / year T 이후 test) 정식 평가",
+    "ObjectId crawl timestamp 기반 data freshness drift 모니터링 (Saatchi 한정)",
+    "year_made dirty value (4800 등) 클렌징 — Group 5 데이터 클렌징과 연계",
+    "Bucket별 composition audit (medium / gallery / price band / warm-cold 비중) — 2021/2023 연도 변동이 시간 효과인지 mix shift인지 분리"
+  ]
+}

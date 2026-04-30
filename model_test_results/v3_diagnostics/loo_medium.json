@@ -1,0 +1,186 @@
+{
+  "config": {
+    "loo_n": 7,
+    "rng_seed": 42,
+    "warm_min_count": 5,
+    "evaluation": "production routing (warm=XGB / cold=CB+cell calibration)",
+    "baseline_cold_full_groupkfold": 38.28973677147977,
+    "baseline_warm_full_kfold": 9.701765452424613,
+    "interpretation": "각 medium_category를 학습에서 제외 후 그 매체 작품 예측. baseline (full OOF) 보다 MdAPE가 크게 악화되면 모델이 매체별 패턴에 과도하게 의존했다는 신호. Scope: top-N 매체 (~98% 작품 커버) 한정. Warm 비교 caveat: baseline warm 9.7%는 KFold이고 LOO warm은 '같은 작가라도 해당 매체 작품은 전부 제거된 더 어려운 과제'라 apples-to-apples 비교 아님.",
+    "acceptance_gate": "SOFT (observe-and-report) — 운영 gate 아닌 관찰/리포트용 진단",
+    "result_summary": {
+      "cold_generalization": "stable — mean +1.37%p (baseline 38.29% → LOO 39.66%), std 4.17%p (1.8 gallery std 12.25%p의 1/3 수준)",
+      "warm_caveat": "Warm baseline 9.7%는 KFold이고 LOO warm은 같은 작가라도 해당 매체 작품 전부 제거된 더 어려운 과제 — apples-to-apples 비교 아님. 정확한 framing: '매체 제거는 warm에 더 harsh한 평가 과제'. '1.9 vs 1.8 warm 비교'도 같은 이유로 강한 비교 문구 회피.",
+      "outlier_observations": "oil cold 37.41% / mixed cold 31.80% — baseline 보다 약간 better 또는 비슷. 정확한 해석은 v3.1 medium feature ablation (drop importance / permutation) 후속 검증 권고.",
+      "acceptance_gate_result": "SOFT PASS (strong) — cold mean 소폭 악화 + variance 낮음, 운영 gate 아닌 관찰/리포트용 진단"
+    }
+  },
+  "per_medium": [
+    {
+      "medium": "acrylic",
+      "n_total": 12154,
+      "n_warm": 4005,
+      "n_cold": 8149,
+      "n_train": 16222,
+      "train_seconds": 16.27607035636902,
+      "overall": {
+        "MdAPE": 37.380623520864496,
+        "W30": 41.53365147276617
+      },
+      "warm": {
+        "MdAPE": 26.82381898779196,
+        "W30": 52.90886392009988,
+        "n": 4005
+      },
+      "cold": {
+        "MdAPE": 41.455564597720695,
+        "W30": 35.94306049822064,
+        "n": 8149
+      }
+    },
+    {
+      "medium": "oil",
+      "n_total": 11179,
+      "n_warm": 4576,
+      "n_cold": 6603,
+      "n_train": 17197,
+      "train_seconds": 15.947611093521118,
+      "overall": {
+        "MdAPE": 35.25985526446374,
+        "W30": 43.81429465962966
+      },
+      "warm": {
+        "MdAPE": 32.49130591618404,
+        "W30": 46.96241258741259,
+        "n": 4576
+      },
+      "cold": {
+        "MdAPE": 37.41071437544895,
+        "W30": 41.63259124640315,
+        "n": 6603
+      }
+    },
+    {
+      "medium": "ink",
+      "n_total": 1497,
+      "n_warm": 730,
+      "n_cold": 767,
+      "n_train": 26879,
+      "train_seconds": 17.818297863006592,
+      "overall": {
+        "MdAPE": 26.43060279855991,
+        "W30": 55.845023380093515
+      },
+      "warm": {
+        "MdAPE": 15.413518578414706,
+        "W30": 72.32876712328768,
+        "n": 730
+      },
+      "cold": {
+        "MdAPE": 38.125304288036126,
+        "W30": 40.15645371577575,
+        "n": 767
+      }
+    },
+    {
+      "medium": "watercolor",
+      "n_total": 1235,
+      "n_warm": 842,
+      "n_cold": 393,
+      "n_train": 27141,
+      "train_seconds": 18.317200183868408,
+      "overall": {
+        "MdAPE": 32.60934263786768,
+        "W30": 47.20647773279352
+      },
+      "warm": {
+        "MdAPE": 25.946924825879847,
+        "W30": 54.156769596199524,
+        "n": 842
+      },
+      "cold": {
+        "MdAPE": 41.430263029836354,
+        "W30": 32.31552162849873,
+        "n": 393
+      }
+    },
+    {
+      "medium": "other",
+      "n_total": 1144,
+      "n_warm": 503,
+      "n_cold": 641,
+      "n_train": 27232,
+      "train_seconds": 19.020639896392822,
+      "overall": {
+        "MdAPE": 31.979012621836993,
+        "W30": 46.41608391608392
+      },
+      "warm": {
+        "MdAPE": 24.201243997306012,
+        "W30": 59.64214711729622,
+        "n": 503
+      },
+      "cold": {
+        "MdAPE": 46.26079359906646,
+        "W30": 36.037441497659906,
+        "n": 641
+      }
+    },
+    {
+      "medium": "mixed",
+      "n_total": 716,
+      "n_warm": 213,
+      "n_cold": 503,
+      "n_train": 27660,
+      "train_seconds": 19.020774126052856,
+      "overall": {
+        "MdAPE": 29.28564815550977,
+        "W30": 50.977653631284916
+      },
+      "warm": {
+        "MdAPE": 25.4689170288694,
+        "W30": 60.56338028169014,
+        "n": 213
+      },
+      "cold": {
+        "MdAPE": 31.79527141958836,
+        "W30": 46.91848906560636,
+        "n": 503
+      }
+    },
+    {
+      "medium": "pigment",
+      "n_total": 368,
+      "n_warm": 88,
+      "n_cold": 280,
+      "n_train": 28008,
+      "train_seconds": 18.44109082221985,
+      "overall": {
+        "MdAPE": 32.84765213723033,
+        "W30": 44.02173913043478
+      },
+      "warm": {
+        "MdAPE": 13.499211835965175,
+        "W30": 72.72727272727273,
+        "n": 88
+      },
+      "cold": {
+        "MdAPE": 41.17221524921069,
+        "W30": 35.0,
+        "n": 280
+      }
+    }
+  ],
+  "aggregate": {
+    "n_media": 7,
+    "overall_mdape_mean": 32.25610530519042,
+    "overall_mdape_std": 3.350794799453632,
+    "overall_mdape_min": 26.43060279855991,
+    "overall_mdape_max": 37.380623520864496,
+    "cold_mdape_mean": 39.66430379412966,
+    "cold_mdape_std": 4.165908531520791,
+    "warm_mdape_mean": 23.406420167201592,
+    "warm_mdape_std": 6.18284283485525
+  },
+  "wall_seconds_total": 125.16611003875732
+}
