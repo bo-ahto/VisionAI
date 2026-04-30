@@ -215,7 +215,16 @@ def main() -> None:
 
     summary = {
         "config": {
-            "purpose": "time-axis evaluation feasibility + observational year_made cohort stratification (Artsy only)",
+            "purpose": (
+                "Temporal-feasibility limitation report + Artsy year_made cohort/age "
+                "observational stratification. (파일명에 'time_axis'가 들어 있으나 실제 분석은 "
+                "market-time holdout이 아닌 cohort stratification — limitation 첫 항목 참조)"
+            ),
+            "title_clarification": (
+                "이 산출물의 본질은 '진정한 temporal evaluation의 가능 범위 점검 + Artsy 제작연도 "
+                "cohort 관찰'이며, market-time stability를 평가하지 않는다. v3.1에서 listing/sale "
+                "time 컬럼 신규 수집 후 정식 temporal holdout 가능."
+            ),
             "method": (
                 "production routing OOF 예측 (warm=XGB / cold=CB+cell calibration)을 "
                 "Artsy year_made 버킷으로 stratify. 진정한 temporal holdout 아님 — "

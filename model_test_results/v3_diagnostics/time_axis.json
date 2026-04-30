@@ -1,6 +1,7 @@
 {
   "config": {
     "purpose": "Temporal-feasibility limitation report + Artsy year_made cohort/age observational stratification. (파일명에 'time_axis'가 들어 있으나 실제 분석은 market-time holdout이 아닌 cohort stratification — limitation 첫 항목 참조)",
+    "title_clarification": "이 산출물의 본질은 '진정한 temporal evaluation의 가능 범위 점검 + Artsy 제작연도 cohort 관찰'이며, market-time stability를 평가하지 않는다. v3.1에서 listing/sale time 컬럼 신규 수집 후 정식 temporal holdout 가능.",
     "method": "production routing OOF 예측 (warm=XGB / cold=CB+cell calibration)을 Artsy year_made 버킷으로 stratify. 진정한 temporal holdout 아님 — GroupKFold는 작가 단위 split, time split 아님. year_made = 작품 제작연도 (cohort/age). listing/sale time과 무관.",
     "year_window": [
       2000,
@@ -15,8 +16,7 @@
       "→ 진정한 temporal eval은 v3.1에서 가격 시점 (listing_date / sold_date) 컬럼 신규 수집 후 가능"
     ],
     "acceptance_gate": "SOFT (limitation report) — 1.10은 평가 가능 범위와 후속 작업 식별이 목표",
-    "metric_note": "MdAPE 표는 production-routed OOF 기준 (warm artist 행은 XGB, cold artist 행은 CB+cell calibration). 'cold MdAPE'는 별도 per_year_artsy_warm_cold_split에서 warm/cold 분리 결과로만 보고.",
-    "title_clarification": "이 산출물의 본질은 '진정한 temporal evaluation의 가능 범위 점검 + Artsy 제작연도 cohort 관찰'이며, market-time stability를 평가하지 않는다. v3.1에서 listing/sale time 컬럼 신규 수집 후 정식 temporal holdout 가능."
+    "metric_note": "MdAPE 표는 production-routed OOF 기준 (warm artist 행은 XGB, cold artist 행은 CB+cell calibration). 'cold MdAPE'는 별도 per_year_artsy_warm_cold_split에서 warm/cold 분리 결과로만 보고."
   },
   "data_coverage": {
     "total": 28376,
