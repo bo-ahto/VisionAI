@@ -17,6 +17,7 @@ Production routing 정합 기준 (`primary_predictor.py:328-371`):
 from __future__ import annotations
 
 from collections.abc import Iterable
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -165,7 +166,7 @@ def label_encode_xgb(  # (sklearn 관례: X_train, X_test capitalization)
 # ─── OOF artifact loading ──────────────────────────────────────────────
 
 
-def load_oof_predictions(npz_path) -> dict[str, np.ndarray]:
+def load_oof_predictions(npz_path: str | Path) -> dict[str, np.ndarray]:
     """oof_predictions.npz 로드 helper (load_data 와 정합 검증 caller 책임).
 
     Args:
