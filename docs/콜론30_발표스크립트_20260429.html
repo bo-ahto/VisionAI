@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1차 시장 가격 예측 모델 — 발표 스크립트</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --paper: #ffffff;
+    --text: #1f2328;
+    --muted: #6e7781;
+    --border: #d1d5da;
+    --border-light: #eaeef2;
+    --accent: #0969da;
+    --good: #1a7f37;
+    --warn: #bf8700;
+    --bad: #cf222e;
+    --speaker-bg: #fff8e7;
+    --speaker-border: #d4a72c;
+    --quote-bg: #ddf4ff;
+    --quote-border: #0969da;
+    --formula-bg: #f6f8fa;
+    --tip-bg: #ddf5e0;
+    --tip-border: #1a7f37;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Apple SD Gothic Neo", "Pretendard",
+                 BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    line-height: 1.85;
+    color: var(--text);
+    background: var(--bg);
+    margin: 0;
+    padding: 40px 20px;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    background: var(--paper);
+    padding: 50px 60px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .toc {
+    background: var(--formula-bg);
+    border: 1px solid var(--border-light);
+    padding: 16px 20px;
+    border-radius: 6px;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  .toc strong { color: var(--accent); }
+  .toc ol { margin: 8px 0 0 20px; padding: 0; }
+  .toc li { margin: 4px 0; color: var(--muted); }
+  .toc li strong { color: var(--text); }
+  h2 {
+    font-size: 22px;
+    margin: 56px 0 16px;
+    padding: 8px 0 8px 16px;
+    border-left: 4px solid var(--accent);
+    background: var(--formula-bg);
+  }
+  h3 { font-size: 17px; margin: 28px 0 12px; font-weight: 600; }
+  h4 { font-size: 15px; margin: 20px 0 8px; color: var(--muted); font-weight: 600; }
+  .timing {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .speaker {
+    background: var(--speaker-bg);
+    border-left: 4px solid var(--speaker-border);
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 4px;
+  }
+  .speaker .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .speaker p { margin: 4px 0; }
+  .tip {
+    background: var(--tip-bg);
+    border-left: 4px solid var(--tip-border);
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .tip .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--good);
+    margin-bottom: 4px;
+  }
+  .quote {
+    background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border);
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 4px;
+    font-style: italic;
+    color: var(--accent);
+  }
+  .visual-cue {
+    background: #f6f0ff;
+    border: 1px dashed #8250df;
+    padding: 8px 14px;
+    margin: 12px 0;
+    border-radius: 4px;
+    color: #6f42c1;
+    font-size: 13px;
+  }
+  .visual-cue::before { content: "📊 시각자료: "; font-weight: 700; }
+  .formula {
+    background: var(--formula-bg);
+    border: 1px solid var(--border-light);
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-radius: 4px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .formula .label {
+    font-family: -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid var(--border-light);
+  }
+  th { background: var(--formula-bg); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.center, th.center { text-align: center; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  .stage {
+    border: 1px solid var(--border-light);
+    padding: 16px 20px;
+    margin: 12px 0;
+    border-radius: 6px;
+  }
+  .stage .stage-num {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-weight: 700;
+    font-size: 14px;
+    margin-right: 8px;
+  }
+  .stage h4 { display: inline; margin: 0; color: var(--text); }
+  .qa-item {
+    border-left: 3px solid var(--border);
+    padding: 8px 14px;
+    margin: 10px 0;
+    background: var(--formula-bg);
+  }
+  .qa-item .q { font-weight: 600; color: var(--accent); }
+  .qa-item .a { color: var(--text); margin-top: 4px; }
+  hr { border: none; border-top: 1px solid var(--border-light); margin: 40px 0; }
+  .neg { color: var(--bad); font-weight: 600; }
+  .pos { color: var(--good); font-weight: 600; }
+  .zero { color: var(--muted); }
+  .footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-light);
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .key-stat {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>1차 시장 작품 가격 예측 모델 — 전반 설명</h1>
+<div class="subtitle">콜론30 미팅용 발표 스크립트</div>
+<div class="meta">
+  작성일: 2026-04-29 · 예상 발표 시간: 약 35~40분 · 대상 청중: 비개발자
+</div>
+
+<!-- ─── 발표 개요 ─────────────────────────────────────── -->
+
+<div class="speaker">
+  <div class="label">📌 발표자 사전 안내</div>
+  <p>이 스크립트는 <strong>1차 시장 가격 예측 모델 전체</strong>를 비개발자에게 30~40분에 설명하는 용도입니다. 흐름은:</p>
+  <p>① 모델이 무엇을 하는가 → ② 무엇으로 학습했는가 → ③ 모델이 보는 입력은 → ④ 어떻게 예측하는가(라우팅) → ⑤ 후처리(등급·마진·보정) → ⑥ 얼마나 정확한가 → ⑦ 최근 개선 사항(v1→v2) → ⑧ 콜론30 검증 의문 두 가지 → ⑨ 한계와 다음 단계</p>
+  <p>각 섹션 좌측 노란 박스(<strong>📌 발표자 노트</strong>)는 청중에게 보여주지 않고 발표자만 보는 메모입니다. 본문(질문/표/공식)은 청중과 함께 보면서 진행하시면 됩니다.</p>
+</div>
+
+<div class="toc">
+  <strong>📋 목차 (총 9개 섹션, 약 35~40분)</strong>
+  <ol>
+    <li><strong>여는 말</strong> — 모델의 목적·대상·1차 시장이란 (3분)</li>
+    <li><strong>학습 데이터</strong> — Artsy와 Saatchi (4분)</li>
+    <li><strong>모델 입력</strong> — 32개 피처를 4그룹으로 (5분)</li>
+    <li><strong>예측 방식</strong> — 두 모델로 라우팅 (5분)</li>
+    <li><strong>후처리</strong> — 신뢰도 등급·마진·셀 보정 (4분)</li>
+    <li><strong>성능</strong> — 얼마나 정확한가 (4분)</li>
+    <li><strong>v1 → v2 핵심 개선</strong> — 4건의 PR (5분)</li>
+    <li><strong>콜론30 검증 의문 두 가지</strong> — 출처 효과 + 보정 방식 (5분)</li>
+    <li><strong>한계와 다음 단계</strong> — 협조 필요 사항 (3분)</li>
+  </ol>
+</div>
+
+<hr>
+
+<!-- ─── 1. 여는 말 ────────────────────────────────────── -->
+
+<h2>1. 여는 말 — 모델이 무엇을 하는가<span class="timing">3분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>가벼운 인사 후, "이 모델이 뭐 하는 모델인지"부터 명확히 정의하세요. "1차 시장"이라는 용어가 청중에게 익숙하지 않을 수 있으니 비유로 풀어주세요.</p>
+</div>
+
+<p>오늘 설명드릴 모델은 <strong>한국 미술 1차 시장 작품의 판매 가격을 예측하는 AI 모델</strong>입니다. 한 마디로:</p>
+
+<div class="quote">
+  <p>작품 정보(작가·크기·재료·갤러리 등)를 입력하면 <strong>그 작품이 갤러리·온라인에서 얼마에 팔릴지 예측가를 산출</strong>하는 모델입니다.</p>
+</div>
+
+<h3>1.1 "1차 시장"이란?</h3>
+
+<p>미술 시장은 두 단계로 나눠집니다.</p>
+
+<table>
+<thead><tr><th>구분</th><th>의미</th><th>예시</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>1차 시장</strong></td>
+  <td>작가가 처음 작품을 시장에 내놓는 단계. 갤러리·온라인 마켓에서의 <strong>판매 호가</strong>.</td>
+  <td>갤러리 전시 가격표, Saatchi 작가 직판 가격</td>
+</tr>
+<tr>
+  <td>2차 시장</td>
+  <td>한 번 거래된 작품이 다시 거래되는 단계. 경매·재판매·딜러 거래 등이 포함되며, 본 시스템에선 그중 <strong>경매 낙찰가</strong>를 별도 모델로 다룸.</td>
+  <td>서울옥션·K옥션 낙찰가 (별도 모델 B 영역)</td>
+</tr>
+</tbody>
+</table>
+
+<p>오늘 다루는 모델은 <strong>1차 시장 전용 (모델 A)</strong>입니다. 경매 낙찰가는 별도 모델로 운영됩니다.</p>
+
+<h3>1.2 누가 쓰는가</h3>
+
+<ul>
+  <li><strong>갤러리</strong>: 작품 가격 책정 시 참고가</li>
+  <li><strong>컬렉터/구매자</strong>: 적정 가격 검토</li>
+  <li><strong>콜론30 운영팀</strong>: 작가 등록·작품 등록 시 가격 추정 보조</li>
+</ul>
+
+<h3>1.3 한 줄 결과</h3>
+
+<div class="tip">
+  <div class="label">💡 현재 모델 성능</div>
+  <p>학습한 작가의 작품은 <strong>오차 중앙값(MdAPE)</strong> <span class="key-stat">9.7%</span>로 예측합니다 — "절반의 작품을 ±9.7% 이내로 맞춘다"는 뜻. 신규/희소 작가는 <span class="key-stat">38.3%</span>로 떨어지지만, 이는 데이터 양의 한계라 모델만으론 더 줄이기 어렵습니다.</p>
+  <p>의미: 100만원짜리 작품이면 학습된 작가는 절반의 케이스에서 약 90~110만원 범위, 신규 작가는 절반에서 약 62~138만원 범위로 추정됩니다 (나머지 절반은 그 밖).</p>
+</div>
+
+<hr>
+
+<!-- ─── 2. 학습 데이터 ────────────────────────────────── -->
+
+<h2>2. 학습 데이터 — Artsy와 Saatchi<span class="timing">4분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>두 출처의 본질적 차이를 인지시키세요. 비유(쿠팡 vs Etsy)가 매우 효과적입니다. 이 차이가 §3 이후 모델 입력·라우팅·보정 모든 부분에 영향을 줍니다.</p>
+</div>
+
+<p>모델은 두 출처에서 가져온 데이터로 학습했습니다.</p>
+
+<table>
+<thead>
+<tr><th>출처</th><th>플랫폼 정체성</th><th class="num">학습 건수</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Artsy</strong></td>
+  <td>한국 갤러리 <strong>66개의 작품</strong>을 모은 <strong>aggregator</strong> (B2B 갤러리 입점 플랫폼). Artsy 자체가 갤러리는 아님.</td>
+  <td class="num">7,640</td>
+</tr>
+<tr>
+  <td><strong>Saatchi</strong></td>
+  <td>작가가 직접 작품을 올리는 <strong>마켓플레이스</strong> (C2C 직판). Saatchi 자체도 갤러리는 아님.</td>
+  <td class="num">21,721</td>
+</tr>
+<tr>
+  <td colspan="2"><em>합계 (정제 전)</em></td>
+  <td class="num">29,361</td>
+</tr>
+<tr>
+  <td colspan="2"><em>입체/3D 작품 985건 제외 후 학습용</em></td>
+  <td class="num"><strong>28,376</strong></td>
+</tr>
+</tbody>
+</table>
+
+<div class="tip">
+  <div class="label">💡 비유로 이해하기</div>
+  <p><strong>Artsy</strong>는 쿠팡·지마켓 같은 마켓플레이스입니다 — 여러 갤러리(매장)가 입점해서 자기 작품을 올립니다. 가격은 갤러리가 정한 호가.</p>
+  <p><strong>Saatchi</strong>는 Etsy의 미술 버전입니다 — 작가 본인이 자기 작품을 직접 올립니다. 가격도 작가가 자가책정.</p>
+  <p>같은 "온라인 미술 플랫폼"이지만 가격 형성 메커니즘이 다릅니다. 이게 모델이 출처를 입력으로 보는 이유입니다.</p>
+</div>
+
+<h3>2.1 작가 분포</h3>
+
+<table>
+<thead><tr><th>구분</th><th class="num">작가 수</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td>전체 학습 작가</td><td class="num">1,551</td><td>두 출처에 등장한 한국 작가</td></tr>
+<tr><td><strong>warm 작가 (≥5작품)</strong></td><td class="num"><strong>930</strong></td><td>모델이 충분히 학습한 작가</td></tr>
+<tr><td>cold 작가 (1~4작품)</td><td class="num">621</td><td>학습량 부족, 신규 작가 시뮬레이션 대상</td></tr>
+</tbody>
+</table>
+
+<p>작가 학습량 5건이 분기점인 이유는 §4(라우팅)에서 자세히 설명드립니다.</p>
+
+<hr>
+
+<!-- ─── 3. 모델 입력 ──────────────────────────────────── -->
+
+<h2>3. 모델 입력 — 32개 피처를 4그룹으로<span class="timing">5분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>32개 피처를 다 나열하면 청중이 따라오기 어렵습니다. 4그룹으로 묶어서 "각 그룹이 무엇을 잡는가"를 보여주세요. 각 그룹에서 한두 개 대표 피처만 자세히 풀어 설명.</p>
+</div>
+
+<p>모델은 작품 한 점에 대해 <strong>32개 정보</strong>를 입력으로 받습니다. 4가지 그룹으로 나눠 보면 이해하기 쉽습니다.</p>
+
+<table>
+<thead><tr><th>그룹</th><th>피처 수</th><th>대표 피처</th><th>잡으려는 것</th></tr></thead>
+<tbody>
+<tr>
+  <td>① 작품 자체</td>
+  <td class="center">9</td>
+  <td><code>ho</code> (호수), <code>area_cm2</code> (면적), <code>aspect_ratio</code> (비율), <code>support_factor</code> (지지체)</td>
+  <td>크기·형태가 가격에 미치는 영향</td>
+</tr>
+<tr>
+  <td>② 재료·기법</td>
+  <td class="center">6</td>
+  <td><code>support_type</code> (캔버스/종이/패널), <code>medium_category</code> (유화/아크릴/수채), <code>is_unique</code>, <code>is_edition</code></td>
+  <td>재료·원작/에디션 여부의 영향</td>
+</tr>
+<tr>
+  <td>③ 작가</td>
+  <td class="center">6</td>
+  <td><code>artist_birth_year</code>, <code>career_stage</code>, <code>ln_followers</code>, <code>artist_total_works</code></td>
+  <td>작가의 경력·인지도</td>
+</tr>
+<tr>
+  <td>④ 시장·갤러리</td>
+  <td class="center">11</td>
+  <td><code>gallery_tier</code>, <code>has_seoul</code>, <code>is_krw</code>, <code>price_currency</code>, <code>source</code></td>
+  <td>판매 채널·지역·통화·출처</td>
+</tr>
+</tbody>
+</table>
+
+<h3>3.1 핵심 피처 몇 개만 풀어보면</h3>
+
+<div class="stage">
+  <span class="stage-num">①</span><h4><code>ho</code> (호수) — 한국 미술 시장 표준 크기 단위</h4>
+  <p>1호 ≈ 22.7 × 15.8 cm. 50호면 약 116 × 91 cm. 클수록 보통 비쌉니다. 한국 미술 시장에서 가장 표준적인 크기 표기라 중요한 피처입니다.</p>
+</div>
+
+<div class="stage">
+  <span class="stage-num">③</span><h4><code>career_stage</code> — 작가 경력 단계 (연속 0~8 점수)</h4>
+  <p>작가의 활동 경력·전시 이력·미술관 소장 여부 등을 종합한 점수입니다. v1에서는 4단계 정수 분류(신진/중견/원로 식)였지만, v2에서 <strong>연속 점수 0~8</strong>로 재설계했습니다 — 콜론30 피드백 반영. "신진/중견/원로" 같은 시장 통념 라벨은 더 이상 사용하지 않습니다.</p>
+</div>
+
+<div class="stage">
+  <span class="stage-num">④</span><h4><code>gallery_tier</code> — 갤러리 등급 (1~5)</h4>
+  <p>판매 갤러리의 시장 지위(전시 횟수·아트페어 참여·국제 활동 등)를 1~5단계로 분류. tier 1이 최상위. 현재는 default 매핑이 적용되어 있고, <strong>콜론30이 제공한 갤러리 티어 v3 매핑(89개)은 PR #19에서 매칭 분석만 완료된 상태</strong>입니다. 본 학습 데이터에 반영하는 Phase 1B는 콜론30 검수 후 진행 예정.</p>
+</div>
+
+<div class="stage">
+  <span class="stage-num">④</span><h4><code>source</code> — 출처 라벨 (artsy / saatchi)</h4>
+  <p>학습 시점에 데이터 출처를 표시하는 라벨. 모델이 두 플랫폼의 가격 분포 차이를 인지하는 신호. <strong>이 라벨이 결과에 얼마나 영향을 주는지가 콜론30 첫 번째 의문이었고, §8에서 검증 결과를 보여드립니다.</strong></p>
+</div>
+
+<h3>3.2 v2에서 제거된 5개 피처</h3>
+
+<p>v1에는 37개 피처가 있었지만, v2에서 5개를 제거해 32개가 되었습니다. 이유: <strong>학습 시엔 의미 있는 신호였지만 서빙 시점엔 활용 불가능한 피처</strong>들이었습니다.</p>
+
+<table>
+<thead><tr><th>제거된 피처</th><th>제거 이유</th></tr></thead>
+<tbody>
+<tr><td><code>career_age</code></td><td>학습엔 분포가 있는데 서빙은 항상 0 (DB에 컬럼 없음)</td></tr>
+<tr><td><code>work_age</code></td><td>API에 작품 연도 필드 없어 서빙 불가</td></tr>
+<tr><td><code>vintage_premium</code></td><td>work_age 의존</td></tr>
+<tr><td><code>freshness_discount</code></td><td>work_age 의존</td></tr>
+<tr><td><code>gallery_name</code></td><td>학습 vocab 59개인데 서빙은 2개만 사용 → 매번 unseen</td></tr>
+</tbody>
+</table>
+
+<p>이런 "학습/서빙 정합 불일치(drift)"는 정확도 그래프엔 안 잡히지만 production에서 silent하게 해를 끼칩니다. 제거하니 cold MdAPE가 40.6 → 39.4로 오히려 개선됐습니다.</p>
+
+<hr>
+
+<!-- ─── 4. 예측 방식 ──────────────────────────────────── -->
+
+<h2>4. 예측 방식 — 두 모델로 라우팅<span class="timing">5분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>여기서 "왜 모델이 두 개인가"를 명확히. warm/cold라는 용어가 처음 등장하므로 정의를 분명히 하세요. 이 라우팅이 §6 성능 차이의 직접적 원인입니다.</p>
+</div>
+
+<p>가격 예측 시 모델은 작가의 학습량에 따라 <strong>두 가지 모델 중 하나를 선택</strong>합니다.</p>
+
+<div class="formula">
+  <div class="label">라우팅 의사 결정</div>
+  if 작가가 학습 데이터에 5작품 이상 있음 (warm)<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;→ XGBoost 모델 사용 (정밀 모델)<br>
+  else (cold — 학습량 부족, 또는 처음 보는 작가)<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;→ CatBoost 모델 사용 (일반화 모델)
+</div>
+
+<h3>4.1 왜 두 모델로 분리하는가</h3>
+
+<p>두 상황은 모델 입장에서 매우 다릅니다.</p>
+
+<table>
+<thead><tr><th>상황</th><th>모델</th><th>왜 이 모델인가</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>warm</strong> (학습 5건↑)</td>
+  <td>XGBoost</td>
+  <td>작가별 가격 패턴이 충분히 학습됨. XGBoost는 수치 피처(팔로워·작품수·전시 수)의 비선형 관계를 잘 잡아 정밀한 예측 가능.</td>
+</tr>
+<tr>
+  <td><strong>cold</strong> (1~4건 / 처음)</td>
+  <td>CatBoost</td>
+  <td>작가별 신호가 부족해 범주형 피처(재료·갤러리·출처)에 의존해야 함. CatBoost의 ordered target statistics가 cold-start에서 더 안정적.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>4.2 라우팅의 권위 — warm 작가 명단</h3>
+
+<p>"이 작가가 warm인가 cold인가"를 즉석에서 판단하지 않습니다. <strong>학습 시점에 확정된 warm 작가 930명의 명단(slug 리스트)이 JSON 파일로 저장</strong>되어 있고, 서빙 시 이 명단을 lookup합니다.</p>
+
+<div class="formula">
+  <div class="label">파일 위치</div>
+  model_test_results/integrated_v3_filtered_tuned_warm_artists.json<br>
+  → "warm_artist_slugs": [930개 슬러그]
+</div>
+
+<p>이렇게 한 이유는 <strong>학습/서빙 정합</strong>을 보장하기 위해서입니다. 학습 시 warm으로 분류돼 XGBoost로 학습된 작가가 서빙 시에도 같은 분류로 routing되어야, 일관된 결과가 나옵니다.</p>
+
+<div class="visual-cue">"입력 작품 → 라우팅 의사결정 → XGBoost or CatBoost → 예측가" 흐름도를 보여주세요.</div>
+
+<hr>
+
+<!-- ─── 5. 후처리 ───────────────────────────────────────── -->
+
+<h2>5. 후처리 — 신뢰도 등급·마진·셀 보정<span class="timing">4분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>모델 예측이 끝난 뒤 거치는 두 단계(등급+마진 / 셀 보정)를 자세히 설명. 셀 보정은 §8에서 콜론30 의문과 함께 더 깊이 다루므로 여기선 가볍게.</p>
+</div>
+
+<p>모델 예측가가 산출된 후, 사용자에게 보여주기 전에 두 단계 후처리를 거칩니다.</p>
+
+<h3>5.1 신뢰도 등급 (A/B/C/D)</h3>
+
+<p>예측가가 얼마나 믿을 만한지 4단계로 분류합니다.</p>
+
+<table>
+<thead><tr><th>등급</th><th>조건</th><th class="num">학습 데이터 비율</th><th class="num">실제 정확도 (MdAPE)</th></tr></thead>
+<tbody>
+<tr><td class="center"><strong>A</strong></td><td>매칭 + warm 작가</td><td class="num">95%</td><td class="num">9.8%</td></tr>
+<tr><td class="center"><strong>B</strong></td><td>매칭 + warm 아님</td><td class="num">3.5%</td><td class="num">29.7%</td></tr>
+<tr><td class="center"><strong>C</strong></td><td>생년·프로필 일부 보유</td><td class="num">변동</td><td class="num">~38%</td></tr>
+<tr><td class="center"><strong>D</strong></td><td>최소 정보만</td><td class="num">변동</td><td class="num">~43%</td></tr>
+</tbody>
+</table>
+
+<div class="tip">
+  <div class="label">💡 등급 분류는 "작가 능력"이 아닙니다</div>
+  <p>등급은 <strong>예측 가능 정보량</strong>에 따른 분류입니다. D 등급 작가가 실력이 부족한 게 아니라, 모델이 그 작가에 대한 정보를 충분히 가지고 있지 않다는 뜻입니다. 콜론30 피드백을 받아 이 부분을 명확히 했습니다 (시장 통념 라벨 사용 안 함 정책).</p>
+</div>
+
+<h3>5.2 마진 (가격 범위)</h3>
+
+<p>예측가만 보여주면 사용자가 "정확히 이 값"이라고 오해할 수 있어, <strong>가격 범위(low~high)</strong>를 함께 제공합니다.</p>
+
+<div class="formula">
+  <div class="label">가격 범위 산출</div>
+  price_low  = 예측가 × (1 − margin)<br>
+  price_high = 예측가 × (1 + margin)<br>
+  <br>
+  margin은 등급별로 다름:<br>
+  &nbsp;&nbsp;A: 0.20 (현재 권장: 0.286)<br>
+  &nbsp;&nbsp;B: 0.30 (현재 권장: 0.609)<br>
+  &nbsp;&nbsp;C: 0.50 / D: 0.70
+</div>
+
+<p>v1 마진은 모델 OOS MdAPE에서 단순 도출했지만, v2에서 <strong>production 라우팅·보정을 동일하게 재현해 등급별 80% 커버리지가 되도록</strong> 다시 산출했습니다 (PR #22).</p>
+
+<h3>5.3 셀 보정 (cold 경로만)</h3>
+
+<p>cold 경로(CatBoost) 예측에는 <strong>(출처 × 시장) 셀별로 측정한 곱셈 factor</strong>가 추가로 적용됩니다. factor는 학습 데이터의 셀별 <code>median(실제 가격 ÷ 예측 가격)</code>으로 산출되며, warm 경로(XGBoost)에는 적용되지 않습니다.</p>
+
+<div class="formula">
+  <div class="label">셀 보정 적용</div>
+  cell = source × target_market   (예: "saatchi_online")<br>
+  factor[cell] = JSON에서 lookup<br>
+  최종 가격 = 모델 raw 출력 × factor[cell]
+</div>
+
+<table>
+<thead><tr><th>셀</th><th class="num">factor</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td>artsy_online</td><td class="num"><strong>×0.9426</strong></td><td>Artsy 온라인 5.7% 깎음</td></tr>
+<tr><td>saatchi_online</td><td class="num"><strong>×0.9569</strong></td><td>Saatchi 온라인 4.3% 깎음</td></tr>
+<tr><td>artsy_gallery</td><td class="num">×1.0</td><td>회귀 가드로 skip</td></tr>
+<tr><td>saatchi_gallery</td><td class="num">미정의</td><td>학습 데이터 부재</td></tr>
+</tbody>
+</table>
+
+<p>이 보정의 작동 원리와 v1 옛 방식과의 차이는 <strong>§8에서 자세히</strong> 다룹니다 (콜론30 두 번째 의문에 대한 답).</p>
+
+<hr>
+
+<!-- ─── 6. 성능 ─────────────────────────────────────────── -->
+
+<h2>6. 성능 — 얼마나 정확한가<span class="timing">4분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>MdAPE와 W30 두 지표 정의를 먼저. 그 다음 warm vs cold 차이가 왜 큰지 설명. 38.3%가 "데이터 한계라서 모델로는 더 줄이기 어렵다"는 메시지가 중요.</p>
+</div>
+
+<h3>6.1 두 가지 정확도 지표</h3>
+
+<table>
+<thead><tr><th>지표</th><th>의미</th><th>예시</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>MdAPE</strong> (Median Absolute Percentage Error)</td>
+  <td>예측-실제 오차 비율의 <strong>중앙값</strong>. 작을수록 정확.</td>
+  <td>9.7% = "절반의 작품은 ±9.7% 이내로 맞힘"</td>
+</tr>
+<tr>
+  <td><strong>W30</strong> (Within 30%)</td>
+  <td>예측이 실제값의 <strong>±30% 안에 들어간 비율</strong>. 클수록 정확.</td>
+  <td>82.8% = "82.8%의 작품을 ±30% 안에서 맞힘"</td>
+</tr>
+</tbody>
+</table>
+
+<p>MdAPE는 평균 대신 중앙값을 쓰기 때문에 극단적 오차(아주 비싼 작품 한두 점)에 덜 흔들립니다. 미술품 가격은 right-skewed(소수 고가 작품 존재)라 중앙값이 더 robust합니다.</p>
+
+<h3>6.2 warm 작가 — 학습량 충분한 경우</h3>
+
+<table>
+<thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE</th><th class="num">W30</th></tr></thead>
+<tbody>
+<tr><td>Warm 전체</td><td>XGBoost</td><td class="num">27,062</td><td class="num"><strong>9.7%</strong></td><td class="num">82.8%</td></tr>
+<tr><td><strong>Warm Artsy</strong></td><td>XGBoost</td><td class="num">6,603</td><td class="num"><strong>8.3%</strong></td><td class="num">85.9%</td></tr>
+<tr><td>Warm Saatchi</td><td>XGBoost</td><td class="num">20,459</td><td class="num">10.3%</td><td class="num">81.9%</td></tr>
+</tbody>
+</table>
+
+<p><strong>warm Artsy 8.3%</strong> = 콜론30 A 등급 목표(8%대)에 사실상 도달. 100만원 작품이면 약 92~108만원 범위 안에서 절반의 케이스를 맞힙니다.</p>
+
+<h3>6.3 cold 작가 — 학습량 부족 / 처음 보는 작가</h3>
+
+<table>
+<thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE</th></tr></thead>
+<tbody>
+<tr><td><strong>Cold 전체 (production)</strong></td><td>CatBoost (보정 전)</td><td class="num">28,376</td><td class="num">39.4%</td></tr>
+<tr><td><strong>Cold 전체 (production)</strong></td><td>CatBoost + 셀 보정</td><td class="num">28,376</td><td class="num"><strong>38.3%</strong></td></tr>
+</tbody>
+</table>
+
+<div class="tip">
+  <div class="label">💡 cold 38%가 의미하는 것</div>
+  <p>cold 영역에서 절반의 작품이 ±38% 이내, 절반은 그 밖이라는 뜻입니다. 100만원 작품이면 약 62~138만원 범위.</p>
+  <p><strong>왜 이렇게 큰가</strong>: 모델이 처음 보는 작가에 대한 신호가 거의 없어서 "이 작가는 평균 어느 정도 가격대인가"를 추정하는 단계라 본질적 불확실성이 큽니다.</p>
+  <p><strong>모델만으론 더 줄이기 어렵습니다</strong> — 신규 작가 정보 수집·갤러리 티어 매칭 같은 데이터 측 개선이 더 큰 폭을 가져옵니다 (§9 협조 사항).</p>
+</div>
+
+<h3>6.4 정직한 caveat</h3>
+
+<p>위 메트릭은 cross-validation 기반이지만 일부 계산에서 잔존 bias가 있습니다. JSON에 명시한 그대로:</p>
+
+<ul>
+  <li>셀 보정 factor는 cross-fit OOF로 추정하지만, "어느 셀이 회귀하는지" 가드 결정은 같은 OOF 결과를 보고 결정 → post-hoc selection bias 잔존</li>
+  <li>등급 마진은 모델 OOF 예측 + full-data routing artifact 결합 → 순수 OOF 아님</li>
+</ul>
+
+<p>따라서 38.3% / 9.7%는 <strong>보수적 추정치</strong>로 보시면 됩니다 — 실제 production은 약간 더 좋을 가능성도 있습니다.</p>
+
+<hr>
+
+<!-- ─── 7. v1 → v2 핵심 개선 ────────────────────────────── -->
+
+<h2>7. v1 → v2 핵심 개선 — 4건의 PR<span class="timing">5분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>v1에서 v2로 오면서 무엇이 바뀌었는지를 4건의 PR로 압축해 설명. 콜론30이 v1을 보고 던진 의문 두 가지가 v2에서 어떻게 해결됐는지 자연스럽게 연결.</p>
+</div>
+
+<p>2026-04-07 ~ 4-28 사이 콜론30 피드백 24건(기술보고서 10건 + 실험계획서 14건)을 받아 4건의 PR로 모델을 개선했습니다.</p>
+
+<table>
+<thead><tr><th>PR</th><th>주제</th><th>핵심 변경</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>#19</strong></td>
+  <td>갤러리 티어 v3 매핑</td>
+  <td>콜론30 제공 89개 갤러리 매핑 분석. <strong>갤러리 기준</strong> Artsy 66개 중 11개 매칭 (17%), <strong>작품 기준</strong> 7,289건 중 965건 매칭 (13.2%). Phase 1B 본 학습 적용은 콜론30 검수 후 진행 예정.</td>
+</tr>
+<tr>
+  <td><strong>#20</strong></td>
+  <td>career_stage v2 + drift 제거</td>
+  <td><strong>① career_stage 4단계 정수 → 연속 0~8 점수.</strong> ② 학습/서빙 불일치 5개 피처 제거 (career_age, work_age, vintage_premium, freshness_discount, gallery_name).</td>
+</tr>
+<tr>
+  <td><strong>#21</strong></td>
+  <td>Source × target_market 셀 보정</td>
+  <td>v1 단일 상수 −0.075 보정 → 셀별 multiplicative factor로 교체. cross-fit + per-cell guard 도입. <strong>콜론30 두 번째 의문의 해결.</strong></td>
+</tr>
+<tr>
+  <td><strong>#22</strong></td>
+  <td>source 정규화 + 마진 재캘리브레이션</td>
+  <td>① 결측값(None/NaN/'') 정규화로 학습/서빙 정합 확보. ② 등급 마진을 production 라우팅·보정 동일 재현으로 재산출.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>7.1 핵심 결과 — v1 vs v2</h3>
+
+<table>
+<thead><tr><th>지표</th><th class="num">v1 (4월 17일)</th><th class="num">v2 (4월 28일)</th><th class="num">개선</th></tr></thead>
+<tbody>
+<tr><td>피처 수</td><td class="num">37</td><td class="num">32</td><td class="num">−5 (drift 제거)</td></tr>
+<tr><td>Warm 전체 MdAPE (XGB)</td><td class="num">11.7%</td><td class="num"><strong>9.7%</strong></td><td class="num pos">−2.0%p</td></tr>
+<tr><td>Warm Artsy MdAPE (XGB)</td><td class="num">명시 안됨</td><td class="num"><strong>8.3%</strong></td><td class="num pos">A 목표 도달</td></tr>
+<tr><td>Cold 전체 MdAPE (보정 후)</td><td class="num">38.9~39.4%</td><td class="num"><strong>38.3%</strong></td><td class="num pos">−0.6%p (v1→v2)</td></tr>
+<tr><td>Source 보정 방식</td><td class="num">단일 ln-offset −0.075 (additive)</td><td class="num">셀별 multiplicative factor</td><td class="num">per-cell guard 도입</td></tr>
+</tbody>
+</table>
+
+<div class="tip">
+  <div class="label">💡 핵심 메시지</div>
+  <p>v2의 가장 큰 깨달음은 <strong>"단순 피처 추가보다 학습/서빙 정합(train/serve drift)이 더 큰 병목"</strong>이었습니다. 5개 피처를 제거했더니 오히려 정확도가 좋아졌고, 단일 보정을 셀별로 쪼갰더니 출처별 분포 차이를 더 잘 잡아냈습니다.</p>
+</div>
+
+<hr>
+
+<!-- ─── 8. 콜론30 검증 의문 ────────────────────────────── -->
+
+<h2>8. 콜론30 검증 의문 두 가지<span class="timing">5분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>이 부분이 콜론30이 직접 던진 두 의문에 대한 답입니다. 짚어주신 의문이 사내 진단과 일치한다는 점, 이미 개선됐다는 점을 강조하세요.</p>
+</div>
+
+<h3>8.1 의문 1 — 출처 라벨이 결과를 흔드는가?</h3>
+
+<div class="quote">
+  <p>"같은 작품에 대해 다른 모든 정보는 그대로 두고 출처 라벨만 Artsy↔Saatchi로 바꾸면 결과가 달라지나요?"</p>
+</div>
+
+<p>이걸 확인하려고 <strong>30명 통제 실험</strong>을 진행했습니다. 결과:</p>
+
+<table>
+<thead>
+<tr><th>코호트</th><th class="num">평균 변화</th><th class="num">최대 변화 폭</th><th class="num">±0.5% 이내</th></tr>
+</thead>
+<tbody>
+<tr><td>A. 양쪽 학습 (warm)</td><td class="num neg">−0.25%</td><td class="num">1.29%</td><td class="num">8 / 10</td></tr>
+<tr><td>B. Artsy만 warm</td><td class="num neg">−0.33%</td><td class="num">1.48%</td><td class="num">8 / 10</td></tr>
+<tr><td>C. Saatchi만 warm</td><td class="num pos">+0.02%</td><td class="num">0.79%</td><td class="num">8 / 10</td></tr>
+</tbody>
+</table>
+
+<p><strong>warm 작가 30명 모두 변화율 ±1.5% 이내, 80%가 ±0.5% 이내.</strong> 즉 학습량이 충분한 작가에게는 출처 라벨을 바꿔도 예측이 사실상 동일합니다. 모델이 출처를 가격 결정의 주요 단서로 쓰지 않는다는 의미입니다.</p>
+
+<p>cold 작가에서는 영향이 더 큽니다 (−8 ~ −17% 케이스 존재). 이 부분이 다음 의문(셀 보정)으로 이어집니다.</p>
+
+<div class="visual-cue">출처 플립 실험 결과 — 별도 보고서 <code>출처라벨_플립실험_보고서_20260429.html</code> 보여주실 수 있습니다.</div>
+
+<h3>8.2 의문 2 — v1의 −0.075 보정은 문제 없는가?</h3>
+
+<div class="quote">
+  <p>"Saatchi랑 Artsy 둘 다 online이면 일률 −0.075를 적용한다는 건데, 여기서 문제 생기지 않을까?"</p>
+</div>
+
+<p>정확히 짚으셨습니다. 사내에서도 동일 진단을 거쳐 PR #21에서 <strong>셀별 보정</strong>으로 교체했습니다.</p>
+
+<table>
+<thead><tr><th>구분</th><th>v1 (옛 방식)</th><th>v2 (현재)</th></tr></thead>
+<tbody>
+<tr><td>방식</td><td>ln 공간 additive offset</td><td>선형 공간 multiplicative factor</td></tr>
+<tr><td>출처 구분</td><td>❌ 모든 online 같은 −0.075</td><td>✅ Artsy/Saatchi 다른 factor</td></tr>
+<tr><td>측정 방식</td><td>단일 상수</td><td>셀별 median ratio</td></tr>
+<tr><td>OOD 처리</td><td>❌ 학습 안 된 셀에도 적용</td><td>✅ 셀 부재 → ×1.0 fallback</td></tr>
+</tbody>
+</table>
+
+<div class="formula">
+  <div class="label">v2 핵심 공식</div>
+  factor[cell] = median( P_actual / P_predicted )<br>
+  P_corrected = P_raw × factor[cell]<br>
+  <br>
+  현재 적용:<br>
+  &nbsp;&nbsp;artsy_online   → ×0.9426 (5.7% 깎음)<br>
+  &nbsp;&nbsp;saatchi_online → ×0.9569 (4.3% 깎음)
+</div>
+
+<p><strong>두 출처가 더 이상 같은 보정값을 받지 않습니다.</strong> 각 셀은 자기 셀의 학습 데이터로 측정한 factor를 받습니다. 안전장치(cross-fit, per-cell guard, schema validation)도 함께 도입해 보정이 오히려 정확도를 떨어뜨리는 셀은 자동으로 ×1.0으로 fallback합니다.</p>
+
+<p>이 보정으로 cold path MdAPE가 39.4% → 38.3% (−1.1%p) 로 cross-fit 기준 개선 확인.</p>
+
+<hr>
+
+<!-- ─── 9. 한계와 다음 단계 ────────────────────────────── -->
+
+<h2>9. 한계와 다음 단계 — 협조 필요 사항<span class="timing">3분</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>"우리가 더 할 수 있는 일과 콜론30 협조가 필요한 일을 분리"하세요. 협조 사항을 명확히 전달하는 자리이기도 합니다.</p>
+</div>
+
+<h3>9.1 모델만으론 더 줄이기 어려운 부분</h3>
+
+<p>현재 모델의 잔존 한계 6가지를 v2 보고서 §9에 정리했습니다. 핵심:</p>
+
+<table>
+<thead><tr><th>한계</th><th>해결 방향</th><th>주체</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>Cold-start MdAPE 38%대 수렴</strong></td>
+  <td>신규 작가 외부 정보 수집 정확도 향상, cold 분류 자체 줄이기</td>
+  <td>운영 협조</td>
+</tr>
+<tr>
+  <td><strong>갤러리 티어 매칭 81% 미해결</strong></td>
+  <td>PR #19 Top 30 미매칭 갤러리 명단 검수 → Phase 1B 학습 적용</td>
+  <td><strong>콜론30 협조</strong></td>
+</tr>
+<tr>
+  <td><strong>DB schema 마이그레이션</strong></td>
+  <td><code>artist_profiles.career_stage</code> INT 제약 해제, <code>career_age</code> 컬럼 신설</td>
+  <td>운영 협조</td>
+</tr>
+<tr>
+  <td><strong>출처 라벨 잔존 편향 (cold)</strong></td>
+  <td>source 컬럼 ablation 실험 검토 중</td>
+  <td>모델팀 자체</td>
+</tr>
+<tr>
+  <td><strong>m 값 정책 결정</strong></td>
+  <td>권장 마진 적용 시 C/D는 m≈0.9 — 가격 범위 표시 정책 변경 영향 검토</td>
+  <td>콜론30 + 운영 정책</td>
+</tr>
+</tbody>
+</table>
+
+<h3>9.2 다음 단계</h3>
+
+<ol>
+  <li><strong>v2 기술보고서 공식 전달</strong> — 본 발표와 함께 공유</li>
+  <li><strong>출처 라벨 ablation 실험</strong> — source 제거 시 정확도 영향 측정</li>
+  <li><strong>Phase 1B 갤러리 티어 적용</strong> — 콜론30 미매칭 갤러리 검수 후 학습 데이터에 반영 (예상 −1~2%p A 등급 개선)</li>
+  <li><strong>cold-start 데이터 강화</strong> — 한국 갤러리 사이트 크롤링 추가 (예상 −5~10%p cold 개선)</li>
+</ol>
+
+<h3>9.3 한 문장 정리</h3>
+
+<div class="tip">
+  <div class="label">💡 결론</div>
+  <p>v2 모델은 학습 작가 작품을 <strong>오차 중앙값(MdAPE)</strong> 9.7% (warm Artsy 8.3%) 로 예측하고, 신규 작가는 38.3%로 예측합니다. 다음 큰 폭 개선은 모델 코드보다 <strong>콜론30 갤러리 정보 수집·DB schema 정합·갤러리 입력 UX</strong>에 달려 있습니다.</p>
+</div>
+
+<hr>
+
+<!-- ─── 부록 Q&A ─────────────────────────────────────────── -->
+
+<h2>부록 — 예상되는 추가 질문<span class="timing">필요 시</span></h2>
+
+<div class="speaker">
+  <div class="label">📌 발표자 노트</div>
+  <p>Q&A 시간에 나올 가능성이 높은 질문들입니다. 발표하지 않아도 되고, 질문이 나왔을 때만 참조하세요.</p>
+</div>
+
+<div class="qa-item">
+  <div class="q">Q. 갤러리도 Artsy도 결국 작품 정보 모은 거 아니에요? 왜 출처를 구분하나요?</div>
+  <div class="a">두 플랫폼이 본질적으로 다릅니다. Artsy는 한국 갤러리 66개의 작품을 모은 aggregator(B2B 갤러리 입점), Saatchi는 작가가 직접 작품을 올리는 마켓플레이스(C2C 직판). 가격 형성 메커니즘이 달라(갤러리 호가 vs 작가 자가책정) 모델이 이 차이를 인지하도록 출처를 입력으로 받습니다. 다만 §8 실험에서 보셨듯이 이 라벨 효과는 warm 작가에서 사실상 미미합니다.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">Q. warm 5건 기준은 누가 정한 건가요?</div>
+  <div class="a">학습 시 작가별 작품 수 분포를 보고 정한 임계값입니다. 5건 이상이면 작가별 가격 패턴(평균·분산)이 어느 정도 안정화되어 정밀 모델(XGBoost)이 의미 있는 학습이 가능. 4건 이하는 데이터가 부족해 cold 일반화 모델(CatBoost)이 더 안전. <code>warm_artist_slugs.json</code>의 <code>min_count</code> 필드에 명시되어 있습니다.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">Q. ×0.9426, ×0.9569 같은 숫자는 어떻게 나왔나요?</div>
+  <div class="a">이론치가 아니라 <strong>학습 데이터로 직접 측정한 값</strong>입니다. 5-fold cross-fit OOF 예측을 돌려서, 셀별로 <code>median(실제 ÷ 예측)</code>을 계산했습니다. Artsy_online 6,421건에서 0.9426 (5.7% 과대예측), Saatchi_online 21,087건에서 0.9569 (4.3% 과대예측)가 측정됐습니다.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">Q. v1 보고서에서 본 "−0.075" 보정은 이제 사용 안 하나요?</div>
+  <div class="a">네, PR #21(2026-04-28)에서 폐기됐습니다. 콜론30이 짚어주신 "출처 무관 일률 적용" 결함이 정확히 이 방식의 문제였고, 셀별 multiplicative factor로 교체했습니다. v1 §4.5 본문 표기에 추가로 일관성 문제가 있었던 점도 v2 §5.1에 정정 박스로 명시했습니다.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">Q. cold 작가 38% 오차를 더 줄일 방법은 없나요?</div>
+  <div class="a">두 방향을 검토 중입니다. ① <strong>source 컬럼 제거 ablation</strong> — 모델 학습에서 source를 빼면 categorical 임베딩 편향이 사라질 수 있음. ② <strong>cold-start 데이터 강화</strong> — 신규 작가 정보 수집 정확도를 높여 cold 분류 자체를 줄임. ②는 콜론30 협조 영역(갤러리 티어 매칭, 외부 작가 정보 수집)과 직결됩니다.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">Q. 모델이 매번 같은 작품에 같은 가격을 내나요? 결과가 변동되나요?</div>
+  <div class="a">동일 입력에는 동일 출력입니다. 모델 가중치는 학습 후 고정이고, 후처리 보정 factor도 JSON으로 고정. 즉 같은 작품 정보를 두 번 넣으면 항상 같은 가격이 나옵니다. 다만 작가 정보(팔로워 수 등)는 시간에 따라 바뀌므로, 작가 정보가 갱신되면 자연스럽게 결과도 갱신됩니다.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">Q. 작가가 신진/중견/원로인지에 따라 다르게 처리되나요?</div>
+  <div class="a">그런 분류는 사용하지 않습니다. 콜론30 피드백을 받아 v2부터는 "신진/중견/원로" 같은 시장 통념 라벨을 폐기하고, 두 가지 분류만 사용합니다: ① <strong>career_stage</strong> (연속 0~8 점수 — 모델 입력 피처) ② <strong>운영 등급 A/B/C/D</strong> (예측 가능 정보량 기준 — 작가 능력이 아닌 모델 신뢰도 분류). v2 보고서 상단에 명시되어 있습니다.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">Q. 이 모델 결과를 사용자에게 어떤 형태로 보여주나요?</div>
+  <div class="a">예측가 한 점이 아니라 <strong>가격 범위(low~high) + 신뢰도 등급</strong>으로 보여줍니다. 예: "예상 가격 약 280만원 (250~310만원, A 등급)". 등급별 마진(low/high 폭)이 다릅니다 — A는 ±20%, D는 ±70% 등. 사용자가 "이건 정확하다"라고 오해하지 않도록 범위와 등급이 함께 표시됩니다.</div>
+</div>
+
+<hr>
+
+<!-- ─── 마무리 ────────────────────────────────────────── -->
+
+<div class="speaker">
+  <div class="label">📌 발표자 사후 메모</div>
+  <p>발표 후 이 스크립트를 콜론30에 함께 공유하면 청중이 개별 검토 시 참조 가능합니다. v2 기술보고서 + 출처 라벨 플립 실험 보고서와 함께 패키지로 묶어 전달하시면 좋습니다.</p>
+</div>
+
+<div class="footer">
+  <p>📄 함께 공유드리는 자료</p>
+  <ul>
+    <li><strong><code>docs/model_technical_report_v2.html</code></strong> — v1 → v2 모델 변경 전체 보고서 (PR #19~22, 셀 보정 §5, 검증 §8, 한계 §9)</li>
+    <li><strong><code>docs/출처라벨_플립실험_보고서_20260429.html</code></strong> — 출처 라벨 플립 실험 결과 (warm 작가 30명 상세)</li>
+    <li><strong>(본 발표 스크립트)</strong> — 모델 전반 30~40분 설명용</li>
+  </ul>
+  <p>작성일: 2026-04-29 · 발표 분량 약 35~40분 (부록 Q&A 제외)</p>
+</div>
+
+</div>
+</body>
+</html>

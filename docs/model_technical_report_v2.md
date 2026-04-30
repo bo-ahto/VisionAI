@@ -50,11 +50,11 @@
 | Warm 작가 (≥5건) | 명시 안됨 | **930명 / 27,062건** | 라우팅 정합 확보 |
 | **Warm 전체 MdAPE (KFold)** | 11.7% (XGB) / 17.1% (CB) | **9.7% (XGB) / 11.9% (CB) / 10.5% (앙상블)** | -2.0%p (XGB) |
 | Warm Artsy MdAPE (KFold) | 명시 안됨 | **8.3% (XGB) / 8.7% (앙상블)** | A 목표(8%) 도달 |
-| **Cold 전체 MdAPE (GroupKFold)** — production path = CatBoost | 38.9% (CB) / 39.4% (XGB) | **CatBoost 39.4% (보정 전) → 38.3% (보정 후, cross-fit guarded)** | -1.1%p |
+| **Cold 전체 MdAPE (GroupKFold)** — production path = CatBoost | 38.9% (CB) / 39.4% (XGB) | **CatBoost 39.4% (보정 전) → 38.3% (보정 후, cross-fit guarded)** | −0.6%p (v1 38.9 → v2 38.3) <br>(v2 자체의 보정 효과 −1.1%p, 39.4→38.3) |
 | Cold 전체 — offline ensemble (참고용, production 경로 아님) | — | 38.7% | — |
 | Cold Artsy MdAPE — offline ensemble (참고용) | ≈40% | 33.2% (앙상블) | -7%p |
 | Production-time A 등급 MdAPE | 보고 없음 | **9.8%** | 신규 측정 |
-| Source 보정 방식 | 단일 상수 -0.075 (online) | **셀별 ratio (artsy_online=0.943, saatchi_online=0.957)** | per-cell guard 도입 |
+| Source 보정 방식 | 단일 ln-offset −0.075 (additive) | **셀별 multiplicative factor = median(actual / predicted)** | per-cell guard 도입 (자세한 단위·환산·셀별 값은 §5 참조) |
 
 **해석**: 단일 매개변수 보정에서 **source × target_market 셀별 보정**으로 갈아탔다. **production cold path는 CatBoost 단일 경로**이므로 보정 전후 비교는 CatBoost OOF 기준(`source_calibration.json` `cold_overall`): 39.38 → 38.29 (-1.09%p, cross-fit guarded). 앙상블/Artsy 슬라이스 수치는 offline 비교용이며 운영 경로와 다르므로 별도 표기. **artsy_gallery 셀은 cross-fit에서 보정이 회귀를 일으켜 factor=1.0 (skip)** — 자동 가드로 안정성 확보.
 
@@ -297,7 +297,9 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 
 ### 4.9 PR #20 결과 요약
 
-| 분할 | 모델 | n | MdAPE (PR #20 종착) |
+> **주의**: 아래 수치는 **PR #20 머지 시점 스냅샷** (cell calibration 도입 이전, 등급 마진 재캘리브레이션 이전). 후속 PR #21+#22 적용 후 production 최종 메트릭은 §8 참조 (warm 전체 9.7% / warm Artsy 8.3% / cold 38.3%).
+
+| 분할 | 모델 | n | MdAPE (PR #20 snapshot, pre-PR21/22) |
 |---|---|---:|---:|
 | Cold 전체 | CatBoost | 28,376 | 39.4 |
 | Cold Artsy | CatBoost | 7,289 | 33.3 |
@@ -314,21 +316,32 @@ vs 직전 production: cold 40.6→39.4 (**-1.2%p**), warm 10.3→9.8 (**-0.5%p**
 
 ### 5.1 v1의 단일 상수 보정 한계
 
-v1: `c = -0.075 if target_market=='online' else 0.0` — **모든 online을 같은 값으로** 보정.
+v1: `ln(P_corrected) = ln(P_raw) + c`, `c = -0.075 if target_market=='online' else 0.0` — **모든 online을 같은 값으로** 보정 (ln 공간 additive offset).
+
+> **📐 v1 §4.5 표기 정정**
+>
+> v1 §4.5는 보정 근거를 *"예측 대비 실제 비율 1.078 (7.8% 과대 예측)"* 으로 적었으나, "예측 대비 실제 비율"을 문자 그대로 읽으면 `실제/예측 = 1.078 → 실제 > 예측 → 과소예측`이라 라벨과 어긋난다. 보정 부호(`-0.075`를 더해 예측을 낮춤)는 **"모델이 과대예측하므로 깎는다"** 방향이 맞으며, v1 본문의 비율/라벨 표기가 일관되지 않았던 것이다.
+>
+> v2부터는 표기를 다음으로 통일한다:
+> - **factor = median(P_actual / P_predicted)** — 셀별 multiplicative factor (선형 공간)
+> - **factor < 1 = 모델 과대예측 → 예측에 factor를 곱해 깎음** (현재 artsy_online ×0.943, saatchi_online ×0.957)
+> - **factor > 1 = 모델 과소예측 → 예측에 factor를 곱해 올림** (현재 cold_factors에 해당 셀 없음)
+>
+> 보정 방향(깎기)은 v1과 v2가 동일하지만, v2는 ln-offset(additive) 대신 곱셈 factor(multiplicative)를 사용하고, online 일률 적용 대신 `(source × target_market)` 셀별로 다른 factor를 적용한다.
 
 문제: Artsy online과 Saatchi online은 분포가 다르다.
 
-| 셀 | n | baseline MdAPE | v2 cross-fit calibrated MdAPE | 적용 factor |
-|---|---:|---:|---:|---:|
-| artsy_gallery | 868 | 24.3 | **24.3 (skip) ← guarded** | 1.0 |
-| artsy_online | 6,421 | 35.0 | **34.1** | 0.943 |
-| saatchi_online | 21,087 | 41.7 | **40.1** | 0.957 |
+| 셀 | n | baseline MdAPE | cross-fit calibrated MdAPE<br>(pre-guard, proposed factor 적용) | guarded 결과 (운영 적용) | 적용 factor |
+|---|---:|---:|---:|---:|---:|
+| artsy_gallery | 868 | 24.3 | 31.2 | **24.3 (skip)** | 1.0 |
+| artsy_online | 6,421 | 35.0 | 34.1 | **34.1** | 0.943 |
+| saatchi_online | 21,087 | 41.7 | 40.1 | **40.1** | 0.957 |
 
-(MdAPE는 cold GroupKFold OOF, [`source_calibration.json`](../model_test_results/integrated_v3_filtered_tuned_source_calibration.json) `cold_breakdown` 기준.)
+(MdAPE는 cold GroupKFold OOF, [`source_calibration.json`](../model_test_results/integrated_v3_filtered_tuned_source_calibration.json) `cold_breakdown` 기준. `artsy_gallery`는 proposed factor=1.0371 적용 시 cross-fit MdAPE가 24.3→31.2로 회귀하여 per-cell guard로 factor=1.0 fallback. 운영 적용 결과는 baseline과 동일.)
 
 ### 5.2 셀 정의
 
-`cell = f"{source}_{target_market}"`. `target_market`은 `is_krw==1 → 'gallery'` (한국 갤러리), 그 외 → `'online'`. 학습 시점과 서빙 시점에 동일한 룰 적용.
+`cell = f"{source}_{target_market}"`. **학습 시점**: `target_market`을 `is_krw==1 → 'gallery'` (한국 갤러리), 그 외 → `'online'`으로 도출하여 셀 키 산출 (`scripts/calibrate_source_bias.py`). **서빙 시점**: predictor는 `target_market`을 caller로부터 인자로 받고 셀 키 산출에만 사용 (`primary_predictor.py:306, 371`) — `is_krw`로의 자동 추론이나 일치 검증은 하지 않음. 학습/서빙이 같은 룰을 따른다는 보장은 **upstream caller(데이터 빌더 / API 서버)의 계약**에 의존한다.
 
 가능한 셀:
 - `artsy_gallery` (Artsy 데이터 중 KRW 표기) — 868건
@@ -457,7 +470,7 @@ PR #22 작업 중 다음 정합 결함이 발견·수정됐다:
 | **`work_age`/`vintage_premium`/`freshness_discount`** | 학습 시 신호 있으나 서빙 0 하드코딩 | ❌ drift |
 | **`gallery_name` 직접 피처** | 학습 vocab 59개 vs 서빙 2개 hardcoded | ❌ 매번 sentinel → drift |
 | **5 카테고리 확장** (장르/스타일 등) | 계약 변경 위험 큼, -0.5%p 추정 | ❌ ROI 낮음 |
-| **단일 상수 source 보정** (-0.075 ln) | 모든 online 동일 처리, 셀 분포 차이 미반영 | ❌ 셀별 보정으로 대체 (PR #21) |
+| **단일 ln-offset −0.075 (additive, online 일률)** | 모든 online 동일 처리, 셀 분포 차이 미반영 | ❌ 셀별 multiplicative factor로 대체 (PR #21) |
 | **In-sample calibration** | 평가 부풀려짐 | ❌ cross-fit으로 대체 |
 | **개인전/페어 직접 피처화** | v4 실험에서 과적합 + warm 데이터 부족 | ❌ `career_stage_v2_score` 입력으로 통합 |
 
@@ -467,7 +480,7 @@ PR #22 작업 중 다음 정합 결함이 발견·수정됐다:
 
 ## 8. 최종 production 메트릭 (v3-tuned-cal)
 
-> **측정 절차**: production 코드 경로 그대로 재현. `is_warm_artist`(930 slug JSON), source calibration cold factor, target_market 추론까지 동일.
+> **측정 절차**: production 코드 경로 그대로 재현. `is_warm_artist`(930 slug JSON), source calibration cold factor를 동일 적용. 오프라인 평가 스크립트(`scripts/calibrate_grade_margins.py`)는 데이터 행의 `is_krw`로 `target_market`을 도출하여 셀 키를 산출하며, 운영 서빙은 caller(API 요청)가 `target_market` 값을 직접 전달한다 — predictor는 양쪽 경로 모두에서 받은 값을 그대로 셀 키 산출에만 사용 (§5.2 참조).
 
 ### 8.1 Warm slice (KFold, 27,062건 / 930 작가, ≥5건)
 

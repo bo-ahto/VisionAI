@@ -63,7 +63,7 @@
 <div class="container">
 <h1>VisionAI 1차 시장 가격 예측 모델 기술 보고서 v2</h1>
 <blockquote>
-<p><strong>작성일</strong>: 2026-04-28</p>
+<p><strong>작성일</strong>: 2026-04-30</p>
 <p><strong>모델 버전</strong>: v3-tuned-cal (<code>integrated_v3_filtered_tuned</code> + cell calibration)</p>
 <p><strong>학습 데이터</strong>: 28,376건 (29,361건에서 입체/3D 985건 제외) / 1,551명 작가 (warm 930명, ≥5건)</p>
 <p><strong>대상</strong>: 한국 회화 작품의 1차 시장(갤러리) 가격 예측</p>
@@ -125,7 +125,7 @@
 <li>최종 production 메트릭 + 정직성</li>
 <li>알려진 제약·잔존 협조 사항</li>
 <li>운영 변경 사항</li>
-<li>한 줄 요약 + 참고 문서 + 변경 이력</li>
+<li>한 줄 요약</li>
 </ol>
 </div>
 
@@ -148,11 +148,11 @@
 <tr><td>Warm 작가 (≥5건)</td><td class="num">명시 안됨</td><td class="num"><strong>930명 / 27,062건</strong></td><td class="num">라우팅 정합</td></tr>
 <tr><td><strong>Warm 전체 MdAPE (KFold)</strong></td><td class="num">11.7% (XGB) / 17.1% (CB)</td><td class="num"><strong>9.7% (XGB) / 11.9% (CB) / 10.5% (앙상블)</strong></td><td class="num delta-pos">-2.0%p (XGB)</td></tr>
 <tr><td>Warm Artsy MdAPE (KFold)</td><td class="num">명시 안됨</td><td class="num"><strong>8.3% (XGB) / 8.7% (앙상블)</strong></td><td class="num delta-pos">A 목표(8%) 도달</td></tr>
-<tr><td><strong>Cold 전체 MdAPE (GroupKFold)</strong> — production path = CatBoost</td><td class="num">38.9% (CB) / 39.4% (XGB)</td><td class="num"><strong>CatBoost 39.4% (보정 전) → 38.3% (보정 후, cross-fit guarded)</strong></td><td class="num delta-pos">-1.1%p</td></tr>
+<tr><td><strong>Cold 전체 MdAPE (GroupKFold)</strong> — production path = CatBoost</td><td class="num">38.9% (CB) / 39.4% (XGB)</td><td class="num"><strong>CatBoost 39.4% (보정 전) → 38.3% (보정 후, cross-fit guarded)</strong></td><td class="num delta-pos">−0.6%p (v1 38.9 → v2 38.3)<br><span class="muted">v2 자체의 보정 효과 −1.1%p (39.4→38.3)</span></td></tr>
 <tr><td>Cold 전체 — offline ensemble (참고용, production 경로 아님)</td><td class="num">—</td><td class="num">38.7%</td><td class="num">—</td></tr>
 <tr><td>Cold Artsy MdAPE — offline ensemble (참고용)</td><td class="num">≈40%</td><td class="num">33.2% (앙상블)</td><td class="num delta-pos">-7%p</td></tr>
 <tr><td>Production-time A 등급 MdAPE</td><td class="num">보고 없음</td><td class="num"><strong>9.8%</strong></td><td class="num">신규 측정</td></tr>
-<tr><td>Source 보정 방식</td><td class="num">단일 상수 -0.075 (online)</td><td class="num"><strong>셀별 ratio (artsy_online=0.943, saatchi_online=0.957)</strong></td><td class="num">per-cell guard 도입</td></tr>
+<tr><td>Source 보정 방식</td><td class="num">단일 ln-offset −0.075 (additive)</td><td class="num"><strong>셀별 multiplicative factor = median(actual / predicted)</strong></td><td class="num">per-cell guard 도입 (자세한 단위·환산·셀별 값은 §5 참조)</td></tr>
 </tbody>
 </table>
 </div>
@@ -394,8 +394,9 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <p>이런 항목들은 모델 정확도 그래프엔 잡히지 않지만 production에서 silent하게 잘못 작동할 수 있는 train/serve 정합 문제로, 학습 데이터 분포와 서빙 코드를 동시에 봐야 잡힙니다.</p>
 
 <h3>4.9 PR #20 결과 요약</h3>
+<blockquote><p><strong>주의</strong>: 아래 수치는 <strong>PR #20 머지 시점 스냅샷</strong> (cell calibration 도입 이전, 등급 마진 재캘리브레이션 이전). 후속 PR #21+#22 적용 후 production 최종 메트릭은 §8 참조 (warm 전체 9.7% / warm Artsy 8.3% / cold 38.3%).</p></blockquote>
 <table>
-<thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE (PR #20 종착)</th></tr></thead>
+<thead><tr><th>분할</th><th>모델</th><th class="num">n</th><th class="num">MdAPE (PR #20 snapshot, pre-PR21/22)</th></tr></thead>
 <tbody>
 <tr><td>Cold 전체</td><td>CatBoost</td><td class="num">28,376</td><td class="num">39.4</td></tr>
 <tr><td>Cold Artsy</td><td>CatBoost</td><td class="num">7,289</td><td class="num">33.3</td></tr>
@@ -411,20 +412,31 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <h2>5. PR #21 — Source × target_market 셀 캘리브레이션</h2>
 
 <h3>5.1 v1의 단일 상수 보정 한계</h3>
-<p>v1: <code>c = -0.075 if target_market=='online' else 0.0</code> — <strong>모든 online을 같은 값으로</strong> 보정.</p>
+<p>v1: <code>ln(P_corrected) = ln(P_raw) + c</code>, <code>c = -0.075 if target_market=='online' else 0.0</code> — <strong>모든 online을 같은 값으로</strong> 보정 (ln 공간 additive offset).</p>
+<div class="policy-note">
+<p><strong>📐 v1 §4.5 표기 정정</strong></p>
+<p>v1 §4.5는 보정 근거를 <em>"예측 대비 실제 비율 1.078 (7.8% 과대 예측)"</em>으로 적었으나, "예측 대비 실제 비율"을 문자 그대로 읽으면 <code>실제/예측 = 1.078 → 실제 &gt; 예측 → 과소예측</code>이라 라벨과 어긋납니다. 보정 부호(<code>-0.075</code>를 더해 예측을 낮춤)는 <strong>"모델이 과대예측하므로 깎는다"</strong> 방향이 맞으며, v1 본문의 비율/라벨 표기가 일관되지 않았던 것입니다.</p>
+<p>v2부터는 표기를 다음으로 통일합니다:</p>
+<ul>
+<li><strong>factor = median(P<sub>actual</sub> / P<sub>predicted</sub>)</strong> — 셀별 multiplicative factor (선형 공간)</li>
+<li><strong>factor &lt; 1 = 모델 과대예측 → 예측에 factor를 곱해 깎음</strong> (현재 artsy_online ×0.943, saatchi_online ×0.957)</li>
+<li><strong>factor &gt; 1 = 모델 과소예측 → 예측에 factor를 곱해 올림</strong> (현재 cold_factors에는 해당 셀 없음)</li>
+</ul>
+<p>보정 방향(깎기)은 v1과 v2가 동일하지만, v2는 ln-offset(additive) 대신 곱셈 factor(multiplicative)를 사용하고, online 일률 적용 대신 <code>(source × target_market)</code> 셀별로 다른 factor를 적용합니다.</p>
+</div>
 <p>문제: Artsy online과 Saatchi online은 분포가 다릅니다.</p>
 <table>
-<thead><tr><th>셀</th><th class="num">n</th><th class="num">baseline MdAPE</th><th class="num">v2 cross-fit calibrated MdAPE</th><th class="num">적용 factor</th></tr></thead>
+<thead><tr><th>셀</th><th class="num">n</th><th class="num">baseline MdAPE</th><th class="num">cross-fit calibrated MdAPE<br><span class="muted">(pre-guard, proposed factor 적용)</span></th><th class="num">guarded 결과 (운영 적용)</th><th class="num">적용 factor</th></tr></thead>
 <tbody>
-<tr><td>artsy_gallery</td><td class="num">868</td><td class="num">24.3</td><td class="num"><strong>24.3 (skip) ← guarded</strong></td><td class="num">1.0</td></tr>
-<tr><td>artsy_online</td><td class="num">6,421</td><td class="num">35.0</td><td class="num"><strong>34.1</strong></td><td class="num">0.943</td></tr>
-<tr><td>saatchi_online</td><td class="num">21,087</td><td class="num">41.7</td><td class="num"><strong>40.1</strong></td><td class="num">0.957</td></tr>
+<tr><td>artsy_gallery</td><td class="num">868</td><td class="num">24.3</td><td class="num">31.2</td><td class="num"><strong>24.3 (skip)</strong></td><td class="num">1.0</td></tr>
+<tr><td>artsy_online</td><td class="num">6,421</td><td class="num">35.0</td><td class="num">34.1</td><td class="num"><strong>34.1</strong></td><td class="num">0.943</td></tr>
+<tr><td>saatchi_online</td><td class="num">21,087</td><td class="num">41.7</td><td class="num">40.1</td><td class="num"><strong>40.1</strong></td><td class="num">0.957</td></tr>
 </tbody>
 </table>
-<p>(MdAPE는 cold GroupKFold OOF, <code>integrated_v3_filtered_tuned_source_calibration.json</code> <code>cold_breakdown</code> 기준.)</p>
+<p>(MdAPE는 cold GroupKFold OOF, <code>integrated_v3_filtered_tuned_source_calibration.json</code> <code>cold_breakdown</code> 기준. <code>artsy_gallery</code>는 proposed factor=1.0371 적용 시 cross-fit MdAPE가 24.3→31.2로 회귀하여 per-cell guard로 factor=1.0 fallback. 운영 적용 결과는 baseline과 동일.)</p>
 
 <h3>5.2 셀 정의</h3>
-<p><code>cell = f"{source}_{target_market}"</code>. <code>target_market</code>은 <code>is_krw==1 → 'gallery'</code> (한국 갤러리), 그 외 → <code>'online'</code>. 학습 시점과 서빙 시점에 동일한 룰 적용.</p>
+<p><code>cell = f"{source}_{target_market}"</code>. <strong>학습 시점</strong>: <code>target_market</code>을 <code>is_krw==1 → 'gallery'</code> (한국 갤러리), 그 외 → <code>'online'</code>으로 도출하여 셀 키 산출 (<code>scripts/calibrate_source_bias.py</code>). <strong>서빙 시점</strong>: predictor는 <code>target_market</code>을 caller로부터 인자로 받고 셀 키 산출에만 사용 (<code>primary_predictor.py:306, 371</code>) — <code>is_krw</code>로의 자동 추론이나 일치 검증은 하지 않음. 학습/서빙이 같은 룰을 따른다는 보장은 <strong>upstream caller(데이터 빌더 / API 서버)의 계약</strong>에 의존합니다.</p>
 <p>가능한 셀:</p>
 <ul>
 <li><code>artsy_gallery</code> (Artsy 데이터 중 KRW 표기) — 868건</li>
@@ -464,6 +476,74 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <li><strong>cell key parser 버그</strong>: <code>split('_', 1)</code>이 <code>"artsy_artue"</code> 같은 셀에서 잘못 분할 → <code>rsplit</code>으로 수정.</li>
 <li><strong>Schema validation</strong>: 산출물 version/model_target/허용 셀 키 일치 + factor 값 [0.1, 10.0] 범위 확인 (불일치 시 RuntimeError).</li>
 </ul>
+
+<h3>5.6 출처 라벨 효과 통제 실험 — 설계와 결과</h3>
+
+<p>콜론30이 v1 보고서 검토 중 던진 의문 — <em>"같은 작품에 다른 모든 입력은 그대로 두고 출처 라벨만 Artsy ↔ Saatchi로 바꾸면 예측이 달라지나?"</em> — 에 답하기 위해 통제 실험을 수행했습니다. PR #21 셀 캘리브레이션 도입 이후 모델이 출처 라벨에 얼마나 의존하는지 정량 측정한 결과입니다.</p>
+
+<h4>설계</h4>
+
+<ul>
+<li><strong>표본</strong>: warm 작가 30명 (3개 코호트 × 10명, random_state=42)
+  <ul>
+  <li>코호트 A — 양쪽 학습 (Artsy ∩ Saatchi 양쪽 warm slice 작가)</li>
+  <li>코호트 B — Artsy만 warm</li>
+  <li>코호트 C — Saatchi만 warm</li>
+  </ul>
+</li>
+<li><strong>작품</strong>: 각 작가의 ln_price 중앙값에 가장 가까운 1점 (대표 작품)</li>
+<li><strong>처리</strong>: 작품 features 그대로 두고 <code>source</code> 라벨만 <code>"artsy"</code> ↔ <code>"saatchi"</code> 두 값으로 각각 예측 (총 60회 예측)</li>
+<li><strong>고정 변수</strong>: <code>target_market="online"</code> (Saatchi 학습이 100% online이라 다른 셀은 OOD)</li>
+</ul>
+
+<p>변화율 정의: <code>delta% = (price_saatchi − price_artsy) / price_artsy × 100</code></p>
+
+<h4>결과 (warm 30명)</h4>
+
+<div class="wide-table-wrap">
+<table>
+<thead><tr><th>코호트</th><th class="num">n</th><th class="num">delta% 평균</th><th class="num">delta% 중앙값</th><th class="num">|delta|% 평균</th><th class="num">|delta|% 최대</th><th class="num">±0.5% 이내</th></tr></thead>
+<tbody>
+<tr><td>A. 양쪽 학습</td><td class="num">10</td><td class="num">−0.25%</td><td class="num">−0.19%</td><td class="num">0.35%</td><td class="num">1.29%</td><td class="num">8 / 10</td></tr>
+<tr><td>B. Artsy만 warm</td><td class="num">10</td><td class="num">−0.33%</td><td class="num">−0.07%</td><td class="num">0.41%</td><td class="num">1.48%</td><td class="num">8 / 10</td></tr>
+<tr><td>C. Saatchi만 warm</td><td class="num">10</td><td class="num">+0.02%</td><td class="num">+0.05%</td><td class="num">0.30%</td><td class="num">0.79%</td><td class="num">8 / 10</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>핵심 발견</strong>:</p>
+<ul>
+<li>warm 작가 30명 <strong>전원 변화율 ±1.5% 이내</strong>, 80%(24명)가 ±0.5% 이내</li>
+<li>코호트별 평균 변화율 ±0.3% 수준 — 모델 출력의 일반적 측정 노이즈에 가까움</li>
+<li>변화 방향이 코호트 C에선 +0.02%로 양수, A·B는 음수 — 작가별로도 부호가 일관되지 않음 → 모델이 출처 라벨을 가격 결정의 주요 단서로 사용하지 않음을 시사</li>
+<li>학습량 50작품 이상 작가는 변화율 최대 0.27%, 5~9작품 경계선 작가에서만 1% 안팎 변동</li>
+</ul>
+
+<h4>cold 작가에서는 영향이 더 큼 (참고)</h4>
+
+<p>warm-only 필터를 해제하고 cold 라우팅(CatBoost) 작가에 대해 동일 실험을 진행한 보조 결과 (<code>model_test_results/source_flip_results.json</code>, warm-only=False), 일부 사례에서 −8 ~ −17%까지 변동이 관찰됐습니다.</p>
+
+<table>
+<thead><tr><th>cold 사례</th><th class="num">학습량 (a/s)</th><th class="num">변화율</th></tr></thead>
+<tbody>
+<tr><td>checksy choi</td><td class="num">0 / 1</td><td class="num">−16.49%</td></tr>
+<tr><td>Lee Haekyung</td><td class="num">2 / 0</td><td class="num">−15.41%</td></tr>
+<tr><td>do min</td><td class="num">19 / 2</td><td class="num">−12.79%</td></tr>
+<tr><td>hyejung moon</td><td class="num">0 / 1</td><td class="num">−11.43%</td></tr>
+<tr><td>rakeum rhee</td><td class="num">10 / 1</td><td class="num">−8.82%</td></tr>
+</tbody>
+</table>
+
+<p>이 cold 영역 잔존 편향은 셀 캘리브레이션이 잡지 못하는 부분 — 모델 내부의 categorical embedding이 출처 라벨을 학습한 결과로 분석됩니다. v2 셀 보정은 데이터 분포 평균 차이는 잡았으나 임베딩 차원의 영향까지는 제거하지 못합니다.</p>
+
+<h4>해석</h4>
+
+<ul>
+<li><strong>warm 영역</strong>: 출처 라벨 효과가 사실상 없음. 학습량이 충분한 작가에 대해서는 모델이 작가 고유 신호(career_stage, ln_followers, artist_total_works 등)에 의해 가격을 결정하며 출처는 주변 신호로만 작용</li>
+<li><strong>cold 영역</strong>: 작가 고유 신호가 부족할 때 모델이 출처 라벨을 보조 단서로 활용. 이는 학습 데이터 분포 차이 (Saatchi 평균이 Artsy 대비 저가 대역에 분포)의 자연스러운 반영이며, 후처리 셀 보정으로 일부 완화하나 완전 제거는 v3 source ablation 실험으로 검토 (§9.2)</li>
+</ul>
+
+<p><strong>한계</strong>: n=30/코호트, 작가당 1작품으로 통계적 검정 미실시. v3에서 표본을 90+로 확장하고 paired t-test, Cohen's d, 95% CI 추가 예정 (§9.2). 자세한 실험 raw 데이터는 <code>model_test_results/source_flip_results_warm.json</code>, 작가별 상세는 별도 보고서 <code>docs/출처라벨_플립실험_보고서_20260429.html</code> 참조.</p>
 
 <hr>
 <h2>6. PR #22 — Source 정규화 + 등급 마진 production-time 재캘리브레이션</h2>
@@ -544,7 +624,7 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <tr><td><strong><code>work_age</code>/<code>vintage_premium</code>/<code>freshness_discount</code></strong></td><td>학습 시 신호 있으나 서빙 0 하드코딩</td><td class="center">❌ drift</td></tr>
 <tr><td><strong><code>gallery_name</code> 직접 피처</strong></td><td>학습 vocab 59개 vs 서빙 2개 hardcoded</td><td class="center">❌ 매번 sentinel → drift</td></tr>
 <tr><td><strong>5 카테고리 확장</strong> (장르/스타일 등)</td><td>계약 변경 위험 큼, -0.5%p 추정</td><td class="center">❌ ROI 낮음</td></tr>
-<tr><td><strong>단일 상수 source 보정</strong> (-0.075 ln)</td><td>모든 online 동일 처리, 셀 분포 차이 미반영</td><td class="center">❌ 셀별 보정으로 대체 (PR #21)</td></tr>
+<tr><td><strong>단일 ln-offset −0.075 (additive, online 일률)</strong></td><td>모든 online 동일 처리, 셀 분포 차이 미반영</td><td class="center">❌ 셀별 multiplicative factor로 대체 (PR #21)</td></tr>
 <tr><td><strong>In-sample calibration</strong></td><td>평가 부풀려짐</td><td class="center">❌ cross-fit으로 대체</td></tr>
 <tr><td><strong>개인전/페어 직접 피처화</strong></td><td>v4 실험에서 과적합 + warm 데이터 부족</td><td class="center">❌ <code>career_stage_v2_score</code> 입력으로 통합</td></tr>
 </tbody>
@@ -553,7 +633,7 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 
 <hr>
 <h2>8. 최종 production 메트릭 (v3-tuned-cal)</h2>
-<blockquote><p><strong>측정 절차</strong>: production 코드 경로 그대로 재현. <code>is_warm_artist</code>(930 slug JSON), source calibration cold factor, target_market 추론까지 동일.</p></blockquote>
+<blockquote><p><strong>측정 절차</strong>: production 코드 경로 그대로 재현. <code>is_warm_artist</code>(930 slug JSON), source calibration cold factor를 동일 적용. 오프라인 평가 스크립트(<code>scripts/calibrate_grade_margins.py</code>)는 데이터 행의 <code>is_krw</code>로 <code>target_market</code>을 도출하여 셀 키를 산출하며, 운영 서빙은 caller(API 요청)가 <code>target_market</code> 값을 직접 전달합니다 — predictor는 양쪽 경로 모두에서 받은 값을 그대로 셀 키 산출에만 사용 (§5.2 참조).</p></blockquote>
 
 <h3>8.1 Warm slice (KFold, 27,062건 / 930 작가, ≥5건)</h3>
 <table>
@@ -615,6 +695,36 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <li><strong>m 값 정책 결정</strong>: 권장치 적용 시 C/D는 m≈0.9 — 가격 범위 표시 정책 변경 영향 검토 필요. 옵션은 §6.2 참조.</li>
 </ol>
 
+<h3>9.2 v3 후속 보강 계획 — 작업 트랙 5개</h3>
+
+<p>위 6건 협조 사항 + 코덱스 방법론 검토 결과를 반영하여 v3 보강 작업을 5개 트랙으로 분해했습니다 (자세한 내용은 별도 문서 <code>docs/v3_보강계획_외부공유용_20260430.md</code> 참조).</p>
+
+<div class="wide-table-wrap">
+<table>
+<thead><tr><th>Group</th><th>작업 영역</th><th>진행 시기</th><th>기존 Phase 매핑</th></tr></thead>
+<tbody>
+<tr><td><strong>Group 1</strong></td><td>분석·통계 보강 (Bootstrap CI, paired statistical test, learning curve, leave-one-gallery-out / leave-one-medium-out CV, calibration plot, residual analysis)</td><td>2026-05~06</td><td>(독립 트랙)</td></tr>
+<tr><td><strong>Group 2</strong></td><td>핵심 실험 추가 (출처 플립 표본 30→90+ 확장, cold path 모델 채택 규칙 정량 명시화, drift ablation, quantile regression / conformal prediction)</td><td>2026-06~09</td><td>Phase 1B 병행</td></tr>
+<tr><td><strong>Group 3</strong></td><td>모델 구조·튜닝 (nested CV, Optuna 30→100+ 확장, cell key 재설계, source ablation)</td><td>2026-09~12</td><td>Phase 2A / 2B 병행</td></tr>
+<tr><td><strong>Group 4</strong></td><td>운영·재현성·일반화 (production 모니터링, 선행 연구 정량 benchmark, drift 진단 procedure 일반화, 외부 재현성 패키지)</td><td>2026-12~2027-03</td><td>Phase 3 병행</td></tr>
+<tr><td><strong>Group 5</strong></td><td><strong>데이터 클렌징 파이프라인 고도화</strong> — medium/support parser 정확도 향상, gallery_name 표준화, 입체/회화 자동 분류 정확화, duplicate detection 강화, 시점별 환율 보정</td><td>Phase 1B~2B 병행</td><td>Phase 1B / Phase 2B 정량 backbone</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>v3 보강 핵심 메시지</h4>
+
+<ul>
+<li><strong>방법론적 엄밀성 강화</strong>: §6.4 정직성 caveat에 명시한 post-hoc selection bias를 nested CV로 제거. 출처 플립 실험을 표본 확장 + 통계 검정으로 강화.</li>
+<li><strong>Cold path 모델 채택 객관화</strong>: 현재 CatBoost 채택 사유는 "안정성"인데, v3.1에서 CatBoost / XGBoost / 앙상블을 동일 outer fold에서 비교하고 사전 정의된 채택 규칙(MdAPE 차이, CI, latency, 운영 단순성 4단계 tie-break)으로 결정.</li>
+<li><strong>Cold-start MdAPE plateau 정량 입증</strong>: 학습 데이터 양 vs MdAPE의 learning curve를 산출하여 "데이터 한계" 주장의 근거 제시. 동시에 <strong>Group 5 데이터 클렌징 고도화</strong>로 데이터 측 품질 자체를 끌어올려 plateau를 한 차례 더 내림.</li>
+<li><strong>각 마일스톤 acceptance gate</strong>: v3.0 / v3.1 / v3.2 / v3 final 각각에 산출물 + 정량 임계값 (HARD/SOFT 분류) 명시. 임계값 미달 시 다음 단계 진행 보류.</li>
+</ul>
+
+<h4>1차년도 정량 목표 진행 상황</h4>
+
+<p>v2의 5-fold CV 측정값 (warm Artsy MdAPE 8.3%, 앙상블 8.7%)은 1차년도 A 등급 목표 밴드 (warm Artsy 8.0~9.0%) 내에 진입했으며, v3.0 단계에서 v1 vs v2 paired statistical test로 개선의 통계적 유의성을 추가 검증할 예정입니다. cold MdAPE의 v3.2 추가 개선 추정치 (35~37%)는 Phase 2B 데이터 강화 + Group 5 클렌징 고도화 완료를 가정한 값이며, acceptance gate 정량 임계값으로는 사용하지 않습니다.</p>
+
 <hr>
 <h2>10. 운영 변경 사항 (v1 대비)</h2>
 
@@ -661,56 +771,6 @@ if is_warm_artist is False:
 <div class="tldr">
 <p><strong>v2 모델은 학습 작가의 작품 가격을 평균 9.7% 오차(warm Artsy는 8.3%)로 예측한다. 신규 작가는 38.3% 오차 — 데이터 부족으로 본질적 한계. 다음 큰 개선은 모델이 아니라 콜론30 갤러리 정보 수집·DB schema 정합·갤러리 입력 UX에 달림.</strong></p>
 </div>
-
-<hr>
-<h2>12. 참고 문서</h2>
-
-<h3>콜론30 피드백</h3>
-<ul>
-<li><code>실험계획서_피드백_답변.md</code> — 2026-04-07~08, 14건 (모델 설계 단계)</li>
-<li><code>기술보고서_피드백_답변_20260427.md</code> — 2026-04-24~26, 10건 (production 평가 단계)</li>
-</ul>
-
-<h3>v1 본문 (이론·아키텍처·SHAP)</h3>
-<ul>
-<li><a href="model_technical_report.html"><code>model_technical_report.html</code></a> — v1 보고서</li>
-</ul>
-
-<h3>액션 플랜·실행 기록</h3>
-<ul>
-<li><code>MdAPE_개선_액션플랜_20260427.md</code> — 액션 매트릭스(P0~P3)</li>
-<li><code>예측정확도_종합리포트_20260428.md</code> — 정확도 시작점→현재 비교</li>
-<li><code>협조_필요사항_정리_20260428.md</code> — 콜론30/운영/정책 협조 12건</li>
-</ul>
-
-<h3>산출물 (수치 출처)</h3>
-<ul>
-<li><code>model_test_results/integrated_v3_filtered_tuned_metrics.json</code> — 핵심 metrics</li>
-<li><code>model_test_results/integrated_v3_filtered_tuned_source_calibration.json</code> — cell calibration factor</li>
-<li><code>model_test_results/grade_margin_calibration.json</code> — production-time 등급별 m</li>
-<li><code>model_test_results/integrated_v3_filtered_tuned_warm_artists.json</code> — warm 930 slug</li>
-<li><code>model_test_results/gallery_tier_coverage_report.md</code> — PR #19 매핑 분석</li>
-</ul>
-
-<h3>머지된 PR</h3>
-<ul>
-<li>PR #19 (<code>e73f967</code>) — 갤러리 티어 v3 매핑 분석</li>
-<li>PR #20 (<code>71b363e</code>) — career_stage v2 + drift 정리</li>
-<li>PR #21 (<code>e1d033d</code>) — source × target_market 셀 캘리브레이션</li>
-<li>PR #22 (<code>6f47ec2</code>) — source 정규화 + grade margin 재캘리브레이션</li>
-<li>PR #23 (<code>4a3588a</code>) — 협조 필요 사항 문서화</li>
-<li>PR #24 (<code>cfce8a6</code>) — 정확도 종합 리포트</li>
-</ul>
-
-<hr>
-<h2>13. 변경 이력</h2>
-<ul>
-<li><strong>2026-04-28 (v2 1차)</strong> — career_stage v2, 5개 drift 피처 제거, source × target_market 셀 캘리브레이션, 등급 마진 production-time 재산출 반영.</li>
-<li><strong>2026-04-28 (v2 2차)</strong> — 명칭 정책 반영(Q9: "신진/중견/원로" 라벨 제거 → 수치형 <code>career_stage</code> 0~8 + 운영 등급 A/B/C/D만 사용). 콜론30 피드백 24건(기술보고서 10 + 실험계획서 14) 트레이서빌리티 표 추가. PR #19 갤러리 티어 분석, negative results 표 추가.</li>
-<li><strong>2026-04-28 (v2 3차)</strong> — 비개발자 독자 가독성 개선: ① 용어 미니 가이드 추가(PR/MdAPE/W30/drift/warm-cold/OOF 풀어 설명), ② §1 "5개 피처 제거"를 무엇·왜 표로 본문에 직접 노출(이전엔 §4.4까지 가야 보였음), ③ 피드백 매트릭스(Q1~Q10, P-Q1~P-Q14)에 <strong>반영 상태 컬럼</strong>(✅/🔄/📋/❌) 추가, ④ "협력자" 표기를 회사명 <strong>"콜론30"</strong>으로 통일.</li>
-<li><strong>2026-04-28 (v2 4차)</strong> — 표 직관성 개선: ① 컨테이너 폭 940→1180px로 확대, ② 한글 단어 단위 줄바꿈(<code>word-break: keep-all</code>) 적용으로 "글자 단위 세로 wrap" 해소, ③ 넓은 표(피드백 매트릭스, 5개 피처 제거, 등급 마진 등)에 <code>.wide-table-wrap</code> + <code>colgroup</code> 적용으로 컬럼 폭 명시, ④ 반영 상태 셀을 2단(<strong>상태</strong> + <span class="muted">상세</span>) 구조로 재포맷.</li>
-<li><strong>2026-04-28 (v2 5차)</strong> — 내부 개발 프로세스 메타정보 정리: 코덱스 리뷰 회차별 표·인라인 인용·"32회" 멘션을 제거하고, 발견된 정합 결함은 §4.8/§5.5/§6.3에 압축 산문으로 기술. 새로 §6.4 "왜 38.3% / 9.7%가 신뢰할 만한가" 단락 추가 (정직성 근거를 한 곳에 모음). 외부 독자(콜론30)에게는 "어떻게 발견했는지"보다 "지금 모델이 무엇을 하는지"가 본질이라는 판단.</li>
-</ul>
 
 </div>
 </body>
