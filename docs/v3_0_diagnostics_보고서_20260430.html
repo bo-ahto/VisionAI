@@ -556,11 +556,36 @@
 <p><strong>핵심 진단</strong>: SDD01-SDD08 모두 강한 음수 → <strong>saatchi_online D10은 broad cell saturation</strong> (모든 actual 가격 구간에서 일관 과대예측), top-tail regime shift 만의 문제 아님. 단일 cold cell factor 0.9569로는 <strong>D10에서 부족</strong>. v3.1 액션: D10 (예측가 ≥ 13.7M KRW) 전용 calibration layer 우선 검토.</p>
 </div>
 
-<h3>8.4 'other' medium 라벨 정제 (n=1,144)</h3>
+<h3>8.4 v3.2-4 production-routed 재검증 — D10 framing 갱신 (warm 노출 99.4%)</h3>
+
+<p>v3.0 D10 deep-dive (8.2-8.3) 는 cold path 의 saatchi_online 만 보고 있었으나, v3.2-4 에서 production routing 정합 (warm → XGB only, cold → CB × cell factor) 기준 재평가한 결과 <strong>D10 framing 자체를 갱신해야 함</strong>이 드러났다.</p>
+
+<table>
+<thead>
+<tr><th>Cohort</th><th class="num">n</th><th>구성</th><th class="num">A_existing coverage</th><th class="num">B_conformal (참고)</th><th class="num">C_boost_1.5×</th></tr>
+</thead>
+<tbody>
+<tr><td>cold_d10 (v3.1-1 layer cohort)</td><td class="num">27</td><td>cold + saatchi + online + cb_calibrated ≥ 13.7M, v3.1-1 적용</td><td class="num">33.3% (B=±30%)</td><td class="num">77.8%</td><td class="num">51.9%</td></tr>
+<tr><td><strong>warm_saatchi_high</strong></td><td class="num"><strong>1,556</strong></td><td>warm + saatchi + online + xgb_pred ≥ 13.7M, v3.1-1 미적용</td><td class="num"><strong>13.6%</strong> (A=±20%)</td><td class="num">35.8% (OOD)</td><td class="num">20.4%</td></tr>
+<tr><td>all_d10_routed</td><td class="num">1,566</td><td>saatchi + online + pred_routed ≥ 13.7M (warm 99.4%)</td><td class="num">13.9%</td><td class="num">36.1%</td><td class="num">20.7%</td></tr>
+</tbody>
+</table>
+
+<div class="tldr">
+<p><strong>새 핵심 진단</strong>: <strong>production-routed saatchi_online 고가 segment 의 주된 실패 구간은 warm path 에 있음</strong> (n=1,566 중 warm 1,556 = 99.4%). 기존 A grade ±20% 가 13.6% 만 cover. v3.0 D10 deep-dive (n=1,499) 는 cohort 전체 (warm/cold 합산) 를 본 결과였으며, cold path 의 v3.1-1 layer 는 27 행에만 적용. <strong>v3.3 우선순위 1 = saatchi_online 고가 segment 전반의 모델/피처/외부 데이터 (listing date, view count, sale ratio) 개선</strong> + warm path 별도 calibration 진단.</p>
+</div>
+
+<p><strong>해석 caveat</strong> (코덱스 P0/P3): cold_d10 임계는 cb_calibrated ≥ 13.7M, warm_saatchi_high 는 xgb_price ≥ 13.7M — 임계 모델이 다르므로 cold vs warm 1:1 비교는 unfair. B_d10_grade_conformal 의 35.8% 는 cold-D10 calibration set 에서 학습된 split conformal 결과 (v3.2-3) 를 warm 에 그대로 적용한 OOD transfer 참고치 — deploy-valid 수치 아님. warm 전용 conformal 은 v3.3 follow-up diagnostic.</p>
+
+<p>참고: 학습 데이터 grade 분포 = {A: 27,062, B: 1,314, C: 0, D: 0} (학습 데이터는 모두 matched + has_birth_year 다수 → C/D 미등장). server <code>determine_confidence()</code> 호출, has_manual_profile=False (학습 데이터에 컬럼 없음, 보수적). <strong>실제 production grade mix 추정까지 주장하려면 unmatched + manual profile + DB 기준 training_count 반영한 별도 replay 필요</strong> (코덱스 P1).</p>
+
+<p><strong>산출물</strong>: <code>scripts/v32_d10_margin_redesign.py</code> + <code>model_test_results/v3_diagnostics/d10_margin_ablation.json</code></p>
+
+<h3>8.5 'other' medium 라벨 정제 (n=1,144)</h3>
 
 <p>'other' raw breakdown: 199 unique raw mediums. 한국 전통 회화 계열 (silk / korean paper / gofun / stone powder) 합 ~140건 → <strong>v3.1에서 korean_traditional 카테고리 신설로 라벨 정제 가능</strong>. 'color' / 'color, other' 236건은 추가 샘플링 후 결정.</p>
 
-<h3>8.5 work_count × cell 2-way (구성효과 진단)</h3>
+<h3>8.6 work_count × cell 2-way (구성효과 진단)</h3>
 
 <p>'3-4 작품 작가 worst (MdAPE 46%)' 신호의 일부는 <strong>artsy_online 3-4 (n=308, MdAPE 45%, med +18.74)</strong> anomaly. saatchi_online은 1-2/3-4/5-9 모두 비슷하게 어려움. 단순 work_count signal 보다 정밀화된 진단 — v3.1 우선순위 하향.</p>
 

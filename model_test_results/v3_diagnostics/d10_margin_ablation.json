@@ -1,0 +1,142 @@
+{
+  "config": {
+    "scope": "Production-routed (warm→XGB / cold→CB×cell factor) 기준 D10 cohort 별 기존 grade margin coverage 측정 + 3 옵션 ablation. v3.1-1 cold-D10 layer factor=0.7569 는 cold + saatchi_online + cb_calibrated ≥ 13,728,873 KRW 에만 적용 (production semantics 그대로).",
+    "threshold_krw": 13728873,
+    "target_coverage_pct": 90.0,
+    "existing_grade_margins": {
+      "A": 0.2,
+      "B": 0.3,
+      "C": 0.5,
+      "D": 0.7
+    },
+    "v31_point_factor": 0.7569,
+    "grade_rule_source": "server determine_confidence (primary_predictor.py:52)",
+    "grade_simplification_caveats": "is_matched=True (학습 데이터 모두 matched 가정), has_manual_profile=False (학습 데이터 컬럼 없음, 보수적). training_count = 학습 데이터 기준 작가별 row count.",
+    "conformal_quantiles_used": {
+      "q_low_log": -1.4159066791024517,
+      "q_high_log": 0.6879825561524612,
+      "low_factor": 0.2427054576919721,
+      "high_factor": 1.9896973786702599
+    },
+    "cohorts": {
+      "cold_d10": "v3.1-1 layer 가 닿는 cohort: cold artist + saatchi + online + cb_calibrated ≥ threshold. 본 ablation 의 primary cohort.",
+      "warm_saatchi_high": "warm artist + saatchi + online + xgb_pred ≥ threshold. v3.1-1 미적용 (production 에서 cold path 만 적용). 비교 참고.",
+      "all_d10_routed": "saatchi + online + pred_routed ≥ threshold (warm/cold 합쳐서). 참고용 — production 의 D10 라우팅 평균 효과."
+    },
+    "cohort_comparability_caveat": "cold_d10 cohort 정의는 cb_calibrated ≥ 13.7M, warm_saatchi_high 는 xgb_price ≥ 13.7M — 임계 모델이 다르므로 cold vs warm 1:1 성능 비교는 unfair. 다만 production exposure 관점에서 all_d10_routed n=1,566 중 warm 1,556 (99.4%) → production-routed saatchi_online 고가 segment 의 주된 실패 구간이 warm path 에 몰려 있음.",
+    "conformal_warm_application_caveat": "B_d10_grade_conformal 의 quantile (low_factor 0.243 / high_factor 1.990) 은 cold D10 calibration set 에서 학습된 split conformal 결과 (v3.2-3). warm cohort 에 그대로 적용한 35.8% coverage 는 deploy-valid 수치 X — OOD transfer 참고치로만 해석. warm 전용 conformal 은 follow-up diagnostic 로 분리 (v3.3 우선순위 아래).",
+    "deploy_caveat": "본 ablation 은 research/comparison only. 실제 deploy 결정은 운영 측 + 별도 PR. v3.1-1 point + v3.2-3 interval + v3.2-4 grade 모두 layered HOLD 상태. 본질 해결은 v3.3 에서 saatchi_online 고가 segment (warm/cold 모두) 의 모델/피처/외부 데이터 (listing date, view count, sale ratio) 개선."
+  },
+  "global_grade_distribution": {
+    "A": 27062,
+    "B": 1314
+  },
+  "cohorts": {
+    "cold_d10": {
+      "n": 27,
+      "grade_distribution": {
+        "B": 27
+      },
+      "options": {
+        "A_existing": {
+          "coverage_pct": 33.33333333333333,
+          "width_median": 0.6000000000000001,
+          "width_p25": 0.6000000000000001,
+          "width_p75": 0.6000000000000002,
+          "low_median": 8847354.15103062,
+          "high_median": 16430800.566199725,
+          "description": "기존 grade margin (server determine_confidence 그대로) — additive symmetric"
+        },
+        "B_d10_grade_conformal": {
+          "coverage_pct": 77.77777777777779,
+          "width_median": 1.7469919209782878,
+          "width_p25": 1.7469919209782878,
+          "width_p75": 1.7469919209782878,
+          "low_median": 3067573.0551269376,
+          "high_median": 25147939.08924724,
+          "description": "D10 신설 등급, multiplicative margin from v3.2-3 conformal (low_factor=0.243, high_factor=1.990)"
+        },
+        "C_existing_boost_1.5x": {
+          "coverage_pct": 51.85185185185185,
+          "width_median": 0.8999999999999999,
+          "width_p25": 0.8999999999999998,
+          "width_p75": 0.9,
+          "low_median": 6951492.547238346,
+          "high_median": 18326662.169992,
+          "description": "기존 grade margin × 1.5 boost (D → ±105% capped at 99%) — additive"
+        }
+      }
+    },
+    "warm_saatchi_high": {
+      "n": 1556,
+      "grade_distribution": {
+        "A": 1556
+      },
+      "options": {
+        "A_existing": {
+          "coverage_pct": 13.624678663239074,
+          "width_median": 0.3999999999999999,
+          "width_p25": 0.39999999999999986,
+          "width_p75": 0.39999999999999997,
+          "low_median": 40959968.18821356,
+          "high_median": 61439952.282320336,
+          "description": "기존 grade margin (server determine_confidence 그대로) — additive symmetric"
+        },
+        "B_d10_grade_conformal": {
+          "coverage_pct": 35.796915167095115,
+          "width_median": 1.7469919209782878,
+          "width_p25": 1.7469919209782878,
+          "width_p75": 1.7469919209782878,
+          "low_median": 12426509.782711236,
+          "high_median": 101872426.66813219,
+          "description": "D10 신설 등급, multiplicative margin from v3.2-3 conformal (low_factor=0.243, high_factor=1.990)"
+        },
+        "C_existing_boost_1.5x": {
+          "coverage_pct": 20.43701799485861,
+          "width_median": 0.6000000000000001,
+          "width_p25": 0.6,
+          "width_p75": 0.6000000000000002,
+          "low_median": 35839972.16468686,
+          "high_median": 66559948.305847034,
+          "description": "기존 grade margin × 1.5 boost (D → ±105% capped at 99%) — additive"
+        }
+      }
+    },
+    "all_d10_routed": {
+      "n": 1566,
+      "grade_distribution": {
+        "A": 1556,
+        "B": 10
+      },
+      "options": {
+        "A_existing": {
+          "coverage_pct": 13.92081736909323,
+          "width_median": 0.3999999999999999,
+          "width_p25": 0.39999999999999986,
+          "width_p75": 0.39999999999999997,
+          "low_median": 40959968.18821356,
+          "high_median": 61439952.282320336,
+          "description": "기존 grade margin (server determine_confidence 그대로) — additive symmetric"
+        },
+        "B_d10_grade_conformal": {
+          "coverage_pct": 36.07918263090677,
+          "width_median": 1.7469919209782878,
+          "width_p25": 1.7469919209782878,
+          "width_p75": 1.7469919209782878,
+          "low_median": 12426509.782711236,
+          "high_median": 101872426.66813219,
+          "description": "D10 신설 등급, multiplicative margin from v3.2-3 conformal (low_factor=0.243, high_factor=1.990)"
+        },
+        "C_existing_boost_1.5x": {
+          "coverage_pct": 20.689655172413794,
+          "width_median": 0.6000000000000001,
+          "width_p25": 0.6,
+          "width_p75": 0.6000000000000002,
+          "low_median": 35839972.16468686,
+          "high_median": 66559948.305847034,
+          "description": "기존 grade margin × 1.5 boost (D → ±105% capped at 99%) — additive"
+        }
+      }
+    }
+  }
+}
