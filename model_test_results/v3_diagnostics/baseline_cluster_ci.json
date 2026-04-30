@@ -1,0 +1,85 @@
+{
+  "config": {
+    "scope": "1.4 baseline 비교의 row-level CI 를 artist-cluster bootstrap CI 로 재산출. Cold 일반화 질문에 정합 (within-artist 의존성 보존). 1.5 learning curve / v3.1-1/2/3 와 동일 bootstrap 단위로 inconsistent 해소.",
+    "n_bootstrap": 10000,
+    "rng_seed": 42,
+    "hard_gate_threshold_pp": 30.0,
+    "hard_gate_definition": "v2 cold ensemble MdAPE ≤ Global median baseline MdAPE − 30%p (점추정). 본 작업은 사후 정의 변경이 아니라 cluster CI 보강 — 기존 점추정 gate 그대로 유지 (codex P1). cluster CI 하한이 30%p 미만이면 'PASS but borderline under cluster CI' 로 framing.",
+    "framing_guide": "올바른 표현: 'PASS under pre-specified point gate; baseline 대비 큰 개선은 재확인되나, cluster bootstrap 기준으로 30%p 초과를 하한까지 보장하진 못함.' 잘못된 표현: '통계적으로 명확하게 30%p 이상 우수' (cluster CI 하한 미달 시 과장). RF vs v2 cluster gap [-1.63, +2.75] (점추정 +0.29%p) 는 '우위 없음 = 통계적 동급' 으로 정리 (codex P2)."
+  },
+  "options": {
+    "global_median": {
+      "point": 71.9123505976096,
+      "ci_low": 67.46153846153854,
+      "ci_high": 77.7310924369748,
+      "method": "artist-cluster bootstrap (n_clusters=1551, 10000 iter)",
+      "W30": 19.98167465463772
+    },
+    "random_forest": {
+      "point": 38.94739574801656,
+      "ci_low": 34.89200002739816,
+      "ci_high": 45.32139697744801,
+      "method": "artist-cluster bootstrap (n_clusters=1551, 10000 iter)",
+      "W30": 39.720186072737526
+    },
+    "v2_ensemble_raw": {
+      "point": 38.66210624205194,
+      "ci_low": 33.905417086785846,
+      "ci_high": 44.453828953288394,
+      "method": "artist-cluster bootstrap (n_clusters=1551, 10000 iter)",
+      "W30": 41.094586974908374
+    }
+  },
+  "paired_gap_ci": {
+    "global_median_minus_v2_ensemble": {
+      "label": "global_median - v2_ensemble",
+      "point_gap_pp": 33.25024435555766,
+      "ci_low_pp": 25.88882849492118,
+      "ci_high_pp": 40.06105003563884,
+      "method": "paired artist-cluster bootstrap (n_clusters=1551, 10000 iter)"
+    },
+    "random_forest_minus_v2_ensemble": {
+      "label": "random_forest - v2_ensemble",
+      "point_gap_pp": 0.2852895059646201,
+      "ci_low_pp": -1.646111693523068,
+      "ci_high_pp": 2.712367498653878,
+      "method": "paired artist-cluster bootstrap (n_clusters=1551, 10000 iter)"
+    }
+  },
+  "hard_gate_evaluation": {
+    "point_estimate_gap_pp": 33.25024435555766,
+    "cluster_ci_low_pp": 25.88882849492118,
+    "cluster_ci_high_pp": 40.06105003563884,
+    "threshold_pp": 30.0,
+    "point_pass": true,
+    "cluster_ci_lower_meets_threshold": false,
+    "official_status": "PASS under pre-specified point gate (33.25%p ≥ 30%p)",
+    "cluster_ci_caveat": "Cluster bootstrap 기준 ΔCI 하한이 30%p threshold 미만 — 'baseline 대비 큰 개선 방향은 재확인되나 cluster bootstrap 기준으로 30%p 초과를 하한까지 보장하진 못함'. 기존 gate 정의 (point ≥ 30%p) 는 사후 변경 없이 유지 (codex v3.2-1 P1). 정확한 CI 하한 값은 본 객체의 cluster_ci_low_pp 필드 참조."
+  },
+  "row_level_reference": {
+    "global_median_row_ci": {
+      "point": 71.9123505976096,
+      "ci_low": 71.61073825503358,
+      "ci_high": 72.5467289719626
+    },
+    "random_forest_row_ci": {
+      "point": 38.94739574801656,
+      "ci_low": 38.39525905151081,
+      "ci_high": 39.62054489285992
+    },
+    "v2_ensemble_raw_row_ci": {
+      "point": 38.66210624205194,
+      "ci_low": 38.02524662540353,
+      "ci_high": 39.18753105289021
+    },
+    "hard_gate_row_level": {
+      "rule": "v2 cold MdAPE ≤ Global median baseline MdAPE − 30%p",
+      "v2_cold_best_mdape": 38.66210624205194,
+      "v2_cold_best_model": "ensemble (raw OOF)",
+      "global_median_mdape": 71.9123505976096,
+      "gap_pp": 33.25024435555766,
+      "threshold_pp": 30.0,
+      "pass": true
+    }
+  }
+}

@@ -135,8 +135,8 @@
   <td>1.4</td>
   <td>Baseline 비교 (HARD gate)</td>
   <td class="gate-pass">HARD</td>
-  <td class="pos"><strong>PASS</strong></td>
-  <td>v2 ensemble cold 38.66% vs Global median 71.91% = <strong>gap 33.25%p</strong> (threshold 30%p) → HARD gate PASS. RandomForest cold 38.95% [38.40, 39.62] CI는 v2 ensemble과 겹침 (cold에서 GBDT 우위 약함, 데이터 bottleneck 시사)</td>
+  <td class="pos"><strong>PASS</strong> (point gate)</td>
+  <td>v2 ensemble cold 38.66% vs Global median 71.91% = <strong>gap 33.25%p</strong> (threshold 30%p) → HARD gate PASS under pre-specified point gate. <strong>v3.2-1 cluster CI 보강</strong>: paired cluster ΔCI [+25.89, +40.06]%p — 하한 30%p 미달 (PASS but borderline under cluster CI). RF vs v2 ΔCI [-1.65, +2.71] 0 포함 → <strong>cold path GBDT/RF 통계적 동급</strong> (데이터/피처 bottleneck 가설 재확인)</td>
 </tr>
 <tr>
   <td>1.5</td>
@@ -348,11 +348,37 @@
 <h3>5.4 HARD gate 평가 + 인사이트</h3>
 
 <div class="tldr">
-<p><strong>HARD gate</strong>: v2 ensemble cold 38.66% vs Global median 71.91% = <strong>gap 33.25%p ≥ 30%p</strong> → <span class="pos"><strong>PASS</strong></span></p>
+<p><strong>HARD gate</strong>: v2 ensemble cold 38.66% vs Global median 71.91% = <strong>gap 33.25%p ≥ 30%p</strong> → <span class="pos"><strong>PASS under pre-specified point gate</strong></span></p>
 </div>
 
+<h4>5.4.1 Cluster CI 보강 (v3.2-1, 2026-04-30 후속)</h4>
+
+<p>v3.0 1.4 의 row-level bootstrap CI (28,376행) 는 cold 일반화 질문에 낙관적 — 1.5 learning curve / v3.1-1/2/3 모두 사용한 artist-cluster bootstrap 으로 재산출 (10,000 iter):</p>
+
+<div class="wide-table-wrap">
+<table>
+<thead><tr><th>Option</th><th class="num">point MdAPE</th><th class="num">cluster CI</th><th class="num">row-level CI (1.4)</th></tr></thead>
+<tbody>
+<tr><td>Global median</td><td class="num">71.91%</td><td class="num">[67.46, 77.73]</td><td class="num">[71.07, 72.74]</td></tr>
+<tr><td>Random Forest</td><td class="num">38.95%</td><td class="num">[34.89, 45.32]</td><td class="num">[38.40, 39.62]</td></tr>
+<tr><td>v2 ensemble raw</td><td class="num">38.66%</td><td class="num">[33.91, 44.45]</td><td class="num">[38.03, 39.19]</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Paired cluster ΔCI</strong> (gap = baseline - v2_ensemble):</p>
 <ul>
-<li><strong>Cold</strong>: RF 38.95% [38.40, 39.62] vs v2 ensemble 38.66% [38.03, 39.19] → <strong>CI 겹침 (GBDT 우위 약함)</strong>. 데이터/피처 bottleneck 시사 — 단순 모델 변경으로는 한계.</li>
+<li><strong>global_median - v2_ensemble: +33.25%p, cluster ΔCI [+25.89, +40.06]</strong> — 점추정 PASS, cluster CI 하한 25.89%p &lt; 30%p threshold</li>
+<li>random_forest - v2_ensemble: +0.29%p, cluster ΔCI [-1.65, +2.71] — <strong>0 포함, GBDT/RF 통계적 동급</strong></li>
+</ul>
+
+<div class="scope-warn">
+<p><strong>HARD gate framing</strong>: <strong>PASS under pre-specified point gate (33.25%p ≥ 30%p)</strong>. 단, cluster bootstrap 기준 ΔCI 하한 25.89%p &lt; 30%p — "baseline 대비 큰 개선 방향은 재확인되나 cluster bootstrap 기준으로 30%p 초과를 하한까지 보장하진 못함". 기존 gate 정의 사후 변경 없이 유지 (codex v3.2-1 P1).</p>
+</div>
+
+<h4>5.4.2 인사이트 (cluster CI 기준 갱신)</h4>
+<ul>
+<li><strong>Cold (cluster CI)</strong>: RF [34.89, 45.32] vs v2 ensemble [33.91, 44.45] CI 겹침 + paired ΔCI [-1.65, +2.71] 0 포함 → <strong>cold path 에서 GBDT/RF 통계적 동급</strong>. 데이터/피처 bottleneck 가설 정량 재확인 (1.5 learning curve cold cluster CI [-0.81, +7.92] 와 일관).</li>
 <li><strong>Warm</strong>: RF 24.80% vs v2 XGB 9.70% (15.10%p 차이) → <strong>GBDT 명확한 우위</strong>. warm slice에서 모델 복잡도가 실효.</li>
 <li>v3.1 implication: cold path 개선은 <strong>피처 강화 / 데이터 cleaning / segment 전용 calibration</strong>이 모델 변경보다 효과적.</li>
 </ul>
