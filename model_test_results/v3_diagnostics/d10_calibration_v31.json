@@ -1,0 +1,271 @@
+{
+  "config": {
+    "method": "Cross-fit 5-fold by artist (GroupKFold). 각 fold 의 train (4/5) D10 saatchi cold 행에서 factor = median(actual/pred) 추정 → test fold (1/5) D10 saatchi cold 행에 적용. 평가 메트릭은 cross-fit 적용 후 OOF 기준.",
+    "production_cold_path_baseline": "CB OOF × cold_cell_factor[cell]",
+    "d10_segment_definition": "source=saatchi AND target_market=online AND pred_baseline >= threshold_krw",
+    "thresholds_evaluated_krw": [
+      10000000,
+      13728873,
+      20000000
+    ],
+    "n_splits": 5,
+    "rng_seed": 42,
+    "status": "v3.1 stopgap candidate — deploy 결정 보류",
+    "deploy_caveats": [
+      "P1 nested purity: 본 평가는 기존 OOF predictions 위에 cross-fit factor 추정 + 적용 형태. baseline OOF 자체가 GroupKFold 5-fold OOF이므로 nested 평가 보다 낙관적일 수 있음. deploy 전 GroupKFold split 안에서 'baseline 생성→threshold 판정→factor 추정→test 적용' 일괄 재평가 필요.",
+      "P1 threshold post-hoc selection: 13.7M / 10M / 20M 후보 중 13.7M 이 최선이지만 동일 데이터에서 선택. v3.2 에선 holdout validation set 으로 검증 필요. 13.7M 동결 정당화 = 1.7 분석에서 도출된 D10 boundary (예측가 quantile 90%) 를 inference-time absolute threshold 로 동결.",
+      "P1 under-prediction tail 악화: 단일 multiplicative factor 는 분포 균일 shift. median 은 0 으로 보정되나 P10 은 약 -0.26 추가 음수 (under-prediction 25% 악화). 운영 의사결정: '고가 saatchi 일부 사용자에게 더 낮게 틀릴 위험을 의도적으로 수용' 명문화 필요.",
+      "P1 confidence/range 재검토 부재: point estimate 만 이동, margin 변경 없음. deploy 전 D10 segment grade/margin 재정의 필요.",
+      "P1 server PR: 별도 PR + artifact/config 기반 + regression test + shadow/A/B 계획. mainline primary_predictor.py 즉시 변경 비권장."
+    ],
+    "interpretation_caveat": "단일 multiplicative factor 는 median 만 0 으로 옮기므로 분포 좌측 (P10) 은 더 음수가 됨. 즉 D10 saatchi 안의 underpriced art 일부는 보정 후 더 부정확해질 수 있음. MdAPE / W30 개선이 일관적이라면 50% 다수에 대한 이득이 10% 손실보다 큼을 의미. Quantile/conformal 보강은 v3.2 항목.",
+    "next_steps": [
+      "v3.1.5: Group 5 라벨 정제 (korean_traditional 신설) → 매체 신호 강화로 D10 factor 크기 자체를 줄일 수 있는지 확인",
+      "v3.2: quantile regression / conformal prediction 도입 (tail-aware)",
+      "v3.2: D10 segment grade/margin 재정의 (D 등급 등 별도 신뢰도 단계)",
+      "v3.2: Saatchi 고가 segment 추가 신호 (view count, sold ratio 등) 수집"
+    ]
+  },
+  "thresholds": [
+    {
+      "threshold_krw": 10000000.0,
+      "n_segment": 1568,
+      "fold_factors": [
+        0.8830374663728708,
+        0.7832544070682079,
+        0.8299594111738723,
+        0.8286301350694263,
+        0.8023863633051342
+      ],
+      "fold_n_train": [
+        1176,
+        1238,
+        1306,
+        1337,
+        1215
+      ],
+      "fold_n_test": [
+        392,
+        330,
+        262,
+        231,
+        353
+      ],
+      "full_data_factor": 0.8243800012384545,
+      "segment_metrics": {
+        "before": {
+          "MdAPE": 43.63053148215899,
+          "W30": 37.5,
+          "log_ratio": {
+            "p10": -0.6940262146566328,
+            "p25": -0.199170454847925,
+            "median": 0.19312368882575567,
+            "p75": 0.581922947299979,
+            "p90": 1.0613389579003252,
+            "mean": 0.21139946043287797
+          }
+        },
+        "after": {
+          "MdAPE": 39.79678953177198,
+          "W30": 39.60459183673469,
+          "log_ratio": {
+            "p10": -0.9137044532664975,
+            "p25": -0.4085379904636533,
+            "median": -0.005553807458717472,
+            "p75": 0.4205616959471321,
+            "p90": 0.8385133485736743,
+            "mean": 0.020486624908926658
+          }
+        }
+      },
+      "overall_cold_metrics": {
+        "before": {
+          "MdAPE": 38.14983665593103,
+          "W30": 40.89371299689879
+        },
+        "after": {
+          "MdAPE": 38.01904670867696,
+          "W30": 41.010008457851704
+        }
+      },
+      "overall_cold_paired_cluster_ci": {
+        "method": "paired cluster (artist) bootstrap, Δ = MdAPE_after - MdAPE_before (음수=개선)",
+        "delta_pp": -0.13078994725407256,
+        "ci_low": -0.44733106500958825,
+        "ci_high": 0.1427954242050339,
+        "before_mdape": 38.14983665593103,
+        "after_mdape": 38.01904670867696
+      },
+      "saatchi_online_full_metrics": {
+        "before": {
+          "MdAPE": 40.071381991208305,
+          "W30": 38.848579693650116
+        },
+        "after": {
+          "MdAPE": 39.866159193149045,
+          "W30": 39.005074216341825
+        }
+      }
+    },
+    {
+      "threshold_krw": 13728873.0,
+      "n_segment": 626,
+      "fold_factors": [
+        0.7903642533273791,
+        0.7372980164176246,
+        0.7722584692495124,
+        0.7518941905863663,
+        0.7557578544510408
+      ],
+      "fold_n_train": [
+        476,
+        504,
+        474,
+        569,
+        481
+      ],
+      "fold_n_test": [
+        150,
+        122,
+        152,
+        57,
+        145
+      ],
+      "full_data_factor": 0.75692792688444,
+      "segment_metrics": {
+        "before": {
+          "MdAPE": 43.62652893452806,
+          "W30": 34.82428115015975,
+          "log_ratio": {
+            "p10": -0.45861744205676136,
+            "p25": -0.04729587180355561,
+            "median": 0.2784872683574484,
+            "p75": 0.6417669783457847,
+            "p90": 0.9924425898707493,
+            "mean": 0.2851055508225155
+          }
+        },
+        "after": {
+          "MdAPE": 36.81224511203087,
+          "W30": 43.45047923322684,
+          "log_ratio": {
+            "p10": -0.7190256889305878,
+            "p25": -0.32069201310516426,
+            "median": 0.007588288549406654,
+            "p75": 0.3664335230574658,
+            "p90": 0.7193135891153241,
+            "mean": 0.01575788403859338
+          }
+        }
+      },
+      "overall_cold_metrics": {
+        "before": {
+          "MdAPE": 38.14983665593103,
+          "W30": 40.89371299689879
+        },
+        "after": {
+          "MdAPE": 37.95207212512669,
+          "W30": 41.08401466027629
+        }
+      },
+      "overall_cold_paired_cluster_ci": {
+        "method": "paired cluster (artist) bootstrap, Δ = MdAPE_after - MdAPE_before (음수=개선)",
+        "delta_pp": -0.1977645308043421,
+        "ci_low": -0.3853316534104224,
+        "ci_high": 0.005429714451383781,
+        "before_mdape": 38.14983665593103,
+        "after_mdape": 37.95207212512669
+      },
+      "saatchi_online_full_metrics": {
+        "before": {
+          "MdAPE": 40.071381991208305,
+          "W30": 38.848579693650116
+        },
+        "after": {
+          "MdAPE": 39.85976356649234,
+          "W30": 39.10466163987291
+        }
+      }
+    },
+    {
+      "threshold_krw": 20000000.0,
+      "n_segment": 189,
+      "fold_factors": [
+        0.8228134809991308,
+        0.73912133149621,
+        0.7430914480677749,
+        0.7472678648027646,
+        0.7557983092288201
+      ],
+      "fold_n_train": [
+        138,
+        161,
+        119,
+        172,
+        166
+      ],
+      "fold_n_test": [
+        51,
+        28,
+        70,
+        17,
+        23
+      ],
+      "full_data_factor": 0.7685051703898652,
+      "segment_metrics": {
+        "before": {
+          "MdAPE": 40.23491284089688,
+          "W30": 39.682539682539684,
+          "log_ratio": {
+            "p10": -0.3025184570681953,
+            "p25": 0.042494201359025076,
+            "median": 0.2633079881277905,
+            "p75": 0.6284771673942958,
+            "p90": 1.1023373639084653,
+            "mean": 0.33933065596241574
+          }
+        },
+        "after": {
+          "MdAPE": 32.80342139810776,
+          "W30": 47.61904761904761,
+          "log_ratio": {
+            "p10": -0.5739318521662563,
+            "p25": -0.2164069329608044,
+            "median": 0.005777490403955279,
+            "p75": 0.3797839098312596,
+            "p90": 0.8043297964052962,
+            "mean": 0.07166797553215316
+          }
+        }
+      },
+      "overall_cold_metrics": {
+        "before": {
+          "MdAPE": 38.14983665593103,
+          "W30": 40.89371299689879
+        },
+        "after": {
+          "MdAPE": 38.07492359572995,
+          "W30": 40.946574570059205
+        }
+      },
+      "overall_cold_paired_cluster_ci": {
+        "method": "paired cluster (artist) bootstrap, Δ = MdAPE_after - MdAPE_before (음수=개선)",
+        "delta_pp": -0.07491306020108368,
+        "ci_low": -0.185546539201282,
+        "ci_high": 0.004958010967002239,
+        "before_mdape": 38.14983665593103,
+        "after_mdape": 38.07492359572995
+      },
+      "saatchi_online_full_metrics": {
+        "before": {
+          "MdAPE": 40.071381991208305,
+          "W30": 38.848579693650116
+        },
+        "after": {
+          "MdAPE": 39.976858434480576,
+          "W30": 38.919713567600894
+        }
+      }
+    }
+  ]
+}
