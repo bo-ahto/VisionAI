@@ -39,21 +39,29 @@ jobs:
         run: |
           uv sync --frozen --extra dev --extra price-engine-core --extra price-engine-exp --extra price-engine-api
 
-      - name: Ruff lint (Phase 3 scope - 신규 helpers and tests)
+      - name: Ruff lint (신규 helpers/tests + v3.1 scripts — pattern based)
+        # v3.1-4 R2 (codex P2): 명시적 file list 대신 패턴 — 신규 v3.1 스크립트 자동 cover.
+        # 기존 scripts/*.py 광역 ignore 는 pyproject.toml [tool.ruff.lint.per-file-ignores]
+        # 그대로 유지 (legacy 점진 정리는 별도 트랙).
         run: |
-          uv run ruff check src/visionai/price_engine/_provenance.py src/visionai/price_engine/_eval_helpers.py
-          uv run ruff check tests/price_engine/test_provenance.py tests/price_engine/test_eval_helpers.py
-          uv run ruff check scripts/v3_emit_provenance.py
+          uv run ruff check \
+            src/visionai/price_engine/_provenance.py \
+            src/visionai/price_engine/_eval_helpers.py \
+            tests/price_engine/test_provenance.py \
+            tests/price_engine/test_eval_helpers.py \
+            scripts/v3_emit_provenance.py \
+            scripts/v31_*.py
 
-      - name: Ruff format check (Phase 3 scope - 신규 helpers/tests)
-        # v3.1-4: continue-on-error 제거, strict.
+      - name: Ruff format check (strict, pattern based)
+        # v3.1-4: continue-on-error 제거. 패턴으로 신규 코드 자동 cover.
         run: |
           uv run ruff format --check \
             src/visionai/price_engine/_provenance.py \
             src/visionai/price_engine/_eval_helpers.py \
             tests/price_engine/test_provenance.py \
             tests/price_engine/test_eval_helpers.py \
-            scripts/v3_emit_provenance.py
+            scripts/v3_emit_provenance.py \
+            scripts/v31_*.py
 
       - name: Mypy (src only — strict per pyproject.toml)
         run: uv run mypy src/visionai/price_engine/_provenance.py src/visionai/price_engine/_eval_helpers.py
@@ -67,11 +75,11 @@ jobs:
         run: uv run pytest tests/ -q
         continue-on-error: true  # 기존 테스트 일부 환경 의존. v3.1에서 strict 전환.
 
-  # v3.1-4: Python 3.14 smoke lane (informational — primary는 3.11)
+  # v3.1-4: Python 3.14 smoke lane (independent — primary 3.11 실패해도 신호 보임)
   smoke-py314:
     name: Smoke (Python 3.14)
     runs-on: ubuntu-latest
-    needs: lint-typecheck-test
+    # v3.1-4 R2 (codex P3): needs 제거 — 3.11 lane 실패 시에도 informational 신호 확보.
     continue-on-error: true  # informational, 3.11 lane이 primary
     steps:
       - name: Checkout
@@ -87,9 +95,9 @@ jobs:
         with:
           version: "0.8.22"
 
-      - name: Sync (allow uv to resolve for 3.14)
+      - name: Sync (frozen — uv.lock markers 가 3.11/3.14/3.15 포함, lock 검증/재사용)
+        # FastAPI 3.14 호환성 미확인 → price-engine-api 제외. helpers/provenance 호환성만 확인.
         run: |
-          # frozen 잠금이 3.14 markers 포함하므로 그대로 사용
           uv sync --frozen --extra dev --extra price-engine-core --extra price-engine-exp
 
       - name: Pytest fast subset (helper + provenance)

@@ -25,6 +25,7 @@
 Usage:
     PYTHONPATH=src python3 scripts/v31_default_vs_tuned_paired.py
 """
+
 from __future__ import annotations
 
 import json
@@ -45,8 +46,13 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import (
-    CAT_FEATURES, _cb_pool, _warm_mask, load_data, prepare_features,
+    CAT_FEATURES,
+    _cb_pool,
+    _warm_mask,
+    load_data,
+    prepare_features,
 )
+
 from visionai.price_engine._eval_helpers import label_encode_xgb
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -74,7 +80,10 @@ DEFAULT_XGB_PARAMS = {
 
 
 def _train_cb_xgb_oof_groupkfold(
-    X: pd.DataFrame, y: np.ndarray, groups: np.ndarray, n_splits: int = 5,
+    X: pd.DataFrame,
+    y: np.ndarray,
+    groups: np.ndarray,
+    n_splits: int = 5,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Default hp 로 GroupKFold OOF 산출."""
     gkf = GroupKFold(n_splits=n_splits)
@@ -83,14 +92,19 @@ def _train_cb_xgb_oof_groupkfold(
     for fold, (tr, te) in enumerate(gkf.split(X, y, groups), 1):
         logger.info("[GKF default %d/%d] train=%d test=%d", fold, n_splits, len(tr), len(te))
         cb = CatBoostRegressor(
-            **DEFAULT_CB_PARAMS, loss_function="RMSE", verbose=0,
-            random_seed=RANDOM_SEED, allow_writing_files=False,
+            **DEFAULT_CB_PARAMS,
+            loss_function="RMSE",
+            verbose=0,
+            random_seed=RANDOM_SEED,
+            allow_writing_files=False,
         )
         cb.fit(_cb_pool(X.iloc[tr], y[tr]))
         cb_preds[te] = cb.predict(_cb_pool(X.iloc[te]))
 
         Xtr_e, Xte_e, _ = label_encode_xgb(
-            X.iloc[tr], X.iloc[te], categorical_features=CAT_FEATURES,
+            X.iloc[tr],
+            X.iloc[te],
+            categorical_features=CAT_FEATURES,
         )
         xgb_p = {k: v for k, v in DEFAULT_XGB_PARAMS.items() if k != "num_boost_round"}
         m = xgb.train(
@@ -103,7 +117,9 @@ def _train_cb_xgb_oof_groupkfold(
 
 
 def _train_cb_xgb_oof_kfold_warm(
-    X_warm: pd.DataFrame, y_warm: np.ndarray, n_splits: int = 5,
+    X_warm: pd.DataFrame,
+    y_warm: np.ndarray,
+    n_splits: int = 5,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Default hp 로 warm slice KFold OOF 산출."""
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_SEED)
@@ -112,14 +128,19 @@ def _train_cb_xgb_oof_kfold_warm(
     for fold, (tr, te) in enumerate(kf.split(X_warm), 1):
         logger.info("[KF warm default %d/%d] train=%d test=%d", fold, n_splits, len(tr), len(te))
         cb = CatBoostRegressor(
-            **DEFAULT_CB_PARAMS, loss_function="RMSE", verbose=0,
-            random_seed=RANDOM_SEED, allow_writing_files=False,
+            **DEFAULT_CB_PARAMS,
+            loss_function="RMSE",
+            verbose=0,
+            random_seed=RANDOM_SEED,
+            allow_writing_files=False,
         )
         cb.fit(_cb_pool(X_warm.iloc[tr], y_warm[tr]))
         cb_preds[te] = cb.predict(_cb_pool(X_warm.iloc[te]))
 
         Xtr_e, Xte_e, _ = label_encode_xgb(
-            X_warm.iloc[tr], X_warm.iloc[te], categorical_features=CAT_FEATURES,
+            X_warm.iloc[tr],
+            X_warm.iloc[te],
+            categorical_features=CAT_FEATURES,
         )
         xgb_p = {k: v for k, v in DEFAULT_XGB_PARAMS.items() if k != "num_boost_round"}
         m = xgb.train(
@@ -142,7 +163,10 @@ def w30(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def paired_test(
-    y_true: np.ndarray, pred_default: np.ndarray, pred_tuned: np.ndarray, label: str,
+    y_true: np.ndarray,
+    pred_default: np.ndarray,
+    pred_tuned: np.ndarray,
+    label: str,
     groups: np.ndarray | None = None,
 ) -> dict:
     """per-row absolute percentage error 위에서 paired Wilcoxon + Cohen's d_z + paired bootstrap CI."""
@@ -277,9 +301,15 @@ def main() -> None:
         paired_test(y_warm_price, ens_warm_default, ens_warm_tuned, "warm_ensemble_row"),
     ]
     warm_results_cluster = [
-        paired_test(y_warm_price, cb_warm_default, cb_warm_tuned, "warm_catboost_cluster", groups_warm),
-        paired_test(y_warm_price, xgb_warm_default, xgb_warm_tuned, "warm_xgboost_cluster", groups_warm),
-        paired_test(y_warm_price, ens_warm_default, ens_warm_tuned, "warm_ensemble_cluster", groups_warm),
+        paired_test(
+            y_warm_price, cb_warm_default, cb_warm_tuned, "warm_catboost_cluster", groups_warm
+        ),
+        paired_test(
+            y_warm_price, xgb_warm_default, xgb_warm_tuned, "warm_xgboost_cluster", groups_warm
+        ),
+        paired_test(
+            y_warm_price, ens_warm_default, ens_warm_tuned, "warm_ensemble_cluster", groups_warm
+        ),
     ]
     warm_results = warm_results_row + warm_results_cluster
 
@@ -318,20 +348,24 @@ def main() -> None:
     print("\n" + "=" * 110)
     print("v3.1-2 default vs tuned paired Wilcoxon (Optuna 효과)")
     print("=" * 110)
-    print(f"\n{'Slice':<25} {'n':>6} {'MdAPE def':>10} {'MdAPE tuned':>12} {'Δ %p':>8} "
-          f"{'Wilcoxon p':>11} {'d_z':>7} {'95% CI Δ (cluster/row)':>26}")
+    print(
+        f"\n{'Slice':<25} {'n':>6} {'MdAPE def':>10} {'MdAPE tuned':>12} {'Δ %p':>8} "
+        f"{'Wilcoxon p':>11} {'d_z':>7} {'95% CI Δ (cluster/row)':>26}"
+    )
     print("-" * 110)
     for r in cold_results + warm_results:
         if r.get("skipped"):
             continue
         wp = r["wilcoxon"]["p_two_sided"]
         ci = r["paired_bootstrap_ci"]
-        print(f"{r['label']:<25} {r['n']:>6} {r['mdape_default']:>9.2f}% {r['mdape_tuned']:>11.2f}% "
-              f"{r['delta_mdape_pp']:>+7.2f}%p "
-              f"{wp:>10.4f} {r['cohens_d_z']:>+7.3f} "
-              f"[{ci['ci_low']:>+5.2f}, {ci['ci_high']:>+5.2f}]")
+        print(
+            f"{r['label']:<25} {r['n']:>6} {r['mdape_default']:>9.2f}% {r['mdape_tuned']:>11.2f}% "
+            f"{r['delta_mdape_pp']:>+7.2f}%p "
+            f"{wp:>10.4f} {r['cohens_d_z']:>+7.3f} "
+            f"[{ci['ci_low']:>+5.2f}, {ci['ci_high']:>+5.2f}]"
+        )
 
-    print(f"\nTotal wall: {train_wall:.0f}s ({train_wall/60:.1f} min)")
+    print(f"\nTotal wall: {train_wall:.0f}s ({train_wall / 60:.1f} min)")
     print(f"저장: {OUT_JSON}")
 
 

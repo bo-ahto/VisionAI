@@ -27,6 +27,7 @@
 Usage:
     PYTHONPATH=src python3 scripts/v31_d10_calibration.py
 """
+
 from __future__ import annotations
 
 import json
@@ -35,7 +36,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from sklearn.model_selection import GroupKFold
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,6 +43,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import load_data, prepare_features
+
 from visionai.price_engine._eval_helpers import (
     apply_cell_calibration,
     cell_keys,
@@ -92,7 +93,9 @@ def log_ratio_quantiles(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 
 
 def compute_d10_factor(
-    y_true: np.ndarray, y_pred: np.ndarray, mask: np.ndarray,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    mask: np.ndarray,
 ) -> float | None:
     """train fold D10 saatchi cold 행에서 median(actual/pred) 산출."""
     if not mask.any():
@@ -105,8 +108,14 @@ def compute_d10_factor(
 
 
 def paired_cluster_bootstrap_delta(
-    y_true: np.ndarray, pred_before: np.ndarray, pred_after: np.ndarray,
-    groups: np.ndarray, *, n_iter: int = 5000, alpha: float = 0.05, rng_seed: int = RNG_SEED,
+    y_true: np.ndarray,
+    pred_before: np.ndarray,
+    pred_after: np.ndarray,
+    groups: np.ndarray,
+    *,
+    n_iter: int = 5000,
+    alpha: float = 0.05,
+    rng_seed: int = RNG_SEED,
 ) -> dict:
     """artist-cluster bootstrap on Δ MdAPE = MdAPE(after) - MdAPE(before).
 
@@ -186,17 +195,29 @@ def evaluate_threshold(
     # 메트릭 (segment + 전체 cold)
     segment_metrics = {
         "before": {
-            "MdAPE": mdape(y_full_price[cold_d10_saatchi_mask_full], pred_baseline[cold_d10_saatchi_mask_full]),
-            "W30": w30(y_full_price[cold_d10_saatchi_mask_full], pred_baseline[cold_d10_saatchi_mask_full]),
+            "MdAPE": mdape(
+                y_full_price[cold_d10_saatchi_mask_full], pred_baseline[cold_d10_saatchi_mask_full]
+            ),
+            "W30": w30(
+                y_full_price[cold_d10_saatchi_mask_full], pred_baseline[cold_d10_saatchi_mask_full]
+            ),
             "log_ratio": log_ratio_quantiles(
-                y_full_price[cold_d10_saatchi_mask_full], pred_baseline[cold_d10_saatchi_mask_full],
+                y_full_price[cold_d10_saatchi_mask_full],
+                pred_baseline[cold_d10_saatchi_mask_full],
             ),
         },
         "after": {
-            "MdAPE": mdape(y_full_price[cold_d10_saatchi_mask_full], pred_calibrated[cold_d10_saatchi_mask_full]),
-            "W30": w30(y_full_price[cold_d10_saatchi_mask_full], pred_calibrated[cold_d10_saatchi_mask_full]),
+            "MdAPE": mdape(
+                y_full_price[cold_d10_saatchi_mask_full],
+                pred_calibrated[cold_d10_saatchi_mask_full],
+            ),
+            "W30": w30(
+                y_full_price[cold_d10_saatchi_mask_full],
+                pred_calibrated[cold_d10_saatchi_mask_full],
+            ),
             "log_ratio": log_ratio_quantiles(
-                y_full_price[cold_d10_saatchi_mask_full], pred_calibrated[cold_d10_saatchi_mask_full],
+                y_full_price[cold_d10_saatchi_mask_full],
+                pred_calibrated[cold_d10_saatchi_mask_full],
             ),
         },
     }
@@ -218,14 +239,19 @@ def evaluate_threshold(
             "W30": w30(y_full_price[saatchi_online_mask], pred_baseline[saatchi_online_mask]),
         },
         "after": {
-            "MdAPE": mdape(y_full_price[saatchi_online_mask], pred_calibrated[saatchi_online_mask]),
+            "MdAPE": mdape(
+                y_full_price[saatchi_online_mask], pred_calibrated[saatchi_online_mask]
+            ),
             "W30": w30(y_full_price[saatchi_online_mask], pred_calibrated[saatchi_online_mask]),
         },
     }
 
     # Paired cluster bootstrap CI on Δ overall MdAPE (artist 단위)
     delta_overall_ci = paired_cluster_bootstrap_delta(
-        y_full_price, pred_baseline, pred_calibrated, groups,
+        y_full_price,
+        pred_baseline,
+        pred_calibrated,
+        groups,
     )
 
     return {
@@ -256,7 +282,9 @@ def main() -> None:
     target_market = derive_target_market(df["is_krw"])
 
     # production cold path baseline: CB OOF × cold_cell_factor
-    cal = json.loads((OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json").read_text())
+    cal = json.loads(
+        (OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json").read_text()
+    )
     cold_factors = cal["cold_factors"]
     cb_price = np.exp(cb_gkf_ln)
     cell = cell_keys(source, target_market)
@@ -268,7 +296,12 @@ def main() -> None:
     for t in THRESHOLDS_KRW:
         logger.info("=== threshold = %s KRW ===", f"{int(t):,}")
         res = evaluate_threshold(
-            y_full_price, pred_baseline, source, target_market, groups, t,
+            y_full_price,
+            pred_baseline,
+            source,
+            target_market,
+            groups,
+            t,
         )
         results.append(res)
         if res.get("skipped"):
@@ -278,18 +311,22 @@ def main() -> None:
         logger.info(
             "  segment n=%d | before MdAPE=%.2f%% W30=%.2f%% / after MdAPE=%.2f%% W30=%.2f%%",
             res["n_segment"],
-            seg["before"]["MdAPE"], seg["before"]["W30"],
-            seg["after"]["MdAPE"], seg["after"]["W30"],
+            seg["before"]["MdAPE"],
+            seg["before"]["W30"],
+            seg["after"]["MdAPE"],
+            seg["after"]["W30"],
         )
         logger.info(
             "  segment log_ratio median: before=%+.3f / after=%+.3f",
-            seg["before"]["log_ratio"]["median"], seg["after"]["log_ratio"]["median"],
+            seg["before"]["log_ratio"]["median"],
+            seg["after"]["log_ratio"]["median"],
         )
         ovc = res["overall_cold_metrics"]
         logger.info(
             "  overall cold n=%d | before MdAPE=%.2f%% / after MdAPE=%.2f%% (Δ=%+.3f%%p)",
-            int(len(y_full_price)),
-            ovc["before"]["MdAPE"], ovc["after"]["MdAPE"],
+            len(y_full_price),
+            ovc["before"]["MdAPE"],
+            ovc["after"]["MdAPE"],
             ovc["after"]["MdAPE"] - ovc["before"]["MdAPE"],
         )
         logger.info(
@@ -354,8 +391,10 @@ def main() -> None:
     print("\n" + "=" * 100)
     print("v3.1-1 D10 saatchi calibration — threshold sensitivity")
     print("=" * 100)
-    print(f"\n{'threshold':>13} {'n_seg':>6} {'factor':>8} {'seg before':>11} {'seg after':>11} "
-          f"{'Δ seg':>9} {'cold before':>12} {'cold after':>11} {'Δ overall':>10}")
+    print(
+        f"\n{'threshold':>13} {'n_seg':>6} {'factor':>8} {'seg before':>11} {'seg after':>11} "
+        f"{'Δ seg':>9} {'cold before':>12} {'cold after':>11} {'Δ overall':>10}"
+    )
     print("-" * 100)
     for r in results:
         if r.get("skipped"):
@@ -365,9 +404,11 @@ def main() -> None:
         ov_b = r["overall_cold_metrics"]["before"]["MdAPE"]
         ov_a = r["overall_cold_metrics"]["after"]["MdAPE"]
         f_str = f"{r['full_data_factor']:.4f}" if r["full_data_factor"] else "n/a"
-        print(f"{int(r['threshold_krw']):>10,}KRW {r['n_segment']:>6} {f_str:>8} "
-              f"{seg_b:>10.2f}% {seg_a:>10.2f}% {seg_a - seg_b:>+8.2f}%p "
-              f"{ov_b:>11.2f}% {ov_a:>10.2f}% {ov_a - ov_b:>+9.2f}%p")
+        print(
+            f"{int(r['threshold_krw']):>10,}KRW {r['n_segment']:>6} {f_str:>8} "
+            f"{seg_b:>10.2f}% {seg_a:>10.2f}% {seg_a - seg_b:>+8.2f}%p "
+            f"{ov_b:>11.2f}% {ov_a:>10.2f}% {ov_a - ov_b:>+9.2f}%p"
+        )
 
     print(f"\n저장: {OUT_JSON}")
 

@@ -29,6 +29,7 @@
 Usage:
     PYTHONPATH=src python3 scripts/v31_cold_path_ablation.py
 """
+
 from __future__ import annotations
 
 import json
@@ -43,6 +44,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import load_data, prepare_features
+
 from visionai.price_engine._eval_helpers import (
     apply_cell_calibration,
     cell_keys,
@@ -73,8 +75,12 @@ def w30(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def cluster_bootstrap_ci(
-    y_true: np.ndarray, y_pred: np.ndarray, groups: np.ndarray,
-    n_iter: int = N_BOOTSTRAP, alpha: float = 0.05, rng_seed: int = RNG_SEED,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    groups: np.ndarray,
+    n_iter: int = N_BOOTSTRAP,
+    alpha: float = 0.05,
+    rng_seed: int = RNG_SEED,
 ) -> dict:
     """Artist-cluster bootstrap 95% CI on MdAPE."""
     rng = np.random.default_rng(rng_seed)
@@ -90,20 +96,29 @@ def cluster_bootstrap_ci(
         if not v.any():
             values[i] = float("nan")
             continue
-        values[i] = float(np.median(np.abs(y_true[idx][v] - y_pred[idx][v]) / y_true[idx][v]) * 100)
+        values[i] = float(
+            np.median(np.abs(y_true[idx][v] - y_pred[idx][v]) / y_true[idx][v]) * 100
+        )
     point = mdape(y_true, y_pred)
     return {
         "point": float(point),
         "ci_low": float(np.percentile(values, 100 * alpha / 2)),
         "ci_high": float(np.percentile(values, 100 * (1 - alpha / 2))),
-        "method": "artist-cluster bootstrap (n_clusters=%d, %d iter)" % (n_g, n_iter),
+        "method": f"artist-cluster bootstrap (n_clusters={n_g}, {n_iter} iter)",
     }
 
 
 def paired_cluster_delta_ci(
-    y_true: np.ndarray, pred_a: np.ndarray, pred_b: np.ndarray, groups: np.ndarray,
-    *, label_a: str = "A", label_b: str = "B",
-    n_iter: int = N_BOOTSTRAP, alpha: float = 0.05, rng_seed: int = RNG_SEED,
+    y_true: np.ndarray,
+    pred_a: np.ndarray,
+    pred_b: np.ndarray,
+    groups: np.ndarray,
+    *,
+    label_a: str = "A",
+    label_b: str = "B",
+    n_iter: int = N_BOOTSTRAP,
+    alpha: float = 0.05,
+    rng_seed: int = RNG_SEED,
 ) -> dict:
     """Paired artist-cluster bootstrap on Δ MdAPE = MdAPE(a) - MdAPE(b).
 
@@ -138,7 +153,11 @@ def paired_cluster_delta_ci(
 
 
 def evaluate_option(
-    label: str, y_true: np.ndarray, y_pred: np.ndarray, source: np.ndarray, groups: np.ndarray,
+    label: str,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    source: np.ndarray,
+    groups: np.ndarray,
 ) -> dict:
     overall_ci = cluster_bootstrap_ci(y_true, y_pred, groups)
     by_source: dict = {}
@@ -153,7 +172,7 @@ def evaluate_option(
         }
     return {
         "label": label,
-        "n": int(len(y_true)),
+        "n": len(y_true),
         "overall": {
             "MdAPE": overall_ci["point"],
             "MdAPE_95_CI": [overall_ci["ci_low"], overall_ci["ci_high"]],
@@ -208,9 +227,11 @@ def apply_tiebreak(options: list[dict]) -> dict:
             )
             # Tier 3: Latency (정성 — 명시적 데이터 측정 미수행)
             latency_priority = {
-                "A_catboost_raw": 1, "B_catboost_calibrated": 1,
+                "A_catboost_raw": 1,
+                "B_catboost_calibrated": 1,
                 "C_xgboost_raw": 2,
-                "D_ensemble_raw": 3, "E_ensemble_calibrated": 3,
+                "D_ensemble_raw": 3,
+                "E_ensemble_calibrated": 3,
             }
             best_lat = latency_priority.get(best["label"], 99)
             second_lat = latency_priority.get(second["label"], 99)
@@ -235,16 +256,16 @@ def apply_tiebreak(options: list[dict]) -> dict:
                 )
                 # Tier 4: 운영 단순성
                 simplicity_priority = {
-                    "A_catboost_raw": 1, "B_catboost_calibrated": 2,
+                    "A_catboost_raw": 1,
+                    "B_catboost_calibrated": 2,
                     "C_xgboost_raw": 1,
-                    "D_ensemble_raw": 3, "E_ensemble_calibrated": 4,
+                    "D_ensemble_raw": 3,
+                    "E_ensemble_calibrated": 4,
                 }
                 best_simp = simplicity_priority.get(best["label"], 99)
                 second_simp = simplicity_priority.get(second["label"], 99)
                 if best_simp < second_simp:
-                    rationale.append(
-                        f"Tier 4 (운영 단순성): {best['label']} 더 단순 ⇒ 채택"
-                    )
+                    rationale.append(f"Tier 4 (운영 단순성): {best['label']} 더 단순 ⇒ 채택")
                     decision_tier = "tier4_simplicity"
                 else:
                     decision_label = second["label"]
@@ -264,7 +285,11 @@ def apply_tiebreak(options: list[dict]) -> dict:
             "diff_pp": diff_pp,
         },
         "all_sorted": [
-            {"label": o["label"], "MdAPE": o["overall"]["MdAPE"], "CI": o["overall"]["MdAPE_95_CI"]}
+            {
+                "label": o["label"],
+                "MdAPE": o["overall"]["MdAPE"],
+                "CI": o["overall"]["MdAPE_95_CI"],
+            }
             for o in sorted_opts
         ],
         "rationale": rationale,
@@ -293,7 +318,9 @@ def main() -> None:
     xgb_cold_raw = np.exp(xgb_gkf_ln)
     ens_cold_raw = np.exp((cb_gkf_ln + xgb_gkf_ln) / 2)
 
-    cal = json.loads((OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json").read_text())
+    cal = json.loads(
+        (OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json").read_text()
+    )
     cold_factors = cal["cold_factors"]
     cb_cold_calibrated = apply_cell_calibration(cb_cold_raw, cell, cold_factors)
     ens_cold_calibrated = apply_cell_calibration(ens_cold_raw, cell, cold_factors)
@@ -304,31 +331,51 @@ def main() -> None:
         evaluate_option("B_catboost_calibrated", y_full_price, cb_cold_calibrated, source, groups),
         evaluate_option("C_xgboost_raw", y_full_price, xgb_cold_raw, source, groups),
         evaluate_option("D_ensemble_raw", y_full_price, ens_cold_raw, source, groups),
-        evaluate_option("E_ensemble_calibrated", y_full_price, ens_cold_calibrated, source, groups),
+        evaluate_option(
+            "E_ensemble_calibrated", y_full_price, ens_cold_calibrated, source, groups
+        ),
     ]
 
     for o in options:
         ci = o["overall"]["MdAPE_95_CI"]
-        logger.info("[%s] MdAPE=%.2f%% [%.2f, %.2f] / W30=%.2f%%",
-                    o["label"], o["overall"]["MdAPE"], ci[0], ci[1], o["overall"]["W30"])
+        logger.info(
+            "[%s] MdAPE=%.2f%% [%.2f, %.2f] / W30=%.2f%%",
+            o["label"],
+            o["overall"]["MdAPE"],
+            ci[0],
+            ci[1],
+            o["overall"]["W30"],
+        )
 
     decision = apply_tiebreak(options)
 
     # Paired artist-cluster bootstrap ΔCI between top option (E) and current production (B)
     # — codex P1: ablation winner 정당화 시 individual CI 보다 paired ΔCI 가 정합
     paired_e_vs_b = paired_cluster_delta_ci(
-        y_full_price, ens_cold_calibrated, cb_cold_calibrated, groups,
-        label_a="E_ensemble_calibrated", label_b="B_catboost_calibrated",
+        y_full_price,
+        ens_cold_calibrated,
+        cb_cold_calibrated,
+        groups,
+        label_a="E_ensemble_calibrated",
+        label_b="B_catboost_calibrated",
     )
     # Reference: B vs A (calibration 효과만)
     paired_b_vs_a = paired_cluster_delta_ci(
-        y_full_price, cb_cold_calibrated, cb_cold_raw, groups,
-        label_a="B_catboost_calibrated", label_b="A_catboost_raw",
+        y_full_price,
+        cb_cold_calibrated,
+        cb_cold_raw,
+        groups,
+        label_a="B_catboost_calibrated",
+        label_b="A_catboost_raw",
     )
     # E vs D (calibration 효과 in ensemble)
     paired_e_vs_d = paired_cluster_delta_ci(
-        y_full_price, ens_cold_calibrated, ens_cold_raw, groups,
-        label_a="E_ensemble_calibrated", label_b="D_ensemble_raw",
+        y_full_price,
+        ens_cold_calibrated,
+        ens_cold_raw,
+        groups,
+        label_a="E_ensemble_calibrated",
+        label_b="D_ensemble_raw",
     )
     paired_results = {
         "E_vs_B (winner vs current production)": paired_e_vs_b,
@@ -337,8 +384,7 @@ def main() -> None:
     }
     logger.info("=== Paired cluster ΔCI ===")
     for k, v in paired_results.items():
-        logger.info("  %s: Δ=%+.2f%%p [%+.2f, %+.2f]",
-                    k, v["delta_pp"], v["ci_low"], v["ci_high"])
+        logger.info("  %s: Δ=%+.2f%%p [%+.2f, %+.2f]", k, v["delta_pp"], v["ci_low"], v["ci_high"])
 
     summary = {
         "config": {
@@ -386,25 +432,31 @@ def main() -> None:
     print("\n" + "=" * 110)
     print("v3.1-3 Cold path 채택 규칙 ablation")
     print("=" * 110)
-    print(f"\n{'Option':<28} {'overall MdAPE':>14} {'95% CI (cluster)':>22} {'W30':>7} "
-          f"{'artsy MdAPE':>12} {'saatchi MdAPE':>14}")
+    print(
+        f"\n{'Option':<28} {'overall MdAPE':>14} {'95% CI (cluster)':>22} {'W30':>7} "
+        f"{'artsy MdAPE':>12} {'saatchi MdAPE':>14}"
+    )
     print("-" * 110)
     for o in options:
         ov = o["overall"]
         bs = o["by_source"]
         artsy = bs.get("artsy", {}).get("MdAPE", float("nan"))
         saa = bs.get("saatchi", {}).get("MdAPE", float("nan"))
-        print(f"{o['label']:<28} {ov['MdAPE']:>13.2f}% "
-              f"[{ov['MdAPE_95_CI'][0]:>5.2f}, {ov['MdAPE_95_CI'][1]:>5.2f}] "
-              f"{ov['W30']:>6.2f}% {artsy:>11.2f}% {saa:>13.2f}%")
+        print(
+            f"{o['label']:<28} {ov['MdAPE']:>13.2f}% "
+            f"[{ov['MdAPE_95_CI'][0]:>5.2f}, {ov['MdAPE_95_CI'][1]:>5.2f}] "
+            f"{ov['W30']:>6.2f}% {artsy:>11.2f}% {saa:>13.2f}%"
+        )
 
     print("\n" + "=" * 110)
     print("결정 (사전 정의 4단계 tie-break)")
     print("=" * 110)
     print(f"\nDecision: {decision['decision_label']} (tier: {decision['decision_tier']})")
-    print(f"Best MdAPE: {decision['best_mdape']:.2f}%, "
-          f"second: {decision['second_best']['label']} {decision['second_best']['MdAPE']:.2f}% "
-          f"(diff {decision['second_best']['diff_pp']:+.2f}%p)")
+    print(
+        f"Best MdAPE: {decision['best_mdape']:.2f}%, "
+        f"second: {decision['second_best']['label']} {decision['second_best']['MdAPE']:.2f}% "
+        f"(diff {decision['second_best']['diff_pp']:+.2f}%p)"
+    )
     print("\nRationale:")
     for r in decision["rationale"]:
         print(f"  • {r}")
@@ -414,8 +466,10 @@ def main() -> None:
     print("=" * 110)
     for k, v in paired_results.items():
         print(f"  {k}")
-        print(f"    Δ={v['delta_pp']:+.2f}%p  95% CI=[{v['ci_low']:+.2f}, {v['ci_high']:+.2f}]  "
-              f"({'명확' if v['ci_high'] < 0 else '0 포함, 명확하지 않음'})")
+        print(
+            f"    Δ={v['delta_pp']:+.2f}%p  95% CI=[{v['ci_low']:+.2f}, {v['ci_high']:+.2f}]  "
+            f"({'명확' if v['ci_high'] < 0 else '0 포함, 명확하지 않음'})"
+        )
     print(f"\n저장: {OUT_JSON}")
 
 
