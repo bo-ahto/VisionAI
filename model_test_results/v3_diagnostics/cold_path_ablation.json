@@ -1,0 +1,230 @@
+{
+  "config": {
+    "scope": "Cold path 채택 규칙 ablation. 5 options × overall + by_source breakdown + artist-cluster bootstrap 95% CI. 사전 정의 4단계 tie-break 적용. Paired ΔCI (E vs B 등) 별도 산출 — ablation winner 정당화.",
+    "deploy_caveats": [
+      "P1 deploy 정당화: 본 ablation 결정 (E_ensemble_calibrated) 은 'research/ablation winner' 로만 한정. paired cluster ΔCI(E-B) 가 0 을 포함하면 production 변경 정당화 약함. deploy 시 별도 paired test + regression test + shadow/A/B 필요.",
+      "P1 1.4 baseline gap (33.25%p) 도 cluster CI 단위로 재검토 권고. row-level CI [38.03, 39.19] 는 cold 일반화 질문에 낙관적이었음.",
+      "P2 Tier 3 latency 정성 우선순위만 — 실측 (p50/p95 추론시간 + artifact load) 필요. 현재는 'priors' 로만.",
+      "P2 D10 saatchi 잔존 이슈 (v3.1-1) — E 채택해도 saatchi 고가 segment broad cell saturation 문제 그대로. 본격 대응은 v3.2 트랙."
+    ],
+    "options_definition": {
+      "A_catboost_raw": "CatBoost OOF, no calibration",
+      "B_catboost_calibrated": "CatBoost OOF × cold cell factor (현재 production)",
+      "C_xgboost_raw": "XGBoost OOF, no calibration",
+      "D_ensemble_raw": "(CB + XGB) / 2 in ln-space, no calibration",
+      "E_ensemble_calibrated": "(CB + XGB) / 2 in ln-space × cold cell factor"
+    },
+    "tiebreak": {
+      "tier1_mdape_diff": "≥ 0.5%p — 의미있는 차이",
+      "tier2_ci_disjoint": "95% CI 비겹침 — 통계적 우위",
+      "tier3_latency": "단일 모델 < ensemble (추론 속도)",
+      "tier4_simplicity": "raw < calibrated (코드/artifact 단순성)"
+    },
+    "n_bootstrap": 5000,
+    "rng_seed": 42,
+    "tier1_threshold_pp": 0.5
+  },
+  "options": [
+    {
+      "label": "A_catboost_raw",
+      "n": 28376,
+      "overall": {
+        "MdAPE": 39.3767703371767,
+        "MdAPE_95_CI": [
+          34.97889615946202,
+          44.66627434392694
+        ],
+        "W30": 39.783619960530025
+      },
+      "by_source": {
+        "artsy": {
+          "n": 7289,
+          "MdAPE": 33.50394656199554,
+          "W30": 45.60296336946083
+        },
+        "saatchi": {
+          "n": 21087,
+          "MdAPE": 41.70253109826572,
+          "W30": 37.77208706786171
+        }
+      }
+    },
+    {
+      "label": "B_catboost_calibrated",
+      "n": 28376,
+      "overall": {
+        "MdAPE": 38.14983665593103,
+        "MdAPE_95_CI": [
+          34.26949967576508,
+          43.233813168137885
+        ],
+        "W30": 40.89371299689879
+      },
+      "by_source": {
+        "artsy": {
+          "n": 7289,
+          "MdAPE": 32.427967681989024,
+          "W30": 46.810262038688435
+        },
+        "saatchi": {
+          "n": 21087,
+          "MdAPE": 40.071381991208305,
+          "W30": 38.848579693650116
+        }
+      }
+    },
+    {
+      "label": "C_xgboost_raw",
+      "n": 28376,
+      "overall": {
+        "MdAPE": 39.08449547037293,
+        "MdAPE_95_CI": [
+          34.83293866589258,
+          44.53314422146698
+        ],
+        "W30": 39.977445728784886
+      },
+      "by_source": {
+        "artsy": {
+          "n": 7289,
+          "MdAPE": 34.67042896629757,
+          "W30": 44.0115242145699
+        },
+        "saatchi": {
+          "n": 21087,
+          "MdAPE": 40.780431094721486,
+          "W30": 38.583013230900555
+        }
+      }
+    },
+    {
+      "label": "D_ensemble_raw",
+      "n": 28376,
+      "overall": {
+        "MdAPE": 38.66210624205194,
+        "MdAPE_95_CI": [
+          33.8870667813047,
+          44.24056077850107
+        ],
+        "W30": 41.094586974908374
+      },
+      "by_source": {
+        "artsy": {
+          "n": 7289,
+          "MdAPE": 33.15074886729946,
+          "W30": 46.83770064480724
+        },
+        "saatchi": {
+          "n": 21087,
+          "MdAPE": 41.06405426908601,
+          "W30": 39.10940389813629
+        }
+      }
+    },
+    {
+      "label": "E_ensemble_calibrated",
+      "n": 28376,
+      "overall": {
+        "MdAPE": 37.43946513630688,
+        "MdAPE_95_CI": [
+          32.89576802420244,
+          43.23834077946541
+        ],
+        "W30": 41.84169720890893
+      },
+      "by_source": {
+        "artsy": {
+          "n": 7289,
+          "MdAPE": 31.89660706279002,
+          "W30": 47.75689394978735
+        },
+        "saatchi": {
+          "n": 21087,
+          "MdAPE": 39.670133989844764,
+          "W30": 39.797031346327124
+        }
+      }
+    }
+  ],
+  "decision": {
+    "decision_label": "E_ensemble_calibrated",
+    "decision_tier": "tier1_mdape_diff",
+    "best_mdape": 37.43946513630688,
+    "second_best": {
+      "label": "B_catboost_calibrated",
+      "MdAPE": 38.14983665593103,
+      "diff_pp": 0.7103715196241538
+    },
+    "all_sorted": [
+      {
+        "label": "E_ensemble_calibrated",
+        "MdAPE": 37.43946513630688,
+        "CI": [
+          32.89576802420244,
+          43.23834077946541
+        ]
+      },
+      {
+        "label": "B_catboost_calibrated",
+        "MdAPE": 38.14983665593103,
+        "CI": [
+          34.26949967576508,
+          43.233813168137885
+        ]
+      },
+      {
+        "label": "D_ensemble_raw",
+        "MdAPE": 38.66210624205194,
+        "CI": [
+          33.8870667813047,
+          44.24056077850107
+        ]
+      },
+      {
+        "label": "C_xgboost_raw",
+        "MdAPE": 39.08449547037293,
+        "CI": [
+          34.83293866589258,
+          44.53314422146698
+        ]
+      },
+      {
+        "label": "A_catboost_raw",
+        "MdAPE": 39.3767703371767,
+        "CI": [
+          34.97889615946202,
+          44.66627434392694
+        ]
+      }
+    ],
+    "rationale": [
+      "Tier 1 (MdAPE 차이 ≥ 0.5%p): E_ensemble_calibrated 37.44% vs B_catboost_calibrated 38.15% = 0.71%p ≥ 0.5%p ⇒ E_ensemble_calibrated 채택"
+    ]
+  },
+  "paired_cluster_delta_ci": {
+    "E_vs_B (winner vs current production)": {
+      "label_a": "E_ensemble_calibrated",
+      "label_b": "B_catboost_calibrated",
+      "delta_pp": -0.7103715196241538,
+      "ci_low": -2.1133023010046665,
+      "ci_high": 1.1937257462798203,
+      "method": "paired artist-cluster bootstrap, Δ = MdAPE(a) - MdAPE(b)"
+    },
+    "B_vs_A (calibration 효과 — current production validates calibration)": {
+      "label_a": "B_catboost_calibrated",
+      "label_b": "A_catboost_raw",
+      "delta_pp": -1.2269336812456686,
+      "ci_low": -2.1191946708518734,
+      "ci_high": -0.611861085572747,
+      "method": "paired artist-cluster bootstrap, Δ = MdAPE(a) - MdAPE(b)"
+    },
+    "E_vs_D (calibration 효과 in ensemble)": {
+      "label_a": "E_ensemble_calibrated",
+      "label_b": "D_ensemble_raw",
+      "delta_pp": -1.222641105745062,
+      "ci_low": -1.7565020069073511,
+      "ci_high": -0.44520190041087315,
+      "method": "paired artist-cluster bootstrap, Δ = MdAPE(a) - MdAPE(b)"
+    }
+  }
+}
