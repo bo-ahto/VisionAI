@@ -58,11 +58,13 @@ def _load_cold_factors() -> dict[str, float]:
 def _apply_cell_calibration(
     cb_pred: np.ndarray, source: np.ndarray, is_krw: np.ndarray, cold_factors: dict[str, float],
 ) -> np.ndarray:
-    """primary_predictor.py 와 동일하게 cell factor 적용. 미정의 셀은 ×1.0 fallback."""
-    target_market = np.where(is_krw == 1, "gallery", "online")
-    cells = np.array([f"{s}_{t}" for s, t in zip(source, target_market)])
-    factors = np.array([cold_factors.get(c, 1.0) for c in cells])
-    return cb_pred * factors
+    """primary_predictor.py 와 동일하게 cell factor 적용 — _eval_helpers wrapper."""
+    from visionai.price_engine._eval_helpers import (
+        apply_cell_calibration as _ac, cell_keys, derive_target_market,
+    )
+    target_market = derive_target_market(is_krw)
+    cells = cell_keys(source, target_market)
+    return _ac(cb_pred, cells, cold_factors)
 
 
 def mdape(y_true: np.ndarray, y_pred: np.ndarray) -> float:

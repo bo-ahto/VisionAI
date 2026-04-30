@@ -44,7 +44,13 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
-from train_primary_market_v3_filtered import _warm_mask, load_data, prepare_features
+from train_primary_market_v3_filtered import load_data, prepare_features
+from visionai.price_engine._eval_helpers import (
+    apply_cell_calibration as _apply_cell_calibration_helper,
+    cell_keys as _cell_keys_helper,
+    derive_target_market,
+    warm_mask as _warm_mask,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -75,12 +81,7 @@ def w30(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 def _apply_cell_calibration(
     pred_price: np.ndarray, cell: np.ndarray, factors: dict[str, float],
 ) -> np.ndarray:
-    out = pred_price.copy()
-    for k, f in factors.items():
-        m = cell == k
-        if m.any():
-            out[m] = pred_price[m] * f
-    return out
+    return _apply_cell_calibration_helper(pred_price, cell, factors)
 
 
 def main() -> None:
@@ -97,8 +98,8 @@ def main() -> None:
     X, y_check, groups = prepare_features(df)
     np.testing.assert_allclose(y_check, y_actual_ln, rtol=1e-10)
     source = df["source"].astype(str).to_numpy()
-    target_market = np.where(df["is_krw"].astype(int) == 1, "gallery", "online")
-    cell = np.array([f"{s}_{t}" for s, t in zip(source, target_market)])
+    target_market = derive_target_market(df["is_krw"])
+    cell = _cell_keys_helper(source, target_market)
 
     # Production routing 예측 (warm=XGB OOF / cold=CB OOF + cold cell factor)
     cal = json.loads((OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json").read_text())

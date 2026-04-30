@@ -42,9 +42,10 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import (
-    CB_FEATURES, CAT_FEATURES, _cb_pool, _label_encode_xgb,
-    WARM_MIN_COUNT, load_data, prepare_features,
+    CB_FEATURES, CAT_FEATURES, _cb_pool,
+    load_data, prepare_features,
 )
+from visionai.price_engine._eval_helpers import WARM_MIN_COUNT, derive_target_market
 # 1.8과 동일 routing/metric 헬퍼 재사용
 from v3_loo_gallery import _train_cb_xgb, _predict_production, mdape, w30  # noqa: E402
 
@@ -83,7 +84,7 @@ def main() -> None:
     df = df[df.get("is_excluded_for_training", 0) != 1].reset_index(drop=True)
     X, y, groups = prepare_features(df)
     source = df["source"].astype(str).to_numpy()
-    target_market = np.where(df["is_krw"].astype(int) == 1, "gallery", "online")
+    target_market = derive_target_market(df["is_krw"])
     medium = df["medium_category"].astype(str).to_numpy()
 
     # Top-N media (small media는 train fold에 미세 영향이라 의미 적음)

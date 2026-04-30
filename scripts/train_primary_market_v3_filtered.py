@@ -140,22 +140,12 @@ def _cb_pool(X: pd.DataFrame, y: np.ndarray | None = None) -> Pool:
 def _label_encode_xgb(
     X_train: pd.DataFrame, X_test: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, dict[str, int]]]:
-    """XGBoost용 categorical label encoding.
+    """XGBoost용 categorical label encoding — _eval_helpers wrapper.
 
-    Codex review: train fold만으로 매핑 빌드. test fold의 unseen 카테고리는
-    sentinel 인덱스(=len(mapping))로 매핑하여 leakage 방지.
+    Codex 하네스 P2 (2026-04-30): 공용 helper 로 위임하여 진단 스크립트와 정합 보장.
     """
-    X_train_e = X_train.copy()
-    X_test_e = X_test.copy()
-    label_maps: dict[str, dict[str, int]] = {}
-    for col in CAT_FEATURES:
-        train_vals = X_train_e[col].unique()
-        mapping = {v: i for i, v in enumerate(sorted(train_vals))}
-        unseen_idx = len(mapping)  # train에 없는 test 값은 동일 sentinel로
-        label_maps[col] = mapping
-        X_train_e[col] = X_train_e[col].map(mapping).astype(float)
-        X_test_e[col] = X_test_e[col].map(mapping).fillna(unseen_idx).astype(float)
-    return X_train_e, X_test_e, label_maps
+    from visionai.price_engine._eval_helpers import label_encode_xgb
+    return label_encode_xgb(X_train, X_test, categorical_features=CAT_FEATURES)
 
 
 def cv_groupkfold(
@@ -222,14 +212,10 @@ def cv_groupkfold(
     return out
 
 
-WARM_MIN_COUNT = 5
-
-
-def _warm_mask(groups: np.ndarray) -> np.ndarray:
-    """artist별 작품 수 >= WARM_MIN_COUNT 인 행만 True (서빙 라우팅 일치)."""
-    counts = pd.Series(groups).value_counts()
-    warm_set = set(counts[counts >= WARM_MIN_COUNT].index)
-    return np.array([g in warm_set for g in groups])
+from visionai.price_engine._eval_helpers import (  # noqa: E402
+    WARM_MIN_COUNT,
+    warm_mask as _warm_mask,
+)
 
 
 def cv_kfold(

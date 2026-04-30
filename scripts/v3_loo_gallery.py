@@ -45,8 +45,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from train_primary_market_v3_filtered import (
-    CB_FEATURES, CAT_FEATURES, _cb_pool, _label_encode_xgb,
-    WARM_MIN_COUNT, load_data, prepare_features,
+    CB_FEATURES, CAT_FEATURES, _cb_pool,
+    load_data, prepare_features,
+)
+from visionai.price_engine._eval_helpers import (
+    WARM_MIN_COUNT, apply_cell_calibration, cell_keys, derive_target_market,
+    label_encode_xgb,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -97,7 +101,9 @@ def _train_cb_xgb(
     )
     cb.fit(_cb_pool(X_tr, y_tr))
 
-    Xtr_e, _, label_maps = _label_encode_xgb(X_tr, X_tr.iloc[:1])
+    Xtr_e, _, label_maps = label_encode_xgb(
+        X_tr, X_tr.iloc[:1], categorical_features=CAT_FEATURES,
+    )
     xgb_p = {k: v for k, v in xgb_params.items() if k != "num_boost_round"}
     booster = xgb.train(
         params={**xgb_p, "objective": "reg:squarederror", "verbosity": 0, "seed": RANDOM_SEED},
@@ -129,14 +135,11 @@ def _predict_production(
     pred_ln = np.where(is_warm_te, xgb_ln, cb_ln)
     pred_price = np.exp(pred_ln)
 
-    # cold cell calibration (cold만)
-    cell = np.array([f"{s}_{t}" for s, t in zip(source_te, target_market_te)])
-    cold_mask = ~is_warm_te
-    for k, f in cold_factors.items():
-        m = cold_mask & (cell == k)
-        if m.any():
-            pred_price[m] = pred_price[m] * f
-    return pred_price
+    # cold cell calibration (cold만) — _eval_helpers 공용 사용
+    cell = cell_keys(source_te, target_market_te)
+    return apply_cell_calibration(
+        pred_price, cell, cold_factors, only_mask=~is_warm_te,
+    )
 
 
 def main() -> None:
@@ -152,7 +155,7 @@ def main() -> None:
     X, y, groups = prepare_features(df)
     df["_idx"] = np.arange(len(df))
     source = df["source"].astype(str).to_numpy()
-    target_market = np.where(df["is_krw"].astype(int) == 1, "gallery", "online")
+    target_market = derive_target_market(df["is_krw"])
     gallery = df["gallery_name"].astype(str).to_numpy()
 
     # Top-N Artsy 갤러리 선정

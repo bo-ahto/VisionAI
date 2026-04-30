@@ -41,7 +41,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
-from train_primary_market_v3_filtered import _warm_mask, load_data, prepare_features
+from train_primary_market_v3_filtered import load_data, prepare_features
+from visionai.price_engine._eval_helpers import (
+    cell_keys, derive_target_market, warm_mask as _warm_mask,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -195,7 +198,7 @@ def _d10_deep_dive(
     src_d = source[d10_mask]
     tm_d = target_market[d10_mask]
     med_d = medium[d10_mask]
-    cell_d = np.array([f"{s}_{t}" for s, t in zip(src_d, tm_d)])
+    cell_d = cell_keys(src_d, tm_d)
 
     # Actual price 내부 decile (D10 안에서 다시 10등분)
     inner_q = np.quantile(yt, np.linspace(0, 1, 11))
@@ -318,7 +321,7 @@ def main() -> None:
     X, y_check, groups = prepare_features(df)
     np.testing.assert_allclose(y_check, y_actual_ln, rtol=1e-10)
     source = df["source"].astype(str).to_numpy()
-    target_market = np.where(df["is_krw"].astype(int) == 1, "gallery", "online")
+    target_market = derive_target_market(df["is_krw"])
     medium = df["medium_category"].astype(str).fillna("unknown").to_numpy()
 
     # 작가별 작품 수 (전체 데이터에서 카운트)
@@ -341,8 +344,8 @@ def main() -> None:
     # cold path: cell calibration 적용
     cal_path = OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.json"
     cal = json.loads(cal_path.read_text())
-    cell_cold = np.array([f"{s}_{t}" for s, t in zip(source, target_market)])
-    cell_warm = np.array([f"{s}_{t}" for s, t in zip(source_warm, tm_warm)])
+    cell_cold = cell_keys(source, target_market)
+    cell_warm = cell_keys(source_warm, tm_warm)
     ens_cold_calibrated = ens_cold_raw.copy()
     for k, f in cal["cold_factors"].items():
         m = cell_cold == k
@@ -356,7 +359,7 @@ def main() -> None:
     d10_dive = _d10_deep_dive(y_full, ens_cold_calibrated, df, source, target_market, medium)
     other_dive = _other_medium_raw_breakdown(df)
     # work_count × cell 2-way (codex 1.7 R2 P2)
-    cell_cold_full = np.array([f"{s}_{t}" for s, t in zip(source, target_market)])
+    cell_cold_full = cell_keys(source, target_market)
     work_cell_2way = _work_count_cell_two_way(y_full, ens_cold_calibrated, work_bucket, cell_cold_full)
 
     # Stratification 분석

@@ -71,15 +71,12 @@ def _cb_groupkfold_mdape(
     return _mdape(y_price, pred_price)
 
 
-# XGBoost 튜닝/평가는 warm slice만 (PrimaryPredictor 라우팅: training_count>=5)
-WARM_MIN_COUNT = 5
-
-
-def _warm_mask(groups: np.ndarray) -> np.ndarray:
-    """artist별 작품 수 >= WARM_MIN_COUNT 인 행만 True."""
-    counts = pd.Series(groups).value_counts()
-    warm_set = set(counts[counts >= WARM_MIN_COUNT].index)
-    return np.array([g in warm_set for g in groups])
+# XGBoost 튜닝/평가는 warm slice만 (PrimaryPredictor 라우팅: training_count>=5).
+# Codex Phase 2 P2: 공용 helper 위임으로 진단/학습/서빙 정합 보장.
+from visionai.price_engine._eval_helpers import (  # noqa: E402
+    WARM_MIN_COUNT,
+    warm_mask as _warm_mask,
+)
 
 
 def _xgb_kfold_mdape(

@@ -47,7 +47,13 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
-from train_primary_market_v3_filtered import _warm_mask, load_data, prepare_features
+from train_primary_market_v3_filtered import load_data, prepare_features
+from visionai.price_engine._eval_helpers import (
+    apply_cell_calibration as _apply_cell_calibration_helper,
+    cell_keys as _cell_keys_helper,
+    derive_target_market as _derive_target_market_helper,
+    warm_mask as _warm_mask,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -59,24 +65,19 @@ N_DECILES = 10
 
 
 def _derive_target_market(df: pd.DataFrame) -> np.ndarray:
-    """v3 cell calibration의 target_market 정의: is_krw==1 → gallery, else online."""
-    return np.where(df["is_krw"].astype(int) == 1, "gallery", "online")
+    """v3 cell calibration의 target_market 정의 — _eval_helpers wrapper."""
+    return _derive_target_market_helper(df["is_krw"])
 
 
 def _cell_keys(source: np.ndarray, target_market: np.ndarray) -> np.ndarray:
-    return np.array([f"{s}_{t}" for s, t in zip(source, target_market)])
+    return _cell_keys_helper(source, target_market)
 
 
 def _apply_cell_calibration(
     pred_price: np.ndarray, cell: np.ndarray, factors: dict[str, float],
 ) -> np.ndarray:
-    """Production multiplicative calibration: pred_calibrated = pred * factor[cell]."""
-    out = pred_price.copy()
-    for k, f in factors.items():
-        mask = cell == k
-        if mask.any():
-            out[mask] = pred_price[mask] * f
-    return out
+    """Production multiplicative calibration — _eval_helpers wrapper."""
+    return _apply_cell_calibration_helper(pred_price, cell, factors)
 
 
 def _decile_stats(
