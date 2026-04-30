@@ -601,9 +601,36 @@
 
 <p><strong>산출물</strong>: <code>scripts/v32_d10_margin_redesign.py</code> v2, <code>scripts/v33_warm_saatchi_high_diag.py</code> v2, <code>model_test_results/v3_diagnostics/d10_margin_ablation.json</code>, <code>model_test_results/v3_diagnostics/warm_saatchi_high_diag.json</code></p>
 
-<h3>8.5 'other' medium 라벨 정제 (n=1,144)</h3>
+<h3>8.5 'other' medium 라벨 정제 — v3.3-2 진단 close (KT 즉시 재학습 우선순위 낮다)</h3>
 
-<p>'other' raw breakdown: 199 unique raw mediums. 한국 전통 회화 계열 (silk / korean paper / gofun / stone powder) 합 ~140건 → <strong>v3.1에서 korean_traditional 카테고리 신설로 라벨 정제 가능</strong>. 'color' / 'color, other' 236건은 추가 샘플링 후 결정.</p>
+<p>'other' raw breakdown: 199 unique raw mediums. v3.3-2 v2 (코덱스 권고로 keyword 3-tier 분리 + stratified stability check) 결과:</p>
+
+<table>
+<thead>
+<tr><th>Cohort</th><th class="num">n</th><th>구성</th><th class="num">MdAPE</th><th class="num">vs acrylic (p)</th><th>해석</th></tr>
+</thead>
+<tbody>
+<tr><td>strong_kt</td><td class="num">194</td><td>hanji/jangji/korean paper/gofun/bunchae/stone powder</td><td class="num">11.63%</td><td class="num">0.005 (worse)</td><td>artsy-only 100%, warm 186/cold 8</td></tr>
+<tr><td>silk_only</td><td class="num">81</td><td>silk 단독 매칭 (false positive 검증)</td><td class="num">5.65%</td><td class="num">0.004 (better)</td><td><strong>3명의 artsy warm 작가 (서기환 69행 = 85%)</strong> 집중 → false positive</td></tr>
+<tr><td>ambiguous_kt</td><td class="num">32</td><td>lacquer/mother of pearl/gold leaf/silver leaf/mulberry</td><td class="num">7.68%</td><td class="num">0.887 (~)</td><td>통계적 차이 없음</td></tr>
+<tr><td>other_residual</td><td class="num">837</td><td>잔여 (lenticular, digital, mixed media 등)</td><td class="num">14.73%</td><td class="num">-</td><td>'other' 노이즈의 본진</td></tr>
+</tbody>
+</table>
+
+<p><strong>strong_kt stratified stability</strong> (warm/cold × source × work_count):</p>
+<ul>
+<li>warm n=186 MdAPE 11.10% / cold n=8 MdAPE 54.73% (median signed +36.16%)</li>
+<li>artsy 100% (saatchi 0)</li>
+<li>work_count: 1-2 n=1 (114%), 3-4 n=7 (54.7%), 5-9 n=29 (11.5%), 10+ n=157 (11.1%)</li>
+</ul>
+
+<div class="tldr">
+<p><strong>v3.3-2 close framing</strong> (코덱스 권장): strong_kt strict cohort 에서 acrylic 대비 잔차 난도가 다소 높게 관찰되지만, 해당 효과는 <strong>artsy-only 및 low-support strata</strong> 에 강하게 묶여 있다. 따라서 <strong>korean_traditional 라벨 신설의 즉시 재학습 우선순위는 낮다</strong>. 향후 데이터 cleaning 후보로는 유지하되, 다음 실험 우선순위는 <strong>외부 데이터 (listing date / view count / sale ratio) feature 검토</strong>.</p>
+</div>
+
+<p><strong>핵심 caveat</strong>: silk_only n=81 의 5.65% MdAPE 는 한국 전통 매체 신호가 아니라 단 3명의 artsy warm 작가 dominant cohort (서기환 69행 = 85%) 결과. cold + 저 work_count 의 catastrophic 결과 (50%+ 에러) 는 <strong>low support / sparse artist-history</strong> 의 일반적 문제 — 라벨 추가만으로 해결 X.</p>
+
+<p><strong>산출물</strong>: <code>scripts/v33_2_other_medium_audit.py</code> v2 + <code>model_test_results/v3_diagnostics/other_medium_audit.json</code></p>
 
 <h3>8.6 work_count × cell 2-way (구성효과 진단)</h3>
 
