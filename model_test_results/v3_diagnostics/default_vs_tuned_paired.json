@@ -1,0 +1,197 @@
+{
+  "config": {
+    "scope": "v3-filtered (28,376 rows / 32 features) 위에서 default hp vs Optuna tuned hp 의 paired Wilcoxon. v1 historical 전체 재현 (29,361 rows / 37 features / default hp) 은 row schema 차이로 paired 불가능 → v3.2 로 미룸. 본 작업은 Optuna 효과만 분리.",
+    "default_hp": {
+      "catboost": {
+        "iterations": 1000,
+        "learning_rate": 0.05,
+        "depth": 6
+      },
+      "xgboost": {
+        "eta": 0.05,
+        "max_depth": 6,
+        "num_boost_round": 1000
+      }
+    },
+    "tuned_hp_source": "model_test_results/integrated_v3_filtered_tuned_best_params.json",
+    "n_bootstrap": 10000,
+    "rng_seed": 42,
+    "interpretation": "Δ MdAPE = MdAPE_default - MdAPE_tuned (양수 = tuned 가 개선). Wilcoxon p-value 가 α=0.05 미만이면 효과 통계적으로 유의. Cohen's d_z 절대값 0.2 small / 0.5 medium / 0.8 large. Paired bootstrap CI 하한 > 0 ⇒ 통계적으로 명확한 개선. Warm 결과는 row-level (작품 단위 KFold 분할 정합) + cluster (artist 일반화 보조) 둘 다 보고 — cluster CI 가 0 포함하면 artist 단위 일반화 증거 보류."
+  },
+  "cold_groupkfold": [
+    {
+      "label": "cold_catboost",
+      "n": 28376,
+      "mdape_default": 40.759985003330506,
+      "mdape_tuned": 39.3767703371767,
+      "delta_mdape_pp": 1.3832146661538047,
+      "wilcoxon": {
+        "statistic": 186156958.0,
+        "p_two_sided": 4.839451283077436e-28,
+        "p_one_sided_default_gt_tuned": 2.419725641538718e-28
+      },
+      "cohens_d_z": 0.12060113721318814,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_mdape_pp": 1.1288696640921385,
+        "ci_low": -0.6660304665107432,
+        "ci_high": 2.998599459208676
+      }
+    },
+    {
+      "label": "cold_xgboost",
+      "n": 28376,
+      "mdape_default": 39.31498492240018,
+      "mdape_tuned": 39.08449547037293,
+      "delta_mdape_pp": 0.2304894520272498,
+      "wilcoxon": {
+        "statistic": 184542226.0,
+        "p_two_sided": 5.817096380863376e-34,
+        "p_one_sided_default_gt_tuned": 2.908548190431688e-34
+      },
+      "cohens_d_z": 0.12951668322534682,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_mdape_pp": 0.3430808346582187,
+        "ci_low": -1.0834625806785798,
+        "ci_high": 1.9052395781666351
+      }
+    },
+    {
+      "label": "cold_ensemble",
+      "n": 28376,
+      "mdape_default": 39.20607056160349,
+      "mdape_tuned": 38.66210624205194,
+      "delta_mdape_pp": 0.5439643195515487,
+      "wilcoxon": {
+        "statistic": 180550082.0,
+        "p_two_sided": 3.900247297568139e-51,
+        "p_one_sided_default_gt_tuned": 1.9501236487840695e-51
+      },
+      "cohens_d_z": 0.14447335240774833,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_mdape_pp": 0.41025374876825227,
+        "ci_low": -0.6305299167638279,
+        "ci_high": 1.5545880899656672
+      }
+    }
+  ],
+  "warm_kfold": [
+    {
+      "label": "warm_catboost_row",
+      "n": 27062,
+      "mdape_default": 16.634787451976724,
+      "mdape_tuned": 11.876395777924566,
+      "delta_mdape_pp": 4.758391674052158,
+      "wilcoxon": {
+        "statistic": 95719174.0,
+        "p_two_sided": 0.0,
+        "p_one_sided_default_gt_tuned": 0.0
+      },
+      "cohens_d_z": 0.2130634615052139,
+      "paired_bootstrap_ci": {
+        "method": "row-level paired bootstrap",
+        "delta_mdape_pp": 4.748615042156709,
+        "ci_low": 4.518390597450673,
+        "ci_high": 4.981299502022698
+      }
+    },
+    {
+      "label": "warm_xgboost_row",
+      "n": 27062,
+      "mdape_default": 11.03516514280826,
+      "mdape_tuned": 9.701765452424613,
+      "delta_mdape_pp": 1.3333996903836471,
+      "wilcoxon": {
+        "statistic": 152374865.0,
+        "p_two_sided": 2.829516456426225e-126,
+        "p_one_sided_default_gt_tuned": 1.4147582282131125e-126
+      },
+      "cohens_d_z": 0.04192749981748672,
+      "paired_bootstrap_ci": {
+        "method": "row-level paired bootstrap",
+        "delta_mdape_pp": 1.332609779339692,
+        "ci_low": 1.1511449519402002,
+        "ci_high": 1.5177302954905008
+      }
+    },
+    {
+      "label": "warm_ensemble_row",
+      "n": 27062,
+      "mdape_default": 13.592723753223957,
+      "mdape_tuned": 10.463915700890016,
+      "delta_mdape_pp": 3.128808052333941,
+      "wilcoxon": {
+        "statistic": 111920150.0,
+        "p_two_sided": 0.0,
+        "p_one_sided_default_gt_tuned": 0.0
+      },
+      "cohens_d_z": 0.14866802070711604,
+      "paired_bootstrap_ci": {
+        "method": "row-level paired bootstrap",
+        "delta_mdape_pp": 3.1130889967995863,
+        "ci_low": 2.9078300207450853,
+        "ci_high": 3.2882023565240237
+      }
+    },
+    {
+      "label": "warm_catboost_cluster",
+      "n": 27062,
+      "mdape_default": 16.634787451976724,
+      "mdape_tuned": 11.876395777924566,
+      "delta_mdape_pp": 4.758391674052158,
+      "wilcoxon": {
+        "statistic": 95719174.0,
+        "p_two_sided": 0.0,
+        "p_one_sided_default_gt_tuned": 0.0
+      },
+      "cohens_d_z": 0.2130634615052139,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_mdape_pp": 4.76649068609781,
+        "ci_low": 3.9483115671224236,
+        "ci_high": 5.568247617059238
+      }
+    },
+    {
+      "label": "warm_xgboost_cluster",
+      "n": 27062,
+      "mdape_default": 11.03516514280826,
+      "mdape_tuned": 9.701765452424613,
+      "delta_mdape_pp": 1.3333996903836471,
+      "wilcoxon": {
+        "statistic": 152374865.0,
+        "p_two_sided": 2.829516456426225e-126,
+        "p_one_sided_default_gt_tuned": 1.4147582282131125e-126
+      },
+      "cohens_d_z": 0.04192749981748672,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_mdape_pp": 1.3276298377570628,
+        "ci_low": 1.05601195870005,
+        "ci_high": 1.6069998197722628
+      }
+    },
+    {
+      "label": "warm_ensemble_cluster",
+      "n": 27062,
+      "mdape_default": 13.592723753223957,
+      "mdape_tuned": 10.463915700890016,
+      "delta_mdape_pp": 3.128808052333941,
+      "wilcoxon": {
+        "statistic": 111920150.0,
+        "p_two_sided": 0.0,
+        "p_one_sided_default_gt_tuned": 0.0
+      },
+      "cohens_d_z": 0.14866802070711604,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_mdape_pp": 3.082776553760721,
+        "ci_low": 2.5161639235603532,
+        "ci_high": 3.6333943900215164
+      }
+    }
+  ],
+  "wall_seconds_total": 70.84403920173645
+}
