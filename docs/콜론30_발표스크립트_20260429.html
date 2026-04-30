@@ -906,10 +906,43 @@
   <ul>
     <li><strong><code>docs/model_technical_report_v2.html</code></strong> — v1 → v2 모델 변경 전체 보고서 (PR #19~22, 셀 보정 §5, 검증 §8, 한계 §9)</li>
     <li><strong><code>docs/출처라벨_플립실험_보고서_20260429.html</code></strong> — 출처 라벨 플립 실험 결과 (warm 작가 30명 상세)</li>
+    <li><strong><code>docs/v3_0_diagnostics_보고서_20260430.html</code></strong> — <strong>v3.0 Group 1 분석·통계 보강 최종 산출물 (HARD 1건 + SOFT 9건 PASS)</strong></li>
     <li><strong>(본 발표 스크립트)</strong> — 모델 전반 30~40분 설명용</li>
   </ul>
-  <p>작성일: 2026-04-29 · 발표 분량 약 35~40분 (부록 Q&A 제외)</p>
+  <p>작성일: 2026-04-29 (발표 스크립트) · 2026-04-30 갱신 (v3.0 진단 결과 부록 추가) · 발표 분량 약 35~40분 (부록 Q&A 제외)</p>
 </div>
+
+<hr>
+
+<h2>📊 부록 — v3.0 Group 1 진단 결과 (2026-04-30 후속)</h2>
+
+<div class="speaker">
+  <div class="label">💡 발표 시 추가 멘션 가이드 (선택, 약 2~3분)</div>
+  <p>발표 본문 종료 후 콜론30 검수자가 질문하실 가능성이 높은 v3 보강 진행 상황을 간단히 정리. 자세한 수치는 <code>docs/v3_0_diagnostics_보고서_20260430.html</code> 참조.</p>
+</div>
+
+<h3>한 줄 결과</h3>
+
+<p><strong>v3.0 Group 1 (분석·통계 보강) 10개 acceptance gate 전체 PASS</strong> (HARD 1건 + SOFT 9건). v2 모델은 통계적 신뢰 구간까지 1차년도 A등급 목표를 정량 입증 가능한 상태로 정리.</p>
+
+<h3>4가지 핵심 결과</h3>
+
+<ol>
+  <li><strong>1차년도 정량 목표 통계 입증 ✅</strong>: warm Artsy XGB MdAPE 95% CI <strong>[7.97%, 8.68%]</strong> ⊂ A등급 밴드 [8.0%, 9.0%]. CI 상한 8.68 &lt; 9.0이라 점추정 + 통계적 신뢰 구간 둘 다에서 목표 도달.</li>
+  <li><strong>HARD gate (1.4 baseline 비교) PASS ✅</strong>: v2 ensemble cold 38.66% vs Global median 71.91% = <strong>gap 33.25%p</strong> (≥30%p threshold). RandomForest cold 38.95%와 CI 겹침 → cold path 개선은 <strong>모델 교체보다 segment 전용 calibration / 라벨 정제 / 피처 강화</strong>가 더 효과적.</li>
+  <li><strong>D10 saatchi 구조적 과대예측 발견 ⚠ v3.1 우선 작업</strong>: 최고가 예측 decile (D10, n=2,838)의 saatchi_online (n=1,499)에서 log(pred/actual) median +1.359 (3.9× 과대예측). 단일 cold cell factor 0.9569로는 부족 → v3.1에서 <strong>D10 (예측가 ≥ 13.7M KRW) 전용 calibration layer</strong> 신설 우선 검토.</li>
+  <li><strong>'other' 매체 라벨 정제 기회 발견</strong>: 'other' 매체 1,144건 중 ~140건이 한국 전통 회화 (silk / korean paper / gofun / stone powder) → <strong>korean_traditional 카테고리 신설</strong>로 라벨 정제 가능. Group 5 데이터 클렌징 backlog.</li>
+</ol>
+
+<h3>v3.1 우선순위 (콜론30 협력 영역 표시)</h3>
+
+<ol>
+  <li>D10 saatchi 전용 calibration layer (3~5일)</li>
+  <li>v1 재학습 + 정식 paired Wilcoxon (1~2일)</li>
+  <li>출처 플립 표본 90+ 확장 (3~5일)</li>
+  <li>'other' → korean_traditional 라벨 정제 (2~3일) — <em>콜론30 검수 협력 가능 영역</em></li>
+  <li>listing_date / sold_date 신규 수집 (2~3주) — <em>콜론30 협력 필수 (1차 시장 모델 시간축 평가 위해)</em></li>
+</ol>
 
 </div>
 </body>

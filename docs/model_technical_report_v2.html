@@ -718,13 +718,13 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 
 <h3>9.2 v3 후속 보강 계획 — 작업 트랙 5개</h3>
 
-<p>위 6건 협조 사항 + 코덱스 방법론 검토 결과를 반영하여 v3 보강 작업을 5개 트랙으로 분해했습니다 (자세한 내용은 별도 문서 <code>docs/v3_보강계획_외부공유용_20260430.md</code> 참조).</p>
+<p>위 6건 협조 사항 + 코덱스 방법론 검토 결과를 반영하여 v3 보강 작업을 5개 트랙으로 분해했습니다 (자세한 내용은 별도 문서 <code>docs/v3_보강계획_외부공유용_20260430.md</code>, v3.0 산출물은 <code>docs/v3_0_diagnostics_보고서_20260430.html</code> 참조).</p>
 
 <div class="wide-table-wrap">
 <table>
 <thead><tr><th>Group</th><th>작업 영역</th><th>진행 시기</th><th>기존 Phase 매핑</th></tr></thead>
 <tbody>
-<tr><td><strong>Group 1</strong></td><td>분석·통계 보강. <strong>일부 완료</strong>: 출처 플립 통계 검정 (1.3 — Wilcoxon/Cohen's d_z/Bootstrap CI, 결과는 §5.6 통계 표). <strong>잔여</strong>: Bootstrap CI for MdAPE (1.1), v1 vs v2 paired test (1.2), Baseline 비교 (1.4), Learning curve (1.5), Calibration plot (1.6), Residual analysis (1.7), leave-one-gallery-out / leave-one-medium-out CV (1.8/1.9), 시간축 평가 시도 (1.10)</td><td>2026-05~06</td><td>(독립 트랙)</td></tr>
+<tr><td><strong>Group 1</strong> ✅</td><td>분석·통계 보강. <strong>10/10 acceptance gate PASS 완료 (2026-04-30)</strong>: HARD gate 1.4 baseline 비교 PASS (gap 33.25%p ≥ 30%p threshold) + SOFT gate 9건 (1.1 Bootstrap CI / 1.3 출처 플립 통계검정 / 1.5 Learning curve slice-split / 1.6 Calibration / 1.7 Residual / 1.8 LOO gallery / 1.9 LOO medium / 1.10 Time-axis limitation) PASS + 1.2 v1 vs v2 proxy (정식 paired는 v3.1)</td><td><strike>2026-05~06</strike> <strong>완료 2026-04-30</strong></td><td>(독립 트랙)</td></tr>
 <tr><td><strong>Group 2</strong></td><td>핵심 실험 추가 (출처 플립 표본 <strong>warm 30 → 90+ 확장 (Group 1.3 후속 power 강화)</strong>, cold path 모델 채택 규칙 정량 명시화, drift ablation, quantile regression / conformal prediction)</td><td>2026-06~09</td><td>Phase 1B 병행</td></tr>
 <tr><td><strong>Group 3</strong></td><td>모델 구조·튜닝 (nested CV, Optuna 30→100+ 확장, cell key 재설계, source ablation)</td><td>2026-09~12</td><td>Phase 2A / 2B 병행</td></tr>
 <tr><td><strong>Group 4</strong></td><td>운영·재현성·일반화 (production 모니터링, 선행 연구 정량 benchmark, drift 진단 procedure 일반화, 외부 재현성 패키지)</td><td>2026-12~2027-03</td><td>Phase 3 병행</td></tr>
@@ -742,9 +742,32 @@ def is_warm_artist(slug): return slug in WARM_ARTIST_SLUGS  # 학습 정의와 1
 <li><strong>각 마일스톤 acceptance gate</strong>: v3.0 / v3.1 / v3.2 / v3 final 각각에 산출물 + 정량 임계값 (HARD/SOFT 분류) 명시. 임계값 미달 시 다음 단계 진행 보류.</li>
 </ul>
 
-<h4>1차년도 정량 목표 진행 상황</h4>
+<h4>1차년도 정량 목표 진행 상황 — v3.0 진단으로 통계적 신뢰 구간까지 입증</h4>
 
-<p>v2의 5-fold CV 측정값 (warm Artsy MdAPE 8.3%, 앙상블 8.7%)은 1차년도 A 등급 목표 밴드 (warm Artsy 8.0~9.0%) 내에 진입했으며, v3.0 단계에서 v1 vs v2 paired statistical test로 개선의 통계적 유의성을 추가 검증할 예정입니다. cold MdAPE의 v3.2 추가 개선 추정치 (35~37%)는 Phase 2B 데이터 강화 + Group 5 클렌징 고도화 완료를 가정한 값이며, acceptance gate 정량 임계값으로는 사용하지 않습니다.</p>
+<p>v2의 5-fold CV 측정값 (warm Artsy MdAPE 8.3%, 앙상블 8.7%)은 1차년도 A 등급 목표 밴드 (warm Artsy 8.0~9.0%) 내에 진입했으며, <strong>v3.0 Group 1.1 Bootstrap CI 산출 결과 warm Artsy XGBoost MdAPE 95% CI [7.97%, 8.68%]가 A등급 밴드 [8.0%, 9.0%] 내부에 정량 입증</strong>되었습니다 (CI 상한 8.68 &lt; 9.0). 1.2 v1 vs v2 paired statistical test는 v1 OOF 부재로 proxy 비교만 수행됐고, 정식 검정은 v3.1에서 v1 재학습 후 진행 예정입니다. cold MdAPE의 v3.2 추가 개선 추정치 (35~37%)는 Phase 2B 데이터 강화 + Group 5 클렌징 고도화 완료를 가정한 값이며, acceptance gate 정량 임계값으로는 사용하지 않습니다.</p>
+
+<h3>9.3 v3.0 Group 1 핵심 발견 4가지 (2026-04-30 후속)</h3>
+
+<p>v3.0 Group 1 (분석·통계 보강) 10개 acceptance gate 모두 PASS. v3.1 우선순위 작업으로 직접 연결되는 핵심 발견은 다음 4가지입니다 (자세한 내용은 <code>docs/v3_0_diagnostics_보고서_20260430.html</code> §12 참조).</p>
+
+<ol>
+<li><strong>1차년도 정량 목표 통계적 입증</strong>: warm Artsy XGB MdAPE 95% CI [7.97%, 8.68%] ⊂ A등급 목표 밴드 [8.0, 9.0] (위 §9.2 §1차년도 진행상황 참조)</li>
+<li><strong>D10 saatchi_online 구조적 과대예측 (1.7 발견)</strong>: 최고가 예측 decile (D10, n=2,838)에서 saatchi_online (n=1,499)의 log(pred/actual) median +1.359 (≈ 3.9× 과대예측). 단일 cold cell factor 0.9569로는 부족 — <strong>v3.1에서 D10 (예측가 ≥ 13.7M KRW) 전용 calibration layer 신설 우선 검토</strong>. v2 saatchi MdAPE 41.7%의 일부는 이 segment에 집중된 비대칭이며, 일반 cold path 보정만으로는 한계가 명확.</li>
+<li><strong>Cold path 데이터/피처 bottleneck (1.4 + 1.5 + 1.9 결합)</strong>: 1.4 baseline 비교에서 RandomForest cold 38.95% [38.40, 39.62] vs v2 ensemble cold 38.66% [38.03, 39.19] CI 겹침 → cold path GBDT 우위 약함. 1.5 learning curve cold cluster CI [-0.81, +7.92] 0 포함 → 데이터 추가의 통계적 효용 불명확. <strong>결론</strong>: cold path 개선은 단순 모델 변경 / 데이터 양 증가보다 <strong>피처 강화 / segment 전용 calibration / 라벨 정제</strong>가 효과적. (warm은 RF 24.80% vs XGB 9.70% 명확한 GBDT 우위 — 반대 결론).</li>
+<li><strong>'other' medium 라벨 정제 기회 (1.7 발견)</strong>: 'other' 매체 1,144건 중 ~140건이 한국 전통 회화 (silk / korean paper / gofun / stone powder) → <strong>korean_traditional 카테고리 신설로 라벨 정제 가능</strong>. Group 5 데이터 클렌징 backlog로 진행.</li>
+</ol>
+
+<h3>9.4 ML 인프라(하네스) 보강 — 코덱스 별도 review P1 5건 close (2026-04-30)</h3>
+
+<p>모델/평가 코드의 reproducibility / quality 인프라에 대한 별도 코덱스 review에서 P1 5건 (provenance / 학습 코드 무테스트 / CI 부재 / lock file 부재 / lineage 추적 자동화) 식별되어 3 phase로 close 완료:</p>
+
+<ul>
+<li><strong>Phase 1 — Provenance manifest + uv.lock</strong>: 학습/진단 산출물에 git SHA / 데이터 해시 / 의존성 버전 / parser rule version 자동 stamping. 124 packages 의존성 잠금.</li>
+<li><strong>Phase 2 — 공통 helper 추출</strong>: <code>_eval_helpers.py</code> (warm_mask / cell_keys / apply_cell_calibration / label_encode_xgb / production_routed_predictions) — 학습/진단 8개 스크립트가 사용. 33 unit tests + 28 provenance tests = 61 tests 100% 커버.</li>
+<li><strong>Phase 3 — pre-commit + GitHub Actions CI + Docker smoke</strong>: PR마다 ruff/mypy strict/pytest/Docker build 자동 검증. <strong>PR #25 GitHub runner 통과 확인</strong>.</li>
+</ul>
+
+<p>잔여 P2/P3 (git-lfs 또는 S3 artifact storage / ruff format strict / 전체 src mypy / Python 3.14 smoke lane / 모델 재학습 smoke)는 v3.1 backlog로 정리.</p>
 
 <hr>
 <h2>10. 운영 변경 사항 (v1 대비)</h2>

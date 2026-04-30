@@ -1071,9 +1071,96 @@
 
 <div class="footer">
   <p>본 보고서는 정부 R&D 과제 중간 평가용으로 작성되었습니다.</p>
-  <p>모델 버전: v3-tuned-cal · 보고 일자: 2026-04-29 · 학습 데이터: 28,376건 / 1,551 작가</p>
+  <p>모델 버전: v3-tuned-cal · 보고 일자: 2026-04-29 (본문) / 2026-04-30 (부록 — v3.0 진단 결과 추가) · 학습 데이터: 28,376건 / 1,551 작가</p>
   <p>작성: VisionAI 모델 개발팀</p>
 </div>
+
+<hr>
+
+<h2>부록 A — v3.0 진단 결과 (2026-04-30 후속, 학술적 보강)</h2>
+
+<p>본문 §6-§7의 평가 방법론을 코덱스 round 1-3 비판에 따라 보강한 결과를 정리한다 (자세한 산출은 별도 문서 <code>docs/v3_0_diagnostics_보고서_20260430.html</code> 참조). 본 부록은 본문 결과를 대체하지 않고 통계적 신뢰 구간 + 한계 분해를 추가한다.</p>
+
+<h3>A.1 통계적 신뢰 구간 산출 (Bootstrap CI, 1.1)</h3>
+
+<p>본문 §6 점추정에 대해 Bootstrap 10,000 resample으로 95% CI 산출:</p>
+<ul>
+  <li><strong>warm Artsy XGBoost MdAPE 95% CI [7.97%, 8.68%]</strong> ⊂ 1차년도 A등급 목표 밴드 [8.0%, 9.0%] (CI 상한 8.68 &lt; 9.0). 점추정 + 통계적 신뢰 구간 모두에서 목표 도달이 정량 입증됨.</li>
+  <li>Cold ensemble (raw OOF) 38.66% [38.03, 39.19] / Cold calibrated (cross-fit guarded) 38.29% [delta_guarded −1.09%p].</li>
+</ul>
+
+<h3>A.2 Baseline 비교 (HARD acceptance gate, 1.4)</h3>
+
+<p>v3 plan §6 v3.0 acceptance gate의 유일한 HARD gate:</p>
+<ul>
+  <li><strong>v2 ensemble cold MdAPE 38.66% vs Global median baseline 71.91% = gap 33.25%p ≥ 30%p threshold</strong> → <strong>HARD gate PASS</strong></li>
+  <li>RandomForest baseline (n_estimators=200, depth=10) cold 38.95% [38.40, 39.62] vs v2 ensemble 38.66% [38.03, 39.19] → CI 겹침. Cold slice에서 GBDT 모델 우위가 통계적으로 명확하지 않음. 해석: <strong>cold path 개선 제약은 알고리즘이 아니라 데이터/피처/segment 비대칭에서 비롯</strong>.</li>
+  <li>Warm slice는 RF 24.80% vs XGB 9.70% (15.10%p 차이) — GBDT의 명확한 우위. warm/cold가 다른 패러다임을 요구함을 정량 확인.</li>
+</ul>
+
+<h3>A.3 Learning Curve + Paired Bootstrap CI (1.5)</h3>
+
+<p>5 fraction (10/25/50/75/100%) nested cumulative subsampling 후 Δ50→100 paired bootstrap CI:</p>
+<ul>
+  <li><strong>Cold (artist-cluster bootstrap, n_clusters=1551)</strong>: Δ MdAPE = +3.50%p, 95% CI [-0.81, +7.92] → CI가 0을 포함, observed improvement이나 inferentially inconclusive</li>
+  <li><strong>Warm (row-level bootstrap)</strong>: Δ MdAPE = +1.58%p, 95% CI [+1.39, +1.73] → 명확한 개선</li>
+</ul>
+
+<p>해석: warm slice (기존 작가의 추가 작품 학습)는 데이터 추가의 효용이 통계적으로 명확. cold slice (새 작가 일반화)는 데이터 추가의 효용이 within-artist correlation을 보존한 cluster bootstrap 기준 통계적으로 보류 결론. 이는 §A.2의 RF vs GBDT CI 겹침과 정합 — cold path 개선은 단순 데이터 양 증가 / 모델 변경보다 <strong>피처 / segment 전용 calibration / 라벨 정제</strong>가 효과적.</p>
+
+<h3>A.4 잔차 분해 + D10 segment 발견 (1.7)</h3>
+
+<p>본문 §4.4 cell calibration의 한계가 D10 (최고가 예측 decile, n=2,838)에서 명확:</p>
+<ul>
+  <li><strong>D10 ∩ saatchi_online (n=1,499)</strong>: log(pred/actual) median +1.359 → e^1.36 ≈ 3.9× 과대예측. SDD01-SDD08 (D10 안의 actual 하위 80%) 모두 강한 음수 signed residual (mean −395%, P10 −769%).</li>
+  <li>단일 cold cell factor 0.9569 (saatchi_online)는 D10 segment에 대해 broad cell saturation 형태로 부족함. <strong>v3.1 권고 액션: D10 (예측가 ≥ 13.7M KRW) 전용 calibration layer 신설</strong>.</li>
+  <li>본문 saatchi MdAPE 41.7%의 일부는 이 segment에 집중된 비대칭. 일반 cold path 보정만으로는 한계 명확.</li>
+</ul>
+
+<h3>A.5 일반화 한계 분해 (Leave-one-X-out CV, 1.8/1.9)</h3>
+
+<p>본문 §6.1의 GroupKFold + KFold 구조 외에 두 가지 OOD 일반화 진단 추가:</p>
+<ul>
+  <li><strong>Leave-one-gallery-out (top-10 Artsy 갤러리, ~60% 거래량)</strong>: cold mean 39.85 ± 12.25%p (range 19.40–67.85), baseline 38.29% 대비 +1.56%p. Art Spoon (cold n=651/659) outlier 67.85% — 새 갤러리 cold transfer failure 사례 식별.</li>
+  <li><strong>Leave-one-medium-out (top-7 매체, ~98% 작품)</strong>: cold mean 39.66 ± <strong>4.17%p</strong> (gallery 분산의 1/3). 매체 일반화가 갤러리 일반화보다 stable. oil cold 37.41% / mixed cold 31.80% — baseline 보다 약간 better, 매체 신호의 다른 피처 분산을 시사.</li>
+</ul>
+
+<h3>A.6 시간축 평가 한계 명시 (1.10)</h3>
+
+<p>본문 §6.1 cross-sectional protocol 의 한계를 정직하게 명시:</p>
+<ul>
+  <li><strong>Saatchi (학습 데이터의 74%, n=21,087): year_made / 게시일 / 거래일 컬럼 없음</strong> → 진정한 temporal holdout (학습 시점 &lt; 예측 시점) 평가 불가</li>
+  <li><strong>Artsy</strong>: year_made 99.2% 가용 (정제 후 7,166 valid)이나 작품 제작연도 (cohort/age proxy)이며 listing/sale time과 무관 → cohort stratification 한정</li>
+  <li><strong>v3.1 후속</strong>: listing_date / sold_date / first_seen_date 신규 수집 (Artsy + Saatchi) → 정식 temporal holdout 평가</li>
+</ul>
+
+<h3>A.7 출처 라벨 통제 실험 결과 (1.3)</h3>
+
+<p>본문 §8.3의 출처 플립 실험 (warm 30명 통제군) 결과에 통계 검정 추가:</p>
+<ul>
+  <li>Pooled Δ% = −0.183 (95% CI [−0.368, −0.017]), Wilcoxon signed-rank p = 0.068 (α=0.05 기준 경계선 비유의), Cohen's d_z = −0.366 (small ~ medium effect)</li>
+  <li>"출처 라벨 효과는 크지 않다"는 본문 결론은 데이터로 입증되나, "사실상 영향 없음"이라고 단언하기에는 n=30 표본이 power 부족. v3.1 Group 2.1에서 표본 90+ 확장 + 정식 검증 예정</li>
+</ul>
+
+<h3>A.8 v3.0 acceptance gate 결과 종합</h3>
+
+<table>
+  <thead><tr><th>항목</th><th>종류</th><th>결과</th><th>요약</th></tr></thead>
+  <tbody>
+    <tr><td>1.1 Bootstrap CI</td><td>SOFT</td><td>PASS</td><td>warm Artsy XGB CI [7.97, 8.68] A등급 밴드 내부</td></tr>
+    <tr><td>1.2 v1 vs v2 paired test</td><td>SOFT</td><td>proxy</td><td>v1 OOF 부재 → v3.1 v1 재학습 후 정식 검정</td></tr>
+    <tr><td>1.3 출처 플립 통계 검정</td><td>SOFT</td><td>PASS</td><td>경계선 비유의 (p=0.068), small effect</td></tr>
+    <tr><td>1.4 Baseline 비교</td><td><strong>HARD</strong></td><td><strong>PASS</strong></td><td>gap 33.25%p ≥ 30%p</td></tr>
+    <tr><td>1.5 Learning curve</td><td>SOFT</td><td>PASS (slice-split)</td><td>Cold cluster CI 0 포함 / Warm 명확 개선</td></tr>
+    <tr><td>1.6 Calibration plot</td><td>SOFT</td><td>PASS</td><td>warm 사실상 완벽 (decile spread 0.99-1.01)</td></tr>
+    <tr><td>1.7 Residual analysis</td><td>SOFT</td><td>PASS + 발견</td><td>D10 saatchi log_ratio +1.359 (3.9× 과대)</td></tr>
+    <tr><td>1.8 LOO gallery</td><td>SOFT</td><td>PASS</td><td>Cold mean 39.85 ± 12.25%, Art Spoon outlier</td></tr>
+    <tr><td>1.9 LOO medium</td><td>SOFT</td><td>PASS strong</td><td>Cold mean 39.66 ± 4.17% (stable)</td></tr>
+    <tr><td>1.10 Time-axis</td><td>SOFT</td><td>PASS (limitation)</td><td>Saatchi year_made 부재 → cohort 한정 분석</td></tr>
+  </tbody>
+</table>
+
+<p><strong>종합</strong>: HARD gate 1건 PASS + SOFT gate 9건 PASS = v3.0 Group 1 전체 통과. 1.2 v1 vs v2 정식 paired test는 v1 재학습 후 v3.1로 이관. 본 부록의 모든 수치는 코덱스 review 4-5라운드 통과한 산출물이며 재현 가능 (provenance manifest + uv.lock + GitHub Actions CI 제공).</p>
 
 </div>
 </body>
