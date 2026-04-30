@@ -1,0 +1,182 @@
+{
+  "config": {
+    "n_bootstrap": 10000,
+    "rng_seed": 42,
+    "rf_params": {
+      "n_estimators": 200,
+      "max_depth": 10,
+      "random_state": 42
+    },
+    "category_mean_keys": [
+      "medium_category",
+      "source"
+    ],
+    "method": "v2 OOF (production tuned) vs 3 baselines (global median / per-category mean / RandomForest)"
+  },
+  "cold_groupkfold": {
+    "n": 28376,
+    "baselines": {
+      "global_median": {
+        "n": 28376,
+        "MdAPE": {
+          "point": 71.9123505976096,
+          "ci_low": 71.61073825503358,
+          "ci_high": 72.5467289719626
+        },
+        "W30": {
+          "point": 19.98167465463772,
+          "ci_low": 19.512968705948687,
+          "ci_high": 20.46095291795884
+        }
+      },
+      "category_mean_groupkfold": {
+        "n": 28376,
+        "MdAPE": {
+          "point": 72.98862806082354,
+          "ci_low": 71.97461773387619,
+          "ci_high": 73.96292249489747
+        },
+        "W30": {
+          "point": 19.08302791091063,
+          "ci_low": 18.635466591485763,
+          "ci_high": 19.54468564984494
+        }
+      },
+      "random_forest_groupkfold": {
+        "n": 28376,
+        "MdAPE": {
+          "point": 38.94739574801656,
+          "ci_low": 38.39525905151081,
+          "ci_high": 39.62054489285992
+        },
+        "W30": {
+          "point": 39.720186072737526,
+          "ci_low": 39.14928108260502,
+          "ci_high": 40.30518748237947
+        }
+      }
+    },
+    "v2_models": {
+      "catboost_v3_filtered_tuned (raw)": {
+        "n": 28376,
+        "MdAPE": {
+          "point": 39.3767703371767,
+          "ci_low": 38.88400083779392,
+          "ci_high": 40.012705216391204
+        },
+        "W30": {
+          "point": 39.783619960530025,
+          "ci_low": 39.21271497039751,
+          "ci_high": 40.35452495066253
+        }
+      },
+      "xgboost_v3_filtered_tuned (raw)": {
+        "n": 28376,
+        "MdAPE": {
+          "point": 39.08449547037293,
+          "ci_low": 38.60210303404549,
+          "ci_high": 39.628692082133945
+        },
+        "W30": {
+          "point": 39.977445728784886,
+          "ci_low": 39.3959684240203,
+          "ci_high": 40.54482661404003
+        }
+      },
+      "ensemble (raw)": {
+        "n": 28376,
+        "MdAPE": {
+          "point": 38.66210624205194,
+          "ci_low": 38.02524662540353,
+          "ci_high": 39.18753105289021
+        },
+        "W30": {
+          "point": 41.094586974908374,
+          "ci_low": 40.51663377502114,
+          "ci_high": 41.65844375528616
+        }
+      }
+    }
+  },
+  "warm_kfold": {
+    "n": 27062,
+    "baselines": {
+      "global_median": {
+        "n": 27062,
+        "MdAPE": {
+          "point": 71.92280859563135,
+          "ci_low": 71.37042062415195,
+          "ci_high": 72.61163032191067
+        },
+        "W30": {
+          "point": 19.91722710812209,
+          "ci_low": 19.44423915453403,
+          "ci_high": 20.40139309733205
+        }
+      },
+      "random_forest_kfold": {
+        "n": 27062,
+        "MdAPE": {
+          "point": 24.80131878147552,
+          "ci_low": 24.376254211113118,
+          "ci_high": 25.110911465272277
+        },
+        "W30": {
+          "point": 57.26479934964156,
+          "ci_low": 56.680954844431305,
+          "ci_high": 57.85612667208632
+        }
+      }
+    },
+    "v2_models": {
+      "catboost_v3_filtered_tuned": {
+        "n": 27062,
+        "MdAPE": {
+          "point": 11.876395777924566,
+          "ci_low": 11.63476790831085,
+          "ci_high": 12.086181181949101
+        },
+        "W30": {
+          "point": 80.64075086837632,
+          "ci_low": 80.17145813317566,
+          "ci_high": 81.11373882196438
+        }
+      },
+      "xgboost_v3_filtered_tuned": {
+        "n": 27062,
+        "MdAPE": {
+          "point": 9.701765452424613,
+          "ci_low": 9.48414176768836,
+          "ci_high": 9.922716211626547
+        },
+        "W30": {
+          "point": 82.84310102727072,
+          "ci_low": 82.38489394723229,
+          "ci_high": 83.29022245214692
+        }
+      },
+      "ensemble": {
+        "n": 27062,
+        "MdAPE": {
+          "point": 10.463915700890016,
+          "ci_low": 10.283950919976261,
+          "ci_high": 10.653472514240214
+        },
+        "W30": {
+          "point": 82.42923656788116,
+          "ci_low": 81.97102948784273,
+          "ci_high": 82.88374842953219
+        }
+      }
+    }
+  },
+  "hard_gate_evaluation": {
+    "rule": "v2 cold MdAPE ≤ Global median baseline MdAPE − 30%p",
+    "v2_cold_best_mdape": 38.66210624205194,
+    "v2_cold_best_model": "ensemble (raw OOF)",
+    "global_median_mdape": 71.9123505976096,
+    "gap_pp": 33.25024435555766,
+    "threshold_pp": 30.0,
+    "pass": true
+  }
+}
