@@ -380,6 +380,51 @@ def main(n_trials: int) -> None:
     with (OUT_DIR / "integrated_v3_filtered_tuned_metrics.json").open("w") as f:
         json.dump(metrics_doc, f, ensure_ascii=False, indent=2)
 
+    # Provenance manifest (Codex 하네스 P1, 2026-04-30) — 학습 산출물에 git/data/dep 결속
+    from visionai.price_engine._provenance import _provenance_dict, write_provenance_manifest
+    DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+    provenance_payload = _provenance_dict(
+        model_target="integrated_v3_filtered_tuned",
+        data_paths={
+            "artsy_dataset": DATA_DIR / "primary_market_dataset.parquet",
+            "saatchi_cleaned": DATA_DIR / "saatchi_cleaned.parquet",
+            "data_version_file": DATA_DIR / "VERSION",
+        },
+        artifact_paths={
+            "catboost_cbm": OUT_DIR / "integrated_v3_filtered_tuned_catboost.cbm",
+            "xgboost_json": OUT_DIR / "integrated_v3_filtered_tuned_xgboost.json",
+            "xgboost_label_maps": OUT_DIR / "integrated_v3_filtered_tuned_xgboost_label_maps.json",
+            "warm_artists": OUT_DIR / "integrated_v3_filtered_tuned_warm_artists.json",
+            "best_params": OUT_DIR / "integrated_v3_filtered_tuned_best_params.json",
+            "metrics": OUT_DIR / "integrated_v3_filtered_tuned_metrics.json",
+        },
+        extra={
+            "scope": "tuned production model artifacts (CatBoost + XGBoost ensemble)",
+            "n_rows": int(len(df)),
+            "n_artists": int(len(set(groups))),
+            "n_warm_artists": len(warm_artists_set),
+            "n_features": len(CB_FEATURES),
+            "tuning_trials": int(n_trials),
+            "best_params": {"catboost": cb_best, "xgboost": xgb_best},
+            "tuning_best_mdape": {
+                "catboost_3fold": round(cb_study.best_value, 2),
+                "xgboost_3fold": round(xgb_study.best_value, 2),
+            },
+            "final_oof_mdape": {
+                "groupkfold_ensemble": gkf_metrics["ensemble"]["MdAPE"],
+                "kfold_ensemble": kf_metrics["ensemble"]["MdAPE"],
+            },
+        },
+    )
+    write_provenance_manifest(
+        OUT_DIR / "integrated_v3_filtered_tuned.provenance.json",
+        payload=provenance_payload,
+    )
+    logger.info("Provenance manifest saved: integrated_v3_filtered_tuned.provenance.json "
+                "(git_sha=%s, dirty=%s)",
+                (provenance_payload["git_sha"] or "n/a")[:12],
+                provenance_payload["git_dirty"])
+
     logger.info("=" * 60)
     logger.info("Tuning complete")
     logger.info("=" * 60)
