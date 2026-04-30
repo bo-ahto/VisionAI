@@ -69,9 +69,9 @@
 <blockquote>
 <p><strong>작성일</strong>: 2026-04-30 (final, Group 1 전체 완료 후 갱신)</p>
 <p><strong>대상 모델</strong>: integrated_v3_filtered_tuned + cell calibration (production v2)</p>
-<p><strong>v3 plan acceptance gate</strong>: v3.0 (Group 1 분석·통계 보강) — <strong class="pos">전체 PASS</strong> (HARD 1건 + SOFT 9건. 1.2는 v1 OOF 부재로 proxy 비교만 → v3.1 정식 paired test 권장)</p>
-<p><strong>HARD gate</strong>: 1.4 Baseline 비교 — v2 ensemble cold 38.66% vs Global median 71.91% gap <strong>33.25%p ≥ 30%p</strong> → PASS</p>
-<p><strong>SOFT gates 9건 PASS</strong>: 1.1/1.3/1.5(slice-split)/1.6/1.7/1.8/1.9/1.10 + 1.2 (proxy)</p>
+<p><strong>v3 plan acceptance gate</strong>: v3.0 (Group 1 분석·통계 보강) — <strong class="pos">전체 PASS</strong> (HARD 1건 + SOFT 9건. 1.2는 v3.2-2 reconstructed-v1 paired close 로 격상)</p>
+<p><strong>HARD gate</strong>: 1.4 Baseline 비교 — v2 ensemble cold 38.66% vs Global median 71.91% gap <strong>33.25%p ≥ 30%p</strong> → PASS (cluster CI 보강은 §5.4.1 — borderline)</p>
+<p><strong>SOFT gates 9건 PASS</strong>: 1.1/1.3/1.5(slice-split)/1.6/1.7/1.8/1.9/1.10 + 1.2 (reconstructed-v1 paired close, v3.2-2)</p>
 </blockquote>
 
 <div class="scope-warn">
@@ -121,8 +121,8 @@
   <td>1.2</td>
   <td>v1 vs v2 paired test</td>
   <td class="gate-soft">SOFT</td>
-  <td><span class="neg">부분 완료</span></td>
-  <td>v1 OOF 부재로 정식 paired Wilcoxon 미실시. v1 점추정 vs v2 95% CI proxy 비교만 수행. <strong>정식 검증은 v3.1에서 v1 재학습 후</strong></td>
+  <td class="pos"><strong>reconstructed-v1 paired close</strong></td>
+  <td>v3.0: v1 OOF 부재로 proxy 비교만 (v1 점추정이 v2 95% CI 내부 모두). <strong>v3.2-2 (§3.3)</strong>: 공통 28,376 row + reconstructed v1-like spec (CB+5 extra, default hp) 정식 paired Wilcoxon. cold cluster CI 모두 0 포함 (구분 불가, proxy 결과 재확인) / warm XGB Δ+1.54 [+1.22, +1.80] 명확. exact historical v1 (29,361 row) + 입체 985 효과는 v3.3 backlog</td>
 </tr>
 <tr>
   <td>1.3</td>
@@ -256,9 +256,34 @@
 </tbody>
 </table>
 
-<p><strong>해석</strong>: v1 점추정이 모두 v2 95% CI 내부 ⇒ <strong>이 proxy 비교에서는 v1 vs v2 cold path 차이가 통계적으로 명확하지 않음</strong>. 이는 (1) v2 개선이 noise 수준일 수 있거나, (2) proxy 비교가 정식 paired test보다 power가 약함을 의미. 정식 paired Wilcoxon은 v3.1에서 power 강화 예정.</p>
+<p><strong>해석</strong>: v1 점추정이 모두 v2 95% CI 내부 ⇒ <strong>이 proxy 비교에서는 v1 vs v2 cold path 차이가 통계적으로 명확하지 않음</strong>. 이는 (1) v2 개선이 noise 수준일 수 있거나, (2) proxy 비교가 정식 paired test보다 power가 약함을 의미.</p>
 
 <p>다만 warm slice는 v1과 v2의 slice 정의가 다름 (v1 KFold는 전체 29,361건 / v2 KFold는 warm 27,062건만) — 직접 비교 부적절.</p>
+
+<h3>3.3 정식 paired close — reconstructed v1-like vs v2 (v3.2-2, 2026-04-30 후속)</h3>
+
+<p>v1 historical OOF raw 부재 + 진정한 v1 spec (29,361 row) row mismatch 로 paired 불가 → 공통 28,376 row 위에서 <strong>reconstructed v1-like spec</strong> (CB_FEATURES + 5 extra train/serve-drift features + default hp) 재학습 후 paired Wilcoxon. v2 변경 중 (a) 5 features 제거 + (b) Optuna tuning 결합 효과만 isolated. 입체 985 필터 + true v1 (29,361) 은 v3.3 backlog.</p>
+
+<div class="wide-table-wrap">
+<table>
+<thead><tr><th>Comparison</th><th class="num">n</th><th class="num">v1 MdAPE</th><th class="num">v2 MdAPE</th><th class="num">Δ %p</th><th class="num">Wilcoxon p</th><th class="num">95% cluster CI Δ</th><th>판정</th></tr></thead>
+<tbody>
+<tr><td>cb_v1 vs cb_v2 (cold)</td><td class="num">28,376</td><td class="num">40.13%</td><td class="num">39.38%</td><td class="num">+0.76</td><td class="num">0.0000</td><td class="num">[-1.42, +2.80]</td><td>0 포함, 불명확</td></tr>
+<tr><td>xgb_v1 vs xgb_v2 (cold)</td><td class="num">28,376</td><td class="num">39.14%</td><td class="num">39.08%</td><td class="num">+0.05</td><td class="num">0.0000</td><td class="num">[-1.38, +1.62]</td><td>0 포함, 불명확</td></tr>
+<tr><td>ens_v1 vs ens_v2 (cold)</td><td class="num">28,376</td><td class="num">38.97%</td><td class="num">38.66%</td><td class="num">+0.30</td><td class="num">0.0000</td><td class="num">[-0.90, +1.68]</td><td>0 포함, 불명확</td></tr>
+<tr><td><strong>xgb_v1 vs xgb_v2 (warm cluster)</strong></td><td class="num">27,062</td><td class="num">11.24%</td><td class="num">9.70%</td><td class="num"><strong>+1.54</strong></td><td class="num">0.0000</td><td class="num"><strong>[+1.22, +1.80]</strong></td><td>명확 개선</td></tr>
+<tr><td>ens_v1 vs ens_v2 (warm cluster)</td><td class="num">27,062</td><td class="num">13.71%</td><td class="num">10.46%</td><td class="num">+3.25</td><td class="num">0.0000</td><td class="num">[+2.61, +3.78]</td><td>명확 개선</td></tr>
+<tr><td>cb_v1 vs cb_v2 (warm cluster)</td><td class="num">27,062</td><td class="num">17.16%</td><td class="num">11.88%</td><td class="num">+5.28</td><td class="num">0.0000</td><td class="num">[+4.45, +6.04]</td><td>명확 개선 (default 큰 폭 sub-optimal)</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>핵심 결론 — 정식 paired close</strong>:</p>
+<ul>
+<li><strong>Cold</strong>: proxy 비교 결과 (v1 점추정이 v2 95% CI 내부) 가 reconstructed paired 에서도 재확인. v2 가 방향성상 소폭 우세 (점추정 +0.05~+0.76%p) 하나 <strong>cold 개선의 artist-cluster 일반화 증거 부족 → 현 단계에선 구분 불가</strong>. Wilcoxon p&lt;0.0001 은 표본 크기 효과 — cluster CI 가 의사결정 기준.</li>
+<li><strong>Warm</strong>: v2 명확한 개선 (cluster CI 모두 strictly positive). 운영 1순위 XGB warm Δ +1.54%p [+1.22, +1.80]. CB warm +5.28%p 는 default catboost warm 의 큰 폭 sub-optimality 재확인 (v3.1-2 와 정합).</li>
+<li><strong>1.2 status</strong>: v3.0 "proxy" → v3.2-2 "reconstructed-v1 paired close" 로 격상. 단 release-level v1→v2 총효과 (입체 985 필터 포함) + exact historical v1 (29,361) 은 v3.3 backlog.</li>
+</ul>
 
 <hr>
 

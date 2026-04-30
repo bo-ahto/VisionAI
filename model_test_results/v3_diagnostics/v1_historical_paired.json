@@ -1,0 +1,248 @@
+{
+  "config": {
+    "scope": "공통 28,376 row 위에서 reconstructed v1-like spec (CB_FEATURES + 5 extra train/serve-drift features + default hp) vs v2 (production tuned) paired close. 이는 'exact historical v1 vs v2' 의 정식 종결이 아니라 'reconstructed v1-like vs v2 paired close' (codex v3.2-2 P1). v2 변경 중 (a) 5 features 제거 + (b) Optuna tuning 의 결합 효과만 isolated. 입체 985 필터 효과 + 진정한 v1 spec (29,361 row) 은 row schema mismatch 로 paired 불가능 → v3.3 backlog (release-level v1→v2 총효과 + exact historical v1 reproduction).",
+    "v1_features": [
+      "ho",
+      "ho_power",
+      "ln_ho",
+      "area_cm2",
+      "ln_area",
+      "aspect_ratio",
+      "is_small",
+      "support_factor",
+      "ho_x_support",
+      "is_unique",
+      "is_edition",
+      "has_depth",
+      "artist_birth_year",
+      "has_birth_year",
+      "career_stage",
+      "ln_followers",
+      "artist_total_works",
+      "for_sale_ratio",
+      "ho_price_level",
+      "medium_price_level",
+      "profile_completeness",
+      "gallery_tier",
+      "gallery_city_count",
+      "has_seoul",
+      "has_international",
+      "is_krw",
+      "support_type",
+      "medium_category",
+      "attribution_class",
+      "gallery_type",
+      "price_currency",
+      "source",
+      "career_age",
+      "work_age",
+      "vintage_premium",
+      "freshness_discount",
+      "gallery_name"
+    ],
+    "v1_cat_features": [
+      "support_type",
+      "medium_category",
+      "attribution_class",
+      "gallery_type",
+      "price_currency",
+      "source",
+      "gallery_name"
+    ],
+    "v1_hp": {
+      "catboost": {
+        "iterations": 1000,
+        "learning_rate": 0.05,
+        "depth": 6
+      },
+      "xgboost": {
+        "eta": 0.05,
+        "max_depth": 6,
+        "num_boost_round": 1000
+      }
+    },
+    "v2_hp_source": "model_test_results/integrated_v3_filtered_tuned_best_params.json",
+    "n_bootstrap": 10000,
+    "rng_seed": 42,
+    "scope_caveat": "본 v1 재현은 'CB_FEATURES + 5 extra + default hp' = v2 가 도입한 변경 중 (a) 5 features 제거 + (b) Optuna tuning 효과의 결합. (c) 입체 985 필터 효과는 isolated 안 됨 (v3.3 backlog: 29,361 vs 28,376 비교 — row mismatch 로 paired 불가).",
+    "framing_guide": "Cold 결과 (cluster CI 모두 0 포함): 'v2 가 방향성상 소폭 우세 (점추정 +0.05 ~ +0.76%p) 하나 cold 개선의 artist-cluster 일반화 증거는 부족 → 현 단계에선 구분 불가' 가 정확한 framing (codex v3.2-2 P2). 'noise 가능성' 까지 가능하나 단정 회피. Wilcoxon p<0.0001 은 표본 크기 효과 — cluster CI 가 의사결정 기준."
+  },
+  "cold_groupkfold_paired": [
+    {
+      "label": "v1_cb_vs_v2_cb",
+      "n": 28376,
+      "mdape_a": 40.13283123129386,
+      "mdape_b": 39.3767703371767,
+      "delta_pp": 0.7560608941171623,
+      "wilcoxon": {
+        "statistic": 191110437.0,
+        "p_two_sided": 1.4800172691480418e-13,
+        "p_one_sided_a_gt_b": 7.400086345740209e-14
+      },
+      "cohens_d_z": 0.10966916655975449,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_pp": 0.6131405944813956,
+        "ci_low": -1.4227080556510305,
+        "ci_high": 2.8010117387880213
+      }
+    },
+    {
+      "label": "v1_xgb_vs_v2_xgb",
+      "n": 28376,
+      "mdape_a": 39.13809924968801,
+      "mdape_b": 39.08449547037293,
+      "delta_pp": 0.053603779315082534,
+      "wilcoxon": {
+        "statistic": 185867912.0,
+        "p_two_sided": 4.6606416001388404e-29,
+        "p_one_sided_a_gt_b": 2.3303208000694202e-29
+      },
+      "cohens_d_z": 0.1391182233659429,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_pp": 0.1017449280506122,
+        "ci_low": -1.3752286076560885,
+        "ci_high": 1.6164600816357313
+      }
+    },
+    {
+      "label": "v1_ens_vs_v2_ens",
+      "n": 28376,
+      "mdape_a": 38.966064617321656,
+      "mdape_b": 38.66210624205194,
+      "delta_pp": 0.3039583752697155,
+      "wilcoxon": {
+        "statistic": 189041858.0,
+        "p_two_sided": 6.220698058153229e-19,
+        "p_one_sided_a_gt_b": 3.1103490290766147e-19
+      },
+      "cohens_d_z": 0.14566229303066697,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_pp": 0.32371341993248925,
+        "ci_low": -0.9037402523341156,
+        "ci_high": 1.6800218666917368
+      }
+    }
+  ],
+  "warm_kfold_paired_row": [
+    {
+      "label": "v1_cb_vs_v2_cb",
+      "n": 27062,
+      "mdape_a": 17.159468506746084,
+      "mdape_b": 11.876395777924566,
+      "delta_pp": 5.283072728821518,
+      "wilcoxon": {
+        "statistic": 95658017.0,
+        "p_two_sided": 0.0,
+        "p_one_sided_a_gt_b": 0.0
+      },
+      "cohens_d_z": 0.22000278452309313,
+      "paired_bootstrap_ci": {
+        "method": "row-level paired bootstrap",
+        "delta_pp": 5.261625379648905,
+        "ci_low": 5.0159738581901285,
+        "ci_high": 5.493364387511914
+      }
+    },
+    {
+      "label": "v1_xgb_vs_v2_xgb",
+      "n": 27062,
+      "mdape_a": 11.23732770196365,
+      "mdape_b": 9.701765452424613,
+      "delta_pp": 1.535562249539037,
+      "wilcoxon": {
+        "statistic": 149930276.0,
+        "p_two_sided": 7.700792620791952e-147,
+        "p_one_sided_a_gt_b": 3.850396310395976e-147
+      },
+      "cohens_d_z": 0.03789877951252499,
+      "paired_bootstrap_ci": {
+        "method": "row-level paired bootstrap",
+        "delta_pp": 1.531639955172963,
+        "ci_low": 1.3514916157682804,
+        "ci_high": 1.7135337637948185
+      }
+    },
+    {
+      "label": "v1_ens_vs_v2_ens",
+      "n": 27062,
+      "mdape_a": 13.714360712171473,
+      "mdape_b": 10.463915700890016,
+      "delta_pp": 3.2504450112814567,
+      "wilcoxon": {
+        "statistic": 112188856.0,
+        "p_two_sided": 0.0,
+        "p_one_sided_a_gt_b": 0.0
+      },
+      "cohens_d_z": 0.18131332442396533,
+      "paired_bootstrap_ci": {
+        "method": "row-level paired bootstrap",
+        "delta_pp": 3.2355189684472627,
+        "ci_low": 3.0559295839673224,
+        "ci_high": 3.4223840225538913
+      }
+    }
+  ],
+  "warm_kfold_paired_cluster": [
+    {
+      "label": "v1_cb_vs_v2_cb_cluster",
+      "n": 27062,
+      "mdape_a": 17.159468506746084,
+      "mdape_b": 11.876395777924566,
+      "delta_pp": 5.283072728821518,
+      "wilcoxon": {
+        "statistic": 95658017.0,
+        "p_two_sided": 0.0,
+        "p_one_sided_a_gt_b": 0.0
+      },
+      "cohens_d_z": 0.22000278452309313,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_pp": 5.264860015374367,
+        "ci_low": 4.445781678658568,
+        "ci_high": 6.041510291691561
+      }
+    },
+    {
+      "label": "v1_xgb_vs_v2_xgb_cluster",
+      "n": 27062,
+      "mdape_a": 11.23732770196365,
+      "mdape_b": 9.701765452424613,
+      "delta_pp": 1.535562249539037,
+      "wilcoxon": {
+        "statistic": 149930276.0,
+        "p_two_sided": 7.700792620791952e-147,
+        "p_one_sided_a_gt_b": 3.850396310395976e-147
+      },
+      "cohens_d_z": 0.03789877951252499,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_pp": 1.5010312903887608,
+        "ci_low": 1.2167296765224977,
+        "ci_high": 1.8008965390177936
+      }
+    },
+    {
+      "label": "v1_ens_vs_v2_ens_cluster",
+      "n": 27062,
+      "mdape_a": 13.714360712171473,
+      "mdape_b": 10.463915700890016,
+      "delta_pp": 3.2504450112814567,
+      "wilcoxon": {
+        "statistic": 112188856.0,
+        "p_two_sided": 0.0,
+        "p_one_sided_a_gt_b": 0.0
+      },
+      "cohens_d_z": 0.18131332442396533,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "delta_pp": 3.22652653353203,
+        "ci_low": 2.614439557742735,
+        "ci_high": 3.7845237107415857
+      }
+    }
+  ],
+  "wall_seconds_total": 75.58181405067444
+}
