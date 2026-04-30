@@ -1,0 +1,234 @@
+{
+  "config": {
+    "fractions": [
+      0.1,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "n_splits": 5,
+    "rng_seed": 42,
+    "n_bootstrap": 10000,
+    "subsample_unit": {
+      "cold": "group-aware (artist) — fold별 작가 permutation 1회 → prefix",
+      "warm": "row-wise (work) — fold별 행 permutation 1회 → prefix"
+    },
+    "nested_cumulative": true,
+    "metric": "raw OOF MdAPE / W30 (calibration 미적용)",
+    "plateau_threshold_pp": 1.0,
+    "plateau_rule_point": "MdAPE(50%) - MdAPE(100%) < 1.0%p ⇒ point plateau",
+    "plateau_rule_paired_ci": "paired bootstrap 95% CI of Δ = MdAPE(50%) - MdAPE(100%); CI 하한 ≤ 0 ⇒ 50%→100% 개선 통계적으로 명확하지 않음 (방향성은 별도 보고). Cold: cluster (artist) bootstrap — artist-cluster dependence를 반영해 GroupKFold cold 질문에 더 잘 정렬된 conditional CI (한 번 실현된 OOF 예측에 조건부; fold/prefix 재표본 불확실성은 미포함). Warm: row-level bootstrap [작품 단위 KFold].",
+    "interpretation_caveat": "Cold/Warm 서브샘플링 단위가 다름 (artist vs row): cold는 새 작가 일반화 / warm은 같은 작가의 추가 작품 학습이라는 운영 시나리오에 각각 부합. 두 슬라이스의 plateau 판정을 직접 병렬 비교하지 말고 슬라이스별 결론으로 분리해 해석할 것."
+  },
+  "data": {
+    "n_total": 28376,
+    "n_warm": 27062,
+    "n_artists": 1551,
+    "n_artists_warm": 930
+  },
+  "cold_groupkfold": [
+    {
+      "fraction": 0.1,
+      "n_train_per_fold_mean": 2252.4,
+      "n_artists_per_fold_mean": 124.0,
+      "catboost": {
+        "MdAPE": 47.00532845324384,
+        "W30": 34.271919932337184
+      },
+      "xgboost": {
+        "MdAPE": 47.91611983888062,
+        "W30": 33.60234000563857
+      },
+      "ensemble": {
+        "MdAPE": 46.56465012966803,
+        "W30": 34.76881872004511
+      }
+    },
+    {
+      "fraction": 0.25,
+      "n_train_per_fold_mean": 5689.0,
+      "n_artists_per_fold_mean": 310.0,
+      "catboost": {
+        "MdAPE": 42.690757753827135,
+        "W30": 36.70707640259374
+      },
+      "xgboost": {
+        "MdAPE": 44.302966189412594,
+        "W30": 35.3679165491965
+      },
+      "ensemble": {
+        "MdAPE": 43.25909720132153,
+        "W30": 36.18198477586693
+      }
+    },
+    {
+      "fraction": 0.5,
+      "n_train_per_fold_mean": 11229.0,
+      "n_artists_per_fold_mean": 620.4,
+      "catboost": {
+        "MdAPE": 41.47113045804126,
+        "W30": 37.626867775585
+      },
+      "xgboost": {
+        "MdAPE": 42.455710787291586,
+        "W30": 36.58725683676346
+      },
+      "ensemble": {
+        "MdAPE": 41.804545172784614,
+        "W30": 37.3907527488018
+      }
+    },
+    {
+      "fraction": 0.75,
+      "n_train_per_fold_mean": 17049.8,
+      "n_artists_per_fold_mean": 930.8,
+      "catboost": {
+        "MdAPE": 38.87834956863912,
+        "W30": 39.099943614321965
+      },
+      "xgboost": {
+        "MdAPE": 37.21757016150098,
+        "W30": 41.10868339441782
+      },
+      "ensemble": {
+        "MdAPE": 37.81489277331222,
+        "W30": 40.84085142373837
+      }
+    },
+    {
+      "fraction": 1.0,
+      "n_train_per_fold_mean": 22700.8,
+      "n_artists_per_fold_mean": 1240.8,
+      "catboost": {
+        "MdAPE": 38.661115008122216,
+        "W30": 40.139554553143505
+      },
+      "xgboost": {
+        "MdAPE": 38.740550342642734,
+        "W30": 40.47786862137017
+      },
+      "ensemble": {
+        "MdAPE": 38.3047168160655,
+        "W30": 40.74217648717226
+      }
+    }
+  ],
+  "warm_kfold": [
+    {
+      "fraction": 0.1,
+      "n_train_per_fold_mean": 2165.0,
+      "catboost": {
+        "MdAPE": 18.5591577160531,
+        "W30": 66.06680954844431
+      },
+      "xgboost": {
+        "MdAPE": 20.161529937114395,
+        "W30": 64.00857290665878
+      },
+      "ensemble": {
+        "MdAPE": 18.712472148094232,
+        "W30": 65.98181952553396
+      }
+    },
+    {
+      "fraction": 0.25,
+      "n_train_per_fold_mean": 5412.0,
+      "catboost": {
+        "MdAPE": 14.53449353815402,
+        "W30": 73.85632990909762
+      },
+      "xgboost": {
+        "MdAPE": 14.909505283836705,
+        "W30": 73.05077230064296
+      },
+      "ensemble": {
+        "MdAPE": 14.371974865828063,
+        "W30": 74.0041386445939
+      }
+    },
+    {
+      "fraction": 0.5,
+      "n_train_per_fold_mean": 10824.6,
+      "catboost": {
+        "MdAPE": 12.93845829673449,
+        "W30": 77.8693370778213
+      },
+      "xgboost": {
+        "MdAPE": 11.942366154493213,
+        "W30": 78.68967555982559
+      },
+      "ensemble": {
+        "MdAPE": 12.040301320139543,
+        "W30": 78.71923730692484
+      }
+    },
+    {
+      "fraction": 0.75,
+      "n_train_per_fold_mean": 16237.6,
+      "catboost": {
+        "MdAPE": 12.299374867385184,
+        "W30": 79.43241445569433
+      },
+      "xgboost": {
+        "MdAPE": 10.573285465308684,
+        "W30": 81.30219495972212
+      },
+      "ensemble": {
+        "MdAPE": 11.028525021369086,
+        "W30": 81.11743404035178
+      }
+    },
+    {
+      "fraction": 1.0,
+      "n_train_per_fold_mean": 21649.6,
+      "catboost": {
+        "MdAPE": 11.876395777924566,
+        "W30": 80.64075086837632
+      },
+      "xgboost": {
+        "MdAPE": 9.701765452424613,
+        "W30": 82.84310102727072
+      },
+      "ensemble": {
+        "MdAPE": 10.463915700890016,
+        "W30": 82.42923656788116
+      }
+    }
+  ],
+  "soft_gate_evaluation": {
+    "cold": {
+      "mdape_at_0.50": 41.804545172784614,
+      "mdape_at_1.00": 38.3047168160655,
+      "improvement_50_to_100_pp": 3.4998283567191137,
+      "point_plateau": false,
+      "paired_bootstrap_ci": {
+        "method": "paired cluster (artist) bootstrap",
+        "n_clusters": 1551,
+        "delta_mdape_pp": 3.4998283567191137,
+        "delta_ci_low": -0.80828144958003,
+        "delta_ci_high": 7.917663035729504,
+        "mdape_a": 41.804545172784614,
+        "mdape_b": 38.3047168160655
+      },
+      "ci_lower_above_zero": false
+    },
+    "warm": {
+      "mdape_at_0.50": 12.040301320139543,
+      "mdape_at_1.00": 10.463915700890016,
+      "improvement_50_to_100_pp": 1.5763856192495265,
+      "point_plateau": false,
+      "paired_bootstrap_ci": {
+        "method": "row-level paired bootstrap",
+        "delta_mdape_pp": 1.5763856192495265,
+        "delta_ci_low": 1.3889758052896641,
+        "delta_ci_high": 1.7331820517420564,
+        "mdape_a": 12.040301320139543,
+        "mdape_b": 10.463915700890016
+      },
+      "ci_lower_above_zero": true
+    },
+    "interpretation": "Cold (artist expansion): observed improvement, inferentially inconclusive. 방향성은 양수(+3.50%p)이나 artist-cluster CI가 0을 포함해 통계적 결론 보류. Warm (work expansion): observed improvement, inferentially supported. Δ 95% CI가 0을 명확히 초과해 같은 작가의 추가 작품 학습은 효용 있음. 운영 결정 매핑: cold = 작가 발굴 (추가 ROI 불확실), warm = 기존 작가 데이터 보강 (효용 명확)."
+  },
+  "wall_seconds_total": 628.5052258968353
+}
