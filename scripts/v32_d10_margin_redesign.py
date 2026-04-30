@@ -1,33 +1,27 @@
-"""v3.2-4: D10 segment grade/margin 재정의 ablation (production-routed).
+"""v3.2-4: D10 segment grade/margin 재정의 ablation (production-routed, KF OOF 정합 v2).
 
-배경 (v3.1-1 코덱스 P1 + v3.2-4 코덱스 R1 P0):
+배경 (v3.1-1 코덱스 P1 + v3.2-4 코덱스 R1 P0 + v3.3-1 코덱스 P0 fix):
 - v3.1-1 단일 multiplicative factor 0.7569 는 **cold path 의 D10 segment** 만
   point estimate 를 이동. margin 변경 없음.
 - 현재 grade/margin: A ±20% / B ±30% / C ±50% / D ±70% (additive symmetric).
 - v3.2-3 conformal: D10 segment 90% interval median width 1.73 = [P×0.243, P×1.990].
-- 본 작업: production routing 정합 (warm → XGB only, cold → CB × cell factor) 기준
-  D10 cohort 의 기존 grade margin coverage 측정 + 옵션 ablation.
+- v3.2-4 v1 은 warm 행에 cold-protocol GroupKFold OOF (xgb_preds_gkf_ln, 작가 통째 홀드아웃)
+  를 적용한 평가 프로토콜 버그가 있었음 → "warm A grade ±20% 13.6% coverage" 결론은 GKF artifact.
+- 본 v2 (정정): warm slice KFold OOF (xgb_preds_kf_ln) 를 production routing 의 warm 위치에
+  주입. cold 는 CB OOF × cell factor 그대로.
 
-방법 (코덱스 P0 fix):
-1. Production-routed prediction 구성:
-   pred_routed[warm] = XGB OOF
-   pred_routed[cold] = CB OOF × cold_cell_factor[cell]
+방법:
+1. Production-routed prediction (KF OOF 정합):
+   pred_routed[warm] = xgb_preds_kf_ln (warm slice OOF, full 길이로 broadcast)
+   pred_routed[cold] = exp(cb_preds_gkf_ln) × cold_cell_factor[cell]
 2. v3.1-1 layer 적용 (cold + saatchi_online + cold-baseline ≥ 13.7M 에만):
    pred_routed[cold_d10] *= 0.7569
-3. 3개 cohort 분리 보고 (코덱스 P0 액션):
-   - cold D10 : v3.1-1 layer 가 적용된 cohort (143~ 행)
-   - warm saatchi high-price : 동일 임계 위 warm 라우팅 cohort (~480 행, 별 처리 X)
-   - all D10 routed : saatchi+online+pred_routed≥13.7M 의 routed 위 정의 (참고용)
-4. Grade 부여 (코덱스 P1 fix): server `determine_confidence()` 그대로 호출
-   - is_matched = True (training data 모두 matched)
-   - is_warm_artist = warm_mask
-   - training_count = 작가별 row count (학습 데이터 기준)
-   - has_birth_year = df 컬럼
-   - has_manual_profile = False (학습 데이터에 컬럼 없음, 보수적)
-5. 옵션 ablation (3개, 코덱스 P3 fix — B/D 동일 라벨 통합):
-   A. **Existing**: 기존 grade margin
-   B. **D10 grade (conformal multiplicative)**: 90% conformal width 직접 적용
-   C. **Existing × 1.5 boost**: 기존 등급 margin × 1.5 (D → ±105% capped at 99%)
+3. 3개 cohort 분리 보고:
+   - cold D10 : v3.1-1 layer 가 적용된 cohort (~27 행)
+   - warm saatchi high-price : warm + saatchi + online + xgb_kf_pred ≥ 13.7M
+   - all D10 routed : saatchi+online+pred_routed≥13.7M (참고용)
+4. Grade 부여: server `determine_confidence()` 그대로 호출
+5. 옵션 ablation (3개): A_existing / B_d10_grade_conformal / C_existing_boost_1.5x
 
 산출물:
     model_test_results/v3_diagnostics/d10_margin_ablation.json
@@ -190,7 +184,7 @@ def main() -> None:
     oof = np.load(OOF_PATH, allow_pickle=True)
     y_actual_ln = oof["y_actual_ln"]
     cb_gkf_ln = oof["cb_preds_gkf_ln"]
-    xgb_gkf_ln = oof["xgb_preds_gkf_ln"]
+    xgb_kf_ln_warm = oof["xgb_preds_kf_ln"]  # warm slice OOF (n=27062)
 
     df = load_data()
     df = df[df.get("is_excluded_for_training", 0) != 1].reset_index(drop=True)
@@ -207,10 +201,9 @@ def main() -> None:
         [int(artist_counts.get(a, 0)) for a in df["artist_slug"].astype(str)]
     )
 
-    # production routing
+    # production routing — KF OOF 정합 (코덱스 P0 fix)
     wmask = _warm_mask(groups)
     cb_price = np.exp(cb_gkf_ln)
-    xgb_price = np.exp(xgb_gkf_ln)
     cell = cell_keys(source, target_market)
 
     cal = json.loads(
@@ -219,8 +212,19 @@ def main() -> None:
     cold_factors = cal["cold_factors"]
     cb_calibrated = apply_cell_calibration(cb_price, cell, cold_factors)
 
-    # warm → XGB only / cold → CB × cell factor
-    pred_routed_pre_v31 = np.where(wmask, xgb_price, cb_calibrated)
+    # warm slice OOF (xgb_preds_kf_ln) 를 full 길이 array 로 broadcast
+    # 정합 assert (코덱스 P2): warm slice 길이 + y 일치 검증 — silent mismatch 방지
+    assert int(wmask.sum()) == len(xgb_kf_ln_warm), (
+        f"warm slice OOF 길이 mismatch: wmask.sum()={int(wmask.sum())} vs "
+        f"len(xgb_kf_ln_warm)={len(xgb_kf_ln_warm)}"
+    )
+    np.testing.assert_allclose(oof["y_warm_actual_ln"], y_actual_ln[wmask], rtol=1e-10)
+    xgb_kf_full_ln = np.full_like(y_actual_ln, np.nan)
+    xgb_kf_full_ln[wmask] = xgb_kf_ln_warm
+    xgb_kf_price = np.exp(xgb_kf_full_ln)
+
+    # warm → xgb_kf_price (KF OOF) / cold → cb_calibrated
+    pred_routed_pre_v31 = np.where(wmask, xgb_kf_price, cb_calibrated)
 
     # v3.1-1 layer: cold + saatchi_online + cb_calibrated ≥ THRESHOLD
     cold_d10_mask = (
@@ -263,11 +267,11 @@ def main() -> None:
     new_d10_low_factor = float(np.exp(q_low_avg))
     new_d10_high_factor = float(np.exp(q_high_avg))
 
-    # 3 cohort 정의 (코덱스 P0 액션)
+    # 3 cohort 정의 (코덱스 P0 액션) — warm 임계도 KF pred 기준
     saatchi_online_mask = (source == "saatchi") & (target_market == "online")
     high_price_routed_mask = pred_routed >= THRESHOLD_KRW
     cold_d10_eval_mask = cold_d10_mask  # v3.1-1 layer 가 닿는 행 (정확히 같은 정의)
-    warm_saatchi_high_mask = wmask & saatchi_online_mask & (xgb_price >= THRESHOLD_KRW)
+    warm_saatchi_high_mask = wmask & saatchi_online_mask & (xgb_kf_price >= THRESHOLD_KRW)
     all_d10_routed_mask = saatchi_online_mask & high_price_routed_mask
 
     logger.info(
@@ -314,10 +318,11 @@ def main() -> None:
     summary = {
         "config": {
             "scope": (
-                "Production-routed (warm→XGB / cold→CB×cell factor) 기준 D10 cohort 별 "
-                "기존 grade margin coverage 측정 + 3 옵션 ablation. v3.1-1 cold-D10 layer "
-                f"factor={V31_FACTOR} 는 cold + saatchi_online + cb_calibrated ≥ "
-                f"{THRESHOLD_KRW:,} KRW 에만 적용 (production semantics 그대로)."
+                "v2 (KF OOF 정합): warm → xgb_preds_kf_ln (warm slice KFold OOF), "
+                "cold → CB × cell factor. v3.1-1 cold-D10 layer factor=0.7569 는 cold + "
+                f"saatchi_online + cb_calibrated ≥ {THRESHOLD_KRW:,} KRW 에만 적용. "
+                "v1 은 warm 행에 cold-protocol GroupKFold OOF (xgb_preds_gkf_ln) 를 적용한 "
+                "평가 프로토콜 버그 — '13.6% coverage' 결론은 GKF artifact, 본 v2 가 정답."
             ),
             "threshold_krw": THRESHOLD_KRW,
             "target_coverage_pct": TARGET_COVERAGE_PCT,
@@ -337,34 +342,42 @@ def main() -> None:
             "cohorts": {
                 "cold_d10": (
                     "v3.1-1 layer 가 닿는 cohort: cold artist + saatchi + online + "
-                    "cb_calibrated ≥ threshold. 본 ablation 의 primary cohort."
+                    "cb_calibrated ≥ threshold. 본 ablation 의 primary cohort. n=27."
                 ),
                 "warm_saatchi_high": (
-                    "warm artist + saatchi + online + xgb_pred ≥ threshold. v3.1-1 미적용 "
-                    "(production 에서 cold path 만 적용). 비교 참고."
+                    "warm artist + saatchi + online + xgb_kf_pred ≥ threshold. v3.1-1 미적용. "
+                    "n=1,757 (KF OOF 정합)."
                 ),
                 "all_d10_routed": (
                     "saatchi + online + pred_routed ≥ threshold (warm/cold 합쳐서). "
-                    "참고용 — production 의 D10 라우팅 평균 효과."
+                    "참고용 — production 의 D10 라우팅 평균 효과. n=1,767 중 warm 1,757 (99.4%)."
                 ),
             },
             "cohort_comparability_caveat": (
-                "cold_d10 cohort 정의는 cb_calibrated ≥ 13.7M, warm_saatchi_high 는 xgb_price "
-                "≥ 13.7M — 임계 모델이 다르므로 cold vs warm 1:1 성능 비교는 unfair. 다만 "
-                "production exposure 관점에서 all_d10_routed n=1,566 중 warm 1,556 (99.4%) → "
-                "production-routed saatchi_online 고가 segment 의 주된 실패 구간이 warm path 에 몰려 있음."
+                "cold_d10 cohort 정의는 cb_calibrated ≥ 13.7M, warm_saatchi_high 는 "
+                "xgb_kf_price ≥ 13.7M — 임계 모델이 다르므로 cold vs warm 1:1 성능 비교는 unfair. "
+                "production exposure 관점에서 all_d10_routed n=1,767 중 warm 1,757 (99.4%) — "
+                "warm 결과 (A_existing 71.9%, conformal 97.4%) 가 cold (33.3%/77.8%) 보다 "
+                "통계적으로 훨씬 안정적이지만, KF 정합 평가 = known-artist 시나리오 라는 제한 그대로."
             ),
             "conformal_warm_application_caveat": (
                 "B_d10_grade_conformal 의 quantile (low_factor 0.243 / high_factor 1.990) 은 "
                 "cold D10 calibration set 에서 학습된 split conformal 결과 (v3.2-3). warm cohort 에 "
-                "그대로 적용한 35.8% coverage 는 deploy-valid 수치 X — OOD transfer 참고치로만 해석. "
-                "warm 전용 conformal 은 follow-up diagnostic 로 분리 (v3.3 우선순위 아래)."
+                "그대로 적용한 97.4% coverage 는 over-cover (cold quantile 폭이 warm 에선 너무 wide) — "
+                "deploy-valid 수치 X. warm 전용 row-level conformal (90.1%, width 0.96) 가 정합 결과 "
+                "(v3.3-1 v2). 다만 row-level conformal 은 같은 cohort empirical coverage 이므로 "
+                "운영 보장치로 과해석 X."
+            ),
+            "warm_cohort_generalization_caveat": (
+                "warm_saatchi_high cohort 는 saatchi-only artists 100% (artsy 거래 0). source-mix "
+                "일반화 결론으로 확장 X. KF 정합 평가는 known-artist 시나리오 = artist-held-out "
+                "일반화 성능 주장 아님 (stress conformal coverage 88.3% 참고)."
             ),
             "deploy_caveat": (
                 "본 ablation 은 research/comparison only. 실제 deploy 결정은 운영 측 + 별도 PR. "
-                "v3.1-1 point + v3.2-3 interval + v3.2-4 grade 모두 layered HOLD 상태. 본질 해결은 "
-                "v3.3 에서 saatchi_online 고가 segment (warm/cold 모두) 의 모델/피처/외부 데이터 "
-                "(listing date, view count, sale ratio) 개선."
+                "warm row-level conformal width 0.96 > 기존 A-grade 0.40 → 통계적으로 합리적이나 "
+                "현행 grade/margin 체계 대체는 제품 변경. cold D10 (n=27) 은 v3.1-1 paired Wilcoxon "
+                "p=0.7 와 일관 — 본질 해결은 v3.3 모델/feature 개선."
             ),
         },
         "global_grade_distribution": grade_distribution(grades_all),

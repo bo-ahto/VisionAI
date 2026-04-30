@@ -556,30 +556,50 @@
 <p><strong>핵심 진단</strong>: SDD01-SDD08 모두 강한 음수 → <strong>saatchi_online D10은 broad cell saturation</strong> (모든 actual 가격 구간에서 일관 과대예측), top-tail regime shift 만의 문제 아님. 단일 cold cell factor 0.9569로는 <strong>D10에서 부족</strong>. v3.1 액션: D10 (예측가 ≥ 13.7M KRW) 전용 calibration layer 우선 검토.</p>
 </div>
 
-<h3>8.4 v3.2-4 production-routed 재검증 — D10 framing 갱신 (warm 노출 99.4%)</h3>
+<h3>8.4 v3.2-4 + v3.3-1 production-routed 재검증 (KF OOF 정합 v2)</h3>
 
-<p>v3.0 D10 deep-dive (8.2-8.3) 는 cold path 의 saatchi_online 만 보고 있었으나, v3.2-4 에서 production routing 정합 (warm → XGB only, cold → CB × cell factor) 기준 재평가한 결과 <strong>D10 framing 자체를 갱신해야 함</strong>이 드러났다.</p>
+<p><strong>정정 노트 (2026-05-01)</strong>: v3.2-4 v1 + v3.3-1 v1 은 warm 행에 cold-protocol GroupKFold OOF (xgb_preds_gkf_ln, 작가 통째 홀드아웃) 를 적용한 평가 프로토콜 버그가 있었음 — "warm A grade ±20% 가 13.6% 만 cover, MdAPE 90.9%, median log_residual=-2.272" 라는 catastrophic over-prediction 결론은 GKF artifact (코덱스 v3.3-1 P0). 본 v2 는 warm slice KFold OOF (xgb_preds_kf_ln) 로 정합, production warm path 와 일치. 아래 표는 v2 결과.</p>
+
+<h4>8.4.1 D10 cohort 별 grade margin coverage (v3.2-4 v2)</h4>
 
 <table>
 <thead>
-<tr><th>Cohort</th><th class="num">n</th><th>구성</th><th class="num">A_existing coverage</th><th class="num">B_conformal (참고)</th><th class="num">C_boost_1.5×</th></tr>
+<tr><th>Cohort</th><th class="num">n</th><th>구성</th><th class="num">A_existing</th><th class="num">B_conformal (참고)</th><th class="num">C_boost_1.5×</th></tr>
 </thead>
 <tbody>
-<tr><td>cold_d10 (v3.1-1 layer cohort)</td><td class="num">27</td><td>cold + saatchi + online + cb_calibrated ≥ 13.7M, v3.1-1 적용</td><td class="num">33.3% (B=±30%)</td><td class="num">77.8%</td><td class="num">51.9%</td></tr>
-<tr><td><strong>warm_saatchi_high</strong></td><td class="num"><strong>1,556</strong></td><td>warm + saatchi + online + xgb_pred ≥ 13.7M, v3.1-1 미적용</td><td class="num"><strong>13.6%</strong> (A=±20%)</td><td class="num">35.8% (OOD)</td><td class="num">20.4%</td></tr>
-<tr><td>all_d10_routed</td><td class="num">1,566</td><td>saatchi + online + pred_routed ≥ 13.7M (warm 99.4%)</td><td class="num">13.9%</td><td class="num">36.1%</td><td class="num">20.7%</td></tr>
+<tr><td>cold_d10 (v3.1-1 layer)</td><td class="num">27</td><td>cold + saatchi + online + cb_calibrated ≥ 13.7M, v3.1-1 적용</td><td class="num">33.3% (B=±30%)</td><td class="num">77.8%</td><td class="num">51.9%</td></tr>
+<tr><td>warm_saatchi_high</td><td class="num">1,757</td><td>warm + saatchi + online + xgb_kf_pred ≥ 13.7M</td><td class="num">71.9% (A=±20%)</td><td class="num">97.4% (PASS)</td><td class="num">80.0%</td></tr>
+<tr><td>all_d10_routed</td><td class="num">1,767</td><td>saatchi + online + pred_routed ≥ 13.7M (warm 99.4%)</td><td class="num">71.9%</td><td class="num">97.3% (PASS)</td><td class="num">79.9%</td></tr>
 </tbody>
 </table>
 
+<h4>8.4.2 warm_saatchi_high cohort residual 진단 (v3.3-1 v2)</h4>
+
+<p>warm slice KF OOF 정합 cohort (n=1,757, 148 unique artists, saatchi-only 100%):</p>
+<ul>
+<li>median log_residual = <strong>-0.009</strong> (정상 — pred ≈ actual)</li>
+<li>p10 = -0.240, p90 = +0.342, MdAPE = <strong>7.53%</strong></li>
+<li>asymmetry: skew +0.222, ratio_p90/abs_p10 = 1.43 (대칭에 가까움)</li>
+<li>warm row-level conformal: [0.652, 1.608], width 0.96, empirical coverage <strong>90.1% (PASS)</strong></li>
+<li>가격대별 stratification: 13.7M~30M MdAPE 17.20% / 30M~60M MdAPE 14.22% / 60M+ MdAPE 4.36%</li>
+</ul>
+
 <div class="tldr">
-<p><strong>새 핵심 진단</strong>: <strong>production-routed saatchi_online 고가 segment 의 주된 실패 구간은 warm path 에 있음</strong> (n=1,566 중 warm 1,556 = 99.4%). 기존 A grade ±20% 가 13.6% 만 cover. v3.0 D10 deep-dive (n=1,499) 는 cohort 전체 (warm/cold 합산) 를 본 결과였으며, cold path 의 v3.1-1 layer 는 27 행에만 적용. <strong>v3.3 우선순위 1 = saatchi_online 고가 segment 전반의 모델/피처/외부 데이터 (listing date, view count, sale ratio) 개선</strong> + warm path 별도 calibration 진단.</p>
+<p><strong>v2 핵심 진단</strong>: <strong>warm saatchi_online 고가 segment 는 KF 정합 기준 정상</strong> (MdAPE 7.53%, conformal coverage 90.1%). 60M+ 가 가장 잘 맞음 (MdAPE 4.36%) — v1 결론의 "30M cliff" 도 GKF artifact. <strong>cold D10 (n=27) 만 여전히 어려움</strong> (A_existing 33.3%, conformal 77.8%) — v3.1-1 layer 의 본래 target. v3.3 우선순위는 cold D10 + 'other' medium / 외부 feature 개선 으로 회귀.</p>
 </div>
 
-<p><strong>해석 caveat</strong> (코덱스 P0/P3): cold_d10 임계는 cb_calibrated ≥ 13.7M, warm_saatchi_high 는 xgb_price ≥ 13.7M — 임계 모델이 다르므로 cold vs warm 1:1 비교는 unfair. B_d10_grade_conformal 의 35.8% 는 cold-D10 calibration set 에서 학습된 split conformal 결과 (v3.2-3) 를 warm 에 그대로 적용한 OOD transfer 참고치 — deploy-valid 수치 아님. warm 전용 conformal 은 v3.3 follow-up diagnostic.</p>
+<p><strong>해석 caveat</strong> (코덱스 v3.3-1 v2 R2):</p>
+<ul>
+<li><strong>cohort 비대칭</strong>: cold_d10 임계는 cb_calibrated ≥ 13.7M, warm_saatchi_high 는 xgb_kf_price ≥ 13.7M — 임계 모델이 다르므로 cold vs warm 1:1 비교 unfair.</li>
+<li><strong>conformal warm over-cover</strong>: B_d10_grade_conformal 의 97.4% 는 cold-D10 calibration set 에서 학습된 conformal interval 을 warm 에 그대로 적용한 over-cover (cold quantile 폭이 warm 에선 too wide) — deploy-valid 수치 아님. warm 전용 row-level conformal (90.1%, width 0.96) 가 정합 결과.</li>
+<li><strong>known-artist 정합 X artist-held-out 일반화</strong>: warm KF 정합 결과는 known-artist 시나리오 (같은 작가의 다른 작품이 학습에 포함) 만 평가. artist-held-out 일반화 성능 주장 아님 (stress conformal coverage 88.3% 참고).</li>
+<li><strong>source-mix 일반화 X</strong>: warm_saatchi_high cohort 는 saatchi-only artists 100% (artsy 거래 0) — source-mix 일반화 결론으로 확장 금지.</li>
+<li><strong>row-level conformal 운영 보장 X</strong>: 90.1% empirical coverage 는 같은 cohort 기반 — 운영 보장치로 과해석 금지. 현행 grade/margin 체계 대체는 제품 변경 + 별도 ops review (코덱스 R3).</li>
+</ul>
 
-<p>참고: 학습 데이터 grade 분포 = {A: 27,062, B: 1,314, C: 0, D: 0} (학습 데이터는 모두 matched + has_birth_year 다수 → C/D 미등장). server <code>determine_confidence()</code> 호출, has_manual_profile=False (학습 데이터에 컬럼 없음, 보수적). <strong>실제 production grade mix 추정까지 주장하려면 unmatched + manual profile + DB 기준 training_count 반영한 별도 replay 필요</strong> (코덱스 P1).</p>
+<p>참고: 학습 데이터 grade 분포 = {A: 27,062, B: 1,314, C: 0, D: 0} (학습 데이터는 모두 matched + has_birth_year 다수 → C/D 미등장). server <code>determine_confidence()</code> 호출, has_manual_profile=False (학습 데이터에 컬럼 없음, 보수적). 실제 production grade mix 추정까지 주장하려면 unmatched + manual profile + DB 기준 training_count 반영한 별도 replay 필요 (코덱스 v3.2-4 R2).</p>
 
-<p><strong>산출물</strong>: <code>scripts/v32_d10_margin_redesign.py</code> + <code>model_test_results/v3_diagnostics/d10_margin_ablation.json</code></p>
+<p><strong>산출물</strong>: <code>scripts/v32_d10_margin_redesign.py</code> v2, <code>scripts/v33_warm_saatchi_high_diag.py</code> v2, <code>model_test_results/v3_diagnostics/d10_margin_ablation.json</code>, <code>model_test_results/v3_diagnostics/warm_saatchi_high_diag.json</code></p>
 
 <h3>8.5 'other' medium 라벨 정제 (n=1,144)</h3>
 
