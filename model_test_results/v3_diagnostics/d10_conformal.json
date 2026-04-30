@@ -1,0 +1,115 @@
+{
+  "config": {
+    "method": "Split conformal prediction with artist-cluster cross-fit (5-fold). calibration fold 위 ln-residual 잔차 quantile 추정 → test fold D10 segment 에 적용. point = exp(q_median) shift, interval = exp(q_low/q_high) 곱셈.",
+    "production_cold_path_baseline": "CB OOF × cold_cell_factor[cell]",
+    "d10_segment": "source=saatchi AND target_market=online AND pred_baseline >= 13,728,873 KRW",
+    "n_segment": 626,
+    "alpha": 0.1,
+    "interval_coverage_target_pct": 90,
+    "n_splits": 5,
+    "rng_seed": 42,
+    "comparison_to_v31_1": "v3.1-1 단일 multiplicative factor (full_data_factor 0.7569) 는 분포 균일 shift — P10 -0.26 추가 음수 (under-prediction 25% 악화). 본 conformal 은 동일 median shift + α/2 quantile interval 로 tail-aware 신뢰 구간 산출. Point estimate 는 v3.1-1 와 동일 — 본 작업의 새 가치는 interval 만.",
+    "deploy_caveats": [
+      "P1 coverage guarantee 약화 (codex v3.2-3): 본 실험은 artist GroupKFold cross-fit + post-hoc segment 선택 (pred_baseline ≥ 13.7M) 위에서 residual quantile 적용 — 고전적 split conformal 의 exchangeability 가정 그대로 가져오기 어려움. 89.9% empirical coverage 는 본 평가에서 작동 입증, '90% guaranteed coverage' 단정 회피.",
+      "P2 UX 폭 한계: median width 1.73 = P×0.24~P×2.23 (예: P=14M → [3.4M, 31M]). 정직성은 있으나 사용자 가격 제안으로는 거의 무용. 실질적 narrow interval 은 **기저 모델/segment 피처 개선** 이 본질적 답 (LWC/QR 확장보다 우선) — irreducible spread 신호 (코덱스 v3.2-3 P2/P3).",
+      "P2 v3.1-1 stopgap 과의 layering: point estimate 는 v3.1-1 와 정확히 동일 → 본 작업의 새 가치는 interval layer 만. 운영 deploy 시 v3.1-1 (point) + v3.2-3 (interval) 별도 layer 로 분리 가능."
+    ],
+    "interpretation": "Research artifact: PASS (interval coverage 작동 입증). Deploy-ready 90% guaranteed interval: NOT PASS (coverage guarantee post-hoc segment + cluster cross-fit 으로 약화 + UX 폭 한계). 본 작업의 운영 가치는 'D10 saatchi 가격 불확실성의 정량 입증' (irreducible spread 강조 → v3.3 모델/feature 개선 동기) 에 한정."
+  },
+  "fold_quantiles": [
+    {
+      "fold": 1,
+      "n_cal": 476,
+      "n_test": 150,
+      "q_low": -1.4271895222407758,
+      "q_median": -0.2352618934572721,
+      "q_high": 0.8033234783350585
+    },
+    {
+      "fold": 2,
+      "n_cal": 504,
+      "n_test": 122,
+      "q_low": -1.3566805073849117,
+      "q_median": -0.30476328159433486,
+      "q_high": 0.6879825561524612
+    },
+    {
+      "fold": 3,
+      "n_cal": 474,
+      "n_test": 152,
+      "q_low": -1.3825243684516448,
+      "q_median": -0.258436367489729,
+      "q_high": 0.8299865784026927
+    },
+    {
+      "fold": 4,
+      "n_cal": 569,
+      "n_test": 57,
+      "q_low": -1.4159066791024517,
+      "q_median": -0.28515966893952793,
+      "q_high": 0.6746868597743595
+    },
+    {
+      "fold": 5,
+      "n_cal": 481,
+      "n_test": 145,
+      "q_low": -1.514758059518476,
+      "q_median": -0.2800342524542607,
+      "q_high": 0.6035635381018025
+    }
+  ],
+  "d10_segment_evaluation": {
+    "n": 626,
+    "before_baseline": {
+      "MdAPE": 43.62652893452806,
+      "W30": 34.82428115015975,
+      "log_ratio": {
+        "p10": -0.45861744205676136,
+        "p25": -0.04729587180355561,
+        "median": 0.2784872683574484,
+        "p75": 0.6417669783457847,
+        "p90": 0.9924425898707493,
+        "mean": 0.2851055508225155,
+        "std": 0.6579975218824365
+      }
+    },
+    "after_conformal_point": {
+      "MdAPE": 36.8122451120308,
+      "W30": 43.45047923322684,
+      "log_ratio": {
+        "p10": -0.719026044482602,
+        "p25": -0.3206925102859295,
+        "median": 0.007588021633082273,
+        "p75": 0.3664333457860845,
+        "p90": 0.7193135004796326,
+        "mean": 0.015757627552612362,
+        "std": 0.6619775817880936
+      }
+    },
+    "interval": {
+      "alpha": 0.1,
+      "target_coverage_pct": 90,
+      "actual_coverage_pct": 89.93610223642172,
+      "width_relative": {
+        "median": 1.732183202520495,
+        "mean": 1.8403495643394974,
+        "p25": 1.7207125968319592,
+        "p75": 1.992967329636939
+      }
+    }
+  },
+  "comparison_v31_1": {
+    "threshold_krw": 13728873.0,
+    "v31_factor": 0.75692792688444,
+    "after_MdAPE": 36.81224511203087,
+    "after_W30": 43.45047923322684,
+    "after_log_ratio": {
+      "p10": -0.7190256889305878,
+      "p25": -0.32069201310516426,
+      "median": 0.007588288549406654,
+      "p75": 0.3664335230574658,
+      "p90": 0.7193135891153241,
+      "mean": 0.01575788403859338
+    }
+  }
+}
