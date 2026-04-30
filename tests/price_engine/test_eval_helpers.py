@@ -1,4 +1,5 @@
 """Tests for visionai.price_engine._eval_helpers."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -154,10 +155,12 @@ def test_apply_cell_calibration_empty_factors() -> None:
 
 
 def test_normalize_categoricals_replaces_nan_none_empty() -> None:
-    df = pd.DataFrame({
-        "src": ["artsy", "saatchi", None, "", "nan", "None"],
-        "other": [1, 2, 3, 4, 5, 6],
-    })
+    df = pd.DataFrame(
+        {
+            "src": ["artsy", "saatchi", None, "", "nan", "None"],
+            "other": [1, 2, 3, 4, 5, 6],
+        }
+    )
     out = normalize_categoricals(df, ["src"])
     assert out["src"].tolist() == ["artsy", "saatchi", "unknown", "unknown", "unknown", "unknown"]
     assert out["other"].tolist() == [1, 2, 3, 4, 5, 6]  # 미지정 컬럼 변경 X
@@ -253,8 +256,11 @@ def test_production_routed_predictions_warm_uses_xgb_no_cal() -> None:
     # cold cells: artsy_online, saatchi_online; cold factor 0.5 should NOT apply to warm
     factors = {"saatchi_online": 0.5}
     out = production_routed_predictions(
-        cb_pred_ln_full=cb_full, xgb_pred_ln_warm=xgb_warm,
-        warm_mask_full=warm_mask_full, source=source, target_market=tm,
+        cb_pred_ln_full=cb_full,
+        xgb_pred_ln_warm=xgb_warm,
+        warm_mask_full=warm_mask_full,
+        source=source,
+        target_market=tm,
         cold_factors=factors,
     )
     # row 0: warm → 110 (XGB, no cal)
@@ -272,8 +278,11 @@ def test_production_routed_predictions_cold_only_factors() -> None:
     tm = np.array(["online", "online"])
     factors = {"artsy_online": 0.5}
     out = production_routed_predictions(
-        cb_pred_ln_full=cb_full, xgb_pred_ln_warm=xgb_warm,
-        warm_mask_full=warm_mask_full, source=source, target_market=tm,
+        cb_pred_ln_full=cb_full,
+        xgb_pred_ln_warm=xgb_warm,
+        warm_mask_full=warm_mask_full,
+        source=source,
+        target_market=tm,
         cold_factors=factors,
     )
     # warm row uses XGB exp = 100, cold row gets 100 * 0.5 = 50
@@ -286,7 +295,8 @@ def test_production_routed_predictions_warm_count_mismatch_raises() -> None:
     warm_mask_full = np.array([True, False, True])
     with pytest.raises(ValueError, match="warm_mask sum"):
         production_routed_predictions(
-            cb_pred_ln_full=cb_full, xgb_pred_ln_warm=xgb_warm_wrong,
+            cb_pred_ln_full=cb_full,
+            xgb_pred_ln_warm=xgb_warm_wrong,
             warm_mask_full=warm_mask_full,
             source=np.array(["a", "b", "c"]),
             target_market=np.array(["online"] * 3),
@@ -302,8 +312,11 @@ def test_production_routed_predictions_all_cold() -> None:
     tm = np.array(["online", "online"])
     factors = {"artsy_online": 0.9, "saatchi_online": 1.1}
     out = production_routed_predictions(
-        cb_pred_ln_full=cb_full, xgb_pred_ln_warm=xgb_warm,
-        warm_mask_full=warm_mask_full, source=source, target_market=tm,
+        cb_pred_ln_full=cb_full,
+        xgb_pred_ln_warm=xgb_warm,
+        warm_mask_full=warm_mask_full,
+        source=source,
+        target_market=tm,
         cold_factors=factors,
     )
     np.testing.assert_allclose(out, [100.0 * 0.9, 200.0 * 1.1])
@@ -314,7 +327,8 @@ def test_production_routed_predictions_all_warm_no_cal() -> None:
     xgb_warm = np.log(np.array([99.0, 199.0]))
     warm_mask_full = np.array([True, True])
     out = production_routed_predictions(
-        cb_pred_ln_full=cb_full, xgb_pred_ln_warm=xgb_warm,
+        cb_pred_ln_full=cb_full,
+        xgb_pred_ln_warm=xgb_warm,
         warm_mask_full=warm_mask_full,
         source=np.array(["artsy", "saatchi"]),
         target_market=np.array(["online", "online"]),

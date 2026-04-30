@@ -1,4 +1,5 @@
 """Tests for visionai.price_engine._provenance."""
+
 from __future__ import annotations
 
 import hashlib
@@ -165,15 +166,23 @@ def test_provenance_dict_contains_all_required_keys(tmp_path: Path) -> None:
         repo_root=tmp_path,
     )
     required = {
-        "model_target", "git_sha", "git_dirty", "created_at_utc",
-        "data_hashes", "dependency_versions", "parser_rule_version",
+        "model_target",
+        "git_sha",
+        "git_dirty",
+        "created_at_utc",
+        "data_hashes",
+        "dependency_versions",
+        "parser_rule_version",
     }
     assert required.issubset(payload.keys())
 
 
 def test_provenance_dict_artifact_paths_optional(tmp_path: Path) -> None:
     payload = _provenance_dict(
-        model_target="t", data_paths={}, parser_rule_files=(), repo_root=tmp_path,
+        model_target="t",
+        data_paths={},
+        parser_rule_files=(),
+        repo_root=tmp_path,
     )
     assert "artifact_hashes" not in payload
 
@@ -195,8 +204,11 @@ def test_provenance_dict_artifact_paths_present_when_given(tmp_path: Path) -> No
 
 def test_provenance_dict_extra_passthrough(tmp_path: Path) -> None:
     payload = _provenance_dict(
-        model_target="t", data_paths={}, parser_rule_files=(),
-        repo_root=tmp_path, extra={"n_rows": 28376, "hp": {"depth": 8}},
+        model_target="t",
+        data_paths={},
+        parser_rule_files=(),
+        repo_root=tmp_path,
+        extra={"n_rows": 28376, "hp": {"depth": 8}},
     )
     assert payload["extra"]["n_rows"] == 28376
     assert payload["extra"]["hp"] == {"depth": 8}
@@ -206,17 +218,26 @@ def test_provenance_dict_data_hashes_stable_for_same_content(tmp_path: Path) -> 
     p = tmp_path / "data.parquet"
     p.write_bytes(b"deterministic content")
     payload1 = _provenance_dict(
-        model_target="t", data_paths={"d": p}, parser_rule_files=(), repo_root=tmp_path,
+        model_target="t",
+        data_paths={"d": p},
+        parser_rule_files=(),
+        repo_root=tmp_path,
     )
     payload2 = _provenance_dict(
-        model_target="t", data_paths={"d": p}, parser_rule_files=(), repo_root=tmp_path,
+        model_target="t",
+        data_paths={"d": p},
+        parser_rule_files=(),
+        repo_root=tmp_path,
     )
     assert payload1["data_hashes"]["d"]["sha256"] == payload2["data_hashes"]["d"]["sha256"]
 
 
 def test_provenance_dict_iso8601_utc_timestamp(tmp_path: Path) -> None:
     payload = _provenance_dict(
-        model_target="t", data_paths={}, parser_rule_files=(), repo_root=tmp_path,
+        model_target="t",
+        data_paths={},
+        parser_rule_files=(),
+        repo_root=tmp_path,
     )
     ts = payload["created_at_utc"]
     assert isinstance(ts, str)
@@ -263,7 +284,10 @@ def test_stamp_artifact_writes_sibling_manifest(tmp_path: Path) -> None:
     art = tmp_path / "model.cbm"
     art.write_bytes(b"fake binary")
     manifest = stamp_artifact_with_provenance(
-        art, model_target="m", data_paths={}, parser_rule_files=(),
+        art,
+        model_target="m",
+        data_paths={},
+        parser_rule_files=(),
     )
     assert manifest == art.with_suffix(".cbm.provenance.json")
     assert manifest.exists()

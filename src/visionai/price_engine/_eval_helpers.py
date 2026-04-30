@@ -14,6 +14,7 @@ Production routing 정합 기준 (`primary_predictor.py:328-371`):
 본 모듈은 학습/진단 단계용 NumPy/pandas 벡터화 helper 를 제공한다. 단일 행 inference
 는 `primary_predictor.PricePredictor.predict()` 를 사용한다.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -108,7 +109,8 @@ def apply_cell_calibration(
 
 
 def normalize_categoricals(
-    df: pd.DataFrame, categorical_features: Iterable[str],
+    df: pd.DataFrame,
+    categorical_features: Iterable[str],
 ) -> pd.DataFrame:
     """categorical 컬럼 정규화 (nan/None/empty → 'unknown'). server `primary_predictor.py:316`
     + 학습 `train_primary_market_v3_filtered.py:120` 와 정합. df 를 in-place 변경하지
@@ -118,12 +120,7 @@ def normalize_categoricals(
     for col in categorical_features:
         if col not in out.columns:
             continue
-        out[col] = (
-            out[col]
-            .astype(str)
-            .fillna("unknown")
-            .replace(CATEGORICAL_NORMALIZE_MAP)
-        )
+        out[col] = out[col].astype(str).fillna("unknown").replace(CATEGORICAL_NORMALIZE_MAP)
     return out
 
 
@@ -157,9 +154,7 @@ def label_encode_xgb(  # (sklearn 관례: X_train, X_test capitalization)
         unseen_idx = len(mapping)
         label_maps[col] = mapping
         X_train_e[col] = X_train_e[col].astype(str).map(mapping).astype(float)
-        X_test_e[col] = (
-            X_test_e[col].astype(str).map(mapping).fillna(unseen_idx).astype(float)
-        )
+        X_test_e[col] = X_test_e[col].astype(str).map(mapping).fillna(unseen_idx).astype(float)
     return X_train_e, X_test_e, label_maps
 
 
@@ -226,7 +221,10 @@ def production_routed_predictions(
     pred_price = np.exp(cb_pred_ln_full)
     cold_mask = ~warm_mask_full
     pred_price = apply_cell_calibration(
-        pred_price, cell, cold_factors, only_mask=cold_mask,
+        pred_price,
+        cell,
+        cold_factors,
+        only_mask=cold_mask,
     )
     # warm 행은 XGB 로 덮어쓰기 (no calibration)
     pred_price[warm_idx] = np.exp(xgb_pred_ln_warm)

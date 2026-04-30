@@ -45,7 +45,8 @@ jobs:
           uv run ruff check tests/price_engine/test_provenance.py tests/price_engine/test_eval_helpers.py
           uv run ruff check scripts/v3_emit_provenance.py
 
-      - name: Ruff format check (Phase 3 scope)
+      - name: Ruff format check (Phase 3 scope - 신규 helpers/tests)
+        # v3.1-4: continue-on-error 제거, strict.
         run: |
           uv run ruff format --check \
             src/visionai/price_engine/_provenance.py \
@@ -53,7 +54,6 @@ jobs:
             tests/price_engine/test_provenance.py \
             tests/price_engine/test_eval_helpers.py \
             scripts/v3_emit_provenance.py
-        continue-on-error: true  # 한글 docstring 정렬 가벼운 차이 허용. v3.1에서 strict.
 
       - name: Mypy (src only — strict per pyproject.toml)
         run: uv run mypy src/visionai/price_engine/_provenance.py src/visionai/price_engine/_eval_helpers.py
@@ -66,6 +66,34 @@ jobs:
       - name: Pytest (전체 — 회귀 점검, 실패 허용)
         run: uv run pytest tests/ -q
         continue-on-error: true  # 기존 테스트 일부 환경 의존. v3.1에서 strict 전환.
+
+  # v3.1-4: Python 3.14 smoke lane (informational — primary는 3.11)
+  smoke-py314:
+    name: Smoke (Python 3.14)
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    continue-on-error: true  # informational, 3.11 lane이 primary
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.8.22"
+
+      - name: Sync (allow uv to resolve for 3.14)
+        run: |
+          # frozen 잠금이 3.14 markers 포함하므로 그대로 사용
+          uv sync --frozen --extra dev --extra price-engine-core --extra price-engine-exp
+
+      - name: Pytest fast subset (helper + provenance)
+        run: uv run pytest tests/price_engine/test_eval_helpers.py tests/price_engine/test_provenance.py -q
 
   docker-frontend-smoke:
     name: Docker frontend (nginx) build smoke

@@ -12,6 +12,7 @@
 Usage:
     PYTHONPATH=src python3 scripts/v3_emit_provenance.py
 """
+
 from __future__ import annotations
 
 import logging

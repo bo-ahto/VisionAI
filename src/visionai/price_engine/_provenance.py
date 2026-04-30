@@ -24,6 +24,7 @@
         payload=payload,
     )
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -59,7 +60,10 @@ def _git_sha(repo_root: Path) -> str | None:
     try:
         out = subprocess.run(
             ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
-            check=True, capture_output=True, text=True, timeout=5,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         return out.stdout.strip()
     except (subprocess.SubprocessError, FileNotFoundError, OSError):
@@ -124,7 +128,8 @@ def _dependency_versions(packages: tuple[str, ...]) -> dict[str, str | None]:
 
 
 def _parser_rule_version(
-    repo_root: Path, files: tuple[str, ...],
+    repo_root: Path,
+    files: tuple[str, ...],
 ) -> dict[str, Any]:
     """Compose parser rule version: combined hash + per-file metadata.
 
