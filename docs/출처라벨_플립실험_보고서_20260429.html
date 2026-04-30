@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출처 라벨 플립 실험 — Artsy ↔ Saatchi 비교 보고</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --orange: #d29922; --red: #f85149; --purple: #bc8cff;
+    --tldr-bg: #1f2a3a; --tldr-border: #58a6ff;
+    --policy-bg: #2a1f3a; --policy-border: #bc8cff;
+    --warn-bg: rgba(210,153,34,0.08);
+    --pos-bg: rgba(63,185,80,0.10); --neg-bg: rgba(248,81,73,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text);
+         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', sans-serif;
+         line-height: 1.75; padding: 40px 20px;
+         word-break: keep-all; overflow-wrap: break-word; }
+  .container { max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+  h2 { font-size: 22px; margin-top: 48px; margin-bottom: 16px;
+       color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: var(--purple); }
+  h4 { font-size: 15px; margin-top: 24px; margin-bottom: 8px; color: var(--green); }
+  p { margin-bottom: 12px; }
+  blockquote { border-left: 3px solid var(--accent); padding: 8px 16px;
+               margin: 16px 0; background: var(--card); border-radius: 4px;
+               color: var(--muted); font-size: 14px; }
+  .tldr { border-left: 4px solid var(--tldr-border); background: var(--tldr-bg);
+          padding: 14px 18px; margin: 18px 0; border-radius: 6px; }
+  .tldr strong { color: var(--accent); }
+  .policy-note { border-left: 4px solid var(--policy-border); background: var(--policy-bg);
+                 padding: 14px 18px; margin: 18px 0; border-radius: 6px; font-size: 14px; }
+  .scope-warn { background: var(--warn-bg); border-left: 4px solid var(--orange);
+                padding: 14px 18px; margin: 16px 0; border-radius: 6px; font-size: 14px; }
+  .scope-warn strong.title { color: var(--orange); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;
+          word-break: keep-all; overflow-wrap: break-word; table-layout: auto; }
+  th { background: var(--card); padding: 10px 12px; text-align: left;
+       border-bottom: 2px solid var(--border); color: var(--muted);
+       font-weight: 600; word-break: keep-all; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top;
+       word-break: keep-all; overflow-wrap: break-word; }
+  tr:hover td { background: rgba(88,166,255,0.05); }
+  td.num, th.num { text-align: right; white-space: nowrap;
+                   font-variant-numeric: tabular-nums; }
+  td.center, th.center { text-align: center; }
+  .wide-table-wrap { overflow-x: auto; margin: 16px 0; }
+  .wide-table-wrap table { margin: 0; }
+  code { background: var(--card); padding: 2px 6px; border-radius: 3px;
+         font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre { background: var(--card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px; overflow-x: auto;
+        margin: 16px 0; font-size: 13px; line-height: 1.5;
+        font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre.histogram { white-space: pre; color: var(--muted); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  ul, ol { margin: 12px 0; padding-left: 24px; }
+  li { margin-bottom: 4px; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .zero { color: var(--muted); }
+  .delta-pos { color: var(--green); font-weight: 600; }
+  .delta-neg { color: var(--red); font-weight: 600; }
+  .delta-zero { color: var(--muted); }
+  .muted { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+         padding: 16px 20px; margin: 24px 0; font-size: 14px; }
+  .toc strong { color: var(--accent); }
+  .toc ol { margin-top: 8px; }
+  .summary-strip { display: grid; grid-template-columns: repeat(3, 1fr);
+                   gap: 12px; margin: 24px 0; }
+  .stat-card { background: var(--card); border: 1px solid var(--border);
+               padding: 16px; border-radius: 6px; text-align: center; }
+  .stat-card .label { font-size: 12px; color: var(--muted);
+                      text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 24px; font-weight: 700; margin: 6px 0 4px;
+                      color: var(--accent); font-variant-numeric: tabular-nums; }
+  .stat-card .sub { font-size: 12px; color: var(--muted); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px;
+           font-size: 12px; font-weight: 600; }
+  .badge.warm { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .badge.cold { background: rgba(88,166,255,0.15); color: var(--accent); }
+  details { margin: 12px 0; padding: 12px 16px; border: 1px solid var(--border);
+            border-radius: 6px; background: var(--card); }
+  details summary { cursor: pointer; font-weight: 600; color: var(--text); }
+  details[open] summary { margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>출처 라벨 플립 실험 — Artsy ↔ Saatchi 비교 보고</h1>
+<blockquote>
+<p><strong>작성일</strong>: 2026-04-29</p>
+<p><strong>대상 모델</strong>: 1차 시장 가격 예측 모델 v2 (<code>integrated_v3_filtered_tuned</code> + cell calibration)</p>
+<p><strong>실험 표본</strong>: warm 작가 30명 (3개 코호트 × 10명) · 작품 30점 · 예측 60회</p>
+<p><strong>목적</strong>: 콜론30이 제기한 "출처별 차이가 발생하지 않는가" 의문에 대해, 동일 작품에 출처 라벨만 바꿔 모델 출력 차이를 측정</p>
+</blockquote>
+
+<div class="scope-warn">
+<p><strong class="title">📌 본 문서의 위치</strong>: 본 문서는 콜론30이 2026-04-29 제기한 의문 — <em>"데이터 출처별 차이가 생기는 게 아닌지 궁금합니다. 작가 10명 정도만 다른 건 다 동일하게 하고 출처(Artsy랑 Saatchi만 바꿔서) 결과를 볼 수 있을까요?"</em> — 에 대한 통제 실험 결과입니다.</p>
+<p><strong>관련 모델 보고서</strong>: <a href="model_technical_report_v2.html"><code>model_technical_report_v2.html</code></a> §4(PR #21 Source × target_market 셀 캘리브레이션) 의 운영 후 검증 데이터에 해당.</p>
+</div>
+
+<div class="policy-note">
+<p><strong>📐 표기 정책</strong></p>
+<p>본 문서는 <code>model_technical_report_v2.html</code>의 명칭 정책을 따릅니다 — "신진/중견/원로" 등 시장 통념 라벨은 사용하지 않으며, 작가 분류는 <strong>warm/cold (학습 기준)</strong> 와 <strong>운영 등급 A/B/C/D (예측 가능 정보량 기준)</strong> 로만 표기합니다.</p>
+</div>
+
+<div class="scope-warn">
+<p><strong class="title">출처(Provenance)</strong>: 본 문서가 인용하는 모든 수치는 다음 산출물 기준입니다.</p>
+<ul>
+<li>실험 raw 데이터: <code>model_test_results/source_flip_results_warm.json</code> (warm-only, n=30)</li>
+<li>참고용 전체 라우팅: <code>model_test_results/source_flip_results.json</code> (warm + cold, n=30)</li>
+<li>실험 스크립트: <code>scripts/experiment_source_flip.py</code> (재현 가능, <code>random_state=42</code>)</li>
+<li>적용 모델: <code>model_test_results/integrated_v3_filtered_tuned_catboost.cbm</code> + <code>integrated_v3_filtered_tuned_xgboost.json</code></li>
+<li>적용 캘리브레이션: <code>model_test_results/integrated_v3_filtered_tuned_source_calibration.json</code> (cold path 후처리)</li>
+<li>warm 작가 셋: <code>model_test_results/integrated_v3_filtered_tuned_warm_artists.json</code> (930명)</li>
+</ul>
+</div>
+
+<div class="toc">
+<strong>목차</strong>
+<ol>
+<li>한 문단 요약</li>
+<li>왜 이 실험을 했나</li>
+<li>실험 설계 — 어떻게 측정했나</li>
+<li>메인 결과 — warm 작가 30명</li>
+<li>핵심 발견 3가지</li>
+<li>참고 — cold 작가에서는 영향이 더 큽니다</li>
+<li>결과 해석 시 주의사항</li>
+<li>콜론30 전달용 결론 한 페이지</li>
+<li>용어 풀이</li>
+</ol>
+</div>
+
+<hr>
+<h2>1. 한 문단 요약</h2>
+<div class="tldr">
+<p>warm slice에 포함된 작가 30명 (양쪽 학습·Artsy만·Saatchi만 각 10명)을 대상으로, 같은 작품의 다른 모든 입력은 그대로 두고 <strong>출처 라벨만 Artsy ↔ Saatchi로 플립</strong>하여 가격 예측 차이를 측정한 결과 — <strong>30명 모두 변화율이 ±1.5% 이내</strong>였고 <strong>24명(80%)이 ±0.5% 이내</strong>였습니다. 평균 변화는 코호트별로 −0.33% ~ +0.02% 수준으로, 측정 노이즈에 가깝습니다. 학습 작품 수 50점 이상 작가는 변화율 최대가 0.27%로 사실상 라벨에 무관했고, 5~9점 경계선 작가에서만 1% 안팎 변화가 관찰되었습니다. <strong>결론: 학습량이 충분한 작가에 대해서는 출처가 가격 예측의 주요 단서로 작용하지 않습니다.</strong></p>
+</div>
+
+<div class="summary-strip">
+  <div class="stat-card">
+    <div class="label">실험 작가 수</div>
+    <div class="value">30명</div>
+    <div class="sub">3개 코호트 × 10명</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">코호트별 평균 변화</div>
+    <div class="value">±0.3%</div>
+    <div class="sub">−0.33% ~ +0.02%</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">전 작가 최대 변화</div>
+    <div class="value">1.48%</div>
+    <div class="sub">±1.5% 이내 100%</div>
+  </div>
+</div>
+
+<hr>
+<h2>2. 왜 이 실험을 했나</h2>
+
+<p>1차 시장 모델(<code>integrated_v3_filtered_tuned</code>)은 두 출처에서 가져온 데이터로 학습합니다.</p>
+
+<table>
+<thead><tr><th>출처</th><th>설명</th><th class="num">학습 건수</th></tr></thead>
+<tbody>
+<tr><td><strong>Artsy</strong></td><td>갤러리 기반 미술품 정보 사이트</td><td class="num">7,640</td></tr>
+<tr><td><strong>Saatchi</strong></td><td>작가 직판 온라인 마켓 (전량 online)</td><td class="num">21,721</td></tr>
+<tr><td colspan="2"><em>합계</em></td><td class="num"><strong>29,361</strong></td></tr>
+</tbody>
+</table>
+
+<p>모델은 학습 시점에 각 작품의 <code>source ∈ {artsy, saatchi}</code> 라벨을 categorical 피처로 함께 봅니다. 추가로 cold path 예측에는 <code>source × target_market</code> 셀별 후처리 보정(median-ratio cell calibration)을 곱합니다.</p>
+
+<p>이 구조에서 자연스러운 의문이 발생합니다.</p>
+
+<div class="scope-warn">
+<p><strong class="title">❓ 콜론30 의문 (2026-04-29)</strong></p>
+<p>"데이터 출처별 차이가 생기는 게 아닌지 궁금합니다. 작가 10명 정도만 다른 건 다 동일하게 하고 출처(Artsy랑 Saatchi만 바꿔서) 결과를 볼 수 있을까요?"</p>
+</div>
+
+<p>의문의 핵심: <strong>같은 작품에 대해 출처 라벨만 바꿔도 예측이 달라진다면</strong>, 모델이 출처에 따라 편향된 판단을 한다는 의미. <strong>달라지지 않는다면</strong>, 작품 자체 특성으로 가격을 결정하고 있다는 의미입니다.</p>
+
+<hr>
+<h2>3. 실험 설계 — 어떻게 측정했나</h2>
+
+<h3>3.1 작가를 3개 코호트로 분류</h3>
+
+<p>학습 데이터에서 작가가 어느 출처에 등장했는지 (작가 이름 정규화 매칭 기준) 에 따라 3개 그룹으로 나눴습니다.</p>
+
+<table>
+<thead><tr><th>코호트</th><th>의미</th><th class="num">후보 풀</th><th class="num">선정 인원</th></tr></thead>
+<tbody>
+<tr><td><strong>A. 양쪽 학습</strong></td><td>Artsy와 Saatchi 양쪽 모두 충분히(warm) 학습된 작가</td><td class="num">10명</td><td class="num">10명</td></tr>
+<tr><td><strong>B. Artsy만 warm</strong></td><td>Artsy에서만 충분히 학습. Saatchi 측 작품이 없거나 1~2점만 있어 warm 미달</td><td class="num">380명</td><td class="num">10명</td></tr>
+<tr><td><strong>C. Saatchi만 warm</strong></td><td>Saatchi에서만 충분히 학습. Artsy 측 작품 없음</td><td class="num">506명</td><td class="num">10명</td></tr>
+</tbody>
+</table>
+
+<p class="muted">※ "충분히 학습됨(warm)"의 기준: 학습 시점 해당 작가의 <code>artist_slug</code>가 warm slice (≥5건)에 포함되어 정밀 모델(XGBoost)에 들어간 경우. <strong>한 작가가 양쪽에 작품이 있어도 한쪽이 1~2점이면 그쪽은 cold</strong>로 분류되어 본 실험 코호트는 한쪽 warm만 인정합니다.</p>
+
+<h3>3.2 작품 선정 — 작가별 대표 1점</h3>
+
+<p>각 작가의 작품 중 <code>ln_price</code> 중앙값에 가장 가까운 1점을 대표로 선정했습니다. 극단가(아주 비싸거나 싼 작품)를 피해 그 작가의 일반적인 가격대를 측정하기 위함입니다.</p>
+
+<h3>3.3 출처 라벨만 바꿔 두 번 예측</h3>
+
+<p>작품의 모든 features (크기·재료·작가 신상·갤러리·발견자 통계 등 32개)를 그대로 고정한 채, 모델 입력의 <code>source</code> 항목 하나만 변경하여 두 번 예측을 돌렸습니다.</p>
+
+<pre>1차 예측: features + source = "artsy"   → price_artsy
+2차 예측: features + source = "saatchi" → price_saatchi
+
+변화율(delta%) = (price_saatchi − price_artsy) / price_artsy × 100
+ratio          = price_saatchi / price_artsy</pre>
+
+<p>0%·1.0이면 라벨 무관, +값은 saatchi 라벨이 더 높게, −값은 saatchi 라벨이 더 낮게 예측한다는 뜻입니다.</p>
+
+<h3>3.4 통제 변수</h3>
+
+<table>
+<thead><tr><th>변수</th><th>고정값</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td><code>target_market</code></td><td><code>online</code></td><td>Saatchi 학습이 100% online이라 <code>gallery</code>는 OOD. <code>saatchi_gallery</code> 셀이 calibration JSON에 부재.</td></tr>
+<tr><td>모델 라우팅</td><td>XGBoost (warm)</td><td>warm-only 필터 적용으로 cold-path cell calibration 영향 제거. 출처 플립 단독 효과만 측정.</td></tr>
+<tr><td>샘플링 시드</td><td>42</td><td>재현 가능성 보장.</td></tr>
+<tr><td>작품 ho/재료/갤러리·작가 features</td><td>각 작품 원본 그대로</td><td>출처 라벨 외 변수의 자연 분포 보존.</td></tr>
+</tbody>
+</table>
+
+<hr>
+<h2>4. 메인 결과 — warm 작가 30명</h2>
+
+<h3>4.1 코호트별 핵심 요약</h3>
+
+<div class="wide-table-wrap">
+<table>
+<thead><tr>
+  <th>코호트</th>
+  <th class="num">n</th>
+  <th class="num">ratio 평균</th>
+  <th class="num">ratio 중앙값</th>
+  <th class="num">delta% 평균</th>
+  <th class="num">|delta|% 평균</th>
+  <th class="num">|delta|% 최대</th>
+  <th class="num">±0.5% 이내</th>
+</tr></thead>
+<tbody>
+<tr><td>A. 양쪽 학습</td><td class="num">10</td><td class="num">0.9975</td><td class="num">0.9981</td>
+    <td class="num delta-neg">−0.25%</td><td class="num">0.35%</td><td class="num">1.29%</td><td class="num">8/10</td></tr>
+<tr><td>B. Artsy만 warm</td><td class="num">10</td><td class="num">0.9967</td><td class="num">0.9993</td>
+    <td class="num delta-neg">−0.33%</td><td class="num">0.41%</td><td class="num">1.48%</td><td class="num">8/10</td></tr>
+<tr><td>C. Saatchi만 warm</td><td class="num">10</td><td class="num">1.0002</td><td class="num">1.0005</td>
+    <td class="num delta-pos">+0.02%</td><td class="num">0.30%</td><td class="num">0.79%</td><td class="num">8/10</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="muted">"±0.5% 이내" = 변화율이 −0.5%보다 크고 +0.5%보다 작은 작가의 비율. 사실상 동일하다고 볼 수 있는 수준.</p>
+
+<h3>4.2 분포 통계 (delta%)</h3>
+
+<table>
+<thead><tr>
+  <th>코호트</th>
+  <th class="num">p10</th>
+  <th class="num">p25</th>
+  <th class="num">p50 (중앙값)</th>
+  <th class="num">p75</th>
+  <th class="num">p90</th>
+  <th class="num">표준편차</th>
+</tr></thead>
+<tbody>
+<tr><td>A. 양쪽 학습</td>
+    <td class="num delta-neg">−0.63%</td><td class="num delta-neg">−0.31%</td>
+    <td class="num delta-neg">−0.19%</td>
+    <td class="num delta-zero">−0.06%</td><td class="num delta-pos">+0.21%</td><td class="num">0.44%</td></tr>
+<tr><td>B. Artsy만 warm</td>
+    <td class="num delta-neg">−1.47%</td><td class="num delta-neg">−0.29%</td>
+    <td class="num delta-zero">−0.07%</td>
+    <td class="num delta-zero">+0.06%</td><td class="num delta-pos">+0.16%</td><td class="num">0.63%</td></tr>
+<tr><td>C. Saatchi만 warm</td>
+    <td class="num delta-neg">−0.42%</td><td class="num delta-neg">−0.24%</td>
+    <td class="num delta-zero">+0.05%</td>
+    <td class="num delta-pos">+0.24%</td><td class="num delta-pos">+0.38%</td><td class="num">0.39%</td></tr>
+</tbody>
+</table>
+
+<h3>4.3 변화율 히스토그램 — 전 30명 분포</h3>
+
+<pre class="histogram">  변화율 구간   |  인원
+  ──────────────────────────────────────────────
+       &lt;−5% |                                    0건  ( 0%)
+     −5~−2% |                                    0건  ( 0%)
+   −2~−0.5% | ██████                             5건  (17%)
+  −0.5~+0.5%| ████████████████████████████████  24건  (80%)
+   +0.5~+2% | █                                  1건  ( 3%)
+     +2~+5% |                                    0건  ( 0%)
+       &gt;+5% |                                    0건  ( 0%)</pre>
+
+<p><strong>전 작가의 100%가 ±2% 이내</strong>입니다. 80%가 ±0.5% 이내로 사실상 동일한 결과를 냈습니다.</p>
+
+<h3>4.4 부호 분포 — 출처 플립 시 가격이 높아지나, 낮아지나</h3>
+
+<table>
+<thead><tr>
+  <th>코호트</th>
+  <th class="num">n</th>
+  <th class="num">saatchi 라벨이 더 높게 (+)</th>
+  <th class="num">≈0 (|d|≤0.1%)</th>
+  <th class="num">saatchi 라벨이 더 낮게 (−)</th>
+</tr></thead>
+<tbody>
+<tr><td>A. 양쪽 학습</td><td class="num">10</td>
+    <td class="num">2 (20%)</td><td class="num">1 (10%)</td><td class="num">7 (70%)</td></tr>
+<tr><td>B. Artsy만 warm</td><td class="num">10</td>
+    <td class="num">2 (20%)</td><td class="num">3 (30%)</td><td class="num">5 (50%)</td></tr>
+<tr><td>C. Saatchi만 warm</td><td class="num">10</td>
+    <td class="num">4 (40%)</td><td class="num">2 (20%)</td><td class="num">4 (40%)</td></tr>
+</tbody>
+</table>
+
+<p>코호트 C(Saatchi만 warm)는 saatchi 라벨로 더 높아지는 경우와 낮아지는 경우가 4:4로 갈립니다 — <strong>방향이 무작위에 가깝다</strong>는 뜻이며, 모델이 출처를 가격의 직접 신호로 쓰지 않음을 시사합니다.</p>
+
+<h3>4.5 작가별 상세</h3>
+
+<details open>
+<summary>코호트 A — Artsy ∩ Saatchi 양쪽 warm 학습 작가</summary>
+
+<div class="wide-table-wrap">
+<table>
+<thead><tr>
+  <th>작가</th>
+  <th class="num">학습량 (a / s)</th>
+  <th class="num">실제 가격(원)</th>
+  <th class="num">artsy 예측</th>
+  <th class="num">saatchi 예측</th>
+  <th class="num">변화율</th>
+</tr></thead>
+<tbody>
+<tr><td>soyoung seo</td><td class="num">10 / 7</td><td class="num">6,044,399</td><td class="num">5,658,804</td><td class="num">5,647,412</td><td class="num delta-neg">−0.20%</td></tr>
+<tr><td>hyewon lee</td><td class="num">6 / 17</td><td class="num">1,109,520</td><td class="num">754,480</td><td class="num">753,234</td><td class="num delta-neg">−0.17%</td></tr>
+<tr><td>kim byungkwan</td><td class="num">9 / 130</td><td class="num">3,063,600</td><td class="num">3,187,515</td><td class="num">3,181,906</td><td class="num delta-neg">−0.18%</td></tr>
+<tr><td>darae lee</td><td class="num">10 / 16</td><td class="num">1,179,900</td><td class="num">1,167,268</td><td class="num">1,152,206</td><td class="num delta-neg">−1.29%</td></tr>
+<tr><td>sieun kim</td><td class="num">10 / 25</td><td class="num">2,394,300</td><td class="num">2,430,038</td><td class="num">2,421,901</td><td class="num delta-neg">−0.33%</td></tr>
+<tr><td>hyoyoun lee</td><td class="num">32 / 5</td><td class="num">9,287,399</td><td class="num">6,748,685</td><td class="num">6,711,184</td><td class="num delta-neg">−0.56%</td></tr>
+<tr><td>taeyang hong</td><td class="num">6 / 42</td><td class="num">10,101,599</td><td class="num">8,933,558</td><td class="num">8,951,450</td><td class="num delta-pos">+0.20%</td></tr>
+<tr><td>jungwan chae</td><td class="num">7 / 43</td><td class="num">2,635,800</td><td class="num">2,828,637</td><td class="num">2,821,885</td><td class="num delta-neg">−0.24%</td></tr>
+<tr><td>jooyeon lee</td><td class="num">16 / 28</td><td class="num">1,821,599</td><td class="num">1,778,899</td><td class="num">1,784,559</td><td class="num delta-pos">+0.32%</td></tr>
+<tr><td>seongeun moon</td><td class="num">6 / 11</td><td class="num">502,320</td><td class="num">493,778</td><td class="num">493,625</td><td class="num delta-zero">−0.03%</td></tr>
+</tbody>
+</table>
+</div>
+<p class="muted">학습량 (a / s) = "작가 이름 매칭 기준 Artsy 학습 작품 수 / Saatchi 학습 작품 수". <code>artist_slug</code>는 출처마다 형식이 달라(Artsy 하이픈식, Saatchi 숫자 ID) 이름으로 카운트해야 양쪽 진짜 작품 수가 나옵니다.</p>
+</details>
+
+<details>
+<summary>코호트 B — Artsy 측에서만 warm 학습된 작가</summary>
+<div class="wide-table-wrap">
+<table>
+<thead><tr>
+  <th>작가</th>
+  <th class="num">학습량 (a / s)</th>
+  <th class="num">실제 가격(원)</th>
+  <th class="num">artsy 예측</th>
+  <th class="num">saatchi 예측</th>
+  <th class="num">변화율</th>
+</tr></thead>
+<tbody>
+<tr><td>Rakeum Rhee</td><td class="num">10 / 1</td><td class="num">2,760,000</td><td class="num">2,857,502</td><td class="num">2,853,319</td><td class="num delta-neg">−0.15%</td></tr>
+<tr><td>E.SUN</td><td class="num">5 / 0</td><td class="num">3,725,999</td><td class="num">4,095,080</td><td class="num">4,034,476</td><td class="num delta-neg">−1.48%</td></tr>
+<tr><td>Juwon Ju</td><td class="num">8 / 0</td><td class="num">441,600</td><td class="num">439,946</td><td class="num">433,491</td><td class="num delta-neg">−1.47%</td></tr>
+<tr><td>Dongyoung Kim</td><td class="num">15 / 0</td><td class="num">52,440,000</td><td class="num">51,906,647</td><td class="num">51,761,019</td><td class="num delta-neg">−0.28%</td></tr>
+<tr><td>Yeonhong Kim</td><td class="num">51 / 0</td><td class="num">1,959,599</td><td class="num">1,904,047</td><td class="num">1,904,047</td><td class="num delta-zero">+0.00%</td></tr>
+<tr><td>Kim Greem</td><td class="num">6 / 0</td><td class="num">1,380,000</td><td class="num">1,303,890</td><td class="num">1,304,783</td><td class="num delta-zero">+0.07%</td></tr>
+<tr><td>Joy Rock 無憂樹</td><td class="num">12 / 0</td><td class="num">7,727,999</td><td class="num">7,505,375</td><td class="num">7,517,918</td><td class="num delta-pos">+0.17%</td></tr>
+<tr><td>Dahee Yang</td><td class="num">9 / 0</td><td class="num">3,588,000</td><td class="num">4,555,349</td><td class="num">4,562,593</td><td class="num delta-pos">+0.16%</td></tr>
+<tr><td>Jaehee Jang</td><td class="num">10 / 0</td><td class="num">1,794,000</td><td class="num">2,155,761</td><td class="num">2,149,460</td><td class="num delta-neg">−0.29%</td></tr>
+<tr><td>Jo NuRy</td><td class="num">9 / 0</td><td class="num">1,407,600</td><td class="num">1,409,152</td><td class="num">1,409,388</td><td class="num delta-zero">+0.02%</td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
+<details>
+<summary>코호트 C — Saatchi 측에서만 warm 학습된 작가</summary>
+<div class="wide-table-wrap">
+<table>
+<thead><tr>
+  <th>작가</th>
+  <th class="num">학습량 (a / s)</th>
+  <th class="num">실제 가격(원)</th>
+  <th class="num">artsy 예측</th>
+  <th class="num">saatchi 예측</th>
+  <th class="num">변화율</th>
+</tr></thead>
+<tbody>
+<tr><td>daesun choi</td><td class="num">0 / 62</td><td class="num">1,758,120</td><td class="num">1,757,901</td><td class="num">1,758,922</td><td class="num delta-zero">+0.06%</td></tr>
+<tr><td>paul gadd</td><td class="num">0 / 15</td><td class="num">3,118,800</td><td class="num">3,304,036</td><td class="num">3,305,747</td><td class="num delta-zero">+0.05%</td></tr>
+<tr><td>the jack</td><td class="num">0 / 8</td><td class="num">2,980,800</td><td class="num">3,263,497</td><td class="num">3,274,312</td><td class="num delta-pos">+0.33%</td></tr>
+<tr><td>hana lee</td><td class="num">0 / 8</td><td class="num">1,255,799</td><td class="num">1,259,023</td><td class="num">1,256,039</td><td class="num delta-neg">−0.24%</td></tr>
+<tr><td>yurim seong</td><td class="num">0 / 69</td><td class="num">2,539,200</td><td class="num">2,348,296</td><td class="num">2,351,091</td><td class="num delta-pos">+0.12%</td></tr>
+<tr><td>joam jeong</td><td class="num">0 / 5</td><td class="num">7,617,599</td><td class="num">7,752,503</td><td class="num">7,720,740</td><td class="num delta-neg">−0.41%</td></tr>
+<tr><td>jinwoo kim</td><td class="num">0 / 10</td><td class="num">1,283,400</td><td class="num">771,094</td><td class="num">769,205</td><td class="num delta-neg">−0.24%</td></tr>
+<tr><td>junesuk park</td><td class="num">0 / 25</td><td class="num">2,125,200</td><td class="num">2,192,607</td><td class="num">2,181,413</td><td class="num delta-neg">−0.51%</td></tr>
+<tr><td>yongho park</td><td class="num">0 / 105</td><td class="num">3,422,399</td><td class="num">5,401,755</td><td class="num">5,416,554</td><td class="num delta-pos">+0.27%</td></tr>
+<tr><td>hae-kwang jeong</td><td class="num">0 / 13</td><td class="num">43,814,999</td><td class="num">38,509,275</td><td class="num">38,815,230</td><td class="num delta-pos">+0.79%</td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
+<hr>
+<h2>5. 핵심 발견 3가지</h2>
+
+<h3>발견 1 — 출처 라벨의 영향은 사실상 없습니다 (warm 한정)</h3>
+
+<p>warm 작가 30명 모두 변화율이 ±1.5% 이내였고, 24명(80%)은 ±0.5% 이내였습니다. 이는 모델 출력의 일반적인 측정 노이즈 수준입니다.</p>
+
+<h3>발견 2 — 학습량이 많을수록 영향이 더 작아집니다</h3>
+
+<p>총 학습량 (Artsy + Saatchi 합산, 이름 기준) 구간별로 |변화율| 통계를 보면 명확합니다.</p>
+
+<table>
+<thead><tr>
+  <th>총 학습량 (a + s)</th>
+  <th class="num">인원</th>
+  <th class="num">평균 |변화율|</th>
+  <th class="num">최대 |변화율|</th>
+</tr></thead>
+<tbody>
+<tr><td>50작품 이상</td><td class="num">6</td><td class="num">0.14%</td><td class="num">0.27%</td></tr>
+<tr><td>20~49작품</td><td class="num">7</td><td class="num">0.48%</td><td class="num">1.29%</td></tr>
+<tr><td>10~19작품</td><td class="num">9</td><td class="num">0.25%</td><td class="num">0.79%</td></tr>
+<tr><td>5~9작품</td><td class="num">8</td><td class="num">0.52%</td><td class="num">1.48%</td></tr>
+</tbody>
+</table>
+
+<p>50작품 이상 학습된 작가는 평균 0.14% / 최대 0.27%로 사실상 라벨 무관합니다. 5~9작품 경계선 작가에서만 1% 안팎 변화가 관찰됩니다.</p>
+
+<h3>발견 3 — 변화 방향이 무작위 → 모델은 출처를 직접 신호로 쓰지 않음</h3>
+
+<p>"Artsy에서 학습된 작가는 artsy 라벨일 때 더 높게, Saatchi에서 학습된 작가는 saatchi 라벨일 때 더 높게 나오지 않을까" 라는 직관과 다르게, 부호 분포가 일관되지 않습니다.</p>
+<ul>
+<li>코호트 A (양쪽 warm): saatchi 라벨로 낮아짐 7명, 높아짐 2명, 동일 1명</li>
+<li>코호트 B (Artsy만 warm): saatchi 라벨로 낮아짐 5명, 높아짐 2명, 동일 3명</li>
+<li>코호트 C (Saatchi만 warm): saatchi 라벨로 낮아짐 4명, 높아짐 4명, 동일 2명 (4:4 분할)</li>
+</ul>
+<p>이는 모델 내부의 출처 categorical 임베딩이 작가별 특징(<code>career_stage</code>, <code>ln_followers</code>, <code>artist_total_works</code> 등)에 비해 주변적 신호로 작용함을 시사합니다.</p>
+
+<hr>
+<h2>6. 참고 — cold 작가에서는 영향이 더 큽니다</h2>
+
+<p>본 보고서의 메인 결론(±1.5% 이내)은 <strong>warm 작가에 한정</strong>됩니다. 학습량이 부족한 cold 작가에 대해 별도로 동일 실험을 진행했을 때, 결과는 크게 달라집니다.</p>
+
+<p>cold 라우팅(CatBoost)에서 출처 라벨의 영향이 컸던 5개 사례:</p>
+
+<div class="wide-table-wrap">
+<table>
+<thead><tr>
+  <th>작가</th>
+  <th class="num">학습량 (a / s)</th>
+  <th class="num">artsy 예측</th>
+  <th class="num">saatchi 예측</th>
+  <th class="num">변화율</th>
+  <th>cell calibration 적용</th>
+</tr></thead>
+<tbody>
+<tr><td>checksy choi</td><td class="num">0 / 1</td><td class="num">1,753,092</td><td class="num">1,464,049</td><td class="num delta-neg">−16.49%</td><td>artsy_online ×0.943 / saatchi_online ×0.957</td></tr>
+<tr><td>Lee Haekyung</td><td class="num">2 / 0</td><td class="num">27,122,806</td><td class="num">22,944,381</td><td class="num delta-neg">−15.41%</td><td>같음</td></tr>
+<tr><td>do min</td><td class="num">19 / 2</td><td class="num">14,054,067</td><td class="num">12,257,127</td><td class="num delta-neg">−12.79%</td><td>같음</td></tr>
+<tr><td>hyejung moon</td><td class="num">0 / 1</td><td class="num">4,078,670</td><td class="num">3,612,512</td><td class="num delta-neg">−11.43%</td><td>같음</td></tr>
+<tr><td>rakeum rhee</td><td class="num">10 / 1</td><td class="num">9,484,800</td><td class="num">8,648,710</td><td class="num delta-neg">−8.82%</td><td>같음</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>해석</strong>: cold 영역에서 모델은 작가 본인 신호가 부족해, 출처 라벨을 보조 단서로 활용합니다. 학습 데이터의 출처별 가격 분포 차이(Saatchi가 평균적으로 더 저렴) 가 모델 내부에 그대로 반영된 결과입니다.</p>
+
+<p><strong>현재 시스템의 보완 장치</strong>: PR #21에서 도입한 <code>source × target_market</code> 셀별 후처리 보정 (cell calibration)이 cold path에 적용되어 있습니다. 적용 factor는 <code>integrated_v3_filtered_tuned_source_calibration.json</code>에서 source of truth로 관리됩니다.</p>
+
+<table>
+<thead><tr><th>cell</th><th class="num">factor</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>artsy_online</code></td><td class="num">×0.9426</td><td>artsy 라벨 + online 시장 → 모델 출력 5.7% 깎음</td></tr>
+<tr><td><code>saatchi_online</code></td><td class="num">×0.9569</td><td>saatchi 라벨 + online 시장 → 모델 출력 4.3% 깎음</td></tr>
+<tr><td><code>artsy_gallery</code></td><td class="num">×1.0000</td><td>cross-fit에서 회귀 가드 적용 (보정 미적용)</td></tr>
+<tr><td><code>saatchi_gallery</code></td><td class="num">미정의</td><td>Saatchi 학습 100% online이라 데이터 부재</td></tr>
+</tbody>
+</table>
+
+<p>이 보정은 cold path 평균 편향(MdAPE 39.4 → 38.3, −1.1%p)을 잡아주지만, <strong>모델 내부의 categorical 임베딩 편향(−10~17%)을 완전히 제거하지는 못합니다</strong>. 이는 알려진 잔여 한계이며, cold 작가 영역에서 출처 라벨이 의미 있게 작동함을 의미합니다.</p>
+
+<hr>
+<h2>7. 결과 해석 시 주의사항</h2>
+
+<ul>
+<li><strong>표본 크기</strong>: 코호트당 10명, 총 30명. 통계적 강도를 위해선 코호트당 30~50명 이상이 권장되지만, 관찰된 효과 크기가 매우 작아(±1.5% 이내) 표본을 늘려도 결론 방향이 바뀔 가능성은 낮습니다.</li>
+<li><strong>측정 대상은 "모델 출력의 차이"</strong>: 두 라벨 중 어느 쪽이 정답에 더 가까운지(정밀도)를 측정한 것은 아닙니다. 모델이 라벨에 따라 다른 답을 내는지 여부만 확인했습니다. 정밀도 평가는 별도 실측 비교가 필요합니다.</li>
+<li><strong>WARM_ONLY 필터</strong>: 메인 결론은 warm slice에 포함된 작가에 한합니다. cold 작가에 대해서는 §6 참조.</li>
+<li><strong>target_market='online' 고정</strong>: Saatchi 학습이 100% online이라는 데이터 제약 때문입니다. <code>gallery</code> 시장 작품은 별도 분석이 필요하며, 현재로선 Artsy 학습 분포 내에서만 비교 가능합니다.</li>
+</ul>
+
+<hr>
+<h2>8. 콜론30 전달용 결론 한 페이지</h2>
+
+<div class="tldr">
+<p><strong>Q. 데이터 출처별 차이가 생기는 게 아닌지 궁금합니다.</strong></p>
+<p><strong>A. 학습량이 충분한 작가(warm)에 대해서는 출처 라벨(Artsy/Saatchi)을 바꿔도 예측가가 사실상 동일합니다.</strong></p>
+<p>warm 작가 30명 (양쪽 학습 10명 + Artsy만 warm 10명 + Saatchi만 warm 10명) 을 대상으로, 같은 작품의 다른 모든 입력은 그대로 두고 출처 라벨만 바꿔 예측한 결과:</p>
+<ul>
+<li>30명 모두 변화율이 <strong>±1.5% 이내</strong></li>
+<li>30명 중 <strong>24명(80%)이 ±0.5% 이내</strong></li>
+<li>학습량 50작품 이상 작가는 <strong>±0.3% 이내</strong></li>
+<li>변화 방향(높아짐/낮아짐)도 작가별로 무작위 → 모델이 출처를 가격의 직접 신호로 사용하지 않음</li>
+</ul>
+<p>다만 학습량이 매우 적은 cold 작가에서는 영향이 −8 ~ −16%까지 커질 수 있습니다. 이는 모델이 본인 신호 부족 시 출처 라벨을 보조 단서로 활용하기 때문이며, 후처리 cell calibration으로 일부 완화하고 있으나 완전 제거는 아닙니다 (알려진 잔여 한계).</p>
+</div>
+
+<hr>
+<h2>9. 용어 풀이</h2>
+
+<table>
+<thead><tr><th>용어</th><th>풀어 쓰면</th><th>본 문서에서의 의미</th></tr></thead>
+<tbody>
+<tr><td><strong>코호트 (cohort)</strong></td><td>—</td><td>비슷한 조건으로 묶은 작가 그룹. 본 실험에선 학습 데이터 출처 등장 패턴별 3그룹.</td></tr>
+<tr><td><strong>warm / cold</strong></td><td>—</td><td>warm = 학습 시 ≥5건 작품이 있던 작가 (정밀 모델 XGBoost 라우팅), cold = 신규 작가 또는 학습 부족 (CatBoost 라우팅).</td></tr>
+<tr><td><strong>학습량 (a / s)</strong></td><td>—</td><td>"작가 이름 매칭 기준 Artsy 학습 작품 수 / Saatchi 학습 작품 수". 예: <code>10 / 16</code> = Artsy 10작품, Saatchi 16작품.</td></tr>
+<tr><td><strong>변화율 (delta%)</strong></td><td>—</td><td><code>(price_saatchi − price_artsy) / price_artsy × 100</code>. +값 = saatchi 라벨이 더 높음, −값 = 더 낮음.</td></tr>
+<tr><td><strong>ratio</strong></td><td>—</td><td><code>price_saatchi / price_artsy</code>. 1.0이면 동일.</td></tr>
+<tr><td><strong>p10/p25/p50/p75/p90</strong></td><td>quantile (분위수)</td><td>값을 정렬했을 때 하위 X% 위치 값. p50 = 중앙값.</td></tr>
+<tr><td><strong>cell calibration</strong></td><td>(source × target_market) cell-based calibration</td><td>cold path 모델 출력 후, 출처와 시장 조합별로 학습된 평균 편향을 곱셈으로 보정. PR #21에서 도입.</td></tr>
+<tr><td><strong>target_market</strong></td><td>—</td><td>그 작품이 어떤 시장에서 팔리는지: <code>online</code> 또는 <code>gallery</code>. 본 실험은 <code>online</code> 고정.</td></tr>
+<tr><td><strong>OOD</strong></td><td>Out-Of-Distribution</td><td>학습 데이터에 없는 분포. <code>saatchi_gallery</code> 셀이 OOD.</td></tr>
+<tr><td><strong>대표 작품</strong></td><td>—</td><td>각 작가의 작품 중 <code>ln_price</code> 중앙값에 가장 가까운 1점. 극단가 회피용.</td></tr>
+<tr><td><strong>콜론30</strong></td><td>협력 회사명</td><td>본 모델의 1차 시장 데이터·갤러리 티어·피드백 등을 제공하는 협력사.</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<blockquote>
+<p><strong>변경 이력</strong></p>
+<ul>
+<li>2026-04-29 — 초안 작성. warm-only n=30 (3 코호트 × 10), random_state=42, target_market=online.</li>
+</ul>
+</blockquote>
+
+</div>
+</body>
+</html>
