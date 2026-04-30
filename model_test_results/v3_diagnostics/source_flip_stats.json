@@ -1,0 +1,198 @@
+{
+  "config": {
+    "test_design": "paired observation per artwork (artsy vs saatchi prediction)",
+    "test_unit": "log-price ratio (= ln(price_saatchi) - ln(price_artsy))",
+    "n_bootstrap": 10000,
+    "rng_seed": 42
+  },
+  "per_cohort": {
+    "both": {
+      "cohort": "Cohort A — 양쪽 학습 (Artsy ∩ Saatchi warm)",
+      "n": 10,
+      "delta_pct": {
+        "mean": -0.247455636143694,
+        "median": -0.18864121172339726,
+        "std": 0.44367773596718285,
+        "min": -1.290363481222821,
+        "max": 0.31817433142634854,
+        "mean_95ci": [
+          -0.531554576727853,
+          -0.012605559100420476
+        ],
+        "median_95ci": [
+          -0.37849662443916643,
+          0.017565844560390884
+        ]
+      },
+      "log_ratio": {
+        "mean": -0.00248655535937079,
+        "median": -0.0018882016945260816,
+        "std": 0.004459019120997199,
+        "mean_95ci": [
+          -0.005340773827609695,
+          -0.00013063058519590003
+        ]
+      },
+      "wilcoxon_signed_rank": {
+        "statistic": 11.0,
+        "p_value": 0.10546875,
+        "significant_at_0.05": false
+      },
+      "paired_t_test": {
+        "statistic": -1.7634323267830512,
+        "p_value": 0.11165673928068487,
+        "significant_at_0.05": false
+      },
+      "cohens_dz": {
+        "value": -0.5576462652204788,
+        "interpretation": "medium (0.5≤|d|<0.8)"
+      },
+      "shapiro_normality": {
+        "statistic": 0.8757169755602727,
+        "p_value": 0.11647462530827757,
+        "is_normal_at_0.05": true
+      }
+    },
+    "artsy_only": {
+      "cohort": "Cohort B — Artsy만 warm",
+      "n": 10,
+      "delta_pct": {
+        "mean": -0.32550013545648643,
+        "median": -0.07319329960224,
+        "std": 0.6260261208803005,
+        "min": -1.479922248161208,
+        "max": 0.16712023050147395,
+        "mean_95ci": [
+          -0.7275960332768661,
+          0.00532894347519492
+        ],
+        "median_95ci": [
+          -0.8146728510928801,
+          0.08788475271705769
+        ]
+      },
+      "log_ratio": {
+        "mean": -0.00327815185387923,
+        "median": -0.0007324692453281045,
+        "std": 0.006304620632373949,
+        "mean_95ci": [
+          -0.0073317809433584985,
+          5.218221261571433e-05
+        ]
+      },
+      "wilcoxon_signed_rank": {
+        "statistic": 12.0,
+        "p_value": 0.25,
+        "significant_at_0.05": false
+      },
+      "paired_t_test": {
+        "statistic": -1.6442585491870367,
+        "p_value": 0.1345343798906609,
+        "significant_at_0.05": false
+      },
+      "cohens_dz": {
+        "value": -0.5199602077635036,
+        "interpretation": "medium (0.5≤|d|<0.8)"
+      },
+      "shapiro_normality": {
+        "statistic": 0.7241963173179098,
+        "p_value": 0.0017320646184178386,
+        "is_normal_at_0.05": false
+      }
+    },
+    "saatchi_only": {
+      "cohort": "Cohort C — Saatchi만 warm",
+      "n": 10,
+      "delta_pct": {
+        "mean": 0.02265122280512898,
+        "median": 0.054932890715052626,
+        "std": 0.39099462928294004,
+        "min": -0.5105338074721096,
+        "max": 0.7944969101599549,
+        "mean_95ci": [
+          -0.2019085790640517,
+          0.2603128579582493
+        ],
+        "median_95ci": [
+          -0.32336100512307525,
+          0.2739665164377133
+        ]
+      },
+      "log_ratio": {
+        "mean": 0.00021961800972079005,
+        "median": 0.0005491775863886161,
+        "std": 0.003905750592931785,
+        "mean_95ci": [
+          -0.0020261809802978002,
+          0.0025920090948814466
+        ]
+      },
+      "wilcoxon_signed_rank": {
+        "statistic": 26.0,
+        "p_value": 0.921875,
+        "significant_at_0.05": false
+      },
+      "paired_t_test": {
+        "statistic": 0.1778129733033944,
+        "p_value": 0.8628076127157019,
+        "significant_at_0.05": false
+      },
+      "cohens_dz": {
+        "value": 0.056229399316544054,
+        "interpretation": "negligible (|d|<0.2)"
+      },
+      "shapiro_normality": {
+        "statistic": 0.9578698882464206,
+        "p_value": 0.7613376367295784,
+        "is_normal_at_0.05": true
+      }
+    }
+  },
+  "pooled": {
+    "cohort": "Pooled (warm 30명 전체)",
+    "n": 30,
+    "delta_pct": {
+      "mean": -0.18343484959835044,
+      "median": -0.1557667276586497,
+      "std": 0.5031708318890916,
+      "min": -1.479922248161208,
+      "max": 0.7944969101599549,
+      "mean_95ci": [
+        -0.36818414964278046,
+        -0.01725262385158266
+      ],
+      "median_95ci": [
+        -0.24183907740409827,
+        0.054932890715052626
+      ]
+    },
+    "log_ratio": {
+      "mean": -0.0018483630678430766,
+      "median": -0.0015588861146138555,
+      "std": 0.005055741481523315,
+      "mean_95ci": [
+        -0.003702914737085591,
+        -0.00017830178975786098
+      ]
+    },
+    "wilcoxon_signed_rank": {
+      "statistic": 133.0,
+      "p_value": 0.06767564114400142,
+      "significant_at_0.05": false
+    },
+    "paired_t_test": {
+      "statistic": -2.0024563170743206,
+      "p_value": 0.054664529072834867,
+      "significant_at_0.05": false
+    },
+    "cohens_dz": {
+      "value": -0.3655968317601076,
+      "interpretation": "small (0.2≤|d|<0.5)"
+    },
+    "shapiro_normality": {
+      "statistic": 0.8689014153222083,
+      "p_value": 0.0015836827903844188,
+      "is_normal_at_0.05": false
+    }
+  }
+}

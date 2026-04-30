@@ -1,0 +1,163 @@
+{
+  "config": {
+    "method": "v1 point estimates compared to v2 OOF Bootstrap 95% CI",
+    "limitation": "v1 OOF raw predictions are not preserved in artifacts; rigorous paired Wilcoxon signed-rank test cannot be performed without re-training v1 on matched 28,376-row subset. v3 Group 2 후속에서 v1 재학습 + 정확한 paired test 시행 예정.",
+    "v1_data": "29,361건 (입체 포함)",
+    "v2_data": "28,376건 (입체 985건 제외)",
+    "data_subset_caveat": "v1과 v2 학습 데이터가 985건 다름. v1 OOF가 985건 입체 작품에서 어떻게 동작하는지 알 수 없으므로 직접 비교는 conservative bound.",
+    "n_bootstrap": 10000,
+    "rng_seed": 42
+  },
+  "v1_point_estimates": {
+    "n": 29361,
+    "data_note": "29361 = Artsy+Artue 7640 + Saatchi 21721",
+    "groupkfold": {
+      "catboost_v3": {
+        "MdAPE": 38.9
+      },
+      "xgboost_v3": {
+        "MdAPE": 39.4
+      },
+      "ensemble": {
+        "MdAPE": 38.7
+      },
+      "baseline": {
+        "MdAPE": 43.8
+      }
+    }
+  },
+  "v2_bootstrap_ci": {
+    "cold_path_groupkfold": {
+      "n": 28376,
+      "catboost_v2_filtered_tuned": {
+        "MdAPE": {
+          "point": 39.3767703371767,
+          "ci_low": 38.88400083779392,
+          "ci_high": 40.012705216391204,
+          "ci_width": 1.1287043785972841
+        },
+        "W30": {
+          "point": 39.783619960530025,
+          "ci_low": 39.21271497039751,
+          "ci_high": 40.35452495066253,
+          "ci_width": 1.1418099802650161
+        }
+      },
+      "xgboost_v2_filtered_tuned": {
+        "MdAPE": {
+          "point": 39.08449547037293,
+          "ci_low": 38.60210303404549,
+          "ci_high": 39.628692082133945,
+          "ci_width": 1.0265890480884536
+        },
+        "W30": {
+          "point": 39.977445728784886,
+          "ci_low": 39.3959684240203,
+          "ci_high": 40.54482661404003,
+          "ci_width": 1.1488581900197303
+        }
+      },
+      "ensemble": {
+        "MdAPE": {
+          "point": 38.66210624205194,
+          "ci_low": 38.02524662540353,
+          "ci_high": 39.18753105289021,
+          "ci_width": 1.162284427486675
+        },
+        "W30": {
+          "point": 41.094586974908374,
+          "ci_low": 40.51663377502114,
+          "ci_high": 41.65844375528616,
+          "ci_width": 1.1418099802650161
+        }
+      }
+    },
+    "warm_slice_kfold": {
+      "n": 27062,
+      "catboost_v2_filtered_tuned": {
+        "MdAPE": {
+          "point": 11.876395777924566,
+          "ci_low": 11.63476790831085,
+          "ci_high": 12.086181181949101,
+          "ci_width": 0.45141327363825035
+        },
+        "W30": {
+          "point": 80.64075086837632,
+          "ci_low": 80.17145813317566,
+          "ci_high": 81.11373882196438,
+          "ci_width": 0.9422806887887134
+        }
+      },
+      "xgboost_v2_filtered_tuned": {
+        "MdAPE": {
+          "point": 9.701765452424613,
+          "ci_low": 9.48414176768836,
+          "ci_high": 9.922716211626547,
+          "ci_width": 0.4385744439381867
+        },
+        "W30": {
+          "point": 82.84310102727072,
+          "ci_low": 82.38489394723229,
+          "ci_high": 83.29022245214692,
+          "ci_width": 0.9053285049146353
+        }
+      },
+      "ensemble": {
+        "MdAPE": {
+          "point": 10.463915700890016,
+          "ci_low": 10.283950919976261,
+          "ci_high": 10.653472514240214,
+          "ci_width": 0.3695215942639525
+        },
+        "W30": {
+          "point": 82.42923656788116,
+          "ci_low": 81.97102948784273,
+          "ci_high": 82.88374842953219,
+          "ci_width": 0.9127189416894623
+        }
+      },
+      "artsy": {
+        "n": 6603,
+        "xgboost_v2_filtered_tuned": {
+          "MdAPE": {
+            "point": 8.302689665933675,
+            "ci_low": 7.970887615968583,
+            "ci_high": 8.684221326613498,
+            "ci_width": 0.7133337106449149
+          }
+        },
+        "ensemble": {
+          "MdAPE": {
+            "point": 8.681269033606654,
+            "ci_low": 8.33194480694273,
+            "ci_high": 8.976613923551485,
+            "ci_width": 0.644669116608755
+          }
+        }
+      }
+    }
+  },
+  "comparison": {
+    "cold_path_catboost": {
+      "v1_point": 38.9,
+      "v2_ci_low": 38.88400083779392,
+      "v2_ci_high": 40.012705216391204,
+      "v1_in_v2_ci": true,
+      "interpretation": "v1 점추정이 v2 95% CI 내부 → 이 proxy 비교에서는 차이가 통계적으로 명확하지 않음 (formal paired test로 power 보강 필요)"
+    },
+    "cold_path_xgboost": {
+      "v1_point": 39.4,
+      "v2_ci_low": 38.60210303404549,
+      "v2_ci_high": 39.628692082133945,
+      "v1_in_v2_ci": true,
+      "interpretation": "v1 점추정이 v2 95% CI 내부 → 이 proxy 비교에서는 차이가 통계적으로 명확하지 않음 (formal paired test로 power 보강 필요)"
+    },
+    "cold_path_ensemble": {
+      "v1_point": 38.7,
+      "v2_ci_low": 38.02524662540353,
+      "v2_ci_high": 39.18753105289021,
+      "v1_in_v2_ci": true,
+      "interpretation": "v1 점추정이 v2 95% CI 내부 → 이 proxy 비교에서는 차이가 통계적으로 명확하지 않음 (formal paired test로 power 보강 필요)"
+    }
+  }
+}
