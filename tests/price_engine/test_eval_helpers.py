@@ -177,7 +177,7 @@ def test_normalize_categoricals_missing_column_skipped() -> None:
 
 
 def test_normalize_categoricals_map_constant() -> None:
-    assert {"nan": "unknown", "None": "unknown", "": "unknown"} == CATEGORICAL_NORMALIZE_MAP
+    assert CATEGORICAL_NORMALIZE_MAP == {"nan": "unknown", "None": "unknown", "": "unknown"}
 
 
 # ─── label_encode_xgb ──────────────────────────────────────────────────
@@ -217,7 +217,7 @@ def test_label_encode_xgb_handles_string_coercion() -> None:
     """numeric/mixed → str 강제 변환 후 매핑."""
     df_tr = pd.DataFrame({"cat": [1, 2, 3]})
     df_te = pd.DataFrame({"cat": [1, 4]})  # 4 unseen
-    enc_tr, enc_te, maps = label_encode_xgb(df_tr, df_te, categorical_features=["cat"])
+    _enc_tr, enc_te, maps = label_encode_xgb(df_tr, df_te, categorical_features=["cat"])
     # str map: '1', '2', '3' sorted
     assert maps["cat"] == {"1": 0, "2": 1, "3": 2}
     assert enc_te["cat"].tolist() == [0.0, 3.0]
