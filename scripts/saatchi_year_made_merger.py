@@ -42,7 +42,15 @@ ENRICHMENT_PATH = (
 # 학습 데이터 정의 그대로 (prepare_primary_market_dataset.py:254)
 WORK_AGE_REF_YEAR = 2026
 
-VariantName = Literal["V0", "V_year_only", "V_full"]
+VariantName = Literal[
+    "V0",
+    "V_year_only",
+    "V_full",
+    # v3.5 step 1: cohort-gated variants (코덱스 권장)
+    "V_year_saatchi_only",  # saatchi rows 만 year/has_year/work_age 적용
+    "V_year_warm_only",  # warm rows 만 적용 (cold disabled)
+    "V_year_saatchi_warm",  # saatchi & warm 둘 다 만족 (intersect)
+]
 
 
 def load_enrichment_year_map(path: Path = ENRICHMENT_PATH) -> dict[str, int]:
@@ -164,16 +172,47 @@ def recompute_career_age(df: pd.DataFrame) -> pd.DataFrame:
     return df_new
 
 
+def _disable_year_for_mask(df: pd.DataFrame, disable_mask: np.ndarray) -> pd.DataFrame:
+    """gating: disable_mask=True 행의 year_made/has_year_made/work_age 를 강제 비활성.
+
+    - year_made → NaN
+    - has_year_made → 0
+    - work_age → 0
+
+    코덱스 v3.5 plan step 1 selection rule: V_year_saatchi_only 등 cohort gating 시
+    비대상 row 의 year 신호 강제 차단 (cold 또는 non-saatchi 의 spurious overfit 방지).
+    """
+    df_new = df.copy()
+    if "year_made" in df_new.columns:
+        df_new.loc[disable_mask, "year_made"] = np.nan
+    if "has_year_made" in df_new.columns:
+        df_new.loc[disable_mask, "has_year_made"] = 0
+    if "work_age" in df_new.columns:
+        df_new.loc[disable_mask, "work_age"] = 0.0
+    return df_new
+
+
 def build_variant(
     df: pd.DataFrame,
     enrichment_map: dict[str, int],
     variant: VariantName,
+    *,
+    warm_mask: np.ndarray | None = None,
 ) -> pd.DataFrame:
     """Variant 별 feature df 생성.
 
     V0: enrichment 미적용 (year_made 그대로)
-    V_year_only: year_made update + has_year_made flag + work_age
+    V_year_only: year_made update + has_year_made flag + work_age (saatchi only)
     V_full: V_year_only + vintage_premium + freshness_discount + career_age
+
+    v3.5 cohort gating (코덱스 권장):
+    - V_year_saatchi_only: V_year_only base + 비-saatchi (artsy) row 의 year 신호 비활성
+    - V_year_warm_only: V_year_only base + cold (~warm_mask) row 의 year 신호 비활성
+    - V_year_saatchi_warm: 두 gating 모두 적용 (saatchi & warm 만 active)
+
+    Args:
+        warm_mask: V_year_warm_only / V_year_saatchi_warm 일 때 필수.
+                   length = len(df), True = warm artist row.
     """
     if variant == "V0":
         # baseline: enrichment 미적용. has_year_made 도 추가 X (CB_FEATURES 그대로)
@@ -191,6 +230,26 @@ def build_variant(
         df_new = recompute_career_age(df_new)
         return df_new
 
+    # ---- v3.5 cohort gating variants ----
+    is_saatchi = (df_new["source"].astype(str) == "saatchi").to_numpy()
+
+    if variant == "V_year_saatchi_only":
+        # 비-saatchi (artsy) 의 year 신호 비활성
+        return _disable_year_for_mask(df_new, ~is_saatchi)
+
+    if variant == "V_year_warm_only":
+        if warm_mask is None:
+            raise ValueError("V_year_warm_only requires warm_mask")
+        # cold 의 year 신호 비활성
+        return _disable_year_for_mask(df_new, ~warm_mask)
+
+    if variant == "V_year_saatchi_warm":
+        if warm_mask is None:
+            raise ValueError("V_year_saatchi_warm requires warm_mask")
+        # 비-saatchi 또는 cold 의 year 신호 비활성 (intersect 만 active)
+        disable = (~is_saatchi) | (~warm_mask)
+        return _disable_year_for_mask(df_new, disable)
+
     raise ValueError(f"Unknown variant: {variant}")
 
 
@@ -198,7 +257,12 @@ def variant_added_features(variant: VariantName) -> list[str]:
     """Variant 별 CB_FEATURES 에 추가할 컬럼."""
     if variant == "V0":
         return []
-    if variant == "V_year_only":
+    if variant in (
+        "V_year_only",
+        "V_year_saatchi_only",
+        "V_year_warm_only",
+        "V_year_saatchi_warm",
+    ):
         return ["year_made", "has_year_made", "work_age"]
     if variant == "V_full":
         return [

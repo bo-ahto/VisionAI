@@ -278,6 +278,76 @@ def test_build_variant_unknown_raises():
         raise AssertionError("expected ValueError")
 
 
+# ---- v3.5 cohort gating variants (코덱스 권장) ----
+
+
+def test_build_variant_saatchi_only_disables_artsy_year():
+    """V_year_saatchi_only: artsy rows 의 year 신호 강제 비활성."""
+    df = _sample_df()
+    out = build_variant(df, _enrichment(), "V_year_saatchi_only")
+    # saatchi A (idx 0) 는 enrichment 적용
+    assert out.loc[0, "year_made"] == 2020.0
+    assert out.loc[0, "has_year_made"] == 1
+    assert out.loc[0, "work_age"] == 6.0
+    # artsy x (idx 3) 는 원래 2018 보유였으나 비활성 (NaN/0)
+    assert pd.isna(out.loc[3, "year_made"])
+    assert out.loc[3, "has_year_made"] == 0
+    assert out.loc[3, "work_age"] == 0.0
+
+
+def test_build_variant_warm_only_disables_cold_year():
+    """V_year_warm_only: cold rows 비활성. warm_mask 기반."""
+    df = _sample_df()
+    # _sample_df 5 행: idx 0,1,2 (saatchi), 3,4 (artsy). warm_mask 가정: 0,1,3 warm, 2,4 cold
+    warm_mask = np.array([True, True, False, True, False])
+    out = build_variant(df, _enrichment(), "V_year_warm_only", warm_mask=warm_mask)
+    # warm saatchi A (idx 0) → year 활성
+    assert out.loc[0, "year_made"] == 2020.0
+    assert out.loc[0, "has_year_made"] == 1
+    # cold saatchi C (idx 2) → 비활성
+    assert pd.isna(out.loc[2, "year_made"])
+    assert out.loc[2, "has_year_made"] == 0
+    # warm artsy x (idx 3) → 활성 유지 (year 2018 보존)
+    assert out.loc[3, "year_made"] == 2018.0
+    assert out.loc[3, "has_year_made"] == 1
+
+
+def test_build_variant_saatchi_warm_intersect_only():
+    """V_year_saatchi_warm: saatchi & warm 둘 다 만족만 active."""
+    df = _sample_df()
+    warm_mask = np.array([True, True, False, True, False])
+    out = build_variant(df, _enrichment(), "V_year_saatchi_warm", warm_mask=warm_mask)
+    # saatchi & warm A (idx 0) → 활성
+    assert out.loc[0, "year_made"] == 2020.0
+    assert out.loc[0, "has_year_made"] == 1
+    # saatchi & warm B (idx 1) → 활성
+    assert out.loc[1, "year_made"] == 2015.0
+    # saatchi & cold C (idx 2) → 비활성
+    assert pd.isna(out.loc[2, "year_made"])
+    assert out.loc[2, "has_year_made"] == 0
+    # artsy & warm x (idx 3) → 비활성 (saatchi 아님)
+    assert pd.isna(out.loc[3, "year_made"])
+    assert out.loc[3, "has_year_made"] == 0
+
+
+def test_build_variant_warm_only_requires_warm_mask():
+    df = _sample_df()
+    try:
+        build_variant(df, _enrichment(), "V_year_warm_only")
+    except ValueError as e:
+        assert "warm_mask" in str(e)
+    else:
+        raise AssertionError("expected ValueError")
+
+
+def test_variant_added_features_v35_gating():
+    """v3.5 gating variants 모두 V_year_only 와 동일한 columns 추가."""
+    expected = ["year_made", "has_year_made", "work_age"]
+    assert variant_added_features("V_year_saatchi_only") == expected
+    assert variant_added_features("V_year_warm_only") == expected
+    assert variant_added_features("V_year_saatchi_warm") == expected
+
+
 # ---- variant_added_features ----
 
 

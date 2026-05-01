@@ -16,20 +16,25 @@ v3.4-2 는 *research ablation* — "year signal upper-bound 측정". 본 v3.5 �
 
 ---
 
-## 2. 결정된 framing (코덱스 v3.4-2 step 5 권장)
+## 2. 결정된 framing (v3.5 step 1 결과 후 갱신)
 
 | 채택안 | 결정 |
 |--------|------|
-| Variant | **V_year_only** (V_full 은 backlog 후보, 배포 대상 X) |
-| Cohort gating | **saatchi-conditional feature** 1순위, **cold gating** 2순위 |
+| Variant | **V_year_saatchi_warm** (saatchi & warm intersect gating, step 1 unique pass) |
+| Cohort gating | **saatchi & warm intersect** — `is_saatchi=True AND warm_artist=True` 만 활성 |
 | Drift 회피 | production scrape 가 detail page year_made stable 공급 (saatchi 만 가능, artsy 별도 트랙) |
 | Rollout | gated (cohort) + monitored (drift) — global on 금지 |
 
-기대 효과 (v3.4-2 ablation 정량 근거):
-- Overall MdAPE: -0.74%p
-- saatchi_online: -1.04%p
-- saatchi_online 10+ warm 작가 (n=19,423): -0.98 ~ -1.03%p
-- Cold cohort (n=1,314): **±0%p (gating 으로 noise 차단)**
+기대 효과 (v3.5 step 1 정량 근거, n_splits=5 full):
+- Overall MdAPE: **-0.738%p** (CI95 [-1.140, -0.337], artist p=0.00028)
+- saatchi_online: -1.05%p
+- saatchi_online 10+ warm 작가 (n=19,423): **-1.002%p**
+- Cold cohort (n=1,314): **+0.028% ≈ 0** (gating 으로 noise 차단 성공)
+
+### v3.4-2 step 5 → v3.5 step 1 채택안 변경 history
+- v3.4-2 step 5: `V_year_only` 권장 (단 cold +0.99% 손실)
+- v3.5 step 1: gating 검증 후 **`V_year_saatchi_warm`** (cold +0.03% ≈ 0)
+- 코덱스 R2 해석: warm-only gating 의 cold +3.12% counterintuitive 결과 → "비활성=0 sentinel" 이 cold leaf 악화. saatchi&warm intersect 만 source 축 + warm 축 교호작용으로 cold 보호.
 
 ---
 

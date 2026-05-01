@@ -1,0 +1,319 @@
+{
+  "config": {
+    "scope": "v3.5 step 1 cohort gating ablation. v3.4-2 step 5 V_year_only Δ-0.74%p 채택 후 cold cohort 차단 검증. 3 gating variants (saatchi-only / warm-only / saatchi-and-warm) + V0 baseline + V_year_only 비교.",
+    "mode": "FULL",
+    "n_splits": 5,
+    "n_bootstrap": 10000,
+    "random_seed": 42,
+    "production_routing": "warm=xgb_kf, cold=cb_gkf (no cell factor)",
+    "variants": [
+      "V0",
+      "V_year_only",
+      "V_year_saatchi_only",
+      "V_year_warm_only",
+      "V_year_saatchi_warm"
+    ],
+    "thresholds": {
+      "primary_overall_delta_max": -0.5,
+      "guardrail_cold_delta_max": 0.3,
+      "guardrail_saatchi_10p_delta_max": -0.8
+    },
+    "selection_rule": "1) saatchi-conditional 1순위, 2) 동률 시 cold guardrail 더 안전, 3) 셋 다 미충족 → abort"
+  },
+  "merge_summary": {
+    "n_saatchi": 21087,
+    "n_artsy": 7289,
+    "saatchi_year_before": 0,
+    "saatchi_year_after": 20644,
+    "saatchi_fill_rate_before": 0.0,
+    "saatchi_fill_rate_after": 0.9789917958932044,
+    "artsy_year_before": 7231,
+    "artsy_year_after": 7231,
+    "artsy_count_invariant": true,
+    "artsy_value_invariant": true,
+    "enrichment_map_size": 20644
+  },
+  "variants": {
+    "V0": {
+      "variant": "V0",
+      "extras": [],
+      "n_features": 32,
+      "elapsed_sec": 156.9415421485901,
+      "evaluation": {
+        "primary": {
+          "mdape_pct": 10.357770124531074,
+          "n": 28376
+        },
+        "guardrail": {
+          "cold": {
+            "n": 1314,
+            "mdape_pct": 42.57486913559279
+          },
+          "cold_le2": {
+            "n": 571,
+            "mdape_pct": 39.461550288220984
+          },
+          "warm_5_9": {
+            "n": 2114,
+            "mdape_pct": 17.14972697235464
+          },
+          "saatchi_online": {
+            "n": 21087,
+            "mdape_pct": 10.667961317074152
+          },
+          "saatchi_online_10p": {
+            "n": 19423,
+            "mdape_pct": 9.901994455489296
+          }
+        }
+      }
+    },
+    "V_year_only": {
+      "variant": "V_year_only",
+      "extras": [
+        "year_made",
+        "has_year_made",
+        "work_age"
+      ],
+      "n_features": 35,
+      "elapsed_sec": 156.1977789402008,
+      "evaluation": {
+        "primary": {
+          "mdape_pct": 9.619083366363853,
+          "n": 28376
+        },
+        "guardrail": {
+          "cold": {
+            "n": 1314,
+            "mdape_pct": 43.569771104225715
+          },
+          "cold_le2": {
+            "n": 571,
+            "mdape_pct": 41.64424833014888
+          },
+          "warm_5_9": {
+            "n": 2114,
+            "mdape_pct": 16.881497891352456
+          },
+          "saatchi_online": {
+            "n": 21087,
+            "mdape_pct": 9.625671706169243
+          },
+          "saatchi_online_10p": {
+            "n": 19423,
+            "mdape_pct": 8.919743812174579
+          }
+        }
+      }
+    },
+    "V_year_saatchi_only": {
+      "variant": "V_year_saatchi_only",
+      "extras": [
+        "year_made",
+        "has_year_made",
+        "work_age"
+      ],
+      "n_features": 35,
+      "elapsed_sec": 153.0172312259674,
+      "evaluation": {
+        "primary": {
+          "mdape_pct": 9.614067086395046,
+          "n": 28376
+        },
+        "guardrail": {
+          "cold": {
+            "n": 1314,
+            "mdape_pct": 43.37850594190446
+          },
+          "cold_le2": {
+            "n": 571,
+            "mdape_pct": 41.65104321755166
+          },
+          "warm_5_9": {
+            "n": 2114,
+            "mdape_pct": 16.49298473858391
+          },
+          "saatchi_online": {
+            "n": 21087,
+            "mdape_pct": 9.620477978925102
+          },
+          "saatchi_online_10p": {
+            "n": 19423,
+            "mdape_pct": 8.900350568129882
+          }
+        }
+      }
+    },
+    "V_year_warm_only": {
+      "variant": "V_year_warm_only",
+      "extras": [
+        "year_made",
+        "has_year_made",
+        "work_age"
+      ],
+      "n_features": 35,
+      "elapsed_sec": 152.15173983573914,
+      "evaluation": {
+        "primary": {
+          "mdape_pct": 9.624762595570841,
+          "n": 28376
+        },
+        "guardrail": {
+          "cold": {
+            "n": 1314,
+            "mdape_pct": 45.69288503415328
+          },
+          "cold_le2": {
+            "n": 571,
+            "mdape_pct": 43.20269323520172
+          },
+          "warm_5_9": {
+            "n": 2114,
+            "mdape_pct": 16.881497891352456
+          },
+          "saatchi_online": {
+            "n": 21087,
+            "mdape_pct": 9.641839999197007
+          },
+          "saatchi_online_10p": {
+            "n": 19423,
+            "mdape_pct": 8.919743812174579
+          }
+        }
+      }
+    },
+    "V_year_saatchi_warm": {
+      "variant": "V_year_saatchi_warm",
+      "extras": [
+        "year_made",
+        "has_year_made",
+        "work_age"
+      ],
+      "n_features": 35,
+      "elapsed_sec": 152.20429682731628,
+      "evaluation": {
+        "primary": {
+          "mdape_pct": 9.619828102955701,
+          "n": 28376
+        },
+        "guardrail": {
+          "cold": {
+            "n": 1314,
+            "mdape_pct": 42.60260169815979
+          },
+          "cold_le2": {
+            "n": 571,
+            "mdape_pct": 40.36969308325786
+          },
+          "warm_5_9": {
+            "n": 2114,
+            "mdape_pct": 16.49298473858391
+          },
+          "saatchi_online": {
+            "n": 21087,
+            "mdape_pct": 9.620144928945406
+          },
+          "saatchi_online_10p": {
+            "n": 19423,
+            "mdape_pct": 8.900350568129882
+          }
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "V_year_only_vs_V0": {
+      "label": "V_year_only_vs_V0",
+      "diff_mdape_pct": -0.738686758167221,
+      "artist_cluster_bootstrap": {
+        "diff_median_mdape_pct": -0.7106945190662959,
+        "ci_95_low": -1.1444324979892904,
+        "ci_95_high": -0.3242803410635762,
+        "ci_excludes_zero": true,
+        "n_bootstrap": 10000
+      },
+      "wilcoxon_row_p": 2.5796816286586577e-55,
+      "wilcoxon_artist_p": 0.01842088633561821
+    },
+    "V_year_saatchi_only_vs_V0": {
+      "label": "V_year_saatchi_only_vs_V0",
+      "diff_mdape_pct": -0.7437030381360277,
+      "artist_cluster_bootstrap": {
+        "diff_median_mdape_pct": -0.7161861160702108,
+        "ci_95_low": -1.1422694445639434,
+        "ci_95_high": -0.34073175972852526,
+        "ci_excludes_zero": true,
+        "n_bootstrap": 10000
+      },
+      "wilcoxon_row_p": 8.764729009448226e-60,
+      "wilcoxon_artist_p": 0.021398787117020826
+    },
+    "V_year_warm_only_vs_V0": {
+      "label": "V_year_warm_only_vs_V0",
+      "diff_mdape_pct": -0.7330075289602327,
+      "artist_cluster_bootstrap": {
+        "diff_median_mdape_pct": -0.7033346203866655,
+        "ci_95_low": -1.1399954537469876,
+        "ci_95_high": -0.3181770022289941,
+        "ci_excludes_zero": true,
+        "n_bootstrap": 10000
+      },
+      "wilcoxon_row_p": 1.5618604621049298e-51,
+      "wilcoxon_artist_p": 0.08710949314325256
+    },
+    "V_year_saatchi_warm_vs_V0": {
+      "label": "V_year_saatchi_warm_vs_V0",
+      "diff_mdape_pct": -0.7379420215753729,
+      "artist_cluster_bootstrap": {
+        "diff_median_mdape_pct": -0.7109496912222175,
+        "ci_95_low": -1.1402862162267136,
+        "ci_95_high": -0.33664281655660355,
+        "ci_excludes_zero": true,
+        "n_bootstrap": 10000
+      },
+      "wilcoxon_row_p": 1.6173447675647072e-63,
+      "wilcoxon_artist_p": 0.00027615730507864244
+    }
+  },
+  "decision": {
+    "thresholds": {
+      "primary_pct": -0.5,
+      "guardrail_cold_pct": 0.3,
+      "guardrail_saatchi_online_10p_pct": -0.8
+    },
+    "candidates": [
+      {
+        "variant": "V_year_saatchi_only",
+        "delta_overall_mdape_pct": -0.7437030381360277,
+        "delta_cold_mdape_pct": 0.8036368063116655,
+        "delta_saatchi_online_10p_mdape_pct": -1.001643887359414,
+        "passes_primary": true,
+        "passes_guardrail_cold": false,
+        "passes_guardrail_saatchi_10p": true,
+        "all_pass": false
+      },
+      {
+        "variant": "V_year_warm_only",
+        "delta_overall_mdape_pct": -0.7330075289602327,
+        "delta_cold_mdape_pct": 3.118015898560486,
+        "delta_saatchi_online_10p_mdape_pct": -0.9822506433147176,
+        "passes_primary": true,
+        "passes_guardrail_cold": false,
+        "passes_guardrail_saatchi_10p": true,
+        "all_pass": false
+      },
+      {
+        "variant": "V_year_saatchi_warm",
+        "delta_overall_mdape_pct": -0.7379420215753729,
+        "delta_cold_mdape_pct": 0.027732562566995966,
+        "delta_saatchi_online_10p_mdape_pct": -1.001643887359414,
+        "passes_primary": true,
+        "passes_guardrail_cold": true,
+        "passes_guardrail_saatchi_10p": true,
+        "all_pass": true
+      }
+    ],
+    "chosen_variant": "V_year_saatchi_warm",
+    "rationale": "unique pass: V_year_saatchi_warm"
+  }
+}
