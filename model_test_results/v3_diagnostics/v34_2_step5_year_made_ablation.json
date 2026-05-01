@@ -2,9 +2,9 @@
   "config": {
     "scope": "v3.4-2 step 5 research ablation: year_made enrichment의 model signal upper-bound 측정. CB_FEATURES 의 work_age/career_age/vintage/freshness 가 이미 production drift 정합 위해 제거되어 있어, 본 ablation 은 'reintroduce drift-prone features' 실험 — deploy 즉시 가능 X.",
     "framing": "research only, not deployable",
-    "mode": "SMOKE",
-    "n_splits": 2,
-    "n_bootstrap": 1000,
+    "mode": "FULL",
+    "n_splits": 5,
+    "n_bootstrap": 10000,
     "random_seed": 42,
     "production_routing": "warm=xgb_kf, cold=cb_gkf (no cell factor, fair feature ablation)",
     "primary_endpoint": "overall MdAPE — artist-cluster bootstrap CI95. Wilcoxon (row-level + artist-level) 보조.",
@@ -55,46 +55,46 @@
       "variant": "V0",
       "extras": [],
       "n_features": 32,
-      "elapsed_sec": 5.362726211547852,
+      "elapsed_sec": 175.85433101654053,
       "evaluation": {
         "primary": {
-          "mdape_pct": 24.582464417641066,
+          "mdape_pct": 10.357770124531074,
           "n": 28376
         },
         "guardrail": {
           "cold": {
             "n": 1314,
-            "mdape_pct": 43.8141080690692
+            "mdape_pct": 42.57486913559279
           },
           "cold_le2": {
             "n": 571,
-            "mdape_pct": 38.99446044696347
+            "mdape_pct": 39.461550288220984
           },
           "warm_5_9": {
             "n": 2114,
-            "mdape_pct": 36.74084528617069
+            "mdape_pct": 17.14972697235464
           },
           "saatchi_online": {
             "n": 21087,
-            "mdape_pct": 24.504899144900158
+            "mdape_pct": 10.667961317074152
           }
         },
         "saatchi_online_by_work_count": {
           "1-2": {
             "n": 243,
-            "mdape_pct": 42.00012947038109
+            "mdape_pct": 46.952410747805985
           },
           "3-4": {
             "n": 385,
-            "mdape_pct": 45.4149775231443
+            "mdape_pct": 47.64630194823201
           },
           "5-9": {
             "n": 1036,
-            "mdape_pct": 38.14550944971008
+            "mdape_pct": 19.560080894274083
           },
           "10+": {
             "n": 19423,
-            "mdape_pct": 23.59310218446023
+            "mdape_pct": 9.901994455489296
           }
         }
       }
@@ -107,46 +107,46 @@
         "work_age"
       ],
       "n_features": 35,
-      "elapsed_sec": 3.4472529888153076,
+      "elapsed_sec": 168.61229705810547,
       "evaluation": {
         "primary": {
-          "mdape_pct": 24.430967991929748,
+          "mdape_pct": 9.619083366363853,
           "n": 28376
         },
         "guardrail": {
           "cold": {
             "n": 1314,
-            "mdape_pct": 41.94705744900576
+            "mdape_pct": 43.569771104225715
           },
           "cold_le2": {
             "n": 571,
-            "mdape_pct": 38.549966740775844
+            "mdape_pct": 41.64424833014888
           },
           "warm_5_9": {
             "n": 2114,
-            "mdape_pct": 36.522345757142126
+            "mdape_pct": 16.881497891352456
           },
           "saatchi_online": {
             "n": 21087,
-            "mdape_pct": 24.48711073110531
+            "mdape_pct": 9.625671706169243
           }
         },
         "saatchi_online_by_work_count": {
           "1-2": {
             "n": 243,
-            "mdape_pct": 43.20313685934534
+            "mdape_pct": 47.29363749690443
           },
           "3-4": {
             "n": 385,
-            "mdape_pct": 45.73369780783662
+            "mdape_pct": 47.09909077476513
           },
           "5-9": {
             "n": 1036,
-            "mdape_pct": 37.58627445749874
+            "mdape_pct": 19.163224740885386
           },
           "10+": {
             "n": 19423,
-            "mdape_pct": 23.469673734116242
+            "mdape_pct": 8.919743812174579
           }
         }
       }
@@ -162,46 +162,46 @@
         "career_age"
       ],
       "n_features": 38,
-      "elapsed_sec": 3.524083137512207,
+      "elapsed_sec": 167.04364490509033,
       "evaluation": {
         "primary": {
-          "mdape_pct": 24.43890733914521,
+          "mdape_pct": 9.610471466898906,
           "n": 28376
         },
         "guardrail": {
           "cold": {
             "n": 1314,
-            "mdape_pct": 41.248430593790964
+            "mdape_pct": 43.66041860978967
           },
           "cold_le2": {
             "n": 571,
-            "mdape_pct": 39.164747804673375
+            "mdape_pct": 42.43882183482503
           },
           "warm_5_9": {
             "n": 2114,
-            "mdape_pct": 36.165465195352844
+            "mdape_pct": 17.1718687985347
           },
           "saatchi_online": {
             "n": 21087,
-            "mdape_pct": 24.53968268009604
+            "mdape_pct": 9.624859457155486
           }
         },
         "saatchi_online_by_work_count": {
           "1-2": {
             "n": 243,
-            "mdape_pct": 41.59429950260108
+            "mdape_pct": 46.83130867854956
           },
           "3-4": {
             "n": 385,
-            "mdape_pct": 44.16500253218902
+            "mdape_pct": 45.11491671673826
           },
           "5-9": {
             "n": 1036,
-            "mdape_pct": 38.502851630079086
+            "mdape_pct": 19.88637874655812
           },
           "10+": {
             "n": 19423,
-            "mdape_pct": 23.609125050886
+            "mdape_pct": 8.872766755531842
           }
         }
       }
@@ -210,78 +210,78 @@
   "paired_comparisons": {
     "V_year_only_vs_V0": {
       "label": "V_year_only_vs_V0",
-      "a_overall_mdape": 24.430967991929748,
-      "b_overall_mdape": 24.582464417641066,
-      "diff_mdape_pct": -0.1514964257113185,
+      "a_overall_mdape": 9.619083366363853,
+      "b_overall_mdape": 10.357770124531074,
+      "diff_mdape_pct": -0.738686758167221,
       "artist_cluster_bootstrap": {
-        "diff_median_mdape_pct": -0.07427227077645071,
-        "diff_mean_mdape_pct": -0.07359508914870758,
-        "ci_95_low": -0.563107979716584,
-        "ci_95_high": 0.4203395414977745,
-        "n_bootstrap": 1000,
-        "ci_excludes_zero": false
+        "diff_median_mdape_pct": -0.7106945190662959,
+        "diff_mean_mdape_pct": -0.7158864275591436,
+        "ci_95_low": -1.1444324979892904,
+        "ci_95_high": -0.3242803410635762,
+        "n_bootstrap": 10000,
+        "ci_excludes_zero": true
       },
       "wilcoxon_row_level_auxiliary": {
-        "statistic": 200034363.0,
-        "p_value": 0.3566014628381693,
+        "statistic": 179688800.0,
+        "p_value": 2.5796816286586577e-55,
         "n": 28376,
         "caveat": "row-level, artist cluster 무시 — CI 가 primary"
       },
       "wilcoxon_artist_level_auxiliary": {
-        "statistic": 576886.0,
-        "p_value": 0.1580816051297158,
+        "statistic": 560206.0,
+        "p_value": 0.01842088633561821,
         "n_artists": 1551,
         "note": "artist-level aggregate (median per artist), cluster-aware"
       }
     },
     "V_full_vs_V0": {
       "label": "V_full_vs_V0",
-      "a_overall_mdape": 24.43890733914521,
-      "b_overall_mdape": 24.582464417641066,
-      "diff_mdape_pct": -0.14355707849585642,
+      "a_overall_mdape": 9.610471466898906,
+      "b_overall_mdape": 10.357770124531074,
+      "diff_mdape_pct": -0.7472986576321681,
       "artist_cluster_bootstrap": {
-        "diff_median_mdape_pct": -0.05840765445307028,
-        "diff_mean_mdape_pct": -0.05125331679385987,
-        "ci_95_low": -0.4882438424254755,
-        "ci_95_high": 0.40352505717559256,
-        "n_bootstrap": 1000,
-        "ci_excludes_zero": false
+        "diff_median_mdape_pct": -0.738340103746407,
+        "diff_mean_mdape_pct": -0.7445211670961724,
+        "ci_95_low": -1.1694377628924753,
+        "ci_95_high": -0.3491418396381611,
+        "n_bootstrap": 10000,
+        "ci_excludes_zero": true
       },
       "wilcoxon_row_level_auxiliary": {
-        "statistic": 198870028.0,
-        "p_value": 0.07745585739491209,
+        "statistic": 180595878.0,
+        "p_value": 6.435902114908723e-51,
         "n": 28376,
         "caveat": "row-level, artist cluster 무시 — CI 가 primary"
       },
       "wilcoxon_artist_level_auxiliary": {
-        "statistic": 573270.0,
-        "p_value": 0.10598116236057553,
+        "statistic": 564450.0,
+        "p_value": 0.03430406316399234,
         "n_artists": 1551,
         "note": "artist-level aggregate (median per artist), cluster-aware"
       }
     },
     "V_full_vs_V_year_only": {
       "label": "V_full_vs_V_year_only",
-      "a_overall_mdape": 24.43890733914521,
-      "b_overall_mdape": 24.430967991929748,
-      "diff_mdape_pct": 0.007939347215462078,
+      "a_overall_mdape": 9.610471466898906,
+      "b_overall_mdape": 9.619083366363853,
+      "diff_mdape_pct": -0.008611899464947115,
       "artist_cluster_bootstrap": {
-        "diff_median_mdape_pct": 0.022079045699365807,
-        "diff_mean_mdape_pct": 0.022341772354847713,
-        "ci_95_low": -0.3196227088968282,
-        "ci_95_high": 0.35502879717140334,
-        "n_bootstrap": 1000,
+        "diff_median_mdape_pct": -0.028264788270999652,
+        "diff_mean_mdape_pct": -0.028634739537028924,
+        "ci_95_low": -0.1718932476676766,
+        "ci_95_high": 0.10832485154783336,
+        "n_bootstrap": 10000,
         "ci_excludes_zero": false
       },
       "wilcoxon_row_level_auxiliary": {
-        "statistic": 201009233.0,
-        "p_value": 0.8294698549721337,
+        "statistic": 200553933.0,
+        "p_value": 0.5925949745318217,
         "n": 28376,
         "caveat": "row-level, artist cluster 무시 — CI 가 primary"
       },
       "wilcoxon_artist_level_auxiliary": {
-        "statistic": 583981.0,
-        "p_value": 0.31279349707640314,
+        "statistic": 595979.0,
+        "p_value": 0.7419446332324681,
         "n_artists": 1551,
         "note": "artist-level aggregate (median per artist), cluster-aware"
       }
