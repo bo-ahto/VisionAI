@@ -17,6 +17,11 @@ from fastapi import FastAPI, HTTPException
 
 from . import external_collector, shap_explainer
 from .artist_matcher import ArtistMatcher
+from .artwork_year_cache import (
+    get_artwork_year,
+    get_global_cache,
+    seed_artwork_year,
+)
 from .primary_feature_builder import build_features
 from .primary_predictor import (
     CAT_FEATURES,
@@ -560,11 +565,13 @@ async def model_info():
     """
     if _model_info_cache is None:
         # 발생할 일 없음 (lifespan에서 _load_models 호출됨) — defensive
+        # v3.6 PR8 (코덱스 PR7 review P2 fix): defensive fallback 도 variant-aware.
+        # CB_FEATURES (32) hardcode → predictor.cb_features 길이 (variant 별 32/35).
         return ModelInfoResponse(
             model_version=_predictor.model_version_label(_model_version),
             training_count=0, artist_count=0,
             mdape_groupkfold=0.0, mdape_kfold=0.0,
-            features_count=len(CB_FEATURES),
+            features_count=len(_predictor.cb_features),
         )
     return _model_info_cache
 
@@ -626,6 +633,39 @@ async def predict(req: PredictRequest):
 
     has_manual = len(manual) > 0
 
+    # 3.5 v3.6 PR8: V_year_saatchi_warm cohort gating + year resolution
+    # Cohort authority (v3.5 step 2 §2.3): match.profile.source + warm_artist_slugs.
+    # external_collector 로 채워진 profile.source 는 비권위 (is_matched=False 면 무시).
+    artist_slug_for_routing = match.slug if match else None
+    is_saatchi_warm = (
+        is_matched
+        and isinstance(profile, dict)
+        and profile.get("source") == "saatchi"
+        and bool(artist_slug_for_routing)
+        and _predictor.is_warm_artist(artist_slug_for_routing)
+    )
+
+    # year_made resolution: manual (request) > cache.get > fetch (saatchi-only).
+    # 비대상 cohort 면 year resolve skip (build_features 안에서 옵션 B disable).
+    year_made: int | None = None
+    year_made_route: str = "no_id"
+    if is_saatchi_warm:
+        if req.year_made is not None:
+            year_made = int(req.year_made)
+            # write-through: artwork_id 있으면 cache seed (route = manual_seed_cache_write
+            # 또는 parse_invalid). artwork_id 없으면 manual 사용만.
+            if req.artwork_id:
+                year_made_route = seed_artwork_year(
+                    req.artwork_id, year_made, artwork_url=req.artwork_url
+                )
+            else:
+                year_made_route = "manual_no_cache"
+        else:
+            cache = get_global_cache()
+            year_made, year_made_route = get_artwork_year(
+                req.artwork_id, req.artwork_url, cache=cache
+            )
+
     # 4. 피처 생성
     features = build_features(
         width_cm=req.width_cm,
@@ -634,10 +674,11 @@ async def predict(req: PredictRequest):
         artist_profile=profile,
         target_market=req.target_market,
         manual_overrides=manual,
+        is_saatchi_warm=is_saatchi_warm,
+        year_made=year_made,
     )
 
     # 5. 예측 — artist_slug 전달 (학습 시 warm artist set lookup용, Codex 5차 P1)
-    artist_slug_for_routing = match.slug if match else None
     result = _predictor.predict(
         features=features,
         is_matched=is_matched,
@@ -685,6 +726,10 @@ async def predict(req: PredictRequest):
         "is_known_artist": result["is_known_artist"],
         "training_count": result["training_count"],
         "has_manual_profile": has_manual,
+        # v3.6 PR8: V_year_saatchi_warm cohort 관측 (PR10 full schema 전 minimal).
+        "is_saatchi_warm": bool(is_saatchi_warm),
+        "year_made_route": year_made_route,
+        "year_made_used": year_made,
         "total_ms": total_ms,
     })
 
