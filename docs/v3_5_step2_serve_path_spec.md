@@ -11,7 +11,7 @@ V_year_saatchi_warm activation rule (학습/서빙 정합, 코덱스 P0 fix):
 - **Cohort authority** = `match is not None AND match.profile["source"] == "saatchi" AND predictor warm_artist_slugs CONTAINS match.slug`
 - **gating source = `match.profile["source"]` only** (external_collector 결과는 비권위)
 - year_made 활성: 위 3 조건 동시 충족 시
-- 그 외 (unmatched / artsy / saatchi cold / external saatchi/web) → year_made=NaN, has_year_made=0, work_age=0
+- 그 외 (unmatched / artsy / saatchi cold / external saatchi/web) → builder output `year_made=0.0, has_year_made=0, work_age=0.0` (옵션 B, §2.3 단일 contract)
 
 > 권위 source: `warm_artist_slugs` artifact (`integrated_v3_filtered_tuned_warm_artists.json`).
 > training_count<5 같은 DB count fallback 은 비권위 (Codex 9차 P1 이미 정합 변경됨).
@@ -176,7 +176,11 @@ def build_features(
 - 학습 정합: `prepare_features_with_extra` 가 numeric `fillna(0)` 거치는데, builder 단계에서 이미 0 이면 fillna 무관하게 동일
 - predictor 직전 별도 fillna 불필요 → **계약 단순화**
 
-> 학습 데이터의 disabled rows 도 `_disable_year_for_mask` 후 prepare 단계 fillna(0) 로 0 입력. 서빙 builder 가 동일하게 0 출력 → 학습/서빙 정합 1:1 보장.
+> **Post-prepare model-input parity** (코덱스 fix wording 정정):
+> - 학습 builder 출력: `_disable_year_for_mask` → `year_made=NaN, has_year_made=0, work_age=0.0`
+> - 학습 prepare: numeric `fillna(0)` → 모델 입력 `year_made=0, has_year_made=0, work_age=0`
+> - 서빙 builder 출력 (옵션 B): `year_made=0.0, has_year_made=0, work_age=0.0` 직접
+> - **모델 입력 단계에서 정합 1:1 보장** (builder output 자체는 다르지만 model-input level 동일)
 
 ### 2.4 `src/visionai/price_engine/api/primary_predictor.py` — feature contract + model artifact
 
@@ -350,6 +354,15 @@ V_year_saatchi_warm 채택 시 새 model artifact bundle (`primary_predictor.py:
 - `model_loader` 가 환경변수 `MODEL_VARIANT=v3_filtered_tuned | v3_5_v_year_saatchi_warm` 으로 선택
 - Atomic load: 5 파일 모두 검증 후 instance state swap (기존 패턴 그대로)
 
+### Side artifact 규약 (코덱스 P0 #4)
+- `metrics.json` (`primary_server.py:431` 의 `model_info` 참조): 같은 prefix 로 함께 관리
+  - 신규: `integrated_v3_5_v_year_saatchi_warm_metrics.json`
+  - 비-fail-closed (없으면 model_info 만 비어있음, 서비스 자체는 동작)
+- `calibration JSON` 의 `model_target` field (`primary_predictor.py:208` 의 검증):
+  - 현재 `integrated_v3_filtered_tuned` 고정 검증
+  - 신규 variant 시 `model_target == "v3_5_v_year_saatchi_warm"` 정합 검증으로 교체 (variant-aware)
+  - `MODEL_VARIANT` env var 와 calibration `model_target` 일치 확인 (mismatch → RuntimeError)
+
 새 학습은 v3.5 step 4 monitoring 직전 별도 commit (out of scope §10).
 
 ---
@@ -387,6 +400,26 @@ step 2 완료 → step 3 (enrichment / latency / coverage trade-off):
 
 ## 10. Out of scope (다음 단계)
 
-- 실제 코드 변경 (4 파일 수정) — v3.6 production rollout 전 별도 PR
-- Model retraining (V_year_saatchi_warm 새 artifact) — Step 4 monitoring 직전 commit
+본 step 2 = **spec only close** (v3.5 plan §3 정의 그대로). 실제 구현은 별도 PR.
+
+### v3.6 production rollout 직전 implementation checklist (코덱스 P0 #4 fix)
+실제 코드 변경 PR 전 체크리스트:
+- [ ] `primary_schemas.py`: `artwork_id`, `artwork_url`, `year_made` 필드 + validation
+- [ ] `primary_schemas.py` BatchPredictRequest 도 동일 필드 추가
+- [ ] `external_collector.py`: `_artwork_year_cache` (artwork_id key, URL alias) + `get_artwork_year`
+- [ ] `primary_feature_builder.py`: `is_saatchi_warm`, `year_made` 인자 + 옵션 B (0.0 output)
+- [ ] `primary_predictor.py`: CB_FEATURES + 3, 5-file fail-closed bundle, `MODEL_VARIANT` env var
+- [ ] `primary_predictor.py`: `model_target` variant-aware 검증
+- [ ] `primary_server.py:431` `model_info` 의 metrics.json prefix 정합
+- [ ] `primary_server.py:575` (단건) + `:703` (batch) 의 cohort gating 통합
+- [ ] 단건/배치 logging schema: `is_saatchi_warm`, `match_profile_source`, `slug_in_warm_set`, `year_made_route`, `external_collector_source`
+- [ ] Integration tests: 10 fallback cases (§4) 통과
+- [ ] Smoke benchmark: cache hit p95 ≤ 5ms, miss ≤ 600ms 검증
+
+### v3.5 step 4 monitoring 직전 별도 commit
+- Model retraining (V_year_saatchi_warm 새 5-file bundle + metrics.json 산출)
+- Calibration JSON 의 `model_target = "v3_5_v_year_saatchi_warm"` 으로 재생성
+
+### 그 외 out of scope
 - Cache TTL invalidation 정책 세부 (sold 작품 처리) — Step 4 monitoring 에서 검토
+- DB 영구 cache (Persistent layer) — v3.6+ optimization backlog (코덱스 P1)
