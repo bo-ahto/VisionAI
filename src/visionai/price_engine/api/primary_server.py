@@ -6,8 +6,8 @@ import json
 import logging
 import os
 import time
-import uuid
 import urllib.request
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,28 +15,32 @@ from pathlib import Path
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 
+from . import external_collector, shap_explainer
+from .artist_matcher import ArtistMatcher
+from .primary_feature_builder import build_features
+from .primary_predictor import (
+    CAT_FEATURES,
+    CB_FEATURES,
+    SUPPORTED_VARIANTS,
+    PrimaryPredictor,
+)
 from .primary_schemas import (
-    ErrorResponse,
-    HealthResponse,
-    ModelInfoResponse,
-    PredictRequest,
-    PredictResponse,
-    Prediction,
-    PriceRange,
-    ModelInfo,
-    Processing,
+    ArtistPriceHistory,
     BatchPredictRequest,
     BatchPredictResponse,
     BatchPredictResult,
-    ArtistPriceHistory,
-    PriceHistoryItem,
+    ErrorResponse,
+    HealthResponse,
     MatchedArtwork,
+    ModelInfo,
+    ModelInfoResponse,
+    Prediction,
+    PredictRequest,
+    PredictResponse,
+    PriceHistoryItem,
+    PriceRange,
+    Processing,
 )
-from .artist_matcher import ArtistMatcher
-from .primary_feature_builder import build_features
-from .primary_predictor import PrimaryPredictor, CB_FEATURES, CAT_FEATURES
-from . import external_collector
-from . import shap_explainer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -426,25 +430,34 @@ def _build_model_info_cache(model_dir: Path) -> None:
     """startup 시점의 metrics + calibration으로 model_info 응답 캐시.
 
     이후 disk가 바뀌어도 메모리 cache 사용 → version과 metrics가 같은 세대 보장.
+
+    v3.6 PR7 (코덱스 P1 fix): predictor 의 variant prefix 와 정합. MODEL_VARIANT 적용
+    시 metrics.json + calibration JSON + metrics dict 의 model_type key 모두 variant
+    prefix 로 갱신. 이전 hardcoded 'integrated_v3_filtered_tuned_*' 는 deprecated.
     """
     global _model_info_cache
-    metrics_path = model_dir / "integrated_v3_filtered_tuned_metrics.json"
-    calib_path = model_dir / "integrated_v3_filtered_tuned_source_calibration.json"
+    # PR7: variant prefix 로 artifact path 결정 (predictor 와 정합)
+    variant_prefix = SUPPORTED_VARIANTS[_predictor.variant]["prefix"]
+    metrics_path = model_dir / f"{variant_prefix}_metrics.json"
+    calib_path = model_dir / f"{variant_prefix}_source_calibration.json"
     if not metrics_path.exists():
         logger.warning("metrics file 없음 (%s) — model_info cache fallback", metrics_path)
         _model_info_cache = ModelInfoResponse(
             model_version=_predictor.model_version_label(_model_version),
             training_count=0, artist_count=0,
             mdape_groupkfold=0.0, mdape_kfold=0.0,
-            features_count=len(CB_FEATURES),
+            features_count=len(_predictor.cb_features),
         )
         return
     with metrics_path.open(encoding="utf-8") as f:
         metrics = json.load(f)
-    cold_cb = metrics.get("groupkfold", {}).get("catboost_v3_filtered_tuned", {})
-    warm_xgb = metrics.get("kfold", {}).get("warm_slice", {}).get("xgboost_v3_filtered_tuned", {})
+    # PR7: metrics.json 안의 catboost / xgboost key 도 variant prefix
+    cb_key = f"catboost_{_predictor.variant}"
+    xgb_key = f"xgboost_{_predictor.variant}"
+    cold_cb = metrics.get("groupkfold", {}).get(cb_key, {})
+    warm_xgb = metrics.get("kfold", {}).get("warm_slice", {}).get(xgb_key, {})
     if not warm_xgb:
-        warm_xgb = metrics.get("kfold", {}).get("xgboost_v3_filtered_tuned", {})
+        warm_xgb = metrics.get("kfold", {}).get(xgb_key, {})
     cold_mdape = float(cold_cb.get("MdAPE", 0.0))
     warm_mdape = float(warm_xgb.get("MdAPE", 0.0))
     if calib_path.exists():
@@ -635,14 +648,18 @@ async def predict(req: PredictRequest):
     )
 
     # SHAP 설명 (CatBoost 경로만, threadpool에서 실행)
+    # v3.6 PR7: variant-aware model_type → 'catboost_*' prefix 로 분기
     feature_contributions = []
-    if result["model_type"] == "catboost_v3":
+    if result["model_type"].startswith("catboost_"):
+        cb_features_for_shap = _predictor.cb_features  # variant-aware
+
         def _compute_shap():
             df_explain = pd.DataFrame([features])
             for col in CAT_FEATURES:
                 if col in df_explain.columns:
                     df_explain[col] = df_explain[col].astype(str).fillna("unknown")
-            return shap_explainer.explain(df_explain[CB_FEATURES], CB_FEATURES)
+            return shap_explainer.explain(df_explain[cb_features_for_shap], cb_features_for_shap)
+
         loop = asyncio.get_event_loop()
         feature_contributions = await loop.run_in_executor(None, _compute_shap)
 

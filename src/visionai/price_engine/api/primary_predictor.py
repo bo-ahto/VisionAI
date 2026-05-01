@@ -447,7 +447,10 @@ class PrimaryPredictor:
         else:
             is_warm = None  # warm set 미로드 → grade도 legacy fallback
             use_xgb = is_matched and training_count >= 5
-        model_type = "xgboost_v3_filtered_tuned" if use_xgb else "catboost_v3_filtered_tuned"
+        # v3.6 PR7 (코덱스 P2 fix): model_type 응답을 variant 별 분리.
+        # 이전 hardcoded "xgboost_v3_filtered_tuned" → "{algo}_{variant}" 동적.
+        algo = "xgboost" if use_xgb else "catboost"
+        model_type = f"{algo}_{self._variant}"
 
         if use_xgb:
             # XGBoost는 categorical을 label encoding
