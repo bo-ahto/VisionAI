@@ -805,6 +805,8 @@
 
 <h2>13. v3.1 후속 작업 우선순위</h2>
 
+<p><em>2026-04-30 시점 우선순위 (역사적 스냅샷). 후속 결과와 대체안 채택은 §15 v3.4-v3.6 부록 참조.</em></p>
+
 <p>v3.0 Group 1 진단에서 도출된 v3.1 작업 항목 (우선순위 순):</p>
 
 <div class="wide-table-wrap">
@@ -878,6 +880,112 @@
 <tr><td><code>integrated_v3_filtered_tuned.provenance.json</code></td><td>(model_test_results/) production model 산출물 lineage</td></tr>
 </tbody>
 </table>
+
+<hr>
+
+<h2>15. v3.4-v3.6 후속 사이클 부록 (2026-05-02 갱신)</h2>
+
+<p>v3.0 진단 (§1-12) → v3.1-3.3 research follow-up → v3.4 saatchi enrichment → v3.5 spec → v3.6 production rollout plan 까지의 후속 사이클을 본 §15 에 요약. 상세는 각 docs 참조.</p>
+
+<h3>15.1 v3.4-1: external data feasibility 검증 (saatchi/artsy detail page)</h3>
+
+<p>v3.0 §13 v3.1 backlog 의 "외부 데이터 도입" 가설 검증:</p>
+<ul>
+<li><strong>Saatchi</strong>: detail page 의 <code>Year Created</code> 100% 노출 (5 + 26 sample stratified 검증). anti-bot 차단 0건. 단순 fetch 가능.</li>
+<li><strong>Artsy</strong>: anti-bot 강함 (HTTP 403). v3.5 scope 외 (별도 partnership/API 트랙).</li>
+<li><strong>Listing date / view count / favorite</strong>: saatchi detail page 에 노출 X. v3.6+ 제외.</li>
+</ul>
+
+<p>참조: <code>docs/v3_4_1_phase1_manual_validation.md</code>, <code>docs/v3_4_2_step1_stratified_validation.md</code></p>
+
+<h3>15.2 v3.4-2: saatchi 21,087 전수 enrichment + ablation</h3>
+
+<table>
+<thead>
+<tr><th>단계</th><th>결과</th></tr>
+</thead>
+<tbody>
+<tr><td>step 1: 26 stratified sample</td><td>Year Created 100% 검출</td></tr>
+<tr><td>step 2: parser 모듈 + 18 단위 테스트</td><td>smoke 26/26 PASS</td></tr>
+<tr><td>step 3: pilot 1,000건 (hybrid sampling)</td><td>99.6% fill, anti-bot 0</td></tr>
+<tr><td>step 4: 21,087 전수 + retry 2-pass</td><td><strong>97.90% fill</strong> (8.5h, 443 unresolved = 19 작가 cluster)</td></tr>
+<tr><td>step 5: ablation (V0 / V_year_only / V_full)</td><td><strong>V_year_only Δ-0.74%p overall</strong> (CI [-1.144, -0.324], artist p=0.018)</td></tr>
+</tbody>
+</table>
+
+<p><strong>핵심 finding</strong>: V_year_only 가 overall MdAPE 통계 유의 개선. 단 cold cohort (n=1,314) 에서 +0.99%p worse — year_made 가 sparse cohort 에서 spurious / overfit. 코덱스 권장 framing 변경: "global on" 이 아니라 "cohort-gated on".</p>
+
+<p><strong>Caveat (코덱스 P1)</strong>: v3.4-2 step 5 = <strong>research only — deploy 즉시 가능 X</strong>. 현재 production scrape (`external_collector.py`) 가 작품 year_made 를 미수집. 본 결과는 V_year_saatchi_warm 채택 (v3.5) → production scrape 변경 (v3.6 Phase 1) 후 재현 검증 필요.</p>
+
+<p>참조: <code>docs/v3_4_2_step3_pilot_results.md</code>, <code>docs/v3_4_2_step4_full_results.md</code>, <code>docs/v3_4_2_step5_full_results.md</code></p>
+
+<h3>15.3 v3.5: V_year_saatchi_warm 채택 + spec (4-step)</h3>
+
+<table>
+<thead>
+<tr><th>Step</th><th>결과</th></tr>
+</thead>
+<tbody>
+<tr><td>step 1: cohort gating ablation (3 variants)</td><td><strong>V_year_saatchi_warm 채택</strong> — overall -0.738%p / cold +0.028% / saatchi_online 10+ -1.002%p / artist p=<strong>0.00028</strong></td></tr>
+<tr><td>step 2: serve-path integration spec</td><td>Cohort authority (warm_artist_slugs + match.profile.source) / 옵션 B disable / 10 fallback cases / 5-file artifact bundle / batch endpoint 정합</td></tr>
+<tr><td>step 3: enrichment trade-off + 측정 plan</td><td>Cache-first + manual override hybrid (artwork_id 단위 LRU TTL 7d) / rate-limit gate (miss_qps / 5min_burst) / version-aware logging</td></tr>
+<tr><td>step 4: drift monitoring 설계</td><td>17 metrics + 6 drift scenario + state machine (1%→5%→25%→100%) + 12 dashboard panel + rollback trigger 단일 표</td></tr>
+</tbody>
+</table>
+
+<div class="tldr">
+<p><strong>v3.5 핵심 결정</strong>: <strong>V_year_saatchi_warm</strong> (saatchi & warm intersect gating) 만 cold cohort 보호 + overall ROI 보존. <code>is_saatchi=True AND warm_artist=True</code> 조건의 작품에만 year_made 활성. 그 외 (artsy / saatchi cold / unmatched) 는 builder output <strong>0/0/0 (옵션 B 단일 contract)</strong> — 학습/서빙 model-input 정합을 위한 <strong>fail-closed contract</strong> (학습 fillna(0) 후 입력값과 1:1 일치). offline ROI <strong>-0.74%p overall, -1.0%p saatchi_online 10+</strong> 정량 근거 확보.</p>
+</div>
+
+<p>참조: <code>docs/v3_5_plan.md</code>, <code>docs/v3_5_step1_cohort_gating_results.md</code>, <code>docs/v3_5_step2_serve_path_spec.md</code>, <code>docs/v3_5_step3_enrichment_tradeoff.md</code>, <code>docs/v3_5_step4_drift_monitoring.md</code></p>
+
+<h3>15.4 v3.6: production rollout 실행 plan</h3>
+
+<p>v3.5 close 후 production 적용 4-Phase plan (~30-37일):</p>
+
+<ul>
+<li><strong>Phase 1 (~10d)</strong>: implementation 11 PR (per-PR unit tests + cross-path integration). primary_schemas / external_collector / primary_feature_builder / primary_predictor / primary_server (단건+batch) / metrics / logging / tests</li>
+<li><strong>Phase 2 (~8d)</strong>: monitoring infra (Grafana 12 panel + Slack/PagerDuty alert + GitOps state machine + on-call playbook training)</li>
+<li><strong>Phase 3 (~3d)</strong>: pre-rollout validation (DEV TEST / STAGING / Pre-canary smoke)</li>
+<li><strong>Phase 4 (~16d)</strong>: gated rollout (CANARY 1% → ROLLOUT 5% D1/D3/D7 → 25% → FULL 100%)</li>
+</ul>
+
+<p><strong>Phase 4 abort criteria (시간창 기반 + hard threshold)</strong>:</p>
+<ul>
+<li>시간창: 24h 내 crit 1건 → 단계 hold / 24h 내 crit 2건 또는 auto-rollback 1건 → 단계 중단 / 같은 crit 2회 반복 → v3.6 abort</li>
+<li>Hard threshold (코덱스 P0 fix): <strong>ROLLOUT 5% D7 에서 MdAPE diff > +0.3%p → abort</strong>, <strong>어떤 단계에서 mdape_d7_cold > 46% → 자동 rollback (no manual confirm)</strong></li>
+</ul>
+
+<p><strong>Success criterion</strong>: FULL 100% 1주 안정 + offline -0.74%p overall 의 production 재현 (D7 MdAPE diff ≤ -0.5%p) + saatchi_online 10+ -1.00%p 재현.</p>
+
+<p>참조: <code>docs/v3_6_plan.md</code></p>
+
+<h3>15.5 v3.0 → v3.6 의 의사결정 흐름 (코덱스 P0 fix)</h3>
+
+<p>v3.0 시점 §13 backlog 1순위는 <strong>D10 전용 calibration</strong> 이었음. 외부 데이터 도입은 §1.10 temporal limitation 등과 결합된 별도 동기. 최종 채택안은 D10 슬라이스 calibration 이 아니라 saatchi-warm 대형 cohort 의 year signal — 인과 직선이 아닌 분기를 따른 결과:</p>
+
+<ol>
+<li><strong>v3.0 §1.7 발견</strong>: D10 saatchi_online over-prediction (log_ratio +1.359). §13 backlog 1순위 = D10 전용 calibration layer.</li>
+<li><strong>v3.1-1: D10 saatchi calibration 시도</strong>: 단일 multiplicative factor 0.7569 — paired Wilcoxon p=0.7 (deploy HOLD).</li>
+<li><strong>v3.2-3 D10 split conformal</strong>: 89.9% empirical coverage but width 1.73 (UX 한계). research close.</li>
+<li><strong>v3.2-4 / v3.3-1 production routing 정정</strong>: warm KF OOF 정합 후 D10 framing 갱신 (warm path 가 99.4% 노출).</li>
+<li><strong>v3.3 missing-signal investigation</strong>: D10 발견이 외부 데이터 가설을 촉발 — KT 라벨 정제 / external data inventory / saatchi detail page feasibility (v3.4-1).</li>
+<li><strong>v3.4-2 enrichment</strong>: saatchi 97.90% fill + V_year_only Δ-0.74%p 통계 유의. 단 D10 cohort 전용 효과 X — overall + saatchi_online 10+ 대형 cohort 에서 효과.</li>
+<li><strong>v3.5 cohort gating</strong>: V_year_saatchi_warm (saatchi & warm intersect) 채택 — D10 전용이 아니라 <strong>saatchi-warm gated year signal</strong>. cold cohort 보호 + overall ROI 보존.</li>
+<li><strong>v3.6 production rollout</strong>: implementation + infra + gated rollout 실행 (예상 5-7주).</li>
+</ol>
+
+<p><strong>핵심</strong>: v3.0 §1.7 의 D10 발견은 missing-signal investigation 의 trigger 였고, 최종 채택안 (V_year_saatchi_warm) 은 D10 전용 calibration 이 아니라 saatchi-warm 대형 cohort 의 year_made signal 도입 — 결과적으로 D10 cohort 도 saatchi_online 10+ subset 으로 일부 개선됨 (직접 calibration 아님).</p>
+
+<h3>15.6 v3.7+ out of scope (v3.6 close 후 검토)</h3>
+<ul>
+<li>Artsy partnership / API 도입 (별도 트랙)</li>
+<li>V_full (vintage_premium / freshness_discount / career_age) 재도입 (saatchi 3-4 cohort 효과 재현 시)</li>
+<li>Sold ratio feature (saatchi avail-only 제약)</li>
+<li>Async preload / backfill (v3.6+ optimization)</li>
+<li>Year_made 외 신호 (view_count / favorite_count / listing_date)</li>
+<li>Persistent DB cache (현재 in-memory LRU only)</li>
+</ul>
 
 </div>
 </body>
