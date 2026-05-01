@@ -1,0 +1,61 @@
+{
+  "config": {
+    "scope": "v3.4-2 step 4 full saatchi enrichment (21,087 training-relevant)",
+    "n_total": 21087,
+    "rate_limit_sec": 0.6,
+    "raw_jsonl_path": "model_test_results/v3_diagnostics/saatchi_step4_full_enrichment_raw.jsonl",
+    "retry_policy": {
+      "retryable": [
+        "5xx",
+        "timeout",
+        "network_error"
+      ],
+      "pass_1_backoff_sec": [
+        2,
+        5
+      ],
+      "pass_2_backoff_sec": [
+        5,
+        15
+      ]
+    }
+  },
+  "totals": {
+    "n_attempted": 21087,
+    "n_not_attempted": 0,
+    "year_created_resolved": 20644,
+    "year_created_unresolved": 443,
+    "fill_rate_year": 0.9789917958932044
+  },
+  "fetch_status_distribution": {
+    "ok": 20644,
+    "network_error": 27,
+    "5xx": 416
+  },
+  "extraction_source_distribution": {
+    "html_year_created": 20644,
+    "unresolved": 443
+  },
+  "is_sold_out": {
+    "true": 5949,
+    "false": 14695,
+    "missing": 443
+  },
+  "diagnostics_counts": {
+    "n_short_response": 0,
+    "n_blocked": 0,
+    "n_price_zero_flag": 0,
+    "warning_distribution": {
+      "fetch_network_error": 27,
+      "fetch_5xx": 416
+    }
+  },
+  "year_distribution": {
+    "min": 1919,
+    "p10": 2015,
+    "median": 2021,
+    "p90": 2025,
+    "max": 2026
+  },
+  "interpretation": "최종 unresolved 는 residual transient bucket. retry 2-pass 후에도 실패한 url 은 fetch failure 영구 케이스 — step 5 ablation 에서는 has_year_made flag 로 분리."
+}
