@@ -37,7 +37,7 @@
 | pass 1 | 2-5s | **0 / 443** | 0% |
 | pass 2 | 5-15s | **0 / 443** | 0% |
 
-→ **transient 가 아니라 영구 5xx**. saatchi 측 작품 제거 / 비공개 정책 추정. 코덱스 권장대로 "residual transient bucket" 으로 고정.
+→ **transient 가 아니라 stable 실패군** (코덱스 P0 wording). 416 건은 5xx→5xx→5xx, 27 건은 network_error→network_error→network_error 로 고정. **artist/page cluster 단위 persistent fetch failure** 로 추정 (제거/비공개 가능성 높지만 policy 단정은 X). step 5 에서는 `has_year_made=0` 으로 처리.
 
 ### 2.3 운영 메트릭
 - main pass: 4.85 hr (rate 0.88 req/s)
@@ -52,7 +52,7 @@
 2. **fallback 사용 0** — 21,087 모두 primary regex (html_year_created) 매칭. parser drift 없음
 3. **5,949 sold 검출 (28.2%)** — saatchi raw 의 avail-only 정의와 무관 (detail page 의 isSoldOut JSON 노출). v3.4-3 sold_ratio feature 의 데이터 이미 있음
 4. **Year 분포 다양** (1919~2026, median 2021) — production 작품의 vintage 신호로 충분
-5. **0% retry 회복** — main pass 의 5xx 가 영구 saatchi-side issue 임을 입증
+5. **0% retry 회복** — 이번 실행 창 (2026-05-01 UTC 기준) 에서 transient 로 회복되지 않는 stable 실패군. 코덱스 P0: 443 실패가 19 artist_slug 에 집중 → "artist/page cluster persistent failure". saatchi 정책 단정은 X.
 
 ---
 
