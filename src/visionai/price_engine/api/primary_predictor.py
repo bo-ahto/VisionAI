@@ -1,15 +1,16 @@
 """Phase 1 모델 라우팅 + 예측."""
+
 from __future__ import annotations
 
 import json
-import math
 import logging
+import math
+import os
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-from catboost import CatBoostRegressor
 import xgboost as xgb
+from catboost import CatBoostRegressor
 
 logger = logging.getLogger(__name__)
 
@@ -20,22 +21,95 @@ USD_TO_KRW = 1380
 # (source, target_market) cell 기반 factor에 흡수됨. 별도 ln_price 보정 제거.
 # Cell 정의: f"{source}_{target_market}" — 예: "saatchi_online", "artsy_gallery"
 
-CB_FEATURES = [
-    "ho", "ho_power", "ln_ho", "area_cm2", "ln_area", "aspect_ratio", "is_small",
-    "support_factor", "ho_x_support",
-    "is_unique", "is_edition", "has_depth",
-    "artist_birth_year", "has_birth_year", "career_stage",
-    "ln_followers", "artist_total_works", "for_sale_ratio",
-    "ho_price_level", "medium_price_level",
+# 기본 32 features (v3_filtered_tuned variant)
+CB_FEATURES_BASE = [
+    "ho",
+    "ho_power",
+    "ln_ho",
+    "area_cm2",
+    "ln_area",
+    "aspect_ratio",
+    "is_small",
+    "support_factor",
+    "ho_x_support",
+    "is_unique",
+    "is_edition",
+    "has_depth",
+    "artist_birth_year",
+    "has_birth_year",
+    "career_stage",
+    "ln_followers",
+    "artist_total_works",
+    "for_sale_ratio",
+    "ho_price_level",
+    "medium_price_level",
     "profile_completeness",
-    "gallery_tier", "gallery_city_count", "has_seoul", "has_international",
+    "gallery_tier",
+    "gallery_city_count",
+    "has_seoul",
+    "has_international",
     "is_krw",
-    "support_type", "medium_category", "attribution_class",
-    "gallery_type", "price_currency", "source",
+    "support_type",
+    "medium_category",
+    "attribution_class",
+    "gallery_type",
+    "price_currency",
+    "source",
 ]
+
+# v3.6 PR5+6: V_year_saatchi_warm variant 의 35 features (CB_FEATURES_BASE + year 3종)
+CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM = [
+    *CB_FEATURES_BASE,
+    "year_made",
+    "has_year_made",
+    "work_age",
+]
+
+# Backward compat: 기존 import 호환
+CB_FEATURES = CB_FEATURES_BASE
+
+# v3.6 Phase 1 PR5+6: variant 별 artifact bundle + feature contract
+# (v3.5 step 2 §6.5 명세)
+SUPPORTED_VARIANTS: dict[str, dict] = {
+    "v3_filtered_tuned": {
+        "prefix": "integrated_v3_filtered_tuned",
+        "cb_features": CB_FEATURES_BASE,
+        "expected_target": "integrated_v3_filtered_tuned",
+    },
+    "v3_5_v_year_saatchi_warm": {
+        "prefix": "integrated_v3_5_v_year_saatchi_warm",
+        "cb_features": CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM,
+        "expected_target": "v3_5_v_year_saatchi_warm",
+    },
+}
+
+DEFAULT_VARIANT = "v3_filtered_tuned"
+
+
+def _resolve_variant(variant: str | None = None) -> str:
+    """variant 결정: 인자 → MODEL_VARIANT env var → DEFAULT.
+
+    v3.6 PR5+6: gated rollout 용 — 운영 환경변수로 변형 선택.
+    Unknown variant → RuntimeError (fail-closed).
+    """
+    if variant is None:
+        variant = os.environ.get("MODEL_VARIANT", DEFAULT_VARIANT)
+    if variant not in SUPPORTED_VARIANTS:
+        raise RuntimeError(
+            f"Unsupported MODEL_VARIANT={variant!r}. Supported: {list(SUPPORTED_VARIANTS)}"
+        )
+    return variant
+
+
+def get_cb_features(variant: str | None = None) -> list[str]:
+    """variant 의 CB_FEATURES list 반환."""
+    return SUPPORTED_VARIANTS[_resolve_variant(variant)]["cb_features"]
+
+
 # Removed for train/serve drift consistency:
 # - career_age, work_age, vintage_premium, freshness_discount (Codex 4차 P1, 2026-04-28)
 #   학습 데이터는 정상 계산, 서빙은 0 하드코딩.
+#   (v3.6 PR4: V_year_saatchi_warm variant 만 work_age 재도입, gating 적용)
 # - gallery_name (Codex 14차 P1, 2026-04-28)
 #   학습 vocab은 실제 갤러리명 59개 (예: "Kukje Gallery"), 서빙은 artist_matcher가
 #   "Gallery"/"Saatchi Art"로 하드코딩. Saatchi는 vocab에 있지만 Artsy 작가는 매번
@@ -44,8 +118,12 @@ CB_FEATURES = [
 #    gallery_name 필드 추가 시 다시 도입 검토.)
 
 CAT_FEATURES = [
-    "support_type", "medium_category", "attribution_class",
-    "gallery_type", "price_currency", "source",
+    "support_type",
+    "medium_category",
+    "attribution_class",
+    "gallery_type",
+    "price_currency",
+    "source",
 ]
 
 
@@ -102,17 +180,36 @@ class PrimaryPredictor:
         self._warm_artifact_loaded: bool = False
         # Source-specific calibration (Codex 권장 P2): cold path 후처리 보정
         self._cold_calibration_factors: dict[str, float] = {}
+        # v3.6 Phase 1 PR5+6: variant-aware load (MODEL_VARIANT env var)
+        self._variant: str = DEFAULT_VARIANT
+        self._cb_features: list[str] = CB_FEATURES_BASE
 
-    def load_models(self, model_dir: Path) -> None:
-        """v3-filtered-tuned 모델 로드 — fail-closed + schema 검증 (Codex 12차).
+    @property
+    def variant(self) -> str:
+        return self._variant
+
+    @property
+    def cb_features(self) -> list[str]:
+        return self._cb_features
+
+    def load_models(self, model_dir: Path, variant: str | None = None) -> None:
+        """variant-aware 모델 로드 — fail-closed + schema 검증 (Codex 12차 + v3.6 PR5+6).
+
+        v3.6 PR5+6 (v3.5 step 2 §6.5):
+        - variant 결정: 인자 → MODEL_VARIANT env var → DEFAULT (v3_filtered_tuned)
+        - artifact prefix: SUPPORTED_VARIANTS[variant]["prefix"]
+        - calibration model_target 검증: SUPPORTED_VARIANTS[variant]["expected_target"]
+        - mismatch → RuntimeError (atomic load — 기존 instance state 유지)
 
         Required artifacts (모두 필수, 누락 또는 schema invalid 시 RuntimeError):
-        - integrated_v3_filtered_tuned_catboost.cbm
-        - integrated_v3_filtered_tuned_xgboost.json
-        - integrated_v3_filtered_tuned_xgboost_label_maps.json
+        - <prefix>_catboost.cbm
+        - <prefix>_xgboost.json
+        - <prefix>_xgboost_label_maps.json
             · dict[str, dict[str, int]] schema 검증 (CAT_FEATURES 7개 모두 존재)
-        - integrated_v3_filtered_tuned_warm_artists.json
+        - <prefix>_warm_artists.json
             · 'warm_artist_slugs' key 존재 + list 타입 검증
+        - <prefix>_source_calibration.json
+            · model_target == expected_target 검증
 
         Build new state in local vars first, then swap to instance state at end.
         중간 실패 시 instance state는 이전 값 그대로 유지.
@@ -121,12 +218,19 @@ class PrimaryPredictor:
         현재 _load_models는 startup-only 호출이라 race 위험 적음.
         런타임 reload 도입 시 별도 lock 필요.
         """
-        # 1) artifact 경로 — 5개 모두 필수 (Codex PR #22 5차 P1: fail-closed 정합)
-        cb_path = model_dir / "integrated_v3_filtered_tuned_catboost.cbm"
-        xgb_path = model_dir / "integrated_v3_filtered_tuned_xgboost.json"
-        warm_path = model_dir / "integrated_v3_filtered_tuned_warm_artists.json"
-        label_maps_path = model_dir / "integrated_v3_filtered_tuned_xgboost_label_maps.json"
-        calib_path = model_dir / "integrated_v3_filtered_tuned_source_calibration.json"
+        # v3.6 PR5+6: variant 결정 (env var 또는 인자)
+        resolved_variant = _resolve_variant(variant)
+        variant_config = SUPPORTED_VARIANTS[resolved_variant]
+        prefix = variant_config["prefix"]
+        new_cb_features = variant_config["cb_features"]
+        expected_target = variant_config["expected_target"]
+
+        # 1) artifact 경로 — variant prefix 적용
+        cb_path = model_dir / f"{prefix}_catboost.cbm"
+        xgb_path = model_dir / f"{prefix}_xgboost.json"
+        warm_path = model_dir / f"{prefix}_warm_artists.json"
+        label_maps_path = model_dir / f"{prefix}_xgboost_label_maps.json"
+        calib_path = model_dir / f"{prefix}_source_calibration.json"
 
         for path, label in (
             (cb_path, "CatBoost model"),
@@ -164,9 +268,7 @@ class PrimaryPredictor:
         with label_maps_path.open(encoding="utf-8") as f:
             new_label_maps = json.load(f)
         if not isinstance(new_label_maps, dict):
-            raise RuntimeError(
-                f"label_maps schema invalid ({label_maps_path}): must be dict"
-            )
+            raise RuntimeError(f"label_maps schema invalid ({label_maps_path}): must be dict")
         # Codex 13차 P2: schema 검증을 predict() 요구사항과 정합 — non-empty + int values
         for col in CAT_FEATURES:
             if col not in new_label_maps:
@@ -202,10 +304,16 @@ class PrimaryPredictor:
         #   external_collector 'web', artist_matcher 'manual')
         # - factor 타입 + 범위 sanity bounds [0.1, 10.0]
         ALLOWED_SOURCES = {
-            "artsy", "saatchi", "manual", "printbakery", "artsy_artue", "web", "unknown",
+            "artsy",
+            "saatchi",
+            "manual",
+            "printbakery",
+            "artsy_artue",
+            "web",
+            "unknown",
         }
         ALLOWED_MARKETS = {"gallery", "online"}
-        EXPECTED_TARGET = "integrated_v3_filtered_tuned"
+        # v3.6 PR5+6: variant-aware model_target 검증
         new_cold_calib: dict[str, float] = {}
         if calib_path.exists():
             with calib_path.open(encoding="utf-8") as f:
@@ -220,10 +328,10 @@ class PrimaryPredictor:
                 raise RuntimeError(
                     f"calibration schema invalid ({calib_path}): 'model_target' key 필수"
                 )
-            if target != EXPECTED_TARGET:
+            if target != expected_target:
                 raise RuntimeError(
                     f"calibration model_target mismatch ({calib_path}): "
-                    f"expected {EXPECTED_TARGET!r}, got {target!r}"
+                    f"expected {expected_target!r}, got {target!r}"
                 )
             # version 필수
             if "version" not in calib_data:
@@ -270,13 +378,18 @@ class PrimaryPredictor:
         self._warm_artifact_loaded = new_warm_loaded
         self._label_maps = new_label_maps
         self._cold_calibration_factors = new_cold_calib
+        # v3.6 PR5+6: variant + cb_features 도 atomic swap
+        self._variant = resolved_variant
+        self._cb_features = new_cb_features
 
         # 4) 로깅
         logger.info("CatBoost loaded: %s", cb_path)
         logger.info("XGBoost loaded: %s", xgb_path)
         logger.info("Warm artists loaded: %d (학습 시 warm slice 작가)", len(new_warm_slugs))
-        logger.info("XGBoost label maps loaded: %d categories",
-                    sum(len(v) for v in new_label_maps.values() if isinstance(v, dict)))
+        logger.info(
+            "XGBoost label maps loaded: %d categories",
+            sum(len(v) for v in new_label_maps.values() if isinstance(v, dict)),
+        )
         if new_cold_calib:
             logger.info("Source calibration loaded: cold factors=%s", new_cold_calib)
         else:
@@ -317,8 +430,11 @@ class PrimaryPredictor:
         df = pd.DataFrame([features])
         for col in CAT_FEATURES:
             if col in df.columns:
-                df[col] = df[col].astype(str).fillna("unknown").replace(
-                    {"nan": "unknown", "None": "unknown", "": "unknown"}
+                df[col] = (
+                    df[col]
+                    .astype(str)
+                    .fillna("unknown")
+                    .replace({"nan": "unknown", "None": "unknown", "": "unknown"})
                 )
 
         # 모델 라우팅 (학습 시 warm slice와 정합) — Codex 9차 P1 정합 강화
@@ -337,7 +453,7 @@ class PrimaryPredictor:
             # XGBoost는 categorical을 label encoding
             # Codex 12차 P1: 학습 시 _label_encode_xgb와 동일하게 unseen=sentinel(len(mapping)) 사용.
             # 런타임에 mapping을 mutate하지 않음 — artifact가 권위적이며 새 ID 추가는 ID shift 위험.
-            df_xgb = df[CB_FEATURES].copy()
+            df_xgb = df[self._cb_features].copy()
             for col in CAT_FEATURES:
                 mapping = self._label_maps.get(col, {})
                 if not mapping:
@@ -345,12 +461,16 @@ class PrimaryPredictor:
                         f"label_maps에 카테고리 '{col}' 없음 — artifact 손상 (load_models 시점에 검증됐어야 함)"
                     )
                 unseen_idx = len(mapping)  # train script와 동일 sentinel
-                df_xgb[col] = df_xgb[col].map(lambda v, m=mapping, u=unseen_idx: m.get(str(v), u)).astype(float)
+                df_xgb[col] = (
+                    df_xgb[col]
+                    .map(lambda v, m=mapping, u=unseen_idx: m.get(str(v), u))
+                    .astype(float)
+                )
 
             dmat = xgb.DMatrix(df_xgb)
             ln_price = float(self.xgb_model.predict(dmat)[0])
         else:
-            X = df[CB_FEATURES]
+            X = df[self._cb_features]
             ln_price = float(self.cb_model.predict(X)[0])
 
         price_krw = int(math.exp(ln_price))
@@ -374,9 +494,14 @@ class PrimaryPredictor:
         price_usd = int(price_krw / USD_TO_KRW)
 
         # 신뢰도 (Codex 6차 P1: is_warm_artist로 라우팅과 grade 정렬)
-        has_birth = bool(features.get("artist_birth_year") and not math.isnan(features["artist_birth_year"]))
+        has_birth = bool(
+            features.get("artist_birth_year") and not math.isnan(features["artist_birth_year"])
+        )
         grade, margin = determine_confidence(
-            is_matched, training_count, has_birth, has_manual_profile,
+            is_matched,
+            training_count,
+            has_birth,
+            has_manual_profile,
             is_warm_artist=is_warm,
         )
 
