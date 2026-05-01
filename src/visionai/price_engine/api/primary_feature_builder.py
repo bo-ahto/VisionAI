@@ -1,21 +1,35 @@
 """Phase 1 피처 빌더 — 37개 피처 생성."""
+
 from __future__ import annotations
 
 import math
-import re
-
-import numpy as np
-
-from visionai.price_engine.preprocessing.primary_medium_parser import parse_artsy_medium
 
 # ─── 호수 변환 테이블 (F형 기준) ───
 HO_TABLE_F = {
-    0: 180, 1: 364, 2: 520, 3: 727, 4: 1084,
-    5: 1167, 6: 1338, 8: 1818, 10: 2412,
-    12: 2757, 15: 3478, 20: 4304, 25: 5323,
-    30: 5858, 40: 7320, 50: 9128, 60: 12636,
-    80: 16918, 100: 21245, 120: 25740, 150: 33894,
-    200: 43980, 300: 67060, 500: 121898,
+    0: 180,
+    1: 364,
+    2: 520,
+    3: 727,
+    4: 1084,
+    5: 1167,
+    6: 1338,
+    8: 1818,
+    10: 2412,
+    12: 2757,
+    15: 3478,
+    20: 4304,
+    25: 5323,
+    30: 5858,
+    40: 7320,
+    50: 9128,
+    60: 12636,
+    80: 16918,
+    100: 21245,
+    120: 25740,
+    150: 33894,
+    200: 43980,
+    300: 67060,
+    500: 121898,
 }
 
 SUPPORT_RULES = [
@@ -39,8 +53,13 @@ MEDIUM_RULES = [
 ]
 
 SUPPORT_FACTORS = {
-    "canvas": 1.0, "linen": 1.1, "paper": 0.8, "panel": 0.9,
-    "silk": 1.0, "metal": 0.9, "other": 0.85,
+    "canvas": 1.0,
+    "linen": 1.1,
+    "paper": 0.8,
+    "panel": 0.9,
+    "silk": 1.0,
+    "metal": 0.9,
+    "other": 0.85,
 }
 
 
@@ -121,11 +140,28 @@ def build_features(
     artist_profile: dict | None = None,
     target_market: str = "gallery",
     manual_overrides: dict | None = None,
+    *,
+    is_saatchi_warm: bool = False,
+    year_made: int | None = None,
 ) -> dict:
     """37개 피처를 생성하여 dict로 반환.
 
     artist_profile: DB에서 가져온 작가 프로필 (매칭 성공 시).
     manual_overrides: 요청에서 직접 입력한 값 (birth_year, total_works 등).
+
+    v3.6 Phase 1 PR4: V_year_saatchi_warm cohort gating + year 3종 피처.
+    is_saatchi_warm: caller (server) 가 결정한 cohort gate 결과.
+        True = saatchi & warm artist 조건 충족, False = 그 외 (artsy / saatchi cold /
+        unmatched).
+    year_made: 제작년도. caller 가 manual override 또는 cache/fetch 결과로 결정.
+
+    Activation rule (v3.5 step 2 §2.3):
+        is_saatchi_warm and year_made not None and 1800 <= year_made <= 2030 → 활성
+        그 외 → 옵션 B disable (year_made=0.0, has_year_made=0, work_age=0.0)
+
+    Output contract (v3.5 step 2 §4 옵션 B 단일 contract):
+        모든 builder output 은 finite 0 또는 valid value. NaN 없음.
+        학습 fillna(0) 후 model-input parity 보장.
     """
     p = artist_profile or {}
     m = manual_overrides or {}
@@ -178,10 +214,21 @@ def build_features(
     gallery_tier = p.get("gallery_tier", 4)
     source = p.get("source", "manual")
 
+    # v3.6 Phase 1 PR4: V_year_saatchi_warm gating + 옵션 B disable
+    if is_saatchi_warm and year_made is not None and 1800 <= year_made <= 2030:
+        feat_year_made = float(year_made)
+        feat_has_year_made = 1
+        feat_work_age = float(2026 - year_made)
+    else:
+        # 옵션 B: 비대상 → 0/0/0 (학습 fillna(0) 후 model-input parity)
+        feat_year_made = 0.0
+        feat_has_year_made = 0
+        feat_work_age = 0.0
+
     features = {
         # 크기 (9)
         "ho": ho,
-        "ho_power": ho ** 0.74 if ho > 0 else 0.0,
+        "ho_power": ho**0.74 if ho > 0 else 0.0,
         "ln_ho": math.log(ho + 1),
         "area_cm2": area_cm2,
         "ln_area": math.log(max(area_cm2, 1)),
@@ -218,6 +265,10 @@ def build_features(
         "gallery_type": gallery_type,
         "price_currency": "KRW" if target_market == "gallery" else "USD",
         "source": source,
+        # v3.6 Phase 1 PR4: V_year_saatchi_warm enrichment (3) — 옵션 B disable
+        "year_made": feat_year_made,
+        "has_year_made": feat_has_year_made,
+        "work_age": feat_work_age,
     }
 
     return features
