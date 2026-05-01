@@ -1,0 +1,73 @@
+{
+  "config": {
+    "scope": "v3.4-2 step 3 pilot enrichment (650 target + 350 stratified random)",
+    "n_total": 1000,
+    "rate_limit_sec": 0.6,
+    "raw_jsonl_path": "model_test_results/v3_diagnostics/saatchi_pilot_enrichment_raw.jsonl"
+  },
+  "fetch_status_distribution": {
+    "ok": 996,
+    "5xx": 3,
+    "network_error": 1
+  },
+  "extraction_source_distribution": {
+    "html_year_created": 996,
+    "unresolved": 4
+  },
+  "year_created": {
+    "resolved": 996,
+    "unresolved": 4,
+    "fill_rate_overall": 0.996,
+    "fill_rate_warm": 0.9939759036144579,
+    "fill_rate_cold": 0.99800796812749,
+    "year_summary": {
+      "min": 1998,
+      "p10": 2013,
+      "median": 2019,
+      "p90": 2025,
+      "max": 2026
+    }
+  },
+  "is_sold_out": {
+    "true": 208,
+    "false": 788,
+    "missing": 4
+  },
+  "diagnostics_counts": {
+    "n_short_response": 0,
+    "n_blocked": 0,
+    "n_price_zero_flag": 0,
+    "n_price_zero_isSoldOut_missing": 0,
+    "warning_distribution": {
+      "fetch_5xx": 3,
+      "fetch_network_error": 1
+    }
+  },
+  "fill_rate_by_target_reason": {
+    "stratified_fill": {
+      "n": 58,
+      "fill_rate_year": 1.0,
+      "n_blocked": 0,
+      "n_price_zero": 0
+    },
+    "fill_diversity": {
+      "n": 150,
+      "fill_rate_year": 1.0,
+      "n_blocked": 0,
+      "n_price_zero": 0
+    },
+    "cold_artist": {
+      "n": 500,
+      "fill_rate_year": 0.998,
+      "n_blocked": 0,
+      "n_price_zero": 0
+    },
+    "stratified_random": {
+      "n": 292,
+      "fill_rate_year": 0.9897260273972602,
+      "n_blocked": 0,
+      "n_price_zero": 0
+    }
+  },
+  "interpretation": "코덱스 권장 batch summary: fetch_status / extraction_source distribution / year unresolved / short_response / price_zero_flag / price_zero_isSoldOut_missing. hash drift rate 는 step 1 baseline 부재로 본 pilot 의 hash 만 저장 (raw jsonl), 향후 monitor 시 baseline."
+}
