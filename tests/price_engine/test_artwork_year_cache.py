@@ -339,3 +339,110 @@ def test_get_artwork_year_after_ttl_expiry_refetches():
     assert year == 2025
     assert route == "fetch_ok"
     fetch_fn.assert_called_once()
+
+
+# ---- 코덱스 P1 fix: alias cleanup on TTL/LRU eviction ----
+
+
+def test_alias_cleanup_on_ttl_expiry():
+    """TTL expiry 시 url_to_id alias 도 정리 (메모리 누수 방지)."""
+    cache = ArtworkYearCache(ttl_sec=1)
+    cache.put("art1", 2020, source="fetch", artwork_url="https://example.com/art1")
+    cache.put("art2", 2021, source="fetch", artwork_url="https://example.com/art2")
+    assert cache.stats()["url_alias_count"] == 2
+    time.sleep(1.5)
+    # get() 호출로 expiry trigger
+    cache.get("art1")
+    cache.get("art2")
+    assert len(cache) == 0
+    assert cache.stats()["url_alias_count"] == 0
+
+
+def test_alias_cleanup_on_lru_eviction():
+    """LRU eviction 시 url_to_id alias 도 정리."""
+    cache = ArtworkYearCache(max_size=2)
+    cache.put("art1", 2020, source="fetch", artwork_url="https://example.com/art1")
+    cache.put("art2", 2021, source="fetch", artwork_url="https://example.com/art2")
+    cache.put("art3", 2022, source="fetch", artwork_url="https://example.com/art3")
+    assert len(cache) == 2
+    assert cache.stats()["url_alias_count"] == 2  # art1 alias 도 제거됨
+    year, _ = cache.get(None, "https://example.com/art1")
+    assert year is None
+
+
+def test_alias_does_not_grow_unbounded():
+    """capacity 초과 후 alias map 도 capacity 이하 유지."""
+    cache = ArtworkYearCache(max_size=10)
+    for i in range(50):
+        cache.put(f"art{i}", 2020, source="fetch", artwork_url=f"https://example.com/art{i}")
+    assert len(cache) == 10
+    assert cache.stats()["url_alias_count"] == 10
+
+
+# ---- 코덱스 P1 fix: 추가 fetch_status branch coverage ----
+
+
+def test_get_artwork_year_blocked_status():
+    cache = ArtworkYearCache()
+    fetch_fn = MagicMock(return_value=_make_fetch_result("blocked", None))
+    year, route = get_artwork_year(
+        "art1", "https://www.saatchiart.com/art/x/1/art1/view", fetch_fn=fetch_fn, cache=cache
+    )
+    assert year is None
+    assert route == "fetch_fail"
+    assert len(cache) == 0
+
+
+def test_get_artwork_year_timeout_status():
+    cache = ArtworkYearCache()
+    fetch_fn = MagicMock(return_value=_make_fetch_result("timeout", None))
+    year, route = get_artwork_year(
+        "art1", "https://www.saatchiart.com/art/x/1/art1/view", fetch_fn=fetch_fn, cache=cache
+    )
+    assert year is None
+    assert route == "fetch_fail"
+
+
+def test_get_artwork_year_network_error_status():
+    cache = ArtworkYearCache()
+    fetch_fn = MagicMock(return_value=_make_fetch_result("network_error", None))
+    year, route = get_artwork_year(
+        "art1", "https://www.saatchiart.com/art/x/1/art1/view", fetch_fn=fetch_fn, cache=cache
+    )
+    assert year is None
+    assert route == "fetch_fail"
+
+
+def test_get_artwork_year_short_response_status():
+    cache = ArtworkYearCache()
+    fetch_fn = MagicMock(return_value=_make_fetch_result("short_response", None))
+    year, route = get_artwork_year(
+        "art1", "https://www.saatchiart.com/art/x/1/art1/view", fetch_fn=fetch_fn, cache=cache
+    )
+    assert year is None
+    assert route == "fetch_fail"
+
+
+# ---- 코덱스 P1 fix: URL-only fetch → alias 등록 → 다음 URL-only hit 경로 ----
+
+
+def test_url_only_request_fetches_then_aliases_for_next_hit():
+    """URL-only 요청 (artwork_id=None):
+    1) cache miss → fetch + URL 에서 artwork_id 추출 → cache write + alias 등록
+    2) 다음 같은 URL 요청 → cache_hit (artwork_id 없이도 hit)
+    """
+    cache = ArtworkYearCache()
+    fetch_fn = MagicMock(return_value=_make_fetch_result("ok", 2019))
+    url = "https://www.saatchiart.com/art/Title/1234/567890/view"
+
+    year, route = get_artwork_year(None, url, fetch_fn=fetch_fn, cache=cache)
+    assert year == 2019
+    assert route == "fetch_ok"
+    assert len(cache) == 1
+    assert cache.stats()["url_alias_count"] == 1
+
+    fetch_fn.reset_mock()
+    year2, route2 = get_artwork_year(None, url, fetch_fn=fetch_fn, cache=cache)
+    assert year2 == 2019
+    assert route2 == "cache_hit"
+    fetch_fn.assert_not_called()

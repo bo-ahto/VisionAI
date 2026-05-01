@@ -144,7 +144,7 @@ def build_features(
     is_saatchi_warm: bool = False,
     year_made: int | None = None,
 ) -> dict:
-    """37개 피처를 생성하여 dict로 반환.
+    """35개 피처를 생성하여 dict로 반환 (v3.6 PR4: 32 + year 3종).
 
     artist_profile: DB에서 가져온 작가 프로필 (매칭 성공 시).
     manual_overrides: 요청에서 직접 입력한 값 (birth_year, total_works 등).

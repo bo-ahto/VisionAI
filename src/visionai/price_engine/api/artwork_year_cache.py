@@ -87,16 +87,27 @@ class ArtworkYearCache:
     def _is_expired(self, entry: dict, now: float) -> bool:
         return now - entry["fetched_at"] > self._ttl_sec
 
+    def _purge_aliases_for_locked(self, artwork_id: str) -> None:
+        """lock 안에서 호출. artwork_id 가 evict/expire 될 때 해당 alias 모두 제거.
+
+        코덱스 P1 fix: alias map 무한 증가 방지 (메모리 누수 + url_alias_count 신뢰성).
+        """
+        stale = [u for u, aid in self._url_to_id.items() if aid == artwork_id]
+        for u in stale:
+            del self._url_to_id[u]
+
     def _evict_expired_locked(self, now: float) -> None:
-        """lock 안에서 호출. 만료 entry 제거."""
+        """lock 안에서 호출. 만료 entry + 해당 alias 제거."""
         expired_keys = [k for k, v in self._cache.items() if self._is_expired(v, now)]
         for k in expired_keys:
             del self._cache[k]
+            self._purge_aliases_for_locked(k)
 
     def _evict_lru_locked(self) -> None:
-        """lock 안에서 호출. capacity 초과 시 가장 오래된 entry 제거."""
+        """lock 안에서 호출. capacity 초과 시 가장 오래된 entry + alias 제거."""
         while len(self._cache) > self._max_size:
-            self._cache.popitem(last=False)  # FIFO (oldest first)
+            evicted_id, _ = self._cache.popitem(last=False)  # FIFO (oldest first)
+            self._purge_aliases_for_locked(evicted_id)
 
     def get(
         self, artwork_id: str | None, artwork_url: str | None = None
@@ -122,6 +133,7 @@ class ArtworkYearCache:
                 return None, None
             if self._is_expired(entry, now):
                 del self._cache[resolved_id]
+                self._purge_aliases_for_locked(resolved_id)
                 return None, None
 
             # LRU: move to end (most recent)
