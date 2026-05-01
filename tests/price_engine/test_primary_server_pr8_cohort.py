@@ -314,6 +314,76 @@ def test_get_artwork_year_releases_gate_on_fetch_ok():
     assert gate.stats()["consecutive_fails"] == 0
 
 
+# ---- PR8d: per-key inflight dedup (코덱스 review P1 fix) ----
+
+
+def test_fetch_gate_blocks_duplicate_inflight_key():
+    """같은 key 가 inflight 면 두 번째 try_acquire 거부 (stampede 방지)."""
+    gate = ayc.FetchGate()
+    ok1, _ = gate.try_acquire("artwork_X")
+    assert ok1 is True
+    blocked, reason = gate.try_acquire("artwork_X")
+    assert blocked is False
+    assert reason == "inflight"
+    # 다른 key 는 통과
+    ok2, _ = gate.try_acquire("artwork_Y")
+    assert ok2 is True
+
+
+def test_fetch_gate_releases_inflight_on_completion():
+    """release 후 같은 key 다시 acquire 가능."""
+    gate = ayc.FetchGate()
+    ok, _ = gate.try_acquire("artwork_Z")
+    assert ok is True
+    gate.release("artwork_Z", success=True)
+    ok2, _ = gate.try_acquire("artwork_Z")
+    assert ok2 is True
+
+
+def test_get_artwork_year_default_fetch_uses_short_timeout(monkeypatch):
+    """PR8d (코덱스 P0 fix): default fetcher 가 FETCH_TIMEOUT_SEC (5s) 사용."""
+    captured = {}
+
+    def fake_fetcher(url: str, *, timeout: int = 999):
+        captured["timeout"] = timeout
+        r = MagicMock()
+        r.fetch_status = "ok"
+        r.year_created = 2018
+        return r
+
+    # saatchi_detail_enricher.fetch_and_parse_saatchi_detail 을 monkeypatch
+    import sys
+    fake_module = MagicMock()
+    fake_module.fetch_and_parse_saatchi_detail = fake_fetcher
+    monkeypatch.setitem(sys.modules, "saatchi_detail_enricher", fake_module)
+
+    cache = ayc.ArtworkYearCache()
+    gate = ayc.FetchGate()
+    # fetch_fn=None 으로 default path 강제
+    year, route = ayc.get_artwork_year(
+        None, "https://www.saatchiart.com/art/t/a/777/view",
+        fetch_fn=None, cache=cache, gate=gate,
+    )
+    assert year == 2018
+    assert route == "fetch_ok"
+    assert captured["timeout"] == int(ayc.FETCH_TIMEOUT_SEC)
+    assert captured["timeout"] == 5  # spec 기준
+
+
+def test_fetch_gate_inflight_per_key_independent():
+    """다른 key 들은 inflight 영향 없음 (concurrent_max 한도 안에서)."""
+    gate = ayc.FetchGate()
+    keys = [f"k{i}" for i in range(ayc.FETCH_CONCURRENT_MAX)]
+    for k in keys:
+        ok, _ = gate.try_acquire(k)
+        assert ok is True
+    # 같은 key 재시도 — gate 평가 순서: cool_down → concurrent → burst → inflight.
+    # concurrent_max 가 먼저 차단 → reason='concurrent'.
+    blocked, reason = gate.try_acquire("k0")
+    assert blocked is False
+    assert reason == "concurrent"  # concurrent 가 inflight 보다 먼저 평가
+
+
 # ---- model_info() defensive fallback (P2 fix) ----
 
 

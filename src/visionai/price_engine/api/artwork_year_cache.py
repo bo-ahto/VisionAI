@@ -60,9 +60,15 @@ YearRoute = Literal[
 ]
 
 
-# v3.6 PR8a: rate-limit / cool-down / stampede 방지 gate.
+# v3.6 PR8a/8d: rate-limit / cool-down / stampede 방지 gate.
 # v3.5 step 3 §3.2.3 spec: miss_qps < 0.5, concurrent_fetch < 5, 5min_miss_burst < 50,
-# fetch_fail 누적 시 cool-down. 단순화: in-process counter + lock + circuit breaker.
+# fetch_fail 누적 시 cool-down.
+# 구현 상태:
+#   - PR8a: concurrent / 5min_burst / cool-down + circuit breaker
+#   - PR8d: per-key inflight dedup (동일 artwork_id stampede 방지) + timeout wire-up
+#   - DEFERRED to PR10: miss_qps soft limit (token bucket / cold-start cap).
+#     5min_burst <= 50 은 평균 보호이고 1초 burst 는 못 막음. PR10 logging 작업에서
+#     metric 기록 추가 + token bucket 보강 예정.
 FETCH_TIMEOUT_SEC: float = 5.0  # 기존 20s → 5s (event loop 차단 시간 단축)
 FETCH_CONCURRENT_MAX: int = 5
 FETCH_5MIN_BURST_MAX: int = 50
@@ -92,9 +98,14 @@ class FetchGate:
     def try_acquire(self, key: str) -> tuple[bool, str]:
         """fetch 시도 전 gate 확인.
 
+        v3.6 PR8d (코덱스 P1 fix): per-key inflight dedup 추가. 동일 key 가
+        이미 fetch 중이면 acquire 거부 → caller 가 'rate_limited' 처리. waiter
+        구조는 별도 PR 으로 deferred (현재는 dedup 만 — 같은 saatchi 페이지를
+        1초 안에 5번 동시 호출하던 stampede 방지).
+
         Returns:
             (acquired, reason): acquired=True 면 fetch 진행 OK,
-            acquired=False 면 reason 에 'cool_down' / 'concurrent' / 'burst' 중 하나.
+            acquired=False 면 reason ∈ {'cool_down', 'concurrent', 'burst', 'inflight'}.
         """
         now = time.time()
         with self._lock:
@@ -105,15 +116,22 @@ class FetchGate:
                 return False, "concurrent"
             if len(self._miss_window) >= FETCH_5MIN_BURST_MAX:
                 return False, "burst"
+            if key and key in self._inflight:
+                return False, "inflight"
             self._concurrent += 1
             self._miss_window.append(now)
+            if key:
+                self._inflight[key] = threading.Event()
             return True, "ok"
 
     def release(self, key: str, success: bool) -> None:
-        """fetch 완료 후 호출. 연속 fail 누적 시 cool-down 활성."""
+        """fetch 완료 후 호출. 연속 fail 누적 시 cool-down 활성. inflight key 제거."""
         now = time.time()
         with self._lock:
             self._concurrent = max(0, self._concurrent - 1)
+            if key and key in self._inflight:
+                evt = self._inflight.pop(key)
+                evt.set()
             if success:
                 self._consecutive_fails = 0
             else:
@@ -341,10 +359,13 @@ def get_artwork_year(
         return None, "rate_limited"
 
     # 3. cache miss → fetch (gate acquired)
+    # PR8d (코덱스 P0 fix): default fetcher 에 FETCH_TIMEOUT_SEC 명시 적용
+    # (saatchi_detail_enricher 의 default 20s 를 server 경로에서 5s 로 단축).
     if fetch_fn is None:
         from saatchi_detail_enricher import fetch_and_parse_saatchi_detail
 
-        fetch_fn = fetch_and_parse_saatchi_detail
+        def fetch_fn(url: str):
+            return fetch_and_parse_saatchi_detail(url, timeout=int(FETCH_TIMEOUT_SEC))
 
     fetch_url = artwork_url
     if not fetch_url:
