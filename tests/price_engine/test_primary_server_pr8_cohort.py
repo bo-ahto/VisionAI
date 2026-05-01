@@ -20,8 +20,10 @@ from visionai.price_engine.api import artwork_year_cache as ayc
 @pytest.fixture(autouse=True)
 def reset_cache():
     ayc.reset_global_cache()
+    ayc.reset_global_gate()
     yield
     ayc.reset_global_cache()
+    ayc.reset_global_gate()
 
 
 # ---- Cohort 결정 (server logic 모사: 의존성 주입으로 단위화) ----
@@ -81,16 +83,20 @@ def test_cohort_false_when_warm_set_empty():
 def _resolve_year(*, is_saatchi_warm: bool, manual_year: int | None,
                   artwork_id: str | None, artwork_url: str | None,
                   fetch_fn=None):
-    """server.predict 안의 year resolve 로직 단위화. fetch_fn 으로 외부 호출 격리."""
+    """server.predict 안의 year resolve 로직 단위화. fetch_fn 으로 외부 호출 격리.
+
+    v3.6 PR8b: route 계약 — 'disabled' (비대상), 'manual' (no cache),
+    'manual_seed_cache_write' (manual + cache).
+    """
     if not is_saatchi_warm:
-        return None, "no_id"
+        return None, "disabled"
     if manual_year is not None:
         if artwork_id:
             route = ayc.seed_artwork_year(
                 artwork_id, manual_year, artwork_url=artwork_url
             )
         else:
-            route = "manual_no_cache"
+            route = "manual"
         return int(manual_year), route
     return ayc.get_artwork_year(
         artwork_id, artwork_url, fetch_fn=fetch_fn
@@ -98,12 +104,12 @@ def _resolve_year(*, is_saatchi_warm: bool, manual_year: int | None,
 
 
 def test_year_skipped_when_cohort_false():
-    """비대상 cohort → year resolve 안 함."""
+    """비대상 cohort → year resolve 안 함, route='disabled' (PR8b)."""
     year, route = _resolve_year(
         is_saatchi_warm=False, manual_year=2020, artwork_id="abc", artwork_url=None,
     )
     assert year is None
-    assert route == "no_id"
+    assert route == "disabled"
 
 
 def test_year_manual_with_artwork_id_writes_through():
@@ -120,11 +126,12 @@ def test_year_manual_with_artwork_id_writes_through():
 
 
 def test_year_manual_without_artwork_id_no_cache():
+    """manual override 만 있고 cache 등록 X — route='manual' (PR8b 계약)."""
     year, route = _resolve_year(
         is_saatchi_warm=True, manual_year=2018, artwork_id=None, artwork_url=None,
     )
     assert year == 2018
-    assert route == "manual_no_cache"
+    assert route == "manual"
     assert ayc.get_global_cache().stats()["size"] == 0
 
 
@@ -194,6 +201,117 @@ def test_year_no_id_when_nothing_provided():
     )
     assert year is None
     assert route == "no_id"
+
+
+# ---- FetchGate (PR8a P0 fix): rate-limit / cool-down / stampede ----
+
+
+def test_fetch_gate_acquires_under_limits():
+    gate = ayc.FetchGate()
+    acquired, reason = gate.try_acquire("a1")
+    assert acquired is True
+    assert reason == "ok"
+    gate.release("a1", success=True)
+
+
+def test_fetch_gate_blocks_when_concurrent_max():
+    gate = ayc.FetchGate()
+    for i in range(ayc.FETCH_CONCURRENT_MAX):
+        ok, _ = gate.try_acquire(f"a{i}")
+        assert ok is True
+    blocked, reason = gate.try_acquire("over")
+    assert blocked is False
+    assert reason == "concurrent"
+
+
+def test_fetch_gate_blocks_when_5min_burst_exceeds():
+    gate = ayc.FetchGate()
+    # 5min window 안에 burst max 채움 (acquire 후 release 로 concurrent 는 비움)
+    for i in range(ayc.FETCH_5MIN_BURST_MAX):
+        ok, _ = gate.try_acquire(f"a{i}")
+        assert ok is True
+        gate.release(f"a{i}", success=True)
+    blocked, reason = gate.try_acquire("burst_over")
+    assert blocked is False
+    assert reason == "burst"
+
+
+def test_fetch_gate_cool_down_after_consecutive_fails():
+    gate = ayc.FetchGate()
+    for i in range(ayc.FETCH_FAIL_COOL_DOWN_THRESHOLD):
+        ok, _ = gate.try_acquire(f"f{i}")
+        assert ok is True
+        gate.release(f"f{i}", success=False)
+    # cool-down 활성 → 다음 try_acquire 차단
+    blocked, reason = gate.try_acquire("after_fail")
+    assert blocked is False
+    assert reason == "cool_down"
+    stats = gate.stats()
+    assert stats["cool_down_remaining_sec"] > 0
+
+
+def test_fetch_gate_recovers_after_success():
+    gate = ayc.FetchGate()
+    # 실패 1건 → 누적
+    ok, _ = gate.try_acquire("k1")
+    gate.release("k1", success=False)
+    # 성공 1건 → consecutive_fails 리셋
+    ok2, _ = gate.try_acquire("k2")
+    gate.release("k2", success=True)
+    assert gate.stats()["consecutive_fails"] == 0
+
+
+def test_get_artwork_year_returns_rate_limited_when_gate_blocks():
+    """gate suspend 시 fetch 안 하고 'rate_limited' route 반환."""
+    gate = ayc.FetchGate()
+    # 5 concurrent 채워서 gate 차단
+    for i in range(ayc.FETCH_CONCURRENT_MAX):
+        ok, _ = gate.try_acquire(f"hold{i}")
+        assert ok is True
+    fetch_fn = MagicMock()  # 호출되면 안 됨
+    cache = ayc.ArtworkYearCache()
+    year, route = ayc.get_artwork_year(
+        "x", "https://x/y/x/view", fetch_fn=fetch_fn, cache=cache, gate=gate,
+    )
+    assert year is None
+    assert route == "rate_limited"
+    fetch_fn.assert_not_called()
+
+
+def test_get_artwork_year_releases_gate_on_fetch_fail():
+    """fetch 실패해도 gate.release 호출 — concurrent 카운터 누수 방지."""
+    fake_result = MagicMock()
+    fake_result.fetch_status = "blocked"
+    fake_result.year_created = None
+    fetch_fn = MagicMock(return_value=fake_result)
+    gate = ayc.FetchGate()
+    cache = ayc.ArtworkYearCache()
+
+    year, route = ayc.get_artwork_year(
+        "x", "https://x/y/x/view", fetch_fn=fetch_fn, cache=cache, gate=gate,
+    )
+    assert year is None
+    assert route == "fetch_fail"
+    assert gate.stats()["concurrent"] == 0
+    assert gate.stats()["consecutive_fails"] == 1
+
+
+def test_get_artwork_year_releases_gate_on_fetch_ok():
+    fake_result = MagicMock()
+    fake_result.fetch_status = "ok"
+    fake_result.year_created = 2017
+    fetch_fn = MagicMock(return_value=fake_result)
+    gate = ayc.FetchGate()
+    cache = ayc.ArtworkYearCache()
+
+    year, route = ayc.get_artwork_year(
+        None, "https://www.saatchiart.com/art/t/a/123456/view",
+        fetch_fn=fetch_fn, cache=cache, gate=gate,
+    )
+    assert year == 2017
+    assert route == "fetch_ok"
+    assert gate.stats()["concurrent"] == 0
+    assert gate.stats()["consecutive_fails"] == 0
 
 
 # ---- model_info() defensive fallback (P2 fix) ----

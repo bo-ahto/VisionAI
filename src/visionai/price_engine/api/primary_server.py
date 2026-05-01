@@ -646,24 +646,29 @@ async def predict(req: PredictRequest):
     )
 
     # year_made resolution: manual (request) > cache.get > fetch (saatchi-only).
-    # 비대상 cohort 면 year resolve skip (build_features 안에서 옵션 B disable).
+    # 비대상 cohort 면 year resolve skip → route='disabled' (v3.5 step 3 §3.2 schema).
+    # PR8a (P0 fix): fetch 는 run_in_executor 로 분리 (event loop 차단 방지) +
+    # rate-limit / cool-down gate (v3.5 step 3 §3.2.3).
+    # PR8b (P1 fix): route 계약 — 'disabled' (비대상), 'manual' (no cache),
+    # 'rate_limited' (gate suspend) 사용.
     year_made: int | None = None
-    year_made_route: str = "no_id"
+    year_made_route: str = "disabled"
     if is_saatchi_warm:
         if req.year_made is not None:
             year_made = int(req.year_made)
-            # write-through: artwork_id 있으면 cache seed (route = manual_seed_cache_write
-            # 또는 parse_invalid). artwork_id 없으면 manual 사용만.
             if req.artwork_id:
+                # write-through: cache seed (route = manual_seed_cache_write 또는 parse_invalid)
                 year_made_route = seed_artwork_year(
                     req.artwork_id, year_made, artwork_url=req.artwork_url
                 )
             else:
-                year_made_route = "manual_no_cache"
+                year_made_route = "manual"
         else:
             cache = get_global_cache()
-            year_made, year_made_route = get_artwork_year(
-                req.artwork_id, req.artwork_url, cache=cache
+            loop = asyncio.get_event_loop()
+            year_made, year_made_route = await loop.run_in_executor(
+                None,
+                lambda: get_artwork_year(req.artwork_id, req.artwork_url, cache=cache),
             )
 
     # 4. 피처 생성

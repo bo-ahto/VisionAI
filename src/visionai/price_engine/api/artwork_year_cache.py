@@ -53,7 +53,104 @@ YearRoute = Literal[
     "no_id",
     "parse_invalid",
     "manual_seed_cache_write",
+    # v3.6 PR8b: logging schema 계약 (v3.5 step 3 §3.2 / step 2 §3.2)
+    "manual",  # manual override 사용, cache write 안 함 (artwork_id 없음)
+    "disabled",  # 비대상 cohort — year resolve 자체 skip
+    "rate_limited",  # PR8a: fetch suspend gate 활성 (concurrent / burst / cool-down)
 ]
+
+
+# v3.6 PR8a: rate-limit / cool-down / stampede 방지 gate.
+# v3.5 step 3 §3.2.3 spec: miss_qps < 0.5, concurrent_fetch < 5, 5min_miss_burst < 50,
+# fetch_fail 누적 시 cool-down. 단순화: in-process counter + lock + circuit breaker.
+FETCH_TIMEOUT_SEC: float = 5.0  # 기존 20s → 5s (event loop 차단 시간 단축)
+FETCH_CONCURRENT_MAX: int = 5
+FETCH_5MIN_BURST_MAX: int = 50
+FETCH_FAIL_COOL_DOWN_THRESHOLD: int = 5  # 연속 fail 5건 → cool-down
+FETCH_COOL_DOWN_SEC: int = 60  # cool-down 활성 시 fetch 차단 시간
+FETCH_5MIN_WINDOW_SEC: int = 300
+
+
+class FetchGate:
+    """단일 process 내 saatchi fetch rate-limit / cool-down / stampede gate.
+
+    Thread-safe (lock 으로 counter 관리). asyncio executor pool 에서 호출되어도 안전.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._concurrent: int = 0
+        self._miss_window: list[float] = []  # 5min sliding window timestamps
+        self._consecutive_fails: int = 0
+        self._cool_down_until: float = 0.0
+        self._inflight: dict[str, threading.Event] = {}  # stampede 방지
+
+    def _prune_window_locked(self, now: float) -> None:
+        cutoff = now - FETCH_5MIN_WINDOW_SEC
+        self._miss_window = [t for t in self._miss_window if t >= cutoff]
+
+    def try_acquire(self, key: str) -> tuple[bool, str]:
+        """fetch 시도 전 gate 확인.
+
+        Returns:
+            (acquired, reason): acquired=True 면 fetch 진행 OK,
+            acquired=False 면 reason 에 'cool_down' / 'concurrent' / 'burst' 중 하나.
+        """
+        now = time.time()
+        with self._lock:
+            self._prune_window_locked(now)
+            if now < self._cool_down_until:
+                return False, "cool_down"
+            if self._concurrent >= FETCH_CONCURRENT_MAX:
+                return False, "concurrent"
+            if len(self._miss_window) >= FETCH_5MIN_BURST_MAX:
+                return False, "burst"
+            self._concurrent += 1
+            self._miss_window.append(now)
+            return True, "ok"
+
+    def release(self, key: str, success: bool) -> None:
+        """fetch 완료 후 호출. 연속 fail 누적 시 cool-down 활성."""
+        now = time.time()
+        with self._lock:
+            self._concurrent = max(0, self._concurrent - 1)
+            if success:
+                self._consecutive_fails = 0
+            else:
+                self._consecutive_fails += 1
+                if self._consecutive_fails >= FETCH_FAIL_COOL_DOWN_THRESHOLD:
+                    self._cool_down_until = now + FETCH_COOL_DOWN_SEC
+                    logger.warning(
+                        "fetch cool-down activated for %ds (consecutive_fails=%d)",
+                        FETCH_COOL_DOWN_SEC, self._consecutive_fails,
+                    )
+
+    def stats(self) -> dict:
+        with self._lock:
+            now = time.time()
+            self._prune_window_locked(now)
+            return {
+                "concurrent": self._concurrent,
+                "miss_5min": len(self._miss_window),
+                "consecutive_fails": self._consecutive_fails,
+                "cool_down_remaining_sec": max(0, int(self._cool_down_until - now)),
+            }
+
+
+_global_gate: FetchGate | None = None
+
+
+def get_global_gate() -> FetchGate:
+    global _global_gate
+    if _global_gate is None:
+        _global_gate = FetchGate()
+    return _global_gate
+
+
+def reset_global_gate() -> None:
+    """테스트용."""
+    global _global_gate
+    _global_gate = FetchGate()
 
 
 class ArtworkYearCache:
@@ -206,6 +303,7 @@ def get_artwork_year(
     *,
     fetch_fn=None,
     cache: ArtworkYearCache | None = None,
+    gate: FetchGate | None = None,
 ) -> tuple[int | None, YearRoute]:
     """artwork_id 또는 artwork_url 로 year_made 조회.
 
@@ -216,12 +314,17 @@ def get_artwork_year(
                   signature: fetch_fn(url) -> EnrichmentResult.
                   None 이면 saatchi_detail_enricher.fetch_and_parse_saatchi_detail 사용.
         cache: 사용할 cache instance. None 이면 global_cache.
+        gate: rate-limit gate. None 이면 global_gate. v3.6 PR8a: cold start /
+              miss burst 보호 (v3.5 step 3 §3.2.3).
 
     Returns:
         (year_made, route): year_made (int) or None, route ∈ YearRoute.
+        rate-limit / cool-down 활성 시 'rate_limited' 반환 (caller 가 옵션 B disable 처리).
     """
     if cache is None:
         cache = get_global_cache()
+    if gate is None:
+        gate = get_global_gate()
 
     if not artwork_id and not artwork_url:
         return None, "no_id"
@@ -231,7 +334,13 @@ def get_artwork_year(
     if cached_route == "cache_hit":
         return cached_year, "cache_hit"
 
-    # 2. cache miss → fetch
+    # 2. cache miss → gate 통과 시도 (v3.6 PR8a)
+    gate_key = artwork_id or artwork_url or ""
+    acquired, _reason = gate.try_acquire(gate_key)
+    if not acquired:
+        return None, "rate_limited"
+
+    # 3. cache miss → fetch (gate acquired)
     if fetch_fn is None:
         from saatchi_detail_enricher import fetch_and_parse_saatchi_detail
 
@@ -240,12 +349,14 @@ def get_artwork_year(
     fetch_url = artwork_url
     if not fetch_url:
         # artwork_id 만 있는데 URL fallback 없음 — fetch 불가 (saatchi URL pattern 알 수 X)
+        gate.release(gate_key, success=False)
         logger.warning("get_artwork_year: artwork_id=%s but no artwork_url", artwork_id)
         return None, "no_id"
 
     try:
         result = fetch_fn(fetch_url)
     except Exception as e:
+        gate.release(gate_key, success=False)
         logger.warning("fetch_fn raised: %s", e)
         return None, "fetch_fail"
 
@@ -253,18 +364,24 @@ def get_artwork_year(
     year = getattr(result, "year_created", None)
 
     if fetch_status != "ok":
+        gate.release(gate_key, success=False)
         return None, "fetch_fail"
 
     if year is None:
+        # parse_invalid 는 server side parse 실패 — saatchi 자체는 응답 OK 라
+        # rate-limit pressure 와 무관. consecutive_fails 누적 X.
+        gate.release(gate_key, success=True)
         return None, "parse_invalid"
 
     if not (VALID_YEAR_MIN <= year <= VALID_YEAR_MAX):
+        gate.release(gate_key, success=True)
         return None, "parse_invalid"
 
-    # 3. cache write (artwork_id 결정 — fetch_url 에서 추출 또는 받은 그대로)
+    # 4. cache write (artwork_id 결정 — fetch_url 에서 추출 또는 받은 그대로)
     cache_key = artwork_id or _extract_artwork_id_from_url(fetch_url)
     if cache_key:
         cache.put(cache_key, year, source="fetch", artwork_url=fetch_url)
+    gate.release(gate_key, success=True)
     return int(year), "fetch_ok"
 
 
