@@ -61,8 +61,9 @@ YearRoute = Literal[
 
 
 # v3.6 PR8a/8d/10: rate-limit / cool-down / stampede / qps gate.
-# v3.5 step 3 §3.2.3 spec 충족:
-#   - miss_qps soft cap (PR10 token bucket: capacity=3 burst, refill=0.5 qps sustain)
+# v3.5 step 3 §3.2.3 spec 매핑:
+#   - miss_qps target < 0.5 qps: token bucket (burst=3, refill=0.5/s) — sustain
+#     충족, cold-start 첫 60초 ≈ 33 fetch (0.3 qps soft cap 은 deferred)
 #   - concurrent_fetch < 5 (PR8a)
 #   - 5min_miss_burst < 50 (PR8a)
 #   - fetch_fail 누적 시 cool-down (PR8a circuit breaker)
@@ -74,11 +75,14 @@ FETCH_5MIN_BURST_MAX: int = 50
 FETCH_FAIL_COOL_DOWN_THRESHOLD: int = 5  # 연속 fail 5건 → cool-down
 FETCH_COOL_DOWN_SEC: int = 60  # cool-down 활성 시 fetch 차단 시간
 FETCH_5MIN_WINDOW_SEC: int = 300
-# v3.6 PR10 (코덱스 PR8d 후속 P2 fix): miss_qps token bucket.
-# v3.5 step 3 §3.2.3 spec: cold start 0.3 qps soft cap, 일반 0.5 qps target.
-# Token bucket — capacity = burst, refill_rate = sustain qps.
-FETCH_QPS_CAPACITY: int = 3  # 1초 burst max (cold start 보호)
-FETCH_QPS_REFILL_PER_SEC: float = 0.5  # sustain rate
+# v3.6 PR10 (코덱스 PR8d 후속 P2 fix): miss_qps token bucket — burst + sustain.
+# 현재 수치: burst=3 (cold-start spike 보호), sustain=0.5 qps (v3.5 step 3 §3.2.3
+# 의 miss_qps target). 첫 60초 cumulative max ≈ 3 + 0.5*60 = 33 fetch.
+# NOTE (코덱스 PR10 review P2): spec 의 "0.3 qps cold-start soft cap" 은 별도
+# warmup-mode (capacity=0, refill=0.3/s 첫 N분) 가 필요. 현재는 단일 mode 만.
+# warmup-mode 분리는 PR11 이상 deferred (운영 데이터로 0.3 vs 0.5 결정).
+FETCH_QPS_CAPACITY: int = 3
+FETCH_QPS_REFILL_PER_SEC: float = 0.5
 
 
 class FetchGate:

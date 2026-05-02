@@ -743,10 +743,13 @@ async def predict(req: PredictRequest):
         "is_known_artist": result["is_known_artist"],
         "training_count": result["training_count"],
         "has_manual_profile": has_manual,
-        # v3.6 PR8 + PR10: V_year_saatchi_warm cohort + full schema (v3.5 step 3 §3.2).
+        # v3.6 PR8 + PR10/10b: V_year_saatchi_warm cohort + full schema (v3.5 step 3 §3.2).
         "is_saatchi_warm": bool(is_saatchi_warm),
+        # PR10b (코덱스 P2): match.profile.source 만 권위. is_matched=False 일 때
+        # external_collector 가 채운 profile.source 는 별도 external_collector_source
+        # 필드로만 기록 → match_profile_source 오염 차단.
         "match_profile_source": (
-            profile.get("source") if isinstance(profile, dict) else None
+            profile.get("source") if (is_matched and isinstance(profile, dict)) else None
         ),
         "slug_in_warm_set": (
             _predictor.is_warm_artist(artist_slug_for_routing)

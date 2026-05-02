@@ -373,6 +373,9 @@ def test_endpoint_logging_unmatched_external_collector():
         # is_matched=False → cohort=False (external 비권위) 이지만 sources_used 는 기록
         assert log["is_saatchi_warm"] is False
         assert log["external_collector_source"] == "saatchi"  # 첫 source
+        # PR10b (코덱스 P2 fix): unmatched 시 match_profile_source=None
+        # (external_collector 로 채운 profile.source 가 권위 필드 오염 못 함)
+        assert log["match_profile_source"] is None
     finally:
         ext_patch.__exit__(None, None, None)
         _exit_all(ctxs)

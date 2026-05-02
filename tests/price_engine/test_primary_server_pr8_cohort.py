@@ -423,13 +423,16 @@ def test_token_bucket_evaluation_after_concurrent(monkeypatch):
 
 
 def test_token_bucket_default_spec_values(monkeypatch):
-    """v3.5 step 3 §3.2.3 spec: cold-start 0.3 qps soft cap, sustain 0.5 qps."""
-    # autouse fixture 의 monkeypatch undo → 실제 module 상수 검증
-    monkeypatch.undo()
+    """v3.5 step 3 §3.2.3 sustain target (< 0.5 qps) 충족.
+
+    NOTE: spec 의 "cold-start 0.3 qps soft cap" 별도 warmup-mode 는 deferred.
+    현재 단일 mode (burst=3, refill=0.5/s). 첫 60초 ≈ 33 fetch 가능.
+    """
+    monkeypatch.undo()  # autouse fixture monkeypatch undo
     import importlib
     importlib.reload(ayc)
-    assert ayc.FETCH_QPS_CAPACITY == 3  # cold-start burst 보호
-    assert ayc.FETCH_QPS_REFILL_PER_SEC == 0.5  # sustain 0.5 qps target
+    assert ayc.FETCH_QPS_CAPACITY == 3  # burst max
+    assert ayc.FETCH_QPS_REFILL_PER_SEC == 0.5  # sustain rate
 
 
 def test_fetch_gate_inflight_per_key_independent():

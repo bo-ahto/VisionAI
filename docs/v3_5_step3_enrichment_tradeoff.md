@@ -262,10 +262,13 @@ SELECT
 FROM predict_logs WHERE timestamp > NOW() - INTERVAL '7 days'
 GROUP BY year_made_route;
 
--- fallback rate
+-- fallback rate (v3.6 PR10b: rate_limited 포함 — §3.2.2 정의 정합)
 SELECT
-  COUNT(*) FILTER (WHERE year_made_route IN ('fetch_fail', 'parse_invalid', 'no_id'))
-    * 1.0 / NULLIF(COUNT(*) FILTER (WHERE is_saatchi_warm), 0) AS fallback_rate
+  COUNT(*) FILTER (WHERE year_made_route IN ('fetch_fail', 'parse_invalid', 'no_id', 'rate_limited'))
+    * 1.0 / NULLIF(COUNT(*) FILTER (WHERE is_saatchi_warm), 0) AS fallback_rate,
+  -- rate_limited 만 별도 집계 (§3.2.2 의 rate_limited_rate)
+  COUNT(*) FILTER (WHERE year_made_route = 'rate_limited')
+    * 1.0 / NULLIF(COUNT(*) FILTER (WHERE is_saatchi_warm), 0) AS rate_limited_rate
 FROM predict_logs WHERE timestamp > NOW() - INTERVAL '24 hours';
 ```
 
