@@ -806,6 +806,7 @@ async def predict(req: PredictRequest):
         "training_count": result["training_count"],
         "has_manual_profile": has_manual,
         # v3.6 PR8 + PR10/10b: V_year_saatchi_warm cohort + full schema (v3.5 step 3 §3.2).
+        "matched": bool(is_matched),  # PR14b' (코덱스 P1): DDL spec 정합
         "is_saatchi_warm": bool(is_saatchi_warm),
         # PR10b (코덱스 P2): match.profile.source 만 권위. is_matched=False 일 때
         # external_collector 가 채운 profile.source 는 별도 external_collector_source
@@ -983,6 +984,7 @@ async def predict_batch(req: BatchPredictRequest):
                 "is_known_artist": result["is_known_artist"],
                 "training_count": result["training_count"],
                 "has_manual_profile": len(manual) > 0,
+                "matched": bool(is_matched),  # PR14b' (코덱스 P1): DDL spec 정합
                 "is_saatchi_warm": bool(is_saatchi_warm),
                 "match_profile_source": (
                     profile.get("source")

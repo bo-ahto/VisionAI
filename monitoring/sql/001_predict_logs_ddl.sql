@@ -66,7 +66,11 @@ CREATE TABLE IF NOT EXISTS sold_actuals (
     sold_price_krw          INT             NOT NULL,
     artist_slug             VARCHAR(64),
     source                  VARCHAR(16),                  -- saatchi | artsy | web | manual
-    PRIMARY KEY (artwork_id, sold_at)
+    PRIMARY KEY (artwork_id, sold_at),
+    -- v3.6 PR14b' (코덱스 P2): MdAPE 계산 시 0 분모 방지.
+    -- abs_pct_error = ABS(predicted - sold) / sold → sold=0 이면 NULL.
+    -- view 의 NULLIF 가 NULL 처리하지만 alert all-NULL window 에서 metric 누락 → CHECK 으로 ingest 단계 차단.
+    CONSTRAINT sold_actuals_price_positive CHECK (sold_price_krw > 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sold_actuals_sold_at

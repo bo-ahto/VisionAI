@@ -9,13 +9,21 @@
 -- 목표: < 1% (모든 cohort), warn > 1%, crit > 5%
 -- ============================================================================
 
--- panel_3_cohort_discrepancy
-WITH train_dist AS (
-    -- 학습 데이터 분포 (v3.5 step 1 ablation 산출 — 28376 rows 기준)
-    SELECT 'saatchi_warm' AS cohort, 0.697 AS expected_rate  -- 19773 / 28376
-    UNION SELECT 'saatchi_cold', 0.046
-    UNION SELECT 'artsy_warm',   0.257
-    UNION SELECT 'unmatched',    0.0    -- 학습 시 0%, production 만 발생
+-- panel_3_cohort_discrepancy (v3.6 PR14b' 코덱스 P1 fix: train_dist 를 cohort_baselines table 로 분리)
+-- 사용 artifact_version 은 production 의 latest active 또는 query parameter 로 명시.
+WITH active_artifact AS (
+    SELECT artifact_version
+    FROM predict_logs
+    WHERE timestamp > NOW() - INTERVAL '1 hour'
+        AND rollout_cohort = 'treatment_5pct'
+    GROUP BY artifact_version
+    ORDER BY COUNT(*) DESC
+    LIMIT 1
+),
+train_dist AS (
+    SELECT b.cohort, b.expected_rate
+    FROM cohort_baselines b
+    JOIN active_artifact a USING (artifact_version)
 ),
 prod_dist AS (
     SELECT

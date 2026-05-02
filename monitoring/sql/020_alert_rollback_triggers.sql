@@ -12,6 +12,10 @@
 
 -- ============================================================================
 -- Trigger 1: 5min_miss_burst > 200 (5분 지속) → 자동 pause (fetch suspend 5분)
+--
+-- NOTE (v3.6 PR14b' 코덱스 P1): "5분 지속" 은 alert manager 의 `for: 5m` 옵션
+-- 으로 보강. 이 SQL 은 단발 평가 (현재 5min window 누적값) → alert manager 가
+-- 연속 5분간 임계 초과 유지 시에만 fire. PR14c 에서 `for: 5m` 명시 필요.
 -- ============================================================================
 
 -- trigger_1_5min_miss_burst_critical
@@ -33,11 +37,20 @@ WHERE timestamp > NOW() - INTERVAL '5 minutes';
 -- ============================================================================
 
 -- trigger_2_cohort_discrepancy_critical (24h window)
-WITH train_dist AS (
-    SELECT 'saatchi_warm' AS cohort, 0.697 AS expected_rate
-    UNION SELECT 'saatchi_cold', 0.046
-    UNION SELECT 'artsy_warm',   0.257
-    UNION SELECT 'unmatched',    0.0
+-- v3.6 PR14b' (코덱스 P1): train_dist 를 cohort_baselines table 에서 동적 조회.
+WITH active_artifact AS (
+    SELECT artifact_version
+    FROM predict_logs
+    WHERE timestamp > NOW() - INTERVAL '1 hour'
+        AND rollout_cohort = 'treatment_5pct'
+    GROUP BY artifact_version
+    ORDER BY COUNT(*) DESC
+    LIMIT 1
+),
+train_dist AS (
+    SELECT b.cohort, b.expected_rate
+    FROM cohort_baselines b
+    JOIN active_artifact a USING (artifact_version)
 ),
 prod_dist AS (
     SELECT

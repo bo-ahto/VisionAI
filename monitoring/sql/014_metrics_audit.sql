@@ -62,8 +62,11 @@ SELECT
     worker_instance_id,
     cache_epoch,
     last_seen_at,
-    -- cache_epoch 형식: YYYYMMDDTHHMMZ → timestamp 변환 후 age 계산
-    EXTRACT(EPOCH FROM (NOW() - TO_TIMESTAMP(cache_epoch, 'YYYYMMDD"T"HH24MI"Z"')))
-        / 3600.0                                              AS cache_epoch_age_hours
+    -- cache_epoch 형식: YYYYMMDDTHHMMZ → timestamp 변환 후 age 계산.
+    -- v3.6 PR14b' (코덱스 P2): TO_TIMESTAMP 의 'Z' 는 literal 매칭이라
+    -- DB session timezone 영향 받음. AT TIME ZONE 'UTC' 명시로 정합 보장.
+    EXTRACT(EPOCH FROM (
+        NOW() - (TO_TIMESTAMP(cache_epoch, 'YYYYMMDD"T"HH24MI"Z"') AT TIME ZONE 'UTC')
+    )) / 3600.0                                              AS cache_epoch_age_hours
 FROM latest_per_worker
 ORDER BY cache_epoch_age_hours DESC;

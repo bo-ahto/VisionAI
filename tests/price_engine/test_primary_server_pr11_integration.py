@@ -309,6 +309,7 @@ def test_single_and_batch_log_schema_match():
 
     # PR10/12/14a spec 의 모든 필드가 양쪽 모두에 존재
     common_required = [
+        "matched",  # PR14b' (코덱스 P1): DDL spec 정합
         "is_saatchi_warm", "match_profile_source", "slug_in_warm_set",
         "external_collector_source", "year_made_route", "year_made_used",
         "artwork_id", "artwork_url", "enrichment_latency_ms",
