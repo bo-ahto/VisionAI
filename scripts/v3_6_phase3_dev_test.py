@@ -189,9 +189,11 @@ def _resolve_year_route(req: SyntheticRequest, is_saatchi_warm: bool,
                         cache: dict, fetch_fn) -> tuple[int | None, str]:
     """server _resolve_year_sync + get_artwork_year 의 단위 모사.
 
-    v3.6 PR17c (코덱스 P1): server.artwork_year_cache.get_artwork_year 가
-    artwork_id+url 둘 다 없으면 'no_id' 반환, fetch_fn 결과 invalid year (None
-    또는 [1800,2030] 외) 면 'parse_invalid' 반환. 본 helper 도 정합.
+    v3.6 PR17c (코덱스 P1): server.artwork_year_cache.get_artwork_year 정합:
+    - artwork_id + url 둘 다 없음 → 'no_id'
+    - fetch_fn 결과 None (network/blocked) → 'fetch_fail'
+    - fetch_fn 결과 [1800, 2030] 외 → 'parse_invalid'
+    - fetch_fn 결과 valid year → 'fetch_ok' (cache 등록)
     """
     if not is_saatchi_warm:
         return None, "disabled"

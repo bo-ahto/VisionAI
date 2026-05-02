@@ -115,7 +115,9 @@ python -m scripts.v3_6_phase3_dev_test --n 10000 --seed 42
 
 ### 실패 시
 - T1 fire (miss_burst): warmup-mode 정상 동작 + traffic burst 진단.
-- 12 panel 빈 결과: ETL `etl_predict_logs.py` 의 offset / dead_letter 점검.
+- Panel 1-6, 10-11 빈 결과 (24h 트래픽 후): ETL `etl_predict_logs.py` 의 offset
+  / dead_letter 점검 → `predict_logs` 적재 실패 의심. **NOTE**: Panel 7-9, 12
+  의 빈 결과는 sold_actuals 적재 부족 (D7 미도달) — 정상.
 - alert 발사 누락: contact_points env vars / Grafana provisioning reload 점검.
 
 ---
