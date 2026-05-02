@@ -63,13 +63,6 @@ PREDICT_LOGS_COLUMNS: tuple[str, ...] = (
     "cache_epoch",
 )
 
-# JSONL row → DDL column 매핑 (이름 다른 경우만)
-ROW_KEY_REMAP: dict[str, str] = {
-    "id": "request_id",
-    "ts": "timestamp",
-}
-
-
 def map_row_to_columns(row: dict[str, Any]) -> dict[str, Any]:
     """JSONL row → predict_logs INSERT row.
 
@@ -89,27 +82,37 @@ def map_row_to_columns(row: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def iter_jsonl_after_offset(jsonl_path: Path, offset: int) -> Iterator[tuple[int, dict[str, Any]]]:
+def iter_jsonl_after_offset(
+    jsonl_path: Path, offset: int,
+) -> Iterator[tuple[int, dict[str, Any] | None]]:
     """JSONL 의 byte offset 이후 line 을 (new_offset, row) 로 yield.
 
-    parse 실패 line 은 skip + warning. caller 가 last good offset 을 저장.
+    v3.6 PR15a (코덱스 PR15 review P1):
+    - newline 으로 안 끝나는 마지막 line 은 partial append 가능성 → 그 line 은
+      yield 안 함 (offset 전진 X) → 다음 run 에서 완성된 line 으로 다시 read.
+    - parse 실패 (malformed) → row=None yield + offset 전진 (caller 가 dead-letter
+      에 원본 line 저장 + counter 증가).
     """
     if not jsonl_path.exists():
         return
     with jsonl_path.open("rb") as f:
         f.seek(offset)
-        line_no = 0
         while True:
             line = f.readline()
             if not line:
                 break
-            line_no += 1
+            # partial append 보호: newline 없으면 incomplete (server flush 직전).
+            # offset 전진 안 하고 break → 다음 run 에서 같은 자리부터 재시도.
+            if not line.endswith(b"\n"):
+                logger.debug("partial line at offset %d, defer to next run", f.tell())
+                break
             new_offset = f.tell()
             try:
                 row = json.loads(line.decode("utf-8"))
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                logger.warning("skip malformed line at offset %d: %s", new_offset, e)
-                yield new_offset, {}  # offset 진행, row 빈 dict
+                logger.warning("malformed line at offset %d: %s", new_offset, e)
+                # row=None 표식 — caller 가 dead-letter 저장 (원본 line 보존)
+                yield new_offset, {"__malformed__": line.decode("utf-8", errors="replace")}
                 continue
             yield new_offset, row
 
@@ -153,6 +156,13 @@ def write_offset(offset_path: Path, offset: int) -> None:
     offset_path.write_text(str(offset))
 
 
+def _record_malformed(dead_letter_path: Path, raw_line: str, offset: int) -> None:
+    """malformed line 을 dead-letter file 에 추가 (원본 + offset)."""
+    dead_letter_path.parent.mkdir(parents=True, exist_ok=True)
+    with dead_letter_path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"offset": offset, "line": raw_line}) + "\n")
+
+
 def run_etl(
     jsonl_path: Path,
     offset_path: Path,
@@ -160,27 +170,53 @@ def run_etl(
     pg_dsn: str | None,
     dry_run: bool = False,
     batch_size: int = 500,
+    dead_letter_path: Path | None = None,
 ) -> dict[str, int]:
     """ETL run: 마지막 offset 이후 line 을 읽어 batch INSERT.
 
-    Returns: {"lines_read": int, "inserted": int, "new_offset": int}
+    v3.6 PR15a (코덱스 PR15 review P1):
+    - partial 마지막 line 은 offset 전진 X (다음 run 으로 미룸).
+    - malformed line → dead-letter file 에 원본 보존 + counter.
+    - dead_letter_path None 이면 default `<jsonl>.dead_letter`.
+
+    Returns: {"lines_read": int, "inserted": int, "malformed": int, "new_offset": int}
     """
     start_offset = read_offset(offset_path)
     logger.info("ETL start: jsonl=%s, offset=%d, dry_run=%s", jsonl_path, start_offset, dry_run)
 
+    if dead_letter_path is None:
+        dead_letter_path = jsonl_path.with_suffix(jsonl_path.suffix + ".dead_letter")
+
     lines_read = 0
+    malformed = 0
     last_offset = start_offset
     rows_buffer: list[dict[str, Any]] = []
 
+    def _handle_line(new_offset: int, row: dict[str, Any]) -> dict[str, Any] | None:
+        """malformed → dead-letter 저장. valid row 반환, malformed 면 None."""
+        nonlocal malformed
+        if "__malformed__" in row:
+            malformed += 1
+            if not dry_run:
+                _record_malformed(dead_letter_path, row["__malformed__"], new_offset)
+            return None
+        return row
+
     if dry_run:
-        # parse + map 만, INSERT 안 함
         for new_offset, row in iter_jsonl_after_offset(jsonl_path, start_offset):
             lines_read += 1
             last_offset = new_offset
-            if row:
-                map_row_to_columns(row)  # validate mapping
-        logger.info("dry-run: lines_read=%d, new_offset=%d", lines_read, last_offset)
-        return {"lines_read": lines_read, "inserted": 0, "new_offset": last_offset}
+            valid = _handle_line(new_offset, row)
+            if valid:
+                map_row_to_columns(valid)  # validate mapping
+        logger.info(
+            "dry-run: lines_read=%d, malformed=%d, new_offset=%d",
+            lines_read, malformed, last_offset,
+        )
+        return {
+            "lines_read": lines_read, "inserted": 0,
+            "malformed": malformed, "new_offset": last_offset,
+        }
 
     if pg_dsn is None:
         raise RuntimeError("pg_dsn required for non-dry-run")
@@ -192,8 +228,9 @@ def run_etl(
         for new_offset, row in iter_jsonl_after_offset(jsonl_path, start_offset):
             lines_read += 1
             last_offset = new_offset
-            if row:
-                rows_buffer.append(row)
+            valid = _handle_line(new_offset, row)
+            if valid:
+                rows_buffer.append(valid)
             if len(rows_buffer) >= batch_size:
                 inserted += insert_rows(cur, rows_buffer)
                 conn.commit()
@@ -205,10 +242,13 @@ def run_etl(
         write_offset(offset_path, last_offset)
 
     logger.info(
-        "ETL done: lines_read=%d, inserted=%d, new_offset=%d",
-        lines_read, inserted, last_offset,
+        "ETL done: lines_read=%d, inserted=%d, malformed=%d, new_offset=%d",
+        lines_read, inserted, malformed, last_offset,
     )
-    return {"lines_read": lines_read, "inserted": inserted, "new_offset": last_offset}
+    return {
+        "lines_read": lines_read, "inserted": inserted,
+        "malformed": malformed, "new_offset": last_offset,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -100,7 +100,8 @@ def test_iter_jsonl_yields_rows_after_offset(tmp_path: Path):
     assert yielded2 == []
 
 
-def test_iter_jsonl_skips_malformed(tmp_path: Path):
+def test_iter_jsonl_marks_malformed(tmp_path: Path):
+    """v3.6 PR15a: malformed line → __malformed__ key 로 표식 (caller 가 dead-letter 저장)."""
     jsonl = tmp_path / "log.jsonl"
     content = (
         json.dumps({"id": "a", "ts": "x"}) + "\n"
@@ -110,11 +111,31 @@ def test_iter_jsonl_skips_malformed(tmp_path: Path):
     jsonl.write_text(content)
 
     yielded = list(iter_jsonl_after_offset(jsonl, 0))
-    # 3 line, malformed 는 빈 dict yield (offset 진행)
     assert len(yielded) == 3
     assert yielded[0][1]["id"] == "a"
-    assert yielded[1][1] == {}
+    assert "__malformed__" in yielded[1][1]
+    assert "not valid json" in yielded[1][1]["__malformed__"]
     assert yielded[2][1]["id"] == "b"
+
+
+def test_iter_jsonl_defers_partial_line(tmp_path: Path):
+    """v3.6 PR15a (코덱스 P1): newline 없는 마지막 line 은 yield 안 함 + offset 전진 X."""
+    jsonl = tmp_path / "log.jsonl"
+    line1 = json.dumps({"id": "a", "ts": "x"}) + "\n"
+    partial = json.dumps({"id": "b", "ts": "y"})  # 의도적으로 \n 누락
+    jsonl.write_text(line1 + partial)
+
+    yielded = list(iter_jsonl_after_offset(jsonl, 0))
+    # 첫 line 만 yield. partial line 은 다음 run 으로 미룸.
+    assert len(yielded) == 1
+    assert yielded[0][1]["id"] == "a"
+    deferred_offset = yielded[0][0]
+
+    # 이제 partial line 에 \n 추가 (server flush 모사)
+    jsonl.write_text(line1 + partial + "\n")
+    yielded2 = list(iter_jsonl_after_offset(jsonl, deferred_offset))
+    assert len(yielded2) == 1
+    assert yielded2[0][1]["id"] == "b"
 
 
 def test_iter_jsonl_nonexistent_file(tmp_path: Path):
@@ -202,9 +223,31 @@ def test_run_etl_dry_run_parses_without_db(tmp_path: Path):
     result = run_etl(jsonl, offset_path, pg_dsn=None, dry_run=True)
     assert result["lines_read"] == 2
     assert result["inserted"] == 0
+    assert result["malformed"] == 0
     assert result["new_offset"] > 0
-    # dry-run 은 offset state file 안 쓴다 (production offset 보존)
+    # dry-run 은 offset state file + dead-letter 안 쓴다 (production state 보존)
     assert not offset_path.exists()
+    assert not jsonl.with_suffix(".jsonl.dead_letter").exists()
+
+
+def test_run_etl_counts_and_records_malformed(tmp_path: Path):
+    """v3.6 PR15a (코덱스 P1): malformed counter + dead-letter 검증."""
+    jsonl = tmp_path / "log.jsonl"
+    content = (
+        json.dumps({"id": "a", "ts": "x"}) + "\n"
+        + "garbage\n"
+        + json.dumps({"id": "b", "ts": "y"}) + "\n"
+    )
+    jsonl.write_text(content)
+    offset_path = tmp_path / "state"
+    dead_letter = tmp_path / "dead.jsonl"
+
+    # dry-run 은 dead-letter 안 씀
+    res_dry = run_etl(jsonl, offset_path, pg_dsn=None, dry_run=True,
+                      dead_letter_path=dead_letter)
+    assert res_dry["lines_read"] == 3
+    assert res_dry["malformed"] == 1
+    assert not dead_letter.exists()
 
 
 def test_run_etl_resumes_from_offset(tmp_path: Path):
