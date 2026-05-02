@@ -28,7 +28,16 @@ BigQuery / Snowflake 로 warehouse 변경 시 별도 변환 필요.
 
 `predict_logs` 의 row 는 server `_log_prediction()` 이 JSONL 로 작성한 record 를 ETL 로 적재. server 가 직접 PostgreSQL 에 INSERT 하지 않음 (decoupled).
 
-JSONL → PostgreSQL ETL (예: Vector / Fluent Bit / Logstash 또는 cron job) 은 Phase 2 의 별도 작업.
+**ETL 구현 (v3.6 PR15)**: `scripts/etl_predict_logs.py`. 운영 cron 예시:
+```
+*/5 * * * * PG_DSN=postgresql://... python -m scripts.etl_predict_logs --jsonl /app/logs/predictions.jsonl
+```
+
+특징:
+- idempotent: `ON CONFLICT (request_id) DO NOTHING`
+- offset 추적: `<jsonl>.offset` 파일에 last byte offset 기록 → 재실행 안전
+- alias drop: `predicted_krw / price_range_low|high / total_ms` 등 deprecated 필드는 ingest 안 함
+- dry-run: `--dry-run` 으로 parse + map 만 (DB 의존 없이 schema 검증)
 
 ## 17 metrics 매핑 (step4 §2)
 
