@@ -167,6 +167,13 @@ def test_batch_logging_schema_matches_single():
 
         # batch 전용 필드
         assert log["batch_index"] == 0
+        # PR9b (코덱스 P1 fix): total_ms / predict_total_latency_ms 가 item end-to-end.
+        assert "total_ms" in log
+        assert isinstance(log["total_ms"], int)
+        # predict_total_latency_ms == total_ms (둘 다 item 전체)
+        assert log["predict_total_latency_ms"] == log["total_ms"]
+        # enrichment_latency_ms ≤ total_ms (enrichment 는 일부 단계)
+        assert log["enrichment_latency_ms"] <= log["total_ms"] + 1  # rounding margin
     finally:
         _exit(ctxs)
 

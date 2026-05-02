@@ -628,8 +628,8 @@ def _resolve_year_sync(
 ) -> tuple[int | None, str]:
     """v3.5 step 2 §2.2 + step 3 §2.3 year resolution: manual > cache > fetch.
 
-    sync 함수 — fetch 가 동기 I/O (saatchi 1.5s timeout). 단건 endpoint 는
-    await loop.run_in_executor 로 wrap 하고, batch 는 sync loop 안에서 직접 호출.
+    sync 함수 — fetch 가 동기 I/O (saatchi 1.5s timeout). 단건/batch endpoint
+    모두 await loop.run_in_executor 로 wrap (event loop 차단 방지).
     PR8 의 token bucket / inflight / cool-down gate 자동 적용.
     """
     if not is_saatchi_warm:
@@ -841,6 +841,7 @@ async def predict_batch(req: BatchPredictRequest):
     loop = asyncio.get_event_loop()
 
     for i, item in enumerate(req.artworks):
+        item_t0 = time.time()
         try:
             # 매칭
             match = _matcher.match(item.artist_name)
@@ -899,7 +900,11 @@ async def predict_batch(req: BatchPredictRequest):
                 artist_slug=artist_slug,
             )
 
-            # v3.6 PR9 + PR10: per-item logging (단건과 동일 schema)
+            # v3.6 PR9 + PR10 + PR9b: per-item logging (단건과 동일 schema).
+            # PR9b (코덱스 PR9 review P1): item end-to-end total_ms 측정 — 단건의
+            # total_ms 와 동일 의미 (matcher + cohort + year + features + predict 합).
+            # enrichment_ms 는 year resolve 단계만, total_ms 는 item 전체.
+            item_total_ms = int((time.time() - item_t0) * 1000)
             _log_prediction({
                 "id": str(uuid.uuid4()),
                 "ts": datetime.now(timezone.utc).isoformat(),
@@ -935,7 +940,8 @@ async def predict_batch(req: BatchPredictRequest):
                 "artwork_id": item.artwork_id,
                 "artwork_url": item.artwork_url,
                 "enrichment_latency_ms": enrichment_ms,
-                "predict_total_latency_ms": enrichment_ms,  # batch row 기준
+                "predict_total_latency_ms": item_total_ms,
+                "total_ms": item_total_ms,  # _monitor avg_ms 합산용 (단건 호환)
                 "model_variant": _predictor.variant,
                 "artifact_version": _ARTIFACT_VERSION,
                 "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
