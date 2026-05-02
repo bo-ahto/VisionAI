@@ -450,6 +450,32 @@ def test_monitor_endpoint_exposes_fetch_gate_stats():
     assert re.match(r"^[0-9a-f]{32}$", body["worker_instance_id"])
 
 
+def test_worker_instance_id_consistent_across_endpoints_and_logs():
+    """PR13 (코덱스 PR12 Nit): /monitor + single log + batch log 가 같은
+    process 안에서 동일 worker_instance_id 를 노출 (process-local uuid 정합)."""
+    pred = _make_mock_predictor()
+    matcher = MagicMock()
+    matcher.match.return_value = _saatchi_match("kim_warm")
+    captured = []
+    with _build_client(pred, matcher) as client, patch.object(
+        primary_server, "_log_prediction",
+        side_effect=lambda e: captured.append(e),
+    ):
+        client.post("/api/v1/predict", json=_predict_payload(year_made=2020))
+        client.post("/api/v1/predict/batch", json=_batch_payload([
+            _predict_payload(artist_name="Kim", year_made=2019),
+        ]))
+        monitor_resp = client.get("/api/v1/monitor")
+
+    assert len(captured) == 2
+    single_log, batch_log = captured
+    monitor_id = monitor_resp.json()["worker_instance_id"]
+    # 같은 process 안 — 모든 출구가 동일 uuid
+    assert single_log["worker_instance_id"] == monitor_id
+    assert batch_log["worker_instance_id"] == monitor_id
+    assert monitor_id == primary_server._WORKER_INSTANCE_ID
+
+
 def test_health_endpoint_alive():
     pred = _make_mock_predictor()
     matcher = _make_mock_matcher(None)

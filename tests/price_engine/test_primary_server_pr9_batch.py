@@ -261,6 +261,73 @@ def test_decide_saatchi_warm_cohort_helper_consistency():
         ) is False
 
 
+def test_batch_external_collector_dedup_and_executor_wrap():
+    """PR13 (코덱스 PR9 review P2): batch 안 unmatched 작가 중복 시 1회만 lookup +
+    external_collector.collect 가 await loop.run_in_executor 로 분리."""
+    pred = _make_predictor_mock(warm_slugs={"warm_kim"})
+    # 3 item 모두 unmatched + 같은 artist_name "Unknown" (중복)
+    matches = [None, None, None]
+    ctxs = _patch_server(pred, matches)
+    collect_calls = []
+
+    def _fake_collect(name, _flag=False):
+        collect_calls.append(name)
+        return ({}, [])
+
+    ext_patch = patch.object(
+        primary_server, "external_collector",
+        MagicMock(collect=MagicMock(side_effect=_fake_collect)),
+    )
+    _enter(ctxs)
+    ext_patch.__enter__()
+    try:
+        # 같은 작가명 3번 → dedup 으로 1회만 lookup
+        req = BatchPredictRequest(artworks=[
+            _make_batch_item("Unknown"),
+            _make_batch_item("Unknown"),
+            _make_batch_item("Unknown"),
+        ])
+        asyncio.run(primary_server.predict_batch(req))
+        # 같은 artist_name 3번 → 1회 lookup (dedup)
+        unique_calls = list(set(collect_calls))
+        assert unique_calls == ["Unknown"]
+        assert len(collect_calls) == 1
+    finally:
+        ext_patch.__exit__(None, None, None)
+        _exit(ctxs)
+
+
+def test_batch_external_collector_separate_artists_lookup_per_unique():
+    """다른 artist_name 들은 각각 1회씩 lookup."""
+    pred = _make_predictor_mock(warm_slugs=set())
+    matches = [None, None, None]
+    ctxs = _patch_server(pred, matches)
+    collect_calls = []
+
+    def _fake_collect(name, _flag=False):
+        collect_calls.append(name)
+        return ({}, [])
+
+    ext_patch = patch.object(
+        primary_server, "external_collector",
+        MagicMock(collect=MagicMock(side_effect=_fake_collect)),
+    )
+    _enter(ctxs)
+    ext_patch.__enter__()
+    try:
+        req = BatchPredictRequest(artworks=[
+            _make_batch_item("Alice"),
+            _make_batch_item("Bob"),
+            _make_batch_item("Alice"),  # 중복 — Alice 2회면 1 lookup
+        ])
+        asyncio.run(primary_server.predict_batch(req))
+        # Alice + Bob = 2 lookups (Alice 의 두 번째 call 은 cache hit)
+        assert sorted(collect_calls) == ["Alice", "Bob"]
+    finally:
+        ext_patch.__exit__(None, None, None)
+        _exit(ctxs)
+
+
 def test_resolve_year_sync_helper_consistency():
     """_resolve_year_sync helper 단위 검증."""
     # disabled

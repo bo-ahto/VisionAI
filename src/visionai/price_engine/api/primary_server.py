@@ -71,8 +71,16 @@ _SERVER_INSTANCE = os.getenv("SERVER_INSTANCE", "unknown")
 _CACHE_EPOCH = datetime.now(timezone.utc).strftime("%Y%m%dT%H%MZ")
 # v3.6 PR12 (코덱스 PR11d Nit fix): worker_instance_id — process-local uuid.
 # SERVER_INSTANCE env 미주입 / "unknown" 환경에서도 worker 식별 보장.
-# multi-worker (uvicorn workers > 1) 시 worker 별 unique. cache_epoch 분 단위
-# 동일 worker 들도 이 id 로 분리 가능.
+# cache_epoch 분 단위 동일 worker 들도 이 id 로 분리 가능.
+#
+# 런처 가정 (PR13 코덱스 Nit fix):
+# - uvicorn `--workers N` (spawn 모델): child process 가 module 을 다시 import
+#   → worker 별 uuid 다름. ✓
+# - gunicorn `--preload` + fork 모델: parent 에서 module 1회 load 후 fork →
+#   모든 child 가 동일 uuid 상속. ✗ (이 경우 SERVER_INSTANCE env 또는 startup
+#   훅에서 worker 별 갱신 필요).
+# 현재 Dockerfile.api 는 uvicorn 직기동 → 안전. preload+fork 런처로 변경 시
+# startup 시점 정합 점검 필요.
 _WORKER_INSTANCE_ID = uuid.uuid4().hex
 
 # ─── 인메모리 모니터링 카운터 ───
@@ -865,6 +873,10 @@ async def predict_batch(req: BatchPredictRequest):
     success_count = 0
     fail_count = 0
     loop = asyncio.get_event_loop()
+    # v3.6 PR13 (코덱스 PR9 review P2): batch 안 unmatched 작가 중복 dedup.
+    # docstring "작가 중복 시 외부 수집 1회만" 의 실 구현. 50건 batch 안에 같은
+    # artist_name 이 여러 번 나오면 첫 lookup 결과 재사용.
+    ext_lookup_cache: dict[str, tuple[dict, list[str]]] = {}
 
     for i, item in enumerate(req.artworks):
         item_t0 = time.time()
@@ -876,9 +888,18 @@ async def predict_batch(req: BatchPredictRequest):
             profile = match.profile if match else {}
             sources = []
 
-            # 외부 수집
+            # 외부 수집 (executor 분리 + artist 중복 dedup, PR13).
+            # event loop 차단 방지 — saatchi/web fetch 가 동기 I/O.
             if not is_matched and not req.skip_external_lookup:
-                ext_profile, sources = external_collector.collect(item.artist_name)
+                key = item.artist_name
+                if key in ext_lookup_cache:
+                    ext_profile, sources = ext_lookup_cache[key]
+                else:
+                    ext_profile, sources = await loop.run_in_executor(
+                        None,
+                        lambda name=key: external_collector.collect(name, False),
+                    )
+                    ext_lookup_cache[key] = (ext_profile, sources)
                 if ext_profile:
                     profile = ext_profile
 
