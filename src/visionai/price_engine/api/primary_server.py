@@ -36,10 +36,12 @@ from .primary_schemas import (
     BatchPredictResponse,
     BatchPredictResult,
     ErrorResponse,
+    FetchGateStats,
     HealthResponse,
     MatchedArtwork,
     ModelInfo,
     ModelInfoResponse,
+    MonitorResponse,
     Prediction,
     PredictRequest,
     PredictResponse,
@@ -67,6 +69,11 @@ _ROLLOUT_RULE_VERSION = os.getenv("ROLLOUT_RULE_VERSION", "unknown")
 _SERVER_INSTANCE = os.getenv("SERVER_INSTANCE", "unknown")
 # cache_epoch: server cold-start 시점 (cache 비어있는 epoch 식별용).
 _CACHE_EPOCH = datetime.now(timezone.utc).strftime("%Y%m%dT%H%MZ")
+# v3.6 PR12 (코덱스 PR11d Nit fix): worker_instance_id — process-local uuid.
+# SERVER_INSTANCE env 미주입 / "unknown" 환경에서도 worker 식별 보장.
+# multi-worker (uvicorn workers > 1) 시 worker 별 unique. cache_epoch 분 단위
+# 동일 worker 들도 이 id 로 분리 가능.
+_WORKER_INSTANCE_ID = uuid.uuid4().hex
 
 # ─── 인메모리 모니터링 카운터 ───
 _monitor = {
@@ -594,28 +601,28 @@ async def model_info():
     return _model_info_cache
 
 
-@app.get("/api/v1/monitor")
-async def monitor():
+@app.get("/api/v1/monitor", response_model=MonitorResponse)
+async def monitor() -> MonitorResponse:
     """인메모리 카운터 기반 모니터링.
 
     v3.6 PR11d: fetch_gate stats 노출 (warmup_mode / tokens / miss_5min /
     cool_down). v3.5 step 3 §3.2.3 의 운영 metric 을 endpoint 로 직접 관측 가능.
+    PR12: response_model 명시 + worker_instance_id 추가 (multi-worker 식별).
     """
     total = _monitor["total_predictions"]
-    return {
-        "total_predictions": total,
-        "by_grade": _monitor["by_grade"],
-        "by_model": _monitor["by_model"],
-        "avg_ms": round(_monitor["total_ms"] / total, 1) if total else 0,
-        "external_lookup_count": _monitor["external_lookup_count"],
-        "known_artist_count": _monitor["known_artist_count"],
-        "uptime_seconds": round(time.time() - _start_time, 1),
-        # v3.6 PR11d: fetch_gate runtime stats (코덱스 PR11c review P2 fix)
-        "fetch_gate": get_global_gate().stats(),
-        # cache_epoch + server_instance — multi-worker 식별 (PR11c Nit 일부)
-        "cache_epoch": _CACHE_EPOCH,
-        "server_instance": _SERVER_INSTANCE,
-    }
+    return MonitorResponse(
+        total_predictions=total,
+        by_grade=_monitor["by_grade"],
+        by_model=_monitor["by_model"],
+        avg_ms=round(_monitor["total_ms"] / total, 1) if total else 0.0,
+        external_lookup_count=_monitor["external_lookup_count"],
+        known_artist_count=_monitor["known_artist_count"],
+        uptime_seconds=round(time.time() - _start_time, 1),
+        fetch_gate=FetchGateStats(**get_global_gate().stats()),
+        cache_epoch=_CACHE_EPOCH,
+        server_instance=_SERVER_INSTANCE,
+        worker_instance_id=_WORKER_INSTANCE_ID,
+    )
 
 
 def _decide_saatchi_warm_cohort(
@@ -810,6 +817,7 @@ async def predict(req: PredictRequest):
         "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
         "rollout_rule_version": _ROLLOUT_RULE_VERSION,
         "server_instance": _SERVER_INSTANCE,
+        "worker_instance_id": _WORKER_INSTANCE_ID,
         "cache_epoch": _CACHE_EPOCH,
         "total_ms": total_ms,  # backward compat (기존 dashboard 가 total_ms 사용)
     })
@@ -965,6 +973,7 @@ async def predict_batch(req: BatchPredictRequest):
                 "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
                 "rollout_rule_version": _ROLLOUT_RULE_VERSION,
                 "server_instance": _SERVER_INSTANCE,
+                "worker_instance_id": _WORKER_INSTANCE_ID,
                 "cache_epoch": _CACHE_EPOCH,
             })
 

@@ -307,7 +307,7 @@ def test_single_and_batch_log_schema_match():
     assert len(captured) == 2
     single_log, batch_log = captured
 
-    # PR10 spec 의 모든 필드가 양쪽 모두에 존재
+    # PR10 spec 의 모든 필드가 양쪽 모두에 존재 (PR12: worker_instance_id 추가)
     common_required = [
         "is_saatchi_warm", "match_profile_source", "slug_in_warm_set",
         "external_collector_source", "year_made_route", "year_made_used",
@@ -315,6 +315,7 @@ def test_single_and_batch_log_schema_match():
         "predict_total_latency_ms", "total_ms",
         "model_variant", "artifact_version", "warm_artist_slugs_version",
         "rollout_rule_version", "server_instance", "cache_epoch",
+        "worker_instance_id",
     ]
     for field in common_required:
         assert field in single_log, f"single missing: {field}"
@@ -435,9 +436,18 @@ def test_monitor_endpoint_exposes_fetch_gate_stats():
     assert isinstance(gate["warmup_mode"], bool)
     assert gate["warmup_remaining_sec"] >= 0
 
-    # multi-worker 관측용 (PR11c Nit 일부)
+    # multi-worker 관측용 (PR11c Nit + PR12 보강)
     assert "cache_epoch" in body
     assert "server_instance" in body
+    # PR12: cache_epoch 포맷 (UTC ISO short: YYYYMMDDTHHMMZ)
+    import re
+    assert re.match(r"\d{8}T\d{4}Z", body["cache_epoch"])
+    # server_instance 비공백 (env 미주입 시 'unknown', 비공백 보장)
+    assert body["server_instance"]
+    assert isinstance(body["server_instance"], str)
+    # PR12: worker_instance_id (uuid4 hex 32자) — multi-worker 식별
+    assert "worker_instance_id" in body
+    assert re.match(r"^[0-9a-f]{32}$", body["worker_instance_id"])
 
 
 def test_health_endpoint_alive():

@@ -196,3 +196,33 @@ class HealthResponse(BaseModel):
     model_version: str
     artists_loaded: int
     uptime_seconds: float
+
+
+# v3.6 PR12 (코덱스 PR11d Nit): /api/v1/monitor response_model — backward compat
+# consumer 계약 고정. additive change OK, key 삭제/rename 은 break.
+
+
+class FetchGateStats(BaseModel):
+    """v3.5 step 3 §3.2.3 fetch gate runtime metrics."""
+    concurrent: int
+    miss_5min: int
+    consecutive_fails: int
+    cool_down_remaining_sec: int
+    tokens_available: float
+    inflight: int
+    warmup_mode: bool
+    warmup_remaining_sec: int
+
+
+class MonitorResponse(BaseModel):
+    total_predictions: int
+    by_grade: dict[str, int]
+    by_model: dict[str, int]
+    avg_ms: float
+    external_lookup_count: int
+    known_artist_count: int
+    uptime_seconds: float
+    fetch_gate: FetchGateStats
+    cache_epoch: str
+    server_instance: str
+    worker_instance_id: str  # PR12: process-local uuid (multi-worker 식별)
