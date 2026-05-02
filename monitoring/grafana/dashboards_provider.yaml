@@ -1,0 +1,15 @@
+# v3.6 PR14d — Grafana dashboard provisioning provider
+# spec: https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards
+
+apiVersion: 1
+
+providers:
+  - name: visionai
+    orgId: 1
+    folder: "VisionAI / v3.6 Rollout"
+    type: file
+    disableDeletion: true   # production 안전 — UI 에서 실수 삭제 차단
+    updateIntervalSeconds: 30
+    allowUiUpdates: false   # provisioned dashboard 는 UI 편집 불가 (git source-of-truth)
+    options:
+      path: /etc/grafana/provisioning/dashboards/visionai
