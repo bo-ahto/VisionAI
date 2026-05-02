@@ -600,6 +600,50 @@ async def monitor():
     }
 
 
+def _decide_saatchi_warm_cohort(
+    is_matched: bool,
+    profile: dict | None,
+    artist_slug: str | None,
+) -> bool:
+    """v3.5 step 2 §2.3 cohort authority — match.profile.source + warm_artist_slugs.
+
+    external_collector 로 채워진 profile.source 는 비권위 (is_matched=False 면 무시).
+    PR9: 단건/batch 공유 helper.
+    """
+    return (
+        bool(is_matched)
+        and isinstance(profile, dict)
+        and profile.get("source") == "saatchi"
+        and bool(artist_slug)
+        and _predictor.is_warm_artist(artist_slug)
+    )
+
+
+def _resolve_year_sync(
+    *,
+    is_saatchi_warm: bool,
+    manual_year: int | None,
+    artwork_id: str | None,
+    artwork_url: str | None,
+) -> tuple[int | None, str]:
+    """v3.5 step 2 §2.2 + step 3 §2.3 year resolution: manual > cache > fetch.
+
+    sync 함수 — fetch 가 동기 I/O (saatchi 1.5s timeout). 단건 endpoint 는
+    await loop.run_in_executor 로 wrap 하고, batch 는 sync loop 안에서 직접 호출.
+    PR8 의 token bucket / inflight / cool-down gate 자동 적용.
+    """
+    if not is_saatchi_warm:
+        return None, "disabled"
+    if manual_year is not None:
+        year_int = int(manual_year)
+        if artwork_id:
+            route = seed_artwork_year(artwork_id, year_int, artwork_url=artwork_url)
+        else:
+            route = "manual"
+        return year_int, route
+    return get_artwork_year(artwork_id, artwork_url, cache=get_global_cache())
+
+
 @app.post("/api/v1/predict", response_model=PredictResponse)
 async def predict(req: PredictRequest):
     t0 = time.time()
@@ -642,45 +686,24 @@ async def predict(req: PredictRequest):
 
     has_manual = len(manual) > 0
 
-    # 3.5 v3.6 PR8: V_year_saatchi_warm cohort gating + year resolution
-    # Cohort authority (v3.5 step 2 §2.3): match.profile.source + warm_artist_slugs.
-    # external_collector 로 채워진 profile.source 는 비권위 (is_matched=False 면 무시).
+    # 3.5 v3.6 PR8/9: V_year_saatchi_warm cohort gating + year resolution
+    # PR9: helper 로 추출 (_decide_saatchi_warm_cohort + _resolve_year_sync) →
+    # batch endpoint 와 공유. fetch I/O 는 await loop.run_in_executor 로 분리.
     artist_slug_for_routing = match.slug if match else None
-    is_saatchi_warm = (
-        is_matched
-        and isinstance(profile, dict)
-        and profile.get("source") == "saatchi"
-        and bool(artist_slug_for_routing)
-        and _predictor.is_warm_artist(artist_slug_for_routing)
+    is_saatchi_warm = _decide_saatchi_warm_cohort(
+        is_matched, profile, artist_slug_for_routing
     )
-
-    # year_made resolution: manual (request) > cache.get > fetch (saatchi-only).
-    # 비대상 cohort 면 year resolve skip → route='disabled' (v3.5 step 3 §3.2 schema).
-    # PR8a (P0 fix): fetch 는 run_in_executor 로 분리 (event loop 차단 방지) +
-    # rate-limit / cool-down gate (v3.5 step 3 §3.2.3).
-    # PR8b (P1 fix): route 계약 — 'disabled' (비대상), 'manual' (no cache),
-    # 'rate_limited' (gate suspend) 사용.
-    # PR10: enrichment_latency_ms 측정 (v3.5 step 3 §3.2 logging schema).
-    year_made: int | None = None
-    year_made_route: str = "disabled"
     enrichment_t0 = time.time()
-    if is_saatchi_warm:
-        if req.year_made is not None:
-            year_made = int(req.year_made)
-            if req.artwork_id:
-                # write-through: cache seed (route = manual_seed_cache_write 또는 parse_invalid)
-                year_made_route = seed_artwork_year(
-                    req.artwork_id, year_made, artwork_url=req.artwork_url
-                )
-            else:
-                year_made_route = "manual"
-        else:
-            cache = get_global_cache()
-            loop = asyncio.get_event_loop()
-            year_made, year_made_route = await loop.run_in_executor(
-                None,
-                lambda: get_artwork_year(req.artwork_id, req.artwork_url, cache=cache),
-            )
+    loop = asyncio.get_event_loop()
+    year_made, year_made_route = await loop.run_in_executor(
+        None,
+        lambda: _resolve_year_sync(
+            is_saatchi_warm=is_saatchi_warm,
+            manual_year=req.year_made,
+            artwork_id=req.artwork_id,
+            artwork_url=req.artwork_url,
+        ),
+    )
     enrichment_ms = round((time.time() - enrichment_t0) * 1000, 2)
 
     # 4. 피처 생성
@@ -804,11 +827,18 @@ async def predict(req: PredictRequest):
 
 @app.post("/api/v1/predict/batch", response_model=BatchPredictResponse)
 async def predict_batch(req: BatchPredictRequest):
-    """배치 예측 (최대 50건). 작가 중복 시 외부 수집 1회만."""
+    """배치 예측 (최대 50건). 작가 중복 시 외부 수집 1회만.
+
+    v3.6 PR9: V_year_saatchi_warm cohort gating + year resolution 추가
+    (단건 endpoint 와 helper 공유). 각 item 마다 cohort 결정 + year resolve +
+    logging row 기록. fetch I/O 는 token bucket / inflight gate 자동 적용
+    (50 item 동시 fetch 도 직렬화).
+    """
     t0 = time.time()
     results = []
     success_count = 0
     fail_count = 0
+    loop = asyncio.get_event_loop()
 
     for i, item in enumerate(req.artworks):
         try:
@@ -838,17 +868,81 @@ async def predict_batch(req: BatchPredictRequest):
             if item.followers is not None:
                 manual["followers"] = item.followers
 
+            # v3.6 PR9: cohort gating + year resolve (단건과 동일 helper)
+            artist_slug = match.slug if match else None
+            is_saatchi_warm = _decide_saatchi_warm_cohort(
+                is_matched, profile, artist_slug
+            )
+            enrichment_t0 = time.time()
+            year_made, year_made_route = await loop.run_in_executor(
+                None,
+                lambda iw=is_saatchi_warm, my=item.year_made,
+                       aid=item.artwork_id, au=item.artwork_url:
+                    _resolve_year_sync(
+                        is_saatchi_warm=iw, manual_year=my,
+                        artwork_id=aid, artwork_url=au,
+                    ),
+            )
+            enrichment_ms = round((time.time() - enrichment_t0) * 1000, 2)
+
             features = build_features(
                 width_cm=item.width_cm, height_cm=item.height_cm,
                 medium=item.medium, artist_profile=profile,
                 target_market=item.target_market, manual_overrides=manual,
+                is_saatchi_warm=is_saatchi_warm,
+                year_made=year_made,
             )
             result = _predictor.predict(
                 features=features, is_matched=is_matched,
                 training_count=training_count, target_market=item.target_market,
                 has_manual_profile=len(manual) > 0,
-                artist_slug=match.slug if match else None,
+                artist_slug=artist_slug,
             )
+
+            # v3.6 PR9 + PR10: per-item logging (단건과 동일 schema)
+            _log_prediction({
+                "id": str(uuid.uuid4()),
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "batch_index": i,
+                "artist_name_input": item.artist_name,
+                "artist_id": match.artist_id if match else None,
+                "artist_matched": match.name if match else None,
+                "match_score": match.score if match else 0,
+                "width_cm": item.width_cm,
+                "height_cm": item.height_cm,
+                "medium": item.medium,
+                "target_market": item.target_market,
+                "predicted_krw": result["price_krw"],
+                "price_range_low": result["price_range_low"],
+                "price_range_high": result["price_range_high"],
+                "confidence_grade": result["confidence_grade"],
+                "model_type": result["model_type"],
+                "is_known_artist": result["is_known_artist"],
+                "training_count": result["training_count"],
+                "has_manual_profile": len(manual) > 0,
+                "is_saatchi_warm": bool(is_saatchi_warm),
+                "match_profile_source": (
+                    profile.get("source")
+                    if (is_matched and isinstance(profile, dict)) else None
+                ),
+                "slug_in_warm_set": (
+                    _predictor.is_warm_artist(artist_slug)
+                    if artist_slug else False
+                ),
+                "external_collector_source": sources[0] if sources else "none",
+                "year_made_route": year_made_route,
+                "year_made_used": year_made,
+                "artwork_id": item.artwork_id,
+                "artwork_url": item.artwork_url,
+                "enrichment_latency_ms": enrichment_ms,
+                "predict_total_latency_ms": enrichment_ms,  # batch row 기준
+                "model_variant": _predictor.variant,
+                "artifact_version": _ARTIFACT_VERSION,
+                "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
+                "rollout_rule_version": _ROLLOUT_RULE_VERSION,
+                "server_instance": _SERVER_INSTANCE,
+                "cache_epoch": _CACHE_EPOCH,
+            })
 
             results.append(BatchPredictResult(
                 index=i, status="success",
