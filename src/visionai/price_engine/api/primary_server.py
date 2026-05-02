@@ -542,7 +542,7 @@ async def lifespan(app: FastAPI):
 
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 
 app = FastAPI(
     title="VisionAI 1차 시장 가격 예측 API",
@@ -632,6 +632,103 @@ async def monitor() -> MonitorResponse:
         server_instance=_SERVER_INSTANCE,
         worker_instance_id=_WORKER_INSTANCE_ID,
     )
+
+
+@app.get("/api/v1/metrics", response_class=PlainTextResponse)
+async def metrics() -> str:
+    """Prometheus exposition format — v3.6 PR16.
+
+    spec: docs/v3_5_step4_drift_monitoring.md §3.2.3 Panel 5 (concurrent_fetch_max).
+    /api/v1/monitor 의 fetch_gate stats 를 Prometheus scrape 가능한 text 형식으로
+    노출. 모든 metric 에 worker_instance_id / server_instance / model_variant
+    label 포함 → multi-worker 환경에서 worker 별 분리 + Grafana variable.
+
+    Format: https://prometheus.io/docs/instrumenting/exposition_formats/
+    의존성 X — 단순 string format (prometheus_client 라이브러리 안 씀).
+    """
+    gate_stats = get_global_gate().stats()
+    labels = (
+        f'worker="{_WORKER_INSTANCE_ID}",'
+        f'server="{_SERVER_INSTANCE}",'
+        f'variant="{_predictor.variant}"'
+    )
+
+    def gauge(name: str, help_text: str, value: float | int | bool) -> str:
+        v = int(value) if isinstance(value, bool) else value
+        return (
+            f"# HELP {name} {help_text}\n"
+            f"# TYPE {name} gauge\n"
+            f"{name}{{{labels}}} {v}\n"
+        )
+
+    def counter(name: str, help_text: str, value: float | int) -> str:
+        return (
+            f"# HELP {name} {help_text}\n"
+            f"# TYPE {name} counter\n"
+            f"{name}{{{labels}}} {value}\n"
+        )
+
+    lines: list[str] = []
+    # fetch_gate (8 metric — Panel 4-6 + warmup)
+    lines.append(gauge(
+        "visionai_fetch_gate_concurrent",
+        "Concurrent in-flight saatchi fetch requests",
+        gate_stats["concurrent"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_miss_5min",
+        "Cache miss count in last 5min sliding window",
+        gate_stats["miss_5min"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_consecutive_fails",
+        "Consecutive fetch_fail count (cool-down trigger)",
+        gate_stats["consecutive_fails"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_cool_down_remaining_sec",
+        "Seconds remaining until fetch cool-down ends (0 = inactive)",
+        gate_stats["cool_down_remaining_sec"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_tokens_available",
+        "Token bucket available tokens (warmup or sustain mode)",
+        gate_stats["tokens_available"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_inflight",
+        "Per-key inflight set size (stampede dedup)",
+        gate_stats["inflight"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_warmup_mode",
+        "1 if cold-start warmup mode active (capacity=1, refill=0.3 qps)",
+        gate_stats["warmup_mode"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_warmup_remaining_sec",
+        "Seconds remaining in warmup window",
+        gate_stats["warmup_remaining_sec"],
+    ))
+
+    # _monitor 카운터 (cumulative since process start)
+    lines.append(counter(
+        "visionai_predictions_total",
+        "Total predictions served since worker start",
+        _monitor["total_predictions"],
+    ))
+    lines.append(counter(
+        "visionai_predictions_external_lookup_total",
+        "Predictions that triggered external_collector lookup",
+        _monitor["external_lookup_count"],
+    ))
+    lines.append(counter(
+        "visionai_predictions_known_artist_total",
+        "Predictions where artist matched DB",
+        _monitor["known_artist_count"],
+    ))
+
+    return "".join(lines)
 
 
 def _decide_saatchi_warm_cohort(

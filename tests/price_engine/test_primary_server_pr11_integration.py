@@ -482,6 +482,60 @@ def test_worker_instance_id_consistent_across_endpoints_and_logs():
     assert monitor_id == primary_server._WORKER_INSTANCE_ID
 
 
+def test_metrics_endpoint_prometheus_format():
+    """v3.6 PR16: /api/v1/metrics 가 Prometheus exposition format 으로 노출."""
+    pred = _make_mock_predictor()
+    matcher = _make_mock_matcher(None)
+    with _build_client(pred, matcher) as client:
+        ayc.get_global_gate().mark_server_start()
+        resp = client.get("/api/v1/metrics")
+    assert resp.status_code == 200
+    assert "text/plain" in resp.headers["content-type"]
+    body = resp.text
+
+    # 11 metric 모두 존재 (gauge 8 + counter 3)
+    expected_metrics = [
+        "visionai_fetch_gate_concurrent",
+        "visionai_fetch_gate_miss_5min",
+        "visionai_fetch_gate_consecutive_fails",
+        "visionai_fetch_gate_cool_down_remaining_sec",
+        "visionai_fetch_gate_tokens_available",
+        "visionai_fetch_gate_inflight",
+        "visionai_fetch_gate_warmup_mode",
+        "visionai_fetch_gate_warmup_remaining_sec",
+        "visionai_predictions_total",
+        "visionai_predictions_external_lookup_total",
+        "visionai_predictions_known_artist_total",
+    ]
+    for m in expected_metrics:
+        assert f"# HELP {m}" in body
+        assert f"# TYPE {m}" in body
+        assert m + "{" in body  # label set 시작
+
+    # label: worker / server / variant
+    assert 'worker="' in body
+    assert 'server="' in body
+    assert 'variant="' in body
+
+
+def test_metrics_endpoint_label_cardinality():
+    """Prometheus label 이 예측 가능한 cardinality (worker/server/variant 만)."""
+    pred = _make_mock_predictor()
+    matcher = _make_mock_matcher(None)
+    with _build_client(pred, matcher) as client:
+        resp = client.get("/api/v1/metrics")
+    body = resp.text
+    # 첫 번째 metric 의 label set 추출
+    import re
+    line = next(
+        ln for ln in body.splitlines()
+        if ln.startswith("visionai_fetch_gate_concurrent{")
+    )
+    label_set = re.search(r"\{(.+?)\}", line).group(1)
+    label_keys = sorted(k.split("=")[0] for k in label_set.split(","))
+    assert label_keys == ["server", "variant", "worker"]
+
+
 def test_health_endpoint_alive():
     pred = _make_mock_predictor()
     matcher = _make_mock_matcher(None)
