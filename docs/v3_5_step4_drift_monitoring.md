@@ -34,7 +34,7 @@ step 3 measurement plan 의 metrics + step 4 신규 downstream metrics 통합.
 | `enrichment_p95_latency_ms_hit` | route='cache_hit' p95 (5분 window) | ≤ 5 ms | > 20 ms | > 100 ms | step 3 |
 | `enrichment_p95_latency_ms_miss` | route='fetch_ok' p95 (5분 window) | ≤ 600 ms | > 1000 ms | > 2000 ms | step 3 |
 | `valid_year_range_rate` | `parse_invalid / parse_total` 의 inverse | 100% within [1800, 2030] | < 99.5% | < 98% | step 3 + parser drift detection |
-| `fallback_rate_eligible` | `(fetch_fail + parse_invalid + no_id) / total_eligible` | ≤ 5% | > 10% | > 20% | step 3 |
+| `fallback_rate_eligible` | `(fetch_fail + parse_invalid + no_id + rate_limited) / total_eligible` | ≤ 5% | > 10% | > 20% | step 3 (v3.6 PR10b: rate_limited 포함) |
 | `miss_qps` | cache miss → fetch QPS (1분 window) | < 0.5 | > 1.0 | > 2.0 (auto-suspend) | step 3 §3.2.3 |
 | `concurrent_fetch_max` | 동시 진행 fetch 수 (1분 max) | < 5 | > 10 | > 20 | step 3 §3.2.3 |
 | `5min_miss_burst` | 5분 누적 cache miss | < 50 | > 100 | > 200 (auto-suspend) | step 3 §3.2.3 |
@@ -197,7 +197,9 @@ step 3 measurement plan 의 metrics + step 4 신규 downstream metrics 통합.
 - `cache_hit_rate` 임시 < 30%
 
 **대응**:
-1. 자동: cold start fetch rate cap (0.3 qps) 적용 (step 3 §3.2.3)
+1. 자동: token bucket gate 작동 (현재 burst=3, sustain=0.5 qps; v3.6 PR10).
+   NOTE: spec 의 cold-start 0.3 qps soft cap 별도 warmup-mode 는 deferred (PR11+
+   에서 운영 데이터로 결정). 현재는 단일 mode.
 2. 1h 이상 hit rate 회복 안 되면 → 트래픽 패턴 검증
 3. async preload 우선순위 상향 (v3.6 backlog 진입 검토)
 
