@@ -60,7 +60,11 @@ groups:
             model:
               format: table
               rawSql: |
-                -- baseline row 부재 → 0, 존재 → 1. threshold lt 1 → fire.
+                -- v3.6 PR14c'' (코덱스 P1 fix): traffic-0 vs baseline-missing 구분.
+                -- value 의미:
+                --   1 = OK (traffic 0 또는 baseline 존재)
+                --   0 = NO_BASELINE (traffic 있는데 baseline row 없음 — fire 대상)
+                -- threshold lt 1 → value=0 만 fire.
                 WITH active_artifact AS (
                     SELECT artifact_version FROM predict_logs
                     WHERE timestamp > NOW() - INTERVAL '24 hours'
@@ -68,9 +72,14 @@ groups:
                     GROUP BY artifact_version ORDER BY COUNT(*) DESC LIMIT 1
                 )
                 SELECT
-                    COUNT(*)::int AS value
-                FROM cohort_baselines b
-                JOIN active_artifact USING (artifact_version);
+                    CASE
+                        WHEN NOT EXISTS (SELECT 1 FROM active_artifact) THEN 1
+                        WHEN EXISTS (
+                            SELECT 1 FROM cohort_baselines b
+                            JOIN active_artifact USING (artifact_version)
+                        ) THEN 1
+                        ELSE 0
+                    END AS value;
           - refId: B
             datasourceUid: __expr__
             type: threshold
