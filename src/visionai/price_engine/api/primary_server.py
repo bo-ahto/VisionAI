@@ -596,7 +596,11 @@ async def model_info():
 
 @app.get("/api/v1/monitor")
 async def monitor():
-    """인메모리 카운터 기반 모니터링."""
+    """인메모리 카운터 기반 모니터링.
+
+    v3.6 PR11d: fetch_gate stats 노출 (warmup_mode / tokens / miss_5min /
+    cool_down). v3.5 step 3 §3.2.3 의 운영 metric 을 endpoint 로 직접 관측 가능.
+    """
     total = _monitor["total_predictions"]
     return {
         "total_predictions": total,
@@ -606,6 +610,11 @@ async def monitor():
         "external_lookup_count": _monitor["external_lookup_count"],
         "known_artist_count": _monitor["known_artist_count"],
         "uptime_seconds": round(time.time() - _start_time, 1),
+        # v3.6 PR11d: fetch_gate runtime stats (코덱스 PR11c review P2 fix)
+        "fetch_gate": get_global_gate().stats(),
+        # cache_epoch + server_instance — multi-worker 식별 (PR11c Nit 일부)
+        "cache_epoch": _CACHE_EPOCH,
+        "server_instance": _SERVER_INSTANCE,
     }
 
 

@@ -386,15 +386,18 @@ def test_warmup_anchor_is_server_lifespan(monkeypatch):
     """
     monkeypatch.setattr(ayc, "FETCH_WARMUP_DURATION_SEC", 100.0)
     monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_CAPACITY", 1)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_REFILL_PER_SEC", 0.0)
     monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 5)
 
     gate = ayc.FetchGate()
-    # gate 생성 후 token 소비 — capacity=1 이라 1번만 통과
+    # gate 생성 후 token 소비 — warmup capacity=1 이라 1번만 통과 (release 로
+    # inflight 제거 → 둘째 acquire 의 거부 이유는 'qps' 단일).
     ok, _ = gate.try_acquire("k0")
     assert ok is True
+    gate.release("k0", success=True)
     blocked, reason = gate.try_acquire("k1")
     assert blocked is False
-    assert reason in ("qps", "inflight")  # warmup capacity 한계
+    assert reason == "qps"  # warmup capacity exhausted
 
     # mark_server_start 호출 → token 다시 capacity 만큼 회복 (lifespan 재시작 모사)
     gate.mark_server_start()
@@ -403,16 +406,38 @@ def test_warmup_anchor_is_server_lifespan(monkeypatch):
     assert stats["tokens_available"] == 1.0  # warmup capacity 로 reset
 
 
-def test_warmup_endpoint_smoke_via_stats():
-    """warmup_mode flag 가 endpoint 외부에서 가시 (PR11c P2 — endpoint 층 보장)."""
-    gate = ayc.get_global_gate()
-    gate.mark_server_start()
-    stats = gate.stats()
-    # production 기본 상수: FETCH_WARMUP_DURATION_SEC=300, capacity=1
-    # autouse fixture 가 큰 값 monkeypatch 했으므로 여기는 fixture context 안
-    # warmup_mode flag 자체는 노출되어 있어야 함.
-    assert "warmup_mode" in stats
-    assert "warmup_remaining_sec" in stats
+def test_monitor_endpoint_exposes_fetch_gate_stats():
+    """PR11d (코덱스 PR11c P2): /api/v1/monitor 가 fetch_gate stats 직접 노출.
+
+    실 endpoint 경로 (TestClient + FastAPI route) 로 warmup_mode + tokens +
+    miss_5min + cool_down + cache_epoch + server_instance 검증.
+    """
+    pred = _make_mock_predictor()
+    matcher = _make_mock_matcher(None)
+    with _build_client(pred, matcher) as client:
+        # 사전 mark_server_start (lifespan 우회 환경 모사)
+        ayc.get_global_gate().mark_server_start()
+        resp = client.get("/api/v1/monitor")
+    assert resp.status_code == 200
+    body = resp.json()
+
+    # PR11d 신규 필드
+    assert "fetch_gate" in body
+    gate = body["fetch_gate"]
+    for field in (
+        "concurrent", "miss_5min", "consecutive_fails",
+        "cool_down_remaining_sec", "tokens_available",
+        "inflight", "warmup_mode", "warmup_remaining_sec",
+    ):
+        assert field in gate, f"fetch_gate missing field: {field}"
+    # warmup_mode 는 mark_server_start 직후라 True (autouse fixture 가 duration=300
+    # default 유지) — fixture 가 capacity 만 monkeypatch 했고 duration 은 그대로.
+    assert isinstance(gate["warmup_mode"], bool)
+    assert gate["warmup_remaining_sec"] >= 0
+
+    # multi-worker 관측용 (PR11c Nit 일부)
+    assert "cache_epoch" in body
+    assert "server_instance" in body
 
 
 def test_health_endpoint_alive():
