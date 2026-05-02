@@ -34,6 +34,7 @@ alerting/
 | Trigger | SQL (monitoring/sql/020_alert_rollback_triggers.sql) | severity | Grafana for: |
 |---------|------------------------------------------------------|----------|--------------|
 | 1. 5min_miss_burst > 200 | trigger_1 | crit (pause) | **5m** (5분 지속 명시) |
+| 2a. NO_BASELINE | (별도) | crit (pause) | **1m** (즉시) |
 | 2. cohort_discrepancy > 5% | trigger_2 | crit (pause) | 10m |
 | 3. mdape_d7_cold > 46% | trigger_3 | rollback | 1h |
 | 4. treatment_vs_control > +1.0%p | trigger_4 | rollback | 1h |
@@ -43,8 +44,9 @@ alerting/
 
 ## Special alerts (코덱스 P1 fix 후속)
 
-- **NO_BASELINE alert**: trigger_2 가 `action = 'NO_BASELINE'` 반환 시 — cohort_baselines 미설정 / 새 artifact_version row 누락 → operator 즉시 조치. severity `crit` (Slack + PagerDuty).
-- **Trigger 1 for: 5m**: SQL 자체는 단발 평가 (5분 누적값). Grafana `for: 5m` 로 5분 연속 임계 초과 시에만 fire — spec "5분 지속" 정합 (PR14b' Trigger 1 주석 참조).
+- **NO_BASELINE alert (T2a)**: cohort_baselines 미설정 / 새 artifact_version row 누락 → 즉시 알림 (`for: 1m`, severity `crit`). PR14c' 에서 T2 와 분리 — T2 의 `for: 10m` pending 영향 없이 1분 안에 fire.
+- **Trigger 1 for: 5m**: SQL 자체는 단발 평가 (5분 누적값). Grafana `for: 5m` 로 5분 연속 임계 초과 시에만 fire — spec "5분 지속" 정합.
+- **secure_settings**: Slack `url` + PagerDuty `integrationKey` 는 Grafana provisioning 의 `secure_settings` 사용 (평문 노출 + provisioning reload 분실 차단). PR14c' 에서 적용.
 
 ## 적용 방법 (Grafana provisioning)
 
@@ -52,7 +54,10 @@ alerting/
 # 1. Grafana 10+ /etc/grafana/provisioning/alerting/ 에 YAML 복사
 cp monitoring/alerting/*.yaml /etc/grafana/provisioning/alerting/
 
-# 2. env: SLACK_WEBHOOK_ML_ALERTS / SLACK_WEBHOOK_ML_ROLLOUT / PAGERDUTY_INTEGRATION_KEY 주입
+# 2. env 주입 (secure_settings 의 ${...} 참조). 예시 (systemd):
+#    Environment=SLACK_WEBHOOK_ML_ROLLOUT=https://hooks.slack.com/...
+#    Environment=SLACK_WEBHOOK_ML_ALERTS=https://hooks.slack.com/...
+#    Environment=PAGERDUTY_INTEGRATION_KEY=R0123456789abcdef
 # 3. Grafana 재시작 / SIGHUP
 systemctl reload grafana-server
 ```

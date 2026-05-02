@@ -11,8 +11,10 @@ contactPoints:
     receivers:
       - uid: cp-slack-ml-rollout
         type: slack
+        # v3.6 PR14c' (코덱스 P1 fix): Slack url 은 Grafana provisioning 의
+        # secure setting. settings 에 두면 평문 노출 + provisioning reload
+        # 시 분실 위험. https://grafana.com/docs/grafana/latest/administration/provisioning/
         settings:
-          url: ${SLACK_WEBHOOK_ML_ROLLOUT}
           recipient: "#ml-rollout"
           title: "[VisionAI v3.6 / {{ .Status }}] {{ .CommonLabels.severity }}"
           text: |
@@ -21,6 +23,8 @@ contactPoints:
             action: {{ .CommonLabels.action }}
             runbook: {{ .CommonAnnotations.runbook }}
             firing: {{ len .Alerts.Firing }} / resolved: {{ len .Alerts.Resolved }}
+        secure_settings:
+          url: ${SLACK_WEBHOOK_ML_ROLLOUT}
 
   - orgId: 1
     name: slack-ml-alerts
@@ -28,7 +32,6 @@ contactPoints:
       - uid: cp-slack-ml-alerts
         type: slack
         settings:
-          url: ${SLACK_WEBHOOK_ML_ALERTS}
           recipient: "#ml-alerts"
           title: "[VisionAI v3.6 / {{ .Status }}] {{ .CommonLabels.severity }}"
           text: |
@@ -37,6 +40,8 @@ contactPoints:
             action: {{ .CommonLabels.action }}
             runbook: {{ .CommonAnnotations.runbook }}
             firing: {{ len .Alerts.Firing }} / resolved: {{ len .Alerts.Resolved }}
+        secure_settings:
+          url: ${SLACK_WEBHOOK_ML_ALERTS}
 
   - orgId: 1
     name: pagerduty-on-call
@@ -44,7 +49,6 @@ contactPoints:
       - uid: cp-pagerduty-on-call
         type: pagerduty
         settings:
-          integrationKey: ${PAGERDUTY_INTEGRATION_KEY}
           severity: '{{ if eq .CommonLabels.severity "rollback" }}critical{{ else }}error{{ end }}'
           summary: "[VisionAI v3.6] {{ .CommonAnnotations.summary }}"
           source: "grafana-prod"
@@ -53,3 +57,5 @@ contactPoints:
           customDetails:
             spec: "{{ .CommonLabels.spec }}"
             runbook: "{{ .CommonAnnotations.runbook }}"
+        secure_settings:
+          integrationKey: ${PAGERDUTY_INTEGRATION_KEY}

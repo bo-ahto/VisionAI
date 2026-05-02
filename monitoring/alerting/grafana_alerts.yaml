@@ -44,7 +44,51 @@ groups:
           runbook: "monitoring/playbooks/scenario-D-cache-warmup-spike.md"
 
       # ------------------------------------------------------------------
-      # Trigger 2: cohort_assignment_discrepancy > 5%  + NO_BASELINE alert
+      # Trigger 2a: NO_BASELINE — cohort_baselines 미설정 즉시 alert
+      # 코덱스 PR14c review P1 fix: Trigger 2 의 noDataState=Alerting 도 for:10m
+      # pending 을 그대로 타기 때문에 baseline 누락이 10분 뒤에야 fire 함.
+      # 별도 rule (for: 1m) 로 분리 — 즉시 알림.
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-2a-no-baseline
+        title: "T2a: cohort_baselines 미설정 (NO_BASELINE)"
+        condition: B
+        for: 1m
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 86400, to: 0 }
+            model:
+              format: table
+              rawSql: |
+                -- baseline row 부재 → 0, 존재 → 1. threshold lt 1 → fire.
+                WITH active_artifact AS (
+                    SELECT artifact_version FROM predict_logs
+                    WHERE timestamp > NOW() - INTERVAL '24 hours'
+                        AND rollout_cohort = 'treatment_5pct'
+                    GROUP BY artifact_version ORDER BY COUNT(*) DESC LIMIT 1
+                )
+                SELECT
+                    COUNT(*)::int AS value
+                FROM cohort_baselines b
+                JOIN active_artifact USING (artifact_version);
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+        labels:
+          severity: crit
+          action: TRIGGER_PAUSE
+          spec: step4_3_3_t2a
+        annotations:
+          summary: "cohort_baselines 에 active artifact 의 row 없음 — discrepancy metric 무효화"
+          runbook: "monitoring/playbooks/scenario-C-cohort-gating-fail.md#no-baseline"
+
+      # ------------------------------------------------------------------
+      # Trigger 2: cohort_assignment_discrepancy > 5%
+      # baseline 존재 + 임계 초과 시. baseline 부재는 T2a 가 잡음.
       # ------------------------------------------------------------------
       - uid: vai-trigger-2-cohort-discrepancy
         title: "T2: cohort_discrepancy > 5%"
@@ -93,13 +137,13 @@ groups:
               expression: A
               conditions:
                 - evaluator: { type: gt, params: [0.05] }
-        noDataState: Alerting  # NO_BASELINE → NoData → alert (silent OK 차단)
+        noDataState: NoData  # baseline 부재는 T2a 가 fire — 여기서는 NoData 무시
         labels:
           severity: crit
           action: TRIGGER_PAUSE
           spec: step4_3_3_t2
         annotations:
-          summary: "cohort 분포가 학습 baseline 과 5%p 이상 차이 (또는 baseline 미설정)"
+          summary: "cohort 분포가 학습 baseline 과 5%p 이상 차이"
           runbook: "monitoring/playbooks/scenario-C-cohort-gating-fail.md"
 
       # ------------------------------------------------------------------
