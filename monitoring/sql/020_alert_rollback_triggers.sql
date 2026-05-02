@@ -37,11 +37,15 @@ WHERE timestamp > NOW() - INTERVAL '5 minutes';
 -- ============================================================================
 
 -- trigger_2_cohort_discrepancy_critical (24h window)
--- v3.6 PR14b' (코덱스 P1): train_dist 를 cohort_baselines table 에서 동적 조회.
+-- v3.6 PR14b'/14b'' (코덱스 P1 fix):
+-- - cohort_baselines 동적 조회 (train_dist 분리)
+-- - active_artifact + prod_dist 둘 다 24h window 일치 (mixed traffic 차단)
+-- - prod_dist 도 artifact_version filter
+-- - baseline missing → 'NO_BASELINE' 명시 (silent false negative 차단)
 WITH active_artifact AS (
     SELECT artifact_version
     FROM predict_logs
-    WHERE timestamp > NOW() - INTERVAL '1 hour'
+    WHERE timestamp > NOW() - INTERVAL '24 hours'
         AND rollout_cohort = 'treatment_5pct'
     GROUP BY artifact_version
     ORDER BY COUNT(*) DESC
@@ -63,20 +67,28 @@ prod_dist AS (
             ELSE 'other'
         END AS cohort,
         COUNT(*) * 1.0 / SUM(COUNT(*)) OVER () AS rate
-    FROM predict_logs
-    WHERE timestamp > NOW() - INTERVAL '24 hours'
-        AND rollout_cohort = 'treatment_5pct'
+    FROM predict_logs p
+    JOIN active_artifact a USING (artifact_version)  -- PR14b'' window 일치
+    WHERE p.timestamp > NOW() - INTERVAL '24 hours'
+        AND p.rollout_cohort = 'treatment_5pct'
     GROUP BY 1
+),
+baseline_check AS (
+    SELECT EXISTS (SELECT 1 FROM train_dist) AS has_baseline
+),
+discrepancy AS (
+    SELECT MAX(ABS(t.expected_rate - COALESCE(p.rate, 0))) AS max_discrepancy
+    FROM train_dist t
+    LEFT JOIN prod_dist p USING (cohort)
 )
 SELECT
-    MAX(ABS(t.expected_rate - COALESCE(p.rate, 0)))         AS max_discrepancy,
+    d.max_discrepancy,
     CASE
-        WHEN MAX(ABS(t.expected_rate - COALESCE(p.rate, 0))) > 0.05
-        THEN 'TRIGGER_PAUSE'
+        WHEN NOT b.has_baseline THEN 'NO_BASELINE'  -- silent OK 차단
+        WHEN d.max_discrepancy > 0.05 THEN 'TRIGGER_PAUSE'
         ELSE 'OK'
     END AS action
-FROM train_dist t
-LEFT JOIN prod_dist p USING (cohort);
+FROM discrepancy d, baseline_check b;
 
 -- ============================================================================
 -- Trigger 3: mdape_d7_cold > 46% → 자동 rollback (no manual confirm)

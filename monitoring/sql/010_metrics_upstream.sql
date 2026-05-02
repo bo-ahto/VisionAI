@@ -6,9 +6,9 @@
 -- ============================================================================
 -- Panel 1: cache_hit_rate (시간대별, 7d window)
 -- 목표: D1 ≥ 30%, D7 ≥ 50%, D30 ≥ 80%
+-- NOTE: rollout_cohort 는 'treatment_5pct' literal. 다른 cohort 분석 필요 시
+-- panel 별 별도 query (Grafana variable substitution 으로 dashboard 단계 처리).
 -- ============================================================================
--- :rollout_cohort 변수 (treatment_5pct | control)
--- 사용: psql -v rollout_cohort="'treatment_5pct'" -f 010_metrics_upstream.sql
 
 -- panel_1_cache_hit_rate_by_hour
 SELECT

@@ -9,12 +9,15 @@
 -- 목표: < 1% (모든 cohort), warn > 1%, crit > 5%
 -- ============================================================================
 
--- panel_3_cohort_discrepancy (v3.6 PR14b' 코덱스 P1 fix: train_dist 를 cohort_baselines table 로 분리)
--- 사용 artifact_version 은 production 의 latest active 또는 query parameter 로 명시.
+-- panel_3_cohort_discrepancy
+-- v3.6 PR14b'' (코덱스 PR14b' review P1 fix):
+-- - prod_dist 가 active_artifact 의 artifact_version 만 필터 (window mismatch 차단)
+-- - active_artifact / prod_dist 모두 24h window 일치
+-- - cohort_baselines 비면 NO_BASELINE 명시 (silent false negative 차단)
 WITH active_artifact AS (
     SELECT artifact_version
     FROM predict_logs
-    WHERE timestamp > NOW() - INTERVAL '1 hour'
+    WHERE timestamp > NOW() - INTERVAL '24 hours'
         AND rollout_cohort = 'treatment_5pct'
     GROUP BY artifact_version
     ORDER BY COUNT(*) DESC
@@ -28,20 +31,29 @@ train_dist AS (
 prod_dist AS (
     SELECT
         CASE
-            WHEN matched = false THEN 'unmatched'  -- 의도된 fallback (step2 §6.2)
+            WHEN matched = false THEN 'unmatched'
             WHEN is_saatchi_warm THEN 'saatchi_warm'
             WHEN matched
                 AND match_profile_source = 'saatchi'
                 AND slug_in_warm_set = false THEN 'saatchi_cold'
             WHEN matched AND match_profile_source = 'artsy' THEN 'artsy_warm'
-            ELSE 'other'  -- catch-all (anomaly)
+            ELSE 'other'
         END AS cohort,
         COUNT(*) * 1.0 / SUM(COUNT(*)) OVER () AS rate
-    FROM predict_logs
-    WHERE timestamp > NOW() - INTERVAL '24 hours'
-        AND rollout_cohort = 'treatment_5pct'
+    FROM predict_logs p
+    JOIN active_artifact a USING (artifact_version)  -- PR14b'' window 일치
+    WHERE p.timestamp > NOW() - INTERVAL '24 hours'
+        AND p.rollout_cohort = 'treatment_5pct'
     GROUP BY 1
 )
+-- baseline missing 명시: cohort_baselines 비면 status='NO_BASELINE' row 노출
+SELECT
+    'NO_BASELINE'::text                            AS cohort,
+    NULL                                            AS expected_rate,
+    NULL                                            AS prod_rate,
+    NULL                                            AS diff
+WHERE NOT EXISTS (SELECT 1 FROM train_dist)
+UNION ALL
 SELECT
     t.cohort,
     t.expected_rate,
@@ -50,7 +62,6 @@ SELECT
 FROM train_dist t
 LEFT JOIN prod_dist p USING (cohort)
 UNION ALL
--- production-only cohort (other = anomaly)
 SELECT
     p.cohort,
     NULL                                            AS expected_rate,
