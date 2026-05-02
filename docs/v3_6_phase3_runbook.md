@@ -107,7 +107,10 @@ python -m scripts.v3_6_phase3_dev_test --n 10000 --seed 42
 
 ### 산출물
 - 24h 동안 crit alert 누적 0건 (또는 1건 이내 즉시 해결)
-- 12 panel 모두 데이터 표시
+- Panel 1-6, 10-11 데이터 표시 (upstream + cohort + audit — D1 측정 가능)
+- Panel 7-9, 12 (MdAPE D7 + treatment_vs_control) — STAGING 24h 만으로는
+  sold_actuals 적재 부족 → **빈 결과 정상**. 본 panel 들의 정상 표시는 Phase 4
+  D7 이후 검증 (CANARY 24h + ROLLOUT 5% D1/D3/D7 단계).
 - baseline 수치 (D1 cache hit rate / fetch_success rate / miss_qps avg) 기록
 
 ### 실패 시
@@ -164,10 +167,17 @@ ORDER BY 4 DESC;
 ```
 
 #### C. Cache fill rate (D1 추정)
-- 100건 중 saatchi_warm 약 70% 예상 (PRODUCTION_DISTRIBUTION).
+- 100건 중 saatchi_warm 약 67% 예상 (PRODUCTION_DISTRIBUTION).
 - 그 중 `artwork_id` 있는 요청만 cache 등록 가능.
 - 첫 시간: cache_hit_rate ≈ 0% (cold start), 누적 후 점진 상승.
 - spec §5.4 gate: cache_hit ≥ 10건 이면 PASS (warm-up 동작 확인).
+
+**cache hit 유도 절차** (v3.6 PR17c — 코덱스 P2): 1시간 smoke 안에 cache_hit
+≥ 10 자연 보장 안 됨. 절차 명시:
+1. 첫 50건은 50개 distinct `artwork_id` (warm-up — 모두 cache miss / fetch_ok).
+2. 다음 50건은 첫 50개 중 10개를 의도적으로 재요청 (cache hit 유도).
+3. 동일 `artwork_id` 재요청 30분 안 진행 (TTL 7d 안 — 자연 cache hit).
+4. 결과 query 에서 `cache_hit ≥ 10` 확인 → PASS.
 
 ```sql
 SELECT

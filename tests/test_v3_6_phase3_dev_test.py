@@ -56,19 +56,19 @@ def test_generate_dataset_different_seeds():
 # ---- 10 fallback cases ----
 
 
-def test_fallback_cases_count_is_10():
-    """v3.5 step 2 §4 의 10 fallback cases — spec 명시."""
-    assert len(FALLBACK_CASES) == 10
+def test_fallback_cases_count_is_11():
+    """v3.5 step 2 §4 의 10 cases + parse_invalid (PR17c 추가) = 11."""
+    assert len(FALLBACK_CASES) == 11
 
 
 def test_fallback_cases_all_pass():
     passed, failed, errors = run_fallback_cases()
     assert failed == 0, f"{failed} cases failed: {errors}"
-    assert passed == 10
+    assert passed == 11
 
 
 def test_fallback_cases_includes_critical_routes():
-    """spec §4 의 핵심 case (manual valid, cache_hit, fetch_ok, disabled, no_id)."""
+    """spec §4 의 핵심 case (manual valid, cache_hit, fetch_ok, disabled, no_id, parse_invalid)."""
     routes = {c["expected_route"] for c in FALLBACK_CASES}
     assert "disabled" in routes
     assert "manual_seed_cache_write" in routes
@@ -76,6 +76,7 @@ def test_fallback_cases_includes_critical_routes():
     assert "cache_hit" in routes
     assert "fetch_ok" in routes
     assert "fetch_fail" in routes
+    assert "parse_invalid" in routes  # v3.6 PR17c
     assert "no_id" in routes
 
 
