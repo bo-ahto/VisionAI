@@ -197,9 +197,11 @@ step 3 measurement plan 의 metrics + step 4 신규 downstream metrics 통합.
 - `cache_hit_rate` 임시 < 30%
 
 **대응**:
-1. 자동: token bucket gate 작동 (현재 burst=3, sustain=0.5 qps; v3.6 PR10).
-   NOTE: spec 의 cold-start 0.3 qps soft cap 별도 warmup-mode 는 deferred (PR11+
-   에서 운영 데이터로 결정). 현재는 단일 mode.
+1. 자동: 2-mode token bucket gate (v3.6 PR10/11b):
+   - warmup (server start 후 첫 5min): burst=1, refill=0.3 qps — spec cold-start cap
+   - sustain (warmup 이후): burst=3, refill=0.5 qps — spec target
+   `/api/v1/monitor` 또는 fetch gate stats 의 `warmup_mode` / `tokens_available`
+   필드로 현재 모드 확인.
 2. 1h 이상 hit rate 회복 안 되면 → 트래픽 패턴 검증
 3. async preload 우선순위 상향 (v3.6 backlog 진입 검토)
 

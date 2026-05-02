@@ -20,10 +20,13 @@ from visionai.price_engine.api import artwork_year_cache as ayc
 
 @pytest.fixture(autouse=True)
 def reset_cache(monkeypatch):
-    # PR10 token bucket 우회: 이 파일의 기존 test 는 concurrent/burst/cool-down/
-    # inflight/timeout 만 검증. token bucket 별도 검증은 새 PR10 token test 에서.
+    # PR10 token bucket / PR11b warmup 우회: 이 파일의 기존 test 는 concurrent/
+    # burst/cool-down/inflight/timeout 만 검증. token bucket / warmup 별도 검증은
+    # 전용 test 에서 monkeypatch.undo() 로 실 module 상수 재로드.
     monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 100_000)
     monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 100_000.0)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_CAPACITY", 100_000)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_REFILL_PER_SEC", 100_000.0)
     ayc.reset_global_cache()
     ayc.reset_global_gate()
     yield
@@ -380,7 +383,9 @@ def test_get_artwork_year_default_fetch_uses_short_timeout(monkeypatch):
 
 
 def test_token_bucket_blocks_after_capacity_exhausted(monkeypatch):
-    """spec capacity 3 까지는 통과, 4번째는 'qps' 거부 (refill 0 가정)."""
+    """sustain mode capacity 3 까지는 통과, 4번째는 'qps' 거부 (refill 0)."""
+    # warmup mode 비활성화 — sustain mode 만 검증
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_DURATION_SEC", 0.0)
     monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 3)
     monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 0.0)
     gate = ayc.FetchGate()
@@ -394,7 +399,8 @@ def test_token_bucket_blocks_after_capacity_exhausted(monkeypatch):
 
 
 def test_token_bucket_refills_over_time(monkeypatch):
-    """refill rate 만큼 시간이 흐르면 token 회복."""
+    """refill rate 만큼 시간이 흐르면 token 회복 (sustain mode)."""
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_DURATION_SEC", 0.0)
     monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 1)
     monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 100.0)  # 빠른 refill
     gate = ayc.FetchGate()
@@ -411,6 +417,7 @@ def test_token_bucket_refills_over_time(monkeypatch):
 
 def test_token_bucket_evaluation_after_concurrent(monkeypatch):
     """gate 평가 순서: cool_down → concurrent → burst → qps → inflight."""
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_DURATION_SEC", 0.0)
     monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 100)  # token 충분
     monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 0.0)
     gate = ayc.FetchGate()
@@ -423,16 +430,75 @@ def test_token_bucket_evaluation_after_concurrent(monkeypatch):
 
 
 def test_token_bucket_default_spec_values(monkeypatch):
-    """v3.5 step 3 §3.2.3 sustain target (< 0.5 qps) 충족.
+    """v3.5 step 3 §3.2.3 spec — warmup + sustain 2-mode (PR11b).
 
-    NOTE: spec 의 "cold-start 0.3 qps soft cap" 별도 warmup-mode 는 deferred.
-    현재 단일 mode (burst=3, refill=0.5/s). 첫 60초 ≈ 33 fetch 가능.
+    - warmup (cold-start 첫 5min): burst=1, refill=0.3/s — spec cold-start
+    - sustain: burst=3, refill=0.5/s — spec target
     """
     monkeypatch.undo()  # autouse fixture monkeypatch undo
     import importlib
     importlib.reload(ayc)
-    assert ayc.FETCH_QPS_CAPACITY == 3  # burst max
-    assert ayc.FETCH_QPS_REFILL_PER_SEC == 0.5  # sustain rate
+    assert ayc.FETCH_QPS_CAPACITY == 3
+    assert ayc.FETCH_QPS_REFILL_PER_SEC == 0.5
+    assert ayc.FETCH_WARMUP_QPS_CAPACITY == 1
+    assert ayc.FETCH_WARMUP_QPS_REFILL_PER_SEC == 0.3
+    assert ayc.FETCH_WARMUP_DURATION_SEC == 300.0
+
+
+# ---- PR11b: warmup-mode (cold-start 0.3 qps soft cap) ----
+
+
+def test_warmup_mode_active_immediately_after_creation():
+    gate = ayc.FetchGate()
+    stats = gate.stats()
+    assert stats["warmup_mode"] is True
+    assert stats["warmup_remaining_sec"] > 0
+
+
+def test_warmup_mode_uses_strict_capacity(monkeypatch):
+    """warmup mode capacity=1 — 2번째 acquire 즉시 'qps' 거부."""
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_CAPACITY", 1)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_REFILL_PER_SEC", 0.0)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_DURATION_SEC", 1000.0)  # warmup 유지
+    # 일반 mode 도 차단 안 되게 큰 값 (warmup 끝나도 통과 유지 — 이 test 는
+    # warmup 효과만 검증)
+    monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 1)
+    monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 0.0)
+    gate = ayc.FetchGate()
+    ok, _ = gate.try_acquire("k1")
+    assert ok is True
+    gate.release("k1", success=True)
+    blocked, reason = gate.try_acquire("k2")
+    assert blocked is False
+    assert reason == "qps"
+
+
+def test_warmup_mode_expires_after_duration(monkeypatch):
+    """warmup duration 지나면 sustain mode 로 전환 (capacity 더 큼)."""
+    # warmup duration 짧게 설정
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_DURATION_SEC", 0.05)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_CAPACITY", 1)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_REFILL_PER_SEC", 0.0)
+    monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 5)
+    monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 100.0)
+    gate = ayc.FetchGate()
+    assert gate.stats()["warmup_mode"] is True
+    time.sleep(0.1)  # warmup duration 초과
+    assert gate.stats()["warmup_mode"] is False
+    # sustain mode 로 전환 → capacity 더 큰 값 사용 (5 토큰 가능)
+    for i in range(5):
+        ok, _ = gate.try_acquire(f"k{i}")
+        assert ok is True
+        gate.release(f"k{i}", success=True)
+
+
+def test_warmup_remaining_sec_decreases():
+    gate = ayc.FetchGate()
+    s1 = gate.stats()
+    time.sleep(0.05)
+    s2 = gate.stats()
+    # 절대 시간 — 아주 작은 변화지만 단조감소
+    assert s2["warmup_remaining_sec"] <= s1["warmup_remaining_sec"]
 
 
 def test_fetch_gate_inflight_per_key_independent():

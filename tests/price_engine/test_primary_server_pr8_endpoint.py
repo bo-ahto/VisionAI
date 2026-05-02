@@ -21,7 +21,12 @@ from visionai.price_engine.api.primary_schemas import PredictRequest
 
 
 @pytest.fixture(autouse=True)
-def reset_state():
+def reset_state(monkeypatch):
+    # PR10/11b token bucket + warmup 우회
+    monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 100_000)
+    monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 100_000.0)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_CAPACITY", 100_000)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_REFILL_PER_SEC", 100_000.0)
     ayc.reset_global_cache()
     ayc.reset_global_gate()
     yield

@@ -26,9 +26,11 @@ from visionai.price_engine.api.artwork_year_cache import (
 
 @pytest.fixture(autouse=True)
 def _bypass_token_bucket(monkeypatch):
-    """v3.6 PR10 token bucket 우회 — 이 파일은 cache / fetch / TTL / LRU 검증 전용."""
+    """v3.6 PR10/11b token bucket + warmup 우회 — 이 파일은 cache 검증 전용."""
     monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 100_000)
     monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 100_000.0)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_CAPACITY", 100_000)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_REFILL_PER_SEC", 100_000.0)
     ayc.reset_global_gate()
     yield
     ayc.reset_global_gate()

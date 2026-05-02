@@ -60,10 +60,11 @@ YearRoute = Literal[
 ]
 
 
-# v3.6 PR8a/8d/10: rate-limit / cool-down / stampede / qps gate.
-# v3.5 step 3 §3.2.3 spec 매핑:
-#   - miss_qps target < 0.5 qps: token bucket (burst=3, refill=0.5/s) — sustain
-#     충족, cold-start 첫 60초 ≈ 33 fetch (0.3 qps soft cap 은 deferred)
+# v3.6 PR8a/8d/10/11b: rate-limit / cool-down / stampede / qps + warmup gate.
+# v3.5 step 3 §3.2.3 spec 충족:
+#   - miss_qps soft cap: 2-mode token bucket
+#     * warmup (server start 후 5min): burst=1, refill=0.3/s — spec cold-start
+#     * sustain: burst=3, refill=0.5/s — spec target
 #   - concurrent_fetch < 5 (PR8a)
 #   - 5min_miss_burst < 50 (PR8a)
 #   - fetch_fail 누적 시 cool-down (PR8a circuit breaker)
@@ -83,6 +84,13 @@ FETCH_5MIN_WINDOW_SEC: int = 300
 # warmup-mode 분리는 PR11 이상 deferred (운영 데이터로 0.3 vs 0.5 결정).
 FETCH_QPS_CAPACITY: int = 3
 FETCH_QPS_REFILL_PER_SEC: float = 0.5
+# v3.6 PR11b (코덱스 PR8d/PR10 deferred 종결): warmup-mode cold-start soft cap.
+# v3.5 step 3 §3.2.3 spec: "cold start (server restart 직후 5분) → fetch rate cap
+# 적용 (max 0.3 qps soft limit)". server start 후 첫 N 초 동안 stricter token bucket
+# 사용 → cache 가 비어있는 cold-start 구간에서 saatchi rate-limit 보호.
+FETCH_WARMUP_DURATION_SEC: float = 300.0  # 5min cold-start window
+FETCH_WARMUP_QPS_CAPACITY: int = 1  # cold-start burst max
+FETCH_WARMUP_QPS_REFILL_PER_SEC: float = 0.3  # spec 0.3 qps soft cap
 
 
 class FetchGate:
@@ -98,7 +106,11 @@ class FetchGate:
         self._consecutive_fails: int = 0
         self._cool_down_until: float = 0.0
         self._inflight: dict[str, threading.Event] = {}  # stampede 방지
-        # v3.6 PR10: token bucket (miss_qps soft cap)
+        # v3.6 PR11b: warmup-mode (cold-start 0.3 qps soft cap).
+        # gate 생성 시점 = server cold-start 기준 → 첫 FETCH_WARMUP_DURATION_SEC
+        # 동안 stricter cap (capacity=1, refill=0.3/s) 적용.
+        self._created_at: float = time.time()
+        # v3.6 PR10: token bucket (miss_qps soft cap) — warmup 후 sustain.
         self._tokens: float = float(FETCH_QPS_CAPACITY)
         self._token_last_refill: float = time.time()
 
@@ -106,13 +118,27 @@ class FetchGate:
         cutoff = now - FETCH_5MIN_WINDOW_SEC
         self._miss_window = [t for t in self._miss_window if t >= cutoff]
 
+    def _is_warmup_mode_locked(self, now: float) -> bool:
+        """server cold-start 후 FETCH_WARMUP_DURATION_SEC 동안 True.
+
+        v3.6 PR11b: spec 0.3 qps soft cap (v3.5 step 3 §3.2.3) 적용 구간.
+        """
+        return (now - self._created_at) < FETCH_WARMUP_DURATION_SEC
+
     def _refill_tokens_locked(self, now: float) -> None:
-        """token bucket refill (v3.5 step 3 §3.2.3 miss_qps soft cap)."""
+        """token bucket refill — warmup 모드 시 stricter cap.
+
+        v3.6 PR11b: cold-start 첫 5분은 capacity=1, refill=0.3/s (spec 0.3 qps).
+        이후 일반 mode: capacity=3, refill=0.5/s.
+        """
+        if self._is_warmup_mode_locked(now):
+            cap = float(FETCH_WARMUP_QPS_CAPACITY)
+            refill = FETCH_WARMUP_QPS_REFILL_PER_SEC
+        else:
+            cap = float(FETCH_QPS_CAPACITY)
+            refill = FETCH_QPS_REFILL_PER_SEC
         elapsed = max(0.0, now - self._token_last_refill)
-        self._tokens = min(
-            float(FETCH_QPS_CAPACITY),
-            self._tokens + elapsed * FETCH_QPS_REFILL_PER_SEC,
-        )
+        self._tokens = min(cap, self._tokens + elapsed * refill)
         self._token_last_refill = now
 
     def try_acquire(self, key: str) -> tuple[bool, str]:
@@ -180,6 +206,10 @@ class FetchGate:
                 "cool_down_remaining_sec": max(0, int(self._cool_down_until - now)),
                 "tokens_available": round(self._tokens, 2),
                 "inflight": len(self._inflight),
+                "warmup_mode": self._is_warmup_mode_locked(now),
+                "warmup_remaining_sec": max(
+                    0, int(self._created_at + FETCH_WARMUP_DURATION_SEC - now)
+                ),
             }
 
 
