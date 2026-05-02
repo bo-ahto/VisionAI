@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,7 +19,11 @@ from visionai.price_engine.api import artwork_year_cache as ayc
 
 
 @pytest.fixture(autouse=True)
-def reset_cache():
+def reset_cache(monkeypatch):
+    # PR10 token bucket 우회: 이 파일의 기존 test 는 concurrent/burst/cool-down/
+    # inflight/timeout 만 검증. token bucket 별도 검증은 새 PR10 token test 에서.
+    monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 100_000)
+    monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 100_000.0)
     ayc.reset_global_cache()
     ayc.reset_global_gate()
     yield
@@ -366,8 +371,65 @@ def test_get_artwork_year_default_fetch_uses_short_timeout(monkeypatch):
     )
     assert year == 2018
     assert route == "fetch_ok"
-    assert captured["timeout"] == int(ayc.FETCH_TIMEOUT_SEC)
-    assert captured["timeout"] == 5  # spec 기준
+    # PR10: spec v3.5 step 2 §291 — 1.5s float 그대로 전달 (saatchi_detail_enricher
+    # signature timeout: float, urllib.urlopen 도 float 허용).
+    assert captured["timeout"] == ayc.FETCH_TIMEOUT_SEC == 1.5
+
+
+# ---- PR10: token bucket (miss_qps soft cap) ----
+
+
+def test_token_bucket_blocks_after_capacity_exhausted(monkeypatch):
+    """spec capacity 3 까지는 통과, 4번째는 'qps' 거부 (refill 0 가정)."""
+    monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 3)
+    monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 0.0)
+    gate = ayc.FetchGate()
+    for i in range(3):
+        ok, _ = gate.try_acquire(f"k{i}")
+        assert ok is True
+        gate.release(f"k{i}", success=True)
+    blocked, reason = gate.try_acquire("k_over")
+    assert blocked is False
+    assert reason == "qps"
+
+
+def test_token_bucket_refills_over_time(monkeypatch):
+    """refill rate 만큼 시간이 흐르면 token 회복."""
+    monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 1)
+    monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 100.0)  # 빠른 refill
+    gate = ayc.FetchGate()
+    ok, _ = gate.try_acquire("k1")
+    assert ok is True
+    gate.release("k1", success=True)
+    blocked, reason = gate.try_acquire("k2")
+    assert blocked is False
+    assert reason == "qps"  # 즉시 다음은 막힘
+    time.sleep(0.05)  # 100/s * 0.05 = 5 token
+    ok2, _ = gate.try_acquire("k2")
+    assert ok2 is True
+
+
+def test_token_bucket_evaluation_after_concurrent(monkeypatch):
+    """gate 평가 순서: cool_down → concurrent → burst → qps → inflight."""
+    monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 100)  # token 충분
+    monkeypatch.setattr(ayc, "FETCH_QPS_REFILL_PER_SEC", 0.0)
+    gate = ayc.FetchGate()
+    # concurrent 5 채움 → 6번째 'concurrent' (qps token 충분해도)
+    for i in range(ayc.FETCH_CONCURRENT_MAX):
+        gate.try_acquire(f"c{i}")
+    blocked, reason = gate.try_acquire("over")
+    assert blocked is False
+    assert reason == "concurrent"
+
+
+def test_token_bucket_default_spec_values(monkeypatch):
+    """v3.5 step 3 §3.2.3 spec: cold-start 0.3 qps soft cap, sustain 0.5 qps."""
+    # autouse fixture 의 monkeypatch undo → 실제 module 상수 검증
+    monkeypatch.undo()
+    import importlib
+    importlib.reload(ayc)
+    assert ayc.FETCH_QPS_CAPACITY == 3  # cold-start burst 보호
+    assert ayc.FETCH_QPS_REFILL_PER_SEC == 0.5  # sustain 0.5 qps target
 
 
 def test_fetch_gate_inflight_per_key_independent():

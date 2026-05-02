@@ -317,7 +317,7 @@ builder output (옵션 B 채택, 모두 finite 0):
 
 ### 6.3 측정 plan
 - Rollout 5% 단계에서 logging:
-  - `request_id, matched_bool, match_profile_source, slug_in_warm_set, is_saatchi_warm, external_collector_source, year_made_used, year_made_route` (route ∈ {manual, cache, fetch, fallback})
+  - `request_id, matched_bool, match_profile_source, slug_in_warm_set, is_saatchi_warm, external_collector_source, year_made_used, year_made_route` (route ∈ {manual, manual_seed_cache_write, cache_hit, fetch_ok, fetch_fail, no_id, parse_invalid, disabled, rate_limited} — v3.6 PR10 step3 spec 와 정합)
 - `external_collector_source` 도메인: `artsy / saatchi / web / manual / none` (코덱스 P1 — `web` 포함)
 - 일별 dashboard 에서 `is_saatchi_warm` 분포 + 학습 시 분포 비교
 - Discrepancy > 1% → rollout pause + 원인 조사

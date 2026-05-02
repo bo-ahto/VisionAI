@@ -293,3 +293,86 @@ def test_endpoint_build_features_called_with_cohort_and_year():
     finally:
         bf_spy.__exit__(None, None, None)
         _exit_all(ctxs)
+
+
+# ---- PR10: full logging schema (v3.5 step 3 §3.2 spec) ----
+
+
+def test_endpoint_logging_schema_has_all_pr10_fields():
+    """PR10 spec 의 전체 필드 (cohort + version + instance + cache_epoch + enrichment) 검증."""
+    pred = _make_predictor_mock(warm_slugs={"kim_artist"})
+    pred.variant = "v3_5_v_year_saatchi_warm"
+    matcher = _make_matcher_mock(_saatchi_match("kim_artist"))
+    ctxs = _patch_server(pred, matcher)
+    _enter_all(ctxs)
+    try:
+        req = _make_request(
+            year_made=2018, artwork_id="A1",
+            artwork_url="https://saatchiart.com/x/y/A1/view",
+        )
+        _run_predict(req)
+        log = primary_server._log_prediction.call_args[0][0]
+        # PR10 spec fields
+        assert "is_saatchi_warm" in log and log["is_saatchi_warm"] is True
+        assert log["match_profile_source"] == "saatchi"
+        assert log["slug_in_warm_set"] is True
+        assert log["external_collector_source"] == "none"  # is_matched=True 면 ext skip
+        assert log["year_made_route"] == "manual_seed_cache_write"
+        assert log["year_made_used"] == 2018
+        assert log["artwork_id"] == "A1"
+        assert log["artwork_url"] == "https://saatchiart.com/x/y/A1/view"
+        assert "enrichment_latency_ms" in log
+        assert isinstance(log["enrichment_latency_ms"], float)
+        assert "predict_total_latency_ms" in log
+        # 배포/설정 metadata
+        assert log["model_variant"] == "v3_5_v_year_saatchi_warm"
+        assert "artifact_version" in log
+        assert "warm_artist_slugs_version" in log
+        assert "rollout_rule_version" in log
+        assert "server_instance" in log
+        assert "cache_epoch" in log
+        # backward compat
+        assert "total_ms" in log
+    finally:
+        _exit_all(ctxs)
+
+
+def test_endpoint_logging_match_profile_source_artsy():
+    """artsy 매칭 시 match_profile_source='artsy' (cohort=False 와 별개로 관측)."""
+    pred = _make_predictor_mock(warm_slugs={"kim_artsy"})
+    matcher = _make_matcher_mock(_artsy_match("kim_artsy"))
+    ctxs = _patch_server(pred, matcher)
+    _enter_all(ctxs)
+    try:
+        req = _make_request()
+        _run_predict(req)
+        log = primary_server._log_prediction.call_args[0][0]
+        assert log["match_profile_source"] == "artsy"
+        assert log["is_saatchi_warm"] is False
+        # slug_in_warm_set 은 cohort 와 무관하게 그대로 (warm artist 여부)
+        assert log["slug_in_warm_set"] is True
+    finally:
+        _exit_all(ctxs)
+
+
+def test_endpoint_logging_unmatched_external_collector():
+    """unmatched + external_collector saatchi → external_collector_source 노출."""
+    pred = _make_predictor_mock(warm_slugs={"kim_artist"})
+    matcher = _make_matcher_mock(None)
+    ctxs = _patch_server(pred, matcher)
+    _enter_all(ctxs)
+    ext_patch = patch.object(
+        primary_server, "external_collector",
+        MagicMock(collect=MagicMock(return_value=({"source": "saatchi"}, ["saatchi", "web"]))),
+    )
+    ext_patch.__enter__()
+    try:
+        req = _make_request()
+        _run_predict(req)
+        log = primary_server._log_prediction.call_args[0][0]
+        # is_matched=False → cohort=False (external 비권위) 이지만 sources_used 는 기록
+        assert log["is_saatchi_warm"] is False
+        assert log["external_collector_source"] == "saatchi"  # 첫 source
+    finally:
+        ext_patch.__exit__(None, None, None)
+        _exit_all(ctxs)

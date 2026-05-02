@@ -195,7 +195,7 @@ def fetch_saatchi_html(
     url: str,
     *,
     user_agent: str = DEFAULT_UA,
-    timeout: int = DEFAULT_TIMEOUT,
+    timeout: float = DEFAULT_TIMEOUT,
 ) -> tuple[str, FetchStatus]:
     """URL 에서 raw HTML fetch + status 판정.
 
@@ -242,7 +242,7 @@ def fetch_and_parse_saatchi_detail(
     *,
     price_krw: float | int | None = None,
     user_agent: str = DEFAULT_UA,
-    timeout: int = DEFAULT_TIMEOUT,
+    timeout: float = DEFAULT_TIMEOUT,
 ) -> EnrichmentResult:
     """Fetch + parse wrapper. fetch 실패 시 빈 result 반환."""
     html, status = fetch_saatchi_html(url, user_agent=user_agent, timeout=timeout)

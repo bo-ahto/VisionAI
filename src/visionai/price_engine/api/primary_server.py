@@ -58,6 +58,15 @@ _model_version = "v3-tuned"  # 기본값. calibration artifact 로드 시 'v3-tu
 _model_info_cache: ModelInfoResponse | None = None  # startup에서 캐시 (Codex 5차 P2: stale 방지)
 _price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
 
+# v3.6 PR10: deploy/rollout metadata (v3.5 step 3 §3.2 logging schema).
+# env var 미설정 시 'unknown' fallback — production 에서는 deploy pipeline 이 주입.
+_ARTIFACT_VERSION = os.getenv("ARTIFACT_VERSION", "unknown")
+_WARM_ARTIST_SLUGS_VERSION = os.getenv("WARM_ARTIST_SLUGS_VERSION", "unknown")
+_ROLLOUT_RULE_VERSION = os.getenv("ROLLOUT_RULE_VERSION", "unknown")
+_SERVER_INSTANCE = os.getenv("SERVER_INSTANCE", "unknown")
+# cache_epoch: server cold-start 시점 (cache 비어있는 epoch 식별용).
+_CACHE_EPOCH = datetime.now(timezone.utc).strftime("%Y%m%dT%H%MZ")
+
 # ─── 인메모리 모니터링 카운터 ───
 _monitor = {
     "total_predictions": 0,
@@ -651,8 +660,10 @@ async def predict(req: PredictRequest):
     # rate-limit / cool-down gate (v3.5 step 3 §3.2.3).
     # PR8b (P1 fix): route 계약 — 'disabled' (비대상), 'manual' (no cache),
     # 'rate_limited' (gate suspend) 사용.
+    # PR10: enrichment_latency_ms 측정 (v3.5 step 3 §3.2 logging schema).
     year_made: int | None = None
     year_made_route: str = "disabled"
+    enrichment_t0 = time.time()
     if is_saatchi_warm:
         if req.year_made is not None:
             year_made = int(req.year_made)
@@ -670,6 +681,7 @@ async def predict(req: PredictRequest):
                 None,
                 lambda: get_artwork_year(req.artwork_id, req.artwork_url, cache=cache),
             )
+    enrichment_ms = round((time.time() - enrichment_t0) * 1000, 2)
 
     # 4. 피처 생성
     features = build_features(
@@ -731,11 +743,31 @@ async def predict(req: PredictRequest):
         "is_known_artist": result["is_known_artist"],
         "training_count": result["training_count"],
         "has_manual_profile": has_manual,
-        # v3.6 PR8: V_year_saatchi_warm cohort 관측 (PR10 full schema 전 minimal).
+        # v3.6 PR8 + PR10: V_year_saatchi_warm cohort + full schema (v3.5 step 3 §3.2).
         "is_saatchi_warm": bool(is_saatchi_warm),
+        "match_profile_source": (
+            profile.get("source") if isinstance(profile, dict) else None
+        ),
+        "slug_in_warm_set": (
+            _predictor.is_warm_artist(artist_slug_for_routing)
+            if artist_slug_for_routing else False
+        ),
+        "external_collector_source": sources_used[0] if sources_used else "none",
         "year_made_route": year_made_route,
         "year_made_used": year_made,
-        "total_ms": total_ms,
+        "artwork_id": req.artwork_id,
+        "artwork_url": req.artwork_url,
+        "enrichment_latency_ms": enrichment_ms,
+        "predict_total_latency_ms": total_ms,
+        # 배포/설정 분리 (v3.5 step 3 §3.2 코덱스 P0): D7/D30 hit rate 해석 시 트래픽
+        # 변화 vs 설정 변화 분리.
+        "model_variant": _predictor.variant,
+        "artifact_version": _ARTIFACT_VERSION,
+        "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
+        "rollout_rule_version": _ROLLOUT_RULE_VERSION,
+        "server_instance": _SERVER_INSTANCE,
+        "cache_epoch": _CACHE_EPOCH,
+        "total_ms": total_ms,  # backward compat (기존 dashboard 가 total_ms 사용)
     })
 
     return PredictResponse(

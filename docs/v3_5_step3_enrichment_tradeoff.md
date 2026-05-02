@@ -129,7 +129,7 @@ year_made 결정 우선순위 (V_year_saatchi_warm gating 통과 후):
   "slug_in_warm_set": true,
   "is_saatchi_warm": true,
   "external_collector_source": "saatchi" | "artsy" | "web" | "manual" | "none",
-  "year_made_route": "manual" | "manual_seed_cache_write" | "cache_hit" | "fetch_ok" | "fetch_fail" | "no_id" | "parse_invalid" | "disabled",
+  "year_made_route": "manual" | "manual_seed_cache_write" | "cache_hit" | "fetch_ok" | "fetch_fail" | "no_id" | "parse_invalid" | "disabled" | "rate_limited",
   "year_made_used": 2020,
   "enrichment_latency_ms": 4.2,
   "predict_total_latency_ms": 78.5,
@@ -152,7 +152,8 @@ year_made 결정 우선순위 (V_year_saatchi_warm gating 통과 후):
 | **cache_hit_rate** | `cache_hit / (cache_hit + fetch_ok + fetch_fail)` | rollout 1주 ≥50%, 1개월 ≥80% |
 | **fetch_success_rate** | `fetch_ok / (fetch_ok + fetch_fail)` | ≥95% (saatchi 정상 응답률) |
 | **enrichment_p95_latency_ms** | route 별 enrichment 단계 p95 | hit ≤5, miss ≤600 |
-| **fallback_rate** | `(fetch_fail + parse_invalid + no_id) / total_eligible` | ≤5% |
+| **fallback_rate** | `(fetch_fail + parse_invalid + no_id + rate_limited) / total_eligible` | ≤5% |
+| **rate_limited_rate** | `rate_limited / total_eligible` | < 1% (정상 운영). 1% 초과 시 traffic burst / saatchi 응답 지연 진단 |
 | **manual_override_rate** | `manual / is_saatchi_warm_eligible` | (client 측정, 정책 결정 input) |
 | **disabled_rate** | `disabled / total_predict` | ≈ 1 - saatchi_warm_ratio (학습 데이터 기준 70% 가량) |
 

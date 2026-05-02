@@ -60,21 +60,25 @@ YearRoute = Literal[
 ]
 
 
-# v3.6 PR8a/8d: rate-limit / cool-down / stampede 방지 gate.
-# v3.5 step 3 §3.2.3 spec: miss_qps < 0.5, concurrent_fetch < 5, 5min_miss_burst < 50,
-# fetch_fail 누적 시 cool-down.
-# 구현 상태:
-#   - PR8a: concurrent / 5min_burst / cool-down + circuit breaker
-#   - PR8d: per-key inflight dedup (동일 artwork_id stampede 방지) + timeout wire-up
-#   - DEFERRED to PR10: miss_qps soft limit (token bucket / cold-start cap).
-#     5min_burst <= 50 은 평균 보호이고 1초 burst 는 못 막음. PR10 logging 작업에서
-#     metric 기록 추가 + token bucket 보강 예정.
-FETCH_TIMEOUT_SEC: float = 5.0  # 기존 20s → 5s (event loop 차단 시간 단축)
+# v3.6 PR8a/8d/10: rate-limit / cool-down / stampede / qps gate.
+# v3.5 step 3 §3.2.3 spec 충족:
+#   - miss_qps soft cap (PR10 token bucket: capacity=3 burst, refill=0.5 qps sustain)
+#   - concurrent_fetch < 5 (PR8a)
+#   - 5min_miss_burst < 50 (PR8a)
+#   - fetch_fail 누적 시 cool-down (PR8a circuit breaker)
+#   - per-key inflight dedup (PR8d stampede 방지)
+#   - timeout 1.5s (PR10 spec 정합 — v3.5 step 2 §291)
+FETCH_TIMEOUT_SEC: float = 1.5  # v3.5 step 2 §291 spec — enrichment 측 1.5s
 FETCH_CONCURRENT_MAX: int = 5
 FETCH_5MIN_BURST_MAX: int = 50
 FETCH_FAIL_COOL_DOWN_THRESHOLD: int = 5  # 연속 fail 5건 → cool-down
 FETCH_COOL_DOWN_SEC: int = 60  # cool-down 활성 시 fetch 차단 시간
 FETCH_5MIN_WINDOW_SEC: int = 300
+# v3.6 PR10 (코덱스 PR8d 후속 P2 fix): miss_qps token bucket.
+# v3.5 step 3 §3.2.3 spec: cold start 0.3 qps soft cap, 일반 0.5 qps target.
+# Token bucket — capacity = burst, refill_rate = sustain qps.
+FETCH_QPS_CAPACITY: int = 3  # 1초 burst max (cold start 보호)
+FETCH_QPS_REFILL_PER_SEC: float = 0.5  # sustain rate
 
 
 class FetchGate:
@@ -90,10 +94,22 @@ class FetchGate:
         self._consecutive_fails: int = 0
         self._cool_down_until: float = 0.0
         self._inflight: dict[str, threading.Event] = {}  # stampede 방지
+        # v3.6 PR10: token bucket (miss_qps soft cap)
+        self._tokens: float = float(FETCH_QPS_CAPACITY)
+        self._token_last_refill: float = time.time()
 
     def _prune_window_locked(self, now: float) -> None:
         cutoff = now - FETCH_5MIN_WINDOW_SEC
         self._miss_window = [t for t in self._miss_window if t >= cutoff]
+
+    def _refill_tokens_locked(self, now: float) -> None:
+        """token bucket refill (v3.5 step 3 §3.2.3 miss_qps soft cap)."""
+        elapsed = max(0.0, now - self._token_last_refill)
+        self._tokens = min(
+            float(FETCH_QPS_CAPACITY),
+            self._tokens + elapsed * FETCH_QPS_REFILL_PER_SEC,
+        )
+        self._token_last_refill = now
 
     def try_acquire(self, key: str) -> tuple[bool, str]:
         """fetch 시도 전 gate 확인.
@@ -105,21 +121,26 @@ class FetchGate:
 
         Returns:
             (acquired, reason): acquired=True 면 fetch 진행 OK,
-            acquired=False 면 reason ∈ {'cool_down', 'concurrent', 'burst', 'inflight'}.
+            acquired=False 면 reason ∈
+                {'cool_down', 'concurrent', 'burst', 'qps', 'inflight'}.
         """
         now = time.time()
         with self._lock:
             self._prune_window_locked(now)
+            self._refill_tokens_locked(now)
             if now < self._cool_down_until:
                 return False, "cool_down"
             if self._concurrent >= FETCH_CONCURRENT_MAX:
                 return False, "concurrent"
             if len(self._miss_window) >= FETCH_5MIN_BURST_MAX:
                 return False, "burst"
+            if self._tokens < 1.0:
+                return False, "qps"
             if key and key in self._inflight:
                 return False, "inflight"
             self._concurrent += 1
             self._miss_window.append(now)
+            self._tokens -= 1.0
             if key:
                 self._inflight[key] = threading.Event()
             return True, "ok"
@@ -147,11 +168,14 @@ class FetchGate:
         with self._lock:
             now = time.time()
             self._prune_window_locked(now)
+            self._refill_tokens_locked(now)
             return {
                 "concurrent": self._concurrent,
                 "miss_5min": len(self._miss_window),
                 "consecutive_fails": self._consecutive_fails,
                 "cool_down_remaining_sec": max(0, int(self._cool_down_until - now)),
+                "tokens_available": round(self._tokens, 2),
+                "inflight": len(self._inflight),
             }
 
 
@@ -359,13 +383,13 @@ def get_artwork_year(
         return None, "rate_limited"
 
     # 3. cache miss → fetch (gate acquired)
-    # PR8d (코덱스 P0 fix): default fetcher 에 FETCH_TIMEOUT_SEC 명시 적용
-    # (saatchi_detail_enricher 의 default 20s 를 server 경로에서 5s 로 단축).
+    # PR8d/PR10 (코덱스 P0 fix): default fetcher 에 FETCH_TIMEOUT_SEC=1.5s 명시
+    # (saatchi_detail_enricher default 20s → spec v3.5 step 2 §291 의 1.5s).
     if fetch_fn is None:
         from saatchi_detail_enricher import fetch_and_parse_saatchi_detail
 
         def fetch_fn(url: str):
-            return fetch_and_parse_saatchi_detail(url, timeout=int(FETCH_TIMEOUT_SEC))
+            return fetch_and_parse_saatchi_detail(url, timeout=FETCH_TIMEOUT_SEC)
 
     fetch_url = artwork_url
     if not fetch_url:
