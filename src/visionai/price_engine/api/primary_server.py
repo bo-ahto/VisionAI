@@ -66,6 +66,7 @@ _price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
 _ARTIFACT_VERSION = os.getenv("ARTIFACT_VERSION", "unknown")
 _WARM_ARTIST_SLUGS_VERSION = os.getenv("WARM_ARTIST_SLUGS_VERSION", "unknown")
 _ROLLOUT_RULE_VERSION = os.getenv("ROLLOUT_RULE_VERSION", "unknown")
+_ROLLOUT_COHORT = os.getenv("ROLLOUT_COHORT", "unknown")  # treatment_5pct | control | unknown
 _SERVER_INSTANCE = os.getenv("SERVER_INSTANCE", "unknown")
 # cache_epoch: server cold-start 시점 (cache 비어있는 epoch 식별용).
 _CACHE_EPOCH = datetime.now(timezone.utc).strftime("%Y%m%dT%H%MZ")
@@ -791,9 +792,14 @@ async def predict(req: PredictRequest):
         "height_cm": req.height_cm,
         "medium": req.medium,
         "target_market": req.target_market,
-        "predicted_krw": result["price_krw"],
-        "price_range_low": result["price_range_low"],
-        "price_range_high": result["price_range_high"],
+        # v3.6 PR14a (코덱스 step4 §6.1 DDL 정합): spec column 이름 사용 +
+        # 기존 이름 alias dual-write (backward compat).
+        "predicted_price_krw": result["price_krw"],
+        "predicted_range_low_krw": result["price_range_low"],
+        "predicted_range_high_krw": result["price_range_high"],
+        "predicted_krw": result["price_krw"],  # alias (deprecated, PR15+ 제거 예정)
+        "price_range_low": result["price_range_low"],  # alias
+        "price_range_high": result["price_range_high"],  # alias
         "confidence_grade": result["confidence_grade"],
         "model_type": result["model_type"],
         "is_known_artist": result["is_known_artist"],
@@ -824,6 +830,7 @@ async def predict(req: PredictRequest):
         "artifact_version": _ARTIFACT_VERSION,
         "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
         "rollout_rule_version": _ROLLOUT_RULE_VERSION,
+        "rollout_cohort": _ROLLOUT_COHORT,
         "server_instance": _SERVER_INSTANCE,
         "worker_instance_id": _WORKER_INSTANCE_ID,
         "cache_epoch": _CACHE_EPOCH,
@@ -964,6 +971,10 @@ async def predict_batch(req: BatchPredictRequest):
                 "height_cm": item.height_cm,
                 "medium": item.medium,
                 "target_market": item.target_market,
+                # PR14a: spec column 이름 + alias dual-write (단건과 동일).
+                "predicted_price_krw": result["price_krw"],
+                "predicted_range_low_krw": result["price_range_low"],
+                "predicted_range_high_krw": result["price_range_high"],
                 "predicted_krw": result["price_krw"],
                 "price_range_low": result["price_range_low"],
                 "price_range_high": result["price_range_high"],
@@ -993,6 +1004,7 @@ async def predict_batch(req: BatchPredictRequest):
                 "artifact_version": _ARTIFACT_VERSION,
                 "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
                 "rollout_rule_version": _ROLLOUT_RULE_VERSION,
+                "rollout_cohort": _ROLLOUT_COHORT,
                 "server_instance": _SERVER_INSTANCE,
                 "worker_instance_id": _WORKER_INSTANCE_ID,
                 "cache_epoch": _CACHE_EPOCH,

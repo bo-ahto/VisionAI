@@ -307,15 +307,20 @@ def test_single_and_batch_log_schema_match():
     assert len(captured) == 2
     single_log, batch_log = captured
 
-    # PR10 spec 의 모든 필드가 양쪽 모두에 존재 (PR12: worker_instance_id 추가)
+    # PR10/12/14a spec 의 모든 필드가 양쪽 모두에 존재
     common_required = [
         "is_saatchi_warm", "match_profile_source", "slug_in_warm_set",
         "external_collector_source", "year_made_route", "year_made_used",
         "artwork_id", "artwork_url", "enrichment_latency_ms",
         "predict_total_latency_ms", "total_ms",
         "model_variant", "artifact_version", "warm_artist_slugs_version",
-        "rollout_rule_version", "server_instance", "cache_epoch",
-        "worker_instance_id",
+        "rollout_rule_version", "rollout_cohort",  # PR14a 추가
+        "server_instance", "cache_epoch", "worker_instance_id",
+        # PR14a: DDL 정합 spec column 이름 (predicted_price_krw 계열)
+        "predicted_price_krw", "predicted_range_low_krw",
+        "predicted_range_high_krw",
+        # PR14a: backward compat alias (deprecated, PR15+ 제거 예정)
+        "predicted_krw", "price_range_low", "price_range_high",
     ]
     for field in common_required:
         assert field in single_log, f"single missing: {field}"
