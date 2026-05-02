@@ -518,6 +518,27 @@ def test_metrics_endpoint_prometheus_format():
     assert 'variant="' in body
 
 
+def test_metrics_endpoint_label_value_escape(monkeypatch):
+    """v3.6 PR16a (코덱스 P1): label value escape — exposition format break 차단."""
+    pred = _make_mock_predictor()
+    pred.variant = 'v\\with"weird\nvalue'  # 모든 escape 대상 포함
+    matcher = _make_mock_matcher(None)
+    # _SERVER_INSTANCE 에도 escape 대상 주입
+    monkeypatch.setattr(primary_server, "_SERVER_INSTANCE", 'srv\\1"x')
+    with _build_client(pred, matcher) as client:
+        resp = client.get("/api/v1/metrics")
+    assert resp.status_code == 200
+    body = resp.text
+    # 정상 escape 결과: \\, \", \n
+    assert 'variant="v\\\\with\\"weird\\nvalue"' in body
+    assert 'server="srv\\\\1\\"x"' in body
+    # parse 검증: 각 metric line 이 white-space 로 split 가능 (label end + value)
+    for line in body.splitlines():
+        if line.startswith("visionai_") and "{" in line:
+            # 마지막 token 이 숫자 — label section 내부 줄바꿈 escape 됐는지 확인
+            assert " " in line
+
+
 def test_metrics_endpoint_label_cardinality():
     """Prometheus label 이 예측 가능한 cardinality (worker/server/variant 만)."""
     pred = _make_mock_predictor()

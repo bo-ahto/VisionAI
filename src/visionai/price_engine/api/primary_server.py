@@ -647,10 +647,23 @@ async def metrics() -> str:
     의존성 X — 단순 string format (prometheus_client 라이브러리 안 씀).
     """
     gate_stats = get_global_gate().stats()
+
+    def _escape_label_value(value: str) -> str:
+        """Prometheus exposition format label value escape.
+
+        v3.6 PR16a (코덱스 P1 fix): \\, ", newline 안 escape 시 metric line
+        parse 실패. https://prometheus.io/docs/instrumenting/exposition_formats/
+        """
+        return (
+            value.replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("\n", "\\n")
+        )
+
     labels = (
-        f'worker="{_WORKER_INSTANCE_ID}",'
-        f'server="{_SERVER_INSTANCE}",'
-        f'variant="{_predictor.variant}"'
+        f'worker="{_escape_label_value(_WORKER_INSTANCE_ID)}",'
+        f'server="{_escape_label_value(_SERVER_INSTANCE)}",'
+        f'variant="{_escape_label_value(_predictor.variant)}"'
     )
 
     def gauge(name: str, help_text: str, value: float | int | bool) -> str:

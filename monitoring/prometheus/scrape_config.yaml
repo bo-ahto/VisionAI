@@ -24,13 +24,19 @@ scrape_configs:
 # 규칙 파일: /etc/prometheus/rules/visionai_v3_6.yml 또는 별도 ConfigMap
 # ----------------------------------------------------------------------------
 #
+# v3.6 PR16a (코덱스 P1 fix): worker 합산 후 1min max 로 spec 임계 관측 가능.
+# 이전 worker 별 max_over_time 은 hard cap=5 라 spec >10/>20 절대 안 잡힘.
+#
 # groups:
 #   - name: visionai_v3_6_recording
 #     interval: 30s
 #     rules:
 #       - record: visionai:fetch_gate_concurrent_max:1m
-#         expr: max_over_time(visionai_fetch_gate_concurrent[1m])
+#         expr: |
+#           max_over_time(
+#             sum by (server, variant) (visionai_fetch_gate_concurrent)[1m:]
+#           )
 #       - record: visionai:fetch_gate_warmup_workers
-#         expr: count(visionai_fetch_gate_warmup_mode == 1) by (server)
+#         expr: count by (server) (visionai_fetch_gate_warmup_mode == 1)
 #       - record: visionai:cool_down_active_workers
-#         expr: count(visionai_fetch_gate_cool_down_remaining_sec > 0) by (server)
+#         expr: count by (server) (visionai_fetch_gate_cool_down_remaining_sec > 0)

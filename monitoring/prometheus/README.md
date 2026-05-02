@@ -37,15 +37,22 @@ PostgreSQL 기반 SQL metric 은 instant 값을 잡기 어렵기 때문에 serve
 
 ## Grafana Panel 5 query
 
+NOTE (v3.6 PR16a 코덱스 P1 fix): gate 는 process-local 이고 hard cap=5. 따라서
+worker 별 시계열 의 `max_over_time` 만 보면 spec 임계 (>10/>20) 가 절대 관측되지
+않음. Panel 5 의 의도는 **server/variant 전체 합산**의 1min max 이므로 worker
+집계를 먼저 해야 함.
+
 ```promql
-# 1min max — spec §2.1 concurrent_fetch_max 정의
-max_over_time(visionai_fetch_gate_concurrent[1m])
+# 1min max — spec §2.1 concurrent_fetch_max 정의 (server/variant 별 합산 후 1min max)
+max_over_time(
+    sum by (server, variant) (visionai_fetch_gate_concurrent)[1m:]
+)
 
-# warm worker 수
-count(visionai_fetch_gate_warmup_mode == 1)
+# warmup 활성 worker 수 (server 별)
+count by (server) (visionai_fetch_gate_warmup_mode == 1)
 
-# cool-down 중 worker 수 (alert 분기 가능)
-count(visionai_fetch_gate_cool_down_remaining_sec > 0)
+# cool-down 중 worker 수 (server 별 — alert 분기 가능)
+count by (server) (visionai_fetch_gate_cool_down_remaining_sec > 0)
 ```
 
 ## 운영 적용
