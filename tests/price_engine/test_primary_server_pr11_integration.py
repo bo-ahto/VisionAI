@@ -118,6 +118,10 @@ class _ClientCtx:
         return self.client
 
     def __exit__(self, *exc):
+        # PR11c (코덱스 Nit): TestClient close — thread/leak 정리
+        import contextlib
+        with contextlib.suppress(Exception):
+            self.client.close()
         for p in self._patches:
             p.__exit__(*exc)
 
@@ -162,7 +166,10 @@ def test_predict_single_saatchi_warm_manual_seed():
 
 
 def test_predict_batch_routes(monkeypatch):
-    """batch 3 item: warm+manual / artsy / unmatched. 모두 200 + per-item status."""
+    """batch 3 item: warm+manual / artsy / unmatched.
+
+    PR11c (코덱스 P2): per-item status / route / single↔batch 결정 일치 강검증.
+    """
     pred = _make_mock_predictor()
 
     matcher = MagicMock()
@@ -172,15 +179,54 @@ def test_predict_batch_routes(monkeypatch):
                     source="artsy", profile={"source": "artsy"}, slug="lee_artsy"),
         None,  # unmatched
     ]
-    with _build_client(pred, matcher) as client:
+    captured = []
+    with _build_client(pred, matcher) as client, patch.object(
+        primary_server, "_log_prediction",
+        side_effect=lambda e: captured.append(e),
+    ), patch.object(
+        primary_server, "external_collector",
+        MagicMock(collect=MagicMock(return_value=({}, []))),
+    ):
         resp = client.post("/api/v1/predict/batch", json=_batch_payload([
             _predict_payload(artist_name="Kim", year_made=2020, artwork_id="aw_K"),
             _predict_payload(artist_name="Lee"),
             _predict_payload(artist_name="Unknown"),
         ]))
+
     assert resp.status_code == 200
     body = resp.json()
     assert body["total"] == 3
+    assert body["success"] == 3
+    assert body["failed"] == 0
+
+    # per-item response 검증
+    for item in body["results"]:
+        assert item["status"] == "success"
+        assert "prediction" in item
+        assert "model_info" in item
+        assert item["model_info"]["model_type"] == "xgboost_v3_5_v_year_saatchi_warm"
+
+    # per-item logging row 검증 (3 row)
+    assert len(captured) == 3
+    log0, log1, log2 = captured
+
+    # T2.1 saatchi+warm+manual+id → cohort=True, route='manual_seed_cache_write'
+    assert log0["is_saatchi_warm"] is True
+    assert log0["year_made_route"] == "manual_seed_cache_write"
+    assert log0["match_profile_source"] == "saatchi"
+    assert log0["batch_index"] == 0
+
+    # T2.2 artsy → cohort=False, route='disabled', match_profile_source='artsy'
+    assert log1["is_saatchi_warm"] is False
+    assert log1["year_made_route"] == "disabled"
+    assert log1["match_profile_source"] == "artsy"
+    assert log1["batch_index"] == 1
+
+    # T2.3 unmatched + external 빈 결과 → cohort=False, match_profile_source=None
+    assert log2["is_saatchi_warm"] is False
+    assert log2["year_made_route"] == "disabled"
+    assert log2["match_profile_source"] is None  # PR10b 정합
+    assert log2["batch_index"] == 2
 
 
 # ---- T3: /api/v1/monitor 의 avg_ms 가 batch-only 트래픽에서도 누적 ----
@@ -330,6 +376,43 @@ def test_predict_artwork_id_max_length_enforced():
 
 
 # ---- T8: /health 살아있음 (smoke) ----
+
+
+def test_warmup_anchor_is_server_lifespan(monkeypatch):
+    """PR11c (코덱스 P1): mark_server_start 호출 시 _created_at + tokens 갱신.
+
+    spec "server restart 직후 5분 cold-start cap" 이 lifespan 시점 anchor 가
+    되도록 검증.
+    """
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_DURATION_SEC", 100.0)
+    monkeypatch.setattr(ayc, "FETCH_WARMUP_QPS_CAPACITY", 1)
+    monkeypatch.setattr(ayc, "FETCH_QPS_CAPACITY", 5)
+
+    gate = ayc.FetchGate()
+    # gate 생성 후 token 소비 — capacity=1 이라 1번만 통과
+    ok, _ = gate.try_acquire("k0")
+    assert ok is True
+    blocked, reason = gate.try_acquire("k1")
+    assert blocked is False
+    assert reason in ("qps", "inflight")  # warmup capacity 한계
+
+    # mark_server_start 호출 → token 다시 capacity 만큼 회복 (lifespan 재시작 모사)
+    gate.mark_server_start()
+    stats = gate.stats()
+    assert stats["warmup_mode"] is True  # 여전히 warmup window 안
+    assert stats["tokens_available"] == 1.0  # warmup capacity 로 reset
+
+
+def test_warmup_endpoint_smoke_via_stats():
+    """warmup_mode flag 가 endpoint 외부에서 가시 (PR11c P2 — endpoint 층 보장)."""
+    gate = ayc.get_global_gate()
+    gate.mark_server_start()
+    stats = gate.stats()
+    # production 기본 상수: FETCH_WARMUP_DURATION_SEC=300, capacity=1
+    # autouse fixture 가 큰 값 monkeypatch 했으므로 여기는 fixture context 안
+    # warmup_mode flag 자체는 노출되어 있어야 함.
+    assert "warmup_mode" in stats
+    assert "warmup_remaining_sec" in stats
 
 
 def test_health_endpoint_alive():

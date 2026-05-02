@@ -194,6 +194,24 @@ class FetchGate:
                         FETCH_COOL_DOWN_SEC, self._consecutive_fails,
                     )
 
+    def mark_server_start(self) -> None:
+        """server lifespan startup 시점 명시 anchor.
+
+        v3.6 PR11c (코덱스 PR11 review P1): warmup 기준이 "FetchGate 첫 생성"
+        이 아니라 "server restart 직후" 가 되도록 lifespan 에서 호출.
+        gate 가 module load 시 lazy 생성되더라도, 명시 호출 시 _created_at /
+        _token_last_refill 갱신 → spec v3.5 step 3 §3.2.3 정합.
+        """
+        with self._lock:
+            now = time.time()
+            self._created_at = now
+            self._token_last_refill = now
+            # cold-start 시 token 도 warmup capacity 로 초기화
+            if self._is_warmup_mode_locked(now):
+                self._tokens = float(FETCH_WARMUP_QPS_CAPACITY)
+            else:
+                self._tokens = float(FETCH_QPS_CAPACITY)
+
     def stats(self) -> dict:
         with self._lock:
             now = time.time()

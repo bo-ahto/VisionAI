@@ -20,6 +20,7 @@ from .artist_matcher import ArtistMatcher
 from .artwork_year_cache import (
     get_artwork_year,
     get_global_cache,
+    get_global_gate,
     seed_artwork_year,
 )
 from .primary_feature_builder import build_features
@@ -506,6 +507,14 @@ async def lifespan(app: FastAPI):
     _load_price_history()
     _build_title_index()
     _init_log()
+
+    # v3.6 PR11c (코덱스 PR11 review P1): warmup anchor = server lifespan startup.
+    # gate 가 lazy 생성이라 lifespan 에서 명시 anchor → spec "server restart 직후
+    # 5min" 정합. cache_epoch 도 같이 갱신.
+    global _CACHE_EPOCH
+    _CACHE_EPOCH = datetime.now(timezone.utc).strftime("%Y%m%dT%H%MZ")
+    get_global_cache()  # explicit init (idempotent)
+    get_global_gate().mark_server_start()
 
     # SHAP explainer 초기화 (CatBoost 모델)
     if _predictor.cb_model:
