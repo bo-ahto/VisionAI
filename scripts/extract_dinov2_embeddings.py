@@ -139,8 +139,8 @@ def main() -> None:
             logger.warning(f"Batch {i} embed fail: {e}")
             fail_count += len(images)
 
-        # Progress + intermediate save (every 100 items)
-        if len(results) > 0 and len(results) % 100 == 0:
+        # Progress + intermediate save (every ~100 items, batch-aligned)
+        if len(results) > 0 and len(results) >= getattr(main, "_next_save", 100):
             elapsed = time.time() - t0
             eta = elapsed / len(results) * (len(df_todo) - len(results))
             logger.info(f"  [{len(results)}/{len(df_todo)}] {elapsed:.0f}s elapsed, ETA {eta:.0f}s, fails {fail_count}")
@@ -149,6 +149,7 @@ def main() -> None:
             if not existing.empty:
                 interim = pd.concat([existing, interim], ignore_index=True)
             interim.to_parquet(EMBED_PATH, index=False)
+            main._next_save = len(results) + 100
 
     # 5. Final save
     new_df = pd.DataFrame(results)
