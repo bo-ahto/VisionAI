@@ -1,12 +1,14 @@
 # V5 Cycle Pre-registration (초안 — 분포-비의존 항목 사전 작성)
 
-> **상태**: 초안 (DRAFT). 본 마이그레이션 데이터 도착 후 분포-의존 항목 (X cell drop threshold, segment 최소 n) 확정하여 commit.
+> **상태**: 초안 (DRAFT, **2026-05-05 PILOT-driven scope adjustment 적용**). 본 마이그레이션 데이터 도착 후 분포-의존 항목 + composite retrieval prior 확정하여 commit.
 >
-> **작성 시점**: 2026-05-04 (마이그레이션 전)
+> **작성 시점**: 2026-05-04 (마이그레이션 전), **수정 2026-05-05** (PILOT 결과 반영)
 >
-> **본 등록 규율**: 코덱스 7차 자문 권고 — 사전등록은 본 데이터 기준 confirmatory commitment. 본 초안의 분포-비의존 항목은 변경 시 deviation log 기록.
+> **본 등록 규율**: 코덱스 7차/9차 자문 권고 — 사전등록은 본 데이터 기준 confirmatory commitment. 본 초안의 분포-비의존 항목은 변경 시 deviation log 기록.
 >
 > **Pilot 분리 명시**: This preregistration was finalized after exploratory pilot diagnostics on a separate pre-migration sample (V4 cycle data, Artsy 7,289 + Saatchi 21,087 = 28,376건).
+>
+> **PILOT 결과 (2026-05-05)**: V5 image diagnostic pilot 3/5 pass — Step 4 Memorization audit critical fail (retention -12.4%), Step 5 Cluster variance fail (41.4%). 결과 → **A (raw image retrieval prior) provisional cut + deprioritized to exploratory-only** (코덱스 9차 자문). C-lite 1순위 승격, R (composite retrieval prior) 신설.
 
 ## 0) Metadata
 - **Cycle**: V5
@@ -19,34 +21,44 @@
 - **Baseline (fixed)**: `v3-filtered_tuned`
   - Model: CatBoost + XGBoost ensemble
   - Feature count: 32 (CB_FEATURES_BASE)
-- **Scope (pre-registered)**:
-  - A: image retrieval prior (visual kNN prior, frozen DINOv2-base)
-  - C-lite: GPBoost mixed-effects (sequential residualization)
-  - A + C-lite (통합)
+- **Scope (pre-registered, 2026-05-05 수정)**:
+  - **C-lite (1순위)**: GPBoost mixed-effects (sequential residualization)
+  - **R (2순위, 신설)**: Composite retrieval prior (image + medium/size combined NN)
+  - A (exploratory-only, deprioritized): raw image retrieval prior — PILOT FAIL 후 confirmatory scope 제외
+  - C-lite + R (통합) — 둘 다 pass 시
 - **Out of scope unless deviation logged**:
   - 새 model family (TabPFN 등 challenger 만 허용)
   - 새 segment 정의
   - 추가 tuning round
   - 새 holdout scheme
+  - **A 를 confirmatory primary intervention 으로 재승격** (PILOT 결과 위반)
 
 ## 1) Hypotheses
 
-### A. Image Retrieval Prior
-
-- **H_A1**: Cold-start 작가 (0-shot exposure) 의 holdout MdAPE 가 baseline 대비 일관되게 (3 seeds 모두 동일 방향) 감소한다.
-- **H_A2**: 시각 nearest neighbor 의 가격 통계량 (NN_median, NN_IQR, distance-weighted avg) 이 baseline 의 cold-start 예측 RMSE 를 보완한다 (memorization 아닌 일반화).
-- **H_A3**: Visual cluster 단위 가격 분산이 global 분산보다 유의하게 작다 (cluster-conditional variance).
-
-### C-lite. GPBoost Mixed-Effects
+### C-lite. GPBoost Mixed-Effects (1순위, primary confirmatory)
 
 - **H_C1**: Seen-artist (1-3, 4-10, 10+ exposure) 의 MdAPE 가 baseline 대비 감소한다 (random intercept partial pooling 효과).
 - **H_C2**: Cold-start 작가 (0-shot) 의 MdAPE 가 baseline 대비 악화되지 않는다 (b_artist=0 자연 수축).
 - **H_C3**: 학습 runtime 이 baseline 의 4x 이내 (운영 적용 가능).
 
-### Full Integration
+### R. Composite Retrieval Prior (2순위, 신설 — 코덱스 9차 자문)
 
-- **H_Full1**: A + C-lite 통합 모델의 overall MdAPE 가 baseline 대비 일관 개선.
-- **H_Full2**: Cold-start gain 이 A 단독 gain 의 80% 이상 유지된다 (negative interaction 없음).
+- **H_R1**: Composite retrieval (image + medium/size joint NN) 가 cold-start 작가의 holdout MdAPE 를 baseline 대비 일관 (3 seeds 같은 방향) 감소시킨다.
+- **H_R2**: Composite retrieval 의 image 성분이 structured-only retrieval (medium/size) 대비 incremental gain 을 제공한다. Image 성분이 0 이면 image features 컷 하고 structured retrieval 만 도입.
+- **H_R3**: R 도입 시 memorization 의존도 (same-artist allow vs forbid retention) 가 PILOT 의 -12.4% 보다 ≥ 50% 로 회복한다.
+
+### A. Raw Image Retrieval Prior (exploratory-only, PILOT FAIL — 코덱스 9차 자문)
+
+> ⚠️ **DEPRIORITIZED**: V5 image diagnostic pilot (2026-05-05) 결과 Step 4 Memorization audit critical fail + Step 5 Cluster variance fail. Confirmatory scope 에서 제외. Hypotheses 는 historic record 로 유지.
+
+- ~~**H_A1**: Cold-start 작가 (0-shot exposure) 의 holdout MdAPE 가 baseline 대비 일관되게 감소한다.~~ — PILOT 결과 cold-start 신호 약함 (Step 2 -3.01pp 는 medium/format proxy 우회 포착으로 추정)
+- ~~**H_A2**: 시각 nearest neighbor 의 가격 통계량이 baseline 의 cold-start 예측 RMSE 를 보완한다 (memorization 아닌 일반화).~~ — PILOT 결과 retention -12.4%, memorization 의존성 critical
+- ~~**H_A3**: Visual cluster 단위 가격 분산이 global 분산보다 유의하게 작다.~~ — PILOT 결과 41.4% < 50% 임계 미달
+
+### Full Integration (수정: C-lite + R)
+
+- **H_Full1**: C-lite + R 통합 모델의 overall MdAPE 가 baseline 대비 일관 개선.
+- **H_Full2**: Cold-start gain 이 R 단독 gain 의 80% 이상 유지된다 (negative interaction 없음).
 - **H_Full3**: Seen-artist gain 이 C-lite 단독 gain 의 80% 이상 유지된다.
 
 ## 2) Validation Setup
@@ -125,16 +137,25 @@
 - Tail (P90 APE) 악화 없음
 - Runtime ≤ 4x baseline
 
-### 통합 (A + C-lite) Pass
+### R Pass (신설 — composite retrieval prior)
+- Cold-start mean ΔMdAPE ≤ **-max(0.8pp, baseline의 3%)**
+- 3/3 seeds 같은 방향
+- Seed std ≤ 0.6pp
+- 다른 segment 악화 ≤ +1.0pp
+- **Image incremental gate**: image 성분이 structured-only (medium/size) 대비 추가 gain ≥ 0.3pp. 미충족 시 image 컷 후 structured retrieval 단독 도입.
+- Memorization retention ≥ 50% (PILOT 의 -12.4% 회복)
+
+### 통합 (C-lite + R) Pass
 - Overall ΔMdAPE ≤ -max(0.8pp, baseline의 3%)
-- Cold-start gain ≥ 80% of A 단독 유지
+- Cold-start gain ≥ 80% of R 단독 유지
 - Seen-artist gain ≥ 80% of C-lite 단독 유지
 - Max segment degradation ≤ +1.0pp
 
 ## 6) Stop Conditions
 
-- **A cut**: Day 4 진단 6단계 (LAO split / image-only / retrieval sanity / memorization audit / cluster variance / retrieval features) 중 ≥2 fail
-- **A cut**: Seed instability — pre-registered consistency gate 위반
+- **R cut**: Day 4 compressed re-check 에서 image incremental gain < 0.3pp (image 컷 후 structured 단독 도입 검토)
+- **R cut**: Memorization retention < 50% (PILOT 패턴 반복 시)
+- **R cut**: Seed instability — pre-registered consistency gate 위반
 - **C-lite cut**: Seed 민감도 큼 (direction unstable across 3 seeds)
 - **C-lite cut**: 추가 tuning 후만 개선 (사전등록 외 hyperparameter search)
 - **Integration cut**: Component gain 이 결합 후 사라짐, 또는 segment harm 초과
@@ -143,9 +164,10 @@
 ## 7) Analysis Plan
 
 ### Main Comparisons
-- Baseline vs A
 - Baseline vs C-lite
-- Baseline vs A + C-lite
+- Baseline vs R (composite retrieval)
+- Baseline vs C-lite + R
+- (exploratory only, post-hoc) Baseline vs A (raw image) — historic comparison
 
 ### Estimands
 - Mean ΔMdAPE across 3 seeds
@@ -177,6 +199,7 @@
 | Date | Item changed | Why | Pre-registered/Post-hoc | Expected impact | Approved by |
 |---|---|---|---|---|---|
 | 2026-05-04 | 본 사전등록 초안 작성 | Cycle 시작 전 분포-비의존 항목 고정 | Pre-registered | n/a | Bo |
+| 2026-05-05 | A → exploratory-only / R 신설 / C-lite 1순위 승격 / 통합 pass 수정 | V5 image diagnostic pilot (3/5 pass — Step 4 retention -12.4%, Step 5 cluster 41.4%). 코덱스 9차 자문 권고. | Pre-registered (pilot-driven scope adjustment, pre-data) | confirmatory scope 변경, decision-binding 진단은 본 데이터 후 | Bo + Codex 9차 자문 |
 | YYYY-MM-DD | | | | | |
 
 ## 9) Governance / Review Linkage
@@ -192,18 +215,53 @@
 
 ## 10) Deviation Risk Controls
 
-- A 가 unexpectedly 큰 gain → 추가 ablation 은 **post-hoc only** (pass/fail 변경 X)
+- R 가 unexpectedly 큰 gain → 추가 ablation 은 **post-hoc only** (pass/fail 변경 X)
 - C-lite fail → 추가 hyperparameter search 는 **사전등록 결과로 X** (새 cycle 시 가능)
+- A (deprioritized) 의 결과를 confirmatory 권고로 재승격 X — exploratory 만 허용
 - Segment 정의 missingness → **원 정의 보고 유지**, fallback aggregation 은 additive 로만
 
-## 11) Pre-migration Pilot Notes (V4 cycle data 기반)
+## 11) Pre-migration Pilot Findings (V4 cycle data 기반) — PILOT-DRIVEN SCOPE ADJUSTMENT
 
 본 사전등록 초안은 V4 cycle (Artsy 7,289 + Saatchi 21,087) 데이터로 진행한 **exploratory pilot diagnostics** 결과를 바탕으로 작성됨:
 
-- Pilot 결과 V5 plan 의 A (image retrieval prior) 와 C-lite (GPBoost) 가 가장 viable 한 방향으로 판단 (코덱스 6차/7차 자문)
+### 초기 PILOT 권고 (코덱스 6차/7차 자문, 2026-05-04)
+- Pilot 결과 V5 plan 의 A (image retrieval prior) 와 C-lite (GPBoost) 가 가장 viable 한 방향으로 판단
 - **Pilot 은 scope selection 용도** (include/exclude decision)
 - **Pilot metric 은 main study confirmatory 결과로 사용 X**
-- Confirmatory threshold 와 evaluation protocol 은 본 데이터 기준으로 다시 고정
+
+### V5 Image Diagnostic Pilot 결과 (2026-05-05) — A 강등
+| Step | Pass | 핵심 발견 |
+|---|---|---|
+| 1. LAO split | ✓ | overlap=0 hard gate |
+| 2. Image-only KNN | ✓ | cold-start MdAPE 78.18→75.17 (-3.01pp) |
+| 3. Retrieval sanity | ✓ | duplicate 0%, residual 1.48 |
+| **4. Memorization audit** | ✗ | **Retention -12.4%** (CRITICAL) |
+| 5. Cluster variance | ✗ | 41.4% < 50% |
+
+**해석 (코덱스 9차 자문)**:
+- Step 2 cold-start 개선 (-3.01pp) 은 visual prior 가 아니라 **medium/format/scale/era proxy 우회 포착**
+- Step 4 retention 음수 → "image KNN gain 의 본질이 작가 식별 (memorization), 가격 일반화 X"
+- Step 5 cluster variance 약함 → "임베딩이 가격 동질 cluster 안정 형성 못함"
+
+### Pilot-driven scope adjustment (코덱스 9차 자문 권고 채택)
+- **A (raw image retrieval prior) → exploratory-only, deprioritized**
+  - Confirmatory scope 제외
+  - 본 데이터 도착 후 compressed re-check 수행 (코덱스 권고 protocol)
+  - 본 데이터에서도 fail 시 cut 확정
+- **C-lite → 1순위 승격** (confirmatory primary)
+- **R (composite retrieval prior) 신설** (image + medium/size joint)
+  - 핵심 가설: structured retrieval + image 의 결합이 image-only 보다 robust
+  - Image 성분 incremental gain 미충족 시 image 컷 (structured-only 도입)
+
+### Compressed re-check protocol (본 데이터 후)
+1. LAO split 재생성 (본 데이터 분포)
+2. Image-only cold-start metric 1회 재측정
+3. Memorization audit 핵심 비교 1회
+4. Retrieval sanity 최소 샘플 확인
+- 본 데이터에서도 fail → A 영구 cut
+- 본 데이터에서 pass → A 후보 재진입 검토 (deviation log 기록)
+
+### Confirmatory threshold 와 evaluation protocol 은 본 데이터 기준으로 다시 고정
 
 ## 12) 미확정 항목 (본 데이터 후 확정 예정)
 

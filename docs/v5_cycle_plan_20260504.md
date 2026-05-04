@@ -16,52 +16,56 @@
 | Single split 비재현 | Repeated 3-seed holdout 표준 |
 | Cherry-picking 위험 | **사전등록** (pre-registration) 의무화 |
 
-## 2. 우선순위 (코덱스 6차 자문 결과)
+## 2. 우선순위 (코덱스 6차/9차 자문 결과 — 2026-05-05 PILOT-driven 재조정)
 
-1. **A. 이미지 retrieval prior** (visual kNN prior, end-to-end CV 아님)
-2. **C-lite. GPBoost / mixed-effects** (sequential residualization)
-3. ~~D. 텍스트 embedding~~ — 다음 cycle
-4. ~~E. Conformal~~ — 별도 트랙
-5. ~~B. TabPFN~~ — challenger only (28K 는 sweet spot 아님)
-6. ~~F. Multi-task~~ — 다음 cycle
-7. ~~G. Active learning~~ — 다음 cycle
+1. **C-lite. GPBoost / mixed-effects** (sequential residualization) — **1순위 승격** (PILOT 후)
+2. **R. Composite retrieval prior** (image + medium/size joint NN) — **신설** (코덱스 9차 자문)
+3. ~~A. 이미지 retrieval prior~~ — **provisional cut** (PILOT FAIL — exploratory-only)
+4. ~~D. 텍스트 embedding~~ — 다음 cycle
+5. ~~E. Conformal~~ — 별도 트랙
+6. ~~B. TabPFN~~ — challenger only (28K 는 sweet spot 아님)
+7. ~~F. Multi-task~~ — 다음 cycle
+8. ~~G. Active learning~~ — 다음 cycle
 
 ## 3. 핵심 운영 원칙 (코덱스 권고)
 
-> 1. A와 C-lite 를 **독립적으로 kill/pass** (동시에 키우지 않음)
-> 2. A는 **cold-start 개선이 없으면 즉시 중단**
-> 3. C-lite는 **seen-artist 개선이 있어도 cold-start 깎으면 보류**
+> 1. C-lite 와 R 을 **독립적으로 kill/pass** (동시에 키우지 않음)
+> 2. R 의 **image 성분이 structured-only retrieval 대비 incremental gain 못 주면 image 컷**
+> 3. C-lite 는 **seen-artist 개선이 있어도 cold-start 깎으면 보류**
+> 4. A (raw image) 는 **본 데이터 compressed re-check 후만 후보 재진입 검토** (현재 deprioritized)
 
-## 4. 2주 실험 계획표
+## 4. 2주 실험 계획표 (PILOT-driven 수정 — 2026-05-05)
 
-### Week 1 — Image Retrieval Prior 진단 + PoC
+### Week 1 — Composite Retrieval (R) 검증 + PoC
 
 | Day | 작업 | Pass | Fail (Stop) |
 |---|---|---|---|
-| 1 | LAO split 구축 + DINOv2-base embedding 추출 | artist_slug overlap=0 (**hard gate**) | overlap 1건이라도 있으면 즉시 재설계 |
-| 2 | Embedding 인덱스 + retrieval pipeline 구축 | extraction/runtime 현실적 | 비현실적 → 2일 내 PoC 불가, cut |
-| 3 | image-only / retrieval-stat-only 평가 + NN sanity check (50-100건 수기) | image-only 또는 retrieval-stat-only ≥ 1개가 baseline 대비 개선, NN 무관 비율 ≤ 20%, duplicate ≤ 2% | 둘 다 무신호 + duplicate/leakage 의심 |
-| 4 | Memorization audit + cluster-conditional variance | same-artist 제거 후 gain 50%+ 유지, n≥30 cluster 과반에서 IQR -10%+ | gain 대부분이 same-artist 의존 / cluster 분산 무차이 |
-| 5 | Retrieval 통계 features → baseline 통합 (NN_median, NN_IQR, distance-weighted, same-medium share, local density) | cold-start 3 seeds 모두 같은 방향, mean ≥ 3% 또는 ≥ 0.8pp | 방향 불일치 / noise / segment fairness 악화 |
-| 6-7 | A gate 결정 + 문서화 | 사전 정의 gate 충족 → PR-data-feature 준비 | gate 미충족 → cut + Week 2를 C-lite 단독 검증으로 전환 |
+| 1 | LAO split 재생성 (본 데이터 기준) + 본 데이터 image embedding 재계산 | artist_slug overlap=0 (**hard gate**) | overlap 1건이라도 있으면 즉시 재설계 |
+| 2 | A compressed re-check (코덱스 권고 protocol) | A 본 데이터에서도 PILOT FAIL 확인 | A pass 시 deviation log + 재검토 |
+| 3 | **3-way compressed re-check (R 진단)** — (1) medium/size-only retrieval, (2) image+medium/size composite, (3) baseline+composite stats | composite ≥ structured-only + 0.3pp incremental gain | image 성분 무가치 → image 컷, structured-only 도입 검토 |
+| 4 | R Memorization audit (composite 기준 same-artist allow vs forbid) | retention ≥ 50% (PILOT 의 -12.4% 회복) | retention < 50% → R cut, structured-only 도입 |
+| 5 | R 통계 features → baseline 통합 (NN_median, NN_IQR, distance-weighted, same-medium share, local density) — composite 기준 | cold-start 3 seeds 모두 같은 방향, mean ≥ 3% 또는 ≥ 0.8pp | 방향 불일치 / noise / segment fairness 악화 |
+| 6-7 | R gate 결정 + 문서화 | 사전 정의 gate 충족 → PR-data-feature 준비 | gate 미충족 → R cut + Week 2 를 C-lite 단독 검증으로 전환 |
 
-### Week 2 — C-lite + 통합 Ablation
+### Week 2 — C-lite + 통합 Ablation (C-lite + R)
 
 | Day | 작업 | Pass | Fail (Stop) |
 |---|---|---|---|
 | 8-9 | C-lite sequential residualization PoC (`y_hat_baseline + b_artist`) | seen-artist 안정적 개선, unseen 거의 무영향 | seen-artist gain noise 또는 cold-start 악화 |
 | 10 | C-lite tuning 최소화 검증 | 3 seeds 같은 방향, std 낮음 | seed 민감도 큼, runtime > 4x baseline |
-| 11-12 | 통합 ablation (후보 1: A 단독, 후보 2: C-lite 단독, 후보 3: A+C 결합) | full 이 단독 best 보다 추가 가치, fairness 악화 X | full 무가치 / 복잡도 대비 gain 부족 |
+| 11-12 | 통합 ablation (후보 1: R 단독, 후보 2: C-lite 단독, 후보 3: C-lite + R 결합) | full 이 단독 best 보다 추가 가치, fairness 악화 X | full 무가치 / 복잡도 대비 gain 부족 |
 | 13 | Confirmatory run (finalist 1-2개 동일 budget 재평가) | gate 재충족 | 재현 실패 |
 | 14 | merge / go / no-go 결정 | data PR / eval PR / model PR 각각 merge 조건 충족 | 미통과 PR 보류 |
 
-## 5. Pass/Fail Gates (사전 확정)
+## 5. Pass/Fail Gates (사전 확정 — 2026-05-05 PILOT 후 수정)
 
-### A Pass
+### R Pass (composite retrieval, 신설 — 코덱스 9차)
 - Cold-start mean ΔMdAPE ≤ **-max(0.8pp, baseline의 3%)**
 - 3/3 seeds 같은 방향
 - Seed std ≤ 0.6pp
 - 다른 segment 악화 ≤ +1.0pp
+- **Image incremental gate**: composite (image+medium/size) 가 structured-only (medium/size) 대비 추가 gain ≥ 0.3pp. 미충족 시 image 컷.
+- **Memorization retention**: same-artist forbid 시에도 gain ≥ 50% 유지 (PILOT 의 -12.4% 회복)
 
 ### C-lite Pass
 - Seen-artist mean ΔMdAPE ≤ **-max(0.5pp, baseline의 2%)**
@@ -70,11 +74,17 @@
 - Tail (P90 APE) 악화 없음
 - Runtime ≤ 4x baseline
 
-### 통합 Pass
+### 통합 Pass (C-lite + R)
 - Overall ΔMdAPE ≤ -max(0.8pp, 3%)
-- Cold-start gain ≥ 80% of A 단독 유지
+- Cold-start gain ≥ 80% of R 단독 유지
 - Seen-artist gain ≥ 80% of C-lite 단독 유지
 - Max segment degradation ≤ +1.0pp
+
+### A Pass (deprioritized — exploratory only, PILOT FAIL)
+> ⚠️ **DEPRIORITIZED** by V5 image diagnostic pilot (2026-05-05) — Step 4 retention -12.4%, Step 5 cluster 41.4%. 본 cycle 의 confirmatory primary 에서 제외. 본 데이터 compressed re-check 시 historic 기준 비교용으로만 유지:
+- Cold-start mean ΔMdAPE ≤ -max(0.8pp, baseline의 3%) (historic gate)
+- 3/3 seeds 같은 방향, std ≤ 0.6pp
+- 본 데이터에서도 fail → A 영구 cut 확정
 
 ## 6. 모델 / 도구 선택 (코덱스 권고)
 
@@ -252,12 +262,36 @@
 - 박지연님 본 마이그레이션 데이터 도착 + 신규 미매칭 갤러리 검수 일괄 완료
 - 또는 별도 일정 블록 (2주 연속 가용)
 
-선행 가능 작업:
-- DINOv2 환경 setup (Python 패키지 설치)
-- GPBoost 환경 setup
-- LAO split 코드 (eval framework PR 사전 작성)
+선행 가능 작업 (2026-05-04~05 commit 완료):
+- ✅ DINOv2 환경 setup (Python 패키지 + facebook/dinov2-base)
+- ✅ GPBoost 환경 setup (gpboost 1.6.7, smoke test pass)
+- ✅ Eval framework (LAO split + 48-cell segment + leakage helpers, 17 tests pass)
+- ✅ 사전등록 분포-비의존 항목 작성 (수정됨: PILOT-driven scope adjustment)
+- ✅ V5 image diagnostic pilot 실행 (3/5 pass — A provisional cut)
 
-## 12. 코덱스 자문 기록
+## 12. PILOT-driven 변경 요약 (2026-05-05)
+
+### V5 Image Diagnostic Pilot (`scripts/v5_image_diagnostic_pilot.py`)
+- 5단계 진단 실행 (Day 5 retrieval features 통합 보류)
+- 결과: 3/5 pass — Step 4 Memorization audit retention -12.4%, Step 5 Cluster variance 41.4%
+- DINOv2 embedding 이 작가 ID 인식엔 강함, 가격 일반화엔 약함 (코덱스 우려 시나리오 적중)
+- 코덱스 9차 자문: "raw image prior 는 no-go 에 가까운 provisional cut"
+
+### 우선순위 변경
+| Before (코덱스 6차) | After (코덱스 9차, 2026-05-05) |
+|---|---|
+| 1. A. Image retrieval prior | 1. **C-lite. GPBoost mixed-effects** (승격) |
+| 2. C-lite. GPBoost | 2. **R. Composite retrieval prior** (신설) |
+| - | 3. ~~A. Raw image~~ (provisional cut, exploratory only) |
+
+### 핵심 변경 사항
+- **C-lite 1순위 승격** (confirmatory primary)
+- **R (composite retrieval prior) 신설** — image + medium/size joint NN, image incremental gate 포함
+- **A deprioritized** — 본 데이터 compressed re-check 후만 후보 재진입 검토
+- **2주 plan Week 1 수정** — image-only 대신 3-way compressed re-check (medium/size-only / composite / baseline+composite)
+- **R Pass gate 추가** — image incremental gain ≥ 0.3pp + memorization retention ≥ 50%
+
+## 13. 코덱스 자문 기록
 
 | 회차 | 주제 | 결론 |
 |---|---|---|
@@ -268,3 +302,5 @@
 | 5차 | Repeated holdout | **P + Saatchi veto** (V4 종결) |
 | 6차 | V5 방향 리서치 | A + C-lite 권고 (B 하락) |
 | 7차 | V5 2주 plan + 사전등록 | 본 문서 |
+| 8차 | 마이그레이션 전 진행 | 옵션 Y 권고 (A+B+D+E migration-robust 작업) |
+| 9차 | PILOT 결과 | **A → exploratory-only / C-lite 1순위 / R 신설** (본 수정의 근거) |
