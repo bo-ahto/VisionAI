@@ -93,9 +93,18 @@ def normalize(name: str | float | None) -> str:
     return re.sub(r"\s+", " ", str(name)).strip()
 
 
-def load_tier_lookup() -> dict[str, tuple[str, str]]:
-    """협력자 리스트 로드. NaN 명칭 dropna, 공백 정규화."""
-    tier_csv = DATA / "art_gallery_tier_list_v3.xlsx - 전체 리스트.csv"
+def load_tier_lookup(version: str = "v4") -> dict[str, tuple[str, str]]:
+    """협력자 리스트 로드. NaN 명칭 dropna, 공백 정규화.
+
+    version="v4": v3 88건 + Top30 검수 30건 (build_gallery_tier_v4.py 산출)
+    version="v3": legacy 호환용 (88건)
+    """
+    if version == "v4":
+        tier_csv = DATA / "art_gallery_tier_list_v4.csv"
+    elif version == "v3":
+        tier_csv = DATA / "art_gallery_tier_list_v3.xlsx - 전체 리스트.csv"
+    else:
+        raise ValueError(f"Unknown version: {version}")
     df = pd.read_csv(tier_csv)
     df = df.dropna(subset=["명칭"])
     lookup: dict[str, tuple[str, str]] = {}
@@ -108,13 +117,27 @@ def load_tier_lookup() -> dict[str, tuple[str, str]]:
     return lookup
 
 
+def load_alias_map() -> dict[str, str]:
+    """data/gallery_alias_map.csv 에서 영문→한글 매핑 로드.
+
+    코덱스 자문 반영: 하드코딩 dict → 외부 CSV 데이터 테이블.
+    검수 라운드마다 같은 패턴 반복 방지.
+    """
+    alias_csv = DATA / "gallery_alias_map.csv"
+    df = pd.read_csv(alias_csv)
+    return {normalize(r["영문명"]): normalize(r["한글명"]) for _, r in df.iterrows()}
+
+
 def determine_gallery_tier_class(
     gallery_name: str | None,
     tier_lookup: dict[str, tuple[str, str]],
+    alias_map: dict[str, str] | None = None,
     apply_d_fallback: bool = False,
     gallery_type: str | None = None,
 ) -> tuple[str, str]:
     """gallery_name → (tier, class).
+
+    alias_map: 영문→한글 매핑 (None 이면 전역 ARTSY_TO_KOR_GALLERY 사용 — legacy).
 
     apply_d_fallback=True 인 경우, 미매칭이면서 commercial gallery type이면
     Tier D ("미분류 commercial gallery — 한국화랑협회/지역 중소 추정")로 둔다.
@@ -125,7 +148,10 @@ def determine_gallery_tier_class(
         return ("Tier E", "미분류")
     if n == "Saatchi Art":
         return ("Tier E", "온라인 플랫폼")
-    kor_name = ARTSY_TO_KOR_GALLERY.get(n, n)
+    if alias_map is not None:
+        kor_name = alias_map.get(n, n)
+    else:
+        kor_name = ARTSY_TO_KOR_GALLERY.get(n, n)
     kor_norm = normalize(kor_name)
     if kor_norm in tier_lookup:
         return tier_lookup[kor_norm]
@@ -144,6 +170,47 @@ def bootstrap_median_ci(values: np.ndarray, n_boot: int = 1000, alpha: float = 0
     lo = np.quantile(boots, alpha / 2)
     hi = np.quantile(boots, 1 - alpha / 2)
     return (float(lo), float(hi))
+
+
+
+def _bootstrap_be_ratio_ci(
+    df: pd.DataFrame, tier_col: str = "tier_v3", n_boot: int = 2000, alpha: float = 0.05, seed: int = 42
+) -> dict:
+    """B/E median price ratio bootstrap CI + ln_price effect size (Cohen's d).
+
+    코덱스 자문 §1.3: median ratio 자체의 CI 와 ln_price effect size 동시 보고.
+    """
+    b = df[df[tier_col] == "Tier B"]["price_krw"].to_numpy()
+    e = df[df[tier_col] == "Tier E"]["price_krw"].to_numpy()
+    ln_b = df[df[tier_col] == "Tier B"]["ln_price"].to_numpy()
+    ln_e = df[df[tier_col] == "Tier E"]["ln_price"].to_numpy()
+
+    if len(b) == 0 or len(e) == 0:
+        return {"n_b": int(len(b)), "n_e": int(len(e)), "median_ratio": None, "ratio_ci95": [None, None], "cohens_d_lnprice": None}
+
+    rng = np.random.default_rng(seed)
+    ratios = []
+    for _ in range(n_boot):
+        rb = rng.choice(b, size=len(b), replace=True)
+        re_ = rng.choice(e, size=len(e), replace=True)
+        ratios.append(float(np.median(rb) / np.median(re_)))
+    ratios = np.array(ratios)
+    median_ratio = float(np.median(b) / np.median(e))
+    ci_lo = float(np.quantile(ratios, alpha / 2))
+    ci_hi = float(np.quantile(ratios, 1 - alpha / 2))
+
+    # Cohen's d on ln_price (pooled SD)
+    pooled = np.sqrt(((len(ln_b) - 1) * np.var(ln_b, ddof=1) + (len(ln_e) - 1) * np.var(ln_e, ddof=1)) / (len(ln_b) + len(ln_e) - 2))
+    d = float((np.mean(ln_b) - np.mean(ln_e)) / pooled) if pooled > 0 else float("nan")
+
+    return {
+        "n_b": int(len(b)),
+        "n_e": int(len(e)),
+        "median_ratio": round(median_ratio, 3),
+        "ratio_ci95": [round(ci_lo, 3), round(ci_hi, 3)],
+        "ratio_ci_excludes_1": bool(ci_lo > 1 or ci_hi < 1),
+        "cohens_d_lnprice": round(d, 3),
+    }
 
 
 def price_stats(df: pd.DataFrame, tier_col: str = "tier_v3") -> dict:
@@ -185,9 +252,17 @@ def crosstab_existing_tier(df: pd.DataFrame) -> dict:
 
 
 def analyze() -> dict:
-    """Artsy + Saatchi 데이터에 매핑 적용 후 커버리지 + 가격 분리도 측정."""
-    tier_lookup = load_tier_lookup()
-    logger.info("Tier list loaded: %d 갤러리/기관 (NaN dropna 후)", len(tier_lookup))
+    """Artsy + Saatchi 데이터에 v4 매핑 적용 후 커버리지 + 가격 분리도 측정.
+
+    코덱스 자문 반영:
+    - tier_lookup: v4 (118건)
+    - alias_map: data/gallery_alias_map.csv 외부 로드 (43건)
+    - assertion: Top30 영문명이 Artsy unique gallery에 모두 존재하는지 검증
+    """
+    tier_lookup = load_tier_lookup(version="v4")
+    alias_map = load_alias_map()
+    logger.info("Tier list (v4) loaded: %d 갤러리/기관", len(tier_lookup))
+    logger.info("Alias map loaded: %d 영문→한글 매핑", len(alias_map))
 
     artsy = pd.read_parquet(DATA / "primary_market_dataset.parquet")
     saatchi = pd.read_parquet(DATA / "saatchi_cleaned.parquet")
@@ -199,6 +274,19 @@ def analyze() -> dict:
     logger.info("Artsy: 전체 %d / 학습 %d 작품", len(artsy), len(artsy_trained))
     logger.info("Saatchi: 전체 %d / 학습 %d 작품", len(saatchi), len(saatchi_trained))
 
+    # ─── Assertion: Top30 영문명이 Artsy unique gallery에 모두 존재 ───
+    top30 = pd.read_csv(DATA / "top30_피드백.csv")
+    artsy_galleries_norm = {normalize(g) for g in artsy_trained["gallery_name"].dropna().unique()}
+    top30_missing = [
+        n for n in top30["영문명"]
+        if normalize(n) not in artsy_galleries_norm
+    ]
+    if top30_missing:
+        raise AssertionError(
+            f"Top30 검수 명단에 Artsy 학습 데이터 미존재 갤러리 {len(top30_missing)}건: {top30_missing}"
+        )
+    logger.info("✓ Assertion passed: Top30 30/30 모두 Artsy unique gallery에 존재")
+
     # ─── Artsy 매핑 (default + Tier D fallback) ─────────────
     def apply_tier_rowwise(df: pd.DataFrame, fallback: bool) -> pd.DataFrame:
         df = df.copy()
@@ -208,6 +296,7 @@ def analyze() -> dict:
             t, c = determine_gallery_tier_class(
                 row.get("gallery_name"),
                 tier_lookup,
+                alias_map=alias_map,
                 apply_d_fallback=fallback,
                 gallery_type=row.get("gallery_type"),
             )
@@ -226,7 +315,7 @@ def analyze() -> dict:
     unmatched_galleries = []
     for name, cnt in vc.items():
         n_norm = normalize(name)
-        kor = ARTSY_TO_KOR_GALLERY.get(n_norm, n_norm)
+        kor = alias_map.get(n_norm, n_norm)
         if normalize(kor) in tier_lookup:
             tier, cls = tier_lookup[normalize(kor)]
             matched_galleries.append({"name": name, "kor": kor, "tier": tier, "class": cls, "n": int(cnt)})
@@ -241,6 +330,9 @@ def analyze() -> dict:
     artsy_price_stats = price_stats(artsy_default)
     artsy_price_stats_d = price_stats(artsy_d_fallback)  # sensitivity
 
+    # B/E median ratio bootstrap CI (코덱스 자문 §1.3)
+    be_ratio_ci = _bootstrap_be_ratio_ci(artsy_default)
+
     # 기존 gallery_tier와의 교차표
     artsy_crosstab = crosstab_existing_tier(artsy_default)
 
@@ -253,11 +345,17 @@ def analyze() -> dict:
         "price_q25": float(np.quantile(saatchi_trained["price_krw"], 0.25)) if len(saatchi_trained) else None,
         "price_q75": float(np.quantile(saatchi_trained["price_krw"], 0.75)) if len(saatchi_trained) else None,
         "ln_mean": float(np.mean(saatchi_trained["ln_price"])) if len(saatchi_trained) else None,
-        "note": "온라인 플랫폼 — 갤러리 개념 미적용. 기존 파이프라인은 source='saatchi'로 분리 처리."
+        "note": "온라인 플랫폼 — 갤러리 개념 미적용. 기존 파이프라인은 source='saatchi'로 분리 처리.",
     }
+
+    # 게이트 판정 (코덱스 자문 §4)
+    coverage_pct = round(100 * matched_works / len(artsy_trained), 1)
+    tier_b_n = int(artsy_default["tier_v3"].eq("Tier B").sum())
+    gate_passed = coverage_pct >= 60.0 and tier_b_n >= 200
 
     return {
         "tier_list_size": len(tier_lookup),
+        "alias_map_size": len(alias_map),
         "artsy": {
             "total_works": int(len(artsy)),
             "trained_works": int(len(artsy_trained)),
@@ -266,7 +364,7 @@ def analyze() -> dict:
             "unmatched_galleries_count": len(unmatched_galleries),
             "matched_works": matched_works,
             "unmatched_works": unmatched_works,
-            "matched_works_pct": round(100 * matched_works / len(artsy_trained), 1),
+            "matched_works_pct": coverage_pct,
             "top30_unmatched_works": top30_unmatched_works,
             "top30_unmatched_pct_of_unmatched": round(100 * top30_unmatched_works / unmatched_works, 1) if unmatched_works else 0,
             "top30_unmatched_pct_of_total": round(100 * top30_unmatched_works / len(artsy_trained), 1),
@@ -276,9 +374,18 @@ def analyze() -> dict:
             "unmatched_galleries_top30": unmatched_galleries[:30],
             "price_stats_default": artsy_price_stats,
             "price_stats_d_fallback": artsy_price_stats_d,
+            "be_ratio_bootstrap_ci": be_ratio_ci,
             "crosstab_v3_vs_existing_tier": artsy_crosstab,
         },
         "saatchi": saatchi_summary,
+        "ablation_gate": {
+            "coverage_pct": coverage_pct,
+            "coverage_threshold": 60.0,
+            "tier_b_n": tier_b_n,
+            "tier_b_threshold": 200,
+            "passed": gate_passed,
+            "decision": "ablation 진행 가능" if gate_passed else "ablation 보류 — 게이트 미통과",
+        },
     }
 
 
