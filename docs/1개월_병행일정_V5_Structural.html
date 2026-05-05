@@ -269,7 +269,7 @@
     <td><strong>피처 설계</strong></td>
     <td>
       <ul style="margin: 6px 0;">
-        <li>Week 1 에 V3 32 features 의 기여/누수/운영 리스크 검증 (feature validation gate)</li>
+        <li>Week 1 에 V3 32 features 의 기여/누수/운영 리스크 검증 + 후보군 정의 (GATE 1)</li>
         <li>새 candidate features 도입 후 검증</li>
         <li>source 유지 (예측력 + calibration 검증됨)</li>
       </ul>
@@ -295,7 +295,7 @@
         <li>Hedonic mixed-effects 회귀</li>
         <li>변수별 가격 기여 분해</li>
         <li>작가/갤러리별 차이 분리 (random effects)</li>
-        <li>"왜 이 가격이 나왔는가" 를 5-7개 변수로 설명</li>
+        <li>"왜 이 가격이 나왔는가" 를 Week 2 freeze 된 feature set (Core 5 또는 Main 7) 으로 설명</li>
       </ul>
     </td>
   </tr>
@@ -342,7 +342,7 @@
     <td>
       <ul style="margin: 6px 0;">
         <li>설명 가능한 benchmark</li>
-        <li>Feature discipline (5-7 변수 의미성 검증)</li>
+        <li>Feature discipline (Core 5 / Main 7 의미성 검증)</li>
         <li>Fallback 후보 모델</li>
         <li>사업 설명 frame (변수별 가격 기여 표)</li>
       </ul>
@@ -388,27 +388,27 @@
   <tr>
     <th>축 (Dimension)</th>
     <th>측정 지표</th>
-    <th>가중치</th>
+    <th>가중치 (총 100)</th>
   </tr>
   <tr>
     <td><strong>정확도</strong></td>
     <td>Holdout MdAPE (전체 + 신규 작가) / W30 / W50</td>
-    <td>높음</td>
+    <td>40</td>
   </tr>
   <tr>
     <td><strong>안정성</strong></td>
     <td>3-seed 재현성 / cold-start 변동성 / 분포 drift</td>
-    <td>높음</td>
+    <td>30</td>
   </tr>
   <tr>
     <td><strong>운영성</strong></td>
     <td>Latency / Fallback 빈도 / 입력 누락 robustness / 모델 수렴 안정성</td>
-    <td>중간</td>
+    <td>20</td>
   </tr>
   <tr>
     <td><strong>해석성</strong></td>
     <td>변수별 가격 기여 설명 가능 여부 / 인과 신뢰도 등급</td>
-    <td>중간</td>
+    <td>10</td>
   </tr>
 </table>
 
@@ -502,7 +502,7 @@
       </ul>
     </td>
     <td>
-      <span class="gate">GATE 2: candidate freeze</span>
+      <span class="gate">GATE 2: 트랙 2 feature set freeze + candidate freeze</span>
       <ul style="margin: 4px 0;">
         <li>트랙 2: Core 5 / Main 7 검증 완료 후 최종 feature set 확정</li>
         <li>두 트랙 모두 후보 모델 1개씩 freeze (이후 변경 금지)</li>
@@ -539,7 +539,7 @@
         <li>복합 scorecard 기반 winner 결정</li>
         <li><strong>최소 조건</strong>: 정확도 baseline 이상 + 안정성 pass + 운영성 pass</li>
         <li>champion 만 Week 4 canary 진행</li>
-        <li>비선정 모델 = 원칙적으로 보조 모델 전환, 필요 시 한시적 shadow 유지</li>
+        <li>비선정 모델 = 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 한시적 shadow 유지</li>
         <li>champion 없음 (양 트랙 미충족) → V3 baseline 유지, Week 4 retrospective 중심</li>
       </ul>
     </td>
