@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>1개월 병행 일정 — V5 cycle + Structural Pricing track</title>
+<title>1개월 가격예측 모델 실험 계획</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Noto Sans KR", sans-serif;
@@ -10,135 +10,45 @@
     margin: 30px auto;
     padding: 0 24px;
     color: #1f2937;
-    line-height: 1.55;
+    line-height: 1.6;
     background: #fafbfc;
   }
   h1 {
-    font-size: 1.75em;
+    font-size: 1.85em;
     border-bottom: 3px solid #2563eb;
-    padding-bottom: 8px;
+    padding-bottom: 10px;
     margin-bottom: 6px;
+    color: #111827;
   }
   h2 {
-    margin-top: 32px;
+    margin-top: 36px;
     color: #1e40af;
     border-left: 4px solid #2563eb;
-    padding-left: 12px;
+    padding-left: 14px;
+    font-size: 1.35em;
   }
   h3 {
     color: #1e3a8a;
     margin-top: 24px;
+    font-size: 1.1em;
   }
   .meta {
     color: #6b7280;
-    font-size: 0.92em;
+    font-size: 0.93em;
     margin-bottom: 18px;
   }
-  .grid {
-    display: grid;
-    grid-template-columns: 70px 1fr 1fr;
-    border: 1px solid #d1d5db;
-    margin: 18px 0;
-    background: white;
-  }
-  .grid-header {
-    background: #1e40af;
-    color: white;
-    padding: 10px 12px;
-    font-weight: 600;
-    text-align: center;
-  }
-  .grid-row {
-    display: contents;
-  }
-  .day-cell {
-    background: #f3f4f6;
-    padding: 10px 8px;
-    border-top: 1px solid #d1d5db;
-    border-right: 1px solid #d1d5db;
-    text-align: center;
-    font-weight: 600;
-    color: #374151;
-  }
-  .v5-cell, .struct-cell {
-    padding: 10px 12px;
-    border-top: 1px solid #d1d5db;
-    border-right: 1px solid #d1d5db;
-    font-size: 0.92em;
-  }
-  .v5-cell {
-    background: #fef3c7;
-  }
-  .struct-cell {
-    background: #dbeafe;
-  }
-  .week-divider {
-    grid-column: 1 / -1;
-    background: #e0e7ff;
-    color: #1e40af;
-    padding: 10px 16px;
-    font-weight: 700;
-    font-size: 1.05em;
-    border-top: 2px solid #1e40af;
-    border-bottom: 1px solid #1e40af;
-  }
-  .pass {
-    color: #16a34a;
-    font-weight: 600;
-  }
-  .fail {
-    color: #dc2626;
-    font-weight: 600;
-  }
-  .stretch {
-    color: #9333ea;
-    font-style: italic;
-  }
-  .pending {
-    color: #ea580c;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 18px 0;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }
-  th, td {
-    border: 1px solid #d1d5db;
-    padding: 9px 12px;
-    text-align: left;
-  }
-  th {
-    background: #1e40af;
-    color: white;
-    font-weight: 600;
-  }
-  tr:nth-child(even) {
-    background: #f9fafb;
-  }
-  .legend {
-    display: flex;
-    gap: 20px;
-    margin: 12px 0;
-    font-size: 0.92em;
-    flex-wrap: wrap;
-  }
-  .legend-box {
-    width: 18px;
-    height: 18px;
-    display: inline-block;
-    margin-right: 4px;
-    vertical-align: middle;
-    border: 1px solid #9ca3af;
-  }
-  .v5-box { background: #fef3c7; }
-  .struct-box { background: #dbeafe; }
-  .stretch-box { background: #f3e8ff; }
   .summary-box {
     background: #f0fdf4;
     border-left: 4px solid #16a34a;
-    padding: 12px 16px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 4px;
+    font-size: 1.02em;
+  }
+  .info-box {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 14px 18px;
     margin: 14px 0;
     border-radius: 4px;
   }
@@ -156,12 +66,107 @@
     margin: 14px 0;
     border-radius: 4px;
   }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 0.95em;
+  }
+  th, td {
+    border: 1px solid #d1d5db;
+    padding: 10px 13px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #1e40af;
+    color: white;
+    font-weight: 600;
+  }
+  tr:nth-child(even) {
+    background: #f9fafb;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr;
+    border: 1px solid #d1d5db;
+    margin: 18px 0;
+    background: white;
+  }
+  .grid-header {
+    background: #1e40af;
+    color: white;
+    padding: 11px 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .day-cell {
+    background: #f3f4f6;
+    padding: 10px 8px;
+    border-top: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    text-align: center;
+    font-weight: 600;
+    color: #374151;
+  }
+  .v5-cell, .struct-cell {
+    padding: 11px 14px;
+    border-top: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    font-size: 0.93em;
+  }
+  .v5-cell {
+    background: #fef3c7;
+  }
+  .struct-cell {
+    background: #dbeafe;
+  }
+  .week-divider {
+    grid-column: 1 / -1;
+    background: #e0e7ff;
+    color: #1e40af;
+    padding: 11px 16px;
+    font-weight: 700;
+    font-size: 1.05em;
+    border-top: 2px solid #1e40af;
+    border-bottom: 1px solid #1e40af;
+  }
+  .pass {
+    color: #16a34a;
+    font-weight: 600;
+  }
+  .fail {
+    color: #dc2626;
+    font-weight: 600;
+  }
+  .pending {
+    color: #ea580c;
+  }
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin: 14px 0;
+    font-size: 0.93em;
+    flex-wrap: wrap;
+  }
+  .legend-box {
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+    margin-right: 5px;
+    vertical-align: middle;
+    border: 1px solid #9ca3af;
+  }
+  .v5-box { background: #fef3c7; }
+  .struct-box { background: #dbeafe; }
   ul, ol {
     margin: 8px 0;
-    padding-left: 24px;
+    padding-left: 26px;
   }
   li {
-    margin: 4px 0;
+    margin: 5px 0;
   }
   .small {
     font-size: 0.88em;
@@ -175,549 +180,637 @@
     font-family: "SF Mono", "Monaco", "Menlo", monospace;
   }
   .footer {
-    margin-top: 40px;
-    padding-top: 16px;
-    border-top: 1px solid #d1d5db;
+    margin-top: 44px;
+    padding-top: 18px;
+    border-top: 2px solid #d1d5db;
     color: #6b7280;
-    font-size: 0.88em;
+    font-size: 0.92em;
+  }
+  .kpi {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.92em;
   }
 </style>
 </head>
 <body>
 
-<h1>📅 1개월 병행 일정 — V5 cycle + Structural Pricing track</h1>
+<h1>1개월 가격예측 모델 실험 계획</h1>
 <p class="meta">
-  <strong>작성</strong>: 2026-05-05 |
-  <strong>대상</strong>: V5 cycle (마이그레이션 후 시작) + Structural Pricing track (별도, 즉시 시작 가능) |
-  <strong>총 기간</strong>: 28일 (4주)
+  <strong>작성일</strong>: 2026-05-05 ·
+  <strong>대상 기간</strong>: 28일 (4주) ·
+  <strong>주제</strong>: 운영 모델 개선 (V5) + 신규 해석 가능 모델 (Structural Pricing) 병행 진행
 </p>
 
-<h2>1. 병행 전략 요약</h2>
+<h2>1. 핵심 요약 (TL;DR)</h2>
 
 <div class="summary-box">
-  <strong>핵심 전략</strong>: V5 cycle 14일 집중 (Week 1-2) + Structural Pricing 28일 분산. <strong>Morning V5 / Afternoon Structural</strong> time-blocked interleave (코덱스 13차 권고).
+  향후 1개월 동안 <strong>두 가지 트랙을 병행</strong> 진행하겠습니다.
+  <ol>
+    <li><strong>트랙 1 (운영 모델 개선)</strong>: 협력자 갤러리 검수 데이터를 활용해 현재 모델의 신규 작가 예측 약점을 직접 개선하겠습니다 (14일).</li>
+    <li><strong>트랙 2 (해석 가능 비교 기준 모델)</strong>: 변수별 가격 영향을 설명할 수 있는 별도 모델을 구축해 운영 모델의 비교 기준이자 설명 자료로 활용하겠습니다 (28일).</li>
+  </ol>
+  두 트랙은 동일한 검증 방식으로 비교하겠습니다. 같은 작가가 학습·평가에 동시에 섞이지 않도록 분리하고, 이를 3회 반복해 재현성을 확인합니다.
+  <br><br>
+  <strong>4주 후 남는 것</strong>: ① 신규 작가 예측 개선 도입 결정 (도입 또는 보류 명확) + ② 변수별 가격 기여 설명서 (10-15페이지 보고서) + ③ 두 모델 비교 표.
+  <br>
+  <strong>승인 요청</strong>: 본 4주 plan 진행 + 마이그레이션 데이터 사용 가능일 확정 + 추가 갤러리 검수 지원.
 </div>
 
-<div class="warn-box">
-  <strong>⚠️ 코덱스 13차 자문 (2026-05-05) 권고 반영</strong>:
-  <ul>
-    <li>시간 budget: <strong>110-115h 운영 + 13-18h buffer</strong> (총 128h 가용)</li>
-    <li>운영 모드 = <strong>B (Morning V5 / Afternoon Structural)</strong> — Day-by-day interleave 보다 cognitive load 낮음</li>
-    <li>V5 Week 2 = <strong>분기 규칙</strong> (R/S pass → 통합 ablation / fail → C-lite only)</li>
-    <li>Week 3-4 V5 운영 작업 명시 — PR merge readiness + monitoring checklist + V5 retro</li>
-    <li>Structural <strong>Must/Optional/Stretch 계층화</strong> — Quantile/Bayesian downgrade</li>
+<h2>2. 배경 — 현재 모델 상태</h2>
+
+<h3>운영 모델 (V3) 성능</h3>
+<table>
+  <tr>
+    <th>측정 조건</th>
+    <th>MdAPE</th>
+    <th>의미</th>
+    <th>활용 가능성</th>
+  </tr>
+  <tr>
+    <td><strong>Warm</strong> (기존 거래 작가)</td>
+    <td><span class="kpi">12-18%</span></td>
+    <td>예측이 실제값의 12-18% 범위 (median)</td>
+    <td>✅ 운영 활용 가능</td>
+  </tr>
+  <tr>
+    <td><strong>Cold-start</strong> (신규 작가)</td>
+    <td><span class="kpi" style="background: #fee2e2; color: #dc2626;">28-48%</span></td>
+    <td>예측 변동성 큼</td>
+    <td>⚠️ 보조 도구로만 사용 권장</td>
+  </tr>
+  <tr>
+    <td><strong>격차</strong></td>
+    <td><span class="kpi" style="background: #fef3c7; color: #92400e;">23%p</span></td>
+    <td>warm 과 cold-start 의 본질적 difficulty 차이</td>
+    <td>핵심 개선 영역</td>
+  </tr>
+</table>
+
+<h3>두 트랙 병행이 필요한 이유</h3>
+<ul>
+  <li>
+    <strong>트랙 1 (운영 모델 개선)</strong>: 신규 작가 예측 영역의 직접 개선 — 협력자 갤러리 검수 데이터 + 새로운 가격 anchor feature 도입.
+    <br><span class="small">→ 1개월 내 운영 가능 여부 검증 + 도입 결정.</span>
+  </li>
+  <li>
+    <strong>트랙 2 (해석 가능 비교 기준 모델)</strong>: 현 운영 모델의 해석 한계를 보완하기 위해, 변수별 가격 영향이 설명 가능한 비교 기준 모델을 별도 구축하겠습니다.
+    <br><span class="small">→ 운영 도입 X, 운영 모델의 설명 자료 + 학술적 비교 기준.</span>
+  </li>
+</ul>
+
+<div class="info-box small">
+  <strong>주요 용어 (본문 첫 등장 시 풀이)</strong>:
+  <ul style="margin: 6px 0;">
+    <li><strong>MdAPE</strong>: 예측 오차의 대표값 (중앙값 기준 % 오차)</li>
+    <li><strong>holdout</strong>: 학습에 사용하지 않은 별도 검증 셋</li>
+    <li><strong>3 seeds</strong>: 랜덤 분할을 3회 반복한 재현성 점검</li>
+    <li><strong>cold-start / 신규 작가</strong>: 학습에 등장하지 않은 새 작가 예측</li>
+    <li><strong>warm / 기존 작가</strong>: 학습 데이터에 작품이 있는 작가</li>
   </ul>
 </div>
 
-<h3>병행 ROI 우선순위 (코덱스 13차)</h3>
-<ol>
-  <li><strong>1순위</strong>: V5 운영 의사결정 명료화 (cold-start 개선 + 도입 결정)</li>
-  <li><strong>2순위</strong>: Structural 해석 가능 baseline 확보 (V3 black-box 보완재)</li>
-  <li><strong>3순위</strong>: Quantile/Bayesian 같은 확장 (Stretch only)</li>
-</ol>
-<p class="small">⚠️ Structural 이 재미있어서 시간이 빨려 들어갈 위험. <strong>Week 4 final report 보다 Week 2 OLS baseline 확보가 최소 성공 기준</strong>.</p>
+<h2>3. 트랙 정의</h2>
 
-<div class="warn-box">
-  <strong>⚠️ 가정</strong>: V5 cycle은 본 마이그레이션 데이터가 Day 1 전 도착했다고 가정. 실제로 도착 지연 시 V5 시작 day shift, Structural은 영향 X (즉시 시작 가능).
-  <br>→ Dependency stop: 마이그레이션 데이터 미도착 시 <strong>Structural Week 1 만 먼저 진행</strong>.
-</div>
+<h3>트랙 1 — 운영 모델 개선 (V5 Cycle, 14일)</h3>
 
-<h3>일별 시간 분배 — 운영 모드 B (Morning/Afternoon)</h3>
 <table>
-  <tr><th>Phase</th><th>오전 V5 (h/day)</th><th>오후 Structural (h/day)</th><th>Total (h/day)</th></tr>
-  <tr><td>Week 1</td><td>2-3 (intensive)</td><td>2-3</td><td>4-6</td></tr>
-  <tr><td>Week 2</td><td>2-3 (intensive)</td><td>2-3</td><td>4-6</td></tr>
-  <tr><td>Week 3</td><td>1-2 (PR merge / monitoring)</td><td>3-4 (ME 본격)</td><td>4-6</td></tr>
-  <tr><td>Week 4</td><td>0-1 (light monitoring)</td><td>4-5 (Quantile + report)</td><td>4-6</td></tr>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr>
+    <td><strong>목적</strong></td>
+    <td>V3 의 cold-start MdAPE 를 stretch -5%p / 현실 -2~4%p 개선</td>
+  </tr>
+  <tr>
+    <td><strong>도입 후보</strong></td>
+    <td>
+      ① 작가별 차이 보정 (mixed-effects 잔차 모델)<br>
+      ② 매체 + 크기 기반 가격 anchor (유사 작품 NN retrieval)<br>
+      ③ 매체 + 크기만 사용 (image 효과 부족 시 fallback)
+    </td>
+  </tr>
+  <tr>
+    <td><strong>전제조건</strong></td>
+    <td>본 마이그레이션 데이터 도착 + 추가 미매칭 갤러리 일괄 검수 완료</td>
+  </tr>
+  <tr>
+    <td><strong>평가 방법</strong></td>
+    <td>같은 작가가 학습·평가에 동시에 섞이지 않도록 분리 (artist-level holdout 80/20), 3회 반복 (재현성 점검)</td>
+  </tr>
+  <tr>
+    <td><strong>도입 결정 기준</strong></td>
+    <td>
+      ① 3회 반복 모두 같은 방향 + ② 평균 오차 개선 ≥ 0.8%p 또는 ≥ 3% 상대 개선 + ③ 작가 식별 의존도 ≤ 50% (단순 작가 매칭으로만 개선되는 경우 제외)
+    </td>
+  </tr>
+  <tr>
+    <td><strong>산출물</strong></td>
+    <td>의사결정 메모 + 모델 PR + 운영 monitoring checklist</td>
+  </tr>
 </table>
-<p class="small">주말은 한 트랙만 몰아서. Structural의 문헌/보고서성 작업은 V5 compute 대기 시간에 배치.</p>
 
-<h3>Legend</h3>
+<h3>트랙 2 — 해석 가능 비교 기준 모델 (Structural Pricing, 28일)</h3>
+
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr>
+    <td><strong>목적</strong></td>
+    <td>운영 모델과 별도로, 가격 결정 요인을 설명할 수 있는 해석 가능 기준 모델을 구축하겠습니다. 이 모델은 운영 모델의 비교 기준이자 설명 자료로 활용합니다.</td>
+  </tr>
+  <tr>
+    <td><strong>모델 형태</strong></td>
+    <td>
+      변수별 가격 기여를 분해해 보여주는 회귀 모델 + 작가/갤러리별 차이를 별도로 분리하는 mixed-effects 구조.<br>
+      <span class="small">→ "왜 이 가격이 나왔는가" 를 변수 단위로 설명 가능</span>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>주요 변수 (15-25개)</strong></td>
+    <td>
+      작품 크기 / 매체 (oil, acrylic 등) / 제작 연도 / 작가 경력 단계 / 작가 활동 지표 / 갤러리 티어 / 데이터 소스 등
+    </td>
+  </tr>
+  <tr>
+    <td><strong>인과 framing</strong></td>
+    <td>
+      변수 간 인과 구조 (DAG) 명시 → 신뢰 가능한 효과 (예: 크기 → 가격) vs 단순 상관관계 (예: 갤러리 티어와 가격) 를 분리해 보고하겠습니다.<br>
+      <span class="small">→ 약한 근거를 강한 근거처럼 포장하지 않음</span>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>설계 원칙</strong></td>
+    <td>
+      1차 시장 데이터에 맞는 변수 체계를 사용하고, 작가/갤러리 효과를 분리해 해석 가능한 결과를 만들겠습니다. 변수 정의 / 인과 가정 / 모델 한계를 모두 문서화합니다.
+    </td>
+  </tr>
+  <tr>
+    <td><strong>산출물</strong></td>
+    <td>
+      변수별 가격 기여 표 · 작가/갤러리 효과 분해 · 인과 신뢰도 등급표 · 운영 모델과 비교 표 · <strong>최종 보고서 (10-15페이지)</strong>
+    </td>
+  </tr>
+</table>
+
+<h2>4. 1개월 일정</h2>
+
+<h3>주차별 핵심 (요약)</h3>
+<table>
+  <tr><th>Week</th><th>트랙 1 (운영 모델)</th><th>트랙 2 (해석 가능 모델)</th><th>주말 산출물</th></tr>
+  <tr>
+    <td><strong>Week 1</strong></td>
+    <td>신규 작가 예측 후보 검증 (R / S / C-lite)</td>
+    <td>변수 체계 확정 + 데이터 전처리 + 인과 구조도</td>
+    <td>Week 1 진행 보고</td>
+  </tr>
+  <tr>
+    <td><strong>Week 2</strong></td>
+    <td>도입 결정 (go / no-go)</td>
+    <td>OLS 회귀 결과 + 운영 모델 비교 표</td>
+    <td>도입 결정 메모</td>
+  </tr>
+  <tr>
+    <td><strong>Week 3</strong></td>
+    <td>PR 준비 + 운영 monitoring 계획</td>
+    <td>Mixed-effects 모델 + 작가/갤러리 분산 분해</td>
+    <td>PR review 결과</td>
+  </tr>
+  <tr>
+    <td><strong>Week 4</strong></td>
+    <td>운영 안정화 (light)</td>
+    <td>최종 보고서 작성 (10-15페이지)</td>
+    <td>1개월 종합 보고</td>
+  </tr>
+</table>
+
+<h3>운영 원칙</h3>
+<ul>
+  <li><strong>일별 운영 모드</strong>: 오전 트랙 1 (운영 모델) / 오후 트랙 2 (해석 가능 모델) — 도메인 전환 비용 줄이기 위해 시간대 분리</li>
+  <li><strong>주말 활용</strong>: 한 트랙만 몰아서 처리 (병행 부담 줄이기)</li>
+  <li><strong>버퍼 자동 적용</strong>: 어느 주든 시간 초과 +30% 시 추가 항목 (stretch) 자동 제거</li>
+</ul>
+
+<h3>Day-by-Day 상세</h3>
+
 <div class="legend">
-  <span><span class="legend-box v5-box"></span>V5 cycle (운영 모델)</span>
-  <span><span class="legend-box struct-box"></span>Structural Pricing (학술 baseline)</span>
-  <span><span class="legend-box stretch-box"></span>Stretch (선택)</span>
-  <span><span class="pass">✓</span> Pass criteria</span>
-  <span><span class="fail">✗</span> Stop conditions</span>
+  <span><span class="legend-box v5-box"></span>트랙 1 — V5 cycle (운영 모델)</span>
+  <span><span class="legend-box struct-box"></span>트랙 2 — Structural Pricing (학술 baseline)</span>
+  <span><span class="pass">✓</span> 통과 기준</span>
+  <span><span class="fail">✗</span> 중단 기준</span>
 </div>
-
-<h2>2. Day-by-Day 일정</h2>
 
 <div class="grid">
   <div class="grid-header">Day</div>
-  <div class="grid-header">V5 cycle</div>
-  <div class="grid-header">Structural Pricing</div>
+  <div class="grid-header">트랙 1: V5 Cycle</div>
+  <div class="grid-header">트랙 2: Structural Pricing</div>
 
-  <div class="week-divider">📍 Week 1 — V5 진단 + Structural 문헌/DAG (Day 1-7)</div>
+  <div class="week-divider">📍 Week 1 (Day 1-7) — V5 진단 / Structural 문헌·DAG·데이터 spec</div>
 
   <div class="day-cell">Day 1<br><span class="small">월</span></div>
   <div class="v5-cell">
-    <strong>LAO split 재생성</strong> (본 데이터 기준)<br>
-    artist_slug overlap=0 hard gate<br>
+    <strong>LAO split 재생성</strong> (본 마이그레이션 데이터 기준)<br>
     DINOv2 embedding 재계산 (background, ~2h)<br>
-    <span class="small pass">✓ overlap=0 PASS</span> · <span class="small fail">✗ overlap≥1 즉시 재설계</span>
+    <span class="small pass">✓ artist 중복 0건</span> · <span class="small fail">✗ 중복 발견 시 재설계</span>
   </div>
   <div class="struct-cell">
-    <strong>Top 2 paper 발췌 — Day 1</strong><br>
-    Rengers & Velthuis (2002) — 1차 시장 hedonic 직접 reference<br>
-    PDF 다운 + abstract + methodology section 정독<br>
-    산출: 발췌 메모 + variables list 추출
+    <strong>핵심 reference 발췌</strong><br>
+    Rengers & Velthuis (2002) — 1차 시장 hedonic 직접 참조<br>
+    PDF + abstract + methodology 정독, 변수 list 추출
   </div>
 
   <div class="day-cell">Day 2<br><span class="small">화</span></div>
   <div class="v5-cell">
-    <strong>A compressed re-check</strong> (코덱스 권고)<br>
-    LAO split + image-only cold-start metric (PILOT 재현)<br>
-    Memorization audit 핵심 비교<br>
-    <span class="small pass">✓ A 본 데이터에서 PILOT FAIL 확인 (예상)</span><br>
-    <span class="small fail">✗ A 의외 PASS → deviation log + scope 재검토</span>
+    <strong>이미지 단독 prior 재검증</strong><br>
+    이전 분석에서 cold-start 일반화 약함 확인 → 본 데이터에서 재검증<br>
+    <span class="small">→ 약점 재확인 시 매체+크기 결합 전략으로 진행</span>
   </div>
   <div class="struct-cell">
-    <strong>Top 2 paper 발췌 — Day 2</strong><br>
-    Renneboog & Spaenjers (2013) JFE — Methodology + 변수<br>
-    각 paper 발췌 메모 (1-2 페이지)
+    <strong>Methodology reference</strong><br>
+    Renneboog & Spaenjers (2013) JFE 발췌<br>
+    변수 list / coefficient sign 비교 자료 작성
   </div>
 
   <div class="day-cell">Day 3<br><span class="small">수</span></div>
   <div class="v5-cell">
-    <strong>3-way compressed re-check (R 진단)</strong><br>
-    (1) medium/size-only retrieval<br>
-    (2) image+medium/size composite<br>
-    (3) baseline + composite stats<br>
-    <span class="small pass">✓ composite ≥ structured + 0.3pp</span><br>
-    <span class="small fail">✗ image 무가치 → structured-only fallback 검토</span>
+    <strong>3-way 비교 검증</strong><br>
+    ① 매체+크기 NN (구조적 prior)<br>
+    ② 이미지 + 매체+크기 결합 (composite)<br>
+    ③ 통합 features → baseline 통합<br>
+    <span class="small pass">✓ composite 가 ① 대비 ≥ 0.3%p 추가 개선</span>
   </div>
   <div class="struct-cell">
-    <strong>Tier 2-4 paper 발췌</strong><br>
-    Rosen (1974), Galenson (2003), Schönfeld & Reinstaller (2007)<br>
-    Variables matrix 작성 (<code>02_literature_review.md</code> §4)
+    <strong>이론 기반 reference</strong><br>
+    Rosen (1974) Hedonic theory + Galenson (2003) Career stage<br>
+    Schönfeld & Reinstaller (2007) Reputation effect
   </div>
 
   <div class="day-cell">Day 4<br><span class="small">목</span></div>
   <div class="v5-cell">
-    <strong>R Memorization audit</strong><br>
-    composite 기준 same-artist allow vs forbid<br>
-    <span class="small pass">✓ retention ≥ 50% (PILOT의 -12.4% 회복)</span><br>
-    <span class="small fail">✗ retention &lt; 50% → R cut, S (structured-only) fallback</span>
+    <strong>Memorization 검증</strong><br>
+    같은 작가 매칭 허용 vs 차단 비교<br>
+    <span class="small pass">✓ 차단 후에도 개선 ≥ 50% 유지</span><br>
+    <span class="small fail">✗ 작가 식별 의존 → image 컷, 구조적 prior 만 도입</span>
   </div>
   <div class="struct-cell">
-    <strong>DAG 작성 (visual)</strong><br>
-    graphviz 또는 dagitty.net<br>
-    식별 가능성 등급표 (Tier A/B/C)<br>
-    산출: <code>experiments/structural_v1/results/figures/causal_dag.png</code>
+    <strong>인과 관계 다이어그램 (DAG)</strong><br>
+    변수 간 인과 구조 visual 작성<br>
+    식별 가능한 효과 (within-artist) vs 단순 상관 분리 등급표
   </div>
 
   <div class="day-cell">Day 5<br><span class="small">금</span></div>
   <div class="v5-cell">
-    <strong>Retrieval 통계 features → baseline 통합</strong><br>
-    NN_median, NN_IQR, distance-weighted, same-medium share<br>
-    cold-start 3 seeds 평가<br>
-    <span class="small pass">✓ 3 seeds 같은 방향 ≥ 0.8pp</span> ·
-    <span class="small fail">✗ 방향 불일치 / noise</span>
+    <strong>Retrieval features 통합 평가</strong><br>
+    NN_median, NN_IQR, distance-weighted 등 5-7개 features 추가<br>
+    3 seeds 반복 평가
   </div>
   <div class="struct-cell">
-    <strong>Variable spec 확정</strong><br>
-    <code>05_data_requirements.md</code> 의 25개 변수 final<br>
-    Categorical 처리 / log transform / centering 결정<br>
-    Reference category 결정
+    <strong>변수 spec 확정</strong><br>
+    15-25개 RHS variables list<br>
+    Categorical 처리 / log transform / centering 결정
   </div>
 
   <div class="day-cell">Day 6-7<br><span class="small">주말</span></div>
   <div class="v5-cell">
-    <strong>R/S gate 결정 + 문서화</strong><br>
-    pass → PR-data-feature 준비<br>
-    fail → Week 2를 C-lite 단독으로 전환<br>
-    <span class="small">의사결정 memo + Week 2 plan 확정</span>
+    <strong>도입 후보 결정 + 의사결정 메모</strong><br>
+    R/S/C-lite 중 무엇을 Week 2 에서 검증할지 확정<br>
+    Week 2 plan 분기 결정
   </div>
   <div class="struct-cell">
-    <strong>data_prep.py 작성</strong><br>
-    <code>experiments/structural_v1/data_prep.py</code><br>
-    V5 eval framework 재사용 (LAO split + 3 seeds)<br>
-    Descriptive statistics + plots 산출<br>
-    <span class="small pass">✓ data_summary.json + figures 산출</span>
+    <strong>데이터 전처리 pipeline 작성</strong><br>
+    동일 LAO split (V5 와 공유) + 3 seeds<br>
+    descriptive statistics + plots 산출
   </div>
 
-  <div class="week-divider">📍 Week 2 — V5 C-lite + 통합 / Structural OLS hedonic (Day 8-14)</div>
+  <div class="week-divider">📍 Week 2 (Day 8-14) — V5 통합 검증 / Structural OLS hedonic baseline</div>
 
-  <div class="day-cell">Day 8<br><span class="small">월</span></div>
+  <div class="day-cell">Day 8-9<br><span class="small">월/화</span></div>
   <div class="v5-cell">
-    <strong>C-lite sequential PoC — Day 1</strong><br>
-    baseline OOF prediction 고정<br>
-    residual = y - y_hat_baseline<br>
-    artist random intercept fit (GPBoost)<br>
-    seen vs unseen artist 분리 평가
+    <strong>C-lite 검증</strong><br>
+    작가별 random effect 잔차 모델 학습<br>
+    seen artist (기존) 개선 + cold-start (신규) 무영향 확인
   </div>
   <div class="struct-cell">
-    <strong>OLS skeleton</strong><br>
-    <code>hedonic_baseline.py</code> 작성<br>
-    statsmodels OLS + heteroskedasticity-robust SE (HC1)<br>
-    Cluster-robust SE (cluster on artist_slug)
-  </div>
-
-  <div class="day-cell">Day 9<br><span class="small">화</span></div>
-  <div class="v5-cell">
-    <strong>C-lite PoC — Day 2</strong><br>
-    seen-artist 안정적 개선 검증<br>
-    <span class="small pass">✓ seen 개선, unseen 무영향</span> ·
-    <span class="small fail">✗ noise 또는 cold-start 악화</span>
-  </div>
-  <div class="struct-cell">
-    <strong>Variable selection</strong><br>
-    Multicollinearity check (VIF &lt; 10)<br>
-    Outlier detection (Cook's distance)<br>
-    산출: clean OLS run + diagnostic
+    <strong>OLS hedonic 회귀 모델</strong><br>
+    statsmodels OLS + heteroskedasticity-robust SE<br>
+    Multicollinearity check (VIF) + Outlier detection
   </div>
 
   <div class="day-cell">Day 10<br><span class="small">수</span></div>
   <div class="v5-cell">
-    <strong>C-lite tuning 최소화 검증</strong><br>
-    Random-effect variance shrinkage<br>
-    <span class="small pass">✓ 3 seeds 같은 방향, std 낮음</span><br>
-    <span class="small fail">✗ seed 민감도 큼 / runtime &gt; 4x baseline</span>
+    <strong>C-lite 안정성 검증</strong><br>
+    3 seeds 같은 방향 + std 낮음 + runtime ≤ 4x baseline
   </div>
   <div class="struct-cell">
-    <strong>LAO holdout 평가</strong><br>
-    V5 eval framework 재사용 → 3 seeds<br>
-    MdAPE / W30 / W50 per seed + mean ± std<br>
-    산출: <code>ols_holdout.json</code>
+    <strong>Holdout 평가</strong><br>
+    동일 LAO split (V5 와 공유) → MdAPE / W30 / W50<br>
+    3 seeds 반복 → mean ± std
   </div>
 
   <div class="day-cell">Day 11-12<br><span class="small">목/금</span></div>
   <div class="v5-cell">
-    <strong>통합 ablation</strong><br>
-    후보 1: R/S 단독 / 후보 2: C-lite 단독 / 후보 3: 결합<br>
-    동일 평가 프로토콜<br>
-    <span class="small pass">✓ full이 단독 best 보다 가치</span><br>
-    <span class="small fail">✗ 무가치 / 복잡도 대비 gain 부족</span>
+    <strong>분기 진행 (Week 1 결과 기반)</strong><br>
+    <strong>Case A</strong> (R/S 통과): 통합 ablation — R + C-lite 결합<br>
+    <strong>Case B</strong> (R/S 보류): C-lite 단독 + 최종 go/no-go<br>
   </div>
   <div class="struct-cell">
-    <strong>Cold/warm + Tier segment</strong><br>
-    Test set의 cold-start (0-shot) vs warm 분리<br>
+    <strong>Cold/warm 분리 + V3 비교</strong><br>
+    Test set 의 cold/warm 분리 평가<br>
     Tier B/C/D/E segment 별 MdAPE<br>
-    <strong>V3 비교 표</strong> 산출
+    <strong>V3 production 모델과 동일 holdout 비교 표</strong>
   </div>
 
   <div class="day-cell">Day 13-14<br><span class="small">주말</span></div>
   <div class="v5-cell">
-    <strong>Confirmatory + go/no-go</strong><br>
-    finalist 1-2개만 동일 budget 재평가<br>
-    repeated 3-seed holdout + LAO 재확인<br>
-    <span class="small">data PR / eval PR / model PR merge 결정</span>
+    <strong>Confirmatory + 도입 결정</strong><br>
+    Finalist 1-2개 동일 budget 재평가<br>
+    <strong>최종 결정</strong>: 도입 / 보류 / 추가 검증<br>
+    PR review 시작
   </div>
   <div class="struct-cell">
-    <strong>OLS Coefficient table + diagnostic</strong><br>
-    Paper-style coefficient table (β + SE + p)<br>
-    Residual plot (QQ, scale-location, leverage)<br>
-    Partial dependence plot per variable<br>
-    산출: <code>ols_coefficients.csv</code> + figures
+    <strong>OLS Coefficient table 산출</strong><br>
+    Paper-style table: β + SE + p-value<br>
+    Residual diagnostic (QQ + scale-location + leverage)<br>
+    Partial dependence plot per variable
   </div>
 
-  <div class="week-divider">📍 Week 3 — V5 정리 + Structural Mixed-Effects (Day 15-21)</div>
+  <div class="week-divider">📍 Week 3 (Day 15-21) — V5 PR merge·monitoring / Structural Mixed-Effects</div>
 
-  <div class="day-cell">Day 15<br><span class="small">월</span></div>
+  <div class="day-cell">Day 15-16<br><span class="small">월/화</span></div>
   <div class="v5-cell">
-    <strong>V5 cycle 결과 review</strong><br>
-    PR-data-feature / PR-model 검토<br>
-    Saatchi 정책 (V4 cycle veto) 재확인<br>
-    필요 시 추가 ablation 1회
+    <strong>PR review + merge 준비</strong><br>
+    평가 framework PR / 데이터 feature PR / 모델 PR 정리<br>
+    Saatchi 정책 (이전 결정) 재확인
   </div>
   <div class="struct-cell">
-    <strong>ME skeleton</strong><br>
-    <code>mixed_effects.py</code> 작성<br>
-    statsmodels MixedLM 또는 pymer4 (R lme4)<br>
-    Artist random intercept first
-  </div>
-
-  <div class="day-cell">Day 16<br><span class="small">화</span></div>
-  <div class="v5-cell">
-    <strong>V5 cycle 결과 문서화</strong><br>
-    의사결정 메모 (V4 형식 재사용)<br>
-    Lessons learned (방법론적 학습)
-  </div>
-  <div class="struct-cell">
-    <strong>Gallery RE 추가</strong><br>
-    artist + gallery 두 RE<br>
-    ICC 계산 (artist / gallery / residual variance)<br>
-    산출: variance decomposition table
+    <strong>Mixed-effects 모델 구축</strong><br>
+    statsmodels MixedLM<br>
+    artist random intercept + gallery random intercept<br>
+    분산 분해 (ICC) 계산
   </div>
 
   <div class="day-cell">Day 17<br><span class="small">수</span></div>
   <div class="v5-cell">
-    <strong>V5 후속 작업</strong><br>
-    선행 도입 가능 시 deployment prep<br>
-    또는 V6 cycle 방향 brainstorm
+    <strong>운영 monitoring checklist 작성</strong><br>
+    배포 후 모니터링 metric 정의<br>
+    Rollback 조건 + alert threshold 명시
   </div>
   <div class="struct-cell">
-    <strong>Within-artist FE 비교</strong><br>
-    Fixed effect (within-artist) 모델<br>
+    <strong>Within-artist 효과 검증</strong><br>
+    Fixed effect (작가 통제) 모델 비교<br>
     Hausman test (RE vs FE)<br>
-    산출: identification 강도 검증
+    인과 식별 가능 변수 결과 정리
   </div>
 
-  <div class="day-cell">Day 18<br><span class="small">목</span></div>
+  <div class="day-cell">Day 18-19<br><span class="small">목/금</span></div>
   <div class="v5-cell">
-    <strong>V5 → V6 brainstorm</strong><br>
-    Conformal prediction 가능성<br>
-    Range estimate 시스템 prototype 검토
+    <strong>의사결정 memo 작성</strong><br>
+    V5 cycle 결과 + lessons learned<br>
+    다음 cycle 사전등록 skeleton
   </div>
   <div class="struct-cell">
-    <strong>Random slope 검토</strong><br>
-    log(area) random slope by artist<br>
-    Likelihood ratio test (random slope 필요?)<br>
-    산출: model selection memo
-  </div>
-
-  <div class="day-cell">Day 19<br><span class="small">금</span></div>
-  <div class="v5-cell">
-    <strong>V5 PR review 마무리</strong><br>
-    code review + comment 반영<br>
-    merge 진행 (가능 시)
-  </div>
-  <div class="struct-cell">
-    <strong>LAO holdout + V3/V5 비교</strong><br>
-    동일 protocol로 ME holdout MdAPE<br>
-    OLS / ME / V3 / V5 비교 표<br>
-    산출: holdout metric per condition
+    <strong>Random slope 검토 + V3/V5 비교</strong><br>
+    log(area) random slope 필요 여부 (likelihood ratio test)<br>
+    동일 holdout 으로 OLS / ME / V3 / V5 비교 표
   </div>
 
   <div class="day-cell">Day 20-21<br><span class="small">주말</span></div>
   <div class="v5-cell">
-    <strong>V5 cycle 종결 + 마이그레이션 follow-up</strong><br>
-    박지연님 협업 체크 (필요 시)<br>
-    추가 검수 갤러리 결과 정리
+    <strong>V5 cycle 종결 + 협업 follow-up</strong><br>
+    박지연님 협업 정리 (필요 시 추가 데이터 요청)<br>
+    배포 가능 시 staged rollout 계획
   </div>
   <div class="struct-cell">
-    <strong>Coefficient + variance + report</strong><br>
-    ME coefficient table (β + RE variance)<br>
-    Variance decomposition figure (stacked bar)<br>
-    Within-artist effect 표<br>
-    산출: <code>me_coefficients.csv</code> + figures
+    <strong>Coefficient + variance + 중간 report</strong><br>
+    ME coefficient table<br>
+    Variance decomposition (artist 분산 / gallery 분산 / residual)<br>
+    Within-artist effect 표
   </div>
 
-  <div class="week-divider">📍 Week 4 — Structural Quantile + 최종 report (Day 22-28)</div>
+  <div class="week-divider">📍 Week 4 (Day 22-28) — V5 안정화 / Structural 최종 report</div>
 
-  <div class="day-cell">Day 22<br><span class="small">월</span></div>
+  <div class="day-cell">Day 22-23<br><span class="small">월/화</span></div>
   <div class="v5-cell">
-    <strong>V5 cycle retro + 정리</strong><br>
-    Final report 작성 (의사결정 메모)<br>
-    PR comment 마무리
+    <strong>운영 안정화 (light)</strong><br>
+    배포 metric 모니터링<br>
+    이상 발견 시 fix 우선순위
   </div>
   <div class="struct-cell">
     <strong>Quantile regression</strong><br>
-    <code>quantile_regression.py</code> 작성<br>
-    statsmodels QuantReg per τ ∈ {0.1, 0.25, 0.5, 0.75, 0.9}<br>
-    산출: τ × variable coefficient grid
-  </div>
-
-  <div class="day-cell">Day 23<br><span class="small">화</span></div>
-  <div class="v5-cell">
-    <strong>다음 cycle 방향 정리</strong><br>
-    V6 / V7 plan 초안<br>
-    Range estimate 시스템 검토 (코덱스 11차 권고)
-  </div>
-  <div class="struct-cell">
-    <strong>Quantile heatmap + interpretation</strong><br>
-    Heatmap: 변수 × τ<br>
-    분포 형태 변화 효과 (heavy-tail 변수 식별)<br>
-    산출: <code>quantile_heatmap.png</code>
+    τ ∈ {0.1, 0.25, 0.5, 0.75, 0.9} grid<br>
+    분포 위치별 변수 효과 변화 (heavy-tail 변수 식별)<br>
+    Heatmap 산출
   </div>
 
   <div class="day-cell">Day 24<br><span class="small">수</span></div>
   <div class="v5-cell">
-    <strong>(가벼움) V5 monitoring</strong><br>
-    배포된 model production metric 검토<br>
-    문제 발견 시 fix
+    <strong>다음 단계 brainstorm</strong><br>
+    예측 신뢰구간 (range estimate) 시스템 검토<br>
+    Confidence-gated 운영 정책 plan
   </div>
   <div class="struct-cell">
-    <strong>Causal interpretation memo</strong><br>
-    <code>06_evaluation_framework.md</code> 식별 등급표 (실제 결과 채움)<br>
-    "What we identify" vs "What we don't"<br>
-    Within-artist 결과와 cross-section 비교
+    <strong>인과 framing 정리</strong><br>
+    "What this model identifies vs not identifies"<br>
+    학술 한계 명시 + future work
   </div>
 
   <div class="day-cell">Day 25-26<br><span class="small">목/금</span></div>
   <div class="v5-cell">
-    <strong>V5 follow-up (최소)</strong><br>
-    필요 시 fix only
+    <strong>V5 retro + 차기 cycle plan</strong><br>
+    1개월 종합 회고 (V4 + V5 학습)<br>
+    다음 cycle (V6) 방향 brainstorm
   </div>
   <div class="struct-cell">
     <strong>최종 report 작성</strong><br>
     Paper-style 10-15 페이지<br>
-    Sections: Abstract / Intro / Data / Methodology / Results / Causal Framing / Comparison / Limitations / Future Work<br>
-    산출: <code>docs/structural_pricing/final_report.md</code>
+    Sections: Abstract / Data / Methodology / Results / Causal / Comparison / Limitations
   </div>
 
   <div class="day-cell">Day 27-28<br><span class="small">주말</span></div>
   <div class="v5-cell">
-    <strong>전체 cycle 회고</strong><br>
-    V4 + V5 + Structural 통합 정리<br>
-    임원 메모 update (필요 시)
+    <strong>전체 cycle 종합 정리</strong><br>
+    임원/상급자 보고 자료 update<br>
+    1개월 deliverable 정리
   </div>
   <div class="struct-cell">
-    <strong class="stretch">Stretch — Bayesian prototype</strong><br>
-    PyMC NUTS 또는 NumPyro<br>
-    artist + gallery + medium random effects<br>
-    Posterior credible interval<br>
-    산출: <code>bayesian_proto.py</code> + interval figure
+    <strong>(선택) Bayesian prototype</strong><br>
+    PyMC NUTS — 시간 여유 시만<br>
+    Posterior credible interval 예시
   </div>
 </div>
 
-<h2>3. 주별 요약 — Must / Optional / Stretch (코덱스 13차)</h2>
+<h2>5. 시간 분배</h2>
+
+<table>
+  <tr><th>Phase</th><th>오전 (V5 운영)</th><th>오후 (Structural 학술)</th><th>일별 합계</th></tr>
+  <tr><td>Week 1 (집중)</td><td>2-3h</td><td>2-3h</td><td>4-6h</td></tr>
+  <tr><td>Week 2 (집중)</td><td>2-3h</td><td>2-3h</td><td>4-6h</td></tr>
+  <tr><td>Week 3 (PR/통합)</td><td>1-2h</td><td>3-4h</td><td>4-6h</td></tr>
+  <tr><td>Week 4 (안정화)</td><td>0-1h</td><td>4-5h</td><td>4-6h</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>총 budget</strong>: 110-115h 운영 + 13-18h buffer = <strong>총 128h 가용</strong> (주 5일 × 4h + 주말 2일 × 6h 기준)<br>
+  <strong>버퍼 자동 적용 규칙</strong>: 어느 주든 시간 초과 +30% 시 stretch 항목 (Bayesian, Quantile full 등) 자동 제거.
+</div>
+
+<h2>6. 주별 우선순위 (Must / Optional / 추가)</h2>
 
 <table>
   <tr>
     <th>Week</th>
-    <th>V5 cycle 핵심</th>
-    <th>Structural 핵심</th>
-    <th>Must / Optional / Stretch</th>
+    <th>Must (반드시 달성)</th>
+    <th>Optional (가능하면)</th>
+    <th>추가 (시간 여유 시)</th>
   </tr>
   <tr>
-    <td><strong>Week 1</strong><br>(Day 1-7)</td>
-    <td>LAO 재생성 + A 재진단 + R 진단</td>
-    <td>5편 paper 발췌 + DAG + 데이터 spec</td>
+    <td><strong>Week 1</strong></td>
     <td>
-      <strong>Must</strong>: R/S gate 결정, Structural Week 1 산출 (data_prep.py)<br>
-      <strong>Optional</strong>: 추가 ablation 1회<br>
-      <strong>Stretch</strong>: 6편 째 paper 발췌
+      ① 트랙 1: 후보 검증 + Week 2 분기 결정<br>
+      ② 트랙 2: 데이터 전처리 pipeline + 인과 구조도
     </td>
+    <td>트랙 1 추가 ablation 1회</td>
+    <td>추가 reference 발췌</td>
   </tr>
   <tr>
-    <td><strong>Week 2</strong><br>(Day 8-14)</td>
-    <td><strong>분기형</strong>:<br>R/S pass → 통합 ablation<br>R/S fail → C-lite only</td>
-    <td>OLS hedonic baseline + V3 비교</td>
+    <td><strong>Week 2</strong></td>
     <td>
-      <strong>Must</strong>: V5 go/no-go 결정, OLS coefficient table<br>
-      <strong>Optional</strong>: V5 통합 ablation full (R/S pass 시만)<br>
-      <strong>Stretch</strong>: OLS 의 within-artist FE 비교
+      ① 트랙 1: 도입 결정 (go / no-go)<br>
+      ② 트랙 2: OLS 결과 + 운영 모델 비교 표
     </td>
+    <td>트랙 1 통합 검증 full (Week 1 통과 시)</td>
+    <td>within-artist 효과 추가 분석</td>
   </tr>
   <tr>
-    <td><strong>Week 3</strong><br>(Day 15-21)</td>
-    <td><strong>운영 작업 명시 (코덱스 13차 권고)</strong>:<br>PR-eval-framework merge<br>PR-data-feature merge readiness<br>monitoring/rollback checklist<br>V5 retro + next-cycle prereg skeleton</td>
-    <td>Mixed-effects (artist + gallery RE)</td>
+    <td><strong>Week 3</strong></td>
     <td>
-      <strong>Must</strong>: V5 PR merge readiness, ME baseline (artist + gallery RE)<br>
-      <strong>Optional</strong>: Random slope, Hausman test<br>
-      <strong>Stretch</strong>: V6 plan brainstorm
+      ① 트랙 1: PR 준비 + 운영 monitoring 계획<br>
+      ② 트랙 2: Mixed-effects 모델 + 분산 분해
     </td>
+    <td>Random slope 검토</td>
+    <td>다음 cycle plan 초안</td>
   </tr>
   <tr>
-    <td><strong>Week 4</strong><br>(Day 22-28)</td>
-    <td>V5 monitoring (light)</td>
-    <td>Quantile + final report</td>
+    <td><strong>Week 4</strong></td>
     <td>
-      <strong>Must</strong>: Structural final report (OLS+ME 중심)<br>
-      <strong>Optional</strong>: Quantile full version<br>
-      <strong>Stretch</strong>: Bayesian prototype (PyMC)
+      트랙 2 최종 보고서 (OLS + ME 중심, 10-15페이지)
     </td>
+    <td>분포별 회귀 (quantile) 결과</td>
+    <td>Bayesian 모델 prototype</td>
   </tr>
 </table>
 
-<h2>4. 핵심 의존성 / 위험 (코덱스 13차 자문 반영)</h2>
+<h2>7. 위험 요인 / 대응 방안</h2>
 
 <div class="danger-box">
-  <strong>⚠️ Hard dependencies</strong>
+  <strong>🛑 핵심 의존성 (Hard Dependencies)</strong>
   <ul>
-    <li><strong>Dependency stop</strong>: V5 Day 1 시작 조건 = 본 마이그레이션 데이터 도착. 미도착 시 <strong>Structural Week 1 만 먼저 진행</strong>.</li>
-    <li><strong>V5 Day 2 A re-check</strong>: V4 PILOT 결과 (image FAIL) 가 본 데이터에서도 재현된다는 가정. 의외 PASS 시 deviation log + scope 재검토.</li>
-    <li><strong>Structural Week 1 데이터 spec</strong>: V5 LAO split 과 동일 framework. Variable spec confirmed by Day 5.</li>
-  </ul>
-</div>
-
-<div class="danger-box">
-  <strong>🛑 Burn-rate Stop / Branch Rules (코덱스 13차 신규)</strong>
-  <ul>
-    <li><strong>Burn-rate stop</strong>: 어느 주든 계획 대비 <strong>+30% 시간 초과</strong> 시 다음 stretch 항목 자동 제거 (Quantile / Bayesian / V6 brainstorm 등).</li>
-    <li><strong>V5 Week 1 negative branch</strong>: Week 1 종료 시 R/S 둘 다 불명확 → Week 2 = <strong>integration branch 취소, C-lite only + final go/no-go</strong>.</li>
-    <li><strong>V5 Day 14 no-go</strong> 시 Week 3-4 = <strong>deploy prep 대신 retro 중심 전환</strong>.</li>
-    <li><strong>Structural OLS 실패 처리 (Week 2 종료)</strong>:
-      <ul>
-        <li><em>spec failure</em> (변수 미확정 / 수치 불안정) → <strong>ME 진행 보류</strong></li>
-        <li><em>performance disappointment</em> (성능 낮음) → <strong>ME 진행 가능</strong></li>
-        <li><em>diagnostic weakness</em> (잔차 부적합 등) → <strong>caveat 달고 진행</strong></li>
-      </ul>
-    </li>
-    <li><strong>Day 10 기준</strong> OLS/ME instability 시 → <strong>Week 4 Quantile scope 축소</strong>.</li>
+    <li><strong>마이그레이션 데이터 사용 가능일</strong>: 트랙 1 의 시작 조건. 미확정 시 트랙 2 만 먼저 진행하겠습니다 (Week 1 시작 가능).</li>
+    <li><strong>추가 미매칭 갤러리 검수</strong>: 본 마이그레이션 데이터 도착 후 협력자께 일괄 검수 요청 → 회신 대기 (Week 1 내 처리 목표).</li>
   </ul>
 </div>
 
 <div class="warn-box">
-  <strong>⚠️ Soft risks (mitigation 가능)</strong>
-  <ul>
-    <li><strong>시간 over-allocation</strong>: 일 4-6h 부담. <strong>Burn-rate stop +30%</strong> 적용으로 자동 controlled.</li>
-    <li><strong>병행 cognitive load</strong>: <strong>Morning V5 / Afternoon Structural</strong> time-block 으로 mitigation. Day-by-day interleave 보다 피로 적음.</li>
-    <li><strong>R fail 시 S fallback</strong>: V5 Week 1 plan 의 변형 진행 (코덱스 9차 자문 권고).</li>
-    <li><strong>Structural Mixed-effects convergence</strong>: statsmodels MixedLM 실패 시 pymer4 (R lme4) 또는 GPBoost 으로 fallback.</li>
-    <li><strong>Bayesian stretch</strong>: 시간 부족 시 자동 폐기 (Burn-rate stop).</li>
-  </ul>
+  <strong>⚠️ 사업적 위험 (가장 우선)</strong>
+  <table style="margin-top: 8px;">
+    <tr><th>위험</th><th>대응 방안</th></tr>
+    <tr>
+      <td><strong>도입 가능한 개선이 없을 위험</strong> (트랙 1)</td>
+      <td>2주 내 도입/보류 결정을 명확히 하고, 보류 시에도 원인 + 다음 실험 우선순위를 의사결정 메모로 남기겠습니다.</td>
+    </tr>
+    <tr>
+      <td><strong>해석 가능 모델의 설명력은 높지만 예측력은 낮을 위험</strong> (트랙 2)</td>
+      <td>본 트랙의 목표를 '운영 대체' 가 아니라 '설명 가능한 비교 기준 확보' 로 관리하고, 운영 모델과 동일 protocol 비교표를 산출하겠습니다.</td>
+    </tr>
+    <tr>
+      <td><strong>두 트랙 모두 의미 있는 결과 미산출</strong></td>
+      <td>1개월 종합 회고 + 다음 cycle 사전등록 skeleton 작성 (negative result 도 학습 자산화).</td>
+    </tr>
+  </table>
 </div>
 
-<h2>5. 성공 기준 (Day 28 종료 시)</h2>
+<div class="warn-box">
+  <strong>⚠️ 운영 위험 + 대응</strong>
+  <table style="margin-top: 8px;">
+    <tr><th>위험</th><th>대응 방안</th></tr>
+    <tr>
+      <td>시간 over-allocation (4-6h/일 부담)</td>
+      <td>시간 초과 +30% 자동 적용 → 추가 항목 (stretch) 자동 제거</td>
+    </tr>
+    <tr>
+      <td>두 트랙 cognitive load</td>
+      <td>오전 트랙 1 / 오후 트랙 2 시간대 분리</td>
+    </tr>
+    <tr>
+      <td>트랙 1 Week 1 결과 약함</td>
+      <td>Week 2 분기 규칙: 통합 검증 취소, 단독 후보 검증으로 축소</td>
+    </tr>
+    <tr>
+      <td>트랙 2 OLS 회귀 안정성 문제</td>
+      <td>3 패턴 분리 처리: 변수 spec 실패 → 보류 / 성능 부족 → 진행 / 진단 약점 → 한계 명시 후 진행</td>
+    </tr>
+    <tr>
+      <td>Mixed-effects 모델 수렴 실패</td>
+      <td>도구 단계적 fallback (statsmodels → R lme4 → GPBoost)</td>
+    </tr>
+  </table>
+</div>
 
-<h3>V5 Cycle</h3>
+<h2>8. 성공 기준 (Day 28 종료 시)</h2>
+
+<h3>트랙 1 — V5 Cycle</h3>
 <ul>
-  <li>R/S 또는 C-lite 도입 결정 완료 (pass/cut 명확)</li>
-  <li>R Pass: cold-start ΔMdAPE ≤ -max(0.8pp, baseline 3%) + memorization retention ≥ 50%</li>
-  <li>C-lite Pass: seen-artist ΔMdAPE ≤ -max(0.5pp, 2%) + cold-start 악화 ≤ +0.5pp</li>
-  <li>통합 Pass: gain retention ≥ 80%</li>
-  <li>의사결정 memo + PR review 완료</li>
+  <li>R/S 또는 C-lite 도입 결정 명확 (pass/cut 객관적 근거)</li>
+  <li>도입 시: PR merge + 운영 monitoring checklist 완성</li>
+  <li>보류 시: 보류 결정 메모 + 다음 cycle 사전등록 skeleton</li>
 </ul>
 
-<h3>Structural Pricing Track (≥ 2/3)</h3>
+<h3>트랙 2 — Structural Pricing (≥ 2/3 충족)</h3>
 <ul>
-  <li><strong>학술 baseline 확립</strong>: OLS / ME / Quantile coefficient + V3 비교</li>
-  <li><strong>Cold-start regime baseline</strong>: Within-artist 식별 결과</li>
-  <li><strong>이론적 방어 가능 문서</strong>: 5+ paper reference + 식별 등급표</li>
+  <li><strong>학술 baseline 확립</strong>: OLS / ME coefficient + V3 holdout 비교 표</li>
+  <li><strong>Cold-start regime 비교 가능 baseline</strong>: Within-artist 식별 결과</li>
+  <li><strong>이론적 방어 가능 문서</strong>: 5+ paper reference + 인과 식별 등급표 + Paper-style report</li>
 </ul>
 
 <h3>병행 성공 기준</h3>
 <ul>
-  <li>두 트랙 모두 timeline 내 완료 (지연 없음)</li>
-  <li>V5 결과와 Structural 결과의 비교 표 (홀드아웃 동일 protocol)</li>
-  <li>코덱스 자문 적정 빈도 활용 (≥ 2회 추가 자문)</li>
+  <li>두 트랙 모두 timeline 내 완료 (Burn-rate stop 으로 over-run 방지)</li>
+  <li>V5 와 Structural 결과의 비교 표 (동일 holdout protocol)</li>
+  <li>1개월 종합 회고 + 임원 보고 자료</li>
 </ul>
 
-<h2>6. 코덱스 자문 trajectory (병행 cycle)</h2>
+<h2>9. 의사결정 요청 / 보고 사항</h2>
 
-<table>
-  <tr><th>회차</th><th>시점</th><th>주제</th></tr>
-  <tr><td>13차 (완료)</td><td>본 plan 작성 시</td><td>병행 일정 적정성 검토 + 4개 수정 권고 (본 HTML 반영)</td></tr>
-  <tr><td>14차 (계획)</td><td>Week 1 종료</td><td>V5 R/S gate 결과 + Structural Week 1 spec 검토</td></tr>
-  <tr><td>15차 (계획)</td><td>Week 2 종료</td><td>V5 통합 ablation 결과 + Structural OLS coefficient 검토</td></tr>
-  <tr><td><span class="pending">15.5차 (event-driven)</span></td><td>Day 10-11 (필요 시)</td><td>V5 C-lite noisy 또는 Structural OLS unstable 시 ad-hoc</td></tr>
-  <tr><td>16차 (계획)</td><td>Week 3 종료</td><td>Structural ME variance decomposition 검토 + V5 retro</td></tr>
-  <tr><td>17차 (계획)</td><td>Week 4 종료</td><td>Structural final report 검토 (학술 형식 / 인용 형식)</td></tr>
-</table>
-<p class="small">코덱스 13차 권고: 정례 4회 + event-driven 1회 (Day 10-11 ad hoc). 문제 발생 시 활용.</p>
+<div class="info-box">
+  <strong>승인이 필요한 사항</strong>
+  <ol>
+    <li><strong>4주 병행 계획 승인 여부</strong> — 두 트랙 병행 진행</li>
+    <li><strong>트랙 1 착수 기준이 되는 마이그레이션 데이터의 사용 가능일 확정</strong></li>
+    <li><strong>추가 미매칭 갤러리 검수를 위한 협업 지원 여부 확정</strong> — 협력자 박지연님 검수 요청</li>
+  </ol>
+  <p class="small" style="margin-top: 10px;">
+    ※ 위 2, 3 이 지연될 경우, 첫 주는 트랙 2 (해석 가능 모델) 우선으로 진행하겠습니다.
+  </p>
+</div>
 
-<h2>7. 산출물 종합 (Day 28 종료 시)</h2>
+<div class="info-box">
+  <strong>보고 일정</strong>
+  <ul>
+    <li>Week 1 종료 시: V5 R/S 후보 결정 + Structural 변수 spec 보고</li>
+    <li>Week 2 종료 시: V5 도입 결정 + Structural OLS 결과 보고</li>
+    <li>Week 3 종료 시: V5 PR merge readiness + Structural ME 결과 보고</li>
+    <li>Week 4 종료 시: 1개월 종합 보고 + Structural final report 제출</li>
+  </ul>
+</div>
 
-<table>
-  <tr><th>위치</th><th>산출물</th><th>유형</th></tr>
-  <tr><td><code>data/</code></td><td>v5 마이그레이션 데이터 + 신규 갤러리 검수 결과</td><td>Reference data</td></tr>
-  <tr><td><code>scripts/</code></td><td>V5 cycle scripts (Day 1-14 산출)</td><td>실행 코드</td></tr>
-  <tr><td><code>experiments/structural_v1/</code></td><td>OLS / ME / Quantile / Bayesian (stretch)</td><td>실행 코드</td></tr>
-  <tr><td><code>docs/v5_cycle_*.md</code></td><td>V5 의사결정 메모</td><td>학술/운영 문서</td></tr>
-  <tr><td><code>docs/structural_pricing/final_report.md</code></td><td>Paper-style 10-15p report</td><td>학술 보고</td></tr>
-  <tr><td><code>experiments/structural_v1/results/</code></td><td>tables + figures + metrics (10+ 산출물)</td><td>실험 결과</td></tr>
-  <tr><td><code>model_test_results/</code></td><td>V5 cycle holdout metrics</td><td>실험 결과</td></tr>
-</table>
+<h2>10. 상세 자료</h2>
 
-<h2>8. 참고 docs</h2>
-
-<ul>
-  <li><strong>V5 cycle plan</strong>: <code>docs/v5_cycle_plan_20260504.md</code> (PILOT-driven 수정 후)</li>
-  <li><strong>V5 사전등록 초안</strong>: <code>docs/v5_cycle_사전등록_초안.md</code></li>
-  <li><strong>V4 학습</strong>: <code>docs/v4_운영도입_의사결정_20260504.md</code></li>
-  <li><strong>Structural pricing track</strong>: <code>docs/structural_pricing/README.md</code> + 6 sub-docs</li>
-  <li><strong>임원 메모</strong>: <code>docs/임원보고_VisionAI_모델운영_20260505.md</code></li>
-</ul>
+<p class="small">본 보고서의 상세 plan / 변수 spec / 인과 구조도 / 사전등록 protocol 등은 별도 internal docs 로 관리합니다. 필요 시 공유 가능.</p>
 
 <div class="footer">
-  <p><strong>최종 업데이트</strong>: 2026-05-05 (코덱스 13차 자문 반영 후)</p>
-  <p><strong>코덱스 자문 trajectory</strong>: 12차 (Structural pricing 권고) → 13차 (본 병행 일정 검토). 본 일정은 V5 cycle 마이그레이션 데이터 도착 시점 기준 4주.</p>
-  <p><strong>코덱스 13차 결론</strong>: "그대로도 진행은 가능하지만, 현재 형태는 버퍼 없는 낙관 플랜이라 수정 후 진행이 더 안전함" → <strong>4개 수정 사항 본 HTML 반영 완료</strong>.</p>
-  <p><strong>다음 액션</strong>: 본 plan 으로 진행 + 마이그레이션 데이터 도착 즉시 Day 1 시작 (또는 Structural Week 1 만 먼저 진행).</p>
+  <p><strong>작성</strong>: 2026-05-05</p>
+  <p><strong>다음 액션</strong>: 본 plan 승인 후 마이그레이션 데이터 사용 가능일에 맞춰 Day 1 시작 (또는 트랙 2 우선 진행).</p>
 </div>
 
 </body>
