@@ -171,14 +171,20 @@
 <h2>1. 핵심 요약 (TL;DR)</h2>
 
 <div class="summary-box">
+  <strong>본 문서는 콜론30 (client) 의뢰에 대한 4주 실행 계획</strong>
+  <ul>
+    <li>본인의 우선 목표 = <strong>모델 고도화 + 예측 정확도 개선</strong> → 콜론30 의뢰 결과물 품질 극대화</li>
+    <li>콜론30 관련 사항 = 외부 의존이 아닌 <strong>Week 1-2 내 적극 조율</strong>로 반영</li>
+  </ul>
   <strong>두 가지 모델 트랙을 동시 검증 후, 운영 endpoint 에는 winner 1개 배포</strong>
   <ul>
     <li><strong>트랙 1 (Predictive Challenger)</strong>: 예측력 우선 — 매주 수요일 갱신 데이터 + V5 후보 (mixed-effects / retrieval) 도입 검증</li>
-    <li><strong>트랙 2 (Interpretable Challenger)</strong>: 해석력 강점 — Core 5 고정 hedonic mixed-effects 모델, 변수별 가격 영향 설명 가능</li>
+    <li><strong>트랙 2 (Interpretable Challenger)</strong>: 해석력 강점 — Core 5 / Main 7 후보 검증 후 freeze, hedonic mixed-effects 모델</li>
   </ul>
   <strong>운영 원칙</strong>
   <ul>
-    <li>Week 1-2: 동일 protocol 로 두 트랙 offline 검증</li>
+    <li>Week 1: 후보군 + 평가 기준 freeze (트랙 2: Core 5 / Main 7 후보군 정의)</li>
+    <li>Week 2: 동일 protocol 로 두 트랙 offline 검증 + 트랙 2 feature set freeze (Core 5 / Main 7 비교 후)</li>
     <li>Week 3 초: 두 트랙 모두 shadow 환경에서 동시 검증</li>
     <li>Week 3 말: 복합 scorecard 기반 <strong>champion 1개 선정</strong></li>
     <li>Week 4: champion 만 canary → full rollout + 안정화</li>
@@ -188,11 +194,11 @@
   <ul>
     <li>운영 endpoint 에 champion 모델 배포 완료 + 4-5일 초기 안정화</li>
     <li>Champion 선정 근거 + 비선정 모델 활용 방안 메모</li>
-    <li>Core 5 기반 해석 가능 모델 보고서 (10-15페이지)</li>
+    <li>Week 2 freeze 된 feature set (Core 5 또는 Main 7) 기반 해석 가능 모델 보고서 (10-15페이지) — <strong>콜론30 의뢰 결과물</strong></li>
     <li>두 트랙 비교 표 (정확도 + 안정성 + 운영성 + 해석성)</li>
   </ul>
-  <strong>외부 협업 요청</strong>: 협력자 콜론30 — 추가 미매칭 갤러리 검수 (Week 1)<br>
-  <strong>본인 결정/관리 사항</strong>: 마이그레이션 데이터 사용 가능일, champion 선정, 배포 방식, rollback owner — §9 타임라인 참조
+  <strong>본인 결정/관리 사항</strong>: 마이그레이션 데이터 사용 가능일 / champion 선정 / 배포 방식 / rollback owner → §10 타임라인 참조<br>
+  <strong>콜론30 조율 사항</strong>: 미매칭 갤러리 검수 / 요구사항 반영 / 중간 산출물 리뷰 → §8 참조
 </div>
 
 <h2>2. 배경 — 현재 운영 모델 상태</h2>
@@ -294,7 +300,7 @@
     </td>
   </tr>
   <tr>
-    <td><strong>Core 5 (고정)</strong></td>
+    <td><strong>Core 5 후보 (검증 후 freeze)</strong></td>
     <td>
       <ul style="margin: 6px 0;">
         <li>log_area — <em>structural / 인과 가능</em></li>
@@ -303,15 +309,29 @@
         <li>career_stage — <em>structural / Galenson curve</em></li>
         <li>gallery_tier — <em>associational / 시장 포지셔닝 proxy (caveat)</em></li>
       </ul>
+      <p class="small">※ Week 1 후보 정의 → Week 2 비교 검증 → Week 2 후반 freeze</p>
     </td>
   </tr>
   <tr>
-    <td><strong>Main 7 (1차 확장)</strong></td>
-    <td>Core 5 + log_artist_total_works (productivity proxy) + missingness control 1개</td>
+    <td><strong>Main 7 후보 (비교 후 freeze)</strong></td>
+    <td>
+      Core 5 + log_artist_total_works (productivity proxy) + missingness control 1개<br>
+      <span class="small">※ Core 5 freeze 와 동시에 Main 7 set 도 비교 후 freeze</span>
+    </td>
   </tr>
   <tr>
     <td><strong>Sensitivity (한계 검증용)</strong></td>
     <td>Main 7 + source [control only] + log_followers [predictive only] + is_krw or has_seoul</td>
+  </tr>
+  <tr>
+    <td><strong>Freeze 기준</strong></td>
+    <td>
+      <ul style="margin: 6px 0;">
+        <li>해석성 (변수별 elasticity 일관성)</li>
+        <li>안정성 (3-seed 변동성)</li>
+        <li>Holdout 성능 (운영 모델 비교)</li>
+      </ul>
+    </td>
   </tr>
   <tr>
     <td><strong>강점</strong></td>
@@ -430,51 +450,53 @@
     <th>의사결정 게이트</th>
   </tr>
   <tr>
-    <td><strong>Week 1</strong><br>5/6 (수) ~ 5/12<br><span class="small">데이터 적용 + 피처 검증</span></td>
-    <td>피처 검증 + 프로토콜 freeze</td>
+    <td><strong>Week 1</strong><br>5/6 (수) ~ 5/12 (화)<br><span class="small">후보 정의 + 사전 기준 고정</span></td>
+    <td>피처 후보군 + 평가 기준 freeze</td>
     <td>
       <ul style="margin: 4px 0;">
         <li>마이그레이션 데이터 적용 + LAO split 재생성</li>
         <li>트랙 1: V3 32 features 의 기여/누수/리스크 검증</li>
-        <li>트랙 2: Core 5 / Main 7 / Sensitivity set 확정 + DAG + 인과 등급표</li>
+        <li>트랙 2: <strong>Core 5 / Main 7 후보군 정의</strong> + 포함 기준 사전등록 + DAG + 인과 등급표</li>
         <li>동일 평가 protocol 정의 (3-seed holdout)</li>
-        <li>협력자 콜론30 검수 결과 통합</li>
+        <li>콜론30 검수 / 요구사항 1차 반영</li>
       </ul>
     </td>
     <td>
       <ul style="margin: 4px 0;">
-        <li>피처 검증 리포트 (트랙 1 + 트랙 2)</li>
+        <li>피처 후보군 정의 리포트 (트랙 1 + 트랙 2)</li>
         <li>인과 구조도 + 등급표</li>
         <li>데이터 전처리 pipeline</li>
-        <li>평가 protocol 문서</li>
+        <li>평가 protocol 문서 (freeze criteria 포함)</li>
       </ul>
     </td>
     <td>
-      <span class="gate">GATE 1: 피처 검증 통과</span>
+      <span class="gate">GATE 1: 후보군 + 평가 기준 freeze</span>
       <ul style="margin: 4px 0;">
-        <li><strong>원칙</strong>: 두 트랙 모두 feature spec freeze</li>
-        <li>한 트랙만 미통과 → 통과 트랙 우선 진행, 미통과 트랙은 spec 재정의 후 보조 검증 트랙으로 전환</li>
+        <li><strong>원칙</strong>: 두 트랙 모두 후보군 + 평가 기준 freeze (트랙 2 feature set 자체는 Week 2 에서 freeze)</li>
+        <li>한 트랙만 미통과 → 통과 트랙 우선 진행, 미통과 트랙은 후보군 재정의 후 보조 검증 트랙으로 전환</li>
         <li>두 트랙 모두 미통과 → GATE 2/3 진행 중단, V3 baseline 유지, 차기 cycle 재설계</li>
       </ul>
     </td>
   </tr>
 
   <tr>
-    <td><strong>Week 2</strong><br>5/13 (수) ~ 5/19<br><span class="small">모델 학습 + 비교</span></td>
-    <td>두 트랙 동일 protocol offline 검증</td>
+    <td><strong>Week 2</strong><br>5/13 (수) ~ 5/19 (화)<br><span class="small">후보 set 비교 + freeze</span></td>
+    <td>두 트랙 동일 protocol offline 검증 + 트랙 2 feature set freeze</td>
     <td>
       <ul style="margin: 4px 0;">
         <li>트랙 1: V3 + 후보 features 학습 (3 seeds)</li>
-        <li>트랙 2: OLS hedonic + ME pilot fit (3 seeds)</li>
+        <li>트랙 2: <strong>Core 5 후보 set 비교</strong> + <strong>Main 7 후보 set 비교</strong> + OLS / ME 학습 (3 seeds)</li>
+        <li>해석성 / 안정성 / Holdout 성능 종합 평가</li>
         <li>Holdout MdAPE / W30 / W50 산출 (양 트랙)</li>
         <li>복합 scorecard 1차 작성</li>
-        <li>5/19 (화): candidate freeze</li>
+        <li><strong>5/19 (화): 트랙 2 feature set freeze + candidate freeze</strong></li>
       </ul>
     </td>
     <td>
       <ul style="margin: 4px 0;">
         <li>트랙 1 모델 학습 결과 + holdout metric</li>
-        <li>트랙 2 OLS coefficient 표 + ME 결과</li>
+        <li>트랙 2 Core 5 / Main 7 비교 표 + 최종 freeze set</li>
+        <li>OLS coefficient 표 + ME 결과</li>
         <li>Scorecard 1차 (정확도 + 안정성)</li>
         <li>champion 선정 후보 사전 평가</li>
       </ul>
@@ -482,6 +504,7 @@
     <td>
       <span class="gate">GATE 2: candidate freeze</span>
       <ul style="margin: 4px 0;">
+        <li>트랙 2: Core 5 / Main 7 검증 완료 후 최종 feature set 확정</li>
         <li>두 트랙 모두 후보 모델 1개씩 freeze (이후 변경 금지)</li>
         <li><strong>통과 기준</strong>: 정확도 ≥ baseline / 3-seed 변동성 허용 범위 / serving artifact 준비 완료</li>
         <li>한 트랙만 미통과 → 통과 트랙만 Week 3 진입 (단일 트랙 모드)</li>
@@ -491,7 +514,7 @@
   </tr>
 
   <tr>
-    <td><strong>Week 3</strong><br>5/20 (수) ~ 5/26<br><span class="small">동시 shadow + 선정</span></td>
+    <td><strong>Week 3</strong><br>5/20 (수) ~ 5/26 (화)<br><span class="small">동시 shadow + 선정</span></td>
     <td>두 트랙 shadow 검증 → champion 1개 선정</td>
     <td>
       <ul style="margin: 4px 0;">
@@ -523,7 +546,7 @@
   </tr>
 
   <tr>
-    <td><strong>Week 4</strong><br>5/27 (수) ~ 6/2<br><span class="small">Winner rollout + 안정화</span></td>
+    <td><strong>Week 4</strong><br>5/27 (수) ~ 6/2 (화)<br><span class="small">Winner rollout + 안정화</span></td>
     <td>Champion 단일 배포 + 안정화</td>
     <td>
       <ul style="margin: 4px 0;">
@@ -593,31 +616,27 @@
 
 <h2>7. 위험 요인 / 대응 방안</h2>
 
-<div class="danger-box">
-  <strong>🛑 외부 의존 (External Dependency)</strong>
-  <ul>
-    <li><strong>협력자 콜론30 — 추가 미매칭 갤러리 검수 회신</strong>
-      <ul>
-        <li>본 마이그레이션 데이터 도착 후 회신 대기</li>
-        <li>초기 주간 내 처리 목표</li>
-        <li>지연 시 → Week 1 진단 순서 조정</li>
-        <li>지연 중 → 트랙 2 DAG / feature spec 만 선행, 동일 LAO split 적용은 회신 후</li>
-      </ul>
-    </li>
-  </ul>
-  <p class="small">※ 본인 통제 사항 (마이그레이션 데이터 사용 가능일 / champion 선정 / 배포 권한 / rollout 진행 방식 / rollback owner) → §9 "총괄 결정 타임라인" 참조</p>
-</div>
+<p class="small">콜론30 (client) 관련 사항은 외부 의존이 아닌 <strong>활성 조율 항목</strong> 으로 §8 분리. 본 절은 사업적/기술 위험만 다룬다.</p>
 
 <div class="warn-box">
   <strong>⚠️ 사업적 위험 + 대응</strong>
   <table style="margin-top: 8px;">
     <tr><th>위험</th><th>대응 방안</th></tr>
     <tr>
-      <td><strong>Week 1 피처 검증 실패</strong></td>
+      <td><strong>Week 1 후보군 / 평가 기준 freeze 실패</strong></td>
       <td>
         <ul style="margin: 4px 0;">
-          <li>Spec 재정의 + Week 2 우선순위 재조정</li>
+          <li>후보군 재정의 + Week 2 우선순위 재조정</li>
           <li>트랙 1 / 2 중 한쪽만 실패 시 다른 트랙 우선 진행</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Week 2 트랙 2 feature set freeze 실패</strong> (Core 5 / Main 7 비교 불수렴)</td>
+      <td>
+        <ul style="margin: 4px 0;">
+          <li>해석성 + 안정성 우선 → 후보군 중 가장 안정 + 해석 가능한 set 선정</li>
+          <li>Holdout 차이 ≤ 운영 허용 폭 시 sparsity 우선</li>
         </ul>
       </td>
     </tr>
@@ -671,7 +690,52 @@
   </table>
 </div>
 
-<h2>8. 성공 기준 (6/2 종료 시)</h2>
+<h2>8. 콜론30 (client) 조율 사항</h2>
+
+<div class="summary-box">
+  <strong>본인의 우선 목표</strong> = 모델 고도화 + 예측 정확도 개선 → 콜론30 의뢰 결과물 품질 극대화<br>
+  <strong>조율 원칙</strong> = 의뢰 회사 요구사항에 맞춰 능동적으로 조정 + 중간 산출물 공유 + 의사 결정 빠른 반영
+</div>
+
+<table>
+  <tr>
+    <th>조율 항목</th><th>본인 측 처리</th><th>콜론30 측 회신</th><th>처리 시점</th>
+  </tr>
+  <tr>
+    <td>미매칭 갤러리 검수</td>
+    <td>마이그레이션 데이터 + 미매칭 list 공유</td>
+    <td>매칭 / 신규 등록 / 제외 결정</td>
+    <td>Week 1 진행 중</td>
+  </tr>
+  <tr>
+    <td>요구사항 1차 반영</td>
+    <td>현재 모델 + 트랙 정의 공유 + 의견 수렴</td>
+    <td>예측 적용 범위 / 우선순위 / 보고 형식 의견</td>
+    <td>Week 1 ~ Week 2 초</td>
+  </tr>
+  <tr>
+    <td>중간 산출물 리뷰</td>
+    <td>후보군 검증 + scorecard 1차 + 트랙 2 Core 5/Main 7 비교 표 공유</td>
+    <td>의견 / 추가 요구</td>
+    <td>Week 2 종료 시</td>
+  </tr>
+  <tr>
+    <td>champion 선정 사전 공유</td>
+    <td>Shadow 결과 + scorecard 공유</td>
+    <td>운영 도입 사전 인지</td>
+    <td>Week 3 (5/26 전)</td>
+  </tr>
+  <tr>
+    <td>최종 결과 보고</td>
+    <td>운영 도입 결과 + 트랙 2 보고서 공유</td>
+    <td>최종 의견 + 차기 협조 방향</td>
+    <td>Week 4 종료 시 (6/2)</td>
+  </tr>
+</table>
+
+<p class="small">※ 일정 상 회신 지연 시 → 본인 측에서 트랙 2 DAG / feature spec 선행, 동일 LAO split 통합은 회신 후 처리 (Week 1-2 활성 조율)</p>
+
+<h2>9. 성공 기준 (6/2 종료 시)</h2>
 
 <h3>운영 도입 (champion 1개)</h3>
 <ul>
@@ -684,9 +748,16 @@
 <h3>두 트랙 산출물</h3>
 <ul>
   <li>트랙 1: 후보 학습 결과 + holdout metric + champion 후보 평가</li>
-  <li>트랙 2: Core 5 기반 OLS / ME 결과 + within-artist 식별 + 최종 보고서 (10-15페이지)</li>
+  <li>트랙 2: Week 2 freeze 된 feature set 기반 OLS / ME 결과 + within-artist 식별 + 최종 보고서 (10-15페이지)</li>
   <li>두 트랙 동일 protocol 비교 표 (정확도 + 안정성 + 운영성 + 해석성)</li>
   <li>Champion 선정 메모 + 비선정 모델 활용 방안</li>
+</ul>
+
+<h3>콜론30 의뢰 결과물</h3>
+<ul>
+  <li>champion 모델의 예측 정확도 + 적용 범위 보고</li>
+  <li>트랙 2 보고서 (paper-style) — 가격 결정 요인 해석</li>
+  <li>중간 산출물 / 최종 결과 공유 완료</li>
 </ul>
 
 <h3>1개월 회고</h3>
@@ -696,7 +767,7 @@
   <li>운영 monitoring dashboard + rollback runbook 활성</li>
 </ul>
 
-<h2>9. 총괄 결정 타임라인 + 외부 협업 요청</h2>
+<h2>10. 총괄 결정 타임라인 + 콜론30 활성 조율</h2>
 
 <div class="info-box">
   <strong>본인 결정/관리 사항 (총괄 권한)</strong>
@@ -709,12 +780,12 @@
     </tr>
     <tr>
       <td>5/12 (화)</td>
-      <td>피처 검증 통과 여부 (GATE 1)</td>
-      <td>두 트랙 feature spec freeze 결정</td>
+      <td>후보군 + 평가 기준 freeze (GATE 1)</td>
+      <td>두 트랙 후보군 + 평가 기준 freeze 결정 (트랙 2 feature set 자체는 5/19)</td>
     </tr>
     <tr>
       <td>5/19 (화)</td>
-      <td>후보 모델 freeze (GATE 2)</td>
+      <td>트랙 2 feature set freeze + candidate freeze (GATE 2)</td>
       <td>두 트랙 1개씩 후보 모델 freeze, 이후 변경 금지</td>
     </tr>
     <tr>
@@ -746,62 +817,67 @@
 </div>
 
 <div class="info-box">
-  <strong>외부 협업 요청 (콜론30)</strong>
+  <strong>콜론30 활성 조율 사항 (의뢰 회사 → 본인 측 능동 대응)</strong>
   <ul>
-    <li><strong>추가 미매칭 갤러리 검수 (협력자 콜론30)</strong>
+    <li><strong>본인 측 작업</strong>
       <ul>
-        <li>Week 1 초반 (5/6-8 사이) 회신 요청</li>
-        <li>본 마이그레이션 데이터 통합 시 신규 미매칭 갤러리 일괄 검수</li>
+        <li>마이그레이션 데이터 + 미매칭 갤러리 list 공유 (Week 1 초)</li>
+        <li>현재 모델 + 트랙 정의 + 적용 범위 안 공유</li>
+        <li>중간 산출물 / scorecard / 트랙 2 비교 표 공유 (Week 2 종료)</li>
+        <li>champion 선정 사전 공유 (5/26 전)</li>
+        <li>최종 결과 보고 (6/2)</li>
+      </ul>
+    </li>
+    <li><strong>콜론30 측 회신 / 결정</strong>
+      <ul>
+        <li>미매칭 갤러리 검수 결과 (매칭 / 신규 / 제외)</li>
+        <li>예측 적용 범위 / 우선순위 / 보고 형식 의견</li>
+        <li>중간 / 최종 산출물 의견</li>
       </ul>
     </li>
   </ul>
   <p class="small" style="margin-top: 10px;">
-    ※ 외부 회신 지연 시 → 첫 주 트랙 2 DAG / feature spec 만 선행, 동일 LAO split holdout / OLS 는 검수 결과 반영 후 재실행
+    ※ 회신 지연 시 본인 측에서 트랙 2 DAG / feature spec 선행 진행 후 통합 — 의뢰 회사 일정에 본인이 능동 조율
   </p>
 </div>
 
 <div class="info-box">
   <strong>자체 보고 / 회고 일정</strong>
   <ul>
-    <li><strong>Week 1 종료 (5/12 화)</strong>: 피처 검증 결과 + 평가 protocol freeze</li>
-    <li><strong>Week 2 종료 (5/19 화 freeze)</strong>: 두 트랙 후보 모델 학습 결과 + scorecard 1차</li>
+    <li><strong>Week 1 종료 (5/12 화)</strong>: 후보군 + 평가 기준 freeze</li>
+    <li><strong>Week 2 종료 (5/19 화)</strong>: 트랙 2 feature set freeze + 두 트랙 후보 모델 학습 결과 + scorecard 1차</li>
     <li><strong>Week 3 종료 (5/26 화)</strong>: Shadow 결과 + champion 선정 + 비선정 모델 활용 방안</li>
     <li><strong>Week 4 종료 (6/2 화)</strong>: champion 도입 결과 (정상 종료 또는 rollback 종료) + 4-5일 안정화 결과 + 트랙 2 최종 보고서</li>
   </ul>
 </div>
 
-<h2>10. 진행 원칙</h2>
+<h2>11. 진행 원칙</h2>
 
 <ul>
   <li><strong>Gate-based 진행</strong>: 각 Week 종료 게이트 (GATE 1-4) 통과 후 다음 Week 진행</li>
   <li><strong>두 트랙 동시 검증</strong>: Week 1-2 동일 protocol, Week 3 까지 동시 평가</li>
   <li><strong>운영 도입 단일 endpoint</strong>: champion 만 배포, 비선정 모델은 원칙적으로 보조 모델 전환 (필요 시에만 한시적 shadow)</li>
-  <li><strong>외부 협업 (콜론30) 의존성</strong>: Week 1 내 회신 — 지연 시 트랙 2 DAG 만 선행</li>
-  <li><strong>본인 결정 사항 우선</strong>: §9 타임라인 기준 본인 직접 관리</li>
-  <li><strong>중단 조건 명확화</strong>: feature validation 실패 / shadow 이상 / rollback trigger</li>
+  <li><strong>콜론30 (client) 능동 조율</strong>: Week 1-2 내 검수 / 의견 반영 — 지연 시 본인 측 선행 진행</li>
+  <li><strong>본인 결정 사항 우선</strong>: §10 타임라인 기준 본인 직접 관리</li>
+  <li><strong>중단 조건 명확화</strong>: 후보군 freeze 실패 / candidate freeze 실패 / shadow 이상 / rollback trigger</li>
   <li><strong>후순위 항목</strong> (필요 시 후행): quantile regression / Bayesian prototype / 추가 sensitivity</li>
 </ul>
 
-<h2>11. 상세 자료</h2>
+<h2>12. 상세 자료</h2>
 
 <ul>
   <li>상세 plan / 변수 spec / 인과 구조도 / 사전등록 protocol / monitoring runbook → 별도 internal docs 관리</li>
   <li>필요 시 공유 가능</li>
 </ul>
 
-<details>
-  <summary>📎 부록 — Day-by-Day 상세 (필요 시 펼치기)</summary>
-  <p class="small" style="margin: 12px 0;">주간 게이트 단위 진행이 메인 plan 입니다. Day-by-Day 상세는 운영 참고용입니다. 각 Week 의 핵심 작업은 §5 의 4주 일정 표 참조.</p>
-</details>
-
 <div class="footer">
   <p><strong>작성</strong>: 2026-05-05</p>
   <p><strong>주요 마일스톤</strong> (수요일 = 데이터 갱신 기준점)</p>
   <ul style="font-size: 0.92em;">
     <li>5/6 (수) — 마이그레이션 Day 1 + 두 트랙 시작</li>
-    <li>5/12 (화) — GATE 1: 피처 검증 통과</li>
+    <li>5/12 (화) — GATE 1: 후보군 + 평가 기준 freeze</li>
     <li>5/13 (수) — Confirmatory refresh (데이터 갱신)</li>
-    <li>5/19 (화) — GATE 2: 후보 모델 freeze</li>
+    <li>5/19 (화) — GATE 2: 트랙 2 feature set freeze + candidate freeze</li>
     <li>5/20 (수) — Shadow 환경 동시 배포 (양 트랙)</li>
     <li>5/26 (화) — <strong>GATE 3: Champion 선정</strong></li>
     <li>5/27 (수) — 1% / 5% canary (champion only)</li>
@@ -812,7 +888,7 @@
   <p><strong>다음 액션</strong></p>
   <ul style="font-size: 0.92em;">
     <li>마이그레이션 데이터 사용 가능 시 → 5/6 (수) Day 1 시작</li>
-    <li>외부 협업 (콜론30 검수) 지연 시 → 트랙 2 DAG / feature spec 우선 진행</li>
+    <li>콜론30 검수 / 회신 지연 시 → 본인 측에서 트랙 2 DAG / feature spec 선행 진행 후 통합</li>
   </ul>
 </div>
 
