@@ -230,7 +230,7 @@
     <li><strong>MdAPE</strong>: 예측 오차의 대표값 (중앙값 기준 % 오차)</li>
     <li><strong>holdout</strong>: 학습에 사용하지 않은 별도 검증 셋</li>
     <li><strong>3 seeds</strong>: 랜덤 분할을 3회 반복한 재현성 점검</li>
-    <li><strong>Champion-Challenger</strong>: 동일 protocol 검증, winner (champion) 만 운영 배포 / 비선정은 challenger 로 shadow 유지</li>
+    <li><strong>Champion-Challenger</strong>: 동일 protocol 검증, winner (champion) 만 운영 배포 / 비선정은 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 1-2주 한정 shadow 유지</li>
     <li><strong>shadow → canary → full rollout</strong>: 신모델 단계적 배포 (트래픽 0% → 1% → 5% → 25% → 50% → 100%)</li>
   </ul>
 </div>
@@ -393,17 +393,29 @@
 </table>
 
 <div class="info-box small">
-  <strong>📌 Champion 선정 규칙</strong>
-  <ul style="margin: 6px 0;">
-    <li><strong>champion 자격 (필수 통과)</strong>: 정확도 ≥ baseline, 안정성 pass, 운영성 pass</li>
-    <li>안정성 / 운영성 fail 시 자동 탈락 (정확도 우수해도 X)</li>
-    <li><strong>점수제 (가중치)</strong>: 정확도 40 / 안정성 30 / 운영성 20 / 해석성 10</li>
-    <li>총점 우위 후보 = champion (동점 시 운영성 → 해석성 순)</li>
-    <li>정확도 차이 ≤ 1%p → 해석성 / 운영성 우위 후보 우선</li>
-    <li>비선정 모델 = 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시 1-2주 한정 shadow 유지</li>
-  </ul>
-  <p class="small" style="margin-top: 8px;">※ 안정성 pass 기준: 3-seed 변동성 ≤ 임계 / cold-start 재현성 일관 / drift 정상</p>
-  <p class="small">※ 운영성 pass 기준: latency p99 ≤ 임계 / fallback 빈도 ≤ 임계 / 입력 누락 robust</p>
+  <strong>📌 Champion 선정 규칙 (단계별)</strong>
+  <ol style="margin: 6px 0;">
+    <li><strong>1단계 — 자격 통과 (필수)</strong>
+      <ul>
+        <li>정확도 ≥ baseline</li>
+        <li>안정성 pass (3-seed 변동성 ≤ 임계 / cold-start 재현성 일관 / drift 정상)</li>
+        <li>운영성 pass (latency p99 ≤ 임계 / fallback 빈도 ≤ 임계 / 입력 누락 robust)</li>
+      </ul>
+      <span class="small">※ 안정성 / 운영성 fail 시 자동 탈락 (정확도 우수해도 X)</span>
+    </li>
+    <li><strong>2단계 — 점수제 (가중치)</strong>
+      <ul>
+        <li>정확도 40 / 안정성 30 / 운영성 20 / 해석성 10</li>
+        <li>총점 우위 후보 = champion</li>
+      </ul>
+    </li>
+    <li><strong>3단계 — 동점 처리</strong>
+      <ul>
+        <li>총점 차이 ≤ 5점: 운영성 → 해석성 순 우선</li>
+      </ul>
+    </li>
+  </ol>
+  <p class="small" style="margin-top: 8px;">※ 비선정 모델 = 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 1-2주 한정 shadow 유지</p>
 </div>
 
 <h2>5. 4주 일정 (주간 단위)</h2>
@@ -514,8 +526,9 @@
     <td>Champion 단일 배포 + 안정화</td>
     <td>
       <ul style="margin: 4px 0;">
-        <li>5/27 (수): 1% canary → 5% → 25%</li>
-        <li>5/28-29 (목/금): 50% → 100% rollout</li>
+        <li>5/27 (수): 1% → 5% canary</li>
+        <li>5/28 (목): 25% → 50% rollout</li>
+        <li>5/29 (금): 100% Full Rollout</li>
         <li>5/30 ~ 6/2: 4-5일 초기 안정화 모니터링</li>
         <li>트랙 2: 최종 보고서 작성 (10-15페이지)</li>
       </ul>
@@ -564,7 +577,7 @@
   </tr>
   <tr><td>Fallback 빈도</td><td>champion</td></tr>
   <tr><td>입력 누락률 (feature missingness)</td><td>champion</td></tr>
-  <tr><td>예측가 / 등급 분포 변화 (drift)</td><td>champion + challenger (shadow)</td></tr>
+  <tr><td>예측가 / 등급 분포 변화 (drift)</td><td>champion (필수) + 비선정 모델 shadow 시 보조 적용</td></tr>
   <tr><td>Source 별 output shift</td><td>champion</td></tr>
   <tr>
     <td rowspan="2"><strong>모델별 진단</strong></td>
@@ -620,8 +633,8 @@
       <td><strong>두 트랙 모두 baseline 통과 (의사결정 어려움)</strong></td>
       <td>
         <ul style="margin: 4px 0;">
-          <li>Scorecard 우선순위: 정확도 → 안정성 → 운영성 → 해석성</li>
-          <li>정확도 차이 ≤ 1%p 시 해석성 / 운영성 우위 후보 우선</li>
+          <li>§4 점수제 (정확도 40 / 안정성 30 / 운영성 20 / 해석성 10) 적용</li>
+          <li>총점 차이 ≤ 5점 시 운영성 → 해석성 순 우선</li>
         </ul>
       </td>
     </tr>
@@ -736,7 +749,7 @@
   <ul>
     <li><strong>추가 미매칭 갤러리 검수 (협력자 콜론30)</strong>
       <ul>
-        <li>Week 1 (Day 1-2) 내 회신 요청</li>
+        <li>Week 1 초반 (5/6-8 사이) 회신 요청</li>
         <li>본 마이그레이션 데이터 통합 시 신규 미매칭 갤러리 일괄 검수</li>
       </ul>
     </li>
@@ -752,7 +765,7 @@
     <li><strong>Week 1 종료 (5/12 월)</strong>: 피처 검증 결과 + 평가 protocol freeze</li>
     <li><strong>Week 2 종료 (5/19 화 freeze)</strong>: 두 트랙 후보 모델 학습 결과 + scorecard 1차</li>
     <li><strong>Week 3 종료 (5/26 월)</strong>: Shadow 결과 + champion 선정 + 비선정 모델 활용 방안</li>
-    <li><strong>Week 4 종료 (6/2 화)</strong>: champion 도입 완료 + 4-5일 안정화 결과 + 트랙 2 최종 보고서</li>
+    <li><strong>Week 4 종료 (6/2 화)</strong>: champion 도입 결과 (정상 종료 또는 rollback 종료) + 4-5일 안정화 결과 + 트랙 2 최종 보고서</li>
   </ul>
 </div>
 
@@ -761,7 +774,7 @@
 <ul>
   <li><strong>Gate-based 진행</strong>: 각 Week 종료 게이트 (GATE 1-4) 통과 후 다음 Week 진행</li>
   <li><strong>두 트랙 동시 검증</strong>: Week 1-2 동일 protocol, Week 3 까지 동시 평가</li>
-  <li><strong>운영 도입 단일 endpoint</strong>: champion 만 배포, 비선정 모델은 challenger / 보조 유지</li>
+  <li><strong>운영 도입 단일 endpoint</strong>: champion 만 배포, 비선정 모델은 원칙적으로 보조 모델 전환 (필요 시에만 1-2주 한정 shadow)</li>
   <li><strong>외부 협업 (콜론30) 의존성</strong>: Week 1 내 회신 — 지연 시 트랙 2 DAG 만 선행</li>
   <li><strong>본인 결정 사항 우선</strong>: §9 타임라인 기준 본인 직접 관리</li>
   <li><strong>중단 조건 명확화</strong>: feature validation 실패 / shadow 이상 / rollback trigger</li>
@@ -790,10 +803,10 @@
     <li>5/19 (화) — GATE 2: 후보 모델 freeze</li>
     <li>5/20 (수) — Shadow 환경 동시 배포 (양 트랙)</li>
     <li>5/26 (월) — <strong>GATE 3: Champion 선정</strong></li>
-    <li>5/27 (수) — 1% / 5% / 25% canary (champion only)</li>
-    <li>5/28 (목) — 50% rollout</li>
+    <li>5/27 (수) — 1% / 5% canary (champion only)</li>
+    <li>5/28 (목) — 25% / 50% rollout</li>
     <li>5/29 (금) — 100% Full Rollout</li>
-    <li>6/2 (화) — <strong>GATE 4: 운영 도입 완료 + 안정화 리포트 + 트랙 2 보고서</strong></li>
+    <li>6/2 (화) — <strong>GATE 4: 운영 도입 종료 + 안정화 리포트 + 트랙 2 보고서</strong></li>
   </ul>
   <p><strong>다음 액션</strong></p>
   <ul style="font-size: 0.92em;">
