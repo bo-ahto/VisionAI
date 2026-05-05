@@ -405,26 +405,38 @@
     </td>
   </tr>
   <tr>
-    <td><strong>핵심 5개 피처 (core)</strong></td>
+    <td><strong>핵심 5개 피처 (Core 5)</strong></td>
     <td>
-      <strong>가장 robust 하고 인과적으로 해석 가능한 5개</strong>:<br>
-      ① 작품 크기 (log_area)<br>
-      ② 매체 (oil/acrylic/paper/other 4분류)<br>
-      ③ 제작 연도 (year_made_centered)<br>
-      ④ 작가 경력 단계 (career_stage)<br>
-      ⑤ 데이터 소스 (Artsy / Saatchi)
+      <strong>해석 가능 + 시장 의미 있는 5개</strong>
+      <ul style="margin: 6px 0;">
+        <li>작품 크기 (log_area) — <em>structural / 인과 가능</em></li>
+        <li>매체 (medium_family, oil/acrylic/paper/other 4분류) — <em>structural / 인과 가능</em></li>
+        <li>제작 연도 (year_made_centered) — <em>structural / vintage 효과</em></li>
+        <li>작가 경력 단계 (career_stage) — <em>structural / Galenson curve</em></li>
+        <li>갤러리 티어 (gallery_tier) — <em>associational / 시장 포지셔닝 proxy (caveat)</em></li>
+      </ul>
+      <p class="small">※ 데이터 소스 (source) 는 Core 에서 <strong>제외</strong>. 예측력은 있으나 해석 변수로 부적절 (data origin proxy). Sensitivity 에 control only 로 포함.</p>
     </td>
   </tr>
   <tr>
-    <td><strong>main 7개 피처 (보조 추가)</strong></td>
+    <td><strong>Main 7 피처 (1차 확장)</strong></td>
     <td>
-      Core 5 + 갤러리 티어 (gallery_tier) + 정보 누락 control 1개 (has_year_made / has_birth_year 중)
+      <ul style="margin: 6px 0;">
+        <li>Core 5</li>
+        <li>작가 productivity proxy (log_artist_total_works)</li>
+        <li>정보 누락 control 1개 (has_year_made / has_birth_year)</li>
+      </ul>
     </td>
   </tr>
   <tr>
-    <td><strong>sensitivity 8-10개 (한계 검증용)</strong></td>
+    <td><strong>Sensitivity 8-10 (한계 검증용)</strong></td>
     <td>
-      Main 7 + 작가 활동 지표 (log_followers, reverse causality 우려) + 한국시장 dummy 등
+      <ul style="margin: 6px 0;">
+        <li>Main 7</li>
+        <li><strong>source [control only]</strong> — 예측 통제용, 해석 X</li>
+        <li>log_followers [predictive only / reverse causality 우려]</li>
+        <li>is_krw or has_seoul [market-context sensitivity]</li>
+      </ul>
     </td>
   </tr>
   <tr>
@@ -460,6 +472,53 @@
     </td>
   </tr>
 </table>
+
+<h4>피처 역할 (Feature Role) 분류</h4>
+<table>
+  <tr>
+    <th>역할</th>
+    <th>해석 가능성</th>
+    <th>해당 변수</th>
+  </tr>
+  <tr>
+    <td><strong>Structural</strong> (인과 가능)</td>
+    <td>강 (within-artist 식별)</td>
+    <td>log_area / medium_family / year_made / career_stage</td>
+  </tr>
+  <tr>
+    <td><strong>Associational</strong> (연관 변수, caveat)</td>
+    <td>중 (selection bias 우려)</td>
+    <td>gallery_tier (시장 포지셔닝 proxy)</td>
+  </tr>
+  <tr>
+    <td><strong>Control-only</strong> (통제 목적)</td>
+    <td>없음 (해석 X)</td>
+    <td>source (data origin proxy)<br>missingness control (has_year_made 등)</td>
+  </tr>
+  <tr>
+    <td><strong>Predictive-only</strong> (예측만)</td>
+    <td>없음 (reverse causality 우려)</td>
+    <td>log_followers (popularity)</td>
+  </tr>
+</table>
+
+<div class="info-box small">
+  <strong>📌 트랙 1 vs 트랙 2 — source 처리 차이</strong>
+  <table style="margin-top: 8px;">
+    <tr><th>트랙</th><th>source 처리</th><th>이유</th></tr>
+    <tr>
+      <td>트랙 1 (운영 모델)</td>
+      <td>유지 (V3 production 사용 중)</td>
+      <td>예측 + calibration 기여 검증됨</td>
+    </tr>
+    <tr>
+      <td>트랙 2 (해석 모델)</td>
+      <td>Core 제외 / Sensitivity 만 (control)</td>
+      <td>"Artsy 라서 비싸다" 는 무의미한 설명 — headline 변수 부적합</td>
+    </tr>
+  </table>
+  <p style="margin: 6px 0;">📝 <strong>운영 원칙</strong>: <em>"source 는 예측 정확도 향상을 위한 통제 변수로만 사용하며, 가격 형성의 의미 있는 설명 변수로 해석하지 않는다."</em></p>
+</div>
 
 <h2>4. 1개월 일정</h2>
 
@@ -524,8 +583,9 @@
   </div>
   <div class="struct-cell">
     <strong>핵심 5개 피처 후보 확정</strong><br>
-    log_area / medium_family / year / career_stage / source<br>
-    문헌 기반 + DAG 상 직접 특성 우선 원칙
+    log_area / medium_family / year / career_stage / <strong>gallery_tier</strong><br>
+    문헌 기반 + DAG 상 직접 특성 우선 원칙<br>
+    <span class="small">※ source 는 Core 제외 (control only, sensitivity 에서만)</span>
   </div>
 
   <div class="day-cell">D2<br>5/7 <span class="small">(목)</span></div>
