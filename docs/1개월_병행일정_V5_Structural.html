@@ -182,7 +182,7 @@
     <li>Week 3 초: 두 트랙 모두 shadow 환경에서 동시 검증</li>
     <li>Week 3 말: 복합 scorecard 기반 <strong>champion 1개 선정</strong></li>
     <li>Week 4: champion 만 canary → full rollout + 안정화</li>
-    <li>비선정 모델은 원칙적으로 보고서/설명용 보조 모델로 전환, 필요 시에만 1-2주 한정 shadow challenger 로 연장</li>
+    <li>비선정 모델은 원칙적으로 보고서/설명용 보조 모델로 전환, 필요 시에만 한시적 shadow challenger 로 연장</li>
   </ul>
   <strong>4주 후 산출물</strong>
   <ul>
@@ -230,7 +230,7 @@
     <li><strong>MdAPE</strong>: 예측 오차의 대표값 (중앙값 기준 % 오차)</li>
     <li><strong>holdout</strong>: 학습에 사용하지 않은 별도 검증 셋</li>
     <li><strong>3 seeds</strong>: 랜덤 분할을 3회 반복한 재현성 점검</li>
-    <li><strong>Champion-Challenger</strong>: 동일 protocol 검증, winner (champion) 만 운영 배포 / 비선정은 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 1-2주 한정 shadow 유지</li>
+    <li><strong>Champion-Challenger</strong>: 동일 protocol 검증, winner (champion) 만 운영 배포 / 비선정은 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 한시적 shadow 유지</li>
     <li><strong>shadow → canary → full rollout</strong>: 신모델 단계적 배포 (트래픽 0% → 1% → 5% → 25% → 50% → 100%)</li>
   </ul>
 </div>
@@ -356,7 +356,7 @@
   <tr>
     <td>champion 선정 시 강점</td>
     <td>예측 정확도</td>
-    <td>설명 + 운영 안정성</td>
+    <td>설명력 + 인과 framing</td>
   </tr>
 </table>
 
@@ -415,7 +415,8 @@
       </ul>
     </li>
   </ol>
-  <p class="small" style="margin-top: 8px;">※ 비선정 모델 = 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 1-2주 한정 shadow 유지</p>
+  <p class="small" style="margin-top: 8px;">※ 비선정 모델 = 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 한시적 shadow 유지</p>
+  <p class="small">※ latency / drift / fallback / sample size / rollback threshold 의 수치 기준은 별도 monitoring runbook 에서 고정 관리</p>
 </div>
 
 <h2>5. 4주 일정 (주간 단위)</h2>
@@ -495,10 +496,10 @@
     <td>
       <ul style="margin: 4px 0;">
         <li>5/20 (수): 두 트랙 shadow 환경 배포</li>
-        <li>5/20-23 (수-금): <strong>최소 3영업일 shadow 관찰창</strong> (latency / drift / fallback / 충분 샘플 확보)</li>
+        <li>5/20-22 (수-금): <strong>shadow 관찰창</strong> (latency / drift / fallback / 충분 샘플 확보)</li>
         <li>트랙 2: ME 분산 분해 + within-artist 식별 결과 + 최종 비교 표</li>
-        <li>5/26 (월) 오전: scorecard lock</li>
-        <li>5/26 (월) 오후: <strong>champion 선정 + rollout 최종 승인</strong></li>
+        <li>5/26 (화) 오전: scorecard lock</li>
+        <li>5/26 (화) 오후: <strong>champion 선정 + rollout 최종 승인</strong></li>
       </ul>
     </td>
     <td>
@@ -598,8 +599,8 @@
     <li><strong>협력자 콜론30 — 추가 미매칭 갤러리 검수 회신</strong>
       <ul>
         <li>본 마이그레이션 데이터 도착 후 회신 대기</li>
-        <li>Week 1 내 처리 목표</li>
-        <li>지연 시 → Week 1 진단 일정 1-2일 shift</li>
+        <li>초기 주간 내 처리 목표</li>
+        <li>지연 시 → Week 1 진단 순서 조정</li>
         <li>지연 중 → 트랙 2 DAG / feature spec 만 선행, 동일 LAO split 적용은 회신 후</li>
       </ul>
     </li>
@@ -615,7 +616,7 @@
       <td><strong>Week 1 피처 검증 실패</strong></td>
       <td>
         <ul style="margin: 4px 0;">
-          <li>Spec 재정의 + Week 2 일정 1-2일 shift</li>
+          <li>Spec 재정의 + Week 2 우선순위 재조정</li>
           <li>트랙 1 / 2 중 한쪽만 실패 시 다른 트랙 우선 진행</li>
         </ul>
       </td>
@@ -643,8 +644,8 @@
       <td>
         <ul style="margin: 4px 0;">
           <li>즉시 rollback + root cause 분석 → 재시작</li>
-          <li>Full rollout 시점 2-3일 후행 가능</li>
-          <li>6/2 종료 일정 동반 shift</li>
+          <li>Full rollout 시점 후행 가능</li>
+          <li>종료 시점 재산정 필요</li>
         </ul>
       </td>
     </tr>
@@ -690,7 +691,7 @@
 
 <h3>1개월 회고</h3>
 <ul>
-  <li>두 트랙 모두 timeline 내 완료 또는 명확한 사유</li>
+  <li>두 트랙 모두 계획 범위 내 완료 또는 명확한 사유</li>
   <li>차기 cycle 사전등록 skeleton</li>
   <li>운영 monitoring dashboard + rollback runbook 활성</li>
 </ul>
@@ -707,7 +708,7 @@
       <td>매주 수요일 snapshot timing 결정</td>
     </tr>
     <tr>
-      <td>5/12 (월)</td>
+      <td>5/12 (화)</td>
       <td>피처 검증 통과 여부 (GATE 1)</td>
       <td>두 트랙 feature spec freeze 결정</td>
     </tr>
@@ -727,12 +728,12 @@
       <td>Shadow / canary 이상 발생 시 rollback 결정자 (본인 또는 위임)</td>
     </tr>
     <tr>
-      <td>5/26 (월)</td>
+      <td>5/26 (화)</td>
       <td><strong>Champion 선정 (GATE 3)</strong></td>
       <td>복합 scorecard 기반 winner 결정. 비선정 모델 활용 방안 동시 결정</td>
     </tr>
     <tr>
-      <td>5/26 (월)</td>
+      <td>5/26 (화)</td>
       <td>Champion 별 rollout 최종 승인</td>
       <td>선정된 champion 에 대해 Week 4 canary 진입 승인</td>
     </tr>
@@ -762,9 +763,9 @@
 <div class="info-box">
   <strong>자체 보고 / 회고 일정</strong>
   <ul>
-    <li><strong>Week 1 종료 (5/12 월)</strong>: 피처 검증 결과 + 평가 protocol freeze</li>
+    <li><strong>Week 1 종료 (5/12 화)</strong>: 피처 검증 결과 + 평가 protocol freeze</li>
     <li><strong>Week 2 종료 (5/19 화 freeze)</strong>: 두 트랙 후보 모델 학습 결과 + scorecard 1차</li>
-    <li><strong>Week 3 종료 (5/26 월)</strong>: Shadow 결과 + champion 선정 + 비선정 모델 활용 방안</li>
+    <li><strong>Week 3 종료 (5/26 화)</strong>: Shadow 결과 + champion 선정 + 비선정 모델 활용 방안</li>
     <li><strong>Week 4 종료 (6/2 화)</strong>: champion 도입 결과 (정상 종료 또는 rollback 종료) + 4-5일 안정화 결과 + 트랙 2 최종 보고서</li>
   </ul>
 </div>
@@ -774,7 +775,7 @@
 <ul>
   <li><strong>Gate-based 진행</strong>: 각 Week 종료 게이트 (GATE 1-4) 통과 후 다음 Week 진행</li>
   <li><strong>두 트랙 동시 검증</strong>: Week 1-2 동일 protocol, Week 3 까지 동시 평가</li>
-  <li><strong>운영 도입 단일 endpoint</strong>: champion 만 배포, 비선정 모델은 원칙적으로 보조 모델 전환 (필요 시에만 1-2주 한정 shadow)</li>
+  <li><strong>운영 도입 단일 endpoint</strong>: champion 만 배포, 비선정 모델은 원칙적으로 보조 모델 전환 (필요 시에만 한시적 shadow)</li>
   <li><strong>외부 협업 (콜론30) 의존성</strong>: Week 1 내 회신 — 지연 시 트랙 2 DAG 만 선행</li>
   <li><strong>본인 결정 사항 우선</strong>: §9 타임라인 기준 본인 직접 관리</li>
   <li><strong>중단 조건 명확화</strong>: feature validation 실패 / shadow 이상 / rollback trigger</li>
@@ -798,11 +799,11 @@
   <p><strong>주요 마일스톤</strong> (수요일 = 데이터 갱신 기준점)</p>
   <ul style="font-size: 0.92em;">
     <li>5/6 (수) — 마이그레이션 Day 1 + 두 트랙 시작</li>
-    <li>5/12 (월) — GATE 1: 피처 검증 통과</li>
+    <li>5/12 (화) — GATE 1: 피처 검증 통과</li>
     <li>5/13 (수) — Confirmatory refresh (데이터 갱신)</li>
     <li>5/19 (화) — GATE 2: 후보 모델 freeze</li>
     <li>5/20 (수) — Shadow 환경 동시 배포 (양 트랙)</li>
-    <li>5/26 (월) — <strong>GATE 3: Champion 선정</strong></li>
+    <li>5/26 (화) — <strong>GATE 3: Champion 선정</strong></li>
     <li>5/27 (수) — 1% / 5% canary (champion only)</li>
     <li>5/28 (목) — 25% / 50% rollout</li>
     <li>5/29 (금) — 100% Full Rollout</li>
