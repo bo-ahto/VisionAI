@@ -165,7 +165,7 @@
 <p class="meta">
   <strong>작성일</strong>: 2026-05-05 ·
   <strong>대상 기간</strong>: 2026-05-06 (수) ~ 2026-06-02 (4주) ·
-  <strong>구조</strong>: Champion-Challenger (두 트랙 동시 검증, 단일 endpoint 배포)
+  <strong>구조</strong>: Champion-Challenger (두 트랙 동시 검증, 단일 운영 엔드포인트 배포)
 </p>
 
 <h2>1. 핵심 요약 (TL;DR)</h2>
@@ -173,31 +173,31 @@
 <div class="summary-box">
   <strong>본 문서는 콜론30 (client) 의뢰에 대한 4주 실행 계획</strong>
   <ul>
-    <li>본인의 우선 목표 = <strong>모델 고도화 + 예측 정확도 개선</strong> → 콜론30 의뢰 결과물 품질 극대화</li>
+    <li>담당자 우선 목표 = <strong>모델 고도화 + 예측 정확도 개선</strong> → 콜론30 의뢰 결과물 품질 극대화</li>
     <li>콜론30 관련 사항 = 외부 의존이 아닌 <strong>Week 1-2 내 능동 조율</strong>로 반영 — 회신 없어도 내부 기준안 선행 진행, 회신 반영은 범위 내 보정</li>
   </ul>
-  <strong>두 가지 모델 트랙을 동시 검증 후, 운영 endpoint 에는 최종 선정 모델 1개 배포</strong>
+  <strong>두 가지 모델 트랙을 동시 검증 후, 운영 엔드포인트에는 최종 선정 모델 1개 배포</strong>
   <ul>
-    <li><strong>트랙 1 (Predictive Challenger)</strong>: 예측력 우선 — 매주 수요일 갱신 데이터 + V5 후보 (mixed-effects / retrieval) 도입 검증</li>
-    <li><strong>트랙 2 (Interpretable Challenger)</strong>: 해석력 강점 — Core 5 / Main 7 후보 검증 후 freeze, hedonic mixed-effects 모델</li>
+    <li><strong>트랙 1 (예측력 우선, Predictive Challenger)</strong>: 매주 수요일 갱신 데이터 + V5 후보 (mixed-effects / retrieval) 도입 검증</li>
+    <li><strong>트랙 2 (해석력 우선, Interpretable Challenger)</strong>: Core 5 / Main 7 후보 검증 후 freeze, hedonic mixed-effects 모델</li>
   </ul>
   <strong>운영 원칙</strong>
   <ul>
     <li>Week 1: 후보군 + 평가 기준 freeze (트랙 2: Core 5 / Main 7 후보군 정의)</li>
     <li>Week 2: 동일 protocol 로 두 트랙 offline 검증 + 트랙 2 feature set freeze (Core 5 / Main 7 비교 후)</li>
-    <li>Week 3 초: shadow 검증 — <strong>2-track mode</strong> (두 트랙 모두 통과) 또는 <strong>single-track mode</strong> (1개 트랙만 GATE 2 통과 시 자격 검증)</li>
-    <li>Week 3 말: <strong>최종 선정 모델 (champion) 결정</strong> — 2-track mode 는 복합 scorecard 비교, single-track mode 는 최소 조건 충족 여부</li>
+    <li>Week 3 초: shadow 검증 — <strong>이중 트랙 모드 (2-track mode)</strong> (두 트랙 모두 통과) 또는 <strong>단일 트랙 모드 (single-track mode)</strong> (1개 트랙만 GATE 2 통과 시 자격 검증)</li>
+    <li>Week 3 말: <strong>최종 선정 모델 (champion) 결정</strong> — 이중 트랙 모드는 복합 scorecard 비교, 단일 트랙 모드는 최소 자격 충족 여부</li>
     <li>Week 4: 최종 선정 모델만 canary → full rollout + 안정화</li>
-    <li>비선정 모델은 원칙적으로 보고서/설명용 보조 모델로 전환, 필요 시에만 한시적 shadow challenger 로 연장</li>
+    <li>비선정 모델은 원칙적으로 보고서·설명용 보조 모델로 전환 / 모니터링 목적이 있을 때에만 한시적 shadow challenger 로 유지</li>
   </ul>
   <strong>4주 후 산출물</strong>
   <ul>
-    <li>운영 endpoint 에 champion 모델 배포 완료 + 4-5일 초기 안정화</li>
-    <li>Champion 선정 근거 + 비선정 모델 활용 방안 메모</li>
+    <li>운영 엔드포인트에 최종 선정 모델 배포 완료 + 4-5일 초기 안정화</li>
+    <li>최종 선정 모델 결정 근거 + 비선정 모델 활용 방안 메모</li>
     <li>Week 2 freeze 된 feature set (Core 5 또는 Main 7) 기반 해석 가능 모델 보고서 (10-15페이지) — <strong>콜론30 의뢰 결과물</strong></li>
     <li>두 트랙 비교 표 (정확도 + 안정성 + 운영성 + 해석성)</li>
   </ul>
-  <strong>본인 결정/관리 사항</strong>: 마이그레이션 데이터 사용 가능일 / champion 선정 / 배포 방식 / rollback owner → §10 타임라인 참조<br>
+  <strong>담당자 결정/관리 사항</strong>: 마이그레이션 데이터 사용 가능일 / 최종 선정 모델 결정 / 배포 방식 / rollback owner → §10 타임라인 참조<br>
   <strong>콜론30 조율 사항</strong>: 미매칭 갤러리 검수 / 요구사항 반영 / 중간 산출물 리뷰 → §8 참조
 </div>
 
@@ -236,19 +236,19 @@
     <li><strong>MdAPE</strong>: 예측 오차의 대표값 (중앙값 기준 % 오차)</li>
     <li><strong>holdout</strong>: 학습에 사용하지 않은 별도 검증 셋</li>
     <li><strong>3 seeds</strong>: 랜덤 분할을 3회 반복한 재현성 점검</li>
-    <li><strong>Champion-Challenger</strong>: 동일 protocol 검증, 최종 선정 모델 (champion) 만 운영 배포 / 비선정은 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 한시적 shadow 유지</li>
+    <li><strong>Champion-Challenger</strong>: 동일 protocol 검증, 최종 선정 모델 (champion) 만 운영 배포 / 비선정 모델은 원칙적으로 보고서·설명용 보조 모델로 전환 / 모니터링 목적이 있을 때에만 한시적 shadow challenger 로 유지</li>
     <li><strong>shadow → canary → full rollout</strong>: 신모델 단계적 배포 (트래픽 0% → 1% → 5% → 25% → 50% → 100%)</li>
   </ul>
 </div>
 
 <h2>3. 트랙 정의</h2>
 
-<h3>트랙 1 — Predictive Challenger (예측력 우선)</h3>
+<h3>트랙 1 — 예측력 우선 (Predictive Challenger)</h3>
 <table>
   <tr><th>항목</th><th>내용</th></tr>
   <tr>
     <td><strong>목표</strong></td>
-    <td>실서비스 endpoint 의 예측력 (특히 신규 작가 예측) 직접 개선</td>
+    <td>운영 엔드포인트의 예측력 (특히 신규 작가 예측) 직접 개선</td>
   </tr>
   <tr>
     <td><strong>모델 형태</strong></td>
@@ -281,12 +281,12 @@
   </tr>
 </table>
 
-<h3>트랙 2 — Interpretable Challenger (해석력 강점)</h3>
+<h3>트랙 2 — 해석력 우선 (Interpretable Challenger)</h3>
 <table>
   <tr><th>항목</th><th>내용</th></tr>
   <tr>
     <td><strong>목표</strong></td>
-    <td>변수별 가격 영향이 설명 가능한 간결 모델 — 동일 protocol 검증 후 champion 후보</td>
+    <td>변수별 가격 영향이 설명 가능한 간결 모델 — 동일 protocol 검증 후 최종 선정 모델 후보</td>
   </tr>
   <tr>
     <td><strong>모델 형태</strong></td>
@@ -325,7 +325,7 @@
     <td>변수 해석성 / 인과 framing / 운영 의사결정 설명력</td>
   </tr>
   <tr>
-    <td><strong>champion 미선정 시 가치</strong></td>
+    <td><strong>최종 미선정 시 가치</strong></td>
     <td>
       <ul style="margin: 6px 0;">
         <li>설명 가능한 benchmark</li>
@@ -367,7 +367,7 @@
 
 <h3>두 트랙의 설계 철학 차이</h3>
 <table>
-  <tr><th>차원</th><th>트랙 1 (Predictive)</th><th>트랙 2 (Interpretable)</th></tr>
+  <tr><th>차원</th><th>트랙 1 (예측력 우선)</th><th>트랙 2 (해석력 우선)</th></tr>
   <tr>
     <td>피처 수</td>
     <td>32 + α (V3 기반)</td>
@@ -389,7 +389,7 @@
     <td>변수별 elasticity / 인과 신뢰도</td>
   </tr>
   <tr>
-    <td>champion 선정 시 강점</td>
+    <td>최종 선정 시 강점</td>
     <td>예측 정확도</td>
     <td>설명력 + 인과 framing</td>
   </tr>
@@ -397,7 +397,7 @@
 
 <p class="small">📝 <strong>설계 원칙</strong>: 두 트랙은 서로 다른 trade-off 를 보여주는 challenger. 최종 선정 모델은 복합 scorecard 로 결정.</p>
 
-<h2>4. Champion 선정 기준 (복합 Scorecard)</h2>
+<h2>4. 최종 선정 모델 결정 기준 (복합 Scorecard)</h2>
 
 <table>
   <tr>
@@ -438,20 +438,20 @@
       </ul>
       <span class="small">※ 안정성 / 운영성 fail 시 자동 탈락 (정확도 우수해도 X)</span>
     </li>
-    <li><strong>2단계 — Mode 별 결정</strong>
+    <li><strong>2단계 — 모드별 결정</strong>
       <ul>
-        <li><strong>2-track mode</strong>: 자격 충족 후보 비교 → 점수제 (정확도 40 / 안정성 30 / 운영성 20 / 해석성 10) → 총점 우위 후보 = champion</li>
-        <li><strong>Single-track mode</strong>: 단일 후보가 자격 조건 충족 → champion 확정 / 미충족 → V3 baseline 유지</li>
+        <li><strong>이중 트랙 모드 (2-track mode)</strong>: 자격 충족 후보 비교 → 점수제 (정확도 40 / 안정성 30 / 운영성 20 / 해석성 10) → 총점 우위 후보 = 최종 선정 모델</li>
+        <li><strong>단일 트랙 모드 (single-track mode)</strong>: 단일 후보가 자격 조건 충족 → 최종 선정 확정 / 미충족 → V3 baseline 유지</li>
       </ul>
     </li>
-    <li><strong>3단계 — 동점 처리 (2-track mode 만)</strong>
+    <li><strong>3단계 — 동점 처리 (이중 트랙 모드 만)</strong>
       <ul>
         <li>총점 차이 ≤ 5점: 운영성 → 해석성 순 우선</li>
       </ul>
     </li>
   </ol>
-  <p class="small" style="margin-top: 8px;">※ 비선정 모델 = 원칙적으로 보고서/설명용 보조 모델 전환, 필요 시에만 한시적 shadow 유지</p>
-  <p class="small">※ latency / drift / fallback / sample size / rollback threshold 의 수치 기준은 별도 monitoring runbook 에서 고정 관리</p>
+  <p class="small" style="margin-top: 8px;">※ 비선정 모델은 원칙적으로 보고서·설명용 보조 모델로 전환 / 모니터링 목적이 있을 때에만 한시적 shadow challenger 로 유지</p>
+  <p class="small">※ latency / drift / fallback / sample size / rollback threshold 의 수치 기준은 별도 모니터링 runbook 에서 고정 관리</p>
 </div>
 
 <h2>5. 4주 일정 (주간 단위)</h2>
@@ -511,14 +511,14 @@
       <ul style="margin: 4px 0;">
         <li>트랙 1 모델 학습 결과 + holdout metric</li>
         <li>트랙 2 Core 5 / Main 7 비교 표 + 최종 freeze set</li>
-        <li><strong>Track 2 freeze decision memo</strong> (해석성 + 안정성 + holdout 성능 종합)</li>
+        <li><strong>트랙 2 freeze 결정 메모</strong> (해석성 + 안정성 + holdout 성능 종합)</li>
         <li>OLS coefficient 표 + ME 결과</li>
-        <li><strong>Champion scorecard 1차</strong> (정확도 + 안정성 + 운영성 + 해석성)</li>
-        <li>champion 후보 사전 평가</li>
+        <li><strong>최종 선정 모델 scorecard 1차</strong> (정확도 + 안정성 + 운영성 + 해석성)</li>
+        <li>최종 선정 후보 사전 평가</li>
       </ul>
     </td>
     <td>
-      <span class="gate">GATE 2: 트랙 2 feature set freeze + candidate freeze</span>
+      <span class="gate">GATE 2: 트랙 2 feature set 확정 + 양 트랙 후보 모델 freeze</span>
       <ul style="margin: 4px 0;">
         <li>트랙 2: Core 5 / Main 7 검증 완료 후 최종 feature set 확정</li>
         <li>두 트랙 모두 후보 모델 1개씩 freeze (이후 변경 금지)</li>
@@ -531,21 +531,21 @@
 
   <tr>
     <td><strong>Week 3</strong><br>5/20 (수) ~ 5/26 (화)<br><span class="small">shadow 검증 + 최종 선정</span></td>
-    <td>shadow 검증 → 최종 선정 모델 (champion) 결정 (2-track 비교 또는 single-track 자격 검증)</td>
+    <td>shadow 검증 → 최종 선정 모델 결정 (이중 트랙 비교 또는 단일 트랙 자격 검증)</td>
     <td>
       <ul style="margin: 4px 0;">
-        <li>5/20 (수): 두 트랙 shadow 환경 배포</li>
+        <li>5/20 (수): shadow 환경 배포 (이중 트랙 또는 단일 트랙 모드)</li>
         <li>5/20-22 (수-금): <strong>shadow 관찰창</strong> (latency / drift / fallback / 충분 샘플 확보)</li>
         <li>트랙 2: ME 분산 분해 + within-artist 식별 결과 + 최종 비교 표</li>
-        <li>5/26 (화) 오전: scorecard lock</li>
-        <li>5/26 (화) 오후: <strong>champion 선정 + rollout 최종 승인</strong></li>
+        <li>5/26 (화) 오전: scorecard 확정</li>
+        <li>5/26 (화) 오후: <strong>최종 선정 모델 결정 + rollout 최종 승인</strong></li>
       </ul>
     </td>
     <td>
       <ul style="margin: 4px 0;">
-        <li>Shadow 운영 결과 (양 트랙)</li>
-        <li>최종 scorecard + champion 선정 메모</li>
-        <li>비선정 모델 활용 방안 (원칙: 보고서/설명용 보조 모델, 예외: 한시적 shadow challenger)</li>
+        <li>Shadow 운영 결과</li>
+        <li>최종 scorecard + 최종 선정 결정 메모</li>
+        <li>비선정 모델 활용 방안 (원칙: 보고서·설명용 보조 모델, 예외: 모니터링 목적 한시적 shadow challenger)</li>
         <li>트랙 2 ME 결과 + 분산 분해</li>
       </ul>
     </td>
@@ -553,41 +553,41 @@
       <span class="gate">GATE 3: 최종 선정 모델 (champion) 결정</span>
       <ul style="margin: 4px 0;">
         <li><strong>최소 자격 조건 (공통)</strong>: 정확도 baseline 이상 + 안정성 pass + 운영성 pass</li>
-        <li><strong>2-track mode</strong> (두 트랙 모두 GATE 2 통과): 자격 충족 후보 중 복합 scorecard 우위 후보 = champion</li>
-        <li><strong>Single-track mode</strong> (GATE 2 단일 통과): 단일 후보가 자격 조건 충족 시 champion 확정, 미충족 시 V3 baseline 유지</li>
-        <li>champion 만 Week 4 canary 진행</li>
-        <li>비선정 모델 = 원칙적으로 보고서/설명용 보조 모델 또는 한시적 shadow challenger</li>
-        <li>champion 없음 (자격 미충족) → V3 baseline 유지, Week 4 retrospective 중심</li>
+        <li><strong>이중 트랙 모드</strong> (두 트랙 모두 GATE 2 통과): 자격 충족 후보 중 복합 scorecard 우위 후보 = 최종 선정 모델</li>
+        <li><strong>단일 트랙 모드</strong> (GATE 2 단일 통과): 단일 후보가 자격 조건 충족 시 최종 선정 확정, 미충족 시 V3 baseline 유지</li>
+        <li>최종 선정 모델만 Week 4 canary 진행</li>
+        <li>비선정 모델 = 원칙적으로 보고서·설명용 보조 모델로 전환 / 모니터링 목적이 있을 때에만 한시적 shadow challenger 로 유지</li>
+        <li>최종 미선정 (자격 미충족) → V3 baseline 유지, Week 4 retrospective 중심</li>
       </ul>
     </td>
   </tr>
 
   <tr>
-    <td><strong>Week 4</strong><br>5/27 (수) ~ 6/2 (화)<br><span class="small">Winner rollout + 안정화</span></td>
-    <td>Champion 단일 배포 + 안정화</td>
+    <td><strong>Week 4</strong><br>5/27 (수) ~ 6/2 (화)<br><span class="small">최종 선정 모델 rollout + 안정화</span></td>
+    <td>최종 선정 모델 단일 배포 + 안정화</td>
     <td>
       <ul style="margin: 4px 0;">
         <li>5/27 (수): 1% → 5% canary</li>
         <li>5/28 (목): 25% → 50% rollout</li>
         <li>5/29 (금): 100% Full Rollout</li>
         <li>5/30 ~ 6/2: 4-5일 초기 안정화 모니터링</li>
-        <li>트랙 2: 최종 보고서 작성 (10-15페이지)</li>
+        <li>트랙 2: 최종 해석 보고서 작성 (10-15페이지)</li>
       </ul>
     </td>
     <td>
       <ul style="margin: 4px 0;">
-        <li>Champion 100% rollout 완료</li>
+        <li>최종 선정 모델 100% rollout 완료</li>
         <li>4-5일 안정화 리포트 (rollback 미발생 + drift 정상)</li>
-        <li>운영 monitoring dashboard</li>
+        <li>운영 모니터링 대시보드</li>
         <li>Rollback runbook</li>
-        <li>트랙 2 최종 보고서 (10-15p)</li>
+        <li>트랙 2 최종 해석 보고서 (10-15p)</li>
         <li>1개월 종합 회고</li>
       </ul>
     </td>
     <td>
       <span class="gate">GATE 4: 프로젝트 종료</span>
       <ul style="margin: 4px 0;">
-        <li>각 rollout 단계 monitoring 정상 시 다음 단계</li>
+        <li>각 rollout 단계 모니터링 정상 시 다음 단계</li>
         <li>이상 발견 시 → 즉시 rollback + root cause 분석</li>
         <li><strong>성공 종료</strong> (= 성공 기준 충족): 100% rollout 완료 + 4-5일 안정화 / rollback 미발생</li>
         <li><strong>Rollback 종료</strong> (= 프로젝트 종료, 성공 기준 미충족): 안정화 단계 이상 발견 → 구모델 복귀 + 재시작 계획</li>
@@ -601,7 +601,7 @@
 <table>
   <tr><th>단계</th><th>일정</th><th>비중</th><th>중단 조건</th></tr>
   <tr><td>Shadow</td><td>Week 3 초 (5/20-22)</td><td>0% (예측만 비교)</td><td>Latency 이상 / 분포 drift 발견</td></tr>
-  <tr><td>1% Canary</td><td>5/27 (수)</td><td>1%</td><td>실시간 monitoring 이상 → 즉시 rollback</td></tr>
+  <tr><td>1% Canary</td><td>5/27 (수)</td><td>1%</td><td>실시간 모니터링 이상 → 즉시 rollback</td></tr>
   <tr><td>5% Canary</td><td>5/27 (수) 후반</td><td>5%</td><td>Grade 분포 drift / fallback 빈도 증가</td></tr>
   <tr><td>25% Rollout</td><td>5/28 (목)</td><td>25%</td><td>4시간 단위 metric 점검</td></tr>
   <tr><td>50% Rollout</td><td>5/28 (목) 후반</td><td>50%</td><td>Source 별 output shift 점검</td></tr>
@@ -609,26 +609,26 @@
   <tr><td>안정화</td><td>5/30 ~ 6/2</td><td>100%</td><td>매일 metric 점검 + 이상 fix</td></tr>
 </table>
 
-<h2>6. 운영 monitoring 지표</h2>
+<h2>6. 운영 모니터링 지표</h2>
 
 <table>
   <tr><th>분류</th><th>지표</th><th>적용 모델</th></tr>
   <tr>
     <td rowspan="5"><strong>공통</strong></td>
-    <td>응답 속도 (latency p50, p95, p99)</td><td>champion (운영 endpoint)</td>
+    <td>응답 속도 (latency p50, p95, p99)</td><td>최종 선정 모델 (운영 엔드포인트)</td>
   </tr>
-  <tr><td>Fallback 빈도</td><td>champion</td></tr>
-  <tr><td>입력 누락률 (feature missingness)</td><td>champion</td></tr>
-  <tr><td>예측가 / 등급 분포 변화 (drift)</td><td>champion (필수) + 비선정 모델 shadow 시 보조 적용</td></tr>
-  <tr><td>Source 별 output shift</td><td>champion</td></tr>
+  <tr><td>Fallback 빈도</td><td>최종 선정 모델</td></tr>
+  <tr><td>입력 누락률 (feature missingness)</td><td>최종 선정 모델</td></tr>
+  <tr><td>예측가 / 등급 분포 변화 (drift)</td><td>최종 선정 모델 (필수) + 비선정 모델 shadow challenger 시 보조 적용</td></tr>
+  <tr><td>Source 별 output shift</td><td>최종 선정 모델</td></tr>
   <tr>
     <td rowspan="2"><strong>모델별 진단</strong></td>
-    <td>Retrieval / feature missingness 진단</td><td>트랙 1 (champion 또는 challenger)</td>
+    <td>Retrieval / feature missingness 진단</td><td>트랙 1 (최종 선정 또는 challenger)</td>
   </tr>
-  <tr><td>Coefficient stability / RE convergence</td><td>트랙 2 (champion 또는 challenger)</td></tr>
+  <tr><td>Coefficient stability / RE convergence</td><td>트랙 2 (최종 선정 또는 challenger)</td></tr>
   <tr>
     <td><strong>안전</strong></td>
-    <td>Rollback 즉시 가능 여부</td><td>champion</td>
+    <td>Rollback 즉시 가능 여부</td><td>최종 선정 모델</td>
   </tr>
 </table>
 
@@ -662,7 +662,7 @@
       <td><strong>두 트랙 모두 baseline 미달</strong></td>
       <td>
         <ul style="margin: 4px 0;">
-          <li>Champion 미선정 → V3 운영 모델 유지 (baseline)</li>
+          <li>최종 선정 모델 미선정 → V3 운영 모델 유지 (baseline)</li>
           <li>두 트랙 결과는 차기 cycle 사전등록 자료로 활용</li>
         </ul>
       </td>
@@ -699,10 +699,10 @@
     </tr>
     <tr>
       <td>트랙 1 retrieval 후보 robust 미충족</td>
-      <td>가장 안전한 후보 (변동성 낮음) 선정 + monitoring 강화</td>
+      <td>가장 안전한 후보 (변동성 낮음) 선정 + 모니터링 강화</td>
     </tr>
     <tr>
-      <td>Rollback 발생 시 champion 의 baseline 미만 위험</td>
+      <td>Rollback 발생 시 최종 선정 모델의 baseline 미만 위험</td>
       <td>구모델 즉시 복귀 가능 상태 유지 + 차기 cycle 재검증</td>
     </tr>
   </table>
@@ -711,13 +711,13 @@
 <h2>8. 콜론30 (client) 조율 사항</h2>
 
 <div class="summary-box">
-  <strong>본인의 우선 목표</strong> = 모델 고도화 + 예측 정확도 개선 → 콜론30 의뢰 결과물 품질 극대화<br>
+  <strong>담당자 우선 목표</strong> = 모델 고도화 + 예측 정확도 개선 → 콜론30 의뢰 결과물 품질 극대화<br>
   <strong>조율 원칙</strong> = 의뢰 회사 요구사항에 맞춰 능동적으로 조정 + 중간 산출물 공유 + 의사 결정 빠른 반영
 </div>
 
 <table>
   <tr>
-    <th>조율 항목</th><th>본인 주도 조율</th><th>client 확인사항</th><th>처리 시점</th>
+    <th>조율 항목</th><th>담당자 주도 조율</th><th>client 확인사항</th><th>처리 시점</th>
   </tr>
   <tr>
     <td>미매칭 갤러리 검수</td>
@@ -738,7 +738,7 @@
     <td>Week 2 종료 시</td>
   </tr>
   <tr>
-    <td>champion 선정 사전 공유</td>
+    <td>최종 선정 사전 공유</td>
     <td>Shadow 결과 + scorecard 공유</td>
     <td>운영 도입 사전 인지</td>
     <td>Week 3 (5/26 전)</td>
@@ -751,29 +751,29 @@
   </tr>
 </table>
 
-<p class="small">※ 본인 측은 내부 기준안으로 항시 선행 진행 — client 회신은 범위 내 보정 형태로 반영 (Week 1-2 능동 조율)</p>
+<p class="small">※ 담당자 측은 내부 기준안으로 항시 선행 진행 — client 회신은 범위 내 보정 형태로 반영 (Week 1-2 능동 조율)</p>
 
 <h2>9. 성공 기준 (6/2 종료 시)</h2>
 
-<h3>운영 도입 (champion 1개)</h3>
+<h3>운영 도입 (최종 선정 모델 1개)</h3>
 <ul>
   <li>100% rollout 완료 (5/29 금)</li>
-  <li>Rollback 조건 명시 (monitoring metric 별 임계치 + 자동 rule)</li>
+  <li>Rollback 조건 명시 (모니터링 metric 별 임계치 + 자동 rule)</li>
   <li>4-5일 초기 안정화 (rollback 미발생 + drift 정상)</li>
-  <li>예측 정확도 ≥ V3 baseline (champion 의 최소 조건)</li>
+  <li>예측 정확도 ≥ V3 baseline (최종 선정 모델의 최소 조건)</li>
 </ul>
 
 <h3>두 트랙 산출물</h3>
 <ul>
-  <li>트랙 1: 후보 학습 결과 + holdout metric + champion 후보 평가</li>
-  <li>트랙 2: Week 2 freeze 된 feature set 기반 OLS / ME 결과 + within-artist 식별 + 최종 보고서 (10-15페이지)</li>
+  <li>트랙 1: 후보 학습 결과 + holdout metric + 최종 선정 후보 평가</li>
+  <li>트랙 2: Week 2 freeze 된 feature set 기반 OLS / ME 결과 + within-artist 식별 + 최종 해석 보고서 (10-15페이지)</li>
   <li>두 트랙 동일 protocol 비교 표 (정확도 + 안정성 + 운영성 + 해석성)</li>
-  <li>Champion 선정 메모 + 비선정 모델 활용 방안</li>
+  <li>최종 선정 결정 메모 + 비선정 모델 활용 방안</li>
 </ul>
 
 <h3>콜론30 의뢰 결과물</h3>
 <ul>
-  <li>champion 모델의 예측 정확도 + 적용 범위 보고</li>
+  <li>최종 선정 모델의 예측 정확도 + 적용 범위 보고</li>
   <li>트랙 2 해석 보고서 — 가격 결정 요인 설명</li>
   <li>중간 산출물 / 최종 결과 공유 완료</li>
 </ul>
@@ -782,13 +782,13 @@
 <ul>
   <li>두 트랙 모두 계획 범위 내 완료 또는 명확한 사유</li>
   <li>차기 cycle 사전등록 skeleton</li>
-  <li>운영 monitoring dashboard + rollback runbook 활성</li>
+  <li>운영 모니터링 대시보드 + rollback runbook 활성</li>
 </ul>
 
 <h2>10. 총괄 결정 타임라인 + 콜론30 능동 조율</h2>
 
 <div class="info-box">
-  <strong>본인 결정/관리 사항 (총괄 권한)</strong>
+  <strong>담당자 결정/관리 사항 (총괄 권한)</strong>
   <table style="margin-top: 8px;">
     <tr><th>결정 시점</th><th>항목</th><th>결정 내용</th></tr>
     <tr>
@@ -814,36 +814,36 @@
     <tr>
       <td>5/20 (수)</td>
       <td>Rollback owner 확정</td>
-      <td>Shadow / canary 이상 발생 시 rollback 결정자 (본인 또는 위임)</td>
+      <td>Shadow / canary 이상 발생 시 rollback 결정자 (담당자 또는 위임)</td>
     </tr>
     <tr>
       <td>5/26 (화)</td>
       <td><strong>최종 선정 모델 (champion) 결정 (GATE 3)</strong></td>
-      <td>2-track mode = 복합 scorecard 우위 후보 = champion / single-track mode = 자격 충족 시 champion 확정. 비선정 모델 활용 방안 동시 결정</td>
+      <td>이중 트랙 모드 = 복합 scorecard 우위 후보 = 최종 선정 모델 / 단일 트랙 모드 = 자격 충족 시 최종 선정 확정. 비선정 모델 활용 방안 동시 결정</td>
     </tr>
     <tr>
       <td>5/26 (화)</td>
-      <td>Champion 별 rollout 최종 승인</td>
-      <td>선정된 champion 에 대해 Week 4 canary 진입 승인</td>
+      <td>최종 선정 모델 rollout 최종 승인</td>
+      <td>선정된 모델에 대해 Week 4 canary 진입 승인</td>
     </tr>
     <tr>
       <td>각 rollout 단계 진입 전</td>
       <td>단계별 진행 결정</td>
-      <td>monitoring metric 점검 후 다음 단계 (본인 검토 또는 자동)</td>
+      <td>모니터링 metric 점검 후 다음 단계 (담당자 검토 또는 자동)</td>
     </tr>
   </table>
-  <p class="small" style="margin-top: 8px;"><strong>상급자 escalation trigger</strong>: 일정 1주 이상 지연 / rollout 중 rollback 발생 / client scope 변경 / GATE 1-2 양 트랙 동시 미통과</p>
+  <p class="small" style="margin-top: 8px;"><strong>상급자 보고 트리거</strong>: 일정 1주 이상 지연 / rollout 중 rollback 발생 / 클라이언트 scope 변경 / GATE 1-2 양 트랙 동시 미통과</p>
 </div>
 
 <div class="info-box">
-  <strong>콜론30 능동 조율 (본인 주도)</strong>
+  <strong>콜론30 능동 조율 (담당자 주도)</strong>
   <ul>
-    <li><strong>본인 주도 조율 항목</strong>
+    <li><strong>담당자 주도 조율 항목</strong>
       <ul>
         <li>마이그레이션 데이터 + 미매칭 갤러리 list 공유 (Week 1 초)</li>
         <li>현재 모델 + 트랙 정의 + 적용 범위 안 공유</li>
         <li>중간 산출물 / scorecard / 트랙 2 비교 표 공유 (Week 2 종료)</li>
-        <li>champion 선정 사전 공유 (5/26 전)</li>
+        <li>최종 선정 사전 공유 (5/26 전)</li>
         <li>최종 결과 보고 (6/2)</li>
       </ul>
     </li>
@@ -856,7 +856,7 @@
     </li>
   </ul>
   <p class="small" style="margin-top: 10px;">
-    ※ 본인 측 진행 = 항시 선행, client 확인사항은 범위 내 보정 형태로 반영 — blocker 가 아닌 능동 조율 항목
+    ※ 담당자 측 진행 = 항시 선행, client 확인사항은 범위 내 보정 형태로 반영 — blocker 가 아닌 능동 조율 항목
   </p>
 </div>
 
@@ -865,8 +865,8 @@
   <ul>
     <li><strong>Week 1 종료 (5/12 화)</strong>: 후보군 + 평가 기준 freeze</li>
     <li><strong>Week 2 종료 (5/19 화)</strong>: 트랙 2 feature set freeze + 두 트랙 후보 모델 학습 결과 + scorecard 1차</li>
-    <li><strong>Week 3 종료 (5/26 화)</strong>: Shadow 결과 + champion 선정 + 비선정 모델 활용 방안</li>
-    <li><strong>Week 4 종료 (6/2 화)</strong>: champion 도입 결과 (정상 종료 또는 rollback 종료) + 4-5일 안정화 결과 + 트랙 2 최종 보고서</li>
+    <li><strong>Week 3 종료 (5/26 화)</strong>: Shadow 결과 + 최종 선정 모델 결정 + 비선정 모델 활용 방안</li>
+    <li><strong>Week 4 종료 (6/2 화)</strong>: 최종 선정 모델 도입 결과 (성공 종료 또는 rollback 종료) + 4-5일 안정화 결과 + 트랙 2 최종 해석 보고서</li>
   </ul>
 </div>
 
@@ -874,10 +874,10 @@
 
 <ul>
   <li><strong>Gate-based 진행</strong>: 각 Week 종료 게이트 (GATE 1-4) 통과 후 다음 Week 진행</li>
-  <li><strong>두 트랙 동시 검증 (원칙)</strong>: Week 1-2 동일 protocol, Week 3 동시 shadow — 단 GATE 2 단일 통과 시 single-track qualification mode 로 진행</li>
-  <li><strong>운영 도입 단일 endpoint</strong>: champion 만 배포, 비선정 모델은 원칙적으로 보조 모델 전환 (필요 시에만 한시적 shadow)</li>
-  <li><strong>콜론30 (client) 능동 조율</strong>: Week 1-2 내 검수 / 의견 반영 — 본인 측 선행 진행 + 회신 범위 내 보정</li>
-  <li><strong>본인 결정 사항 우선</strong>: §10 타임라인 기준 본인 직접 관리</li>
+  <li><strong>두 트랙 동시 검증 (원칙)</strong>: Week 1-2 동일 protocol, Week 3 동시 shadow — 단 GATE 2 단일 통과 시 단일 트랙 모드 (자격 검증) 로 진행</li>
+  <li><strong>운영 도입 단일 엔드포인트</strong>: 최종 선정 모델만 배포, 비선정 모델은 원칙적으로 보고서·설명용 보조 모델로 전환 / 모니터링 목적 시에만 한시적 shadow challenger</li>
+  <li><strong>콜론30 (client) 능동 조율</strong>: Week 1-2 내 검수 / 의견 반영 — 담당자 측 선행 진행 + 회신 범위 내 보정</li>
+  <li><strong>담당자 결정 사항 우선</strong>: §10 타임라인 기준 담당자 직접 관리</li>
   <li><strong>중단 조건 명확화</strong>: 후보군 freeze 실패 / candidate freeze 실패 / shadow 이상 / rollback trigger</li>
   <li><strong>후순위 항목</strong> (필요 시 후행): quantile regression / Bayesian prototype / 추가 sensitivity</li>
 </ul>
@@ -885,7 +885,7 @@
 <h2>12. 상세 자료</h2>
 
 <ul>
-  <li>상세 plan / 변수 spec / 인과 구조도 / 사전등록 protocol / monitoring runbook → 별도 internal docs 관리</li>
+  <li>상세 plan / 변수 spec / 인과 구조도 / 사전등록 protocol / 모니터링 runbook → 별도 internal docs 관리</li>
   <li>필요 시 공유 가능</li>
 </ul>
 
@@ -898,16 +898,16 @@
     <li>5/13 (수) — Confirmatory refresh (데이터 갱신)</li>
     <li>5/19 (화) — GATE 2: 트랙 2 feature set freeze + candidate freeze</li>
     <li>5/20 (수) — Shadow 환경 동시 배포 (양 트랙)</li>
-    <li>5/26 (화) — <strong>GATE 3: Champion 선정</strong></li>
-    <li>5/27 (수) — 1% / 5% canary (champion only)</li>
+    <li>5/26 (화) — <strong>GATE 3: 최종 선정 모델 결정</strong></li>
+    <li>5/27 (수) — 1% / 5% canary (최종 선정 모델만)</li>
     <li>5/28 (목) — 25% / 50% rollout</li>
     <li>5/29 (금) — 100% Full Rollout</li>
-    <li>6/2 (화) — <strong>GATE 4: 운영 도입 종료 + 안정화 리포트 + 트랙 2 보고서</strong></li>
+    <li>6/2 (화) — <strong>GATE 4: 프로젝트 종료 + 안정화 리포트 + 트랙 2 해석 보고서</strong></li>
   </ul>
   <p><strong>다음 액션</strong></p>
   <ul style="font-size: 0.92em;">
     <li>마이그레이션 데이터 사용 가능 시 → 5/6 (수) Day 1 시작</li>
-    <li>콜론30 확인사항은 본인 측 선행 진행과 병행 — 회신 시점에 범위 내 보정으로 반영</li>
+    <li>콜론30 확인사항은 담당자 측 선행 진행과 병행 — 회신 시점에 범위 내 보정으로 반영</li>
   </ul>
 </div>
 
