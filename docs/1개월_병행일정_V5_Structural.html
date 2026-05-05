@@ -172,6 +172,7 @@
 
 <div class="summary-box">
   <strong>본 문서는 콜론30 (client) 의뢰에 대한 4주 실행 계획</strong>
+  <p class="small" style="margin: 4px 0 0 0;">※ 이하 본문에서는 '콜론30' 으로만 표기</p>
   <ul>
     <li>우선 목표 = <strong>모델 고도화 + 예측 정확도 개선</strong> → 콜론30 의뢰 결과물 품질 극대화</li>
     <li>콜론30 관련 사항 = 외부 의존이 아닌 <strong>Week 1-2 내 능동 조율</strong>로 반영 — 회신 없어도 내부 기준안 선행 진행, 회신 반영은 범위 내 보정</li>
@@ -236,6 +237,9 @@
     <li><strong>MdAPE</strong>: 예측 오차의 대표값 (중앙값 기준 % 오차)</li>
     <li><strong>holdout</strong>: 학습에 사용하지 않은 별도 검증 셋</li>
     <li><strong>3 seeds</strong>: 랜덤 분할을 3회 반복한 재현성 점검</li>
+    <li><strong>LAO split</strong>: 작가 단위 holdout 분할 (학습/검증 작가 중복 없음)</li>
+    <li><strong>DAG</strong>: 변수 간 인과 구조도 (Directed Acyclic Graph)</li>
+    <li><strong>Random Effects (RE) / within-artist 식별</strong>: 작가별 차이를 분리 + 같은 작가 내 변수 효과 식별</li>
     <li><strong>Champion-Challenger</strong>: 동일 protocol 검증, 최종 선정 모델 (champion) 만 운영 배포 / 비선정 모델은 원칙적으로 보고서·설명용 보조 모델로 전환 / 모니터링 목적이 있을 때에만 한시적 shadow challenger 로 유지</li>
     <li><strong>shadow → canary → full rollout</strong>: 신모델 단계적 배포 (트래픽 0% → 1% → 5% → 25% → 50% → 100%)</li>
   </ul>
@@ -634,7 +638,7 @@
 
 <h2>7. 위험 요인 / 대응 방안</h2>
 
-<p class="small">콜론30 (client) 관련 사항은 외부 의존이 아닌 <strong>능동 조율 항목</strong> 으로 §8 분리. 본 절은 사업적/기술 위험만 다룬다.</p>
+<p class="small">콜론30 관련 사항은 외부 의존이 아닌 <strong>능동 조율 항목</strong> 으로 §8 분리. 본 절은 사업적/기술 위험만 다룬다.</p>
 
 <div class="warn-box">
   <strong>⚠️ 사업적 위험 + 대응</strong>
@@ -708,16 +712,16 @@
   </table>
 </div>
 
-<h2>8. 콜론30 (client) 조율 사항</h2>
+<h2>8. 콜론30 조율 사항</h2>
 
 <div class="summary-box">
   <strong>우선 목표</strong> = 모델 고도화 + 예측 정확도 개선 → 콜론30 의뢰 결과물 품질 극대화<br>
-  <strong>조율 원칙</strong> = 의뢰 회사 요구사항에 맞춰 능동적으로 조정 + 중간 산출물 공유 + 의사 결정 빠른 반영
+  <strong>조율 원칙</strong> = 콜론30 요구사항에 맞춰 능동적으로 조정 + 중간 산출물 공유 + 의사 결정 빠른 반영
 </div>
 
 <table>
   <tr>
-    <th>조율 항목</th><th>주도 조율 (내부 진행)</th><th>client 확인사항</th><th>처리 시점</th>
+    <th>조율 항목</th><th>주도 조율 (내부 진행)</th><th>콜론30 확인사항</th><th>처리 시점</th>
   </tr>
   <tr>
     <td>미매칭 갤러리 검수</td>
@@ -751,7 +755,7 @@
   </tr>
 </table>
 
-<p class="small">※ 내부 기준안으로 항시 선행 진행 — client 회신은 범위 내 보정 형태로 반영 (Week 1-2 능동 조율)</p>
+<p class="small">※ 내부 기준안으로 항시 선행 진행 — 콜론30 회신은 범위 내 보정 형태로 반영 (Week 1-2 능동 조율)</p>
 
 <h2>9. 성공 기준 (6/2 종료 시)</h2>
 
@@ -832,7 +836,7 @@
       <td>모니터링 metric 점검 후 다음 단계 (직접 검토 또는 자동)</td>
     </tr>
   </table>
-  <p class="small" style="margin-top: 8px;"><strong>상급자 보고 트리거</strong>: 일정 1주 이상 지연 / rollout 중 rollback 발생 / 클라이언트 scope 변경 / GATE 1-2 양 트랙 동시 미통과</p>
+  <p class="small" style="margin-top: 8px;"><strong>상급자 보고 트리거</strong>: 일정 1주 이상 지연 / rollout 중 rollback 발생 / 콜론30 scope 변경 / GATE 1-2 양 트랙 동시 미통과</p>
 </div>
 
 <div class="info-box">
@@ -847,7 +851,7 @@
         <li>최종 결과 보고 (6/2)</li>
       </ul>
     </li>
-    <li><strong>client 확인사항 (수렴 후 보정)</strong>
+    <li><strong>콜론30 확인사항 (수렴 후 보정)</strong>
       <ul>
         <li>미매칭 갤러리 검수 결과 (매칭 / 신규 / 제외)</li>
         <li>예측 적용 범위 / 우선순위 / 보고 형식 의견</li>
@@ -856,7 +860,7 @@
     </li>
   </ul>
   <p class="small" style="margin-top: 10px;">
-    ※ 내부 진행 = 항시 선행, client 확인사항은 범위 내 보정 형태로 반영 — blocker 가 아닌 능동 조율 항목
+    ※ 내부 진행 = 항시 선행, 콜론30 확인사항은 범위 내 보정 형태로 반영 — blocker 가 아닌 능동 조율 항목
   </p>
 </div>
 
@@ -876,7 +880,7 @@
   <li><strong>Gate-based 진행</strong>: 각 Week 종료 게이트 (GATE 1-4) 통과 후 다음 Week 진행</li>
   <li><strong>두 트랙 동시 검증 (원칙)</strong>: Week 1-2 동일 protocol, Week 3 동시 shadow — 단 GATE 2 단일 통과 시 단일 트랙 모드 (자격 검증) 로 진행</li>
   <li><strong>운영 도입 단일 엔드포인트</strong>: 최종 선정 모델만 배포, 비선정 모델은 원칙적으로 보고서·설명용 보조 모델로 전환 / 모니터링 목적 시에만 한시적 shadow challenger</li>
-  <li><strong>콜론30 (client) 능동 조율</strong>: Week 1-2 내 검수 / 의견 반영 — 내부 선행 진행 + 회신 범위 내 보정</li>
+  <li><strong>콜론30 능동 조율</strong>: Week 1-2 내 검수 / 의견 반영 — 내부 선행 진행 + 회신 범위 내 보정</li>
   <li><strong>결정 사항 우선</strong>: §10 타임라인 기준 직접 관리</li>
   <li><strong>중단 조건 명확화</strong>: 후보군 freeze 실패 / candidate freeze 실패 / shadow 이상 / rollback trigger</li>
   <li><strong>후순위 항목</strong> (필요 시 후행): quantile regression / Bayesian prototype / 추가 sensitivity</li>
@@ -888,9 +892,9 @@
   <ul style="font-size: 0.92em;">
     <li>5/6 (수) — 마이그레이션 Day 1 + 두 트랙 시작</li>
     <li>5/12 (화) — GATE 1: 후보군 + 평가 기준 freeze</li>
-    <li>5/13 (수) — Confirmatory refresh (데이터 갱신)</li>
+    <li>5/13 (수) — 데이터 갱신 (수요일 마이그레이션)</li>
     <li>5/19 (화) — GATE 2: 트랙 2 feature set freeze + candidate freeze</li>
-    <li>5/20 (수) — Shadow 환경 동시 배포 (양 트랙)</li>
+    <li>5/20 (수) — Shadow 환경 배포 (양 트랙 또는 단일 트랙 모드)</li>
     <li>5/26 (화) — <strong>GATE 3: 최종 선정 모델 결정</strong></li>
     <li>5/27 (수) — 1% / 5% canary (최종 선정 모델만)</li>
     <li>5/28 (목) — 25% / 50% rollout</li>
