@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>1개월 가격예측 모델 실험 계획</title>
+<title>1개월 가격예측 모델 실험 + 운영 도입 계획</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Noto Sans KR", sans-serif;
@@ -90,7 +90,7 @@
   }
   .grid {
     display: grid;
-    grid-template-columns: 80px 1fr 1fr;
+    grid-template-columns: 90px 1fr 1fr;
     border: 1px solid #d1d5db;
     margin: 18px 0;
     background: white;
@@ -110,6 +110,7 @@
     text-align: center;
     font-weight: 600;
     color: #374151;
+    font-size: 0.92em;
   }
   .v5-cell, .struct-cell {
     padding: 11px 14px;
@@ -195,15 +196,25 @@
     font-weight: 600;
     font-size: 0.92em;
   }
+  .rollout-stage {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.92em;
+    margin-right: 4px;
+  }
 </style>
 </head>
 <body>
 
-<h1>1개월 가격예측 모델 실험 계획</h1>
+<h1>1개월 가격예측 모델 실험 + 운영 도입 계획</h1>
 <p class="meta">
   <strong>작성일</strong>: 2026-05-05 ·
-  <strong>대상 기간</strong>: 28일 (4주) ·
-  <strong>주제</strong>: 운영 모델 개선 (V5) + 신규 해석 가능 모델 (Structural Pricing) 병행 진행
+  <strong>대상 기간</strong>: 2026-05-06 (수) ~ 2026-06-02 (총 28일) ·
+  <strong>주제</strong>: 운영 모델 개선·배포 (V5) + 신규 해석 가능 모델 (Structural Pricing) 병행 진행
 </p>
 
 <h2>1. 핵심 요약 (TL;DR)</h2>
@@ -211,34 +222,34 @@
 <div class="summary-box">
   향후 1개월 동안 <strong>두 가지 트랙을 병행</strong> 진행하겠습니다.
   <ol>
-    <li><strong>트랙 1 (운영 모델 개선)</strong>: 협력자 갤러리 검수 데이터를 활용해 현재 모델의 신규 작가 예측 약점을 직접 개선하겠습니다 (14일).</li>
-    <li><strong>트랙 2 (해석 가능 비교 기준 모델)</strong>: 변수별 가격 영향을 설명할 수 있는 별도 모델을 구축해 운영 모델의 비교 기준이자 설명 자료로 활용하겠습니다 (28일).</li>
+    <li><strong>트랙 1 (운영 모델 개선·배포)</strong>: 매주 수요일 갱신되는 마이그레이션 데이터 기준으로 신규 작가 예측 약점을 직접 개선하고, <strong>한 달 후 실제 서비스에 단계적 배포</strong>하겠습니다 (Day 1-28).</li>
+    <li><strong>트랙 2 (해석 가능 비교 기준 모델)</strong>: <strong>핵심 5-7개 피처</strong>만 사용해 변수별 가격 영향을 설명할 수 있는 별도 모델을 구축, 운영 모델의 비교 기준이자 설명 자료로 활용하겠습니다 (Day 1-28).</li>
   </ol>
   두 트랙은 동일한 검증 방식으로 비교하겠습니다. 같은 작가가 학습·평가에 동시에 섞이지 않도록 분리하고, 이를 3회 반복해 재현성을 확인합니다.
   <br><br>
-  <strong>4주 후 남는 것</strong>: ① 신규 작가 예측 개선 도입 결정 (도입 또는 보류 명확) + ② 변수별 가격 기여 설명서 (10-15페이지 보고서) + ③ 두 모델 비교 표.
+  <strong>4주 후 남는 것</strong>: ① <strong>운영 모델 staged rollout 완료 + 1주 안정화</strong> + ② 핵심 5-7개 피처 기반 해석 가능 모델 보고서 (10-15페이지) + ③ 두 모델 비교 표.
   <br>
-  <strong>승인 요청</strong>: 본 4주 plan 진행 + 마이그레이션 데이터 사용 가능일 확정 + 추가 갤러리 검수 지원.
+  <strong>승인 요청</strong>: 4주 plan 진행 + 마이그레이션 데이터 사용 가능일 확정 (수요일 기준) + 추가 갤러리 검수 지원 + <strong>배포 권한 + rollout 단계 승인 + rollback owner 지정</strong>.
 </div>
 
 <h2>2. 배경 — 현재 모델 상태</h2>
 
-<h3>운영 모델 (V3) 성능</h3>
+<h3>운영 모델 성능</h3>
 <table>
   <tr>
     <th>측정 조건</th>
-    <th>MdAPE</th>
+    <th>오차 (MdAPE)</th>
     <th>의미</th>
     <th>활용 가능성</th>
   </tr>
   <tr>
-    <td><strong>Warm</strong> (기존 거래 작가)</td>
+    <td><strong>기존 작가</strong> (학습에 작품이 있는 작가)</td>
     <td><span class="kpi">12-18%</span></td>
     <td>예측이 실제값의 12-18% 범위 (median)</td>
     <td>✅ 운영 활용 가능</td>
   </tr>
   <tr>
-    <td><strong>Cold-start</strong> (신규 작가)</td>
+    <td><strong>신규 작가</strong> (학습에 등장하지 않은 작가)</td>
     <td><span class="kpi" style="background: #fee2e2; color: #dc2626;">28-48%</span></td>
     <td>예측 변동성 큼</td>
     <td>⚠️ 보조 도구로만 사용 권장</td>
@@ -246,43 +257,40 @@
   <tr>
     <td><strong>격차</strong></td>
     <td><span class="kpi" style="background: #fef3c7; color: #92400e;">23%p</span></td>
-    <td>warm 과 cold-start 의 본질적 difficulty 차이</td>
-    <td>핵심 개선 영역</td>
+    <td>기존/신규 작가 본질적 difficulty 차이</td>
+    <td>핵심 개선 영역 (트랙 1 목표)</td>
   </tr>
 </table>
 
 <h3>두 트랙 병행이 필요한 이유</h3>
 <ul>
   <li>
-    <strong>트랙 1 (운영 모델 개선)</strong>: 신규 작가 예측 영역의 직접 개선 — 협력자 갤러리 검수 데이터 + 새로운 가격 anchor feature 도입.
-    <br><span class="small">→ 1개월 내 운영 가능 여부 검증 + 도입 결정.</span>
+    <strong>트랙 1 (운영 모델 개선·배포)</strong>: 신규 작가 예측 영역 직접 개선 후 <strong>실서비스 staged rollout</strong> — 협력자 갤러리 검수 데이터 + 새로운 가격 anchor feature 도입.
   </li>
   <li>
-    <strong>트랙 2 (해석 가능 비교 기준 모델)</strong>: 현 운영 모델의 해석 한계를 보완하기 위해, 변수별 가격 영향이 설명 가능한 비교 기준 모델을 별도 구축하겠습니다.
-    <br><span class="small">→ 운영 도입 X, 운영 모델의 설명 자료 + 학술적 비교 기준.</span>
+    <strong>트랙 2 (해석 가능 비교 기준 모델)</strong>: 운영 모델의 해석 한계를 보완. <strong>핵심 5-7개 피처만 사용</strong>해 변수별 가격 영향이 설명 가능한 모델 구축 → 운영 도입 X, 설명 자료 + 비교 기준 역할.
   </li>
 </ul>
 
 <div class="info-box small">
-  <strong>주요 용어 (본문 첫 등장 시 풀이)</strong>:
+  <strong>주요 용어 풀이</strong>:
   <ul style="margin: 6px 0;">
     <li><strong>MdAPE</strong>: 예측 오차의 대표값 (중앙값 기준 % 오차)</li>
     <li><strong>holdout</strong>: 학습에 사용하지 않은 별도 검증 셋</li>
     <li><strong>3 seeds</strong>: 랜덤 분할을 3회 반복한 재현성 점검</li>
-    <li><strong>cold-start / 신규 작가</strong>: 학습에 등장하지 않은 새 작가 예측</li>
-    <li><strong>warm / 기존 작가</strong>: 학습 데이터에 작품이 있는 작가</li>
+    <li><strong>shadow / canary / staged rollout</strong>: 신모델을 단계적으로 (1% → 5% → 25% → 50% → 100%) 도입하여 운영 위험 최소화</li>
   </ul>
 </div>
 
 <h2>3. 트랙 정의</h2>
 
-<h3>트랙 1 — 운영 모델 개선 (V5 Cycle, 14일)</h3>
+<h3>트랙 1 — 운영 모델 개선 + Staged Rollout (28일)</h3>
 
 <table>
   <tr><th>항목</th><th>내용</th></tr>
   <tr>
-    <td><strong>목적</strong></td>
-    <td>V3 의 cold-start MdAPE 를 stretch -5%p / 현실 -2~4%p 개선</td>
+    <td><strong>최종 목표</strong></td>
+    <td><strong>한 달 후 실제 서비스 반영 (배포 완료 + 1주 안정화)</strong></td>
   </tr>
   <tr>
     <td><strong>도입 후보</strong></td>
@@ -294,365 +302,393 @@
   </tr>
   <tr>
     <td><strong>전제조건</strong></td>
-    <td>본 마이그레이션 데이터 도착 + 추가 미매칭 갤러리 일괄 검수 완료</td>
+    <td>매주 수요일 마이그레이션 데이터 갱신 + 추가 미매칭 갤러리 일괄 검수 완료 (Day 1-2)</td>
   </tr>
   <tr>
     <td><strong>평가 방법</strong></td>
     <td>같은 작가가 학습·평가에 동시에 섞이지 않도록 분리 (artist-level holdout 80/20), 3회 반복 (재현성 점검)</td>
   </tr>
   <tr>
-    <td><strong>도입 결정 기준</strong></td>
+    <td><strong>도입 후보 선정 기준</strong></td>
     <td>
-      ① 3회 반복 모두 같은 방향 + ② 평균 오차 개선 ≥ 0.8%p 또는 ≥ 3% 상대 개선 + ③ 작가 식별 의존도 ≤ 50% (단순 작가 매칭으로만 개선되는 경우 제외)
+      <strong>가장 robust 한 후보</strong> 선택 (cherry-pick X):<br>
+      ① 3회 반복 모두 같은 방향 + ② 평균 오차 개선 ≥ 0.8%p 또는 ≥ 3% 상대 개선 + ③ 작가 식별 의존도 ≤ 50%<br>
+      <span class="small">미충족 시: 가장 안전한 후보 (변동성 낮은 후보) 도입 + monitoring 강화</span>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>배포 단계 (staged rollout)</strong></td>
+    <td>
+      <span class="rollout-stage">Shadow</span> Week 3 초 (검증)<br>
+      <span class="rollout-stage">1%</span> <span class="rollout-stage">5%</span> Week 3 (canary)<br>
+      <span class="rollout-stage">25%</span> <span class="rollout-stage">50%</span> Week 4 초 (확장)<br>
+      <span class="rollout-stage">100%</span> Week 4 후반 (full rollout) + 1주 안정화
+    </td>
+  </tr>
+  <tr>
+    <td><strong>운영 monitoring 지표</strong></td>
+    <td>
+      ① 응답 속도 (latency) ② fallback 빈도 ③ 입력 누락률 (feature missingness)<br>
+      ④ 예측가 / 등급 분포 변화 (drift) ⑤ source 별 output shift ⑥ rollback 즉시 가능 여부
     </td>
   </tr>
   <tr>
     <td><strong>산출물</strong></td>
-    <td>의사결정 메모 + 모델 PR + 운영 monitoring checklist</td>
+    <td>도입 후보 메모 + 배포 PR + monitoring dashboard + rollback runbook + 1주 안정화 리포트</td>
   </tr>
 </table>
 
-<h3>트랙 2 — 해석 가능 비교 기준 모델 (Structural Pricing, 28일)</h3>
+<h3>트랙 2 — 해석 가능 비교 기준 모델 (28일)</h3>
 
 <table>
   <tr><th>항목</th><th>내용</th></tr>
   <tr>
     <td><strong>목적</strong></td>
-    <td>운영 모델과 별도로, 가격 결정 요인을 설명할 수 있는 해석 가능 기준 모델을 구축하겠습니다. 이 모델은 운영 모델의 비교 기준이자 설명 자료로 활용합니다.</td>
+    <td>운영 모델과 별도로, 가격 결정 요인을 설명할 수 있는 <strong>핵심 5-7개 피처만 사용한 간결 모델</strong> 구축. 운영 모델의 비교 기준이자 설명 자료로 활용.</td>
   </tr>
   <tr>
     <td><strong>모델 형태</strong></td>
     <td>
-      변수별 가격 기여를 분해해 보여주는 회귀 모델 + 작가/갤러리별 차이를 별도로 분리하는 mixed-effects 구조.<br>
-      <span class="small">→ "왜 이 가격이 나왔는가" 를 변수 단위로 설명 가능</span>
+      변수별 가격 기여를 분해해 보여주는 회귀 모델 + 작가/갤러리별 차이를 분리하는 mixed-effects 구조<br>
+      <span class="small">→ "왜 이 가격이 나왔는가" 를 핵심 5-7개 변수로 설명 가능</span>
     </td>
   </tr>
   <tr>
-    <td><strong>주요 변수 (15-25개)</strong></td>
+    <td><strong>핵심 5개 피처 (core)</strong></td>
     <td>
-      작품 크기 / 매체 (oil, acrylic 등) / 제작 연도 / 작가 경력 단계 / 작가 활동 지표 / 갤러리 티어 / 데이터 소스 등
+      <strong>가장 robust 하고 인과적으로 해석 가능한 5개</strong>:<br>
+      ① 작품 크기 (log_area)<br>
+      ② 매체 (oil/acrylic/paper/other 4분류)<br>
+      ③ 제작 연도 (year_made_centered)<br>
+      ④ 작가 경력 단계 (career_stage)<br>
+      ⑤ 데이터 소스 (Artsy / Saatchi)
+    </td>
+  </tr>
+  <tr>
+    <td><strong>main 7개 피처 (보조 추가)</strong></td>
+    <td>
+      Core 5 + 갤러리 티어 (gallery_tier) + 정보 누락 control 1개 (has_year_made / has_birth_year 중)
+    </td>
+  </tr>
+  <tr>
+    <td><strong>sensitivity 8-10개 (한계 검증용)</strong></td>
+    <td>
+      Main 7 + 작가 활동 지표 (log_followers, reverse causality 우려) + 한국시장 dummy 등
+    </td>
+  </tr>
+  <tr>
+    <td><strong>피처 선정 원칙 (parsimony)</strong></td>
+    <td>
+      ① 한 개념당 한 변수 (size, medium, year, career, source 각 1개)<br>
+      ② DAG 상 직접 특성·사전결정 변수 우선<br>
+      ③ Reverse causality 강한 변수 (followers 등) 는 core 제외, sensitivity 만<br>
+      ④ 자동 변수 선택 (LASSO 등) 은 보조 진단으로만 사용 (해석 가능성 우선)
     </td>
   </tr>
   <tr>
     <td><strong>인과 framing</strong></td>
     <td>
-      변수 간 인과 구조 (DAG) 명시 → 신뢰 가능한 효과 (예: 크기 → 가격) vs 단순 상관관계 (예: 갤러리 티어와 가격) 를 분리해 보고하겠습니다.<br>
-      <span class="small">→ 약한 근거를 강한 근거처럼 포장하지 않음</span>
-    </td>
-  </tr>
-  <tr>
-    <td><strong>설계 원칙</strong></td>
-    <td>
-      1차 시장 데이터에 맞는 변수 체계를 사용하고, 작가/갤러리 효과를 분리해 해석 가능한 결과를 만들겠습니다. 변수 정의 / 인과 가정 / 모델 한계를 모두 문서화합니다.
+      변수 간 인과 구조 (DAG) 명시 → 신뢰 가능한 효과 (예: 크기 → 가격) vs 단순 상관관계 (예: 갤러리 티어 → 가격) 분리해 보고
     </td>
   </tr>
   <tr>
     <td><strong>산출물</strong></td>
     <td>
-      변수별 가격 기여 표 · 작가/갤러리 효과 분해 · 인과 신뢰도 등급표 · 운영 모델과 비교 표 · <strong>최종 보고서 (10-15페이지)</strong>
+      변수별 가격 기여 표 (5-7 변수 한정) · 작가/갤러리 효과 분해 · 인과 신뢰도 등급표 · 운영 모델과 비교 표 · <strong>최종 보고서 (10-15페이지)</strong>
     </td>
   </tr>
 </table>
 
 <h2>4. 1개월 일정</h2>
 
-<h3>주차별 핵심 (요약)</h3>
+<h3>주차별 핵심 (수요일 기준 절대 날짜)</h3>
 <table>
-  <tr><th>Week</th><th>트랙 1 (운영 모델)</th><th>트랙 2 (해석 가능 모델)</th><th>주말 산출물</th></tr>
+  <tr><th>Week</th><th>날짜</th><th>트랙 1 (운영 모델)</th><th>트랙 2 (해석 가능 모델)</th></tr>
   <tr>
     <td><strong>Week 1</strong></td>
-    <td>신규 작가 예측 후보 검증 (R / S / C-lite)</td>
-    <td>변수 체계 확정 + 데이터 전처리 + 인과 구조도</td>
-    <td>Week 1 진행 보고</td>
+    <td>2026-05-06 ~ 12<br><span class="small">데이터 snapshot Day 1 (수)</span></td>
+    <td>마이그레이션 데이터 적용 + 도입 후보 검증</td>
+    <td>핵심 5-7개 피처 확정 + 데이터 전처리 + 인과 구조도</td>
   </tr>
   <tr>
     <td><strong>Week 2</strong></td>
-    <td>도입 결정 (go / no-go)</td>
+    <td>2026-05-13 ~ 19<br><span class="small">5/13 (수): confirmatory refresh</span></td>
+    <td>도입 후보 결정 (가장 robust 한 후보 선정)<br><strong>5/19 (월) 까지 candidate freeze</strong></td>
     <td>OLS 회귀 결과 + 운영 모델 비교 표</td>
-    <td>도입 결정 메모</td>
   </tr>
   <tr>
     <td><strong>Week 3</strong></td>
-    <td>PR 준비 + 운영 monitoring 계획</td>
+    <td>2026-05-20 ~ 26<br><span class="small">5/20 (수): candidate freeze 적용</span></td>
+    <td><strong>Shadow + Canary 배포</strong> (1% → 5%) + monitoring</td>
     <td>Mixed-effects 모델 + 작가/갤러리 분산 분해</td>
-    <td>PR review 결과</td>
   </tr>
   <tr>
     <td><strong>Week 4</strong></td>
-    <td>운영 안정화 (light)</td>
-    <td>최종 보고서 작성 (10-15페이지)</td>
-    <td>1개월 종합 보고</td>
+    <td>2026-05-27 ~ 06-02<br><span class="small">5/27 (수): rollout 확장</span></td>
+    <td><strong>Full Rollout</strong> (25% → 50% → 100%) + 1주 안정화</td>
+    <td>최종 보고서 (10-15페이지)</td>
   </tr>
 </table>
 
 <h3>운영 원칙</h3>
 <ul>
-  <li><strong>일별 운영 모드</strong>: 오전 트랙 1 (운영 모델) / 오후 트랙 2 (해석 가능 모델) — 도메인 전환 비용 줄이기 위해 시간대 분리</li>
+  <li><strong>일별 운영 모드</strong>: 오전 트랙 1 / 오후 트랙 2 — 도메인 전환 비용 줄이기</li>
   <li><strong>주말 활용</strong>: 한 트랙만 몰아서 처리 (병행 부담 줄이기)</li>
-  <li><strong>버퍼 자동 적용</strong>: 어느 주든 시간 초과 +30% 시 추가 항목 (stretch) 자동 제거</li>
+  <li><strong>버퍼 자동 적용</strong>: 시간 초과 +30% 시 추가 항목 (stretch) 자동 제거</li>
+  <li><strong>Candidate freeze</strong>: 5/19 (월) 이후 트랙 1 새 후보 추가 금지 (Week 3 배포 안정성)</li>
 </ul>
 
 <h3>Day-by-Day 상세</h3>
 
 <div class="legend">
-  <span><span class="legend-box v5-box"></span>트랙 1 — V5 cycle (운영 모델)</span>
-  <span><span class="legend-box struct-box"></span>트랙 2 — Structural Pricing (학술 baseline)</span>
+  <span><span class="legend-box v5-box"></span>트랙 1 (운영 모델)</span>
+  <span><span class="legend-box struct-box"></span>트랙 2 (해석 가능 모델)</span>
   <span><span class="pass">✓</span> 통과 기준</span>
   <span><span class="fail">✗</span> 중단 기준</span>
 </div>
 
 <div class="grid">
-  <div class="grid-header">Day</div>
-  <div class="grid-header">트랙 1: V5 Cycle</div>
-  <div class="grid-header">트랙 2: Structural Pricing</div>
+  <div class="grid-header">Day / 날짜</div>
+  <div class="grid-header">트랙 1: 운영 모델</div>
+  <div class="grid-header">트랙 2: 해석 가능 모델</div>
 
-  <div class="week-divider">📍 Week 1 (Day 1-7) — V5 진단 / Structural 문헌·DAG·데이터 spec</div>
+  <div class="week-divider">📍 Week 1 (5/6-12) — 트랙 1 마이그레이션 + 후보 검증 / 트랙 2 핵심 피처·인과구조</div>
 
-  <div class="day-cell">Day 1<br><span class="small">월</span></div>
+  <div class="day-cell">D1<br>5/6 <span class="small">(수)</span></div>
   <div class="v5-cell">
-    <strong>LAO split 재생성</strong> (본 마이그레이션 데이터 기준)<br>
-    DINOv2 embedding 재계산 (background, ~2h)<br>
-    <span class="small pass">✓ artist 중복 0건</span> · <span class="small fail">✗ 중복 발견 시 재설계</span>
+    <strong>마이그레이션 데이터 적용</strong> (수요일 snapshot)<br>
+    LAO split 재생성 + 신규 갤러리 검수 결과 통합<br>
+    <span class="small pass">✓ 작가 중복 0건</span>
   </div>
   <div class="struct-cell">
-    <strong>핵심 reference 발췌</strong><br>
-    Rengers & Velthuis (2002) — 1차 시장 hedonic 직접 참조<br>
-    PDF + abstract + methodology 정독, 변수 list 추출
+    <strong>핵심 5개 피처 후보 확정</strong><br>
+    log_area / medium_family / year / career_stage / source<br>
+    문헌 기반 + DAG 상 직접 특성 우선 원칙
   </div>
 
-  <div class="day-cell">Day 2<br><span class="small">화</span></div>
+  <div class="day-cell">D2<br>5/7 <span class="small">(목)</span></div>
   <div class="v5-cell">
     <strong>이미지 단독 prior 재검증</strong><br>
-    이전 분석에서 cold-start 일반화 약함 확인 → 본 데이터에서 재검증<br>
-    <span class="small">→ 약점 재확인 시 매체+크기 결합 전략으로 진행</span>
+    이전 분석에서 신규 작가 일반화 약함 → 본 데이터에서 재검증<br>
+    매체+크기 결합 전략 우선 진행
   </div>
   <div class="struct-cell">
-    <strong>Methodology reference</strong><br>
-    Renneboog & Spaenjers (2013) JFE 발췌<br>
-    변수 list / coefficient sign 비교 자료 작성
+    <strong>인과 구조도 (DAG) 작성</strong><br>
+    변수 간 인과 vs 상관 분리 등급표 초안
   </div>
 
-  <div class="day-cell">Day 3<br><span class="small">수</span></div>
+  <div class="day-cell">D3<br>5/8 <span class="small">(금)</span></div>
   <div class="v5-cell">
-    <strong>3-way 비교 검증</strong><br>
-    ① 매체+크기 NN (구조적 prior)<br>
-    ② 이미지 + 매체+크기 결합 (composite)<br>
-    ③ 통합 features → baseline 통합<br>
-    <span class="small pass">✓ composite 가 ① 대비 ≥ 0.3%p 추가 개선</span>
+    <strong>3-way 후보 비교 검증</strong><br>
+    ① 매체+크기 NN ② 이미지+매체+크기 결합 ③ 통합 features<br>
+    <span class="small pass">✓ ② 가 ① 대비 ≥ 0.3%p 추가 개선</span>
   </div>
   <div class="struct-cell">
-    <strong>이론 기반 reference</strong><br>
-    Rosen (1974) Hedonic theory + Galenson (2003) Career stage<br>
-    Schönfeld & Reinstaller (2007) Reputation effect
+    <strong>한 개념당 한 변수 정리</strong><br>
+    Core 5 vs Main 7 vs Sensitivity 8-10 set 분리<br>
+    Reverse causality 변수 (followers) 는 sensitivity 로
   </div>
 
-  <div class="day-cell">Day 4<br><span class="small">목</span></div>
+  <div class="day-cell">D4<br>5/9 <span class="small">(토)</span></div>
   <div class="v5-cell">
-    <strong>Memorization 검증</strong><br>
+    <strong>작가 식별 의존도 검증</strong><br>
     같은 작가 매칭 허용 vs 차단 비교<br>
-    <span class="small pass">✓ 차단 후에도 개선 ≥ 50% 유지</span><br>
-    <span class="small fail">✗ 작가 식별 의존 → image 컷, 구조적 prior 만 도입</span>
+    <span class="small pass">✓ 차단 후 개선 ≥ 50% 유지</span>
   </div>
   <div class="struct-cell">
-    <strong>인과 관계 다이어그램 (DAG)</strong><br>
-    변수 간 인과 구조 visual 작성<br>
-    식별 가능한 효과 (within-artist) vs 단순 상관 분리 등급표
+    <strong>데이터 전처리 pipeline</strong><br>
+    동일 LAO split (트랙 1 과 공유) + 3 seeds<br>
+    descriptive statistics + plots
   </div>
 
-  <div class="day-cell">Day 5<br><span class="small">금</span></div>
+  <div class="day-cell">D5-7<br>5/10-12</div>
   <div class="v5-cell">
-    <strong>Retrieval features 통합 평가</strong><br>
-    NN_median, NN_IQR, distance-weighted 등 5-7개 features 추가<br>
-    3 seeds 반복 평가
+    <strong>Retrieval features 통합 평가 + Week 1 결정</strong><br>
+    NN_median / NN_IQR / distance-weighted 등 5-7개<br>
+    Week 2 분기 결정: ① 통합 후보 / ② 단독 후보
   </div>
   <div class="struct-cell">
-    <strong>변수 spec 확정</strong><br>
-    15-25개 RHS variables list<br>
+    <strong>변수 spec 최종 확정 + 진행 보고</strong><br>
+    Core 5 + Main 7 + Sensitivity 8-10 final lists<br>
     Categorical 처리 / log transform / centering 결정
   </div>
 
-  <div class="day-cell">Day 6-7<br><span class="small">주말</span></div>
+  <div class="week-divider">📍 Week 2 (5/13-19) — 트랙 1 후보 결정 / 트랙 2 OLS 회귀</div>
+
+  <div class="day-cell">D8<br>5/13 <span class="small">(수)</span></div>
   <div class="v5-cell">
-    <strong>도입 후보 결정 + 의사결정 메모</strong><br>
-    R/S/C-lite 중 무엇을 Week 2 에서 검증할지 확정<br>
-    Week 2 plan 분기 결정
+    <strong>Confirmatory refresh</strong><br>
+    수요일 새 데이터 snapshot 으로 Week 1 결과 재현 확인<br>
+    실패 시 → 가장 안전한 (변동성 낮은) 후보 도입
   </div>
   <div class="struct-cell">
-    <strong>데이터 전처리 pipeline 작성</strong><br>
-    동일 LAO split (V5 와 공유) + 3 seeds<br>
-    descriptive statistics + plots 산출
-  </div>
-
-  <div class="week-divider">📍 Week 2 (Day 8-14) — V5 통합 검증 / Structural OLS hedonic baseline</div>
-
-  <div class="day-cell">Day 8-9<br><span class="small">월/화</span></div>
-  <div class="v5-cell">
-    <strong>C-lite 검증</strong><br>
-    작가별 random effect 잔차 모델 학습<br>
-    seen artist (기존) 개선 + cold-start (신규) 무영향 확인
-  </div>
-  <div class="struct-cell">
-    <strong>OLS hedonic 회귀 모델</strong><br>
+    <strong>OLS 회귀 (Core 5 + Main 7)</strong><br>
     statsmodels OLS + heteroskedasticity-robust SE<br>
-    Multicollinearity check (VIF) + Outlier detection
+    Multicollinearity (VIF) check
   </div>
 
-  <div class="day-cell">Day 10<br><span class="small">수</span></div>
+  <div class="day-cell">D9-10<br>5/14-15</div>
   <div class="v5-cell">
-    <strong>C-lite 안정성 검증</strong><br>
-    3 seeds 같은 방향 + std 낮음 + runtime ≤ 4x baseline
+    <strong>도입 후보 robust 평가</strong><br>
+    3 seeds 변동성 + 작가 식별 의존도 + runtime 종합<br>
+    <strong>가장 robust 한 후보 선정</strong> (cherry-pick X)
   </div>
   <div class="struct-cell">
     <strong>Holdout 평가</strong><br>
-    동일 LAO split (V5 와 공유) → MdAPE / W30 / W50<br>
-    3 seeds 반복 → mean ± std
+    동일 LAO split → MdAPE / W30 / W50<br>
+    Core 5 vs Main 7 vs Sensitivity 결과 비교
   </div>
 
-  <div class="day-cell">Day 11-12<br><span class="small">목/금</span></div>
+  <div class="day-cell">D11-12<br>5/16-17</div>
   <div class="v5-cell">
     <strong>분기 진행 (Week 1 결과 기반)</strong><br>
-    <strong>Case A</strong> (R/S 통과): 통합 ablation — R + C-lite 결합<br>
-    <strong>Case B</strong> (R/S 보류): C-lite 단독 + 최종 go/no-go<br>
+    <strong>Case A</strong>: 통합 후보 가능 → 통합 모델 검증<br>
+    <strong>Case B</strong>: 단독 후보 → 안전한 단독 후보 결정
   </div>
   <div class="struct-cell">
-    <strong>Cold/warm 분리 + V3 비교</strong><br>
-    Test set 의 cold/warm 분리 평가<br>
-    Tier B/C/D/E segment 별 MdAPE<br>
-    <strong>V3 production 모델과 동일 holdout 비교 표</strong>
+    <strong>인과 신뢰도 등급표 채움</strong><br>
+    Core 5 변수의 within-artist 식별 결과 정리<br>
+    운영 모델과 동일 holdout 비교 표
   </div>
 
-  <div class="day-cell">Day 13-14<br><span class="small">주말</span></div>
+  <div class="day-cell">D13-14<br>5/18-19 <span class="small">(월: freeze)</span></div>
   <div class="v5-cell">
-    <strong>Confirmatory + 도입 결정</strong><br>
-    Finalist 1-2개 동일 budget 재평가<br>
-    <strong>최종 결정</strong>: 도입 / 보류 / 추가 검증<br>
-    PR review 시작
+    <strong>최종 도입 후보 freeze</strong> (5/19 월 EOD)<br>
+    배포 PR 작성 + rollback runbook 초안<br>
+    Shadow 환경 setup
   </div>
   <div class="struct-cell">
-    <strong>OLS Coefficient table 산출</strong><br>
-    Paper-style table: β + SE + p-value<br>
-    Residual diagnostic (QQ + scale-location + leverage)<br>
-    Partial dependence plot per variable
+    <strong>OLS Coefficient 표 산출</strong><br>
+    Paper-style: β + SE + p-value (5-7 변수)<br>
+    Residual diagnostic + Partial dependence plot
   </div>
 
-  <div class="week-divider">📍 Week 3 (Day 15-21) — V5 PR merge·monitoring / Structural Mixed-Effects</div>
+  <div class="week-divider">📍 Week 3 (5/20-26) — 트랙 1 Shadow + Canary 배포 / 트랙 2 Mixed-Effects</div>
 
-  <div class="day-cell">Day 15-16<br><span class="small">월/화</span></div>
+  <div class="day-cell">D15<br>5/20 <span class="small">(수)</span></div>
   <div class="v5-cell">
-    <strong>PR review + merge 준비</strong><br>
-    평가 framework PR / 데이터 feature PR / 모델 PR 정리<br>
-    Saatchi 정책 (이전 결정) 재확인
+    <strong>Candidate freeze 적용</strong><br>
+    <span class="rollout-stage">Shadow 시작</span><br>
+    실제 트래픽 받지 않고 prediction 만 비교 (latency / drift)
   </div>
   <div class="struct-cell">
     <strong>Mixed-effects 모델 구축</strong><br>
     statsmodels MixedLM<br>
-    artist random intercept + gallery random intercept<br>
-    분산 분해 (ICC) 계산
+    artist random intercept + gallery random intercept
   </div>
 
-  <div class="day-cell">Day 17<br><span class="small">수</span></div>
+  <div class="day-cell">D16-17<br>5/21-22</div>
   <div class="v5-cell">
-    <strong>운영 monitoring checklist 작성</strong><br>
-    배포 후 모니터링 metric 정의<br>
-    Rollback 조건 + alert threshold 명시
+    <strong>Shadow 결과 검증 + monitoring 점검</strong><br>
+    응답 속도 / fallback / missingness / 분포 drift<br>
+    이상 발견 시 → fix 또는 rollback 결정
   </div>
   <div class="struct-cell">
-    <strong>Within-artist 효과 검증</strong><br>
-    Fixed effect (작가 통제) 모델 비교<br>
-    Hausman test (RE vs FE)<br>
-    인과 식별 가능 변수 결과 정리
+    <strong>분산 분해 (ICC) + Within-artist 효과</strong><br>
+    artist 분산 / gallery 분산 / residual 분해<br>
+    Hausman test (RE vs FE)
   </div>
 
-  <div class="day-cell">Day 18-19<br><span class="small">목/금</span></div>
+  <div class="day-cell">D18-19<br>5/23-24</div>
   <div class="v5-cell">
-    <strong>의사결정 memo 작성</strong><br>
-    V5 cycle 결과 + lessons learned<br>
-    다음 cycle 사전등록 skeleton
+    <strong><span class="rollout-stage">1% canary</span> 시작</strong><br>
+    실제 트래픽 1% 신모델 라우팅<br>
+    실시간 monitoring + grade 분포 추적<br>
+    <span class="small">이상 시 즉시 rollback</span>
   </div>
   <div class="struct-cell">
-    <strong>Random slope 검토 + V3/V5 비교</strong><br>
-    log(area) random slope 필요 여부 (likelihood ratio test)<br>
-    동일 holdout 으로 OLS / ME / V3 / V5 비교 표
+    <strong>Random slope 검토 + 비교 표</strong><br>
+    log(area) random slope 필요 여부 (likelihood ratio)<br>
+    OLS / ME / 운영 모델 동일 holdout 비교
   </div>
 
-  <div class="day-cell">Day 20-21<br><span class="small">주말</span></div>
+  <div class="day-cell">D20-21<br>5/25-26</div>
   <div class="v5-cell">
-    <strong>V5 cycle 종결 + 협업 follow-up</strong><br>
-    박지연님 협업 정리 (필요 시 추가 데이터 요청)<br>
-    배포 가능 시 staged rollout 계획
+    <strong><span class="rollout-stage">5% canary</span> 확장</strong><br>
+    metric 안정 시 → Week 4 본격 rollout 준비<br>
+    <strong>Shadow + 1% + 5% 결과 종합 보고</strong>
   </div>
   <div class="struct-cell">
-    <strong>Coefficient + variance + 중간 report</strong><br>
-    ME coefficient table<br>
-    Variance decomposition (artist 분산 / gallery 분산 / residual)<br>
-    Within-artist effect 표
+    <strong>ME 중간 보고서</strong><br>
+    Coefficient table + variance decomposition<br>
+    Within-artist effect 표 + caveat 명시
   </div>
 
-  <div class="week-divider">📍 Week 4 (Day 22-28) — V5 안정화 / Structural 최종 report</div>
+  <div class="week-divider">📍 Week 4 (5/27-6/2) — 트랙 1 Full Rollout + 안정화 / 트랙 2 최종 보고서</div>
 
-  <div class="day-cell">Day 22-23<br><span class="small">월/화</span></div>
+  <div class="day-cell">D22<br>5/27 <span class="small">(수)</span></div>
   <div class="v5-cell">
-    <strong>운영 안정화 (light)</strong><br>
-    배포 metric 모니터링<br>
-    이상 발견 시 fix 우선순위
+    <strong><span class="rollout-stage">25% rollout</span></strong><br>
+    Canary 결과 정상 → 트래픽 25% 확대<br>
+    monitoring 지표 4시간 단위 점검
   </div>
   <div class="struct-cell">
-    <strong>Quantile regression</strong><br>
-    τ ∈ {0.1, 0.25, 0.5, 0.75, 0.9} grid<br>
-    분포 위치별 변수 효과 변화 (heavy-tail 변수 식별)<br>
-    Heatmap 산출
+    <strong>분포별 회귀 (quantile)</strong> [Optional]<br>
+    τ ∈ {0.25, 0.5, 0.75} (heavy-tail 변수 식별)
   </div>
 
-  <div class="day-cell">Day 24<br><span class="small">수</span></div>
+  <div class="day-cell">D23-24<br>5/28-29</div>
   <div class="v5-cell">
-    <strong>다음 단계 brainstorm</strong><br>
-    예측 신뢰구간 (range estimate) 시스템 검토<br>
-    Confidence-gated 운영 정책 plan
+    <strong><span class="rollout-stage">50% rollout</span></strong><br>
+    절반 트래픽 신모델<br>
+    A/B 형태 비교 (구 vs 신모델 grade 분포)
   </div>
   <div class="struct-cell">
     <strong>인과 framing 정리</strong><br>
-    "What this model identifies vs not identifies"<br>
+    "What this model identifies" vs "What it cannot"<br>
     학술 한계 명시 + future work
   </div>
 
-  <div class="day-cell">Day 25-26<br><span class="small">목/금</span></div>
+  <div class="day-cell">D25<br>5/30 <span class="small">(토)</span></div>
   <div class="v5-cell">
-    <strong>V5 retro + 차기 cycle plan</strong><br>
-    1개월 종합 회고 (V4 + V5 학습)<br>
-    다음 cycle (V6) 방향 brainstorm
+    <strong><span class="rollout-stage">100% rollout</span></strong><br>
+    전체 트래픽 신모델<br>
+    구모델 즉시 rollback 가능 상태 유지
   </div>
   <div class="struct-cell">
-    <strong>최종 report 작성</strong><br>
-    Paper-style 10-15 페이지<br>
+    <strong>최종 보고서 작성</strong><br>
     Sections: Abstract / Data / Methodology / Results / Causal / Comparison / Limitations
   </div>
 
-  <div class="day-cell">Day 27-28<br><span class="small">주말</span></div>
+  <div class="day-cell">D26-27<br>5/31-6/1</div>
   <div class="v5-cell">
-    <strong>전체 cycle 종합 정리</strong><br>
-    임원/상급자 보고 자료 update<br>
-    1개월 deliverable 정리
+    <strong>1주 안정화 모니터링</strong><br>
+    매일 metric 점검 + 이상 fix<br>
+    예측가 분포 / grade A/B/C/D 비율 / latency p99
   </div>
   <div class="struct-cell">
-    <strong>(선택) Bayesian prototype</strong><br>
-    PyMC NUTS — 시간 여유 시만<br>
-    Posterior credible interval 예시
+    <strong>최종 보고서 마무리</strong><br>
+    Coefficient 표 + Variance 표 + 운영 모델 비교 표<br>
+    인과 신뢰도 등급표
+  </div>
+
+  <div class="day-cell">D28<br>6/2 <span class="small">(화)</span></div>
+  <div class="v5-cell">
+    <strong>안정화 리포트 + retro</strong><br>
+    1주 monitoring 결과 종합<br>
+    rollback 미발생 + drift 정상 → <strong>도입 완료 선언</strong>
+  </div>
+  <div class="struct-cell">
+    <strong>최종 보고서 제출</strong><br>
+    10-15페이지 paper-style<br>
+    트랙 1 도입 결과와 비교 자료 포함
   </div>
 </div>
 
 <h2>5. 시간 분배</h2>
 
 <table>
-  <tr><th>Phase</th><th>오전 (V5 운영)</th><th>오후 (Structural 학술)</th><th>일별 합계</th></tr>
-  <tr><td>Week 1 (집중)</td><td>2-3h</td><td>2-3h</td><td>4-6h</td></tr>
-  <tr><td>Week 2 (집중)</td><td>2-3h</td><td>2-3h</td><td>4-6h</td></tr>
-  <tr><td>Week 3 (PR/통합)</td><td>1-2h</td><td>3-4h</td><td>4-6h</td></tr>
-  <tr><td>Week 4 (안정화)</td><td>0-1h</td><td>4-5h</td><td>4-6h</td></tr>
+  <tr><th>Phase</th><th>오전 (트랙 1 운영)</th><th>오후 (트랙 2 학술)</th><th>일별 합계</th></tr>
+  <tr><td>Week 1 (집중 검증)</td><td>2-3h</td><td>2-3h</td><td>4-6h</td></tr>
+  <tr><td>Week 2 (후보 결정)</td><td>2-3h</td><td>2-3h</td><td>4-6h</td></tr>
+  <tr><td>Week 3 (Shadow + Canary)</td><td>2-3h (모니터링)</td><td>2-3h</td><td>4-6h</td></tr>
+  <tr><td>Week 4 (Full Rollout + 안정화)</td><td>3-4h (안정화)</td><td>2-3h</td><td>5-7h</td></tr>
 </table>
 
 <div class="info-box">
-  <strong>총 budget</strong>: 110-115h 운영 + 13-18h buffer = <strong>총 128h 가용</strong> (주 5일 × 4h + 주말 2일 × 6h 기준)<br>
-  <strong>버퍼 자동 적용 규칙</strong>: 어느 주든 시간 초과 +30% 시 stretch 항목 (Bayesian, Quantile full 등) 자동 제거.
+  <strong>총 budget</strong>: 약 110-130h (주 5일 × 4h + 주말 2일 × 6h 기준).<br>
+  <strong>버퍼 자동 적용 규칙</strong>: 어느 주든 시간 초과 +30% 시 추가 항목 (트랙 2 Sensitivity model, Bayesian 등) 자동 제거.<br>
+  <strong>Week 4 시간 약간 증가</strong>: Full rollout 안정화 모니터링 부담 반영.
 </div>
 
 <h2>6. 주별 우선순위 (Must / Optional / 추가)</h2>
@@ -668,24 +704,24 @@
     <td><strong>Week 1</strong></td>
     <td>
       ① 트랙 1: 후보 검증 + Week 2 분기 결정<br>
-      ② 트랙 2: 데이터 전처리 pipeline + 인과 구조도
+      ② 트랙 2: Core 5 / Main 7 피처 확정 + 인과 구조도
     </td>
     <td>트랙 1 추가 ablation 1회</td>
-    <td>추가 reference 발췌</td>
+    <td>Sensitivity 8-10 변수 추가 검토</td>
   </tr>
   <tr>
     <td><strong>Week 2</strong></td>
     <td>
-      ① 트랙 1: 도입 결정 (go / no-go)<br>
+      ① 트랙 1: 가장 robust 도입 후보 선정 + freeze (5/19 EOD)<br>
       ② 트랙 2: OLS 결과 + 운영 모델 비교 표
     </td>
-    <td>트랙 1 통합 검증 full (Week 1 통과 시)</td>
+    <td>트랙 1 통합 후보 검증 (Week 1 통과 시)</td>
     <td>within-artist 효과 추가 분석</td>
   </tr>
   <tr>
     <td><strong>Week 3</strong></td>
     <td>
-      ① 트랙 1: PR 준비 + 운영 monitoring 계획<br>
+      ① 트랙 1: <strong>Shadow + 1% + 5% canary 정상 완료</strong><br>
       ② 트랙 2: Mixed-effects 모델 + 분산 분해
     </td>
     <td>Random slope 검토</td>
@@ -694,7 +730,8 @@
   <tr>
     <td><strong>Week 4</strong></td>
     <td>
-      트랙 2 최종 보고서 (OLS + ME 중심, 10-15페이지)
+      ① 트랙 1: <strong>25% → 50% → 100% Full Rollout + 1주 안정화 완료</strong><br>
+      ② 트랙 2: 최종 보고서 (10-15페이지)
     </td>
     <td>분포별 회귀 (quantile) 결과</td>
     <td>Bayesian 모델 prototype</td>
@@ -706,26 +743,30 @@
 <div class="danger-box">
   <strong>🛑 핵심 의존성 (Hard Dependencies)</strong>
   <ul>
-    <li><strong>마이그레이션 데이터 사용 가능일</strong>: 트랙 1 의 시작 조건. 미확정 시 트랙 2 만 먼저 진행하겠습니다 (Week 1 시작 가능).</li>
-    <li><strong>추가 미매칭 갤러리 검수</strong>: 본 마이그레이션 데이터 도착 후 협력자께 일괄 검수 요청 → 회신 대기 (Week 1 내 처리 목표).</li>
+    <li><strong>마이그레이션 데이터 사용 가능일</strong>: 매주 수요일 snapshot. 5/6 (수) Day 1 가능 여부 확정 필요. 미확정 시 트랙 2 만 먼저 진행.</li>
+    <li><strong>추가 미매칭 갤러리 검수</strong>: Day 1-2 내 협력자 회신 필요. 지연 시 Week 1 R/S 진단 일정 1-2일 shift.</li>
+    <li><strong>배포 권한 + rollback owner</strong>: Week 3 Shadow 시작 전 (5/20 이전) 배포 권한 + rollback 의사결정 owner 지정 필요.</li>
   </ul>
 </div>
 
 <div class="warn-box">
-  <strong>⚠️ 사업적 위험 (가장 우선)</strong>
+  <strong>⚠️ 사업적 위험 + 대응</strong>
   <table style="margin-top: 8px;">
     <tr><th>위험</th><th>대응 방안</th></tr>
     <tr>
-      <td><strong>도입 가능한 개선이 없을 위험</strong> (트랙 1)</td>
-      <td>2주 내 도입/보류 결정을 명확히 하고, 보류 시에도 원인 + 다음 실험 우선순위를 의사결정 메모로 남기겠습니다.</td>
+      <td><strong>강제 도입 시 운영 위험 (rollback 필요 상황)</strong></td>
+      <td>
+        Shadow → 1% → 5% → 25% → 50% → 100% 단계별 진행, 단계별 monitoring metric 정상 확인 후 다음 단계.<br>
+        모든 단계에서 즉시 rollback 가능한 상태 유지 (rollback runbook 사전 작성).
+      </td>
     </tr>
     <tr>
       <td><strong>해석 가능 모델의 설명력은 높지만 예측력은 낮을 위험</strong> (트랙 2)</td>
-      <td>본 트랙의 목표를 '운영 대체' 가 아니라 '설명 가능한 비교 기준 확보' 로 관리하고, 운영 모델과 동일 protocol 비교표를 산출하겠습니다.</td>
+      <td>본 트랙 목표 = 운영 대체 X, 설명 가능한 비교 기준 확보. 운영 모델과 동일 protocol 비교표 산출.</td>
     </tr>
     <tr>
-      <td><strong>두 트랙 모두 의미 있는 결과 미산출</strong></td>
-      <td>1개월 종합 회고 + 다음 cycle 사전등록 skeleton 작성 (negative result 도 학습 자산화).</td>
+      <td><strong>트랙 1 후보 robust 미충족</strong></td>
+      <td>가장 안전한 후보 (변동성 낮은 후보) 도입 + monitoring 강화. 도입 보류 옵션 X (한 달 후 반영 강제).</td>
     </tr>
   </table>
 </div>
@@ -735,49 +776,46 @@
   <table style="margin-top: 8px;">
     <tr><th>위험</th><th>대응 방안</th></tr>
     <tr>
-      <td>시간 over-allocation (4-6h/일 부담)</td>
-      <td>시간 초과 +30% 자동 적용 → 추가 항목 (stretch) 자동 제거</td>
+      <td>시간 over-allocation (Week 4 5-7h/일 부담)</td>
+      <td>시간 초과 +30% 자동 적용 → 추가 항목 자동 제거 + 트랙 2 sensitivity 모델 우선순위 하락</td>
     </tr>
     <tr>
-      <td>두 트랙 cognitive load</td>
-      <td>오전 트랙 1 / 오후 트랙 2 시간대 분리</td>
-    </tr>
-    <tr>
-      <td>트랙 1 Week 1 결과 약함</td>
-      <td>Week 2 분기 규칙: 통합 검증 취소, 단독 후보 검증으로 축소</td>
-    </tr>
-    <tr>
-      <td>트랙 2 OLS 회귀 안정성 문제</td>
-      <td>3 패턴 분리 처리: 변수 spec 실패 → 보류 / 성능 부족 → 진행 / 진단 약점 → 한계 명시 후 진행</td>
+      <td>Shadow / Canary 단계 이상 발견</td>
+      <td>즉시 rollback + root cause 분석 → 재시작 (일정 2-3일 shift 가능)</td>
     </tr>
     <tr>
       <td>Mixed-effects 모델 수렴 실패</td>
       <td>도구 단계적 fallback (statsmodels → R lme4 → GPBoost)</td>
     </tr>
+    <tr>
+      <td>두 트랙 cognitive load</td>
+      <td>오전 트랙 1 / 오후 트랙 2 시간대 분리</td>
+    </tr>
   </table>
 </div>
 
-<h2>8. 성공 기준 (Day 28 종료 시)</h2>
+<h2>8. 성공 기준 (6/2 종료 시)</h2>
 
-<h3>트랙 1 — V5 Cycle</h3>
+<h3>트랙 1 — 운영 도입 (필수)</h3>
 <ul>
-  <li>R/S 또는 C-lite 도입 결정 명확 (pass/cut 객관적 근거)</li>
-  <li>도입 시: PR merge + 운영 monitoring checklist 완성</li>
-  <li>보류 시: 보류 결정 메모 + 다음 cycle 사전등록 skeleton</li>
+  <li><strong>배포 완료</strong>: 100% rollout 도달</li>
+  <li><strong>Rollback 조건 명시</strong>: monitoring metric 별 임계치 + 자동 rollback rule</li>
+  <li><strong>1주 안정화</strong>: 5/30 ~ 6/2 동안 rollback 미발생 + drift 정상</li>
+  <li><strong>예측 정확도</strong>: 신규 작가 영역 평균 0.8%p 이상 개선 또는 변동성 감소 입증</li>
 </ul>
 
-<h3>트랙 2 — Structural Pricing (≥ 2/3 충족)</h3>
+<h3>트랙 2 — 해석 가능 모델 (≥ 2/3 충족)</h3>
 <ul>
-  <li><strong>학술 baseline 확립</strong>: OLS / ME coefficient + V3 holdout 비교 표</li>
-  <li><strong>Cold-start regime 비교 가능 baseline</strong>: Within-artist 식별 결과</li>
-  <li><strong>이론적 방어 가능 문서</strong>: 5+ paper reference + 인과 식별 등급표 + Paper-style report</li>
+  <li>핵심 5-7개 피처 기반 OLS / ME 모델 구축 + 운영 모델 비교 표</li>
+  <li>Within-artist 식별 결과 + 인과 신뢰도 등급표</li>
+  <li>최종 보고서 (10-15페이지) 제출</li>
 </ul>
 
 <h3>병행 성공 기준</h3>
 <ul>
-  <li>두 트랙 모두 timeline 내 완료 (Burn-rate stop 으로 over-run 방지)</li>
-  <li>V5 와 Structural 결과의 비교 표 (동일 holdout protocol)</li>
-  <li>1개월 종합 회고 + 임원 보고 자료</li>
+  <li>두 트랙 모두 timeline 내 완료 (시간 초과 시 추가 항목 자동 제거)</li>
+  <li>운영 모델 (트랙 1 도입 후) 와 해석 가능 모델 (트랙 2) 비교 표</li>
+  <li>1개월 종합 회고 + 차기 cycle 사전등록 skeleton</li>
 </ul>
 
 <h2>9. 의사결정 요청 / 보고 사항</h2>
@@ -785,32 +823,45 @@
 <div class="info-box">
   <strong>승인이 필요한 사항</strong>
   <ol>
-    <li><strong>4주 병행 계획 승인 여부</strong> — 두 트랙 병행 진행</li>
-    <li><strong>트랙 1 착수 기준이 되는 마이그레이션 데이터의 사용 가능일 확정</strong></li>
-    <li><strong>추가 미매칭 갤러리 검수를 위한 협업 지원 여부 확정</strong> — 협력자 박지연님 검수 요청</li>
+    <li><strong>4주 병행 계획 승인 여부</strong> — 두 트랙 병행 + 운영 도입 강제 형태</li>
+    <li><strong>마이그레이션 데이터 사용 가능일 확정</strong> — 5/6 (수) Day 1 시작 가능 여부</li>
+    <li><strong>추가 미매칭 갤러리 검수 협업 지원 여부</strong> — Week 1 내 회신 필요</li>
+    <li><strong>배포 권한 위임 + rollout 단계 승인</strong> — 1% / 5% / 25% / 50% / 100% 각 단계 자동 진행 또는 단계별 승인</li>
+    <li><strong>Rollback owner 지정</strong> — Week 3 시작 전 (5/20 이전) 결정자 명확화</li>
   </ol>
   <p class="small" style="margin-top: 10px;">
-    ※ 위 2, 3 이 지연될 경우, 첫 주는 트랙 2 (해석 가능 모델) 우선으로 진행하겠습니다.
+    ※ 위 2-3 이 지연될 경우, 첫 주는 트랙 2 (해석 가능 모델) 우선으로 진행하겠습니다.<br>
+    ※ 위 4-5 가 미정 시, Week 3 Shadow 까지만 진행하고 canary 이상은 보류합니다.
   </p>
 </div>
 
 <div class="info-box">
   <strong>보고 일정</strong>
   <ul>
-    <li>Week 1 종료 시: V5 R/S 후보 결정 + Structural 변수 spec 보고</li>
-    <li>Week 2 종료 시: V5 도입 결정 + Structural OLS 결과 보고</li>
-    <li>Week 3 종료 시: V5 PR merge readiness + Structural ME 결과 보고</li>
-    <li>Week 4 종료 시: 1개월 종합 보고 + Structural final report 제출</li>
+    <li>Week 1 종료 (5/12): 트랙 1 후보 검증 + 트랙 2 핵심 피처 확정 보고</li>
+    <li>Week 2 종료 (5/19, 캔디데이트 freeze): 도입 후보 + OLS 결과 보고</li>
+    <li>Week 3 종료 (5/26): Canary 결과 (1% + 5%) + ME 결과 보고</li>
+    <li>Week 4 종료 (6/2): <strong>도입 완료 + 1주 안정화 결과 + 최종 보고서 제출</strong></li>
   </ul>
 </div>
 
 <h2>10. 상세 자료</h2>
 
-<p class="small">본 보고서의 상세 plan / 변수 spec / 인과 구조도 / 사전등록 protocol 등은 별도 internal docs 로 관리합니다. 필요 시 공유 가능.</p>
+<p class="small">본 보고서의 상세 plan / 변수 spec / 인과 구조도 / 사전등록 protocol / monitoring runbook 등은 별도 internal docs 로 관리합니다. 필요 시 공유 가능.</p>
 
 <div class="footer">
   <p><strong>작성</strong>: 2026-05-05</p>
-  <p><strong>다음 액션</strong>: 본 plan 승인 후 마이그레이션 데이터 사용 가능일에 맞춰 Day 1 시작 (또는 트랙 2 우선 진행).</p>
+  <p><strong>주요 마일스톤 (수요일 기준)</strong>:</p>
+  <ul style="font-size: 0.92em;">
+    <li>5/6 (수) — 마이그레이션 Day 1 + 트랙 시작</li>
+    <li>5/13 (수) — Confirmatory refresh</li>
+    <li>5/19 (월) — 도입 후보 freeze</li>
+    <li>5/20 (수) — Shadow + Canary 시작</li>
+    <li>5/27 (수) — 25%/50% rollout</li>
+    <li>5/30 (토) — 100% Full Rollout</li>
+    <li>6/2 (화) — <strong>도입 완료 + 안정화 리포트</strong></li>
+  </ul>
+  <p><strong>다음 액션</strong>: 본 plan 승인 후 5/6 (수) Day 1 시작 (또는 트랙 2 우선 진행).</p>
 </div>
 
 </body>
