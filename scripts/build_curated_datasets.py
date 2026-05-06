@@ -104,7 +104,30 @@ def load_eligible() -> pd.DataFrame:
         f"{len(df)} records (-{before - len(df)})"
     )
 
-    # 6. 중복 제거 (canonical key 기준, 첫 번째 유지)
+    # 6. medium 텍스트 품질 검증
+    #    - 숫자/연도만 들어간 medium 제외 (예: "2024", "201205")
+    #    - medium_l1 결측 OR 빈 문자열 = 정상 매체 분류 실패 → 제외
+    before = len(df)
+    medium_str = df["medium"].astype(str).str.strip()
+    is_numeric_only = medium_str.str.fullmatch(r"\d+(\.\d+)?", na=False)
+    df = df[~is_numeric_only]
+    logger.info(
+        f"After medium-text quality filter (숫자만 medium 제외): "
+        f"{len(df)} records (-{before - len(df)})"
+    )
+
+    before = len(df)
+    medium_l1_str = df["medium_l1"].astype(str).str.strip()
+    df = df[df["medium_l1"].notna() & (medium_l1_str != "")]
+    logger.info(
+        f"After medium_l1 결측/공백 제외 (매체 분류 실패): "
+        f"{len(df)} records (-{before - len(df)})"
+    )
+
+    # 6.5. title 앞뒤 공백 정리 (코덱스 P2)
+    df["title"] = df["title"].astype(str).str.strip()
+
+    # 7. 중복 제거 (canonical key 기준, 첫 번째 유지)
     before = len(df)
     df = df.drop_duplicates(subset=DUP_KEY, keep="first").reset_index(drop=True)
     logger.info(
