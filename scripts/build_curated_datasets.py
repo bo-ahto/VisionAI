@@ -65,6 +65,70 @@ DROP_COLUMNS = [
     "value_grade_note",  # 98.5% 결측
 ]
 
+# CSV 출력용 한글 병기 컬럼명 매핑 (영문 → "한글 (영문)")
+KR_COLUMN_LABELS = {
+    "artwork_id": "작품ID",
+    "artist_slug": "작가slug",
+    "artist_name": "작가명",
+    "title": "작품명",
+    "price_krw": "가격_KRW",
+    "price_raw": "원가격",
+    "dimensions_cm": "크기_cm",
+    "medium": "재료_원문",
+    "image_url": "이미지URL",
+    "artwork_url": "작품URL",
+    "ho": "호수",
+    "ho_power": "호수_가중",
+    "ln_ho": "log_호수",
+    "area_cm2": "면적_cm2",
+    "aspect_ratio": "종횡비",
+    "is_small": "소형작품여부",
+    "support_type": "지지체타입",
+    "medium_category": "재료_분류",
+    "year_made": "제작연도",
+    "work_age": "작품경과년수",
+    "has_depth": "입체여부",
+    "artist_birth_year": "작가_출생년",
+    "career_age": "활동연차",
+    "career_stage": "활동단계",
+    "ln_followers": "log_팔로워수",
+    "artist_total_works": "작가_총작품수",
+    "for_sale_ratio": "판매가능비율",
+    "request_ratio": "문의비율",
+    "solo_count": "개인전수",
+    "group_count": "단체전수",
+    "fair_count": "아트페어수",
+    "artist_is_p1": "주력작가여부",
+    "gallery_name": "갤러리명",
+    "gallery_tier": "갤러리등급",
+    "gallery_city_count": "갤러리_도시수",
+    "has_seoul": "서울갤러리여부",
+    "has_international": "해외갤러리여부",
+    "price_currency": "가격통화",
+    "is_krw": "KRW통화여부",
+    "freshness_discount": "신작_할인",
+    "medium_l1": "재료_대분류",
+    "medium_leaf": "재료_세분류",
+    "support_l1": "지지체_대분류",
+    "support_leaf": "지지체_세분류",
+    "mediums_json": "재료_JSON",
+    "supports_json": "지지체_JSON",
+    "has_multimedia": "복합매체여부",
+    "ln_price": "log_가격",
+}
+
+
+def make_kr_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """CSV 출력용 — '한글 (영문)' 헤더로 변환."""
+    new_cols = {}
+    for col in df.columns:
+        kr = KR_COLUMN_LABELS.get(col)
+        if kr:
+            new_cols[col] = f"{kr} ({col})"
+        else:
+            new_cols[col] = col
+    return df.rename(columns=new_cols)
+
 # 중복 판정 canonical key
 DUP_KEY = ["artist_slug", "title", "year_made", "area_cm2", "medium_category"]
 
@@ -413,16 +477,19 @@ def main() -> None:
             curated = curated.drop(columns=constant_cols)
             logger.info(f"  Dropped constants: {constant_cols}")
 
-        # Save (parquet + csv)
+        # Save
+        # - parquet: 원본 영문 컬럼 (코드 호환성)
+        # - csv: 한글 병기 헤더 (가독성)
         base_name = (
             f"{stage_name}_{params['records']}x{params['artists']}"
         )
         parquet_path = OUTPUT_DIR / f"{base_name}.parquet"
         csv_path = OUTPUT_DIR / f"{base_name}.csv"
         curated.to_parquet(parquet_path, index=False)
-        curated.to_csv(csv_path, index=False, encoding="utf-8-sig")
+        curated_kr = make_kr_columns(curated)
+        curated_kr.to_csv(csv_path, index=False, encoding="utf-8-sig")
         logger.info(f"  Saved: {parquet_path.relative_to(ROOT)}")
-        logger.info(f"  Saved: {csv_path.relative_to(ROOT)}")
+        logger.info(f"  Saved: {csv_path.relative_to(ROOT)} (한글 병기 헤더)")
 
         # Summary
         summaries[stage_name] = report_summary(curated, stage_name)
