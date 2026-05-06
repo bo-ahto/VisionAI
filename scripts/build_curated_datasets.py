@@ -89,8 +89,8 @@ KR_COLUMN_LABELS = {
     "work_age": "작품경과년수",
     "has_depth": "입체여부",
     "artist_birth_year": "작가_출생년",
-    "career_age": "활동연차",
-    "career_stage": "활동단계",
+    "career_age": "활동연차",  # 작가 첫 작품 기준 N년차 (재계산 값)
+    "career_stage": "활동등급",  # 합성 score (followers/works/exhibitions 종합)
     "ln_followers": "log_팔로워수",
     "artist_total_works": "작가_총작품수",
     "for_sale_ratio": "판매가능비율",
@@ -260,6 +260,18 @@ def load_eligible() -> pd.DataFrame:
     logger.info(
         f"After creation-age filter (>= {MIN_CREATION_AGE}세): "
         f"{len(df)} records (-{before - len(df)})"
+    )
+
+    # 6.85. career_age 재계산: 작가 첫 작품 연도 기반
+    #       기존 career_age (작가별 고정값, 정의 불명확) → overwrite
+    #       새 계산: year_made - 작가의 first year_made
+    #       → within-artist 변동 가능 (활동 N년차 작품)
+    first_year = df.groupby("artist_slug")["year_made"].transform("min")
+    df["career_age"] = (df["year_made"] - first_year).astype("Int64")
+    logger.info(
+        "career_age 재계산 (작가 첫 작품 기준): "
+        f"min={df['career_age'].min()}, max={df['career_age'].max()}, "
+        f"mean={df['career_age'].mean():.2f}"
     )
 
     # 6.9. Aspect ratio 극단 제외 (자릿수 오타 의심)
