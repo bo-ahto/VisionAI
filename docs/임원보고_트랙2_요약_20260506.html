@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>트랙 2 (해석 가능 모델) — 임원 1페이지 요약</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    max-width: 1100px;
+    margin: 25px auto;
+    padding: 0 22px;
+    color: #1f2937;
+    line-height: 1.55;
+    background: #fff;
+  }
+  h1 {
+    font-size: 1.65em;
+    border-bottom: 3px solid #2563eb;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+    color: #111827;
+  }
+  .meta { color: #6b7280; font-size: 0.88em; margin-bottom: 16px; }
+  h2 {
+    margin-top: 18px;
+    color: #1e40af;
+    border-left: 4px solid #2563eb;
+    padding-left: 12px;
+    font-size: 1.1em;
+  }
+  .summary-box {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 4px;
+    font-size: 0.96em;
+  }
+  .info-box {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 4px;
+  }
+  .warn-box {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    border: 1px solid #d1d5db;
+    padding: 7px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #1e40af; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #f9fafb; }
+  ul, ol { margin: 5px 0 5px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  .small { font-size: 0.86em; color: #6b7280; }
+  .kpi {
+    display: inline-block;
+    padding: 2px 9px;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.88em;
+  }
+  .kpi-good { background: #dcfce7; color: #15803d; }
+  .kpi-bad  { background: #fee2e2; color: #b91c1c; }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .footer {
+    margin-top: 22px;
+    padding-top: 12px;
+    border-top: 2px solid #d1d5db;
+    color: #6b7280;
+    font-size: 0.86em;
+  }
+</style>
+</head>
+<body>
+
+<h1>트랙 2 (해석 가능 모델) — 임원 1페이지 요약</h1>
+<p class="meta"><strong>작성일</strong>: 2026-05-06 · <strong>대상</strong>: 대표 보고용 · <strong>상세 보고서</strong>: docs/트랙2_최종보고서_20260506.md</p>
+
+<div class="summary-box">
+  <strong>핵심 결과 한 줄</strong><br>
+  <strong>3개 변수만으로 V3 운영 모델의 신규 작가 약점 (28-48%) 을 24-27% 까지 개선.</strong> 단계적 운영 도입 가능 수준 도달.
+</div>
+
+<h2>1. 무엇을 했나</h2>
+<ul>
+  <li><strong>해석 가능한 hedonic 회귀 모델</strong> 개발 — 변수별 가격 기여 설명 가능</li>
+  <li>현재 V3 운영 모델 (32 features GBM 블랙박스) 의 신규 작가 약점 보완 목적</li>
+  <li>Stage 1 (200) → Stage 2 (500) → Stage 3 (1,378) 단계 검증 완료</li>
+</ul>
+
+<h2>2. 모델 (3개 변수)</h2>
+<div class="info-box">
+  <strong>가격 = f(작품 크기, 작가 세대, 작가 생산성) + 작가별 고유 효과</strong>
+  <table style="margin-top: 6px;">
+    <tr><th style="width: 30%;">변수</th><th>의미</th><th style="width: 24%;">가격 영향</th></tr>
+    <tr><td>작품 면적</td><td>작품의 크기</td><td>면적 1% ↑ → 가격 +0.78%</td></tr>
+    <tr><td>작가 출생년</td><td>작가의 세대 (시장 위상)</td><td>1년 늦을수록 -5%</td></tr>
+    <tr><td>작가 총작품수</td><td>활동량 / 시장 안정성</td><td>2배 ↑ → +5%</td></tr>
+  </table>
+</div>
+
+<h2>3. 운영 모델 (V3) 대비 비교</h2>
+<table>
+  <tr>
+    <th>시나리오</th>
+    <th>V3 (32 features GBM)</th>
+    <th>트랙 2 (3 features)</th>
+    <th>판정</th>
+  </tr>
+  <tr>
+    <td><strong>학습량 충분 작가</strong> (≥ 10건)</td>
+    <td><span class="kpi kpi-good">12-18%</span></td>
+    <td><span class="kpi">21-22%</span></td>
+    <td>V3 유지</td>
+  </tr>
+  <tr>
+    <td><strong>신규 작가</strong> (학습량 부족)</td>
+    <td><span class="kpi kpi-bad">28-48%</span></td>
+    <td><span class="kpi kpi-good">24-27%</span></td>
+    <td><strong>트랙 2 우수 ⭐</strong></td>
+  </tr>
+  <tr>
+    <td>이원 전략 통합 (시뮬레이션)</td>
+    <td>—</td>
+    <td><span class="kpi kpi-good">22.30 ~ 25.18%</span></td>
+    <td>도입 가능</td>
+  </tr>
+</table>
+<p class="small">※ 30-seed LAO holdout / Bootstrap 95% CI [24.21, 28.45]. 단위는 MdAPE (예측 오차 중앙값 %).</p>
+
+<h2>4. 운영 도입 권고 — 이원 전략</h2>
+<div class="info-box">
+  <pre style="margin: 0; font-family: inherit; font-size: 0.92em;">입력 작품
+  ↓
+작가가 학습 데이터에 충분히 있나? (≥ 10건)
+  ├─ <strong>YES (기존 작가)</strong> → V3 유지       (정확도 12-18%)
+  └─ <strong>NO  (신규 작가)</strong>  → 트랙 2 도입  (정확도 ~27%, V3 대비 -1 ~ -21%p ↓)</pre>
+</div>
+
+<p><strong>전면 교체 아닌 보완 도입.</strong> V3 의 강점 (기존 작가 정확도) 유지 + 트랙 2 의 강점 (신규 작가 정확도 + 해석성) 추가.</p>
+
+<h2>5. 가치 / 한계</h2>
+<div class="grid-2">
+  <div class="info-box">
+    <strong>✅ 가치</strong>
+    <ul>
+      <li>신규 작가 가격 예측 정확도 -4 ~ -20%p 개선</li>
+      <li>가격 결정 요인 3축으로 명확하게 설명 가능</li>
+      <li>변수 부호 일관성 100% (재현성 ↑)</li>
+      <li>해석 가능 모델 → 의사결정 / 보고 용이</li>
+    </ul>
+  </div>
+  <div class="warn-box">
+    <strong>⚠️ 한계 / 가드레일 필요</strong>
+    <ul>
+      <li>저가 작품 (&lt; 5M원): 35.96% (편향 큼)</li>
+      <li>먹/잉크 매체: 32.94% (표본 적음)</li>
+      <li>중간 등급 갤러리: 28.12% (변동 큼)</li>
+      <li>→ 위 segment 는 별도 보정 / 사람 검토 필요</li>
+    </ul>
+  </div>
+</div>
+
+<h2>6. 의사결정 항목</h2>
+<table>
+  <tr><th style="width: 18%;">항목</th><th>권고</th><th style="width: 28%;">결정 필요 시점</th></tr>
+  <tr>
+    <td><strong>운영 도입</strong></td>
+    <td>이원 전략 단계적 도입 (전면 교체 X)</td>
+    <td>본 보고 검토 후</td>
+  </tr>
+  <tr>
+    <td><strong>도입 단계</strong></td>
+    <td>Shadow → Cold-only Soft Launch → Full Cold Routing → 안정화 (4주)</td>
+    <td>Week 4 (5/27 ~ 6/2)</td>
+  </tr>
+  <tr>
+    <td><strong>가드레일</strong></td>
+    <td>저가 / 잉크 / tier 3 별도 보정 룰 적용</td>
+    <td>도입 전 사전 합의</td>
+  </tr>
+  <tr>
+    <td><strong>재학습 주기</strong></td>
+    <td>월 1회 calibration 재학습 (시간 drift 대응)</td>
+    <td>운영 도입과 동시</td>
+  </tr>
+</table>
+
+<h2>7. 다음 단계</h2>
+<ol>
+  <li><strong>본 보고 검토 + 도입 의사결정</strong></li>
+  <li>트랙 1 (예측력 모델) 검증 → 트랙 2 와 비교</li>
+  <li>Production 통합 spec 작성 (cold 라우터 + 가드레일)</li>
+  <li>Week 3 ~ 4 단계적 운영 도입</li>
+</ol>
+
+<div class="footer">
+  <strong>검증 process</strong>: 30-seed LAO holdout · Bootstrap 95% CI · Time-split CV · Per-segment 편향 점검 · 코덱스 자문 6차 통과<br>
+  <strong>상세 자료</strong>: docs/트랙2_최종보고서_20260506.md (12 섹션) · 코드/결과 = experiments/structural_v1/<br>
+  <strong>전체 일정</strong>: docs/1개월_병행일정_V5_Structural.html
+</div>
+
+</body>
+</html>
