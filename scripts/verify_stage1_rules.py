@@ -59,6 +59,8 @@ def check_hard_rules(df: pd.DataFrame) -> dict:
         "year_made",
         "gallery_tier",
         "price_krw",
+        "artist_birth_year",
+        "career_age",
     ]
     for col in required:
         violations[f"{col}_missing"] = int(df[col].isna().sum())

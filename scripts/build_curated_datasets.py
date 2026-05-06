@@ -39,6 +39,9 @@ REQUIRED_FIELDS = [
     "year_made",
     "gallery_tier",
     "price_krw",
+    # 작가 메타 — 작가 단위 누락 시 표본 편향 위험 (코덱스 P1)
+    "artist_birth_year",
+    "career_age",
 ]
 
 # 중복 판정 canonical key
