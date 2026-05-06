@@ -402,6 +402,17 @@ def main() -> None:
         if drop_cols:
             curated = curated.drop(columns=drop_cols)
 
+        # 상수 컬럼 자동 drop (회귀 정보값 0 / 다중공선성 회피)
+        # 예: vintage_premium=0 모두, source='artsy' 모두, gallery_type='Gallery' 모두
+        constant_cols = [
+            col
+            for col in curated.columns
+            if curated[col].nunique(dropna=False) == 1
+        ]
+        if constant_cols:
+            curated = curated.drop(columns=constant_cols)
+            logger.info(f"  Dropped constants: {constant_cols}")
+
         # Save (parquet + csv)
         base_name = (
             f"{stage_name}_{params['records']}x{params['artists']}"
