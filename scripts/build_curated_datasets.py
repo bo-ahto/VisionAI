@@ -63,6 +63,12 @@ rng = np.random.default_rng(SEED)
 CURRENT_YEAR = 2026
 YEAR_MADE_MIN = 1900
 
+# 작가 활동 연령 합리성 (작품 제작 시 최소 15세)
+MIN_CREATION_AGE = 15
+
+# Aspect ratio 극단 (자릿수 오타 의심) — 회화/드로잉 통상 1:5 이내
+MAX_ASPECT_RATIO = 10.0
+
 
 def load_eligible() -> pd.DataFrame:
     """필터 적용 후 eligible records 반환."""
@@ -126,6 +132,46 @@ def load_eligible() -> pd.DataFrame:
 
     # 6.5. title 앞뒤 공백 정리 (코덱스 P2)
     df["title"] = df["title"].astype(str).str.strip()
+
+    # 6.6. title 데이터 품질 — 글자 없는 코드성 title 제외
+    #      (alphabet/한글 문자 1개 이상 포함 필수)
+    before = len(df)
+    has_letters = df["title"].str.contains(
+        r"[a-zA-Z가-힣]", regex=True, na=False
+    )
+    df = df[has_letters]
+    logger.info(
+        f"After title-quality filter (글자 없는 코드성 title 제외): "
+        f"{len(df)} records (-{before - len(df)})"
+    )
+
+    # 6.7. medium 표기 정규화 (대소문자 → title case)
+    #      "Oil on canvas" / "Oil on Canvas" 등 통일
+    df["medium"] = (
+        df["medium"]
+        .astype(str)
+        .str.strip()
+        .str.replace(r"\s+", " ", regex=True)
+    )
+
+    # 6.8. 작가 활동 연령 합리성 (year_made - birth_year >= 15)
+    #      예: birth_year=2013, year_made=2022 → 9세 → 의심 row 제외
+    before = len(df)
+    creation_age = df["year_made"] - df["artist_birth_year"]
+    df = df[creation_age >= MIN_CREATION_AGE]
+    logger.info(
+        f"After creation-age filter (>= {MIN_CREATION_AGE}세): "
+        f"{len(df)} records (-{before - len(df)})"
+    )
+
+    # 6.9. Aspect ratio 극단 제외 (자릿수 오타 의심)
+    #      예: 112 × 1112 cm (1112은 112의 오타 의심)
+    before = len(df)
+    df = df[df["aspect_ratio"].between(1 / MAX_ASPECT_RATIO, MAX_ASPECT_RATIO)]
+    logger.info(
+        f"After aspect-ratio filter (1/{MAX_ASPECT_RATIO} ~ {MAX_ASPECT_RATIO}): "
+        f"{len(df)} records (-{before - len(df)})"
+    )
 
     # 7. 중복 제거 (canonical key 기준, 첫 번째 유지)
     before = len(df)
