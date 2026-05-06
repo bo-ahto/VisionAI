@@ -281,13 +281,16 @@ def main() -> None:
             seed=SEED,
         )
 
-        # Save
-        out_path = (
-            OUTPUT_DIR
-            / f"{stage_name}_{params['records']}x{params['artists']}.parquet"
+        # Save (parquet + csv)
+        base_name = (
+            f"{stage_name}_{params['records']}x{params['artists']}"
         )
-        curated.to_parquet(out_path, index=False)
-        logger.info(f"  Saved: {out_path.relative_to(ROOT)}")
+        parquet_path = OUTPUT_DIR / f"{base_name}.parquet"
+        csv_path = OUTPUT_DIR / f"{base_name}.csv"
+        curated.to_parquet(parquet_path, index=False)
+        curated.to_csv(csv_path, index=False, encoding="utf-8-sig")
+        logger.info(f"  Saved: {parquet_path.relative_to(ROOT)}")
+        logger.info(f"  Saved: {csv_path.relative_to(ROOT)}")
 
         # Summary
         summaries[stage_name] = report_summary(curated, stage_name)
