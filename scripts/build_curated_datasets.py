@@ -53,6 +53,12 @@ REQUIRED_TEXT_FIELDS = [
     "support_leaf",
 ]
 
+# JSON 배열 컬럼 — '[]' 빈 배열 제외
+REQUIRED_JSON_ARRAY_FIELDS = [
+    "mediums_json",
+    "supports_json",
+]
+
 # 분석에 사용 안 함 + 거의 모두 결측 → 출력에서 drop
 DROP_COLUMNS = [
     "exclude_reason",  # 100% 결측 (정상 데이터 by design)
@@ -147,6 +153,15 @@ def load_eligible() -> pd.DataFrame:
         df = df[df[col].notna() & (col_str != "")]
         logger.info(
             f"After {col} 결측/공백 제외: {len(df)} records (-{before - len(df)})"
+        )
+
+    # 6.2. JSON 배열 빈 배열 제외 (mediums_json / supports_json)
+    for col in REQUIRED_JSON_ARRAY_FIELDS:
+        before = len(df)
+        col_str = df[col].astype(str).str.strip()
+        df = df[(col_str != "") & (col_str != "[]")]
+        logger.info(
+            f"After {col} 빈 배열 제외: {len(df)} records (-{before - len(df)})"
         )
 
     # 6.5. title 앞뒤 공백 정리 (코덱스 P2)
