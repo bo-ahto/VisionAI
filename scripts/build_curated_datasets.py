@@ -42,6 +42,21 @@ REQUIRED_FIELDS = [
     # 작가 메타 — 작가 단위 누락 시 표본 편향 위험 (코덱스 P1)
     "artist_birth_year",
     "career_age",
+    # 작품 메타 — 결측 없는 데이터로 통일
+    "image_url",
+]
+
+# 추가 필수 (텍스트 + 빈 문자열 처리 필요)
+REQUIRED_TEXT_FIELDS = [
+    "medium_l1",
+    "support_l1",
+    "support_leaf",
+]
+
+# 분석에 사용 안 함 + 거의 모두 결측 → 출력에서 drop
+DROP_COLUMNS = [
+    "exclude_reason",  # 100% 결측 (정상 데이터 by design)
+    "value_grade_note",  # 98.5% 결측
 ]
 
 # 중복 판정 canonical key
@@ -85,13 +100,17 @@ def load_eligible() -> pd.DataFrame:
     df = df[df["price_krw"] > 1]
     logger.info(f"After price filter: {len(df)} records")
 
-    # 3. 필수 변수 결측 없음
+    # 3. 필수 변수 결측 없음 (NaN + 빈 문자열 모두 제외)
     for col in REQUIRED_FIELDS:
         before = len(df)
-        df = df[df[col].notna()]
+        notna_mask = df[col].notna()
+        # 모든 컬럼에 대해 빈 문자열 체크 (dtype 무관)
+        col_str = df[col].astype(str).str.strip()
+        non_empty_mask = (col_str != "") & (col_str.str.lower() != "nan")
+        df = df[notna_mask & non_empty_mask]
         after = len(df)
         if before != after:
-            logger.info(f"  {col} 결측 제거: -{before - after}")
+            logger.info(f"  {col} 결측/빈문자 제거: -{before - after}")
 
     logger.info(f"After required-field filter: {len(df)} records")
 
@@ -112,7 +131,6 @@ def load_eligible() -> pd.DataFrame:
 
     # 6. medium 텍스트 품질 검증
     #    - 숫자/연도만 들어간 medium 제외 (예: "2024", "201205")
-    #    - medium_l1 결측 OR 빈 문자열 = 정상 매체 분류 실패 → 제외
     before = len(df)
     medium_str = df["medium"].astype(str).str.strip()
     is_numeric_only = medium_str.str.fullmatch(r"\d+(\.\d+)?", na=False)
@@ -122,13 +140,14 @@ def load_eligible() -> pd.DataFrame:
         f"{len(df)} records (-{before - len(df)})"
     )
 
-    before = len(df)
-    medium_l1_str = df["medium_l1"].astype(str).str.strip()
-    df = df[df["medium_l1"].notna() & (medium_l1_str != "")]
-    logger.info(
-        f"After medium_l1 결측/공백 제외 (매체 분류 실패): "
-        f"{len(df)} records (-{before - len(df)})"
-    )
+    # 6.1. 텍스트 필수 변수 결측/공백 제외 (medium_l1 / support_l1 / support_leaf)
+    for col in REQUIRED_TEXT_FIELDS:
+        before = len(df)
+        col_str = df[col].astype(str).str.strip()
+        df = df[df[col].notna() & (col_str != "")]
+        logger.info(
+            f"After {col} 결측/공백 제외: {len(df)} records (-{before - len(df)})"
+        )
 
     # 6.5. title 앞뒤 공백 정리 (코덱스 P2)
     df["title"] = df["title"].astype(str).str.strip()
@@ -362,6 +381,11 @@ def main() -> None:
             works_per_artist=params["works_per_artist"],
             seed=SEED,
         )
+
+        # 결측만 있는 / 거의 결측 컬럼 drop
+        drop_cols = [c for c in DROP_COLUMNS if c in curated.columns]
+        if drop_cols:
+            curated = curated.drop(columns=drop_cols)
 
         # Save (parquet + csv)
         base_name = (
