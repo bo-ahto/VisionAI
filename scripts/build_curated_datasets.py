@@ -41,6 +41,9 @@ REQUIRED_FIELDS = [
     "price_krw",
 ]
 
+# 중복 판정 canonical key
+DUP_KEY = ["artist_slug", "title", "year_made", "area_cm2", "medium_category"]
+
 MIN_WORKS_PER_ARTIST = 10
 SLOPE_CHECK_MIN_WORKS = 15
 
@@ -96,6 +99,13 @@ def load_eligible() -> pd.DataFrame:
     logger.info(
         f"After year_made range filter ({YEAR_MADE_MIN}~{CURRENT_YEAR}): "
         f"{len(df)} records (-{before - len(df)})"
+    )
+
+    # 6. 중복 제거 (canonical key 기준, 첫 번째 유지)
+    before = len(df)
+    df = df.drop_duplicates(subset=DUP_KEY, keep="first").reset_index(drop=True)
+    logger.info(
+        f"After dedup ({DUP_KEY}): {len(df)} records (-{before - len(df)})"
     )
 
     return df
