@@ -133,25 +133,34 @@ window.MathJax = {
 
 <h2>1. 모델 수식 정의 (Hedonic + Mixed-Effects)</h2>
 
-<h3>1.1 선형 Hedonic 회귀 (OLS)</h3>
+<h3>1.1 선형 Hedonic 회귀 (운영 채택 모델)</h3>
 
-<p>가격 (KRW) 의 자연로그를 종속변수로 두고, 작품/작가 특성의 선형 결합으로 모형화:</p>
+<p>가격 (KRW) 의 자연로그를 종속변수로 두고, 작품/작가 특성의 선형 결합 + log_area 의 spline 항으로 모형화:</p>
 
 <div class="formula-box">
-$$\log P_i = \beta_0 + \beta_1 \cdot \log A_i + \beta_2 \cdot (B_i - \bar{B}) + \beta_3 \cdot \log(1 + W_i) + \varepsilon_i$$
+$$\log P_i = \beta_0 + \beta_1 \cdot \log A_i + \beta_2 \cdot (B_i - \bar{B}) + \beta_3 \cdot \log(1 + W_i) + \beta_4 \cdot s_1(\log A_i) + \varepsilon_i$$
 <p class="small" style="margin-top: 8px;">
 $P_i$: 작품 $i$ 의 가격 (KRW) ·
 $A_i$: 작품 $i$ 의 면적 (cm²) ·
 $B_i$: 작품 $i$ 의 작가 출생년 ·
 $\bar{B}$: 출생년 평균 (centering 기준) ·
 $W_i$: 작가 총 작품수 ·
-$\varepsilon_i \sim \mathcal{N}(0, \sigma^2)$
+$s_1(\log A_i)$: log_area 의 3-knot restricted cubic spline basis (1개 항 추가) ·
+$\varepsilon_i$: 잔차 (분포 가정 X — Huber loss 사용)
 </p>
 </div>
 
-<h3>1.2 Mixed-Effects Random Intercept 확장</h3>
+<div class="info-box">
+  <strong>운영 채택 손실함수: Huber loss (eps=1.35)</strong>
+  $$\mathcal{L}_\delta(r) = \begin{cases} \frac{1}{2} r^2 & |r| \leq \delta \\ \delta(|r| - \frac{1}{2}\delta) & |r| > \delta \end{cases}$$
+  <p class="small">$r = \log P - \mathbf{x}^\top \boldsymbol{\beta}$, $\delta = 1.35$ (sklearn default).
+  큰 잔차의 영향을 quadratic → linear 로 down-weighting → 이상치/heavy-tail 영향 감소.
+  특히 양 끝단 (저가/고가) segment 정확도 개선에 효과적.</p>
+</div>
 
-<p>학습량 충분한 작가에 대해 작가별 고유 효과를 random intercept 로 추가:</p>
+<h3>1.2 Mixed-Effects Random Intercept 확장 (참고용)</h3>
+
+<p>warm-start 시나리오 검토용 확장 모델 — <strong>운영 채택 X</strong> (cold-start LAO 에서 무력화):</p>
 
 <div class="formula-box">
 $$\log P_{ij} = \beta_0 + \beta_1 \cdot \log A_{ij} + \beta_2 \cdot (B_j - \bar{B}) + \beta_3 \cdot \log(1 + W_j) + u_j + \varepsilon_{ij}$$
@@ -321,7 +330,7 @@ $$\widehat{\text{ICC}} = \frac{\hat{\tau}^2}{\hat{\tau}^2 + \hat{\sigma}^2}$$
   <strong>데이터 스코프 명시</strong>
   <ul>
     <li><strong>Stage 2</strong> (500 records / 50 artists): F4 winner 결정 (Forward selection / Elastic Net / VIF / coefficient freeze)</li>
-    <li><strong>Stage 3</strong> (실제 1,378 records / 100 artists; 파일명 <code>stage3_1000x100.parquet</code> 은 plan 기준 명명 — 실제 수치는 1,378): ME random intercept 적합 / Calibration table 산출 / warm-start 검증</li>
+    <li><strong>Stage 3</strong> (실제 1,378 records / 100 artists; 파일명 <code>stage3_1000x100.parquet</code> 은 plan 기준 명명 — 실제 수치는 1,378): 추가 개선 실험 (spline / Huber / ME / Calibration) 진행 — 결과적으로 <strong>spline + Huber 채택</strong>, ME / Calibration 은 참고/대안</li>
     <li>본 5장 OLS 학습 절차는 Stage 2 / Stage 3 공통 — 단 ME 적합 / Calibration / warm-start 평가는 Stage 3 전용</li>
   </ul>
 </div>
@@ -344,20 +353,23 @@ log_price = log(price_krw.clip(lower=1))</code></pre>
 </div>
 
 <div class="step-box">
-  <span class="step-num">3</span> <strong>Design matrix 구축</strong>
-  $$\mathbf{X} = [\mathbf{1} \;|\; \log A \;|\; (B - \bar{B}) \;|\; \log(1+W)]$$
-  <p>$\mathbf{X} \in \mathbb{R}^{n \times 4}$</p>
+  <span class="step-num">3</span> <strong>Design matrix 구축</strong> (운영 채택 모델: F4 + log_area spline)
+  $$\mathbf{X} = [\mathbf{1} \;|\; \log A \;|\; (B - \bar{B}) \;|\; \log(1+W) \;|\; s_1(\log A)]$$
+  <p>$\mathbf{X} \in \mathbb{R}^{n \times 5}$ (5 columns: const + 3 features + 1 spline basis)</p>
 </div>
 
 <div class="step-box">
-  <span class="step-num">4</span> <strong>OLS 적합</strong>
-  <pre><code>β̂ = numpy.linalg.lstsq(X, y)
-ε̂ = y - X @ β̂</code></pre>
+  <span class="step-num">4</span> <strong>Huber regression 적합 (운영 채택)</strong>
+  <pre><code>from sklearn.linear_model import HuberRegressor
+m = HuberRegressor(epsilon=1.35, max_iter=500)
+m.fit(X[:, 1:], y)  # const 제외
+β̂ = [m.intercept_, *m.coef_]</code></pre>
+  <p class="small">OLS 도 비교 가능하지만 운영은 Huber 채택 (취약 segment 방어력 입증).</p>
 </div>
 
 <div class="step-box">
-  <span class="step-num">5</span> <strong>(선택) Mixed-effects 적합</strong>
-  <p>4장의 반복 알고리즘 적용 → $\hat{\boldsymbol{\beta}}, \{\hat{u}_j\}$ 산출.</p>
+  <span class="step-num">5</span> <strong>참고: ME random intercept 검토 (운영 채택 X)</strong>
+  <p>warm-start 환경 검토용으로 4장의 반복 알고리즘 시도 — 단 cold-start LAO 에서 무력화 → <strong>운영 비채택</strong>.</p>
 </div>
 
 <div class="step-box">
@@ -543,13 +555,15 @@ $$\text{Route}(j) = \begin{cases}
         return v3_predict(artwork)
 
     else:
-        # Cold path: Track 2 (3변수 OLS)
+        # Cold path: Track 2 (F4 + log_area spline, Huber 학습)
         log_area = log(max(artwork.area_cm2, 1))
         birth_centered = artwork.birth_year - BIRTH_MEAN
         log_works = log(1 + artwork.artist_total_works)
+        spline_term = restricted_cubic_spline(log_area, KNOTS_LOG_AREA)
 
-        x = [1, log_area, birth_centered, log_works]
-        log_price = sum(beta_track2[k] * x[k] for k in range(4))
+        x = [1, log_area, birth_centered, log_works, spline_term]
+        log_price = sum(beta_track2[k] * x[k] for k in range(5))
+        # beta_track2 는 HuberRegressor (eps=1.35) 로 학습된 계수
 
         # 후처리 calibration
         bin_idx = find_bin(exp(log_price))
@@ -619,7 +633,7 @@ ci_95 = (percentile(boot_medians, 2.5), percentile(boot_medians, 97.5))</code></
 </table>
 
 <div style="margin-top: 30px; padding-top: 14px; border-top: 2px solid #d1d5db; color: #6b7280; font-size: 0.88em;">
-  <strong>요약</strong>: Track 2 = 선형 hedonic 회귀 (3 features) + (선택) Mixed-effects random intercept. OLS 매트릭스 추정 + LAO holdout 평가 + Calibration 후처리 + 이원 전략 운영. 모든 수식 / 추정 / 예측 / 검증 절차가 본 문서에 상세 정리됨.
+  <strong>요약</strong>: Track 2 운영 채택 모델 = 선형 hedonic 회귀 (3 features + log_area spline) + Huber regression. ME random intercept / Calibration 은 참고/대안 검증. LAO holdout 평가 (Bootstrap CI) + 취약 segment 방어력 입증 + 이원 전략 운영. 모든 수식 / 추정 / 예측 / 검증 절차가 본 문서에 상세 정리됨.
 </div>
 
 </body>

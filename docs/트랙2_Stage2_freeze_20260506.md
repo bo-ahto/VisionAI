@@ -12,6 +12,12 @@
 log_price ~ log_area + birth_year_centered + log_artist_total_works
 ```
 
+> **후속 개선 적용 (Stage 3 검증 후 결정)**:
+> - log_area 의 3-knot restricted cubic spline 1개 항 추가 (-1.24%p)
+> - 손실함수 OLS → Huber loss (eps=1.35) 변경 (-1.15%p)
+> - **최종 운영 채택**: F4 + log_area spline + Huber regression (Stage 3 100-seed MdAPE 24.07%)
+> - 본 freeze 결정 (F4 baseline) 은 변경 없음 — feature set 자체는 그대로, 보강 적용만 추가
+
 | 지표 | F4 | 기존 baseline (Core 5) | 차이 |
 |---|---|---|---|
 | MdAPE (30-seed LAO) | **24.59 ± 5.96%** | 28.75 ± 6.39% | **-4.16%p** |
@@ -116,7 +122,7 @@ log_price ~ log_area + birth_year_centered + log_artist_total_works
 - **가격대 편향**: 저가 over / 고가 under (log-price OLS 일반 한계)
 - **표본 제약**: Stage 2 = 500 records / 50 artists (Stage 3 에서 1378/100 으로 확장 검증 필요)
 
-→ Stage 3 ME random intercept + calibration 으로 보정 후 운영 적합성 최종 판단.
+→ Stage 3 단계에서 추가 검증 진행 후 최종 운영 모델 결정 (실제 결과: ME 는 cold-start 무력화 → 비채택, **F4 + log_area spline + Huber 채택**).
 
 ## 8. 산출물
 
@@ -135,12 +141,17 @@ log_price ~ log_area + birth_year_centered + log_artist_total_works
 |---|---|
 | Stage 2 1차 자문 | Core 5 winner 판단 타당 (28.5%) |
 | Forward 후 자문 | F4 채택 OK, 후처리 보정으로 가격대 편향 처리 |
-| 검증 4 후 자문 | **옵션 A 채택**: F4 freeze + Stage 3 ME 진입 |
+| 검증 4 후 자문 | F4 freeze + Stage 3 ME 진입 |
+| Stage 3 ME 자문 | ME 는 cold-start 무력화 → 비채택 |
+| P1+P2 추가 실험 자문 | log_area spline + Huber 채택 권고 |
+| B 단계 검증 자문 | **F4 + spline + Huber 운영 채택 — 취약 segment 방어력 입증** |
 
-## 10. 다음 액션
+## 10. 다음 액션 (모두 완료)
 
 - [x] Stage 2 freeze 결정 (5/6)
-- [ ] Stage 3 ME random intercept 스크립트 작성
-- [ ] Stage 3 ME fit + within-artist 식별 (Week 3)
-- [ ] 가격대 calibration ablation (Week 3)
-- [ ] 트랙 2 final report (Week 4, 10-15p)
+- [x] Stage 3 ME random intercept 검증 (cold-start 무력화 확인 → 비채택)
+- [x] Calibration / 이원 전략 검증
+- [x] log_area spline + Huber 추가 개선 실험
+- [x] B 단계 검증 (Bootstrap CI / per-segment / coefficient stability)
+- [x] 트랙 2 final report 업데이트 (Huber 채택 반영)
+- [x] 임원 / 수식 / 쉬운설명 / freeze 보고서 4종 일괄 업데이트

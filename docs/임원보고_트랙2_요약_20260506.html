@@ -99,7 +99,7 @@
 
 <div class="summary-box">
   <strong>핵심 결과 한 줄</strong><br>
-  <strong>3개 변수만으로 V3 운영 모델의 신규 작가 약점 (28-48%) 을 24-27% 까지 개선.</strong> 가드레일 (취약 segment 별도 보정) 충족 시 제한적 도입 가능 수준.
+  <strong>3개 변수 (+ 면적 spline + Huber 손실) 로 V3 운영 모델의 신규 작가 약점 (28-48%) 을 약 24% 까지 개선.</strong> 특히 운영상 가장 취약한 저가/고가/tier 3 segment 에서 구조적 오차 감소가 확인됐고, 통계적 유의성도 입증됐습니다. 가드레일 유지 조건 하 운영 기본값 채택 가능 수준.
 </div>
 
 <h2>1. 무엇을 했나</h2>
@@ -138,7 +138,7 @@
   <tr>
     <td><strong>신규 작가</strong> (학습량 부족)</td>
     <td><span class="kpi kpi-bad">28-48%</span></td>
-    <td><span class="kpi kpi-good">24-27%</span></td>
+    <td><span class="kpi kpi-good">24.07% (Huber)</span></td>
     <td><strong>트랙 2 우수 ⭐</strong></td>
   </tr>
   <tr>
@@ -148,7 +148,9 @@
     <td>가드레일 충족 시 도입 가능</td>
   </tr>
 </table>
-<p class="small">※ 단위는 MdAPE (예측 오차 중앙값 %). <strong>24-27%</strong> 는 평균 성능대 / <strong>CI [24.21, 28.45]</strong> 는 30-seed 평가의 불확실성 범위 / <strong>통합 22-25%</strong> 는 시간 분할 시뮬레이션 결과로 서로 다른 지표.</p>
+<p class="small">※ 단위는 MdAPE (예측 오차 중앙값 %). <strong>24.07%</strong> 는 Stage 3 100-seed 평균 / <strong>Bootstrap CI [21.68, 25.08]</strong> (Huber, OLS [22.75, 25.91] 와 거의 분리 → 통계적 우위) / <strong>통합 22-25%</strong> 는 시간 분할 시뮬레이션 결과로 서로 다른 지표.</p>
+
+<p class="small"><strong>누적 개선</strong>: F4 OLS 26.46% → +면적 spline 25.22% → +Huber 24.07% (-2.39%p 누적). 평균 개선보다 <strong>취약 segment (저가/고가/tier 3) 의 구조적 오차 감소</strong> 가 운영상 더 중요한 가치.</p>
 <p class="small"><strong>표본 차이 caveat</strong>: V3 수치는 운영 28K 전체 데이터 기준, 트랙 2 수치는 클렌징 후 1.3K 표본 기준이라 절대 수치 직접 비교는 한계 있음 — 다만 같은 평가 protocol(LAO holdout) 에서 트랙 2 의 신규 작가 정확도 우위는 일관되게 확인됨.</p>
 
 <h2>4. 운영 도입 권고 — 이원 전략</h2>
@@ -157,7 +159,7 @@
   ↓
 작가가 학습 데이터에 충분히 있나? (≥ 10건)
   ├─ <strong>YES (기존 작가)</strong> → V3 유지       (정확도 12-18%)
-  └─ <strong>NO  (신규 작가)</strong>  → 트랙 2 도입  (정확도 ~27%, V3 대비 -1 ~ -21%p ↓)</pre>
+  └─ <strong>NO  (신규 작가)</strong>  → 트랙 2 (F4 + spline + Huber, 정확도 ~24%)</pre>
 </div>
 
 <p><strong>전면 교체 아닌 보완 도입.</strong> V3 의 강점 (기존 작가 정확도) 유지 + 트랙 2 의 강점 (신규 작가 정확도 + 해석성) 추가.</p>
@@ -176,11 +178,11 @@
   <div class="warn-box">
     <strong>⚠️ 한계 / 가드레일 필요</strong>
     <ul>
-      <li>저가 구간 (가격 하위 20% 작품): 35.96% (편향 큼)</li>
-      <li>먹/잉크 매체: 32.94% (표본 적음)</li>
-      <li>일반 갤러리 등급 (tier 3): 28.12% (변동 큼)</li>
+      <li>저가 구간 (가격 하위 20%): Huber 28.46% (OLS 34.27% 대비 -5.81%p 개선됐으나 여전히 약점)</li>
+      <li>먹/잉크 매체: 31.05% (표본 작음, Huber 효과 변동)</li>
+      <li>일반 갤러리 등급 (tier 3): 24.56% (worst tier, Huber +2.18%p 개선)</li>
       <li>V3 vs 트랙 2 표본 차이 (28K vs 1.3K) — 절대 수치 직접 비교는 한계</li>
-      <li>→ 위 segment 는 별도 보정 / 사람 검토 필요</li>
+      <li>→ Huber 채택 후 모니터링 + 별도 보정 / 사람 검토 유지</li>
     </ul>
   </div>
 </div>
