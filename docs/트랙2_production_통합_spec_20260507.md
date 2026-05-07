@@ -246,19 +246,29 @@ def compute_psi(reference_dist, current_dist):
   "request_id": "uuid",
   "timestamp": "ISO8601",
   "prediction": {
-    "value": "int (KRW)",
+    "value": "int (KRW, = Huber 점예측, 운영 default 유지)",
     "log_value": "float",
-    "band_low": "int (optional, ±20%)",
-    "band_high": "int (optional)"
+    "band_low": "int (= q25, M1 Linear Quantile shadow)",
+    "band_high": "int (= q75, M1 shadow)",
+    "q25": "int (M1, shadow)",
+    "q50": "int (M1, shadow — value 와 다를 수 있음 ≈ +0.27%p MdAPE 차이)",
+    "q75": "int (M1, shadow)"
   },
   "model_used": "string (v3 / track2)",
   "model_version": "string",
   "route_reason": "string",
   "guardrail_flags": ["string"],
   "calibration_applied": "bool",
-  "fallback_active": "bool"
+  "fallback_active": "bool",
+  "quantile_band_source": "string (shadow_m1_quantile / fallback_pm20)"
 }
 ```
+
+> **Hybrid 운영** (코덱스 권고, `docs/stage3_quantile_cycle_20260507.md`):
+> - `value` = Huber 점예측 (운영 default, MdAPE 24.07% 유지)
+> - `band_low / band_high / q25 / q50 / q75` = M1 Linear Quantile (shadow 승인)
+> - Default 전환 (q50 → value) 은 Phase 2 acceptance gate 통과 후
+> - Shadow 단계는 internal flag 로 관찰만, external 노출은 단계적
 
 ### 5.3 응답 예시
 

@@ -25,6 +25,8 @@
 | **운영 / 인프라** | `docs/트랙2_production_통합_spec_20260507.md` | 18 섹션 (§17 = warm-only path 후보, §18 = 참조 문서) |
 | **데이터 엔지니어** | `docs/데이터클렌징_단계계획_20260506.md` + `docs/stage4_데이터수집계획_20260507.md` | Stage 1-3 plan / Stage 4 warm 확장 |
 | **방법론 / 의사결정** | `docs/트랙2_methodology_pipeline_20260507.md` | Phase 1 (curated) / Phase 2 (full) 골격 + 사전등록 |
+| **외부 자문 검증** | `docs/stage3_exploratory_addendum_20260507.md` | Ridge 헤도닉 등 선형/통계 피처 검증 결과 (운영 유지) |
+| **가격 범위 (Quantile)** | `docs/stage3_quantile_cycle_20260507.md` | Linear Quantile q25/q50/q75 shadow 승인 |
 | **결정 메모** | `docs/트랙2_Stage2_freeze_20260506.md` | GATE 2 freeze |
 
 ### 1.2 권장 읽기 순서

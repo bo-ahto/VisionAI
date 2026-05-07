@@ -1,0 +1,139 @@
+{
+  "n_seeds": 100,
+  "quantiles": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "M1_quantile": {
+    "model": "quantile",
+    "n_seeds_kept": 100,
+    "pinball_q25_mean": 0.1454417779011446,
+    "pinball_q50_mean": 0.17107659093180932,
+    "pinball_q75_mean": 0.1344585599460792,
+    "pinball_total": 0.4509769287790331,
+    "coverage_q25": 0.26820373615164017,
+    "coverage_q50": 0.5160997741028456,
+    "coverage_q75": 0.7500153876080446,
+    "central_coverage_q25_q75": 0.48181165145640426,
+    "width_avg_log_price": 0.48638258612628954,
+    "crossing_rate_raw": 0.00010707580760018126,
+    "q50_mdape_mean": 24.53844862826271,
+    "q50_mdape_std": 4.178693542680723
+  },
+  "M2_huber_residual": {
+    "model": "huber_residual",
+    "n_seeds_kept": 100,
+    "pinball_q25_mean": 0.14571900484376005,
+    "pinball_q50_mean": 0.1696700637317276,
+    "pinball_q75_mean": 0.13651546431471184,
+    "pinball_total": 0.4519045328901995,
+    "coverage_q25": 0.2692683198006131,
+    "coverage_q50": 0.5172027019000989,
+    "coverage_q75": 0.7498000278094566,
+    "central_coverage_q25_q75": 0.48053170800884354,
+    "width_avg_log_price": 0.4589684075544303,
+    "crossing_rate_raw": 0.0,
+    "q50_mdape_mean": 24.27307707949127,
+    "q50_mdape_std": 4.302536420990046
+  },
+  "M1_slices": [
+    {
+      "slice_type": "price_tertile",
+      "label": "저가 (P33↓)",
+      "n": 94,
+      "coverage_q25": 0.24468085106382978,
+      "coverage_q50": 0.6808510638297872,
+      "coverage_q75": 0.9787234042553191,
+      "central_coverage": 0.7340425531914894,
+      "width_avg": 0.5364137102214094
+    },
+    {
+      "slice_type": "price_tertile",
+      "label": "중가 (P33-67)",
+      "n": 87,
+      "coverage_q25": 0.2413793103448276,
+      "coverage_q50": 0.4482758620689655,
+      "coverage_q75": 0.7816091954022989,
+      "central_coverage": 0.5402298850574713,
+      "width_avg": 0.4513399543743262
+    },
+    {
+      "slice_type": "price_tertile",
+      "label": "고가 (P67↑)",
+      "n": 89,
+      "coverage_q25": 0.19101123595505617,
+      "coverage_q50": 0.42696629213483145,
+      "coverage_q75": 0.8764044943820225,
+      "central_coverage": 0.6853932584269663,
+      "width_avg": 0.5854629095374841
+    },
+    {
+      "slice_type": "guardrail",
+      "label": "medium=ink",
+      "n": 22,
+      "coverage_q25": 0.36363636363636365,
+      "coverage_q50": 0.5909090909090909,
+      "coverage_q75": 0.8636363636363636,
+      "central_coverage": 0.5,
+      "width_avg": 0.4599542931861645
+    },
+    {
+      "slice_type": "guardrail",
+      "label": "tier=3",
+      "n": 151,
+      "coverage_q25": 0.2251655629139073,
+      "coverage_q50": 0.543046357615894,
+      "coverage_q75": 0.8940397350993378,
+      "central_coverage": 0.6688741721854304,
+      "width_avg": 0.5518532375152434
+    },
+    {
+      "slice_type": "guardrail",
+      "label": "extreme_area (<P5 or >P95)",
+      "n": 26,
+      "coverage_q25": 0.4230769230769231,
+      "coverage_q50": 0.6538461538461539,
+      "coverage_q75": 0.8846153846153846,
+      "central_coverage": 0.46153846153846156,
+      "width_avg": 0.744415773259358
+    }
+  ],
+  "checks": [
+    {
+      "name": "Pinball M1 < M2",
+      "pass": true
+    },
+    {
+      "name": "q25 cov ∈ [20%, 30%]",
+      "pass": true
+    },
+    {
+      "name": "q50 cov ∈ [45%, 55%]",
+      "pass": true
+    },
+    {
+      "name": "q75 cov ∈ [70%, 80%]",
+      "pass": true
+    },
+    {
+      "name": "central cov ∈ [45%, 55%]",
+      "pass": true
+    },
+    {
+      "name": "q50 MdAPE 운영 +1%p 이내",
+      "pass": true
+    },
+    {
+      "name": "crossing rate ≤ 5%",
+      "pass": true
+    },
+    {
+      "name": "Width M1 ≤ M2",
+      "pass": false
+    }
+  ],
+  "verdict": "보류 (1-2 항목 재시도 필요)",
+  "n_pass": 7,
+  "n_total_checks": 8
+}
