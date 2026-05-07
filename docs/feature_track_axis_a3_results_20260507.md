@@ -17,7 +17,7 @@
 >
 > **Seed-level violation 13/100 = 13%** — A.1 (41/100) / A.2 (45/100) 대비 압도적으로 낮음 → 분포상 robust (mean ≈ -2.65%p, 87% seeds negative).
 >
-> **Working hypothesis 부분 입증 (provisional)**: A.1 (cross-artist artwork-level: 분류/갤러리) 약한 신호 / A.2 (artist-binding popularity) near-null / **A.3 (pure artwork-level geometry) 강한 신호** → "Cold-start LAO 에서 유효한 신호 = artwork-level cross-artist applicable" 가설 **부분 일치** (A.4-A.5 재시험으로 확정 필요, 코덱스 framing).
+> **Working hypothesis 부분 일치 (provisionally consistent — escalation rationale 강화) (provisional)**: A.1 (cross-artist artwork-level: 분류/갤러리) 약한 신호 / A.2 (artist-binding popularity) near-null / **A.3 (pure artwork-level geometry) 강한 신호** → "Cold-start LAO 에서 유효한 신호 = artwork-level cross-artist applicable" 가설 **부분 일치** (A.4-A.5 재시험으로 확정 필요, 코덱스 framing).
 >
 > **운영 영향 X (본 cycle)**: A.3 features 운영 spec 추가 X / 운영 모델 (F4 + spline + Huber) + 분기 B (calibration only) 그대로 유지. 단 A.3 의 effect size + low harm decisive 통과 = 추가 검증 가치 있음 (A.4 escalation 후 재평가).
 
@@ -61,7 +61,7 @@
 
 > **Decision rule 적용 정직 보고**: 99% CI +0.41%p miss = α=0.01 (Bonferroni 5 step program-level FWER ≤ 0.05) 통제하 결정 미달. 95% CI 만 사용 시 PASS 가능했음 — 그러나 A.1 prereg P0 fix 로 99% CI 가 decision rule 로 frozen → 사전등록 정합성 유지 의무 (HARK 회피).
 
-## 2. Axis A 전체 패턴 비교 (Working hypothesis 부분 입증, 코덱스 framing)
+## 2. Axis A 전체 패턴 비교 (Working hypothesis 부분 일치 (provisionally consistent — escalation rationale 강화), 코덱스 framing)
 
 | 지표 | A.1 (BORDERLINE) | A.2 (FAIL) | **A.3 (BORDERLINE, strongest)** |
 |---|---|---|---|
@@ -71,7 +71,7 @@
 | 95% CI 상한 | +1.94%p (참고용 미달) | +3.03%p (참고용 미달) | **-0.36%p (참고용 통과)** |
 | 99% CI 상한 (α=0.01 decision) | +3.58%p ✗ | +4.47%p ✗ | **+0.41%p ✗ (very close)** |
 | Seed-level low violation | 41/100 | 45/100 | **13/100 (Axis A min)** |
-| 판정 | BORDERLINE | FAIL | **BORDERLINE (near-PASS)** |
+| 판정 | BORDERLINE | FAIL | **BORDERLINE (largest effect size, decision-grade 미도달)** |
 
 > **Working hypothesis 부분 일치 (코덱스 framing — 입증 X)**: A.1 (cross-artist 작품 분류 / 갤러리) 약한 신호 → A.2 (artist-binding popularity) near-null → **A.3 (pure artwork-level geometry) 가장 강한 신호** = "Cold-start LAO 에서 유효한 신호 = artwork-level cross-artist applicable signal" 가설과 **일관 패턴**. 그러나 본 working hypothesis 의 confirmation 은 **A.4 (text) / A.5 (image) escalation** 에서도 검증 필요 (text embedding 도 artwork-level signal — 본 hypothesis 가 맞다면 promising 예상).
 
@@ -99,13 +99,13 @@
 - 분기 B (calibration only) 그대로 유지
 - A.3 features 운영 채택 X — 사전등록 PASS 기준 (99% CI) 미달
 
-### 4.2 추가 검증 가치 (의사결정자 영역)
+### 4.2 추가 검증 가치 (의사결정자 영역, 코덱스 P1 톤 좁힘)
 - A.3 의 effect size (-2.11%p overall / -2.65%p low) = **Axis A 최대값**
 - Seed-level violation 13/100 = robust 분포
 - 95% CI 통과 / 99% CI very close miss
-- → A.4 escalation 결과에 따라:
-  - **A.4 PASS**: A.4 운영 채택 후보 (단일 step PASS)
-  - **A.4 BORDERLINE / FAIL**: A.3 단독 spec 으로 운영 shadow 검토 가치 있음 (Phase 3 cold shadow + offline confirmation, 별도 의사결정 gate)
+- → 기본 결정: **A.4 GO / A.3 단독 shadow HOLD** (코덱스)
+  - **A.4 진입**: working hypothesis 의 더 직접적 confirmation step (artwork-level cross-artist text signal)
+  - **A.3 단독 shadow**: 운영 채택 검토 X — "추가 evidence 수집" 성격 한정 / **A.4 결과 확인 후 또는 별도 business-driven 탐색 트랙으로만** 검토 가능 / 본 cycle 의 inferential 근거 (single-seed bootstrap 99% CI) 가 닫히지 않은 상태에서는 운영 shadow 권고 X
 
 ## 5. Limitations / 정직 보고
 
@@ -114,6 +114,7 @@
 - **Effect attribution 미수행**: log_aspect_ratio / is_3d / log_depth_3d 중 어느 것이 가장 큰 driver 인지 미측정 (본 cycle 비목표 — 향후 ablation 가능)
 - **2D=71.7% / 3D=28.3% imbalance**: log_depth_3d 는 28.3% 만 informative — 실제 effect 의 majority 는 log_aspect_ratio (likely driver 추정, 본 cycle 입증 X)
 - **Working hypothesis vs 입증 X**: Axis A 패턴 (A.1 약한 / A.2 무 / A.3 강함) 이 "cross-artist signal hypothesis" 와 일관하나 A.4 (text) / A.5 (image) escalation 에서 재시험 필요 (코덱스 P1 권고 톤)
+- **Geometry effect 의 메커니즘 불명 (코덱스 P2 추가 caveat)**: geometry features 가 작품 자체의 형태 신호로 작동하는지, 또는 format / category / material proxy 로 작동하는지 본 cycle 미확인. log_aspect_ratio 가 작품 종류 (회화 vs 조각 vs 사진 등) 의 proxy 일 가능성 — A.1 의 category one-hot 과 partial overlap 가능. 메커니즘 자체는 별도 ablation 필요.
 
 ## 6. 다음 단계 (Step gate B안)
 
@@ -129,7 +130,7 @@
 |---|---|
 | 누적 (Stage 6B / Feature track design / A.1 prereg+결과 / A.2 prereg+결과) | P0×6 + P1×24 + P2×6 적용 |
 | **A.3 prereg freeze (2026-05-07)** | A.1/A.2 v2 lessons 사전 반영 |
-| **A.3 결과 보고 검수 (예정)** | Strongest signal BORDERLINE 정당성 + A.4 escalation 권고 |
+| **A.3 결과 보고 검수 (2026-05-07)** | **A.4 GO / A.3 shadow HOLD**. P0 없음. P1 ×3 ("near-PASS" 표현 / "부분 입증" 톤 / shadow 권고 좁힘) + P2 ×1 (geometry 메커니즘 proxy 가능성 caveat) — 본 v2 commit 일괄 반영 |
 
 ## 8. 참조
 
