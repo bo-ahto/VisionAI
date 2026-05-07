@@ -101,6 +101,29 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Track 1 Option A drift fix amendment] 7 drift + 2 dead 재분류 / fix set freeze (none, Phase 0 stop rule 정상)
+- **사용자 결정**: Option A 진행 (코덱스 권고대로)
+- **코덱스 사전 자문**: 별도 mini-prereg 불필요 / **amendment memo (1 page) 필요** / Phase 0 §1.5 stop rule 정상 적용
+- **Audit 1 결과 (코덱스 직접 확인)**: 학습 데이터 28,376 행 actual distribution
+  * `is_unique` =1: 28,340 / =0: 36
+  * `is_edition` =1: 34
+  * `has_depth` =1: **22,839** (학습 81%, 서빙 모두 0 — 매우 severe)
+  * `gallery_city_count` =1: 25,953 / =2: 1,633 / =3: 564
+  * `has_seoul` =1: **6,414** (학습 23%, 서빙 모두 0 — 매우 severe)
+  * `has_international` =1: **23,394** (학습 82%, 서빙 모두 0 — 매우 severe)
+  * `attribution_class` 'Unique': 28,340 / 'Limited edition': 34
+  * **`ho_price_level` / `medium_price_level`**: 학습 28,376/28,376 = 0.0 → **dead feature** (severe drift X)
+- **재분류 (코덱스 P0)**: 9 features → **7 severe drift + 2 dead** (Stage 1 v3 결과 보고서 update 적용)
+- **Amendment memo** (`docs/track1_amendment_drift_fix_20260507.md`): fix set freeze
+  * 제거 9 features (7 drift + 2 dead): is_unique / is_edition / has_depth / gallery_city_count / has_seoul / has_international / attribution_class / ho_price_level / medium_price_level
+  * 유지 23 features (no serving-side red flag found): 위 9개 외 v3_filtered_tuned 32f 의 잔존
+  * New variant: `v3_filtered_tuned_drift_fix_v1` (23 features)
+  * Models: CatBoost + XGBoost (운영 best_params 그대로)
+  * Calibration 재산출 의무 (`source_calibration.json` cell-level)
+- **평가 protocol (코덱스 권고)**: GroupKFold cold-start Overall + Artsy / Saatchi split + Warm KFold non-regression
+- **분류**: **none (정상 흐름)** — Phase 0 §1.5 stop rule 정상 적용 / baseline contract 변경 사전 명시
+- **운영 영향 X (현 시점)**: 본 amendment 단독 ≠ 운영 spec 변경 trigger / Stage 4 holdout + shadow / staged rollout gate 후만 production 반영
+
 ### 2026-05-07 — [Track 1 Phase 0 + Stage 1 feature integrity audit] 사전등록 method 도입 진입 (none + critical finding)
 - **사용자 명시**: 트랙 1 비선형 모델 사전등록 method 도입 + 피처 수 조정 재검수
 - **코덱스 사전 자문**: 조건부 GO + Phase 0 freeze 우선 (feature selection 자체보다 평가 protocol freeze 가 1순위) + 4 P0 (baseline ambiguity / evaluation redesign / cold-warm gate 분리 / feature integrity recheck)

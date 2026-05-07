@@ -8,32 +8,37 @@
 
 ## 0. 한 줄 요약
 
-> **Stage 1 integrity audit 핵심 finding**: 32 features 중 **9 features 학습-서빙 drift 위험 (28%)** — serving code inspection 기준 hardcoded constant / placeholder. 본 위험은 reported offline cold-start metric (39.4% raw CatBoost / 38.3% calibrated production-cold reference) 가 **actual serving behavior 를 충실히 대변하지 않을 위험** 시사 (코덱스 P1 — 단정 X, 위험 표현). **Stage 1B 진입 전 학습-서빙 정합성 fix 우선** 권고.
+> **Stage 1 integrity audit 핵심 finding (v3 — 코덱스 P0 재분류)**: 32 features 중 **7 features severe train/serve drift + 2 features dead (학습도 0)** = **9 features fix 후보 (28%)**. 본 위험은 reported offline cold-start metric (39.4% raw CatBoost / 38.3% calibrated production-cold reference) 가 **actual serving behavior 를 충실히 대변하지 않을 위험** 시사. **Audit 1 (training distribution) 코덱스 직접 확인 완료** — `ho_price_level` / `medium_price_level` = 학습 28,376 행 모두 0.0 → dead feature 로 재분류 (severe drift 가 아님).
 >
 > **이미 fix 이력 (코덱스 4차 / 14차 P1)**: work_age / career_age / vintage_premium / freshness_discount / gallery_name 등 5+ features 이미 drift 위험으로 제거됨 — 본 audit 의 잔존 위험 = 후속 fix 영역.
 
 ## 1. 위험 신호 분류 (코덱스 P0 #4)
 
-### 1.1 카테고리 A: 서빙 시 hardcoded constant (severe drift, 잔존)
+### 1.1 카테고리 A: 서빙 시 hardcoded constant (severe train/serve drift, 7 features)
 
 > **출처**: `src/visionai/price_engine/api/primary_feature_builder.py:228-272` (`build_features` 함수)
+> **Audit 1 학습 분포 직접 확인 (코덱스, 2026-05-07)**: 학습 데이터 28,376 행 actual distribution 명시.
 
-| Feature | 학습 데이터 (추정) | 서빙 hardcode | Drift 평가 |
+| Feature | 학습 actual 분포 (28,376) | 서빙 hardcode | Drift 평가 |
 |---|---|---|---|
-| `is_unique` | actual binary (작품별 unique vs edition) | `1` (always) | **severe** — 서빙 시 모든 작품 = unique 처리, 학습 vs 서빙 distribution mismatch |
-| `is_edition` | actual binary (edition 작품 0/1) | `0` (always) | **severe** — `is_unique` 와 함께 작품 attribution 신호 학습-서빙 단절 |
-| `has_depth` | actual binary (3D 작품 0/1) | `0` (always) | **severe** — 3D 작품 (조각 등) 학습 시 informative, 서빙 시 모든 작품 = 0 |
-| `gallery_city_count` | actual count (1-N) | `1` (always) | **severe** — multi-city 갤러리 학습 정보 서빙 X |
-| `has_seoul` | actual binary | `0` (always) | **severe** |
-| `has_international` | actual binary | `0` (always) | **severe** |
-| `attribution_class` | actual category (Unique / Limited Edition / etc) | `"Unique"` (always) | **severe** — `is_unique` / `is_edition` 와 동일 drift category |
+| `is_unique` | =1: **28,340** / =0: 36 | `1` (always) | **severe** (서빙 거의 모든 case OK but =0 36건 mismatch) |
+| `is_edition` | =1: **34** / =0: 28,342 | `0` (always) | **severe** (서빙 거의 모든 case OK but =1 34건 mismatch) |
+| `has_depth` | =1: **22,839** / =0: 5,537 | `0` (always) | **매우 severe** — 학습 81% 가 has_depth=1, 서빙 모두 0 = 큰 distribution mismatch |
+| `gallery_city_count` | =1: 25,953 / =2: 1,633 / =3: **564** | `1` (always) | **severe** — multi-city 학습 정보 서빙 X |
+| `has_seoul` | =1: **6,414** / =0: 21,962 | `0` (always) | **매우 severe** — 학습 23% Seoul, 서빙 모두 non-Seoul |
+| `has_international` | =1: **23,394** / =0: 4,982 | `0` (always) | **매우 severe** — 학습 82% international, 서빙 모두 non-international |
+| `attribution_class` | 'Unique': **28,340** / 'Limited edition': 34 | `"Unique"` (always) | **severe** (= is_unique/is_edition 와 redundant category drift) |
 
-### 1.2 카테고리 B: 학습 시 group statistic, 서빙 시 placeholder (severe drift, 잔존)
+> **드러난 패턴 (코덱스 audit 1)**: 카테고리 A 7 features 중 **`has_depth` / `has_seoul` / `has_international` 가 가장 severe** — 학습 distribution 의 majority가 서빙 시 hardcoded 0 으로 단절. is_unique / is_edition / attribution_class = redundant 작품 attribution 신호 (3개가 함께 fix 대상).
 
-| Feature | 학습 (추정) | 서빙 hardcode | Drift 평가 |
+### 1.2 카테고리 B: dead feature (학습도 전부 0 — 코덱스 P0 재분류)
+
+> **코덱스 audit 1 직접 확인 (2026-05-07)**: 학습 데이터 28,376 행 모두 `0.0` — severe drift X / **dead feature** (학습-서빙 둘 다 0).
+
+| Feature | 학습 (28,376 행 actual) | 서빙 | 재분류 |
 |---|---|---|---|
-| `ho_price_level` | (직접 대조 X — 학습 시 group statistic 추정) | `0.0` (placeholder) | **severe serving-side placeholder, likely train/serve drift** (코덱스 P1 보수 표현) |
-| `medium_price_level` | (직접 대조 X — 학습 시 group statistic 추정) | `0.0` (placeholder) | **severe serving-side placeholder, likely train/serve drift** |
+| `ho_price_level` | 모두 `0.0` (28,376/28,376) | `0.0` (placeholder) | **dead feature** (학습도 dead) |
+| `medium_price_level` | 모두 `0.0` (28,376/28,376) | `0.0` (placeholder) | **dead feature** |
 
 ### 1.3 카테고리 C: 이미 제거된 drift features (코덱스 fix 이력)
 
