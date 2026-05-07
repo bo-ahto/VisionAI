@@ -18,10 +18,10 @@
 
 | 항목 | 값 |
 |---|---|
-| Model hash | `track2_v1_20260507` (F4 + log_area spline + Huber eps=1.35 alpha=1e-4) |
+| Model hash (Phase A 운영) | `track2_v1_20260507` (F4 + log_area spline + Huber eps=1.35 alpha=1e-4) |
 | Feature pipeline version | `f4_spline_v1_20260506` |
-| Train data hash | `data/curated/stage3_1000x100.parquet` SHA = ___________________ |
-| Stage 4 baseline 일치성 | ☐ 확인 (`docs/stage4_확장검증계획_20260507.md` §6.0 동일 hash) — **mismatch 시 서명 금지, 배치 보류** |
+| Train data hash (현 운영) | `data/curated/stage3_1000x100.parquet` SHA = ___________________ |
+| Stage 4 baseline 일치성 | ☐ 확인 — Stage 4 의 model hash + pipeline version 은 위와 **동일**, train data 는 Stage 4 신규 (`data/curated/stage4_*.parquet`, 별도 freeze). **model/pipeline mismatch 시 서명 금지, 배치 보류** |
 
 ## 사전 점검 결과
 

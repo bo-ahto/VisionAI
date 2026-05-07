@@ -119,7 +119,8 @@ log_price = β₀ + β₁·log_area + β₂·birth_year_centered + β₃·log_ar
 
 > **현 운영 결정**: warm 작가는 V3 유지 (변경 X).  
 > **연구 상태**: FE only (F4 + spline + Huber + Artist FE) Stage 3 P3 검증 완료, cluster bootstrap CI 0 포함 (n=44 / 13 artist 한계).  
-> **다음 단계**: Stage 4 표본 확장 → cluster bootstrap CI 상한 ≤ 0 합격 시 spec §17 의 W-S Shadow 진입.  
+> **다음 단계**: Stage 4 확장 검증 (v3 정정 — 신규 수집 X / 기존 Artsy 자산 활용 / 40 clusters 가용) → cluster bootstrap CI 상한 ≤ 0 합격 시 spec §17 의 W-S Shadow 진입.  
+> ⚠️ **Honest caveat (v3)**: Stage 4 가용 40 clusters 의 실측 power 44.9% (목표 0.8 미달) — 합격 기준 통과 어려울 수 있음. 이전 plan 의 "추가 수집" 가정은 inventory 검증으로 폐기 (`docs/methodology_deviation_log.md`).  
 > **참조**: spec §17 / 최종보고서 §12 부록 / `docs/stage4_확장검증계획_20260507.md`.
 
 ---

@@ -703,10 +703,12 @@ def route_v2(artwork) → (model, reason):
 - 저가 segment 단일 cutoff 분석 (Combined 에서 +3.36%p 악화 — FE only 는 미검증)
 - 2024 cutoff 신규 warm 작가 36명 추가 → composition shift 영향 큼
 
-### 17.5 Stage 4 데이터 수집 의존
-- `docs/stage4_확장검증계획_20260507.md` 참조
-- 핵심 목표: **warm artist cluster 21 → 40+** (≤2023 split 기준 / row 수 아님), 평가 가능 warm artists **13 → 25+**, warm test rows **44 → 120+**
-- 부수 목표: depth bin (10-14 / 15-24 / 25+) 균형
+### 17.5 Stage 4 확장 검증 의존 (v3 정정 — 2026-05-07)
+- `docs/stage4_확장검증계획_20260507.md` v3 참조
+- **신규 데이터 수집 X** — 기존 Artsy raw 30,046 → cleansing 8,891 / 823 작가 활용 (Saatchi 는 year_made 100% 결측으로 제외)
+- 가용 모집단 (목표 = 가용 100%): warm artists **120**, **test 평가 가능 warm artists 40**, warm test rows 450 (eligible 431)
+- 부수 목표: depth bin (10-14 / 15-24 / 25+) 균형 (실측 14/14/12 artists)
+- ⚠️ **Power caveat**: 40 clusters @ 44.9% power (목표 0.8 미달) — Stage 4 합격 기준 (CI 상한 ≤ 0) 통과 어려울 수 있음. 본 cycle 의 정직한 기대 = effect 방향성 + segment harm 검증 (통계적 유의성 보장 X)
 - 재검증 합격 시 본 §17 의 W-S 단계부터 시작
 
 ---

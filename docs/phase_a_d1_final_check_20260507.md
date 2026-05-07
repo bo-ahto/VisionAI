@@ -9,10 +9,11 @@
 
 ## 1. 모델 / Pipeline Artifact (변경 X 보장)
 
-- ☐ 운영 모델 hash 일치: `track2_v1_20260507`
-- ☐ Feature pipeline version 일치: `f4_spline_v1_20260506`
-- ☐ Train data hash 기록: `data/curated/stage3_1000x100.parquet` SHA = `__________________`
-- ☐ Stage 4 baseline 해시와 동일 (`docs/stage4_확장검증계획_20260507.md` §6.0)
+**Canonical artifact triple** (Phase A shadow = 현 운영 모델 기준):
+- ☐ Model hash: `track2_v1_20260507`
+- ☐ Feature pipeline version: `f4_spline_v1_20260506`
+- ☐ Train data hash: `data/curated/stage3_1000x100.parquet` SHA = `__________________` (현 운영 학습 데이터)
+- ☐ Stage 4 baseline 모델 / pipeline 동일 hash 사용 (`docs/stage4_확장검증계획_20260507.md` §6.0) — Stage 4 의 train data hash 는 별개 (`data/curated/stage4_*.parquet`, Week 1 종료 시 freeze)
 
 > ⚠️ **Hash mismatch 발견 시**: 본 §6 서명 금지 + 배치 보류 + Stage 4 baseline 정의 재확인 (runbook §4.1). hash 일치 회복 후 본 D-1 재실행.
 

@@ -38,7 +38,7 @@
                        ▼
 ┌─────────────────────────────────────────────────────────┐
 │ Phase 2 — Artsy-only Full Confirmatory Replication      │
-│   data/artsy_kr_artworks.csv → cleansed 8,891 / 824 작가 │
+│   data/artsy_kr_artworks.csv → cleansed 8,891 / 823 작가 │
 │   (Saatchi 제외 — year_made 100% 결측)                  │
 │                                                         │
 │   Confirmatory Run 1 — pre-registered replication       │
@@ -86,7 +86,7 @@
 ### 3.1 데이터 (`data/`)
 | 소스 | 원자료 | 정제 후 (실측) | Phase 2 활용 |
 |---|---|---|---|
-| Artsy | `data/artsy_kr_artworks.csv` (30,046) | **8,891 / 824 작가** (cleansing 통과) | ✓ 단독 모집단 |
+| Artsy | `data/artsy_kr_artworks.csv` (30,046) | **8,891 / 823 작가** (cleansing 통과) | ✓ 단독 모집단 |
 | Saatchi | `data/saatchi_cleaned.parquet` (21,721) | year_made 0% / birth_year 9% | ✗ 제외 |
 | 통합 | — | (해당 없음) | — |
 
@@ -162,16 +162,24 @@
 - **Secondary family** (descriptive 보고): secondary 5개에만 Holm 적용 — primary 와 독립
 - 이 구조는 운영 결정 단순성 + descriptive 분석 풍부성 모두 확보
 
-## 6. Sample Size Justification
+## 6. Sample Size Justification (v3 — 실측 기반)
 
-### 6.1 사전 power 계산 (Stage 4 시작 전)
-- Detectable minimum effect: **MdAPE 차이 -2.5%p** (현재 점추정 -3.4%p 의 73%)
-- Required artist cluster: 25+ (Stage 3 의 13 → 거의 2배)
-- Required test rows: 120+ (Stage 3 의 44 → 2.7배)
-- α = 0.05, power = 0.80 가정
+### 6.1 Stage 4 가용 풀 (실측, `stage4_funnel.json` + `stage4_power_simulation_v2.json`)
+- 모집단 = Artsy cleansed 100% 활용 (외부 source 없음)
+- Test-eligible warm artist clusters: **40** (Stage 3 의 13 → 3.1×)
+- Warm test rows: 450 total / 431 eligible (n≥3 작가)
+- α = 0.05 (1-sided)
+- **실측 power @ 40 clusters = 44.9%** (목표 0.80 미달)
+- 0.8 power 도달 필요 clusters: 100 (외부 source 없이 도달 불가)
 
-### 6.2 Phase 2 진입 전 추가 power 계산
-- full data 의 warm artist 풀 + bootstrap 표본 한계 평가
+### 6.2 해석 초점 (코덱스 권고)
+- Power 자체보다 **effect stability 우선** — heterogeneity / outlier / 2025 sparsity / bin imbalance 가 진짜 위험
+- Stage 4 합격 기준 (CI 상한 ≤ 0) 통과는 매우 어려울 수 있음
+- 본 cycle 의 정직한 기대: **effect 방향성 + segment harm 검증** (통계적 유의성 보장 X)
+
+### 6.3 Phase 2 진입 전 추가 power 계산
+- Phase 2 = Artsy 동일 풀 (8,891) → 추가 power 확보 X
+- 외부 source (auction archives 등) 보강 cycle 필요 시 별도 검토
 
 ## 7. Calibration / OOD / Drift (추가 권고)
 
@@ -195,8 +203,7 @@
 | 가격 저가 (P33 미만) | +1.0%p |
 | 가격 중가 (P33-P67) | +0.5%p |
 | 가격 고가 (P67+) | +1.0%p |
-| Source: Artsy | +1.0%p |
-| Source: Saatchi | +1.0%p |
+| Source: Artsy (Phase 2 = Artsy-only, Saatchi 제외) | +1.0%p |
 | Medium: oil / acrylic | +0.5%p |
 | Medium: 기타 | +1.5%p |
 | Depth bin 10-14 | +1.5%p |

@@ -10,10 +10,10 @@
 ## 1. 사전 준비 (D-1, shadow 배치 전)
 
 ### 1.1 모델 / Pipeline 고정
-- [ ] 운영 채택 모델 hash: `track2_v1_20260507` (F4 + log_area spline + Huber eps=1.35 alpha=1e-4)
-- [ ] Feature pipeline 버전 명시 (artist_slug 정규화 / area_cm2 산출 / birth_year_centered offset 등)
-- [ ] 학습 데이터 hash 기록 (`data/curated/stage3_1000x100.parquet` 또는 latest)
-- [ ] **Stage 4 baseline 과 동일 hash 사용 보장** (Stage 4 freeze 의 baseline 정의와 일치)
+- [ ] 운영 채택 model hash: `track2_v1_20260507` (F4 + log_area spline + Huber eps=1.35 alpha=1e-4)
+- [ ] Feature pipeline version: `f4_spline_v1_20260506`
+- [ ] Train data hash: `data/curated/stage3_1000x100.parquet` SHA (현 운영 학습 데이터, latest 사용 X — 명시적 freeze)
+- [ ] **Stage 4 model/pipeline 동일 hash 보장** (Stage 4 의 train data 는 별개 — `data/curated/stage4_*.parquet`, Week 1 종료 시 별도 freeze)
 
 ### 1.2 인프라 점검
 - [ ] Shadow log stream 분리 생성 (`track2_shadow.log`, V3 운영 로그와 분리)
