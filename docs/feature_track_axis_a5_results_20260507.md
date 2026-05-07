@@ -17,13 +17,18 @@
 >
 > **코덱스 권고 (A.4 검수) 검증**: A.5 HOLD / Axis A 종료 권고 = 본 결과로 정확히 입증. A.5 의 image embedding (heavier dim) 도 A.4 (text) 와 비슷한 패턴 — heavy escalation step 이 cold-start LAO 에서 일관 negative.
 >
-> **의사결정 영역 (사용자 결정 의무)**:
-> 1. A.3 단독 운영 shadow 검토 (별도 의사결정 gate, 코덱스 권고 = 조건부 HOLD)
-> 2. Axis B (Phase A pre-screen 후 external acquisition)
-> 3. Program-level 재설계 (representation learning / 새 axis)
-> 4. 운영 baseline + calibration only 유지 (현재 default)
+> **의사결정자 권고 (코덱스 사후 검수, 2026-05-07)** — **운영 기본값 + 다음 투자 우선순위 분리**:
 >
-> **운영 영향 X**: A.5 features 운영 spec 추가 X / 운영 모델 (F4 + spline + Huber) + 분기 B (calibration only) 그대로 유지.
+> **운영 기본값**: **D — baseline + calibration only 유지** (현재 default)
+>
+> **다음 투자 우선순위** (코덱스):
+> 1. **B — Axis B pre-screen project** (즉시 modeling 아님 / source discovery + Legal/TOS/Access/Anti-bot/Labelability/Joinability/As-of-time 통과 여부 screening 프로젝트)
+> 2. **C — Program-level 재설계** (representation learning / 새 axis — Axis B 가 infeasible 시)
+> 3. **A — A.3 단독 shadow 검토** (조건부 HOLD 그대로 유지 — A.5 가 A.3 confirm 하지 않음)
+>
+> **이유 (코덱스)**: 현재 병목 진단상 **새 정보원 (Axis B) 가 가장 정면 대응** / A.3 는 가장 좋은 내부 신호이나 decision-grade 미도달 / Axis B 는 modeling 이 아닌 **screening project** 로 시작.
+>
+> **운영 영향 X**: A.1-A.5 모두 운영 spec §1-§16 변경 X / 분기 B calibration only 그대로 유지.
 
 ## 1. 핵심 결과 (사전등록 §3 적용)
 
@@ -76,32 +81,44 @@
 | 99% CI 상한 | +3.58%p | +4.47%p | **+0.41%p (close)** | +1.85%p | +3.22%p |
 | 판정 | BORDERLINE | FAIL | BORDERLINE strongest | FAIL worst | **FAIL (last)** |
 
-> **Axis A 5 step 종합 (코덱스 framing 톤, working hypothesis 보수적):**
-> - **A.3 (pure artwork geometry, 3 cols low-dim) = 유일 promising signal** — BORDERLINE near-PASS (99% CI very close miss)
-> - **다른 axis (A.1/A.2/A.4/A.5) = 약하거나 negative**
-> - **Working hypothesis 보수적 결론**: A.3 의 strong signal 이 **geometry-specific 또는 low-dim 효과** 가능성 ↑ — "artwork-level cross-artist signal 일반이 cold-start LAO 유효" 단순 일반화는 **지지되지 않음** (A.4/A.5 high-dim heavy escalation 모두 실패)
-> - **Plausible mechanism (단정 X)**: Cold-start LAO 평가에서 dim 증가 자체가 risk — 8,495 sample / artist holdout 구조에서 high-dim feature 의 generalization 약함
+> **Axis A 5 step 종합 (코덱스 framing 톤 정정 v2 — P1 권고)**:
+> - **균형 한 줄 (코덱스)**: "Axis A overall unsuccessful; A.3 only yielded a non-decision-grade promising signal."
+> - **A.3 (pure artwork geometry, 3 cols low-dim) = 유일 promising signal** — BORDERLINE near-PASS (99% CI very close miss). 단 **A.5 가 A.3 를 confirm 하지 않음** — A.3 shadow 가치 **변동 X** (조건부 HOLD 그대로)
+> - **다른 axis (A.1/A.2/A.4/A.5) = 약하거나 negative** — adoption-grade 미도달
+> - **Working hypothesis 보수적 결론**: "artwork-level cross-artist signal 일반이 cold-start LAO 유효" 단순 일반화 **지지되지 않음** (A.4/A.5 heavy escalation 모두 실패) / A.3 의 strong signal = **geometry-specific 또는 low-dim 효과 가능성** (분리 불가, 코덱스 P2 — 새 cycle ablation 필요)
+> - **Plausible mechanism (단정 X, 코덱스 P1 톤 정정)**: A.4/A.5 실패 = **현재 LAO + 현재 sample + PCA K=10 + pretrained additive spec 에서 high-dim embedding 계열 실패** (modality 차이 / pretrained-task mismatch / PCA 압축 / generic title noise / zero-embedding 처리 / additive-only 제약 모두 섞임) — "dim 증가 자체가 cold-start LAO 에서 risk" 단정 X
 
 ## 3. Axis A 종결 — 의사결정 권고 (코덱스 framing 그대로)
 
 ### 3.1 Axis A 5 step 종합 결정
 - A.5 (last step) FAIL → **Axis A 전체 종결**
-- 운영 채택 후보 = 0 (5 step 모두 PASS 미달)
-- A.3 만 BORDERLINE near-PASS — 단독 shadow 검토 가치 (조건부 HOLD)
+- 운영 채택 후보 = 0 (5 step 모두 adoption-grade 미달)
+- A.3 만 BORDERLINE near-PASS — 단독 shadow 검토는 **조건부 HOLD 그대로** (A.5 가 A.3 confirm 하지 않음, 코덱스 P1)
+- **결론 범위 (코덱스 P1 톤 정정)**: "현재 curated internal feature ladder + 현재 frozen specs 로는 cold-start LAO 병목을 못 풀었다" (보편적 불가능 명제 X)
 
-### 3.2 사용자 의사결정 영역 (다음 단계)
+### 3.2 사용자 의사결정 영역 (다음 단계 — 코덱스 종합 검수 권고)
 
-| 옵션 | 사전 조건 | 가치 | 비용 |
-|---|---|---|---|
-| **A. A.3 단독 운영 shadow** (조건부) | 별도 의사결정 gate (코덱스 권고 = 조건부 HOLD) | A.3 의 BORDERLINE 신호 운영 환경 검증 | 운영 spec §1-§16 변경 / shadow infra |
-| **B. Axis B (External Acquisition)** | Phase A 4-7항목 pre-screen 통과 (Legal/TOS/Access/Anti-bot/Labelability/Joinability/As-of-time) | 새 information source 획득 시 가치 큼 | 운영팀 / 법무팀 협업 (LLM 외) |
-| **C. Program-level 재설계** | 새 식별 가설 / 새 axis 발견 시 | hypothesis 자체 reframe | 시간 / 사업 이유 필요 |
-| **D. 운영 baseline + calibration only 유지** (default) | 무조건 가능 | 현재 단기 안전장치 | 0 (이미 진행 중) |
+> **운영 기본값 + 다음 투자 우선순위 분리** (코덱스 2026-05-07).
 
-### 3.3 코덱스 권고 (A.4 결과 검수에서 명시)
-- A.5 HOLD 권고 = 본 A.5 결과로 정확히 검증 (FAIL near-null)
-- "Axis A 종료 + A.3 shadow 도 현재 HOLD" 권고
-- 예외 (A.5 GO 가능 조건) — image 의 본질적 가격 시각 신호 / 별도 사업 예산 + 시간 — 본 A.5 결과로 ROI 미관측 입증
+**운영 기본값 (default)**: **D. 운영 baseline + calibration only 유지** (현재 진행 중, 변경 X)
+
+**다음 투자 우선순위 (코덱스)**:
+
+| 순위 | 옵션 | 사전 조건 | 가치 | 본질 |
+|---|---|---|---|---|
+| **1** | **B. Axis B pre-screen project** | source discovery + Phase A 7항목 (Legal/TOS/Access/Anti-bot/Labelability/Joinability/As-of-time) | 현재 병목 (feature/information shortage) 정면 대응 | **즉시 modeling X — screening project** (코덱스 P2). 운영팀 / 법무팀 협업 (LLM 외) |
+| **2** | **C. Program-level 재설계** | 새 식별 가설 / 새 axis (representation learning / non-artist hierarchy 등) | hypothesis 자체 reframe | Axis B 가 infeasible 시 진입 |
+| **3** | **A. A.3 단독 운영 shadow** | 별도 의사결정 gate / **조건부 HOLD** (A.5 가 A.3 confirm 하지 않음 — 변동 X) | A.3 promising signal 운영 환경 검증 | A.3 BORDERLINE inferential 미확정 → shadow 승격 추가 evidence 필요 |
+
+> **이유 (코덱스)**: 현재 evidence 기반 병목 진단상 **새 정보원 (Axis B) 가 가장 정면 대응**. A.3 는 가장 좋은 내부 신호이나 decision-grade 미도달 — shadow 승격은 추가 evidence 필요.
+
+### 3.3 의사결정자 최종 framing (코덱스 종합 검수 권고 그대로)
+
+> "Axis A is closed. No internal feature family met adoption grade. A.3 showed the only promising but non-decision-grade signal. Near-term default remains baseline plus calibration; next ROI-positive work is lawful external-source screening, with broader redesign only if that path is infeasible or a new identification hypothesis emerges."
+
+### 3.4 코덱스 권고 검증 (A.4 + A.5 검수 종합)
+- A.5 HOLD 권고 (A.4 검수) = 본 A.5 결과로 정확히 검증 (FAIL near-null)
+- "Axis A 종료 + A.3 shadow 도 현재 HOLD" 권고 = 본 A.5 검수로 재확인
 
 ## 4. 운영 영향 X (Axis A 5 step 모두 채택 X)
 
@@ -112,8 +129,9 @@
 ## 5. Limitations / 정직 보고
 
 - **A.5 FAIL 의 메커니즘 분리 X**: image embedding 본질 한계 vs PCA K=10 implementation 한계 분리 미수행 (A.4 동일 caveat) — frozen A.5 spec 의 실패
-- **Plausible mechanism (단정 X)**: dim sensitivity 가설 (cold-start LAO 에서 high-dim feature noise) — A.4 + A.5 일관 패턴이지만 attribution X
-- **Axis A 5 step 종결의 의미**: hypothesis 끝까지 시험 완료 / 그러나 현재 evidence 범위 내 결론은 "A.3 만 promising / 다른 axis 운영 미적합" — 새 evidence (Phase A pre-screen 통과 source / representation learning 등) 시 재평가 가능
+- **Plausible mechanism (단정 X, 코덱스 P1 톤 정정)**: A.4/A.5 실패 = 현재 LAO + 현재 sample + PCA K=10 + pretrained additive spec 에서 high-dim embedding 계열 실패 (modality / pretrained-task mismatch / PCA 압축 / generic title noise / zero-embedding / additive-only 모두 섞임) — 단일 mechanism 으로 attribution X
+- **Axis A 5 step 종결의 범위 (코덱스 P1 톤 정정)**: "현재 curated internal feature ladder + 현재 frozen specs 로는 cold-start LAO 병목을 못 풀었다" — **보편적 불가능 명제 X**. 새 evidence (Phase A pre-screen 통과 source / representation learning / 새 식별 가설 등) 시 재평가 가능
+- **A.3 geometry vs low-dim 효과 분리 불가 (코덱스 P2)**: 본 cycle 평가 X — 분리 위해서는 새 cycle ablation 필요
 - **A.3 단독 shadow 검토 = 별도 의사결정 gate**: 본 cycle 기준 코덱스 = 조건부 HOLD, 의사결정자 영역
 
 ## 6. 다음 단계
@@ -129,7 +147,7 @@
 |---|---|
 | 누적 (Stage 6B / Feature track design / A.1-A.4 prereg+결과) | P0×6 + P1×33 + P2×10 적용 |
 | **A.5 prereg freeze (2026-05-07)** | A.1-A.4 v2 lessons + procedural vs management recommendation 분리 명시 (사용자 명시 instruction A.5 진행) |
-| **A.5 결과 보고 검수 (예정)** | Axis A 5 step 종합 검토 + 의사결정 영역 권고 |
+| **A.5 결과 보고 + Axis A 종합 검수 (2026-05-07)** | **P0 없음** — Axis A 종결 정당. P1×3 (dim 단정 톤 다운 / A.3 shadow 가치 변동 X / "feature engineering 만 해결 X 입증" 범위 축소) + P2×4 (FAIL 문구 prereg rule 우선 / framing 균형 / Axis B = pre-screen project / A.3 분리 불가) — 본 v2 commit 일괄 반영. **의사결정자 권고 = D > B > C > A 순서** (코덱스). |
 
 ## 8. 참조
 
