@@ -27,7 +27,7 @@ ul li { margin-bottom: 4px; }
 <body>
 
 <h1>VisionAI 트랙 1 + 트랙 2 종합 현황</h1>
-<p style="color: #666;"><strong>작성일</strong>: 2026-05-08 | <strong>대상</strong>: 외부 협력자 / 의사결정자 / 외부 보고 inheriting | <strong>본 문서 성격</strong>: 1-2 page executive summary (상세본 = <code>docs/external/external_track1_track2_status_20260508.md</code>)</p>
+<p style="color: #666;"><strong>작성일</strong>: 2026-05-08 | <strong>대상</strong>: 외부 협력자 / 의사결정자 / 공유 대상자 | <strong>본 문서 성격</strong>: 1-2 page executive summary (상세본 = <code>docs/external/external_track1_track2_status_20260508.md</code>)</p>
 
 <div class="summary-box">
 <h3 style="margin-top: 0;">한 줄 요약</h3>
@@ -49,7 +49,7 @@ ul li { margin-bottom: 4px; }
 </tr>
 <tr>
   <td><strong>트랙 2</strong> (해석 가능 cold-start 연구)</td>
-  <td><span class="pill gray">architecture-only 종결</span> <span class="pill yellow">운영 채택 없음</span> <span class="pill green">제한 후보 + shadow 가능</span></td>
+  <td><span class="pill gray">모델 구조 변경 경로 종결</span> <span class="pill yellow">운영 채택 없음</span> <span class="pill green">제한 후보 + shadow 가능</span></td>
   <td>운영 spec 변경 없음 / Slice-conditional 제한 후보 만 1주 shadow 평가 가능</td>
 </tr>
 </table>
@@ -82,7 +82,7 @@ ul li { margin-bottom: 4px; }
 <tr><td>Warm path non-regression</td><td>≤ +0%p</td><td>+0.00%p (동등)</td><td>충족</td></tr>
 </table>
 
-<p><strong>부수적 finding</strong>: 평가 cycle 진행 중 일부 입력 신호 (32 features 중 9개) 에서 학습-서빙 정합성 mismatch 징후 확인. 운영 변경 trigger 가 아닌 exploratory diagnostic 으로 분류 / 후속 정량 검증 별도 영역.</p>
+<p><strong>평가 중 확인된 추가 검증 신호</strong>: 평가 cycle 진행 중 일부 입력 신호 (32 features 중 9개) 에서 학습-서빙 정합성 차이 신호 확인. 운영 반영 과는 분리된 확인 과제 / 후속 정량 검토 = 별도 운영 측 검토 영역.</p>
 
 <h2>4. 트랙 2 연구 cycle 결과</h2>
 
@@ -90,8 +90,8 @@ ul li { margin-bottom: 4px; }
 
 <table>
 <tr><th>경로</th><th>본질</th><th>결과</th></tr>
-<tr><td><strong>architecture-only</strong></td><td>동일 feature set 안에서 architecture 만 변경 (Stage 6A segmented / Stage 6B partial pooling)</td><td>1차 병목 해결 X / <strong>종결</strong></td></tr>
-<tr><td><strong>cheap-feature-only</strong></td><td>Feature Track Axis A 5 step (categorical / popularity / cluster embeddings / title embedding / image embedding)</td><td>5 step 모두 임계 미충족 / <strong>Axis A 종결</strong></td></tr>
+<tr><td><strong>모델 구조 변경 경로</strong></td><td>동일 feature set 안에서 모델 구조 만 변경 (2 가지 시도)</td><td>1차 병목 해결 X / <strong>종결</strong></td></tr>
+<tr><td><strong>간단한 feature 추가 경로</strong></td><td>가능 feature 5 영역 평가 (categorical / popularity / cluster embeddings / title embedding / image embedding)</td><td>5 step 모두 임계 미충족 / <strong>종결</strong></td></tr>
 </table>
 
 <h3>4.1 제한 후속 (operational intake 후보)</h3>
@@ -112,7 +112,7 @@ ul li { margin-bottom: 4px; }
 ✅ <strong>즉시 운영 영향 없음</strong> — 두 cycle 모두 운영 변경 없이 종료.
 <ul>
 <li>운영 main 모델: <code>v3_filtered_tuned</code> 32 features (변경 없음)</li>
-<li>운영 spec: 트랙 2 영역 §17 변경 없음</li>
+<li>운영 규격: 트랙 2 영역 변경 없음</li>
 <li>운영 metric: 핵심 metric 그대로 유지</li>
 </ul>
 </div>
@@ -120,7 +120,7 @@ ul li { margin-bottom: 4px; }
 <p><strong>본 cycle 들의 가치</strong>:</p>
 <ul>
 <li>운영 main 모델 의 안전성 검증 (사전 임계 정상 작동)</li>
-<li>후속 cycle 의 의사결정 base 확보 (architecture-only / cheap-feature-only 경로 한계 입증)</li>
+<li>후속 cycle 의 의사결정 base 확보 (모델 구조 변경 경로 / 간단한 feature 추가 경로 한계 입증)</li>
 <li>외부 협력 영역 (외부 데이터 source / API contract 확장 등) 의 우선순위 재평가 evidence</li>
 </ul>
 
@@ -129,9 +129,9 @@ ul li { margin-bottom: 4px; }
 <table>
 <tr><th>항목</th><th>결정</th></tr>
 <tr><td>트랙 1 운영 main 모델</td><td><strong><code>v3_filtered_tuned</code> 32 features 유지</strong></td></tr>
-<tr><td>트랙 2 운영 채택</td><td><strong>채택 없음</strong> (운영 spec §17 변경 X)</td></tr>
-<tr><td>트랙 2 architecture 후속 cycle</td><td><strong>종결</strong></td></tr>
-<tr><td>트랙 2 Feature Track Axis A</td><td><strong>5 step 모두 임계 미충족 / Axis A 종결</strong></td></tr>
+<tr><td>트랙 2 운영 채택</td><td><strong>채택 없음</strong> (운영 규격 변경 없음)</td></tr>
+<tr><td>트랙 2 모델 구조 변경 후속 cycle</td><td><strong>종결</strong></td></tr>
+<tr><td>트랙 2 Feature 추가 평가</td><td><strong>5 step 모두 임계 미충족 / 종결</strong></td></tr>
 <tr><td>트랙 2 Slice-conditional 제한 후보</td><td><strong>유지</strong> (depth ≥ 25 영역 / Phase A shadow 1주 평가 가능)</td></tr>
 <tr><td>외부 데이터 source 영역</td><td><strong>운영팀 + 법무팀 회신 대기</strong></td></tr>
 </table>
@@ -139,8 +139,8 @@ ul li { margin-bottom: 4px; }
 <h2>7. 다음 단계 (3줄)</h2>
 
 <ol>
-<li><strong>즉시 가능</strong>: Slice-conditional warm path Phase A shadow 1주 착수 (depth ≥ 25 작가 영역) + 트랙 1 부수 finding 후속 정량 검증</li>
-<li><strong>외부 협력</strong>: 외부 데이터 source license / acquisition 협조 + 운영 환경 API contract 확장 가능성</li>
+<li><strong>즉시 가능</strong>: Slice-conditional warm path 1주 shadow 평가 착수 (depth ≥ 25 작가 영역) + 트랙 1 추가 검증 신호 후속 정량 검토</li>
+<li><strong>외부 협력</strong>: 외부 데이터 source license / acquisition 협조 + 운영 환경 입력 정합성 확장 가능성</li>
 <li><strong>조건부 후속 cycle</strong>: 새 baseline / 새 hypothesis family 의 새 사전 정의된 평가 protocol 의무</li>
 </ol>
 
@@ -148,15 +148,14 @@ ul li { margin-bottom: 4px; }
 
 <table>
 <tr><th>영역</th><th>핵심 문서</th></tr>
-<tr><td>트랙 1</td><td><code>docs/트랙1_종합보고서_20260507.html</code></td></tr>
-<tr><td>트랙 2 (인덱스)</td><td><code>docs/트랙2_종합대시보드_20260507.html</code></td></tr>
-<tr><td>트랙 2 (Axis A 종결)</td><td><code>docs/트랙2_종합보고서_axis_a_종결_20260507.html</code></td></tr>
-<tr><td>트랙 2 (외부 데이터 source 영역)</td><td><code>docs/트랙2_종합보고서_axis_b_phase_a_round3_20260507.html</code></td></tr>
-<tr><td>트랙 2 (최종 보고서)</td><td><code>docs/트랙2_최종보고서_20260506.html</code></td></tr>
-<tr><td>트랙 2 (임원 요약)</td><td><code>docs/임원보고_트랙2_요약_20260506.html</code></td></tr>
-<tr><td>트랙 2 (비전공자 친화)</td><td><code>docs/트랙2_쉬운설명_20260506.html</code> / <code>docs/트랙2_프로세스_쉬운버전_20260506.html</code></td></tr>
-<tr><td>모델 기술 보고서 v1 (이론·아키텍처)</td><td><code>docs/model_technical_report.md</code> / <code>.html</code></td></tr>
-<tr><td>모델 기술 보고서 v2 (피드백 후속편)</td><td><code>docs/model_technical_report_v2.md</code> / <code>.html</code></td></tr>
+<tr><td>트랙 1</td><td><a href="../트랙1_종합보고서_20260507.html">트랙 1 상세 결과 보고서</a></td></tr>
+<tr><td>트랙 2 (인덱스)</td><td><a href="../트랙2_종합대시보드_20260507.html">트랙 2 인덱스 / 상태</a></td></tr>
+<tr><td>트랙 2 (Feature 추가 평가 종결)</td><td><a href="../트랙2_종합보고서_axis_a_종결_20260507.html">Feature 추가 평가 종결 보고서</a></td></tr>
+<tr><td>트랙 2 (최종 보고서)</td><td><a href="../트랙2_최종보고서_20260506.html">트랙 2 최종 보고서</a></td></tr>
+<tr><td>트랙 2 (임원 요약)</td><td><a href="../임원보고_트랙2_요약_20260506.html">트랙 2 임원 요약</a></td></tr>
+<tr><td>트랙 2 (비전공자 친화)</td><td><a href="../트랙2_쉬운설명_20260506.html">쉬운 설명</a> / <a href="../트랙2_프로세스_쉬운버전_20260506.html">프로세스 쉬운 버전</a></td></tr>
+<tr><td>모델 기술 보고서 v1 (이론·아키텍처)</td><td><a href="../model_technical_report.html">v1 본문</a></td></tr>
+<tr><td>모델 기술 보고서 v2 (피드백 후속편)</td><td><a href="../model_technical_report_v2.html">v2 본문</a></td></tr>
 </table>
 
 <div class="footer">
