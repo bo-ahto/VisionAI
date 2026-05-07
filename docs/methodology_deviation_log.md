@@ -101,6 +101,34 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Feature Track A.4 결과] Title text embedding FAIL → A.5 escalation 의사결정 영역 (none, 정상 흐름)
+- **사전등록 §3 적용 결과** (100-seed LAO):
+  * Overall: baseline 38.03% → A.4 38.69% (Δ +0.66%p, 악화)
+  * Low: Δ +1.22%p ⚠️ Hard gate 위반 → 즉시 FAIL
+  * Mid-high: Δ +0.00%p (사실상 동등) / Newly-warm: Δ +0.08%p (사실상 동등)
+  * Cluster bootstrap (rep seed=0): mean -0.33%p, 95% CI [-2.04, +1.46], 99% CI [-2.35, +1.85]
+  * Seed-level low violation rate: 75/100 = 75.0% (Axis A 최악, A.3 13/100 정반대)
+- **판정**: FAIL (🔴 Hard gate Δ_low > 0, decisive) — Step gate B안 → A.5 escalation 또는 의사결정자 결정 영역
+- **분류**: **none (정상 흐름)** — 사전등록 §3.3 hard gate 적용
+- **메커니즘 (provisional, 코덱스 framing — 입증 X)**: Working hypothesis "artwork-level cross-artist signal 일반이 cold-start LAO 유효" 의 **단순 일반화 반박**. A.3 strongest / A.4 worst → A.3 의 강한 signal 이 geometry 특수 효과 가능성 / 또는 cold-start LAO 평가에서 dim 증가 자체가 noise / overfitting risk (A.4 PCA K=10 vs A.3 3 cols)
+- **A.5 진입 의사결정 영역**: A.4 dim sensitivity 가설 적용 시 A.5 (image embedding, heavier dim) 도 유사 FAIL 가능 → 진입 ROI 의문. 사용자 결정 영역 (진입 vs 보류 / Axis A 종료 + A.3 단독 shadow 검토)
+- **운영 영향 X**: 운영 spec §1-§16 변경 X / 분기 B 유지 / A.4 features 채택 X / A.3 단독 shadow 검토 가치 변동 X (HOLD 그대로)
+- **승인**: 사용자 검토 + 코덱스 사후 검수 (예정)
+
+### 2026-05-07 — [Feature Track A.4 prereg freeze] Title text embedding (multilingual MiniLM, PCA K=10)
+- **A.4 features**: paraphrase-multilingual-MiniLM-L12-v2 (384-dim) + PCA top-K=10 (train fold fit, leakage-safe)
+- **시점 정합성 명확 OK**: title = 작품 본질 attribute, scrape/sale 시점 무관
+- **First heavy escalation**: compute / storage 비용 ↑ (sentence-transformers 5.4.1 / transformers 5.8.0 설치, 384-dim embedding cache ~13MB)
+- **A.1-A.3 v2 lessons 사전 반영**: cluster bootstrap 진짜 구현 + α=0.01 99% CI decision + per-step freeze 6항목 + framing 톤 (working hypothesis)
+- **분류**: **none (정상 흐름)** — Step gate B안 escalation
+- **승인**: 사용자 (2026-05-07) — A.3 BORDERLINE 후 A.4 진입 결정
+
+### 2026-05-07 — [Feature Track A.3 결과 v2] 코덱스 검수 P1×3 + P2×1 framing 톤 다운 (minor)
+- **코덱스 검수 1차 (2026-05-07)**: A.4 GO + A.3 단독 shadow HOLD (P0 없음)
+- **P1 fix**: "near-PASS" 표현 제거 / "부분 입증" → "부분 일치 (provisionally consistent — escalation rationale 강화)" / shadow 권고 좁힘 (즉시 검토 X, A.4 결과 후 또는 별도 business-driven 트랙으로만)
+- **P2 fix**: Geometry 메커니즘 proxy 가능성 caveat 추가 (format/category/material proxy 가능)
+- **분류**: **minor (framing 톤 다운, 결과 변경 X)**
+
 ### 2026-05-07 — [Feature Track A.3 결과] Geometry BORDERLINE near-PASS → A.4 escalation (none, 정상 흐름)
 - **사전등록 §3 적용 결과** (100-seed LAO):
   * Overall: baseline 38.03% → A.3 35.92% (Δ -2.11%p) ✓ practical (Axis A max)
