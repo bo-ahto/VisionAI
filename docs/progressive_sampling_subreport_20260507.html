@@ -36,7 +36,7 @@ details[open] summary { background: #e9ecef; }
 
 <div class="decision-box">
 <p><strong>1. Progressive sampling exploratory cycle concluded under predefined stopping logic.</strong></p>
-<p><strong>2. No Stage 2 promotion.</strong> Stage 1 evaluated 5 hypothesis families × 18 variants on the smallest curated sample (200 artworks / 20 artists); none cleared the preregistered retain threshold.</p>
+<p><strong>2. No Stage 2 promotion.</strong> Stage 1 covered <strong>18 preregistered variants across 5 families / 14 evaluable</strong> on the smallest curated sample (200 artworks / 20 artists); none cleared the preregistered retain threshold (4 SKIP — Stage 1 dataset 의 일부 column 부재).</p>
 <p><strong>3. Locked holdout asset preserved</strong> (161 artists / 1,680 rows / SHA-16 <code>1933a0947a918fc9</code>) for future preregistered use.</p>
 <p><strong>4. No production spec change from this cycle.</strong> Operational baseline + calibration-only path remains unchanged.</p>
 <p><strong>5. Resource reallocated to Axis B (license-first lane).</strong> The upstream information bottleneck is more directly addressed by adding new lawful external sources than by additional internal feature search.</p>
@@ -61,7 +61,7 @@ details[open] summary { background: #e9ecef; }
 <strong>Method governance / Review controls</strong>:
 - 사전 freeze (Phase 0 mini-prereg) — 6 항목 (KPI / holdout / family roster / stage rule / pipeline / decision-binding)<br>
 - Sealed holdout — Phase 0 시점 봉인, SHA-16 hash 기록, Phase 4 final 1회만 access 권한<br>
-- Independent post-run review — cycle 단계마다 외부 자문 검수 (사전 + 사후 양방향)<br>
+- Independent checkpoint review — pre-freeze 사전 자문 + post-run checkpoint 사후 검수 (key checkpoints, 양방향)<br>
 - Stop logic = retain rule 미달 시 단계 중단 / 결과 본 후 reasoning drift 회피
 </div>
 
@@ -140,7 +140,7 @@ details[open] summary { background: #e9ecef; }
 
 <ul>
 <li><strong>Internal feature ladder 의 한계 신호</strong>: 본 cycle 직전 별도 sample-size sensitivity 분석에서, 큐레이트된 작은 샘플 (200-1378 rows) 의 baseline MdAPE 24-27% vs 운영 분포 (8,495 rows) 의 38.03% 격차가 <em>표본 크기보다 분포 조성 (composition)</em> 차이로 설명됨이 확인됐습니다. 즉 추가 표본 확대보다 정보축 자체의 부재가 1차 병목.</li>
-<li><strong>본 cycle 의 retain 0 결과</strong>: 5 family 모두 작은 샘플에서조차 추가 features 의 net effect 가 음 (개선) 이 아닌 양 (악화) 방향. 작은 샘플 noise 의 일반 패턴이지만, 동시에 <em>현 정보 조건 내에서 추가 feature 재배열의 한계 정황</em>도 됩니다.</li>
+<li><strong>본 cycle 의 retain 0 결과</strong>: 평가 가능한 14 variants 중 어느 family 도 decision-relevant improvement 를 보이지 않음 — 대부분 variants 가 악화 또는 near-null 정체. 작은 샘플 noise 의 일반 패턴이지만, 동시에 <em>현 정보 조건 내에서 추가 feature 재배열의 한계 정황</em>도 됩니다.</li>
 </ul>
 
 <p>따라서 <strong>Axis A continuation (내부 feature 추가) 보다 Axis B (외부 lawful source 확보) 가 information bottleneck 에 대한 더 직접적 대응</strong>이라는 동일 의사결정 logic 으로 본 cycle 종결 + Axis B 우선 진입을 결정합니다.</p>
