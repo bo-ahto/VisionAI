@@ -168,6 +168,24 @@ def auto_fallback_check():
 
 ---
 
+## 4. Drift Monitoring + Post-processing Spec
+
+### 4.0 Global Additive Calibration 후처리 후보 (Stage 5 cycle 종료 후 활성, 2026-05-07)
+
+> ⚠️ **적용 범위 명문화**: **Cold baseline path only** (V3 fallback 시 X / Warm V3 path X / Quantile band X / Slice-conditional X). 단기 트랙 작업 4 결과 (low MdAPE -3.11%p, overall +0.30%p) 근거.
+>
+> ⚠️ **Shadow gate required**: 즉시 운영 전면 적용 X. Cold Phase A shadow 단계에서 **calibrated shadow score 병행 기록** → D+7 actual linkage 후 별도 게이트 통과 시 운영 응답 반영.
+
+| 항목 | 정의 |
+|---|---|
+| Calibration formula | `pred_calibrated = pred_log - mean(pred_train_log - y_train_log)` |
+| 학습 데이터 | `data/curated/stage3_1000x100.parquet` (운영 학습 데이터, train data hash 와 동일) |
+| 적용 path | Cold (track2 응답) only — V3 / Warm path / Quantile band / Slice-conditional 결합 금지 |
+| API 필드 | `calibration_applied: bool` (응답 §5.2 동일) |
+| Shadow gate 합격 기준 | (1) low MdAPE 개선 ≥ -1.0%p / (2) overall MdAPE 악화 ≤ +0.5%p / (3) segment harm 0 violations / (4) 별도 의사결정 회의 |
+
+> Stage 5 cycle 종료 (`docs/stage5a_week2_results_20260507.md`) → 분기 B 활성화 → 본 §4.0 = 외부 source 부재 시 운영 안전장치 추가.
+
 ## 4. Drift Monitoring Spec
 
 ### 4.1 PSI (Population Stability Index) 일 단위 계산

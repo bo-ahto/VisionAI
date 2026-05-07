@@ -8,11 +8,11 @@
 
 ## 1. 한 줄 요약 (의사결정자용)
 
-> **Artsy CV 도 REJECT** — Cloudflare anti-bot 으로 자동화 fetch **0/10 (0% 성공률)** 차단. Google search 는 indexed (manual access 가능) 하나 1,925 작가 대상 자동화 = TOS 자동화 금지 + anti-bot 회피 위반.
+> **Artsy CV REJECT 사유 = 준법적 자동화 접근 불가** (compliance-feasible automation unavailable). Cloudflare anti-bot 으로 자동화 fetch 0/10 차단 + TOS 자동화 금지. Google search indexed snippet 은 평가용 evidence X (운영 자동화 source 아님).
 >
-> → **사전등록 §6.3 적용** (모든 candidate REJECT) → **Stage 5 자체 종결 권고**.
+> → **사전등록 §6.3 적용** (모든 candidate "운영 가능한 취득 경로 부재") → **Stage 5 cycle 종료 권고**.
 >
-> → **Week 3 분기 B 활성화** (`docs/stage5a_week3_decision_memo_20260507.md`): Stage 5 종결 + Calibration (단기 트랙 작업 4 Global additive) 만 운영 적용.
+> → **Week 3 분기 B 활성화** (`docs/stage5a_week3_decision_memo_20260507.md`): Stage 5 종료 + Calibration (cold baseline 한정, shadow gate required) 만 운영 적용.
 
 ## 2. 핵심 발견 3
 
@@ -53,12 +53,12 @@
 
 → 모든 sample 0/10 + 비교군 0/2 = **자동화 access 100% 차단**
 
-### 4.2 Google search 결과 (참고)
+### 4.2 Google search 결과 (참고 only — 평가 evidence X)
 
-`site:artsy.net lee ufan` → **indexed snippet 다수** (artist page / artwork / artist-series / show / article 모두 search 결과 노출).
-`site:artsy.net "do-you-hwang" cv solo show` → **0 hits** (Stage 4 cohort indexing 불충분).
+`site:artsy.net lee ufan` → indexed snippet 다수 노출.
+`site:artsy.net "do-you-hwang" cv solo show` → 0 hits.
 
-→ Lee Ufan = Google indexed / Stage 4 신진 cohort = indexing 미흡 (Coverage 정량 측정 불가).
+> ⚠️ **Google indexed 는 운영 자동화 source 가 아님** — search snippet 은 manual / 정성 참고 evidence 일 뿐, 1,925 작가 대상 정량 feature pipeline 구성 불가. Coverage / signal 평가에 사용 X.
 
 ### 4.3 TOS / 자동화 위험
 
