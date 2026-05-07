@@ -101,6 +101,26 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Feature Track A.1 prereg freeze] Cheap categorical 4종, 의사결정 8건 추천대로 승인 (none + minor)
+- **의사결정 8건 모두 추천대로 승인** (사용자 2026-05-07):
+  1. Axis A 우선 / B 조건부
+  2. Cheap falsification ladder framing
+  3. Step gate B안 (escalation 허용)
+  4. LAO primary family vs warm/time-split supportive family 분리
+  5. Phase A 7항목 확장 (labelability / joinability / as-of-time)
+  6. A.2 시점 정합성 검증 원칙
+  7. A.4 / A.5 escalation 진입 (B안)
+  8. Cold Phase A shadow 정의 (data availability 검증 shadow)
+- **A.1 features 4종 final** (design draft 5종 → 4종, **minor deviation**):
+  * 제거: `medium_type` (`category` 와 분류 체계 거의 동일 — top 6 = Painting / Sculpture / Photography 등 동일, 0.4% 결측 더 많음)
+  * 사유: redundancy + parsimonious spec
+  * **사전 prereg freeze 전 결정** (결과 본 후 변경 X = HARK 회피 정상 흐름)
+- **Per-step freeze 6항목** 명시 (코덱스 P1):
+  (a) feature set 4종 / (b) encoding (one-hot + leakage-safe target encoding 5-fold OOF + multi-hot top-5 city) / (c) preprocessing (missing → 0 city dummy) / (d) interaction NONE (additive only) / (e) stop-go rule (LAO primary family) / (f) 다음 step alternative hypothesis (A.2 escalation, A.1 features drop)
+- **Multiple comparisons**: 5 step gatekeeping sequence → A.1 step α=0.01 (Bonferroni 5 step, FWER ≤ 0.05). LAO secondary Holm m=3 (low / mid-high / newly-warm — sparse-warm 제외, 6B deviation 교훈)
+- **분류**: **none (정상 흐름)** + **minor (medium_type 제거)**
+- **승인**: 사용자 (2026-05-07) + 코덱스 사후 검수 권고
+
 ### 2026-05-07 — [의사결정] Architecture-only close 확정 + Feature track 시작 (none, 정상 흐름)
 - **확정**:
   1. Stage 6B FAIL 승인
