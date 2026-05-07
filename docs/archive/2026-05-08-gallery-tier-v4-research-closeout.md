@@ -108,6 +108,24 @@
 - **개별 commit history**: 코덱스 사전 / 사후 검수 round 별 audit trail 보존 (각 cycle 의 P0/P1/P2 fix 이력 / commit ref `7190fc1` ~ `88a0c0e` 등)
 - **새 작업 진입 X**: 본 branch 에서 추가 commit 금지 (frozen)
 
+### 6.1 Retention policy (잔존 작업 5번, 코덱스 권고 옵션 B + C)
+
+본 archive cycle 의 repository-local rule (전사 정책 X / 본 cycle 한정):
+
+1. **Retention baseline**: branch 는 frozen 상태로 **최소 `2026-05-22` (tag fix 일자 `2026-05-08` + 2주) 까지** origin 보존. 무기한 보존 X.
+2. **Cleanup review earliest date**: **2026-05-22 이후만** cleanup review 개시 가능 (자동 삭제 X).
+3. **Cleanup preconditions** (3 항목 모두 충족 시에만 review 개시):
+   - `2026-05-22` 경과
+   - 다음 운영 cycle kickoff **또는** 잔존 작업 6번 (운영 swap = production rollout) 방향 확정
+   - §4 사용자 결정 영역 + PR #25 관련 정리에서 본 branch 직접 참조 필요성 해소 확인
+4. **Branch / tag 역할 분리**:
+   - `branch` = 임시 보존물 (cleanup 가능)
+   - `tag archive/gallery-tier-v4-research-20260508` + 본 closeout note = **장기 보존물** (영구)
+   - cleanup 시: remote branch 삭제 가능 / tag + closeout note 유지 의무
+5. **Final deletion authority = user**: cleanup 의 실제 실행은 **explicit 사용자 결정**. LLM 단독 결정 X / 자동 cleanup X.
+
+> **권한 분리 명시**: 본 §6.1 = 보존 원칙 + 안전 기준선 (LLM 권한 영역). 실제 cleanup 시점 / 실행 / 다음 archive cycle 표준화 = 사용자 권한 영역.
+
 ## 7. 후속 작업 시 참조
 
 본 archive 의 자산 활용 방법:
