@@ -158,11 +158,13 @@ experiments/structural_v1/
 ├── stage3_huber_validation.py       # Huber B 검증 (Bootstrap CI / per-segment / coef)
 ├── stage3_warm_improvements.py      # Warm-start 개선 후보 비교 (FE / time / history / Combined)
 ├── stage3_warm_validation.py        # Warm P2 검증 (Bootstrap / Rolling / Bucket / Leakage)
-└── stage3_warm_p3_validation.py     # Warm P3 검증 (4-model rolling / EB shrink / depth / cluster boot)
+├── stage3_warm_p3_validation.py     # Warm P3 검증 (4-model rolling / EB shrink / depth / cluster boot)
+├── stage3_warm_feature_exploration.py  # Warm feature 재탐색 (tier / interaction / Huber eps)
+└── stage3_warm_fe_robustness.py     # FE only robustness (n=2000 boot + 10 seed 안정성)
 
 results/
 ├── stage2_*.json                    # Stage 2 실험 결과 (7개 JSON + 3개 coef CSV)
-└── stage3_*.json                    # Stage 3 실험 결과 (10개 JSON 포함 warm 검증)
+└── stage3_*.json                    # Stage 3 실험 결과 (12개 JSON 포함 warm 검증)
 ```
 
 데이터 생성: `scripts/build_curated_datasets.py`
