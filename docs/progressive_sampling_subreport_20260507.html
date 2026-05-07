@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>Progressive Sampling Exploratory Cycle — Sub-report (2026-05-07)</title>
+<title>점진 표본 확대 탐색 cycle — 보조 보고서 (2026-05-07)</title>
 <style>
 body { font-family: -apple-system, sans-serif; max-width: 1100px; margin: 30px auto; padding: 20px; line-height: 1.65; color: #222; }
 h1 { border-bottom: 3px solid #333; padding-bottom: 10px; }
@@ -28,165 +28,165 @@ details[open] summary { background: #e9ecef; }
 </head>
 <body>
 
-<h1>Progressive Sampling Exploratory Cycle — Sub-report</h1>
+<h1>점진 표본 확대 탐색 cycle — 보조 보고서</h1>
 
-<p style="color: #666;"><strong>작성일</strong>: 2026-05-07 | <strong>대상</strong>: 외부 보고 (테스트 진행 method + 결과 + 결정) | <strong>본 cycle 위치</strong>: 트랙 2 baseline 개선 시도 — exploratory stage closed</p>
+<p style="color: #666;"><strong>작성일</strong>: 2026-05-07 | <strong>대상</strong>: 외부 보고 (테스트 진행 방법론 + 결과 + 결정) | <strong>본 cycle 위치</strong>: 트랙 2 운영 모델 baseline 개선 시도 — 탐색 단계 종결</p>
 
-<h2 id="sec1">1. Executive Decision</h2>
+<h2 id="sec1">1. 핵심 의사결정</h2>
 
 <div class="decision-box">
-<p><strong>1. Progressive sampling exploratory cycle concluded under predefined stopping logic.</strong></p>
-<p><strong>2. No Stage 2 promotion.</strong> Stage 1 covered <strong>18 preregistered variants across 5 families / 14 evaluable</strong> on the smallest curated sample (200 artworks / 20 artists); none cleared the preregistered retain threshold (4 SKIP — Stage 1 dataset 의 일부 column 부재).</p>
-<p><strong>3. Locked holdout asset preserved</strong> (161 artists / 1,680 rows / SHA-16 <code>1933a0947a918fc9</code>) for future preregistered use.</p>
-<p><strong>4. No production spec change from this cycle.</strong> Operational baseline + calibration-only path remains unchanged.</p>
-<p><strong>5. Resource reallocated to Axis B (license-first lane).</strong> The upstream information bottleneck is more directly addressed by adding new lawful external sources than by additional internal feature search.</p>
+<p><strong>1. 점진 표본 확대 탐색 cycle 을 사전 정의된 종료 기준에 따라 종결</strong>.</p>
+<p><strong>2. Stage 2 진입 없음</strong>. Stage 1 에서 가장 작은 큐레이트 샘플 (작품 200건 / 작가 20명) 을 사용해 <strong>5개 가설군 × 사전등록된 18개 변형 (평가 가능 14개)</strong> 을 평가했으며, 어느 변형도 사전등록 통과 기준을 충족하지 못함 (4개 SKIP — Stage 1 데이터에 일부 column 부재).</p>
+<p><strong>3. 봉인된 검증용 보존 자산</strong> (작가 161명 / 작품 1,680건 / SHA-16 <code>1933a0947a918fc9</code>) 향후 사전등록 cycle 에서 재사용 가능 상태로 유지.</p>
+<p><strong>4. 본 cycle 결과로 운영 모델 변경 없음</strong>. 운영 baseline + 보정 후처리 한정 경로 그대로 유지.</p>
+<p><strong>5. 자원을 외부 source 확보 트랙 (Axis B / license 우선) 으로 재배분</strong>. 상류 정보 병목 (information bottleneck) 은 내부 feature 추가 탐색보다 새로운 합법적 외부 데이터 source 확보가 더 직접적인 대응.</p>
 </div>
 
-<h2 id="sec2">2. Objective and Method</h2>
+<h2 id="sec2">2. 목적과 방법론</h2>
 
-<h3>2.1 Why this cycle</h3>
-<p>본 cycle 의 의도는 <strong>점진 표본 확대 기반 탐색 평가 (progressive sampling exploratory evaluation)</strong> — 작은 샘플 (200x20) 에서 빠르게 feature/logic 후보를 좁히고, 단계적으로 더 큰 샘플로 확장하면서 유효한 후보만 통과시키는 방식. 트랙 2 의 cold-start 가격예측 baseline 에 대한 새 feature family 발굴 시도.</p>
+<h3>2.1 본 cycle 의 의도</h3>
+<p>본 cycle 의 의도는 <strong>점진 표본 확대 기반 탐색 평가</strong> — 작은 샘플 (작품 200건 / 작가 20명) 에서 빠르게 feature 및 모델 로직 후보를 좁히고, 단계적으로 더 큰 샘플로 확장하면서 유효한 후보만 통과시키는 방식. 트랙 2 의 cold-start (신규 작가) 가격예측 운영 baseline 에 대해 새 feature 후보군을 발굴하려는 시도.</p>
 
-<h3>2.2 Method (HARK-safe variant)</h3>
-<p>표준 ML 방법론 명칭은 <em>progressive sampling / multi-fidelity exploratory cycle / pilot-then-confirmatory study</em>. 본 트랙의 사전등록 / 재현 가능성 기준에 맞춰 다음 변형 적용:</p>
+<h3>2.2 방법론 (사후가설 회피 변형)</h3>
+<p>해당 ML 표준 방법론 명칭은 <em>progressive sampling (점진 표본 확대) / multi-fidelity exploratory cycle (다단계 충실도 탐색) / pilot-then-confirmatory study (예비 후 확증)</em>. 본 트랙의 사전등록 및 재현 가능성 원칙에 맞춰 다음 변형을 적용:</p>
 <ul>
-<li><strong>3-way split</strong>: exploration (Stage 1-3) → development → <em>locked confirmatory holdout</em></li>
-<li><strong>Pre-registered hypothesis families</strong> (5 families, variant cap 사전 고정)</li>
-<li><strong>Stage-별 retain rule 사전 고정</strong> (post-hoc threshold 변경 금지)</li>
-<li><strong>Sequential = pruning only</strong> (단계 통과는 후보 탈락 / 모델 클래스·하이퍼파라미터·평가 규칙 변경 X)</li>
-<li><strong>Confirmatory language ≠ exploratory language</strong> 분리</li>
+<li><strong>3분할 구성</strong>: 탐색 (Stage 1-3) → 개발 → <em>봉인된 확증용 holdout</em></li>
+<li><strong>가설군 사전등록</strong> (5개 군, 군별 변형 수 사전 고정)</li>
+<li><strong>각 단계 통과 기준 사전 고정</strong> (결과 본 후 임계 변경 금지)</li>
+<li><strong>단계 간 진행 = 후보 탈락만</strong> (모델 클래스·하이퍼파라미터·평가 규칙 변경 금지)</li>
+<li><strong>탐색 결과 ≠ 확증 결과</strong> 명확 분리</li>
 </ul>
 
 <div class="gov-box">
-<strong>Method governance / Review controls</strong>:
-- 사전 freeze (Phase 0 mini-prereg) — 6 항목 (KPI / holdout / family roster / stage rule / pipeline / decision-binding)<br>
-- Sealed holdout — Phase 0 시점 봉인, SHA-16 hash 기록, Phase 4 final 1회만 access 권한<br>
-- Independent checkpoint review — pre-freeze 사전 자문 + post-run checkpoint 사후 검수 (key checkpoints, 양방향)<br>
-- Stop logic = retain rule 미달 시 단계 중단 / 결과 본 후 reasoning drift 회피
+<strong>방법론 거버넌스 / 검토 통제</strong>:
+- 사전 freeze (Phase 0 사전등록) — 6항목 (지표 / holdout / 가설군 명세 / 단계 규칙 / 파이프라인 / 결정 영향 분리)<br>
+- 봉인된 holdout — Phase 0 시점에 봉인, SHA-16 해시 기록, 마지막 단계 1회만 접근 권한<br>
+- 독립 체크포인트 검수 — 사전 freeze 자문 + 사후 체크포인트 검수 (주요 체크포인트, 양방향)<br>
+- 종료 기준 = 통과 기준 미달 시 단계 중단 / 결과 본 후 추론 변경 회피
 </div>
 
-<h2 id="sec3">3. How the Cycle Was Run</h2>
+<h2 id="sec3">3. 수행 방법</h2>
 
-<h3>3.1 Phase 0 — Locked holdout 봉인</h3>
+<h3>3.1 Phase 0 — 검증용 holdout 봉인</h3>
 <table>
 <tr><th>항목</th><th>값</th></tr>
-<tr><td>Source</td><td>운영 baseline 학습 데이터 (8,495 rows / 807 artists)</td></tr>
-<tr><td>Holdout 비율</td><td>20% (artist 기준) — 161 artists / 1,680 rows</td></tr>
-<tr><td>Stratification</td><td>Artist depth × median price × low-price share (3축)</td></tr>
-<tr><td>Random seed</td><td>42 (사전 freeze)</td></tr>
-<tr><td>Hash (SHA-16)</td><td><code>1933a0947a918fc9</code></td></tr>
-<tr><td>Access 제한</td><td>Phase 4 final 1회만 — Phase 1-3 / Phase 4 dev 격리</td></tr>
+<tr><td>원본</td><td>운영 baseline 학습 데이터 (작품 8,495건 / 작가 807명)</td></tr>
+<tr><td>Holdout 비율</td><td>20% (작가 기준) — 작가 161명 / 작품 1,680건</td></tr>
+<tr><td>층화 기준</td><td>작가별 작품 수 × 작가 중간가격대 × 저가 비중 (3축)</td></tr>
+<tr><td>난수 시드</td><td>42 (사전 고정)</td></tr>
+<tr><td>해시 (SHA-16)</td><td><code>1933a0947a918fc9</code></td></tr>
+<tr><td>접근 제한</td><td>마지막 단계 1회만 사용 — Stage 1-3 / 개발 단계 전부 격리</td></tr>
 </table>
 
-<h3>3.2 Stage 1 — 200 artworks / 20 artists</h3>
-<p><strong>5 hypothesis families × 18 variants</strong> (4 variants SKIP — Stage 1 schema 부재):</p>
+<h3>3.2 Stage 1 — 작품 200건 / 작가 20명</h3>
+<p><strong>5개 가설군 × 18개 변형</strong> (4개 SKIP — Stage 1 데이터에 일부 column 부재):</p>
 <ul>
-<li><strong>Family A — Geometry variants</strong>: aspect ratio polynomial / aspect × is_3d / depth spline / max dim / full geometry</li>
-<li><strong>Family B — Temporal engineering</strong>: year × birth / career age / decade / age × area</li>
-<li><strong>Family C — Cross-artist categorical interactions</strong>: gallery × category / city × medium / attribution × 3D</li>
-<li><strong>Family D — Artist-level statistical features</strong> (negative control prereg): popularity / for-sale ratio / median proxy</li>
-<li><strong>Family E — Missingness / measurement-quality flags</strong>: year-made missing / depth missing / non-KRW proxy</li>
+<li><strong>가설군 A — 형태 (Geometry)</strong>: 가로/세로비 다항식 / 비율 × 입체 여부 / 깊이 spline / 최대 차원 / 통합 형태</li>
+<li><strong>가설군 B — 시간 변수 (Temporal)</strong>: 제작년도 × 출생연도 / 작가 경력년수 / 연대 / 나이 × 면적</li>
+<li><strong>가설군 C — 작가 무관 범주형 상호작용</strong>: 갤러리 × 카테고리 / 도시 × 매체 / 보증 × 입체</li>
+<li><strong>가설군 D — 작가 통계 변수</strong> (사전등록상 음성 대조군): 인기도 / 판매 가능 비율 / 중앙가 proxy</li>
+<li><strong>가설군 E — 결측 / 측정 품질 flag</strong>: 제작년도 결측 / 깊이 결측 / 비-KRW 통화 proxy</li>
 </ul>
 
-<p><strong>Evaluation</strong>: 100-seed cold-start LAO (artist 20% holdout per seed). Baseline = F4 + spline + Huber regression (운영 채택 모델).</p>
+<p><strong>평가 방식</strong>: 100-seed cold-start LAO 교차검증 (seed 별 작가 20% holdout). Baseline = F4 + spline + Huber 회귀 (운영 채택 모델).</p>
 
-<p><strong>Retain rule (Stage 1, exploratory threshold)</strong>: Overall Δ ≤ -0.3%p AND Low Δ ≤ +0.2%p (vs baseline). 통과 시 family 별 best 1 (tied 2) 선택 후 Stage 2 (500x50) 진입.</p>
+<p><strong>통과 기준 (Stage 1, 탐색 단계 임계)</strong>: Overall Δ ≤ -0.3%p AND Low Δ ≤ +0.2%p (baseline 대비). 통과 시 가설군별 best 1 (동률시 2) 선택 후 Stage 2 (작품 500건 / 작가 50명) 진입.</p>
 
-<h2 id="sec4">4. Key Results</h2>
+<h2 id="sec4">4. 주요 결과</h2>
 
-<h3>4.1 Family-level summary</h3>
+<h3>4.1 가설군 단위 요약</h3>
 
 <table>
-<tr><th>Family</th><th>Variants 평가</th><th>Best variant Overall Δ</th><th>Best variant Low Δ</th><th>Retain</th></tr>
-<tr><td>A — Geometry</td><td>4 / 5 (1 SKIP)</td><td>+0.00%p (max_dim)</td><td>-0.00%p</td><td>✗</td></tr>
-<tr><td>B — Temporal</td><td>4 / 4</td><td>+0.06%p (career_age)</td><td>-0.13%p</td><td>✗</td></tr>
-<tr><td>C — Cross-artist categorical</td><td>2 / 3 (1 SKIP)</td><td>+1.93%p (city_medium)</td><td>+3.28%p</td><td>✗</td></tr>
-<tr><td>D — Artist stats (neg control)</td><td>3 / 3</td><td>+0.21%p (for_sale)</td><td>+0.78%p</td><td>✗</td></tr>
-<tr><td>E — Missingness</td><td>2 / 3 (1 SKIP)</td><td>-0.00%p (year_made)</td><td>-0.00%p</td><td>✗</td></tr>
+<tr><th>가설군</th><th>평가 변형</th><th>최우수 변형 Overall Δ</th><th>최우수 변형 Low Δ</th><th>통과 여부</th></tr>
+<tr><td>A — 형태 (Geometry)</td><td>4 / 5 (1 SKIP)</td><td>+0.00%p (max_dim)</td><td>-0.00%p</td><td>✗</td></tr>
+<tr><td>B — 시간 변수</td><td>4 / 4</td><td>+0.06%p (career_age)</td><td>-0.13%p</td><td>✗</td></tr>
+<tr><td>C — 작가 무관 범주형</td><td>2 / 3 (1 SKIP)</td><td>+1.93%p (city_medium)</td><td>+3.28%p</td><td>✗</td></tr>
+<tr><td>D — 작가 통계 (음성 대조군)</td><td>3 / 3</td><td>+0.21%p (for_sale)</td><td>+0.78%p</td><td>✗</td></tr>
+<tr><td>E — 결측 flag</td><td>2 / 3 (1 SKIP)</td><td>-0.00%p (year_made)</td><td>-0.00%p</td><td>✗</td></tr>
 </table>
 
-<p><strong>요약</strong>: 5 families across 14 evaluable variants → <strong>0 retained</strong>. Of 18 attempted variants, 17 produced an Overall positive shift (consistent with small-sample overfitting under added degrees of freedom).</p>
+<p><strong>요약</strong>: 5개 가설군 / 평가 가능 14개 변형 → <strong>통과 0건</strong>. 시도된 18개 변형 중 17개에서 Overall 양의 방향 (악화) 변동이 관찰되며, 이는 작은 샘플에서 자유도 증가에 따른 과적합의 일반 패턴과 일관됨.</p>
 
 <details>
-<summary>Appendix A — 18 variants 전체 결과 (펼치기)</summary>
+<summary>부록 A — 18개 변형 전체 결과 (펼치기)</summary>
 <div class="detail-content">
 <table>
-<tr><th>Family</th><th>Variant</th><th>Δ_overall</th><th>Δ_low</th><th>Δ_high</th></tr>
-<tr><td>Geometry</td><td>geom_aspect_poly</td><td>+0.49%p</td><td>-0.02%p</td><td>+0.57%p</td></tr>
-<tr><td>Geometry</td><td>geom_aspect_is3d</td><td>+1.83%p</td><td>+0.48%p</td><td>+1.46%p</td></tr>
-<tr><td>Geometry</td><td>geom_depth_spline</td><td colspan="3">SKIP — Stage 1 schema (depth_cm) 부재</td></tr>
-<tr><td>Geometry</td><td>geom_max_dim</td><td>+0.00%p</td><td>-0.00%p</td><td>+0.00%p</td></tr>
-<tr><td>Geometry</td><td>geom_full</td><td>+2.14%p</td><td>+2.10%p</td><td>+1.41%p</td></tr>
-<tr><td>Temporal</td><td>temp_year_birth</td><td>+2.84%p</td><td>+3.12%p</td><td>+2.84%p</td></tr>
-<tr><td>Temporal</td><td>temp_career_age</td><td>+0.06%p</td><td>-0.13%p</td><td>+0.86%p</td></tr>
-<tr><td>Temporal</td><td>temp_decade</td><td>+0.52%p</td><td>+0.54%p</td><td>+0.43%p</td></tr>
-<tr><td>Temporal</td><td>temp_age_x_area</td><td>+0.43%p</td><td>+0.28%p</td><td>+0.48%p</td></tr>
-<tr><td>Cross-cat</td><td>cat_gallery_x_category</td><td>+4.14%p</td><td>+1.63%p</td><td>+4.28%p</td></tr>
-<tr><td>Cross-cat</td><td>cat_city_medium</td><td>+1.93%p</td><td>+3.28%p</td><td>+1.45%p</td></tr>
-<tr><td>Cross-cat</td><td>cat_attribution_x_3d</td><td colspan="3">SKIP — Stage 1 schema 부재</td></tr>
-<tr><td>Artist stats</td><td>artist_popularity</td><td>+0.68%p</td><td>-3.33%p</td><td>+1.78%p</td></tr>
-<tr><td>Artist stats</td><td>artist_for_sale</td><td>+0.21%p</td><td>+0.78%p</td><td>+0.37%p</td></tr>
-<tr><td>Artist stats</td><td>artist_median_proxy</td><td>+1.61%p</td><td>-1.59%p</td><td>+2.25%p</td></tr>
-<tr><td>Missingness</td><td>miss_year_made</td><td>-0.00%p</td><td>-0.00%p</td><td>-0.00%p</td></tr>
-<tr><td>Missingness</td><td>miss_depth</td><td colspan="3">SKIP — Stage 1 schema 부재</td></tr>
-<tr><td>Missingness</td><td>miss_proxy_USD</td><td>+2.21%p</td><td>+1.42%p</td><td>+2.95%p</td></tr>
+<tr><th>가설군</th><th>변형</th><th>Δ_overall</th><th>Δ_low</th><th>Δ_high</th></tr>
+<tr><td>형태</td><td>geom_aspect_poly</td><td>+0.49%p</td><td>-0.02%p</td><td>+0.57%p</td></tr>
+<tr><td>형태</td><td>geom_aspect_is3d</td><td>+1.83%p</td><td>+0.48%p</td><td>+1.46%p</td></tr>
+<tr><td>형태</td><td>geom_depth_spline</td><td colspan="3">SKIP — Stage 1 데이터 (depth_cm) 부재</td></tr>
+<tr><td>형태</td><td>geom_max_dim</td><td>+0.00%p</td><td>-0.00%p</td><td>+0.00%p</td></tr>
+<tr><td>형태</td><td>geom_full</td><td>+2.14%p</td><td>+2.10%p</td><td>+1.41%p</td></tr>
+<tr><td>시간</td><td>temp_year_birth</td><td>+2.84%p</td><td>+3.12%p</td><td>+2.84%p</td></tr>
+<tr><td>시간</td><td>temp_career_age</td><td>+0.06%p</td><td>-0.13%p</td><td>+0.86%p</td></tr>
+<tr><td>시간</td><td>temp_decade</td><td>+0.52%p</td><td>+0.54%p</td><td>+0.43%p</td></tr>
+<tr><td>시간</td><td>temp_age_x_area</td><td>+0.43%p</td><td>+0.28%p</td><td>+0.48%p</td></tr>
+<tr><td>범주형</td><td>cat_gallery_x_category</td><td>+4.14%p</td><td>+1.63%p</td><td>+4.28%p</td></tr>
+<tr><td>범주형</td><td>cat_city_medium</td><td>+1.93%p</td><td>+3.28%p</td><td>+1.45%p</td></tr>
+<tr><td>범주형</td><td>cat_attribution_x_3d</td><td colspan="3">SKIP — Stage 1 데이터 부재</td></tr>
+<tr><td>작가 통계</td><td>artist_popularity</td><td>+0.68%p</td><td>-3.33%p</td><td>+1.78%p</td></tr>
+<tr><td>작가 통계</td><td>artist_for_sale</td><td>+0.21%p</td><td>+0.78%p</td><td>+0.37%p</td></tr>
+<tr><td>작가 통계</td><td>artist_median_proxy</td><td>+1.61%p</td><td>-1.59%p</td><td>+2.25%p</td></tr>
+<tr><td>결측 flag</td><td>miss_year_made</td><td>-0.00%p</td><td>-0.00%p</td><td>-0.00%p</td></tr>
+<tr><td>결측 flag</td><td>miss_depth</td><td colspan="3">SKIP — Stage 1 데이터 부재</td></tr>
+<tr><td>결측 flag</td><td>miss_proxy_USD</td><td>+2.21%p</td><td>+1.42%p</td><td>+2.95%p</td></tr>
 </table>
 </div>
 </details>
 
-<h2 id="sec5">5. Interpretation</h2>
+<h2 id="sec5">5. 해석</h2>
 
-<p>두 갈래 신호가 일관됩니다.</p>
+<p>두 갈래의 신호가 일관됩니다.</p>
 
 <ul>
-<li><strong>Internal feature ladder 의 한계 신호</strong>: 본 cycle 직전 별도 sample-size sensitivity 분석에서, 큐레이트된 작은 샘플 (200-1378 rows) 의 baseline MdAPE 24-27% vs 운영 분포 (8,495 rows) 의 38.03% 격차가 <em>표본 크기보다 분포 조성 (composition)</em> 차이로 설명됨이 확인됐습니다. 즉 추가 표본 확대보다 정보축 자체의 부재가 1차 병목.</li>
-<li><strong>본 cycle 의 retain 0 결과</strong>: 평가 가능한 14 variants 중 어느 family 도 decision-relevant improvement 를 보이지 않음 — 대부분 variants 가 악화 또는 near-null 정체. 작은 샘플 noise 의 일반 패턴이지만, 동시에 <em>현 정보 조건 내에서 추가 feature 재배열의 한계 정황</em>도 됩니다.</li>
+<li><strong>내부 feature 확장의 한계 신호</strong>: 본 cycle 직전 별도로 진행한 표본 크기 민감도 분석에서, 큐레이트된 작은 샘플 (작품 200-1,378건) 의 baseline MdAPE 24-27% 와 운영 분포 (작품 8,495건) 의 38.03% 사이 격차가 <em>표본 크기보다 분포 조성 (composition) 차이</em> 로 설명됨이 확인됐습니다. 즉 추가 표본 확대보다 정보축 자체의 부재가 1차 병목.</li>
+<li><strong>본 cycle 의 통과 0건 결과</strong>: 평가 가능한 14개 변형 중 어느 가설군도 의사결정에 의미 있는 개선을 보이지 않음 — 대부분 변형이 악화 또는 0 부근 정체. 작은 샘플 noise 의 일반 패턴이지만, 동시에 <em>현 정보 조건 내에서 추가 feature 재배열의 한계 정황</em>도 됩니다.</li>
 </ul>
 
-<p>따라서 <strong>Axis A continuation (내부 feature 추가) 보다 Axis B (외부 lawful source 확보) 가 information bottleneck 에 대한 더 직접적 대응</strong>이라는 동일 의사결정 logic 으로 본 cycle 종결 + Axis B 우선 진입을 결정합니다.</p>
+<p>따라서 <strong>내부 feature 추가 (Axis A continuation) 보다 외부 합법적 데이터 source 확보 (Axis B / license 우선) 가 정보 병목에 대한 더 직접적 대응</strong>이라는 동일한 의사결정 논리에서 본 cycle 종결 + Axis B 우선 진입을 결정합니다.</p>
 
-<h2 id="sec6">6. Secondary Observations (non-decision-driving)</h2>
+<h2 id="sec6">6. 부수 관측 (의사결정 미개입)</h2>
 
 <div class="caveat-box">
-<strong>아래 관찰은 의사결정 근거가 아닙니다</strong>: 작은 샘플 (200x20) 의 std 9.41% noise 영향 + Family D 의 사전 negative-control 등록 + 단일 / 유사 hypothesis 의 다른 평가 (full-like dataset) 결과와의 정합성 부족 등 — artifact prior 가 더 높습니다.
+<strong>아래 관측은 의사결정 근거가 아닙니다</strong>: 작은 샘플 (200x20) 의 std 9.41% noise 영향 + 가설군 D 의 사전 음성 대조군 등록 + 동일 / 유사 가설의 더 큰 데이터셋 평가 결과와의 정합성 부족 등 — 작은 표본 인공효과 가능성이 더 큽니다.
 </div>
 
 <table>
-<tr><th>Variant</th><th>Overall Δ</th><th>Low Δ</th><th>High Δ</th><th>해석</th></tr>
-<tr><td>artist_popularity</td><td>+0.68%p</td><td><strong>-3.33%p</strong></td><td>+1.78%p</td><td>저가 segment 에서 부분 개선 / mid-high 악화 — segment heterogeneity 가능성</td></tr>
+<tr><th>변형</th><th>Overall Δ</th><th>Low Δ</th><th>High Δ</th><th>해석</th></tr>
+<tr><td>artist_popularity</td><td>+0.68%p</td><td><strong>-3.33%p</strong></td><td>+1.78%p</td><td>저가 영역에서 부분 개선 / 중고가 악화 — 영역별 이질성 가능성</td></tr>
 <tr><td>artist_median_proxy</td><td>+1.61%p</td><td>-1.59%p</td><td>+2.25%p</td><td>유사 패턴</td></tr>
 </table>
 
-<p><strong>위치</strong>: future preregistered low-slice diagnostic 가설로만 보존 (본 cycle 의 promotion 근거 X).</p>
+<p><strong>위치</strong>: 향후 사전등록된 저가 영역 진단 가설로만 보존 (본 cycle 의 진행 근거 X).</p>
 
-<h2 id="sec7">7. Assets Preserved for Future Use</h2>
+<h2 id="sec7">7. 보존 자산</h2>
 
 <div class="asset-box">
-<strong>Locked holdout asset (validated, sealed)</strong>:
+<strong>봉인된 검증 자산 (검증 완료, 봉인 유지)</strong>:
 <ul>
-<li>Path: <code>data/curated/progressive_sampling_locked_holdout_v1.parquet</code></li>
-<li>Hash: SHA-16 <code>1933a0947a918fc9</code> — sealed 2026-05-07</li>
-<li>Composition: 161 artists / 1,680 rows, stratified by depth × median price × low-share</li>
-<li>Status: 본 cycle 의 confirmatory access 미사용 (Stage 4 final 미진입). 향후 별도 preregistered cycle 또는 Axis B 결과 후 재사용 가능</li>
+<li>경로: <code>data/curated/progressive_sampling_locked_holdout_v1.parquet</code></li>
+<li>해시: SHA-16 <code>1933a0947a918fc9</code> — 2026-05-07 봉인</li>
+<li>구성: 작가 161명 / 작품 1,680건, 작가별 작품 수 × 중간가격대 × 저가 비중 층화</li>
+<li>상태: 본 cycle 의 확증 단계 미사용 (마지막 단계 미진입). 향후 별도 사전등록 cycle 또는 Axis B 결과 후 재사용 가능</li>
 </ul>
-이번 cycle 의 종결은 자산 손실이 아닌 <em>governance-preserving stop</em> — sealed holdout 무결성 보존.
+이번 cycle 종결은 자산 손실이 아닌 <em>절차 무결성 보존형 종료</em> — 봉인된 holdout 의 무결성 보존.
 </div>
 
-<h2 id="sec8">8. Caveats and Operational Impact</h2>
+<h2 id="sec8">8. 한계와 운영 영향</h2>
 
 <table>
 <tr><th>항목</th><th>상태</th></tr>
-<tr><td>본 cycle 의 evidence 위계</td><td>Exploratory stage only — Stage 2 promotion 없음 / decision-grade evidence X</td></tr>
-<tr><td>Sub-signal (artist popularity Low improvement)</td><td>Non-conclusive observation — small-sample artifact 가능성 우위, transferability 미검증</td></tr>
-<tr><td>SKIP variants (4건)</td><td>Stage 1 dataset 의 일부 column 부재로 평가 미수행 — "모든 preregistered variant 가 공정 평가" 가 아닌 "평가 가능한 variant 들에서 advancement evidence 없음" 이 정확</td></tr>
-<tr><td>운영 spec 영향</td><td><strong>변경 없음</strong> — operational baseline + calibration-only path 그대로</td></tr>
+<tr><td>본 cycle 의 근거 위계</td><td>탐색 단계 한정 — Stage 2 진입 없음 / 의사결정급 근거 없음</td></tr>
+<tr><td>부수 관측 (artist popularity 의 저가 개선)</td><td>의사결정 미개입 — 작은 표본 인공효과 가능성이 우위, 일반화 가능성 미검증</td></tr>
+<tr><td>SKIP 변형 (4건)</td><td>Stage 1 데이터셋에 일부 column 부재로 평가 미수행 — "사전등록된 모든 변형이 공정 평가" 가 아닌 "평가 가능한 변형들에서 진행 근거 없음" 이 정확</td></tr>
+<tr><td>운영 모델 영향</td><td><strong>변경 없음</strong> — 운영 baseline + 보정 후처리 한정 경로 그대로 유지</td></tr>
 </table>
 
 <hr>
 
 <p style="text-align: center; color: #888; font-size: 11px;">
-Progressive Sampling Exploratory Cycle — 2026-05-07 closure / governance-preserving stop /
-sealed holdout preserved for future preregistered use
+점진 표본 확대 탐색 cycle — 2026-05-07 종결 / 절차 무결성 보존형 종료 /
+봉인된 holdout 향후 사전등록 cycle 재사용 가능 자산으로 보존
 </p>
 
 </body>
