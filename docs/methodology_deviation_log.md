@@ -108,7 +108,7 @@
 - **B: KOSIS aggregate**: 미술시장 검색 hit 4 만 — 정부 공식 art market 통계 source 약함
 - **B: KAMS aggregate**: 자료실 empty / artmarket sub-domain 500 / login 필요 추정 → 데이터 직접 access 어려움
 - **종합 판정**: Phase A 종합 = HOLD 유지 (Round 2 v2 그대로). 코덱스 사전 자문 base hypothesis (Option B ROI 낮음 — label scarcity 미해결) **재확인**
-- **우선순위 update (post-Round-2B)**: A (license-first) 1순위 변동 X / B (Round 2B) **3순위 격하** (Round 2B 결과로 ROI 낮음 입증) / E (MCST partial PASS, Arko unresolved 유지)
+- **우선순위 update (post-Round-2B, 코덱스 P1 톤 정정 v2)**: A (license-first) 1순위 변동 X / B (Round 2B) **3순위 격하** (실무 우선순위 하락 — A를 막을 정도의 ROI 아님 / B 구조적 ROI 입증 X / 탐색 깊이 부족) / E (MCST partial PASS = access recovery only, transport resolved but endpoint unconfirmed / Arko unresolved HOLD — freeze §3.3 24-72h × 3회 spec 미충족, 1차 retry 만 기록)
 - **분류**: **none (정상 흐름)** — Round 2B 결과 freeze rule 그대로 적용
 - **운영 영향 X**: Phase A HOLD 그대로 / 운영 spec §1-§16 변경 X / 분기 B 유지
 
