@@ -101,6 +101,34 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Feature Track A.2 결과] Artist popularity FAIL → A.3 escalation (none, 정상 흐름)
+- **사전등록 §3 적용 결과** (100-seed LAO):
+  * Overall: baseline 38.03% → A.2 37.82% (-0.21%p, 사실상 동등)
+  * Low: +0.05%p ⚠️ Hard gate 위반
+  * Mid-high: -0.47%p
+  * Newly-warm: -0.81%p
+  * Cluster bootstrap (rep seed=0, n=2000, 진짜 cluster bootstrap A.1 v2 fix): mean -0.39%p, 95% CI [-3.85, +3.03], 99% CI [-5.40, +4.47]
+  * Seed-level low violation rate: 45/100 = 45.0% (A.1 의 41/100 보다 4%p 높음)
+- **판정**: **FAIL (🔴 Hard gate Δ_low > 0 위반)** — 즉시 FAIL
+- **분류**: **none (정상 흐름)** — 사전등록 §3.3 hard gate 적용
+- **Step gate B안 적용**: A.2 FAIL → A.3 (geometry — aspect ratio + 2D vs 3D) escalation, A.2 features drop (alternative hypothesis sequence)
+- **메커니즘 해석 (코덱스 framing)**: Single-snapshot artist features (followers/for_sale/is_p1) = **cold-start LAO 에서 무력** — Stage 6B partial pooling random intercept 무력화 패턴 반복. Artist-binding signal 은 LAO 평가 구조의 본질적 한계 (artist holdout = 학습된 effect 가 unseen artist 에 적용 X).
+- **A.1 vs A.2 대조**: A.1 cross-artist signal (작품 분류 + 갤러리) = 약한 개선 / A.2 artist-binding signal (popularity) = 무력 → "Cold-start LAO 에서 유효한 features 는 cross-artist applicable" 가설 입증
+- **운영 영향 X**: 운영 spec §1-§16 변경 X / 분기 B calibration only 그대로 유지
+- **승인**: 사용자 검토 + 코덱스 사후 자문 (예정)
+
+### 2026-05-07 — [Feature Track A.2 prereg freeze] Artist popularity 4종 (none + minor)
+- **사전등록 시점 정합성 평가 (코덱스 design draft P1 권고 적용)**:
+  * artist_followers / artist_for_sale / artist_is_p1: artist 당 unique 1.00 = single snapshot (운영 F4 의 artist_total_works 와 동등 spec)
+  * year_made: 작품 본질 attribute, 시점 정합성 명확 OK
+- **Honesty caveat 명시**: historical reconstruction 불가 (Artsy historical API 부재 / Stage 5 acquisition 종료) → deployment-time consistency 가정 의존. 운영 F4 가 이미 동등 spec (artist_total_works) 사용 중 = 자기모순 X
+- **A.1 v2 lessons 사전 반영**:
+  1. Cluster bootstrap 진짜 구현 (artist 별 indices 사전 매핑 + with replicas)
+  2. α=0.01 = 99% CI 상한 ≤ 0 decision rule (95% CI 참고만)
+  3. Per-step freeze 6항목 spec 그대로
+- **분류**: **none (정상 흐름)** — Step gate B안 escalation
+- **승인**: 사용자 (2026-05-07) — A.1 BORDERLINE → A.2 진입 결정, 시점 정합성 평가 후 caveat 인정 진입
+
 ### 2026-05-07 — [Feature Track A.1 v2] 코덱스 결과 검수 P0×2 fix (minor / 사후 정정)
 - **코덱스 결과 검수 1차 (2026-05-07)**: HOLD — A.2 진입 보류 권고
 - **P0 #1 (Implementation bug)**: cluster_bootstrap_diff 의 `np.isin()` 가 `replace=True` 중복 draw 를 collapse → 진짜 cluster bootstrap 가중치 미반영. 본 fix = artist 별 indices 사전 매핑 + sample 별 concatenate (with replicas). Stage 6B 코드도 동일 bug 보유 (recurring pattern, 향후 cycle 에서 동일 fix 적용 의무). **fix 후 95% CI [-9.41, +1.94] (이전 [-8.31, +1.04] 대비 wider)** — bootstrap 가중치 정합 반영. 결과 본 후 fix 이지만 **결과 변경 X** (BORDERLINE → BORDERLINE 유지, 95% / 99% 둘 다 미달).
