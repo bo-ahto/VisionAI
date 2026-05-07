@@ -3,7 +3,7 @@
 > **작성일**: 2026-05-07 (Stage 5 시작 전 freeze)
 > **목적**: External feature acquisition 의 **source feasibility 검증 + 수집 protocol 사전등록** (acquisition vs modeling 분리, HARK 회피)
 > **위치**: 새 Phase 2 = External Feature Acquisition + Validation (Stage 5) 의 **첫 단계**
-> **연계**: `docs/stage4_short_term_track_results_20260507.md` (Feature 부족 가설 input) / `docs/stage5c_modeling_prereg_20260507.md` (별도 — 본 prereg 종결 후 작성)
+> **연계**: `docs/stage4_short_term_track_results_20260507.md` (Feature 부족 가설 input) / `docs/stage5c_modeling_prereg_20260507.md` (별도, **2026-05-07 동시 freeze** — 5A 결과 후에는 placeholder feature dictionary 만 re-freeze)
 
 > ⚠️ **본 prereg 적용 범위**: Stage 5A (feasibility) + 5B (acquisition execution + entity resolution + feature construction). **Modeling 검증 (5C) 는 별도 prereg** — acquisition 결과 보고 후 별도 freeze (HARK 회피).
 
@@ -40,8 +40,8 @@
 | **1. Coverage** | 한국 작가 cohort cover 비율 (Artsy 823 / Stage 4 warm 120 기준) | warm artist ≥ 50% (≥ 60명) |
 | **2. Price directness** | 가격 anchor 직접성 (가격 자체 / proxy / 정성) | 직접 (auction 가격 등) > proxy > 정성 |
 | **3. Integration cost** | 데이터팀 / 인프라 / 매칭 비용 | 1주 이내 acquisition + entity resolution 가능 |
-| **4. Legal risk** | 라이선스 / 저작권 / GDPR / TOS 위반 | 명시적 허용 또는 fair use 명확 |
-| **5. Expected incremental signal** | Artsy 와 독립 정보 제공 정도 (correlation 낮을 것) | Artsy feature 와 corr ≤ 0.3 (사전 추정) |
+| **4. Legal risk** | 라이선스 / 저작권 / GDPR / TOS 위반 | **허용된 acquisition mode 1+ 식별**: (a) 공개 API + 허용 필드, (b) `robots.txt` allow + TOS 명시 허용, (c) 학술 / fair-use 가이드라인 적용 가능 (변호사 자문 필수), (d) 명시적 license 계약 |
+| **5. Expected incremental signal** | Artsy 와 독립 정보 제공 정도 | **Feasibility proxy**: (a) source 설명상 Artsy 미제공 변수 (가격 anchor / 매매 history 등) ≥ 1개 명시, (b) 한국 작가 sample 5명 이상 web 검토 시 Artsy 와 다른 정보 확인. corr 정량 측정은 5B 이후 |
 
 > **PASS = 5축 모두 ✓** / **BORDERLINE = 4축 ✓ + 1축 ✗** (운영팀 / 의사결정자 검토) / **REJECT = 3축 이하 ✓**
 
@@ -112,11 +112,10 @@
 - ❌ 저가 segment harm 해소 검증 (= 5C secondary)
 - ❌ 운영 spec 변경 (모델 fit 결과 기반 변경 X)
 
-### 7.2 5C prereg 분리 의무
-- 5A-5B 종결 후 acquisition 결과 (matched dataset) 확정
-- 결과 보고 (5A-5B 종결 보고서)
-- **그 후 5C prereg 별도 freeze** (modeling 가설 / metric / PASS 기준 사전등록)
-- 5C prereg 는 acquisition 결과를 본 후 작성하므로 일부 HARK risk 존재 — 단, modeling family / baseline / metric 은 본 prereg 와 동일 freeze
+### 7.2 5C prereg 분리 의무 (2026-05-07 동시 freeze)
+- **5C prereg 는 본 5A 와 동시에 freeze** (`docs/stage5c_modeling_prereg_20260507.md`, 2026-05-07): modeling 가설 / metric / Holm family / PASS 기준 사전등록 완료
+- 5A-5B 종결 후 변경 가능 항목 = **placeholder 만** (`<external_feature_set>` → 확정 feature list)
+- Re-freeze 시 deviation log entry 의무 — 가설 / metric / PASS 기준 변경 시 새 cycle 분리
 
 ### 7.3 Deviation log 의무
 - 5A 진행 중 사전등록 외 source 발견 / 평가 기준 변경 시 즉시 기록
@@ -133,11 +132,14 @@
 
 ## 9. 산출물
 
-- 본 prereg: `docs/stage5a_acquisition_prereg_20260507.md`
-- Source scorecard: `docs/stage5a_source_scorecard.md` (Week 1 종료 시)
-- Feasibility memo: `docs/stage5a_feasibility_memo.md` (Week 3 종료 시)
-- 5A 결과 보고: `docs/stage5a_results_YYYYMMDD.md` (5A 종결 시)
-- 5C prereg: `docs/stage5c_modeling_prereg_20260507.md` (별도, 5A 종결 후 작성)
+| 산출물 | 상태 | 일정 |
+|---|---|---|
+| 본 prereg: `docs/stage5a_acquisition_prereg_20260507.md` | ✅ 완료 (2026-05-07) | — |
+| 5C prereg: `docs/stage5c_modeling_prereg_20260507.md` | ✅ 완료 (2026-05-07 동시 freeze) | placeholder만 re-freeze |
+| Source scorecard: `docs/stage5a_source_scorecard.md` | ⏳ **예정 산출물** | Week 1 종료 시 |
+| Feasibility memo: `docs/stage5a_feasibility_memo.md` | ⏳ **예정 산출물** | Week 3 종료 시 |
+| 5A 결과 보고: `docs/stage5a_results_YYYYMMDD.md` | ⏳ **예정 산출물** | 5A 종결 시 |
+| 5B feature dictionary: `docs/stage5b_feature_dictionary.md` | ⏳ **예정 산출물** | 5B 종결 시 |
 
 ## 10. 위험 + 대응
 
@@ -155,7 +157,7 @@
 |---|---|
 | Stage 4 단기 트랙 종결 | Stage 5 prereg = "external feature acquisition" 중심 권고 |
 | 본 prereg 사전 자문 (2026-05-07) | 4단계 (5A-5D) 구조 + 사전등록 9 항목 + acquisition vs modeling 분리 |
-| 5A 종결 (예정) | feasibility 결과 review + 5C prereg 작성 자문 |
+| 5A 종결 (예정) | feasibility 결과 review + 5C placeholder re-freeze 자문 |
 
 ## 12. 다음 액션 (5A Week 1)
 

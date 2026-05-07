@@ -149,10 +149,11 @@
 
 ## 5. 다중비교 보정 (Multi-comparison Correction)
 
-### 5.1 보정 방법 선택
-- **Primary**: Holm-Bonferroni (sequential, less conservative)
+### 5.1 보정 방법 선택 (Stage 4 부터, 2 family 분리)
+- **Primary family**: 단일 비교 unadjusted (운영 채택 게이트 — Stage 4 § 6.0 / Stage 5C § 2.6)
+- **Secondary family**: Holm-Bonferroni (sequential, less conservative) — primary 와 별도 family
 - **Sensitivity**: Bonferroni (most conservative, 부록 보고)
-- **Family-wise α = 0.05**
+- **Family-wise α = 0.05** (each family)
 
 ### 5.2 Stage 3 결과 재계산 (C)
 - 별도 실험 `stage3_warm_holm_adjusted.py` 진행
@@ -179,9 +180,9 @@
 - Stage 4 합격 기준 (CI 상한 ≤ 0) 통과는 매우 어려울 수 있음
 - 본 cycle 의 정직한 기대: **effect 방향성 + segment harm 검증** (통계적 유의성 보장 X)
 
-### 6.3 Phase 2 진입 전 추가 power 계산
-- Phase 2 = Artsy 동일 풀 (8,891) → 추가 power 확보 X
-- 외부 source (auction archives 등) 보강 cycle 필요 시 별도 검토
+### 6.3 Phase 2 (Stage 5) 진입 전 추가 power 계산
+- 기존 Artsy-only 풀 만으로는 추가 power 확보 X (Stage 4 결과로 입증)
+- **Stage 5 = External feature acquisition (auction / provenance / 등) 보강 cycle** — 5C 시작 전 power simulation 의무
 
 ## 7. Calibration / OOD / Drift (추가 권고)
 
@@ -205,7 +206,7 @@
 | 가격 저가 (P33 미만) | +1.0%p |
 | 가격 중가 (P33-P67) | +0.5%p |
 | 가격 고가 (P67+) | +1.0%p |
-| Source: Artsy (Phase 2 = Artsy-only, Saatchi 제외) | +1.0%p |
+| Source: Artsy (Stage 4 cycle) / Stage 5 = Artsy + external (auction 등) | +1.0%p |
 | Medium: oil / acrylic | +0.5%p |
 | Medium: 기타 | +1.5%p |
 | Depth bin 10-14 | +1.5%p |

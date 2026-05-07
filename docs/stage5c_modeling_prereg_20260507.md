@@ -54,19 +54,19 @@
 | **F3: Provenance / exhibition** | `<solo_count_external>` / `<institution_count>` (Artsy 보유 + auction CV) | 5A 2순위 |
 | (5A 결과 의존) | (추가 family) | (추가 source) |
 
-### 2.6 Secondary hypotheses (Holm m=N, primary 와 별도 family)
+### 2.6 Secondary hypotheses (Holm m=6 confirmatory, primary 와 별도 family — **2026-05-07 fix**)
 
-> N = 5A 결과 의존. 5A 종결 후 secondary list 확정.
+> 본 6개 list 는 **2026-05-07 freeze**. 5A-5B 종결 후 변경 X (HARK 회피).
+> Family 정의 = Stage 4 결과 기반 — F1/F2/F3 family 자체는 placeholder 가 아님 (구체 변수만 5A 결과 후 매핑).
 
-기본 secondary 후보 (예정):
-1. Low-price segment harm 감소 (Stage 4 +5.63%p → +1%p 이내)
-2. Depth 15-24 harm 감소 (Stage 4 +6.76%p → +1%p 이내)
-3. Composition-shift 개선 — 신규 warm 작가 효과 (Stage 4 +0.25%p → -2%p 이상)
-4. F1 (auction anchor) 단독 효과
-5. F2 (market activity) 단독 효과
-6. F3 (provenance) 단독 효과
+1. **Low-price segment harm 감소**: Stage 4 baseline-vs-FE +5.63%p → external model 에서 +1%p 이내
+2. **Depth 15-24 harm 감소**: Stage 4 +6.76%p → +1%p 이내
+3. **Composition-shift 개선** (신규 warm 작가 효과): Stage 4 신규 +0.25%p → external model 에서 -2%p 이상
+4. **F1 family (Auction price anchor) 단독 효과**: external model − baseline ≤ -1.0%p
+5. **F2 family (Market activity) 단독 효과**: external model − baseline ≤ -1.0%p
+6. **F3 family (Provenance / exhibition) 단독 효과**: external model − baseline ≤ -1.0%p
 
-→ Holm m=6 별도 family 적용
+> **m=6 Holm family-wise α=0.05** 적용. **5A 결과 후 변경 가능한 것 = 각 family 의 구체 변수 명** 만 (예: `auction_median_price_log` ↔ `auction_mean_price_log` 등). family 자체 추가/삭제 = HARK violation → deviation log + 새 cycle.
 
 ### 2.7 Sample 분할 (변경 X)
 - Train ≤ 2023 / Val 2024 / Test 2025 (Stage 4 v3 동일)
@@ -134,7 +134,7 @@
 - Source: Artsy only (Saatchi 제외 동일)
 
 ### 4.4 PASS 보고 의무 항목
-- 합격 조건 4 항목 (§3.1) 모두 결과 명시
+- 합격 조건 5 항목 (§3.1: CI 상한 / practical Δ / seed std / segment harm / composition-shift) 모두 결과 명시
 - effect heterogeneity (subgroup CI) 동시 보고
 - 실패 항목 있으면 BORDERLINE 또는 FAIL 분류
 
