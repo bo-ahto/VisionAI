@@ -133,6 +133,10 @@ window.MathJax = {
 
 <h2>1. 모델 수식 정의 (Hedonic + Mixed-Effects)</h2>
 
+<div class="info-box">
+  <strong>표본 차이 caveat (전체 보고서 공통)</strong>: 본 모델 학습/평가 = 1,378 records / 100 artists (Stage 3 cleansed). 운영 V3 = 28,376 records 전체. 두 모델의 절대 비교에 한계 있음. 같은 평가 protocol (LAO holdout) 안에서 트랙 2 의 cold-start 우위 일관 확인.
+</div>
+
 <h3>1.1 선형 Hedonic 회귀 (운영 채택 모델)</h3>
 
 <p>가격 (KRW) 의 자연로그를 종속변수로 두고, 작품/작가 특성의 선형 결합 + log_area 의 spline 항으로 모형화:</p>
@@ -484,14 +488,23 @@ $$\text{CI}_{95\%} = \left[ Q_{2.5\%}(\text{boot}), Q_{97.5\%}(\text{boot}) \rig
   </ul>
 </div>
 
-<h3>7.5 본 모델 평가 결과 (참조)</h3>
+<h3>7.5 본 모델 평가 결과 (실험 비교 — 운영 채택과 다름)</h3>
+
+<div class="info-box">
+  <strong>주의 — 본 표의 ME 결과는 실험 비교용 (warm-start 시나리오 검토)</strong>
+  <ul>
+    <li><strong>운영 채택 모델</strong>: warm = V3 (기존) / cold = 트랙 2 (F4 + spline + Huber, ME 비채택)</li>
+    <li>본 표의 ME 컬럼은 학술적 검토 결과로, 운영 라우팅과는 다른 개념</li>
+    <li>운영 라우팅 spec 은 §9.2 와 production_통합_spec §1 참조</li>
+  </ul>
+</div>
 
 <table>
   <tr><th>평가 방식</th><th>OLS MdAPE</th><th>ME MdAPE</th><th>비고</th></tr>
-  <tr><td>LAO 30-seed (cold-start)</td><td>25.49%</td><td>25.54%</td><td>cold-start 에서 ME 무력화</td></tr>
-  <tr><td>Random split 30-seed (warm)</td><td>25.10%</td><td>15.46%</td><td>warm 에서 ME 효과 발현</td></tr>
-  <tr><td>Time-split (≤2023 train)</td><td>25.45%</td><td>21.74%</td><td>현실 운영 근사</td></tr>
-  <tr><td>Time + warm threshold (이원)</td><td>—</td><td>22.30~25.18%</td><td>운영 도입안</td></tr>
+  <tr><td>LAO 30-seed (cold-start)</td><td>25.49%</td><td>25.54%</td><td>cold-start 에서 ME 무력화 → 운영 채택 X</td></tr>
+  <tr><td>Random split 30-seed (warm)</td><td>25.10%</td><td>15.46%</td><td>warm 에서 ME 효과 (학술 검토 결과)</td></tr>
+  <tr><td>Time-split (≤2023 train)</td><td>25.45%</td><td>21.74%</td><td>현실 운영 근사 (실험)</td></tr>
+  <tr><td>Time + warm threshold (이원, 실험)</td><td>—</td><td>22.30~25.18%</td><td>실험 시뮬레이션 — 운영 채택 = V3 + 트랙 2 OLS+spline+Huber</td></tr>
 </table>
 
 <h2>8. Calibration (후처리 보정)</h2>

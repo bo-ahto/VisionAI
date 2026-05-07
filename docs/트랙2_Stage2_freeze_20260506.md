@@ -4,6 +4,8 @@
 > **연계**: `docs/1개월_병행일정_V5_Structural.html` Week 2 GATE 2
 > **연계**: `docs/데이터클렌징_단계계획_20260506.md` Stage 2
 
+> **표본 차이 caveat (전체 보고서 공통)**: 본 freeze 결정은 Stage 2 (500/50) 기준이고, 후속 검증/운영 결정은 Stage 3 (1,378/100) 기준. 즉 **트랙 2 학습 표본 ≈ 1.3K vs V3 운영 표본 28K** — 두 모델 절대 비교에 한계 있음, 같은 LAO protocol 안에서 트랙 2 cold-start 우위 일관 확인.
+
 ## 1. 요약
 
 **Stage 2 OLS Hedonic feature set freeze: F4 (3 features)**
