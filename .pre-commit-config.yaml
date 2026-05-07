@@ -1,0 +1,50 @@
+# pre-commit hooks for VisionAI primary-market price engine.
+#
+# Codex 하네스 리뷰 P1 (2026-04-30): repo 자동화로 fail-fast 체계 구축.
+# CI workflow와 동일 도구를 local commit 시점에 실행하여 PR 직전 회귀 차단.
+#
+# 설치:
+#   uv tool install pre-commit  # 또는 pip install pre-commit
+#   pre-commit install
+#
+# 수동 실행:
+#   pre-commit run --all-files
+#
+# 일시적 우회 (특별한 이유가 있을 때만):
+#   git commit --no-verify
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$|\.json$'
+      - id: end-of-file-fixer
+        exclude: '\.json$|\.npz$|\.cbm$|\.parquet$|\.png$'
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=15000']  # 15MB cap (oof_predictions.npz 8MB / catboost 4MB 통과)
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  - repo: local
+    hooks:
+      - id: pytest-fast
+        name: pytest (fast subset — price_engine helpers + provenance via uv)
+        # uv run 으로 hermetic 실행: pre-commit 환경의 pytest 활성화 여부와 무관.
+        # 사전 조건: `uv sync --extra dev --extra price-engine-core --extra price-engine-exp`.
+        entry: uv run --frozen pytest tests/price_engine/test_eval_helpers.py tests/price_engine/test_provenance.py -q
+        language: system
+        pass_filenames: false
+        types: [python]
+        stages: [pre-commit]
+        require_serial: true

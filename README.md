@@ -4,16 +4,28 @@ Computer Vision & AI Platform
 
 ## Setup
 
+권장: [uv](https://github.com/astral-sh/uv) 사용 — `uv.lock`이 의존성을 핀하여 OOF / 학습 결과 재현성을 보장합니다.
+
 ```bash
-# 가상환경 생성
+# uv로 sync (uv.lock 기준 — 권장)
+uv sync --extra dev --extra price-engine-core --extra price-engine-exp
+
+# price engine API까지 포함
+uv sync --all-extras
+
+# 잠금 파일 갱신 (의존성 변경 시)
+uv lock
+
+# 잠금 무결성 확인 (CI에서 사용)
+uv lock --check
+```
+
+대안 (uv 사용하지 않을 때):
+
+```bash
 python -m venv .venv
 source .venv/bin/activate
-
-# 의존성 설치
-pip install -e ".[dev]"
-
-# 학습용 의존성 포함
-pip install -e ".[dev,train]"
+pip install -e ".[dev,train,price-engine-core,price-engine-exp,price-engine-api]"
 ```
 
 ## Development
@@ -40,3 +52,9 @@ tests/           # 테스트
 scripts/         # 유틸리티 스크립트
 docs/            # 문서
 ```
+
+## Canonical artifact manifest
+
+운영 v3 모델의 artifact provenance 기준 = `model_test_results/integrated_v3_filtered_tuned.provenance.json` (운영 서빙 모델 `v3_filtered_tuned` 32f 의 학습 dataset / hyperparameters / commit hash 등의 manifest).
+
+본 파일을 운영 model variant 의 single source of truth 로 사용 — Track 1 freeze (`docs/track1_phase0_freeze_20260507.md`) + production spec (`docs/v3_6_plan.md` / `docs/v3_6_summary_report.md`) 의 reference anchor.
