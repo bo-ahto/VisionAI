@@ -62,7 +62,7 @@
 | `gallery_type` | 모두 'Gallery' 100% — 정보 X |
 | `attribution_class` | Unique 91.6% vs 93.4% — 미세 |
 
-→ **Artsy 미사용 컬럼 = 사실상 추가 정보 없음**. Feature 부족이 본질이지만 **현 데이터셋 안에서 해결 불가** (외부 source 필요)
+→ **현 Artsy 메타데이터 범위 내 추가 feature 신호 미확인**. Feature 부족이 본질, **외부 source (Stage 5)** 가 다음 단계 (사전등록 §8.5 의 미수행 corr/bootstrap 으로 추가 검증 가능)
 
 ### 2.5 가설 시그니처 판정
 
@@ -85,7 +85,7 @@
 | **1. Global additive** | 33.60% (+0.30) | **27.92% (-3.11)** | 38.40% (+1.51) | 0.2512 | **✓ PASS** |
 | 2. Low-price only | 36.08% (+2.78) | 33.69% (+2.65) | 36.89% (+0.00) | 0.2699 | ✗ FAIL |
 | 3. Slice tertile | 31.05% (-2.25) | 36.57% (+5.54) | 24.22% (-12.67) | — | ✗ FAIL |
-| 4. Isotonic (보조) | 33.30% (-0.00) | 31.49% (+0.46) | 33.69% (-3.20) | — | ✓ PASS (소폭) |
+| 4. Isotonic (보조) | 33.30% (-0.00) | 31.49% (+0.46) | 33.69% (-3.20) | ↑ 악화 | 참고 — 운영 후보 아님 |
 
 ### 3.2 코덱스 해석 규칙 적용
 - **Global calibration ✓ PASS** → "후처리 가치 있음"
@@ -106,7 +106,7 @@
 | Slice-conditional shadow 별도 운영 | 작업 2 | spec §17.6 canonical + 별도 shadow spec |
 | 신규 warm 자동 fallback | Stage 4 composition-shift | spec §17.7 (이미 적용) |
 | Low-price + depth 15-24 보호 guardrail | Stage 4 segment harm | shadow spec §3.2 |
-| **Global additive calibration 후처리** | 작업 4 | spec §4 / §5.2 (calibration_applied) 후보 |
+| **Global additive calibration 후처리** | 작업 4 | spec §4 / §5.2 (calibration_applied) **후보** — baseline cold path 한정 shadow/post-processing 단계 (즉시 운영 통합 X, 다음 gate 결정) |
 
 ### 4.2 본질 해결책 = 별도 후속 트랙
 - **Feature 부족 (작업 3)** → 외부 source 필요 (provenance / auction / market data)

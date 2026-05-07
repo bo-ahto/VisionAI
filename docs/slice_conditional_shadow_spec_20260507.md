@@ -89,7 +89,6 @@ warm artist (train ≥10) AND depth ≥25 (train) AND seen-in-training
 | 항목 | 합격 기준 | 결과 |
 |---|---|---|
 | Slice-eligible sample 누적 | ≥ 200 | __ |
-| Cold rollout 7개 게이트 (별도 path) | 모두 PASS (cold runbook §3) | __ |
 | Slice-conditional MdAPE vs V3 | 악화 없음 (D+7 actual linkage) | __ |
 | Low-price guardrail 정상 작동 | sample 검증 | __ |
 | Depth 15-24 guardrail 정상 작동 | sample 검증 | __ |
@@ -118,9 +117,10 @@ ops cli notify --channel #ops-alert --msg "Slice-conditional rollback: <사유>"
 - 두 path 간 통계 가설 분리 / 운영 결정 분리
 - 단, **모델 hash + pipeline version 동일** (`track2_v1_20260507` / `f4_spline_v1_20260506`)
 
-### 8.2 Phase 순서
-- Cold Phase A 완료 후 → Slice W-SC-S1 진입 권고 (운영 안정성 검증 후)
-- 동시 진행 시 운영팀 capacity 분리 필요
+### 8.2 Phase 순서 (권고만, 강제 X)
+- **Cold Phase A 완료 후 → Slice W-SC-S1 진입 권고** (운영 안정성 검증 후)
+- 권고 사유: 운영팀 capacity 분리 + cold parity 검증 결과 활용
+- 단, **공식 prerequisite 아님** — Slice W-SC-S1 의 합격 기준 (§6) 은 Slice path 자체 항목만 (cold 게이트 의존 X)
 
 ## 9. 산출물 (W-SC-S1 종료 시)
 

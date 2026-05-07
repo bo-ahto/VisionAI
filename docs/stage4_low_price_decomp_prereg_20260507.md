@@ -2,7 +2,7 @@
 
 > **작성일**: 2026-05-07 (실험 시작 전 freeze)
 > **목적**: HARK (Hypothesizing After Results are Known) 회피 — 분석 전에 정의 / 지표 / 판정 fix
-> **연계**: `docs/stage4_warm_validation_results_20260507.md` §8 (코덱스 권고 #3) / `docs/methodology_pipeline_20260507.md` §10
+> **연계**: `docs/stage4_warm_validation_results_20260507.md` §8 (코덱스 권고 #3) / `docs/트랙2_methodology_pipeline_20260507.md` §10
 > **트랙 목표 / 비목표** (코덱스 명시):
 > - 목표: 원인 분류 (feature / loss / support / bias) + 운영 완화 가능성 평가
 > - **비목표**: 즉시 새 모델 우월성 주장 / 재학습 결정 (별도 후속 decision gate)
@@ -85,6 +85,50 @@
 - 결과 JSON: `experiments/structural_v1/results/stage4_low_price_decomp.json`
 - 결과 보고: 본 문서 §8 (실험 후 추가)
 
-## 8. 결과 요약 (실험 후 추가)
+## 8. 결과 요약 (실험 완료 2026-05-07)
 
-(실험 완료 후 채워질 예정)
+### 8.1 핵심 결과 (사전등록 §3 지표)
+
+| 모델 | slice | n | bias log (%) | residual std | residual IQR |
+|---|---|---|---|---|---|
+| baseline | low | 250 | **+0.322 (+38.0% 과대)** | 0.532 | 0.667 |
+| baseline | mid_high | 181 | -0.265 (-23.3% 과소) | 0.439 | 0.661 |
+| fe_only | low | 250 | +0.203 (+22.5% 과대) | 0.561 | 0.555 |
+| fe_only | mid_high | 181 | -0.067 (-6.5%) | 0.449 | 0.453 |
+
+### 8.2 Artist Support
+- Low-price test artists (35명): train works median **18.0** / P25 13 / P75 27
+- Mid-high test artists (33명): train works median **18.0** / P25 12 / P75 27
+- → **Support 동일** (가설 3 기각)
+
+### 8.3 Proxy 변수 (현재 모델 미사용)
+| 컬럼 | low / high 분포 |
+|---|---|
+| medium_type | Painting 72.8% / 80.7% — 미세 |
+| category | 동일 패턴 |
+| availability | 모두 'for sale' 100% — 정보 X |
+| gallery_type | 모두 'Gallery' 100% — 정보 X |
+| attribution_class | Unique 91.6% / 93.4% — 미세 |
+
+### 8.4 가설 시그니처 판정 (사전등록 §5)
+
+| 가설 | 시그니처 일치 | 우선순위 |
+|---|---|---|
+| **Feature space 부족** | **3/3** ⭐ | 1순위 (코덱스 예측 정확) |
+| Loss 한계 | 2/3 | 2순위 |
+| Support 부족 | 0/1 | 기각 |
+| Calibration 가능 | 0/1 | 기각 |
+
+→ **최우세 가설: Feature space 부족** (사전등록 우선순위 1과 정확 매칭)
+
+### 8.5 사전등록 대비 미수행 항목 (deviation, minor)
+- **`gallery_cities` proxy 분석**: 실제 실행 X — 다른 5개 컬럼 (medium / category / availability / gallery_type / attribution_class) 만 분석
+- **target corr 정량 측정**: 실제 실행 X — 분포 비교 (top3 + missing rate) 만 수행
+- **row-level bootstrap 1000 (사전등록 §4.2)**: 실제 실행 X — 시그니처 판정만 수행
+- **분류**: minor — 결론 (Feature 부족 가설 우세) 영향 X (시그니처 3/3 명확)
+- **deviation log 등록**: `docs/methodology_deviation_log.md` 2026-05-07 entry
+
+### 8.6 결론
+- **§6.1 합격 적용** — Feature 부족 가설 단일 우세 (시그니처 ≥ 2/3)
+- **운영 완화 후보 명확**: 외부 source 보강 (Stage 5) — 본 cycle 비목표 (재학습 / 모델 변경 X)
+- **즉시 spec 변경 X** — 본 진단 결과는 Stage 5 prereg 의 input

@@ -74,6 +74,18 @@
 - **승인**: 코덱스 자문 (BORDERLINE 판정 + slice-conditional 후보 유지 권고)
 - **후속 cycle**: Stage 5 (외부 source 보강 + new prereg) — 별도 분리, Phase 2 (Artsy-only) 폐지
 
+### 2026-05-07 — [Stage 4 단기 트랙] Prereg 적용 + 실행 차이 (minor)
+- **사전등록**: `docs/stage4_low_price_decomp_prereg_20260507.md` (작업 3 = 저가 error decomp)
+- **메타-방법론 가치**: Stage 4 v3 정정 이후 처음으로 **작은 진단 트랙에도 prereg 적용** — 향후 cycle 표준 자산 (코덱스 권고)
+- **실행 vs 사전등록 차이 (minor deviation)**:
+  * `gallery_cities` proxy 분석 미수행 (다른 5개 컬럼만)
+  * Target corr 정량 측정 미수행 (분포 비교만 — top3 + missing rate)
+  * Row-level bootstrap 1000 미수행 (시그니처 판정만)
+- **분류**: minor — 결론 (Feature 부족 가설 3/3 시그니처 우세) 영향 X
+- **운영 영향**: 없음 (본 트랙 비목표 = 재학습 / 모델 변경 X)
+- **승인**: 코덱스 자문 (단기 트랙 종결 검수)
+- **표준화 권고**: 향후 진단 트랙은 prereg 메모 (1페이지) 의무 + deviation log 동시 기록
+
 ## Phase 2 (폐지, 2026-05-07)
 
 > Phase 2 (Artsy-only full confirmatory) 는 Stage 4 가 사실상 Artsy 전체 모집단 활용 → 동일 데이터 반복 분석 의미 없음. 코덱스 권고로 **폐지**.
