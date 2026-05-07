@@ -4,6 +4,7 @@
 > **Owner**: archive cycle (`feature/gallery-tier-v4-research`) → main 적재 후 운영 swap 결정 영역.
 > **판정**: 🟡 **Blocked** (LLM 영역 검증 통과 / 사용자 영역 prerequisite 미충족 → 즉시 production rollout 부적절)
 > **Authority boundary**: 본 보고서 = LLM 영역 (정적/dev 검증 + 보고서). 실제 swap trigger / staging deploy / rollback 결정 = **사용자 권한 영역**.
+> **사용자 영역 standalone view**: `docs/v3_6_swap_user_action_checklist_20260508.md` — §5 안전선 + §6 11 step checklist + reviewer signoff matrix + rollback 시나리오 분리 (사용자 / DevOps / 운영팀 reference).
 
 ## 0. 한 줄 요약
 
