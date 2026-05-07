@@ -465,8 +465,12 @@ log_price = 8.6 + 0.78 × log_area − 0.05 × birth_year_centered + 0.07 × log
   <tr><td>E</td><td>artist_median_te / sales_count / dispersion / combined</td><td>+0.13 ~ +30.96%p</td><td>✗ LAO 구조상 무력</td></tr>
 </table>
 
+<div class="warn-box">
+  <strong>artist 통계 피처는 LAO (test 작가 100% unseen) 평가에서 구조적으로 warm-only 가치만 가짐</strong> — fillna(0) 비중 100% 로 train-eval 분포가 본질적으로 어긋남.
+</div>
+
 <div class="info-box">
-  <strong>핵심 결론</strong>: 외부 자문 모든 후보 합격 기준 (-1.0%p) 미달 → <strong>운영 모델 (F4 + spline + Huber, eps=1.35, alpha=1e-4) 유지 결정 강화</strong>.
+  <strong>핵심 결론</strong>: 외부 자문 선형/통계 피처 계열 모든 후보 합격 기준 (-1.0%p) 미달 → <strong>기존 운영 모델 (F4 + spline + Huber, eps=1.35, alpha=1e-4) 유지</strong> + 외부 대안 비채택 근거 추가.
 </div>
 
 <p>외부 자문 권고는 다음 영역에 한정 재해석:</p>
