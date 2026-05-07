@@ -1,6 +1,7 @@
 # Track 1 — Phase 0 Closeout Note (Option A)
 
 > **작성일**: 2026-05-07
+> **Owner**: 트랙 1 사전등록 cycle (운영 메인 모델 — 1차 시장 갤러리 가격 예측)
 > **결정자 / 일자**: 사용자 결정 A (본 cycle 종결, 코덱스 권고대로) / 2026-05-07
 > **본 문서 성격**: 내부 governance decision artifact — Phase 0 mini-prereg cycle 의 공식 종결 선언
 > **외부 보고용 산출물**: `docs/트랙1_종합보고서_20260507.html` (이미 GO, 본 closeout 으로 대체 X)
