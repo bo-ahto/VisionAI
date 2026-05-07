@@ -93,10 +93,11 @@
   * Low: +1.29%p 악화 (hard gate 위반)
   * Mid/high: -1.04%p 개선
   * ICC mechanism: 0.81 (CI [0.77, 0.84]) — partial pooling 작동 ✓
-- **결론**: Partial pooling FAIL (사전등록 §3.3 즉시). Architecture-only 트랙 (6A + 6B) 모두 종료.
-- **분류**: **none (정상 흐름)** + **minor (sparse-warm 측정 불가)**
+- **결론**: Partial pooling FAIL (사전등록 §3.3 즉시). **Architecture-only remedies under fixed-feature cold-start LAO scope** (6A + 6B) 모두 종료.
+- **분류**: **none (정상 흐름)** + **minor (sparse-warm 측정 불가)** + **minor (frozen spec 통일 — 코덱스 P0)**
 - **Sparse-warm deviation (사전등록 §2.8.1 #3)**: LAO 평가에서 test artists 정의상 train 에 0 작품 → "sparse-warm (train ≤ 5)" 자체 정의 모순. 100/100 seeds 측정 불가. **사후 인정**: prereg 시점 design 오류, 결과 본 후 변경 X = HARK 회피 정상 흐름. Time-split (warm threshold) 평가에서만 의미.
-- **4-cycle 일관성 확정**: Stage 4 작업 3 / Stage 5 / Stage 6A / Stage 6B 모두 feature shortage 본질 입증
+- **Frozen spec 통일 (코덱스 P0 — minor 정정)**: prereg v2 본문 §1.3 / §2.11 에 잔존하던 `is_low_price fixed effect` / `low/high group fixed effect` 표현 = 6B v2 freeze 시점에 이미 삭제된 spec → 결과 본 후 prereg / deviation log / results report 전부 단일 line 으로 통일 ("v2 frozen spec = Stage 3 ME identical, `is_low_price` fixed effect 제거"). 결과 변경 X / 통계 결정 변경 X.
+- **Cycle 일관성 확정 (코덱스 P0 분리)**: **3-cycle empirical** (Stage 4 단기 트랙 작업 3 / Stage 6A / Stage 6B) + **1-cycle acquisition infeasibility** (Stage 5 — 준법적 자동화 불가, empirical 반증 X). 본질 = "fixed-feature cold-start LAO scope 의 architecture-only remedies 가 1차 병목 해결 X"
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (예정)
 

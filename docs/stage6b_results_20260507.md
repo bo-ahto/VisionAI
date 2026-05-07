@@ -14,9 +14,11 @@
 > - 그러나 LAO cold-start 에서 random intercept 무력화 → **식별 가능한 신규 신호를 만들지 못함**
 > - "Hierarchical pooling 자체는 실패가 아니라 mis-targeted" (코덱스)
 >
-> **4-cycle 일관성 확정**: Stage 4 작업 3 → Stage 5 → Stage 6A → 6B 모두 동일 — **현재 evidence 범위 내 1차 병목 = feature / information shortage** (architecture 가 무가치 아님 / 단지 1차 병목 아님).
+> **Cycle 일관성 확정 (코덱스 P0 분리)**: **3-cycle empirical** (Stage 4 단기 트랙 작업 3 — feature 부족 시그니처 3/3 / Stage 6A — segmentation FAIL +5.23%p / Stage 6B — partial pooling FAIL low +1.29%p) + **1-cycle acquisition infeasibility** (Stage 5 — 준법적 자동화 불가 미개시 종료, empirical 반증 X).
 >
-> **종결 사유** (코덱스): "실패해서 중단" 이 아닌 **"병목 식별 → 자본 배분 전환"**. Architecture-only 트랙 close → **feature / acquisition track** 로 의사결정 이관 (6C 도 architecture 추가 = 낮은 ROI).
+> → **현재 evidence 범위 내 1차 병목 = fixed-feature, no-new-information, cold-start LAO 조건의 feature/information shortage** (architecture 가 무가치 아님 / 단지 1차 병목 아님).
+>
+> **종결 사유** (코덱스): "실패해서 중단" 이 아닌 **"병목 식별 → 자본 배분 전환"**. **Architecture-only remedies under fixed-feature cold-start LAO scope** close → **feature / acquisition track** 로 의사결정 이관 (representation learning / multimodal / non-artist hierarchy 등 새 axis 는 본 close 범위 외).
 
 ## 1. 핵심 결과 (사전등록 §3 적용)
 
@@ -36,6 +38,8 @@
 - P(diff ≥ 0) = 0.15
 
 > ⚠️ Single seed 의 cluster bootstrap 점추정 (-1.60%p) 과 **100-seed 전체 평균 (-0.09%p)** 사이 큰 차이 — single seed=0 이 운 좋게 좋은 결과. **100-seed 전체 평균이 더 신뢰할 만한 effect size**.
+>
+> **Primary CI 위치 명시 (코덱스 P1)**: Inferential CI 는 canonical seed=0 cluster bootstrap 기준 **보조 해석**. **최종 FAIL 은 100-seed Δ_low hard gate 위반으로 결정** (+1.29%p > 0). Hard gate 가 point estimate artifact 가 아님은 §6.3 seed-level violation rate 참고.
 
 ### 1.3 ICC Mechanism (Holm 외 supportive — 사전등록 §2.8.2)
 - ICC mean: **0.81** (Stage 3 의 0.541 보다 높음 — 전체 823 artists 의 이질성 더 큼)
@@ -64,18 +68,20 @@
 
 → **🔴 Hard gate 위반 → 즉시 FAIL** (사전등록 §3.3). Primary 와 secondary 모두 동시 미달 (Hard gate 무관 동일 결론) — **aggregate parity but low-slice harm** (코덱스 framing).
 
-## 2. 4-Cycle 일관성 (의사결정자 압축)
+## 2. Cycle 일관성 (의사결정자 압축, 코덱스 P0 정정)
 
-> **본 6B 결과로 4 cycle 일관성 확정**: 현재 운영 모델 (F4 + spline + Huber) 의 한계는 **architecture / acquisition 의 결함이 아니라 input feature space 자체의 정보 부족**.
+> **본 6B 결과로 cycle 일관성 확정**: 현재 운영 모델 (F4 + spline + Huber) 의 한계는 **fixed-feature cold-start LAO scope 의 architecture-only remedies 로 해결 불가**.
+>
+> **3-cycle empirical + 1-cycle acquisition infeasibility 분리** (코덱스 P0):
 
-| Cycle | 가설 | 결과 | 저가 segment |
-|---|---|---|---|
-| Stage 4 작업 3 | Calibration 으로 해결? | ✗ Feature 부족 시그니처 3/3 | bias structural |
-| Stage 5 (5A-5C) | External source 으로 해결? | ✗ 준법적 자동화 불가 미개시 종료 | (미실행) |
-| Stage 6A | Segmentation 으로 해결? | ✗ +5.23%p 악화, hard gate 위반 | +3.54%p 악화 |
-| **Stage 6B** | **Partial pooling 으로 해결?** | ✗ -0.09%p 동등, hard gate 위반 | **+1.29%p 악화** |
+| Cycle | 종류 | 가설 | 결과 | 저가 segment |
+|---|---|---|---|---|
+| Stage 4 작업 3 | empirical | Calibration 으로 해결? | ✗ Feature 부족 시그니처 3/3 | bias structural |
+| Stage 5 (5A-5C) | **acquisition infeasibility** (empirical 반증 X) | External source 가능? | ✗ 준법적 자동화 불가 → 미개시 종료 | (미실행, untested) |
+| Stage 6A | empirical | Segmentation 으로 해결? | ✗ +5.23%p 악화, hard gate 위반 | +3.54%p 악화 |
+| **Stage 6B** | **empirical** | **Partial pooling 으로 해결?** | ✗ -0.09%p 동등, hard gate 위반 | **+1.29%p 악화** |
 
-→ **Architecture-only 트랙 (6A + 6B) 모두 종료**. Information sharing 도 segmentation 도 저가 harm 해결 X.
+→ **Empirical 3 cycle (Stage 4 단기 + 6A + 6B) 모두 동일 패턴** + **Stage 5 acquisition path 자체가 미개시 — feature 가설은 반증 아닌 미검증**. Architecture-only remedies under fixed-feature cold-start LAO 종료.
 
 ## 3. 6B 의 Mechanism 가치 (정직 보고)
 
@@ -135,19 +141,44 @@
 - 상위 5 작가 (do-you-hwang 126 / kyong-lee 74 / winter-gyeoul-kim 52 / kang-yehsine 46 / kwon-hye-jo 45) — **특정 작가 집중 X**, 분산 분포
 - 즉 +1.29%p 악화는 특정 subslice 가 아닌 **저가 segment 전반의 systematic harm** — Stage 4 단기 트랙 작업 3 의 "feature shortage 시그니처 3/3" 입증과 일관
 
+### 6.3 Seed-level violation rate (코덱스 P2 권고 — Hard gate 가 point estimate artifact 가 아님 입증)
+
+| 지표 | 결과 |
+|---|---|
+| **Low Δ > 0 violation rate** | **66/100 seeds (66.0%)** |
+| Mean low Δ | +1.295%p |
+| Median low Δ | +1.231%p (mean ≈ median → outlier 영향 X) |
+| Distribution | <0%p: 34 seeds / 0-1%p: 9 / 1-3%p: 37 / ≥3%p: 20 |
+
+→ **Majority of seeds 에서 low harm 재현** + median 도 +1.2%p 이상 악화. Hard gate 위반은 평균에 끌려간 것이 아닌 **분포 자체가 우측 (악화 방향) 으로 치우침**.
+
 ### 6.2 ICC 0.81 → ranking gain vs shrinkage 분리 (코덱스 P2)
 - 본 cycle 측정 X (별도 decomposition 필요)
 - 추후 권고: 추가 분석 시 (a) ranking AUC / Spearman corr 비교 (b) artist-level prediction gradient 분리
 - 현재 evidence: ICC 자체가 ranking gain 보다 **variance suppression** 가능성 큼 (LAO 무력화 + low harm 패턴 일관)
 
-## 7. 다음 단계
+## 7. 다음 단계 (코덱스 P1 — 의사결정 분리)
 
-1. ✅ 본 6B 결과 보고 — 본 commit
-2. ⏳ Deviation log: sparse-warm 측정 불가 (minor) + 4-cycle 일관성 확정 entry
-3. ⏳ Stage 6 prereg draft v3: 6B FAIL 반영 + architecture-only 트랙 종료
-4. ⏳ 종합 대시보드 갱신
-5. ⏳ 코덱스 검토 — FAIL 정당성 + 6C 진행 우선순위 + 운영 framing
-6. ⏳ (사용자 결정) 6C 진행 / Calibration only 운영 적용 / Cold Phase A 시작
+### 7.1 지금 즉시 확정 (의사결정자 단일 안건)
+- ✅ Stage 6B FAIL 승인 (사전등록 §3.3 hard gate)
+- ✅ Architecture-only remedies under fixed-feature cold-start LAO scope **종료**
+- ✅ 운영 모델 = baseline (F4 + spline + Huber) **+ calibration only (분기 B 그대로)** 유지
+
+### 7.2 즉시 시작 (Feature/acquisition track — 1순위)
+- ⏳ Feature/acquisition track 설계 (low 구간 식별력 보강)
+- ⚠️ **Stage 5 의 compliance blocker 우회 가능한 합법적 source path 가 없으면**, "**Acquisition Feasibility Phase A**" 를 별도 분리 — 모델 개선 cycle 이전에 **Legal / TOS / Access / Anti-bot pre-screen** 통과 우선
+
+### 7.3 보류 (재검토 조건부)
+- ⏸️ **6C (architecture 추가) — 새 식별 가설 발견 시에만 reopen** (현재 evidence 상 ROI 낮음, 코덱스)
+- ⏸️ Representation learning / multimodal / non-artist hierarchy = 본 close 범위 외, 별도 axis
+
+### 7.4 Shadow only (모델 개선 cycle X)
+- ⏳ **Cold Phase A shadow** = `data availability / labelability / compliance feasibility` 검증 shadow (코덱스 권고). 모델 개선 cycle 로 prom otion X.
+
+### 7.5 산출물 / 운영 (병행)
+- ⏳ Deviation log: 본 cycle entry 확정 (이미 추가)
+- ⏳ Stage 6 prereg draft v3 갱신 (6A + 6B FAIL 반영, 본 commit 반영)
+- ⏳ 종합 대시보드 갱신 (이미 진행)
 
 ## 8. 코덱스 자문 이력
 

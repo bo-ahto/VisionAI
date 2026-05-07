@@ -33,7 +33,7 @@
 ### 1.3 6B Hypothesis
 > **6A 의 fragmentation harm 을 partial pooling 으로 완화 가능**:
 > - Sample 통합 학습 유지 (모델 1개)
-> - Artist random intercept + low/high group fixed effect 만 추가
+> - **Artist random intercept 만 추가** (Stage 3 ME identical, `is_low_price` fixed effect 삭제 — 코덱스 P1 타깃 누수)
 > - Information sharing under heterogeneity — segmentation X
 
 ## 2. Pre-registered Items (2026-05-07 freeze)
@@ -132,7 +132,9 @@ log_price_ij = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_art
 - Model hash (baseline): `track2_v1_20260507`
 - Feature pipeline version: `f4_spline_v1_20260506` (변경 X)
 - Train data hash: `data/curated/stage4_full.parquet` SHA-16 = `b7b51b81d3a033b5`
-- Partial pooling hash: `stage6b_partial_pooling_v1_20260507` (Stage 3 ME formula + is_low_price fixed effect)
+- Partial pooling hash: `stage6b_partial_pooling_v2_20260507` (**Stage 3 ME identical — `is_low_price` fixed effect 제거 후 frozen spec**)
+
+> **v2 frozen spec 단일 line (코덱스 P0 통일)**: 6B model = Stage 3 ME identical = `log_price ~ log_area + birth_year_centered + log_artist_total_works + log_area_spline + (1|artist)`. 어떠한 fixed effect 도 추가 X. 차별점은 단지 (a) 6A 와의 비교 + (b) Secondary 분석 (sparse-warm / ICC / newly-warm).
 
 ## 3. PASS / BORDERLINE / FAIL 결정 (코덱스)
 
