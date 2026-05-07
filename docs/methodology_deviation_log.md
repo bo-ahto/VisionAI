@@ -86,6 +86,18 @@
 - **승인**: 코덱스 자문 (단기 트랙 종결 검수)
 - **표준화 권고**: 향후 진단 트랙은 prereg 메모 (1페이지) 의무 + deviation log 동시 기록
 
+### 2026-05-07 — [Stage 5A Week 2] Artsy CV REJECT + Stage 5 종결 (major)
+- **Week 1 결과**: Auction 4 source REJECT, Artsy CV BORDERLINE (§6.2 보류)
+- **Week 2 측정**: Artsy 자동화 fetch 0/10 (Cloudflare 403 차단) + TOS 자동화 금지 위험
+- **결론**: 사전등록 §6.3 적용 — **모든 candidate REJECT, Stage 5 cycle 종결**
+- **분류**: **major** — Stage 5 cycle 자체 종결 결정
+- **5C prereg 영향**: F1/F2/F3 family 모두 실현 불가 → 5C prereg 자동 폐기 (사전등록 §9 위험 표 첫 row 적용)
+- **분기 B 활성화** (`docs/stage5a_week3_decision_memo_20260507.md`):
+  * Stage 5 종결 + Calibration only 운영 적용
+  * Spec §4 후처리 후보 (Global additive cold baseline 한정)
+  * 새 source / Stage 6 (segmented architecture) = 별도 decision gate
+- **승인**: 사용자 검토 + 코덱스 자문 (Week 2 결과 검수 예정)
+
 ### 2026-05-07 — [Stage 5A Week 1] Auction-first 가정 폐기 (minor)
 - **사전등록 §4.1**: 1순위 source = K-Auction / Seoul Auction (한국 전문, "한국 작가 cover 자연 높음" 가정)
 - **실측 (Week 1)**: 모든 auction (Seoul / K / Sotheby's / Christie's) = **시장 확립 작가 (Lee Ufan / 김창열 등) 한정**. Stage 4 cohort (신진/중견) cover ~0%

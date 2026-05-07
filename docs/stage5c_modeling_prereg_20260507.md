@@ -196,7 +196,15 @@
 | Re-freeze 시 가설 변경 시도 (HARK) | Deviation log 의무 + 새 cycle 분리 |
 | Composition-shift 본질적 미해결 | 운영 정책 강화 (신규 warm 자동 fallback, 이미 spec §17.7 적용) |
 
-## 10. 현 prereg 기준 PASS 기대 (5A Week 1 결과 후 추가, 코덱스 권고)
+## 11. 본 prereg 자동 폐기 (Stage 5A Week 2 결과 후, 2026-05-07)
+
+> ⚠️ **본 prereg cycle 종결**: Stage 5A Week 2 결과 — Artsy 자동화 fetch 0/10 차단 + TOS 위험 → 사전등록 §6.3 적용 (모든 candidate REJECT). F1/F2/F3 family 모두 실현 불가 → 본 prereg §9 위험 표 첫 row "5A REJECT — 본 5C prereg 자동 폐기" 적용.
+>
+> **운영 적용 영향**: 분기 B 활성화 (`docs/stage5a_week3_decision_memo_20260507.md` 참조) — Calibration only 운영 적용, Stage 6 (segmented architecture / new family) 별도 decision gate.
+>
+> 결과 보고: `docs/stage5a_week2_results_20260507.md`
+
+## 10. 현 prereg 기준 PASS 기대 (5A Week 1 결과 후 추가, 코덱스 권고 — 참고)
 
 > **2026-05-07 Stage 5A Week 1 결과 후 명시**: Auction archives 4 source 모두 REJECT (Stage 4 cohort cover 0/6) → **F1 (auction price anchor) family 실현 가능성 ✗**.
 >
