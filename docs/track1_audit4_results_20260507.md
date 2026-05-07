@@ -9,9 +9,9 @@
 
 ## 0. 한 줄 요약
 
-> **Audit 4 판정 (Phase 0 §4 stop criteria)**: **FAIL + soft fail (slice gate)** — drift_fix_v1 (23f) 의 Overall MdAPE 가 baseline 32f 대비 **+0.70%p 악화** (Ensemble) + **Saatchi slice +1.80%p 악화** (hard gate 2 비대칭 violation).
+> **Audit 4 판정 (Phase 0 §4 stop criteria)**: **FAIL (primary) + Hard gate 2 violation** — drift_fix_v1 (23f) 의 Overall MdAPE 가 baseline 32f 대비 **+0.70%p 악화** (Ensemble) + **Saatchi slice +1.80%p 악화** (hard gate 2 비대칭 violation).
 >
-> **핵심 시사 (코덱스 framing 톤)**: drift features 9개 중 7개 (severe drift 카테고리 A) 가 **학습 시 실제 informative signal** (특히 Saatchi-specific) 이었음 입증. 서빙 시 hardcoded 0 으로 받는 = **production 시 학습된 informative weight 무효화** → reported offline metric (38.3% calibrated production-cold reference) 이 actual serving behavior 보다 **더 낙관적**일 가능성.
+> **핵심 시사 (코덱스 P1 톤 정정)**: drift features 9개 중 7개 (severe drift 카테고리 A) 가 **학습 분포 OOF 에서 유의미한 예측 기여** 입증 (특히 Saatchi slice). 서빙 시 hardcoded 0 으로 받는 = **production 시 학습된 informative weight 가 inference 시 무효화** 가능 → reported offline metric (38.3% calibrated production-cold reference) 이 actual serving behavior 보다 **낙관적일 가능성을 강하게 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량).
 >
 > **운영 영향 X (현 시점)**: 본 audit 단독 = 운영 spec 변경 trigger X. Production reality gap 평가 = Stage 4 confirmatory holdout + 운영 inquiry (서빙 측 actual value 추출 가능성) 후 결정.
 
@@ -41,15 +41,15 @@
 - 특히 Saatchi 큰 악화 = `has_seoul` / `has_international` / `has_depth` 등이 Saatchi 분포에 strongly informative 추정 (별도 ablation 필요 — 본 cycle 비목표)
 
 ### 2.2 학습-서빙 gap 의 의미
-- 학습 시 informative features 가 서빙 시 hardcoded 0 = **production model 의 학습된 weight 가 inference 시 무효화**
-- Reported offline metric (calibrated 38.3% cold) 이 production reality 보다 **낙관적**일 가능성 시사 (= production 시 더 나쁠 가능성)
-- 단 production reality gap 의 정량 측정 = Stage 4 confirmatory holdout + 서빙 log 비교 영역 (본 audit 비목표)
+- 학습 시 informative features 가 서빙 시 hardcoded 0 = **production model 의 학습된 weight 가 inference 시 무효화** 가능
+- Reported offline metric (calibrated 38.3% cold) 이 production reality 보다 **낙관적일 가능성을 강하게 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량)
+- production reality gap 의 정량 측정 = Stage 4 confirmatory holdout + 서빙 log 비교 영역 (본 audit 비목표)
 
 ### 2.3 Drift fix 옵션 재평가 (Audit 4 결과 후)
 
 | 옵션 | 의미 | Audit 4 결과 영향 |
 |---|---|---|
-| **A.1** (학습 측 제거) | 9 features 제거 후 재학습 | Overall +0.70%p / Saatchi +1.80%p 악화 입증 — **OOF metric 손실** but production reality 와 정합 (학습-서빙 일관 X) |
+| **A.1** (학습 측 제거) | 9 features 제거 후 재학습 | Overall +0.70%p / Saatchi +1.80%p 악화 입증 — **OOF metric 손실** / production reality 와 **정합 가능성** (학습-서빙 일관성 회복, but 정량 미검증) |
 | **A.2** (서빙 측 actual 추출) | request contract 확장 / 서빙 측 actual value 입력 | **Audit 4 미측정** — request contract 확장 가능성 평가 = 운영팀 영역 (LLM 외) |
 | **A.3** (현 상태 유지) | drift 인지 + production-time monitoring | OOF metric 유지 but production 시 잠재적 gap 인지 |
 
@@ -68,7 +68,7 @@
 ## 4. 운영 영향 (코덱스 framing — 운영 spec 변경 단독 trigger X)
 
 - **현 시점 운영 spec 변경 X**: `v3_filtered_tuned` 32f 운영 그대로 유지
-- 본 audit 결과 = **drift fix path 의 OOF metric 손실 입증** + **drift features 가 production-time 학습-서빙 gap 의 잠재 source 임을 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량)
+- 본 audit 결과 = **drift fix path 의 OOF metric 손실 입증** + **drift features 가 production-time 학습-서빙 gap 의 잠재 source 임을 강하게 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량)
 - Production trigger = Stage 4 confirmatory holdout + shadow / staged rollout 별도 의사결정 gate
 
 ## 5. 다음 단계 (사용자 결정 영역)
@@ -85,7 +85,7 @@
 - **OOF metric 손실 ≠ production reality 더 나쁨 입증**: drift features 가 학습 시 informative 였다는 사실만 본 audit 으로 직접 입증. Production-time actual gap = Stage 4 holdout + 서빙 log 비교 후만 정량 가능
 - **본 audit 단독 = 운영 spec 변경 trigger X**: Phase 0 §1.8 decision-binding 분리 그대로
 - **Saatchi 큰 악화 (+1.80%p) 의 attribution 미수행**: 9 features 중 어느 것이 main driver 인지 별도 ablation 필요 (본 cycle 비목표 — `has_seoul` / `has_international` / `has_depth` 가 Saatchi 분포에 informative 가설)
-- **3-split caveat**: 본 audit 의 baseline 32f 3-split 결과 (40.20%) ≠ 운영 metrics.json 의 38.7% Ensemble (split 수 미상). 본 audit = 두 variant 정합 비교 only / 운영 reported metric 직접 비교 부적합
+- **3-split caveat**: 본 audit 의 baseline 32f 3-split 결과 (40.20% Ensemble) ≠ 운영 metrics.json 의 38.7% Ensemble. 차이 = **(a) 본 audit 3-split rerun vs prior 5-fold offline ensemble + (b) production-path calibrated 38.3% (CatBoost) vs offline ensemble 38.7% 차이** (`docs/model_technical_report_v2.md:53` 참조). 본 audit = 두 variant 정합 비교 only / 운영 reported metric 직접 비교 부적합
 
 ## 7. 코덱스 자문 이력
 
