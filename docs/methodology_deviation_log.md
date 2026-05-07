@@ -101,6 +101,21 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Progressive sampling Checkpoint 1 v2] 코덱스 사후 검수 P1×4 + P2×3 적용 → Stage 2 HOLD / 종결 권고 (minor)
+- **코덱스 사후 검수 (Stage 2 진입): HOLD** — operational decision = 종결
+- **P1 fix**:
+  1. Literal stop-rule (모든 family near-null + Low non-harm 미달) = 비트리거 / Operational reading (family-level retain 0건) = 종결
+  2. Sub-signal (artist_popularity Low -3.33%p) = artifact prior 더 높음 / transferability 근거 X
+  3. HARK risk: Stage 2 진입 reasoning = "all-family triage" → "Family D rescue" 변경 = reasoning drift (Family D = 원래 negative control prereg)
+  4. Stage 1 noise (std 9.41%) = decision-grade evidence X — 승급 근거 부적합 / 종결 근거는 충분
+- **P2 caveat 추가**:
+  1. SKIP variants 존재 (geom_depth_spline / cat_attribution_x_3d / miss_depth) — "모든 preregistered variant 공정 평가" X / "평가 가능한 variant 들에서 advancement evidence 없음" 이 정확
+  2. Family D = 원래 negative control prereg / re-test only
+  3. A.2 FAIL (full-like) vs Stage 1 median_proxy 완전 동일 가설 X (bundle vs subset 차이)
+- **사용자 보고 framing (코덱스)**: "decision-grade 승급 근거 X / family-level retain 0건 + Stage 1 noise → operational decision HOLD/종결 / sub-signal 은 별도 exploratory low-slice 가설로만 보존"
+- **분류**: **minor (framing 톤 다운, 결과 변경 X)**
+- **운영 영향 X**: 운영 spec §1-§16 변경 X / 분기 B calibration only 유지
+
 ### 2026-05-07 — [Progressive sampling Phase 0 + Stage 1 Checkpoint 1] HARK-safe variant 진입 (none + minor)
 - **사용자 명시**: A 옵션 (progressive sampling) 메인 진입 + 체크포인트 + 코덱스 활용
 - **코덱스 사전 자문**: 조건부 GO — 3 조건 (Stage 3 transfer filter / holdout decision-binding / family cap·tie·stop rule)

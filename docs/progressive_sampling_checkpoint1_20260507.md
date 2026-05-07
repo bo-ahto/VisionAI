@@ -7,18 +7,21 @@
 
 > ⚠️ **본 cycle framing (코덱스)**: Stage 1 결과 = **exploratory only / decision X**. 200x20 작은 sample noise (sample sensitivity 분석 std 9.41% / IQR 12.96%) — 결과 자체 unreliable for decision-grade.
 
-## 0. Checkpoint 1 한 줄 요약
+## 0. Checkpoint 1 한 줄 요약 (코덱스 사후 검수 v2 적용)
 
 > **Phase 0 holdout 봉인 완료** (161 artists / 1,680 rows / SHA-16 hash `1933a0947a918fc9`).
 >
-> **Stage 1 결과**: 5 family × 18 variants 평가 — **모든 variant retain 기준 미달** (Overall Δ ≤ -0.3%p AND Low Δ ≤ +0.2%p).
+> **Stage 1 결과**: 5 family × 18 variants 평가 — **모든 variant retain 기준 미달** (Overall Δ ≤ -0.3%p AND Low Δ ≤ +0.2%p / 단 4 variants SKIP — Stage 1 schema 부재).
 >
-> **코덱스 stop rule trigger 가능성**: "Stage 1 모든 family near-null + low non-harm 미달 = 중단" 조건에 해당. 단 Stage 1 자체가 **small sample noise** (sample sensitivity std 9.41%) → Stage 2 진입 시 conservative caveat 적용 가능.
+> **코덱스 사후 검수 권고**: **Stage 2 진입 = HOLD**. Stage 1 = promotion evidence 너무 noisy / pruning evidence 충분히 negative. Literal stop-rule = 비트리거 (Family D Low 개선) but **operational decision = 종결**.
 >
-> **흥미로운 sub-signal (decision-grade X — exploratory only)**:
-> - `artist_popularity`: Overall +0.68%p but **Low -3.33%p** (저가 specific 큰 개선) / High +1.78%p
-> - `artist_median_proxy`: Low -1.59%p / High +2.25%p
-> - → small-sample patterns 가능성 / 또는 segment-specific signal — Stage 2/3 transferability 미검증
+> **Family D sub-signal**:
+> - `artist_popularity`: Overall +0.68%p but Low -3.33%p / High +1.78%p
+> - `artist_median_proxy`: Low -1.59%p but Overall +1.61%p / High +2.25%p
+> - → **artifact prior 더 높음** (small-sample noise / segment heterogeneity) — transferability 근거 X
+> - 본 cycle continuation 근거 X / **별도 exploratory low-slice 가설로만 보존** (코덱스 권고)
+>
+> **HARK risk (코덱스 P1)**: Stage 2 진입 reasoning = "all-family triage" → "Family D rescue" 변경 시 reasoning drift. Family D = 원래 negative control prereg.
 
 ## 1. Phase 0: Locked holdout 봉인 결과
 
@@ -88,34 +91,34 @@
 - 패턴: Stage 1 200x20 의 small sample 에 추가 features = overfitting (degrees of freedom 증가)
 - **CAVEAT**: small sample 의 add-feature negative effect 일반 패턴 — 모델 quality issue X / sample size 효과
 
-## 3. Stop / Continue 결정 영역
+## 3. Stop / Continue 결정 영역 (코덱스 사후 검수 v2)
 
-### 3.1 코덱스 stop rule (Phase 0 freeze §2)
-- Stage 1: 모든 family `Overall near-null` + `Low non-harm 미달` → **중단**
+### 3.1 코덱스 stop rule (Phase 0 freeze §2) 적용
 
-### 3.2 본 결과 평가
-| 조건 | 본 결과 |
-|---|---|
-| 모든 family Overall near-null | ✓ (모두 positive — 악화 방향) |
-| Low non-harm 미달 | ✗ — artist_popularity / artist_median_proxy 의 Low 개선 (-3.33%p / -1.59%p) 발견 |
+**Literal vs Operational reading (코덱스 P1 분리)**:
 
-### 3.3 의사결정 영역 (사용자 + 코덱스)
+| Reading | 본 결과 | 결론 |
+|---|---|---|
+| **Literal strict** (모든 family Overall near-null + Low non-harm 미달 동시) | ✗ 비트리거 (Family D Low 개선) | 종결 X |
+| **Operational** (family-level retain advancement) | ✓ trigger (5 family 모두 retain 0건) | **종결 권고** |
 
-**Option A: 본 cycle 즉시 중단 (코덱스 stop rule strict reading)**
-- 근거: Stage 1 모든 family Overall 악화 / retain 항목 0
-- Phase 0 holdout 봉인 유지 (cancel X)
-- Axis B license-first lane 우선 진입 (코덱스 사후 검수 종합 권고와 일치)
+→ **코덱스 권고: operational reading 적용 → Stage 2 진입 HOLD / 본 cycle 종결**
 
-**Option B: Stage 2 진입 (Stage 1 = small sample noise caveat 적용)**
-- 근거: Stage 1 200x20 sample sensitivity 분석 결과 — std 9.41% (가장 unstable) → 결과 자체 unreliable for decision
-- artist_popularity / artist_median_proxy 의 Low specific 개선 = Stage 2 (500x50, std 6.30%) 에서 재시험 가치
-- 단 Stage 2 retain 기준 더 strict (Overall Δ ≤ -0.7%p AND Low Δ ≤ 0%p) — 더 어려움
-- HARK risk: Stage 1 negative 결과 본 후 "noise caveat" 로 진행 = post-hoc reasoning 위험
+### 3.2 의사결정 영역 (코덱스 사후 검수 v2)
 
-**Option C: Stage 2 진입 + 가설 family 재정의 (HARK violation, 비추천)**
-- 코덱스 권고와 충돌 — "Family 외 새 axis 명시 배제 (HARK 회피)" 위반
+**Option A (코덱스 권고): 본 cycle 종결**
+- 근거: Stage 1 family-level retain 0건 (operational stop) / Stage 1 noise (std 9.41%) = decision-grade evidence X
+- Phase 0 holdout 봉인 유지 (cancel X — 향후 별도 cycle 활용 가능)
+- Axis B license-first lane 우선 진입 (코덱스 종합 검수 권고와 일치)
 
-## 4. Honesty Caveats (코덱스 P0/P1 톤)
+**Option B (HARK risk): Stage 2 진입 + sub-signal rescue**
+- ⚠️ **HARK risk**: 진입 reasoning = "all-family triage" → "Family D rescue" 변경 = reasoning drift
+- Family D = 원래 negative control prereg / Axis A.2 (full-like) FAIL 결과와 일관
+- 코덱스 권고와 충돌
+
+**Option C (HARK 위반): Stage 2 + family 재정의** — 비추천 그대로
+
+## 4. Honesty Caveats (코덱스 사후 검수 v2 — 추가 P2 caveat 3건)
 
 - **Stage 1 200x20 = small sample noise**: sample sensitivity std 9.41% / IQR 12.96% (가장 unstable) — Stage 1 결과 자체 unreliable for decision-grade
 - **Sub-signal (artist_popularity Low 개선)**: small-sample exploratory pattern, **full transferability 미검증** (composition gap + Family D negative control prior)
@@ -123,14 +126,22 @@
 - **Phase 0 holdout 봉인**: 본 결과 무관 / 봉인 유지 / Phase 4 final 1회만 사용
 - **Decision-grade evidence X**: 본 결과는 운영 spec 변경 trigger 아님 / Stage 2 진입 여부 자체가 의사결정 영역
 
-## 5. 다음 단계 (사용자 결정 영역)
+### 4.1 추가 honesty caveats (코덱스 P2)
+- **SKIP variants 존재 (4건)**: geom_depth_spline / cat_attribution_x_3d / miss_depth / (geom_full 일부 dim) — Stage 1 schema (depth_cm 부재) → "모든 preregistered variant 가 공정하게 졌다" X / **"평가 가능한 variant 들에서 advancement evidence 없음"** 이 정확
+- **Family D = 원래 negative control prereg**: Phase 0 freeze §1.3 "main winner 후보 X / re-test only" — 본 cycle 진입 reasoning = Family D rescue 가 되면 reasoning drift / HARK risk
+- **A.2 FAIL (full-like) vs Stage 1 median_proxy 완전 동일 가설 X**: A.2 = 4 features bundle (followers/for_sale/is_p1/year_made) full-like dataset / Stage 1 median_proxy = followers + for_sale 단순 조합 / 200x20 — 본 결과 = A.2 재해석 근거 X
 
-| 옵션 | 본질 | 코덱스 권고 |
+## 5. 다음 단계 (사용자 결정 영역, 코덱스 사후 검수 v2 적용)
+
+> **코덱스 사후 검수 권고 (Stage 2 진입): HOLD** — operational decision = 종결.
+> **사용자 보고 framing (코덱스)**: "Checkpoint 1 에서는 Stage 1 이 decision-grade 승급 근거를 제공하지 못했다. Literal stop-rule 은 엄밀히는 비트리거지만, family-level retain 0건과 Stage 1 의 높은 noise 를 고려하면 operational decision 은 HOLD/종결이 타당하다. artist_popularity·artist_median_proxy 의 low 개선은 본 cycle continuation 근거가 아니라, 별도 exploratory low-slice 가설로만 보존한다."
+
+| 옵션 | 본질 | 코덱스 권고 v2 |
 |---|---|---|
-| A. 본 cycle 종결 | Stop rule strict reading / Axis B license-first 우선 | 종합 검수 권고와 일치 |
-| **B. Stage 2 진입** (small sample caveat) | sub-signal 재시험 / 더 strict retain | conservative caveat 적용 시 가능 |
-| C. Stage 2 + family 재정의 | HARK 위반 | **비추천** |
-| D. 사용자 결정 보류 / 코덱스 사후 검수 후 | 본 cycle 진행 직전 stop / continue 재평가 | **권고** |
+| **A. 본 cycle 종결** | family retain 0건 / advancement evidence X / Axis B license-first 우선 | **권고** ✓ |
+| B. Stage 2 진입 (sub-signal rescue) | HARK risk (Family D rescue reasoning drift) | **비추천** |
+| C. Stage 2 + family 재정의 | HARK 위반 | 비추천 |
+| D. 별도 exploratory sub-cycle (low-slice 가설 보존) | sub-signal 보존 only / 본 cycle continuation 아님 | 가능 (별도 freeze) |
 
 ## 6. 코덱스 자문 이력
 
@@ -138,7 +149,7 @@
 |---|---|
 | 누적 | P0×16 + P1×59 + P2×30 |
 | Phase 0 사전 자문 | 조건부 GO + 3 조건 (Stage 3 transfer filter / holdout decision-binding / family cap·tie·stop rule) |
-| **Checkpoint 1 사후 검수 (예정)** | Stop rule trigger vs noise caveat / Stage 2 진입 vs 종결 / sub-signal 해석 |
+| **Checkpoint 1 사후 검수 (2026-05-07)** | **Stage 2 진입 HOLD 권고 / 본 cycle 종결**. P0 없음. P1×4 (literal vs operational stop reading / sub-signal artifact prior / HARK risk Family D rescue / Stage 1 noise decision-grade X) + P2×3 (SKIP variants 명시 / Family D negative control prereg / A.2 vs median_proxy 완전 동일 X) — 본 v2 commit 일괄 반영 |
 
 ## 7. 참조
 
