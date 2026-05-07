@@ -275,10 +275,29 @@ done
         - 동일 artwork_id 재요청은 30분 이내
         - 결과: cache_hit ≥ 10 PASS
 
+        검증 SQL (권위 runbook §5.3 line 158-168 / 184-193):
+        ```sql
+        -- 매칭 정확성 분포 검증
+        SELECT match_profile_source, slug_in_warm_set, is_saatchi_warm,
+               COUNT(*) AS n
+        FROM predict_logs
+        WHERE timestamp > NOW() - INTERVAL '1 hour'
+        GROUP BY 1, 2, 3
+        ORDER BY 4 DESC;
+
+        -- year_made_route 분포 검증 (cache_hit ≥ 10 확인)
+        SELECT year_made_route, COUNT(*) AS n
+        FROM predict_logs
+        WHERE timestamp > NOW() - INTERVAL '1 hour'
+            AND is_saatchi_warm = true
+        GROUP BY 1 ORDER BY 2 DESC;
+        -- 기대: cache_hit ≥ 10 / fetch_ok / manual_seed_cache_write / disabled
+        ```
+
         산출물 (gate):
         - 100건 응답 모두 200 OK
-        - Saatchi 매칭 정확성 ≥ 95%
-        - cache_hit ≥ 10건 (spec §5.4 gate)
+        - Saatchi 매칭 정확성 ≥ 95% (위 SQL 매칭 분포 / total ratio)
+        - cache_hit ≥ 10건 (위 SQL year_made_route='cache_hit' 의 n ≥ 10)
 
 [ ]  9. CANARY 1% (24h, v3_6_phase3_runbook §Phase 3 gate 통과 후)
         - 트래픽 1% 만 treatment_5pct cohort 라우팅
@@ -307,7 +326,7 @@ done
 
 ## 4. Reviewer signoff matrix
 
-§3 Step 9 (ROLLOUT 5% D7 판정) 시점 의무 — 3 reviewer signoff:
+§3 Step 10 (ROLLOUT 5% D7 판정) 시점 의무 — 3 reviewer signoff:
 
 | Reviewer | 영역 | 검토 항목 |
 |---|---|---|
@@ -334,26 +353,57 @@ done
 
 ### 5.2 Rollback 실행 (사용자 / oncall 권한)
 
-> **Caveat**: 실제 운영 오케스트레이터 (K8s / ECS / Nomad / 등) 에 따라 명령 다름. 본 절은 **placeholder** — 운영팀 표준 명령으로 치환 의무.
+> **Caveat**: 실제 운영 오케스트레이터 (K8s / ECS / Nomad / 운영팀 ops cli 등) 에 따라 명령 다름. 본 절은 환경 별 representative 명령 — **운영팀 표준 SOP 와 정합 의무 / 실제 production 적용 전 dry-run 검증 의무**.
 
+#### 핵심 invariant (모든 환경 공통)
+
+긴급 rollback 의 본질 = 다음 3 가지 동시 적용:
+
+1. `MODEL_VARIANT` env 를 baseline 으로 복귀 (`v3_filtered_tuned`) — 또는 unset (DEFAULT 적용)
+2. `ROLLOUT_COHORT` env 를 `control` 로 복귀 (트래픽 100% baseline cohort routing)
+3. 모든 worker / pod / instance 재시작 (env 적용 보장)
+
+#### 환경 별 명령
+
+**K8s (Deployment + rolling restart)**:
 ```bash
-# Placeholder — 실제 운영 환경 표준 명령으로 치환:
-
-# 옵션 1: K8s deployment env var update
-# kubectl set env deployment/<service> MODEL_VARIANT=v3_filtered_tuned ROLLOUT_COHORT=control
-# kubectl rollout restart deployment/<service>
-
-# 옵션 2: ECS task definition update + service redeploy
-# aws ecs update-service --cluster <cluster> --service <service> --force-new-deployment
-
-# 옵션 3: 운영팀 ops cli (해당 시)
-# ops cli swap rollback --target v3_filtered_tuned
-
-# 어떤 환경이든 핵심:
-# - MODEL_VARIANT 를 baseline (v3_filtered_tuned) 으로 복귀 또는 unset
-# - ROLLOUT_COHORT=control 로 트래픽 100% 복귀
-# - 모든 worker / pod / instance 재시작
+kubectl set env deployment/<service> \
+  MODEL_VARIANT=v3_filtered_tuned \
+  ROLLOUT_COHORT=control
+kubectl rollout restart deployment/<service>
+kubectl rollout status deployment/<service> --timeout=5m
+# 검증: kubectl exec <pod> -- curl localhost:8000/api/v1/monitor | jq '.model_info.variant'
+# 기대: "v3_filtered_tuned"
 ```
+
+**ECS (task definition + force redeploy)**:
+```bash
+# task definition 의 environment 영역 update (콘솔 또는 register-task-definition)
+# - MODEL_VARIANT=v3_filtered_tuned
+# - ROLLOUT_COHORT=control
+aws ecs update-service \
+  --cluster <cluster> --service <service> \
+  --force-new-deployment
+aws ecs wait services-stable --cluster <cluster> --services <service>
+# 검증: curl https://<service-url>/api/v1/monitor | jq '.model_info.variant'
+```
+
+**Docker Compose (ops cli or manual)**:
+```bash
+# .env 또는 docker-compose.yml 의 environment 영역 update
+# - MODEL_VARIANT=v3_filtered_tuned
+# - ROLLOUT_COHORT=control
+docker compose up -d --no-deps --force-recreate <service>
+# 검증: curl http://localhost:8000/api/v1/monitor | jq '.model_info.variant'
+```
+
+**운영팀 ops cli (canonical, 해당 시)**:
+```bash
+# 운영팀 표준 SOP 의 rollback 명령 — 실제 명령은 ops 팀 wiki 참조
+ops cli swap rollback --target v3_filtered_tuned --cohort control
+```
+
+> **Critical**: 위 명령 모두 본 checklist 의 representative example. **실제 production 적용 전** = 운영팀 표준 SOP 와 정합 + STAGING dry-run 검증 의무. 본 명령 단독 실행 = LLM 권한 X.
 
 ### 5.3 Rollback 후 의무
 
