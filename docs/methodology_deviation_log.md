@@ -101,6 +101,20 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Axis B Phase A pre-screen Round 1] Source discovery + Access 1차 실측 (none, 정상 흐름)
+- **위치**: 새 Phase 2'' Axis B (External Acquisition) Phase A pre-screen project — Round 1
+- **본 round 의 범위**: LLM 가능 영역만 (Access / Anti-bot / robots.txt) — Legal / TOS / License = 운영팀/법무팀 영역
+- **후보 10개 source 평가**:
+  * **PASS likely 5개 (정부/공공)**: KOSIS / MCST / KAMS / Arko / MMCA — robots.txt 자동화 친화적, Allow: / 명시 또는 부분 disallow only
+  * **부분 PASS 2개**: KIAF (Allow : / 전체 허용) + 한국화랑협회 (wp-admin 만 disallow) — TOS 추가 검토 필요
+  * **REJECT 1개**: **Frieze Seoul** = `Content-Signal: ai-train=no` 명시 + EU Article 4 권리 보유 + AI scraper (Amazonbot/Bytespider/CCBot) 전체 Disallow → AI/ML 사용 명시 금지
+  * **추가 확인 필요 2개**: Korea Foundation (SSL 에러) / KOSARC (DNS FAIL — 도메인 확인 필요)
+- **Stage 5 패턴 반복 (1건)**: Frieze REJECT = Stage 5 Artsy CV (Cloudflare 403 + TOS automation prohibition) 와 동일 패턴 → "private art market site 는 AI 사용 명시 금지 가능성 높음" plausible 가설 (Stage 5 + Frieze 2 사례)
+- **다음 round 진입 후보**: 정부/공공 5개 source — Round 2 = (LLM) Data availability + Labelability 평가 / (운영팀/법무팀) Legal / TOS 검토 + License 협상
+- **분류**: **none (정상 흐름)** — Phase A pre-screen project Round 1 정상 진행
+- **운영 영향 X**: 운영 spec 변경 X / 분기 B calibration only 그대로
+- **승인**: 사용자 검토 + 다음 round 옵션 결정 (A/B/C/D)
+
 ### 2026-05-07 — [Feature Track A.5 결과 + Axis A 5 step 종결] Image embedding FAIL near-null (none, 정상 흐름)
 - **사전등록 §3 적용 결과** (100-seed LAO):
   * Overall: baseline 38.03% → A.5 38.25% (Δ +0.22%p, 사실상 동등 또는 미세 악화)
