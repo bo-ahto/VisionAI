@@ -44,7 +44,7 @@
 - [ ] Feature 값이 학습 시 spec 과 일치 (log_area / birth_year_centered / log_artist_total_works 단위 / 결측 처리)
 - [ ] Artist slug 정규화 동일 (대소문자 / 공백 / 특수문자)
 - [ ] 가드레일 사전/사후 차단 로직 동일 (low_price / ink / tier 3 등)
-- [ ] 학습-서빙 parity 검증: 동일 입력 → 동일 출력 (반올림 오차 ≤ 0.001)
+- [ ] 학습-서빙 parity 검증: 동일 입력 → 동일 출력 (max diff ≤ 1e-6)
 
 ### 2.3 로그 완전성
 - [ ] 응답 필드 누락 0% (model_used / route_reason / guardrail_flags / calibration_applied / fallback_active)
@@ -107,13 +107,19 @@
 
 ### 6.1 Manual Rollback (즉시, 담당자 단독)
 
-**정식 경로** (spec §15.1 Manual Rollback Runbook 따름):
+**정식 경로** (spec §15.1 canonical):
 ```bash
-# Spec §15.1 의 표준 ops cli (운영 인프라 정의 명령)
-ops rollback --service track2-shadow --reason "<사유>"
+# Step 1. Track 2 즉시 차단
+ops cli model.disable --name track2_v1 --reason "manual_rollback: <사유>"
+
+# Step 2. 자동 V3 라우팅 확인 (1분 내)
+ops cli traffic.verify --model v3 --pct 100 --segment cold
+
+# Step 3. 운영팀 알림
+ops cli notify --channel #ops-alert --msg "Track 2 manual rollback: <사유>"
 ```
 
-**대안 경로** (ops cli 장애 시 fallback):
+**대안 경로** (ops cli 장애 시만 fallback):
 ```bash
 # kubectl 직접
 kubectl set env deployment/track2-shadow ENABLED=false

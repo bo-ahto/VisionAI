@@ -22,7 +22,7 @@
       "n_iter": 1000,
       "p50_us": 1.0,
       "p95_us": 1.042,
-      "p99_us": 1.083
+      "p99_us": 1.0844099999999997
     },
     {
       "test": "fail_closed_test_cases",
@@ -31,7 +31,7 @@
           "name": "NO_BASELINE",
           "trigger": "학습-서빙 parity 검증 실패",
           "input": "동일 input → 학습 시 vs 운영 시 prediction 차이 > 1e-6",
-          "expected": "Track 2 응답 X, V3 자동 라우팅, sue_code = 'NO_BASELINE'",
+          "expected": "Track 2 응답 X, V3 자동 라우팅, reason = 'NO_BASELINE'",
           "operational_test": "운영 환경에서 학습 모델 hash와 다른 hash 의도적 배포 → 자동 fallback 발동 확인"
         },
         {
@@ -50,6 +50,11 @@
         }
       ],
       "note": "Offline 정의 only. 실제 fail-closed 동작은 운영팀이 in-environment 에서 검증 필수."
+    },
+    {
+      "test": "sample_parity_30_dataset",
+      "n": 30,
+      "output_path": "experiments/structural_v1/results/phase_a_sample_parity_30.json"
     }
   ],
   "offline_preflight_pass": true

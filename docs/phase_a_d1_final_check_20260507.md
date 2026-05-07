@@ -14,6 +14,8 @@
 - ☐ Train data hash 기록: `data/curated/stage3_1000x100.parquet` SHA = `__________________`
 - ☐ Stage 4 baseline 해시와 동일 (`docs/stage4_데이터수집계획_20260507.md` §6.0)
 
+> ⚠️ **Hash mismatch 발견 시**: 본 §6 서명 금지 + 배치 보류 + Stage 4 baseline 정의 재확인 (runbook §4.1). hash 일치 회복 후 본 D-1 재실행.
+
 ## 2. Offline Preflight (LLM 사전 검증 — 본 D-1 에 재실행)
 
 ```bash
@@ -31,7 +33,7 @@ python3 scripts/phase_a_preflight.py
 - ☐ Dependency lock (requirements.txt / poetry.lock) 학습 환경과 동일
 - ☐ Runtime flag / config 학습 시 가정과 동일 (KRW 환율 기준일 등)
 - ☐ Shadow log stream 분리 생성 (`track2_shadow.log`)
-- ☐ Slack alert 채널 연결 (가드레일 hit / fallback / latency / schema 4종)
+- ☐ Slack alert 채널 연결 (핵심 4종: schema / latency / guardrail / fallback — 전체 8 rules 는 monitoring spec §2)
 - ☐ Latency p95 측정 baseline (V3 운영 환경) 산출 완료 — V3 p95 = ___ ms
 
 ## 4. Fail-closed E2E (운영팀 in-environment 실행)
@@ -42,8 +44,8 @@ python3 scripts/phase_a_preflight.py
 
 ## 5. Sample Parity 30 건 (운영팀 in-environment 실행)
 
-- ☐ Stage 3 데이터에서 임의 sample 30 건 선택 (`scripts/phase_a_preflight.py` 의 first 30 rows 권장)
-- ☐ 각 sample 학습 시 prediction vs 운영 환경 재예측 비교
+- ☐ Sample dataset 사용: `experiments/structural_v1/results/phase_a_sample_parity_30.json` (preflight 자동 산출, 30 건 input + expected_log_prediction)
+- ☐ 각 sample 의 expected vs 운영 환경 재예측 비교
 - ☐ 30/30 max diff ≤ 1e-6 (요구) — 결과 첨부: `__________________`
 - ☐ 차이 발생 row 0 건 확인
 

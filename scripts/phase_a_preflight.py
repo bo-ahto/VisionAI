@@ -207,6 +207,45 @@ def test_fail_closed_simulation():
 
 
 # ─────────────────────────────────────
+# 4.5. Sample parity 30 건 산출 (운영팀 in-environment 비교용 입력)
+# ─────────────────────────────────────
+def sample_parity_30(df_feat, y, n=30, seed=42):
+    """첫 30 건 (또는 seed 기반 sample) 의 (input, expected_prediction) pairs 산출.
+    운영팀이 in-environment 에서 동일 input → 동일 prediction 비교용."""
+    logger.info(f"\n[4.5] Sample parity {n} 건 산출 (운영팀 비교용 입력 + 기대 출력)")
+    X = build_X(df_feat).values.astype(float)
+    y_arr = y.values.astype(float)
+    m = fit_huber(X, y_arr)
+
+    rng = np.random.default_rng(seed)
+    idx = rng.choice(len(df_feat), size=min(n, len(df_feat)), replace=False)
+
+    preds = X[idx, 1:] @ m.coef_ + m.intercept_
+
+    samples = []
+    for i, row_i in enumerate(idx):
+        row = df_feat.iloc[row_i]
+        samples.append({
+            "row_idx": int(row_i),
+            "input": {
+                "artist_slug": str(row["artist_slug"]),
+                "area_cm2": float(row["area_cm2"]),
+                "artist_birth_year": int(row["artist_birth_year"]),
+                "artist_total_works": int(row["artist_total_works"]),
+            },
+            "expected_log_prediction": float(preds[i]),
+            "expected_prediction_krw": float(np.exp(preds[i])),
+        })
+
+    out = RESULTS / "phase_a_sample_parity_30.json"
+    with out.open("w", encoding="utf-8") as f:
+        json.dump({"n": len(samples), "tolerance_max_diff": 1e-6,
+                   "model_hash": MODEL_HASH, "samples": samples}, f, indent=2, ensure_ascii=False)
+    logger.info(f"  → {out.relative_to(ROOT)} (운영팀: 동일 input → expected_log_prediction 비교, max diff ≤ 1e-6)")
+    return {"test": "sample_parity_30_dataset", "n": len(samples), "output_path": str(out.relative_to(ROOT))}
+
+
+# ─────────────────────────────────────
 # 5. 운영팀 in-environment 점검 항목 (참고용 출력)
 # ─────────────────────────────────────
 def print_in_environment_checklist():
@@ -218,7 +257,7 @@ def print_in_environment_checklist():
         "Runtime flag / config 학습 시 가정과 동일 (KRW 환율 기준일 등)",
         "Fail-closed E2E 3종 (NO_BASELINE / MODEL_ERROR / PARITY_BREACH) 동작 확인",
         "Shadow log stream 분리 생성 (track2_shadow.log, V3 운영 로그와 구분)",
-        "Slack alert 채널 연결 + 4 alert rule 활성화",
+        "Slack alert 채널 연결 + 핵심 4종 alert (schema/latency/guardrail/fallback) 활성화 — 전체 8 rules 는 monitoring spec §2 참조",
         "Latency p95 ratio (track2 / V3) 측정 가능 — APM 연결",
     ]
     for i, item in enumerate(items, 1):
@@ -250,6 +289,7 @@ def run():
     summary["tests"].append(test_feature_pipeline(df_feat))
     summary["tests"].append(measure_latency(df_feat, y))
     summary["tests"].append(test_fail_closed_simulation())
+    summary["tests"].append(sample_parity_30(df_feat, y))
     print_in_environment_checklist()
 
     # 종합 판정

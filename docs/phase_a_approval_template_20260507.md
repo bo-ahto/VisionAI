@@ -21,7 +21,7 @@
 | Model hash | `track2_v1_20260507` (F4 + log_area spline + Huber eps=1.35 alpha=1e-4) |
 | Feature pipeline version | `f4_spline_v1_20260506` |
 | Train data hash | `data/curated/stage3_1000x100.parquet` SHA = ___________________ |
-| Stage 4 baseline 일치성 | ☐ 확인 (`docs/stage4_데이터수집계획_20260507.md` §6.0 동일 hash) |
+| Stage 4 baseline 일치성 | ☐ 확인 (`docs/stage4_데이터수집계획_20260507.md` §6.0 동일 hash) — **mismatch 시 서명 금지, 배치 보류** |
 
 ## 사전 점검 결과
 
@@ -38,9 +38,9 @@
 | 항목 | 값 |
 |---|---|
 | Alert 채널 | Slack `#track2-shadow` (또는 운영팀 정의) |
-| Alert rules | 가드레일 hit > 2% / fallback > 5% / latency p95 > V3×2 / schema < 99% / parity_breach 즉시 |
-| Rollback 정식 경로 | `ops rollback --service track2-shadow --reason "<사유>"` (spec §15.1) |
-| Rollback 대안 경로 | `kubectl set env deployment/track2-shadow ENABLED=false` |
+| Alert rules | 핵심: 가드레일 hit > 2% / fallback > 5% / latency p95 > V3×2 / schema < 99% / parity_breach 즉시 (전체 8 rules: monitoring spec §2) |
+| Rollback 정식 경로 (spec §15.1 canonical) | `ops cli model.disable --name track2_v1 --reason "manual_rollback: <사유>"` (이후 traffic.verify + notify 3-step) |
+| Rollback 대안 경로 (ops cli 장애 시만) | `kubectl set env deployment/track2-shadow ENABLED=false` |
 
 ## 사전 공유 (인지 목적, 승인 X)
 
