@@ -101,6 +101,20 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Sample size sensitivity descriptive analysis] 운영 baseline stability 관찰 (none, 정상 흐름)
+- **사용자 요청**: data/curated 의 200/500/1000 데이터 기준 모델 검증
+- **코덱스 사전 자문**: 조건부 GO — "baseline 검증" → "sample size + composition sensitivity descriptive analysis" framing 정정 / mini-freeze 6항목 (목적 / 데이터 / 모델 / split / metric / 해석 rule)
+- **결과 (운영 baseline F4 + spline + Huber, 100-seed LAO)**:
+  * stage1_200x20: Overall 25.95% / std 9.41% (가장 unstable, floor)
+  * stage2_500x50: Overall 27.21% / std 6.30%
+  * stage3_1000x100: Overall 24.30% / std 4.30% (가장 stable curated)
+  * stage4_full: Overall 38.03% / std 4.23% (운영 baseline)
+- **핵심 finding**: curated cohort (1/2/3) 24-27% vs full 38% gap = **sample size 가 아닌 composition 효과** (작가당 작품 수 uniform vs heavy variance, cold artist 비율 차이) — 코덱스 P0 framing 정확
+- **Stability**: sample size 증가 시 std 개선 (200x20 9.41% → full 4.23%), 1000x100 ≈ full 포화
+- **Newly-warm**: stage4_full only (46.11% mean) — Stage 1/2/3 = curated cohort, Stage 3 cohort 기준 정의 부적합 → N/A 처리
+- **분류**: **none (정상 흐름)** — descriptive sensitivity, decision-binding X
+- **운영 영향 X**: 본 분석 단독 spec 변경 trigger 금지 (코덱스 P0) / 운영 spec §1-§16 변경 X / 분기 B calibration only 유지
+
 ### 2026-05-07 — [Axis B Round 3 v2] 코덱스 사후 검수 P1×5 + P2×1 framing 톤 다운 (minor)
 - **코덱스 사후 검수**: Round 3 continue / 운영팀 outreach GO (단 범위 한정 = Artprice + Kukje/Pace/PKM + Arko inquiry / Sotheby's·Christie's·Hyundai HOLD = Round 4 pool)
 - **P1 fix**:
