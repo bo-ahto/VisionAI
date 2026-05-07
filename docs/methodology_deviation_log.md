@@ -101,6 +101,16 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Progressive sampling cycle 종결 + sub-report HTML] A 결정 / Axis B 우선 (none, 정상 흐름)
+- **사용자 결정**: A 옵션 (본 cycle 종결) + Axis B license-first 우선 진행 + Progressive Sampling test sub-HTML 외부 보고용 별도 정리
+- **본 cycle 종결 사유 (코덱스 사후 검수 종합)**: Stage 1 family-level retain 0건 / advancement evidence X / Stage 1 noise std 9.41% = decision-grade 승급 근거 부적합 / pruning 근거는 충분
+- **Phase 0 holdout 봉인 유지**: cancel X — `data/curated/progressive_sampling_locked_holdout_v1.parquet` (SHA-16 1933a0947a918fc9) governance-preserving stop / future preregistered cycle 또는 Axis B 결과 후 재사용 가능
+- **Sub-report HTML** (`docs/progressive_sampling_subreport_20260507.html`): 코덱스 사전 자문 (8 sections + measured tone) 적용. 외부 보고용 (1-2 page executive). FAIL framing 회피 / "exploratory cycle concluded under stopping logic" / Axis B 우선 동일 decision logic 으로 framing
+- **분류**: **none (정상 흐름)** — Phase 0 freeze 의 stop logic 정상 적용
+- **운영 영향 X**: 운영 spec §1-§16 변경 X / 분기 B calibration only 유지
+- **다음 단계**: Axis B license-first lane 우선 (handoff packet `docs/axis_b_handoff_packet_20260507.md` 그대로 활용 — Artprice + Kukje + Pace + PKM + Arko inquiry 즉시 outreach)
+- **승인**: 사용자 (2026-05-07)
+
 ### 2026-05-07 — [Progressive sampling Checkpoint 1 v2] 코덱스 사후 검수 P1×4 + P2×3 적용 → Stage 2 HOLD / 종결 권고 (minor)
 - **코덱스 사후 검수 (Stage 2 진입): HOLD** — operational decision = 종결
 - **P1 fix**:
