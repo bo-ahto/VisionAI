@@ -20,10 +20,12 @@
 
 | 순위 | Vendor | Access | License/API hint | 평가 |
 |---|---|---|---|---|
-| **1** | **Artprice** | 200 / 9-14KB main+subscription | **strong (28+33 hits)** — `subscription`, `license`, `api`, `plan` 명시 | **paid subscription / API 명시 강함** → 운영팀 협상 우선 후보 |
-| **2** | **Sotheby's** | 200 / 455KB | 0 explicit hint (large web app, dynamic) | 주요 auction house — 한국 작가 거래 history 가능 / API 가능성 (별도 inquiry) |
-| **3** | **Christie's** | 200 / 152KB | 0 explicit hint | 주요 auction house / 동일 |
+| **1** | **Artprice** | 200 / 9-14KB main+subscription | **strong (28+33 hits)** — `subscription`, `license`, `api`, `plan` 명시 | **paid subscription/API hint strong** (운영 확인 전 — 코덱스 P1 톤 정정) → 운영팀 협상 우선 후보 |
+| ⚠️ HOLD (Round 4 pool) | **Sotheby's** | 200 / 455KB | 0 explicit hint | 주요 auction house — Round 2 freeze 의 5 source 외 / **본 Round 3 outreach 범위 X** (HARK 회피) |
+| ⚠️ HOLD (Round 4 pool) | **Christie's** | 200 / 152KB | 0 explicit hint | 동일 — Round 4 candidate pool 분리 |
 | 후보 (보류) | Artnet PriceDB | 200 / 1KB only (dynamic load 추정) | 0 | 추가 LLM 평가 또는 운영팀 inquiry 필요 |
+
+> **본 Round 3 운영팀 outreach 즉시 범위 (코덱스 P1 정정 — Decision Table 충돌 fix)**: **Artprice 만** (vendor 1순위). Sotheby's / Christie's = Round 4 candidate pool 분리 / 본 Round 3 outreach 범위 X (HARK 회피).
 
 **LLM 한계 명시**: 본 평가 = public web page 1차 access + keyword hint 기반 추정. **실제 license 조건 / 한국 art coverage / API spec / AI/ML 사용 허용 = 운영팀 협상 영역** (LLM 외).
 
@@ -40,9 +42,10 @@
 
 **갤러리 web 의 가격 공개 관행 (코덱스 사전 자문)**: hint count = 0 (모두) — 갤러리 web 은 가격 공개 비율 낮음 → **"데이터 richness" 보다 "협상 가능성 / 관계 형성 난이도" screening** 에 더 가까움 (코덱스 톤).
 
-### 1.3 Lane 1 stop/continue rule (코덱스 §3)
-- **A continue 조건**: "1개라도 운영팀 contactable + license path plausible + 작품/가격 데이터 가능성 있음" → **충족** (Artprice = subscription/API 강함, contactable + license path / Kukje / Pace / PKM = web access OK + 협상 가능)
-- → **A continue GO** (운영팀 협상 시작 권고)
+### 1.3 Lane 1 stop/continue rule (코덱스 §3, P1 톤 정정)
+- **A continue 조건**: "1개라도 운영팀 contactable + license path plausible + 작품/가격 데이터 가능성 있음" → **충족** (Artprice = subscription/API hint strong, contactable + license path / Kukje / Pace / PKM = web access OK + 협상 가능)
+- → **A continue: 협상 착수 GO** (운영팀 협상 시작 권고)
+- ⚠️ **A continue ≠ decision-grade GO** (코덱스 P1 톤 정정): **source adequacy 판정 미정** — Lane 1 sources 는 **Round 2 freeze 3축 (cover ≥70 / join ≥80 / time-safe) 평가 미수행** (LLM 가능 영역 외 / 운영팀 + 법무 회신 후만 평가 가능). 본 Round 3 = "narrowing-grade only".
 
 ## 2. Lane 2 — Arko ops (inquiry draft + retry 2차)
 
@@ -105,6 +108,21 @@
    - 담당 부서 / 담당자 이름 + email + 직위
    - 1차 회신 가능 시점
    - 추가 협의 필요 영역
+
+9. 정확 endpoint URL (코덱스 P1 보완)
+   - art market 통계 / 작품 catalog 의 정확 URL path
+   - 예: `arko.or.kr/<exact-path>/data` 또는 sub-domain
+
+10. Schema sample / 컬럼 예시 (코덱스 P1 보완)
+    - 작품-level 데이터 시 row sample (작가 / 작품명 / 거래가 / 매체 등)
+    - aggregate-level 시 column 명 + format
+
+11. Sample file 또는 API response (코덱스 P1 보완)
+    - 1-page sample 또는 JSON response example
+
+12. Auth 방식 (코덱스 P1 보완)
+    - API key / OAuth / IP whitelist / login session
+    - 발급 절차 / 사용 quota
 ```
 
 **산출물 status**: 운영팀 인계용 발송본 — 본 draft 인계 후 운영팀 fine-tuning + 발송.
@@ -127,27 +145,32 @@
 
 ### 3.2 산출물 (코덱스 §1C — 정확 path 후보 1-3개 + why plausible)
 
-> **결과**: 본 Round 3 LLM 가능 영역 = **endpoint discovery 실패** (sub-path 모두 404). MCST web 의 URL pattern 이 변경되었거나 search endpoint 가 다른 path 로 이동한 추정. **운영팀 inquiry 영역** (담당 부서 직접 contact / 또는 google search 외부 검색 후 endpoint 발견).
+> **결과**: 본 Round 3 LLM 가능 영역 = **endpoint discovery 실패** (sub-path 모두 404). MCST web 의 URL pattern 이 변경되었거나 search endpoint 가 다른 path 로 이동한 추정. **운영팀 직접 inquiry 또는 외부 검색 담당 배정** (코덱스 P2 정정 — LLM/운영팀 역할 경계 명확화).
 
 ### 3.3 Lane 3 stop/continue rule (코덱스)
 - MCST endpoint 미발견 ≠ program stop 사유
 - 운영팀 inquiry 우선 (Lane 2 와 함께)
 
-## 4. Decision Table (코덱스 reporting §2)
+## 4. Decision Table (코덱스 reporting §2, P1 정정 — 즉시 outreach 범위 vs Round 4 pool 분리)
 
-| 항목 | 결과 | 다음 단계 |
-|---|---|---|
-| **A vendors** | Artprice (1순위, paid subscription/API) / Sotheby's, Christie's (2-3순위) / Artnet (보류) | 운영팀 license 협상 즉시 시작 |
-| **A galleries** | Kukje / Pace / PKM (3개 access OK) / Hyundai (dynamic) / Hakgojae, Gana (access X) | 운영팀 협상 / 가격 공개 관행 낮음 (협상 난이도 screening) |
-| **Arko inquiry** | 8항목 draft 완성 | 운영팀 인계 + 발송 |
-| **Arko retry** | 2회 완료 (1+1차), main `/` 200 access recovery / sub-path 미확인 | 추가 1회 retry (다음 cycle) + 운영팀 inquiry 우선 |
-| **MCST endpoint** | sub-path 4종 404 = LLM 가능 영역 endpoint 발견 X | 운영팀 inquiry / 외부 search engine |
+> **본 Decision Table 원칙 (코덱스 P1 충돌 fix)**: **즉시 운영팀 outreach 범위** = 5 source freeze + Round 3 narrowing 통과 항목만 / **Round 4 candidate pool** = 본선 외 (HARK 회피).
+
+| 항목 | 결과 | 즉시 outreach 범위 | Round 4 pool 분리 |
+|---|---|---|---|
+| **A vendors (Round 3 outreach)** | Artprice (1순위, hint strong) | ✓ Artprice 즉시 협상 | — |
+| **A vendors (Round 4 pool, HARK)** | Sotheby's / Christie's | — | ⚠️ Round 4 pool, **즉시 outreach X** |
+| **A galleries (Round 3 outreach)** | Kukje / Pace / PKM (3개 access OK) | ✓ 즉시 협상 (가격 공개 낮음 — 협상 난이도 screening) | — |
+| **A galleries (Round 4 pool / 추가 평가)** | Hyundai (dynamic) | — | ⚠️ 추가 평가 필요 / Hakgojae·Gana 별도 access 검토 |
+| **Arko inquiry** | 12항목 draft 완성 (코덱스 P1 보완) | ✓ 운영팀 인계 + 발송 | — |
+| **Arko retry** | 2회 완료, main `/` 200 access recovery / sub-path 미확인 | — | 추가 1회 retry 다음 cycle + 운영팀 inquiry 우선 |
+| **MCST endpoint** | sub-path 4종 404 — LLM 가능 영역 endpoint 발견 X | — | 운영팀 직접 inquiry 또는 외부 검색 담당 배정 |
 
 ## 5. Stop / Continue (코덱스 reporting §3)
 
 ### 5.1 Continue (확인된 것)
-- **A lane continue**: Artprice + Kukje/Pace/PKM = 운영팀 협상 시작 충분
-- Arko main access recovery — partial PASS
+- **A lane continue: 협상 착수 GO** (코덱스 P1 톤 정정 — decision-grade GO X / source adequacy 판정 미정): Artprice + Kukje/Pace/PKM = 운영팀 협상 착수 충분
+- Arko main access recovery — partial PASS (access only, dataset endpoint 미확인)
+- ⚠️ **Lane 1 sources = Round 2 freeze 3축 (cover ≥70 / join ≥80 / time-safe) 평가 미수행** (코덱스 P1 caveat 강화) — method-gate 미검증
 
 ### 5.2 HOLD (운영팀 / 법무 의존 영역)
 - Arko / MCST 의 dataset endpoint = 운영팀 inquiry 후
@@ -164,7 +187,7 @@
 
 | 영역 | 작업 | 시점 |
 |---|---|---|
-| **운영팀 outreach (1순위)** | Artprice / Kukje / Pace / PKM license 협상 시작 | 즉시 |
+| **운영팀 outreach (1순위, 범위 한정)** | **Artprice + Kukje + Pace + PKM + Arko inquiry** license 협상 시작 (코덱스 P1 — Sotheby's/Christie's/Hyundai 제외, Round 4 pool) | 즉시 |
 | **운영팀 outreach (Arko)** | inquiry draft 발송 | 즉시 |
 | **법무 검토** | Artprice TOS / 한국 갤러리 license 검토 | 즉시 |
 | **Arko 추가 retry** | freeze §3.3 spec 충족 (3회 중 마지막 1회) | 다음 cycle (24-72h 후) |
@@ -174,7 +197,8 @@
 ## 8. Limitations / 정직 보고 (코덱스 톤 유지)
 
 - **LLM 한계 (Round 3)**: web access + keyword hint 기반 narrowing only. **실제 license 조건 / 한국 art coverage / dataset schema = 운영팀 협상 + 법무 검토 영역** (LLM 외)
-- **Artprice 1순위 의 caveat**: subscription/API hint = strong but **실제 한국 작가 coverage / paid tier 비용 / AI/ML 사용 허용 = 운영팀 협상 후만 확인 가능**
+- **Artprice 1순위 의 caveat (코덱스 P1 강화)**: subscription/API hint = strong but **paid license 확인 X (운영 확인 전 단정 X)** / 실제 한국 작가 coverage / paid tier 비용 / AI/ML 사용 허용 = 운영팀 협상 후만 확인 가능
+- **Lane 1 method-gate 미검증 (코덱스 P1 핵심 caveat)**: A continue GO = "협상 착수 GO" / Lane 1 sources 는 **Round 2 freeze 3축 (cover ≥70 / join ≥80 / time-safe) 평가 전혀 미수행** — source adequacy 판정 미정 / 운영팀 + 법무 회신 후만 평가 가능
 - **갤러리 web 의 가격 공개 낮음 (코덱스 사전 자문)**: gallery direct = "데이터 richness" 보다 **"협상 가능성 / 관계 형성 난이도" screening** — 운영팀 영역
 - **Arko / MCST main page access recovery ≠ data 적합성 개선** (코덱스 caveat 동일 적용)
 - **새 source (Sotheby's/Christie's) HARK 회피**: 본선 편입 X / Round 4 candidate pool 분리 (코덱스 P0)
@@ -185,7 +209,7 @@
 |---|---|
 | 누적 (Stage 6B / Feature track / A.1-A.5 / Axis A 종합 / Axis B Round 1-2-2B) | P0×11 + P1×42 + P2×20 |
 | **Round 3 사전 자문 (2026-05-07)** | 조건부 GO + 3 lane 분리 + reporting 5 구조 + freeze 추가 권고 |
-| **Round 3 결과 검수 (예정)** | A continue 정당성 + 운영팀 outreach 우선순위 + Round 4 candidate pool 처리 |
+| **Round 3 결과 검수 (2026-05-07)** | **Round 3 continue / 운영팀 outreach GO** (단 범위 한정 = Artprice + Kukje/Pace/PKM + Arko / Sotheby's·Christie's·Hyundai HOLD = Round 4 pool). P0 없음 / P1×5 (Artprice "paid 확인" 톤 / Decision Table 충돌 / Arko inquiry 12항목 보완 / Lane 1 method-gate 미검증 caveat / A continue "decision-grade GO" 톤) + P2×1 (MCST 외부 검색 표현) — 본 v2 commit 일괄 반영 |
 
 ## 10. 참조
 

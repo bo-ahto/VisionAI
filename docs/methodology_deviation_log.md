@@ -101,6 +101,17 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Axis B Round 3 v2] 코덱스 사후 검수 P1×5 + P2×1 framing 톤 다운 (minor)
+- **코덱스 사후 검수**: Round 3 continue / 운영팀 outreach GO (단 범위 한정 = Artprice + Kukje/Pace/PKM + Arko inquiry / Sotheby's·Christie's·Hyundai HOLD = Round 4 pool)
+- **P1 fix**:
+  1. Artprice "paid license 확인" → "paid subscription/API hint strong (운영 확인 전 단정 X)"
+  2. Decision Table 의 즉시 outreach 범위 vs Round 4 pool 충돌 fix — Sotheby's/Christie's = Round 4 pool 분리 명시 (HARK 회피)
+  3. Arko inquiry draft 8항목 → 12항목 보완 (정확 endpoint URL / schema sample / sample file or API response / auth 방식 추가)
+  4. Lane 1 method-gate 미검증 caveat (Round 2 freeze 3축 cover ≥70 / join ≥80 / time-safe 평가 미수행) A continue GO 옆에 명시
+  5. A continue GO = "decision-grade GO" 톤 → "협상 착수 GO, source adequacy 판정 미정"
+- **P2 fix**: MCST endpoint = "google search 외부 검색" → "운영팀 직접 inquiry 또는 외부 검색 담당 배정" (LLM/운영팀 역할 경계 명확화)
+- **분류**: **minor (framing 톤 다운, 결과 변경 X)**
+
 ### 2026-05-07 — [Axis B Round 3] A pre-assessment + Arko ops + MCST side-queue (3 lane, none + minor)
 - **사용자 명시 instruction**: 우선순위에 맞춰 진행 + 코덱스 활용
 - **코덱스 사전 자문**: 조건부 GO + 3 lane 분리 (Lane 1 A 본선 / Lane 2 Arko ops / Lane 3 MCST side-queue) + reporting 5 구조
