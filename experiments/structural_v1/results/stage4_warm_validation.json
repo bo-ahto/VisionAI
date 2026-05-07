@@ -1,0 +1,143 @@
+{
+  "data_source": "data/curated/stage4_full.parquet",
+  "n_train": 4207,
+  "n_warm_artists": 120,
+  "n_test_eligible_artists": 40,
+  "n_test_rows": 431,
+  "models": {
+    "baseline_mdape": 33.300017545506186,
+    "fe_only_mdape": 27.062304038862223,
+    "combined_mdape": 29.02719131457615,
+    "combined_shrunk_mdape": 28.962514698126622
+  },
+  "primary": {
+    "diff_point": -6.2377135066439635,
+    "bootstrap": {
+      "n_boot_kept": 2000,
+      "mean": -5.745782662382446,
+      "ci_lo_95": -15.947967666488164,
+      "ci_hi_95": 5.325805900436633,
+      "p_value_1sided": 0.1415
+    },
+    "ci_upper_le_0": false,
+    "practical_le_neg08": true,
+    "seed_std": 0.27622447026053437,
+    "seed_std_le_05": true
+  },
+  "secondary": [
+    {
+      "name": "Combined vs baseline",
+      "result": {
+        "n_boot_kept": 1000,
+        "mean": -4.86873559504975,
+        "ci_lo_95": -15.197820039295621,
+        "ci_hi_95": 7.246909833525315,
+        "p_value_1sided": 0.217
+      }
+    },
+    {
+      "name": "Combined-shrunk vs baseline",
+      "result": {
+        "n_boot_kept": 1000,
+        "mean": -4.912752111998607,
+        "ci_lo_95": -15.230496212011705,
+        "ci_hi_95": 7.395980389365647,
+        "p_value_1sided": 0.208
+      }
+    },
+    {
+      "name": "FE only @ depth 10-14",
+      "result": {
+        "n_boot_kept": 1000,
+        "mean": 3.576398717824357,
+        "ci_lo_95": -30.488839773964227,
+        "ci_hi_95": 49.51724117053613,
+        "p_value_1sided": 0.544
+      }
+    },
+    {
+      "name": "FE only @ depth 15-24",
+      "result": {
+        "n_boot_kept": 1000,
+        "mean": 3.1405252024762205,
+        "ci_lo_95": -19.08214081996745,
+        "ci_hi_95": 13.674604029467824,
+        "p_value_1sided": 0.715
+      }
+    },
+    {
+      "name": "FE only @ depth 25+",
+      "result": {
+        "n_boot_kept": 1000,
+        "mean": -17.317722122856093,
+        "ci_lo_95": -40.23125837712058,
+        "ci_hi_95": -4.219141179863128,
+        "p_value_1sided": 0.005
+      }
+    }
+  ],
+  "secondary_holm_rejects": [
+    "FE only @ depth 25+"
+  ],
+  "harm_budget": {
+    "results": [
+      {
+        "slice": "price_저가",
+        "n": 144,
+        "baseline": 46.700309218391595,
+        "fe": 52.41238342882553,
+        "diff": 5.712074210433933,
+        "threshold": 1.0,
+        "violation": true
+      },
+      {
+        "slice": "price_중가",
+        "n": 151,
+        "baseline": 24.46499643191289,
+        "fe": 23.866883092048234,
+        "diff": -0.598113339864657,
+        "threshold": 0.5,
+        "violation": false
+      },
+      {
+        "slice": "price_고가",
+        "n": 136,
+        "baseline": 38.87835596455433,
+        "fe": 18.20677186547424,
+        "diff": -20.67158409908009,
+        "threshold": 1.0,
+        "violation": false
+      },
+      {
+        "slice": "depth_10-14",
+        "n": 141,
+        "baseline": 31.967969347953186,
+        "fe": 28.225822448326955,
+        "diff": -3.7421468996262313,
+        "threshold": 1.5,
+        "violation": false
+      },
+      {
+        "slice": "depth_15-24",
+        "n": 127,
+        "baseline": 24.55482886384409,
+        "fe": 31.256149927187376,
+        "diff": 6.701321063343286,
+        "threshold": 1.0,
+        "violation": true
+      },
+      {
+        "slice": "depth_25+",
+        "n": 163,
+        "baseline": 36.89171653347615,
+        "fe": 22.734886602334843,
+        "diff": -14.156829931141306,
+        "threshold": 0.5,
+        "violation": false
+      }
+    ],
+    "n_violations": 2,
+    "all_pass": false
+  },
+  "verdict": "BORDERLINE — 보류 (실용 효과 또는 segment harm)"
+}

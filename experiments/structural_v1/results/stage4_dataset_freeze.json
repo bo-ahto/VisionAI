@@ -1,0 +1,62 @@
+{
+  "version": "stage4_v3_20260507",
+  "model_hash": "track2_v1_20260507",
+  "feature_pipeline_version": "f4_spline_v1_20260506",
+  "source": {
+    "raw_artworks_path": "data/artsy_kr_artworks.csv",
+    "raw_artworks_sha256_16": "b3ca65992975afed",
+    "raw_artworks_n_rows": 30046
+  },
+  "cleansing_rules": {
+    "price_krw_gt_1": true,
+    "width_cm_gt_0": true,
+    "height_cm_gt_0": true,
+    "artist_birth_year_non_null": true,
+    "year_made_range_1900_2026": true
+  },
+  "cleansing_pass": {
+    "n_artworks": 8495,
+    "n_artists": 807
+  },
+  "split": {
+    "train": {
+      "year_max": 2023,
+      "n": 4207
+    },
+    "val": {
+      "year_eq": 2024,
+      "n": 1953
+    },
+    "test": {
+      "year_eq": 2025,
+      "n": 2335
+    }
+  },
+  "warm_threshold": 10,
+  "warm_artists_n": 120,
+  "test_eligible_artists_n": 40,
+  "test_eligible_n_threshold": 3,
+  "depth_bin_counts": {
+    "cold": 4737,
+    "10-14": 791,
+    "15-24": 1143,
+    "25+": 1824
+  },
+  "test_eligible_depth_distribution": {
+    "10-14": 374,
+    "15-24": 517,
+    "25+": 969
+  },
+  "outputs": {
+    "stage4_full_parquet": {
+      "path": "data/curated/stage4_full.parquet",
+      "sha256_16": "b7b51b81d3a033b5",
+      "n_rows": 8495
+    },
+    "stage4_warm_test_eligible_parquet": {
+      "path": "data/curated/stage4_warm_test_eligible.parquet",
+      "sha256_16": "ea7eb4258e09a14b",
+      "n_rows": 1860
+    }
+  }
+}
