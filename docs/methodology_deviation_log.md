@@ -111,15 +111,16 @@
   * **Saatchi Ensemble: 42.50% → 44.30% (+1.80%p)** — Hard gate 2 violation (source 비대칭)
   * Warm slice XGBoost: 10.30% → 10.30% (+0.00%p, ≈) — Hard gate 3 OK
 - **Stop criteria (Phase 0 §4)**: **fail trigger** (Overall 비개선/악화 + Saatchi 비대칭) — 정상 trigger
-- **핵심 finding (코덱스 framing)**: drift features 9개 중 7 (severe) 가 학습 시 **실제 informative signal** (특히 Saatchi-specific) 입증. 서빙 시 hardcoded 0 = production 시 학습된 informative weight 무효화 → reported offline metric 이 production reality 보다 낙관적 가능성
-- **Drift fix 옵션 재평가**: A.1 (학습 측 제거) = OOF 손실 입증 / **A.2 (서빙 측 actual 추출 / API contract 확장) ROI ↑ 재산정** 권고 — 운영팀 영역 (LLM 외)
+- **핵심 finding (코덱스 P1 톤 정정)**: drift features 9개 중 7 (severe) 가 학습 분포 OOF 에서 **유의미한 예측 기여 (informative signal) 임을 강하게 시사** (특히 Saatchi slice). 서빙 시 hardcoded 0 = production 시 학습된 informative weight 무효화 가능 → reported offline metric (calibrated 38.3% cold) 이 actual serving behavior 보다 **낙관적일 가능성을 강하게 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량)
+- **Drift fix 옵션 재평가**: A.1 (학습 측 제거) = OOF 손실 확인 / **A.2 (서빙 측 actual 추출 / API contract 확장) ROI ↑ 재산정** 권고 — 운영팀 영역 (LLM 외)
 - **본 cycle 종결 (코덱스 권고)**: Stage 1B 진입 X / 운영팀 후속 inquiry 영역 (A.2 path)
-- **종합 HTML 보고서** (`docs/트랙1_종합보고서_20260507.html`): 외부 보고용 1-2 page executive (10 sections — Phase 0 + Stage 1 + Amendment + Audit 4 + 사전등록 governance 가치)
+- **종합 HTML 보고서** (`docs/트랙1_종합보고서_20260507.html`): 외부 보고용 executive 보고 (10 sections — Phase 0 + Stage 1 + Amendment + Audit 4 + 사전등록 governance 가치, §9 부록 = 내부 governance 메타 분리)
 - **분류**: **none (정상 흐름)** — Phase 0 §4 stop trigger / governance-preserving close
 - **운영 영향 X**: 운영 spec §1-§16 변경 X / `v3_filtered_tuned` 32f 운영 그대로 유지 / Production-time gap 정량 = Stage 4 holdout / 서빙 log 비교 = 후속 cycle
-- **사전등록 governance 도입 가치 입증**: HARK 회피 (drift fix → OOF 개선 가설 사전 freeze 후 결과 반증, 정직 보고) / operational anchor baseline 확정 / train-serve gap 정량 시사 / 운영 영향 분리 / 코덱스 사전+사후 검수 cycle 정상 작동
+- **사전등록 governance 도입 가치**: HARK 위험 실질적으로 낮춘 cycle (drift fix → OOF 개선 가설 사전 freeze 후 결과 반증, 정직 보고) / operational anchor baseline 확정 / train-serve gap 정량 시사 / 운영 영향 분리 / 코덱스 사전+사후 검수 cycle 정상 작동
 - **다음 단계**: 사용자 결정 (A 본 cycle 종결 권고 / B Stage 1B 보류 / C A.2 path 운영팀 inquiry / D 비추천)
-- **승인**: 사용자 검토 + 코덱스 사후 검수 (예정 — Audit 4 결과 + HTML 사후)
+- **코덱스 사후 검수 (round 1-3 → round 4 GO)**: P0×0 + P1×3 + P2×2 — round 1 (FAIL+soft fail 분리 / 38.7% reference 명확화 / 톤 정정 / 부록 분리 / HARK framing 톤 다운) + round 2-3 (잔여 sweep + HTML 부록 동기화) → round 4 GO 확정 (외부 보고 인계 가능)
+- **승인**: 사용자 검토 + 코덱스 사후 검수 round 1-4 통과 (commit 8763b93)
 
 ### 2026-05-07 — [Track 1 Option A drift fix amendment] 7 drift + 2 dead 재분류 / fix set freeze (none, Phase 0 stop rule 정상)
 - **사용자 결정**: Option A 진행 (코덱스 권고대로)
