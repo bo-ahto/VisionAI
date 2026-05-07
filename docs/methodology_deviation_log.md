@@ -86,6 +86,19 @@
 - **승인**: 코덱스 자문 (단기 트랙 종결 검수)
 - **표준화 권고**: 향후 진단 트랙은 prereg 메모 (1페이지) 의무 + deviation log 동시 기록
 
+### 2026-05-07 — [Stage 5A Week 1] Auction-first 가정 폐기 (minor)
+- **사전등록 §4.1**: 1순위 source = K-Auction / Seoul Auction (한국 전문, "한국 작가 cover 자연 높음" 가정)
+- **실측 (Week 1)**: 모든 auction (Seoul / K / Sotheby's / Christie's) = **시장 확립 작가 (Lee Ufan / 김창열 등) 한정**. Stage 4 cohort (신진/중견) cover ~0%
+- **사유**: Auction = secondary market (재판매), Stage 4 = primary market (신진/중견 1차 판매) 본질적 cohort mismatch
+- **분류**: minor — 사전등록 §6.2 보류 적용 (정상 흐름)
+- **결과**: Auction 4 source 모두 REJECT, Artsy CV 만 BORDERLINE PASS-ready
+- **후속 액션**:
+  * Week 2: Artsy CV 정량 feasibility 확장
+  * 사전등록 외 source 후보 검토 (Galerie 직접 / Artsy 매출 history / Artprice 등)
+  * 사전등록 외 source 추가 시 별도 deviation entry
+- **5C 영향**: F1 (auction anchor) family 실현 가능성 ✗ — 5B 진행 시 F2/F3 만 가능. Primary Δ ≤ -2.0%p 어려울 수 있음.
+- **승인**: 코덱스 자문 (Week 1 결과 검수 예정)
+
 ## Phase 2 (재정의 v4, 2026-05-07)
 
 ### 2026-05-07 — [Phase 2] v3 (Artsy-only) 폐지 + v4 재정의 (Stage 5 = External Acquisition)
