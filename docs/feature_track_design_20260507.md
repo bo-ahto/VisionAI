@@ -38,45 +38,54 @@
 
 | 그룹 | Feature | Missing | Unique | 검증 비용 | 운영 적합성 |
 |---|---|---|---|---|---|
-| **A1: Quick-win categorical** | `category` | 0% | 14 | 낮음 | 즉시 |
+| **A1: Cheap categorical** | `category` | 0% | 14 | 낮음 | 즉시 |
 | | `medium_type` | 0.4% | 13 | 낮음 | 즉시 |
 | | `attribution_class` | 0% | 4 | 낮음 | 즉시 |
-| | `gallery_name` | 0% | 76 | 낮음 | 즉시 (target encoding) |
+| | `gallery_name` | 0% | 76 | 낮음 | **leakage-safe target encoding 필수** (코덱스 P2 — cross-fitting / out-of-fold 명시 prereg 의무) |
 | | `gallery_cities` | 1.8% | 30 | 낮음 | 즉시 (city dummy) |
-| **A2: Numeric / artist popularity** | `artist_followers` | 0% | 157 | 낮음 | 즉시 (log transform) |
-| | `artist_for_sale` | 0% | 89 | 낮음 | 즉시 |
-| | `artist_is_p1` | 0% | 2 | 낮음 | 즉시 (boolean) |
-| | `year_made` | 0% | 65 | 낮음 | 즉시 (작품 - 작가 시간차) |
+| **A2: Numeric / artist popularity** | `artist_followers` | 0% | 157 | 낮음 | **시점 정합성 검증 필수** (코덱스 P1 — sale 시점 이전 정보 재현 가능 확인 후 진입) |
+| | `artist_for_sale` | 0% | 89 | 낮음 | **시점 정합성 검증 필수** (동일) |
+| | `artist_is_p1` | 0% | 2 | 낮음 | **시점 정합성 검증 필수** (동일) |
+| | `year_made` | 0% | 65 | 낮음 | 즉시 (작품 - 작가 시간차, 시점 정합성 명확) |
 | **A3: Geometry** | `width_cm / height_cm` | 0% | — | 낮음 | aspect ratio / shape feature |
 | **A4: Text embedding (heavier)** | `title` | 0% | 6,614 | 중간 | multilingual BERT (KR/EN) |
 | | `medium` | 0% | 1,434 | 중간 | medium 의 text 임베딩 (medium_type 으로 압축 안 되는 정보) |
 | **A5: Vision embedding (heaviest)** | `image_url` | 0% | — | 높음 | CLIP / ResNet — image fetch 필요 |
 | **배제 (단일값/거의 결측)** | `availability`, `gallery_type`, `is_auction`, `artist_nationality`, `depth_cm (71.7% miss)` | — | — | — | useless |
 
-### 3.2 단계별 우선순위 (코덱스 권고 — quick-win 우선)
+### 3.2 단계별 우선순위 (코덱스 P0 — escalation ladder, "cheap falsification → representation escalation")
 
-> Axis A 는 **단계적 추가** (Stage 3 P3 / Stage 4 처럼 family addition cycle). 한 번에 모든 feature 추가 X — 각 단계 PASS 검증 후 진행.
+> Axis A = **cheap falsification ladder** (코덱스 P1 framing 정정). "quick-win 기대" 가 아닌 **저비용 가설 반증 → 비용 증가 family escalation** 의 사전순서형 gatekeeping sequence.
+>
+> Stage 4 단기 트랙 작업 3 결과 = "현재 inputs 로는 feature space 분리력 부족" + 6A/6B 의 저가 systematic harm (구조적 + 100seed 66/100 violation) → **A.1-A.3 만으로 충분할 가능성은 낮음** (코덱스 P1). A.4 (text) / A.5 (vision) 까지 escalation 사실상 유력 — 의사결정자에게 정직 보고.
 
-| Step | Feature 추가 | 가설 | 비용 |
-|---|---|---|---|
-| **A.1** | A1 (Quick-win categorical 5종) | 갤러리 / 작품 분류 신호 추가 → 저가 식별력 ↑ | 1주 |
-| A.2 | A2 (Artist popularity 4종) | 인기도 / P1 / 가용성 신호 추가 | 1주 |
-| A.3 | A3 (Geometry — aspect ratio + 2D vs 3D) | 작품 모양 신호 추가 | 0.5주 |
-| A.4 | A4 (Title text embedding, multilingual BERT) | 제목 의미 신호 추가 (작품 / 시리즈명 differentiation) | 2-3주 |
-| A.5 | A5 (Image embedding, CLIP/ResNet) | 시각적 신호 추가 (heaviest, image fetch + storage) | 4주+ |
+| Step | Feature family | 가설 | 비용 | 결과별 다음 행동 |
+|---|---|---|---|---|
+| **A.1** | A1 (Cheap categorical 5종) | 갤러리 / 작품 분류 신호 추가로 저가 식별력 보강? | 1주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.2 진입 |
+| A.2 | A2 (Artist popularity 4종, 시점 정합성 검증 후) | 인기도 / P1 / 가용성 신호 추가? | 1주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.3 진입 |
+| A.3 | A3 (Geometry — aspect ratio + 2D vs 3D) | 작품 모양 신호 추가? | 0.5주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.4 진입 (heavy escalation) |
+| A.4 | A4 (Title text embedding, multilingual BERT) | 제목 의미 신호 추가? | 2-3주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.5 진입 |
+| A.5 | A5 (Image embedding, CLIP/ResNet) | 시각적 신호 추가? | 4주+ | PASS → 운영 채택 / FAIL → Axis A 전체 종료, Axis B 또는 새 cycle |
 
-> **각 step 사이 stop rule**: 특정 step 의 PASS 조건 미달 (Δ ≤ -1.0%p AND hard gate Δ_low ≤ 0%p) 시 다음 step **추가 시도 X — 가설 update + 재설계** (HARK 회피).
+> **Step gate (코덱스 P0 — 통일)**: B안 "**escalation 허용**" 채택. 각 step FAIL/BORDERLINE 시 **다음 step 으로 escalation** (이전 step 폐기 X — 누적 family 가 아닌 **대체 family hypothesis** sequence). PASS 시 즉시 운영 채택 후보 + 이후 step 진입 불필요.
+>
+> **Per-step freeze 의무 (코덱스 P1 — HARK 회피 강화)**: 각 step prereg 에서 **(a) feature set + (b) encoding (target encoding cross-fitting / one-hot / log transform 명시) + (c) preprocessing (missing imputation / outlier handling) + (d) interaction 허용 범위 (있으면 사전 명시) + (e) stop/go rule + (f) 다음 step 이 alternative hypothesis 임을 명시** 모두 동시 freeze. 결과 본 후 변경 X.
+>
+> **Multiple comparisons (코덱스 P1 — 정정)**: 5 step 동시 비교 X = "사전순서형 gatekeeping sequence" → step-level Holm 보정 부적절. 각 step 은 **prereg 시점 단일 가설 단일 metric 기준 PASS/FAIL** 만 적용. Step-간 family 보정은 program-level α 분배 (예: 5 step 각 α=0.01) 또는 sequential stop-when-significant 명시 — A.1 prereg 에서 결정.
 
-### 3.3 Axis A 의 한계 (사전 정직 보고)
+### 3.3 Axis A 의 한계 (사전 정직 보고, 코덱스 P1 강화)
 - Internal feature = current curated data 의 새 column 활용일 뿐. **새 정보 source 자체는 추가 안 됨**.
-- Stage 4 단기 트랙 작업 3 의 시그니처 = "현재 inputs 로는 feature space 가 분리력 부족" → Axis A 도 본질적 information bottleneck 미해결 가능성.
-- → Axis A.1-A.3 fail 시 Axis B (external acquisition) 또는 A.4-A.5 (representation embedding) 로 escalation.
+- Stage 4 단기 트랙 작업 3 시그니처 ("현재 inputs 로는 feature space 분리력 부족") + Stage 6A/6B 저가 systematic harm 패턴 → **A.1-A.3 cheap families 만으로 저가 specific harm 해결 가능성 사전 evidence 상 낮음** (코덱스 P1).
+- A.4 / A.5 representation embedding 까지 escalation **사실상 유력** — 의사결정자 의식적 자원 배분 필요 (compute + storage 비용 사전 계획).
+- **A.5 까지 모두 FAIL 시**: Axis A 전체 종료 → Axis B (external acquisition, Phase A pre-screen 통과 필요) 또는 program-level 재설계 (representation learning track 신설 / 재정의 등).
 
 ## 4. Axis B — External Acquisition (Phase A pre-screen 통과 시만)
 
 > **사전 조건 (코덱스 권고)**: Stage 5 의 compliance blocker (auction cohort mismatch / Artsy CV 자동화 prohibition) 우회 가능한 **새 합법적 source path** 발견 시에만 진입.
 
-### 4.1 Acquisition Feasibility Phase A — 0단계 pre-screen (4항목)
+### 4.1 Acquisition Feasibility Phase A — 0단계 pre-screen (코덱스 P1 — 7항목 확장)
+
+> **확장 사유 (코덱스 P1)**: Stage 5 는 compliance 단계에서 막혔으나, 합법 source 가 생겨도 **작품-level 저가 harm 해결로 연결되지 않으면 Phase A 통과 후에도 무의미**. 특히 공공 / 정부 aggregate index 는 compliance 쉬워도 작품-level signal 로 연결 불명확.
 
 | 항목 | 평가 method | PASS 기준 |
 |---|---|---|
@@ -84,6 +93,9 @@
 | **TOS 자동화 조항** | 약관 검토 (한국어 원문 우선) | scraping / data mining / API 자동 사용 명시 허용 |
 | **Access** | API 가용성 / robots.txt / anti-bot 실측 | API 또는 합법적 자동화 path 가용 |
 | **Anti-bot** | WebFetch / Playwright sample 실측 | 차단 X (Stage 5 처럼 403 = REJECT) |
+| **Data availability** (코덱스 P1) | 저가 segment 작품 / 작가 cover rate, missing rate | ≥ 70% cover (저가 segment 의 majority) |
+| **Labelability / Joinability** (코덱스 P1) | `artist_slug` / `title` / `gallery` 등 join key 일치율 | ≥ 80% join 가능 (작품-level signal 연결 가능) |
+| **As-of-time reproducibility** (코덱스 P1) | scrape / API 시점이 sale 시점 이전 정보로 재구성 가능 | sale 시점 이전 snapshot 확보 가능 (시점 정합성 — leakage 방지) |
 
 ### 4.2 후보 source (사전 등록 외 — 발견 시 deviation log 의무)
 
@@ -100,9 +112,13 @@
 - **License 협상**: 운영팀 (LLM 외)
 - → **Phase A 자체가 LLM 단독 작업이 아님** — 운영팀 / 법무팀 협업 필수.
 
-## 5. PASS / FAIL 기준 (candidate, freeze 전)
+## 5. PASS / FAIL 기준 (candidate, freeze 전 — 코덱스 P0 family 분리)
 
 > 각 step 의 prereg 작성 시 finalize. 본 draft 는 candidate.
+>
+> **Evaluation family 분리 (코덱스 P0)**: 6B 의 sparse-warm 측정 불가 deviation 교훈 적용 — **LAO primary family 와 warm/time-split supportive family 를 PASS/FAIL 표에서 분리**. LAO 는 primary 결정, warm/time-split 은 보조 해석 (운영 채택 결정 미관여).
+
+### 5.1 LAO Primary Family (운영 채택 결정 — main)
 
 | 조건 | 임계 (candidate) |
 |---|---|
@@ -110,8 +126,17 @@
 | Practical Δ | ≤ -1.0%p (운영 채택) / ≤ -0.3%p (BORDERLINE) |
 | Primary CI | Cluster bootstrap 95% CI 상한 ≤ 0 |
 | 🔴 Hard gate | Δ_low ≤ 0%p (저가 segment harm 절대 금지 — 운영 spec §17 동일) |
-| Secondary | Holm m=4 (low / mid-high / sparse-warm time-split / newly-warm) |
-| Newly-warm | 사실상 동등 또는 개선 |
+| **LAO Secondary (Holm m=3)** | low MdAPE / mid-high MdAPE / newly-warm MdAPE — **3 family** (sparse-warm 제외 — LAO 정의상 측정 불가) |
+
+### 5.2 Warm / Time-split Supportive Family (코덱스 P0 — 별도 분리, 운영 채택 결정 미관여)
+
+> **목적**: LAO 의 cold-start 한계를 보완하는 supportive evidence (운영 채택 결정 X). 6B 의 sparse-warm 측정 불가 교훈 — sparse-warm 은 time-split 평가에서만 의미.
+
+| 조건 | 임계 (candidate) |
+|---|---|
+| Time-split metric | Warm artist 의 train ≤ 2024 → test 2025 MdAPE |
+| Sparse-warm subset | train count ≤ 5 (time-split 에서 의미 있음) |
+| 해석 | LAO Primary PASS 시 supportive / LAO Primary FAIL 시 단독 PASS 결정 X |
 
 ## 6. 일정 후보 (의사결정자 결정)
 
@@ -123,18 +148,24 @@
 | (조건부) A.2 진입 | A.1 결과 본 후 결정 | 별도 prereg |
 | (조건부 / 병렬) Axis B Phase A pre-screen | 운영팀 / 법무팀 일정에 의존 | Source-별 4항목 평가 |
 
-## 7. 의사결정자 결정 사항 (본 draft 의 목적)
+## 7. 의사결정자 결정 사항 (본 draft 의 목적, 코덱스 검수 권고 반영)
 
 1. **Axis 우선순위** — Axis A 우선 진행 동의?
-   - 추천 (코덱스 + 본 design): A 우선 / B 는 새 source 발견 시 병렬
-2. **Axis A 내 step 우선순위** — A.1 (Quick-win categorical) 부터 단계적 진행 동의?
-   - 추천: A.1 → A.2 → A.3 단계적, 각 step PASS 후 진행
-3. **A.4 (text) / A.5 (vision) 진입 조건** — A.1-A.3 모두 FAIL 시? 또는 A.1 부터 병렬?
-   - 추천: A.1-A.3 모두 FAIL 시 escalation (자원 효율성)
-4. **Axis B 진입** — 새 합법적 source 후보 발견 시 운영팀 / 법무팀 파일럿 가능?
-   - 결정 영역: 비-LLM 작업 자원 배분
-5. **Cold Phase A shadow (코덱스)** — 모델 개선 cycle 이 아닌 **data availability / labelability / compliance feasibility 검증 shadow** 로 정의 동의?
-   - 추천: yes — feature track 과 분리
+   - 추천 (코덱스 + 본 design): A 우선 / B 는 새 source 발견 시 조건부
+2. **Axis A framing 확정 (코덱스 권고 1)** — "**cheap falsification ladder**" (저비용 가설 반증 → 비용 증가 escalation, 정직) vs "quick-win 기대 ladder" (낙관적) 중 어느 framing 으로 승인?
+   - 추천: cheap falsification ladder (현재 evidence 상 정직)
+3. **Step gate 확정 (코덱스 권고 2 — P0)** — A안 (각 family fail 시 전체 Axis A 종료) vs B안 (A.1-A.3 cheap fail 시 A.4-A.5 heavier escalation 허용) 중 어느 gate 로 승인?
+   - 추천: B안 (escalation 허용) — 본 draft 의도와 일치, A.4/A.5 사전 자원 계획 필요
+4. **Evaluation family 분리 (코덱스 권고 3 — P0)** — LAO primary family 와 warm/time-split supportive family 를 별도 표로 분리 동의?
+   - 추천: yes — 6B sparse-warm 측정 불가 교훈, LAO 단독으로 운영 채택 결정 / warm/time-split 은 supportive
+5. **Axis B Phase A 확장 (코덱스 권고 4 — P1)** — labelability / joinability / as-of-time reproducibility 를 정식 gate 로 추가 동의?
+   - 추천: yes — 합법 source 가 생겨도 작품-level 저가 harm 연결 불가 시 Phase A 통과 무의미
+6. **A.2 시점 정합성 검증 원칙 (코덱스 권고 5 — P1)** — `artist_followers` / `artist_for_sale` / `artist_is_p1` 의 prediction-time availability 검증 없이 진입 X 원칙 추가 동의?
+   - 추천: yes — sale 시점 이전 정보로 재현 가능 확인 후만 진입
+7. **A.4 / A.5 진입 조건** — A.1-A.3 FAIL/BORDERLINE 시 escalation 동의 (B안)?
+   - 추천: yes (B안)
+8. **Cold Phase A shadow** — 모델 개선 cycle 이 아닌 **data availability / labelability / joinability / compliance feasibility 검증 shadow** 로 정의 동의?
+   - 추천: yes — feature track 과 분리, screen 항목 명시화
 
 ## 8. 위험 / Honest Caveats
 
@@ -148,7 +179,7 @@
 | 차수 | 내용 |
 |---|---|
 | Stage 6B 결과 최종 검수 (2026-05-07) | "Architecture-only close → feature/acquisition track 1순위 / Cold Phase A 는 모델 개선 X 정의" |
-| 본 design draft 검수 (예정) | axis 우선순위 / step 단계화 / Phase A 분리 정당성 |
+| **본 design draft 검수 (2026-05-07)** | **P0 ×2** (step gate 자기모순 / secondary family 정의 충돌) + **P1 ×6** (cheap falsification framing / HARK 강화 / labelability gate / 시점 정합성 / Axis A 한계 강하게 / shadow screen 항목화) + **P2 ×1** (gallery_name target encoding cross-fitting) — 본 commit 일괄 반영 |
 
 ## 10. 참조
 
