@@ -19,9 +19,9 @@
 | **#30** | `feat: Track 2 extensions` (Feature Track Axis A.1-A.5 + Sample size + Progressive sampling) | 33 | +6,452 |
 | **#31** | `docs: Axis B` (Phase A pre-screen Round 1-3 + handoff packet) | 7 | +1,244 |
 | **#32** | `fix: Track 2 core bug fix` (Stage 2 results + structural_pricing root design + .gitignore) | 14 | +2,828 |
-| **(본 PR)** | `docs: Archive closeout note` | 1 | +본 문서 |
+| **(본 PR)** | `docs: Archive closeout note` | 1 | +154 |
 
-**Total: 227 files / +51,115 lines** main 적재.
+**Total: 228 files / +51,269 lines** main 적재.
 
 ## 3. main 에 보내지 않은 카테고리별 잔존 자산 (132 files)
 
@@ -43,10 +43,10 @@
 - 결정: `archive only` — 한 사이클 실험 산출물
 - **예외 가능성** (사용자 결정 영역): `saatchi_detail_enricher.py` / `saatchi_year_made_merger.py` 는 PR #27 (v3.6 prod-server bundle) 에 이미 포함 (의존성 보존 목적) — 본 잔존은 `tests/` + pilot scripts 만
 
-### D. gallery_tier_v4 (11 파일) — `archive only` (운영 도입 보류 결정)
-- `data/art_gallery_tier_list_v4.csv` / `data/gallery_alias_map.csv`
-- `model_test_results/ablation_gallery_tier_v4_report.md` / `v4_full_verification_report.md`
-- `scripts/ablation_gallery_tier_v4.py` / `ablation_v4_full_verification.py` / `analyze_gallery_tier_coverage.py` / `build_gallery_tier_v4.py` / `tier_b_gating_experiment.py` / `train_primary_market_v3_filtered.py` / `tune_fairness_check.py` / `tune_primary_market_v3_filtered.py` / `tune_v4_warm_artsy.py` / `holdout_292_v4_qa.py`
+### D. gallery_tier_v4 (14 파일) — `archive only` (운영 도입 보류 결정)
+- `data/art_gallery_tier_list_v4.csv` / `data/gallery_alias_map.csv` (2)
+- `model_test_results/ablation_gallery_tier_v4_report.md` / `v4_full_verification_report.md` (2)
+- `scripts/ablation_gallery_tier_v4.py` / `ablation_v4_full_verification.py` / `analyze_gallery_tier_coverage.py` / `build_gallery_tier_v4.py` / `tier_b_gating_experiment.py` / `train_primary_market_v3_filtered.py` / `tune_fairness_check.py` / `tune_primary_market_v3_filtered.py` / `tune_v4_warm_artsy.py` / `holdout_292_v4_qa.py` (10)
 - 결정: `archive only` — Top30 검수 후 운영 도입 보류 결정 (PILOT-level)
 
 ### E. v5 pilot (10 파일) — `archive only` (pilot FAIL 종결)
@@ -65,10 +65,11 @@
 - v3.3 external_data_inventory + unmatched_galleries_top30.csv
 - 결정: `archive only` — 작업 history / 외부 공유 본 / 협조 응답 산출물
 
-### H. 운영 의사결정 / 외부 공유 docs (6 파일) — `mixed`
-- **archive only**: `docs/v3_보강계획_20260430.md` / `v3_보강계획_외부공유용` / `v5_cycle_plan` / `v5_cycle_사전등록_초안`
-- **사용자 결정 영역**: `docs/v4_운영도입_의사결정_20260504.md` (의사결정 기록 가치 / main merge 검토)
-- **HOLD (Step 6 범위 제외)**: `docs/model_technical_report_v2.md` / `model_technical_report_v2.html` — PR #25 (`docs/technical-report-v2`) 와 중복 가능성 / 단일 소스로 정리 의무
+### H. 운영 의사결정 / 외부 공유 docs (7 파일) — `mixed`
+- **archive only (4)**: `docs/v3_보강계획_20260430.md` / `v3_보강계획_외부공유용` / `v5_cycle_plan_20260504.md` / `v5_cycle_사전등록_초안.md`
+- **사용자 결정 영역 (1)**: `docs/v4_운영도입_의사결정_20260504.md` (의사결정 기록 가치 / main merge 검토)
+- **HOLD — Step 6 범위 제외 (2)**: `docs/model_technical_report_v2.md` / `model_technical_report_v2.html` — PR #25 (`docs/technical-report-v2`) 와 중복 가능성 / 단일 소스로 정리 의무
+- **F 와의 중복 표기 caveat**: `v3_보강계획*` / `v5_cycle*` 는 정책 의미 강조 위해 본 H 절에 재등장. 분류 기준 = 132 잔존 총수 검산 X / 정책 분류 표시 only.
 
 ### I. root 메타 파일 (3 파일 — .gitignore 는 PR #32 에 포함)
 - **archive only**: `CLAUDE.md` (project 내부 작업지침 / 운영 코드 무관)
@@ -82,7 +83,7 @@
 
 ### 기타 (root + data)
 - `data/top30_피드백.csv` (외부 협조 산출물) — `archive only`
-- `model_test_results/integrated_v3_filtered_tuned.provenance.json` — 사용자 결정 영역 (위 J 예외 참조)
+- `integrated_v3_filtered_tuned.provenance.json` 는 J 절의 사용자 결정 영역 항목으로 단일 분류 (본 절 중복 등재 X / 132 잔존 총수 검산성 보존).
 
 ## 4. 사용자 결정 영역 (코덱스 자문 명시)
 
