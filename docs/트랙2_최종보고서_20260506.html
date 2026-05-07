@@ -734,14 +734,38 @@ Phase D (4주+) — 안정화
 <h3>12.5 운영 도입 시 적용 정책 (Stage 4 합격 가정)</h3>
 <p>요지: warm path 진입 임계 (<code>WARM_PATH_MIN_DEPTH ≥ 15</code>) + Shadow → 5% → 25% → Full + warm-scoped KPI 게이트 + 모델/로그 분리. 상세 라우팅 / 단계별 승격 조건 / 자동 차단 / kill switch 는 운영 spec §17 참조: <code>docs/트랙2_production_통합_spec_20260507.md</code>.</p>
 
-<h3>12.6 Stage 4 확장 검증 의존 (v3 정정)</h3>
+<h3>12.6 Stage 4 확장 검증 결과 (v3 실행 완료, 2026-05-07)</h3>
+
+<div class="warn-box">
+  <strong>판정 (사전등록 §6.1)</strong>: <strong>BORDERLINE 보류 — warm-only 일반 경로 <code>not advanced</code></strong> (코덱스).
+  결과 보고: <code>docs/stage4_warm_validation_results_20260507.md</code>
+</div>
+
+<table>
+  <tr><th>조건</th><th>결과</th></tr>
+  <tr><td>Primary FE only vs baseline</td><td>-6.22%p 점추정 / -5.74%p (boot mean) ✓ practical</td></tr>
+  <tr><td>Cluster bootstrap CI (n=2000)</td><td>[-16.01, +5.30] <strong>✗ 0 포함</strong></td></tr>
+  <tr><td>Seed std (10 seeds)</td><td>0.252 ✓</td></tr>
+  <tr><td>Segment harm</td><td>저가 +5.63%p / depth 15-24 +6.76%p — <strong>2 violations</strong> ✗</td></tr>
+</table>
+
+<p><strong>핵심 발견</strong>:</p>
 <ul>
-  <li><strong>신규 수집 X</strong> — 기존 Artsy 8,891 / 823 작가 활용 (Saatchi 제외, year_made 100% 결측)</li>
-  <li><strong>가용 모집단 (목표 = 100% 활용)</strong>: warm artists 120 / test 평가 가능 40 / warm test rows 450 (eligible 431)</li>
-  <li>depth bin (10-14 / 15-24 / 25+) 균형 확보 (실측 14/14/12 artists)</li>
-  <li>artist-cluster bootstrap CI 상한 ≤ 0 또는 P(&lt;0) ≥ 95% 시 W-S 단계 진입</li>
-  <li>⚠️ <strong>Honest caveat</strong>: 40 clusters 실측 power 44.9% (목표 0.8 미달) — 합격 기준 통과 어려울 수 있음. 이전 plan 의 "추가 수집" 가정 폐기: <code>docs/methodology_deviation_log.md</code></li>
-  <li>Stage 4 plan: <code>docs/stage4_확장검증계획_20260507.md</code></li>
+  <li>Composition-shift: 신규 warm (79명, test 251건) Δ +0.25%p / 기존 warm (41명, 180건) Δ -12.98%p → <strong>FE only 효과 = 기존 작가 한정</strong> (Artist FE 본질)</li>
+  <li>depth 25+ secondary Holm 보정 후 reject (-17.10%p, p=0.009) → <strong>slice-conditional 후보 가능</strong></li>
+  <li>저가 segment 일관 악화 (P2 Combined +3.36 / Stage 4 FE only +5.63%p) → F4 feature space 한계 (코덱스)</li>
+</ul>
+
+<div class="info-box">
+  <strong>코덱스 운영 의사결정자 문구</strong>: "FE only 는 전체 warm 집단에 대한 일반 해법으로는 입증 실패. 다만 충분한 이력(depth ≥25)을 가진 기존 warm 작가에서는 강한 개선 신호 → 제한적 라우팅 정책 후보로는 가치 있음."
+</div>
+
+<p><strong>다음 단계</strong> (코덱스 권고):</p>
+<ul>
+  <li>✅ Slice-conditional warm path (<code>depth ≥25 + seen-in-training</code>) 별도 가설로 분리, shadow mode 파일럿</li>
+  <li>✅ 신규 warm 작가 정책 즉시 보수화 (seen-in-training 자동 fallback)</li>
+  <li>✅ Stage 5 = 외부 source 보강 + new prereg (장기)</li>
+  <li>❌ Phase 2 (Artsy-only) 폐지 — 본 cycle 이 사실상 confirmatory</li>
 </ul>
 
 <h2 id="sec13">13. 결론</h2>

@@ -703,13 +703,52 @@ def route_v2(artwork) → (model, reason):
 - 저가 segment 단일 cutoff 분석 (Combined 에서 +3.36%p 악화 — FE only 는 미검증)
 - 2024 cutoff 신규 warm 작가 36명 추가 → composition shift 영향 큼
 
-### 17.5 Stage 4 확장 검증 의존 (v3 정정 — 2026-05-07)
-- `docs/stage4_확장검증계획_20260507.md` v3 참조
-- **신규 데이터 수집 X** — 기존 Artsy raw 30,046 → cleansing 8,891 / 823 작가 활용 (Saatchi 는 year_made 100% 결측으로 제외)
-- 가용 모집단 (목표 = 가용 100%): warm artists **120**, **test 평가 가능 warm artists 40**, warm test rows 450 (eligible 431)
-- 부수 목표: depth bin (10-14 / 15-24 / 25+) 균형 (실측 14/14/12 artists)
-- ⚠️ **Power caveat**: 40 clusters @ 44.9% power (목표 0.8 미달) — Stage 4 합격 기준 (CI 상한 ≤ 0) 통과 어려울 수 있음. 본 cycle 의 정직한 기대 = effect 방향성 + segment harm 검증 (통계적 유의성 보장 X)
-- 재검증 합격 시 본 §17 의 W-S 단계부터 시작
+### 17.5 Stage 4 확장 검증 결과 (실행 완료, 2026-05-07)
+
+> **판정**: **BORDERLINE 보류 — warm-only 일반 경로 `not advanced`** (사전등록 §6.1 미달).  
+> 결과: `docs/stage4_warm_validation_results_20260507.md`. CI 상한 ≤ 0 ✗ + segment harm 2 violations (저가 / depth 15-24).
+
+→ **§17.1 의 일반 warm-only path (FE only) 가설은 종결**. spec §1-§16 의 cold rollout 영향 X (변경 없음).
+
+### 17.6 Slice-conditional Warm Path 후보 (코덱스 권고, 2026-05-07)
+
+> Stage 4 결과의 핵심 발견 — depth ≥25 + seen-in-training 작가에서 -14.18%p 강한 개선 (Holm 보정 후 reject, p=0.009). 일반 warm 경로는 종결됐으나 **제한적 라우팅 정책**으로는 가치 있음.
+
+#### 17.6.1 라우팅 로직 확장 (Phase 1 = 연구 후보)
+```
+def route_v3(artwork) → (model, reason):
+    base = route_v2(artwork)  # §17.3.1 의 v2
+    if base != ("track2_warm_fe", "warm_fe_path"):
+        return base
+
+    n_train = train_artist_counts.get(artwork.artist_slug, 0)
+    seen = artwork.artist_slug in TRAIN_ARTIST_SET
+
+    # Slice-conditional: depth ≥25 AND seen-in-training 만 FE only 활용
+    if n_train >= SLICE_DEPTH_MIN and seen:
+        return ("track2_warm_fe", "warm_fe_slice_path")
+    return ("v3", "warm_shallow_or_unseen")
+```
+
+- `SLICE_DEPTH_MIN`: **25** (Stage 4 결과 기반)
+- `TRAIN_ARTIST_SET`: 학습 시점 작가 set (서빙 시 immutable)
+- 신규 warm 진입 작가 (`seen=False`) → V3 자동 fallback
+
+#### 17.6.2 Stage 4 결과 근거
+- depth 25+ (n=163 test rows / 12 artists): MdAPE 36.89% → 22.71% (Δ -14.18%p)
+- 저가 / depth 15-24 segment 는 본 path 진입 X (harm 회피)
+
+#### 17.6.3 도입 단계 (Shadow mode 우선, 코덱스 권고)
+- **W-SC-S**: Shadow mode (live decision X, slice-conditional policy 추적만)
+- 저가 segment harm guardrail 별도 (예측가 < 5M KRW → V3 강제)
+- 운영 승격은 별도 검증 (shadow 4주 + segment harm 0건 확인 후)
+
+### 17.7 신규 warm 작가 정책 즉시 보수화 (코덱스 권고)
+- 모든 warm path 진입 시: `seen-in-training` 검증 우선
+- `seen=False` (학습 시점에 없던 신규 warm 진입) → 자동 V3 fallback
+- 사유 코드: `warm_unseen_artist_fallback`
+- 적용 범위: §17.3 (일반 warm path 가설) + §17.6 (slice-conditional)
+- Stage 4 composition-shift 결과: 신규 warm 작가 (test 251건) FE 효과 = +0.25%p (사실상 무효) 입증
 
 ---
 

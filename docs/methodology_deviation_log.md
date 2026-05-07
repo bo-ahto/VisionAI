@@ -58,6 +58,23 @@
   - Stage 4 합격 기준 (CI 상한 ≤ 0) 통과는 매우 어려울 수 있음 명시
 - **승인**: 코덱스 자문 (해석 초점 변경 권고)
 
-## Phase 2 (Full Confirmatory)
+### 2026-05-07 — [Stage 4 v3 실행 결과] BORDERLINE 보류 — 일반 warm 경로 `not advanced` (none)
+- **사전등록 §6.1**: Primary CI 상한 ≤ 0 + practical Δ ≤ -0.8%p + seed std ≤ 0.5%p + segment harm 0건
+- **실측 결과**:
+  * Primary Δ -6.22%p (점추정) / -5.74%p (boot mean) — practical ✓
+  * 95% CI [-16.01, +5.30] — CI 상한 0 포함 ✗
+  * Seed std 0.252 ✓
+  * Segment harm 2 violations: 저가 +5.63%p / depth 15-24 +6.76%p ✗
+- **분류**: **none (deviation 아님)** — 사전등록 합격 기준 미달 = §6.2 보류 적용 (정상 흐름)
+- **운영 영향**: 일반 warm-only 경로 종결 + slice-conditional (depth ≥25 + seen) 만 후보 유지
+- **신규 발견 (사전등록 외)**:
+  * Composition-shift: 신규 warm Δ +0.25%p / 기존 warm Δ -12.98%p — Artist FE 본질 입증
+  * depth 25+ Holm 보정 후 reject (-17.10%p, p=0.009) — slice-conditional 근거
+  * 저가 segment 일관 악화 (P2 Combined +3.36 / Stage 4 FE only +5.63%p) — F4 feature space 한계
+- **승인**: 코덱스 자문 (BORDERLINE 판정 + slice-conditional 후보 유지 권고)
+- **후속 cycle**: Stage 5 (외부 source 보강 + new prereg) — 별도 분리, Phase 2 (Artsy-only) 폐지
 
-(Phase 2 진입 후 deviation 기록)
+## Phase 2 (폐지, 2026-05-07)
+
+> Phase 2 (Artsy-only full confirmatory) 는 Stage 4 가 사실상 Artsy 전체 모집단 활용 → 동일 데이터 반복 분석 의미 없음. 코덱스 권고로 **폐지**.
+> 새 Phase 2 = Stage 5 (외부 source 보강 + OOD/drift/sensitivity confirmatory) 로 재정의 예정.

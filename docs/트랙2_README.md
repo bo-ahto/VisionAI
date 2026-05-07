@@ -115,13 +115,13 @@ log_price = β₀ + β₁·log_area + β₂·birth_year_centered + β₃·log_ar
 
 상세: `docs/트랙2_production_통합_spec_20260507.md` §11-§16 참조.
 
-### 4-Appendix. Warm-only Track 2 path 후보 (운영 미승인)
+### 4-Appendix. Warm-only Track 2 path 후보 (Stage 4 결과 — 일반 경로 종결, slice-conditional 만 후보 유지)
 
 > **현 운영 결정**: warm 작가는 V3 유지 (변경 X).  
-> **연구 상태**: FE only (F4 + spline + Huber + Artist FE) Stage 3 P3 검증 완료, cluster bootstrap CI 0 포함 (n=44 / 13 artist 한계).  
-> **다음 단계**: Stage 4 확장 검증 (v3 정정 — 신규 수집 X / 기존 Artsy 자산 활용 / 40 clusters 가용) → cluster bootstrap CI 상한 ≤ 0 합격 시 spec §17 의 W-S Shadow 진입.  
-> ⚠️ **Honest caveat (v3)**: Stage 4 가용 40 clusters 의 실측 power 44.9% (목표 0.8 미달) — 합격 기준 통과 어려울 수 있음. 이전 plan 의 "추가 수집" 가정은 inventory 검증으로 폐기 (`docs/methodology_deviation_log.md`).  
-> **참조**: spec §17 / 최종보고서 §12 부록 / `docs/stage4_확장검증계획_20260507.md`.
+> **Stage 4 결과 (2026-05-07)**: BORDERLINE 보류 — **일반 warm 경로 `not advanced`** (사전등록 §6.1 미달, CI 0 포함 + segment harm 2건). FE only 효과는 기존 작가 (depth ≥25) 한정.  
+> **유지되는 후보**: **Slice-conditional warm path** (`depth ≥25 + seen-in-training`) — 코덱스 제한적 정책 후보로 권고. depth 25+ -14.18%p 강한 개선 (Holm reject).  
+> ⚠️ **신규 warm 작가 정책 즉시 보수화** (코덱스): seen-in-training 아니면 자동 V3 fallback (spec §17.7).  
+> **참조**: spec §17.5 (결과) / §17.6 (slice-conditional) / §17.7 (신규 warm 정책) / 최종보고서 §12.6 / `docs/stage4_warm_validation_results_20260507.md`.
 
 ---
 

@@ -112,9 +112,38 @@
 5. Phase 2 정의 재검토 — Artsy 전체 모집단 활용 후 별도 confirmatory 의미?
 6. 전체 cycle 종결 vs Stage 5 추가 검토
 
-## 7. 다음 단계
+## 7. 코덱스 자문 결론 (2026-05-07)
 
-1. 본 결과 코덱스 자문 (의사결정 framing)
-2. 보고서 §12 부록 / spec §17 / README 갱신 (BORDERLINE 판정 + slice-conditional 후보 명시)
-3. Deviation log v4 entry (사전등록 합격 기준 vs 실측 결과)
-4. (사용자 결정) C / B / D 중 선택 → 후속 cycle
+> **운영 의사결정자 문구 (코덱스)**:
+> "FE only 는 전체 warm 집단에 대한 **일반 해법으로는 입증 실패**. 다만 충분한 이력(depth ≥25)을 가진 기존 warm 작가에서는 강한 개선 신호가 있어, **제한적 라우팅 정책 후보**로는 가치가 있다."
+
+### 7.1 결정 (코덱스 권고)
+- **A**. ❌ Phase 2 진입 — 동일 데이터, 의미 없음
+- **B**. ✅ Stage 5 = 외부 source 보강 + new prereg (장기)
+- **C**. ✅ Slice-conditional warm path (`depth ≥25 + seen-in-training`) → 별도 가설로 분리, shadow mode 파일럿
+- **D**. ❌ 완전 폐기 — slice-conditional 가치 살림
+
+### 7.2 저가 segment 일관 악화 가설 우선순위 (코덱스)
+1. **feature space 부족** (1순위) — F4 가 저가 결정 요인 못 담음
+2. **loss 한계** (2순위) — Huber 가 평균 안정성 주지만 저가 비대칭 비용 못 맞춤
+3. **calibration 부족** (3순위, 가장 약함) — segment-aware modeling 이 본질 해법
+
+### 7.3 신규 warm 작가 정책 (코덱스 즉시 권고)
+- `seen-in-training` 아닐 경우 자동 fallback
+- 최소 support 기준 충족 전 FE 비활성
+- 운영 spec §17 라우팅 로직에 즉시 반영
+
+## 8. 다음 단계 (코덱스 7개 액션)
+
+1. **warm-only 일반 경로 종료** 문서화 — 사전등록 §6.2 보류 + `not advanced`
+2. **Slice-conditional 새 가설 분리** — spec §17.6 (신규) 에 `depth ≥25 + seen-in-training` 라우팅 명시
+3. **저가 segment error decomposition** — price band 별 bias / residual / artist support / proxy 누락
+4. **Calibration 독립 검증** — 전체 / 저가 전용 / slice 별 calibration → harm 해소 여부
+5. **Stage 5 prereg** — 외부 source 보강 전제 (target cluster + subgroup power 명시)
+6. **운영 파일럿** = shadow mode (live X, slice-conditional 추적, segment harm guardrail)
+7. **신규 warm 작가 정책 즉시 보수화** — seen-in-training 자동 fallback (spec §17 라우팅 로직)
+
+### 8.1 사용자 결정 우선순위
+- **즉시** (LLM 가능): 1, 7 (문서 갱신)
+- **단기** (다음 cycle): 2, 3, 4
+- **장기** (Stage 5): 5, 6
