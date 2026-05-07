@@ -11,7 +11,7 @@
 
 > **Audit 4 판정 (Phase 0 §4 stop criteria)**: **FAIL (primary) + Hard gate 2 violation** — drift_fix_v1 (23f) 의 Overall MdAPE 가 baseline 32f 대비 **+0.70%p 악화** (Ensemble) + **Saatchi slice +1.80%p 악화** (hard gate 2 비대칭 violation).
 >
-> **핵심 시사 (코덱스 P1 톤 정정)**: drift features 9개 중 7개 (severe drift 카테고리 A) 가 **학습 분포 OOF 에서 유의미한 예측 기여** 입증 (특히 Saatchi slice). 서빙 시 hardcoded 0 으로 받는 = **production 시 학습된 informative weight 가 inference 시 무효화** 가능 → reported offline metric (38.3% calibrated production-cold reference) 이 actual serving behavior 보다 **낙관적일 가능성을 강하게 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량).
+> **핵심 시사 (코덱스 P1 톤 정정)**: drift features 9개 중 7개 (severe drift 카테고리 A) 가 **학습 분포 OOF 에서 유의미한 예측 기여를 강하게 시사** (특히 Saatchi slice). 서빙 시 hardcoded 0 으로 받는 = **production 시 학습된 informative weight 가 inference 시 무효화** 가능 → reported offline metric (38.3% calibrated production-cold reference) 이 actual serving behavior 보다 **낙관적일 가능성을 강하게 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량).
 >
 > **운영 영향 X (현 시점)**: 본 audit 단독 = 운영 spec 변경 trigger X. Production reality gap 평가 = Stage 4 confirmatory holdout + 운영 inquiry (서빙 측 actual value 추출 가능성) 후 결정.
 
@@ -25,7 +25,7 @@
 | **Overall XGBoost** (GroupKFold) | 41.10% | 41.60% | **+0.50%p** | ✗ **FAIL** (Δ > 0) |
 | **Overall Ensemble** (GroupKFold) | **40.20%** | **40.90%** | **+0.70%p** | ✗ **FAIL** (Phase 0 primary: Δ ≤ -0.7%p 미달) |
 | Artsy Ensemble (GroupKFold) | 35.40% | 35.30% | -0.10%p | ≈ 동등 |
-| **Saatchi Ensemble** (GroupKFold) | 42.50% | **44.30%** | **+1.80%p** | ✗ **soft FAIL** (Hard gate 2: source slice 비대칭 악화) |
+| **Saatchi Ensemble** (GroupKFold) | 42.50% | **44.30%** | **+1.80%p** | ✗ **Hard gate 2 violation** (source slice 비대칭 악화) |
 | Warm slice XGBoost (KFold) | 10.30% | 10.30% | +0.00%p | ✓ non-regression OK (Hard gate 3) |
 
 > **Hard gates 평가** (Phase 0 §1.4):
@@ -35,9 +35,9 @@
 
 ## 2. 해석 (코덱스 framing 톤 — exploratory diagnostic)
 
-### 2.1 Drift features 의 실제 informative 정도 (가설 입증)
+### 2.1 Drift features 의 실제 informative 정도 (가설 강하게 시사)
 - Stage 1 audit 의 위험 신호 가설: "drift features 가 학습 시 informative 가능성"
-- Audit 4 결과: **9 features 제거 시 Overall +0.70%p / Saatchi +1.80%p 악화** → drift features 가 학습 시 **noise 가 아닌 실제 informative signal**
+- Audit 4 결과: **9 features 제거 시 Overall +0.70%p / Saatchi +1.80%p 악화** → drift features 가 학습 분포 OOF 에서 **noise 가 아닌 informative signal 임을 강하게 시사**
 - 특히 Saatchi 큰 악화 = `has_seoul` / `has_international` / `has_depth` 등이 Saatchi 분포에 strongly informative 추정 (별도 ablation 필요 — 본 cycle 비목표)
 
 ### 2.2 학습-서빙 gap 의 의미
@@ -82,7 +82,7 @@
 
 ## 6. Honesty caveats (코덱스 P1)
 
-- **OOF metric 손실 ≠ production reality 더 나쁨 입증**: drift features 가 학습 시 informative 였다는 사실만 본 audit 으로 직접 입증. Production-time actual gap = Stage 4 holdout + 서빙 log 비교 후만 정량 가능
+- **OOF metric 손실 ≠ production reality 더 나쁨 입증**: drift features 가 학습 분포 OOF 에서 informative 였음을 강하게 시사 (단정 X). Production-time actual gap = Stage 4 holdout + 서빙 log 비교 후만 정량 가능
 - **본 audit 단독 = 운영 spec 변경 trigger X**: Phase 0 §1.8 decision-binding 분리 그대로
 - **Saatchi 큰 악화 (+1.80%p) 의 attribution 미수행**: 9 features 중 어느 것이 main driver 인지 별도 ablation 필요 (본 cycle 비목표 — `has_seoul` / `has_international` / `has_depth` 가 Saatchi 분포에 informative 가설)
 - **3-split caveat**: 본 audit 의 baseline 32f 3-split 결과 (40.20% Ensemble) ≠ 운영 metrics.json 의 38.7% Ensemble. 차이 = **(a) 본 audit 3-split rerun vs prior 5-fold offline ensemble + (b) production-path calibrated 38.3% (CatBoost) vs offline ensemble 38.7% 차이** (`docs/model_technical_report_v2.md:53` 참조). 본 audit = 두 variant 정합 비교 only / 운영 reported metric 직접 비교 부적합
