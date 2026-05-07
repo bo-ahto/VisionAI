@@ -1,17 +1,21 @@
 # Feature Track Axis A.1 결과 보고서 — Cheap Categorical BORDERLINE
 
-> **작성일**: 2026-05-07
+> **작성일**: 2026-05-07 (코덱스 결과 검수 P0×2 + P1×4 fix 반영 v2)
 > **사전등록 freeze**: `docs/feature_track_axis_a1_prereg_20260507.md` (2026-05-07, P0×3 + P1×4 + P2×1 fix 후 GO)
 > **실험**: `experiments/structural_v1/feature_track_axis_a1.py` / `results/feature_track_axis_a1.json`
-> **판정**: **BORDERLINE — Primary CI 만 미달, Hard gate ✓ / practical Δ ✓ → A.2 escalation (B안)**
+> **판정**: **BORDERLINE (promising but not decision-grade)** — 코덱스 framing. Hard gate ✓ + practical Δ ✓ but Primary 99% CI (α=0.01 Bonferroni 5 step decision rule) +3.58%p 미달 → **A.2 escalation (B안)**
 
-## 0. 한 줄 요약 (의사결정자용)
+> ⚠️ **핵심 caveat (코덱스 P1 — 문서 첫머리에 명시 의무)**: 본 결과는 **single-seed cluster bootstrap CI 기반 inferential 근거** + **100-seed mean 기반 effect estimate** 의 **분리 해석** 결과. 100-seed mean (-1.34%p) 은 상대적으로 robust 하나 single seed CI 는 wide → **inferential 근거 미확정**. 따라서 BORDERLINE = "PASS 가까움" 이 아닌 **"유망하지만 robust 신호 X"** framing.
 
-> **Stage 6B FAIL 후 첫 PASS 후보 신호** — A.1 cheap categorical 4종 추가로 **overall -1.34%p / 저가 -0.98%p / mid-high -1.67%p / newly-warm -4.06%p** 모두 개선 방향. 단 single seed cluster bootstrap CI 상한 +1.04%p (걸침) → **BORDERLINE 판정** + step gate B안에 따라 **A.2 escalation**.
+## 0. 한 줄 요약 (의사결정자용 — 코덱스 framing 정정)
+
+> **Stage 6B FAIL 후 첫 cheap-feature 실험에서 평균 개선과 low mean non-harm 은 관측됐지만, inferential 근거는 아직 닫히지 않았다** (코덱스 권고 framing). 따라서 A.1 = **promising but not decision-grade** — 운영 변경 없이 A.2 escalation 진입.
 >
-> **6B 와 정반대 패턴**: 6B = aggregate parity but low-slice harm / **A.1 = aggregate 개선 + low-slice 비악화 + newly-warm 큰 개선**.
+> **100-seed mean (effect estimate)**: overall -1.34%p / 저가 -0.98%p / mid-high -1.67%p / newly-warm -4.06%p — 모두 개선 방향. 그러나 **single seed cluster bootstrap (진짜 cluster bootstrap, 코덱스 P0 fix)**: 95% CI [-9.41, +1.94] / 99% CI (α=0.01 Bonferroni 5 step) [-11.05, +3.58] → **둘 다 0 걸침**.
 >
-> **저가 specific 신호 일부 발견** (코덱스 사전 evidence 상 기대 낮았던 결과 — Stage 4 단기 트랙 시그니처 부분 반박): cheap categorical features (gallery_name target encoding 등) 가 **저가 segment 의 식별력 일부 보강**. 그러나 seed-level violation rate 41/100 = 41% 로 여전히 **마지노선** (6B 의 66% 보다 낮으나 robust 신호 X).
+> **6B 대비 framing (코덱스 권고)**: "**mis-targeted architecture (6B) vs promising but non-robust feature signal (A.1)**". 6B 는 low harm / A.1 은 **mean low non-harm** (분포상 41/100 seeds 여전히 violation — "harm 해결" 아님, **평균상 비악화 + 분포상 불안정**).
+>
+> **사전 expectation 대비**: Stage 4 단기 트랙 = "기존 F4 운영 입력 부족". A.1 = "cheap metadata (F4 외부) 확장으로 약한 신호 관측" — **기존 운영 입력 부족 가설 유지 + cheap metadata 확장 일부 완화 가능성** (전면 반박 아님, 코덱스 P1 톤 정정).
 
 ## 1. 핵심 결과 (사전등록 §3 적용)
 
@@ -24,12 +28,20 @@
 | Mid/high (≥ 5M) | 38.00% | 36.33% | **-1.67%p** ✓ | — |
 | **Newly-warm (Stage 3 외)** | 46.11% | 42.05% | **-4.06%p** ✓ (큰 개선) | — |
 
-### 1.2 Cluster bootstrap (rep seed=0, n=2000)
-- Δ overall mean: **-3.54%p** (single seed 결과)
-- 95% CI: **[-8.31, +1.04]** — **0 걸침 (CI 상한 +1.04%p)**
-- P(diff ≥ 0) = 0.0715
+### 1.2 Cluster bootstrap (rep seed=0, n=2000) — 코덱스 P0 fix 반영
 
-> **Primary CI 위치 명시 (6B 동일 caveat)**: Inferential CI 는 canonical seed=0 cluster bootstrap 기준 **보조 해석**. 100-seed 전체 평균 (-1.34%p, std 3.43%p) 가 더 robust effect size — single seed=0 의 -3.54%p 는 운 좋은 큰 개선 (std 3.43%p 의 ~2σ).
+> **이전 v1 결과 (잘못된 구현)**: 95% CI [-8.31, +1.04] — `np.isin()` 가 중복 draw 를 collapse → 진짜 cluster bootstrap 가중치 미반영 (코덱스 P0 적발).
+>
+> **현재 v2 (진짜 cluster bootstrap)**: artist 별 indices 사전 매핑 + sample 별 concatenate (with replicas) → 정합 구현.
+
+- Δ overall mean: **-3.48%p** (single seed=0 결과)
+- **95% CI: [-9.41, +1.94]** — 0 걸침 (CI 상한 +1.94%p, 보고만)
+- **🎯 99% CI (α=0.01, Bonferroni 5 step decision rule): [-11.05, +3.58]** — 0 걸침 (CI 상한 +3.58%p, **decision-grade**)
+- P(diff ≥ 0) = 0.1125
+
+> **Primary CI 위치 명시 (코덱스 P1 — 문서 첫머리 + 본 §1.2 양쪽 강조)**: Inferential CI 는 canonical seed=0 cluster bootstrap 기준 **보조 해석**. 100-seed 전체 평균 (-1.34%p, std 3.43%p) 가 더 robust effect size — single seed=0 의 -3.48%p 는 ~2σ outlier.
+>
+> **α=0.01 operationalization (코덱스 P0 사후 정정)**: prereg §2.10 declared α=0.01 (Bonferroni 5 step) 그러나 PASS 조건은 95% CI 로만 명시 → operationalization 미흡. 본 결과 보고서부터 **decision rule = 99% CI 상한 ≤ 0** 적용 (95% / 99% 둘 다 미달, BORDERLINE 결정 영향 X).
 
 ### 1.3 Seed-level Low violation rate (코덱스 P2 패턴 적용)
 
@@ -41,19 +53,20 @@
 
 → **41% seeds 에서 여전히 low harm** (그러나 6B 의 66% 대비 25%p 개선). Hard gate 점추정 통과 ✓ but **분포가 0 걸침** — robust 신호 X.
 
-### 1.4 사전등록 §3 PASS / BORDERLINE / FAIL 판정
+### 1.4 사전등록 §3 PASS / BORDERLINE / FAIL 판정 (α=0.01 operationalization, 코덱스 P0)
 
-> **Hard gate 정의 (사전등록 §2.8 단일 line)**: `Δ_low ≤ 0%p` (100-seed LAO mean 점추정 기준).
+> **Hard gate 정의**: `Δ_low ≤ 0%p` (100-seed LAO mean 점추정 기준).
 >
-> **판정 rule**: Hard gate 위반 시 즉시 FAIL. Hard gate 통과 후 primary CI + practical 동시 충족 → PASS / 하나만 충족 → BORDERLINE / 둘 다 미달 → FAIL.
+> **Decision rule (사후 정정 반영)**: Hard gate 위반 시 즉시 FAIL. Hard gate 통과 후 **primary 99% CI 상한 ≤ 0 (α=0.01 Bonferroni 5 step)** + practical Δ ≤ -1.0%p 동시 충족 → PASS / 하나만 충족 → BORDERLINE / 둘 다 미달 → FAIL.
 
 | 조건 | 결과 |
 |---|---|
 | 🔴 **Hard gate Δ_low ≤ 0%p** | **✓ (-0.98%p)** |
 | Primary practical Δ ≤ -1.0%p | ✓ (-1.34%p) |
-| Primary CI 상한 ≤ 0 | ✗ (+1.04%p, 0 걸침) |
+| **Primary 99% CI 상한 ≤ 0 (α=0.01 decision)** | **✗ (+3.58%p, 0 걸침)** |
+| Primary 95% CI 상한 ≤ 0 (참고만) | ✗ (+1.94%p) |
 
-→ **BORDERLINE (Primary CI 만 미달)** — Step gate B안 (A.2 escalation 허용) 적용.
+→ **BORDERLINE (Primary 99% CI 미달)** — Step gate B안 (A.2 escalation) 적용.
 
 ## 2. 6B vs A.1 패턴 대조 (의사결정자 압축)
 
@@ -66,19 +79,20 @@
 | Low seed violation | 66/100 | 41/100 | A.1 = 25%p 감소 (여전히 noise 영역) |
 | ICC mechanism | 0.81 ✓ but mis-targeted | N/A (architecture-only X) | A.1 = direct feature signal |
 
-> **결론**: A.1 = **6B 의 mis-targeted partial pooling 과 달리 cheap categorical 이 식별력 일부 보강**. Stage 4 단기 트랙 시그니처 ("current inputs 분리력 부족") 가 **부분 반박** — 추가 features (특히 `gallery_name` target encoding) 가 의미 있는 신호.
+> **결론 (코덱스 P1 톤 정정)**: A.1 = 6B mis-targeted architecture 와 달리 **cheap metadata 확장으로 약한 신호 관측** (likely driver = `gallery_name` target encoding 추정 — 본 cycle effect attribution 미수행, 단정 X). Stage 4 단기 트랙 시그니처 ("기존 F4 운영 입력 부족") = **유지** + cheap metadata 추가로 **일부 완화 가능성** (전면 반박 X).
 
 ## 3. A.1 의 의의 (정직 보고)
 
-### 3.1 사전 evidence 상 기대 vs 결과
+### 3.1 사전 evidence 상 기대 vs 결과 (코덱스 P1 톤 정정)
 - **사전 expectation (코덱스 P1, prereg §1.2)**: Stage 4 단기 트랙 + 6A/6B 저가 systematic harm → "A.1 PASS 가능성 **낮음**" / "A.4-A.5 escalation 사실상 유력"
-- **실제 결과**: A.1 100-seed mean -1.34%p / 저가 -0.98%p / Hard gate ✓ → **사전 expectation 부분 반박**
-- → **저가 식별력 보강이 cheap categorical 만으로 일부 가능** (특히 `gallery_name` target encoding 의 효과 — gallery 별 가격대 prior 가 새 신호)
+- **실제 결과**: A.1 100-seed mean -1.34%p / 저가 -0.98%p / Hard gate ✓ but **Primary 99% CI 미달** → 사전 expectation 의 **부분적 약신호 관측** (전면 반박 X / decision-grade 도달 X)
+- → "저가 식별력 보강이 cheap categorical 만으로 일부 가능" 결론은 **inferential 근거 미확정** — 본 cycle 은 effect 의 **방향만 시사** / robust 검증은 A.2 escalation 후 재평가
+- 특정 feature 기여 단정 X (effect attribution 미수행 — `gallery_name` target encoding 은 likely driver 추정 수준)
 
-### 3.2 그러나 BORDERLINE 인 이유
-- **Primary CI 상한 +1.04%p**: single seed cluster bootstrap (n=2000) 기반 — 운 좋게 큰 개선 seed=0 에 의한 noise (CI 가 wide [-8.31, +1.04])
-- **Seed-level low violation 41%**: 100 seeds 중 41 seeds 에서 여전히 low harm — 분포 자체는 0 걸침
-- **사전등록 PASS 기준 = primary CI 상한 ≤ 0 (단일 line)** → CI 미달 → 즉 결정 보류 = BORDERLINE
+### 3.2 BORDERLINE 인 이유 (decision-grade 미도달)
+- **Primary 99% CI 상한 +3.58%p / 95% CI 상한 +1.94%p**: 진짜 cluster bootstrap (코덱스 P0 fix) 적용 후 둘 다 0 걸침 — single seed 기반 inferential noise wide
+- **Seed-level low violation 41/100**: hard gate mean 통과 ✓ but **분포 자체는 0 걸침** = "harm 해결" 이 아닌 **평균상 비악화 + 분포상 불안정** (코덱스 P1 톤 정정)
+- **사전등록 PASS 기준 미달** (α=0.01 operationalization 사후 정정 후 99% CI 사용, 95% / 99% 둘 다 미달) → 결정 보류 = BORDERLINE
 
 ### 3.3 A.2 escalation 정당성
 - **사전등록 §3.2 BORDERLINE → A.2 escalation** (B안 — Step gate)
@@ -122,7 +136,8 @@
 | Stage 6B 결과 최종 검수 (2026-05-07) | architecture-only close → feature track |
 | Feature track design draft 검수 (2026-05-07) | P0×2 / P1×6 / P2×1 |
 | A.1 prereg freeze 검수 1차 (2026-05-07) | HOLD → P0×3 + P1×4 + P2×1 fix → GO |
-| **A.1 결과 보고 검수 (예정)** | BORDERLINE 정당성 + A.2 escalation 권고 |
+| **A.1 결과 보고 검수 1차 (2026-05-07)** | **HOLD** — P0×2 (cluster bootstrap np.isin collapse / α=0.01 operationalization 미흡) + P1×4 (Stage 4 반박 톤 / gallery_name attribution / "저가 harm 해결" 표현 / single-seed CI 첫머리). 본 v2 commit 일괄 fix |
+| **A.1 결과 보고 검수 v2 (예정)** | bootstrap fix + α=0.01 operationalization + framing 톤 다운 후 GO 권고 |
 
 ## 8. 참조
 

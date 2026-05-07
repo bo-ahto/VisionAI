@@ -241,24 +241,33 @@ def eval_one_seed(df, y, seed, stage3_artists):
 
 
 def cluster_bootstrap_diff(yte, pred_a, pred_b, test_artists, n_boot=N_BOOT, seed=42):
+    """Proper cluster bootstrap: 중복 draw 시 cluster 의 모든 indices 가 그만큼 여러 번 들어감 (코덱스 P0 fix).
+
+    이전 구현의 np.isin() 은 중복 draw 를 collapse 해서 진짜 bootstrap 가중치가 반영 X.
+    본 구현 = artist 별 indices 사전 매핑 후 sample 별 concatenate (with replicas).
+    Returns 95% AND 99% CI (코덱스 P0 — α=0.01 Bonferroni 5 step operationalization).
+    """
     rng = np.random.default_rng(seed)
     yte = np.asarray(yte)
     pred_a = np.asarray(pred_a)
     pred_b = np.asarray(pred_b)
     test_artists = np.asarray(test_artists)
-    unique = list(set(test_artists))
+    unique = np.unique(test_artists)
+    artist_indices = {a: np.where(test_artists == a)[0] for a in unique}
     diffs = []
     for _ in range(n_boot):
-        sample = rng.choice(unique, size=len(unique), replace=True)
-        mask = np.isin(test_artists, sample)
-        if mask.sum() < 3:
+        sample_artists = rng.choice(unique, size=len(unique), replace=True)
+        idx = np.concatenate([artist_indices[a] for a in sample_artists])
+        if len(idx) < 3:
             continue
-        diffs.append(mdape_log(yte[mask], pred_a[mask]) - mdape_log(yte[mask], pred_b[mask]))
+        diffs.append(mdape_log(yte[idx], pred_a[idx]) - mdape_log(yte[idx], pred_b[idx]))
     diffs = np.array(diffs)
     return {
         "mean": float(np.mean(diffs)),
         "ci_lo_95": float(np.percentile(diffs, 2.5)),
         "ci_hi_95": float(np.percentile(diffs, 97.5)),
+        "ci_lo_99": float(np.percentile(diffs, 0.5)),
+        "ci_hi_99": float(np.percentile(diffs, 99.5)),
         "p_1sided": float((diffs >= 0).mean()),
     }
 
@@ -331,26 +340,30 @@ def run():
     # Primary cluster bootstrap (rep seed=0)
     rep = seed_results[0]
     boot = cluster_bootstrap_diff(rep["y_te"], rep["pred_a1"], rep["pred_baseline"], rep["test_artists"])
-    logger.info(f"\n[Primary cluster bootstrap (rep seed=0, n={N_BOOT})]")
+    logger.info(f"\n[Primary cluster bootstrap (rep seed=0, n={N_BOOT}, 진짜 cluster bootstrap — 코덱스 P0 fix)]")
     logger.info(f"  Δ overall (a1 - baseline) mean: {boot['mean']:+.2f}%p")
     logger.info(f"  95% CI: [{boot['ci_lo_95']:+.2f}, {boot['ci_hi_95']:+.2f}]")
+    logger.info(f"  99% CI (α=0.01, Bonferroni 5 step): [{boot['ci_lo_99']:+.2f}, {boot['ci_hi_99']:+.2f}]")
     logger.info(f"  P(diff ≥ 0) = {boot['p_1sided']:.4f}")
 
-    # 사전등록 §3 PASS/BORDERLINE/FAIL 판정
-    primary_ci_pass = boot["ci_hi_95"] <= 0
+    # 사전등록 §3 PASS/BORDERLINE/FAIL 판정 (α=0.01 → 99% CI 사용, 코덱스 P0 fix)
+    primary_ci_99_pass = boot["ci_hi_99"] <= 0
+    primary_ci_95_pass = boot["ci_hi_95"] <= 0  # 보고만, decision 사용 X
     primary_practical_pass = diff_overall.mean() <= -1.0
     low_harm_pass = diff_low.mean() <= 0  # Hard gate: Δ_low ≤ 0%p (point estimate)
 
-    logger.info(f"\n[PASS/BORDERLINE/FAIL 판정 (사전등록 §3)]")
+    logger.info(f"\n[PASS/BORDERLINE/FAIL 판정 (사전등록 §3 + α=0.01 operationalization)]")
     logger.info(f"  🔴 Hard gate Δ_low ≤ 0%p:    {'✓' if low_harm_pass else '✗'} ({diff_low.mean():+.2f}%p)")
-    logger.info(f"  Primary CI 상한 ≤ 0:        {'✓' if primary_ci_pass else '✗'} ({boot['ci_hi_95']:+.2f}%p)")
+    logger.info(f"  Primary 99% CI 상한 ≤ 0 (α=0.01 decision): {'✓' if primary_ci_99_pass else '✗'} ({boot['ci_hi_99']:+.2f}%p)")
+    logger.info(f"  Primary 95% CI 상한 ≤ 0 (참고만):           {'✓' if primary_ci_95_pass else '✗'} ({boot['ci_hi_95']:+.2f}%p)")
     logger.info(f"  Primary practical Δ ≤ -1.0%p: {'✓' if primary_practical_pass else '✗'} ({diff_overall.mean():+.2f}%p)")
 
+    # α=0.01 (Bonferroni 5 step) operationalization: 99% CI 가 decision rule
     if not low_harm_pass:
         verdict = "FAIL (🔴 Hard gate Δ_low > 0)"
         next_action = "A.2 escalation (artist popularity 4종, 시점 정합성 검증 후)"
-    elif primary_ci_pass and primary_practical_pass:
-        verdict = "PASS (Phase 3 cold shadow 진입 후보)"
+    elif primary_ci_99_pass and primary_practical_pass:
+        verdict = "PASS (Phase 3 cold shadow 진입 후보, α=0.01 operationalized)"
         next_action = "운영 채택 후보 / A.2 진입 불필요"
     elif (-1.0 < diff_overall.mean() <= -0.3) and low_harm_pass:
         verdict = "BORDERLINE (소폭 개선 -1.0 < Δ ≤ -0.3%p)"
@@ -359,7 +372,7 @@ def run():
         verdict = "FAIL (Δ > -0.3%p, 개선 미달)"
         next_action = "A.2 escalation"
     else:
-        verdict = "BORDERLINE (Primary 1개 미달)"
+        verdict = "BORDERLINE (Primary 99% CI 미달, α=0.01)"
         next_action = "A.2 escalation"
 
     logger.info(f"\n  → 판정: {verdict}")
@@ -388,7 +401,8 @@ def run():
         "next_action": next_action,
         "primary_pass": {
             "hard_gate_low_le_0": bool(low_harm_pass),
-            "ci_upper_le_0": bool(primary_ci_pass),
+            "ci_99_upper_le_0_decision": bool(primary_ci_99_pass),
+            "ci_95_upper_le_0_reference": bool(primary_ci_95_pass),
             "practical_le_neg1": bool(primary_practical_pass),
         },
         "freeze_spec": {

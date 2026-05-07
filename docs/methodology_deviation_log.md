@@ -101,6 +101,19 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Feature Track A.1 v2] 코덱스 결과 검수 P0×2 fix (minor / 사후 정정)
+- **코덱스 결과 검수 1차 (2026-05-07)**: HOLD — A.2 진입 보류 권고
+- **P0 #1 (Implementation bug)**: cluster_bootstrap_diff 의 `np.isin()` 가 `replace=True` 중복 draw 를 collapse → 진짜 cluster bootstrap 가중치 미반영. 본 fix = artist 별 indices 사전 매핑 + sample 별 concatenate (with replicas). Stage 6B 코드도 동일 bug 보유 (recurring pattern, 향후 cycle 에서 동일 fix 적용 의무). **fix 후 95% CI [-9.41, +1.94] (이전 [-8.31, +1.04] 대비 wider)** — bootstrap 가중치 정합 반영. 결과 본 후 fix 이지만 **결과 변경 X** (BORDERLINE → BORDERLINE 유지, 95% / 99% 둘 다 미달).
+- **P0 #2 (Spec operationalization 미흡)**: prereg §2.10 declared α=0.01 (Bonferroni 5 step) 그러나 PASS 조건 §2.7 = "95% CI 상한 ≤ 0" 만 명시 → operationalization 부재. **사후 정정**: §2.7 = **99% CI 상한 ≤ 0 (α=0.01 decision rule)** 추가. 사후 정정 risk 인정 — 결과 본 후 spec 보강 = HARK 잠재 risk / 본 cycle 은 95% / 99% 둘 다 미달 → BORDERLINE 결정 영향 X / 향후 step 에서는 prereg 시점부터 99% CI 명시 의무.
+- **P1 fix (보고서 톤 다운)**:
+  * "Stage 4 시그니처 부분 반박" → "기존 운영 입력 부족 가설 유지 + cheap metadata 확장 일부 완화 가능성"
+  * "gallery_name 핵심 기여" → "likely driver 추정" (effect attribution 미수행)
+  * "저가 harm 해결" → "평균상 비악화 + 분포상 불안정"
+  * Single seed CI vs 100-seed mean discrepancy 문서 첫머리 명시
+- **분류**: **minor (사후 정정 — 결과 변경 X)** + **minor (implementation bug — 결과 변경 X)**
+- **Framing 정정 (코덱스)**: "promising but not decision-grade" — 운영 변경 없이 A.2 escalation
+- **승인**: 코덱스 결과 검수 v1 → fix 적용 후 결과 보고서 v2 commit
+
 ### 2026-05-07 — [Feature Track A.1 결과] Cheap categorical BORDERLINE → A.2 escalation (none, 정상 흐름)
 - **사전등록 §3 적용 결과** (100-seed LAO):
   * Overall: baseline 38.03% → A.1 36.70% (-1.34%p) ✓ practical

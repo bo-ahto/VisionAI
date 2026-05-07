@@ -130,7 +130,7 @@ log_price_i = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_arti
 
 ### 2.7 Practical Significance
 - Δ ≤ -1.0%p (운영 채택 임계 — Stage 3/6A/6B 동일 cold rollout default 임계, 코덱스 P0 인용 정정)
-- Cluster bootstrap 95% CI 상한 ≤ 0 (n=2000 cluster bootstrap on rep seed=0)
+- **Cluster bootstrap 99% CI 상한 ≤ 0** (n=2000 cluster bootstrap on rep seed=0, **α=0.01 Bonferroni 5 step decision rule, 코덱스 P0 사후 operationalization** — minor deviation 명시 / 결과 본 후 정정 = 사후 정정 risk 인정 / 95% / 99% 둘 다 미달이므로 결정 영향 X / deviation log entry 의무)
 
 ### 2.8 🔴 Hard Gate
 - Δ_low ≤ 0%p (점추정 기준 — 6A/6B prereg 동일 hard gate 정의)
