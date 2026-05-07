@@ -22,7 +22,7 @@
 - [ ] Fail-closed 동작 E2E 테스트 (NO_BASELINE / MODEL_ERROR / PARITY_BREACH 3가지)
 
 ### 1.3 의사결정 / 알림
-- [ ] 담당자 + 운영 매니저 shadow 배치 승인 (spec §11.3)
+- [ ] **담당자 단독 shadow 배치 승인** (spec §11.3 기준 — Phase B 5% canary 부터 운영 매니저 동반 승인)
 - [ ] Slack alert 채널 설정 (가드레일 hit > 2% / fallback > 5% / latency p95 > V3×2)
 - [ ] D+7 actual price linkage 거래 DB 조인 사전 검증
 
@@ -106,12 +106,22 @@
 ## 6. Rollback (필요 시)
 
 ### 6.1 Manual Rollback (즉시, 담당자 단독)
+
+**정식 경로** (spec §15.1 Manual Rollback Runbook 따름):
 ```bash
-# Shadow 즉시 중단
+# Spec §15.1 의 표준 ops cli (운영 인프라 정의 명령)
+ops rollback --service track2-shadow --reason "<사유>"
+```
+
+**대안 경로** (ops cli 장애 시 fallback):
+```bash
+# kubectl 직접
 kubectl set env deployment/track2-shadow ENABLED=false
 # 또는 runtime config flip
 config set track2.shadow.enabled false
 ```
+
+> 정식 경로 사용 시 자동 audit log + Slack 알림 포함. 대안 경로는 운영팀 수동 알림 필요.
 
 ### 6.2 Auto-fallback (자동)
 - spec §3.1 자동 트리거 발동 시 → Track 2 응답 100% V3 라우팅

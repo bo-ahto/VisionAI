@@ -163,7 +163,7 @@ def run():
 
     logger.info("\n--- Step 3: Power simulation (cluster bootstrap CI 상한 ≤ 0) ---")
     logger.info(f"  n_sim = {N_SIM}, n_boot = {N_BOOT}")
-    logger.info(f"  observed effect 분포 (Stage 3 13 artists) 에서 resample\n")
+    logger.info(f"  observed effect 분포 (Stage 3 cutoff 2023, n≥2 작품 작가만 = 10명) 에서 resample\n")
 
     cluster_sizes = [15, 20, 25, 30, 35, 40, 50]
     powers = {}
