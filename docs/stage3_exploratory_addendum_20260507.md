@@ -5,7 +5,7 @@
 > **위치**: Phase 1 (curated exploratory) 내 별도 cycle, **Stage 4 와 분리**
 > **연계**: `docs/트랙2_methodology_pipeline_20260507.md` (Phase 1/2/3 골격) / 외부 자문 의견 (Ridge 1순위 / ElasticNet / Quantile / 작가 차등 처리 / gallery·material 통계 피처)
 
-> ⚠️ **본 cycle 은 사전등록이 아닌 미니 프로토콜**. Stage 4 의 사전등록 (`docs/stage4_데이터수집계획_20260507.md` §6.0) 과 **별도 family**. 결과는 indicative — 운영 채택 결정 X, Stage 4 / Phase 2 의 후보 정의에 영향.
+> ⚠️ **본 cycle 은 사전등록이 아닌 미니 프로토콜**. Stage 4 의 사전등록 (`docs/stage4_확장검증계획_20260507.md` §6.0) 과 **별도 family**. 결과는 indicative — 운영 채택 결정 X, Stage 4 / Phase 2 의 후보 정의에 영향.
 
 > **본 cycle 실행 범위 (정직 보고)**:  
 > - 실행 ✓: Family 1 (gallery/material TE), Family 2 (Ridge / Huber+L2 / 결합), Family 4 (artist 통계 피처)  

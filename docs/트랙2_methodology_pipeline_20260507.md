@@ -2,7 +2,7 @@
 
 > **작성일**: 2026-05-07
 > **목적**: 트랙 2 모든 후속 실험의 방법론 골격 + curated → full 2단계 pipeline + pre-registered analysis 규율
-> **연계**: `docs/트랙2_최종보고서_20260506.md` §6 / `docs/트랙2_production_통합_spec_20260507.md` §17 / `docs/stage4_데이터수집계획_20260507.md`
+> **연계**: `docs/트랙2_최종보고서_20260506.md` §6 / `docs/트랙2_production_통합_spec_20260507.md` §17 / `docs/stage4_확장검증계획_20260507.md`
 > **사전 자문**: 코덱스 (D + curated→full pipeline 자문, 2026-05-07)
 
 ## 0. 핵심 원칙
@@ -37,14 +37,15 @@
                        │ Gate 1: Stage 4 leading candidate 검증 통과
                        ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Phase 2 — Full Confirmatory Replication                 │
-│   data/{artsy_*,saatchi_*}.csv (raw / cleansed)         │
+│ Phase 2 — Artsy-only Full Confirmatory Replication      │
+│   data/artsy_kr_artworks.csv → cleansed 8,891 / 824 작가 │
+│   (Saatchi 제외 — year_made 100% 결측)                  │
 │                                                         │
 │   Confirmatory Run 1 — pre-registered replication       │
 │   Confirmatory Run 2 — sensitivity / OOD / drift        │
 │                                                         │
 │   ▶ Stage 4 합격 모델만 진입                            │
-│   ▶ 결과 차이 분석 protocol 강제                         │
+│   ▶ Stage 4 vs Phase 2 차이 분석 protocol 강제           │
 └─────────────────────────────────────────────────────────┘
                        │
                        │ Gate 2: Full pass
@@ -78,14 +79,18 @@
 - 점추정 + CI 보고 시 항상 "exploratory, multiple comparisons unadjusted" caveat
 - 채택 결정 시 Phase 2 replication 필수
 
-## 3. Phase 2 — Full Confirmatory Replication
+## 3. Phase 2 — Artsy-only Full Confirmatory Replication
+
+> **v3 정정 (2026-05-07)**: 기존 "Artsy + Saatchi 통합 28K" 가정은 inventory 검증으로 반박됨. Saatchi 는 `year_made` 100% 결측 + `birth_year` 9% 만 → F4 + time-split 불가 → **Phase 2 모집단에서 제외**. Phase 2 의 "full" = **Artsy cleansed only**.
 
 ### 3.1 데이터 (`data/`)
-| 소스 | 원자료 | 정제 후 (예상) |
-|---|---|---|
-| Artsy | `data/artsy_kr_artworks.csv` (30,046) | ~7K (curated cleansing 적용) |
-| Saatchi | `data/saatchi_cleaned.parquet` (21,721) | ~21K (이미 정제) |
-| 통합 | — | ~28K (중복 제거 후) |
+| 소스 | 원자료 | 정제 후 (실측) | Phase 2 활용 |
+|---|---|---|---|
+| Artsy | `data/artsy_kr_artworks.csv` (30,046) | **8,891 / 824 작가** (cleansing 통과) | ✓ 단독 모집단 |
+| Saatchi | `data/saatchi_cleaned.parquet` (21,721) | year_made 0% / birth_year 9% | ✗ 제외 |
+| 통합 | — | (해당 없음) | — |
+
+> Stage 3 (1,378 / 100) 대비 Phase 2 = **6.5× / 8.2×**. "full" 의미는 **현재 가용 Artsy 모집단 100% 활용** (외부 source 추가 시 별도 Phase 3 cycle).
 
 ### 3.2 Confirmatory Run 1 (pre-registered replication)
 - **Primary hypothesis**: Stage 4 leading candidate (baseline vs FE only 단일 비교)
@@ -247,6 +252,6 @@
 
 - 트랙 2 최종보고서: `docs/트랙2_최종보고서_20260506.md` (§6 한계 / §12 부록)
 - Production spec: `docs/트랙2_production_통합_spec_20260507.md` (§17 warm-only)
-- Stage 4 plan: `docs/stage4_데이터수집계획_20260507.md` (§pre-registration 신규)
+- Stage 4 plan: `docs/stage4_확장검증계획_20260507.md` (§pre-registration 신규)
 - 데이터 클렌징: `docs/데이터클렌징_단계계획_20260506.md` (Stage 1-3 cleansing)
 - Holm 보정 실험: `experiments/structural_v1/stage3_warm_holm_adjusted.py` (신규)

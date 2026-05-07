@@ -608,7 +608,7 @@ $ ops cli report.create --type rollback --model track2_v1
 > **상태**: 연구 후보 (Phase 1 curated exploratory 종결) / **운영 도입 보류** — §1-§16 의 cold rollout 과 분리 운용  
 > **근거**: 4 차 실험 — `stage3_warm_p3_validation.json` + `stage3_warm_feature_exploration.json` + `stage3_warm_fe_robustness.json` + `stage3_warm_holm_adjusted.json`  
 > **다중비교 보정 결과 (Holm/Bonferroni)**: warm path 비교에서 보정 후 통계적 유의성 미달 (FE only raw p=0.30, n=44 한계) — 점추정 신호는 일관, 확정에는 표본 확장 필요  
-> **승격 결정**: Stage 4 (Phase 1 마지막 gate, `docs/stage4_데이터수집계획_20260507.md` §6) → Phase 2 (full confirmatory replication) → Phase 3 W-S 진입  
+> **승격 결정**: Stage 4 (Phase 1 마지막 gate, `docs/stage4_확장검증계획_20260507.md` §6) → Phase 2 (full confirmatory replication) → Phase 3 W-S 진입  
 > **방법론 골격**: `docs/트랙2_methodology_pipeline_20260507.md` (Phase 1 / Phase 2 / Phase 3 분리 + 사전등록)  
 > **본 §17 의 KPI / 게이트는 warm path 전용 scope override** — §16 (cold-default KPI glossary) 와 별도 운용
 
@@ -666,7 +666,7 @@ def route_v2(artwork) → (model, reason):
 
 #### 17.3.2 도입 단계 (Shadow → Small Canary → Gated Rollout)
 
-> **W-S 진입 prerequisite (코덱스 P2)**: `docs/stage4_데이터수집계획_20260507.md` §6.1 (오프라인 합격 기준 — cluster bootstrap CI 상한 ≤ 0 또는 P(diff<0) ≥ 95%) 통과 후에만 W-S 진입.
+> **W-S 진입 prerequisite (코덱스 P2)**: `docs/stage4_확장검증계획_20260507.md` §6.1 (오프라인 합격 기준 — cluster bootstrap CI 상한 ≤ 0 또는 P(diff<0) ≥ 95%) 통과 후에만 W-S 진입.
 
 | 단계 | 트래픽 | 비교 | 승격 조건 |
 |---|---|---|---|
@@ -704,7 +704,7 @@ def route_v2(artwork) → (model, reason):
 - 2024 cutoff 신규 warm 작가 36명 추가 → composition shift 영향 큼
 
 ### 17.5 Stage 4 데이터 수집 의존
-- `docs/stage4_데이터수집계획_20260507.md` 참조
+- `docs/stage4_확장검증계획_20260507.md` 참조
 - 핵심 목표: **warm artist cluster 21 → 40+** (≤2023 split 기준 / row 수 아님), 평가 가능 warm artists **13 → 25+**, warm test rows **44 → 120+**
 - 부수 목표: depth bin (10-14 / 15-24 / 25+) 균형
 - 재검증 합격 시 본 §17 의 W-S 단계부터 시작
@@ -719,6 +719,6 @@ def route_v2(artwork) → (model, reason):
 - 비전공자 풀이: `docs/트랙2_프로세스_쉬운버전_20260506.html`
 - 임원 1페이지: `docs/임원보고_트랙2_요약_20260506.html`
 - 데이터 plan: `docs/데이터클렌징_단계계획_20260506.md`
-- Stage 4 plan: `docs/stage4_데이터수집계획_20260507.md`
+- Stage 4 plan: `docs/stage4_확장검증계획_20260507.md`
 - 실험 코드: `experiments/structural_v1/stage*.py`
 - Warm P2/P3 결과: `experiments/structural_v1/results/stage3_warm_{,p3_}validation.json`

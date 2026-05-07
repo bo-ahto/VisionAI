@@ -12,7 +12,7 @@
 - ☐ 운영 모델 hash 일치: `track2_v1_20260507`
 - ☐ Feature pipeline version 일치: `f4_spline_v1_20260506`
 - ☐ Train data hash 기록: `data/curated/stage3_1000x100.parquet` SHA = `__________________`
-- ☐ Stage 4 baseline 해시와 동일 (`docs/stage4_데이터수집계획_20260507.md` §6.0)
+- ☐ Stage 4 baseline 해시와 동일 (`docs/stage4_확장검증계획_20260507.md` §6.0)
 
 > ⚠️ **Hash mismatch 발견 시**: 본 §6 서명 금지 + 배치 보류 + Stage 4 baseline 정의 재확인 (runbook §4.1). hash 일치 회복 후 본 D-1 재실행.
 

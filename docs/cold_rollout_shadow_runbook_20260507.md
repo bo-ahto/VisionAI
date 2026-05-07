@@ -144,5 +144,5 @@ config set track2.shadow.enabled false
 
 - 운영 spec: `docs/트랙2_production_통합_spec_20260507.md` §11.1 / §15 / §6
 - 모델 결과: `docs/트랙2_최종보고서_20260506.md`
-- Stage 4 plan: `docs/stage4_데이터수집계획_20260507.md` (baseline 일치성)
+- Stage 4 plan: `docs/stage4_확장검증계획_20260507.md` (baseline 일치성)
 - Quantile shadow: `docs/stage3_quantile_cycle_20260507.md` (별도 shadow, 본 cold rollout 과 분리)
