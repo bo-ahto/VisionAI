@@ -6,10 +6,10 @@
 
 > ⚠️ **연구 목적 (코덱스 framing)**: **Fixed-feature regime 에서 partial pooling 이 6A 의 sample fragmentation harm 을 완화할 수 있는지 평가** — 즉, Mechanism-targeted follow-up study (사후 성능 최대화 X).
 
-> **HARK Disclosure (코덱스 의무)**:
-> - 본 6B 가설 = 6A 결과 (FAIL) 관찰 후 형성
-> - 새 탐색 / 새 모델 family X — Stage 3 ME 구현 재활용 + low/high fixed effect 만 추가
-> - 추가 segmentation / 추가 feature / router 변경 = **prereg 명시 배제**
+> **HARK Disclosure (코덱스 의무, v2 정정)**:
+> - 본 6B 가설 = 6A 결과 (FAIL) 관찰 후 형성 — **registered follow-up within program** (program-level independent confirmation 아님)
+> - 새 탐색 / 새 모델 family X — Stage 3 ME 구현 재활용 (`is_low_price` fixed effect 는 코덱스 P1 검수에서 타깃 누수 발견되어 **삭제**)
+> - 추가 segmentation / 추가 feature / router 변경 / artist-segment interaction = **prereg 명시 배제**
 > - primary threshold = 6A 와 동일 (변경 X)
 
 > **본 prereg 의 freeze**: 가설 / metric / Holm family / PASS 기준 / Implementation fallback rule = **2026-05-07 freeze**. 결과 본 후 변경 X.
@@ -38,24 +38,37 @@
 
 ## 2. Pre-registered Items (2026-05-07 freeze)
 
-### 2.1 Primary Model (Stage 3 ME 재사용 + low/high fixed effect)
+### 2.1 Primary Model (Stage 3 ME 그대로 — `is_low_price` 제거)
 
 ```
 log_price_ij = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_artist_total_works_i
               + β4·spline(log_area_i)
-              + β5·is_low_price_i        ← NEW: low/high group fixed effect
-              + u_j                      ← Artist j random intercept (Stage 3 ME)
+              + u_j                      ← Artist j random intercept (Stage 3 ME 동일)
               + ε_ij
 ```
 
-- Random intercept: artist (Stage 3 ME 동일 — `MixedLM(formula, groups=artist_slug, re_formula="1")`)
-- Fixed effect 추가: `is_low_price = price_krw < 5M` indicator
+- Random intercept: artist (`MixedLM(formula, groups=artist_slug, re_formula="1")`)
 - Same F4 + spline features (변경 X)
+- **❌ `is_low_price` fixed effect 삭제 (코덱스 P1 — 예측 시점 price 미관측 = 타깃 누수)**
+
+### 2.1.1 6B 의 차별점 (vs Stage 3 ME)
+> Model spec 자체는 Stage 3 ME 동일. 6B 의 가치 = **6A 와의 비교 (segmented vs partial pooling) + Secondary 분석 (sparse-warm / ICC / newly-warm subgroup)**.
+> Stage 3 ME LAO 결과 (cold-start 무력화 / random intercept 0 수축) 가능성 인정 (§9 정직한 기대치).
 
 ### 2.2 Implementation
 - **Primary**: `statsmodels.regression.mixed_linear_model.MixedLM` (Stage 3 `stage3_mixed_effects.py` 와 동일 구조)
-- **Fallback rule (HARK 회피)**: 수렴 실패 시 — (a) optimizer 변경 (`lbfgs` → `bfgs` → `nm`) → (b) `re_formula` 단순화 (random intercept only) → (c) `lme4` R 호출 (rpy2)
-- **환경 freeze**: Python 3.14 + statsmodels version pin (현재 환경 확인 후 freeze)
+- **Estimation**: REML (default) — `MixedLM.fit(reml=True)` 고정
+- **Fallback rule (코덱스 권고 — canonical 선택 deterministic)**:
+  1. Optimizer 순서: `lbfgs` (default) → 실패 시 `bfgs` → 실패 시 `nm` (Nelder-Mead)
+  2. ML/REML: REML 고정 (변경 X)
+  3. **첫 성공 모델 = canonical** (이후 같은 seed/data 에서 재현 가능해야 함)
+  4. statsmodels 모든 optimizer 실패 → R `lme4::lmer` (rpy2) **동일 사양** (REML / 동일 random structure)
+  5. R fallback 도 실패 → **해당 seed skip + 보고 시 명시**
+- **환경 pin** (실제 version 문자열, 본 prereg freeze 시점):
+  * Python: 3.14
+  * statsmodels: (실험 시작 시 `pip show statsmodels` 결과 명시)
+  * scikit-learn / numpy / pandas: (동일)
+  * (R fallback 사용 시) rpy2 / R / lme4 version 명시
 
 ### 2.3 명시 배제 (HARK 회피)
 - ❌ 추가 segmentation (분리 학습)
@@ -77,27 +90,37 @@ log_price_ij = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_art
 - **Δ ≤ -1.0%p** (baseline 대비)
 - > "6B 는 큰 효과보다 variance reduction 기반 modest improvement 기대 — but decision threshold 6A 동일 유지" (코덱스)
 
-### 2.7 🔴 Hard Gate (6A 동일, 강화)
-- **Low-price segment harm = 0 violations** (Δ_low > 0 금지)
-- 또는 더 엄격: **low-price non-inferiority** (Δ_low ≤ 0%p, 유의한 악화 X)
+### 2.7 🔴 Hard Gate (6A 동일, 단일화 — 코덱스 P1)
+- **Δ_low ≤ 0%p** (low-price segment 점추정 악화 X)
+- 측정: 100-seed LAO 평균 (point estimate) 기준 + per-seed violation count 보조
 - Hard gate 위반 = 즉시 FAIL (사전등록 §3.3 동일)
 
-### 2.8 Secondary Hypotheses (Holm m=5, primary 와 별도 family — 2026-05-07 freeze)
+### 2.8 Secondary Hypotheses (Holm m=4 inferential + ICC mechanistic 별도 — 2026-05-07 freeze)
 
-| # | 가설 | 임계 |
+> 코덱스 P2 권고: Holm family 의 모든 항목은 동일한 inferential 검정 형태 필수. ICC 는 검정 형태가 다르므로 **별도 mechanistic 보조 지표**로 분리.
+
+#### 2.8.1 Holm Family (m=4, 1-sided cluster bootstrap CI 동일 형태)
+
+| # | 가설 | 임계 (CI 상한) |
 |---|---|---|
-| 1 | Low-price MdAPE non-inferiority / improvement | Δ_low ≤ 0%p (악화 X) |
-| 2 | Mid/high MdAPE improvement | Δ_high ≤ 0%p (악화 X), 가능하면 개선 |
-| 3 | **Sparse-warm artists** (train count ≤ 5) MdAPE improvement | Δ_sparse ≤ -1.0%p (partial pooling 핵심 가치) |
-| 4 | **ICC > 0** (mechanistic — partial pooling 작동 검증) | Estimated artist-level variance ≥ 0.05 (Stage 3: 0.130, ICC 0.541) |
-| 5 | **Existing warm vs newly warm subgroup difference** (composition shift 부분 해결) | Δ_new ≤ -1.0%p (Stage 4 신규 +0.25 → 개선) |
+| 1 | Low-price MdAPE non-inferiority | Δ_low CI 상한 ≤ 0%p |
+| 2 | Mid/high MdAPE non-inferiority | Δ_high CI 상한 ≤ 0%p |
+| 3 | **Sparse-warm artists** (train count ≤ 5) MdAPE improvement | Δ_sparse CI 상한 ≤ -1.0%p (partial pooling 핵심 가치) |
+| 4 | **Newly warm artists** (Stage 3 학습 외 신규 warm) MdAPE improvement | Δ_new CI 상한 ≤ -1.0%p (Stage 4 +0.25 → 개선) |
 
-> Holm m=5 family-wise α=0.05 적용. **Family 자체 추가/삭제 = HARK violation** (deviation log + 새 cycle).
+→ Holm m=4 family-wise α=0.05 적용. **Family 자체 추가/삭제 = HARK violation**.
+
+#### 2.8.2 Mechanistic 보조 지표 (Holm 외 — supportive only)
+
+- **ICC (intra-class correlation)**: cluster bootstrap 95% CI lower bound
+- 기준: **ICC CI 하한 > 0** (partial pooling 작동 검증) / 권장 ICC 점추정 ≥ 0.05 (Stage 3: 0.541)
+- 본 지표 = mechanism 입증용 / **PASS 결정 영향 X** (단, FAIL 시 partial pooling 자체 불작동 신호로 해석)
 
 ### 2.9 Sample 분할 (Stage 3/4 동일)
 - Train ≤ 2023 / Val 2024 / Test 2025 (Stage 4 v3 동일)
 - Cold-start LAO 100-seed (Stage 3 ME 와 동일 protocol)
 - Cluster bootstrap unit: artist
+- **Val 2024 역할** (코덱스 Nit): **monitor only, decision unused** — 본 prereg 의 PASS / Holm 결정에 사용 X (튜닝 X)
 
 ### 2.10 Stratification + Subgroup
 - Price segment: low / mid-high (사전등록 §2.7 hard gate)
@@ -113,11 +136,14 @@ log_price_ij = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_art
 
 ## 3. PASS / BORDERLINE / FAIL 결정 (코덱스)
 
-### 3.1 PASS (6B 운영 채택 후보 진입)
-- **Primary**: Δ ≤ -1.0%p (점추정) + Cluster bootstrap CI 상한 ≤ 0
-- **🔴 Hard gate**: Low-price harm 0 violations
-- **Secondary**: 5개 중 **최소 1개 이상 방향 일치** (특히 #3 sparse-warm 또는 #4 ICC mechanistic 권장)
+### 3.1 PASS (6B 운영 채택 후보 진입 — 코덱스 단일화)
+- **Primary**: Δ ≤ -1.0%p (점추정) AND Cluster bootstrap CI 상한 ≤ 0
+- **🔴 Hard gate**: Δ_low ≤ 0%p (점추정)
+- **Secondary**: supportive only (Holm reject 권장이지만 PASS 결정 영향 X)
+- **ICC mechanism**: supportive only (해석 보조)
 - → Phase 3 shadow 진입 검토
+
+> **PASS 단순화 (코덱스)**: Primary + Hard gate **만** PASS 결정. Secondary / Mechanism = 해석 보조.
 
 ### 3.2 BORDERLINE (보류, 추가 cycle 검토)
 - 🔴 Hard gate (저가 harm 0) **만족** AND
@@ -173,7 +199,7 @@ log_price_ij = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_art
 |---|---|
 | Stage 6A FAIL 검수 (2026-05-07) | "Architecture-only 6A 종료, 6B = shared-modeling, 6C = new-information 두 축" |
 | **본 prereg 사전 자문 (2026-05-07)** | statsmodels MixedLM (a) / Stage 3 ME 재사용 / Δ 6A 동일 / Secondary Holm m=5 (router 제외 + ICC + sparse-warm) / fallback rule |
-| 본 prereg 검수 (예정) | freeze 일관성 + HARK framing 검토 |
+| 본 prereg 검수 (2026-05-07 v2) | P1: `is_low_price` 타깃 누수 → 삭제 / Hard gate 단일화 / Fallback canonical / Secondary Holm m=4 + ICC 분리 / Val 2024 monitor only |
 | 6B 결과 (예정) | PASS / BORDERLINE / FAIL 판정 + 후속 cycle |
 
 ## 9. 핵심 메시지 (코덱스)
