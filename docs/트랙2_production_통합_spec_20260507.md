@@ -3,7 +3,7 @@
 > **작성일**: 2026-05-07
 > **대상**: 운영 / 인프라 담당자
 > **연계**: `docs/트랙2_최종보고서_20260506.md`, `docs/트랙2_수식_프로세스_상세_20260506.html`
-> **상태**: 코덱스 자문 반영 v1
+> **상태**: 코덱스 자문 반영 v2 (P1+P2+Nit 모두 반영, 17 섹션)
 
 ## 0. 목표 / KPI (문서 상단 고정)
 
@@ -62,7 +62,15 @@ def route(artwork) → "warm" | "cold":
 
 응답 필드에 반드시 포함:
 - `model_used`: "v3" or "track2"
-- `route_reason`: "warm_artist" / "cold_artist" / "missing_required_features" / "guardrail_fallback" / "fallback_active"
+- `route_reason` (enum): 
+  - `warm_artist` — 학습량 ≥ 10
+  - `cold_artist` — 학습량 < 10 (Track 2 정상 라우팅)
+  - `missing_required_features` — 필수 변수 결측 (V3 fallback)
+  - `guardrail_fallback` — 가드레일 트리거 (V3 fallback, §2)
+  - `fallback_active` — auto-fallback 발동 중 (§3)
+  - `NO_BASELINE` — Track 2 학습-서빙 parity 검증 실패 (V3 fallback, §11.2)
+  - `MODEL_ERROR` — Track 2 응답 실패 / 의존성 장애 (V3 fallback)
+  - `PARITY_BREACH` — 학습 시 사용한 변수 spec 과 운영 입력 불일치
 
 ### 1.3 Warm/Cold 임계 freeze
 - **현재 임계: `n_train ≥ 10`**
@@ -374,7 +382,203 @@ $ ops cli model.disable --name track2_v1
 
 ---
 
-## 11. 참조 문서
+## 11. Shadow / Soft-launch 승인서 + 체크리스트
+
+### 11.1 0% Shadow 합격 기준 (Phase A)
+
+운영 트래픽 영향 없이 1주 shadow 운영 후 다음 모두 충족 시 5% canary 진입 승인:
+
+| 항목 | 합격 기준 | 측정 방법 |
+|---|---|---|
+| Shadow 표본 누적 | 최소 500건 (cold) | 일별 누적 카운트 |
+| 실제 거래가 linkage | D+7 거래 actual price 매칭 | 거래 DB 조인 |
+| Track 2 vs V3 MdAPE 격차 | ≤ +5%p (V3 baseline 대비) | 동일 기간 동일 작품 |
+| 가드레일 hit rate | ≤ 2% | log 집계 |
+| Latency p95 | ≤ V3 × 2.0 | APM |
+| Schema 검증 통과율 | ≥ 99% | API log |
+| Fail-closed 동작 | NO_BASELINE 시 V3 자동 라우팅 | E2E 테스트 |
+
+→ 위 7개 모두 PASS 시 Phase B (5% canary) 승인.
+
+### 11.2 Fail-closed 절차
+
+Track 2 모델 응답 실패 / 학습-서빙 parity 파괴 / 의존성 장애 시:
+- 자동 V3 라우팅 (트랙 2 응답 X)
+- 사유 코드: `NO_BASELINE` / `MODEL_ERROR` / `PARITY_BREACH`
+- 운영팀 알림 (즉시) + 자동 fallback rate KPI 기록
+
+### 11.3 단계별 승인권자
+
+| 단계 | 승인 필요 |
+|---|---|
+| Shadow 배치 | 담당자 단독 |
+| Phase B (5% canary) | 담당자 + 운영 매니저 |
+| Phase C (10%/25% 확대) | 담당자 + 운영 매니저 + 의사결정자 |
+| Manual rollback | 담당자 단독 가능 |
+| Fallback 후 재개 | 담당자 + 운영 매니저 (24h 보고 후) |
+
+### 11.4 D+7 Actual Linkage
+
+운영 후 7일이 지나야 실제 거래가 확정 → 그 전까지는 KPI 관측치 부족 → **확대 금지**.
+Phase B 5% 운영 시작 후 최소 D+14 (5% × 7일 누적) 까지는 확대 X.
+
+---
+
+## 12. Segment / Channel KPI 부록
+
+### 12.1 Segment 별 alert threshold (자동 / 수동 조치 분리)
+
+| Segment | n 최소 | MdAPE 임계 | P90 APE 임계 | 작동 |
+|---|---|---|---|---|
+| 전체 cold | 200 | > 30% | > 70% | **자동 fallback** |
+| 저가 (예측가 < 5M) | 100 | > 35% | > 80% | **자동 사람 검토 라우팅** |
+| medium = ink | 50 | > 33% | > 75% | **수동 alert** (운영팀 검토) |
+| gallery_tier = 3 | 100 | > 28% | > 70% | **수동 alert** |
+| 극단 면적 (P5 미만 / P95 초과) | 30 | — | — | **자동 V3 fallback** (가드레일) |
+
+### 12.2 Channel 별 정책 (입력 출처)
+
+| Channel | 활성화 조건 | 결측 정책 | 별도 KPI 추적 |
+|---|---|---|---|
+| Artsy crawl (학습 동일) | default ON | V3 fallback (필수 변수 결측 시) | 기본 모니터링 |
+| Saatchi crawl | default ON | year_made 결측 → V3 fallback | year_made fill rate |
+| **gallery_direct (신규)** | **default OFF** → shadow 100건 + MdAPE diff < +5%p 후 활성화 | V3 fallback | **채널별 MdAPE / fallback rate 별도** |
+| **collector_input (신규)** | **default OFF** → 동일 조건 | V3 fallback | 동일 |
+| 기타 (external) | default OFF | V3 fallback | 동일 |
+
+### 12.3 신규 채널 활성화 단계
+
+1. Channel 별 shadow 라우팅 enabled (트래픽 0%)
+2. 100건 누적 + 7일 actual linkage 대기
+3. 채널별 MdAPE 가 전체 대비 +5%p 이내 → activated
+4. 활성화 후에도 채널별 KPI 별도 모니터링 지속
+
+---
+
+## 13. 학습-운영 표본 차이 Bridge Memo
+
+### 13.1 표본 차이 명시
+
+| 측면 | 학습 (Stage 3) | 운영 (production) |
+|---|---|---|
+| 규모 | 1,378 records / 100 artists | 28,376 records (전체 풀) |
+| 출처 | Artsy curated only | Artsy + Saatchi + 신규 채널 |
+| Cleansing | 엄격 (필수 변수 / 작가당 ≥10) | 다양 (결측 케이스 포함) |
+| 평가 protocol | LAO 30/100-seed | 운영 4주 rolling |
+
+### 13.2 Bridge — 운영 데이터에서의 정확도 추정 위험
+
+학습 LAO MdAPE 24.07% → 운영 환경에서는:
+- 표본 분포 차이로 ± 3-5%p 이동 가능 (낙관/비관)
+- D+7 actual linkage 후 운영 실측치 확보까지 정확도 단정 X
+
+### 13.3 Bridge 위험 완화
+
+1. **Phase A shadow 1주** → 운영 표본 500건 + actual linkage 후 KPI 1차 검증
+2. **5% canary 2주** → 추가 운영 데이터 확보
+3. **단계 확대 전 KPI 충족 확인 필수**
+4. 학습 데이터 분포와 운영 분포 PSI 추적 (§4 와 동일)
+
+### 13.4 의사결정 시 caveat 승계
+
+본 운영 도입 결정 시 다음을 의사결정자에게 명시:
+- "학습 LAO MdAPE 24.07% 는 cleansed 1.3K 표본 기준. 운영 28K 분포에서 같은 정확도 보장 X."
+- "Shadow + canary 단계로 운영 실측 확보 후 정착 정확도 판단."
+- "단계 확대는 KPI gate 충족이 필수 조건."
+
+---
+
+## 14. Warm/Cold 임계 Sensitivity 부록 (5 / 10 / 15)
+
+### 14.1 추적 항목 (대시보드)
+
+3개 임계로 각각 별도 KPI 산출:
+
+| 임계 (n_train) | warm % | cold % | warm MdAPE | cold MdAPE | 통합 MdAPE |
+|---|---|---|---|---|---|
+| ≥ 5 | (운영 측정) | — | — | — | — |
+| **≥ 10** (현재 기본) | (운영 측정) | — | — | — | — |
+| ≥ 15 | (운영 측정) | — | — | — | — |
+
+### 14.2 임계 변경 승인 규칙
+
+다음 모두 충족 시에만 임계 변경 검토:
+
+1. 4주 이상 운영 데이터에서 다른 임계 (5 또는 15) 가 통합 MdAPE 기준 -1.5%p 이상 우수
+2. 다른 임계의 warm/cold 비율이 운영 가능 범위 (warm 20-80% 사이)
+3. 가드레일 hit rate 변화 ≤ 1%p
+4. 의사결정자 + 담당자 + 운영 매니저 3자 승인
+
+### 14.3 변경 절차
+
+1. 1개월 운영 데이터 + 3개 임계 KPI 비교
+2. 비교 메모 작성 + 권고
+3. 의사결정 회의 + 3자 승인
+4. Shadow 1주 검증 (새 임계로) → 변경 적용
+
+---
+
+## 15. 운영 Runbook (Rollback / Alert 대응)
+
+### 15.1 Manual Rollback 절차
+
+```bash
+# Step 1. Track 2 즉시 차단
+$ ops cli model.disable --name track2_v1 --reason "manual_rollback: <reason>"
+
+# Step 2. 자동 V3 라우팅 확인 (1분 내)
+$ ops cli traffic.verify --model v3 --pct 100 --segment cold
+
+# Step 3. 운영팀 알림
+$ ops cli notify --channel #ops-alert --msg "Track 2 manual rollback: <reason>"
+
+# Step 4. 24h 내 보고서 작성
+$ ops cli report.create --type rollback --model track2_v1
+```
+
+### 15.2 Auto-fallback 발동 시 대응 절차
+
+1. **즉시 (≤ 5분)**: Slack alert 수신 + 트래픽 자동 100% V3 복귀 확인
+2. **1h 내**: 발동 사유 분석 (KPI 로그 + 운영 metric)
+3. **4h 내**: 1차 보고 (담당자 → 운영 매니저)
+4. **24h 내**: 원인 분석 보고서 + 재개 가능 여부 판단
+5. **재개 결정**: 담당자 + 운영 매니저 승인 → Phase A shadow 부터 재진입
+
+### 15.3 Alert 대응 매트릭스
+
+| Alert | 자동 조치 | 수동 조치 |
+|---|---|---|
+| Auto-fallback 발동 | V3 100% 복귀 | 24h 분석 보고 |
+| Guardrail hit > 2% | 알람 | 운영팀 검토 (segment 분포 확인) |
+| PSI > 0.10 (3일 연속) | 알람 | 재학습 검토 |
+| PSI > 0.25 | 즉시 알람 | 긴급 재학습 트리거 |
+| Latency p95 > V3 × 2 | 자동 fallback | 인프라 점검 |
+| Schema 검증 통과율 < 99% | 알람 | 입력 채널 점검 |
+| Channel 별 MdAPE > +5%p | 알람 | 채널 검토 / 필요 시 차단 |
+
+### 15.4 Runbook 위치
+
+본 spec 의 §15 + 별도 운영 wiki 링크 (운영팀 공유).
+
+---
+
+## 16. KPI 용어 통일 부록
+
+| 용어 | 정의 | 단위 |
+|---|---|---|
+| **MdAPE** | Median Absolute Percentage Error (예측가 vs 실제가, 중앙값) | % |
+| **High-APE rate** | APE > 50% 인 케이스 비율 | % |
+| **P90 APE** | APE 의 90th percentile | % |
+| **Fallback rate** | 자동/수동 fallback 발동된 cold 트래픽 비율 | % |
+| **Guardrail hit rate** | 가드레일 트리거된 cold 트래픽 비율 | % |
+| **PSI** | Population Stability Index (학습/운영 분포 차이) | 무차원 |
+| **Latency p95** | 응답 시간 95 percentile | ms |
+
+본 spec 의 모든 임계 / KPI 는 위 정의 기준.
+
+---
+
+## 17. 참조 문서
 
 - 모델 결과: `docs/트랙2_최종보고서_20260506.md`
 - 수식 / 알고리즘: `docs/트랙2_수식_프로세스_상세_20260506.html`
