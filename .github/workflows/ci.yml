@@ -39,29 +39,23 @@ jobs:
         run: |
           uv sync --frozen --extra dev --extra price-engine-core --extra price-engine-exp --extra price-engine-api
 
-      - name: Ruff lint (신규 helpers/tests + v3.1 scripts — pattern based)
-        # v3.1-4 R2 (codex P2): 명시적 file list 대신 패턴 — 신규 v3.1 스크립트 자동 cover.
-        # 기존 scripts/*.py 광역 ignore 는 pyproject.toml [tool.ruff.lint.per-file-ignores]
-        # 그대로 유지 (legacy 점진 정리는 별도 트랙).
+      - name: Ruff lint (신규 helpers/tests — pattern based)
+        # v3.0~v3.5 research scripts (v3_emit_provenance / v31_*) 는 archive 결정
+        # (Step 6 카테고리 B) 으로 본 분할 PR scope 에서 제외. lint scope = helpers/tests.
         run: |
           uv run ruff check \
             src/visionai/price_engine/_provenance.py \
             src/visionai/price_engine/_eval_helpers.py \
             tests/price_engine/test_provenance.py \
-            tests/price_engine/test_eval_helpers.py \
-            scripts/v3_emit_provenance.py \
-            scripts/v31_*.py
+            tests/price_engine/test_eval_helpers.py
 
       - name: Ruff format check (strict, pattern based)
-        # v3.1-4: continue-on-error 제거. 패턴으로 신규 코드 자동 cover.
         run: |
           uv run ruff format --check \
             src/visionai/price_engine/_provenance.py \
             src/visionai/price_engine/_eval_helpers.py \
             tests/price_engine/test_provenance.py \
-            tests/price_engine/test_eval_helpers.py \
-            scripts/v3_emit_provenance.py \
-            scripts/v31_*.py
+            tests/price_engine/test_eval_helpers.py
 
       - name: Mypy (src only — strict per pyproject.toml)
         run: uv run mypy src/visionai/price_engine/_provenance.py src/visionai/price_engine/_eval_helpers.py
