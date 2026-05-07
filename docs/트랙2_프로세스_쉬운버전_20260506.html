@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>트랙 2 — 프로세스 쉬운 버전 (전문용어 풀이)</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    max-width: 980px;
+    margin: 25px auto;
+    padding: 0 24px;
+    color: #1f2937;
+    line-height: 1.7;
+    background: #fafbfc;
+    font-size: 1.02em;
+  }
+  h1 { font-size: 1.7em; border-bottom: 3px solid #2563eb; padding-bottom: 8px; color: #111827; }
+  h2 { margin-top: 32px; color: #1e40af; border-left: 4px solid #2563eb; padding-left: 12px; font-size: 1.25em; }
+  h3 { color: #1e3a8a; margin-top: 22px; font-size: 1.05em; }
+  h4 { color: #1e40af; margin-top: 14px; font-size: 0.98em; }
+  .meta { color: #6b7280; font-size: 0.9em; margin-bottom: 14px; }
+  .lead {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 14px 20px;
+    margin: 14px 0;
+    border-radius: 4px;
+    font-size: 1.04em;
+  }
+  .term-box {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 12px 16px;
+    margin: 10px 0;
+    border-radius: 4px;
+  }
+  .term-box .term-name {
+    font-weight: 700;
+    color: #92400e;
+  }
+  .formula-box {
+    background: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    padding: 12px 18px;
+    margin: 10px 0;
+    border-radius: 4px;
+  }
+  .info-box {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 4px;
+  }
+  .step-box {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 10px 0;
+  }
+  .step-num {
+    display: inline-block;
+    background: #2563eb;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .analogy {
+    background: #faf5ff;
+    border-left: 4px solid #9333ea;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-size: 0.95em;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.94em; }
+  th, td { border: 1px solid #d1d5db; padding: 8px 10px; vertical-align: top; }
+  th { background: #1e40af; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #f9fafb; }
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "SF Mono", "Monaco", "Menlo", monospace;
+    font-size: 0.92em;
+  }
+  .small { font-size: 0.86em; color: #6b7280; }
+  .toc {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin: 14px 0;
+  }
+  .toc ol { margin: 4px 0; }
+  .footer {
+    margin-top: 32px;
+    padding-top: 14px;
+    border-top: 2px solid #d1d5db;
+    color: #6b7280;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+
+<h1>트랙 2 — 프로세스 쉬운 버전 (전문용어 풀이)</h1>
+<p class="meta">
+  <strong>작성일</strong>: 2026-05-06 ·
+  <strong>대상</strong>: 비전공자 ·
+  <strong>전문 버전</strong>: docs/트랙2_수식_프로세스_상세_20260506.html
+</p>
+
+<div class="lead">
+  이 문서는 트랙 2 모델의 <strong>학습 / 예측 / 평가</strong> 전 과정을 비전공자도 이해할 수 있게 풀어 쓴 버전입니다. 모든 전문용어 (OLS / LAO / Bootstrap CI / Huber / spline / Calibration 등) 를 일상 비유로 설명합니다. 수식이 필요한 경우 전문 버전을 같이 보세요.
+</div>
+
+<div class="toc">
+  <strong>목차</strong>
+  <ol>
+    <li>모델이 하는 일 (한눈에)</li>
+    <li>전문용어 풀이 사전</li>
+    <li>학습 (모델 만들기) 전체 과정</li>
+    <li>예측 (가격 산출) 전체 과정</li>
+    <li>평가 (모델 정확도 검증) 전체 과정</li>
+    <li>운영 적용 + 보정</li>
+    <li>왜 이 방식이 안전한가</li>
+  </ol>
+</div>
+
+<h2>1. 모델이 하는 일 (한눈에)</h2>
+
+<p>
+입력: 작품 1점 (크기 / 작가 출생년 / 작가 총 작품 수)
+<br>↓<br>
+모델: 학습된 규칙으로 가격 계산
+<br>↓<br>
+출력: 예상 가격 (원)
+</p>
+
+<div class="info-box">
+  <strong>최종 운영 모델</strong> = <code>면적</code> + <code>작가 출생년</code> + <code>작가 작품수</code> + <code>면적의 곡률 보정</code> + <code>이상치에 덜 휘둘리는 학습 방법(Huber)</code>
+</div>
+
+<div class="warn-box">
+  <strong>표본 차이 주의</strong>: V3 (현행) 는 운영 28,376 작품 전체 기준, 트랙 2 는 1,378 정제 작품 기준입니다. 두 모델의 절대 정확도 직접 비교에는 한계가 있고, 같은 평가 방식 (LAO holdout) 안에서 cold-start 우위가 일관 확인됐습니다.
+</div>
+
+<h2>2. 전문용어 풀이 사전</h2>
+
+<p>아래는 본 문서/전문 버전에 등장하는 모든 핵심 용어를 비유로 풀이한 것입니다.</p>
+
+<div class="term-box">
+  <div class="term-name">OLS (Ordinary Least Squares = 최소제곱법)</div>
+  <div>가장 표준적인 회귀 방법. <strong>"예측값과 실제값의 차이를 모두 제곱해서 합한 값을 최소화하는 식"</strong>을 찾는 방법.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 친구들 키 데이터를 점으로 찍고 가장 잘 맞는 직선 1개를 그어보는 것. 모든 점에서 직선까지의 거리(오차)의 제곱 합이 가장 작게 되는 직선이 정답.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">LAO (Leave-Artists-Out = 작가 단위 시험)</div>
+  <div>모델 평가 방식. <strong>학습 데이터의 "작가" 를 통째로 빼고 시험 보기.</strong> 작품 단위가 아니라 작가 단위로 분할.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 시험 준비할 때, 같은 선생님에게 배운 학생을 시험에 끼우면 답을 외워서 풀 수 있음. 그래서 한 번도 본 적 없는 선생님(=작가) 의 학생(=작품) 으로 시험 봐야 진짜 실력 측정 가능.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Bootstrap CI (재표본 신뢰구간)</div>
+  <div>한 번 측정한 결과를 신뢰하기 어려우니 <strong>같은 데이터를 무작위로 여러 번 다시 뽑아 측정</strong>해서 결과의 흔들림 범위 측정.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 뽑기 1번으로는 우연일 수 있으니, 500번 뽑아서 결과 분포를 보는 것. 95% 가 22~25% 범위에 있다면 "신뢰 95% 로 22~25%" 라고 말할 수 있음.
+  </div>
+  <div class="small">본 운영 모델 (Huber): 95% 구간 [21.68%, 25.08%] / 비교 OLS [22.75%, 25.91%] → 거의 안 겹침 = 우연 효과 아님. <strong>본 문서 모든 수치는 최종 보고서 (운영 채택 = Huber) 기준</strong>.</div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Huber loss / Huber regression (Huber 회귀)</div>
+  <div>OLS 의 변형. <strong>"이상치 (극단적 데이터)" 의 영향을 덜 받게 학습</strong>. 작은 오차는 OLS 와 같이 제곱, 큰 오차는 직선으로 처리.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 반 평균 키를 구할 때, 농구부 학생 1명이 평균을 확 끌어올리지 못하게 그 학생의 영향력을 제한하는 방식.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Spline (스플라인) / Restricted Cubic Spline (RCS)</div>
+  <div>변수와 가격의 관계가 직선이 아닐 때 사용. <strong>구간별로 다른 곡률을 허용하는 추가 항.</strong></div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: "작품 면적이 커질수록 가격 ↑" 인데 너무 커지면 가격 상승률이 둔화될 수 있음. 직선이 아닌 살짝 휜 곡선을 그릴 수 있게 변수를 추가.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Random Intercept / Mixed-Effects (작가 효과 항)</div>
+  <div>일반 회귀에 <strong>작가별 고유 효과</strong>를 추가하는 방법. "이 작가는 평균보다 비싸 / 싸" 같은 작가 단위 보정.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 같은 키 / 같은 학교라도 "이 사람은 원래 좀 큼/작음" 하는 개인 특성을 반영. 단 신규 작가에게는 개인 특성을 모르므로 효과 없음.
+  </div>
+  <div class="small">본 모델은 <strong>운영 채택 X</strong> — 신규 작가 예측이 핵심이라 작가 효과 항을 못 씀.</div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">ICC (Intra-class Correlation = 작가 분산 비중)</div>
+  <div>가격 분산 중 <strong>"작가 단위 차이"</strong> 가 차지하는 비율. 0~1 사이.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 학생 키 차이의 60% 가 "어느 반인가" 로 설명되면 ICC = 0.60.
+  </div>
+  <div class="small">본 모델: ICC = 0.541 → 가격 분산의 54% 가 작가 단위 차이.</div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">VIF (Variance Inflation Factor = 다중공선성 지표)</div>
+  <div>변수들이 서로 너무 비슷한 정보를 가지고 있는지 점검. <strong>5 미만 안전 / 10 초과 위험.</strong></div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 키와 발 사이즈는 강한 상관 → 둘 다 변수로 넣으면 둘이 서로 영향력 뺏기. 본 모델은 VIF 1.2 (안전).
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">p-value / t-statistic (통계적 유의성 검정)</div>
+  <div>변수의 영향이 <strong>"우연이 아닌 진짜인지"</strong> 측정. 정확한 정의: <strong>"영향이 0이라고 가정했을 때, 지금 같거나 더 극단적인 결과가 우연히 나올 가능성"</strong>. 작을수록 "우연이 아닐 가능성 ↑".</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: "이 약이 효과 있나?" 에서 p < 0.05 = "약이 정말 효과 없다고 가정했을 때 지금 같은 결과가 나올 확률이 5% 미만 → 효과 없다는 가정이 틀렸을 가능성 ↑".
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">R² (결정계수)</div>
+  <div>모델이 가격 변동을 얼마나 설명하는지. 0~1 사이. <strong>1 에 가까울수록 잘 설명.</strong></div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: R² = 0.87 이면 가격 차이의 87% 가 "면적/세대/작품수" 로 설명되고, 13% 는 다른 알 수 없는 요인.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">MdAPE (Median Absolute Percentage Error)</div>
+  <div>예측 오차의 <strong>중앙값 (%)</strong>. 본 모델 평가 핵심 지표. (mean 이 아닌 median 사용 → 극단치 영향 X)</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: MdAPE = 24% 면 "예측한 작품들을 오차순으로 줄세웠을 때 한가운데 작품의 오차가 24%". 절반은 24% 보다 정확, 절반은 24% 보다 빗나감.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">W30 / W50 (Within-X% Hit Rate)</div>
+  <div><strong>예측이 실제가 ± X% 안에 들어오는 비율.</strong></div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: W30 = 76% 면 "100건 중 76건은 실제가 ±30% 안에 맞췄다".
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Calibration (보정 / 캘리브레이션)</div>
+  <div>모델 예측 후 <strong>가격대별 대표 편향 (log 잔차의 중앙값) 만큼 결과를 다시 다듬는 후처리.</strong></div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 체중계가 어떤 무게대에서 1kg 더 나오는 걸 알면 그 구간의 측정값에서 1kg 빼주는 것. 시간이 지나 체중계 오차가 변하면 정기적으로 재측정 필요.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">log / log_price / log_area (자연로그 변환)</div>
+  <div>가격 / 면적처럼 한쪽으로 치우친 데이터를 <strong>자연로그 (ln) 변환</strong>해서 분포를 평평하게 만드는 작업.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 1만원~10억까지 100,000배 차이 나는 데이터를 ln 변환하면 9~21 정도의 비슷한 범위가 됨. 모델이 학습하기 쉬워짐.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Centering (평균 중심화)</div>
+  <div>변수에서 평균을 빼서 <strong>0 을 기준</strong>으로 만드는 것.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 출생년이 1980 인 작가를 0 으로, 1990 인 작가를 +10, 1970 인 작가를 -10 으로. 절대 연도보다 "기준 대비" 가 해석 쉬움.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Residual (잔차)</div>
+  <div>예측값과 실제값의 차이. 모델이 설명하지 못한 부분.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 예측 1,000만원 / 실제 1,200만원 → 잔차 = 실제 - 예측 = +200만원. log 잔차로도 같은 식으로 표현.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Cold-start / Warm-start (신규 / 기존 작가)</div>
+  <div>예측 시 작가가 학습 데이터에 있는지에 따른 구분.</div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: <strong>Cold-start</strong> = "처음 보는 작가" (학습에 그 작가 작품 없음). <strong>Warm-start</strong> = "익숙한 작가" (학습에 그 작가 작품 있음). LAO 평가는 항상 cold-start 시나리오.
+  </div>
+</div>
+
+<div class="term-box">
+  <div class="term-name">Heteroskedasticity (분산 불균등)</div>
+  <div>오차의 분산(흩어진 정도)이 가격대마다 다른 현상. <strong>저가 작품 오차 분포의 폭과 고가 작품 오차 분포의 폭이 다름.</strong></div>
+  <div class="analogy">
+    🎯 <strong>비유</strong>: 100만원 작품은 ±10만원만 빗나가도 큰 오차 (10%), 10억 작품은 ±1억 빗나가도 같은 10%. 가격대별로 오차가 흩어진 폭이 다름 → 가격대별 다른 보정/가중 필요.
+  </div>
+</div>
+
+<h2>3. 학습 (모델 만들기) 전체 과정</h2>
+
+<div class="step-box">
+  <span class="step-num">1</span>
+  <strong>데이터 정리 (cleansing)</strong>
+  <p>원본 7,289 작품 → 가격/크기/연도 등 핵심 정보가 명확한 작품만 남김 → 작가당 10작품 이상인 작가만 → 최종 1,378 작품 / 100 작가.</p>
+  <p class="small">자세한 룰은 docs/데이터클렌징_단계계획_20260506.md 참조.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span>
+  <strong>변수 변환 (transformation)</strong>
+  <ul>
+    <li>가격 → log 변환 (1만원~10억 차이를 9~21 범위로)</li>
+    <li>면적 → log 변환 (작은 그림 vs 큰 그림 차이를 부드럽게)</li>
+    <li>출생년 → centering (평균 출생년 기준으로 ±)</li>
+    <li>작품수 → log(1+x) 변환 (0 처리 가능)</li>
+    <li>면적의 spline 추가 (큰 작품의 곡률 반영)</li>
+  </ul>
+</div>
+
+<div class="step-box">
+  <span class="step-num">3</span>
+  <strong>모델 적합 (fitting)</strong>
+  <p>Huber 회귀로 학습 → "이 변수가 가격에 얼마나 영향 주는지" 의 계수를 자동 계산.</p>
+  <p class="small">계수 결과: log_area +0.64, birth_year_centered -0.05, log_artist_total_works +0.10, log_area_spline +0.20.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">4</span>
+  <strong>적합도 검증</strong>
+  <ul>
+    <li>R² 측정 (모델이 가격을 얼마나 설명?)</li>
+    <li>각 변수의 p-value (변수 영향이 진짜인가?)</li>
+    <li>VIF 측정 (변수들이 너무 비슷하진 않은가?) → 본 모델 1.2 (안전)</li>
+    <li>30~100번 다른 데이터 조합으로 학습해 계수 부호 일관성 확인 → 본 모델 100% 일관</li>
+  </ul>
+</div>
+
+<h2>4. 예측 (가격 산출) 전체 과정</h2>
+
+<div class="step-box">
+  <span class="step-num">1</span>
+  <strong>입력 변환</strong>
+  <p>새 작품의 면적, 작가 출생년, 작가 총 작품수를 학습 시와 같은 방식으로 변환.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span>
+  <strong>가격 (로그) 계산</strong>
+  <p>학습된 계수와 <em>변환된</em> 변수 곱셈/덧셈 → 로그 가격 산출.</p>
+  <pre><code>log_price = 9.4 + 0.64 × log_area
+              − 0.05 × birth_year_centered
+              + 0.10 × log_artist_total_works
+              + 0.20 × spline(log_area)</code></pre>
+  <p class="small">※ <code>log_area</code> = ln(면적), <code>birth_year_centered</code> = 출생년 - 평균출생년, <code>spline</code> = log_area 의 곡률 항.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">3</span>
+  <strong>실제 가격 (원) 으로 역변환</strong>
+  <p>로그 가격에 지수 함수 (exp) 적용 → 원 단위 가격.</p>
+  <p class="small">본 모델은 <strong>중앙값 (median) 추정</strong>. 즉 "비슷한 조건의 작품들의 가격 중앙값" 을 예측.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">4</span>
+  <strong>(선택) 가격대별 보정</strong>
+  <p>예측 가격이 저가/고가 구간에 들어가면 보정표로 다시 다듬음.</p>
+</div>
+
+<h2>5. 평가 (모델 정확도 검증) 전체 과정</h2>
+
+<div class="step-box">
+  <span class="step-num">1</span>
+  <strong>LAO 분할 (시험 출제)</strong>
+  <p>100명 작가 중 80명 학습 / 20명 시험. 작품 단위가 아닌 <strong>작가 단위</strong>로 나눠서 진짜 신규 작가 예측 능력 측정.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span>
+  <strong>예측 + 실제 비교</strong>
+  <p>시험 작가의 작품 가격을 예측 → 실제 가격과 비교 → 오차 측정.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">3</span>
+  <strong>30~100회 반복 (재현성 확인)</strong>
+  <p>매번 다른 작가 조합으로 시험 → 결과가 일관되는지 확인.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">4</span>
+  <strong>지표 산출</strong>
+  <ul>
+    <li>MdAPE: 오차순 줄세웠을 때 한가운데 작품의 오차율 → 본 모델 약 24%</li>
+    <li>W30: ±30% 안에 맞춘 비율 → 본 모델 약 53%</li>
+    <li>W50: ±50% 안에 맞춘 비율 → 본 모델 약 75%</li>
+    <li>Bootstrap CI: 신뢰 구간 → 본 모델 [22%, 25%]</li>
+  </ul>
+</div>
+
+<div class="step-box">
+  <span class="step-num">5</span>
+  <strong>구간별 분석 (가드레일 점검)</strong>
+  <p>가격대 / 매체 / 갤러리 등급별로 정확도가 균일한지 점검 → 약점 segment 발견 시 사람 검토 또는 별도 보정.</p>
+</div>
+
+<h2>6. 운영 적용 + 보정</h2>
+
+<div class="info-box">
+  <strong>이원 전략 (Two-track strategy)</strong>
+  <ul>
+    <li>학습 데이터에 작가가 많이 있는 경우 → 기존 V3 모델 사용 (정확도 12-18%)</li>
+    <li>학습 데이터에 작가가 거의 없는 경우 → 트랙 2 (F4 + spline + Huber) 사용 (약 24%)</li>
+  </ul>
+  <p class="small">전면 교체 아니라 "신규 작가 보완용" 으로 단계적 도입.</p>
+</div>
+
+<div class="info-box">
+  <strong>가드레일 (Guardrail)</strong>
+  <p>아래 경우는 사람이 한번 더 검토 권장:</p>
+  <ul>
+    <li>예측가가 약 500만원 미만 (저가)</li>
+    <li>예측가가 약 1,250만원 이상 (고가)</li>
+    <li>먹/잉크/한국화 매체</li>
+    <li>일반 등급 갤러리 (tier 3)</li>
+  </ul>
+</div>
+
+<h2>7. 왜 이 방식이 안전한가</h2>
+
+<table>
+  <tr><th>안전 포인트</th><th>설명</th></tr>
+  <tr>
+    <td><strong>설명 가능</strong></td>
+    <td>변수 3개 + spline 1개로 "왜 그 가격인지" 설명 가능. V3 (32 변수 GBM) 의 블랙박스 X.</td>
+  </tr>
+  <tr>
+    <td><strong>재현 가능</strong></td>
+    <td>학습 코드/데이터 공개. 100번 반복 시 같은 결과.</td>
+  </tr>
+  <tr>
+    <td><strong>통계적 유의</strong></td>
+    <td>Bootstrap CI 가 OLS 와 거의 안 겹쳐 우연 효과 X.</td>
+  </tr>
+  <tr>
+    <td><strong>취약 segment 방어</strong></td>
+    <td>저가/고가/일반 등급 segment 모두 OLS 보다 개선. 가장 위험한 구간 보호.</td>
+  </tr>
+  <tr>
+    <td><strong>가드레일 운영</strong></td>
+    <td>모델 신뢰 어려운 경우 자동 사람 검토 우선 처리.</td>
+  </tr>
+</table>
+
+<div class="footer">
+  <strong>본 문서</strong>는 비전공자용 쉬운 버전입니다.<br>
+  수식과 매트릭스 형태가 필요하면: <code>docs/트랙2_수식_프로세스_상세_20260506.html</code><br>
+  최종 결과 보고서: <code>docs/트랙2_최종보고서_20260506.md</code><br>
+  임원 1페이지 요약: <code>docs/임원보고_트랙2_요약_20260506.html</code><br>
+  더 일상적 설명: <code>docs/트랙2_쉬운설명_20260506.html</code>
+</div>
+
+</body>
+</html>

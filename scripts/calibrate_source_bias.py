@@ -345,6 +345,36 @@ def main() -> None:
         json.dump(result, f, ensure_ascii=False, indent=2)
     logger.info("Saved: %s", out)
 
+    # Provenance manifest (Codex 하네스 P1, 2026-04-30)
+    from visionai.price_engine._provenance import _provenance_dict, write_provenance_manifest
+    DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+    provenance_payload = _provenance_dict(
+        model_target="integrated_v3_filtered_tuned_source_calibration",
+        data_paths={
+            "artsy_dataset": DATA_DIR / "primary_market_dataset.parquet",
+            "saatchi_cleaned": DATA_DIR / "saatchi_cleaned.parquet",
+            "data_version_file": DATA_DIR / "VERSION",
+            "tuned_catboost": OUT_DIR / "integrated_v3_filtered_tuned_catboost.cbm",
+            "tuned_xgboost": OUT_DIR / "integrated_v3_filtered_tuned_xgboost.json",
+        },
+        artifact_paths={
+            "source_calibration": out,
+        },
+        extra={
+            "scope": "cell-based source × target_market calibration factors",
+            "cold_factors": result.get("cold_factors"),
+            "warm_factors": result.get("warm_factors"),
+            "n_total": result.get("n_total"),
+            "n_warm": result.get("n_warm"),
+        },
+    )
+    manifest_path = OUT_DIR / "integrated_v3_filtered_tuned_source_calibration.provenance.json"
+    write_provenance_manifest(manifest_path, payload=provenance_payload)
+    logger.info("Provenance manifest saved: %s (git_sha=%s, dirty=%s)",
+                manifest_path.name,
+                (provenance_payload["git_sha"] or "n/a")[:12],
+                provenance_payload["git_dirty"])
+
 
 if __name__ == "__main__":
     main()

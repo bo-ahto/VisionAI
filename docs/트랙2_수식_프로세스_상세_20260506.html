@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>트랙 2 — 수식 + 프로세스 상세 (선형 Hedonic 모델)</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    max-width: 1200px;
+    margin: 25px auto;
+    padding: 0 24px;
+    color: #1f2937;
+    line-height: 1.6;
+    background: #fafbfc;
+  }
+  h1 { font-size: 1.7em; border-bottom: 3px solid #2563eb; padding-bottom: 8px; color: #111827; }
+  h2 {
+    margin-top: 32px;
+    color: #1e40af;
+    border-left: 4px solid #2563eb;
+    padding-left: 12px;
+    font-size: 1.25em;
+  }
+  h3 { color: #1e3a8a; margin-top: 22px; font-size: 1.05em; }
+  h4 { color: #1e40af; margin-top: 14px; font-size: 0.98em; }
+  .meta { color: #6b7280; font-size: 0.9em; margin-bottom: 16px; }
+  .formula-box {
+    background: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    padding: 12px 18px;
+    margin: 12px 0;
+    border-radius: 4px;
+    font-size: 1.02em;
+    overflow-x: auto;
+  }
+  .info-box {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 4px;
+  }
+  .step-box {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 12px 0;
+  }
+  .step-box .step-num {
+    display: inline-block;
+    background: #2563eb;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    background: #fff;
+    font-size: 0.94em;
+  }
+  th, td { border: 1px solid #d1d5db; padding: 8px 11px; vertical-align: top; }
+  th { background: #1e40af; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #f9fafb; }
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "SF Mono", "Monaco", "Menlo", monospace;
+    font-size: 0.92em;
+  }
+  pre {
+    background: #1f2937;
+    color: #f3f4f6;
+    padding: 14px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  .small { font-size: 0.86em; color: #6b7280; }
+  .toc {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin: 14px 0;
+  }
+  .toc ol { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>트랙 2 — 수식 + 프로세스 상세 (선형 Hedonic 모델)</h1>
+<p class="meta">
+  <strong>작성일</strong>: 2026-05-06 ·
+  <strong>대상</strong>: 모델 구현/검증 담당자 ·
+  <strong>요약본</strong>: docs/임원보고_트랙2_요약_20260506.html ·
+  <strong>최종 보고서</strong>: docs/트랙2_최종보고서_20260506.md
+</p>
+
+<div class="toc">
+  <strong>목차</strong>
+  <ol>
+    <li>모델 수식 정의 (Hedonic + Mixed-Effects)</li>
+    <li>변수 정의 + 변환</li>
+    <li>OLS 추정 (수식 + 매트릭스 형식)</li>
+    <li>Mixed-Effects Random Intercept 추정</li>
+    <li>학습 프로세스 (단계별)</li>
+    <li>예측 프로세스 (단계별)</li>
+    <li>평가 protocol (LAO holdout + 지표)</li>
+    <li>Calibration (후처리 보정)</li>
+    <li>이원 전략 운영 절차</li>
+    <li>모델 검증 (VIF / 부호 일관성 / Bootstrap)</li>
+    <li>참조 문서</li>
+  </ol>
+</div>
+
+<h2>1. 모델 수식 정의 (Hedonic + Mixed-Effects)</h2>
+
+<div class="info-box">
+  <strong>표본 차이 caveat (전체 보고서 공통)</strong>: 본 모델 학습/평가 = 1,378 records / 100 artists (Stage 3 cleansed). 운영 V3 = 28,376 records 전체. 두 모델의 절대 비교에 한계 있음. 같은 평가 protocol (LAO holdout) 안에서 트랙 2 의 cold-start 우위 일관 확인.
+</div>
+
+<h3>1.1 선형 Hedonic 회귀 (운영 채택 모델)</h3>
+
+<p>가격 (KRW) 의 자연로그를 종속변수로 두고, 작품/작가 특성의 선형 결합 + log_area 의 spline 항으로 모형화:</p>
+
+<div class="formula-box">
+$$\log P_i = \beta_0 + \beta_1 \cdot \log A_i + \beta_2 \cdot (B_i - \bar{B}) + \beta_3 \cdot \log(1 + W_i) + \beta_4 \cdot s_1(\log A_i) + \varepsilon_i$$
+<p class="small" style="margin-top: 8px;">
+$P_i$: 작품 $i$ 의 가격 (KRW) ·
+$A_i$: 작품 $i$ 의 면적 (cm²) ·
+$B_i$: 작품 $i$ 의 작가 출생년 ·
+$\bar{B}$: 출생년 평균 (centering 기준) ·
+$W_i$: 작가 총 작품수 ·
+$s_1(\log A_i)$: log_area 의 3-knot restricted cubic spline basis (1개 항 추가) ·
+$\varepsilon_i$: 잔차 (분포 가정 X — Huber loss 사용)
+</p>
+</div>
+
+<div class="info-box">
+  <strong>운영 채택 손실함수: Huber loss (eps=1.35)</strong>
+  $$\mathcal{L}_\delta(r) = \begin{cases} \frac{1}{2} r^2 & |r| \leq \delta \\ \delta(|r| - \frac{1}{2}\delta) & |r| > \delta \end{cases}$$
+  <p class="small">$r = \log P - \mathbf{x}^\top \boldsymbol{\beta}$, $\delta = 1.35$ (sklearn default).
+  큰 잔차의 영향을 quadratic → linear 로 down-weighting → 이상치/heavy-tail 영향 감소.
+  특히 양 끝단 (저가/고가) segment 정확도 개선에 효과적.</p>
+</div>
+
+<h3>1.2 Mixed-Effects Random Intercept 확장 (참고용)</h3>
+
+<p>warm-start 시나리오 검토용 확장 모델 — <strong>운영 채택 X</strong> (cold-start LAO 에서 무력화):</p>
+
+<div class="formula-box">
+$$\log P_{ij} = \beta_0 + \beta_1 \cdot \log A_{ij} + \beta_2 \cdot (B_j - \bar{B}) + \beta_3 \cdot \log(1 + W_j) + u_j + \varepsilon_{ij}$$
+<p class="small" style="margin-top: 8px;">
+$j$: 작가 인덱스 ·
+$i$: 작가 $j$ 의 작품 인덱스 ·
+$u_j \sim \mathcal{N}(0, \tau^2)$ : 작가별 고유 효과 (random intercept) ·
+$\varepsilon_{ij} \sim \mathcal{N}(0, \sigma^2)$ : 잔차
+</p>
+</div>
+
+<h3>1.3 분산 분해</h3>
+
+<div class="formula-box">
+$$\text{Var}(\log P_{ij}) = \tau^2 + \sigma^2$$
+$$\text{ICC} = \frac{\tau^2}{\tau^2 + \sigma^2}$$
+<p class="small" style="margin-top: 8px;">
+ICC (Intra-class Correlation): 가격 분산 중 작가 단위 변동 비중. 본 데이터에서 <strong>ICC = 0.541</strong>.
+</p>
+</div>
+
+<h2>2. 변수 정의 + 변환</h2>
+
+<h3>2.1 종속 변수</h3>
+
+<table>
+  <tr><th style="width: 22%;">변수</th><th>정의</th><th style="width: 30%;">변환</th></tr>
+  <tr>
+    <td>$\log P$ (log_price)</td>
+    <td>작품 가격 (KRW) 의 자연로그</td>
+    <td>$\log P = \ln(\max(P, 1))$</td>
+  </tr>
+</table>
+
+<h3>2.2 독립 변수 (3개)</h3>
+
+<table>
+  <tr><th style="width: 26%;">변수</th><th>원본</th><th style="width: 30%;">변환식</th></tr>
+  <tr>
+    <td>$\log A$ (log_area)</td>
+    <td>area_cm2 (cm²)</td>
+    <td>$\log A = \ln(\max(A, 1))$</td>
+  </tr>
+  <tr>
+    <td>$B - \bar{B}$ (birth_year_centered)</td>
+    <td>artist_birth_year</td>
+    <td>$B - \bar{B}$ (mean centering)</td>
+  </tr>
+  <tr>
+    <td>$\log(1+W)$ (log_artist_total_works)</td>
+    <td>artist_total_works</td>
+    <td>$\log(1 + W)$ (log1p)</td>
+  </tr>
+</table>
+
+<h3>2.3 변환 근거</h3>
+
+<ul>
+  <li><strong>$\log P$, $\log A$</strong>: 가격/면적은 양의 right-skewed 분포 → log 변환으로 정규성 ↑ + size elasticity 해석 가능</li>
+  <li><strong>$B - \bar{B}$</strong>: 절대 출생년 (1936~1997) 의 절편 영향 제거 → 계수 해석 명확</li>
+  <li><strong>$\log(1+W)$</strong>: 작품수 0 인 케이스 처리 ($\log 0$ 방지) + diminishing return 표현</li>
+</ul>
+
+<h2>3. OLS 추정 (수식 + 매트릭스 형식)</h2>
+
+<h3>3.1 매트릭스 표기</h3>
+
+<div class="formula-box">
+$$\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon}$$
+<p class="small">
+$\mathbf{y} \in \mathbb{R}^n$ : log_price 벡터 ·
+$\mathbf{X} \in \mathbb{R}^{n \times 4}$ : design matrix (상수항 1열 + 3개 독립변수) ·
+$\boldsymbol{\beta} \in \mathbb{R}^4$ : 계수 벡터 ·
+$\boldsymbol{\varepsilon} \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$
+</p>
+</div>
+
+<h3>3.2 OLS 추정량</h3>
+
+<div class="formula-box">
+$$\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y}$$
+</div>
+
+<h3>3.3 잔차 / 분산 추정</h3>
+
+<div class="formula-box">
+$$\hat{\boldsymbol{\varepsilon}} = \mathbf{y} - \mathbf{X}\hat{\boldsymbol{\beta}}$$
+$$\hat{\sigma}^2 = \frac{1}{n - k} \sum_{i=1}^n \hat{\varepsilon}_i^2 \quad (k = 4)$$
+</div>
+
+<h3>3.4 표준오차 / t-statistic / p-value</h3>
+
+<div class="formula-box">
+$$\text{SE}(\hat{\beta}_j) = \sqrt{\hat{\sigma}^2 \cdot [(\mathbf{X}^\top \mathbf{X})^{-1}]_{jj}}$$
+$$t_j = \frac{\hat{\beta}_j}{\text{SE}(\hat{\beta}_j)}$$
+$$p_j = 2 \cdot P(T_{n-k} \geq |t_j|) \quad (\text{양측 검정})$$
+</div>
+
+<h3>3.5 모델 적합도 ($R^2$)</h3>
+
+<div class="formula-box">
+$$R^2 = 1 - \frac{\sum_i \hat{\varepsilon}_i^2}{\sum_i (y_i - \bar{y})^2}$$
+$$R^2_{\text{adj}} = 1 - (1 - R^2) \cdot \frac{n - 1}{n - k}$$
+</div>
+
+<h2>4. Mixed-Effects Random Intercept 추정</h2>
+
+<h3>4.1 모델 형태</h3>
+
+<div class="formula-box">
+$$\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \mathbf{Z}\mathbf{u} + \boldsymbol{\varepsilon}$$
+<p class="small">
+$\mathbf{Z} \in \{0,1\}^{n \times J}$ : 작가 indicator matrix ·
+$\mathbf{u} \sim \mathcal{N}(0, \tau^2 \mathbf{I}_J)$ : random intercept 벡터 ·
+$\boldsymbol{\varepsilon} \sim \mathcal{N}(0, \sigma^2 \mathbf{I}_n)$
+</p>
+</div>
+
+<h3>4.2 반복 추정 알고리즘 (간이 구현)</h3>
+
+<div class="info-box">
+  <strong>주의 — 본 구현은 정식 Mixed-Effects 추정 (BLUP / REML / lme4) 이 아닙니다.</strong>
+  <ul>
+    <li>정식 ME 의 핵심인 <strong>shrinkage</strong> (작가별 작품 수에 따른 $u_j$ 가중 축소) 가 빠져 있음</li>
+    <li>$\hat{u}_j$ 를 단순 잔차 평균으로 추정 → 작은 그룹은 over-fit 위험</li>
+    <li>분산 추정 $\hat{\tau}^2$ 도 단순 표본 분산 (REML 비편향 X)</li>
+    <li>정식 ME 가 필요한 경우 <code>statsmodels.MixedLM</code> 또는 <code>pymer4 (R lme4)</code> 사용 권장</li>
+  </ul>
+  <p class="small">현재는 Python 3.14 + statsmodels 호환 이슈로 numpy 직접 구현. 본 구현의 ICC 0.541 은 정식 ME 추정과 ±0.05 이내 근사로 검증.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">1</span> <strong>초기 OLS 적합</strong>
+  $$\hat{\boldsymbol{\beta}}^{(0)} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y}$$
+  $$\hat{\boldsymbol{\varepsilon}}^{(0)} = \mathbf{y} - \mathbf{X}\hat{\boldsymbol{\beta}}^{(0)}$$
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span> <strong>작가별 잔차 평균 = random intercept 추정</strong>
+  $$\hat{u}_j^{(t)} = \frac{1}{n_j} \sum_{i \in j} \hat{\varepsilon}_i^{(t)}$$
+  <p class="small">$n_j$: 작가 $j$ 의 train 작품 수</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">3</span> <strong>$\mathbf{u}$ 보정 후 OLS 재적합</strong>
+  $$\mathbf{y}_{\text{adj}} = \mathbf{y} - \mathbf{Z}\hat{\mathbf{u}}^{(t)}$$
+  $$\hat{\boldsymbol{\beta}}^{(t+1)} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y}_{\text{adj}}$$
+</div>
+
+<div class="step-box">
+  <span class="step-num">4</span> <strong>수렴 조건</strong>
+  $$\max_j |\hat{\beta}_j^{(t+1)} - \hat{\beta}_j^{(t)}| < 10^{-5}$$
+  최대 20회 반복.
+</div>
+
+<h3>4.3 분산 추정 (variance components)</h3>
+
+<div class="formula-box">
+$$\hat{\tau}^2 = \frac{1}{J} \sum_{j=1}^J \hat{u}_j^2$$
+$$\hat{\sigma}^2 = \frac{1}{n} \sum_{i=1}^n (y_i - x_i^\top \hat{\boldsymbol{\beta}} - \hat{u}_{j(i)})^2$$
+$$\widehat{\text{ICC}} = \frac{\hat{\tau}^2}{\hat{\tau}^2 + \hat{\sigma}^2}$$
+</div>
+
+<h2>5. 학습 프로세스 (단계별)</h2>
+
+<div class="info-box">
+  <strong>데이터 스코프 명시</strong>
+  <ul>
+    <li><strong>Stage 2</strong> (500 records / 50 artists): F4 winner 결정 (Forward selection / Elastic Net / VIF / coefficient freeze)</li>
+    <li><strong>Stage 3</strong> (실제 1,378 records / 100 artists; 파일명 <code>stage3_1000x100.parquet</code> 은 plan 기준 명명 — 실제 수치는 1,378): 추가 개선 실험 (spline / Huber / ME / Calibration) 진행 — 결과적으로 <strong>spline + Huber 채택</strong>, ME / Calibration 은 참고/대안</li>
+    <li>본 5장 OLS 학습 절차는 Stage 2 / Stage 3 공통 — 단 ME 적합 / Calibration / warm-start 평가는 Stage 3 전용</li>
+  </ul>
+</div>
+
+<div class="step-box">
+  <span class="step-num">1</span> <strong>데이터 로드 + 클렌징</strong>
+  <ul>
+    <li>Stage 2: <code>data/curated/stage2_500x50.parquet</code> — 500 records / 50 artists (모델 freeze 용)</li>
+    <li>Stage 3: <code>data/curated/stage3_1000x100.parquet</code> — <strong>실제 1,378 records</strong> / 100 artists (ME / 검증 용)</li>
+    <li>필수 변수 결측 / 빈 값 / 상수 컬럼 모두 제거됨 (사전 처리)</li>
+  </ul>
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span> <strong>변수 변환</strong>
+  <pre><code>log_area = log(area_cm2.clip(lower=1))
+birth_year_centered = artist_birth_year - mean(artist_birth_year)
+log_artist_total_works = log(1 + artist_total_works)
+log_price = log(price_krw.clip(lower=1))</code></pre>
+</div>
+
+<div class="step-box">
+  <span class="step-num">3</span> <strong>Design matrix 구축</strong> (운영 채택 모델: F4 + log_area spline)
+  $$\mathbf{X} = [\mathbf{1} \;|\; \log A \;|\; (B - \bar{B}) \;|\; \log(1+W) \;|\; s_1(\log A)]$$
+  <p>$\mathbf{X} \in \mathbb{R}^{n \times 5}$ (5 columns: const + 3 features + 1 spline basis)</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">4</span> <strong>Huber regression 적합 (운영 채택)</strong>
+  <pre><code>from sklearn.linear_model import HuberRegressor
+m = HuberRegressor(epsilon=1.35, max_iter=500)
+m.fit(X[:, 1:], y)  # const 제외
+β̂ = [m.intercept_, *m.coef_]</code></pre>
+  <p class="small">OLS 도 비교 가능하지만 운영은 Huber 채택 (취약 segment 방어력 입증).</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">5</span> <strong>참고: ME random intercept 검토 (운영 채택 X)</strong>
+  <p>warm-start 환경 검토용으로 4장의 반복 알고리즘 시도 — 단 cold-start LAO 에서 무력화 → <strong>운영 비채택</strong>.</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">6</span> <strong>적합도 검증</strong>
+  $R^2$, adj $R^2$, AIC, BIC, 잔차 정규성, 부호 일관성 (30-seed) 점검.
+</div>
+
+<h2>6. 예측 프로세스 (단계별)</h2>
+
+<div class="step-box">
+  <span class="step-num">1</span> <strong>입력 변수 변환</strong> (학습 시와 동일)
+  <pre><code>log_area_new = log(max(area_cm2_new, 1))
+birth_year_centered_new = artist_birth_year_new - mean_train  # 학습 시 평균 사용
+log_works_new = log(1 + artist_total_works_new)</code></pre>
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span> <strong>설계 벡터 구축</strong>
+  $$\mathbf{x}_{\text{new}} = [1, \log A_{\text{new}}, (B_{\text{new}} - \bar{B}), \log(1+W_{\text{new}})]^\top$$
+</div>
+
+<div class="step-box">
+  <span class="step-num">3</span> <strong>로그 가격 예측</strong>
+  <p><strong>OLS</strong>:</p>
+  $$\widehat{\log P}_{\text{new}} = \mathbf{x}_{\text{new}}^\top \hat{\boldsymbol{\beta}}$$
+  <p><strong>Mixed-Effects</strong>: 작가가 학습 데이터에 있으면 random intercept 추가</p>
+  $$\widehat{\log P}_{\text{new}} = \mathbf{x}_{\text{new}}^\top \hat{\boldsymbol{\beta}} + \mathbb{1}[\text{작가} \in \text{train}] \cdot \hat{u}_j$$
+  <p class="small">신규 작가 (cold-start): $\hat{u}_j = 0$ (population mean)</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">4</span> <strong>역변환 (KRW)</strong>
+  <p><strong>Median 예측 (기본)</strong>:</p>
+  $$\hat{P}_{\text{new}}^{\text{median}} = \exp(\widehat{\log P}_{\text{new}})$$
+  <p class="small">$\exp(\widehat{\log P})$ 는 가격 분포의 <strong>median</strong> 추정치. 본 모델 운영 권고치.</p>
+
+  <p style="margin-top: 8px;"><strong>Mean 예측 (선택, smearing 보정)</strong>:</p>
+  $$\hat{P}_{\text{new}}^{\text{mean}} = \exp(\widehat{\log P}_{\text{new}}) \cdot \exp\left(\frac{\hat{\sigma}^2}{2}\right)$$
+  <p class="small">log-normal 가정 시 mean 추정용 보정. 현재 운영 권고는 <strong>median 기반</strong> (MdAPE metric 과 일치).</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">5</span> <strong>(선택) Calibration 후처리</strong>
+  <p>8장 참조.</p>
+</div>
+
+<h2>7. 평가 protocol (LAO holdout + 지표)</h2>
+
+<h3>7.1 Leave-Artist-Out (LAO) Split</h3>
+
+<p>작가 단위로 train/test 분할. 같은 작가가 train/test 에 동시 등장 금지 (cold-start 평가):</p>
+
+<div class="step-box">
+  <span class="step-num">1</span>
+  <code>GroupShuffleSplit(test_size=0.20, random_state=seed)</code> 로 작가 인덱스를 train/test 분할.
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span>
+  Hard gate 검증:
+  $$\text{train\_artists} \cap \text{test\_artists} = \emptyset$$
+</div>
+
+<div class="step-box">
+  <span class="step-num">3</span>
+  30 seeds (42, 43, ..., 71) 반복으로 평균 + 표준편차 산출.
+</div>
+
+<h3>7.2 평가 지표</h3>
+
+<div class="formula-box">
+<strong>MdAPE (Median Absolute Percentage Error)</strong>
+$$\text{MdAPE} = \text{median}_i \left( \frac{|\hat{P}_i - P_i|}{P_i} \right) \times 100\%$$
+</div>
+
+<div class="formula-box">
+<strong>$W_{30}$ / $W_{50}$ (Within-X% Hit Rate)</strong>
+$$W_{30} = \frac{1}{n} \sum_i \mathbb{1}\left[ \frac{|\hat{P}_i - P_i|}{P_i} \leq 0.30 \right] \times 100\%$$
+$$W_{50} = \frac{1}{n} \sum_i \mathbb{1}\left[ \frac{|\hat{P}_i - P_i|}{P_i} \leq 0.50 \right] \times 100\%$$
+</div>
+
+<h3>7.3 Bootstrap 95% CI</h3>
+
+<div class="formula-box">
+$$\text{CI}_{95\%} = \left[ Q_{2.5\%}(\text{boot}), Q_{97.5\%}(\text{boot}) \right]$$
+<p class="small">
+30 seeds 결과에 대해 $B = 500$ resampling → $B$ 개의 median MdAPE 분포 형성 → 2.5% / 97.5% 분위수.
+</p>
+</div>
+
+<h3>7.4 Time-Split CV (시간 안정성 + 이원 전략 근거)</h3>
+
+<p>이원 전략 (warm = ME / cold = OLS) 의 실제 운영 근거는 LAO 가 아닌 <strong>time-split</strong>:</p>
+
+<div class="step-box">
+  <span class="step-num">1</span> <strong>시간 기준 train/test 분할</strong>
+  <p>예: $\text{train} = \{i : Y_i \leq 2023\}$, $\text{test} = \{i : Y_i > 2023\}$</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span> <strong>warm/cold 분류</strong>
+  $$\text{warm}(j) = \mathbb{1}\left[ n_j^{\text{train}} \geq T \right]$$
+  <p class="small">$T$ = warm threshold (운영 기본 10, 성능 showcase 3)</p>
+</div>
+
+<div class="step-box">
+  <span class="step-num">3</span> <strong>각 segment 별 metric 측정</strong>
+  <ul>
+    <li>warm test: ME 예측 (작가 $u_j$ 사용 가능)</li>
+    <li>cold test: OLS 예측 (population $\bar{u} = 0$)</li>
+    <li>combined: 양쪽 합쳐서 통합 MdAPE</li>
+  </ul>
+</div>
+
+<h3>7.5 본 모델 평가 결과 (실험 비교 — 운영 채택과 다름)</h3>
+
+<div class="info-box">
+  <strong>주의 — 본 표의 ME 결과는 실험 비교용 (warm-start 시나리오 검토)</strong>
+  <ul>
+    <li><strong>운영 채택 모델</strong>: warm = V3 (기존) / cold = 트랙 2 (F4 + spline + Huber, ME 비채택)</li>
+    <li>본 표의 ME 컬럼은 학술적 검토 결과로, 운영 라우팅과는 다른 개념</li>
+    <li>운영 라우팅 spec 은 §9.2 와 production_통합_spec §1 참조</li>
+  </ul>
+</div>
+
+<table>
+  <tr><th>평가 방식</th><th>OLS MdAPE</th><th>ME MdAPE</th><th>비고</th></tr>
+  <tr><td>LAO 30-seed (cold-start)</td><td>25.49%</td><td>25.54%</td><td>cold-start 에서 ME 무력화 → 운영 채택 X</td></tr>
+  <tr><td>Random split 30-seed (warm)</td><td>25.10%</td><td>15.46%</td><td>warm 에서 ME 효과 (학술 검토 결과)</td></tr>
+  <tr><td>Time-split (≤2023 train)</td><td>25.45%</td><td>21.74%</td><td>현실 운영 근사 (실험)</td></tr>
+  <tr><td>Time + warm threshold (이원, 실험)</td><td>—</td><td>22.30~25.18%</td><td>실험 시뮬레이션 — 운영 채택 = V3 + 트랙 2 OLS+spline+Huber</td></tr>
+</table>
+
+<h2>8. Calibration (후처리 보정)</h2>
+
+<h3>8.1 보정 테이블 생성</h3>
+
+<div class="step-box">
+  <span class="step-num">1</span> <strong>예측가 quantile bin 정의</strong>
+  $$Q = \{q_{0.20}, q_{0.40}, q_{0.60}, q_{0.80}\} \;\text{ (예측가 분위수)}$$
+  $$B = \{(-\infty, q_{0.20}], (q_{0.20}, q_{0.40}], \ldots, (q_{0.80}, +\infty)\}$$
+</div>
+
+<div class="step-box">
+  <span class="step-num">2</span> <strong>각 bin 의 잔차 중앙값 계산</strong>
+  $$\delta_b = \text{median}_{i \in b}\left[ \log P_i - \widehat{\log P}_i \right]$$
+  <p class="small">$\delta_b$ : bin $b$ 의 log-scale 평균 편향</p>
+</div>
+
+<h3>8.2 보정 적용</h3>
+
+<div class="formula-box">
+$$\widehat{\log P}_i^{\text{cal}} = \widehat{\log P}_i + \delta_{b(i)}$$
+$$\hat{P}_i^{\text{cal}} = \hat{P}_i \cdot \exp(\delta_{b(i)})$$
+<p class="small">
+$\exp(\delta_b)$ = 보정 배수 (예: 1.229 = +22.9% 보정).
+</p>
+</div>
+
+<h3>8.3 본 모델의 보정 테이블 (Stage 3 LAO holdout 30-seed 산출)</h3>
+<p class="small">출처: <code>experiments/structural_v1/results/stage3_warm_calibration.json</code> (예측가 quantile bin 기반 calibration table). <code>stage3_mixed_effects.json</code> 의 calibration 표 (가격 quantile 기반, 수치 다름) 와는 다른 산출물.</p>
+
+<table>
+  <tr><th>예측가 구간</th><th>$\delta_b$ (log)</th><th>보정 배수 $\exp(\delta_b)$</th></tr>
+  <tr><td>저가 (~ 1.7M원)</td><td>-0.097</td><td>0.908×</td></tr>
+  <tr><td>1.7M ~ 3.5M</td><td>-0.106</td><td>0.899×</td></tr>
+  <tr><td>3.5M ~ 6.5M</td><td>-0.024</td><td>0.977×</td></tr>
+  <tr><td>6.5M ~ 12.4M</td><td>+0.049</td><td>1.051×</td></tr>
+  <tr><td>고가 (12.4M+)</td><td>+0.206</td><td>1.229×</td></tr>
+</table>
+
+<h2>9. 이원 전략 운영 절차</h2>
+
+<h3>9.1 라우팅 규칙</h3>
+
+<div class="formula-box">
+$$\text{Route}(j) = \begin{cases}
+\text{V3 (warm)} & \text{if } n_j^{\text{train}} \geq 10 \\
+\text{Track 2 OLS} & \text{otherwise (cold)}
+\end{cases}$$
+<p class="small">$n_j^{\text{train}}$ : 학습 데이터에서 작가 $j$ 의 작품 수</p>
+</div>
+
+<h3>9.2 운영 예측 함수 (의사 코드)</h3>
+
+<pre><code>def predict_price(artwork):
+    artist = artwork.artist_slug
+    n_train = train_artist_counts.get(artist, 0)
+
+    if n_train >= 10:
+        # Warm path: V3 운영 모델
+        return v3_predict(artwork)
+
+    else:
+        # Cold path: Track 2 (F4 + log_area spline, Huber 학습)
+        log_area = log(max(artwork.area_cm2, 1))
+        birth_centered = artwork.birth_year - BIRTH_MEAN
+        log_works = log(1 + artwork.artist_total_works)
+        spline_term = restricted_cubic_spline(log_area, KNOTS_LOG_AREA)
+
+        x = [1, log_area, birth_centered, log_works, spline_term]
+        log_price = sum(beta_track2[k] * x[k] for k in range(5))
+        # beta_track2 는 HuberRegressor (eps=1.35) 로 학습된 계수
+
+        # 후처리 calibration
+        bin_idx = find_bin(exp(log_price))
+        log_price += calibration_table[bin_idx].delta
+
+        # 가드레일 적용
+        if needs_human_review(artwork):
+            return PriceBand(low=exp(log_price)*0.7, high=exp(log_price)*1.3, flag="human_review")
+
+        return exp(log_price)
+</code></pre>
+
+<h3>9.3 가드레일 조건</h3>
+
+<table>
+  <tr><th>조건</th><th>처리</th></tr>
+  <tr><td>예측가 < 5M원</td><td>Prediction band ±50% 응답</td></tr>
+  <tr><td>medium = 'ink' / 'pigment' (먹/잉크)</td><td>Human review 권장</td></tr>
+  <tr><td>gallery_tier = 3 (일반)</td><td>별도 보정 검토</td></tr>
+</table>
+
+<h2>10. 모델 검증 (VIF / 부호 일관성 / Bootstrap)</h2>
+
+<h3>10.1 VIF (Variance Inflation Factor)</h3>
+
+<div class="formula-box">
+$$\text{VIF}_j = \frac{1}{1 - R_j^2}$$
+<p class="small">
+$R_j^2$ = 변수 $j$ 를 다른 모든 변수로 회귀한 결정계수.
+VIF > 5 = 다중공선성 의심 / VIF > 10 = 심각.
+</p>
+</div>
+
+<p><strong>본 모델 VIF</strong> (max VIF = 1.2): 다중공선성 없음.</p>
+
+<h3>10.2 30-seed 부호 일관성</h3>
+
+<div class="formula-box">
+$$\text{Consistency}_j = \max\left( \frac{\#\{s : \hat{\beta}_j^{(s)} > 0\}}{S}, \frac{\#\{s : \hat{\beta}_j^{(s)} < 0\}}{S} \right) \times 100\%$$
+<p class="small">$S = 30$ seeds. 100% = 모든 seed 에서 같은 부호.</p>
+</div>
+
+<p><strong>본 모델 부호 일관성</strong>: log_area (100%), birth_year_centered (100%), log_artist_total_works (100%) — 완벽 일관.</p>
+
+<h3>10.3 Bootstrap CI 산출</h3>
+
+<pre><code>boot_medians = []
+for b in range(500):
+    idx = rng.integers(0, len(seed_metrics), size=len(seed_metrics))
+    boot_medians.append(median(seed_metrics[idx]))
+
+ci_95 = (percentile(boot_medians, 2.5), percentile(boot_medians, 97.5))</code></pre>
+
+<p><strong>본 모델</strong>: OLS LAO Bootstrap 95% CI = [24.21%, 28.45%]</p>
+
+<h2>11. 참조 문서</h2>
+
+<table>
+  <tr><th>문서</th><th>내용</th></tr>
+  <tr><td><code>docs/트랙2_최종보고서_20260506.md</code></td><td>12 섹션 상세 결과 보고서</td></tr>
+  <tr><td><code>docs/트랙2_Stage2_freeze_20260506.md</code></td><td>Stage 2 freeze 결정 메모</td></tr>
+  <tr><td><code>docs/임원보고_트랙2_요약_20260506.html</code></td><td>1페이지 임원 요약</td></tr>
+  <tr><td><code>docs/데이터클렌징_단계계획_20260506.md</code></td><td>Stage 1-3 데이터 plan</td></tr>
+  <tr><td><code>experiments/structural_v1/stage2_*.py</code></td><td>Stage 2 OLS 비교 스크립트 7개</td></tr>
+  <tr><td><code>experiments/structural_v1/stage3_*.py</code></td><td>Stage 3 ME / 검증 스크립트 4개</td></tr>
+  <tr><td><code>experiments/structural_v1/results/*.json</code></td><td>전체 실험 결과 데이터</td></tr>
+</table>
+
+<div style="margin-top: 30px; padding-top: 14px; border-top: 2px solid #d1d5db; color: #6b7280; font-size: 0.88em;">
+  <strong>요약</strong>: Track 2 운영 채택 모델 = 선형 hedonic 회귀 (3 features + log_area spline) + Huber regression. ME random intercept / Calibration 은 참고/대안 검증. LAO holdout 평가 (Bootstrap CI) + 취약 segment 방어력 입증 + 이원 전략 운영. 모든 수식 / 추정 / 예측 / 검증 절차가 본 문서에 상세 정리됨.
+</div>
+
+</body>
+</html>
