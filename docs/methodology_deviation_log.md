@@ -101,6 +101,38 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Axis B Phase A Round 2] LLM cycle (Data avail + Joinability + As-of-time) → Phase A HOLD (none, 정상 흐름)
+- **위치**: Axis B Phase A pre-screen project — Round 2 (사용자 결정 = C 동시 진행)
+- **사전등록 freeze (코덱스 P0)**: 4 freeze (대상 source 5개 / 평가축 3축 / threshold 70-80-time-safe / 판정 rule)
+- **LLM cycle 결과 (5/5 source)**:
+  * KOSIS (orgId=113 한국문화관광연구원 art market): aggregate-level 통계 (annual 거래액/평균가) → MODEL INPUT FAIL / CONTEXT SIGNAL PASS
+  * KAMS: 미술시장 실태조사 / 아트코리아랩 보고서 → aggregate-level → MODEL INPUT FAIL / CONTEXT SIGNAL PASS
+  * MMCA: 작품-level catalog (작가명/작품명/제작연도/소장품) but 가격 X (museum collection 특성) → partial metadata PASS / MODEL INPUT FAIL (가격 X)
+  * MCST: URL 404, 추가 확인 필요 → HOLD
+  * Arko: HTTP 500 server 에러, 재평가 필요 → HOLD
+- **Phase A 종합 판정**: **HOLD** (joinable source 0 개 — 작품-level + 가격 보유 source = 0)
+- **코덱스 base hypothesis 정확 입증**: "정부/공공 5개 = aggregate/statistical source 가능성 높음, joinability FAIL 다수" — 본 결과로 입증
+- **다음 단계 (사용자 결정 영역)**:
+  * A. License-first lane (갤러리 직접 / paid vendor) — 운영팀/법무팀 영역
+  * B. Aggregate context signal 활용 (Round 2B LLM cycle)
+  * C. Program-level redesign
+  * D. Default 유지
+  * E. Round 2B 추가 평가 (MCST + Arko 재확인 / KIAF / 한국화랑협회 side-queue)
+- **운영팀/법무팀 cycle 동시 진행**: handoff packet (`docs/axis_b_handoff_packet_20260507.md`) 인계 가능 — 법무/TOS 검토 + 운영 inquiry 즉시 병렬 시작 가능
+- **분류**: **none (정상 흐름)** — Round 2 freeze rule 그대로 적용
+- **운영 영향 X**: Phase A HOLD → 운영 spec §1-§16 변경 X / 분기 B calibration only 그대로
+- **승인**: 사용자 검토 + 코덱스 사후 검수 (예정)
+
+### 2026-05-07 — [Axis B Phase A Round 2 freeze + handoff packet] Scorecard + 운영팀/법무팀 인계 packet 작성 (none, 정상 흐름)
+- **코덱스 사전 자문 (2026-05-07)**: 조건부 GO — Round 2 시작 전 4 freeze 필수 (HARK 회피)
+- **freeze 4항목**:
+  1. 대상 source 5 (KOSIS/MCST/KAMS/MMCA/Arko) — KIAF/한국화랑협회 = side-queue 분리 / Frieze REJECT 유지 / 새 source = Round 2B 분리
+  2. 평가축 3 (Data availability / Labelability·Joinability / As-of-time reproducibility)
+  3. Threshold (cover ≥ 70% / join ≥ 80% / time-safe yes-no)
+  4. 판정 rule (3축 중 1 fail = source FAIL / aggregate-only = 이원화 / 2 이상 PASS + 1 이상 joinable = 조건부 PASS)
+- **Handoff packet** (`docs/axis_b_handoff_packet_20260507.md`): 코덱스 권고 7-document 통합 — Exec summary + Round 1 + scorecard freeze + 법무/TOS 의뢰서 (7항목) + 운영 inquiry sheet (8항목) + license fallback memo + cover memo
+- **분류**: **none (정상 흐름)** — Round 2 사전 design + handoff packet 작성
+
 ### 2026-05-07 — [Axis B Phase A pre-screen Round 1] Source discovery + Access 1차 실측 (none, 정상 흐름)
 - **위치**: 새 Phase 2'' Axis B (External Acquisition) Phase A pre-screen project — Round 1
 - **본 round 의 범위**: LLM 가능 영역만 (Access / Anti-bot / robots.txt) — Legal / TOS / License = 운영팀/법무팀 영역
