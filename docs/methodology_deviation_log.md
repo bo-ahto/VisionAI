@@ -101,6 +101,43 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Feature Track A.5 결과 + Axis A 5 step 종결] Image embedding FAIL near-null (none, 정상 흐름)
+- **사전등록 §3 적용 결과** (100-seed LAO):
+  * Overall: baseline 38.03% → A.5 38.25% (Δ +0.22%p, 사실상 동등 또는 미세 악화)
+  * Low: Δ -0.06%p ✓ Hard gate (very close to 0)
+  * Mid-high: Δ +0.43%p / Newly-warm: Δ +0.14%p
+  * Cluster bootstrap (rep seed=0): mean -1.01%p, 95% CI [-4.35, +2.29], 99% CI [-5.39, +3.22]
+  * Seed-level low violation: 54/100 = 54.0%
+- **판정**: FAIL (Δ > -0.3%p, 개선 미달, 마지막 step) — Hard gate 통과 ✓ but practical Δ + CI 모두 미달
+- **분류**: **none (정상 흐름)** — Step gate B안 마지막 step
+- **Axis A 5 step 종결 확정**:
+  * A.1 BORDERLINE (cross-artist artwork 분류+갤러리, 약한 신호)
+  * A.2 FAIL (artist-binding popularity, near-null)
+  * A.3 BORDERLINE strongest (pure artwork geometry, 3 cols low-dim)
+  * A.4 FAIL worst (artwork text PCA K=10)
+  * A.5 FAIL near-null (artwork image PCA K=10) — **마지막**
+- **종합 결론 (코덱스 framing 톤, working hypothesis 보수적)**: A.3 만 유일 promising signal — geometry-specific 또는 low-dim 효과 가능성. "artwork-level cross-artist signal 일반이 cold-start LAO 유효" 단순 일반화 미지지. Plausible mechanism (단정 X) = cold-start LAO 에서 dim 증가 자체가 risk.
+- **코덱스 권고 검증 (A.4 검수)**: A.5 HOLD / Axis A 종료 권고 = 본 A.5 결과로 정확히 입증 (FAIL near-null, image embedding 도 A.4 와 비슷 패턴)
+- **운영 영향 X**: A.1-A.5 모두 운영 spec §1-§16 변경 X / 분기 B calibration only 유지 / A.3 단독 shadow = 별도 의사결정 gate (조건부 HOLD)
+- **사용자 의사결정 영역**: 옵션 A (A.3 단독 shadow) / B (Axis B external acquisition + Phase A pre-screen) / C (program-level 재설계) / D (default — calibration only 유지)
+- **승인**: 사용자 검토 + 코덱스 사후 검수 (예정)
+
+### 2026-05-07 — [Feature Track A.5 prereg freeze] Image embedding (CLIP-ViT-B-32, PCA K=10), 사용자 명시 instruction
+- **A.5 진입 의사결정 근거**: 사용자 명시 instruction (코덱스 권고 = HOLD / Axis A 종료) 와 분리. Procedural Axis A 종결 step 으로 진행 (hypothesis 끝까지 시험)
+- **A.5 features**: clip-ViT-B-32 (512-dim) + PCA top-K=10
+- **시점 정합성 명확 OK**: image_url = 작품 본질 attribute
+- **Heaviest escalation**: image fetch (urllib + ThreadPoolExecutor max_workers=20) + cache to data/curated/images_cache/ + CLIP encode batch 64
+- **Failed images**: 13 null URLs + fetch failures → zero 512-dim embedding (사전 spec)
+- **A.1-A.4 v2 lessons 사전 반영**: cluster bootstrap 진짜 구현 / α=0.01 99% CI / per-step freeze 6항목 / framing 톤 / procedural vs management recommendation 분리
+- **분류**: **none (정상 흐름)** — 사용자 명시 instruction
+- **승인**: 사용자 (2026-05-07)
+
+### 2026-05-07 — [Feature Track A.4 결과 v2] 코덱스 검수 P1×3 + P2×2 framing 톤 다운 (minor)
+- **코덱스 검수 1차 (2026-05-07)**: P0 없음. **A.5 의사결정 권고 = HOLD (Axis A 종료 권고)** — 사용자 명시 instruction 으로 A.5 진행
+- **P1 fix**: working hypothesis 단순 일반화 반박 톤 다운 / procedural step vs management recommendation 분리 / "frozen A.4 spec fails" 톤
+- **P2 fix**: negative information / dim 증가 risk 단정 → plausible mechanism 톤 / single-seed sign 충돌 = single split 불안정성
+- **분류**: **minor (framing 톤 다운, 결과 변경 X)**
+
 ### 2026-05-07 — [Feature Track A.4 결과] Title text embedding FAIL → A.5 escalation 의사결정 영역 (none, 정상 흐름)
 - **사전등록 §3 적용 결과** (100-seed LAO):
   * Overall: baseline 38.03% → A.4 38.69% (Δ +0.66%p, 악화)
