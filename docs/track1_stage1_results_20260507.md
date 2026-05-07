@@ -8,7 +8,7 @@
 
 ## 0. 한 줄 요약
 
-> **Stage 1 integrity audit 핵심 finding**: 32 features 중 **8-10 features 가 학습-서빙 drift 위험** (학습 시 actual value, 서빙 시 hardcoded constant). 본 위험은 model 의 GroupKFold MdAPE 39.4% 가 actual production performance 를 반영하지 못할 가능성 시사 — **Stage 1B (importance + stability) 진입 전 학습-서빙 정합성 fix 우선** 권고.
+> **Stage 1 integrity audit 핵심 finding**: 32 features 중 **9 features 학습-서빙 drift 위험 (28%)** — serving code inspection 기준 hardcoded constant / placeholder. 본 위험은 reported offline cold-start metric (39.4% raw CatBoost / 38.3% calibrated production-cold reference) 가 **actual serving behavior 를 충실히 대변하지 않을 위험** 시사 (코덱스 P1 — 단정 X, 위험 표현). **Stage 1B 진입 전 학습-서빙 정합성 fix 우선** 권고.
 >
 > **이미 fix 이력 (코덱스 4차 / 14차 P1)**: work_age / career_age / vintage_premium / freshness_discount / gallery_name 등 5+ features 이미 drift 위험으로 제거됨 — 본 audit 의 잔존 위험 = 후속 fix 영역.
 
@@ -32,8 +32,8 @@
 
 | Feature | 학습 (추정) | 서빙 hardcode | Drift 평가 |
 |---|---|---|---|
-| `ho_price_level` | ho-bucket median price 추정 (group statistic) | `0.0` (placeholder) | **severe** — group-level 가격 신호 학습-서빙 단절 |
-| `medium_price_level` | medium-bucket median price | `0.0` (placeholder) | **severe** — 동일 |
+| `ho_price_level` | (직접 대조 X — 학습 시 group statistic 추정) | `0.0` (placeholder) | **severe serving-side placeholder, likely train/serve drift** (코덱스 P1 보수 표현) |
+| `medium_price_level` | (직접 대조 X — 학습 시 group statistic 추정) | `0.0` (placeholder) | **severe serving-side placeholder, likely train/serve drift** |
 
 ### 1.3 카테고리 C: 이미 제거된 drift features (코덱스 fix 이력)
 
@@ -46,7 +46,7 @@
 | `gallery_name` | drift / privacy / cardinality | 14차 P1 |
 | `RATIO_CORRECTION` (target_market='online' -0.075) | source-specific median-ratio calibration 으로 흡수 | Codex P1 (line 18-21) |
 
-### 1.4 카테고리 D: 잔존 healthy features (drift 위험 낮음)
+### 1.4 카테고리 D: no serving-side red flag found (코덱스 P1 — "healthy" 단정 회피)
 
 | Feature | 평가 |
 |---|---|
@@ -61,11 +61,12 @@
 
 ## 2. 핵심 시사점 (코덱스 framing 톤 — exploratory diagnostic)
 
-### 2.1 본 finding 의 의미
-- **카테고리 A + B 합 = 9 features (32 features 의 28%)** — 학습-서빙 drift severe
-- 이는 model 의 reported MdAPE 39.4% 가 **actual production performance 와 다를 가능성** 시사
+### 2.1 본 finding 의 의미 (코덱스 P1 보수 표현)
+- **카테고리 A + B 합 = 9 features (32 features 의 28%)** — serving code inspection 기준 hardcoded constant / placeholder
+- 이는 reported offline cold-start metric (39.4% raw CatBoost / 38.3% calibrated production-cold reference, `docs/model_technical_report_v2.md:53`) 이 **actual serving behavior 를 충실히 대변하지 않을 위험** 시사
   - 학습 시 informative features 가 서빙 시 무력 → production MdAPE 더 높을 가능성
   - 또는 학습 시 noise 학습 → production 시 reduced noise 로 더 좋을 가능성 (덜 likely)
+  - 실제 방향성은 별도 audit (학습 데이터 distribution 비교 / serving log 검증) 필요
 - 이미 Codex fix 이력 5+ → drift 인지된 issue / 본 audit 의 잔존 9 features = **다음 fix 후보**
 
 ### 2.2 Stage 1B 진입 전 권고 (코덱스)
@@ -92,6 +93,16 @@
   - Drift fix = 별도 prereg + 별도 cycle (트랙 1 운영 영향 큼 — 신중한 변경)
   - Stage 1B 는 본 cycle 의 다음 stage 로 진행 (drift caveat 인지)
 
+### 2.4 코덱스 사후 검수 권고 (Option A 우선 / B/C 동등 대안 X)
+
+> **코덱스 P0 권고**: Option B (평행 진행) 와 Option C (분리 cycle) 는 가능하나 **동등 대안 아님**. 권고 = **Option A (drift fix 우선 + baseline 재산출)**.
+
+**권고 추가 audit (Option A 진행 시)**:
+1. Training dataset reconstruction → 9 features 실제 분포 확인
+2. Train-side feature generation code ↔ serve-side contract 1:1 매핑 검증
+3. 최근 serving log 샘플에서 9 features 실제 입력값 분포
+4. OOF 에서 "9 features 제거 전 / 후" 재산출 → metric 민감도 측정
+
 ## 3. 운영 영향 (코덱스 P0 — decision-binding 분리)
 
 - 본 stage 1 결과 = **exploratory diagnostic only** — 운영 spec 변경 단독 trigger X
@@ -111,7 +122,7 @@
 |---|---|
 | 누적 | P0×16 + P1×72 + P2×38 |
 | Track 1 사전 자문 (2026-05-07) | 조건부 GO + Phase 0 freeze 우선 + P0×4 (baseline ambiguity / evaluation redesign / cold-warm gate / **feature integrity recheck**) |
-| **Stage 1 결과 검수 (예정)** | drift finding 정당성 + Option A/B/C 권고 + 잔존 위험 평가 |
+| **Stage 1 결과 검수 (2026-05-07)** | **Option A (drift fix 우선) 권고**. P0 1건 (수치 표기 단일화: 9 features) + P1 다수 (primary threshold 단일 숫자 / "healthy" → "no serving-side red flag found" / drift severity 보수 표현 / 카테고리 B 학습 시 group statistic = 추정만 / 32f = "operational anchor baseline") + P2 (RATIO_CORRECTION 분리 / locked holdout hash 명시) — 본 v2 commit 일괄 반영 |
 
 ## 6. 참조
 

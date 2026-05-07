@@ -11,7 +11,7 @@
 
 ### 1.1 Baseline variant 1개 고정 (P0 #1 ambiguity 해소)
 
-> **사용자 inventory 의 ambiguity (코덱스 P0)**: `37 features (historical integrated_v3)` vs `32 features (v3_filtered_tuned, 현재 서빙)` — **`v3_filtered_tuned` 로 고정** (현재 서빙 baseline / 운영 영향 직접 evaluable).
+> **사용자 inventory 의 ambiguity (코덱스 P0)**: `37 features (historical integrated_v3)` vs `32 features (v3_filtered_tuned, 현재 서빙)` — **`v3_filtered_tuned` 32f 로 고정** = **operational anchor baseline** (코덱스 P1 표현 정정 — "clean baseline" 단정 X / 현재 서빙 contract 와 직접 대응하는 유일한 기준선). historical 37f 는 이미 prior cycle 에서 제거된 drift feature 5+ 포함하는 재구성 계열 (`docs/model_technical_report_v2.md:48, 65-71`) — exact serving comparator X.
 
 | 항목 | 값 |
 |---|---|
@@ -44,7 +44,7 @@
 
 | 영역 | Metric | 임계 |
 |---|---|---|
-| **Primary** | Cold-start GroupKFold Overall MdAPE Δ | ≤ -0.7%p ~ -1.0%p (improvement) |
+| **Primary** | Cold-start GroupKFold Overall MdAPE Δ | **≤ -0.7%p** (improvement, 코덱스 P1 — confirmatory 진입 전 단일 숫자 고정) |
 | **🔴 Hard gate 1** | Cold low-price MdAPE Δ_low | ≤ 0%p (저가 segment 악화 금지) |
 | **🔴 Hard gate 2** | Source slice 비대칭 | Artsy / Saatchi cold 한쪽만 좋아지고 다른 쪽 크게 악화 시 FAIL |
 | **🔴 Hard gate 3** | Warm path KFold non-regression | Warm slice MdAPE 악화 금지 |
@@ -77,7 +77,7 @@
 - **Ratio**: artist 20% — 약 310 artists / 추정 5,675 rows
 - **Stratify**: artist depth × source × price segment (3축, 트랙 2 패턴)
 - **Random seed**: **42** (사전 freeze)
-- **Hash**: SHA-16 (Phase 0 봉인 시 계산)
+- **Hash**: SHA-16 (**계산 예정** — Stage 1B 진입 또는 Option A drift fix 후 baseline 재산출 시점에 봉인 + hash 기록 / 본 Phase 0 freeze 시점에는 spec 만 freeze, 실제 holdout 봉인 X)
 - **Output**: `data/curated/track1_locked_holdout_v1.parquet` + hash file
 - **Access 제한**: Phase 4 final 1회만
 
