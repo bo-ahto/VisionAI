@@ -248,3 +248,27 @@ results/
 ### Final
 - Final report (`docs/structural_pricing/final_report.md`) 작성
 - Self-evaluation (`README.md` §7 기준)
+
+## 부록 — `_v5_eval_framework.py` salvage (2026-05-08)
+
+본 트랙의 evaluation framework 는 V5 pilot cycle (Day 1-4 PILOT FAIL 3/5 종결) 의 reference 코드 (`src/visionai/price_engine/_v5_eval_framework.py`) 를 부분적으로 활용.
+
+**재사용 권고 (코덱스 자문, 잔존 작업 3번)**:
+
+| Helper | 재사용 가능성 | 근거 |
+|---|---|---|
+| `lao_split` (artist-level GroupShuffleSplit, hard gate overlap=0) | ✅ 사용 가능 | Track 1 Stage 4 confirmatory holdout / Track 2 후속 cycle |
+| `fit_pca_train_only` (modality leakage prevention) | ✅ 사용 가능 | train-only fit 정책 공용 utility |
+| `compute_segment_grid` (48-cell exposure × source × price × career) | ⚠️ 보조 가능 | reporting / diagnostic overlay |
+| `bootstrap_delta_ci` | ❌ 비권고 (현재 형태) | V5 threshold semantics / artist-cluster bootstrap 미반영 |
+| `evaluate_*_gate` (V5 specific) | ❌ 비권고 | V5 pilot threshold 에 묶임 / Track 1-2 governance 미호환 |
+
+**위치 정합성**:
+- 모듈 docstring 에 archive salvage / 비범용 범위 명시
+- `_v5_` prefix 유지 (rename 보류, V5 cycle history reference 보존)
+- Track 1 / Track 2 의 cluster bootstrap rule = single source of truth 별도 (canonical infra 분리)
+
+**후속 decision items** (사용자 결정 영역):
+- cluster bootstrap shared helper 분리 여부
+- V5 specific gate evaluator 분리 여부
+- 진짜 범용 rename (예: `_eval_framework.py`) 여부
