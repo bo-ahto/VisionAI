@@ -118,8 +118,7 @@
 
 1. ✅ Phase 0 freeze — 본 commit
 2. ⏳ **Stage 1 진입** — feature integrity recheck + permutation importance + stability selection
-   - Code: `experiments/structural_v1/track1_stage1_feature_audit.py`
-   - Output: `experiments/structural_v1/results/track1_stage1.json`
+   - 진행 방식 (cycle 종결 후 사후 정정, 2026-05-08 P0 hygiene): 본 cycle 의 Stage 1 은 **운영 코드 inspection 기반** 으로 진행됨 (`src/visionai/price_engine/api/primary_feature_builder.py:228-272` + `scripts/prepare_primary_market_dataset.py:262` + `scripts/prepare_saatchi_dataset.py:283` 의 학습 actual 분포 vs 서빙 hardcode 비교). 별도 audit script 미작성.
    - Result doc: `docs/track1_stage1_results_20260507.md`
 3. ⏳ 코덱스 사후 검수 (Stage 1 결과)
 4. (조건부) Stage 2 / 3 / 4 진입
