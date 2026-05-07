@@ -9,9 +9,11 @@
 
 ## 1. 한 줄 요약 (의사결정자용)
 
-> **Auction archives 1순위 가설 폐기**. 모든 auction source = **시장 확립 작가 (Lee Ufan / 김창열 등) 한정 cover**. Stage 4 의 신진/중견 작가 (depth ≥25 12명) → **cover ~0%**. Coverage 임계 (≥50%) 미달 → **모든 auction REJECT**.
+> **본질**: Stage 4 모집단 = Artsy primary market (신진/중견 작가 1차 판매) ↔ Auction archives = **secondary market (재판매, 시장 확립 작가)**. **Source-task fit 실패** (source quality 실패 X — 코덱스).
 >
-> **2순위 (Artsy CV) 만 제한적 PASS-ready** — 이미 url 가용, robots/legal 부담 적음. 단, **가격 anchor 직접성 X** (Stage 4 의 핵심 가설 = 가격 결정 요인) → **provisional BORDERLINE**.
+> **Sample (depth ≥25 작가 6명)**: 모든 auction (Seoul / K / Sotheby's / Christie's) cover **0/6** (Lee Ufan 비교군은 모두 cover ✓, 패턴 명확). → **Auction-first 경로 사실상 REJECT**.
+>
+> **Artsy CV** (이미 url 가용 1,925) 만 **BORDERLINE** — coverage / cost / legal 모두 ✓ 이지만 **핵심 약점 = price directness ✗** (Stage 4 의 핵심 가설 = 가격 결정 요인 직접 해결 X). → 사전등록 §6.2 보류 적용 (Week 2-3 추가 검토).
 
 ## 2. 핵심 발견 3
 
@@ -27,7 +29,7 @@
 | **K-Auction** | ✗ (Stage 4 신진 0/1 hit / 김창열·이배 등 cover) | ✓ 직접 | △ (KA-Search URL 확인 `/Home/Search?key=`) | △ ALLOW-LIKELY (robots 제한 X) | △ 동일 | **REJECT** (coverage ✗) |
 | **Christie's** | (측정 X — anti-bot) | ✓ 직접 | ✗ 매우 높음 (Cloudflare anti-bot, Google site search 차단) | ✗ LEGAL-REVIEW (TOS 미확인 + 접근 차단) | △ 글로벌 cover (단, Stage 4 cohort 거의 없음 추정) | **REJECT** (integration + legal ✗) |
 | **Sotheby's** | ✗ (Lee Ufan ✓ 10+ lots / Stage 4 신진 0) | ✓ 직접 | △ (crawl-delay 15s 큼) | △ ALLOW-LIKELY (robots: PDF/api만 차단) | △ 동일 | **REJECT** (coverage ✗) |
-| **Artsy CV** (이미 url 가용 1,925) | ✓ 100% cover (Artsy 모집단 = Stage 4 모집단 동일) | ✗ 정성 (CV / shows count, 가격 X) | ✓ 매우 낮음 (이미 url 보유) | ✓ ALLOW-LIKELY (robots: 검색 query 일부 차단, artist 페이지 허용) | △ Provenance / exhibition signal (가격 직접성 X) | **PASS-ready (BORDERLINE)** |
+| **Artsy CV** (이미 url 가용 1,925) | ✓ 100% cover (Artsy 모집단 = Stage 4 모집단 동일) | ✗ 정성 (CV / shows count, 가격 X) | ✓ 매우 낮음 (이미 url 보유) | ✓ ALLOW-LIKELY (robots: 검색 query 일부 차단, artist 페이지 허용) | △ Provenance / exhibition signal (가격 직접성 X) | **BORDERLINE** |
 
 ### 3.1 평가 라벨 정의 (코덱스 권고)
 - **PASS-ready**: 5축 모두 실질적으로 양호, 법적 red flag 없음
@@ -41,8 +43,12 @@
 |---|---|---|
 | do-you-hwang (황도유) | **0 hits** (Stage 4 train 218건) | site:seoulauction.com 검색 |
 | bae-joon-sung (배준성) | **0 hits** (Stage 4 train 86건) | 동일 |
-| kwon-hye-jo (권혜조) | (생략 — 패턴 확정) | — |
-| Lee Ufan (이우환, 비교군) | **다수 hits** (private sale / contemporary art lot) | https://www.seoulauction.com/auction/live/1037/62 |
+| kwon-hye-jo (권혜조) | **0 hits** (패턴 확정) | 동일 |
+| changmin-lim (임창민) | **0 hits** | OR 검색 |
+| lee-in-seob (이인섭) | **0 hits** | OR 검색 |
+| yoo-suntai (유선태) | **0 hits** | OR 검색 |
+| **Lee Ufan (이우환, 비교군)** | **다수 hits** (private sale / contemporary art lot) | https://www.seoulauction.com/auction/live/1037/62 |
+| → Stage 4 sample 6/6 모두 0 hits → cover **0%** (95% CI [0%, 39%], n=6) |
 
 ### 4.2 K-Auction 검색 결과
 | 작가 | 결과 | 출처 |
@@ -77,7 +83,7 @@
 | K-Auction | **REJECT** | Coverage ✗ (동일) |
 | Christie's | **REJECT** | Integration cost ✗ + Legal LEGAL-REVIEW (anti-bot) |
 | Sotheby's | **REJECT** | Coverage ✗ (글로벌 cover 가능하나 Stage 4 cohort 거의 없음) |
-| **Artsy CV** | **PASS-ready (BORDERLINE)** | Coverage ✓ (모집단 동일) / directness ✗ / cost ✓ / legal ✓ / signal △ |
+| **Artsy CV** | **BORDERLINE** | Coverage ✓ (모집단 동일) / directness ✗ / cost ✓ / legal ✓ / signal △ |
 
 ## 6. 사전등록 §6 의사결정 적용
 
@@ -119,8 +125,9 @@
 
 ### 8.1 사전등록 vs 실측 차이 (deviation)
 - **사전등록 §4.1 1순위**: K-Auction / Seoul Auction (한국 전문 + 한국 작가 cover 자연 높음 가정)
-- **실측**: 한국 auction 도 시장 확립 작가만 cover, Stage 4 신진/중견 cohort cover ~0%
-- **분류**: minor (사전등록 § 6.2 보류 적용 — 정상 흐름)
+- **실측**: 한국 auction 도 시장 확립 작가만 cover, Stage 4 cohort cover **0/6** (≈ 0%)
+- **분류 (5A 절차)**: **minor** — 사전등록 § 6.2 보류 적용 (정상 흐름)
+- **분류 (5C 영향, 별도)**: **실질적 제약** — F1 (auction price anchor) family 실현 불가 → 5C primary Δ ≤ -2.0%p PASS 확률 낮음 (코덱스)
 - **deviation log entry**: `docs/methodology_deviation_log.md` 2026-05-07 추가
 
 ### 8.2 다음 단계 권고

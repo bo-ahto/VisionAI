@@ -195,3 +195,13 @@
 | External feature 통합 후에도 PASS 미달 | BORDERLINE / FAIL 판정 → Stage 6 또는 운영 calibration 만 채택 |
 | Re-freeze 시 가설 변경 시도 (HARK) | Deviation log 의무 + 새 cycle 분리 |
 | Composition-shift 본질적 미해결 | 운영 정책 강화 (신규 warm 자동 fallback, 이미 spec §17.7 적용) |
+
+## 10. 현 prereg 기준 PASS 기대 (5A Week 1 결과 후 추가, 코덱스 권고)
+
+> **2026-05-07 Stage 5A Week 1 결과 후 명시**: Auction archives 4 source 모두 REJECT (Stage 4 cohort cover 0/6) → **F1 (auction price anchor) family 실현 가능성 ✗**.
+>
+> ⚠️ **현 prereg 기준 PASS 기대 낮음**: F1 부재 시 F2 (market activity) + F3 (provenance) 만 가능. Primary Δ ≤ -2.0%p 임계 도달 어려울 수 있음.
+>
+> **임계 완화 X** (사전등록 변경 = major deviation, HARK violation). 대신:
+> - Week 3 의사결정에서 BORDERLINE / FAIL 판정 시 Stage 5 종결 + calibration only 분기 (`docs/stage5a_week3_decision_memo_20260507.md` 분기 B)
+> - 또는 Stage 6 새 prereg (segmented architecture / Bayesian / new model family)
