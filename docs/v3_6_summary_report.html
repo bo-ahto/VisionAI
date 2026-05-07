@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v3.6 V_year_saatchi_warm Implementation 보고서</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --orange: #d29922; --red: #f85149; --purple: #bc8cff;
+    --tldr-bg: #1f2a3a; --tldr-border: #58a6ff;
+    --warn-bg: rgba(210,153,34,0.08);
+    --next-bg: rgba(63,185,80,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text);
+         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                      'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', sans-serif;
+         line-height: 1.75; padding: 40px 20px;
+         word-break: keep-all; overflow-wrap: break-word; }
+  .container { max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+  h2 { font-size: 22px; margin-top: 48px; margin-bottom: 16px;
+       color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: var(--purple); }
+  h4 { font-size: 15px; margin-top: 24px; margin-bottom: 8px; color: var(--green); }
+  p { margin-bottom: 12px; }
+  blockquote { border-left: 3px solid var(--accent); padding: 8px 16px;
+               margin: 16px 0; background: var(--card); border-radius: 4px;
+               color: var(--muted); font-size: 14px; }
+  .tldr { border-left: 4px solid var(--tldr-border); background: var(--tldr-bg);
+          padding: 14px 18px; margin: 18px 0; border-radius: 6px; }
+  .tldr strong { color: var(--accent); }
+  .scope-warn { background: var(--warn-bg); border-left: 4px solid var(--orange);
+                padding: 14px 18px; margin: 16px 0; border-radius: 6px; font-size: 14px; }
+  .scope-warn strong.title { color: var(--orange); }
+  .next-step { background: var(--next-bg); border-left: 4px solid var(--green);
+               padding: 14px 18px; margin: 16px 0; border-radius: 6px; font-size: 14px; }
+  .next-step strong.title { color: var(--green); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;
+          word-break: keep-all; overflow-wrap: break-word; }
+  th { background: var(--card); padding: 10px 12px; text-align: left;
+       border-bottom: 2px solid var(--border); color: var(--muted);
+       font-weight: 600; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: rgba(88,166,255,0.05); }
+  td.num, th.num { text-align: right; white-space: nowrap;
+                   font-variant-numeric: tabular-nums; }
+  .wide-table-wrap { overflow-x: auto; margin: 16px 0; }
+  .wide-table-wrap table { margin: 0; }
+  code { background: var(--card); padding: 2px 6px; border-radius: 3px;
+         font-size: 13px; font-family: 'SF Mono', monospace; }
+  pre { background: var(--card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px; overflow-x: auto;
+        margin: 16px 0; font-size: 13px; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  ul, ol { margin: 12px 0; padding-left: 24px; }
+  li { margin-bottom: 4px; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .warn { color: var(--orange); }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+         padding: 16px 20px; margin: 24px 0; font-size: 14px; }
+  .toc strong { color: var(--accent); }
+  .toc ol { margin: 8px 0 0 0; padding-left: 24px; }
+  .toc li { margin-bottom: 2px; }
+  .toc a { color: var(--text); text-decoration: none; }
+  .toc a:hover { color: var(--accent); text-decoration: underline; }
+  .gate-pass { color: var(--green); font-weight: 600; }
+  .gate-soft { color: var(--orange); font-weight: 600; }
+  .commit-hash { font-family: 'SF Mono', monospace; color: var(--purple);
+                 background: rgba(188,140,255,0.1); padding: 1px 6px;
+                 border-radius: 3px; font-size: 12px; }
+  .stat-box { display: inline-block; background: var(--card); border: 1px solid var(--border);
+              border-radius: 6px; padding: 10px 14px; margin: 4px 6px 4px 0;
+              font-size: 13px; }
+  .stat-box strong { color: var(--accent); display: block; font-size: 18px; }
+  .stat-box .label { color: var(--muted); font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>v3.6 V_year_saatchi_warm Implementation 보고서</h1>
+<blockquote>
+<p><strong>작성일</strong>: 2026-05-03</p>
+<p><strong>branch</strong>: <code>docs/technical-report-v2</code></p>
+<p><strong>범위</strong>: v3.6 Phase 1 (코드) + Phase 2 (monitoring infra) + Phase 3 (pre-rollout validation)</p>
+<p><strong>다음</strong>: v3.6 Phase 4 — gated rollout 실행 (~16일 production deploy)</p>
+</blockquote>
+
+<div class="tldr">
+<p><strong>요약</strong>: v3.5 step 1 ablation 으로 채택된 <strong>V_year_saatchi_warm variant</strong> (offline overall MdAPE -0.74%p, cold +0.03%p) 의 production 배포 직전까지의 모든 코드 + 운영 인프라 + 검증 절차 종결.</p>
+<p>전체 통계: <strong class="pos">800 / 800 test pass</strong>, lint clean, 코덱스 review 사이클 모두 통과.</p>
+</div>
+
+<div>
+<div class="stat-box"><strong>34</strong><span class="label">총 commit</span></div>
+<div class="stat-box"><strong>800</strong><span class="label">test pass</span></div>
+<div class="stat-box"><strong>26</strong><span class="label">monitoring 파일</span></div>
+<div class="stat-box"><strong>17</strong><span class="label">코덱스 review</span></div>
+<div class="stat-box"><strong>3</strong><span class="label">Phase 종결</span></div>
+</div>
+
+<div class="toc">
+<strong>목차</strong>
+<ol>
+  <li><a href="#phase1">Phase 1 — Implementation (코드)</a></li>
+  <li><a href="#phase2">Phase 2 — Monitoring Infra</a></li>
+  <li><a href="#phase3">Phase 3 — Pre-rollout Validation</a></li>
+  <li><a href="#schema">Logging schema (predict_logs DDL 정합)</a></li>
+  <li><a href="#codex">코덱스 review 결과 정리</a></li>
+  <li><a href="#stats">통계</a></li>
+  <li><a href="#phase4">다음 단계 — Phase 4 (gated rollout)</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="phase1">1. Phase 1 — Implementation (코드)</h2>
+
+<h3>1.1 산출물</h3>
+
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>영역</th><th>파일</th><th>기능</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>schema</td>
+        <td><code>primary_schemas.py</code></td>
+        <td><code>artwork_id</code> / <code>artwork_url</code> / <code>year_made</code> 필드 + <code>MonitorResponse</code> / <code>FetchGateStats</code></td></tr>
+    <tr><td>year cache</td>
+        <td><code>artwork_year_cache.py</code></td>
+        <td>thread-safe LRU + TTL + <code>FetchGate</code> (token bucket / cool-down / inflight dedup / warmup-mode)</td></tr>
+    <tr><td>feature builder</td>
+        <td><code>primary_feature_builder.py</code></td>
+        <td>32 → 35 features (year_made / has_year_made / work_age) + 옵션 B disable (0.0/0/0.0)</td></tr>
+    <tr><td>predictor</td>
+        <td><code>primary_predictor.py</code></td>
+        <td><code>MODEL_VARIANT</code> env + 5-file artifact bundle + variant-aware load</td></tr>
+    <tr><td>server</td>
+        <td><code>primary_server.py</code></td>
+        <td>cohort gating + year resolution + variant-aware metrics + Prometheus exporter</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>1.2 Phase 1 commit 시퀀스 (16건)</h3>
+
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>PR</th><th>commit</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>PR1</td><td><span class="commit-hash">9394433</span></td><td>PredictRequest schema 확장</td></tr>
+    <tr><td>PR3</td><td><span class="commit-hash">494cd81</span></td><td>artwork-level year cache (thread-safe LRU + TTL)</td></tr>
+    <tr><td>PR4</td><td><span class="commit-hash">2250b5f</span></td><td>feature builder year 3종 + 옵션 B disable</td></tr>
+    <tr><td>PR3+4 fix</td><td><span class="commit-hash">8c2053d</span></td><td>alias cleanup + test coverage 보강</td></tr>
+    <tr><td>PR5+6</td><td><span class="commit-hash">20d764f</span></td><td>predictor variant + 5-file bundle + MODEL_VARIANT</td></tr>
+    <tr><td>PR7</td><td><span class="commit-hash">be3df9d</span></td><td>server metrics + model_info + model_type variant-aware</td></tr>
+    <tr><td>PR8 사이클</td><td><span class="commit-hash">b3ad573</span> → <span class="commit-hash">989ef2a</span> → <span class="commit-hash">4d5b71e</span></td>
+        <td>단건 cohort gating + fetch 안전화 + timeout + inflight dedup</td></tr>
+    <tr><td>PR10 사이클</td><td><span class="commit-hash">dab0a96</span> → <span class="commit-hash">abed9d4</span> → <span class="commit-hash">cdc915c</span></td>
+        <td>logging schema + miss_qps token bucket + spec 정합</td></tr>
+    <tr><td>PR9 사이클</td><td><span class="commit-hash">b187475</span> → <span class="commit-hash">ec6e144</span></td>
+        <td>batch endpoint cohort gating + latency 정정</td></tr>
+    <tr><td>PR11 사이클</td><td><span class="commit-hash">52d8c1c</span> → <span class="commit-hash">b029c9a</span> → <span class="commit-hash">3146261</span></td>
+        <td>TestClient + warmup-mode + warmup anchor + /monitor stats</td></tr>
+    <tr><td>PR12</td><td><span class="commit-hash">82e6e12</span></td><td>worker_instance_id + /monitor response_model</td></tr>
+    <tr><td>PR13</td><td><span class="commit-hash">6674501</span> → <span class="commit-hash">3f42a20</span></td>
+        <td>batch external_collector executor wrap + artist dedup + api_reference 동기화</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>1.3 핵심 design</h3>
+
+<h4>Cohort authority (v3.5 step 2 §2.3)</h4>
+<pre>is_saatchi_warm = is_matched
+              AND match.profile.source == 'saatchi'
+              AND artist_slug in warm_artist_slugs</pre>
+<p>→ external_collector 가 채운 profile 은 <strong>비권위</strong> (is_matched=False 면 무시).</p>
+
+<h4>Year resolution (manual > cache > fetch)</h4>
+<p>9 라우트 enum: <code>manual</code> / <code>manual_seed_cache_write</code> / <code>cache_hit</code> / <code>fetch_ok</code> / <code>fetch_fail</code> / <code>parse_invalid</code> / <code>no_id</code> / <code>rate_limited</code> / <code>disabled</code></p>
+
+<h4>FetchGate 안전망 (v3.5 step 3 §3.2.3 spec 충족)</h4>
+<ul>
+  <li>concurrent_fetch ≤ 5</li>
+  <li>5min_miss_burst ≤ 50</li>
+  <li>연속 fetch_fail 5건 → 60s cool-down (circuit breaker)</li>
+  <li>per-key inflight dedup (stampede 방지)</li>
+  <li>2-mode token bucket: warmup (capacity=1, refill=0.3 qps, 첫 5분) → sustain (capacity=3, refill=0.5 qps)</li>
+  <li>timeout 1.5s (spec v3.5 step 2 §291)</li>
+</ul>
+
+<h4>옵션 B disable 의 model-input parity</h4>
+<p>비대상 cohort → <code>year_made=0.0, has_year_made=0, work_age=0.0</code> (학습 시 fillna(0) 와 정합).</p>
+
+<hr>
+
+<h2 id="phase2">2. Phase 2 — Monitoring Infra</h2>
+
+<h3>2.1 산출물 (26 file)</h3>
+
+<pre>monitoring/
+├── README.md
+├── sql/                          # PostgreSQL DDL + 17 metric query + 7 trigger (8 file)
+├── alerting/                     # Grafana Alerting v10+ provisioning (4 file)
+├── grafana/                      # Dashboard JSON (3 file)
+├── prometheus/                   # /api/v1/metrics scrape (2 file)
+└── playbooks/                    # 6 drift scenario + README (7 file)
+
+scripts/etl_predict_logs.py       # JSONL → predict_logs ETL (16 test)</pre>
+
+<h3>2.2 17 metrics 매핑</h3>
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>Source</th><th>metric</th><th>spec §</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>upstream</td>
+        <td>enrichment_fetch_success_rate / cache_hit_rate / latency_p95 (hit, miss) / valid_year_range_rate / fallback_rate_eligible / miss_qps / concurrent_fetch_max / 5min_miss_burst / fetch_5xx_rate</td>
+        <td>§2.1 (10)</td></tr>
+    <tr><td>downstream</td>
+        <td>has_year_made_rate / cold_year_made_disabled_rate / cohort_assignment_discrepancy / p50/p90 price ratio / mdape_d7_overall+cold+saatchi_online / treatment_vs_control_diff</td>
+        <td>§2.2 (8)</td></tr>
+    <tr><td>audit</td>
+        <td>model_variant_distribution / artifact_version_consistency / cache_epoch_age</td>
+        <td>§2.3 (3)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>2.3 8 rollback / pause trigger (§3.3)</h3>
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>Trigger</th><th>임계</th><th>severity</th><th>for</th><th>행동</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>T1 5min_miss_burst</td><td>&gt; 200</td><td>crit</td><td>5m</td><td>pause</td></tr>
+    <tr><td><strong>T2a NO_BASELINE</strong></td><td>cohort_baselines 부재</td><td>crit</td><td>1m</td><td><strong>pause (즉시 알림)</strong></td></tr>
+    <tr><td>T2 cohort discrepancy</td><td>&gt; 5%</td><td>crit</td><td>10m</td><td>pause</td></tr>
+    <tr><td>T3 mdape_d7_cold</td><td>&gt; 46%</td><td>rollback</td><td>1h</td><td>rollback (자동)</td></tr>
+    <tr><td>T4 treatment_vs_control_diff</td><td>&gt; +1.0%p</td><td>rollback</td><td>1h</td><td>rollback (자동)</td></tr>
+    <tr><td>T5 fetch_success_rate</td><td>&lt; 90%</td><td>rollback</td><td>1h</td><td>rollback (자동)</td></tr>
+    <tr><td>T6 cold_disabled_rate</td><td>&lt; 95%</td><td>rollback</td><td>30m</td><td>rollback (gating fail)</td></tr>
+    <tr><td>T7 valid_year_range_rate</td><td>&lt; 98%</td><td>crit</td><td>30m</td><td>pause (parser drift)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>2.4 Prometheus exporter (Panel 5)</h3>
+<p>server <code>/api/v1/metrics</code> (PlainTextResponse) 가 11 metric 노출 (gauge 8 + counter 3). label = <code>worker / server / variant</code>.</p>
+<pre>max_over_time(
+    sum by (server, variant) (visionai_fetch_gate_concurrent)[1m:]
+)</pre>
+
+<h3>2.5 ETL idempotency (PR15a 보강)</h3>
+<ul>
+  <li>byte offset 추적 (재실행 안전)</li>
+  <li>partial line 보호 (newline 없는 마지막 line 은 다음 run 으로 미룸)</li>
+  <li><code>ON CONFLICT (request_id) DO NOTHING</code></li>
+  <li>malformed line → dead-letter file (counter + 원본 보존)</li>
+  <li>alias drop (predicted_krw / price_range_low|high / total_ms)</li>
+  <li><code>--dry-run</code> mode (DB 없이 schema 검증)</li>
+</ul>
+
+<h3>2.6 Phase 2 commit (14건)</h3>
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>PR</th><th>commit</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>PR14a/b</td><td><span class="commit-hash">7157392</span></td><td>logging spec 정합 + SQL infrastructure</td></tr>
+    <tr><td>PR14b'</td><td><span class="commit-hash">7ef995f</span></td><td>matched + train_dist + sold_price + cache_epoch UTC</td></tr>
+    <tr><td>PR14b''</td><td><span class="commit-hash">9363365</span></td><td>active_artifact window 일치 + NO_BASELINE explicit</td></tr>
+    <tr><td>PR15</td><td><span class="commit-hash">a639b13</span></td><td>ETL JSONL → predict_logs</td></tr>
+    <tr><td>PR15a</td><td><span class="commit-hash">3bd226b</span></td><td>partial line + dead-letter + psycopg extra</td></tr>
+    <tr><td>PR14c 사이클</td><td><span class="commit-hash">29d9279</span> → <span class="commit-hash">86eaa1a</span> → <span class="commit-hash">27c6719</span></td>
+        <td>Grafana Alerting + secure_settings + T2a 분리 + traffic-0 분기</td></tr>
+    <tr><td>PR16 사이클</td><td><span class="commit-hash">c3f62bb</span> → <span class="commit-hash">72a6a1e</span></td>
+        <td>Prometheus exporter + label escape + PromQL 집계</td></tr>
+    <tr><td>PR14d</td><td><span class="commit-hash">c1e007c</span></td><td>Grafana dashboard JSON (12 panel)</td></tr>
+    <tr><td>PR14e</td><td><span class="commit-hash">97bf66b</span></td><td>drift scenarios playbook (6 markdown)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<h2 id="phase3">3. Phase 3 — Pre-rollout Validation</h2>
+
+<h3>3.1 산출물</h3>
+<ul>
+  <li><code>scripts/v3_6_phase3_dev_test.py</code> (synthetic 10K cohort gating + 11 fallback cases + Phase 3 gate 자동 평가)</li>
+  <li><code>tests/test_v3_6_phase3_dev_test.py</code> (11 단위 test)</li>
+  <li><code>docs/v3_6_phase3_runbook.md</code> (DEV / STAGING / Pre-canary 절차)</li>
+</ul>
+
+<h3>3.2 11 fallback cases (v3.5 step 2 §4 + parse_invalid 추가)</h3>
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>#</th><th>Case</th><th>Cohort</th><th>Expected route</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>unmatched</td><td>unmatched</td><td><code>disabled</code></td></tr>
+    <tr><td>2</td><td><strong>unmatched + ext_saatchi 비권위</strong></td><td>unmatched</td><td><code>disabled</code></td></tr>
+    <tr><td>3</td><td>artsy_warm</td><td>artsy_warm</td><td><code>disabled</code></td></tr>
+    <tr><td>4</td><td>saatchi_cold</td><td>saatchi_cold</td><td><code>disabled</code></td></tr>
+    <tr><td>5</td><td>saatchi_warm + manual valid</td><td>saatchi_warm</td><td><code>manual_seed_cache_write</code></td></tr>
+    <tr><td>6</td><td>saatchi_warm + manual no_artwork_id</td><td>saatchi_warm</td><td><code>manual</code></td></tr>
+    <tr><td>7</td><td>saatchi_warm + cache_hit</td><td>saatchi_warm</td><td><code>cache_hit</code></td></tr>
+    <tr><td>8</td><td>saatchi_warm + fetch_ok</td><td>saatchi_warm</td><td><code>fetch_ok</code></td></tr>
+    <tr><td>9</td><td>saatchi_warm + fetch_fail</td><td>saatchi_warm</td><td><code>fetch_fail</code></td></tr>
+    <tr><td>10</td><td><strong>saatchi_warm + parse_invalid</strong> (year out of [1800, 2030])</td><td>saatchi_warm</td><td><code>parse_invalid</code></td></tr>
+    <tr><td>11</td><td>saatchi_warm + no artwork_id/url</td><td>saatchi_warm</td><td><code>no_id</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>3.3 Phase 3 gate 결과 (mock 환경)</h3>
+<pre>{
+  "n_total": 10000,
+  "cohort_distribution": {
+    "saatchi_warm": 6700, "saatchi_cold": 400,
+    "artsy_warm": 2500, "unmatched": 400
+  },
+  "gating_correctness": <span class="pos">1.0</span>,
+  "fallback_cases_pass": <span class="pos">11</span>,
+  "fallback_cases_fail": 0,
+  "p95_latency_ms": {"fetch_ok": 0.15, "disabled": 0.0, ...},
+  "phase3_gate": {
+    "fallback_cases_pass": <span class="pos">true</span>,
+    "gating_correctness_100": <span class="pos">true</span>,
+    "cache_hit_p95_under_5ms": <span class="pos">true</span>,
+    "fetch_ok_p95_under_600ms": <span class="pos">true</span>
+  },
+  "passed": <span class="pos">true</span>
+}</pre>
+
+<h3>3.4 Phase 3 commit (4건)</h3>
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>PR</th><th>commit</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>PR17a/b</td><td><span class="commit-hash">9088232</span></td><td>DEV TEST script + STAGING/Pre-canary runbook</td></tr>
+    <tr><td>PR17c</td><td><span class="commit-hash">a6db500</span></td><td>helper drift + parse_invalid + 분포 여유</td></tr>
+    <tr><td>PR17d</td><td><span class="commit-hash">54d35c0</span></td><td>runbook 실패 섹션 정합 + docstring</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<h2 id="schema">4. Logging schema (predict_logs DDL 정합)</h2>
+
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>Column</th><th>Type</th><th>Source</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>request_id</td><td>UUID</td><td>server <code>id</code> (uuid4)</td></tr>
+    <tr><td>timestamp</td><td>TIMESTAMPTZ</td><td>server <code>ts</code></td></tr>
+    <tr><td><strong>rollout_cohort</strong></td><td>VARCHAR(32)</td><td>env <code>ROLLOUT_COHORT</code> (treatment_5pct / control / unknown)</td></tr>
+    <tr><td><strong>matched</strong></td><td>BOOLEAN</td><td><code>is_matched</code></td></tr>
+    <tr><td>match_profile_source</td><td>VARCHAR(16)</td><td>match.profile.source (saatchi / artsy / NULL — PR10b 정합)</td></tr>
+    <tr><td>slug_in_warm_set</td><td>BOOLEAN</td><td>predictor.is_warm_artist</td></tr>
+    <tr><td>is_saatchi_warm</td><td>BOOLEAN</td><td>cohort 결정 결과</td></tr>
+    <tr><td>external_collector_source</td><td>VARCHAR(16)</td><td>sources_used[0] / 'none'</td></tr>
+    <tr><td>year_made_route</td><td>VARCHAR(32)</td><td>9 enum</td></tr>
+    <tr><td>year_made_used</td><td>INT</td><td>resolve 결과</td></tr>
+    <tr><td>enrichment_latency_ms</td><td>FLOAT</td><td>year resolve 단계 측정</td></tr>
+    <tr><td>predict_total_latency_ms</td><td>FLOAT</td><td>item end-to-end (PR9b)</td></tr>
+    <tr><td>artwork_id / artwork_url</td><td>VARCHAR</td><td>request 그대로</td></tr>
+    <tr><td><strong>predicted_price_krw / range_low_krw / range_high_krw</strong></td><td>INT</td><td>spec column 이름 (PR14a)</td></tr>
+    <tr><td>confidence_grade</td><td>VARCHAR(2)</td><td>A / B / C / D</td></tr>
+    <tr><td>model_variant</td><td>VARCHAR(64)</td><td>predictor.variant</td></tr>
+    <tr><td>artifact_version / warm_artist_slugs_version / rollout_rule_version</td><td>VARCHAR</td><td>env var (deploy pipeline)</td></tr>
+    <tr><td>server_instance</td><td>VARCHAR(64)</td><td>env <code>SERVER_INSTANCE</code></td></tr>
+    <tr><td><strong>worker_instance_id</strong></td><td>VARCHAR(64)</td><td>uuid4 hex (PR12 — multi-worker 식별)</td></tr>
+    <tr><td>cache_epoch</td><td>VARCHAR(32)</td><td>UTC <code>YYYYMMDDTHHMMZ</code> (lifespan startup)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>기존 client 호환을 위해 alias dual-write (<code>predicted_krw / price_range_low|high / total_ms</code>) 도 logging row 에 포함 (deprecated, ETL 단계 drop).</p>
+
+<hr>
+
+<h2 id="codex">5. 코덱스 review 결과 정리</h2>
+
+<p>총 <strong>17 review 사이클</strong> (각 PR + 보정 commit 별):</p>
+
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>Phase</th><th class="num">통과</th><th class="num">조건부 (보정 후 종결)</th><th class="num">불통과 (재보정 후 통과)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Phase 1</td><td class="num">4</td><td class="num">6</td><td class="num">2</td></tr>
+    <tr><td>Phase 2</td><td class="num">2</td><td class="num">5</td><td class="num">0</td></tr>
+    <tr><td>Phase 3</td><td class="num">1</td><td class="num">1</td><td class="num">0</td></tr>
+    <tr><td><strong>합</strong></td><td class="num"><strong>7</strong></td><td class="num"><strong>12</strong></td><td class="num"><strong>2</strong></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>모든 코덱스 P0 / P1 / P2 issue 종결. 잔여 <strong>Nit</strong> (별도 PR backlog):</p>
+<ul>
+  <li>runbook 의 일부 modal verb 정정 (소소)</li>
+  <li>운영 환경별 datasource UID templating (PR14d 시 명시)</li>
+</ul>
+
+<hr>
+
+<h2 id="stats">6. 통계</h2>
+
+<div class="wide-table-wrap">
+<table>
+  <thead>
+    <tr><th>항목</th><th class="num">값</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>총 commit</td><td class="num"><strong>34</strong></td></tr>
+    <tr><td>누적 test pass</td><td class="num"><strong class="pos">800</strong></td></tr>
+    <tr><td>lint errors</td><td class="num"><strong class="pos">0</strong></td></tr>
+    <tr><td>monitoring/ 파일</td><td class="num">26</td></tr>
+    <tr><td>신규 dir</td><td class="num">5 (sql, alerting, grafana, prometheus, playbooks)</td></tr>
+    <tr><td>spec 정합 컬럼 (predict_logs)</td><td class="num">25</td></tr>
+    <tr><td>Grafana panel</td><td class="num">12</td></tr>
+    <tr><td>Grafana alert rule</td><td class="num">8 (7 trigger + T2a NO_BASELINE)</td></tr>
+    <tr><td>drift scenario playbook</td><td class="num">6</td></tr>
+    <tr><td>Prometheus metric</td><td class="num">11 (gauge 8 + counter 3)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<h2 id="phase4">7. 다음 단계 — Phase 4 (gated rollout)</h2>
+
+<div class="next-step">
+<p><strong class="title">📌 진입 조건</strong>: Phase 3 gate 통과 후 STAGING 24h 안정 + Pre-canary smoke 통과. <code>docs/v3_6_phase3_runbook.md</code> §5.4 의 모든 gate PASS 필요.</p>
+</div>
+
+<h3>7.1 일정 (~16일)</h3>
+<pre>CANARY 1% (24h) ──┐
+   │ gate (24h)   │
+   ▼              │
+ROLLOUT 5% (D1 / D3 / D7 체크포인트, 7d)
+   │ gate (D7)   │
+   ▼             │
+ROLLOUT 25% (24h)
+   │              │
+   ▼              │
+FULL 100% (1주)  ─┘ → v3.6 close + STEADY STATE 진입</pre>
+
+<h3>7.2 D7 gate (ROLLOUT 5% 승급)</h3>
+<ul>
+  <li>cache_hit_rate ≥ <strong>50%</strong></li>
+  <li>mdape_d7_treatment_vs_control_diff ≤ <strong>-0.3%p</strong> (offline -0.74 향)</li>
+  <li>mdape_d7_cold ≤ <strong>43%</strong></li>
+  <li>crit alert 누적 ≤ 1건 (24h 내 즉시 해결)</li>
+</ul>
+
+<h3>7.3 자동 rollback 발동 시 (§3.3 trigger)</h3>
+<ul>
+  <li>post-mortem 24h 내 RCA + 재발 방지 PR.</li>
+  <li>3회 자동 rollback 시 v3.6 abort.</li>
+</ul>
+
+<hr>
+
+<h2>관련 문서</h2>
+
+<ul>
+  <li>spec plan: <code>docs/v3_6_plan.md</code></li>
+  <li>v3.5 step 1-4: <code>docs/v3_5_step1_cohort_gating_results.md</code> ~ <code>docs/v3_5_step4_drift_monitoring.md</code></li>
+  <li>Phase 3 runbook: <code>docs/v3_6_phase3_runbook.md</code></li>
+  <li>monitoring infra: <code>monitoring/</code></li>
+  <li>v3.0 진단 보고서 (§15 v3.4-v3.6 부록): <code>docs/v3_0_diagnostics_보고서_20260430.html</code></li>
+</ul>
+
+</div>
+</body>
+</html>

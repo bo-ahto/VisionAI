@@ -1,4 +1,5 @@
 """Phase 1 1차 시장 가격 예측 API 스키마."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -19,6 +20,34 @@ class PredictRequest(BaseModel):
     solo_count: int | None = Field(None, ge=0)
     group_count: int | None = Field(None, ge=0)
     followers: int | None = Field(None, ge=0)
+
+    # v3.6 Phase 1 PR1: V_year_saatchi_warm enrichment 후크
+    # (v3.5 step 2 §2.1 spec — saatchi-and-warm cohort 만 활성화)
+    artwork_id: str | None = Field(
+        None,
+        max_length=64,
+        description=(
+            "Saatchi artwork ID. Saatchi & warm 작가 작품에 한해 year_made enrichment "
+            "cache key 로 사용. 미제공 시 enrichment skip (cohort gating fail 시에도 무관)."
+        ),
+    )
+    artwork_url: str | None = Field(
+        None,
+        max_length=500,
+        description=(
+            "Saatchi artwork detail page URL. artwork_id 미제공 시 fallback enrichment "
+            "lookup 용. URL alias cache 등록."
+        ),
+    )
+    year_made: int | None = Field(
+        None,
+        ge=1800,
+        le=2030,
+        description=(
+            "작품 제작년도 (manual override). client 직접 제공 시 enrichment fetch skip + "
+            "cache write-through (artwork_id 함께 제공 시). [1800, 2030] 범위 외 → 422 reject."
+        ),
+    )
 
 
 class PriceRange(BaseModel):
@@ -108,6 +137,11 @@ class BatchItem(BaseModel):
     group_count: int | None = None
     followers: int | None = None
 
+    # v3.6 Phase 1 PR1: PredictRequest 와 동일 V_year_saatchi_warm 후크
+    artwork_id: str | None = Field(None, max_length=64)
+    artwork_url: str | None = Field(None, max_length=500)
+    year_made: int | None = Field(None, ge=1800, le=2030)
+
 
 class BatchPredictRequest(BaseModel):
     artworks: list[BatchItem] = Field(..., max_length=50)
@@ -142,7 +176,7 @@ class ModelInfoResponse(BaseModel):
 
     NOTE on metrics interpretation:
     - mdape_groupkfold: cold path (CatBoost) MdAPE.
-      v3-tuned-cal 모델인 경우 source × target_market cell calibration 적용된
+      v3-tuned-cal 모델인 경우 source x target_market cell calibration 적용된
       cross-fit guarded 추정치. guard cell selection이 동일 OOF 결과 보고 결정되어
       post-hoc selection bias 잔존 — 보수적 추정치로 해석 권장.
     - mdape_kfold: warm path (XGBoost) MdAPE on warm slice (artist_count>=5) baseline.
@@ -162,3 +196,33 @@ class HealthResponse(BaseModel):
     model_version: str
     artists_loaded: int
     uptime_seconds: float
+
+
+# v3.6 PR12 (코덱스 PR11d Nit): /api/v1/monitor response_model — backward compat
+# consumer 계약 고정. additive change OK, key 삭제/rename 은 break.
+
+
+class FetchGateStats(BaseModel):
+    """v3.5 step 3 §3.2.3 fetch gate runtime metrics."""
+    concurrent: int
+    miss_5min: int
+    consecutive_fails: int
+    cool_down_remaining_sec: int
+    tokens_available: float
+    inflight: int
+    warmup_mode: bool
+    warmup_remaining_sec: int
+
+
+class MonitorResponse(BaseModel):
+    total_predictions: int
+    by_grade: dict[str, int]
+    by_model: dict[str, int]
+    avg_ms: float
+    external_lookup_count: int
+    known_artist_count: int
+    uptime_seconds: float
+    fetch_gate: FetchGateStats
+    cache_epoch: str
+    server_instance: str
+    worker_instance_id: str  # PR12: process-local uuid (multi-worker 식별)

@@ -1,0 +1,297 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "v3.6 V_year_saatchi_warm rollout dashboard. spec: docs/v3_5_step4_drift_monitoring.md §6.2. 12 panel — upstream ops + cohort + rate-limit + MdAPE D7 + audit.",
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "liveNow": false,
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "Panel 1 — cache_hit_rate by hour (7d, treatment_5pct)",
+      "description": "spec §2.1 — D1 ≥ 30%, D7 ≥ 50%, D30 ≥ 80%",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.3 },
+              { "color": "green", "value": 0.5 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT DATE_TRUNC('hour', timestamp) AS time, COUNT(*) FILTER (WHERE year_made_route = 'cache_hit') * 1.0 / NULLIF(COUNT(*) FILTER (WHERE year_made_route IN ('cache_hit','fetch_ok','fetch_fail')), 0) AS cache_hit_rate FROM predict_logs WHERE rollout_cohort = 'treatment_5pct' AND timestamp > NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 1"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "title": "Panel 2 — p95 latency by year_made_route (5min)",
+      "description": "spec §2.1 — hit ≤ 5ms, miss ≤ 600ms",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT year_made_route, PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY enrichment_latency_ms) AS p95_ms, PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY enrichment_latency_ms) AS p50_ms, COUNT(*) AS n FROM predict_logs WHERE timestamp > NOW() - INTERVAL '5 minutes' GROUP BY year_made_route ORDER BY p95_ms DESC"
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "title": "Panel 3 — cohort assignment discrepancy (24h)",
+      "description": "spec §2.2 — < 1% target, > 5% pause. NO_BASELINE 시 T2a alert.",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "WITH active_artifact AS (SELECT artifact_version FROM predict_logs WHERE timestamp > NOW() - INTERVAL '24 hours' AND rollout_cohort = 'treatment_5pct' GROUP BY artifact_version ORDER BY COUNT(*) DESC LIMIT 1), train_dist AS (SELECT b.cohort, b.expected_rate FROM cohort_baselines b JOIN active_artifact USING (artifact_version)), prod_dist AS (SELECT CASE WHEN matched = false THEN 'unmatched' WHEN is_saatchi_warm THEN 'saatchi_warm' WHEN matched AND match_profile_source = 'saatchi' AND slug_in_warm_set = false THEN 'saatchi_cold' WHEN matched AND match_profile_source = 'artsy' THEN 'artsy_warm' ELSE 'other' END AS cohort, COUNT(*) * 1.0 / SUM(COUNT(*)) OVER () AS rate FROM predict_logs p JOIN active_artifact USING (artifact_version) WHERE p.timestamp > NOW() - INTERVAL '24 hours' AND p.rollout_cohort = 'treatment_5pct' GROUP BY 1) SELECT t.cohort, t.expected_rate, COALESCE(p.rate, 0) AS prod_rate, ABS(t.expected_rate - COALESCE(p.rate, 0)) AS diff FROM train_dist t LEFT JOIN prod_dist p USING (cohort)"
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "title": "Panel 4 — miss_qps (5min smoothed)",
+      "description": "spec §2.1 — < 0.5 target, > 1.0 warn, > 2.0 crit",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 1.0 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) FILTER (WHERE year_made_route IN ('fetch_ok','fetch_fail','parse_invalid','rate_limited')) * 1.0 / 300.0 AS miss_qps_5min FROM predict_logs WHERE timestamp > NOW() - INTERVAL '5 minutes'"
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "title": "Panel 5 — concurrent_fetch_max (1min, server 합산)",
+      "description": "spec §2.1 — < 5 target, > 10 warn, > 20 crit. server/variant 합산 후 1min max (PR16a).",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus-prod" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max_over_time(sum by (server, variant) (visionai_fetch_gate_concurrent)[1m:])",
+          "legendFormat": "{{server}}/{{variant}}"
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "title": "Panel 6 — 5min_miss_burst",
+      "description": "spec §2.1 — < 50 target, > 100 warn, > 200 crit (T1 auto-suspend)",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) FILTER (WHERE year_made_route IN ('fetch_ok','fetch_fail','parse_invalid','rate_limited')) AS miss_burst_5min FROM predict_logs WHERE timestamp > NOW() - INTERVAL '5 minutes'"
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "title": "Panel 7 — MdAPE D7 overall (treatment vs control)",
+      "description": "spec §2.2 — ≤ 9.7%, warn > 10.5%, crit > 11.5%",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT rollout_cohort, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY abs_pct_error) * 100 AS mdape_pct, COUNT(*) AS n_pairs FROM v_d7_predict_sold_pairs WHERE sold_at > NOW() - INTERVAL '7 days' GROUP BY rollout_cohort ORDER BY rollout_cohort"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "title": "Panel 8 — MdAPE D7 cold (cold protect)",
+      "description": "spec §2.2 — ≤ 43%, warn > 44%, crit > 46% (T3 auto-rollback)",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT rollout_cohort, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY abs_pct_error) * 100 AS mdape_cold_pct, COUNT(*) AS n_pairs FROM v_d7_predict_sold_pairs WHERE sold_at > NOW() - INTERVAL '7 days' AND is_saatchi_warm = false GROUP BY rollout_cohort ORDER BY rollout_cohort"
+        }
+      ]
+    },
+
+    {
+      "id": 9,
+      "title": "Panel 9 — MdAPE D7 saatchi_online",
+      "description": "spec §2.2 — ≤ 9.7%, warn > 10.5%, crit > 11.5%",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT rollout_cohort, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY abs_pct_error) * 100 AS mdape_saatchi_online_pct, COUNT(*) AS n_pairs FROM v_d7_predict_sold_pairs WHERE sold_at > NOW() - INTERVAL '7 days' AND sold_source = 'saatchi' GROUP BY rollout_cohort ORDER BY rollout_cohort"
+        }
+      ]
+    },
+
+    {
+      "id": 10,
+      "title": "Panel 10 — model_variant distribution (1h)",
+      "description": "spec §2.3 — rollout % 정합 검증",
+      "type": "piechart",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT model_variant, COUNT(*) AS n FROM predict_logs WHERE timestamp > NOW() - INTERVAL '1 hour' GROUP BY model_variant ORDER BY n DESC"
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "title": "Panel 11 — artifact_version consistency",
+      "description": "spec §2.3 — 100% (worker 안 artifact_version mix 없음)",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT server_instance, worker_instance_id, COUNT(DISTINCT artifact_version) AS distinct_versions, COUNT(*) AS n_requests FROM predict_logs WHERE timestamp > NOW() - INTERVAL '1 hour' GROUP BY server_instance, worker_instance_id HAVING COUNT(DISTINCT artifact_version) > 1 OR COUNT(DISTINCT warm_artist_slugs_version) > 1 ORDER BY n_requests DESC"
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "title": "Panel 12 — treatment vs control diff (rollout gate)",
+      "description": "spec §2.2 — -1.0 ~ -0.3%p target. > +0.3%p warn, > +1.0%p crit (T4 rollback)",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "postgres-prod" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.3 },
+              { "color": "red", "value": 1.0 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "WITH per_cohort AS (SELECT rollout_cohort, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY abs_pct_error) * 100 AS m FROM v_d7_predict_sold_pairs WHERE sold_at > NOW() - INTERVAL '7 days' GROUP BY rollout_cohort) SELECT (SELECT m FROM per_cohort WHERE rollout_cohort = 'treatment_5pct') - (SELECT m FROM per_cohort WHERE rollout_cohort = 'control') AS diff_pct"
+        }
+      ]
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["visionai", "v3.6", "rollout"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "VisionAI v3.6 — V_year_saatchi_warm rollout monitor",
+  "uid": "visionai-v3-6-rollout",
+  "version": 1,
+  "weekStart": ""
+}

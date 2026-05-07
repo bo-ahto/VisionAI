@@ -1,0 +1,42 @@
+# v3.6 PR16 — Prometheus scrape config (Panel 5 concurrent_fetch_max)
+# server endpoint: GET /api/v1/metrics (PlainTextResponse, Prometheus exposition format)
+#
+# 적용:
+# - Prometheus Operator: ServiceMonitor 또는 PodMonitor 로 변환
+# - 기존 Prometheus: prometheus.yml 의 scrape_configs section 에 병합
+
+scrape_configs:
+
+  - job_name: visionai_v3_6
+    metrics_path: /api/v1/metrics
+    scrape_interval: 15s     # spec §2.1 concurrent_fetch_max 1min max → 4 sample
+    scrape_timeout: 5s
+    static_configs:
+      # 운영 환경 별 host:port 치환 (예: kubernetes service / DNS)
+      - targets:
+          - "visionai-api:8000"
+        labels:
+          environment: production
+          service: visionai-price-engine
+
+# ----------------------------------------------------------------------------
+# Recording rules (Panel 5: concurrent_fetch_max 의 1min max 집계)
+# 규칙 파일: /etc/prometheus/rules/visionai_v3_6.yml 또는 별도 ConfigMap
+# ----------------------------------------------------------------------------
+#
+# v3.6 PR16a (코덱스 P1 fix): worker 합산 후 1min max 로 spec 임계 관측 가능.
+# 이전 worker 별 max_over_time 은 hard cap=5 라 spec >10/>20 절대 안 잡힘.
+#
+# groups:
+#   - name: visionai_v3_6_recording
+#     interval: 30s
+#     rules:
+#       - record: visionai:fetch_gate_concurrent_max:1m
+#         expr: |
+#           max_over_time(
+#             sum by (server, variant) (visionai_fetch_gate_concurrent)[1m:]
+#           )
+#       - record: visionai:fetch_gate_warmup_workers
+#         expr: count by (server) (visionai_fetch_gate_warmup_mode == 1)
+#       - record: visionai:cool_down_active_workers
+#         expr: count by (server) (visionai_fetch_gate_cool_down_remaining_sec > 0)

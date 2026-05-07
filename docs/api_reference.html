@@ -182,21 +182,38 @@
 <pre><code>{
   "total_predictions": 1243,
   "by_grade": {"A": 412, "B": 531, "C": 198, "D": 102},
-  "by_model": {"xgboost_v3": 412, "catboost_v3": 831},
+  "by_model": {"xgboost_v3_filtered_tuned": 412, "catboost_v3_filtered_tuned": 831},
   "avg_ms": 187.3,
   "external_lookup_count": 298,
   "known_artist_count": 412,
-  "uptime_seconds": 54291.2
+  "uptime_seconds": 54291.2,
+  "fetch_gate": {
+    "concurrent": 0,
+    "miss_5min": 12,
+    "consecutive_fails": 0,
+    "cool_down_remaining_sec": 0,
+    "tokens_available": 2.85,
+    "inflight": 0,
+    "warmup_mode": false,
+    "warmup_remaining_sec": 0
+  },
+  "cache_epoch": "20260502T0830Z",
+  "server_instance": "primary-server-pod-3",
+  "worker_instance_id": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
 }</code></pre>
 
 <table>
 <tr><th>필드</th><th>의미</th></tr>
 <tr><td><code>total_predictions</code></td><td>서버 가동 후 총 예측 건수</td></tr>
 <tr><td><code>by_grade</code></td><td>신뢰도 등급별 건수 (A/B/C/D)</td></tr>
-<tr><td><code>by_model</code></td><td>내부 라우팅된 모델별 건수 (xgboost_v3 / catboost_v3)</td></tr>
-<tr><td><code>avg_ms</code></td><td>총 처리시간 평균(ms)</td></tr>
+<tr><td><code>by_model</code></td><td>내부 라우팅된 모델별 건수 (variant 별 — 예: <code>xgboost_v3_filtered_tuned</code>, <code>catboost_v3_5_v_year_saatchi_warm</code>). v3.6 PR7 이후 model_type 이 variant prefix 포함.</td></tr>
+<tr><td><code>avg_ms</code></td><td>총 처리시간 평균(ms). 단건 + batch 모두 합산 (v3.6 PR9b).</td></tr>
 <tr><td><code>external_lookup_count</code></td><td>외부 프로필 수집을 수행한 요청 수</td></tr>
 <tr><td><code>known_artist_count</code></td><td>DB 매칭이 성공한 요청 수</td></tr>
+<tr><td><code>fetch_gate</code></td><td>v3.6 PR11d: V_year_saatchi_warm artwork-year fetch gate 의 runtime metric (v3.5 step 3 §3.2.3). <code>warmup_mode</code>=cold-start 첫 5분 (capacity=1, refill=0.3 qps), 이후 sustain (capacity=3, refill=0.5 qps). <code>tokens_available</code>≥1 이면 다음 fetch 가능. <code>cool_down_remaining_sec</code>&gt;0 이면 연속 fetch_fail 누적으로 60s suspend 활성.</td></tr>
+<tr><td><code>cache_epoch</code></td><td>서버 cold-start 시점 UTC (분 단위). cache 비어있는 epoch 식별용 — D7/D30 hit rate 해석에서 cache miss spike 분리.</td></tr>
+<tr><td><code>server_instance</code></td><td>deploy pipeline 주입 (env <code>SERVER_INSTANCE</code>). 미주입 시 <code>"unknown"</code>.</td></tr>
+<tr><td><code>worker_instance_id</code></td><td>v3.6 PR12: process-local uuid4 hex 32자. multi-worker 환경에서 worker 별 식별 — uvicorn <code>--workers</code> spawn 모델 안전. gunicorn preload+fork 시 startup 훅 별도 갱신 필요.</td></tr>
 </table>
 
 <hr>
