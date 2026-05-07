@@ -1,5 +1,7 @@
 # Track 1 Audit 4 — Drift Fix Variant OOF Rerun Results
 
+> 🔒 **본 cycle 종결 결정**: `docs/track1_phase0_closeout_20260507.md` (Option A, 2026-05-07) — 본 문서는 결과 evidence / 최종 결정은 closeout note 참조.
+
 > **작성일**: 2026-05-07
 > **Amendment**: `docs/track1_amendment_drift_fix_20260507.md` (drift fix freeze)
 > **실험**: `scripts/audit4_drift_fix_eval.py` / `model_test_results/audit4_drift_fix_v1_metrics.json`

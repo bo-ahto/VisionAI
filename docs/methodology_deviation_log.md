@@ -121,6 +121,12 @@
 - **다음 단계**: 사용자 결정 (A 본 cycle 종결 권고 / B Stage 1B 보류 / C A.2 path 운영팀 inquiry / D 비추천)
 - **코덱스 사후 검수 (round 1-3 → round 4 GO)**: P0×0 + P1×3 + P2×2 — round 1 (FAIL+soft fail 분리 / 38.7% reference 명확화 / 톤 정정 / 부록 분리 / HARK framing 톤 다운) + round 2-3 (잔여 sweep + HTML 부록 동기화) → round 4 GO 확정 (외부 보고 인계 가능)
 - **승인**: 사용자 검토 + 코덱스 사후 검수 round 1-4 통과 (commit 8763b93)
+- **본 cycle closeout (Option A, 2026-05-07)** — `docs/track1_phase0_closeout_20260507.md`:
+  * **사용자 결정 A 선택**: 본 cycle 종결 (코덱스 권고대로) / Phase 0 §4 fail trigger 정상 종결 처리
+  * **Same-cycle not advanced**: Stage 1B / Stage 2 / Stage 3 / Stage 4 confirmatory holdout 모두 미진입 (본 cycle 의 confirmatory evidence = 0건)
+  * **Stage 4 holdout unopened**: Phase 0 §1.7 spec freeze 만 / actual seal/hash 미실행 / `data/curated/track1_locked_holdout_v1.parquet` 미생성 / future winner 정해진 뒤에만 봉인
+  * **A.2 path 후속 분리**: 운영팀 inquiry (서빙 측 actual value 추출 / API contract 확장 feasibility) = same-cycle continuation X / 별도 path
+  * **Phase 0 freeze + Audit 4 결과 = immutable terminal evidence** (본문 개정 X / closeout stamp + link 만 추가)
 
 ### 2026-05-07 — [Track 1 Option A drift fix amendment] 7 drift + 2 dead 재분류 / fix set freeze (none, Phase 0 stop rule 정상)
 - **사용자 결정**: Option A 진행 (코덱스 권고대로)
