@@ -101,6 +101,25 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Axis B Round 3] A pre-assessment + Arko ops + MCST side-queue (3 lane, none + minor)
+- **사용자 명시 instruction**: 우선순위에 맞춰 진행 + 코덱스 활용
+- **코덱스 사전 자문**: 조건부 GO + 3 lane 분리 (Lane 1 A 본선 / Lane 2 Arko ops / Lane 3 MCST side-queue) + reporting 5 구조
+- **Lane 1 (A 본선) 결과**:
+  * Top 3 paid vendor: Artprice (subscription/API hint strong, 1순위) / Sotheby's (455KB main, 2순위) / Christie's (152KB, 3순위) / Artnet (1KB only, 보류)
+  * Top 5 한국 갤러리 access OK 3개: Kukje / Pace / PKM (자동화 access 가능) / Hyundai 0KB dynamic / Hakgojae connection refused / Gana SSL 에러
+  * 갤러리 가격 공개 hint = 0 (코덱스 사전 자문 — gallery direct = "데이터 richness 보다 협상 가능성 screening" 입증)
+- **Lane 2 (Arko ops) 결과**:
+  * Arko retry 2차: main `/` = 200 ✓ (이전 sub-path 만 5xx, main 정상) → **partial PASS — access recovery only** (sub-path / dataset endpoint 미확인)
+  * Round 2 freeze §3.3 spec 3회 중 2회 완료 (Round 2B 1차 + 본 round 2차) / 추가 1회 = 다음 cycle
+  * Arko 운영팀 inquiry draft 8항목 작성 (목적 / 데이터 범위 / access / historical / cadence / license / AI 사용 / 회신 요청)
+- **Lane 3 (MCST side-queue) 결과**:
+  * sub-path 4종 (sitemap / search / 통계 / policy main) 모두 404 → endpoint discovery 실패 → 운영팀 inquiry / 외부 search engine 영역
+- **Decision Table 핵심**: A continue GO (Artprice + Kukje/Pace/PKM 운영팀 협상 시작 충분) / Arko ops + MCST side-queue 분리
+- **HARK 회피 (코덱스 P0)**: 새 source (Sotheby's / Christie's / Hyundai 추가 평가) = Round 3 본선 편입 X → **Round 4 candidate pool 분리** (deviation log entry)
+- **Phase A 종합 = HOLD 그대로 유지** — 운영팀/법무팀 1차 회신 후 종결 (코덱스 — Round 3 직후 X)
+- **분류**: **none (정상 흐름)** + **minor (Round 4 candidate pool 분리 — 새 source HARK 회피 정상 처리)**
+- **운영 영향 X**: 운영 spec §1-§16 변경 X / 분기 B calibration only 유지
+
 ### 2026-05-07 — [Axis B Round 2B] E (MCST/Arko 재시도) + B (aggregate context) 동시 진행 (none, 정상 흐름)
 - **사용자 명시 instruction**: E + B 동시 진행 (Round 2 v2 우선순위 A>E>B>C>D 의 E + B)
 - **E: MCST 재시도 결과**: main page 200 (이전 정책 list URL = path deprecation, main 자체는 정상) → **partial PASS** (전반 자동화 access OK, art market endpoint 추가 발견 필요 — 운영팀 inquiry 영역)
