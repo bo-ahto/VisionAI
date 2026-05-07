@@ -12,7 +12,7 @@
 | **Track 1 (운영 main 모델)** | ✅ **운영 기준선 유지 / cycle closed** — `v3_filtered_tuned` 32f 변경 X | [track1_phase0_closeout_20260507.md](track1_phase0_closeout_20260507.md) |
 | **Track 2 (cold-start 해석 가능 모델 연구)** | ✅ **Architecture-only close 확정** (Stage 6B + Axis A 5 step 종결) / **일반 warm path 운영 미승인** / **Slice-conditional (depth ≥25) 제한 후보 + Phase A shadow 1주 착수 승인 가능** | [stage6b_results_20260507.md](stage6b_results_20260507.md) §종결 / [트랙2_종합보고서_axis_a_종결_20260507.html](트랙2_종합보고서_axis_a_종결_20260507.html) §결론 / [트랙2_README.md](트랙2_README.md) §99 (Phase A shadow) |
 | **v3.6 production server bundle** | 🟡 **main 적재 / swap blocked** — code/monitoring/ETL ready, swap target artifact bundle 부재 + 운영 환경 prerequisite 미충족 | [v3_6_swap_readiness_report_20260508.md](v3_6_swap_readiness_report_20260508.md) |
-| **archive cycle** | ✅ **closed + retained** — PR 16+ merged (분할 train) / frozen branch + tag / 잔존 작업 1-5 완료 / 잔존 6 LLM 영역 종결 | [archive closeout](archive/2026-05-08-gallery-tier-v4-research-closeout.md) (#27-#33) + 잔존 1-5 (#34-#40) + 잔존 6 (#41-#42) |
+| **archive cycle** | ✅ **closed + retained** — PR 16건 merged (#27~#42 분할 train + 잔존) + 본 PR (TBD) / frozen branch + tag / 잔존 작업 1-5 완료 / 잔존 6 LLM 영역 종결 | [archive closeout](archive/2026-05-08-gallery-tier-v4-research-closeout.md) (#27-#33) + 잔존 1-5 (#34-#40) + 잔존 6 (#41-#42) |
 | **사전등록 governance** | ✅ **도입 cycle 정상 작동** — Track 1 fail-and-close / Track 2 architecture close 확정 / HARK 위험 실질적 저감 | [methodology_deviation_log.md](methodology_deviation_log.md) |
 
 **한 줄 요약**: 운영 main 모델 (`v3_filtered_tuned` 32f) **그대로 유지**, 트랙 2 Architecture-only close 확정 (일반 warm 경로 운영 미승인 / Slice-conditional 제한 후보 + Phase A shadow 1주 착수 승인 가능), v3.6 server bundle main 적재 + swap **blocked** (사용자 권한 영역), archive cycle 정상 종결.
