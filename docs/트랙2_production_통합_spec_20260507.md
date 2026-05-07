@@ -587,9 +587,11 @@ $ ops cli report.create --type rollback --model track2_v1
 
 ## 17. Warm-only Track 2 path 후보 (Stage 4 까지 보류)
 
-> **상태**: 연구 후보 (Stage 3 P3 + feature 재탐색 + robustness 종결) / **운영 도입 보류** — §1-§16 의 cold rollout 과 분리 운용  
-> **근거**: `experiments/structural_v1/results/stage3_warm_p3_validation.json` + `stage3_warm_feature_exploration.json` + `stage3_warm_fe_robustness.json` (3 차)  
-> **승격 결정**: Stage 4 artist-cluster 증거 (`docs/stage4_데이터수집계획_20260507.md` §6.1) 확보 후 재평가  
+> **상태**: 연구 후보 (Phase 1 curated exploratory 종결) / **운영 도입 보류** — §1-§16 의 cold rollout 과 분리 운용  
+> **근거**: 4 차 실험 — `stage3_warm_p3_validation.json` + `stage3_warm_feature_exploration.json` + `stage3_warm_fe_robustness.json` + `stage3_warm_holm_adjusted.json`  
+> **다중비교 보정 결과 (Holm/Bonferroni)**: warm path 비교에서 보정 후 통계적 유의성 미달 (FE only raw p=0.30, n=44 한계) — 점추정 신호는 일관, 확정에는 표본 확장 필요  
+> **승격 결정**: Phase 2 (full confirmatory replication) → Stage 4 (`docs/stage4_데이터수집계획_20260507.md` §6) → Phase 3 W-S 진입  
+> **방법론 골격**: `docs/트랙2_methodology_pipeline_20260507.md` (Phase 1 / Phase 2 / Phase 3 분리 + 사전등록)  
 > **본 §17 의 KPI / 게이트는 warm path 전용 scope override** — §16 (cold-default KPI glossary) 와 별도 운용
 
 ### 17.1 후보 모델
