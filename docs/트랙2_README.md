@@ -1,8 +1,9 @@
 # 트랙 2 (Interpretable Challenger) — 통합 README
 
 > **작성일**: 2026-05-07
-> **상태**: 분석/검증 100% 완료 / Production Phase A (shadow 1주) 착수 승인 가능 / Phase B (5% canary) 는 shadow 7개 게이트 PASS 후 별도 승인 필요
-> **연계 plan**: `docs/1개월_병행일정_V5_Structural.html` Week 1-4
+> **상태 (cold rollout only)**: Phase 1 (curated exploratory) 종결 / Production Phase A (shadow 1주, **cold-only**) 착수 승인 가능 / Phase B (5% canary) 는 shadow 7개 게이트 PASS 후 별도 승인
+> **상태 (warm-only Track 2 path)**: **연구 후보 / 운영 미승인** — Stage 4 (Phase 1 마지막 gate) → Phase 2 (full confirmatory) → 그 후 W-S 진입
+> **연계 plan**: `docs/1개월_병행일정_V5_Structural.html` Week 1-4 / `docs/트랙2_methodology_pipeline_20260507.md` (Phase 1/2/3 골격)
 
 ## 0. 한 줄 요약
 

@@ -28,13 +28,13 @@
 │   Stage 1 (200/20)  — Rules verification                │
 │   Stage 2 (500/50)  — OLS Hedonic exploration           │
 │   Stage 3 (1378/100) — Final candidate (운영 채택)       │
-│   Stage 4 (목표 200+)— Exploratory champion 선정 gate    │
+│   Stage 4 (목표 200+)— Stage 4 leading candidate 검증 gate    │
 │                                                         │
 │   ▶ Pre-registered analysis plan (Stage 4 부터 적용)     │
-│   ▶ Champion 후보 압축 + 통계 검증                       │
+│   ▶ Leading candidate 후보 압축 + 통계 검증                       │
 └─────────────────────────────────────────────────────────┘
                        │
-                       │ Gate 1: Champion 확정
+                       │ Gate 1: Stage 4 leading candidate 검증 통과
                        ▼
 ┌─────────────────────────────────────────────────────────┐
 │ Phase 2 — Full Confirmatory Replication                 │
@@ -66,7 +66,7 @@
 | Stage 1 | 200/20 | rules verification | rules log |
 | Stage 2 | 500/50 | OLS hedonic exploration | feature 후보 |
 | Stage 3 | 1,378/100 | final candidate (운영 cold 모델) | F4+spline+Huber |
-| Stage 4 | 200+ artists / warm 40+ / depth bin 균형 | exploratory champion 선정 | FE only 확정 후보 |
+| Stage 4 | 200+ artists / warm 40+ / depth bin 균형 | Stage 4 leading candidate 검증 | FE only 확정 후보 |
 
 ### 2.2 Phase 1 의 자유도 (exploratory)
 - 가설 추가 / 수정 가능
@@ -88,7 +88,7 @@
 | 통합 | — | ~28K (중복 제거 후) |
 
 ### 3.2 Confirmatory Run 1 (pre-registered replication)
-- **Primary hypothesis**: Stage 4 champion (baseline vs FE only 단일 비교)
+- **Primary hypothesis**: Stage 4 leading candidate (baseline vs FE only 단일 비교)
 - **Pre-registered protocol**: 
   - 가설 / metric / 임계 / 다중비교 보정 / sample split 모두 사전 고정
   - Phase 1 합격 시점에 freeze (변경 X)
@@ -119,17 +119,22 @@
 |---|---|
 | Primary hypothesis | H₀: MdAPE(FE only) ≥ MdAPE(baseline) / H₁: MdAPE(FE only) < MdAPE(baseline) |
 | Primary metric | warm-only MdAPE (artist-cluster bootstrap, n=2000) |
-| Primary test | 1-sided 95% CI, Holm 보정 (m=4 secondary 포함 시 α/4) |
+| Primary test | **1-sided 95% CI, 단일 비교 (unadjusted)** — 채택 결정의 유일한 통계 게이트 |
 | Practical significance | MdAPE 차이 ≤ -0.8%p (상한) |
-| Sample 분할 | Time-split 다중 cutoff (2022 / 2023 / 2024) |
+| Sample 분할 | Train ≤ 2023 / Val == 2024 / Test == 2025 (3-way) + rolling sensitivity cutoff (2022 / 2023 / 2024, 3개) |
 | Stratification | warm artist depth bin (10-14 / 15-24 / 25+) |
 | Bootstrap unit | artist cluster (row 단위 X) |
 | Seed 안정성 | 10 seed 평균 + std (std ≤ 0.5%p 요구) |
 
-### 4.2 Secondary hypotheses (descriptive, Holm m=4)
-- Combined vs baseline (참고)
-- Combined-shrunk vs baseline (참고)
-- FE only by depth bin (10-14 / 15-24 / 25+)
+### 4.2 Secondary hypotheses (descriptive, Holm m=5 별도 family)
+
+> Secondary 5개 비교는 별도 family 로 Holm 보정 적용 — **Primary family 와 분리**, primary 통과 여부와 독립적으로 보고.
+
+- Combined vs baseline
+- Combined-shrunk vs baseline
+- FE only @ depth bin 10-14 vs baseline
+- FE only @ depth bin 15-24 vs baseline
+- FE only @ depth bin 25+ vs baseline
 
 ### 4.3 Deviation rule
 - 사전등록 vs 실제 차이 발생 시 별도 deviation log 작성
@@ -147,9 +152,10 @@
 - Phase 1 의 모든 모델 비교에 Holm 적용 후 95% CI 재계산
 - 후속 의사결정에는 보정 후 CI 사용
 
-### 5.3 Stage 4 적용
-- Primary 1개 + Secondary 4개 = m=5 시 Holm 적용
-- Primary 만 단일 비교로 좁히면 보정 부담 최소
+### 5.3 Stage 4 적용 (코덱스 권고 반영, 2 family 분리)
+- **Primary family** (운영 채택 게이트): primary 1개 단일 비교 (unadjusted) — 가장 깔끔
+- **Secondary family** (descriptive 보고): secondary 5개에만 Holm 적용 — primary 와 독립
+- 이 구조는 운영 결정 단순성 + descriptive 분석 풍부성 모두 확보
 
 ## 6. Sample Size Justification
 
@@ -206,7 +212,7 @@
 | 단계 | 결과 신뢰도 | 의사결정 적합성 |
 |---|---|---|
 | Phase 1 Stage 1-3 | indicative (multiple comparisons unadjusted) | 후보 압축 only |
-| Phase 1 Stage 4 | indicative + Holm 보정 | exploratory champion 확정 |
+| Phase 1 Stage 4 | indicative + Holm 보정 | leading candidate 검증 통과 (운영 채택은 Phase 2 후) |
 | Phase 2 Confirmatory Run 1 | confirmatory (pre-registered) | 운영 채택 후보 |
 | Phase 3 Shadow / Canary | online verified | 점진 운영 도입 |
 

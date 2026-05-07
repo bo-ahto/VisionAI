@@ -590,12 +590,12 @@ $ ops cli report.create --type rollback --model track2_v1
 > **상태**: 연구 후보 (Phase 1 curated exploratory 종결) / **운영 도입 보류** — §1-§16 의 cold rollout 과 분리 운용  
 > **근거**: 4 차 실험 — `stage3_warm_p3_validation.json` + `stage3_warm_feature_exploration.json` + `stage3_warm_fe_robustness.json` + `stage3_warm_holm_adjusted.json`  
 > **다중비교 보정 결과 (Holm/Bonferroni)**: warm path 비교에서 보정 후 통계적 유의성 미달 (FE only raw p=0.30, n=44 한계) — 점추정 신호는 일관, 확정에는 표본 확장 필요  
-> **승격 결정**: Phase 2 (full confirmatory replication) → Stage 4 (`docs/stage4_데이터수집계획_20260507.md` §6) → Phase 3 W-S 진입  
+> **승격 결정**: Stage 4 (Phase 1 마지막 gate, `docs/stage4_데이터수집계획_20260507.md` §6) → Phase 2 (full confirmatory replication) → Phase 3 W-S 진입  
 > **방법론 골격**: `docs/트랙2_methodology_pipeline_20260507.md` (Phase 1 / Phase 2 / Phase 3 분리 + 사전등록)  
 > **본 §17 의 KPI / 게이트는 warm path 전용 scope override** — §16 (cold-default KPI glossary) 와 별도 운용
 
 ### 17.1 후보 모델
-- **FE only (Stage 4 champion)**: F4 + log_area spline + Huber + Artist Fixed Effects (warm 작가 dummy)
+- **FE only (Stage 4 leading candidate)**: F4 + log_area spline + Huber + Artist Fixed Effects (warm 작가 dummy)
 - 비채택: Combined (FE + time weight + history avg) — cutoff 2024 효과 약화 + 저가 segment +3.36%p 악화
 - 비채택: Combined-shrunk (EB) — σ_b² > σ_w² 로 shrinkage 효과 미미 (Combined 와 거의 동일)
 - 비채택: + gallery_tier dummy / + log_area×log_works interaction / + 결합 — feature 재탐색 결과 cutoff 2023/2024 baseline 보다 악화 또는 동등, **증분 가치 없음**
