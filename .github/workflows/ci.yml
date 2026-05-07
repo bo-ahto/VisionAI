@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "docs/**", "feature/**", "fix/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck-test:
+    name: ruff + mypy + pytest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.8.22"
+
+      - name: Verify lockfile freshness
+        run: uv lock --check
+
+      - name: Install project + dev/price-engine extras
+        run: |
+          uv sync --frozen --extra dev --extra price-engine-core --extra price-engine-exp --extra price-engine-api
+
+      - name: Ruff lint (신규 helpers/tests — pattern based)
+        # v3.0~v3.5 research scripts (v3_emit_provenance / v31_*) 는 archive 결정
+        # (Step 6 카테고리 B) 으로 본 분할 PR scope 에서 제외. lint scope = helpers/tests.
+        run: |
+          uv run ruff check \
+            src/visionai/price_engine/_provenance.py \
+            src/visionai/price_engine/_eval_helpers.py \
+            tests/price_engine/test_provenance.py \
+            tests/price_engine/test_eval_helpers.py
+
+      - name: Ruff format check (strict, pattern based)
+        run: |
+          uv run ruff format --check \
+            src/visionai/price_engine/_provenance.py \
+            src/visionai/price_engine/_eval_helpers.py \
+            tests/price_engine/test_provenance.py \
+            tests/price_engine/test_eval_helpers.py
+
+      - name: Mypy (src only — strict per pyproject.toml)
+        run: uv run mypy src/visionai/price_engine/_provenance.py src/visionai/price_engine/_eval_helpers.py
+        # NOTE: full src/ mypy 통과는 v3.1 (기존 코드 type hint 정합 후)
+
+      - name: Pytest (price_engine helpers + provenance — 핵심 helper 100% coverage)
+        run: |
+          uv run pytest tests/price_engine/test_eval_helpers.py tests/price_engine/test_provenance.py -v
+
+      - name: Pytest (전체 — 회귀 점검, 실패 허용)
+        run: uv run pytest tests/ -q
+        continue-on-error: true  # 기존 테스트 일부 환경 의존. v3.1에서 strict 전환.
+
+  # v3.1-4: Python 3.14 smoke lane (independent — primary 3.11 실패해도 신호 보임)
+  smoke-py314:
+    name: Smoke (Python 3.14)
+    runs-on: ubuntu-latest
+    # v3.1-4 R2 (codex P3): needs 제거 — 3.11 lane 실패 시에도 informational 신호 확보.
+    continue-on-error: true  # informational, 3.11 lane이 primary
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.8.22"
+
+      - name: Sync (frozen — uv.lock markers 가 3.11/3.14/3.15 포함, lock 검증/재사용)
+        # FastAPI 3.14 호환성 미확인 → price-engine-api 제외. helpers/provenance 호환성만 확인.
+        run: |
+          uv sync --frozen --extra dev --extra price-engine-core --extra price-engine-exp
+
+      - name: Pytest fast subset (helper + provenance)
+        run: uv run pytest tests/price_engine/test_eval_helpers.py tests/price_engine/test_provenance.py -q
+
+  docker-frontend-smoke:
+    name: Docker frontend (nginx) build smoke
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build frontend image
+        run: docker build -f Dockerfile -t visionai-frontend:ci .
+
+  docker-api-smoke:
+    name: Docker API (FastAPI + 모델) build smoke
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    # NOTE: model artifact (.cbm 4MB / xgboost.json 18MB) + parser rule csv 2개가
+    # gitignore (`*.csv`, `*.parquet`) 영향으로 git tracked가 아님. CI 환경에서
+    # COPY 실패 가능. v3.1 작업 항목: 큰 binary artifact 를 git-lfs 또는 dedicated
+    # artifact storage(S3/HF)로 이전. 그 전까지는 informational.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Dockerfile.api COPY targets (informational, full set)
+        # Dockerfile.api 의 모든 `COPY` 입력을 점검 — build contract 와 1:1 정합.
+        # gitignore (`*.csv`, `*.parquet`, model binary) 로 일부 untracked 가능.
+        # v3.1 backlog: git-lfs / S3 artifact storage 이전.
+        run: |
+          set +e
+          MISSING=0
+          # 모델 산출물 (production v3-filtered-tuned)
+          for f in \
+            "model_test_results/integrated_v3_filtered_tuned_catboost.cbm" \
+            "model_test_results/integrated_v3_filtered_tuned_xgboost.json" \
+            "model_test_results/integrated_v3_filtered_tuned_xgboost_label_maps.json" \
+            "model_test_results/integrated_v3_filtered_tuned_warm_artists.json" \
+            "model_test_results/integrated_v3_filtered_tuned_metrics.json" \
+            "model_test_results/integrated_v3_filtered_tuned_source_calibration.json" \
+            "model_test_results/integrated_v3_catboost.cbm" \
+            "model_test_results/integrated_v3_xgboost.json" \
+            "data/primary_market_dataset.parquet" \
+            "data/saatchi_cleaned.parquet" \
+            "data/k-artmarket 1차 데이터 정제 - 지지체(바탕재) 분류.csv" \
+            "data/k-artmarket 1차 데이터 정제 - 도구_기법 분류.csv"; do
+            if [ -e "$f" ]; then
+              echo "OK: $f"
+            else
+              echo "MISSING (Docker build will fail): $f"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          if [ "$MISSING" -gt 0 ]; then
+            echo "::warning::$MISSING required artifact(s) missing — see v3.1 backlog (git-lfs migration)"
+          fi
+          set -e
+
+      - name: Build API image
+        run: docker build -f Dockerfile.api -t visionai-api:ci .

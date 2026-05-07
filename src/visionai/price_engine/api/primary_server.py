@@ -6,8 +6,8 @@ import json
 import logging
 import os
 import time
-import uuid
 import urllib.request
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,28 +15,40 @@ from pathlib import Path
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 
+from . import external_collector, shap_explainer
+from .artist_matcher import ArtistMatcher
+from .artwork_year_cache import (
+    get_artwork_year,
+    get_global_cache,
+    get_global_gate,
+    seed_artwork_year,
+)
+from .primary_feature_builder import build_features
+from .primary_predictor import (
+    CAT_FEATURES,
+    CB_FEATURES,
+    SUPPORTED_VARIANTS,
+    PrimaryPredictor,
+)
 from .primary_schemas import (
-    ErrorResponse,
-    HealthResponse,
-    ModelInfoResponse,
-    PredictRequest,
-    PredictResponse,
-    Prediction,
-    PriceRange,
-    ModelInfo,
-    Processing,
+    ArtistPriceHistory,
     BatchPredictRequest,
     BatchPredictResponse,
     BatchPredictResult,
-    ArtistPriceHistory,
-    PriceHistoryItem,
+    ErrorResponse,
+    FetchGateStats,
+    HealthResponse,
     MatchedArtwork,
+    ModelInfo,
+    ModelInfoResponse,
+    MonitorResponse,
+    Prediction,
+    PredictRequest,
+    PredictResponse,
+    PriceHistoryItem,
+    PriceRange,
+    Processing,
 )
-from .artist_matcher import ArtistMatcher
-from .primary_feature_builder import build_features
-from .primary_predictor import PrimaryPredictor, CB_FEATURES, CAT_FEATURES
-from . import external_collector
-from . import shap_explainer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -48,6 +60,29 @@ _start_time = time.time()
 _model_version = "v3-tuned"  # 기본값. calibration artifact 로드 시 'v3-tuned-cal' (DB VARCHAR(20) 호환)
 _model_info_cache: ModelInfoResponse | None = None  # startup에서 캐시 (Codex 5차 P2: stale 방지)
 _price_history: dict[str, list[dict]] = {}  # artist_slug → [작품 이력]
+
+# v3.6 PR10: deploy/rollout metadata (v3.5 step 3 §3.2 logging schema).
+# env var 미설정 시 'unknown' fallback — production 에서는 deploy pipeline 이 주입.
+_ARTIFACT_VERSION = os.getenv("ARTIFACT_VERSION", "unknown")
+_WARM_ARTIST_SLUGS_VERSION = os.getenv("WARM_ARTIST_SLUGS_VERSION", "unknown")
+_ROLLOUT_RULE_VERSION = os.getenv("ROLLOUT_RULE_VERSION", "unknown")
+_ROLLOUT_COHORT = os.getenv("ROLLOUT_COHORT", "unknown")  # treatment_5pct | control | unknown
+_SERVER_INSTANCE = os.getenv("SERVER_INSTANCE", "unknown")
+# cache_epoch: server cold-start 시점 (cache 비어있는 epoch 식별용).
+_CACHE_EPOCH = datetime.now(timezone.utc).strftime("%Y%m%dT%H%MZ")
+# v3.6 PR12 (코덱스 PR11d Nit fix): worker_instance_id — process-local uuid.
+# SERVER_INSTANCE env 미주입 / "unknown" 환경에서도 worker 식별 보장.
+# cache_epoch 분 단위 동일 worker 들도 이 id 로 분리 가능.
+#
+# 런처 가정 (PR13 코덱스 Nit fix):
+# - uvicorn `--workers N` (spawn 모델): child process 가 module 을 다시 import
+#   → worker 별 uuid 다름. ✓
+# - gunicorn `--preload` + fork 모델: parent 에서 module 1회 load 후 fork →
+#   모든 child 가 동일 uuid 상속. ✗ (이 경우 SERVER_INSTANCE env 또는 startup
+#   훅에서 worker 별 갱신 필요).
+# 현재 Dockerfile.api 는 uvicorn 직기동 → 안전. preload+fork 런처로 변경 시
+# startup 시점 정합 점검 필요.
+_WORKER_INSTANCE_ID = uuid.uuid4().hex
 
 # ─── 인메모리 모니터링 카운터 ───
 _monitor = {
@@ -426,25 +461,34 @@ def _build_model_info_cache(model_dir: Path) -> None:
     """startup 시점의 metrics + calibration으로 model_info 응답 캐시.
 
     이후 disk가 바뀌어도 메모리 cache 사용 → version과 metrics가 같은 세대 보장.
+
+    v3.6 PR7 (코덱스 P1 fix): predictor 의 variant prefix 와 정합. MODEL_VARIANT 적용
+    시 metrics.json + calibration JSON + metrics dict 의 model_type key 모두 variant
+    prefix 로 갱신. 이전 hardcoded 'integrated_v3_filtered_tuned_*' 는 deprecated.
     """
     global _model_info_cache
-    metrics_path = model_dir / "integrated_v3_filtered_tuned_metrics.json"
-    calib_path = model_dir / "integrated_v3_filtered_tuned_source_calibration.json"
+    # PR7: variant prefix 로 artifact path 결정 (predictor 와 정합)
+    variant_prefix = SUPPORTED_VARIANTS[_predictor.variant]["prefix"]
+    metrics_path = model_dir / f"{variant_prefix}_metrics.json"
+    calib_path = model_dir / f"{variant_prefix}_source_calibration.json"
     if not metrics_path.exists():
         logger.warning("metrics file 없음 (%s) — model_info cache fallback", metrics_path)
         _model_info_cache = ModelInfoResponse(
             model_version=_predictor.model_version_label(_model_version),
             training_count=0, artist_count=0,
             mdape_groupkfold=0.0, mdape_kfold=0.0,
-            features_count=len(CB_FEATURES),
+            features_count=len(_predictor.cb_features),
         )
         return
     with metrics_path.open(encoding="utf-8") as f:
         metrics = json.load(f)
-    cold_cb = metrics.get("groupkfold", {}).get("catboost_v3_filtered_tuned", {})
-    warm_xgb = metrics.get("kfold", {}).get("warm_slice", {}).get("xgboost_v3_filtered_tuned", {})
+    # PR7: metrics.json 안의 catboost / xgboost key 도 variant prefix
+    cb_key = f"catboost_{_predictor.variant}"
+    xgb_key = f"xgboost_{_predictor.variant}"
+    cold_cb = metrics.get("groupkfold", {}).get(cb_key, {})
+    warm_xgb = metrics.get("kfold", {}).get("warm_slice", {}).get(xgb_key, {})
     if not warm_xgb:
-        warm_xgb = metrics.get("kfold", {}).get("xgboost_v3_filtered_tuned", {})
+        warm_xgb = metrics.get("kfold", {}).get(xgb_key, {})
     cold_mdape = float(cold_cb.get("MdAPE", 0.0))
     warm_mdape = float(warm_xgb.get("MdAPE", 0.0))
     if calib_path.exists():
@@ -480,6 +524,14 @@ async def lifespan(app: FastAPI):
     _build_title_index()
     _init_log()
 
+    # v3.6 PR11c (코덱스 PR11 review P1): warmup anchor = server lifespan startup.
+    # gate 가 lazy 생성이라 lifespan 에서 명시 anchor → spec "server restart 직후
+    # 5min" 정합. cache_epoch 도 같이 갱신.
+    global _CACHE_EPOCH
+    _CACHE_EPOCH = datetime.now(timezone.utc).strftime("%Y%m%dT%H%MZ")
+    get_global_cache()  # explicit init (idempotent)
+    get_global_gate().mark_server_start()
+
     # SHAP explainer 초기화 (CatBoost 모델)
     if _predictor.cb_model:
         shap_explainer.init_explainer(_predictor.cb_model)
@@ -490,7 +542,7 @@ async def lifespan(app: FastAPI):
 
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 
 app = FastAPI(
     title="VisionAI 1차 시장 가격 예측 API",
@@ -547,28 +599,193 @@ async def model_info():
     """
     if _model_info_cache is None:
         # 발생할 일 없음 (lifespan에서 _load_models 호출됨) — defensive
+        # v3.6 PR8 (코덱스 PR7 review P2 fix): defensive fallback 도 variant-aware.
+        # CB_FEATURES (32) hardcode → predictor.cb_features 길이 (variant 별 32/35).
         return ModelInfoResponse(
             model_version=_predictor.model_version_label(_model_version),
             training_count=0, artist_count=0,
             mdape_groupkfold=0.0, mdape_kfold=0.0,
-            features_count=len(CB_FEATURES),
+            features_count=len(_predictor.cb_features),
         )
     return _model_info_cache
 
 
-@app.get("/api/v1/monitor")
-async def monitor():
-    """인메모리 카운터 기반 모니터링."""
+@app.get("/api/v1/monitor", response_model=MonitorResponse)
+async def monitor() -> MonitorResponse:
+    """인메모리 카운터 기반 모니터링.
+
+    v3.6 PR11d: fetch_gate stats 노출 (warmup_mode / tokens / miss_5min /
+    cool_down). v3.5 step 3 §3.2.3 의 운영 metric 을 endpoint 로 직접 관측 가능.
+    PR12: response_model 명시 + worker_instance_id 추가 (multi-worker 식별).
+    """
     total = _monitor["total_predictions"]
-    return {
-        "total_predictions": total,
-        "by_grade": _monitor["by_grade"],
-        "by_model": _monitor["by_model"],
-        "avg_ms": round(_monitor["total_ms"] / total, 1) if total else 0,
-        "external_lookup_count": _monitor["external_lookup_count"],
-        "known_artist_count": _monitor["known_artist_count"],
-        "uptime_seconds": round(time.time() - _start_time, 1),
-    }
+    return MonitorResponse(
+        total_predictions=total,
+        by_grade=_monitor["by_grade"],
+        by_model=_monitor["by_model"],
+        avg_ms=round(_monitor["total_ms"] / total, 1) if total else 0.0,
+        external_lookup_count=_monitor["external_lookup_count"],
+        known_artist_count=_monitor["known_artist_count"],
+        uptime_seconds=round(time.time() - _start_time, 1),
+        fetch_gate=FetchGateStats(**get_global_gate().stats()),
+        cache_epoch=_CACHE_EPOCH,
+        server_instance=_SERVER_INSTANCE,
+        worker_instance_id=_WORKER_INSTANCE_ID,
+    )
+
+
+@app.get("/api/v1/metrics", response_class=PlainTextResponse)
+async def metrics() -> str:
+    """Prometheus exposition format — v3.6 PR16.
+
+    spec: docs/v3_5_step4_drift_monitoring.md §3.2.3 Panel 5 (concurrent_fetch_max).
+    /api/v1/monitor 의 fetch_gate stats 를 Prometheus scrape 가능한 text 형식으로
+    노출. 모든 metric 에 worker_instance_id / server_instance / model_variant
+    label 포함 → multi-worker 환경에서 worker 별 분리 + Grafana variable.
+
+    Format: https://prometheus.io/docs/instrumenting/exposition_formats/
+    의존성 X — 단순 string format (prometheus_client 라이브러리 안 씀).
+    """
+    gate_stats = get_global_gate().stats()
+
+    def _escape_label_value(value: str) -> str:
+        """Prometheus exposition format label value escape.
+
+        v3.6 PR16a (코덱스 P1 fix): \\, ", newline 안 escape 시 metric line
+        parse 실패. https://prometheus.io/docs/instrumenting/exposition_formats/
+        """
+        return (
+            value.replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("\n", "\\n")
+        )
+
+    labels = (
+        f'worker="{_escape_label_value(_WORKER_INSTANCE_ID)}",'
+        f'server="{_escape_label_value(_SERVER_INSTANCE)}",'
+        f'variant="{_escape_label_value(_predictor.variant)}"'
+    )
+
+    def gauge(name: str, help_text: str, value: float | int | bool) -> str:
+        v = int(value) if isinstance(value, bool) else value
+        return (
+            f"# HELP {name} {help_text}\n"
+            f"# TYPE {name} gauge\n"
+            f"{name}{{{labels}}} {v}\n"
+        )
+
+    def counter(name: str, help_text: str, value: float | int) -> str:
+        return (
+            f"# HELP {name} {help_text}\n"
+            f"# TYPE {name} counter\n"
+            f"{name}{{{labels}}} {value}\n"
+        )
+
+    lines: list[str] = []
+    # fetch_gate (8 metric — Panel 4-6 + warmup)
+    lines.append(gauge(
+        "visionai_fetch_gate_concurrent",
+        "Concurrent in-flight saatchi fetch requests",
+        gate_stats["concurrent"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_miss_5min",
+        "Cache miss count in last 5min sliding window",
+        gate_stats["miss_5min"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_consecutive_fails",
+        "Consecutive fetch_fail count (cool-down trigger)",
+        gate_stats["consecutive_fails"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_cool_down_remaining_sec",
+        "Seconds remaining until fetch cool-down ends (0 = inactive)",
+        gate_stats["cool_down_remaining_sec"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_tokens_available",
+        "Token bucket available tokens (warmup or sustain mode)",
+        gate_stats["tokens_available"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_inflight",
+        "Per-key inflight set size (stampede dedup)",
+        gate_stats["inflight"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_warmup_mode",
+        "1 if cold-start warmup mode active (capacity=1, refill=0.3 qps)",
+        gate_stats["warmup_mode"],
+    ))
+    lines.append(gauge(
+        "visionai_fetch_gate_warmup_remaining_sec",
+        "Seconds remaining in warmup window",
+        gate_stats["warmup_remaining_sec"],
+    ))
+
+    # _monitor 카운터 (cumulative since process start)
+    lines.append(counter(
+        "visionai_predictions_total",
+        "Total predictions served since worker start",
+        _monitor["total_predictions"],
+    ))
+    lines.append(counter(
+        "visionai_predictions_external_lookup_total",
+        "Predictions that triggered external_collector lookup",
+        _monitor["external_lookup_count"],
+    ))
+    lines.append(counter(
+        "visionai_predictions_known_artist_total",
+        "Predictions where artist matched DB",
+        _monitor["known_artist_count"],
+    ))
+
+    return "".join(lines)
+
+
+def _decide_saatchi_warm_cohort(
+    is_matched: bool,
+    profile: dict | None,
+    artist_slug: str | None,
+) -> bool:
+    """v3.5 step 2 §2.3 cohort authority — match.profile.source + warm_artist_slugs.
+
+    external_collector 로 채워진 profile.source 는 비권위 (is_matched=False 면 무시).
+    PR9: 단건/batch 공유 helper.
+    """
+    return (
+        bool(is_matched)
+        and isinstance(profile, dict)
+        and profile.get("source") == "saatchi"
+        and bool(artist_slug)
+        and _predictor.is_warm_artist(artist_slug)
+    )
+
+
+def _resolve_year_sync(
+    *,
+    is_saatchi_warm: bool,
+    manual_year: int | None,
+    artwork_id: str | None,
+    artwork_url: str | None,
+) -> tuple[int | None, str]:
+    """v3.5 step 2 §2.2 + step 3 §2.3 year resolution: manual > cache > fetch.
+
+    sync 함수 — fetch 가 동기 I/O (saatchi 1.5s timeout). 단건/batch endpoint
+    모두 await loop.run_in_executor 로 wrap (event loop 차단 방지).
+    PR8 의 token bucket / inflight / cool-down gate 자동 적용.
+    """
+    if not is_saatchi_warm:
+        return None, "disabled"
+    if manual_year is not None:
+        year_int = int(manual_year)
+        if artwork_id:
+            route = seed_artwork_year(artwork_id, year_int, artwork_url=artwork_url)
+        else:
+            route = "manual"
+        return year_int, route
+    return get_artwork_year(artwork_id, artwork_url, cache=get_global_cache())
 
 
 @app.post("/api/v1/predict", response_model=PredictResponse)
@@ -613,6 +830,26 @@ async def predict(req: PredictRequest):
 
     has_manual = len(manual) > 0
 
+    # 3.5 v3.6 PR8/9: V_year_saatchi_warm cohort gating + year resolution
+    # PR9: helper 로 추출 (_decide_saatchi_warm_cohort + _resolve_year_sync) →
+    # batch endpoint 와 공유. fetch I/O 는 await loop.run_in_executor 로 분리.
+    artist_slug_for_routing = match.slug if match else None
+    is_saatchi_warm = _decide_saatchi_warm_cohort(
+        is_matched, profile, artist_slug_for_routing
+    )
+    enrichment_t0 = time.time()
+    loop = asyncio.get_event_loop()
+    year_made, year_made_route = await loop.run_in_executor(
+        None,
+        lambda: _resolve_year_sync(
+            is_saatchi_warm=is_saatchi_warm,
+            manual_year=req.year_made,
+            artwork_id=req.artwork_id,
+            artwork_url=req.artwork_url,
+        ),
+    )
+    enrichment_ms = round((time.time() - enrichment_t0) * 1000, 2)
+
     # 4. 피처 생성
     features = build_features(
         width_cm=req.width_cm,
@@ -621,10 +858,11 @@ async def predict(req: PredictRequest):
         artist_profile=profile,
         target_market=req.target_market,
         manual_overrides=manual,
+        is_saatchi_warm=is_saatchi_warm,
+        year_made=year_made,
     )
 
     # 5. 예측 — artist_slug 전달 (학습 시 warm artist set lookup용, Codex 5차 P1)
-    artist_slug_for_routing = match.slug if match else None
     result = _predictor.predict(
         features=features,
         is_matched=is_matched,
@@ -635,14 +873,18 @@ async def predict(req: PredictRequest):
     )
 
     # SHAP 설명 (CatBoost 경로만, threadpool에서 실행)
+    # v3.6 PR7: variant-aware model_type → 'catboost_*' prefix 로 분기
     feature_contributions = []
-    if result["model_type"] == "catboost_v3":
+    if result["model_type"].startswith("catboost_"):
+        cb_features_for_shap = _predictor.cb_features  # variant-aware
+
         def _compute_shap():
             df_explain = pd.DataFrame([features])
             for col in CAT_FEATURES:
                 if col in df_explain.columns:
                     df_explain[col] = df_explain[col].astype(str).fillna("unknown")
-            return shap_explainer.explain(df_explain[CB_FEATURES], CB_FEATURES)
+            return shap_explainer.explain(df_explain[cb_features_for_shap], cb_features_for_shap)
+
         loop = asyncio.get_event_loop()
         feature_contributions = await loop.run_in_executor(None, _compute_shap)
 
@@ -660,15 +902,50 @@ async def predict(req: PredictRequest):
         "height_cm": req.height_cm,
         "medium": req.medium,
         "target_market": req.target_market,
-        "predicted_krw": result["price_krw"],
-        "price_range_low": result["price_range_low"],
-        "price_range_high": result["price_range_high"],
+        # v3.6 PR14a (코덱스 step4 §6.1 DDL 정합): spec column 이름 사용 +
+        # 기존 이름 alias dual-write (backward compat).
+        "predicted_price_krw": result["price_krw"],
+        "predicted_range_low_krw": result["price_range_low"],
+        "predicted_range_high_krw": result["price_range_high"],
+        "predicted_krw": result["price_krw"],  # alias (deprecated, PR15+ 제거 예정)
+        "price_range_low": result["price_range_low"],  # alias
+        "price_range_high": result["price_range_high"],  # alias
         "confidence_grade": result["confidence_grade"],
         "model_type": result["model_type"],
         "is_known_artist": result["is_known_artist"],
         "training_count": result["training_count"],
         "has_manual_profile": has_manual,
-        "total_ms": total_ms,
+        # v3.6 PR8 + PR10/10b: V_year_saatchi_warm cohort + full schema (v3.5 step 3 §3.2).
+        "matched": bool(is_matched),  # PR14b' (코덱스 P1): DDL spec 정합
+        "is_saatchi_warm": bool(is_saatchi_warm),
+        # PR10b (코덱스 P2): match.profile.source 만 권위. is_matched=False 일 때
+        # external_collector 가 채운 profile.source 는 별도 external_collector_source
+        # 필드로만 기록 → match_profile_source 오염 차단.
+        "match_profile_source": (
+            profile.get("source") if (is_matched and isinstance(profile, dict)) else None
+        ),
+        "slug_in_warm_set": (
+            _predictor.is_warm_artist(artist_slug_for_routing)
+            if artist_slug_for_routing else False
+        ),
+        "external_collector_source": sources_used[0] if sources_used else "none",
+        "year_made_route": year_made_route,
+        "year_made_used": year_made,
+        "artwork_id": req.artwork_id,
+        "artwork_url": req.artwork_url,
+        "enrichment_latency_ms": enrichment_ms,
+        "predict_total_latency_ms": total_ms,
+        # 배포/설정 분리 (v3.5 step 3 §3.2 코덱스 P0): D7/D30 hit rate 해석 시 트래픽
+        # 변화 vs 설정 변화 분리.
+        "model_variant": _predictor.variant,
+        "artifact_version": _ARTIFACT_VERSION,
+        "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
+        "rollout_rule_version": _ROLLOUT_RULE_VERSION,
+        "rollout_cohort": _ROLLOUT_COHORT,
+        "server_instance": _SERVER_INSTANCE,
+        "worker_instance_id": _WORKER_INSTANCE_ID,
+        "cache_epoch": _CACHE_EPOCH,
+        "total_ms": total_ms,  # backward compat (기존 dashboard 가 total_ms 사용)
     })
 
     return PredictResponse(
@@ -702,13 +979,25 @@ async def predict(req: PredictRequest):
 
 @app.post("/api/v1/predict/batch", response_model=BatchPredictResponse)
 async def predict_batch(req: BatchPredictRequest):
-    """배치 예측 (최대 50건). 작가 중복 시 외부 수집 1회만."""
+    """배치 예측 (최대 50건). 작가 중복 시 외부 수집 1회만.
+
+    v3.6 PR9: V_year_saatchi_warm cohort gating + year resolution 추가
+    (단건 endpoint 와 helper 공유). 각 item 마다 cohort 결정 + year resolve +
+    logging row 기록. fetch I/O 는 token bucket / inflight gate 자동 적용
+    (50 item 동시 fetch 도 직렬화).
+    """
     t0 = time.time()
     results = []
     success_count = 0
     fail_count = 0
+    loop = asyncio.get_event_loop()
+    # v3.6 PR13 (코덱스 PR9 review P2): batch 안 unmatched 작가 중복 dedup.
+    # docstring "작가 중복 시 외부 수집 1회만" 의 실 구현. 50건 batch 안에 같은
+    # artist_name 이 여러 번 나오면 첫 lookup 결과 재사용.
+    ext_lookup_cache: dict[str, tuple[dict, list[str]]] = {}
 
     for i, item in enumerate(req.artworks):
+        item_t0 = time.time()
         try:
             # 매칭
             match = _matcher.match(item.artist_name)
@@ -717,9 +1006,18 @@ async def predict_batch(req: BatchPredictRequest):
             profile = match.profile if match else {}
             sources = []
 
-            # 외부 수집
+            # 외부 수집 (executor 분리 + artist 중복 dedup, PR13).
+            # event loop 차단 방지 — saatchi/web fetch 가 동기 I/O.
             if not is_matched and not req.skip_external_lookup:
-                ext_profile, sources = external_collector.collect(item.artist_name)
+                key = item.artist_name
+                if key in ext_lookup_cache:
+                    ext_profile, sources = ext_lookup_cache[key]
+                else:
+                    ext_profile, sources = await loop.run_in_executor(
+                        None,
+                        lambda name=key: external_collector.collect(name, False),
+                    )
+                    ext_lookup_cache[key] = (ext_profile, sources)
                 if ext_profile:
                     profile = ext_profile
 
@@ -736,17 +1034,93 @@ async def predict_batch(req: BatchPredictRequest):
             if item.followers is not None:
                 manual["followers"] = item.followers
 
+            # v3.6 PR9: cohort gating + year resolve (단건과 동일 helper)
+            artist_slug = match.slug if match else None
+            is_saatchi_warm = _decide_saatchi_warm_cohort(
+                is_matched, profile, artist_slug
+            )
+            enrichment_t0 = time.time()
+            year_made, year_made_route = await loop.run_in_executor(
+                None,
+                lambda iw=is_saatchi_warm, my=item.year_made,
+                       aid=item.artwork_id, au=item.artwork_url:
+                    _resolve_year_sync(
+                        is_saatchi_warm=iw, manual_year=my,
+                        artwork_id=aid, artwork_url=au,
+                    ),
+            )
+            enrichment_ms = round((time.time() - enrichment_t0) * 1000, 2)
+
             features = build_features(
                 width_cm=item.width_cm, height_cm=item.height_cm,
                 medium=item.medium, artist_profile=profile,
                 target_market=item.target_market, manual_overrides=manual,
+                is_saatchi_warm=is_saatchi_warm,
+                year_made=year_made,
             )
             result = _predictor.predict(
                 features=features, is_matched=is_matched,
                 training_count=training_count, target_market=item.target_market,
                 has_manual_profile=len(manual) > 0,
-                artist_slug=match.slug if match else None,
+                artist_slug=artist_slug,
             )
+
+            # v3.6 PR9 + PR10 + PR9b: per-item logging (단건과 동일 schema).
+            # PR9b (코덱스 PR9 review P1): item end-to-end total_ms 측정 — 단건의
+            # total_ms 와 동일 의미 (matcher + cohort + year + features + predict 합).
+            # enrichment_ms 는 year resolve 단계만, total_ms 는 item 전체.
+            item_total_ms = int((time.time() - item_t0) * 1000)
+            _log_prediction({
+                "id": str(uuid.uuid4()),
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "batch_index": i,
+                "artist_name_input": item.artist_name,
+                "artist_id": match.artist_id if match else None,
+                "artist_matched": match.name if match else None,
+                "match_score": match.score if match else 0,
+                "width_cm": item.width_cm,
+                "height_cm": item.height_cm,
+                "medium": item.medium,
+                "target_market": item.target_market,
+                # PR14a: spec column 이름 + alias dual-write (단건과 동일).
+                "predicted_price_krw": result["price_krw"],
+                "predicted_range_low_krw": result["price_range_low"],
+                "predicted_range_high_krw": result["price_range_high"],
+                "predicted_krw": result["price_krw"],
+                "price_range_low": result["price_range_low"],
+                "price_range_high": result["price_range_high"],
+                "confidence_grade": result["confidence_grade"],
+                "model_type": result["model_type"],
+                "is_known_artist": result["is_known_artist"],
+                "training_count": result["training_count"],
+                "has_manual_profile": len(manual) > 0,
+                "matched": bool(is_matched),  # PR14b' (코덱스 P1): DDL spec 정합
+                "is_saatchi_warm": bool(is_saatchi_warm),
+                "match_profile_source": (
+                    profile.get("source")
+                    if (is_matched and isinstance(profile, dict)) else None
+                ),
+                "slug_in_warm_set": (
+                    _predictor.is_warm_artist(artist_slug)
+                    if artist_slug else False
+                ),
+                "external_collector_source": sources[0] if sources else "none",
+                "year_made_route": year_made_route,
+                "year_made_used": year_made,
+                "artwork_id": item.artwork_id,
+                "artwork_url": item.artwork_url,
+                "enrichment_latency_ms": enrichment_ms,
+                "predict_total_latency_ms": item_total_ms,
+                "total_ms": item_total_ms,  # _monitor avg_ms 합산용 (단건 호환)
+                "model_variant": _predictor.variant,
+                "artifact_version": _ARTIFACT_VERSION,
+                "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
+                "rollout_rule_version": _ROLLOUT_RULE_VERSION,
+                "rollout_cohort": _ROLLOUT_COHORT,
+                "server_instance": _SERVER_INSTANCE,
+                "worker_instance_id": _WORKER_INSTANCE_ID,
+                "cache_epoch": _CACHE_EPOCH,
+            })
 
             results.append(BatchPredictResult(
                 index=i, status="success",

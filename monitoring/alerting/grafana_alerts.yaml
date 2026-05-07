@@ -1,0 +1,332 @@
+# v3.6 Phase 2 — Grafana Alerting provisioning (v10+ Unified Alerting)
+# spec: docs/v3_5_step4_drift_monitoring.md §3.3 + §4
+# 7 trigger + NO_BASELINE alert. severity label 으로 notification policy 라우팅.
+
+apiVersion: 1
+
+groups:
+  - name: visionai_v3_6_rollback_triggers
+    folder: VisionAI / v3.6 Rollback
+    interval: 1m  # 1분 주기 평가 (코덱스 step4 권장)
+    rules:
+
+      # ------------------------------------------------------------------
+      # Trigger 1: 5min_miss_burst > 200 (5분 지속) → 자동 pause
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-1-miss-burst
+        title: "T1: 5min_miss_burst > 200 (saatchi rate-limit)"
+        condition: B
+        for: 5m  # 5분 지속 명시 (코덱스 PR14b' P1 fix)
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              format: table
+              rawSql: |
+                SELECT COUNT(*) FILTER (WHERE year_made_route IN
+                    ('fetch_ok','fetch_fail','parse_invalid','rate_limited')) AS value
+                FROM predict_logs
+                WHERE timestamp > NOW() - INTERVAL '5 minutes';
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [200] }
+        labels:
+          severity: crit
+          action: TRIGGER_PAUSE
+          spec: step4_3_3_t1
+        annotations:
+          summary: "saatchi enrichment burst — 5분 누적 cache miss > 200 (5분 지속)"
+          runbook: "monitoring/playbooks/scenario-D-cache-warmup-spike.md"
+
+      # ------------------------------------------------------------------
+      # Trigger 2a: NO_BASELINE — cohort_baselines 미설정 즉시 alert
+      # 코덱스 PR14c review P1 fix: Trigger 2 의 noDataState=Alerting 도 for:10m
+      # pending 을 그대로 타기 때문에 baseline 누락이 10분 뒤에야 fire 함.
+      # 별도 rule (for: 1m) 로 분리 — 즉시 알림.
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-2a-no-baseline
+        title: "T2a: cohort_baselines 미설정 (NO_BASELINE)"
+        condition: B
+        for: 1m
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 86400, to: 0 }
+            model:
+              format: table
+              rawSql: |
+                -- v3.6 PR14c'' (코덱스 P1 fix): traffic-0 vs baseline-missing 구분.
+                -- value 의미:
+                --   1 = OK (traffic 0 또는 baseline 존재)
+                --   0 = NO_BASELINE (traffic 있는데 baseline row 없음 — fire 대상)
+                -- threshold lt 1 → value=0 만 fire.
+                WITH active_artifact AS (
+                    SELECT artifact_version FROM predict_logs
+                    WHERE timestamp > NOW() - INTERVAL '24 hours'
+                        AND rollout_cohort = 'treatment_5pct'
+                    GROUP BY artifact_version ORDER BY COUNT(*) DESC LIMIT 1
+                )
+                SELECT
+                    CASE
+                        WHEN NOT EXISTS (SELECT 1 FROM active_artifact) THEN 1
+                        WHEN EXISTS (
+                            SELECT 1 FROM cohort_baselines b
+                            JOIN active_artifact USING (artifact_version)
+                        ) THEN 1
+                        ELSE 0
+                    END AS value;
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+        labels:
+          severity: crit
+          action: TRIGGER_PAUSE
+          spec: step4_3_3_t2a
+        annotations:
+          summary: "cohort_baselines 에 active artifact 의 row 없음 — discrepancy metric 무효화"
+          runbook: "monitoring/playbooks/scenario-C-cohort-gating-fail.md#no-baseline"
+
+      # ------------------------------------------------------------------
+      # Trigger 2: cohort_assignment_discrepancy > 5%
+      # baseline 존재 + 임계 초과 시. baseline 부재는 T2a 가 잡음.
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-2-cohort-discrepancy
+        title: "T2: cohort_discrepancy > 5%"
+        condition: B
+        for: 10m
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 86400, to: 0 }
+            model:
+              format: table
+              rawSql: |
+                -- 020_alert_rollback_triggers.sql trigger_2 의 max_discrepancy
+                -- (NO_BASELINE 시 NULL — Grafana NoData = OK 가 아니라 별도 alert)
+                WITH active_artifact AS (
+                    SELECT artifact_version FROM predict_logs
+                    WHERE timestamp > NOW() - INTERVAL '24 hours'
+                        AND rollout_cohort = 'treatment_5pct'
+                    GROUP BY artifact_version ORDER BY COUNT(*) DESC LIMIT 1
+                ),
+                train_dist AS (
+                    SELECT b.cohort, b.expected_rate FROM cohort_baselines b
+                    JOIN active_artifact USING (artifact_version)
+                ),
+                prod_dist AS (
+                    SELECT
+                        CASE WHEN matched = false THEN 'unmatched'
+                             WHEN is_saatchi_warm THEN 'saatchi_warm'
+                             WHEN matched AND match_profile_source = 'saatchi'
+                                 AND slug_in_warm_set = false THEN 'saatchi_cold'
+                             WHEN matched AND match_profile_source = 'artsy' THEN 'artsy_warm'
+                             ELSE 'other' END AS cohort,
+                        COUNT(*) * 1.0 / SUM(COUNT(*)) OVER () AS rate
+                    FROM predict_logs p
+                    JOIN active_artifact USING (artifact_version)
+                    WHERE p.timestamp > NOW() - INTERVAL '24 hours'
+                        AND p.rollout_cohort = 'treatment_5pct'
+                    GROUP BY 1
+                )
+                SELECT MAX(ABS(t.expected_rate - COALESCE(p.rate, 0))) AS value
+                FROM train_dist t LEFT JOIN prod_dist p USING (cohort);
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+        noDataState: NoData  # baseline 부재는 T2a 가 fire — 여기서는 NoData 무시
+        labels:
+          severity: crit
+          action: TRIGGER_PAUSE
+          spec: step4_3_3_t2
+        annotations:
+          summary: "cohort 분포가 학습 baseline 과 5%p 이상 차이"
+          runbook: "monitoring/playbooks/scenario-C-cohort-gating-fail.md"
+
+      # ------------------------------------------------------------------
+      # Trigger 3: mdape_d7_cold > 46% → rollback
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-3-mdape-cold
+        title: "T3: mdape_d7_cold > 46% (cold protect fail)"
+        condition: B
+        for: 1h
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 604800, to: 0 }  # 7d
+            model:
+              format: table
+              rawSql: |
+                SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY abs_pct_error) * 100
+                       AS value
+                FROM v_d7_predict_sold_pairs
+                WHERE sold_at > NOW() - INTERVAL '7 days'
+                    AND is_saatchi_warm = false
+                    AND rollout_cohort = 'treatment_5pct';
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [46] }
+        labels:
+          severity: rollback
+          action: TRIGGER_ROLLBACK
+          spec: step4_3_3_t3
+        annotations:
+          summary: "cold cohort D7 MdAPE > 46% — V_year_saatchi_warm 의 cold 보호 실패"
+          runbook: "monitoring/playbooks/scenario-E-model-regression.md"
+
+      # ------------------------------------------------------------------
+      # Trigger 4: treatment_vs_control_diff > +1.0%p → rollback
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-4-treatment-vs-control
+        title: "T4: treatment_vs_control_diff > +1.0%p"
+        condition: B
+        for: 1h
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 604800, to: 0 }
+            model:
+              format: table
+              rawSql: |
+                WITH per_cohort AS (
+                    SELECT rollout_cohort,
+                           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY abs_pct_error) * 100 AS m
+                    FROM v_d7_predict_sold_pairs
+                    WHERE sold_at > NOW() - INTERVAL '7 days'
+                    GROUP BY rollout_cohort
+                )
+                SELECT
+                    (SELECT m FROM per_cohort WHERE rollout_cohort = 'treatment_5pct')
+                    - (SELECT m FROM per_cohort WHERE rollout_cohort = 'control')
+                    AS value;
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1.0] }
+        labels:
+          severity: rollback
+          action: TRIGGER_ROLLBACK
+          spec: step4_3_3_t4
+        annotations:
+          summary: "treatment cohort 가 control 대비 +1.0%p 이상 악화"
+          runbook: "monitoring/playbooks/scenario-E-model-regression.md"
+
+      # ------------------------------------------------------------------
+      # Trigger 5: fetch_success < 90% (1h 지속) → rollback
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-5-fetch-success
+        title: "T5: enrichment_fetch_success_rate < 90%"
+        condition: B
+        for: 1h
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 3600, to: 0 }
+            model:
+              format: table
+              rawSql: |
+                SELECT COUNT(*) FILTER (WHERE year_made_route = 'fetch_ok') * 1.0 /
+                       NULLIF(COUNT(*) FILTER (WHERE year_made_route IN
+                           ('fetch_ok','fetch_fail')), 0) AS value
+                FROM predict_logs WHERE timestamp > NOW() - INTERVAL '1 hour';
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0.90] }
+        labels:
+          severity: rollback
+          action: TRIGGER_ROLLBACK
+          spec: step4_3_3_t5
+        annotations:
+          summary: "saatchi enrichment 성공률 < 90% (1h)"
+          runbook: "monitoring/playbooks/scenario-B-saatchi-rate-limit.md"
+
+      # ------------------------------------------------------------------
+      # Trigger 6: cold_disabled_rate < 95% → rollback (gating fail)
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-6-cold-disabled
+        title: "T6: cold_year_made_disabled_rate < 95% (gating fail)"
+        condition: B
+        for: 30m
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 3600, to: 0 }
+            model:
+              format: table
+              rawSql: |
+                SELECT COUNT(*) FILTER (WHERE year_made_route = 'disabled') * 1.0 /
+                       NULLIF(COUNT(*), 0) AS value
+                FROM predict_logs
+                WHERE timestamp > NOW() - INTERVAL '1 hour'
+                    AND rollout_cohort = 'treatment_5pct'
+                    AND is_saatchi_warm = false;
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0.95] }
+        labels:
+          severity: rollback
+          action: TRIGGER_ROLLBACK
+          spec: step4_3_3_t6
+        annotations:
+          summary: "cohort=False 요청 중 disabled 비율 < 95% — 학습/서빙 gating mismatch"
+          runbook: "monitoring/playbooks/scenario-C-cohort-gating-fail.md"
+
+      # ------------------------------------------------------------------
+      # Trigger 7: valid_year_range_rate < 98% → pause (parser drift)
+      # ------------------------------------------------------------------
+      - uid: vai-trigger-7-parser-drift
+        title: "T7: valid_year_range_rate < 98% (parser drift)"
+        condition: B
+        for: 30m
+        data:
+          - refId: A
+            datasourceUid: postgres-prod
+            relativeTimeRange: { from: 3600, to: 0 }
+            model:
+              format: table
+              rawSql: |
+                SELECT 1.0 - COUNT(*) FILTER (WHERE year_made_route = 'parse_invalid') * 1.0 /
+                       NULLIF(COUNT(*) FILTER (WHERE year_made_route IN
+                           ('parse_invalid','fetch_ok')), 0) AS value
+                FROM predict_logs WHERE timestamp > NOW() - INTERVAL '1 hour';
+          - refId: B
+            datasourceUid: __expr__
+            type: threshold
+            model:
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0.98] }
+        labels:
+          severity: crit
+          action: TRIGGER_PAUSE
+          spec: step4_3_3_t7
+        annotations:
+          summary: "saatchi 응답에서 1800-2030 범위 외 year 비율 증가 (parser drift)"
+          runbook: "monitoring/playbooks/scenario-A-parser-drift.md"

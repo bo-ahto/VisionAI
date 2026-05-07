@@ -1,0 +1,65 @@
+# v3.6 Phase 2 — Grafana Alerting notification policies (severity → channel)
+# spec: docs/v3_5_step4_drift_monitoring.md §4.1
+#
+# 라우팅:
+# - rollback → Slack #ml-alerts + PagerDuty on-call (자동 단계 후퇴)
+# - crit     → Slack #ml-alerts + PagerDuty on-call (5분 내 대응)
+# - warn     → Slack #ml-alerts (30분 내 확인)
+# - info     → Slack #ml-rollout (정상 보고)
+
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: slack-ml-rollout  # default fallback (info)
+    group_by: ['alertname', 'severity']
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    routes:
+
+      # rollback → Slack #ml-alerts + PagerDuty (즉시)
+      - receiver: slack-ml-alerts
+        matchers:
+          - severity = rollback
+        group_wait: 0s
+        group_interval: 1m
+        repeat_interval: 30m
+        continue: true  # 다음 route (PagerDuty) 도 fire
+      - receiver: pagerduty-on-call
+        matchers:
+          - severity = rollback
+        group_wait: 0s
+        group_interval: 1m
+        repeat_interval: 30m
+
+      # crit → Slack #ml-alerts + PagerDuty (5분 내)
+      - receiver: slack-ml-alerts
+        matchers:
+          - severity = crit
+        group_wait: 30s
+        group_interval: 2m
+        repeat_interval: 1h
+        continue: true
+      - receiver: pagerduty-on-call
+        matchers:
+          - severity = crit
+        group_wait: 30s
+        group_interval: 2m
+        repeat_interval: 1h
+
+      # warn → Slack #ml-alerts only (30분 내 확인)
+      - receiver: slack-ml-alerts
+        matchers:
+          - severity = warn
+        group_wait: 1m
+        group_interval: 5m
+        repeat_interval: 4h
+
+      # info → Slack #ml-rollout (정상 보고, 4h repeat)
+      - receiver: slack-ml-rollout
+        matchers:
+          - severity = info
+        group_wait: 5m
+        group_interval: 30m
+        repeat_interval: 4h
