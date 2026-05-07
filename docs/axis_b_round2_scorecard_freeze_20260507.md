@@ -73,6 +73,18 @@
 | 2개 이상 PASS + 1개 이상 joinable | **Phase A 조건부 PASS** → 다음 round (Legal/TOS / License) 진입 |
 | 모두 PASS + 모두 joinable | Phase A PASS |
 
+### 3.3 Transport / Server Error Retry Protocol (코덱스 P1 보완 — 사후 추가)
+
+> **추가 사유 (코덱스 P1)**: 본 freeze §3.1/3.2 에 transport/server error 처리 규칙 누락 — Round 2 LLM cycle 에서 MCST 404 / Arko 500 발생 시 처리 필요.
+
+**규칙**:
+- HTTP 4xx (URL deprecated) / 5xx (server error) = source property 가 아닌 **관측 실패 (observation failure)** = `evidence gap`
+- **즉시 FAIL 처리 X** — `HOLD (transport error)` 임시 분류
+- **Retry protocol**: 24-72시간 간격 3회 재시도 / alternative URL (sub-domain / search endpoint) 평가 → 모두 실패 시 `FAIL` 전환
+- Retry 결과 deviation log 명시 의무
+
+> **본 cycle 적용 (사후)**: MCST URL 404 / Arko HTTP 500 = 본 freeze 의 retry protocol 부재 → Round 2 결과 보고서 `HOLD` 처리 / 사후 추가 = minor deviation (HARK 회피 — 결과 본 후 추가 명시이지만 source-level 판정 변경 X)
+
 ## 4. LLM 가능 영역 / 한계 (코덱스 명시)
 
 ### 4.1 LLM 가능

@@ -3,25 +3,30 @@
 > **작성일**: 2026-05-07
 > **사전등록 freeze**: `docs/axis_b_round2_scorecard_freeze_20260507.md` (2026-05-07)
 > **연계**: `docs/axis_b_phase_a_pre_screen_round1_20260507.md` (Round 1) / `docs/axis_b_handoff_packet_20260507.md` (운영팀/법무팀 cycle 병렬 진행)
-> **판정**: **Phase A 종합 = HOLD** (5/5 정부/공공 source 모두 작품-level 가격 modeling input FAIL / aggregate context signal 만 PASS)
+> **판정**: **Phase A 종합 = HOLD** (5 source 중 **0 confirmed joinable, 2 unresolved (MCST/Arko transport error — evidence gap), 3 confirmed aggregate-level**) — 코덱스 P0 framing 정정
 
 > ⚠️ **본 round 의 범위 (코덱스 권고)**: LLM 가능 영역 평가 = source 의 documentation / page content 기반 구조 분류. **결과 문구 = "feasible for next diligence" 톤** ("feasible for modeling" 단정 X). 결정급 확정 = 운영팀 inquiry (handoff packet §4) 필요.
 
-## 0. 한 줄 요약 (의사결정자용 — 코덱스 framing 톤)
+## 0. 한 줄 요약 (의사결정자용 — 코덱스 P0 framing 정정)
 
-> **Round 2 LLM cycle 종결: Phase A 종합 = HOLD** — 5개 정부/공공 source 모두 **aggregate-level statistical source** 로 평가됨. 코덱스 사전 자문의 base hypothesis ("정부/공공 5개는 구조상 aggregate/statistical source 일 가능성이 높아서, availability PASS 여도 joinability FAIL 이 다수 나올 가능성") **입증**.
+> **Round 2 LLM cycle 종결: Phase A 종합 = HOLD** — **0 confirmed joinable** (작품-level + 가격 보유 source = 0) + **2 unresolved** (MCST URL 404 / Arko HTTP 500 — transport error = **evidence gap, not negative evidence**) + **3 confirmed aggregate-level** (KOSIS / KAMS / MMCA — MMCA 는 작품-level metadata 까지 보유, but 가격 X). 코덱스 사전 자문의 base hypothesis ("정부/공공 5개는 구조상 aggregate/statistical source 가능성") 와 **부분 일관 패턴** (3 confirmed aggregate / 2 unresolved).
 >
-> **핵심 finding**: **작품-level 가격 데이터 보유 X** (5/5) — 작품-level signal 연결 가능 source = 0. **MMCA 만 작품-level metadata catalog (소장품) 보유** — 가격 데이터 없음 (museum collection 특성).
+> **핵심 finding**: 작품-level 가격 데이터 confirmed source = 0 / MMCA 만 작품-level metadata catalog 확인 (가격 X — museum collection 특성).
 >
-> **결론**: 현재 정부/공공 source 5개 → **MODEL INPUT FAIL** (작품-level 가격 modeling X) / **CONTEXT SIGNAL PASS** (aggregate art market index / 거래량 / 평균가 통계 = secondary feature 가능).
+> **결론 (코덱스 톤)**: 본 evidence 범위 내 → **MODEL INPUT FAIL** (작품-level 가격 modeling X) / **CONTEXT SIGNAL PASS** (KOSIS / KAMS aggregate index = secondary feature 가능). **MCST/Arko 재평가 후 결과 변동 가능**.
 >
-> **다음 단계 (사용자 결정 영역)**:
-> 1. **License-first lane 진입** — 갤러리 직접 license (Kukje / 학고재 / 현대 등) 또는 paid vendor (Artprice / Artnet) — 작품-level 가격 데이터 가능 source
-> 2. **Aggregate context signal 활용** — KOSIS 한국문화관광연구원 통계 등 aggregate index 를 운영 모델 secondary feature 로 추가 (별도 cycle)
-> 3. **Program-level redesign** — aggregate signal 만 사용하는 새 model spec (representation learning / hierarchical bayesian 등)
-> 4. **Default 유지** — D (baseline + calibration only)
+> **다음 단계 권고 (코덱스 사후 검수, A > E > B > C > D)**:
+> 1. **A. License-first lane 즉시 진입** — paid vendor scoping (Artprice/Artnet, 속도 우선) + gallery direct shortlist (Kukje/학고재/현대, 한국 로컬 적합도 우선) 병렬
+> 2. **E. MCST/Arko 재시도** — transport/server error retry protocol 적용 (병행)
+> 3. **B. Aggregate context signal Round 2B** — A를 막지 않는 범위에서만 (label scarcity 미해결)
+> 4. **C. Program-level redesign** — A/B 결과 후 재설계 필요 시
+> 5. **D. Default 유지** — fallback only
 
 > **운영 영향 X**: Phase A HOLD → 운영 spec §1-§16 변경 X / 분기 B calibration only 그대로 유지.
+
+> ⚠️ **Honesty caveats (코덱스 P1)**:
+> - **0 confirmed joinable ≠ 5/5 confirmed absent** — 2 unresolved 는 negative evidence X (transport/server error = observation failure)
+> - **License-first lane 의 새 risk**: coverage bias (특정 갤러리 / 시장 segment 편향) + cost risk (paid vendor / license 비용)
 
 ## 1. Round 2 평가 결과 (5 source)
 
@@ -110,13 +115,15 @@
 
 > 본 Round 2 LLM cycle 결과 = **"5/5 작품-level 가격 source 0 → license-first lane 진입 권고"** → 운영팀/법무팀에게 license 협상 우선순위 정보 제공 가능.
 
-## 4. 한계 / 정직 보고 (코덱스 권고 톤)
+## 4. 한계 / 정직 보고 (코덱스 P1 권고 — 보완)
 
 - **LLM 한계 명시**: 본 Round 2 = source 의 documentation / page content 기반 추정. **실제 dataset schema / API auth / hidden download / historical snapshot = 운영팀 inquiry 필요** (handoff packet §4)
 - **결과 문구 (코덱스 권고)**: "feasible for next diligence" 톤 — "feasible for modeling" 단정 X
-- **MCST / Arko 추가 확인 필요**: 본 cycle 정확 평가 X (404 / 500 에러), 재시도 후 평가 가능
-- **Aggregate signal 의 잠재 가치**: KOSIS / KAMS aggregate 통계 = secondary feature 로 추가 가능 (Round 2B 별도 cycle)
-- **HARK 회피**: 본 round 결과 본 후 freeze threshold 변경 X — 사전등록 §3 그대로 적용
+- **0 confirmed joinable ≠ 5/5 confirmed absent** (코덱스 P1 caveat 핵심): 2 unresolved (MCST/Arko transport error) 는 **evidence gap, not negative evidence** — source property 가 아닌 관측 실패 (404 / 500). Retry protocol 적용 (Round 2 freeze §3.3 사후 추가) 후 평가 변동 가능
+- **License-first lane 의 새 risk (코덱스 P1)**: coverage bias (특정 갤러리 / 시장 segment 편향) + cost risk (paid vendor / license 비용) — A 진입 시 의사결정자 인지 의무
+- **Method 적용 부분 문서화 (코덱스 P1)**: freeze 의 cover numerator/denominator + publication date 기록 권고 — 본 cycle 일부만 적용 (page content 기반 추정만, 정량 cover 수치 미확보) → Round 2B / 운영팀 inquiry 시 보완 의무
+- **Aggregate signal 의 잠재 가치 (Option B, 2순위 이하)**: KOSIS / KAMS aggregate 통계 = secondary feature 로 추가 가능. 단 **label scarcity 미해결** — A를 막지 않는 범위에서만 진입 (코덱스 P2)
+- **HARK 회피**: 본 round 결과 본 후 freeze threshold 변경 X — 단 transport error retry protocol = freeze §3.3 사후 추가 (minor deviation, source-level 판정 변경 X)
 
 ## 5. 코덱스 자문 이력
 
@@ -124,7 +131,7 @@
 |---|---|
 | 누적 (Stage 6B / Feature track / A.1-A.5 / Axis A 종합) | P0×9 + P1×32 + P2×13 |
 | Round 2 사전 자문 (2026-05-07) | 조건부 GO + 4 freeze + 평가 method + threshold + 판정 rule |
-| **Round 2 LLM cycle 결과 검수 (예정)** | HOLD 판정 정당성 + license-first lane 진입 권고 + 운영팀/법무팀 cycle dependency |
+| **Round 2 LLM cycle 결과 검수 (2026-05-07)** | **운영팀/법무팀 인계 GO** (단 framing 정정 후). P0×2 (framing 톤 — "5/5 모두 aggregate" → "0 confirmed joinable, 2 unresolved, 3 confirmed aggregate"; "입증" 톤 다운) + P1×4 (method 적용 문서화 보완 / transport error retry protocol / handoff packet narrowing 결과 링크 / coverage bias + cost risk caveat) + P2×2 — 본 v2 commit 일괄 반영. **다음 우선순위: A > E > B > C > D** (코덱스 사후 검수). |
 
 ## 6. 참조
 

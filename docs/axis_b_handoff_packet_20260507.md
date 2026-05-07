@@ -22,10 +22,16 @@
 - C 동시 진행 (LLM Round 2 + 운영팀/법무팀 cycle 병렬) 결정
 
 ### Decision Ask (의사결정자 + 운영팀 + 법무팀)
-1. **법무팀**: 5개 source 의 Legal / TOS 검토 (§3 의뢰서) — **즉시 병렬 시작 가능**
-2. **운영팀**: 5개 source 의 inquiry (§4 inquiry sheet) — API / 담당자 contact / historical snapshot
-3. **License 협상**: LLM Round 2 1차 narrowing 후 시작 (§5 license fallback memo) — **조건부 병렬**
-4. **의사결정자**: handoff packet 승인 + 운영팀 / 법무팀 capacity 확정
+
+> **Round 2 narrowing 결과 반영 (post-Round-2 update, 코덱스 P1)**: Round 2 LLM cycle 결과 (`docs/axis_b_round2_results_20260507.md`) — **0 confirmed joinable / 2 unresolved (transport error) / 3 confirmed aggregate-level** → **A (license-first lane) 가 실질 1순위** (코덱스 사후 검수).
+
+**우선순위 (코덱스 사후 검수, A > E > B > C > D)**:
+1. **A. License-first lane 즉시 진입** (1순위): paid vendor scoping (Artprice/Artnet) + gallery direct shortlist (Kukje/학고재/현대) **병렬** — 속도 우선 = vendor / 한국 로컬 적합도 우선 = gallery direct
+2. **E. MCST/Arko 재시도** (2순위, 병행): transport error retry protocol 적용 (24-72시간 간격 3회 + alternative URL)
+3. **법무팀**: 5개 source 의 Legal / TOS 검토 (§3 의뢰서) — 즉시 병렬 시작 가능 (단 Round 2 결과 후 우선순위는 license 검토 우선)
+4. **운영팀**: 5개 source 의 inquiry (§4 inquiry sheet) — license 협상 우선 + KOSIS/KAMS aggregate API 보조
+5. **License 협상**: 즉시 시작 (Round 2 narrowing 완료, 사전 자문 권고와 다른 path)
+6. **의사결정자**: handoff packet 승인 + 운영팀 / 법무팀 capacity 확정 + license budget 권한
 
 ---
 
@@ -178,10 +184,11 @@ Source: <name>
 
 ---
 
-## §8 참조 문서
+## §8 참조 문서 (Round 2 결과 반영, 코덱스 P1 보완)
 
+- **Round 2 결과 (post-narrowing, 1순위 권고 근거)**: `docs/axis_b_round2_results_20260507.md`
 - Round 1: `docs/axis_b_phase_a_pre_screen_round1_20260507.md`
-- Round 2 Scorecard freeze: `docs/axis_b_round2_scorecard_freeze_20260507.md`
+- Round 2 Scorecard freeze (transport error retry protocol 포함): `docs/axis_b_round2_scorecard_freeze_20260507.md`
 - HTML 종합 보고서: `docs/트랙2_종합보고서_axis_a_종결_20260507.html`
 - Feature track design: `docs/feature_track_design_20260507.md`
 - Stage 6B close: `docs/stage6b_results_20260507.md`

@@ -101,6 +101,17 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Axis B Round 2 v2] 코덱스 사후 검수 P0×2 + P1×4 + P2×2 fix (minor, 사후 정정)
+- **코덱스 사후 검수**: 운영팀/법무팀 인계 GO (단 framing 정정 후). 다음 우선순위 = A > E > B > C > D
+- **P0 fix**: framing 톤 정정 — "5/5 모두 aggregate / 5/5 가격 X / 입증" → "0 confirmed joinable, 2 unresolved (MCST/Arko transport error = evidence gap), 3 confirmed aggregate-level"
+- **P1 fix**:
+  1. Method 적용 부분 문서화 — cover numerator/denominator + publication date 기록 권고 일부만 적용 명시 (Round 2B / 운영팀 inquiry 시 보완)
+  2. **Transport/Server Error Retry Protocol** Round 2 freeze §3.3 사후 추가 — HTTP 4xx/5xx 시 24-72시간 간격 3회 재시도 + alternative URL / 모두 실패 시 FAIL 전환 / minor deviation 명시 (source-level 판정 변경 X)
+  3. Handoff packet narrowing 결과 (Round 2 결과 문서) 참조 추가 + 우선순위 update (KOSIS 우선 → A license-first 실질 1순위)
+  4. License-first lane 의 새 risk caveat — coverage bias + cost risk
+- **P2 fix**: Option B (aggregate context signal) ROI = 2순위 이하 (label scarcity 미해결) / Handoff packet 우선순위 pre-Round-2 → post-Round-2 update
+- **분류**: **minor (사후 정정 — framing 톤 다운 / 결과 변경 X / source-level 판정 변경 X)**
+
 ### 2026-05-07 — [Axis B Phase A Round 2] LLM cycle (Data avail + Joinability + As-of-time) → Phase A HOLD (none, 정상 흐름)
 - **위치**: Axis B Phase A pre-screen project — Round 2 (사용자 결정 = C 동시 진행)
 - **사전등록 freeze (코덱스 P0)**: 4 freeze (대상 source 5개 / 평가축 3축 / threshold 70-80-time-safe / 판정 rule)
