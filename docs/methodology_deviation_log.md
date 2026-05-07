@@ -101,6 +101,17 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Axis B Round 2B] E (MCST/Arko 재시도) + B (aggregate context) 동시 진행 (none, 정상 흐름)
+- **사용자 명시 instruction**: E + B 동시 진행 (Round 2 v2 우선순위 A>E>B>C>D 의 E + B)
+- **E: MCST 재시도 결과**: main page 200 (이전 정책 list URL = path deprecation, main 자체는 정상) → **partial PASS** (전반 자동화 access OK, art market endpoint 추가 발견 필요 — 운영팀 inquiry 영역)
+- **E: Arko 재시도 결과**: alternative URL 모두 4xx/5xx persistent (server side issue) → **unresolved 그대로** (Round 2 의 HOLD 유지). 24-72h 추가 retry 또는 운영팀 inquiry (담당 부서 contact) 필요
+- **B: KOSIS aggregate**: 미술시장 검색 hit 4 만 — 정부 공식 art market 통계 source 약함
+- **B: KAMS aggregate**: 자료실 empty / artmarket sub-domain 500 / login 필요 추정 → 데이터 직접 access 어려움
+- **종합 판정**: Phase A 종합 = HOLD 유지 (Round 2 v2 그대로). 코덱스 사전 자문 base hypothesis (Option B ROI 낮음 — label scarcity 미해결) **재확인**
+- **우선순위 update (post-Round-2B)**: A (license-first) 1순위 변동 X / B (Round 2B) **3순위 격하** (Round 2B 결과로 ROI 낮음 입증) / E (MCST partial PASS, Arko unresolved 유지)
+- **분류**: **none (정상 흐름)** — Round 2B 결과 freeze rule 그대로 적용
+- **운영 영향 X**: Phase A HOLD 그대로 / 운영 spec §1-§16 변경 X / 분기 B 유지
+
 ### 2026-05-07 — [Axis B Round 2 v2] 코덱스 사후 검수 P0×2 + P1×4 + P2×2 fix (minor, 사후 정정)
 - **코덱스 사후 검수**: 운영팀/법무팀 인계 GO (단 framing 정정 후). 다음 우선순위 = A > E > B > C > D
 - **P0 fix**: framing 톤 정정 — "5/5 모두 aggregate / 5/5 가격 X / 입증" → "0 confirmed joinable, 2 unresolved (MCST/Arko transport error = evidence gap), 3 confirmed aggregate-level"
