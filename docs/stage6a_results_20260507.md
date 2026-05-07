@@ -7,9 +7,14 @@
 
 ## 0. 한 줄 요약 (의사결정자용)
 
-> **Stage 6A FAIL** — Segmented architecture 가 baseline 대비 overall +5.23%p / 저가 +3.54%p / mid-high +6.97%p **모두 악화**. Router 품질은 좋음 (recall 0.87 / balanced acc 0.85). 코덱스 권고대로 **"segmenting 으로 자동 해결 X / feature shortage 본질"** 정확히 입증.
+> **Stage 6A FAIL** (사전등록 §3.3 hard gate 위반 — 즉시 FAIL, 통계적 비유의성과 분리). Overall +5.23%p / 저가 +3.54%p / mid-high +6.97%p **모두 악화** (낮을수록 좋은 metric).
 >
-> → **6B Bayesian / hierarchical 우선 검토**, segmented 폐기.
+> **3 핵심 메시지** (코덱스):
+> 1. **Router quality was not the bottleneck** (recall 0.87 / balanced acc 0.85 / Brier 0.11 — 양호)
+> 2. **Segmentation reduced sample efficiency without adding new information** (분리 학습 → 각 segment sample 절반 / feature 동일)
+> 3. **This result updates the program hypothesis from routing deficiency to feature scarcity under current inputs**
+>
+> → **Architecture-only 개선 트랙 종료**. 후속 = **shared-modeling (6B Bayesian / hierarchical)** 또는 **new-information (6C 새 source, pre-screen 후)** 두 축만.
 
 ## 1. 핵심 결과 (사전등록 §3 적용)
 
@@ -24,9 +29,10 @@
 > 본 평가의 baseline 38.05% 는 8,495 cleansed 전체 cold-start LAO 결과. Stage 3 의 24.07% (curated 1,378) 와 다른 — baseline 정의 동일하나 population 다름. **본 6A 의 비교 단위 = baseline ↔ segmented 동일 population 의 Δ**.
 
 ### 1.2 Cluster bootstrap (n=2000, seed=42)
-- Δ overall mean: **+3.60%p (악화 방향)**
-- 95% CI: **[-0.19, +7.19]**
-- P(diff ≥ 0) = **0.97** (악화 신뢰도 매우 높음)
+- Δ overall mean: **+3.60%p** (낮을수록 좋은 metric — 양수 = 악화)
+- 95% CI: **[-0.19, +7.19]** — 0 걸침 (통계적 비유의성, **gate 면제 X — 별개**)
+- P(boot Δ ≥ 0) = **0.97** (cluster bootstrap distribution 의 악화 방향 비율)
+- **해석**: 통계 비유의 ≠ gate 통과. 사전등록 §3.3 hard gate (저가 harm 0) 별도 적용 → FAIL 확정.
 
 ### 1.3 Router 품질 (100-seed mean)
 | 지표 | 결과 | 임계 | 판정 |
@@ -55,11 +61,30 @@
 ### 2.1 코덱스 사전 권고 (prereg §1.3)
 > "Segmentation 만으로 feature 부족 (Stage 4 결과) 자동 해결 가정 X — feature shortage 가 본질, segmentation = pooled bias 감소만"
 
-### 2.2 실측 입증
-- **Router 품질 충분** (recall 0.87 / balanced acc 0.85) — router 가 segment 분류 잘 함
-- **하지만 Model L + Model H 모두 baseline 보다 큰 폭 악화** — segmentation 후 각 segment 의 sample 절반으로 감소 (Train n=4,207 → low 1,906 / mid-high 2,301)
-- **Feature 동일** (F4 + spline) → segment 분리 후 정보량 감소
-- → "Segmentation 으로 pooled bias 감소" 가설 자체 X — pooled bias 가 컸지만 sample 풍부한 baseline 이 더 강건
+### 2.2 Sample Fragmentation 정량 (6B 설계 근거)
+
+| Pool | Train n | Test n (LAO 평균) | Sample efficiency |
+|---|---|---|---|
+| Baseline (전체) | 4,207 | 평균 ~1,700 | 단일 모델 학습 |
+| Model L (price < 5M) | **1,906** (45.3%) | 평균 ~700 | **sample 절반** |
+| Model H (price ≥ 5M) | **2,301** (54.7%) | 평균 ~1,000 | **sample 절반** |
+
+→ Segmentation = sample 절반 + feature 동일 → variance 증가 + generalization 저하
+
+### 2.3 실측 입증
+- **Router 품질 충분** (recall 0.87 / balanced acc 0.85 / Brier 0.11) — router 가 segment 분류 잘 함 (본문 핵심 근거)
+- **하지만 Model L + Model H 모두 baseline 보다 큰 폭 악화** — sample fragmentation + feature 동일 → 정보량 감소
+- → "현 feature set 하 architecture-only fix 실패" (코덱스 정확 표현)
+
+### 2.4 3-cycle 일관성 (의사결정자 압축 요약)
+
+> **Stage 4 → Stage 5 → Stage 6A 모두 동일 결론**: 현재 운영 모델 (F4 + spline + Huber) 의 한계는 **architecture / acquisition pipeline 의 결함이 아니라 input feature space 자체의 정보 부족**. Architecture-only 개선 트랙 종료. 후속 = shared-modeling (6B) 또는 new-information (6C, 별도) 두 축.
+
+| Cycle | 가설 | 결과 |
+|---|---|---|
+| Stage 4 단기 작업 3 | 저가 segment 의 bias 가 calibration 으로 해결 가능? | ✗ Feature 부족 시그니처 3/3 |
+| Stage 5 (5A-5C) | External source acquisition 으로 해결? | ✗ 준법적 자동화 불가, 미개시 종료 |
+| **Stage 6A** | **Segmentation (sample 분할 학습) 으로 해결?** | ✗ **+5.23%p 악화, hard gate 위반** |
 
 ### 2.3 정량 검증 — feature shortage 가 본질
 | 단계 | 결과 |

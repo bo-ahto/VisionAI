@@ -18,13 +18,15 @@
 > - 2순위: Bayesian / hierarchical
 > - 3순위: 새 source (legal/access pre-screen 통과 후 별도)
 
-## 2. Stage 6 구조 (3 branch)
+## 2. Stage 6 구조 (v2 갱신 — 6A FAIL 후, 2 축으로 압축)
 
-| Branch | 가설 | 근거 |
+> **6A FAIL 후 갱신 (2026-05-07)**: 코덱스 권고 — "Architecture-only 개선 트랙 6A 에서 종료, 이후 **shared-modeling** 또는 **new-information** 두 축만". Segmentation 추가 실험 배제.
+
+| Branch | 가설 | 상태 |
 |---|---|---|
-| **6A — Segmented architecture** (1순위) | Low-price 전용 모델 + mid/high 분리 학습 → 저가 harm 해결 | 단기 트랙 작업 3 (feature 부족) + Stage 4 (저가 +5.63%p violation) |
-| **6B — Bayesian / hierarchical** (2순위) | 작가별 partial pooling + uncertainty-aware fallback → cold/warm 경계 + sparse artist 처리 | Stage 3 ME 결과 (cold-start 무력화) + Stage 4 (composition shift 신규 warm 효과 없음) |
-| **6C — 새 source 보강** (3순위, gate 별도) | External source = 가격 anchor / market activity 통합 | Stage 5 미개시 — 새 source legal/access pre-screen 통과 후 |
+| ~~6A — Segmented architecture~~ | ~~Low-price 전용 모델 분리~~ | **FAIL** (`docs/stage6a_results_20260507.md`) |
+| **6B — Bayesian / hierarchical (shared-modeling)** | **Feature shortage under fixed features** 인식 + partial pooling + sparse artist + cold-warm 경계 | **다음 1순위** (코덱스) |
+| **6C — 새 source 보강 (new-information)** | External source = 가격 anchor / market activity 통합 | 4항목 pre-screen 병행 준비 / 결정 = 6B 후 |
 
 ## 3. 6A (Segmented Architecture) — 1순위 prereg 초안
 
