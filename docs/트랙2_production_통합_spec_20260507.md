@@ -3,13 +3,15 @@
 > **작성일**: 2026-05-07
 > **대상**: 운영 / 인프라 담당자
 > **연계**: `docs/트랙2_최종보고서_20260506.md`, `docs/트랙2_수식_프로세스_상세_20260506.html`
-> **상태**: 코덱스 자문 반영 v2 (P1+P2+Nit 모두 반영, 17 섹션)
+> **상태**: 코덱스 자문 반영 v3 (P1+P2+Nit 모두 반영, 18 섹션 — §17 = warm-only 후보 추가)
+> **본 spec 의 기본 운영 플로우** = **cold rollout 단계 + 가드레일 + fallback**. §17 (Warm-only Track 2 path 후보) 는 **연구 부록 — Stage 4 후 재평가, 즉시 도입 X**.
 
 ## 0. 목표 / KPI (문서 상단 고정)
 
-### 0.1 적용 범위
-- **Warm 작가** (학습량 ≥ 10건): **V3 운영 모델 유지** (정확도 12-18%)
+### 0.1 적용 범위 (현재 운영)
+- **Warm 작가** (학습량 ≥ 10건): **V3 운영 모델 유지** (정확도 12-18%) — 본 spec §1-§16 은 모두 cold rollout 기준
 - **Cold 작가** (학습량 < 10건): **트랙 2 도입** (F4 + log_area spline + Huber)
+- **Warm-only Track 2 path (FE only)**: §17 부록 — 연구 후보, **운영 미승인 / Stage 4 후 재평가**
 
 ### 0.2 1차 Soft Launch
 - 비율: **5% (cold 트래픽 한정)**
@@ -73,9 +75,10 @@ def route(artwork) → "warm" | "cold":
   - `PARITY_BREACH` — 학습 시 사용한 변수 spec 과 운영 입력 불일치
 
 ### 1.3 Warm/Cold 임계 freeze
-- **현재 임계: `n_train ≥ 10`**
+- **현재 임계: `n_train ≥ 10`** (= `WARM_ROUTING_MIN_WORKS`)
 - 운영 중 5/10/15 sensitivity 함께 추적 (대시보드)
 - 임계 변경은 별도 의사결정 + 학습 데이터 재산출
+- **warm path (Track 2 FE only) 진입은 별도 임계** `WARM_PATH_MIN_DEPTH ≥ 15` 적용 — §17 참조 (현재 미활성)
 
 ---
 
@@ -573,12 +576,116 @@ $ ops cli report.create --type rollback --model track2_v1
 | **Guardrail hit rate** | 가드레일 트리거된 cold 트래픽 비율 | % |
 | **PSI** | Population Stability Index (학습/운영 분포 차이) | 무차원 |
 | **Latency p95** | 응답 시간 95 percentile | ms |
+| **warm_mdape** *(scope: warm path, §17)* | warm path 트래픽 한정 MdAPE | % |
+| **warm_low_price_mdape** *(scope: warm path, §17)* | warm path + 예측가 < 5M KRW MdAPE | % |
+| **warm_artist_win_rate** *(scope: warm path, §17)* | artist 단위 warm V3 baseline 대비 개선 비율 | % |
+| **warm_fallback_rate** *(scope: warm path, §17)* | warm path 트래픽 V3 fallback 발동 비율 | % |
 
-본 spec 의 모든 임계 / KPI 는 위 정의 기준.
+본 spec 의 모든 임계 / KPI 는 위 정의 기준. **scope 라벨이 없는 KPI = cold rollout default (§1-§16) / scope: warm path = §17 (warm-only Track 2 후보) 한정**.
 
 ---
 
-## 17. 참조 문서
+## 17. Warm-only Track 2 path 후보 (Stage 4 까지 보류)
+
+> **상태**: 연구 후보 (Stage 3 P3 검증 완료) / **운영 도입 보류** — §1-§16 의 cold rollout 과 분리 운용  
+> **근거**: `experiments/structural_v1/results/stage3_warm_p3_validation.json`  
+> **승격 결정**: Stage 4 artist-cluster 증거 (`docs/stage4_데이터수집계획_20260507.md` §6.1) 확보 후 재평가  
+> **본 §17 의 KPI / 게이트는 warm path 전용 scope override** — §16 (cold-default KPI glossary) 와 별도 운용
+
+### 17.1 후보 모델
+- **FE only**: F4 + log_area spline + Huber + Artist Fixed Effects (warm 작가 dummy)
+- 비채택: Combined (FE + time weight + history avg) — cutoff 2024 효과 약화 + 저가 segment +3.36%p 악화
+- 비채택: Combined-shrunk (EB) — σ_b² > σ_w² 로 shrinkage 효과 미미 (Combined 와 거의 동일)
+
+### 17.2 P3 검증 핵심 결과 (≤2023 train, ≥10 작품 warm 기준)
+
+| cutoff | n_test | baseline | FE only | Δ (vs baseline) |
+|---|---|---|---|---|
+| 2022 | 19 | 17.50% | 10.24% | -7.26%p |
+| 2023 | 44 | 23.15% | 19.18% | -3.97%p |
+| 2024 | 62 | 26.13% | 21.90% | -4.23%p |
+
+- Cluster bootstrap: FE only vs baseline mean **-2.68%p**, 95% CI [-14.33, +8.54], P(<0)=72%
+- 3 cutoff 모두 동일 방향 개선 (강건성 확인)
+- CI 0 포함 (n=44, 13 artist 한계) — Stage 4 표본 확장 후 재검증 필요
+- Leakage 점검 0건 (artist history 변수의 train cutoff 분리 정상)
+
+### 17.3 운영 정책 (도입 시 적용 예정)
+
+#### 17.3.1 라우팅 (§1 확장)
+
+> **분리 변수 (코덱스 P1)**: warm 라우팅 임계와 warm-path 진입 임계를 별도 정의해 분기 의도를 명확히 한다.
+> - `WARM_ROUTING_MIN_WORKS = 10` — §1 의 warm/cold 라우팅 임계 (변경 X, 기존과 동일)
+> - `WARM_PATH_MIN_DEPTH = 15` — warm-path (Track 2 FE only) 진입 추가 임계 (10 ≤ n_train < 15 인 얕은 warm 은 V3 유지)
+
+```
+def route_v2(artwork) → (model, reason):
+    # 기존 §1 라우팅 통과 후 warm 판정 시
+    base = route(artwork)
+    if base != ("v3", "warm_artist"):
+        return base  # cold / fallback 등 그대로
+
+    n_train = train_artist_counts.get(artwork.artist_slug, 0)
+    if n_train < WARM_PATH_MIN_DEPTH:
+        return ("v3", "warm_shallow_fallback")  # 얕은 warm 은 V3
+    if WARM_TRACK2_ENABLED:
+        return ("track2_warm_fe", "warm_fe_path")
+    return base  # warm path 비활성 시 V3
+```
+
+- **WARM_ROUTING_MIN_WORKS**: 10 (§1 임계, 변경 X)
+- **WARM_PATH_MIN_DEPTH**: 초기 15 (Stage 4 결과로 10 / 15 / 20 sensitivity 평가)
+- **WARM_TRACK2_ENABLED**: 기본 `False`. Shadow / Canary 단계에서만 `True`
+- **모델 / 버전 분리**: cold Track 2 (`track2`) 와 warm FE (`track2_warm_fe`) 는 **독립 model_id / version pin / shadow log 로 배포** (§6.2 의 model registry 에서 별도 entry)
+
+#### 17.3.2 도입 단계 (Shadow → Small Canary → Gated Rollout)
+
+> **W-S 진입 prerequisite (코덱스 P2)**: `docs/stage4_데이터수집계획_20260507.md` §6.1 (오프라인 합격 기준 — cluster bootstrap CI 상한 ≤ 0 또는 P(diff<0) ≥ 95%) 통과 후에만 W-S 진입.
+
+| 단계 | 트래픽 | 비교 | 승격 조건 |
+|---|---|---|---|
+| **W-S** Shadow | 0% (병렬 예측 로깅) | warm V3 vs warm FE only 동일 입력 | **warm-only MdAPE diff ≤ 0%p (비열위)**, 1주 안정 |
+| **W-C1** Small Canary | warm 트래픽 5% | online A/B | win rate ≥ 55%, 저가 악화 +1%p 이내, fallback rate ≤ 5%, 2주 |
+| **W-C2** Canary | warm 트래픽 25% | online A/B | warm MdAPE 악화 없음, P90 APE 악화 +3%p 이내, 2주 |
+| **W-F** Full warm rollout | warm 트래픽 100% | — | W-C2 통과 + 의사결정 회의 |
+
+#### 17.3.3 Warm path 전용 Metric Gate
+
+> **Scope override**: 본 메트릭들은 warm path (`track2_warm_fe`) 트래픽 한정 KPI 다. §16 KPI glossary 의 `MdAPE`, `Fallback rate` 등은 cold rollout default — warm path 는 본 §17 정의를 우선 적용한다 (§16 표에도 warm-scoped 항목 추가).
+
+| 메트릭 | 정의 | 단위 | 알람 |
+|---|---|---|---|
+| `warm_mdape` | warm path 트래픽 MdAPE | % | warm V3 baseline 대비 악화 시 즉시 |
+| `warm_high_ape` | warm path 트래픽 APE > 50% 비율 | % | +5%p 악화 시 |
+| `warm_p90_ape` | warm path 트래픽 P90 APE | % | +3%p 악화 시 |
+| `warm_low_price_mdape` | warm path + 예측가 < 5M KRW MdAPE | % | +1%p 악화 시 즉시 |
+| `warm_artist_win_rate` | artist 단위 warm V3 baseline 대비 개선 비율 | % | < 50% 시 |
+| `warm_fallback_rate` | warm path 트래픽 V3 fallback 발동 비율 | % | > 5% 시 |
+| `warm_depth_distribution` | warm path 작가 history depth 분포 | hist | shift 시 검토 |
+
+#### 17.3.4 자동 차단 / Kill Switch (Warm path 즉시 fallback)
+- `warm_low_price_mdape` 1시간 +1%p 악화 → warm path 즉시 V3 fallback (`WARM_TRACK2_ENABLED=False`)
+- `warm_artist_win_rate` 1일 < 50% → warm path 비활성
+- 신규 warm 진입 작가 (Stage 3/4 학습에 없던 작가) 비율 1주 > 30% → 자동 비활성 + review
+- **수동 kill switch**: 운영 매니저가 `WARM_TRACK2_ENABLED` 플래그 즉시 toggle 가능 (배포 X, runtime config flip)
+- **모델 버전 분리**: cold Track 2 와 warm FE 는 독립 batch 로 평가 / 배포 — 한쪽 fallback 이 다른 쪽에 영향 X
+- **Shadow log 분리**: warm path shadow log 는 `track2_warm_shadow.log` 별도 stream (cold 와 분리)
+
+### 17.4 Stage 3 한계 (도입 보류 사유)
+- Cluster bootstrap CI 0 포함 (n=44 / 13 artist)
+- Depth bin 분해 불가 (모든 warm test 가 10-14 depth 에 집중, 15+ depth test 0건)
+- 저가 segment 단일 cutoff 분석 (Combined 에서 +3.36%p 악화 — FE only 는 미검증)
+- 2024 cutoff 신규 warm 작가 36명 추가 → composition shift 영향 큼
+
+### 17.5 Stage 4 데이터 수집 의존
+- `docs/stage4_데이터수집계획_20260507.md` 참조
+- 핵심 목표: **warm artist cluster 21 → 40+** (≤2023 split 기준 / row 수 아님), 평가 가능 warm artists **13 → 25+**, warm test rows **44 → 120+**
+- 부수 목표: depth bin (10-14 / 15-24 / 25+) 균형
+- 재검증 합격 시 본 §17 의 W-S 단계부터 시작
+
+---
+
+## 18. 참조 문서
 
 - 모델 결과: `docs/트랙2_최종보고서_20260506.md`
 - 수식 / 알고리즘: `docs/트랙2_수식_프로세스_상세_20260506.html`
@@ -586,4 +693,6 @@ $ ops cli report.create --type rollback --model track2_v1
 - 비전공자 풀이: `docs/트랙2_프로세스_쉬운버전_20260506.html`
 - 임원 1페이지: `docs/임원보고_트랙2_요약_20260506.html`
 - 데이터 plan: `docs/데이터클렌징_단계계획_20260506.md`
+- Stage 4 plan: `docs/stage4_데이터수집계획_20260507.md`
 - 실험 코드: `experiments/structural_v1/stage*.py`
+- Warm P2/P3 결과: `experiments/structural_v1/results/stage3_warm_{,p3_}validation.json`

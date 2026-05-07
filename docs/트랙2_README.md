@@ -19,10 +19,10 @@
 | **대표 / 임원** | `docs/임원보고_트랙2_요약_20260506.html` | 1페이지 |
 | **일반 독자** | `docs/트랙2_쉬운설명_20260506.html` | 9 섹션 (비유 위주) |
 | **비전공 실무자** | `docs/트랙2_프로세스_쉬운버전_20260506.html` | 7 섹션 + 용어풀이 |
-| **분석가 / 실무자** | `docs/트랙2_최종보고서_20260506.md` (또는 `.html` 동일 내용) | 12 섹션 상세 |
+| **분석가 / 실무자** | `docs/트랙2_최종보고서_20260506.md` (또는 `.html` 동일 내용) | 13 섹션 (§12 부록 = warm path 후보) |
 | **모델 구현 담당** | `docs/트랙2_수식_프로세스_상세_20260506.html` | 11 섹션 + 수식 |
-| **운영 / 인프라** | `docs/트랙2_production_통합_spec_20260507.md` | 17 섹션 (운영 spec) |
-| **데이터 엔지니어** | `docs/데이터클렌징_단계계획_20260506.md` | Stage 1-3 plan |
+| **운영 / 인프라** | `docs/트랙2_production_통합_spec_20260507.md` | 18 섹션 (§17 = warm-only path 후보, §18 = 참조 문서) |
+| **데이터 엔지니어** | `docs/데이터클렌징_단계계획_20260506.md` + `docs/stage4_데이터수집계획_20260507.md` | Stage 1-3 plan / Stage 4 warm 확장 |
 | **결정 메모** | `docs/트랙2_Stage2_freeze_20260506.md` | GATE 2 freeze |
 
 ### 1.2 권장 읽기 순서
@@ -91,6 +91,8 @@ log_price = β₀ + β₁·log_area + β₂·birth_year_centered + β₃·log_ar
 
 ## 4. Production 도입 단계 (코덱스 권고)
 
+> **본 §4 = Cold rollout 단계 (warm 작가는 V3 유지)**. Warm-only Track 2 path 는 별도 §4-Appendix 로 분리 — **운영 미승인 / Stage 4 후 재평가**.
+
 ```
 [Phase A] Shadow (0% 트래픽, 1주)
   └─ 7개 합격 기준 PASS → Phase B 승인
@@ -105,7 +107,14 @@ log_price = β₀ + β₁·log_area + β₂·birth_year_centered + β₃·log_ar
   └─ 4-5일 모니터링 + 정기 재학습
 ```
 
-상세: `docs/트랙2_production_통합_spec_20260507.md` §11-§17 참조.
+상세: `docs/트랙2_production_통합_spec_20260507.md` §11-§16 참조.
+
+### 4-Appendix. Warm-only Track 2 path 후보 (운영 미승인)
+
+> **현 운영 결정**: warm 작가는 V3 유지 (변경 X).  
+> **연구 상태**: FE only (F4 + spline + Huber + Artist FE) Stage 3 P3 검증 완료, cluster bootstrap CI 0 포함 (n=44 / 13 artist 한계).  
+> **다음 단계**: Stage 4 표본 확장 → cluster bootstrap CI 상한 ≤ 0 합격 시 spec §17 의 W-S Shadow 진입.  
+> **참조**: spec §17 / 최종보고서 §12 부록 / `docs/stage4_데이터수집계획_20260507.md`.
 
 ---
 
@@ -146,11 +155,14 @@ experiments/structural_v1/
 ├── stage3_p1_improvements.py        # P1: Spline / Interaction / Ridge / 전체 모집단
 ├── stage3_p2_robust.py              # P2: Huber / Weighted / Transform / Smearing
 ├── stage3_huber_tuning.py           # Huber eps/alpha + Winsorization + 100-seed
-└── stage3_huber_validation.py       # Huber B 검증 (Bootstrap CI / per-segment / coef)
+├── stage3_huber_validation.py       # Huber B 검증 (Bootstrap CI / per-segment / coef)
+├── stage3_warm_improvements.py      # Warm-start 개선 후보 비교 (FE / time / history / Combined)
+├── stage3_warm_validation.py        # Warm P2 검증 (Bootstrap / Rolling / Bucket / Leakage)
+└── stage3_warm_p3_validation.py     # Warm P3 검증 (4-model rolling / EB shrink / depth / cluster boot)
 
 results/
 ├── stage2_*.json                    # Stage 2 실험 결과 (7개 JSON + 3개 coef CSV)
-└── stage3_*.json                    # Stage 3 실험 결과 (8개 JSON)
+└── stage3_*.json                    # Stage 3 실험 결과 (10개 JSON 포함 warm 검증)
 ```
 
 데이터 생성: `scripts/build_curated_datasets.py`
