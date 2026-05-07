@@ -11,7 +11,7 @@
 
 ---
 
-## 1. 산출물 인덱스 (총 14개 항목 = README + 13종 문서; 최종보고서는 .md/.html 동일 내용 2개 파일)
+## 1. 산출물 인덱스 (총 15개 항목 = README + 14종 문서; 최종보고서는 .md/.html 동일 내용 2개 파일; Phase A 배치 사전 준비는 4 파일 묶음 단일 항목)
 
 ### 1.1 청중별 권장 시작 문서
 
@@ -28,6 +28,7 @@
 | **외부 자문 검증** | `docs/stage3_exploratory_addendum_20260507.md` | Ridge 헤도닉 등 선형/통계 피처 검증 결과 (운영 유지) |
 | **가격 범위 (Quantile)** | `docs/stage3_quantile_cycle_20260507.md` | Linear Quantile q25/q50/q75 — **conditional accept (shadow 승인)** + **Hybrid 운영** (`value=Huber 점예측`, `band+q-tiles=M1 quantile shadow`); default 전환은 Phase 2 acceptance gate 후 |
 | **Cold rollout shadow (운영)** | `docs/cold_rollout_shadow_runbook_20260507.md` | Phase A 1주 shadow 일일 점검 체크리스트 + 트러블슈팅 + Stage 4 baseline 일치성 |
+| **Phase A 배치 사전 준비** | `docs/phase_a_d1_final_check_20260507.md` + `docs/phase_a_approval_template_20260507.md` + `docs/phase_a_monitoring_spec_20260507.md` + `scripts/phase_a_preflight.py` | D-1 final check / 담당자 단독 승인서 / Grafana/Datadog metric+alert spec / offline preflight 자동화 |
 | **결정 메모** | `docs/트랙2_Stage2_freeze_20260506.md` | GATE 2 freeze |
 
 ### 1.2 권장 읽기 순서

@@ -1,0 +1,56 @@
+{
+  "model_hash": "track2_v1_20260507",
+  "pipeline_version": "f4_spline_v1_20260506",
+  "data_path": "data/curated/stage3_1000x100.parquet",
+  "data_n_rows": 1378,
+  "data_n_artists": 100,
+  "tests": [
+    {
+      "test": "self_parity",
+      "pass": true,
+      "max_diff": 0.0,
+      "coef_max_diff": 0.0
+    },
+    {
+      "test": "feature_pipeline_deterministic",
+      "pass": true,
+      "max_diff": 0.0,
+      "feature_hash": "01577e2fbca06a5b"
+    },
+    {
+      "test": "latency_baseline_offline",
+      "n_iter": 1000,
+      "p50_us": 1.0,
+      "p95_us": 1.042,
+      "p99_us": 1.083
+    },
+    {
+      "test": "fail_closed_test_cases",
+      "cases": [
+        {
+          "name": "NO_BASELINE",
+          "trigger": "학습-서빙 parity 검증 실패",
+          "input": "동일 input → 학습 시 vs 운영 시 prediction 차이 > 1e-6",
+          "expected": "Track 2 응답 X, V3 자동 라우팅, sue_code = 'NO_BASELINE'",
+          "operational_test": "운영 환경에서 학습 모델 hash와 다른 hash 의도적 배포 → 자동 fallback 발동 확인"
+        },
+        {
+          "name": "MODEL_ERROR",
+          "trigger": "모델 응답 실패 / 의존성 장애",
+          "input": "예측 함수에서 exception 발생",
+          "expected": "Track 2 응답 X, V3 자동 라우팅, reason = 'MODEL_ERROR'",
+          "operational_test": "예측 endpoint 강제 종료 → V3 fallback 5초 이내 발동 확인"
+        },
+        {
+          "name": "PARITY_BREACH",
+          "trigger": "학습 시 사용 변수 spec 과 운영 입력 불일치",
+          "input": "필수 변수 결측 또는 단위 mismatch",
+          "expected": "Track 2 응답 X, V3 자동 라우팅, reason = 'PARITY_BREACH'",
+          "operational_test": "area_cm2 = None / birth_year = None 입력 → fallback 발동 확인"
+        }
+      ],
+      "note": "Offline 정의 only. 실제 fail-closed 동작은 운영팀이 in-environment 에서 검증 필수."
+    }
+  ],
+  "offline_preflight_pass": true
+}
