@@ -51,6 +51,7 @@ code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 12p
 <li><a href="#sec4">4. 핵심 수치</a></li>
 <li><a href="#sec5">5. Axis A 5 step 결과 요약</a></li>
 <li><a href="#sec6">6. 다음 단계 (옵션 D/B/C/A)</a></li>
+<li><a href="#sec6b">6.B Axis B Handoff Packet (운영팀/법무팀 인계)</a></li>
 <li><a href="#sec7">7. 정직 보고 / 한계</a></li>
 <li><a href="#sec8">8. 코덱스 자문 누적</a></li>
 </ul>
@@ -96,8 +97,9 @@ code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 12p
 <div class="card blue">
 <h4>1순위: B — Axis B pre-screen project <span class="pill blue">권고</span></h4>
 <p><strong>즉시 modeling 아님 — Source discovery + 7항목 screening</strong></p>
-<p>Phase A 7항목 (Legal / TOS / Access / Anti-bot / Labelability / Joinability / As-of-time)</p>
+<p>Phase A 7항목 (코덱스 P0 fix): Legal / TOS / Access / Anti-bot / <strong>Data availability</strong> / Labelability·Joinability / As-of-time reproducibility</p>
 <p>운영팀 / 법무팀 협업 (LLM 외 작업 영역)</p>
+<p><strong>전제 (Stage 5)</strong>: 5/5 source REJECT (Artsy CV / Auction 4 source) — 새 lawful path 발견 시에만 진입 가능</p>
 <p>이유: 현재 병목 (feature/information shortage) 정면 대응</p>
 </div>
 <div class="card amber">
@@ -192,9 +194,13 @@ code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 12p
 <div class="card blue">
 <h4>B. Axis B pre-screen project <span class="pill blue">1순위 (코덱스)</span></h4>
 <p><strong>즉시 modeling 아님 — screening project</strong></p>
-<p>Source discovery: Stage 5 reject 외 새 합법 source 후보 발굴</p>
-<p>7항목 screening: Legal / TOS / Access / Anti-bot / Labelability / Joinability / As-of-time</p>
+<p>Source discovery: Stage 5 reject 외 새 합법 source 후보 발굴 (Stage 5 = 5/5 REJECT)</p>
+<p>7항목 screening: Legal / TOS / Access / Anti-bot / <strong>Data availability</strong> / Labelability·Joinability / As-of-time reproducibility</p>
 <p>운영팀 / 법무팀 협업 (LLM 외)</p>
+<p><strong>3줄 요약 (handoff용 — 코덱스 P2)</strong>:<br>
+&bull; <strong>why B</strong>: 현재 병목 = feature/information shortage 정면 대응<br>
+&bull; <strong>why not A</strong>: A.3 promising but non-decision-grade, A.5 가 confirm 하지 않음<br>
+&bull; <strong>required inputs</strong>: 새 합법 source 후보 list / 운영팀-법무팀 capacity 확정</p>
 </div>
 <div class="card amber">
 <h4>C. Program-level 재설계 <span class="pill amber">2순위</span></h4>
@@ -204,11 +210,62 @@ code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 12p
 </div>
 <div class="card gray">
 <h4>A. A.3 단독 shadow <span class="pill gray">3순위 (조건부 HOLD)</span></h4>
-<p>A.3 BORDERLINE near-PASS — geometry 3종 단독 shadow</p>
+<p>A.3 BORDERLINE — promising but non-decision-grade signal (코덱스 P1, "near-PASS" 톤 정정)</p>
 <p>A.5 가 A.3 confirm 하지 않음 → 가치 변동 X</p>
 <p>별도 의사결정 gate / 추가 evidence 필요</p>
 </div>
 </div>
+
+<h2 id="sec6b">6.B Axis B Handoff Packet (운영팀 / 법무팀 인계 — 코덱스 P1 보완)</h2>
+
+<h3>6.B.1 Stage 5 blocker 구체 (Axis B 진입 전제)</h3>
+
+<table>
+<tr><th>Source</th><th>REJECT 사유</th><th>구체 근거</th></tr>
+<tr><td>Artsy CV (Week 2)</td><td>준법적 자동화 접근 불가</td><td>Cloudflare anti-bot 으로 자동화 fetch 0/10 (HTTP 403) + TOS scraping/data mining 자동화 금지</td></tr>
+<tr><td>Korea Auction</td><td>Cohort mismatch</td><td>경매 시장 = primary market gallery sale 과 cohort 다름 (operationally distinct)</td></tr>
+<tr><td>Seoul Auction / SBI / K Auction</td><td>Cohort mismatch + 자동화 path 부재</td><td>동일 사유</td></tr>
+</table>
+
+<div class="warn-box">
+<strong>핵심</strong>: Stage 5 = <strong>5/5 source 모두 REJECT</strong> — 새 합법 source path 발견 없이 Axis B modeling 진입 불가. <strong>Axis B = 새 lawful path discovery + Phase A 7항목 통과 시에만 진입</strong>.
+</div>
+
+<h3>6.B.2 Phase A 7항목 PASS 기준</h3>
+
+<table>
+<tr><th>항목</th><th>평가 method</th><th>PASS 기준</th></tr>
+<tr><td>Legal</td><td>TOS 명시 / 한국법 / GDPR 검토</td><td>자동화 / data extraction / AI 사용 명시 허용 또는 금지 X (모호 시 LEGAL-REVIEW)</td></tr>
+<tr><td>TOS 자동화 조항</td><td>약관 검토 (한국어 원문 우선)</td><td>scraping / data mining / API 자동 사용 명시 허용</td></tr>
+<tr><td>Access</td><td>API 가용성 / robots.txt / anti-bot 실측</td><td>API 또는 합법적 자동화 path 가용</td></tr>
+<tr><td>Anti-bot</td><td>WebFetch / Playwright sample 실측</td><td>차단 X (Stage 5 처럼 403 = REJECT)</td></tr>
+<tr><td>Data availability</td><td>저가 segment 작품 / 작가 cover rate, missing rate</td><td>≥ 70% cover (저가 segment majority)</td></tr>
+<tr><td>Labelability·Joinability</td><td>artist_slug / title / gallery 등 join key 일치율</td><td>≥ 80% join 가능 (작품-level signal 연결 가능)</td></tr>
+<tr><td>As-of-time reproducibility</td><td>scrape / API 시점이 sale 시점 이전 정보로 재구성 가능</td><td>sale 시점 이전 snapshot 확보 가능 (시점 정합성 / leakage 방지)</td></tr>
+</table>
+
+<h3>6.B.3 후보 source list (사전 등록 외 — 발견 시 deviation log 의무)</h3>
+
+<table>
+<tr><th>Source</th><th>Pre-screen 가능성</th><th>메모</th></tr>
+<tr><td><strong>공공 / 정부</strong> (KAMS, 문체부, Korea Foundation 통계)</td><td>가장 높음 — public data 명시</td><td>작품-level X / 시장 지수 level (aggregate signal) — Labelability 평가 핵심</td></tr>
+<tr><td><strong>갤러리 직접 license</strong> (Kukje / 학고재 / 현대 등)</td><td>협상 필요</td><td>LLM 외 운영팀 / 법무팀 작업 영역 (license 협상)</td></tr>
+<tr><td>Artprice / Artnet (paid)</td><td>License 비용 발생</td><td>비용 < ROI 검증 필요</td></tr>
+<tr><td>Artsy / Saatchi / Auction site 자동화</td><td><strong>REJECT</strong> (Stage 5 결론)</td><td>본 axis 진입 X</td></tr>
+</table>
+
+<h3>6.B.4 책임 분담</h3>
+
+<table>
+<tr><th>역할</th><th>담당</th><th>가능 영역</th></tr>
+<tr><td>Source discovery</td><td>운영팀 (LLM 보조 가능)</td><td>새 source 후보 발굴 / 1차 evaluation</td></tr>
+<tr><td>Legal / TOS 검토</td><td>법무팀 (LLM 외)</td><td>약관 / 한국법 / GDPR 검토</td></tr>
+<tr><td>Access / Anti-bot 실측</td><td>LLM 가능 (Stage 5 와 동일 method)</td><td>WebFetch / robots.txt / Playwright sample</td></tr>
+<tr><td>Labelability·Joinability 평가</td><td>LLM 가능</td><td>join key 일치율 / 작품-level signal 연결성</td></tr>
+<tr><td>Data availability 평가</td><td>LLM 가능</td><td>cover rate / missing rate 측정</td></tr>
+<tr><td>As-of-time reproducibility</td><td>LLM 가능</td><td>scrape / API 시점 정합성 평가</td></tr>
+<tr><td>License 협상</td><td>운영팀 (LLM 외)</td><td>갤러리 / paid source 협상</td></tr>
+</table>
 
 <h2 id="sec7">7. 정직 보고 / 한계</h2>
 
@@ -245,10 +302,12 @@ code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 12p
 
 <hr>
 
-<p><strong>참조 문서</strong>:</p>
+<p><strong>참조 문서</strong> (코덱스 P1 보완 — auditability + B handoff 정합성):</p>
 <ul>
-<li>Architecture-only close: <code>docs/stage6b_results_20260507.md</code></li>
-<li>Feature track design: <code>docs/feature_track_design_20260507.md</code></li>
+<li>Architecture-only close 근거: <code>docs/stage6b_results_20260507.md</code> / <code>docs/stage6a_results_20260507.md</code></li>
+<li>Stage 5 acquisition infeasibility (Axis B 진입 전제): <code>docs/stage5a_week2_results_20260507.md</code> / <code>docs/stage5a_source_scorecard_20260507.md</code></li>
+<li>Stage 4 short-term track (저가 feature 부족 시그니처 3/3): <code>docs/stage4_short_term_track_results_20260507.md</code></li>
+<li>Feature track design: <code>docs/feature_track_design_20260507.md</code> (Phase A 7항목 정의)</li>
 <li>Axis A.1-A.5 prereg + 결과: <code>docs/feature_track_axis_a*_*_20260507.md</code></li>
 <li>Methodology pipeline: <code>docs/트랙2_methodology_pipeline_20260507.md</code></li>
 <li>Deviation log: <code>docs/methodology_deviation_log.md</code></li>
