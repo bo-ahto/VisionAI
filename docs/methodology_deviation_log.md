@@ -101,6 +101,22 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Feature Track A.1 결과] Cheap categorical BORDERLINE → A.2 escalation (none, 정상 흐름)
+- **사전등록 §3 적용 결과** (100-seed LAO):
+  * Overall: baseline 38.03% → A.1 36.70% (-1.34%p) ✓ practical
+  * Low: -0.98%p ✓ hard gate
+  * Mid-high: -1.67%p ✓
+  * Newly-warm: -4.06%p (큰 개선)
+  * Cluster bootstrap (rep seed=0, n=2000): mean -3.54%p, 95% CI [-8.31, +1.04] — **CI 상한 +1.04%p 0 걸침**
+  * Seed-level low violation rate: 41/100 = 41.0% (6B 의 66/100 대비 25%p 감소)
+- **판정**: **BORDERLINE (Primary CI 만 미달)** — Hard gate ✓ + practical Δ ✓ but CI 상한 > 0
+- **분류**: **none (정상 흐름)** — 사전등록 §3.2 BORDERLINE 정상 적용
+- **Step gate B안 적용**: A.1 BORDERLINE → A.2 (artist popularity 4종, 시점 정합성 검증 후) escalation, A.1 features drop (alternative hypothesis sequence)
+- **사전 evidence vs 결과**: 사전 expectation (A.1 PASS 가능성 낮음 / A.4-A.5 escalation 사실상 유력) 의 **부분 반박** — cheap categorical 만으로 저가 식별력 일부 보강 가능
+- **6B 와 정반대 패턴**: 6B = aggregate parity but low-slice harm / A.1 = aggregate 개선 + low-slice 비악화 + newly-warm 큰 개선
+- **운영 영향 X**: 운영 spec §1-§16 cold rollout 변경 X / 분기 B calibration only 그대로 유지
+- **승인**: 사용자 검토 + 코덱스 사후 자문 (예정)
+
 ### 2026-05-07 — [Feature Track A.1 prereg freeze] Cheap categorical 4종, 의사결정 8건 추천대로 승인 (none + minor)
 - **의사결정 8건 모두 추천대로 승인** (사용자 2026-05-07):
   1. Axis A 우선 / B 조건부
