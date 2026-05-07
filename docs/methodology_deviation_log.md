@@ -86,6 +86,21 @@
 - **승인**: 코덱스 자문 (단기 트랙 종결 검수)
 - **표준화 권고**: 향후 진단 트랙은 prereg 메모 (1페이지) 의무 + deviation log 동시 기록
 
+### 2026-05-07 — [Stage 6A] Segmented architecture FAIL — Hard gate 저가 harm 위반 (none, 정상 흐름)
+- **사전등록 §3.3**: 🔴 Hard gate 저가 harm = 0 violation. 1건이라도 발생 시 즉시 FAIL.
+- **실측 (100-seed LAO)**:
+  * Overall: baseline 38.05% → segmented 43.28% (+5.23%p 악화)
+  * Low: +3.54%p / Mid/high: +6.97%p
+  * 83/100 seeds 저가 악화 (hard gate 위반)
+  * Cluster bootstrap CI [-0.19, +7.19], P(diff ≥ 0)=0.97 (악화 신뢰도 매우 높음)
+  * Router 품질: low recall 0.87 / balanced acc 0.85 / Brier 0.11 (router 자체 OK)
+- **결론**: Segmented architecture 폐기. Stage 6A FAIL.
+- **분류**: **none (deviation 아님)** — 사전등록 §3.3 정상 적용
+- **운영 영향**: Spec §17 routing 로직 추가 X / 운영 모델 (F4+spline+Huber) 유지
+- **본질 입증** (코덱스 사전 권고 정확): "Segmenting 만으로 feature shortage 해결 X" — Stage 4 작업 3 (feature decomp) → Stage 5 (acquisition 미개시) → Stage 6A (architecture FAIL) **3 cycle 일관**
+- **후속 cycle**: 6B Bayesian / hierarchical 우선 검토 (partial pooling + sparse artist + cold-warm 경계)
+- **승인**: 사용자 검토 + 코덱스 사후 자문 (예정)
+
 ### 2026-05-07 — [Stage 5A Week 2] Artsy CV REJECT + Stage 5 cycle 종료 (major)
 - **Week 1 결과**: Auction 4 source REJECT (cohort mismatch), Artsy CV BORDERLINE (§6.2 보류)
 - **Week 2 측정**: Artsy 자동화 fetch 0/10 (Cloudflare 403 차단) + TOS 자동화 금지 위험
