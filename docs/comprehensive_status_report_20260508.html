@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>VisionAI 종합 현황 보고서 — 트랙 1 + 트랙 2 + Archive Cycle (2026-05-08)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1100px; margin: 30px auto; padding: 20px; line-height: 1.65; color: #222; word-break: keep-all; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; }
+h2 { background: #f4f4f4; padding: 8px 12px; border-left: 4px solid #2c5aa0; margin-top: 28px; }
+h3 { color: #2c5aa0; margin-top: 18px; font-size: 15px; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+.status-box { border: 2px solid #2c5aa0; background: #f4f8fc; padding: 15px; margin: 15px 0; border-radius: 4px; }
+.fail-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 4px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.gray { background: #e9ecef; color: #495057; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+ul li { margin-bottom: 4px; }
+.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>VisionAI 종합 현황 보고서</h1>
+<p style="color: #666;"><strong>작성일</strong>: 2026-05-08 | <strong>대상</strong>: 의사결정자 / 운영팀 / 외부 보고 inheriting | <strong>본 문서 성격</strong>: 1-2 page executive summary (canonical 문서 = <code>docs/comprehensive_status_report_20260508.md</code>)</p>
+
+<div class="status-box"><h3 style="margin-top: 0;">한 줄 요약</h3>
+<p>운영 main 모델 (<code>v3_filtered_tuned</code> 32f) <strong>그대로 유지</strong>, 트랙 2 Architecture-only close 확정 (일반 warm 경로 운영 미승인 / Slice-conditional 제한 후보 + Phase A shadow 1주 착수 승인 가능), v3.6 server bundle main 적재 + swap <strong>blocked</strong> (사용자 권한 영역), archive cycle 정상 종결.</p>
+</div>
+
+<h2>1. 통합 상태표</h2>
+
+<table>
+<tr><th>영역</th><th>상태</th><th>판정</th><th>근거 anchor</th></tr>
+<tr>
+  <td><strong>Track 1</strong> (운영 main 모델)</td>
+  <td><span class="pill green">운영 기준선 유지</span> <span class="pill gray">cycle closed</span></td>
+  <td>fail-and-close 정상 종결 / spec §1-§16 변경 X</td>
+  <td><code>track1_phase0_closeout_20260507.md</code></td>
+</tr>
+<tr>
+  <td><strong>Track 2</strong> (cold-start 해석 가능 모델 연구)</td>
+  <td><span class="pill gray">Architecture close</span> <span class="pill yellow">일반 warm 운영 미승인</span> <span class="pill green">Slice-conditional + Phase A shadow 1주 착수 가능</span></td>
+  <td>Stage 6B + Axis A 5 step 종결 / 1차 병목 해결 X 입증 / Slice-conditional warm path (depth ≥25) 만 제한 후보 유지</td>
+  <td><a href="stage6b_results_20260507.md"><code>stage6b_results_20260507.md</code></a> §0 (종결 사유) + §2 (Cycle 일관성) / <a href="트랙2_종합보고서_axis_a_종결_20260507.html#sec2"><code>Axis A 종결 HTML #sec2</code></a> (의사결정자 권고) + <a href="트랙2_종합보고서_axis_a_종결_20260507.html#sec3"><code>#sec3</code></a> (Cycle 결론) / <a href="트랙2_README.md"><code>트랙2_README.md</code></a> line 99 (Phase A shadow 착수 승인 가능)</td>
+</tr>
+<tr>
+  <td><strong>v3.6 production server bundle</strong></td>
+  <td><span class="pill green">main 적재</span> <span class="pill yellow">swap blocked</span></td>
+  <td>code/monitoring/ETL ready / swap target artifact bundle 부재 + 운영 환경 prerequisite 미충족</td>
+  <td><code>v3_6_swap_readiness_report_20260508.md</code></td>
+</tr>
+<tr>
+  <td><strong>Archive cycle</strong></td>
+  <td><span class="pill green">closed + retained</span></td>
+  <td>PR 16건 merged (#27~#42 분할 train + 잔존) + 본 PR (TBD) / frozen branch + tag / 잔존 작업 1-5 완료 / 6 LLM 영역 종결</td>
+  <td><code>archive/2026-05-08-gallery-tier-v4-research-closeout.md</code> (#27-#33) + 잔존 1-5 (#34-#40) + 잔존 6 (#41-#42)</td>
+</tr>
+<tr>
+  <td><strong>사전등록 governance</strong></td>
+  <td><span class="pill green">정상 작동</span></td>
+  <td>Track 1 fail-and-close / Track 2 architecture close 확정 / HARK 위험 실질적 저감</td>
+  <td><code>methodology_deviation_log.md</code></td>
+</tr>
+</table>
+
+<h2>2. 왜 이 archive cycle 을 닫는가</h2>
+
+<div class="info-box">
+본 archive cycle 은 거대 누적 branch (<code>feature/gallery-tier-v4-research</code>, main 대비 239+ commits / 359 files) 의 logical cycle 별 분할 종결. 코덱스 권고에 따른 Wave 1-3 + follow-up + 잔존 작업 1-6 분리 진행.
+</div>
+
+<table>
+<tr><th>Cycle 종결 사유</th><th>본질</th></tr>
+<tr><td>Track 1 cycle</td><td>Phase 0 §4 fail trigger 정상 작동 (Audit 4 OOF 악화 + Saatchi 비대칭 violation) / Option A closed (사용자 결정)</td></tr>
+<tr><td>Track 2 cycle</td><td>3-cycle empirical (Stage 4 단기 / Stage 6A / Stage 6B) + 1-cycle acquisition infeasibility (Stage 5) / Feature Track Axis A.1-A.5 모두 hard gate 통과 X / Architecture-only close 확정</td></tr>
+<tr><td>Archive 분할 종결</td><td>거대 PR (167+ file diff) 단일 merge 비효율 / logical cycle 별 분할 PR train 권고 적용</td></tr>
+</table>
+
+<h2>3. 현재 운영 모델</h2>
+
+<div class="success-box">
+<strong>운영 main 모델</strong>: <code>v3_filtered_tuned</code> 32 features (변경 X)
+<br><strong>운영 spec 변경</strong>: §1-§16 모두 그대로 유지
+<br><strong>Reported metric</strong>: Cold CatBoost calibrated <strong>38.3%</strong> / Cold offline ensemble 38.7% / Warm KFold ensemble 10.5%
+</div>
+
+<div class="warn-box">
+<strong>Caveat (Track 1 finding)</strong>: drift features 9개 중 7 (severe) 가 학습 분포 OOF 에서 informative signal 임을 강하게 시사 → reported offline metric 이 actual serving behavior 보다 낙관적일 가능성 강하게 시사 (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량).
+</div>
+
+<h2>4. 연구 트랙 (Track 2) 의 입증 / 미입증</h2>
+
+<h3>4.1 입증된 것</h3>
+<ul>
+<li><strong>Architecture-only close</strong>: fixed-feature cold-start LAO scope 의 architecture-only remedies 가 1차 병목 해결 X (3 empirical cycle)</li>
+<li><strong>Acquisition infeasibility</strong>: 4 source 중 Artsy CV 1 BORDERLINE / F1 (auction anchor) family 실현 가능성 X</li>
+<li><strong>Cheap-feature-only remedy 한계</strong>: Feature Track Axis A.1-A.5 모두 hard gate 통과 X (BORDERLINE 2 + FAIL 3)</li>
+<li><strong>HARK 위험 실질적 저감</strong>: 사전등록 freeze 후 결과 본 cycle 정상 종결 (정직 보고)</li>
+</ul>
+
+<h3>4.2 못 넘은 것</h3>
+<ul>
+<li>운영 채택 (Stage 6A/6B FAIL → 운영 spec §17 변경 X)</li>
+<li>Confirmatory holdout (Stage 4 봉인 X / future winner 정해진 뒤에만)</li>
+<li>Axis B Phase A 진입 (LLM 외 영역 / 운영팀 + 법무팀 회신 대기)</li>
+<li>Stage 5 acquisition (Artsy CV 외 source 모두 REJECT)</li>
+</ul>
+
+<h2>5. v3.6 Production Server Bundle — Swap 가능 / 불가능 액션</h2>
+
+<h3>5.1 LLM 영역 (이미 종결)</h3>
+<ul>
+<li>✅ DEV TEST 실행 PASS (fallback_cases_fail=0 / gating_correctness=1.0)</li>
+<li>✅ Baseline artifact bundle (5 file) 모두 존재 + 로더 통과</li>
+<li>✅ MODEL_VARIANT / prefix / model_target 일관성 정합</li>
+<li>✅ Logging schema / monitor payload 정합</li>
+<li>✅ readiness report + user action checklist 작성</li>
+</ul>
+
+<h3>5.2 사용자 권한 영역 (open)</h3>
+
+<div class="fail-box">
+<strong>현재 즉시 swap 가능 X</strong> — 다음 prerequisite 충족 의무:
+<ul>
+<li><strong>P0 Blocker</strong>: Swap target artifact bundle (<code>v3_5_v_year_saatchi_warm</code> 5 file) <strong>모두 부재</strong> → 학습 pipeline 수동 실행 의무</li>
+<li><strong>P0 Blocker</strong>: Runtime image <code>/app/models/</code> 적재 미완 (Dockerfile.api COPY step 또는 K8s PVC)</li>
+<li><strong>P1</strong>: 운영 환경 의존성 (psycopg / PostgreSQL / Grafana / Slack) 운영 환경 wiring</li>
+<li><strong>P1</strong>: 운영 secrets / cron schedule (LLM 절대 비권한)</li>
+</ul>
+</div>
+
+<h3>5.3 Swap 실행 절차 (사용자 권한)</h3>
+<ol>
+<li>STAGING 24h baseline (1K request + 12 panel + 6 alert)</li>
+<li>Pre-canary smoke 0.5d (100건 manual + cache_hit ≥ 10)</li>
+<li>CANARY 1% (24h)</li>
+<li>ROLLOUT 5% (D1/D3/D7) + reviewer 1+2+3 signoff</li>
+<li>ROLLOUT 25% → FULL 100% + Final swap</li>
+</ol>
+
+<p>상세 절차: <code>docs/v3_6_swap_user_action_checklist_20260508.md</code> (사용자 권한 영역 standalone view, 코덱스 round 1-5 GO 통과)</p>
+
+<h2>6. Archive Cycle 종결 — PR 16+1건</h2>
+
+<h3>6.1 분할 PR train 요약</h3>
+
+<table>
+<tr><th>Wave / 잔존</th><th>PR 범위</th><th>본질</th></tr>
+<tr><td>Wave 1</td><td>#27 (v3.6 prod-server) + #28 (Track 1 closeout)</td><td>운영 영향 강제 분리 + governance only</td></tr>
+<tr><td>Wave 2</td><td>#29 (Track 2 core) + #32 (#29 fix) + #30 (Track 2 ext) + #31 (Axis B)</td><td>연구 트랙 + Axis B</td></tr>
+<tr><td>Wave 3</td><td>#33 (archive closeout note)</td><td>archive 메타</td></tr>
+<tr><td>follow-up</td><td>#34 (repo hygiene + canonical assets)</td><td>repo hygiene + provenance manifest 채택</td></tr>
+<tr><td>잔존 1-5</td><td>#35 (model_tech v2) + #36/#37 (deviation log A+B) + #38 (v5 eval salvage) + #39 (saatchi tests) + #40 (retention policy)</td><td>archive 정합 + governance 후속</td></tr>
+<tr><td>잔존 6 LLM</td><td>#41 (swap readiness Blocked) + #42 (user action checklist)</td><td>swap 영역 LLM 종결</td></tr>
+<tr><td>본 PR</td><td>(TBD) Comprehensive status report</td><td>Track 1+2 통합 view</td></tr>
+</table>
+
+<h3>6.2 Frozen archive</h3>
+<ul>
+<li><strong>Branch</strong>: <code>feature/gallery-tier-v4-research</code> (origin 보존 / rename X)</li>
+<li><strong>Tag</strong>: <code>archive/gallery-tier-v4-research-20260508</code> (HEAD <code>52ac44d</code>, origin push 완료)</li>
+<li><strong>Retention policy</strong>: 최소 2026-05-22 보존 / cleanup review = 다음 cycle kickoff 또는 swap 방향 확정 후 / final deletion = 사용자 explicit 결정 (LLM 단독 X)</li>
+</ul>
+
+<h2>7. 사전등록 Governance 의 가치</h2>
+
+<div class="info-box">
+<strong>본 archive cycle 의 governance signal</strong>:
+<ul>
+<li><strong>Track 1 fail-and-close 정상 작동</strong>: drift fix path 의 OOF 개선 가설을 사전 freeze 후 평가 → 결과 반증 (악화) → Stage 1B 이상으로 decision drift 없이 종결</li>
+<li><strong>Track 2 Architecture-only close 확정</strong>: 3-cycle empirical + 1-cycle acquisition infeasibility / 1차 병목 해결 X 입증</li>
+<li><strong>HARK 위험 실질적 저감</strong>: 사전등록 없이 결과 본 후 합리화 시 fail/borderline 을 PASS 로 framing risk → 본 cycle 은 정직 보고</li>
+<li><strong>운영 영향 분리</strong>: decision-binding ≠ exploratory / production trigger 자격 X</li>
+<li><strong>운영 swap authority boundary</strong>: LLM 영역 evidence ↔ 사용자 영역 명확 분리 / safety guard 명시</li>
+</ul>
+</div>
+
+<h2>8. Open Items + Authority Boundary</h2>
+
+<table>
+<tr><th>항목</th><th>영역</th><th>의사결정자</th></tr>
+<tr><td>v3.6 swap target artifact bundle 학습 + 적재</td><td>학습 pipeline 수동 실행</td><td>DevOps / 운영팀</td></tr>
+<tr><td>v3.6 운영 환경 prerequisite 충족</td><td>psycopg / PostgreSQL / Grafana wiring / secrets</td><td>DevOps / 운영팀</td></tr>
+<tr><td>STAGING → Pre-canary → CANARY → ROLLOUT 실행</td><td>state machine 권위 (v3_6_phase3_runbook §5)</td><td>운영팀 + reviewer 1+2+3 signoff</td></tr>
+<tr><td>Final swap (DEFAULT_VARIANT 변경)</td><td>governance rule (별도 PR)</td><td>사용자 + reviewer signoff</td></tr>
+<tr><td>Rollback 결정 (긴급 운영)</td><td>drift / regression 감지 시</td><td>oncall / 운영팀</td></tr>
+<tr><td>archive branch cleanup (2026-05-22 이후)</td><td>retention policy §6.1</td><td>사용자 explicit 결정</td></tr>
+<tr><td>외부 공유 산출물 처리</td><td>archive lane / external-share</td><td>사용자</td></tr>
+<tr><td>A.2 path (Track 1 후속)</td><td>운영팀 inquiry / API contract 확장</td><td>운영팀 (LLM 외)</td></tr>
+<tr><td>Axis B Phase A HOLD 해제</td><td>외부 source 회신 / 법무팀 검토</td><td>운영팀 + 법무팀</td></tr>
+</table>
+
+<h2>9. 상세 근거 문서 링크</h2>
+
+<table>
+<tr><th>영역</th><th>핵심 문서</th></tr>
+<tr><td>Track 1</td><td><code>track1_phase0_closeout_20260507.md</code> (decision artifact) / <code>트랙1_종합보고서_20260507.html</code> (외부 보고용)</td></tr>
+<tr><td>Track 2</td><td><code>트랙2_README.md</code> (인덱스) / <code>트랙2_methodology_pipeline_20260507.md</code> / <code>트랙2_종합대시보드_20260507.html</code> / <code>트랙2_종합보고서_axis_a_종결_20260507.html</code></td></tr>
+<tr><td>v3.6 swap</td><td><code>v3_6_swap_readiness_report_20260508.md</code> (Blocked) / <code>v3_6_swap_user_action_checklist_20260508.md</code> (사용자 권한 standalone) / <code>v3_6_phase3_runbook.md</code> (state machine 권위)</td></tr>
+<tr><td>Archive</td><td><code>archive/2026-05-08-gallery-tier-v4-research-closeout.md</code> (PR 목록 + retention policy §6.1)</td></tr>
+<tr><td>Governance</td><td><code>methodology_deviation_log.md</code> (모든 cycle entries 종합)</td></tr>
+<tr><td>Canonical</td><td><code>README.md</code> §canonical artifact manifest / <code>model_test_results/integrated_v3_filtered_tuned.provenance.json</code></td></tr>
+<tr><td>Comprehensive (canonical)</td><td><code>docs/comprehensive_status_report_20260508.md</code> — 본 HTML 의 canonical Markdown</td></tr>
+</table>
+
+<div class="footer">
+<p><strong>본 HTML 보고서의 위치</strong>: 의사결정자 / 외부 설명 가능 수준의 1-2 page executive summary. 상세 governance + audit trail + reference index 는 canonical Markdown (<code>docs/comprehensive_status_report_20260508.md</code>) 참조.</p>
+<p><strong>코덱스 검수</strong>: 사전 자문 + 사후 검수 round 반복 진행 (GO 까지).</p>
+<p>VisionAI archive cycle <code>feature/gallery-tier-v4-research</code> 종합 종결 보고서 / 2026-05-08</p>
+</div>
+
+</body>
+</html>
