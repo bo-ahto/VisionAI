@@ -5,18 +5,18 @@
 > **실험**: `experiments/structural_v1/feature_track_axis_a2.py` / `results/feature_track_axis_a2.json`
 > **판정**: **FAIL (🔴 Hard gate Δ_low > 0 위반)** → A.3 escalation (Step gate B안)
 
-## 0. 한 줄 요약 (의사결정자용)
+## 0. 한 줄 요약 (의사결정자용 — 코덱스 framing 톤 다운 v2)
 
-> **A.2 artist popularity 4종 FAIL** (사전등록 §3.3 hard gate 위반, decisive). Overall **-0.21%p (사실상 동등)** + 저가 **+0.05%p 미세 악화** (Hard gate 위반) + Mid-high **-0.47%p** + Newly-warm **-0.81%p**.
+> **A.2 artist popularity bundle (4종) 은 cold-start LAO 에서 baseline 대비 실질 개선을 만들지 못했고, prereg hard gate 를 미세하게 위반해 FAIL** (코덱스 권고 framing). Overall **-0.21%p (사실상 동등)** + 저가 **+0.05%p (마진 5bp 위반)** + Mid-high -0.47%p + Newly-warm -0.81%p.
 >
-> **핵심 발견 (Stage 6B 패턴 반복)**: Single-snapshot artist-level features (followers / for_sale / is_p1) 는 **cold-start LAO 에서 무력** — artist holdout 시 unseen artist 의 popularity 신호가 학습 X → 효과 사실상 0. **6B partial pooling 의 random intercept 무력화 패턴과 동일** ("targeted at artist heterogeneity but cold-start LAO neutralizes").
+> **Provisional 메커니즘 가설 (입증 X — A.3-A.5 에서 재시험 필요)**: A.2 bundle 의 결과는 single-snapshot artist-level features 가 cold-start LAO 에서 효과 약함을 **시사** (Stage 6B partial pooling 의 random intercept 무력화 패턴과 유사). 그러나 본 실험은 4-feature bundle 단일 add-on test 이며 `year_made` 처럼 artist-binding 이 아닌 항목도 포함 → "artist-binding 신호 일반이 무력" 으로 일반화 X.
 >
-> **A.1 vs A.2 대조 (정직 보고)**:
-> - **A.1 (작품 분류 + 갤러리, BORDERLINE)**: 모든 작품에 적용되는 신호 → cold-start LAO 에서 promising signal
-> - **A.2 (artist popularity, FAIL)**: artist 별 신호, holdout artist 에 적용 X → 무력
-> - → **Cold-start LAO 에서 유효한 신호 = artwork-level 또는 gallery-level (cross-artist applicable)** / artist-specific 신호는 본 평가 구조에서 무력
+> **A.1 vs A.2 — working hypothesis (입증 X)**:
+> - A.1 (cross-artist signal — 작품 분류 + 갤러리): BORDERLINE (promising but not decision-grade)
+> - A.2 (artist-binding 추정 — popularity bundle): FAIL (this spec, this evaluation)
+> - → Working hypothesis: "Cold-start LAO 에서 유효한 신호는 cross-artist applicable 가능성" → A.3 (geometry, 더 직접적인 artwork-level falsification step) 에서 재시험
 >
-> **운영 영향 X**: A.2 features 운영 spec 추가 X / 운영 모델 (F4 + spline + Huber) + 분기 B (calibration only) 그대로 유지.
+> **운영 영향 X**: A.2 bundle 운영 spec 추가 X / 운영 모델 (F4 + spline + Huber) + 분기 B (calibration only) 그대로 유지. **운영 F4 의 `artist_total_works` 효용 재평가 = 별도 ablation 필요** (본 결과로 추론 jump 금지, 코덱스 P1).
 
 ## 1. 핵심 결과 (사전등록 §3 적용)
 
@@ -43,7 +43,9 @@
 | Low Δ mean | +0.05%p |
 | Low Δ std | 4.49%p |
 
-→ **45 seeds 에서 low harm + mean +0.05%p 위반** — Hard gate 점추정 위반 = **즉시 FAIL** (A.1 의 41/100 보다 4%p 높음).
+→ 45 seeds 에서 low harm + mean +0.05%p 위반 — Hard gate 점추정 위반 = **즉시 FAIL**.
+
+> **A.1 (41/100) vs A.2 (45/100) 비교 caveat (코덱스 P2)**: 차이 +4%p 의 95% CI ≈ [-9.7%p, +17.7%p] — **robust difference X** (sample 충돌 가능성 큼). "A.1 보다 더 나쁘다" 단정 X — **사실상 비슷한 분포** 로 봐야 정직.
 
 ### 1.4 사전등록 §3 PASS / BORDERLINE / FAIL 판정
 
@@ -59,37 +61,37 @@
 
 → **🔴 Hard gate 위반 → 즉시 FAIL** (사전등록 §3.3) — primary / secondary 모든 조건 동시 미달 (decisive).
 
-## 2. A.1 vs A.2 정직 대조 (Step gate B안 의사결정)
+## 2. A.1 vs A.2 비교 (Working hypothesis, 코덱스 P1 — 입증 X)
 
 | 지표 | A.1 (BORDERLINE) | A.2 (FAIL) |
 |---|---|---|
-| Overall Δ | **-1.34%p** ✓ practical | -0.21%p (사실상 동등) |
-| Low Δ (hard gate) | -0.98%p ✓ | **+0.05%p ✗** |
+| Overall Δ | -1.34%p ✓ practical | -0.21%p (사실상 동등) |
+| Low Δ (hard gate) | -0.98%p ✓ | +0.05%p ✗ |
 | Mid-high Δ | -1.67%p | -0.47%p |
-| Newly-warm Δ | **-4.06%p** (큰 개선) | -0.81%p |
+| Newly-warm Δ | -4.06%p | -0.81%p |
 | 99% CI 상한 | +3.58%p (참고용 미달) | +4.47%p (decisive 미달) |
-| Seed-level low violation | 41/100 | 45/100 |
-| 판정 | BORDERLINE → escalation | **FAIL → escalation** |
+| Seed-level low violation | 41/100 | 45/100 (~4%p, robust difference X) |
+| 판정 | BORDERLINE → escalation | FAIL → escalation |
 
-> **결론 (코덱스 framing 적용)**: A.1 에서 cheap metadata (작품 분류 / 갤러리) 가 약한 신호 관측 / **A.2 의 artist popularity 는 cold-start LAO 에서 사실상 무력** — Stage 6B partial pooling 의 random intercept 무력화 패턴 반복 (artist holdout 평가 구조의 본질적 한계).
+> **Working hypothesis (입증 X — 코덱스 P1)**: A.1 (cross-artist signal: 작품 분류 + 갤러리) 에서 약한 promising signal 관측 / A.2 (artist-binding 추정 popularity bundle) 에서는 이 spec / 이 평가에서 실질 개선 X. 6B partial pooling 의 random intercept 무력화 패턴과 **유사**하나, A.2 bundle 단일 결과로 "artist-binding 신호 일반 무력" 으로 일반화 X. **A.3-A.5 escalation 에서 재시험 필요**.
 
-## 3. 메커니즘 분석 (정직 보고)
+## 3. Provisional 메커니즘 분석 (코덱스 P1 — working hypothesis, 입증 X)
 
-### 3.1 왜 A.2 가 FAIL 했나?
-- **Single-snapshot artist features**: followers / for_sale / is_p1 = artist 당 unique 1.00 (single snapshot), train 에서 학습된 효과는 holdout artist 에 적용 X
-- **Cold-start LAO 평가 구조의 한계**: test artists 가 train 에 0 작품 → artist-specific feature 의 학습된 weight 가 unseen artist 에 generalization 부족
-- **`year_made` 의 noise 효과**: 작품 제작년도는 모든 작품에 적용 가능하나 birth_year_centered (운영 F4) 와 다소 redundant — 추가 신호 미세
-- → **A.2 features 모두 cold-start LAO 에서 무력** = 운영 spec 변경 명분 X
+### 3.1 왜 A.2 bundle 이 near-null net effect 였나? (가설 수준)
+- **Single-snapshot artist features**: followers / for_sale / is_p1 = artist 당 unique 1.00 (single snapshot), train 에서 학습된 weight 가 unseen artist 에 generalization 가능성 약함
+- **Cold-start LAO 평가 구조의 추정 한계**: test artists 가 train 에 0 작품 → artist-binding feature 의 generalization 약할 가능성 (입증 X — bundle 단일 결과)
+- **`year_made` 가능성**: 작품 제작년도는 모든 작품에 적용 가능, birth_year_centered (운영 F4) 와 일부 redundant 가능
+- → **A.2 bundle 이 이 spec / 이 평가에서 실질 개선 만들지 못했다** (provisional 결론, 코덱스 framing)
 
-### 3.2 6B vs A.2 패턴 일치
+### 3.2 6B vs A.2 패턴 — 유사하나 동일 단정 X
 - 6B (partial pooling): ICC 0.81 ✓ but cold-start LAO 무력 → "mis-targeted"
-- A.2 (popularity): single-snapshot artist features → 동일 패턴 — **artist 자체에 결합된 신호는 LAO 에서 가치 X**
-- → **Cold-start LAO 평가에서 유효한 features 는 cross-artist applicable** (artwork-level / gallery-level)
+- A.2 (popularity bundle): single-snapshot artist features → **유사 패턴 시사** (입증 X)
+- → **Working hypothesis**: artist-binding 신호 일부가 cold-start LAO 에서 약할 가능성 / **A.3-A.5 에서 재시험 필요**
 
-### 3.3 A.1 vs A.2 framing
-- **A.1 (작품 분류 + 갤러리)**: 모든 작품에 적용 가능한 cross-artist signal → 약한 개선 관측
-- **A.2 (artist popularity)**: artist-binding signal → 무력
-- → A.3 (geometry — aspect ratio + 2D vs 3D) = **artwork-level signal** 다시 → 가능성 있음
+### 3.3 A.1 vs A.2 framing (working hypothesis, 입증 X)
+- A.1 (작품 분류 + 갤러리): cross-artist applicable signal → 약한 개선 관측 (BORDERLINE)
+- A.2 (artist popularity bundle): artist-binding 추정 → near-null net effect (FAIL)
+- → A.3 (geometry — aspect ratio + 2D vs 3D) = artwork-level signal → working hypothesis 의 더 직접적 falsification step
 
 ## 4. 운영 영향 X
 
@@ -97,10 +99,10 @@
 - 분기 B (calibration only) 운영 그대로 유지
 - Step gate B안 적용: A.2 FAIL → **A.3 prereg freeze 진입** (geometry, A.2 features drop = alternative hypothesis sequence)
 
-## 5. Limitations / 정직 보고
+## 5. Limitations / 정직 보고 (코덱스 P1 톤 다운)
 
-- **시점 정합성 caveat 적용 후 무력 확인**: 운영 F4 의 `artist_total_works` 와 동등 spec (single snapshot) 인 features (followers / for_sale / is_p1) 가 cold-start LAO 에서 무력 — 즉 **운영 모델 F4 의 artist_total_works 도 cold-start LAO 에서 비슷하게 약한 신호** 일 가능성 (본 cycle 비목표, 별도 ablation 검토 가능)
-- **`year_made` 단독 효과 미측정**: 4종 features 중 어느 것이 noise / 미세 negative effect 인지 분해 X (effect attribution 본 cycle 비목표)
+- **시점 정합성 caveat 적용 후 near-null net effect**: 운영 F4 의 `artist_total_works` 와 동등 snapshot spec 인 features (followers / for_sale / is_p1) 가 본 evaluation 에서 약함 — 단 **`artist_total_works` 자체 효용 평가는 별도 ablation 필요** (본 결과로 운영 F4 약화 추론 = inference jump, 코덱스 P1 — **운영 spec 재평가 트리거 X**)
+- **`year_made` 단독 효과 미측정**: 4종 features 중 어느 것이 noise / 미세 negative driver 인지 분해 X (effect attribution 본 cycle 비목표)
 - **Single-seed CI vs 100-seed mean discrepancy**: A.1 동일 caveat — single seed=0 의 -0.39%p 도 wide CI 노출 / 100-seed mean -0.21%p 가 더 robust effect
 
 ### 5.1 Effect attribution 미수행 (코덱스 P2 권고 — 향후 escalation 후)
@@ -124,7 +126,7 @@
 | A.1 prereg freeze 검수 (2026-05-07) | HOLD → P0×3 + P1×4 + P2×1 fix → GO |
 | A.1 결과 보고 검수 (2026-05-07) | HOLD → P0×2 + P1×4 fix → v2 |
 | **A.2 prereg freeze (2026-05-07)** | A.1 v2 lessons 사전 반영 (cluster bootstrap fix / 99% CI / 시점 정합성 caveat) |
-| **A.2 결과 보고 검수 (예정)** | FAIL 정당성 + A.3 escalation 권고 |
+| **A.2 결과 보고 검수 (2026-05-07)** | **FAIL 정당성 OK + A.3 escalation GO**. P1 ×4 (메커니즘 톤 / artist_total_works inference jump / A.1 vs A.2 working hypothesis / 의사결정자 framing) + P2 ×2 (45 vs 41 robust difference X / effect attribution 톤) — 본 v2 commit 일괄 반영 |
 
 ## 8. 참조
 
