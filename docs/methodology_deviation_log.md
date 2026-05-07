@@ -101,6 +101,34 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Feature Track A.3 결과] Geometry BORDERLINE near-PASS → A.4 escalation (none, 정상 흐름)
+- **사전등록 §3 적용 결과** (100-seed LAO):
+  * Overall: baseline 38.03% → A.3 35.92% (Δ -2.11%p) ✓ practical (Axis A max)
+  * Low: Δ -2.65%p ✓ hard gate (큰 개선, A.1 -0.98%p 대비)
+  * Mid-high: Δ -1.79%p
+  * Newly-warm: Δ -3.15%p
+  * Cluster bootstrap (rep seed=0, n=2000, 진짜 cluster bootstrap): mean -4.43%p, **95% CI [-9.54, -0.36]** ✓ / **99% CI [-11.37, +0.41]** ✗ very close miss
+  * Seed-level low violation rate: 13/100 = 13.0% (Axis A min — A.1 41/100, A.2 45/100 대비 압도적 robust)
+- **판정**: **BORDERLINE (Primary 99% CI 미달, α=0.01 Bonferroni 5 step decision rule)** — 95% CI 만으로는 PASS 가능했으나 사전등록 freeze 정합성 유지 의무
+- **분류**: **none (정상 흐름)** — Step gate B안 BORDERLINE → A.4 escalation
+- **메커니즘 (working hypothesis 부분 입증, 코덱스 framing — 입증 X)**: A.1 (cross-artist artwork-level: 분류/갤러리) 약한 / A.2 (artist-binding popularity) near-null / A.3 (pure artwork-level geometry) **strongest signal in Axis A** = "cold-start LAO 에서 유효한 신호 = artwork-level cross-artist applicable" 가설 일관 패턴. 단 A.4 (text) / A.5 (image) escalation 에서 재시험 필요.
+- **운영 영향 X (본 cycle)**: 운영 spec 변경 X / 분기 B 유지 / A.3 features 채택 X (PASS 기준 미달)
+- **추가 검증 가치 (의사결정자 영역)**: A.3 effect size + low harm decisive 통과 = Axis A 최강 / A.4 결과에 따라 (PASS 시 A.4 채택 / FAIL/BORDERLINE 시 A.3 단독 shadow 검토 가치)
+- **승인**: 사용자 검토 + 코덱스 사후 검수 (예정)
+
+### 2026-05-07 — [Feature Track A.3 prereg freeze] Geometry 3종 (none, 정상 흐름)
+- **A.3 features 3종**: log_aspect_ratio + is_3d + log_depth_3d (2D=71.7% / 3D=28.3%)
+- **시점 정합성 명확 OK**: width/height/depth = 작품 본질 attribute, scrape/sale 시점 무관
+- **A.1/A.2 v2 lessons 사전 반영**: cluster bootstrap 진짜 구현 + α=0.01 99% CI decision + per-step freeze 6항목 + 운영 spec 인용 정확성 + framing 톤 (working hypothesis)
+- **분류**: **none (정상 흐름)** — Step gate B안 escalation
+- **승인**: 사용자 (2026-05-07) — A.2 FAIL 후 A.3 진입 결정
+
+### 2026-05-07 — [Feature Track A.2 결과 v2] 코덱스 검수 P1×4 + P2×2 framing 톤 다운 (minor)
+- **코덱스 검수 1차 (2026-05-07)**: A.3 GO + FAIL 정당성 OK (P0 없음)
+- **P1 fix**: 메커니즘 결론 톤 다운 ("무력" → "near-null net effect under this spec") / artist_total_works inference jump 인정 (운영 F4 재평가 트리거 X) / A.1 vs A.2 = "입증" → "working hypothesis" / 의사결정자 framing
+- **P2 fix**: 45/100 vs 41/100 robust difference X (CI [-9.7, +17.7]) / effect attribution 톤
+- **분류**: **minor (framing 톤 다운, 결과 변경 X)**
+
 ### 2026-05-07 — [Feature Track A.2 결과] Artist popularity FAIL → A.3 escalation (none, 정상 흐름)
 - **사전등록 §3 적용 결과** (100-seed LAO):
   * Overall: baseline 38.03% → A.2 37.82% (-0.21%p, 사실상 동등)
