@@ -490,19 +490,23 @@ log_price = 8.6 + 0.78 × log_area − 0.05 × birth_year_centered + 0.07 × log
   <li>Coverage q25/q50/q75 = <strong>26.8% / 51.6% / 75.0%</strong> (목표 25/50/75 매우 정확)</li>
   <li>Central coverage q25-q75 = 48.2% (목표 50%)</li>
   <li>Raw crossing rate 0.0% (post-hoc sort 전부터 monotone)</li>
-  <li>q50 MdAPE 24.54% (Huber 운영 24.27% +0.27%p)</li>
+  <li>q50 MdAPE 24.54% (Quantile cycle 내부 Huber comparator 24.27% +0.27%p; 전체 운영 cold baseline 24.07% 와 별도 — cycle 재실행 LAO seed 차이)</li>
 </ul>
 
 <p><strong>판정 (코덱스 conditional accept)</strong>: 8 항목 중 7 통과. 미달 항목 (Width M1 &gt; M2) 은 conditional band vs global residual 의 본질적 차이로 평가 기준 자체 부적절 → 제거. <strong>Shadow 승인 = uncertainty band 모델로 즉시 도입 가능</strong>.</p>
 
 <p><strong>운영 통합 (Hybrid)</strong>:</p>
 <ul>
-  <li><code>value</code> = <strong>Huber 점예측 유지</strong> (운영 default, MdAPE 24.07%)</li>
+  <li><code>value</code> = <strong>Huber 점예측 유지</strong> (운영 cold baseline MdAPE 24.07%)</li>
   <li><code>band_low / band_high / q25 / q50 / q75</code> = <strong>M1 quantile shadow</strong></li>
   <li>Default 전환 (q50 → value) 은 Phase 2 acceptance gate 통과 후</li>
 </ul>
 
-<p><strong>Slice calibration shift</strong> (저가 q50 cov 68% / 고가 43%) 는 Phase 2 진입 전 slice-wise intercept correction 검토.</p>
+<p><strong>Slice calibration shift</strong> (저가 q50 cov 68% / 고가 43%) — <strong>Shadow 단계는 모니터링만, 보정안 (slice-wise intercept correction) 비교는 Phase 2 진입 전 별도 후속</strong>.</p>
+
+<div class="warn-box">
+  <strong>주의</strong>: 기존 <code>calibration_applied</code> (point estimate path) 는 quantile band 와 <strong>결합 금지</strong> (덧씌우면 coverage 망가짐 — 코덱스). 장기 후속 (본 cycle 종결과 별도): Conformal Quantile Regression (CQR).
+</div>
 
 <h3>6.4 가드레일 운영 권고</h3>
 

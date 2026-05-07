@@ -269,6 +269,8 @@ def compute_psi(reference_dist, current_dist):
 > - `band_low / band_high / q25 / q50 / q75` = M1 Linear Quantile (shadow 승인)
 > - Default 전환 (q50 → value) 은 Phase 2 acceptance gate 통과 후
 > - Shadow 단계는 internal flag 로 관찰만, external 노출은 단계적
+> - **`calibration_applied` 는 point estimate path only — quantile band 와 결합 금지** (덧씌우면 coverage 망가짐)
+> - 후속 장기 후보 (본 cycle 종결과 별도): Conformal Quantile Regression (CQR)
 
 ### 5.3 응답 예시
 
@@ -280,16 +282,22 @@ def compute_psi(reference_dist, current_dist):
     "value": 8500000,
     "log_value": 15.95,
     "band_low": 6800000,
-    "band_high": 10200000
+    "band_high": 10200000,
+    "q25": 6800000,
+    "q50": 8400000,
+    "q75": 10200000
   },
   "model_used": "track2",
   "model_version": "track2_v1_20260507",
   "route_reason": "cold_artist",
   "guardrail_flags": [],
   "calibration_applied": true,
-  "fallback_active": false
+  "fallback_active": false,
+  "quantile_band_source": "shadow_m1_quantile"
 }
 ```
+
+> **응답 예시 주석**: `value` (8,500,000) 와 `q50` (8,400,000) 가 다른 이유 — `value` = Huber 점예측 (운영 default), `q50` = M1 Linear Quantile shadow. MdAPE 차이는 +0.27%p 수준이지만 row 별로 다를 수 있음. `calibration_applied: true` 는 **point estimate path only** — quantile band 와 결합하지 않음.
 
 ---
 

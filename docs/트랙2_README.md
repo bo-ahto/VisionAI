@@ -11,7 +11,7 @@
 
 ---
 
-## 1. 산출물 인덱스 (총 10개 파일 = README + 9종 보고서; 최종보고서는 .md/.html 동일 내용 2개 파일)
+## 1. 산출물 인덱스 (총 13개 항목 = README + 12종 문서; 최종보고서는 .md/.html 동일 내용 2개 파일)
 
 ### 1.1 청중별 권장 시작 문서
 
@@ -26,7 +26,7 @@
 | **데이터 엔지니어** | `docs/데이터클렌징_단계계획_20260506.md` + `docs/stage4_데이터수집계획_20260507.md` | Stage 1-3 plan / Stage 4 warm 확장 |
 | **방법론 / 의사결정** | `docs/트랙2_methodology_pipeline_20260507.md` | Phase 1 (curated) / Phase 2 (full) 골격 + 사전등록 |
 | **외부 자문 검증** | `docs/stage3_exploratory_addendum_20260507.md` | Ridge 헤도닉 등 선형/통계 피처 검증 결과 (운영 유지) |
-| **가격 범위 (Quantile)** | `docs/stage3_quantile_cycle_20260507.md` | Linear Quantile q25/q50/q75 shadow 승인 |
+| **가격 범위 (Quantile)** | `docs/stage3_quantile_cycle_20260507.md` | Linear Quantile q25/q50/q75 — **conditional accept (shadow 승인)** + **Hybrid 운영** (`value=Huber 점예측`, `band+q-tiles=M1 quantile shadow`); default 전환은 Phase 2 acceptance gate 후 |
 | **결정 메모** | `docs/트랙2_Stage2_freeze_20260506.md` | GATE 2 freeze |
 
 ### 1.2 권장 읽기 순서

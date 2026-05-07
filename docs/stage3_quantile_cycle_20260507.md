@@ -16,8 +16,9 @@
 | Quantile | **q25 / q50 / q75** (3 quantile, 외부 자문 권고와 일치) |
 | Loss | Pinball loss (각 quantile 독립 fit) |
 | Crossing | Independent fit + **post-hoc sorting** + raw crossing rate metric |
-| 운영 통합 | `prediction.value = q50` + `q25 / q75` 추가, `band_low = q25 / band_high = q75` (기존 ±20% 폐기) |
-| Calibration | quantile band 와 기존 calibration table **분리 유지** (덧씌우면 coverage 망가짐) |
+| 운영 통합 (초기 가설, §8 결과 후 변경) | `prediction.value = q50` + `q25 / q75` 추가 — 합격 후 단순 채택안 |
+| **운영 통합 (확정안, §8.4 Hybrid)** | `value = Huber 점예측 (운영 default 유지)` + `band_low/high + q25/q50/q75 = M1 quantile (shadow)` — Default 전환은 Phase 2 acceptance gate 후 |
+| Calibration | quantile band 와 기존 calibration table **분리 유지** — `calibration_applied` bool 은 point estimate path only, q-band 와 결합 금지 |
 
 ## 2. 후보 모델
 
@@ -53,12 +54,18 @@
 | **Post-sort crossing 해결률** | sorting 후 monotone 보장 | 100% |
 
 ### 3.3 Slice 별 성능표 (필수)
-가드레일 segment 의 안정성이 평균보다 중요 (코덱스 권고):
-- **저가 (<5M KRW)**
-- **중가 / 고가** (price tertile)
-- **medium = ink** (운영 가드레일 segment)
-- **gallery_tier = 3** (운영 가드레일 segment)
-- **extreme area** (log_area P5 미만 / P95 초과)
+가드레일 segment 의 안정성이 평균보다 중요 (코덱스 권고). **실험 slice (분포 기준) vs 운영 guardrail slice (절대값 기준) 분리 표기**:
+
+#### 3.3.1 실험 slice (Stage 3 분포 quantile 기준)
+- **저가 (P33↓)** / **중가 (P33-67)** / **고가 (P67↑)** — price tertile
+- **medium = ink** (운영 가드레일 segment 와 동일)
+- **gallery_tier = 3** (운영 가드레일 segment 와 동일)
+- **extreme area** (학습 분포 log_area P5 미만 / P95 초과)
+
+#### 3.3.2 운영 guardrail slice (spec §2 절대값 기준)
+- 예측가 < 5,000,000 KRW (`guardrail_low_price`)
+- medium = ink / gallery_tier = 3 / extreme size 등 — spec §2.1 표 참조
+- → Phase 2 진입 시 운영 분포로 분리 평가 (본 cycle 은 Stage 3 분포 한정)
 
 각 slice 별 coverage / width 가 평균과 크게 차이나면 가드레일 정책 재검토.
 
@@ -85,26 +92,28 @@
 
 ## 5. 운영 통합 (합격 시)
 
-### 5.1 API 변경 (spec §5)
+### 5.1 API 변경 (spec §5) — Hybrid 확정안 (코덱스 §8.4)
 ```diff
   "prediction": {
 -   "value": "int (KRW)",
-+   "value": "int (KRW, = q50)",
++   "value": "int (KRW, = Huber 점예측, 운영 default 유지)",
     "log_value": "float",
 -   "band_low": "int (optional, ±20%)",
 -   "band_high": "int (optional)"
-+   "band_low": "int (= q25)",
-+   "band_high": "int (= q75)",
-+   "q25": "int",
-+   "q50": "int",
-+   "q75": "int"
++   "band_low": "int (= q25 from M1 Linear Quantile, shadow)",
++   "band_high": "int (= q75 from M1, shadow)",
++   "q25": "int (M1 shadow)",
++   "q50": "int (M1 shadow — value 와 다를 수 있음, +0.27%p MdAPE 차이)",
++   "q75": "int (M1 shadow)"
   }
 ```
 
 ### 5.2 단계적 도입
-1. **Shadow / internal flag**: 즉시 (API 추가 trivial)
-2. **External band 전환**: Phase 2 confirmatory 합격 후
-3. **Calibration table 과 분리 유지** (코덱스 권고)
+1. **Shadow / internal flag**: 즉시 (band+q-tiles 만 — value 는 Huber 유지)
+2. **slice 보정**: shadow 단계는 **모니터링만**, 보정안 비교는 **Phase 2 진입 전**
+3. **External band 전환** (band_low/high 의 외부 노출): Phase 2 confirmatory 합격 후
+4. **Default 전환** (q50 → value): Phase 2 acceptance gate 통과 후
+5. **Calibration table 과 분리 유지** (코덱스 권고) — `calibration_applied` 는 point path only, q-band 와 결합 금지
 
 ### 5.3 Monitoring 추가
 - 운영 트래픽의 empirical coverage (q25/q50/q75) 일 단위
@@ -165,7 +174,7 @@
 | tier 3 | 151 | 22.5% | 54.3% | 89.4% | 66.9% | 0.55 |
 | extreme area | 26 | 42.3% | 65.4% | 88.5% | 46.2% | 0.74 |
 
-→ 저가 / 고가 calibration shift (q50 cov 50% 에서 ±18%p 어긋남) — 모델이 저가 일관 과소 / 고가 일관 과대 예측. Phase 2 / shadow 단계에서 slice-wise intercept correction 검토.
+→ 저가 / 고가 calibration shift (q50 cov 50% 에서 ±18%p 어긋남) — 모델이 저가 일관 과소 / 고가 일관 과대 예측. **Shadow 단계는 모니터링만, 보정안 (slice-wise intercept correction) 비교는 Phase 2 진입 전 별도 후속 검토** (코덱스 권고).
 
 ### 8.4 운영 도입 권고 (코덱스)
 
