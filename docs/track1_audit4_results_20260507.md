@@ -49,11 +49,11 @@
 
 | 옵션 | 의미 | Audit 4 결과 영향 |
 |---|---|---|
-| **A.1** (학습 측 제거) | 9 features 제거 후 재학습 | Overall +0.70%p / Saatchi +1.80%p 악화 입증 — **OOF metric 손실** / production reality 와 **정합 가능성** (학습-서빙 일관성 회복, but 정량 미검증) |
+| **A.1** (학습 측 제거) | 9 features 제거 후 재학습 | Overall +0.70%p / Saatchi +1.80%p 악화 확인 — **OOF metric 손실** / production reality 와 **정합 가능성** (학습-서빙 일관성 회복, but 정량 미검증) |
 | **A.2** (서빙 측 actual 추출) | request contract 확장 / 서빙 측 actual value 입력 | **Audit 4 미측정** — request contract 확장 가능성 평가 = 운영팀 영역 (LLM 외) |
 | **A.3** (현 상태 유지) | drift 인지 + production-time monitoring | OOF metric 유지 but production 시 잠재적 gap 인지 |
 
-> **코덱스 권고 (사전 자문)**: A.1 권고 — 단 Audit 4 OOF metric 손실 입증 후 **A.2 (서빙 측 actual 추출 가능성 평가)** 우선순위 ↑ 재평가 필요. 본 cycle 결과 = "drift features 의 informative 정도 입증" → A.2 path 의 ROI 재산정 (운영팀 inquiry 영역).
+> **코덱스 권고 (사전 자문)**: A.1 권고 — 단 Audit 4 OOF metric 손실 확인 후 **A.2 (서빙 측 actual 추출 가능성 평가)** 우선순위 ↑ 재평가 필요. 본 cycle 결과 = "drift features 의 informative 정도 강하게 시사" → A.2 path 의 ROI 재산정 (운영팀 inquiry 영역).
 
 ## 3. Stop criteria 적용 (Phase 0 §4)
 
@@ -68,35 +68,38 @@
 ## 4. 운영 영향 (코덱스 framing — 운영 spec 변경 단독 trigger X)
 
 - **현 시점 운영 spec 변경 X**: `v3_filtered_tuned` 32f 운영 그대로 유지
-- 본 audit 결과 = **drift fix path 의 OOF metric 손실 입증** + **drift features 가 production-time 학습-서빙 gap 의 잠재 source 임을 강하게 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량)
+- 본 audit 결과 = **drift fix path 의 OOF metric 손실 확인** + **drift features 가 production-time 학습-서빙 gap 의 잠재 source 임을 강하게 시사** (단정 X — Stage 4 holdout / 서빙 log 비교 후만 정량)
 - Production trigger = Stage 4 confirmatory holdout + shadow / staged rollout 별도 의사결정 gate
 
 ## 5. 다음 단계 (사용자 결정 영역)
 
 | 옵션 | 본질 | 코덱스 권고 |
 |---|---|---|
-| **A. 본 cycle 종결 (Phase 0 §4 fail trigger)** | drift fix path 의 OOF 손실 입증 / Stage 1B 진입 X / Axis B license-first 우선 | **권고** — 동일 logic (정보 부족 1차 병목) |
+| **A. 본 cycle 종결 (Phase 0 §4 fail trigger)** | drift fix path 의 OOF 손실 확인 / Stage 1B 진입 X / Axis B license-first 우선 | **권고** — 동일 logic (정보 부족 1차 병목) |
 | B. Stage 1B (importance + stability) 진입 | drift_fix_v1 23f baseline 기준 importance / stability 평가 / 새 hypothesis family 발굴 | 보류 — drift fix path 자체가 OOF 손실 |
 | C. A.2 path 진입 (운영팀 inquiry) | request contract 확장 가능성 평가 / 9 drift features 의 서빙 측 actual 추출 | LLM 외 영역 (운영팀 / API 변경 의사결정) |
 | D. 별도 axis 진입 (HP tuning / ensemble redesign) | Phase 0 §1.8 권고 순서 (feature subset 안정 후) — 본 결과 = feature subset 미안정 | 비추천 (현 시점) |
 
 ## 6. Honesty caveats (코덱스 P1)
 
-- **OOF metric 손실 ≠ production reality 더 나쁨 입증**: drift features 가 학습 분포 OOF 에서 informative 였음을 강하게 시사 (단정 X). Production-time actual gap = Stage 4 holdout + 서빙 log 비교 후만 정량 가능
+- **OOF metric 손실 ≠ production reality 더 나쁨 단정**: drift features 가 학습 분포 OOF 에서 informative 였음을 강하게 시사 (단정 X). Production-time actual gap = Stage 4 holdout + 서빙 log 비교 후만 정량 가능
 - **본 audit 단독 = 운영 spec 변경 trigger X**: Phase 0 §1.8 decision-binding 분리 그대로
 - **Saatchi 큰 악화 (+1.80%p) 의 attribution 미수행**: 9 features 중 어느 것이 main driver 인지 별도 ablation 필요 (본 cycle 비목표 — `has_seoul` / `has_international` / `has_depth` 가 Saatchi 분포에 informative 가설)
 - **3-split caveat**: 본 audit 의 baseline 32f 3-split 결과 (40.20% Ensemble) ≠ 운영 metrics.json 의 38.7% Ensemble. 차이 = **(a) 본 audit 3-split rerun vs prior 5-fold offline ensemble + (b) production-path calibrated 38.3% (CatBoost) vs offline ensemble 38.7% 차이** (`docs/model_technical_report_v2.md:53` 참조). 본 audit = 두 variant 정합 비교 only / 운영 reported metric 직접 비교 부적합
 
-## 7. 코덱스 자문 이력
+## 7. 코덱스 자문 이력 (내부 governance 메타)
+
+> 본 섹션은 외부 보고 본문 외 내부 governance 추적 메타. 외부 독자는 §0-§6 + §8 만 참조해도 충분.
 
 | 차수 | 내용 |
 |---|---|
-| 누적 | P0×17 + P1×80 + P2×40 |
 | Track 1 사전 자문 (2026-05-07) | 조건부 GO + Phase 0 freeze 우선 |
 | Stage 1 사후 검수 | Option A first 권고 |
 | Option A drift fix 사전 자문 | mini-prereg 불필요 / amendment memo 필요 / 7 drift + 2 dead 재분류 / A.1 권고 |
 | Audit 4 사전 자문 | 옵션 B (별도 script) / 운영 best params / 3-split / audit4 prefix |
-| **Audit 4 결과 검수 (예정)** | FAIL trigger 정당성 + Source 비대칭 해석 + A.2 path 재평가 |
+| Audit 4 결과 검수 (round 1-3) | FAIL trigger 정당성 / Source 비대칭 해석 / 톤 정정 (P1×3 + P2×2) |
+
+> 누적 카운트 (트랙 2 + 트랙 1 합산, 본 cycle 시점): 트랙 2 P0×17 + P1×80 + P2×40 / 트랙 1 P0×12 + P1×14 + P2×10. 내부 추적 only.
 
 ## 8. 참조
 
