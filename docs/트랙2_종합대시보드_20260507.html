@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>트랙 2 종합 대시보드 — 진행 상황 + 의사결정</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Noto Sans KR", sans-serif; max-width: 1300px; margin: 30px auto; padding: 0 24px; color: #1f2937; line-height: 1.6; background: #fafbfc; }
+  h1 { font-size: 1.85em; border-bottom: 3px solid #2563eb; padding-bottom: 10px; color: #111827; margin-bottom: 4px; }
+  h2 { margin-top: 36px; color: #1e40af; border-left: 4px solid #2563eb; padding-left: 14px; font-size: 1.3em; }
+  h3 { color: #1e3a8a; margin-top: 22px; font-size: 1.05em; }
+  .meta { color: #6b7280; font-size: 0.9em; margin-bottom: 18px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 14px 0; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .card { background: white; border-radius: 8px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-left: 4px solid #cbd5e1; }
+  .card.green { border-left-color: #16a34a; }
+  .card.blue { border-left-color: #2563eb; }
+  .card.amber { border-left-color: #f59e0b; background: #fffbeb; }
+  .card.red { border-left-color: #dc2626; }
+  .card.gray { border-left-color: #6b7280; background: #f9fafb; }
+  .card h4 { margin: 0 0 8px 0; font-size: 1.0em; color: #111827; }
+  .card p { margin: 4px 0; font-size: 0.93em; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; margin-left: 6px; }
+  .pill.green { background: #d1fae5; color: #065f46; }
+  .pill.amber { background: #fef3c7; color: #92400e; }
+  .pill.red { background: #fee2e2; color: #991b1b; }
+  .pill.blue { background: #dbeafe; color: #1e40af; }
+  .pill.gray { background: #f3f4f6; color: #374151; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 0.93em; }
+  th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #1e40af; color: white; font-weight: 600; }
+  tr:nth-child(even) { background: #f9fafb; }
+  .info-box { background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .warn-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .success-box { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  code { background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; font-family: "SF Mono", "Monaco", monospace; }
+  ul { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  .small { font-size: 0.85em; color: #6b7280; }
+  .arrow { color: #2563eb; font-weight: bold; }
+  .toc { background: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 18px; margin: 14px 0; font-size: 0.93em; }
+  .toc a { margin-right: 14px; color: #1e40af; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .footer { margin-top: 44px; padding-top: 18px; border-top: 2px solid #d1d5db; color: #6b7280; font-size: 0.88em; }
+</style>
+</head>
+<body>
+
+<h1>트랙 2 종합 대시보드 — 진행 상황 + 의사결정</h1>
+<p class="meta">
+  <strong>작성일</strong>: 2026-05-07 · <strong>대상</strong>: 의사결정자 / 운영 매니저 / 실무자 · <strong>읽기 시간</strong>: 약 5분
+</p>
+
+<div class="toc">
+  <strong>목차</strong>
+  <a href="#sec1">1. 한 줄 요약</a>
+  <a href="#sec2">2. 의사결정 현황</a>
+  <a href="#sec3">3. 진행 단계 흐름</a>
+  <a href="#sec4">4. 핵심 수치</a>
+  <a href="#sec5">5. 산출물 link</a>
+  <a href="#sec6">6. 다음 단계</a>
+  <a href="#sec7">7. 위험 요인</a>
+</div>
+
+<h2 id="sec1">1. 한 줄 요약</h2>
+
+<div class="success-box">
+  <strong>운영 채택 모델</strong>: F4 (3 features) + log_area spline + Huber regression — V3 (32 features GBM) 의 신규 작가 약점 (28-48%) 을 약 24% 까지 개선한 해석 가능 모델. <strong>Cold rollout Phase A 착수 승인 가능</strong>.
+</div>
+
+<div class="warn-box">
+  <strong>Warm-only Track 2 path</strong>: 일반 경로 <code>not advanced</code> (Stage 4 BORDERLINE 보류). <strong>Slice-conditional</strong> (depth ≥25 + seen-in-training) 만 제한적 후보로 유지.
+</div>
+<div class="warn-box">
+  <strong>Stage 5 (External Acquisition) 종료 (2026-05-07)</strong>: REJECT 사유 = <strong>준법적 자동화 접근 불가</strong>. 사전등록 §6.3 적용. <strong>5C prereg = 미개시 종료 (untested, 반증 X)</strong>.
+</div>
+<div class="warn-box">
+  <strong>Stage 6A (Segmented) FAIL + Stage 6B (Partial pooling) FAIL (2026-05-07)</strong>: 6A overall +5.23%p / 6B overall -0.09%p but 둘 다 저가 hard gate 위반 (+3.54 / +1.29%p, 6B 의 경우 100 seed 중 66 seed violation). 6B ICC 0.81 ✓ (partial pooling mechanism 작동) but cold-start LAO 무력화 = <strong>mis-targeted (코덱스)</strong>. <strong>Architecture-only remedies under fixed-feature cold-start LAO scope 종료</strong>. <strong>Cycle 일관성 (코덱스 P0 분리)</strong>: 3-cycle empirical (Stage 4 단기 / 6A / 6B) + 1-cycle acquisition infeasibility (Stage 5, empirical 반증 X). <strong>의사결정 (2026-05-07)</strong>: ① architecture-only close 확정 / ② 운영 = baseline + calibration only 유지 / ③ <strong>Feature track 설계 시작</strong> (Acquisition Feasibility Phase A 분리 가능). 6C 보류 (새 식별 가설 발견 시).
+</div>
+
+<h2 id="sec2">2. 의사결정 현황</h2>
+
+<div class="grid-3">
+  <div class="card green">
+    <h4>운영 모델 (Cold)</h4>
+    <p><strong>F4 + spline + Huber</strong> 채택</p>
+    <p>MdAPE 24.07% (Stage 3 100-seed)</p>
+    <p>저가/고가/tier 3 segment 모두 개선</p>
+    <p><span class="pill green">CHAMPION</span></p>
+  </div>
+  <div class="card blue">
+    <h4>Cold Rollout</h4>
+    <p>Phase A shadow 사전 준비 ✓</p>
+    <p>4 파일 묶음 운영팀 인계 가능</p>
+    <p>Offline preflight ✓ PASS</p>
+    <p><span class="pill blue">착수 승인 가능</span></p>
+  </div>
+  <div class="card amber">
+    <h4>Warm-only path</h4>
+    <p>일반 경로 <code>not advanced</code></p>
+    <p>40 clusters 실측 power 44.9%</p>
+    <p>Slice-conditional (depth≥25) 만 후보</p>
+    <p><span class="pill amber">보류</span></p>
+  </div>
+  <div class="card blue">
+    <h4>Quantile band (가격 범위)</h4>
+    <p>M1 Linear Quantile shadow 승인</p>
+    <p>Hybrid 운영: value=Huber + band=M1</p>
+    <p>Default 전환 = Phase 2 후</p>
+    <p><span class="pill blue">shadow 승인</span></p>
+  </div>
+  <div class="card amber">
+    <h4>Calibration 후처리</h4>
+    <p>Global additive ✓ (low -3.11%p)</p>
+    <p>Cold baseline path 한정 후보</p>
+    <p>실 운영 통합 = 다음 gate</p>
+    <p><span class="pill amber">candidate</span></p>
+  </div>
+  <div class="card red">
+    <h4>Stage 5 (External features)</h4>
+    <p>Week 1: Auction REJECT (cohort mismatch)</p>
+    <p>Week 2: Artsy CV REJECT (anti-bot + TOS)</p>
+    <p>§6.3 적용 → <strong>cycle 종료</strong></p>
+    <p><span class="pill red">REJECT (분기 B)</span></p>
+  </div>
+  <div class="card red">
+    <h4>Stage 6A (Segmented architecture)</h4>
+    <p>Overall +5.23%p 악화 / 저가 +3.54%p</p>
+    <p>🔴 Hard gate 위반 (83/100 seeds 저가 악화)</p>
+    <p>Router 품질 OK but 모델 sample 감소 → 약화</p>
+    <p><span class="pill red">FAIL → 6B 우선</span></p>
+  </div>
+  <div class="card red">
+    <h4>Stage 6B (Partial pooling) FAIL</h4>
+    <p>Overall -0.09%p (사실상 동등)</p>
+    <p>저가 +1.29%p 악화 (🔴 hard gate 위반)</p>
+    <p>ICC 0.81 ✓ but cold-start 무력화 (Stage 3 ME 패턴)</p>
+    <p><span class="pill red">FAIL → architecture-only 트랙 종료</span></p>
+  </div>
+</div>
+
+<h2 id="sec3">3. 진행 단계 흐름 (Phase 1 → 2 → 3)</h2>
+
+<table>
+  <tr><th width="20%">Phase</th><th>구성</th><th>상태</th></tr>
+  <tr>
+    <td><strong>Phase 1 — Curated Exploratory</strong></td>
+    <td>Stage 1 (rules) → Stage 2 (OLS) → <strong>Stage 3 (운영 채택)</strong> → Stage 4 (warm 검증, BORDERLINE)</td>
+    <td><span class="pill green">종결</span></td>
+  </tr>
+  <tr>
+    <td><strong>Phase 2 — Stage 5 (External Acquisition + Validation)</strong> <span class="pill blue">v4 재정의</span></td>
+    <td>Stage 5A (acquisition) → 5B (integration) → 5C (modeling) → 5D (deployment)</td>
+    <td><span class="pill blue">prereg 완료, 5A Week 1 시작 대기</span></td>
+  </tr>
+  <tr>
+    <td><strong>Phase 3 — Production Validation</strong></td>
+    <td>Cold Phase A shadow → B (5%) → C (10/25%) → D (full) / Warm slice W-SC-S1 → C1 → C2 → F</td>
+    <td><span class="pill amber">Cold A 착수 가능 / Warm slice 운영 미승인</span></td>
+  </tr>
+</table>
+
+<h3>Phase 1 의 핵심 의사결정 흐름</h3>
+<table>
+  <tr><th>단계</th><th>결과</th><th>의사결정</th></tr>
+  <tr><td>Stage 2 (500/50)</td><td>F4 (3 features) MdAPE 24.59%</td><td>F4 freeze (Forward + ElasticNet 자동 선택)</td></tr>
+  <tr><td>Stage 3 (1378/100)</td><td>F4 + spline + Huber 24.07%</td><td>운영 채택 모델 ⭐</td></tr>
+  <tr><td>Stage 3 P2/P3 (warm)</td><td>FE only -3.97%p, CI 0 포함 (n=44)</td><td>Stage 4 leading candidate</td></tr>
+  <tr><td>Stage 3 feature 재탐색</td><td>tier / interaction 모두 ✗ — Huber+L2 = ±0</td><td>운영 모델 유지</td></tr>
+  <tr><td>Stage 3 외부 자문 검증</td><td>Ridge 헤도닉 모든 후보 ✗ (LAO 미달)</td><td>운영 모델 유지 강화</td></tr>
+  <tr><td>Stage 3 Quantile cycle</td><td>M1 Linear Quantile 8/7 합격 (Holm)</td><td>Hybrid (value=Huber/band=M1) shadow 승인</td></tr>
+  <tr><td>Stage 4 v3</td><td>BORDERLINE (CI 0 포함, segment harm 2건)</td><td>warm 일반 경로 <code>not advanced</code> / slice-conditional 후보</td></tr>
+  <tr><td>단기 트랙 (저가 / calibration)</td><td>Feature 부족 3/3 시그니처 / Global cal -3.11%p ✓</td><td>Stage 5 = External feature acquisition</td></tr>
+</table>
+
+<h2 id="sec4">4. 핵심 수치</h2>
+
+<div class="grid-2">
+  <div class="card">
+    <h4>운영 채택 모델 (Stage 3 100-seed LAO)</h4>
+    <table style="font-size: 0.9em;">
+      <tr><th>모델 단계</th><th>MdAPE</th></tr>
+      <tr><td>F4 OLS baseline</td><td>26.46±4.69%</td></tr>
+      <tr><td>+ log_area spline</td><td>25.22±4.36%</td></tr>
+      <tr><td><strong>+ Huber ⭐</strong></td><td><strong>24.07±4.18%</strong></td></tr>
+      <tr><td>Bootstrap 95% CI</td><td>[21.68, 25.08]</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Stage 4 Warm Path (BORDERLINE)</h4>
+    <table style="font-size: 0.9em;">
+      <tr><th>지표</th><th>결과</th></tr>
+      <tr><td>FE only Δ (점추정)</td><td>-6.22%p</td></tr>
+      <tr><td>Cluster bootstrap CI</td><td>[-16.01, +5.30] ✗</td></tr>
+      <tr><td>Power (40 clusters)</td><td>44.9% (목표 0.8 미달)</td></tr>
+      <tr><td>Composition shift</td><td>신규 +0.25 / 기존 -12.98%p</td></tr>
+      <tr><td>Segment harm</td><td>저가 +5.63 / depth15-24 +6.76 (2 violations)</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h4>Slice-conditional (depth ≥25 + seen)</h4>
+    <table style="font-size: 0.9em;">
+      <tr><th>지표</th><th>결과</th></tr>
+      <tr><td>Test-eligible artists</td><td>12명 (Stage 4 기준)</td></tr>
+      <tr><td>FE only Δ (depth 25+)</td><td>-14.18%p ⭐</td></tr>
+      <tr><td>Holm 보정 후 reject</td><td>✓ (p=0.009)</td></tr>
+      <tr><td>운영 진입 조건</td><td>shadow 모드 + 보호 guardrail</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Quantile (Hybrid 운영)</h4>
+    <table style="font-size: 0.9em;">
+      <tr><th>지표</th><th>결과</th></tr>
+      <tr><td>q25/q50/q75 coverage</td><td>26.8% / 51.6% / 75.0% ✓</td></tr>
+      <tr><td>Pinball total</td><td>0.4510 (M2 0.4519 우위)</td></tr>
+      <tr><td>Crossing rate</td><td>0.0%</td></tr>
+      <tr><td>q50 MdAPE vs Huber</td><td>+0.27%p (사실상 동등)</td></tr>
+    </table>
+  </div>
+</div>
+
+<h2 id="sec5">5. 산출물 link (청중별)</h2>
+
+<table>
+  <tr><th>대상 / 목적</th><th>문서</th></tr>
+  <tr><td>대표 / 임원</td><td><code>docs/임원보고_트랙2_요약_20260506.html</code> (1페이지)</td></tr>
+  <tr><td>일반 독자</td><td><code>docs/트랙2_쉬운설명_20260506.html</code> (9 섹션, 비유 위주)</td></tr>
+  <tr><td>비전공 실무자</td><td><code>docs/트랙2_프로세스_쉬운버전_20260506.html</code></td></tr>
+  <tr><td>분석가 / 실무자</td><td><code>docs/트랙2_최종보고서_20260506.md</code> (또는 .html)</td></tr>
+  <tr><td>모델 구현 담당</td><td><code>docs/트랙2_수식_프로세스_상세_20260506.html</code></td></tr>
+  <tr><td>운영 / 인프라</td><td><code>docs/트랙2_production_통합_spec_20260507.md</code> (18 섹션)</td></tr>
+  <tr><td>방법론 / 의사결정</td><td><code>docs/트랙2_methodology_pipeline_20260507.md</code> (Phase 1/2/3 + 사전등록)</td></tr>
+  <tr><td>Cold rollout 운영</td><td><code>docs/cold_rollout_shadow_runbook_20260507.md</code> + Phase A 4 파일 묶음</td></tr>
+  <tr><td>Warm slice 운영 (미승인)</td><td><code>docs/slice_conditional_shadow_spec_20260507.md</code></td></tr>
+  <tr><td>Stage 5 prereg (acquisition)</td><td><code>docs/stage5a_acquisition_prereg_20260507.md</code></td></tr>
+  <tr><td>Stage 5 prereg (modeling)</td><td><code>docs/stage5c_modeling_prereg_20260507.md</code></td></tr>
+  <tr><td>Stage 4 결과</td><td><code>docs/stage4_warm_validation_results_20260507.md</code></td></tr>
+  <tr><td>단기 트랙 결과</td><td><code>docs/stage4_short_term_track_results_20260507.md</code></td></tr>
+  <tr><td>Methodology deviation log</td><td><code>docs/methodology_deviation_log.md</code></td></tr>
+</table>
+
+<h2 id="sec6">6. 다음 단계 (옵션)</h2>
+
+<div class="grid-3">
+  <div class="card blue">
+    <h4>A. Cold Phase A 시작 <span class="pill blue">즉시</span></h4>
+    <p>운영팀 인계 (4 파일 묶음 + offline preflight)</p>
+    <p>D-1 final check → 담당자 단독 승인 → 1주 shadow</p>
+    <p>D+7 합격 판정 → Phase B 5% canary</p>
+  </div>
+  <div class="card blue">
+    <h4>B. Quantile shadow 도입 <span class="pill blue">즉시</span></h4>
+    <p>API 확장 (band_low/high + q25/q50/q75)</p>
+    <p>internal flag 활성화</p>
+    <p>Calibration table 과 분리 유지</p>
+  </div>
+  <div class="card amber">
+    <h4>C. Stage 5A Week 1 <span class="pill amber">LLM</span></h4>
+    <p>K-Auction / Seoul Auction / Christie's web sample</p>
+    <p>robots.txt + TOS 1차 검토</p>
+    <p>Source scorecard 5축 평가</p>
+  </div>
+  <div class="card amber">
+    <h4>D. Slice-conditional shadow <span class="pill amber">권고: Cold A 후</span></h4>
+    <p>W-SC-S1 운영팀 인계</p>
+    <p>보호 guardrail (저가 + depth 15-24)</p>
+    <p>3축 coverage (traffic / GMV / artist)</p>
+  </div>
+  <div class="card gray">
+    <h4>E. Calibration 운영 통합 <span class="pill gray">다음 gate</span></h4>
+    <p>Global additive cold baseline 한정</p>
+    <p>spec §4 후처리 후보 문서화</p>
+    <p>실 운영 = Cold A 안정 후</p>
+  </div>
+  <div class="card gray">
+    <h4>F. 5B (Acquisition execution) <span class="pill gray">Phase A pre-screen 분리</span></h4>
+    <p>Stage 5 acquisition infeasibility 후 Phase A 0단계 (Legal/TOS/Access/Anti-bot) 통과 source 발견 시만</p>
+    <p>운영팀 / 법무팀 협업 필수 (LLM 외)</p>
+  </div>
+  <div class="card blue">
+    <h4>G. Feature track 설계 (Axis A) <span class="pill blue">즉시</span></h4>
+    <p><strong>Architecture-only close 후 신설</strong> (`docs/feature_track_design_20260507.md`)</p>
+    <p>Axis A: Internal feature engineering — Quick-win categorical (A.1 — `category` / `medium_type` / `gallery_*` / `attribution_class`) 부터 단계적 진입</p>
+    <p>각 step PASS 검증 후 다음 진입 (HARK 회피)</p>
+  </div>
+</div>
+
+<div class="info-box">
+  <strong>코덱스 권고 우선순위 (2026-05-07 갱신)</strong>: Stage 6B FAIL 후 architecture-only close → <strong>Feature track Axis A (Internal, compliance 무관, 즉시)</strong> 1순위 / Cold Phase A shadow 는 모델 개선 X 정의 (data availability 검증) / Axis B (External) 는 Phase A pre-screen 통과 시만.
+</div>
+
+<h2 id="sec7">7. 위험 요인 + 대응</h2>
+
+<table>
+  <tr><th>위험</th><th>대응</th></tr>
+  <tr><td>Stage 4 Power 한계 (40 clusters @ 44.9%)</td><td>Stage 5 외부 source 보강 — power 자체보다 effect stability 우선 (코덱스)</td></tr>
+  <tr><td>Composition-shift (신규 warm 효과 없음)</td><td>spec §17.7 신규 warm 자동 fallback 적용</td></tr>
+  <tr><td>저가 segment 일관 악화 (P2 +3.36 / Stage 4 +5.63%p)</td><td>Feature 부족 = 본질 → Stage 5 acquisition / 운영 가드레일 §2.1 강제 fallback 유지</td></tr>
+  <tr><td>외부 source license / TOS</td><td>5A 법무팀 사전 검토 의무 / acquisition mode 4종 명시</td></tr>
+  <tr><td>HARK risk (5A 후 가설 변경)</td><td>5A-5B prereg ↔ 5C prereg 분리 + deviation log</td></tr>
+  <tr><td>운영 baseline 정체성 붕괴</td><td>Cold runbook §4.1 + Stage 4/5 동일 model hash + pipeline freeze</td></tr>
+</table>
+
+<div class="footer">
+  <strong>본 dashboard 는 단일 진실원 X</strong> — 의사결정 / 진행 상황 종합 view 만 제공. 상세는 §5 산출물 link 참조.
+  <br><strong>업데이트 빈도</strong>: 주요 cycle 종결 시 갱신. <strong>최근 갱신</strong>: 2026-05-07 (Stage 5 prereg 종결 후).
+</div>
+
+</body>
+</html>

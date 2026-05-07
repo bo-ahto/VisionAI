@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>트랙 2 (가격 예측 모델) — 쉬운 설명</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    max-width: 980px;
+    margin: 25px auto;
+    padding: 0 24px;
+    color: #1f2937;
+    line-height: 1.7;
+    background: #fafbfc;
+    font-size: 1.02em;
+  }
+  h1 {
+    font-size: 1.7em;
+    border-bottom: 3px solid #2563eb;
+    padding-bottom: 8px;
+    color: #111827;
+  }
+  h2 {
+    margin-top: 32px;
+    color: #1e40af;
+    border-left: 4px solid #2563eb;
+    padding-left: 12px;
+    font-size: 1.25em;
+  }
+  h3 { color: #1e3a8a; margin-top: 22px; font-size: 1.05em; }
+  .meta { color: #6b7280; font-size: 0.9em; margin-bottom: 14px; }
+  .lead {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 14px 20px;
+    margin: 14px 0;
+    border-radius: 4px;
+    font-size: 1.06em;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .three-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .col-card {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 12px 14px;
+    border-radius: 4px;
+  }
+  .col-card .icon { font-size: 1.6em; }
+  .example-box {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    margin: 12px 0;
+    border-radius: 4px;
+  }
+  .step {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 8px 0;
+  }
+  .step-num {
+    display: inline-block;
+    background: #2563eb;
+    color: #fff;
+    width: 26px;
+    height: 26px;
+    line-height: 26px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .compare-box {
+    background: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    padding: 14px 18px;
+    margin: 12px 0;
+    border-radius: 4px;
+  }
+  .warn-box {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 4px;
+  }
+  .summary-box {
+    background: #dcfce7;
+    border-left: 4px solid #16a34a;
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-radius: 4px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.96em; }
+  th, td { border: 1px solid #d1d5db; padding: 9px 12px; text-align: left; }
+  th { background: #1e40af; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #f9fafb; }
+  .small { font-size: 0.86em; color: #6b7280; }
+  .qa { margin: 12px 0; }
+  .qa .q { color: #1e40af; font-weight: 600; }
+  .qa .a { margin-top: 4px; }
+  .footer {
+    margin-top: 32px;
+    padding-top: 14px;
+    border-top: 2px solid #d1d5db;
+    color: #6b7280;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+
+<h1>트랙 2 — 가격 예측 모델 쉬운 설명</h1>
+<p class="meta">
+  <strong>작성일</strong>: 2026-05-06 · <strong>대상</strong>: 비전문가 (일반 독자) ·
+  <strong>전문 버전</strong>: docs/트랙2_수식_프로세스_상세_20260506.html
+</p>
+
+<div class="lead">
+  <strong>한 줄 요약</strong><br>
+  미술 작품 가격을 <strong>3가지 정보 (작품 크기 / 작가 출생년 / 작가 활동량)</strong> 만으로 예측하는 모델입니다.
+  복잡한 인공지능 대신 간단한 규칙을 써서 <strong>왜 그 가격인지 설명</strong> 가능하게 만든 것이 핵심입니다.
+</div>
+
+<h2>1. 이 모델이 하는 일</h2>
+
+<p>새로 들어온 작품을 보면 → "이 작품 가격은 약 OO만원" 이라고 예측합니다. 단, 그냥 숫자만 뱉는 게 아니라 <strong>"왜 그 가격인지"</strong> 설명할 수 있어야 합니다.</p>
+
+<div class="card">
+  <strong>예시</strong><br>
+  입력: <em>"100×80cm 캔버스, 1990년생 작가, 총 작품 50점"</em><br>
+  ↓<br>
+  출력: <em>예측 가격 약 600만원</em><br>
+  근거: <em>"작품 크기 + 작가 세대 + 활동량을 종합해서 산출"</em>
+</div>
+
+<h2>2. 사용하는 3가지 정보</h2>
+
+<div class="three-cols">
+  <div class="col-card">
+    <div class="icon">🖼️</div>
+    <strong>1. 작품 크기</strong>
+    <p>가로 × 세로 cm. 큰 작품일수록 가격 ↑.<br>
+    <span class="small">면적 1% 늘면 가격 0.78% 상승</span></p>
+  </div>
+  <div class="col-card">
+    <div class="icon">👤</div>
+    <strong>2. 작가 출생년</strong>
+    <p>오래된 세대 작가일수록 시장 위상 ↑ → 가격 ↑.<br>
+    <span class="small">출생년 1년 뒤일수록 가격 5% ↓</span></p>
+  </div>
+  <div class="col-card">
+    <div class="icon">📚</div>
+    <strong>3. 작가 활동량</strong>
+    <p>작가가 발표한 총 작품 수 (시장 안정성 지표).<br>
+    <span class="small">작품 수 2배 → 가격 5% ↑</span></p>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>왜 이 3가지인가?</strong><br>
+  처음에는 더 많은 정보 (재료 / 갤러리 등급 / SNS 팔로워 등) 도 시도했는데, 검증해보니 <strong>신규 작가 (처음 보는 작가) 예측에서 위 3가지만 써도 정확도가 가장 좋았습니다.</strong> 변수가 많아진다고 정확해지진 않더라는 결론입니다.<br>
+  <span class="small">※ 학습 데이터가 충분한 기존 작가에 대해서는 V3 모델이 여전히 더 정확합니다. 새 모델은 V3 의 약점인 신규 작가 예측에 특화된 것입니다.</span>
+</div>
+
+<h2>3. 가격 계산 방법 (직관적 설명)</h2>
+
+<p>모델은 다음과 같은 <strong>덧셈/뺄셈 규칙</strong>으로 가격을 계산합니다 (실제로는 곱셈에 가깝지만 직관적으로 표현하면):</p>
+
+<div class="card">
+  <strong>가격 = 기본값 + 작품 크기 효과 + 작가 세대 효과 + 작가 활동량 효과</strong>
+
+  <p style="margin-top: 12px;"><strong>예시 계산</strong> (실제 작품)</p>
+  <table>
+    <tr><th>항목</th><th>값</th><th>가격에 미친 영향</th></tr>
+    <tr><td>기본값 (모든 작품 공통 출발점)</td><td>약 550만원</td><td>+550만</td></tr>
+    <tr><td>작품 크기 100×80cm = 8000cm²</td><td>큰 편</td><td>×1.5 (약 +250만)</td></tr>
+    <tr><td>작가 출생년 1990 (평균 1980 대비 +10년)</td><td>젊은 편</td><td>-30% (약 -240만)</td></tr>
+    <tr><td>작가 작품수 50점</td><td>활발한 편</td><td>+10% (약 +60만)</td></tr>
+    <tr><td><strong>최종 예측</strong></td><td>—</td><td><strong>약 620만원</strong></td></tr>
+  </table>
+  <p class="small">※ 실제로는 로그 변환을 거쳐 곱셈으로 처리합니다. 위 표는 직관적 이해를 위한 단순화.</p>
+</div>
+
+<h2>4. 모델은 어떻게 학습했나?</h2>
+
+<p>약 1,378개의 실제 작품 데이터를 가지고 다음 과정을 거쳤습니다.</p>
+
+<div class="step">
+  <span class="step-num">1</span>
+  <strong>데이터 정리</strong> — 원본 7,289 작품 → 결측 / 비정상 데이터 제거 후 2,903 모집단 → 모델 학습용으로 100명 작가의 1,378 작품 추출. 가격 / 크기 / 연도 등이 명확히 기록된 작품만 남겼습니다.
+</div>
+
+<div class="step">
+  <span class="step-num">2</span>
+  <strong>가장 의미 있는 정보 찾기</strong> — 처음에는 면적, 재료, 갤러리 등급, SNS 팔로워 등 여러 정보를 다 써봤습니다. 그 중 <strong>"꼭 필요한 3가지"</strong> 만 골랐습니다.
+</div>
+
+<div class="step">
+  <span class="step-num">3</span>
+  <strong>각 정보가 가격에 미치는 영향 측정</strong> — 1,378개 작품의 실제 가격을 보면서, 위 3가지 정보가 가격을 얼마나 설명하는지 통계적으로 계산했습니다.
+</div>
+
+<div class="step">
+  <span class="step-num">4</span>
+  <strong>여러 번 다른 작가 조합으로 시험</strong> — 30번 다른 작가 조합으로 시험해서 결과가 일관되는지 확인했습니다.
+</div>
+
+<h2>5. 모델은 어떻게 평가했나?</h2>
+
+<p>모델이 진짜 정확한지 확인하기 위해 <strong>"본 적 없는 작가의 작품"</strong> 으로 시험을 봅니다.</p>
+
+<div class="card">
+  <strong>시험 방식 — "본 적 없는 작가" 의 작품으로 시험 (LAO 방식)</strong>
+  <ol>
+    <li>1,378 작품의 작가 100명 중 <strong>80명</strong> 은 모델이 학습 (= 공부)</li>
+    <li>나머지 <strong>20명 작가의 작품 전부</strong> 는 안 보여줬다가 시험에 사용</li>
+    <li>모델이 처음 보는 작가의 작품 가격을 예측 → 실제 가격과 비교</li>
+    <li>이 시험을 30번 다른 작가 조합으로 반복</li>
+  </ol>
+  <p class="small">
+    ※ 작품을 80/20 으로 그냥 나누면 같은 작가가 학습/시험 양쪽에 들어가서 정확도가 부풀려 보입니다.
+    그래서 <strong>"작가" 단위로 분할 (LAO = Leave-Artists-Out)</strong> 해서 진짜 새 작가에 대한 정확도를 측정합니다.
+  </p>
+</div>
+
+<h3>시험 결과</h3>
+
+<div class="compare-box">
+  <strong>예측 정확도 (예측가가 실제가에서 얼마나 벗어나는가)</strong>
+
+  <table style="margin-top: 8px;">
+    <tr><th>대상</th><th>현재 운영 모델 (V3)</th><th>이번 새 모델 (트랙 2)</th></tr>
+    <tr>
+      <td><strong>작가 데이터 풍부</strong></td>
+      <td>12-18%</td>
+      <td>21-22%</td>
+    </tr>
+    <tr style="background: #dcfce7;">
+      <td><strong>신규 작가 (데이터 부족)</strong></td>
+      <td>28-48%</td>
+      <td><strong>약 24% ⭐</strong></td>
+    </tr>
+  </table>
+  <p class="small" style="margin-top: 8px;">※ 숫자는 예측 오차율 (낮을수록 좋음). 신규 작가에서는 새 모델이 더 잘 맞춥니다.<br>
+  <strong>표본 차이 주의</strong>: V3 는 운영 28,376 작품 전체 기준, 트랙 2 는 1,378 정제 작품 기준이라 두 모델의 절대 비교는 한계가 있습니다. 다만 같은 평가 방식 (LAO) 에서 신규 작가 정확도는 일관되게 트랙 2 가 우수.</p>
+  <p class="small">※ 새 모델에는 <strong>두 가지 보강</strong>이 들어갔습니다.<br>
+  ① <strong>면적 곡률 보정</strong>: 작품이 너무 크거나 작을 때 면적과 가격의 관계가 직선이 아니라는 점을 반영<br>
+  ② <strong>이상치 영향 감소 (Huber)</strong>: 극단적으로 비싸거나 싼 작품 몇 개에 모델이 휘둘리지 않도록 보정.<br>
+  이 두 가지 덕분에 운영상 가장 위험한 <strong>저가/고가/일반 등급 갤러리 (tier 3) 작품의 예측이 크게 개선</strong>됐습니다 (저가 -5.81%p, 고가 -3.65%p, tier 3 -2.18%p).</p>
+</div>
+
+<h2>6. 그래서 어떻게 쓰나?</h2>
+
+<div class="card">
+  <strong>"잘 아는 작가" 와 "처음 보는 작가" 를 다르게 처리</strong>
+  <table style="margin-top: 8px;">
+    <tr><th>입력 작품 작가</th><th>적용 모델</th><th>이유</th></tr>
+    <tr>
+      <td>학습 데이터에 작품 10개 이상</td>
+      <td>현재 V3 유지</td>
+      <td>익숙한 작가는 V3 가 잘 맞춤</td>
+    </tr>
+    <tr style="background: #dcfce7;">
+      <td><strong>학습 데이터에 작품 거의 없음</strong></td>
+      <td><strong>새 모델 (트랙 2)</strong></td>
+      <td><strong>신규 작가는 새 모델이 더 나음</strong></td>
+    </tr>
+  </table>
+</div>
+
+<p class="small">즉 V3 를 통째로 갈아엎는 게 아니라 <strong>약점 보완</strong> 형태로 추가하는 것입니다.</p>
+
+<h2>7. 모델의 한계 (정직하게)</h2>
+
+<div class="warn-box">
+  다음 경우는 예측이 더 부정확해서 사람이 한번 더 확인해야 합니다.
+
+  <ul>
+    <li><strong>예측 가격이 약 500만원 미만</strong> 일 때: 모델이 실제보다 약간 비싸게 예측하는 경향 → 보정표로 다시 낮춰줍니다</li>
+    <li><strong>예측 가격이 약 1,250만원 이상</strong> 일 때: 반대로 실제보다 약간 싸게 예측하는 경향 → 보정표로 다시 높여줍니다</li>
+    <li><strong>먹/잉크/한국화</strong> 매체: 학습 데이터가 적어서 변동이 큽니다 → 별도 검토 권장</li>
+    <li><strong>일반 등급 갤러리 (gallery_tier 3)</strong>: 다양성이 커서 예측 변동이 큽니다</li>
+  </ul>
+  <p class="small">※ 예측가 기준 보정은 운영 시 자동 적용됩니다 (실제 가격은 예측 시점에 알 수 없으므로 예측가 자체로 구간을 판정).</p>
+</div>
+
+<p>이런 경우는 사람이 검토하거나, 단일 가격 대신 가격 범위 (예: 800만~1,200만) 로 보여주는 방식 권장.</p>
+
+<h2>8. 자주 나오는 질문</h2>
+
+<div class="qa">
+  <div class="q">Q. 왜 변수가 3개밖에 없나요? 더 많이 쓰면 정확하지 않나요?</div>
+  <div class="a">A. 32개 변수 쓴 V3 보다 신규 작가 예측은 오히려 3개가 더 정확했습니다. 변수가 많아지면 학습한 데이터에는 잘 맞지만, 처음 보는 데이터에는 오히려 못 맞추는 "과적합" 현상이 생깁니다. 적은 변수가 더 안정적입니다.</div>
+</div>
+
+<div class="qa">
+  <div class="q">Q. 작가 출생년이 왜 가격에 영향을 주나요?</div>
+  <div class="a">A. 직접적인 영향은 아니고, "작가 세대 = 시장에서 자리 잡은 정도" 의 간접 지표입니다. 본 데이터에서는 60-70년대생 작가가 평균적으로 더 오래 활동해 시장 위상이 상대적으로 높은 경향, 90년대생 신예 작가는 시장 가격이 상대적으로 낮은 경향이 관찰됐습니다 (모든 작가에 적용되는 절대 법칙은 아님).</div>
+</div>
+
+<div class="qa">
+  <div class="q">Q. 같은 작가의 작품인데 왜 가격이 다 다른가요?</div>
+  <div class="a">A. 같은 작가라도 작품 크기가 다르면 가격이 다릅니다. 또 학습량이 충분한 작가는 작가별 고유 효과 (그 작가만의 특성) 가 추가로 반영됩니다.</div>
+</div>
+
+<div class="qa">
+  <div class="q">Q. 예측 가격이 실제 거래 가격과 다르면 모델이 틀린 건가요?</div>
+  <div class="a">A. 모델은 비슷한 조건의 작품들의 <strong>가격 중앙값 (median)</strong> 을 추정합니다. 실제 거래는 컬렉터 취향, 시기, 협상 등 모델이 모르는 요인으로 ±20-30% 변동할 수 있습니다. 모델 예측은 "참고 가격" 으로 사용하시고, 큰 차이가 날 때는 사람의 검토를 거치는 것이 좋습니다.</div>
+</div>
+
+<div class="qa">
+  <div class="q">Q. 새 데이터가 들어오면 모델이 자동으로 업데이트되나요?</div>
+  <div class="a">A. 자동은 아니고 정기적으로 (월 1회 권고) 다시 학습해야 합니다. 시간이 지나면 시장 가격대가 변하기 때문에 보정값도 업데이트가 필요합니다.</div>
+</div>
+
+<h2>9. 정리</h2>
+
+<div class="summary-box">
+  <strong>트랙 2 모델은</strong>
+  <ul>
+    <li>작품 크기 / 작가 세대 / 작가 활동량 <strong>3가지</strong>로 가격 예측</li>
+    <li>"왜 그 가격인지" 설명 가능 (블랙박스 X)</li>
+    <li>현재 V3 모델의 약점인 <strong>신규 작가 예측을 보완</strong></li>
+    <li>전면 교체가 아니라 <strong>"잘 모르는 작가"용 보조 모델</strong> 로 도입</li>
+    <li>가격이 너무 낮거나 높은 작품은 사람이 한번 더 확인 권고</li>
+  </ul>
+</div>
+
+<div class="footer">
+  <strong>본 문서는 일반 독자용 쉬운 설명입니다.</strong><br>
+  더 자세한 수식과 절차: <code>docs/트랙2_수식_프로세스_상세_20260506.html</code><br>
+  최종 보고서: <code>docs/트랙2_최종보고서_20260506.md</code><br>
+  임원 1페이지 요약: <code>docs/임원보고_트랙2_요약_20260506.html</code>
+</div>
+
+</body>
+</html>

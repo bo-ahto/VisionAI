@@ -1,0 +1,82 @@
+{
+  "baseline": {
+    "overall": 33.300017545506186,
+    "low": 31.03174923519754,
+    "high": 36.89171653347615,
+    "ece": 0.2535661540293169
+  },
+  "low_price_threshold_krw": 5000000,
+  "n_test_low": 250,
+  "n_test_high": 181,
+  "calibrations": {
+    "1_global_additive": {
+      "overall": 33.59913327279793,
+      "low": 27.918993043279567,
+      "high": 38.40482667237471,
+      "ece": 0.25121066970618233
+    },
+    "2_low_price_only": {
+      "overall": 36.07607070244978,
+      "low": 33.68535103890872,
+      "high": 36.89171653347615,
+      "ece": 0.2698540114484707
+    },
+    "3_slice_tertile": {
+      "overall": 31.05049522539623,
+      "low": 36.57086085540308,
+      "high": 24.222298022377682,
+      "ece": 0.21288701221072667,
+      "tertile_biases_log": {
+        "low": 0.4945120826882883,
+        "mid": -0.017968121077947024,
+        "high": -0.40898839611701254
+      }
+    },
+    "4_isotonic_aux": {
+      "overall": 33.296110685932106,
+      "low": 31.494354448692768,
+      "high": 33.68828534357516,
+      "ece": 0.29865215552919977
+    }
+  },
+  "harm_threshold_pct_pt": 1.0,
+  "judges": {
+    "1_global_additive": {
+      "low_harm_diff": -3.112756191917974,
+      "overall_diff": 0.29911572729174196,
+      "ece_diff": -0.0023554843231345934,
+      "low_harm_ok": true,
+      "overall_ok": true,
+      "ece_better": true,
+      "verdict": "PASS"
+    },
+    "2_low_price_only": {
+      "low_harm_diff": 2.6536018037111795,
+      "overall_diff": 2.776053156943597,
+      "ece_diff": 0.016287857419153784,
+      "low_harm_ok": false,
+      "overall_ok": false,
+      "ece_better": false,
+      "verdict": "FAIL"
+    },
+    "3_slice_tertile": {
+      "low_harm_diff": 5.539111620205542,
+      "overall_diff": -2.249522320109957,
+      "ece_diff": -0.04067914181859025,
+      "low_harm_ok": false,
+      "overall_ok": true,
+      "ece_better": true,
+      "verdict": "FAIL"
+    },
+    "4_isotonic_aux": {
+      "low_harm_diff": 0.46260521349522676,
+      "overall_diff": -0.0039068595740801015,
+      "ece_diff": 0.045086001499882844,
+      "low_harm_ok": true,
+      "overall_ok": true,
+      "ece_better": false,
+      "verdict": "PASS"
+    }
+  },
+  "interpretation": "global calibration 후처리 가치 있음 → spec §4 후처리 규칙 후보"
+}

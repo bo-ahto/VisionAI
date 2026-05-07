@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>트랙 2 (Interpretable Challenger) 최종 보고서</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Noto Sans KR", sans-serif;
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 24px;
+    color: #1f2937;
+    line-height: 1.6;
+    background: #fafbfc;
+  }
+  h1 {
+    font-size: 1.85em;
+    border-bottom: 3px solid #2563eb;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    color: #111827;
+  }
+  h2 {
+    margin-top: 36px;
+    color: #1e40af;
+    border-left: 4px solid #2563eb;
+    padding-left: 14px;
+    font-size: 1.35em;
+  }
+  h3 { color: #1e3a8a; margin-top: 24px; font-size: 1.1em; }
+  h4 { color: #1e40af; margin-top: 18px; font-size: 1.0em; }
+  .meta { color: #6b7280; font-size: 0.93em; margin-bottom: 18px; }
+  .summary-box {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 4px;
+    font-size: 1.02em;
+  }
+  .info-box {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 4px;
+  }
+  .warn-box {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 4px;
+  }
+  .formula-box {
+    background: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    padding: 12px 18px;
+    margin: 12px 0;
+    border-radius: 4px;
+    font-family: "SF Mono", "Monaco", "Menlo", monospace;
+    font-size: 0.95em;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 0.94em;
+  }
+  th, td { border: 1px solid #d1d5db; padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: #1e40af; color: white; font-weight: 600; }
+  tr:nth-child(even) { background: #f9fafb; }
+  ul, ol { margin: 8px 0; padding-left: 26px; }
+  li { margin: 5px 0; }
+  .small { font-size: 0.88em; color: #6b7280; }
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.92em;
+    font-family: "SF Mono", "Monaco", "Menlo", monospace;
+  }
+  pre {
+    background: #1f2937;
+    color: #f3f4f6;
+    padding: 14px 18px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.9em;
+    line-height: 1.5;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  .toc {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin: 14px 0;
+  }
+  .footer {
+    margin-top: 44px;
+    padding-top: 18px;
+    border-top: 2px solid #d1d5db;
+    color: #6b7280;
+    font-size: 0.92em;
+  }
+</style>
+</head>
+<body>
+
+<h1>트랙 2 (Interpretable Challenger) 최종 보고서</h1>
+<p class="meta">
+  <strong>작성일</strong>: 2026-05-06 (HTML 변환 2026-05-07) ·
+  <strong>연계 일정</strong>: <code>docs/1개월_병행일정_V5_Structural.html</code> Week 4 산출물 ·
+  <strong>연계 plan</strong>: <code>docs/데이터클렌징_단계계획_20260506.md</code> ·
+  <strong>결정 메모</strong>: <code>docs/트랙2_Stage2_freeze_20260506.md</code>
+</p>
+
+<div class="toc">
+  <strong>목차</strong>
+  <ol>
+    <li><a href="#sec0">Executive Summary</a></li>
+    <li><a href="#sec1">배경 및 목표</a></li>
+    <li><a href="#sec2">데이터</a></li>
+    <li><a href="#sec3">Feature Selection</a></li>
+    <li><a href="#sec4">모델 결과</a></li>
+    <li><a href="#sec5">운영 시뮬레이션 (이원 전략)</a></li>
+    <li><a href="#sec6">신뢰도 / 한계</a></li>
+    <li><a href="#sec7">V3 vs 트랙 2 비교</a></li>
+    <li><a href="#sec8">운영 도입 권고</a></li>
+    <li><a href="#sec9">다음 단계 (후속 과제)</a></li>
+    <li><a href="#sec10">산출물 목록</a></li>
+    <li><a href="#sec11">코덱스 자문 이력</a></li>
+    <li><a href="#sec12">부록 — Warm-only Track 2 path 후보 (Stage 4 보류)</a></li>
+    <li><a href="#sec13">결론</a></li>
+  </ol>
+</div>
+
+<h2 id="sec0">0. Executive Summary</h2>
+
+<h3>핵심 결과</h3>
+
+<div class="summary-box">
+  <strong>Hedonic 회귀 (3 features + log_area spline + Huber loss) 로 V3 운영 모델의 cold-start 약점 해결.</strong>
+</div>
+
+<table>
+  <tr><th>시나리오</th><th>V3 (32 features GBM)</th><th>트랙 2 (3 features)</th><th>평가</th></tr>
+  <tr><td>Warm 작가 (학습 충분)</td><td><strong>12-18%</strong> ✓</td><td>21.74%</td><td>V3 우위</td></tr>
+  <tr><td><strong>Cold 작가 (신규, 100-seed)</strong></td><td>28-48% ⚠️</td><td><strong>24.07% (Huber)</strong> ⭐</td><td><strong>트랙 2 우위</strong></td></tr>
+  <tr><td>통합 (시뮬레이션)</td><td>—</td><td>22.30~25.18%</td><td>V3 + 트랙 2 보완 도입</td></tr>
+</table>
+
+<h3>핵심 모델 — 최종 권고 (Huber 채택 후)</h3>
+
+<div class="formula-box">
+$$\log P = \beta_0 + \beta_1 \cdot \log A + \beta_2 \cdot (B - \bar{B}) + \beta_3 \cdot \log(1+W) + \beta_4 \cdot s_1(\log A) + \varepsilon$$
+
+손실함수: <strong>Huber loss</strong> (eps=1.35)
+</div>
+
+<div class="info-box">
+  <strong>참고</strong>: warm-start 시나리오 확장 모델로 <code>+ (1 | artist_slug)</code> random intercept 도 검토했으나, cold-start LAO 환경에서 무력화 → <strong>운영 채택 모델은 위 fixed-effects only 형태</strong>.
+</div>
+
+<p><strong>3 features (+spline) 만으로 V3 (32 features) 의 cold-start 정확도 -4 ~ -24%p 개선.</strong></p>
+
+<h3>누적 개선 (Stage 3, 100-seed LAO holdout)</h3>
+
+<table>
+  <tr><th>모델 단계</th><th>MdAPE</th><th>개선</th></tr>
+  <tr><td>F4 OLS (baseline)</td><td>26.46±4.69%</td><td>(기준)</td></tr>
+  <tr><td>+ log_area spline</td><td>25.22±4.36%</td><td>-1.24%p</td></tr>
+  <tr><td><strong>+ Huber regression</strong> ⭐</td><td><strong>24.07±4.18%</strong></td><td><strong>-2.39%p 누적</strong></td></tr>
+</table>
+
+<h3>운영 도입 권고 (단계적)</h3>
+
+<table>
+  <tr><th>입력 작품</th><th>적용 모델</th><th>예상 정확도</th></tr>
+  <tr><td>학습 데이터에 작가 ≥ 10건</td><td>V3 유지</td><td>MdAPE 12-18%</td></tr>
+  <tr><td>학습 데이터에 작가 &lt; 10건 (cold)</td><td><strong>트랙 2 (F4 + spline + Huber)</strong></td><td><strong>MdAPE ~24% (100-seed)</strong></td></tr>
+</table>
+
+<p>→ <strong>이원 전략 단계적 운영 도입 권고</strong> (전면 교체 X)</p>
+
+<h3>Huber 채택 핵심 근거 — 취약 segment 방어력</h3>
+
+<p>평균 개선 (-2.39%p) 보다 <strong>취약 segment 의 구조적 오차 감소</strong> 가 운영상 더 중요한 가치:</p>
+
+<table>
+  <tr><th>Segment</th><th>OLS</th><th><strong>Huber</strong></th><th>개선</th></tr>
+  <tr><td>저가 (가격 &lt;20%)</td><td>34.27%</td><td><strong>28.46%</strong></td><td><strong>+5.81%p</strong> ⭐⭐⭐</td></tr>
+  <tr><td>고가 (가격 &gt;80%)</td><td>31.87%</td><td><strong>28.22%</strong></td><td><strong>+3.65%p</strong> ⭐⭐</td></tr>
+  <tr><td>Tier 3 (worst)</td><td>26.74%</td><td>24.56%</td><td>+2.18%p</td></tr>
+  <tr><td>Bootstrap 95% CI</td><td>[22.75, 25.91]</td><td><strong>[21.68, 25.08]</strong></td><td>거의 분리</td></tr>
+</table>
+
+<p>→ 가장 위험한 운영 가드레일 segment 모두 개선 (저가/고가/worst tier)</p>
+
+<h2 id="sec1">1. 배경 및 목표</h2>
+
+<h3>1.1 V3 운영 모델 한계</h3>
+<ul>
+  <li>신규 작가 (학습량 부족) MdAPE 28-48% — 운영 정확도 한계</li>
+  <li>32 features GBM ensemble → 해석 어려움</li>
+  <li>Cold-start 일반화 약점</li>
+</ul>
+
+<h3>1.2 트랙 2 목표</h3>
+<ul>
+  <li><strong>해석 가능한 모델</strong> (3-7 features)</li>
+  <li><strong>Cold-start 정확도 개선</strong></li>
+  <li><strong>변수별 가격 기여 설명</strong> 가능 (인과 framing)</li>
+</ul>
+
+<h3>1.3 트랙 2 vs 트랙 1 (Predictive Challenger)</h3>
+<ul>
+  <li>트랙 1: V3 32 features 기반 예측력 우선</li>
+  <li>트랙 2: 3 features 해석력 우선 (본 보고서)</li>
+  <li>두 트랙 동일 protocol 검증 후 단계적 운영 도입</li>
+</ul>
+
+<h2 id="sec2">2. 데이터</h2>
+
+<h3>2.1 데이터 클렌징 단계</h3>
+
+<table>
+  <tr><th>Stage</th><th>Records</th><th>Artists</th><th>용도</th></tr>
+  <tr><td>Stage 1</td><td>200</td><td>20</td><td>데이터 규칙 검증</td></tr>
+  <tr><td>Stage 2</td><td>500</td><td>50</td><td>OLS hedonic 1차 fit</td></tr>
+  <tr><td>Stage 3</td><td>1,378</td><td>100</td><td>ME random intercept (실제 1,378, 파일명 1000x100 = plan 명명)</td></tr>
+</table>
+
+<h3>2.2 적용 cleansing rule (모집단 7,289 → 2,903)</h3>
+
+<ol>
+  <li><code>is_excluded_for_training = 0</code> + <code>price_krw &gt; 1</code></li>
+  <li>필수 변수 결측 / 빈 문자열 / <code>[]</code> 0건</li>
+  <li><code>year_made</code> 1900-2026</li>
+  <li>작가 활동 연령 ≥ 15세</li>
+  <li>Aspect ratio 1/10 ~ 10</li>
+  <li>작가당 작품 수 ≥ 10</li>
+  <li>Canonical key 중복 제거</li>
+  <li>상수 컬럼 / 100% 결측 컬럼 drop</li>
+</ol>
+
+<h3>2.3 출처</h3>
+<ul>
+  <li>Artsy primary market dataset only</li>
+  <li>Saatchi 제외 (year_made 100% 결측)</li>
+</ul>
+
+<h2 id="sec3">3. Feature Selection</h2>
+
+<h3>3.1 검증 과정 (요약)</h3>
+
+<table>
+  <tr><th>단계</th><th>결과</th></tr>
+  <tr><td>Core 5 (초기)</td><td>log_area + year + career_stage + medium + tier (8 feat) → MdAPE 28.75%</td></tr>
+  <tr><td>Forward selection</td><td>log_area + birth_year + total_works + career_stage 자동 선택</td></tr>
+  <tr><td>Elastic Net 채택률</td><td>log_area / birth_year 100%, career_stage &lt;50% (자동 제거)</td></tr>
+  <tr><td><strong>F4 (winner)</strong></td><td><strong>log_area + birth_year + total_works</strong> (3 feat) → <strong>MdAPE 24.59%</strong></td></tr>
+</table>
+
+<h3>3.2 F4 변수 정의</h3>
+
+<table>
+  <tr><th>변수</th><th>정의</th><th>β (full)</th><th>부호 일관성</th></tr>
+  <tr><td><code>log_area</code></td><td>log(작품 면적 cm²)</td><td>+0.78</td><td>100%</td></tr>
+  <tr><td><code>birth_year_centered</code></td><td>(작가 출생년 - 평균)</td><td>-0.05</td><td>100%</td></tr>
+  <tr><td><code>log_artist_total_works</code></td><td>log(1 + 작가 총 작품 수)</td><td>+0.07</td><td>100%</td></tr>
+</table>
+
+<h3>3.3 경제적 해석</h3>
+
+<div class="formula-box">
+log_price = 8.6 + 0.78 × log_area − 0.05 × birth_year_centered + 0.07 × log_artist_total_works
+</div>
+
+<ul>
+  <li><strong>작품 크기</strong>: 면적 1% 증가 → 가격 +0.78% (size elasticity)</li>
+  <li><strong>작가 세대</strong>: 출생년 1년 늦을수록 가격 -5% (시장 위상 effect)</li>
+  <li><strong>작가 생산성</strong>: 작품 수 2배 증가 → 가격 +5%</li>
+</ul>
+
+<p><strong>한국 미술시장 가격 결정 = 작품 크기 + 작가 세대 + 작가 생산성</strong></p>
+
+<h2 id="sec4">4. 모델 결과</h2>
+
+<h3>4.1 Stage 2 OLS Hedonic (500/50)</h3>
+
+<table>
+  <tr><th>Set</th><th>k</th><th>MdAPE (30-seed LAO)</th><th>R²</th><th>VIF</th></tr>
+  <tr><td>Core 5 (초기)</td><td>8</td><td>28.75±6.39%</td><td>0.840</td><td>1.5</td></tr>
+  <tr><td>Hedonic-5R (ln_ho 시도)</td><td>8</td><td>30.50±6.54%</td><td>0.835</td><td>1.5</td></tr>
+  <tr><td><strong>F4</strong> ⭐</td><td><strong>3</strong></td><td><strong>24.59±5.96%</strong></td><td><strong>0.869</strong></td><td><strong>1.2</strong></td></tr>
+</table>
+
+<h3>4.2 Stage 3 ME Random Intercept (1378/100)</h3>
+
+<h4>LAO (cold-start) — ME 효과 미미</h4>
+
+<table>
+  <tr><th>지표</th><th>OLS</th><th>ME</th><th>차이</th></tr>
+  <tr><td>MdAPE</td><td>25.49%</td><td>25.54%</td><td>+0.05%p</td></tr>
+</table>
+
+<p>→ Cold-start 에서 random intercept 가 0 으로 수축 → ME 효과 무력화</p>
+
+<h4>Warm-start (시간 기준) — ME 효과 강함</h4>
+
+<table>
+  <tr><th>Train</th><th>warm 비율</th><th>OLS</th><th><strong>ME</strong></th><th>차이</th></tr>
+  <tr><td>≤2020</td><td>29.6%</td><td>33.46%</td><td>28.59%</td><td>-4.87%p</td></tr>
+  <tr><td>≤2022</td><td>54.1%</td><td>26.50%</td><td><strong>22.26%</strong></td><td>-4.25%p</td></tr>
+  <tr><td>≤2023</td><td>73.5%</td><td>25.45%</td><td><strong>21.74%</strong></td><td>-3.71%p</td></tr>
+</table>
+
+<h3>4.3 Variance Decomposition</h3>
+
+<table>
+  <tr><th>Component</th><th>분산</th><th>비중</th></tr>
+  <tr><td>Artist RE</td><td>0.130</td><td><strong>54.1%</strong></td></tr>
+  <tr><td>Residual</td><td>0.110</td><td>45.9%</td></tr>
+  <tr><td><strong>ICC</strong></td><td>—</td><td><strong>0.541</strong></td></tr>
+</table>
+
+<p><strong>ICC 0.541</strong> → 가격 분산의 54% 가 작가 단위 차이 (warm-start ME 효과 정당화)</p>
+
+<h2 id="sec5">5. 운영 시뮬레이션 (이원 전략)</h2>
+
+<h3>5.1 Time-split + warm threshold 결합</h3>
+
+<h4><code>min_works_10</code> (운영 기본안)</h4>
+
+<table>
+  <tr><th>Train</th><th>warm n</th><th>warm MdAPE</th><th>cold n</th><th>cold MdAPE</th><th>통합</th></tr>
+  <tr><td>≤2022</td><td>19</td><td>10.70%</td><td>1008</td><td>26.82%</td><td>26.53%</td></tr>
+  <tr><td>≤2023</td><td>44</td><td>19.97%</td><td>767</td><td>25.79%</td><td><strong>25.18%</strong></td></tr>
+</table>
+
+<h4><code>min_works_3</code> (성능 showcase)</h4>
+
+<table>
+  <tr><th>Train</th><th>warm n</th><th>warm MdAPE</th><th>cold n</th><th>cold MdAPE</th><th>통합</th></tr>
+  <tr><td>≤2022</td><td>361</td><td>18.89%</td><td>666</td><td>26.57%</td><td>23.22%</td></tr>
+  <tr><td>≤2023</td><td>353</td><td>19.79%</td><td>458</td><td>24.04%</td><td><strong>22.30%</strong> ⭐</td></tr>
+</table>
+
+<h3>5.2 권고 운영 정책</h3>
+
+<table>
+  <tr><th>항목</th><th>운영 기본안</th><th>성능 showcase</th></tr>
+  <tr><td>Warm 임계</td><td>min_works ≥ 10</td><td>min_works ≥ 3</td></tr>
+  <tr><td>통합 MdAPE</td><td>25.18%</td><td>22.30%</td></tr>
+  <tr><td>안정성</td><td>높음 (cold std 4%)</td><td>중간</td></tr>
+  <tr><td>재현성</td><td>높음</td><td>표본 혼합 위험</td></tr>
+</table>
+
+<p><strong>→ 운영 도입 시 <code>min_works ≥ 10</code> 채택, 향후 <code>min_works ≥ 3</code> showcase 검토</strong></p>
+
+<h2 id="sec6">6. 신뢰도 / 한계</h2>
+
+<h3>6.1 Bootstrap 95% CI (LAO 기준)</h3>
+
+<table>
+  <tr><th>모델</th><th>Median</th><th>95% CI</th></tr>
+  <tr><td>OLS</td><td>25.49%</td><td>[24.21, 28.45]</td></tr>
+  <tr><td>ME</td><td>25.54%</td><td>[24.39, 27.90]</td></tr>
+</table>
+
+<p>→ 통계적 신뢰 구간 확보, V3 cold (28-48%) 와 비교해 우수</p>
+
+<h3>6.2 Per-segment 편향 (가드레일 필요)</h3>
+
+<table>
+  <tr><th>차원</th><th>Best</th><th>Worst</th></tr>
+  <tr><td>매체</td><td>pigment 19.03%</td><td><strong>ink 32.94%</strong> ⚠️</td></tr>
+  <tr><td>가격대</td><td>60-80% 18.16%</td><td><strong>저가 (&lt;20%) 35.96%</strong> ⚠️</td></tr>
+  <tr><td>Gallery tier</td><td>tier 2 22.68%</td><td>tier 3 28.12%</td></tr>
+</table>
+
+<h3>6.3 알려진 한계 (모델 / 데이터)</h3>
+
+<ol>
+  <li><strong>Stage 3 표본 제약</strong>: 1378 records / 100 artists</li>
+  <li><strong>Calibration drift</strong>: 시간 지나면 cal table 부정확 → 정기 재학습 필요</li>
+  <li><strong>Cold-start ME 무력화</strong>: random intercept 가 0 으로 수축</li>
+  <li><strong>저가/고가 양 끝단 편향</strong>: log-OLS 의 일반적 한계</li>
+  <li><strong>V3 vs 트랙 2 비교 표본 차이</strong>: V3 = 28K 전체, 트랙 2 = 1.3K curated</li>
+</ol>
+
+<h3>6.3.1 분석 방법론 한계 (코덱스 권고 반영, 정직 보고)</h3>
+
+<div class="warning-box">
+  본 §1-§11 의 모든 결과는 <strong>Phase 1 (curated exploratory)</strong> 단계 산출물. 다음 한계들이 본 결과의 신뢰도를 제한한다 — 운영 채택은 <strong>Phase 2 (full confirmatory)</strong> 후 결정.
+</div>
+
+<ol>
+  <li><strong>Test set reuse (data snooping / "garden of forking paths")</strong>
+    <ul>
+      <li>Stage 3 의 같은 test set 으로 P1 / P2 / P3 / feature 재탐색 / robustness 모두 평가</li>
+      <li>6+ 모델 비교 후 최적 선택 → <strong>winner's curse / test overfitting</strong> 위험</li>
+      <li>누적 multiple testing → reported CI 가 실제 불확실성 underestimate</li>
+    </ul>
+  </li>
+  <li><strong>Train / Validation / Test 3-way split 부재</strong>
+    <ul>
+      <li>Stage 3 = train + test 만 → hyperparameter 와 model selection 이 같은 test 에서 진행됨</li>
+      <li>Stage 4 부터 3-way 분리 적용 (<code>docs/stage4_확장검증계획_20260507.md</code> §4.1)</li>
+    </ul>
+  </li>
+  <li><strong>다중비교 보정 부재 (Stage 3)</strong>
+    <ul>
+      <li>6+ 모델 동시 비교에 Bonferroni / Holm 미적용 → 보고된 CI 가 family-wise α 통제 X</li>
+      <li><strong>Holm 보정 후 재계산 결과</strong> (<code>stage3_warm_holm_adjusted.json</code>): warm path 비교에서 어떤 모델도 보정 후 통계적 유의성 미달 (FE only raw p=0.30, n=44 한계)</li>
+      <li>→ 운영 채택은 <strong>Phase 2 표본 확장 후 사전 등록 단일 비교</strong>로 진행</li>
+    </ul>
+  </li>
+  <li><strong>Pre-registered analysis plan 부재 (Stage 1-3)</strong>
+    <ul>
+      <li>가설 / metric / 임계 / 다중비교 보정 사전 등록 X — 결과 본 후 분석 추가</li>
+      <li>Stage 4 부터 사전등록 적용 (<code>docs/stage4_확장검증계획_20260507.md</code> §6.0)</li>
+    </ul>
+  </li>
+  <li><strong>External validity 미검증</strong>
+    <ul>
+      <li>Stage 3 = curated subset (모집단 7,289 → 1,378, cleansing rule 통과)</li>
+      <li>production traffic 분포와 다를 수 있음 — Phase 2 (full data) 에서 분포 차이 분석 protocol 강제</li>
+    </ul>
+  </li>
+  <li><strong>Calibration / OOD / drift 미평가</strong>
+    <ul>
+      <li>점추정 + CI 만 — 예측 분포 calibration curve / OOD detection / time drift 별도 평가 X</li>
+      <li>Phase 2 부터 필수 산출물 (<code>docs/트랙2_methodology_pipeline_20260507.md</code> §7)</li>
+    </ul>
+  </li>
+</ol>
+
+<div class="info-box">
+  <strong>결론</strong>: Phase 1 결과는 <strong>"기각되지 않은 유망 신호"</strong> — 채택 근거가 아닌 <strong>확인 필요 근거</strong>. 본 보고서의 cold rollout 권고 (§5.2 / §8) 는 V3 fallback 안전장치 + Shadow / Canary 단계적 도입으로 false positive 비용을 통제하는 구조이며, warm-only path (§12 부록) 는 명시적으로 Phase 2 까지 보류.
+</div>
+
+<h3>6.3.2 외부 자문 (Ridge 헤도닉) 검증 결과 (2026-05-07 addendum)</h3>
+
+<p>외부 자문 (Ridge 기반 헤도닉 가격 예측 모델 + gallery/material 통계 피처 + 작가 차등 처리) 권고를 Stage 3 데이터로 검증. 상세는 <code>docs/stage3_exploratory_addendum_20260507.md</code>.</p>
+
+<table>
+  <tr><th>후보 family</th><th>검증 항목</th><th>100-seed LAO 결과</th><th>결정</th></tr>
+  <tr><td>C</td><td>gallery / material out-of-fold target encoding (shrinkage k=10)</td><td>+0.03 ~ +0.79%p</td><td>✗ 미채택</td></tr>
+  <tr><td>A</td><td>Ridge alone</td><td>+1.09%p (악화)</td><td>✗ 미채택</td></tr>
+  <tr><td>A</td><td>Huber + L2 (alpha 1e-4 ~ 10)</td><td>±0.00%p (동등)</td><td>≈ L2 무가치 확정</td></tr>
+  <tr><td>A</td><td>F1 + F2 결합</td><td>+0.77 ~ +2.23%p (악화)</td><td>✗ 미채택</td></tr>
+  <tr><td>E</td><td>artist_median_te / sales_count / dispersion / combined</td><td>+0.13 ~ +30.96%p</td><td>✗ LAO 구조상 무력</td></tr>
+</table>
+
+<div class="warn-box">
+  <strong>artist 통계 피처는 LAO (test 작가 100% unseen) 평가에서 구조적으로 warm-only 가치만 가짐</strong> — fillna(0) 비중 100% 로 train-eval 분포가 본질적으로 어긋남.
+</div>
+
+<div class="info-box">
+  <strong>핵심 결론</strong>: 외부 자문 선형/통계 피처 계열 모든 후보 합격 기준 (-1.0%p) 미달 → <strong>기존 운영 모델 (F4 + spline + Huber, eps=1.35, alpha=1e-4) 유지</strong> + 외부 대안 비채택 근거 추가.
+</div>
+
+<p>외부 자문 권고는 다음 영역에 한정 재해석:</p>
+<ul>
+  <li><strong>Warm-start 전용 후보</strong>: artist 통계 피처 + shrinkage (별도 cycle, Stage 4 secondary 후보 검토)</li>
+  <li><strong>가격 범위 산출</strong>: Quantile Regression q25/q50/q75 → §6.3.3 별도 cycle 종결, <strong>shadow 승인</strong></li>
+  <li><strong>Phase 2 (full data) confirmatory</strong>: gallery/material TE 재검증 가치 (분포 차이 가능성)</li>
+</ul>
+
+<h3>6.3.3 Quantile Regression cycle 결과 (2026-05-07, shadow 승인)</h3>
+
+<p>외부 자문 권고 중 운영 가치가 가장 큰 후보 (가격 범위 산출) 별도 검증. 상세는 <code>docs/stage3_quantile_cycle_20260507.md</code>.</p>
+
+<p><strong>M1 (Linear Quantile, F4+spline+post-hoc sort) Stage 3 100-seed LAO</strong>:</p>
+<ul>
+  <li>Pinball total 0.4510 (M2 Huber+residual 0.4519 대비 우위)</li>
+  <li>Coverage q25/q50/q75 = <strong>26.8% / 51.6% / 75.0%</strong> (목표 25/50/75 매우 정확)</li>
+  <li>Central coverage q25-q75 = 48.2% (목표 50%)</li>
+  <li>Raw crossing rate 0.0% (post-hoc sort 전부터 monotone)</li>
+  <li>q50 MdAPE 24.54% (Quantile cycle 내부 Huber comparator 24.27% +0.27%p; 전체 운영 cold baseline 24.07% 와 별도 — cycle 재실행 LAO seed 차이)</li>
+</ul>
+
+<p><strong>판정 (코덱스 conditional accept)</strong>: 8 항목 중 7 통과. 미달 항목 (Width M1 &gt; M2) 은 conditional band vs global residual 의 본질적 차이로 평가 기준 자체 부적절 → 제거. <strong>Shadow 승인 = uncertainty band 모델로 즉시 도입 가능</strong>.</p>
+
+<p><strong>운영 통합 (Hybrid)</strong>:</p>
+<ul>
+  <li><code>value</code> = <strong>Huber 점예측 유지</strong> (운영 cold baseline MdAPE 24.07%)</li>
+  <li><code>band_low / band_high / q25 / q50 / q75</code> = <strong>M1 quantile shadow</strong></li>
+  <li>Default 전환 (q50 → value) 은 Phase 2 acceptance gate 통과 후</li>
+</ul>
+
+<p><strong>Slice calibration shift</strong> (저가 q50 cov 68% / 고가 43%) — <strong>Shadow 단계는 모니터링만, 보정안 (slice-wise intercept correction) 비교는 Phase 2 진입 전 별도 후속</strong>.</p>
+
+<div class="warn-box">
+  <strong>주의</strong>: 기존 <code>calibration_applied</code> (point estimate path) 는 quantile band 와 <strong>결합 금지</strong> (덧씌우면 coverage 망가짐 — 코덱스). 장기 후속 (본 cycle 종결과 별도): Conformal Quantile Regression (CQR).
+</div>
+
+<h3>6.4 가드레일 운영 권고</h3>
+
+<ul>
+  <li><strong>저가 (&lt;5M원)</strong>: prediction band 확대 ±50%</li>
+  <li><strong>Ink 매체</strong>: human review 권장</li>
+  <li><strong>Tier 3 갤러리</strong>: 별도 보정 규칙 검토</li>
+  <li><strong>Cal table</strong>: 월 단위 재학습 필수</li>
+</ul>
+
+<h2 id="sec7">7. V3 vs 트랙 2 비교 (운영 관점)</h2>
+
+<pre><code>입력 작품
+  ↓
+작가 학습 데이터 ≥ 10건?
+  ├─ YES (warm) → V3 유지 (검증된 정확도 12-18%)
+  └─ NO  (cold) → 트랙 2 (F4 + spline + Huber, 24.07% Stage 3 100-seed)
+</code></pre>
+
+<h3>7.1 트랙 2 도입의 가치</h3>
+
+<table>
+  <tr><th>항목</th><th>V3 단독</th><th>V3 + 트랙 2 보완</th></tr>
+  <tr><td>Warm 정확도</td><td>12-18%</td><td>12-18% (변화 없음)</td></tr>
+  <tr><td><strong>Cold 정확도</strong></td><td>28-48%</td><td><strong>~24%</strong> (Huber 채택 후)</td></tr>
+  <tr><td>해석 가능</td><td>32 feat (어려움)</td><td>3 feat + spline (명확)</td></tr>
+  <tr><td>운영 복잡도</td><td>낮음</td><td>약간 증가 (라우터 + Huber loss)</td></tr>
+</table>
+
+<div class="warn-box">
+  <strong>표본 차이 caveat</strong>: V3 28K 전체 vs 트랙 2 1.3K curated. 동일 프로토콜 직접 비교 X. Stage 3 100-seed Bootstrap CI [21.68, 25.08] 에서 우수 신호 일관 확인.
+</div>
+
+<h3>7.2 비선정 모델 활용</h3>
+
+<p>트랙 2 가 운영 도입되어도 V3 는 warm 전용으로 유지:</p>
+<ul>
+  <li>V3: warm 작가 메인 모델</li>
+  <li>트랙 2: cold 작가 보완 모델</li>
+  <li><strong>비선정</strong> = 별도로 없음 (역할 분리)</li>
+</ul>
+
+<h2 id="sec8">8. 운영 도입 권고</h2>
+
+<h3>8.1 단계적 도입 안</h3>
+
+<pre><code>Phase A (Week 4 ~ 1주차) — Shadow
+  - 트랙 2 (cold-only) shadow 배치
+  - 실제 트래픽 0% 입력만 비교
+  - V3 와 cold 작가 예측 차이 monitoring
+
+Phase B (1-2주차) — Cold-only Soft Launch
+  - cold 작가 대상으로만 트랙 2 적용
+  - 5% → 10% → 25% 점진 확대 (production spec §0.2 와 일치)
+  - 운영 monitoring (latency / drift / fallback)
+
+Phase C (2-4주차) — Full Cold Routing
+  - cold 작가 100% 트랙 2 적용
+  - 결과 정량 보고
+  - 가드레일 (저가/ink/tier3) 별도 처리
+
+Phase D (4주+) — 안정화
+  - Calibration table 월 단위 재학습
+  - V3 와 트랙 2 단계적 통합 (warm-cold 라우터)
+</code></pre>
+
+<h3>8.2 Rollback 조건</h3>
+
+<ul>
+  <li>Cold 작가 MdAPE &gt; V3 baseline (28-48%)</li>
+  <li>가드레일 segment (저가/ink) MdAPE &gt; 50%</li>
+  <li>Latency p99 &gt; 임계</li>
+  <li>Drift 알람 발생</li>
+</ul>
+
+<h2 id="sec9">9. 다음 단계 (후속 과제)</h2>
+
+<h3>9.1 단기 (1-2주)</h3>
+<ul>
+  <li>V3 vs 트랙 2 fair comparison (같은 데이터셋)</li>
+  <li>트랙 2 production 통합 spec 작성 ✅ (완료, <code>docs/트랙2_production_통합_spec_20260507.md</code>)</li>
+  <li>Cold 라우터 룰 + 가드레일 구현</li>
+</ul>
+
+<h3>9.2 중기 (1-2개월)</h3>
+<ul>
+  <li>Calibration 자동 재학습 pipeline</li>
+  <li>가격대별 prediction band</li>
+  <li>저가 / ink 보정 규칙</li>
+</ul>
+
+<h3>9.3 장기 (분기)</h3>
+<ul>
+  <li>Source ablation 실험 결과 반영</li>
+  <li>신규 입력 채널 (gallery_direct / collector_input) 처리</li>
+  <li>데이터 확장 후 재학습 (≥ 5K records)</li>
+</ul>
+
+<h2 id="sec10">10. 산출물 목록</h2>
+
+<h3>10.1 문서 (9종)</h3>
+
+<table>
+  <tr><th>#</th><th>문서</th><th>대상</th></tr>
+  <tr><td>1</td><td><code>docs/트랙2_README.md</code></td><td>전체 인덱스</td></tr>
+  <tr><td>2</td><td><code>docs/임원보고_트랙2_요약_20260506.html</code></td><td>대표 / 임원 (1페이지)</td></tr>
+  <tr><td>3</td><td><code>docs/트랙2_쉬운설명_20260506.html</code></td><td>일반 독자</td></tr>
+  <tr><td>4</td><td><code>docs/트랙2_프로세스_쉬운버전_20260506.html</code></td><td>비전공 (용어 풀이)</td></tr>
+  <tr><td>5</td><td><code>docs/트랙2_최종보고서_20260506.md / .html</code> (본 문서)</td><td>분석 / 실무 상세</td></tr>
+  <tr><td>6</td><td><code>docs/트랙2_수식_프로세스_상세_20260506.html</code></td><td>모델 구현</td></tr>
+  <tr><td>7</td><td><code>docs/트랙2_production_통합_spec_20260507.md</code></td><td>운영 / 인프라</td></tr>
+  <tr><td>8</td><td><code>docs/데이터클렌징_단계계획_20260506.md</code></td><td>데이터 plan</td></tr>
+  <tr><td>9</td><td><code>docs/트랙2_Stage2_freeze_20260506.md</code></td><td>GATE 2 결정 메모</td></tr>
+</table>
+
+<h3>10.2 코드</h3>
+<ul>
+  <li><code>scripts/build_curated_datasets.py</code> — Stage 1-3 데이터 생성</li>
+  <li><code>scripts/verify_stage1_rules.py</code> — Stage 1 규칙 검증</li>
+  <li><code>experiments/structural_v1/stage2_*.py</code> — 7개 비교 스크립트</li>
+  <li><code>experiments/structural_v1/stage3_*.py</code> — 8개 검증 스크립트 (huber 포함)</li>
+</ul>
+
+<h3>10.3 데이터</h3>
+<ul>
+  <li><code>data/curated/stage{1,2,3}_*.{parquet,csv}</code> (한글 헤더 병기 CSV)</li>
+  <li><code>data/curated/stage_summary.json</code></li>
+</ul>
+
+<h3>10.4 결과</h3>
+<ul>
+  <li><code>experiments/structural_v1/results/stage2_*.json</code> — 7개 + coef CSV 3개</li>
+  <li><code>experiments/structural_v1/results/stage3_*.json</code> — 8개</li>
+</ul>
+
+<h2 id="sec11">11. 코덱스 자문 이력 요약</h2>
+
+<table>
+  <tr><th>차수</th><th>결정</th></tr>
+  <tr><td>1차 (Stage 2)</td><td>Core 5 winner OK</td></tr>
+  <tr><td>2차 (Forward)</td><td>F4 채택, calibration 후처리 권고</td></tr>
+  <tr><td>3차 (검증 4)</td><td>옵션 A — F4 freeze + Stage 3 ME 진입</td></tr>
+  <tr><td>4차 (Stage 3 ME)</td><td>코덱스 권고 3가지 — warm-start, calibration, 이원 전략</td></tr>
+  <tr><td>5차 (final 4)</td><td>min_works_10 운영 기본안, 단계적 도입 권고</td></tr>
+  <tr><td>6차 (extra)</td><td><strong>Final report 진입 가능</strong> ✅</td></tr>
+</table>
+
+<div class="info-box">
+  본 표는 <strong>모델 채택까지 6차 핵심 의사결정</strong>. 이후 운영 도입 단계에서 P1/P2 추가 개선 + Huber 채택 + B 검증 + Production spec 등 5회 추가 자문 진행 (<strong>전체 11회</strong> — 상세는 README §8).
+</div>
+
+<h2 id="sec12">12. 부록 — Warm-only Track 2 path 후보 (Stage 4 보류)</h2>
+
+<div class="info-box">
+  <strong>운영 결정 라벨</strong>: 본 부록은 <strong>연구 후보 / 운영 미승인 / Stage 4 후 재평가</strong>. ·
+  §1-§11 의 운영 권고 (warm = V3 / cold = Track 2, §5.2) 는 <strong>변경 X</strong>. ·
+  본 부록 목적: warm-start 에서도 Track 2 활용 가능성 탐색 결과 + Stage 4 의사결정 근거 기록.
+</div>
+
+<h3>12.1 동기</h3>
+<p>V3 의 warm-start (artist 학습량 ≥ 10) MdAPE 12-18% 대비 Track 2 baseline (cold 운영 모델, F4 + spline + Huber) 의 warm-start 성능을 시간 기준 split 으로 측정. Artist Fixed Effects (FE) 등을 추가해 V3 warm 범위 진입 가능한지 확인.</p>
+
+<h3>12.2 P2 검증 (Combined 후보)</h3>
+<ul>
+  <li>모델: baseline + Artist FE + time weight (half-life 2y) + artist history (train avg log_price)</li>
+  <li>결과: 23.15% → 16.79% (-6.36%p 점추정, n_test=44, ≤2023 split)</li>
+  <li>Bootstrap 95% CI: <code>[-11.52%p, +6.59%p]</code>, P(&lt;0) = 79.3% — <strong>0 포함</strong></li>
+  <li>Bucket 분해: 저가 +3.36%p <strong>악화</strong>, 중가 -6.87%p, 고가 -0.93%p — 편중 개선</li>
+  <li>Leakage: 0건 (artist history 의 train cutoff 분리 정상)</li>
+</ul>
+
+<h3>12.3 P3 검증 (코덱스 권고)</h3>
+<p>4-model rolling time-split (cutoff 2022 / 2023 / 2024):</p>
+<table>
+  <tr><th>cutoff</th><th>n_test</th><th>baseline</th><th>FE only</th><th>Combined</th><th>Combined-shrunk (EB)</th></tr>
+  <tr><td>2022</td><td>19</td><td>17.50%</td><td><strong>10.24%</strong></td><td>16.79%</td><td>16.67%</td></tr>
+  <tr><td>2023</td><td>44</td><td>23.15%</td><td><strong>19.18%</strong></td><td>16.49%</td><td>16.51%</td></tr>
+  <tr><td>2024</td><td>62</td><td>26.13%</td><td><strong>21.90%</strong></td><td>23.98%</td><td>23.83%</td></tr>
+  <tr><td>Δ vs baseline</td><td>—</td><td>—</td><td><strong>-7.26 / -3.97 / -4.23%p</strong></td><td>-0.71 / -6.66 / -2.15%p</td><td>거의 동일</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>cutoff 2022 caveat</strong>: n_test_artists=5 의 exploratory signal — 방향성 강건성 평가용이며 채택 결정의 주 근거는 아니다. 주 근거는 cutoff 2023 (n=13) / 2024 (n=21) + robustness 30 실험 (§12.4.2).
+</div>
+
+<ul>
+  <li>Artist-cluster bootstrap (n=500, ≤2023): FE only -2.68%p [-14.33, +8.54], P(&lt;0)=72%</li>
+  <li>EB shrinkage 효과 미미: σ_b² (1.046) > σ_w² (0.639) → 작가 간 분산 우세, shrinkage 약함</li>
+  <li>Depth bin 분해 불가: 모든 warm test 가 10-14 depth 에 집중 (Stage 3 데이터 한계)</li>
+  <li>2024 composition shift: warm artists 21 → 57 (신규 +36) — Combined 효과 약화 원인</li>
+</ul>
+
+<h3>12.4 결론</h3>
+<ul>
+  <li><strong>FE only</strong> 가 3 cutoff 모두 일관 개선 (강건성 확인) → warm-only path <strong>Stage 4 leading candidate 진입 (확정 X)</strong> (코덱스)</li>
+  <li><strong>Combined / Combined-shrunk</strong> 는 cutoff 2024 둔화 + 저가 악화 → 운영 후보 격하 (연구 브랜치)</li>
+  <li>Cluster bootstrap CI 0 포함: 표본 한계 (n=44, 13 artist) 가 본질적 — Stage 4 확장 필요</li>
+  <li>즉시 도입 X: 본 보고서 §5.2 (warm = V3, cold = Track 2) 운영 권고 그대로 유지</li>
+</ul>
+
+<h4>12.4.1 Feature 재탐색 결과 (코덱스 권고 후 추가 검증)</h4>
+<p>운영 채택 baseline (F4 + spline + Huber) 위에 추가 feature 검증:</p>
+<table>
+  <tr><th>모델</th><th>cutoff 2022</th><th>cutoff 2023</th><th>cutoff 2024</th><th>결론</th></tr>
+  <tr><td><strong>fe_only</strong></td><td><strong>10.17%</strong> ↓7.33</td><td><strong>19.17%</strong> ↓3.98</td><td><strong>21.87%</strong> ↓4.26</td><td>✓ 3/3 일관 개선</td></tr>
+  <tr><td>+ gallery_tier</td><td>15.28%</td><td>24.72% <strong>↑1.57</strong></td><td>26.85% <strong>↑0.72</strong></td><td>✗ 악화</td></tr>
+  <tr><td>+ interaction (log_area × log_works)</td><td>17.43%</td><td>23.06%</td><td>27.35% <strong>↑1.22</strong></td><td>✗ cutoff 2024 악화</td></tr>
+  <tr><td>fe + gallery_tier</td><td>9.96%</td><td>17.53%</td><td>27.05% <strong>↑0.92</strong></td><td>✗ cutoff 2024 역전 (강건성 부족)</td></tr>
+  <tr><td>fe + interaction</td><td>11.34%</td><td>19.88%</td><td>22.06%</td><td>≈ FE only ≈</td></tr>
+</table>
+<ul>
+  <li><strong>gallery_tier / interaction 추가 가치 없음</strong> — Stage 4 본실험에서 제외 (부록 sentinel 만 유지)</li>
+  <li><strong>fe + gallery_tier</strong>: cutoff 2022/2023 은 FE only 와 거의 동등하나 cutoff 2024 에서 baseline 보다 악화 — 전 cutoff 일관 우위 없음, 복잡도 증가 대비 강건성 부족</li>
+  <li>Huber <code>eps</code> 1.35 유지 (1.5 와 -0.14%p 차이는 noise 수준)</li>
+  <li><strong>단순함 = 강건함</strong> 증거 — FE 가 이미 주요 신호 흡수, 추가 feature 는 분산만 증가</li>
+</ul>
+
+<h4>12.4.2 FE only Robustness (추가 검증)</h4>
+<ul>
+  <li>Bootstrap n=2000 (cutoff 2024): diff -3.38%p, CI [-17.40, +9.36], P&lt;0=72.3%</li>
+  <li>Seed 안정성 (10 seed × cutoff 2024): mean -3.42%p (<strong>std 0.316</strong>), P&lt;0 72.9% (std 0.024)</li>
+  <li><strong>3 cutoff × 10 seed = 30 실험 모두 음수 방향</strong> (방향 일관성 매우 강함)</li>
+</ul>
+
+<h3>12.5 운영 도입 시 적용 정책 (Stage 4 합격 가정)</h3>
+<p>요지: warm path 진입 임계 (<code>WARM_PATH_MIN_DEPTH ≥ 15</code>) + Shadow → 5% → 25% → Full + warm-scoped KPI 게이트 + 모델/로그 분리. 상세 라우팅 / 단계별 승격 조건 / 자동 차단 / kill switch 는 운영 spec §17 참조: <code>docs/트랙2_production_통합_spec_20260507.md</code>.</p>
+
+<h3>12.6 Stage 4 확장 검증 결과 (v3 실행 완료, 2026-05-07)</h3>
+
+<div class="warn-box">
+  <strong>판정 (사전등록 §6.1)</strong>: <strong>BORDERLINE 보류 — warm-only 일반 경로 <code>not advanced</code></strong> (코덱스).
+  결과 보고: <code>docs/stage4_warm_validation_results_20260507.md</code>
+</div>
+
+<table>
+  <tr><th>조건</th><th>결과</th></tr>
+  <tr><td>Primary FE only vs baseline</td><td>-6.22%p 점추정 / -5.74%p (boot mean) ✓ practical</td></tr>
+  <tr><td>Cluster bootstrap CI (n=2000)</td><td>[-16.01, +5.30] <strong>✗ 0 포함</strong></td></tr>
+  <tr><td>Seed std (10 seeds)</td><td>0.252 ✓</td></tr>
+  <tr><td>Segment harm</td><td>저가 +5.63%p / depth 15-24 +6.76%p — <strong>2 violations</strong> ✗</td></tr>
+</table>
+
+<p><strong>핵심 발견</strong>:</p>
+<ul>
+  <li>Composition-shift: 신규 warm (79명, test 251건) Δ +0.25%p / 기존 warm (41명, 180건) Δ -12.98%p → <strong>FE only 효과 = 기존 작가 한정</strong> (Artist FE 본질)</li>
+  <li>depth 25+ secondary Holm 보정 후 reject (-17.10%p, p=0.009) → <strong>slice-conditional 후보 가능</strong></li>
+  <li>저가 segment 일관 악화 (P2 Combined +3.36 / Stage 4 FE only +5.63%p) → F4 feature space 한계 (코덱스)</li>
+</ul>
+
+<div class="info-box">
+  <strong>코덱스 운영 의사결정자 문구</strong>: "FE only 는 전체 warm 집단에 대한 일반 해법으로는 입증 실패. 다만 충분한 이력(depth ≥25)을 가진 기존 warm 작가에서는 강한 개선 신호 → 제한적 라우팅 정책 후보로는 가치 있음."
+</div>
+
+<p><strong>다음 단계</strong> (코덱스 권고):</p>
+<ul>
+  <li>✅ Slice-conditional warm path (<code>depth ≥25 + seen-in-training</code>) 별도 가설로 분리, shadow mode 파일럿</li>
+  <li>✅ 신규 warm 작가 정책 즉시 보수화 (seen-in-training 자동 fallback)</li>
+  <li>✅ Stage 5 = 외부 source 보강 + new prereg (장기)</li>
+  <li>❌ Phase 2 (Artsy-only) 폐지 — 본 cycle 이 사실상 confirmatory</li>
+</ul>
+
+<h2 id="sec13">13. 결론</h2>
+
+<div class="summary-box">
+  <strong>3 features hedonic 회귀 (F4) + log_area spline + Huber regression 으로 V3 운영 모델의 cold-start 약점 해결 가능.</strong>
+
+  <ul>
+    <li><strong>트랙 2 cold-start MdAPE 24.07% (Stage 3 100-seed)</strong> / 통합 시뮬레이션 22.30 ~ 25.18% (V3 cold 28-48% 대비 우수 신호; 표본 차이 caveat 존재)</li>
+    <li><strong>취약 segment 방어력</strong>: 저가 +5.81%p / 고가 +3.65%p / tier 3 +2.18%p (Huber 의 핵심 가치)</li>
+    <li><strong>이원 전략 (warm = V3 / cold = 트랙 2) 단계적 도입 권고</strong></li>
+    <li><strong>해석 가능</strong>: 면적 / 작가 세대 / 작가 생산성 3축으로 가격 결정 설명</li>
+    <li><strong>가드레일 필요</strong>: 저가 / ink / tier 3 segment 별도 처리</li>
+  </ul>
+</div>
+
+<p><strong>운영 도입 가능 단계</strong>: Shadow (Week 4) → Cold-only soft launch (1-2주차) → Full cold routing (2-4주차) → 안정화 (4주+).</p>
+
+<div class="footer">
+  <strong>본 문서는 트랙 2 최종 보고서의 HTML 버전입니다.</strong><br>
+  Markdown 원본: <code>docs/트랙2_최종보고서_20260506.md</code><br>
+  전체 산출물 인덱스: <code>docs/트랙2_README.md</code><br>
+  Production 운영 spec: <code>docs/트랙2_production_통합_spec_20260507.md</code>
+</div>
+
+</body>
+</html>
