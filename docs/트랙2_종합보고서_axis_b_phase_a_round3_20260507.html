@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>트랙 2 종합 보고서 v2 — Axis B Phase A Round 3 (2026-05-07)</title>
+<style>
+body { font-family: -apple-system, sans-serif; max-width: 1200px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; }
+h1 { border-bottom: 3px solid #333; padding-bottom: 10px; }
+h2 { background: #f4f4f4; padding: 8px 12px; border-left: 4px solid #2c5aa0; margin-top: 30px; }
+h3 { color: #2c5aa0; margin-top: 20px; }
+h4 { margin: 10px 0 5px; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.fail-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.pass-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.decision-box { background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 4px; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 4px; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.amber { background: #fff3cd; color: #856404; }
+.pill.blue { background: #d1ecf1; color: #0c5460; }
+.pill.gray { background: #e2e3e5; color: #383d41; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 10px 0; }
+.card { border: 1px solid #ddd; border-radius: 4px; padding: 10px 14px; }
+.card.green { border-left: 4px solid #28a745; }
+.card.red { border-left: 4px solid #dc3545; }
+.card.blue { border-left: 4px solid #0c5460; }
+.card.amber { border-left: 4px solid #ffc107; }
+.card.gray { border-left: 4px solid #6c757d; }
+code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+.toc { background: #fafafa; border: 1px solid #eee; padding: 10px 20px; margin: 10px 0; }
+.toc ul { list-style: none; padding-left: 0; columns: 2; }
+.toc li { margin: 3px 0; }
+</style>
+</head>
+<body>
+
+<h1>트랙 2 종합 보고서 v2 — Axis B Phase A Round 3 상태보고</h1>
+
+<p><strong>작성일</strong>: 2026-05-07 | <strong>대상</strong>: 의사결정자 + 운영팀 + 법무팀 (outreach 직전 상태) | <strong>범위</strong>: Axis A close 이후 Axis B Phase A Round 1-2-2B-3 누적</p>
+
+<div class="warn-box">
+<strong>전 buyer 보고서</strong>: <code>docs/트랙2_종합보고서_axis_a_종결_20260507.html</code> (Axis A 종결 snapshot, 보존). 본 v2 = Round 3 까지 후속 상태보고 (코덱스 권고 — new file, 기존 보존).
+</div>
+
+<div class="info-box">
+<strong>본 HTML v2 의 역할 (코덱스 P2 명시)</strong>: <strong>decision-maker summary</strong> (1-page executive briefing). <strong>canonical operational source of truth</strong> = <code>docs/axis_b_handoff_packet_20260507.md</code> (운영팀 / 법무팀 발송본). 본 HTML 의 표 / 권고 = canonical packet 의 요약. 실무 인계 시 packet 우선 / HTML = cover memo.
+</div>
+
+<div class="toc">
+<strong>목차 (코덱스 권고 11 sections)</strong>
+<ul>
+<li><a href="#sec1">1. Executive Line (4-line decision frame)</a></li>
+<li><a href="#sec2">2. What Changed Since Axis A Close</a></li>
+<li><a href="#sec3">3. Current Decision Frame (4단 분리 caveat)</a></li>
+<li><a href="#sec4">4. Axis B Round 1-3 Summary</a></li>
+<li><a href="#sec5">5. Current Source Status Snapshot</a></li>
+<li><a href="#sec6">6. Immediate Outreach Scope</a></li>
+<li><a href="#sec7">7. Stop / Continue / Next Ask</a></li>
+<li><a href="#sec8">8. Round 4 Candidate Pool + HARK Guardrail</a></li>
+<li><a href="#sec9">9. Honesty Caveats</a></li>
+<li><a href="#sec10">10. Updated Cumulative Review Stats</a></li>
+<li><a href="#sec11">11. Linked Operational Packet / Source Docs</a></li>
+</ul>
+</div>
+
+<h2 id="sec1">1. Executive Line (코덱스 4-line decision frame)</h2>
+
+<div class="decision-box">
+<p style="font-size: 16px; margin: 5px 0;"><strong>1. Phase A overall = HOLD.</strong></p>
+<p style="font-size: 16px; margin: 5px 0;"><strong>2. Operational outreach = GO, but only for the narrowed Round 3 scope.</strong></p>
+<p style="font-size: 16px; margin: 5px 0;"><strong>3. This is NOT a decision-grade source adequacy approval.</strong></p>
+<p style="font-size: 16px; margin: 5px 0;"><strong>4. Source adequacy = 미정 (운영팀 + 법무팀 1차 회신 후만 평가 가능).</strong></p>
+</div>
+
+<div class="warn-box">
+<strong>핵심 risk (코덱스 P0 — 의사결정자가 빠지면 안 되는 것)</strong>: 비용 / 커버리지 / historical snapshot / AI/ML 사용 허용은 아직 모두 미확정 — outreach 시작은 가능하지만 source adequacy 판정은 아직 불가.
+</div>
+
+<h2 id="sec2">2. What Changed Since Axis A Close</h2>
+
+<table>
+<tr><th>시점</th><th>이벤트</th><th>결과</th></tr>
+<tr><td>Axis A close (이전 snapshot)</td><td>5 step 모두 adoption-grade 미달, A.3 promising but non-decision-grade</td><td>의사결정자 권고 1순위 = B (Axis B pre-screen)</td></tr>
+<tr><td>Round 1 (Source discovery + Access)</td><td>10 candidates 1차 access 실측</td><td>5 PASS likely (정부/공공) / 1 REJECT (Frieze AI ban) / 2 부분 PASS / 2 추가 확인</td></tr>
+<tr><td>Round 2 (3축 평가 LLM cycle)</td><td>5 source × Data avail / Joinability / As-of-time</td><td><strong>Phase A 종합 = HOLD</strong> (0 confirmed joinable, 2 unresolved, 3 confirmed aggregate)</td></tr>
+<tr><td>Round 2B (E + B 동시 진행)</td><td>MCST/Arko 재시도 + KOSIS/KAMS aggregate context 평가</td><td>Phase A HOLD 유지 / B (aggregate) 3순위 격하</td></tr>
+<tr><td>Round 3 (3 lane: A 본선 + Arko ops + MCST side-queue)</td><td>paid vendor + 한국 갤러리 narrowing + Arko inquiry draft + MCST endpoint search</td><td><strong>A continue: 협상 착수 GO (범위 한정)</strong> / Round 4 candidate pool 분리</td></tr>
+</table>
+
+<h2 id="sec3">3. Current Decision Frame (코덱스 P0 — 4단 분리 caveat 핵심)</h2>
+
+<div class="info-box">
+<strong>의사결정자 4단 분리</strong>: outreach GO 와 source adequacy 판정 은 다른 차원.
+</div>
+
+<table>
+<tr><th>차원</th><th>현재 상태</th><th>다음 평가 시점</th></tr>
+<tr><td>① Public access (web 자동화)</td><td>✓ Round 1-3 LLM 평가 완료 (5 PASS likely + Round 3 vendor/gallery)</td><td>—</td></tr>
+<tr><td>② Legal use (TOS / 한국법 / GDPR)</td><td>❓ 미평가 (LLM 외 영역)</td><td>법무팀 1차 회신</td></tr>
+<tr><td>③ AI/ML 사용 허용</td><td>❓ 미평가 (Frieze 1건만 명시 REJECT)</td><td>법무팀 1차 회신</td></tr>
+<tr><td>④ Joinable / time-safe adequacy (Round 2 freeze 3축)</td><td>❓ Round 3 outreach 대상 (Artprice / Kukje / Pace / PKM) 모두 <strong>미평가</strong></td><td>운영팀 + 법무팀 1차 회신 후 Round 4 평가</td></tr>
+</table>
+
+<div class="fail-box">
+<strong>오독 방지 (코덱스 P0)</strong>: "outreach GO" 를 "source adequacy GO" 로 오독 X. ① public access ≠ ② legal use ≠ ③ AI/ML 허용 ≠ ④ joinable/time-safe adequacy.
+</div>
+
+<h2 id="sec4">4. Axis B Round 1-3 Summary (코덱스 P1 — 라운드 요약표)</h2>
+
+<table>
+<tr><th>Round</th><th>대상</th><th>방법</th><th>결과</th><th>판정</th></tr>
+<tr><td><strong>Round 1</strong></td><td>10 candidates</td><td>Access / robots.txt / Anti-bot 1차</td><td>5 PASS likely (KOSIS/MCST/KAMS/MMCA/Arko) + 1 REJECT (Frieze, ai-train=no) + 2 부분 PASS (KIAF/한국화랑협회) + 2 추가 확인</td><td>5 source 본선 진입</td></tr>
+<tr><td><strong>Round 2</strong></td><td>5 source (본선)</td><td>Data avail + Joinability + As-of-time (3축, freeze)</td><td>0 confirmed joinable / 2 unresolved (MCST 404, Arko 500) / 3 confirmed aggregate (KOSIS/KAMS/MMCA)</td><td><strong>Phase A 종합 = HOLD</strong></td></tr>
+<tr><td><strong>Round 2B</strong></td><td>MCST/Arko + KOSIS/KAMS aggregate</td><td>E (transport retry) + B (aggregate context)</td><td>MCST/Arko unresolved 그대로 / KOSIS/KAMS aggregate access 어려움 (login 필요 추정)</td><td>Phase A HOLD 유지 / B 3순위 격하</td></tr>
+<tr><td><strong>Round 3</strong></td><td>3 lane (A 본선 + Arko ops + MCST side-queue)</td><td>Vendor/gallery narrowing + Arko inquiry draft + MCST endpoint</td><td>Lane 1: Artprice (1순위) + Kukje/Pace/PKM access OK / Lane 2: Arko main 200 (access recovery only) + 12항목 inquiry draft / Lane 3: MCST 4 sub-path 404</td><td><strong>A continue: 협상 착수 GO (범위 한정)</strong></td></tr>
+</table>
+
+<h2 id="sec5">5. Current Source Status Snapshot (Round 1-3 통합)</h2>
+
+<table>
+<tr><th>Source</th><th>R1 access</th><th>R2 3축</th><th>R2B retry/context</th><th>R3 action</th><th>Current status</th></tr>
+<tr><td>KOSIS (통계청)</td><td>✓ Allow:/</td><td>aggregate-only</td><td>art market hit 4 (약함)</td><td>—</td><td><span class="pill amber">Aggregate context only, label scarcity 미해결</span></td></tr>
+<tr><td>MCST (문체부)</td><td>✓ Allow:/</td><td>404 (HOLD)</td><td>main 200 / sub-path 404</td><td>endpoint discovery 실패</td><td><span class="pill amber">unresolved / 운영팀 inquiry 영역</span></td></tr>
+<tr><td>KAMS (예술경영지원센터)</td><td>✓ partial</td><td>aggregate-only (미술시장 보고서)</td><td>자료실 empty / artmarket sub-domain 500</td><td>—</td><td><span class="pill amber">Aggregate context only, login 필요 추정</span></td></tr>
+<tr><td>MMCA (국립현대미술관)</td><td>✓ 정부 공식</td><td>작품-level metadata catalog (가격 X)</td><td>—</td><td>—</td><td><span class="pill amber">Partial metadata PASS, 가격 데이터 없음</span></td></tr>
+<tr><td>Arko (한국문화예술위원회)</td><td>✓ Googlebot 부분</td><td>500 (HOLD)</td><td>1차 retry 4xx/5xx</td><td>2차 retry: main 200 ✓ access recovery + inquiry draft</td><td><span class="pill blue">Partial PASS — access recovery only / 운영팀 inquiry GO</span></td></tr>
+<tr><td>Artprice</td><td>—</td><td>—</td><td>—</td><td>R3 신규: 200 / hint strong</td><td><span class="pill green">Outreach GO (1순위)</span></td></tr>
+<tr><td>Kukje (국제갤러리)</td><td>—</td><td>—</td><td>—</td><td>R3 신규: 200 / 142KB</td><td><span class="pill green">Outreach GO</span></td></tr>
+<tr><td>Pace Seoul</td><td>—</td><td>—</td><td>—</td><td>R3 신규: 200 / 132KB</td><td><span class="pill green">Outreach GO</span></td></tr>
+<tr><td>PKM Gallery</td><td>—</td><td>—</td><td>—</td><td>R3 신규: 200 / 52KB</td><td><span class="pill green">Outreach GO</span></td></tr>
+<tr><td>Sotheby's</td><td>—</td><td>—</td><td>—</td><td>R3 신규: 200 / 455KB</td><td><span class="pill gray">Round 4 pool — Out of current outreach scope (HARK 회피)</span></td></tr>
+<tr><td>Christie's</td><td>—</td><td>—</td><td>—</td><td>R3 신규: 200 / 152KB</td><td><span class="pill gray">Round 4 pool — Out of current outreach scope (HARK 회피)</span></td></tr>
+<tr><td>Hyundai (현대화랑)</td><td>—</td><td>—</td><td>—</td><td>R3 신규: 200 / 0KB (dynamic)</td><td><span class="pill gray">Round 4 pool — 추가 평가 필요</span></td></tr>
+<tr><td>Hakgojae (학고재)</td><td>—</td><td>—</td><td>—</td><td>R3: Connection refused</td><td><span class="pill gray">Round 4 pool — access 재평가 필요</span></td></tr>
+<tr><td>Gana Art</td><td>—</td><td>—</td><td>—</td><td>R3: SSL CERTIFICATE_VERIFY_FAILED</td><td><span class="pill gray">Round 4 pool — SSL config 재평가</span></td></tr>
+<tr><td>Frieze Seoul</td><td>✗ ai-train=no (EU Article 4)</td><td>—</td><td>—</td><td>—</td><td><span class="pill red">REJECT (Round 1)</span></td></tr>
+<tr><td>KIAF</td><td>✓ Allow:/ 부분 PASS</td><td>—</td><td>—</td><td>—</td><td><span class="pill gray">Round 4 pool — Side-queue (TOS 검토 우선)</span></td></tr>
+<tr><td>한국화랑협회</td><td>✓ wp-admin only 부분 PASS</td><td>—</td><td>—</td><td>—</td><td><span class="pill gray">Round 4 pool — Side-queue (TOS 검토 우선)</span></td></tr>
+<tr><td>Korea Foundation</td><td>SSL 에러</td><td>—</td><td>—</td><td>—</td><td><span class="pill gray">Round 4 pool — 도메인 / cert 재평가</span></td></tr>
+<tr><td>KOSARC (한국미술시가감정협회)</td><td>DNS FAIL</td><td>—</td><td>—</td><td>—</td><td><span class="pill gray">Round 4 pool — host name 재평가</span></td></tr>
+<tr><td>MCST endpoint search (특정 path)</td><td>—</td><td>—</td><td>—</td><td>R3: sub-path 4종 404</td><td><span class="pill gray">Round 4 pool — 운영팀 inquiry / 외부 검색 영역</span></td></tr>
+</table>
+
+<p style="font-size:11px; color:#666;"><strong>Note (코덱스 P1 통일)</strong>: 본 §5 의 entity 단위 = §8 Round 4 pool 표와 일관 (1 row = 1 source / 합치지 않음).</p>
+
+<h2 id="sec6">6. Immediate Outreach Scope (코덱스 권고 — 범위 한정)</h2>
+
+<div class="grid-3">
+<div class="card green">
+<h4>운영팀: 5 lane <span class="pill green">즉시</span></h4>
+<ul>
+<li><strong>Artprice</strong> — paid subscription/API license 협상</li>
+<li><strong>Kukje (국제갤러리)</strong> — license / 협력 inquiry</li>
+<li><strong>Pace Seoul</strong> — license / 협력 inquiry</li>
+<li><strong>PKM Gallery</strong> — license / 협력 inquiry</li>
+<li><strong>Arko inquiry 발송</strong> — 12항목 draft 인계 후 운영팀 fine-tuning</li>
+</ul>
+</div>
+<div class="card amber">
+<h4>법무팀: 즉시 outreach 검토 + side-queue 선제 검토 (코덱스 P2 분리)</h4>
+<p><strong>(a) 즉시 outreach 대상 검토</strong> (운영팀 5 lane 동시):</p>
+<ul>
+<li>Artprice TOS / AI/ML 사용 허용 / 한국 작가 coverage 사용 권한</li>
+<li>한국 갤러리 (Kukje/Pace/PKM) license / 저작권 / 작품 image / metadata 사용</li>
+</ul>
+<p><strong>(b) Side-queue 선제 검토</strong> (Arko inquiry 발송 + Round 4 pool 사전 준비):</p>
+<ul>
+<li>Arko 공공 sector use boundary (한국법 / GDPR)</li>
+<li>MCST 공공 sector use boundary (Round 4 pool 후 검토)</li>
+</ul>
+</div>
+<div class="card gray">
+<h4>보류 (Round 4 pool) <span class="pill gray">HOLD — 코덱스 P1 통일</span></h4>
+<ul>
+<li>Sotheby's (auction house, R3 신규)</li>
+<li>Christie's (auction house, R3 신규)</li>
+<li>Hyundai 현대화랑 (R3 dynamic page — 추가 평가)</li>
+<li>Hakgojae 학고재 (R3 connection refused)</li>
+<li>Gana Art (R3 SSL config 이슈)</li>
+<li>KIAF (R1 부분 PASS, TOS 검토 우선)</li>
+<li>한국화랑협회 (R1 부분 PASS, TOS 검토 우선)</li>
+<li>Korea Foundation (R1 SSL 에러, 도메인 재평가)</li>
+<li>KOSARC 한국미술시가감정협회 (R1 DNS, host name 재평가)</li>
+<li>MCST endpoint search (R3 sub-path 404, 운영팀 inquiry 영역)</li>
+</ul>
+</div>
+</div>
+
+<h2 id="sec7">7. Stop / Continue / Next Ask (코덱스 권고 — 3 분리)</h2>
+
+<div class="grid-3">
+<div class="card red">
+<h4>Axis A 종료 <span class="pill red">CLOSED</span></h4>
+<p>5 step (A.1-A.5) 모두 adoption-grade 미달.</p>
+<p>A.3 만 promising but non-decision-grade.</p>
+<p>운영 영향 X / 분기 B calibration only 유지.</p>
+</div>
+<div class="card amber">
+<h4>Axis B Phase A continue <span class="pill amber">PRE-SCREEN 진행 중</span></h4>
+<p>Phase A 종합 = HOLD 그대로.</p>
+<p>운영팀 / 법무팀 1차 회신 후 종결 (Round 3 직후 X).</p>
+<p>Round 4 candidate pool = HARK 회피 분리.</p>
+</div>
+<div class="card green">
+<h4>운영 outreach 제한적 시작 <span class="pill green">GO 한정</span></h4>
+<p>Artprice + Kukje + Pace + PKM + Arko inquiry 만.</p>
+<p>Sotheby's / Christie's / Hyundai = HOLD.</p>
+<p>source adequacy 판정 미정.</p>
+</div>
+</div>
+
+<h3>다음 cycle ask</h3>
+<table>
+<tr><th>영역</th><th>작업</th><th>시점</th></tr>
+<tr><td>운영팀 outreach</td><td>5 lane license 협상 + Arko inquiry 발송</td><td>즉시</td></tr>
+<tr><td>법무 검토</td><td>Artprice TOS / 한국 갤러리 license / 공공 sector boundary</td><td>즉시</td></tr>
+<tr><td>Arko 추가 retry</td><td>freeze §3.3 spec 충족 (3회 중 마지막 1회)</td><td>24-72h 후</td></tr>
+<tr><td>MCST endpoint</td><td>운영팀 직접 inquiry 또는 외부 검색 담당 배정</td><td>다음 cycle</td></tr>
+<tr><td>Round 4 pool 평가</td><td>Sotheby's / Christie's / Hyundai / Hakgojae / Gana / KIAF / 한국화랑협회 / Korea Foundation / KOSARC / MCST endpoint (10 항목, A 막지 않는 한정)</td><td>운영팀/법무팀 1차 회신 후</td></tr>
+</table>
+
+<h2 id="sec8">8. Round 4 Candidate Pool + HARK Guardrail</h2>
+
+<div class="info-box">
+<strong>HARK 회피 원칙</strong>: 새 source 발견 / 본선 외 항목 = Round 3 본선 편입 X / Round 4 candidate pool 분리. <code>Out of current outreach scope; preserved for Round 4 to avoid HARK</code>.
+</div>
+
+<table>
+<tr><th>Round 4 pool 항목</th><th>1차 발견 시점</th><th>대기 사유</th></tr>
+<tr><td>Sotheby's</td><td>Round 3 (Lane 1A)</td><td>Round 2 freeze 5 source 외 / 본선 미편입 (HARK 회피)</td></tr>
+<tr><td>Christie's</td><td>Round 3 (Lane 1A)</td><td>Round 2 freeze 5 source 외 / 본선 미편입 (HARK 회피)</td></tr>
+<tr><td>Hyundai (현대화랑)</td><td>Round 3 (Lane 1B)</td><td>200 / 0KB dynamic — 추가 평가 필요</td></tr>
+<tr><td>Hakgojae (학고재)</td><td>Round 3 (Lane 1B)</td><td>Connection refused — access 재평가 필요</td></tr>
+<tr><td>Gana Art</td><td>Round 3 (Lane 1B)</td><td>SSL CERTIFICATE_VERIFY_FAILED — SSL config 재평가</td></tr>
+<tr><td>KIAF</td><td>Round 1</td><td>Allow:/ 부분 PASS (TOS 검토 우선) / side-queue</td></tr>
+<tr><td>한국화랑협회</td><td>Round 1</td><td>wp-admin only 부분 PASS (TOS 검토 우선) / side-queue</td></tr>
+<tr><td>Korea Foundation</td><td>Round 1</td><td>SSL 에러 — 도메인 / cert 확인 필요</td></tr>
+<tr><td>KOSARC (한국미술시가감정협회)</td><td>Round 1</td><td>DNS 에러 — host name 확인 필요</td></tr>
+<tr><td>MCST endpoint search (특정 path)</td><td>Round 3 (Lane 3 side-queue)</td><td>sub-path 4종 404 — 운영팀 inquiry / 외부 검색 영역</td></tr>
+</table>
+
+<p style="font-size:11px; color:#666;"><strong>Note (코덱스 P1 통일)</strong>: 본 §8 의 Round 4 pool 10 항목 = §5 Source Snapshot + §6 보류 카드 와 entity 단위 일관 유지.</p>
+
+<h2 id="sec9">9. Honesty Caveats (코덱스 P0/P1 권고 — 의사결정자 핵심 경고)</h2>
+
+<div class="fail-box">
+<strong>핵심 caveat 1 (코덱스 P0)</strong>: <code>public access ≠ legal use ≠ AI/ML 허용 ≠ joinable/time-safe adequacy</code> — 4단 분리 (§3 동일).
+</div>
+
+<div class="fail-box">
+<strong>핵심 caveat 2 (코덱스 P1)</strong>: Lane 1 sources (Artprice + Kukje + Pace + PKM) = <strong>Round 2 freeze 3축 (cover ≥70 / join ≥80 / time-safe) 평가 전혀 미수행</strong>. method-gate 미검증 → source adequacy 판정 미정.
+</div>
+
+<div class="warn-box">
+<strong>추가 caveats</strong>:
+<ul>
+<li><strong>Artprice 1순위</strong> = "paid subscription/API hint strong" but <strong>paid license 확인 X</strong> (운영 확인 전 단정 X)</li>
+<li><strong>한국 갤러리 가격 공개 낮음</strong> (코덱스 사전 자문) — gallery direct = "데이터 richness 보다 협상 가능성 / 관계 형성 난이도 screening"</li>
+<li><strong>Stage 5 패턴 1건 (Frieze)</strong> = AI training 명시 금지 (EU Article 4) — 다른 paid vendor 도 동일 risk 가능 (운영팀 협상 후 확인)</li>
+<li><strong>License-first lane 의 새 risk</strong> (Round 2 코덱스): coverage bias (특정 갤러리 / segment 편향) + cost risk (paid vendor 비용)</li>
+<li><strong>본 보고서 = LLM narrowing-grade only</strong>: 결정급 확정 = 운영팀 + 법무팀 회신 후 (Round 4 평가)</li>
+</ul>
+</div>
+
+<h2 id="sec10">10. Updated Cumulative Review Stats (P0×11 + P1×47 + P2×21)</h2>
+
+<table>
+<tr><th>Cycle</th><th>P0</th><th>P1</th><th>P2</th><th>판정</th></tr>
+<tr><td>Stage 6B 결과</td><td>2</td><td>5</td><td>2</td><td>FAIL 정당</td></tr>
+<tr><td>Feature track design draft</td><td>2</td><td>6</td><td>1</td><td>전반 OK</td></tr>
+<tr><td>A.1 prereg / 결과 v2</td><td>5</td><td>8</td><td>1</td><td>BORDERLINE → A.2</td></tr>
+<tr><td>A.2 결과</td><td>0</td><td>4</td><td>2</td><td>FAIL → A.3</td></tr>
+<tr><td>A.3 결과</td><td>0</td><td>3</td><td>1</td><td>BORDERLINE → A.4 GO / shadow HOLD</td></tr>
+<tr><td>A.4 결과</td><td>0</td><td>3</td><td>2</td><td>FAIL / A.5 권고 HOLD</td></tr>
+<tr><td>A.5 + Axis A 종합</td><td>0</td><td>3</td><td>4</td><td>Axis A close 정당</td></tr>
+<tr><td>HTML v1 검수</td><td>1</td><td>3</td><td>2</td><td>B 진입 GO</td></tr>
+<tr><td>Round 2 사전 자문</td><td>0</td><td>3</td><td>1</td><td>조건부 GO + 4 freeze</td></tr>
+<tr><td>Round 2 결과 검수</td><td>1</td><td>4</td><td>2</td><td>인계 GO (framing 정정 후)</td></tr>
+<tr><td>Round 2B 결과 검수</td><td>0</td><td>2</td><td>3</td><td>A 진입 GO</td></tr>
+<tr><td>Round 3 사전 자문</td><td>0</td><td>2</td><td>1</td><td>조건부 GO + 3 lane</td></tr>
+<tr><td><strong>Round 3 결과 검수</strong></td><td>0</td><td>5</td><td>1</td><td>Round 3 continue / outreach GO 범위 한정</td></tr>
+<tr><td><strong>HTML v2 사전 자문</strong></td><td>5</td><td>3</td><td>2</td><td>new file + 11 sections</td></tr>
+<tr><td><strong>누적 (HTML v2 사전 자문 포함)</strong></td><td><strong>16</strong></td><td><strong>54</strong></td><td><strong>25</strong></td><td>—</td></tr>
+</table>
+
+<div class="info-box">
+<strong>Note</strong>: 본 v2 HTML 사후 검수 = +N P1/P2 추가 예정. Round 3 결과 검수 까지 누적 = P0×11 + P1×47 + P2×21 (사용자 제시 수치, 코덱스 검증).
+</div>
+
+<h2 id="sec11">11. Linked Operational Packet / Source Docs</h2>
+
+<table>
+<tr><th>문서 type</th><th>경로</th><th>용도</th></tr>
+<tr><td><strong>Handoff packet (canonical)</strong></td><td><code>docs/axis_b_handoff_packet_20260507.md</code></td><td>운영팀 / 법무팀 인계용 통합 packet (코덱스 7-document 구조 + post-Round-2 update)</td></tr>
+<tr><td>Round 1 보고서</td><td><code>docs/axis_b_phase_a_pre_screen_round1_20260507.md</code></td><td>Source discovery + Access</td></tr>
+<tr><td>Round 2 freeze (transport retry §3.3)</td><td><code>docs/axis_b_round2_scorecard_freeze_20260507.md</code></td><td>3축 평가 + threshold + 판정 rule freeze</td></tr>
+<tr><td>Round 2 결과 v2</td><td><code>docs/axis_b_round2_results_20260507.md</code></td><td>5 source 3축 평가 결과</td></tr>
+<tr><td>Round 2B 결과 v2</td><td><code>docs/axis_b_round2b_results_20260507.md</code></td><td>E + B 동시 진행 결과</td></tr>
+<tr><td>Round 3 결과 v2</td><td><code>docs/axis_b_round3_results_20260507.md</code></td><td>3 lane (A 본선 + Arko ops + MCST side) 결과 + Arko inquiry 12항목 draft</td></tr>
+<tr><td><strong>전 buyer 종합 (Axis A 종결 snapshot)</strong></td><td><code>docs/트랙2_종합보고서_axis_a_종결_20260507.html</code></td><td>Stage 6 + Axis A 5 step 종결 의사결정자 cover memo</td></tr>
+<tr><td>Feature track design</td><td><code>docs/feature_track_design_20260507.md</code></td><td>Phase A 7항목 정의</td></tr>
+<tr><td>Stage 6B close</td><td><code>docs/stage6b_results_20260507.md</code></td><td>Architecture-only close 근거</td></tr>
+<tr><td>Stage 5 acquisition</td><td><code>docs/stage5a_week2_results_20260507.md</code></td><td>Stage 5 5/5 REJECT 근거 (Axis B 진입 전제)</td></tr>
+<tr><td>Methodology pipeline</td><td><code>docs/트랙2_methodology_pipeline_20260507.md</code></td><td>Phase 분리 / pre-registration / single primary hypothesis 등 골격</td></tr>
+<tr><td>Deviation log</td><td><code>docs/methodology_deviation_log.md</code></td><td>HARK 회피 / 사전등록 vs 실제 차이 누적</td></tr>
+<tr><td>운영 spec (cold rollout)</td><td><code>docs/트랙2_production_통합_spec_20260507.md</code></td><td>baseline 운영 모델 + 분기 B calibration only</td></tr>
+</table>
+
+<hr>
+
+<p style="text-align: center; color: #666; font-size: 11px;">트랙 2 종합 보고서 v2 — 2026-05-07 / Axis B Phase A Round 3 상태보고 / 코덱스 사전 자문 + 사후 검수 적용</p>
+
+</body>
+</html>
