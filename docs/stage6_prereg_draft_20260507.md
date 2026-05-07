@@ -28,7 +28,8 @@
 | ~~6B — Partial pooling (shared-modeling)~~ | ~~Stage 3 ME 재사용 + sparse-warm/ICC mechanism~~ | **FAIL** (`docs/stage6b_results_20260507.md`) — ICC 0.81 ✓ but 저가 hard gate 위반 |
 | **6C — 새 source 보강 (new-information)** | External source = 가격 anchor / market activity 통합 | 4항목 pre-screen 통과 후 본실험. **Architecture-only 종료 후 유일 후보** |
 
-> **6A + 6B FAIL → Architecture-only 트랙 모두 종료**. 4-cycle 일관성 (Stage 4 작업 3 + Stage 5 + Stage 6A + Stage 6B) 으로 **feature shortage under current inputs** 본질 확정.
+> **6A + 6B FAIL → Architecture-only remedies under fixed-feature cold-start LAO scope 종료** (코덱스 P1 — close scope 한정).
+> **Cycle 일관성 (코덱스 P0 분리)**: **3-cycle empirical** (Stage 4 단기 트랙 작업 3 / Stage 6A / Stage 6B) + **1-cycle acquisition infeasibility** (Stage 5 — 준법적 자동화 불가, empirical 반증 X). 본질 = "현재 evidence 범위 내 1차 병목 = feature/information shortage" (representation learning / multimodal / non-artist hierarchy = 별도 axis).
 
 ## 3. 6A (Segmented Architecture) — 1순위 prereg 초안
 

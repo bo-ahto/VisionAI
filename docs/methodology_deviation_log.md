@@ -99,7 +99,18 @@
 - **Frozen spec 통일 (코덱스 P0 — minor 정정)**: prereg v2 본문 §1.3 / §2.11 에 잔존하던 `is_low_price fixed effect` / `low/high group fixed effect` 표현 = 6B v2 freeze 시점에 이미 삭제된 spec → 결과 본 후 prereg / deviation log / results report 전부 단일 line 으로 통일 ("v2 frozen spec = Stage 3 ME identical, `is_low_price` fixed effect 제거"). 결과 변경 X / 통계 결정 변경 X.
 - **Cycle 일관성 확정 (코덱스 P0 분리)**: **3-cycle empirical** (Stage 4 단기 트랙 작업 3 / Stage 6A / Stage 6B) + **1-cycle acquisition infeasibility** (Stage 5 — 준법적 자동화 불가, empirical 반증 X). 본질 = "fixed-feature cold-start LAO scope 의 architecture-only remedies 가 1차 병목 해결 X"
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
-- **승인**: 사용자 검토 + 코덱스 사후 자문 (예정)
+- **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
+
+### 2026-05-07 — [의사결정] Architecture-only close 확정 + Feature track 시작 (none, 정상 흐름)
+- **확정**:
+  1. Stage 6B FAIL 승인
+  2. Architecture-only remedies under fixed-feature cold-start LAO scope **종료**
+  3. 운영 모델 = baseline (F4 + spline + Huber) + calibration only (분기 B) **유지**
+  4. **Feature track 설계 시작** (`docs/feature_track_design_20260507.md`) — Axis A (internal feature engineering, compliance 무관, 즉시) 우선 / Axis B (external acquisition, Phase A pre-screen 후 조건부)
+  5. 6C 보류 — 새 식별 가설 발견 시에만 reopen
+- **분류**: **none (정상 흐름)** — methodology pipeline §3 Phase 2'' (feature/information cycle) 진입
+- **운영 영향**: 없음 (운영 spec 변경 X)
+- **승인**: 사용자 (2026-05-07) + 코덱스 사후 자문 권고
 
 ### 2026-05-07 — [Stage 6B] Partial pooling prereg freeze (HARK 회피용 registered follow-up)
 - **Disclosure (코덱스 의무)**: 6B 가설 = 6A 결과 (FAIL) 관찰 후 형성. 새 탐색 X — Stage 3 ME 재사용 + low/high fixed effect 만 추가. Sample fragmentation 가설 검증용 mechanism-targeted follow-up.

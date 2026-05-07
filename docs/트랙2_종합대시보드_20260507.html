@@ -74,7 +74,7 @@
   <strong>Stage 5 (External Acquisition) 종료 (2026-05-07)</strong>: REJECT 사유 = <strong>준법적 자동화 접근 불가</strong>. 사전등록 §6.3 적용. <strong>5C prereg = 미개시 종료 (untested, 반증 X)</strong>.
 </div>
 <div class="warn-box">
-  <strong>Stage 6A (Segmented) FAIL + Stage 6B (Partial pooling) FAIL (2026-05-07)</strong>: 6A overall +5.23%p / 6B overall -0.09%p but 둘 다 저가 hard gate 위반 (+3.54 / +1.29%p). 6B ICC 0.81 ✓ (partial pooling mechanism 작동) but cold-start LAO 무력화. <strong>Architecture-only 트랙 (6A + 6B) 모두 종료</strong>. <strong>4-cycle 일관성 확정</strong>: Stage 4 작업 3 / Stage 5 / Stage 6A / 6B 모두 <strong>feature shortage under current inputs</strong> 본질 입증. 후속 = <strong>6C (new-information, pre-screen 후)</strong> 또는 <strong>calibration only 운영 유지 (분기 B)</strong>.
+  <strong>Stage 6A (Segmented) FAIL + Stage 6B (Partial pooling) FAIL (2026-05-07)</strong>: 6A overall +5.23%p / 6B overall -0.09%p but 둘 다 저가 hard gate 위반 (+3.54 / +1.29%p, 6B 의 경우 100 seed 중 66 seed violation). 6B ICC 0.81 ✓ (partial pooling mechanism 작동) but cold-start LAO 무력화 = <strong>mis-targeted (코덱스)</strong>. <strong>Architecture-only remedies under fixed-feature cold-start LAO scope 종료</strong>. <strong>Cycle 일관성 (코덱스 P0 분리)</strong>: 3-cycle empirical (Stage 4 단기 / 6A / 6B) + 1-cycle acquisition infeasibility (Stage 5, empirical 반증 X). <strong>의사결정 (2026-05-07)</strong>: ① architecture-only close 확정 / ② 운영 = baseline + calibration only 유지 / ③ <strong>Feature track 설계 시작</strong> (Acquisition Feasibility Phase A 분리 가능). 6C 보류 (새 식별 가설 발견 시).
 </div>
 
 <h2 id="sec2">2. 의사결정 현황</h2>
@@ -275,15 +275,20 @@
     <p>실 운영 = Cold A 안정 후</p>
   </div>
   <div class="card gray">
-    <h4>F. 5B (Acquisition execution) <span class="pill gray">PASS source 확정 후</span></h4>
-    <p>데이터팀 / 법무팀 작업</p>
-    <p>Entity resolution audit plan</p>
-    <p>Feature dictionary → 5C re-freeze</p>
+    <h4>F. 5B (Acquisition execution) <span class="pill gray">Phase A pre-screen 분리</span></h4>
+    <p>Stage 5 acquisition infeasibility 후 Phase A 0단계 (Legal/TOS/Access/Anti-bot) 통과 source 발견 시만</p>
+    <p>운영팀 / 법무팀 협업 필수 (LLM 외)</p>
+  </div>
+  <div class="card blue">
+    <h4>G. Feature track 설계 (Axis A) <span class="pill blue">즉시</span></h4>
+    <p><strong>Architecture-only close 후 신설</strong> (`docs/feature_track_design_20260507.md`)</p>
+    <p>Axis A: Internal feature engineering — Quick-win categorical (A.1 — `category` / `medium_type` / `gallery_*` / `attribution_class`) 부터 단계적 진입</p>
+    <p>각 step PASS 검증 후 다음 진입 (HARK 회피)</p>
   </div>
 </div>
 
 <div class="info-box">
-  <strong>코덱스 권고 우선순위</strong>: Cold Phase A 안정화 → Slice W-SC-S1 순차 (동시 X) / Stage 5A 병행 가능 / Calibration 은 다음 gate.
+  <strong>코덱스 권고 우선순위 (2026-05-07 갱신)</strong>: Stage 6B FAIL 후 architecture-only close → <strong>Feature track Axis A (Internal, compliance 무관, 즉시)</strong> 1순위 / Cold Phase A shadow 는 모델 개선 X 정의 (data availability 검증) / Axis B (External) 는 Phase A pre-screen 통과 시만.
 </div>
 
 <h2 id="sec7">7. 위험 요인 + 대응</h2>
