@@ -212,39 +212,97 @@ done
         - 6 file (5 runtime + metrics) → /app/models/ 또는 $MODEL_DIR
         - container rebuild + push to registry
 
-[ ]  7. Phase 3 STAGING 환경 preflight (v3_6_phase3_runbook §5)
-        - container deploy to STAGING
-        - required envs 주입 (§2.6.1: ARTIFACT_VERSION / WARM_ARTIST_SLUGS_VERSION /
-          ROLLOUT_RULE_VERSION / ROLLOUT_COHORT=control / SERVER_INSTANCE)
-        - DEV TEST 재실행:
-          MODEL_VARIANT=v3_5_v_year_saatchi_warm \
-            python scripts/v3_6_phase3_dev_test.py
-          → fallback_cases_fail=0 / gating_correctness=1.0 / passed=true
-        - warmup-mode 검증:
-          curl $STAGING/api/v1/monitor | jq '.fetch_gate.warmup_mode'
-          → true 또는 stable false (state machine 정합)
+[ ]  7. STAGING 24h baseline (v3_6_phase3_runbook §5.2 — 소요 1.5d)
+        Pre-flight checklist (권위 runbook §5.2):
+        - monitoring/sql/001~020 모두 staging DB 적재 (§2.4)
+        - monitoring/sql/003_cohort_baselines.sql 초기 row 적재
+          (integrated_v3_5_v_year_saatchi_warm 4 cohort)
+        - dashboard_v3_6_rollout.json provisioning + Datasource UID 환경별 치환
+        - grafana_alerts.yaml 적용 + env vars 주입
+          (SLACK_WEBHOOK_ML_ALERTS / PAGERDUTY_INTEGRATION_KEY)
+        - prometheus scrape_config.yaml scrape job 추가
+        - scripts/etl_predict_logs.py cron 적재 (5min interval)
+        - server env (권위): MODEL_VARIANT=v3_5_v_year_saatchi_warm /
+          ROLLOUT_COHORT=treatment_5pct / ARTIFACT_VERSION /
+          WARM_ARTIST_SLUGS_VERSION / ROLLOUT_RULE_VERSION / SERVER_INSTANCE
 
-[ ]  8. CANARY 1% (24h) — v3_6_phase3_runbook §STAGING 다음 단계
+        절차:
+        - 1K request 가중 (production replay 또는 synthetic batch)
+        - 24h 모니터링 — Grafana 12 panel + 6 alert baseline 측정
+        - 정합성 검증 SQL (predict_logs row ≥ 1000 / cohort 분포 ±5%p)
+
+        12 panel 정상 표시 검증 (v3_6_phase3_runbook §5.2 표):
+        - Panel 1-6, 10-11 데이터 표시 (upstream + cohort + audit)
+        - Panel 7-9, 12 (MdAPE D7 + treatment_vs_control) — 빈 결과 정상
+          (sold_actuals D7 미도달 — Phase 4 ROLLOUT 5% D7 단계에서만 검증)
+
+        6 alert baseline (D1 24h 안정):
+        - T1 (5min_miss_burst > 200): D1 fire 0건
+        - T2 (cohort discrepancy > 5%): D1 fire 0건
+        - T2a (NO_BASELINE): cohort_baselines 적재 후 fire 0건
+        - T3-7: D1 sold_actuals 적재 부족으로 fire 0건 (정상)
+
+        산출물 (gate):
+        - 24h crit alert 누적 0건 (또는 1건 이내 즉시 해결)
+        - baseline 수치 기록 (cache_hit_rate / fetch_success / miss_qps avg)
+
+[ ]  8. Pre-canary smoke (v3_6_phase3_runbook §5.3 — 소요 0.5d)
+        환경: STAGING 직후 / internal team manual access
+
+        절차 A. Manual request 100건 (다양한 cohort):
+          for i in $(seq 1 100); do
+            curl -X POST http://staging-api:8000/api/v1/predict \
+              -H 'Content-Type: application/json' \
+              -d '{"artist_name":"<saatchi_warm_or_other>", \
+                   "width_cm":50, "height_cm":50, \
+                   "medium":"oil", "target_market":"gallery"}'
+          done
+
+        기대:
+        - 모든 응답 200 OK
+        - model_info.model_type = variant prefix
+          (xgboost_v3_5_v_year_saatchi_warm 또는 catboost_v3_5_v_year_saatchi_warm)
+
+        절차 B. Saatchi 매칭 정확성 (100명 sample):
+        - warm set 내부: matched=True / source=saatchi
+        - warm set 외부 + saatchi: matched=True / source=saatchi (cohort=False)
+        - 외부 + non-saatchi: matched=True / source=artsy
+        - 미등록: matched=False
+
+        절차 C. Cache fill rate (cache_hit ≥ 10건 유도, runbook §5.3 절차):
+        - 첫 50건 = 50개 distinct artwork_id (cache miss / fetch_ok)
+        - 다음 50건 = 첫 50개 중 10개 의도적 재요청 (cache hit 유도)
+        - 동일 artwork_id 재요청은 30분 이내
+        - 결과: cache_hit ≥ 10 PASS
+
+        산출물 (gate):
+        - 100건 응답 모두 200 OK
+        - Saatchi 매칭 정확성 ≥ 95%
+        - cache_hit ≥ 10건 (spec §5.4 gate)
+
+[ ]  9. CANARY 1% (24h, v3_6_phase3_runbook §Phase 3 gate 통과 후)
         - 트래픽 1% 만 treatment_5pct cohort 라우팅
-          ROLLOUT_COHORT=treatment_5pct (1% pod 만)
-        - drift / regression 모니터링 (24h)
+        - drift / regression 모니터링 24h
         - baseline 수치 (cache_hit_rate / fetch_success / miss_qps avg) 기록
+        - Phase 3 gate 통과 시점 = STAGING + Pre-canary 완료 후 진입
 
-[ ]  9. ROLLOUT 5% — D1 / D3 / D7 단계 검증
+[ ] 10. ROLLOUT 5% — D1 / D3 / D7 단계 + reviewer signoff (v3.5 step 4 §3.2)
         - 트래픽 5% routing
         - D1 / D3 / D7 시점 fetch_success / miss_qps / mdape drift 점검
-        - reviewer 1+2+3 signoff (§4 참조) — D7 판정 시점에 의무
+        - D7 gate criterion (v3.5 step 4 §3.2):
+          * cache hit ≥ 50%
+          * mdape_d7_treatment_vs_control_diff ≤ -0.3%p (개선 입증)
+        - reviewer 1+2+3 signoff (§4) — D7 판정 시점 의무
+        - D7 미달 → 5% 단계 추가 1주 또는 abort (rollback)
 
-[ ] 10. ROLLOUT 25% → FULL 100% (state machine 권위 v3_6_phase3_runbook §rollout state)
-        - 트래픽 25% → 검증 → 100%
-        - 각 단계마다 monitor / alert wiring 검증
-        - rollback path 확보 (§5 참조)
-        - regression 감지 시 즉시 rollback (사용자 / oncall 권한)
-
-[ ] 11. Final swap (DEFAULT_VARIANT 변경 시 governance rule)
-        - production 환경변수: ROLLOUT_COHORT=treatment_5pct → 100% pod 적용
-        - DEFAULT_VARIANT 변경 (primary_predictor.py:86) 시 별도 PR 의무
-          (governance rule — code 변경은 PR review + main merge 의무)
+[ ] 11. ROLLOUT 25% → FULL 100% + Final swap (governance rule)
+        - 트래픽 25% routing → 검증 → 100% routing
+        - 각 단계 monitor / alert wiring 검증 + rollback path 확보 (§5 참조)
+        - regression 감지 시 즉시 rollback (oncall 권한)
+        - DEFAULT_VARIANT 변경 시 별도 PR 의무 (governance rule):
+          primary_predictor.py:86 의 DEFAULT_VARIANT="v3_5_v_year_saatchi_warm"
+          변경 = code change → PR review + main merge 의무
+        - 100% 적용 후 Phase 5 (운영 안정화) 진입
 ```
 
 ## 4. Reviewer signoff matrix
