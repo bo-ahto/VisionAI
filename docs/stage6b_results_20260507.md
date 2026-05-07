@@ -5,15 +5,18 @@
 > **실험**: `experiments/structural_v1/stage6b_partial_pooling.py` / `results/stage6b_partial_pooling.json`
 > **판정**: **FAIL (🔴 Hard gate Δ_low > 0 위반)**
 
-## 0. 한 줄 요약 (의사결정자용)
+## 0. 한 줄 요약 (의사결정자용 — 코덱스 framing 강화)
 
-> **Stage 6B FAIL** (사전등록 §3.3 hard gate 위반). Overall **-0.09%p (사실상 동등)** + 저가 **+1.29%p 악화** + Mid/high -1.04%p 개선. 즉 6B partial pooling 은 mid/high 만 부분 개선하고 저가에서 악화 — **6A 와 동일 패턴 (저가 segment harm)**.
+> **Stage 6B FAIL** (사전등록 §3.3 hard gate 위반). 효과 없음 ≠ **목표 slice 에서 해로움**: aggregate parity (-0.09%p) but low-slice harm (+1.29%p) → 운영 부적합.
 >
-> **4 cycle 일관성 확정**: Stage 4 작업 3 (feature 부족 시그니처) → Stage 5 (acquisition 미개시) → Stage 6A (segmentation +5.23%p) → **Stage 6B (partial pooling -0.09%p, 저가 +1.29%p)** — 모두 **feature shortage 본질** 입증.
+> **Mechanism 검증 성공, 제품 목표 실패** (코덱스):
+> - ICC 0.81 [0.77, 0.84] — partial pooling 통계적으로 강하게 작동 ✓ (variance reduction 효과)
+> - 그러나 LAO cold-start 에서 random intercept 무력화 → **식별 가능한 신규 신호를 만들지 못함**
+> - "Hierarchical pooling 자체는 실패가 아니라 mis-targeted" (코덱스)
 >
-> **단, Mechanism 작동 ✓**: ICC 0.81 (CI [0.77, 0.84]) — partial pooling 자체는 강하게 작동. 그러나 예측 효과 미미 = **cold-start LAO 에서 random intercept 무력화** (Stage 3 ME 패턴 반복, 코덱스 사전 권고 정확).
+> **4-cycle 일관성 확정**: Stage 4 작업 3 → Stage 5 → Stage 6A → 6B 모두 동일 — **현재 evidence 범위 내 1차 병목 = feature / information shortage** (architecture 가 무가치 아님 / 단지 1차 병목 아님).
 >
-> → **Architecture-only 트랙 (6A + 6B) 모두 종료**. 후속 = **6C (new-information, pre-screen 후)** 또는 **calibration only 운영 유지** (분기 B).
+> **종결 사유** (코덱스): "실패해서 중단" 이 아닌 **"병목 식별 → 자본 배분 전환"**. Architecture-only 트랙 close → **feature / acquisition track** 로 의사결정 이관 (6C 도 architecture 추가 = 낮은 ROI).
 
 ## 1. 핵심 결과 (사전등록 §3 적용)
 
@@ -48,14 +51,18 @@
 
 ### 1.5 사전등록 §3 PASS / BORDERLINE / FAIL 판정
 
+> **Hard gate 정의 (사전등록 §3.3 단일 line)**: `Δ_low ≤ 0%p` (100-seed LAO mean 점추정 기준, 운영 spec §17 저가 segment harm 절대 금지 원칙과 동일).
+>
+> **판정 rule**: Hard gate 위반 시 primary / secondary 결과 무관 **즉시 FAIL** (`사전등록 §3.3`). Hard gate 통과 후에만 primary CI 상한 ≤ 0 + practical Δ ≤ -1.0%p 동시 충족 → PASS / 하나만 충족 → BORDERLINE / 둘 다 미달 → FAIL.
+
 | 조건 | 결과 |
 |---|---|
+| 🔴 **Hard gate Δ_low ≤ 0%p (단독 즉시 FAIL trigger)** | **✗ (+1.29%p 악화)** |
 | Primary CI 상한 ≤ 0 | ✗ (+1.42%p) |
 | Primary practical Δ ≤ -1.0%p | ✗ (-0.09%p) |
-| 🔴 **Hard gate Δ_low ≤ 0%p** | **✗ (+1.29%p 악화)** |
 | ICC mechanism CI 하한 > 0 | ✓ (0.7719) — **mechanism 작동 ✓** |
 
-→ **🔴 Hard gate 위반 → 즉시 FAIL** (사전등록 §3.3).
+→ **🔴 Hard gate 위반 → 즉시 FAIL** (사전등록 §3.3). Primary 와 secondary 모두 동시 미달 (Hard gate 무관 동일 결론) — **aggregate parity but low-slice harm** (코덱스 framing).
 
 ## 2. 4-Cycle 일관성 (의사결정자 압축)
 
@@ -100,26 +107,38 @@
 - 사전등록 §3.3 "🔴 Hard gate 위반 시 즉시 FAIL" 적용
 - 결과 본 후 임계 변경 X (HARK 회피)
 
-## 5. 후속 cycle (코덱스 권고)
+## 5. 후속 cycle (코덱스 권고 — Architecture close, Feature track 우선)
 
-### 5.1 Architecture-only 트랙 종료 (확정)
+### 5.1 Architecture-only 트랙 close (확정)
 - 6A (segmentation) + 6B (partial pooling) 모두 FAIL
-- → Architecture 변경만으로는 feature shortage 해결 X 입증 완료
+- → "Architecture-only 트랙은 신호 부족 문제를 해결하지 못했으며, 병목은 feature/information shortage 에 있다" (코덱스)
+- **Hierarchical pooling 자체는 실패가 아니라 mis-targeted** — 현재 문제의 1차 병목이 아님
 
-### 5.2 다음 후보 (2 축)
-| 옵션 | 사전 조건 | 가치 |
+### 5.2 다음 후보 우선순위 (코덱스)
+| 순위 | 옵션 | 가치 |
 |---|---|---|
-| **6C — new-information** (외부 source) | 4항목 pre-screen (Legal / TOS / Access / Anti-bot) 통과 | feature 추가 = 본질 해결 가능 |
-| **운영 calibration only** (분기 B 그대로) | 즉시 가능 | 단기 안전장치 (low -3.11%p 가능) |
+| **1** | **Feature / acquisition track** (low 구간 식별력 보강) | 본질 해결 — 1차 병목 직접 공략 |
+| 2 (보조) | Calibration only (분기 B) | 배포 안정성 / threshold tuning 목적만 — 핵심 개선 트랙 X |
+| 3 (낮은 ROI) | 6C architecture 추가 | **새 식별 가설 있을 때만 reopen** — 현 evidence 상 낮은 ROI |
 
-> 코덱스 권고: 6C 진행 시 **새 source 발견** 우선 (Stage 5 종료 후 LLM 외 운영팀 / 법무팀 / 데이터팀 작업 영역). Calibration only 는 분기 B 그대로 진행.
+> 코덱스 권고: "특별한 새 가설 없이 6C 를 돌리면 지금까지 evidence 상 낮은 ROI 의 반복 가능성 큼". Feature / acquisition 우선 / 6C 보류.
 
 ## 6. Limitations / 정직 보고
 
-- **Sparse-warm 측정 불가**: LAO 정의상 모순 (사전등록 §2.8.1 #3 deviation, minor)
+- **Sparse-warm 측정 불가**: LAO 정의상 모순 (사전등록 §2.8.1 #3 deviation, minor) — 향후 sparse-warm 은 LAO 가 아닌 별도 metric/spec (time-split warm threshold) 으로 분리 필요
 - **100-seed mean vs single seed cluster bootstrap 차이**: single seed 가 운 좋은 결과 가능 — 100-seed 평균이 더 신뢰할 만함
 - **ICC 높음 ↔ 예측 효과 무력**: cold-start LAO 평가의 본질적 한계 (warm-start time-split 평가 시 다를 가능성)
-- **Newly-warm subgroup +0.31%p**: 사실상 동등 — Stage 4 의 +0.25%p 패턴 (composition shift) 반복
+- **Newly-warm subgroup +0.31%p**: 사실상 동등 — Overall Δ std (1.87%p) 대비 small effect → **noise 범위 내** (코덱스 권고 — transferable signal X)
+
+### 6.1 Low (<5M) 악화 분해 (코덱스 P1 권고)
+- Low pool: 4,635 작품 / 637 artists (전체 cleansed 의 절반 이상)
+- 상위 5 작가 (do-you-hwang 126 / kyong-lee 74 / winter-gyeoul-kim 52 / kang-yehsine 46 / kwon-hye-jo 45) — **특정 작가 집중 X**, 분산 분포
+- 즉 +1.29%p 악화는 특정 subslice 가 아닌 **저가 segment 전반의 systematic harm** — Stage 4 단기 트랙 작업 3 의 "feature shortage 시그니처 3/3" 입증과 일관
+
+### 6.2 ICC 0.81 → ranking gain vs shrinkage 분리 (코덱스 P2)
+- 본 cycle 측정 X (별도 decomposition 필요)
+- 추후 권고: 추가 분석 시 (a) ranking AUC / Spearman corr 비교 (b) artist-level prediction gradient 분리
+- 현재 evidence: ICC 자체가 ranking gain 보다 **variance suppression** 가능성 큼 (LAO 무력화 + low harm 패턴 일관)
 
 ## 7. 다음 단계
 
