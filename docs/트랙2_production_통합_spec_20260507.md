@@ -587,8 +587,8 @@ $ ops cli report.create --type rollback --model track2_v1
 
 ## 17. Warm-only Track 2 path 후보 (Stage 4 까지 보류)
 
-> **상태**: 연구 후보 (Stage 3 P3 검증 완료) / **운영 도입 보류** — §1-§16 의 cold rollout 과 분리 운용  
-> **근거**: `experiments/structural_v1/results/stage3_warm_p3_validation.json`  
+> **상태**: 연구 후보 (Stage 3 P3 + feature 재탐색 + robustness 종결) / **운영 도입 보류** — §1-§16 의 cold rollout 과 분리 운용  
+> **근거**: `experiments/structural_v1/results/stage3_warm_p3_validation.json` + `stage3_warm_feature_exploration.json` + `stage3_warm_fe_robustness.json` (3 차)  
 > **승격 결정**: Stage 4 artist-cluster 증거 (`docs/stage4_데이터수집계획_20260507.md` §6.1) 확보 후 재평가  
 > **본 §17 의 KPI / 게이트는 warm path 전용 scope override** — §16 (cold-default KPI glossary) 와 별도 운용
 
@@ -606,6 +606,8 @@ $ ops cli report.create --type rollback --model track2_v1
 | 2022 | 19 | 17.50% | 10.24% | -7.26%p |
 | 2023 | 44 | 23.15% | 19.18% | -3.97%p |
 | 2024 | 62 | 26.13% | 21.90% | -4.23%p |
+
+> **cutoff 2022 caveat**: n_test_artists=5 의 exploratory signal — 채택 결정의 주 근거는 아님. 주 근거는 cutoff 2023/2024 + robustness 30 실험 (3 cutoff × 10 seed 모두 음수 방향).
 
 - Cluster bootstrap: FE only vs baseline mean **-2.68%p**, 95% CI [-14.33, +8.54], P(<0)=72%
 - 3 cutoff 모두 동일 방향 개선 (강건성 확인)
