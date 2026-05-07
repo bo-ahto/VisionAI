@@ -101,6 +101,27 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Track 1 Phase 0 + Stage 1 feature integrity audit] 사전등록 method 도입 진입 (none + critical finding)
+- **사용자 명시**: 트랙 1 비선형 모델 사전등록 method 도입 + 피처 수 조정 재검수
+- **코덱스 사전 자문**: 조건부 GO + Phase 0 freeze 우선 (feature selection 자체보다 평가 protocol freeze 가 1순위) + 4 P0 (baseline ambiguity / evaluation redesign / cold-warm gate 분리 / feature integrity recheck)
+- **Phase 0 freeze 적용**:
+  * Baseline 확정: **`v3_filtered_tuned` 32 features** (현재 서빙, 트랙 2 와 별개) — 사용자 inventory 의 historical v3 37f ambiguity 해소
+  * 8항목 freeze (baseline / dataset / feature dictionary / primary metric / hard gates / stop rule / family cap / locked holdout 봉인 / decision-binding 분리)
+  * 트랙 2 → 트랙 1 governance 이식 (locked holdout / family prereg / stage-wise retain / cluster bootstrap / decision-binding 분리) + threshold 재설계 (α=0.01 99% CI = confirmatory holdout 만 / 운영 hard gate 추가: low + source slice + warm non-regression)
+- **Stage 1 (feature integrity audit) 핵심 finding (critical)**:
+  * 32 features 중 **9 features (28%) 학습-서빙 drift severe**
+  * 카테고리 A (7): is_unique / is_edition / has_depth / gallery_city_count / has_seoul / has_international / attribution_class — 서빙 시 hardcoded constant
+  * 카테고리 B (2): ho_price_level / medium_price_level — 서빙 시 placeholder 0.0
+  * 카테고리 C (이미 fix): work_age / career_age / vintage_premium / freshness_discount / gallery_name (Codex 4차 / 14차 P1 fix 이력)
+  * Stage 1 결과 = exploratory diagnostic only / 운영 spec 변경 단독 trigger X
+- **사용자 결정 영역**:
+  * Option A: Drift fix 우선 + baseline 재산출 (코덱스 권고)
+  * Option B: 평행 진행 (Stage 1B importance + stability)
+  * Option C: 분리 cycle (drift fix = 별도 prereg)
+- **분류**: **none (정상 흐름)** + **critical finding** (잔존 drift 위험 9 features, 별도 fix cycle 필요)
+- **운영 영향 X (현 시점)**: 운영 spec §1-§16 변경 X / v3_filtered_tuned 운영 그대로 유지 / 본 finding 의 fix = 별도 confirmatory cycle 후 production gate
+- **승인**: 사용자 검토 + 코덱스 사후 검수 (예정)
+
 ### 2026-05-07 — [Progressive sampling cycle 종결 + sub-report HTML] A 결정 / Axis B 우선 (none, 정상 흐름)
 - **사용자 결정**: A 옵션 (본 cycle 종결) + Axis B license-first 우선 진행 + Progressive Sampling test sub-HTML 외부 보고용 별도 정리
 - **본 cycle 종결 사유 (코덱스 사후 검수 종합)**: Stage 1 family-level retain 0건 / advancement evidence X / Stage 1 noise std 9.41% = decision-grade 승급 근거 부적합 / pruning 근거는 충분
