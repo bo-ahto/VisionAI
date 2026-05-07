@@ -101,6 +101,20 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Progressive sampling Phase 0 + Stage 1 Checkpoint 1] HARK-safe variant 진입 (none + minor)
+- **사용자 명시**: A 옵션 (progressive sampling) 메인 진입 + 체크포인트 + 코덱스 활용
+- **코덱스 사전 자문**: 조건부 GO — 3 조건 (Stage 3 transfer filter / holdout decision-binding / family cap·tie·stop rule)
+- **Phase 0 mini-prereg freeze** (`docs/progressive_sampling_phase0_freeze_20260507.md`): 6항목 (Primary KPI / Locked holdout split / 가설 family roster / Stage 별 pruning / 불변 pipeline / Decision-binding 분리)
+- **Locked holdout 봉인 완료**: 161 artists / 1,680 rows / SHA-16 hash `1933a0947a918fc9` / random_state=42 / stratify (depth × price × low_share) / Phase 4 final 1회만 access
+- **Stage 1 (stage1_200x20) 결과**:
+  * 5 family × 18 variants 평가 — 모든 variant retain 미달 (Overall Δ ≤ -0.3%p AND Low Δ ≤ +0.2%p)
+  * Sub-signal (decision-grade X — exploratory only): artist_popularity Low -3.33%p but Overall +0.68%p / artist_median_proxy Low -1.59%p but Overall +1.61%p — small sample noise / segment heterogeneity 가능
+  * 18 variants 중 17 Overall positive (small sample overfitting 일반 패턴)
+- **Checkpoint 1 결과**: 코덱스 stop rule trigger 가능성 (Stage 1 모든 family near-null + low non-harm 미달) — 단 Stage 1 200x20 sample noise (std 9.41%) caveat 적용 시 Stage 2 진입 가능
+- **분류**: **none (정상 흐름)** — Phase 0 freeze 적용 + 정상 cycle 진행 / **minor** (Stage 1 schema 차이로 일부 variant SKIP — depth_cm 부재)
+- **운영 영향 X**: 운영 spec §1-§16 변경 X / 분기 B calibration only 유지
+- **사용자 의사결정 영역**: A 본 cycle 종결 / B Stage 2 진입 / C HARK 위반 / D 코덱스 사후 검수 후 결정
+
 ### 2026-05-07 — [Sample size sensitivity descriptive analysis] 운영 baseline stability 관찰 (none, 정상 흐름)
 - **사용자 요청**: data/curated 의 200/500/1000 데이터 기준 모델 검증
 - **코덱스 사전 자문**: 조건부 GO — "baseline 검증" → "sample size + composition sensitivity descriptive analysis" framing 정정 / mini-freeze 6항목 (목적 / 데이터 / 모델 / split / metric / 해석 rule)
