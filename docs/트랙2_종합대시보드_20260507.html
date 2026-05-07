@@ -74,7 +74,7 @@
   <strong>Stage 5 (External Acquisition) 종료 (2026-05-07)</strong>: REJECT 사유 = <strong>준법적 자동화 접근 불가</strong>. 사전등록 §6.3 적용. <strong>5C prereg = 미개시 종료 (untested, 반증 X)</strong>.
 </div>
 <div class="warn-box">
-  <strong>Stage 6A (Segmented architecture) FAIL (2026-05-07)</strong>: Overall +5.23%p / 저가 +3.54%p (83/100 seeds 악화) → 사전등록 §3.3 hard gate 위반 즉시 FAIL. <strong>Router 품질은 OK</strong> (recall 0.87 / Brier 0.11) but segmentation 후 sample fragmentation + feature 동일 → 정보량 감소. <strong>핵심 메시지</strong>: routing deficiency 가 아닌 <strong>feature scarcity under current inputs</strong>. <strong>Architecture-only 트랙 종료</strong>. 후속 = 6B (shared-modeling) 또는 6C (new-information, pre-screen 후) 두 축만.
+  <strong>Stage 6A (Segmented) FAIL + Stage 6B (Partial pooling) FAIL (2026-05-07)</strong>: 6A overall +5.23%p / 6B overall -0.09%p but 둘 다 저가 hard gate 위반 (+3.54 / +1.29%p). 6B ICC 0.81 ✓ (partial pooling mechanism 작동) but cold-start LAO 무력화. <strong>Architecture-only 트랙 (6A + 6B) 모두 종료</strong>. <strong>4-cycle 일관성 확정</strong>: Stage 4 작업 3 / Stage 5 / Stage 6A / 6B 모두 <strong>feature shortage under current inputs</strong> 본질 입증. 후속 = <strong>6C (new-information, pre-screen 후)</strong> 또는 <strong>calibration only 운영 유지 (분기 B)</strong>.
 </div>
 
 <h2 id="sec2">2. 의사결정 현황</h2>
@@ -129,12 +129,12 @@
     <p>Router 품질 OK but 모델 sample 감소 → 약화</p>
     <p><span class="pill red">FAIL → 6B 우선</span></p>
   </div>
-  <div class="card gray">
-    <h4>Stage 6B (Partial pooling)</h4>
-    <p>Stage 3 ME 재사용 + low/high fixed effect</p>
-    <p>statsmodels MixedLM (registered follow-up)</p>
-    <p>기대 = variance reduction modest -0.5~-1.5%p</p>
-    <p><span class="pill gray">prereg freeze, 실험 대기</span></p>
+  <div class="card red">
+    <h4>Stage 6B (Partial pooling) FAIL</h4>
+    <p>Overall -0.09%p (사실상 동등)</p>
+    <p>저가 +1.29%p 악화 (🔴 hard gate 위반)</p>
+    <p>ICC 0.81 ✓ but cold-start 무력화 (Stage 3 ME 패턴)</p>
+    <p><span class="pill red">FAIL → architecture-only 트랙 종료</span></p>
   </div>
 </div>
 

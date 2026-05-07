@@ -25,8 +25,10 @@
 | Branch | 가설 | 상태 |
 |---|---|---|
 | ~~6A — Segmented architecture~~ | ~~Low-price 전용 모델 분리~~ | **FAIL** (`docs/stage6a_results_20260507.md`) |
-| **6B — Partial pooling (shared-modeling)** | **Feature shortage under fixed features** 인식 + partial pooling 으로 6A fragmentation harm 완화 (mechanism-targeted follow-up) | **prereg freeze 완료** (`docs/stage6b_partial_pooling_prereg_20260507.md`, 2026-05-07) — 실험 대기 |
-| **6C — 새 source 보강 (new-information)** | External source = 가격 anchor / market activity 통합 | 4항목 pre-screen 병행 준비 / 결정 = 6B 후 |
+| ~~6B — Partial pooling (shared-modeling)~~ | ~~Stage 3 ME 재사용 + sparse-warm/ICC mechanism~~ | **FAIL** (`docs/stage6b_results_20260507.md`) — ICC 0.81 ✓ but 저가 hard gate 위반 |
+| **6C — 새 source 보강 (new-information)** | External source = 가격 anchor / market activity 통합 | 4항목 pre-screen 통과 후 본실험. **Architecture-only 종료 후 유일 후보** |
+
+> **6A + 6B FAIL → Architecture-only 트랙 모두 종료**. 4-cycle 일관성 (Stage 4 작업 3 + Stage 5 + Stage 6A + Stage 6B) 으로 **feature shortage under current inputs** 본질 확정.
 
 ## 3. 6A (Segmented Architecture) — 1순위 prereg 초안
 

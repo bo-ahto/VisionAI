@@ -86,6 +86,20 @@
 - **승인**: 코덱스 자문 (단기 트랙 종결 검수)
 - **표준화 권고**: 향후 진단 트랙은 prereg 메모 (1페이지) 의무 + deviation log 동시 기록
 
+### 2026-05-07 — [Stage 6B 결과] Partial pooling FAIL + sparse-warm 측정 불가 (none / minor)
+- **사전등록 §3.3**: 🔴 Hard gate Δ_low ≤ 0%p
+- **실측 (100-seed LAO)**:
+  * Overall: baseline 38.05% → mixed 37.96% (-0.09%p, 사실상 동등)
+  * Low: +1.29%p 악화 (hard gate 위반)
+  * Mid/high: -1.04%p 개선
+  * ICC mechanism: 0.81 (CI [0.77, 0.84]) — partial pooling 작동 ✓
+- **결론**: Partial pooling FAIL (사전등록 §3.3 즉시). Architecture-only 트랙 (6A + 6B) 모두 종료.
+- **분류**: **none (정상 흐름)** + **minor (sparse-warm 측정 불가)**
+- **Sparse-warm deviation (사전등록 §2.8.1 #3)**: LAO 평가에서 test artists 정의상 train 에 0 작품 → "sparse-warm (train ≤ 5)" 자체 정의 모순. 100/100 seeds 측정 불가. **사후 인정**: prereg 시점 design 오류, 결과 본 후 변경 X = HARK 회피 정상 흐름. Time-split (warm threshold) 평가에서만 의미.
+- **4-cycle 일관성 확정**: Stage 4 작업 3 / Stage 5 / Stage 6A / Stage 6B 모두 feature shortage 본질 입증
+- **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
+- **승인**: 사용자 검토 + 코덱스 사후 자문 (예정)
+
 ### 2026-05-07 — [Stage 6B] Partial pooling prereg freeze (HARK 회피용 registered follow-up)
 - **Disclosure (코덱스 의무)**: 6B 가설 = 6A 결과 (FAIL) 관찰 후 형성. 새 탐색 X — Stage 3 ME 재사용 + low/high fixed effect 만 추가. Sample fragmentation 가설 검증용 mechanism-targeted follow-up.
 - **명시 배제**: 추가 segmentation / router / external feature / artist-segment interaction
