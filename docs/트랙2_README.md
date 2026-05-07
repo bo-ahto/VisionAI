@@ -27,7 +27,9 @@
 | **데이터 엔지니어** | `docs/데이터클렌징_단계계획_20260506.md` + `docs/stage4_확장검증계획_20260507.md` | Stage 1-3 plan / Stage 4 warm 확장 |
 | **방법론 / 의사결정** | `docs/트랙2_methodology_pipeline_20260507.md` | Phase 1 (curated) / **Phase 2 = Stage 5 (External Acquisition)** v4 / 사전등록 |
 | **Stage 5 prereg (acquisition)** | `docs/stage5a_acquisition_prereg_20260507.md` | External source feasibility + 5축 scorecard + acquisition protocol |
-| **Stage 5 prereg (modeling)** | `docs/stage5c_modeling_prereg_20260507.md` | Confirmatory modeling 사전등록 (baseline / Holm m=N / PASS 기준 fix) |
+| **Stage 5 prereg (modeling)** | `docs/stage5c_modeling_prereg_20260507.md` | Confirmatory modeling 사전등록 (5A REJECT 후 미개시 종료) |
+| **Stage 6A 결과 (FAIL)** | `docs/stage6a_segmented_prereg_20260507.md` + `docs/stage6a_results_20260507.md` | Segmented architecture FAIL (hard gate 저가 harm 위반) |
+| **Stage 6B prereg (Partial pooling)** | `docs/stage6b_partial_pooling_prereg_20260507.md` | Stage 3 ME 재사용 + low/high fixed effect (registered follow-up, freeze 2026-05-07) |
 | **외부 자문 검증** | `docs/stage3_exploratory_addendum_20260507.md` | Ridge 헤도닉 등 선형/통계 피처 검증 결과 (운영 유지) |
 | **가격 범위 (Quantile)** | `docs/stage3_quantile_cycle_20260507.md` | Linear Quantile q25/q50/q75 — **conditional accept (shadow 승인)** + **Hybrid 운영** (`value=Huber 점예측`, `band+q-tiles=M1 quantile shadow`); default 전환은 Phase 2 acceptance gate 후 |
 | **Cold rollout shadow (운영)** | `docs/cold_rollout_shadow_runbook_20260507.md` | Phase A 1주 shadow 일일 점검 체크리스트 + 트러블슈팅 + Stage 4 baseline 일치성 |

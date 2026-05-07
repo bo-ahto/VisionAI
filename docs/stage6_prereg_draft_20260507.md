@@ -25,7 +25,7 @@
 | Branch | 가설 | 상태 |
 |---|---|---|
 | ~~6A — Segmented architecture~~ | ~~Low-price 전용 모델 분리~~ | **FAIL** (`docs/stage6a_results_20260507.md`) |
-| **6B — Bayesian / hierarchical (shared-modeling)** | **Feature shortage under fixed features** 인식 + partial pooling + sparse artist + cold-warm 경계 | **다음 1순위** (코덱스) |
+| **6B — Partial pooling (shared-modeling)** | **Feature shortage under fixed features** 인식 + partial pooling 으로 6A fragmentation harm 완화 (mechanism-targeted follow-up) | **prereg freeze 완료** (`docs/stage6b_partial_pooling_prereg_20260507.md`, 2026-05-07) — 실험 대기 |
 | **6C — 새 source 보강 (new-information)** | External source = 가격 anchor / market activity 통합 | 4항목 pre-screen 병행 준비 / 결정 = 6B 후 |
 
 ## 3. 6A (Segmented Architecture) — 1순위 prereg 초안

@@ -86,6 +86,15 @@
 - **승인**: 코덱스 자문 (단기 트랙 종결 검수)
 - **표준화 권고**: 향후 진단 트랙은 prereg 메모 (1페이지) 의무 + deviation log 동시 기록
 
+### 2026-05-07 — [Stage 6B] Partial pooling prereg freeze (HARK 회피용 registered follow-up)
+- **Disclosure (코덱스 의무)**: 6B 가설 = 6A 결과 (FAIL) 관찰 후 형성. 새 탐색 X — Stage 3 ME 재사용 + low/high fixed effect 만 추가. Sample fragmentation 가설 검증용 mechanism-targeted follow-up.
+- **명시 배제**: 추가 segmentation / router / external feature / artist-segment interaction
+- **Primary threshold**: 6A 동일 유지 (Δ ≤ -1.0%p, low-price harm 0 hard gate) — 완화 X
+- **Secondary Holm m=5**: low / mid-high / sparse-warm / **ICC > 0** (mechanism) / existing-vs-new warm
+- **Implementation fallback**: statsmodels MixedLM 수렴 실패 시 optimizer 변경 → re_formula 단순화 → R lme4
+- **분류**: minor (정상 follow-up, HARK control 적용)
+- **승인**: 코덱스 사전 자문 + 본 prereg freeze (`docs/stage6b_partial_pooling_prereg_20260507.md`)
+
 ### 2026-05-07 — [Stage 6A] Segmented architecture FAIL — Hard gate 저가 harm 위반 (none, 정상 흐름)
 - **사전등록 §3.3**: 🔴 Hard gate 저가 harm = 0 violation. 1건이라도 발생 시 즉시 FAIL.
 - **실측 (100-seed LAO)**:
