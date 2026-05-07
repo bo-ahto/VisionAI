@@ -599,7 +599,9 @@ $ ops cli report.create --type rollback --model track2_v1
 - 비채택: Combined (FE + time weight + history avg) — cutoff 2024 효과 약화 + 저가 segment +3.36%p 악화
 - 비채택: Combined-shrunk (EB) — σ_b² > σ_w² 로 shrinkage 효과 미미 (Combined 와 거의 동일)
 - 비채택: + gallery_tier dummy / + log_area×log_works interaction / + 결합 — feature 재탐색 결과 cutoff 2023/2024 baseline 보다 악화 또는 동등, **증분 가치 없음**
+- 비채택: 외부 자문 (Ridge 헤도닉) 권고 — gallery/material out-of-fold target encoding / artist 통계 피처 (median/sales_count/dispersion) / Ridge / Huber+L2 모두 100-seed LAO 합격 기준 미달 (`docs/stage3_exploratory_addendum_20260507.md` §5)
 - Huber `eps` = **1.35 유지** (warm 전용 튜닝 결과 1.35 vs 1.5 차이 -0.14%p 수준 noise — 운영값 고정)
+- Huber `alpha` = **1e-4 유지** (alpha 1e-4 / 1e-2 / 1 / 10 sweep 모두 차이 ≤ 0.01%p — L2 추가 가치 없음 확정)
 
 ### 17.2 P3 검증 핵심 결과 (≤2023 train, ≥10 작품 warm 기준)
 
