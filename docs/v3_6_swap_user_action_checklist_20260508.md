@@ -12,7 +12,8 @@
 |---|---|
 | **LLM 영역 검증** | ✅ 완료 (DEV TEST PASS / Baseline 5 file 통과) |
 | **사용자 권한 영역** | ⏳ **시작점** (본 checklist) |
-| **현재 Blocker** | (1) Swap target artifact bundle (`v3_5_v_year_saatchi_warm`) 부재 / (2) runtime image `/app/models/` 적재 미완 |
+| **본 문서 standalone scope** | swap 절차 **reference standalone runbook** (사용자가 prerequisite 충족 후 따라할 reference) — 문서 작성 시점 (2026-05-08) 에는 swap 즉시 실행 가능 X |
+| **선결 prerequisite (§2)** | (1) Swap target artifact bundle (`v3_5_v_year_saatchi_warm`) 학습 + 적재 / (2) runtime image `/app/models/` 적재 (Dockerfile.api COPY 또는 PVC) / (3-6) 운영 환경 의존성 + DB schema + monitoring wiring + secrets |
 | **선행 의무** | §1 안전선 인지 → §2 prerequisite 충족 → §3 실행형 checklist → §4 reviewer signoff |
 
 ## 1. LLM 단독 금지 항목 (안전선)
@@ -57,7 +58,7 @@ LLM 가능 영역 (이미 종결):
 
 | File | 의무 |
 |---|---|
-| `integrated_v3_5_v_year_saatchi_warm_metrics.json` | reviewer 3 data/ML contract — server `/api/v1/model_info` 의 dynamic load source (없으면 fallback) |
+| `integrated_v3_5_v_year_saatchi_warm_metrics.json` | reviewer 3 data/ML contract — server `/api/v1/model/info` 의 dynamic load source (없으면 fallback) |
 | `integrated_v3_5_v_year_saatchi_warm.provenance.json` | canonical artifact manifest / git_dirty=false 보장 |
 
 **학습 source**:
@@ -332,7 +333,7 @@ done
 |---|---|---|
 | **Reviewer 1** | API / serving | `primary_server.py` / `primary_predictor.py` / Dockerfile.api / logging schema / cohort gating / batch endpoint / `/api/v1/monitor` payload |
 | **Reviewer 2** | Infra / deploy | Dockerfile.api COPY 대상 존재성 / 6 file artifact bundle naming (5 runtime + metrics.json) / `MODEL_DIR` PVC / K8s deployment env / rollback path / runbook 정합 |
-| **Reviewer 3** | Data / ML contract | `metrics.json` (P1 evidence — server `/api/v1/model_info` source) / `provenance.json` (`git_dirty=false`) / calibration cell 정확성 / warm artist set 일관성 / source bundle 정합 |
+| **Reviewer 3** | Data / ML contract | `metrics.json` (P1 evidence — server `/api/v1/model/info` source) / `provenance.json` (`git_dirty=false`) / calibration cell 정확성 / warm artist set 일관성 / source bundle 정합 |
 
 **Deploy contract signoff**: 3 reviewer 모두 signoff 후만 ROLLOUT 25% / FULL 100% 진행.
 
@@ -372,8 +373,8 @@ kubectl set env deployment/<service> \
   ROLLOUT_COHORT=control
 kubectl rollout restart deployment/<service>
 kubectl rollout status deployment/<service> --timeout=5m
-# 검증: kubectl exec <pod> -- curl localhost:8000/api/v1/monitor | jq '.model_info.variant'
-# 기대: "v3_filtered_tuned"
+# 검증: kubectl exec <pod> -- curl localhost:8000/api/v1/model/info | jq '.model_version'
+# 기대: "v3-filtered-tuned" 또는 baseline prefix 포함된 model_version 문자열
 ```
 
 **ECS (task definition + force redeploy)**:
@@ -385,7 +386,7 @@ aws ecs update-service \
   --cluster <cluster> --service <service> \
   --force-new-deployment
 aws ecs wait services-stable --cluster <cluster> --services <service>
-# 검증: curl https://<service-url>/api/v1/monitor | jq '.model_info.variant'
+# 검증: curl https://<service-url>/api/v1/model/info | jq '.model_version'
 ```
 
 **Docker Compose (ops cli or manual)**:
@@ -394,7 +395,7 @@ aws ecs wait services-stable --cluster <cluster> --services <service>
 # - MODEL_VARIANT=v3_filtered_tuned
 # - ROLLOUT_COHORT=control
 docker compose up -d --no-deps --force-recreate <service>
-# 검증: curl http://localhost:8000/api/v1/monitor | jq '.model_info.variant'
+# 검증: curl http://localhost:8000/api/v1/model/info | jq '.model_version'
 ```
 
 **운영팀 ops cli (canonical, 해당 시)**:
