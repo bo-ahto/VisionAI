@@ -37,15 +37,17 @@
                        │ Gate 1: Stage 4 leading candidate 검증 통과
                        ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Phase 2 — Artsy-only Full Confirmatory Replication      │
-│   data/artsy_kr_artworks.csv → cleansed 8,891 / 823 작가 │
-│   (Saatchi 제외 — year_made 100% 결측)                  │
+│ Phase 2 — External Feature Acquisition + Validation     │
+│   = Stage 5 (5A acquisition / 5B integration / 5C model) │
+│   (v4 재정의 — Artsy-only confirmatory 폐지)             │
 │                                                         │
-│   Confirmatory Run 1 — pre-registered replication       │
-│   Confirmatory Run 2 — sensitivity / OOD / drift        │
+│   Stage 5A: Source feasibility + acquisition prereg     │
+│   Stage 5B: Entity resolution + feature construction    │
+│   Stage 5C: Confirmatory modeling (별도 prereg)         │
+│   Stage 5D: Deployment / legal / monitoring             │
 │                                                         │
-│   ▶ Stage 4 합격 모델만 진입                            │
-│   ▶ Stage 4 vs Phase 2 차이 분석 protocol 강제           │
+│   ▶ 5A-5B prereg ↔ 5C prereg 분리 (HARK 회피)            │
+│   ▶ Stage 4 결과 (feature 부족 입증) 가 Stage 5 input    │
 └─────────────────────────────────────────────────────────┘
                        │
                        │ Gate 2: Full pass
@@ -79,42 +81,42 @@
 - 점추정 + CI 보고 시 항상 "exploratory, multiple comparisons unadjusted" caveat
 - 채택 결정 시 Phase 2 replication 필수
 
-## 3. Phase 2 — Artsy-only Full Confirmatory Replication
+## 3. Phase 2 — External Feature Acquisition + Validation (Stage 5)
 
-> **v3 정정 (2026-05-07)**: 기존 "Artsy + Saatchi 통합 28K" 가정은 inventory 검증으로 반박됨. Saatchi 는 `year_made` 100% 결측 + `birth_year` 9% 만 → F4 + time-split 불가 → **Phase 2 모집단에서 제외**. Phase 2 의 "full" = **Artsy cleansed only**.
+> **v4 재정의 (2026-05-07, Stage 4 결과 후)**: 기존 v3 의 "Artsy-only confirmatory" 도 폐지. Stage 4 가 사실상 Artsy 전체 모집단 활용 → 동일 데이터 반복 의미 없음. **Phase 2 = Stage 5 = External Feature Acquisition + Validation** (코덱스 권고).
+>
+> **v3 정정 기록 (2026-05-07)**: 기존 "Artsy + Saatchi 통합 28K" 가정은 inventory 검증으로 반박됨. Saatchi 는 `year_made` 100% 결측 + `birth_year` 9% 만 → F4 + time-split 불가 → Phase 2 모집단에서 제외.
 
-### 3.1 데이터 (`data/`)
-| 소스 | 원자료 | 정제 후 (실측) | Phase 2 활용 |
+### 3.1 데이터 (Stage 5)
+| Stage | 데이터 | 사전등록 | Phase 활용 |
 |---|---|---|---|
-| Artsy | `data/artsy_kr_artworks.csv` (30,046) | **8,891 / 823 작가** (cleansing 통과) | ✓ 단독 모집단 |
-| Saatchi | `data/saatchi_cleaned.parquet` (21,721) | year_made 0% / birth_year 9% | ✗ 제외 |
-| 통합 | — | (해당 없음) | — |
+| Stage 5A | External source candidate (auction / Artsy CV / 등) | `docs/stage5a_acquisition_prereg_20260507.md` | feasibility + acquisition |
+| Stage 5B | Matched dataset + feature dictionary | (5A 산출물) | entity resolution + feature construction |
+| Stage 5C | `data/curated/stage5_*.parquet` (Stage 4 + external 통합) | `docs/stage5c_modeling_prereg_20260507.md` | confirmatory modeling |
+| Stage 5D | Production validation | (5C PASS 후) | deployment / monitoring |
 
-> Stage 3 (1,378 / 100) 대비 Phase 2 = **6.5× / 8.2×**. "full" 의미는 **현재 가용 Artsy 모집단 100% 활용** (외부 source 추가 시 별도 Phase 3 cycle).
+> **Stage 4 (Artsy-only) 대비 Stage 5 의 가치**: feature 부족 본질 해결 (auction price anchor / provenance / market activity 등)
 
-### 3.2 Confirmatory Run 1 (pre-registered replication)
-- **Primary hypothesis**: Stage 4 leading candidate (baseline vs FE only 단일 비교)
-- **Pre-registered protocol**: 
-  - 가설 / metric / 임계 / 다중비교 보정 / sample split 모두 사전 고정
-  - Phase 1 합격 시점에 freeze (변경 X)
-- **Curated 와의 차이 분석 protocol** (필수 산출물):
+### 3.2 Stage 5C Confirmatory protocol (pre-registered)
+- **Primary hypothesis**: External-feature model MdAPE < baseline MdAPE (1-sided)
+- **Practical significance**: ≤ -2.0%p (baseline 24.07% → 22% 이내)
+- **Pre-registered protocol** (`docs/stage5c_modeling_prereg_20260507.md`):
+  - Baseline / metric / Holm family / PASS 기준 5A 결과 보기 전 freeze
+  - 5A-5B 결과 dictionary 확정 시 placeholder re-freeze (deviation log 의무)
+- **Curated (Stage 4) 와 차이 분석 protocol** (필수):
 
 | 차이 유형 | 평가 항목 | 도구 |
 |---|---|---|
-| **Data quality** | full 의 결측 / 중복 / 라벨 노이즈 비율 | counts + sample QA |
-| **Selection bias** | curated vs full 의 source / artist exposure / 가격 분포 차이 | PSI / KS |
-| **Population effect** | curated only / full only subgroup 성능 차이 | subgroup MdAPE |
+| **Data quality** | external source 의 결측 / 매칭 실패율 / outlier | entity resolution audit |
+| **Selection bias** | external cover artist vs Artsy-only artist 의 분포 차이 | PSI / KS |
+| **Population effect** | external 통합 군 vs Artsy-only 군 성능 차이 | subgroup MdAPE |
 
-### 3.3 Confirmatory Run 2 (sensitivity / OOD / drift)
-- 다른 cleansing rule sensitivity
-- OOD detection (curated 분포 밖 sample 의 성능 별도)
-- Time drift (sale_year 별 성능 추이)
-
-### 3.4 Confirmatory 합격 기준 (사전 고정)
-- Primary: baseline vs FE only **MdAPE 차이 ≤ -0.8%p (practical significance)**
-- Statistical: Holm 보정 후 95% CI 상한 ≤ 0
-- Segment harm: 어떤 주요 bucket (price tertile / source) 도 +1.0%p 초과 악화 금지
-- Curated vs full 차이 ≤ 5%p (큰 차이 시 root cause 분석 필수)
+### 3.3 Stage 5C 합격 기준 (사전 고정, `stage5c_modeling_prereg` §3)
+- Primary CI 상한 ≤ 0
+- Practical Δ ≤ -2.0%p (point estimate)
+- Seed std ≤ 0.5%p
+- Segment harm 0 violations
+- 신규 warm 작가 generalization 개선 또는 동등
 
 ## 4. Pre-registered Analysis Plan (Phase 1 Stage 4 부터 적용)
 

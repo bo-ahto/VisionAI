@@ -24,7 +24,9 @@
 | **모델 구현 담당** | `docs/트랙2_수식_프로세스_상세_20260506.html` | 11 섹션 + 수식 |
 | **운영 / 인프라** | `docs/트랙2_production_통합_spec_20260507.md` | 18 섹션 (§17 = warm-only path 후보, §18 = 참조 문서) |
 | **데이터 엔지니어** | `docs/데이터클렌징_단계계획_20260506.md` + `docs/stage4_확장검증계획_20260507.md` | Stage 1-3 plan / Stage 4 warm 확장 |
-| **방법론 / 의사결정** | `docs/트랙2_methodology_pipeline_20260507.md` | Phase 1 (curated) / Phase 2 (full) 골격 + 사전등록 |
+| **방법론 / 의사결정** | `docs/트랙2_methodology_pipeline_20260507.md` | Phase 1 (curated) / **Phase 2 = Stage 5 (External Acquisition)** v4 / 사전등록 |
+| **Stage 5 prereg (acquisition)** | `docs/stage5a_acquisition_prereg_20260507.md` | External source feasibility + 5축 scorecard + acquisition protocol |
+| **Stage 5 prereg (modeling)** | `docs/stage5c_modeling_prereg_20260507.md` | Confirmatory modeling 사전등록 (baseline / Holm m=N / PASS 기준 fix) |
 | **외부 자문 검증** | `docs/stage3_exploratory_addendum_20260507.md` | Ridge 헤도닉 등 선형/통계 피처 검증 결과 (운영 유지) |
 | **가격 범위 (Quantile)** | `docs/stage3_quantile_cycle_20260507.md` | Linear Quantile q25/q50/q75 — **conditional accept (shadow 승인)** + **Hybrid 운영** (`value=Huber 점예측`, `band+q-tiles=M1 quantile shadow`); default 전환은 Phase 2 acceptance gate 후 |
 | **Cold rollout shadow (운영)** | `docs/cold_rollout_shadow_runbook_20260507.md` | Phase A 1주 shadow 일일 점검 체크리스트 + 트러블슈팅 + Stage 4 baseline 일치성 |

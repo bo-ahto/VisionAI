@@ -86,7 +86,15 @@
 - **승인**: 코덱스 자문 (단기 트랙 종결 검수)
 - **표준화 권고**: 향후 진단 트랙은 prereg 메모 (1페이지) 의무 + deviation log 동시 기록
 
-## Phase 2 (폐지, 2026-05-07)
+## Phase 2 (재정의 v4, 2026-05-07)
 
-> Phase 2 (Artsy-only full confirmatory) 는 Stage 4 가 사실상 Artsy 전체 모집단 활용 → 동일 데이터 반복 분석 의미 없음. 코덱스 권고로 **폐지**.
-> 새 Phase 2 = Stage 5 (외부 source 보강 + OOD/drift/sensitivity confirmatory) 로 재정의 예정.
+### 2026-05-07 — [Phase 2] v3 (Artsy-only) 폐지 + v4 재정의 (Stage 5 = External Acquisition)
+- **v3 정의**: Phase 2 = Artsy-only full confirmatory (cleansed 8,891 / 823)
+- **v4 재정의**: Phase 2 = Stage 5 = External Feature Acquisition + Validation (5A acquisition / 5B integration / 5C modeling / 5D deployment)
+- **이유**: Stage 4 가 사실상 Artsy 전체 모집단 활용 → 동일 데이터 반복 의미 없음 (코덱스 권고)
+- **분류**: major (Phase 2 정의 변경 — 새 cycle 분리)
+- **신규 prereg**:
+  * `docs/stage5a_acquisition_prereg_20260507.md` (5A-5B feasibility + acquisition, HARK 회피용 사전등록)
+  * `docs/stage5c_modeling_prereg_20260507.md` (5C modeling, baseline/metric/Holm/PASS 사전 fix, 5A 결과 보기 전 freeze)
+- **HARK control**: 5A-5B prereg ↔ 5C prereg 분리 (코덱스 권고)
+- **Stage 4 결과 input**: Feature 부족 가설 3/3 시그니처 입증 → Stage 5 design 의 핵심 근거
