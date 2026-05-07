@@ -101,6 +101,26 @@
 - **운영 영향 X**: Spec §17 변경 X / 운영 모델 유지 / 분기 B 그대로 진행
 - **승인**: 사용자 검토 + 코덱스 사후 자문 (P0/P1/P2 검수 통과)
 
+### 2026-05-07 — [Track 1 Audit 4 결과 + 종합 HTML 보고서] FAIL trigger / 본 cycle 종결 (none, Phase 0 §4 정상 trigger)
+- **Audit 4 결과** (`scripts/audit4_drift_fix_eval.py`, `model_test_results/audit4_drift_fix_v1_metrics.json`):
+  * 32f vs 23f 3-split 정합 비교 (입체 필터 적용 / 운영 best params / GroupKFold 3 + KFold 3 + random_state=42)
+  * **Overall Ensemble: 40.20% → 40.90% (+0.70%p 악화)** — Phase 0 primary FAIL
+  * Overall CatBoost: 40.20% → 41.30% (+1.10%p)
+  * Overall XGBoost: 41.10% → 41.60% (+0.50%p)
+  * Artsy Ensemble: 35.40% → 35.30% (-0.10%p, ≈)
+  * **Saatchi Ensemble: 42.50% → 44.30% (+1.80%p)** — Hard gate 2 violation (source 비대칭)
+  * Warm slice XGBoost: 10.30% → 10.30% (+0.00%p, ≈) — Hard gate 3 OK
+- **Stop criteria (Phase 0 §4)**: **fail trigger** (Overall 비개선/악화 + Saatchi 비대칭) — 정상 trigger
+- **핵심 finding (코덱스 framing)**: drift features 9개 중 7 (severe) 가 학습 시 **실제 informative signal** (특히 Saatchi-specific) 입증. 서빙 시 hardcoded 0 = production 시 학습된 informative weight 무효화 → reported offline metric 이 production reality 보다 낙관적 가능성
+- **Drift fix 옵션 재평가**: A.1 (학습 측 제거) = OOF 손실 입증 / **A.2 (서빙 측 actual 추출 / API contract 확장) ROI ↑ 재산정** 권고 — 운영팀 영역 (LLM 외)
+- **본 cycle 종결 (코덱스 권고)**: Stage 1B 진입 X / 운영팀 후속 inquiry 영역 (A.2 path)
+- **종합 HTML 보고서** (`docs/트랙1_종합보고서_20260507.html`): 외부 보고용 1-2 page executive (10 sections — Phase 0 + Stage 1 + Amendment + Audit 4 + 사전등록 governance 가치)
+- **분류**: **none (정상 흐름)** — Phase 0 §4 stop trigger / governance-preserving close
+- **운영 영향 X**: 운영 spec §1-§16 변경 X / `v3_filtered_tuned` 32f 운영 그대로 유지 / Production-time gap 정량 = Stage 4 holdout / 서빙 log 비교 = 후속 cycle
+- **사전등록 governance 도입 가치 입증**: HARK 회피 (drift fix → OOF 개선 가설 사전 freeze 후 결과 반증, 정직 보고) / operational anchor baseline 확정 / train-serve gap 정량 시사 / 운영 영향 분리 / 코덱스 사전+사후 검수 cycle 정상 작동
+- **다음 단계**: 사용자 결정 (A 본 cycle 종결 권고 / B Stage 1B 보류 / C A.2 path 운영팀 inquiry / D 비추천)
+- **승인**: 사용자 검토 + 코덱스 사후 검수 (예정 — Audit 4 결과 + HTML 사후)
+
 ### 2026-05-07 — [Track 1 Option A drift fix amendment] 7 drift + 2 dead 재분류 / fix set freeze (none, Phase 0 stop rule 정상)
 - **사용자 결정**: Option A 진행 (코덱스 권고대로)
 - **코덱스 사전 자문**: 별도 mini-prereg 불필요 / **amendment memo (1 page) 필요** / Phase 0 §1.5 stop rule 정상 적용

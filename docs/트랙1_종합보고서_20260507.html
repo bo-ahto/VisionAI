@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>트랙 1 종합 보고서 — 비선형 모델 사전등록 method 도입 + drift fix audit (2026-05-07)</title>
+<style>
+body { font-family: -apple-system, sans-serif; max-width: 1200px; margin: 30px auto; padding: 20px; line-height: 1.65; color: #222; }
+h1 { border-bottom: 3px solid #333; padding-bottom: 10px; }
+h2 { background: #f4f4f4; padding: 8px 12px; border-left: 4px solid #2c5aa0; margin-top: 28px; }
+h3 { color: #2c5aa0; margin-top: 18px; font-size: 15px; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+.decision-box { background: #f4f8fc; border: 2px solid #2c5aa0; padding: 15px; margin: 15px 0; border-radius: 4px; }
+.gov-box { background: #f5f5f5; border-left: 4px solid #6c757d; padding: 10px 15px; margin: 10px 0; font-size: 13px; }
+.fail-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 4px; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.amber { background: #fff3cd; color: #856404; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.gray { background: #e2e3e5; color: #383d41; }
+code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+.delta-pos { color: #c00; font-weight: 600; }
+.delta-neg { color: #060; font-weight: 600; }
+.delta-zero { color: #666; }
+</style>
+</head>
+<body>
+
+<h1>트랙 1 종합 보고서 — 비선형 모델 사전등록 method 도입 + 첫 audit cycle 결과</h1>
+
+<p style="color: #666;"><strong>작성일</strong>: 2026-05-07 | <strong>대상</strong>: 외부 보고 (사전등록 method 도입 진행 + 결과) | <strong>본 cycle 위치</strong>: 트랙 1 (1차 시장 갤러리 가격 예측 운영 모델) 의 첫 사전등록 audit cycle</p>
+
+<h2 id="sec1">1. 핵심 의사결정</h2>
+
+<div class="decision-box">
+<p><strong>1. 본 cycle 결과 = exploratory diagnostic only.</strong> 운영 모델 (`v3_filtered_tuned` 32 features) 변경 없음. 운영 spec §1-§16 그대로 유지.</p>
+<p><strong>2. Drift fix path (Audit 4) FAIL.</strong> 23 features (drift fix 후) Overall MdAPE 가 baseline 32f 대비 +0.70%p 악화 (Ensemble) + Saatchi slice +1.80%p 비대칭 악화 (Hard gate 2 violation).</p>
+<p><strong>3. 핵심 발견</strong>: drift features 9개 중 7개 (severe drift) 가 학습 시 실제 informative signal 이었음 입증 — 서빙 시 hardcoded 0 으로 받는 = production model 의 학습된 informative weight 가 inference 시 무효화 (학습-서빙 gap 의 잠재 source).</p>
+<p><strong>4. 다음 단계</strong>: 본 cycle 종결 (코덱스 권고). 운영팀 inquiry (서빙 측 actual value 추출 가능성 / API contract 확장) 별도 영역. Stage 4 confirmatory holdout / 서빙 log 정량 비교 = 후속 cycle.</p>
+<p><strong>5. 사전등록 method 도입 자체는 성공</strong> — Phase 0 freeze + amendment memo + Audit 4 까지 코덱스 사전 + 사후 검수 통한 정직 평가 진행 / 결과 본 후 spec 변경 회피 (HARK-safe).</p>
+</div>
+
+<div class="info-box">
+<strong>본 cycle 의 사전등록 governance 가치</strong>: "drift fix 가 OOF metric 개선" 가설을 사전 freeze 후 평가 → 결과는 가설 반증 (악화). 사전등록 없이 결과 본 후 합리화하면 "23f 가 더 나쁨" 사실을 가릴 risk → 본 cycle 은 정직 보고 + 운영팀 후속 inquiry trigger 로 연결.
+</div>
+
+<h2 id="sec2">2. 진행 흐름 (사전등록 governance 적용)</h2>
+
+<table>
+<tr><th>단계</th><th>산출물</th><th>코덱스 검수</th></tr>
+<tr><td><strong>Phase 0 freeze</strong></td><td><code>docs/track1_phase0_freeze_20260507.md</code> — 8항목 mini-prereg (baseline / hard gates / locked holdout spec / family cap / decision-binding 분리)</td><td>조건부 GO + 4 P0 적용 (baseline 확정 / evaluation redesign / cold-warm gate 분리 / feature integrity recheck)</td></tr>
+<tr><td><strong>Stage 1 audit</strong></td><td><code>docs/track1_stage1_results_20260507.md</code> v3 — feature integrity audit / 9 features (28%) 학습-서빙 drift 발견</td><td>P0 1건 (수치 단일화) + P1 다수 (framing 톤) fix → Option A first 권고</td></tr>
+<tr><td><strong>Amendment memo</strong></td><td><code>docs/track1_amendment_drift_fix_20260507.md</code> — fix set freeze (7 drift + 2 dead 재분류, drift_fix_v1 23 features)</td><td>mini-prereg 불필요 / amendment memo 필요 / A.1 권고</td></tr>
+<tr><td><strong>Audit 4 OOF rerun</strong></td><td><code>docs/track1_audit4_results_20260507.md</code> — 32f vs 23f 3-split 정합 비교 / FAIL 결론</td><td>옵션 B (별도 script) / 운영 best params 그대로 / 3-split / audit4 prefix 적용</td></tr>
+</table>
+
+<h2 id="sec3">3. Stage 1 — Feature Integrity Audit (코드 inspection)</h2>
+
+<h3>3.1 위험 신호 분류 (32 features)</h3>
+
+<table>
+<tr><th>카테고리</th><th>개수</th><th>설명</th><th>Features</th></tr>
+<tr><td><strong>A. Severe train/serve drift</strong></td><td>7</td><td>학습 actual / 서빙 hardcoded constant</td><td><code>is_unique</code> / <code>is_edition</code> / <code>has_depth</code> / <code>gallery_city_count</code> / <code>has_seoul</code> / <code>has_international</code> / <code>attribution_class</code></td></tr>
+<tr><td><strong>B. Dead feature</strong></td><td>2</td><td>학습도 서빙도 모두 0</td><td><code>ho_price_level</code> / <code>medium_price_level</code></td></tr>
+<tr><td>C. 이미 fix 이력 (Codex 4차 / 14차)</td><td>5+</td><td>제거 완료</td><td><code>work_age</code> / <code>career_age</code> / <code>vintage_premium</code> / <code>freshness_discount</code> / <code>gallery_name</code></td></tr>
+<tr><td>D. No serving-side red flag found</td><td>23</td><td>코드 inspection 기준 위험 신호 없음</td><td><code>ho</code> / <code>area_cm2</code> / <code>aspect_ratio</code> / <code>career_stage</code> / <code>ln_followers</code> 등</td></tr>
+</table>
+
+<h3>3.2 학습 actual 분포 (코덱스 audit 1 직접 확인, 28,376 행)</h3>
+
+<table>
+<tr><th>Feature</th><th>학습 actual 분포</th><th>서빙 hardcode</th><th>Drift 평가</th></tr>
+<tr><td>is_unique</td><td>=1: 28,340 / =0: 36</td><td>1 always</td><td>severe</td></tr>
+<tr><td>is_edition</td><td>=1: 34</td><td>0 always</td><td>severe</td></tr>
+<tr><td><strong>has_depth</strong></td><td><strong>=1: 22,839 (81%)</strong></td><td>0 always</td><td><strong>매우 severe</strong></td></tr>
+<tr><td>gallery_city_count</td><td>=1: 25,953 / =2: 1,633 / =3: 564</td><td>1 always</td><td>severe</td></tr>
+<tr><td><strong>has_seoul</strong></td><td><strong>=1: 6,414 (23%)</strong></td><td>0 always</td><td><strong>매우 severe</strong></td></tr>
+<tr><td><strong>has_international</strong></td><td><strong>=1: 23,394 (82%)</strong></td><td>0 always</td><td><strong>매우 severe</strong></td></tr>
+<tr><td>attribution_class</td><td>'Unique': 28,340 / 'Limited edition': 34</td><td>"Unique" always</td><td>severe</td></tr>
+<tr><td>ho_price_level</td><td>모두 0.0 (28,376/28,376)</td><td>0.0 placeholder</td><td>dead (학습도 0)</td></tr>
+<tr><td>medium_price_level</td><td>모두 0.0 (28,376/28,376)</td><td>0.0 placeholder</td><td>dead (학습도 0)</td></tr>
+</table>
+
+<h2 id="sec4">4. Audit 4 — Drift Fix OOF Rerun (3-split 정합 비교)</h2>
+
+<h3>4.1 결과 표</h3>
+
+<div class="warn-box">
+<strong>비교 정합성 (코덱스 권고)</strong>: 두 variant 모두 동일 spec — 입체 필터 적용 (28,376 rows / 1,551 artists) / 운영 best params (`integrated_v3_filtered_tuned_best_params.json`) / GroupKFold 3-split / KFold 3-split / random_state=42. 운영 reported metric (38.7% Ensemble, 5-split 추정) 과 직접 비교 X.
+</div>
+
+<table>
+<tr><th>Metric</th><th>baseline 32f</th><th>drift_fix_v1 23f</th><th>Δ</th><th>판정</th></tr>
+<tr><td>Overall CatBoost (GroupKFold)</td><td>40.20%</td><td>41.30%</td><td class="delta-pos">+1.10%p</td><td>✗ FAIL</td></tr>
+<tr><td>Overall XGBoost (GroupKFold)</td><td>41.10%</td><td>41.60%</td><td class="delta-pos">+0.50%p</td><td>✗ FAIL</td></tr>
+<tr><td><strong>Overall Ensemble (GroupKFold)</strong></td><td><strong>40.20%</strong></td><td><strong>40.90%</strong></td><td class="delta-pos"><strong>+0.70%p</strong></td><td>✗ <strong>Primary FAIL</strong></td></tr>
+<tr><td>Artsy Ensemble (GroupKFold)</td><td>35.40%</td><td>35.30%</td><td class="delta-zero">-0.10%p</td><td>≈ 동등</td></tr>
+<tr><td><strong>Saatchi Ensemble (GroupKFold)</strong></td><td>42.50%</td><td><strong>44.30%</strong></td><td class="delta-pos"><strong>+1.80%p</strong></td><td>✗ <strong>Hard gate 2 violation</strong> (source 비대칭 악화)</td></tr>
+<tr><td>Warm slice XGBoost (KFold)</td><td>10.30%</td><td>10.30%</td><td class="delta-zero">+0.00%p</td><td>✓ Hard gate 3 OK (warm non-regression)</td></tr>
+</table>
+
+<h3>4.2 Stop criteria 적용 (Phase 0 §4)</h3>
+
+<table>
+<tr><th>Criteria</th><th>본 결과</th><th>결론</th></tr>
+<tr><td>pass: Overall 개선 + hard gate 무위반</td><td>✗ Overall +0.70%p 악화 + Saatchi +1.80%p</td><td>비충족</td></tr>
+<tr><td>soft fail: Overall 개선 but slice/warm 악화</td><td>✗ (Overall 도 악화)</td><td>비해당</td></tr>
+<tr><td><strong>fail: Overall 비개선/악화</strong></td><td><strong>✓ Overall +0.70%p / Saatchi +1.80%p</strong></td><td><strong>trigger</strong></td></tr>
+</table>
+
+<div class="fail-box">
+→ <strong>Audit 4 = FAIL</strong> (Overall 악화 + Saatchi slice 비대칭 악화). Phase 0 §4 stop rule 정확히 trigger.
+</div>
+
+<h2 id="sec5">5. 해석 (코덱스 framing 톤 — exploratory diagnostic)</h2>
+
+<h3>5.1 Drift features 의 실제 informative 정도 (가설 입증)</h3>
+<ul>
+<li>Stage 1 가설: "drift features 가 학습 시 informative 가능성"</li>
+<li>Audit 4 결과: 9 features 제거 시 Overall +0.70%p / Saatchi +1.80%p 악화 → drift features 가 학습 시 <strong>noise 가 아닌 실제 informative signal</strong></li>
+<li>특히 Saatchi 큰 악화 = <code>has_seoul</code> / <code>has_international</code> / <code>has_depth</code> 등이 Saatchi 분포에 strongly informative 추정 (별도 ablation 필요 — 본 cycle 비목표)</li>
+</ul>
+
+<h3>5.2 학습-서빙 gap 의 의미</h3>
+<ul>
+<li>학습 시 informative features 가 서빙 시 hardcoded 0 = <strong>production model 의 학습된 weight 가 inference 시 무효화</strong></li>
+<li>Reported offline metric (calibrated 38.3% cold) 이 production reality 보다 <strong>낙관적</strong>일 가능성 시사 (= production 시 더 나쁠 가능성)</li>
+<li>단 production reality gap 의 정량 측정 = Stage 4 confirmatory holdout + 서빙 log 비교 영역 (본 audit 비목표)</li>
+</ul>
+
+<h3>5.3 Drift fix 옵션 재평가 (Audit 4 결과 후)</h3>
+
+<table>
+<tr><th>옵션</th><th>의미</th><th>Audit 4 결과 영향</th></tr>
+<tr><td><strong>A.1</strong> (학습 측 제거)</td><td>9 features 제거 후 재학습</td><td>Overall +0.70%p / Saatchi +1.80%p 악화 입증 — <strong>OOF metric 손실</strong></td></tr>
+<tr><td><strong>A.2</strong> (서빙 측 actual 추출)</td><td>request contract 확장 / 서빙 측 actual value 입력</td><td>Audit 4 미측정 — <strong>운영팀 영역 (LLM 외) / 우선순위 ↑ 재평가</strong></td></tr>
+<tr><td>A.3 (현 상태 유지)</td><td>drift 인지 + production-time monitoring</td><td>OOF metric 유지 but production 시 잠재적 gap 인지</td></tr>
+</table>
+
+<div class="info-box">
+<strong>코덱스 권고</strong>: 사전 자문 시 A.1 권고 / Audit 4 결과 후 <strong>A.2 path 의 ROI 재산정</strong> 필요 (운영팀 inquiry 영역). drift features 의 informative 정도 입증 → request contract 확장 가능성 평가가 다음 의사결정 영역.
+</div>
+
+<h2 id="sec6">6. Honesty Caveats (코덱스 P1)</h2>
+
+<ul>
+<li><strong>OOF metric 손실 ≠ production reality 더 나쁨 입증</strong>: drift features 가 학습 시 informative 였다는 사실만 본 audit 으로 직접 입증. Production-time actual gap = Stage 4 holdout + 서빙 log 비교 후만 정량 가능</li>
+<li><strong>본 audit 단독 = 운영 spec 변경 trigger X</strong>: Phase 0 §1.8 decision-binding 분리 그대로</li>
+<li><strong>Saatchi 큰 악화 (+1.80%p) 의 attribution 미수행</strong>: 9 features 중 어느 것이 main driver 인지 별도 ablation 필요 (본 cycle 비목표)</li>
+<li><strong>3-split caveat</strong>: 본 audit 의 baseline 32f 3-split 결과 (40.20%) ≠ 운영 metrics.json 의 38.7% Ensemble (split 수 미상). 본 audit = 두 variant 정합 비교 only / 운영 reported metric 직접 비교 부적합</li>
+<li><strong>코드 inspection 기반 audit 한계</strong>: Stage 1 의 "no serving-side red flag found" (23 features) 단정 X — 학습-서빙 actual distribution 비교 별도 audit 영역</li>
+</ul>
+
+<h2 id="sec7">7. 다음 단계 (사용자 결정 영역)</h2>
+
+<table>
+<tr><th>옵션</th><th>본질</th><th>코덱스 권고</th></tr>
+<tr><td><strong>A. 본 cycle 종결</strong> (Phase 0 §4 fail trigger)</td><td>drift fix path 의 OOF 손실 입증 / Stage 1B 진입 X / 운영팀 후속 inquiry 영역</td><td><strong>권고</strong> (코덱스 stop criteria 정상 trigger)</td></tr>
+<tr><td>B. Stage 1B (importance + stability) 진입</td><td>drift_fix_v1 23f baseline 기준 importance / stability 평가 / 새 hypothesis family 발굴</td><td>보류 (drift fix path 자체가 OOF 손실)</td></tr>
+<tr><td><strong>C. A.2 path 진입 (운영팀 inquiry)</strong></td><td>request contract 확장 가능성 평가 / 9 drift features 의 서빙 측 actual 추출</td><td><strong>병행 권고</strong> (LLM 외 영역, 운영팀 / API 변경 의사결정)</td></tr>
+<tr><td>D. 별도 axis 진입 (HP tuning / ensemble redesign)</td><td>Phase 0 §1.8 권고 순서 (feature subset 안정 후) — 본 결과 = feature subset 미안정</td><td>비추천 (현 시점)</td></tr>
+</table>
+
+<h2 id="sec8">8. 사전등록 governance 도입의 가치 (본 cycle 의 의의)</h2>
+
+<div class="info-box">
+사용자 명시 요청 ("트랙 1 도 제대로된 실험 방법론 도입") 의 첫 cycle. 결과 자체는 <strong>FAIL</strong> 이지만 사전등록 method 도입 자체의 가치:
+<ul>
+<li><strong>HARK 회피 입증</strong>: drift fix → OOF 개선 가설을 사전 freeze 후 평가 → 결과 반증 (악화). 사전등록 없이 결과 본 후 합리화 시 "23f 가 더 나쁨" 사실 가릴 risk → 본 cycle 은 정직 보고 + 후속 운영 inquiry 로 연결</li>
+<li><strong>Operational anchor baseline 확정</strong>: historical 37f vs 현재 서빙 32f ambiguity 해소 (코덱스 P0)</li>
+<li><strong>Train-serve gap 의 정량적 시사</strong>: 9 features (28%) drift / 7 severe + 2 dead 재분류 / Saatchi-specific informative 가설 입증 — 단순 코드 inspection 보다 구체적 evidence</li>
+<li><strong>운영 영향 분리</strong>: decision-binding ≠ exploratory 분리 / 본 결과 = production trigger X 명시 / Stage 4 confirmatory holdout 후만 운영 변경</li>
+<li><strong>코덱스 사전 + 사후 검수 cycle 정상 작동</strong>: P0×17 + P1×80 + P2×40 누적 (트랙 2 + 트랙 1 합산) — 외부 governance signal</li>
+</ul>
+</div>
+
+<h2 id="sec9">9. 누적 코덱스 검수 통계</h2>
+
+<table>
+<tr><th>Cycle</th><th>P0</th><th>P1</th><th>P2</th><th>판정</th></tr>
+<tr><td>Track 1 사전 자문</td><td>4</td><td>3</td><td>2</td><td>조건부 GO + Phase 0 freeze 우선</td></tr>
+<tr><td>Stage 1 사후 검수</td><td>1</td><td>5</td><td>2</td><td>Option A first</td></tr>
+<tr><td>Option A drift fix 사전 자문</td><td>4</td><td>3</td><td>3</td><td>amendment memo / A.1 / 7 drift + 2 dead 재분류</td></tr>
+<tr><td>Audit 4 사전 자문</td><td>3</td><td>3</td><td>3</td><td>옵션 B / 운영 best params / 3-split</td></tr>
+<tr><td><strong>Audit 4 결과 검수 (예정)</strong></td><td>—</td><td>—</td><td>—</td><td>FAIL trigger 정당성 + Source 비대칭 해석 + A.2 path 재평가</td></tr>
+<tr><td><strong>Track 1 누적</strong></td><td><strong>12</strong></td><td><strong>14</strong></td><td><strong>10</strong></td><td>(트랙 2 누적 P0×17 + P1×80 + P2×40 별도)</td></tr>
+</table>
+
+<h2 id="sec10">10. 참조 문서</h2>
+
+<table>
+<tr><th>문서</th><th>역할</th></tr>
+<tr><td><code>docs/track1_phase0_freeze_20260507.md</code></td><td>Phase 0 mini-prereg freeze (8항목)</td></tr>
+<tr><td><code>docs/track1_stage1_results_20260507.md</code></td><td>Stage 1 feature integrity audit (코드 inspection)</td></tr>
+<tr><td><code>docs/track1_amendment_drift_fix_20260507.md</code></td><td>Drift fix amendment memo (fix set freeze)</td></tr>
+<tr><td><code>docs/track1_audit4_results_20260507.md</code></td><td>Audit 4 OOF rerun results (32f vs 23f)</td></tr>
+<tr><td><code>scripts/audit4_drift_fix_eval.py</code></td><td>Audit 4 evaluation script</td></tr>
+<tr><td><code>model_test_results/audit4_drift_fix_v1_metrics.json</code></td><td>Audit 4 raw metrics</td></tr>
+<tr><td><code>model_test_results/audit4_drift_fix_v1_oof_groupkfold.parquet</code></td><td>Audit 4 OOF dump (calibration 재현용)</td></tr>
+<tr><td><code>src/visionai/price_engine/api/primary_feature_builder.py:228-272</code></td><td>운영 build_features 함수 (drift hardcode 출처)</td></tr>
+<tr><td><code>docs/methodology_deviation_log.md</code></td><td>HARK 회피 / 사전등록 vs 실제 차이 누적</td></tr>
+</table>
+
+<hr>
+
+<p style="text-align: center; color: #888; font-size: 11px;">
+트랙 1 종합 보고서 — 2026-05-07 / 사전등록 method 첫 cycle 완료 / governance-preserving stop /
+운영 변경 없음 / 후속 = 운영팀 inquiry (A.2 path) 영역
+</p>
+
+</body>
+</html>
