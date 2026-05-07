@@ -61,7 +61,7 @@
 
 | Step | Feature family | 가설 | 비용 | 결과별 다음 행동 |
 |---|---|---|---|---|
-| **A.1** | A1 (Cheap categorical 5종) | 갤러리 / 작품 분류 신호 추가로 저가 식별력 보강? | 1주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.2 진입 |
+| **A.1** | A1 (Cheap categorical 5종 — `medium_type` 제거 후 **4종 final**, freeze 본은 `docs/feature_track_axis_a1_prereg_20260507.md`) | 갤러리 / 작품 분류 신호 추가로 저가 식별력 보강? | 1주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.2 진입 |
 | A.2 | A2 (Artist popularity 4종, 시점 정합성 검증 후) | 인기도 / P1 / 가용성 신호 추가? | 1주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.3 진입 |
 | A.3 | A3 (Geometry — aspect ratio + 2D vs 3D) | 작품 모양 신호 추가? | 0.5주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.4 진입 (heavy escalation) |
 | A.4 | A4 (Title text embedding, multilingual BERT) | 제목 의미 신호 추가? | 2-3주 | PASS → 운영 채택 / FAIL or BORDERLINE → A.5 진입 |

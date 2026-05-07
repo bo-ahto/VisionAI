@@ -42,19 +42,29 @@
 
 > **medium_type 제거 사유 (minor deviation, 사전 freeze)**: design draft §3.1 의 5종 중 `medium_type` 은 `category` 와 분류 체계 거의 동일 (top 6 = Painting / Sculpture / Photography 등 동일) → redundancy. **`category` 만 채택** (0% missing, parsimonious spec). Deviation log entry 의무.
 
-#### (b) Encoding — leakage-safe specification
-- **One-hot (drop_first)**: `category` (14 → 13 columns) / `attribution_class` (4 → 3 columns)
-- **`gallery_name` target encoding (코덱스 P2 — leakage-safe)**:
-  - Method: **5-fold out-of-fold (OOF) cross-fitting** on `log_price` residual
-  - Train fold: 4-fold mean log_price per gallery / Predict fold: held-out fold
-  - Test (LAO held-out artists): full train mean per gallery / unseen gallery → train overall mean
-  - Smoothing: bayesian smoothing α=10 (gallery 의 sample 수 < 10 시 train 평균으로 shrinkage)
-  - 구현: `category_encoders.TargetEncoder` (cv=5) 또는 custom OOF
-- **`gallery_cities` multi-hot dummy**:
-  - Parse: comma-separated split → set of cities
-  - Top-5 cities: Seoul / Busan / Pohang / Daegu / Incheon (실제 inventory top-5 — train 시점 결정, freeze)
-  - Encoding: 5 boolean columns (`in_seoul` / `in_busan` / ... / `in_incheon`) — multi-hot (한 row 가 여러 city 에 속할 수 있음)
-  - "other" bucket: 5 city 외 city 만 보유 시 모든 column 0 (별도 indicator X)
+#### (b) Encoding — leakage-safe specification (코덱스 P0 — 모든 spec 한 줄씩 freeze)
+
+- **One-hot (drop_first)**:
+  - `category` (14 → 13 columns) — drop `Painting` (가장 빈도 높음, 5,900 rows)
+  - `attribution_class` (4 → 3 columns) — drop `Unique` (가장 빈도 높음, 7,659 rows)
+- **`gallery_name` target encoding (코덱스 P0 — spec freeze)**:
+  - **Target**: `log_price` (raw, residual 아님 — Stage 3/6B 의 baseline 과 동일 target space)
+  - **Smoothing formula**: `enc[g] = (n_g · mean_g + α · global_mean) / (n_g + α)` where **α = 10**, `global_mean = mean(log_price)` over train fold
+  - **Fold assignment unit**: **row-level** (artist-cluster X — gallery 가 artist 와 부분 correlated 하나 row OOF 가 standard sklearn `KFold` spec)
+  - **Fold seed**: `random_state=42` (`KFold(n_splits=5, shuffle=True, random_state=42)`)
+  - **OOF spec**: 각 row 의 encoding = 본 row 가 속하지 않은 4-fold 의 smoothing-adjusted gallery mean
+  - **Test (LAO held-out artists)**: full train 5-fold OOF 학습 후 → 전체 train 의 smoothing-adjusted gallery encoding 적용 / unseen gallery → `global_mean` 사용 (train overall mean)
+  - **구현**: `category_encoders.TargetEncoder(smoothing=10, cv=5, handle_unknown='value')` 또는 custom OOF (canonical = category_encoders, version pin 의무)
+
+- **`gallery_cities` multi-hot dummy (코덱스 P1 — parsing detail freeze)**:
+  - **Parse**:
+    1. split on `,` → list of strings
+    2. `.strip()` (whitespace 제거)
+    3. `.casefold()` (case normalize, 예: `SEOUL` → `seoul`)
+    4. `set()` (중복 제거 — `"Seoul, Seoul"` 같은 케이스 dedup)
+  - **Top-5 cities (freeze)**: Seoul / Busan / Pohang / Daegu / Incheon — **train data 전체 (`stage4_full.parquet`) 의 multi-city set frequency 기준 top-5** (train 시점 결정, LAO seed-별 재산정 X — freeze)
+  - **Encoding**: 5 boolean columns (`in_seoul` / `in_busan` / `in_pohang` / `in_daegu` / `in_incheon`) — multi-hot (한 row 가 여러 city 에 속할 수 있음, 예: `"Seoul, Busan"` → `in_seoul=1, in_busan=1`)
+  - **Missing + "other" 의도적 collapse**: `gallery_cities` missing (1.8%) 또는 top-5 외 city 만 보유 시 → **모든 5 boolean column = 0** (지원 sparse). Missing 자체 indicator X (의도적 — sparsity 활용 / collapse 자체가 design choice)
 
 #### (c) Preprocessing
 - Missing imputation:
@@ -74,10 +84,12 @@
 - **BORDERLINE**: -1.0 < Δ ≤ -0.3%p AND Hard gate ✓ → A.2 escalation
 - **FAIL**: Δ > -0.3%p OR Hard gate 위반 → A.2 escalation (B안)
 
-#### (f) 다음 step (alternative hypothesis sequence)
+#### (f) 다음 step (alternative hypothesis sequence, 코덱스 P0 — multiple comparisons 정합성)
 - A.1 FAIL/BORDERLINE 시 → **A.2 (artist popularity 4종, 시점 정합성 검증 후) 로 escalation**
-- **A.2 prereg 에서 A.1 features 전부 drop** (alternative hypothesis sequence — 누적 family X)
+- **A.2 prereg 에서 A.1 features 전부 drop** (model spec = **비누적 feature set** / 각 step 은 독립 model 비교)
 - A.2 의 baseline = 운영 모델 F4 (A.1 features 미사용)
+- **Inferential family = program-level cumulative (코덱스 P0)**: model spec 은 비누적이지만 "Axis A 5 step 중 어느 한 step PASS 시 채택 후보" 라는 program-level 주장이 누적 → multiple comparisons family 도 누적 → step α=0.01 (Bonferroni 5 step, FWER ≤ 0.05) 으로 통제 (§2.10 동일).
+- 즉 **feature set 비누적 / inferential family program-level cumulative** 이 본 cycle 의 정합 문구.
 
 ### 2.2 Primary Model
 
@@ -92,7 +104,7 @@ log_price_i = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_arti
 ```
 
 - Estimator: `sklearn.linear_model.HuberRegressor(epsilon=1.35, alpha=1e-4)` (운영 모델 동일 hyperparameters)
-- Loss: Huber (운영 spec §17 동일)
+- Loss: Huber (운영 spec §1-§16 cold rollout default 와 동일 — §17 warm-only path 와 분리, 코덱스 P0 인용 정정)
 
 ### 2.3 Implementation
 - 환경 pin: Stage 6B prereg 와 동일 (Python 3.14 / scikit-learn / category_encoders / numpy / pandas — 실험 시작 시 version 명시)
@@ -111,16 +123,18 @@ log_price_i = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_arti
 - Baseline = `track2_v1_20260507` (F4 + spline + Huber, 운영 채택 모델)
 - 비교 단위: cold-start LAO 100-seed MdAPE (Stage 3 / 4 / 6A / 6B 동일 split 방식)
 
-### 2.6 Primary Hypothesis (단일, unadjusted)
+### 2.6 Primary Hypothesis (단일, step-internal unadjusted, 코덱스 P1 — 분리 명시)
 - H₀: A.1 모델 overall MdAPE ≥ baseline (Stage 3 100-seed mean = 38.05%)
 - H₁: A.1 모델 overall MdAPE < baseline AND 저가 harm 없음
+- **"unadjusted" 분리 의미**: 본 §2.6 의 "unadjusted" = **step-internal** (A.1 단일 가설 단일 metric 기준, secondary Holm m=3 보정 전). **Program-level cumulative** family (5 step) 의 Bonferroni α=0.01 통제는 §2.10 동일 적용.
 
 ### 2.7 Practical Significance
-- Δ ≤ -1.0%p (운영 채택 임계, 운영 spec §17 동일)
+- Δ ≤ -1.0%p (운영 채택 임계 — Stage 3/6A/6B 동일 cold rollout default 임계, 코덱스 P0 인용 정정)
 - Cluster bootstrap 95% CI 상한 ≤ 0 (n=2000 cluster bootstrap on rep seed=0)
 
 ### 2.8 🔴 Hard Gate
-- Δ_low ≤ 0%p (점추정 기준, 운영 spec §17 저가 segment harm 절대 금지 동일)
+- Δ_low ≤ 0%p (점추정 기준 — 6A/6B prereg 동일 hard gate 정의)
+- 운영 spec §3 의 `guardrail_low_price` (예측가 < 5,000,000 KRW) 와 정합 / 6A/6B 의 cold rollout hard gate 이력과 동일 (코덱스 P0 인용 정정 — §17 warm-only 와 분리)
 - 위반 시 즉시 FAIL — primary 결과 무관
 
 ### 2.9 LAO Secondary Family (Holm m=3, supportive)
@@ -170,7 +184,7 @@ log_price_i = β0 + β1·log_area_i + β2·birth_year_centered_i + β3·log_arti
 | `gallery_name` target encoding leakage (artist holdout 이지 gallery holdout X) | 5-fold OOF cross-fitting + bayesian smoothing α=10 / unseen gallery → train 평균 / artist holdout 시 gallery 는 일부 train 에 등장 가능 (정상 — gallery holdout 은 본 cycle 비목표) |
 | Multicollinearity (`category` × `gallery_name`) | Huber regression 의 자동 handling / Variance Inflation Factor 사후 보고 (informative, 결정 영향 X) |
 | Step α=0.01 의 power 손실 | 정직 보고 — power 자체보다 effect stability 우선 (코덱스 Stage 4 권고) |
-| A.1 PASS but 운영 spec §17 변경 부담 | shadow 평가 후 단계적 운영 적용 (분기 B 와 분리) |
+| A.1 PASS but 운영 spec 변경 부담 (cold rollout default §1-§16) | offline PASS → Phase 3 cold shadow gate (운영 spec §4.0 calibration shadow 와 동일 KPI 형식 — low MdAPE 개선 ≥ -1.0%p / overall 악화 ≤ +0.5%p / segment harm 0 violations) → canary → 단계적 운영 적용 (분기 B calibration only 와 분리) |
 
 ## 5. Step Gate (B안 확정)
 
@@ -211,7 +225,8 @@ Axis A 전체 종료 → Axis B (Phase A pre-screen 통과 시) 또는 program-l
 |---|---|
 | Stage 6B 결과 최종 검수 (2026-05-07) | architecture-only close → feature track |
 | Feature track design draft 검수 (2026-05-07) | P0×2 / P1×6 / P2×1 — 본 prereg 에 모두 반영 |
-| **A.1 prereg freeze 검수 (예정)** | per-step freeze 6항목 / leakage-safe target encoding / α 분배 정당성 |
+| **A.1 prereg freeze 검수 1차 (2026-05-07)** | **HOLD** — P0 ×3 (multiple comparisons family / target encoding spec freeze / 운영 spec §17 인용 잘못) + P1 ×4 + P2 ×1 |
+| **A.1 prereg freeze 검수 — fix 후 GO 예정** | P0 3건 본 commit 일괄 반영 → 구현 진입 가능 |
 
 ## 8. 참조
 
