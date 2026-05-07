@@ -108,9 +108,56 @@
 - **Closeout 코덱스 사후 검수**: P0×0 + P1×0 + P2×1 (Owner 필드 hygiene) → GO
 - **승인**: 사용자 검토 + 코덱스 closeout 사전 자문 (P0×3 + P1×2) + 사후 검수 GO
 
+## Progressive sampling + Sample size sensitivity (2026-05-07)
+
+> 트랙 2 의 실험 방법론 검증 cycle (HARK-safe variant + descriptive baseline stability).
+> 운영 영향 X / framing + record 정리 성격 (코덱스 권고 deviation log follow-up PR-A 영역).
+
+### 2026-05-07 — [Progressive sampling cycle 종결 + sub-report HTML] A 결정 / Axis B 우선 (none, 정상 흐름)
+- **사용자 결정**: A 옵션 (본 cycle 종결) + Axis B license-first 우선 진행 + Progressive Sampling test sub-HTML 외부 보고용 별도 정리
+- **본 cycle 종결 사유 (코덱스 사후 검수 종합)**: Stage 1 family-level retain 0건 / advancement evidence X / Stage 1 noise std 9.41% = decision-grade 승급 근거 부적합 / pruning 근거는 충분
+- **Phase 0 holdout 봉인 유지**: cancel X — `data/curated/progressive_sampling_locked_holdout_v1.parquet` (SHA-16 1933a0947a918fc9) governance-preserving stop / future preregistered cycle 또는 Axis B 결과 후 재사용 가능
+- **Sub-report HTML** (`docs/progressive_sampling_subreport_20260507.html`): 코덱스 사전 자문 (8 sections + measured tone) 적용. 외부 보고용 (1-2 page executive). FAIL framing 회피 / "exploratory cycle concluded under stopping logic" / Axis B 우선 동일 decision logic 으로 framing
+- **분류**: **none (정상 흐름)** — Phase 0 stop logic 정상 trigger / governance-preserving close
+- **운영 영향 X**: 운영 spec 변경 X / 본 cycle = exploratory only
+
+### 2026-05-07 — [Progressive sampling Checkpoint 1 v2] 코덱스 사후 검수 P1×4 + P2×3 적용 → Stage 2 HOLD / 종결 권고 (minor)
+- **Checkpoint 1 v2 변경 사항** (`docs/progressive_sampling_checkpoint1_20260507.md`):
+  * 코덱스 P1×4 fix: Stage 1 advancement criterion 명확화 / framing 톤 다운 / coding rule deviation 명시 / decision matrix table 보강
+  * P2×3 fix: language consistency / sub-section header / footer reference
+- **Stage 2 진입 결정**: HOLD (코덱스 권고)
+  * Stage 1 family-level retain 0건 (5 family 중 0건 confirmatory PASS)
+  * Noise std 9.41% — decision-grade 승급 근거 부적합 (coverage 의 statistical significance 부족)
+  * Pruning 근거는 충분 (5 family 중 cheap 4종 + complex 1 모두 advancement evidence X)
+- **분류**: minor (사후 정정)
+- **운영 영향 X**: exploratory only
+- **승인**: 사용자 검토 + 코덱스 사후 검수 P1×4 + P2×3 통과
+
+### 2026-05-07 — [Progressive sampling Phase 0 + Stage 1 Checkpoint 1] HARK-safe variant 진입 (none + minor)
+- **사용자 명시**: 200/500/1000 sample 점진 확장 방식 — pre-registration governance 적용
+- **Phase 0 freeze** (`docs/progressive_sampling_phase0_freeze_20260507.md`):
+  * Locked holdout 봉인: SHA-16 1933a0947a918fc9 / 200 sample / artist-cluster GroupKFold
+  * Stage 1 advancement criterion: family-level retain (cluster bootstrap 99% CI Δ ≤ 0)
+  * Stage stop rule: family-level retain 0건 시 Stage 2 HOLD
+- **Stage 1 Checkpoint 1 결과**: 5 family (cheap 4 + complex 1) 모두 advancement evidence X
+  * Cheap 4: P0=0 / P1×6 + P2×4 (코덱스 사후 검수 사후 정정)
+  * Complex 1: 동일 advancement evidence X
+  * Phase 0 stop trigger 정상 작동
+- **분류**: **none (정상 흐름)** + minor (사후 정정 P1+P2)
+- **운영 영향 X**
+
+### 2026-05-07 — [Sample size sensitivity descriptive analysis] 운영 baseline stability 관찰 (none, 정상 흐름)
+- **사용자 명시**: `data/curated` 200/500/1000 sample baseline 비교 — 트랙 2 Stage 1 advancement 의 sample size dependence 점검
+- **Descriptive analysis** (`docs/sample_size_sensitivity_results_20260507.md`):
+  * 200 sample: noise std 9.41% / advancement margin 평균 -2.1%
+  * 500 sample: noise std 7.8% / advancement margin 평균 -1.4%
+  * 1000 sample: noise std 5.6% / advancement margin 평균 -0.9%
+  * → noise std 의 sample size dependence 관찰 / advancement margin 의 안정성 200 sample 시 부족
+- **Phase 0 design implication**: Progressive sampling 의 200 sample base = noise std 큰 영역 → advancement criterion 의 statistical power 부족 가능성 시사
+- **분류**: **none (정상 흐름)** — descriptive analysis only / decision-binding X
+- **운영 영향 X**
+
 ## 후속 PR 에서 append 예정 entries
 
-> 본 PR (Track 1 closeout) 의 scope 외 entries 는 후속 PR 에서 append:
-> - **Track 2 core PR**: Phase 1 → Phase 2 전이 (Stage 4 v3 / Stage 6A / Stage 6B / Architecture close)
-> - **Track 2 extensions PR**: Feature Track Axis A.1-A.5 / Sample size sensitivity / Progressive sampling
-> - **Axis B docs PR**: Phase A pre-screen Round 1 / Round 2 / Round 2B / Round 3
+> 본 PR (PR-A: Progressive + Sample size) 의 scope 외 entries 는 후속 PR 에서 append:
+> - **PR-B (Track 2 + Axis B)**: Phase 1 → Phase 2 전이 (Stage 4 v3 / Stage 6A / Stage 6B / Architecture close) + Stage 5 acquisition cycle + Feature Track Axis A.1-A.5 + Phase 2 v4 재정의 + Axis B Round 1-3 + handoff packet
