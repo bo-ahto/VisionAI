@@ -229,4 +229,4 @@ Cycle 1 의 Track 2 Stage 3 운영 채택 baseline 24.07% 는 **curated dataset 
 | 본 audit 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×3 (§4.1/§4.2 over-claim, anomaly-free 표현 과대) / P1×5 (threshold 근거 결손, T6 분해 정량 부족, anomaly taxonomy 혼재, placeholder 분리 결손, trade-off 정량 부족) / P2×4 (area 기준 불일치, 시간 기준 정리, §6 disclaimer, 라벨 톤다운) |
 | 본 audit 보고서 round 2 사후 검수 (2026-05-08, NEEDS FIX) | P2×2 (boundary 표기 불일치 — area/price 의 ≤/< 통일 / §1.2.1 "noise feature 영역" 표현 톤다운) — round 2 fix: §2.2 boundary `≤`/`≥` 명시 + §3.2/§3.3 boundary 의 explicit AND 표현 + §1.2.1 톤다운 |
 | 본 audit 보고서 round 3 사후 검수 (2026-05-08, NEEDS FIX) | P2-1 잔존 (§3.2 의 boundary 통일 설명 예시 의 `<` 잔존) / 신규 issue 없음 — round 3 fix: §3.2 의 Boundary 통일 설명 의 area `≤`/`≥` explicit + price/aspect/ho 동일 원리 명시 |
-| 본 audit 보고서 round 4 사후 검수 (예정) | round 3 fix commit 직후 |
+| 본 audit 보고서 round 4 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음. T6 pass (`>`/`<`) ↔ T6 fail (`≤`/`≥`) 대응 관계 명시 / price/aspect/ho 동일 원리 정합 확인 |
