@@ -257,7 +257,7 @@ drift features 9개 중 7 (severe) 가 학습 분포 OOF 에서 **유의미한 �
 | 차수 | 내용 |
 |---|---|
 | 종합 보고서 사전 자문 (2026-05-08) | 별도 통합 문서 권고 + Markdown canonical + HTML executive summary 분리 / 결론 + 포인터 / 본문 재서술 X |
-| 본 보고서 사후 검수 (round 1, 예정) | 정합성 + 링크 + 판정 보수성 + 중복 제거 |
+| 본 보고서 사후 검수 (round 1-6) | 정합성 + 링크 + 판정 보수성 + 중복 제거 → GO (PR #43 merged) |
 
 ## 10. 본 cycle 종결
 
