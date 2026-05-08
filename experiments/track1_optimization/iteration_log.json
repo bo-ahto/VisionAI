@@ -32,8 +32,14 @@
         "catboost_fi_pvc": "experiments/track1_optimization/phase0/phase0_importance_quick.json",
         "xgboost_gain": "experiments/track1_optimization/phase0/phase0_importance_quick.json",
         "shap_treeshap": "experiments/track1_optimization/phase0/phase0_importance_shap_permutation.json",
-        "permutation": "experiments/track1_optimization/phase0/phase0_importance_shap_permutation.json"
+        "permutation": "experiments/track1_optimization/phase0/phase0_importance_shap_permutation.json",
+        "consensus_summary": "experiments/track1_optimization/phase0/phase0_consensus_summary.json"
       },
+      "drop_a_immediate_candidates": ["ho_price_level", "medium_price_level", "profile_completeness"],
+      "drop_b_low_candidates": ["is_small", "support_factor", "is_unique", "is_edition", "gallery_city_count", "has_international", "is_krw", "attribution_class", "gallery_type", "price_currency"],
+      "consensus_methods": ["catboost_fi_pvc", "xgboost_gain", "shap_treeshap_avg", "permutation_catboost"],
+      "codex_phase0_review_v1": {"verdict": "NEEDS FIX (P1)", "reason": "consensus method 정의 불정합 / is_edition 과대 판정"},
+      "codex_phase0_review_v2_fix": "consensus rule prereg 4 method 정합 (xgb_gain 추가 / SHAP CB+XGB 평균 / literal 4/4 zero) / is_edition → DROP-B 분류",
       "fold_std": "experiments/track1_optimization/phase0/phase0_baseline_fold_std.json",
       "fold_std_summary": {
         "cold_ensemble":   {"mean": 38.62, "std": 4.734, "range": [33.33, 45.50]},
