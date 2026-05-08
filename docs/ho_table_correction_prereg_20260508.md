@@ -85,20 +85,29 @@ def area_to_ho_f(surface_area: float) -> float:
 
 본 cycle 의 별도 module (`scripts/compute_ho_v2.py`) 에서:
 
-1. 표준 `HO_F_TABLE` import (`from visionai.price_engine.preprocessing.dimension_parser import HO_F_TABLE, area_to_ho_f`) 또는 동일 spec 의 hardcoded copy
-2. 각 cleansed Tier CSV 의 `area_cm2` 에 `area_to_ho_f` 적용 → `ho_v2` (float)
-3. 정수 호수 가 필요한 영역 의 경우 `ho_v2_int = round(ho_v2)` (별도 column)
-4. Derived columns 재계산:
+1. 표준 `HO_F_TABLE` **import 원칙** (`from visionai.price_engine.preprocessing.dimension_parser import HO_F_TABLE, area_to_ho_f`). hardcoded copy 사용 금지 (단일 source 통합 원칙).
+2. 각 cleansed Tier CSV 의 `area_cm2` 에 `area_to_ho_f` 적용 → `ho_v2` (float, dtype=`float64`)
+3. 정수 호수 비교 영역: `ho_v2_int = np.rint(ho_v2).astype(int)` (= half-to-even / numpy default / **rounding rule freeze**)
+4. Derived columns 재계산 (모두 float, dtype=float64):
    - `ho_power_v2 = ho_v2 ** 0.74 if ho_v2 > 0 else 0`
    - `ln_ho_v2 = log(ho_v2 + 1)`
-   - `is_small_v2 = (ho_v2 <= 3) ? 1 : 0`
+   - `is_small_v2 = (ho_v2 <= 3.0) ? 1 : 0` (int8 binary)
    - `ho_x_support_v2 = ho_v2 * support_factor`
+
+> **Rounding rule binding**: `np.rint` 의 banker's rounding (half-to-even) 으로 고정 / Python `round` / `Decimal` 사용 금지. tie 영역 (예: ho_v2 = 0.5 / 1.5 / 2.5) = numpy 기본 (가장 가까운 even). `mismatch_int = (operational_ho != ho_v2_int)` exact rule.
 
 ### 3.2 Clipped / out-of-range flag (코덱스 권고)
 
-- `is_ho_clipped_low_v2`: `area_cm2 < min(_HO_AREAS) = 252` → 1 (= 표준 0호 의 area 미만)
-- `is_ho_clipped_high_v2`: `area_cm2 > max(_HO_AREAS) = 50239.49` → 1 (= 표준 200호 의 area 초과)
-- `is_size_out_of_range_v2`: `area_cm2 ≤ 0 OR area_cm2 > 250000` → 1 (비정상 / 데이터 오류 후보)
+| Flag | Threshold (절대값) | 비교 연산자 |
+|---|---|---|
+| `is_ho_clipped_low_v2` | `area_cm2 < 252.0` | `<` (strict less than) |
+| `is_ho_clipped_high_v2` | `area_cm2 > 50239.49` | `>` (strict greater than) |
+| `is_size_out_of_range_v2` | `area_cm2 <= 0.0` OR `area_cm2 > 250000.0` | `<=` / `>` |
+
+> **Threshold 영역 의 의미**:
+> - `252.0` = `HO_F_TABLE[0]` (= 18.0 × 14.0 / 표준 0호 area)
+> - `50239.49` = `HO_F_TABLE[200]` 의 area (= 259.1 × 193.9 / 표준 200호 area)
+> - `250000.0` = 약 500cm × 500cm (대형 작품 의 상한 / 운영 max 187,200 cm² 보다 크게 설정)
 
 ### 3.3 운영 ho vs ho_v2 mismatch 정량
 
@@ -109,48 +118,80 @@ def area_to_ho_f(surface_area: float) -> float:
 
 ### 3.4 cleansed Tier CSV update (별도 column 추가 / 기존 보존)
 
-각 cleansed Tier CSV (T0~T6) 에 다음 8 column 추가 (기존 column 영역 변경 X):
+각 cleansed Tier CSV (T0~T6) 에 다음 **9 column** 추가 (기존 51 column 영역 변경 X):
 
 ```
-ho_v2                  (float / 표준 보간)
-ho_v2_int              (정수 round)
-ho_power_v2            (ho_v2 ^ 0.74)
-ln_ho_v2               (log(ho_v2+1))
-is_small_v2            (ho_v2 <= 3)
-ho_x_support_v2        (ho_v2 × support_factor)
-is_ho_clipped_low_v2   (area < 252)
-is_ho_clipped_high_v2  (area > 50,239)
-is_size_out_of_range_v2 (area <=0 OR > 250,000)
+ho_v2                   (float64 / 표준 보간)
+ho_v2_int               (int / np.rint half-to-even)
+ho_power_v2             (float64 / ho_v2 ^ 0.74)
+ln_ho_v2                (float64 / log(ho_v2+1))
+is_small_v2             (int8 / ho_v2 <= 3.0)
+ho_x_support_v2         (float64 / ho_v2 × support_factor)
+is_ho_clipped_low_v2    (int8 / area_cm2 < 252.0)
+is_ho_clipped_high_v2   (int8 / area_cm2 > 50239.49)
+is_size_out_of_range_v2 (int8 / area_cm2 <= 0.0 OR > 250000.0)
 ```
 
 → 9 column 추가 / 기존 51 column → **60 column** cleansed CSV (별도 file / `*_with_ho_v2.csv` suffix).
 
-### 3.5 column_dictionary 업데이트
+### 3.5 column_dictionary 업데이트 (backward-compatible)
 
 - 9 신규 column 의 row 추가 (53 → 62 entries)
-- 기존 ho / ho_power / ln_ho / is_small / ho_x_support row 에 "high-risk: 표준 F 규격 불일치 (코덱스 review)" 사유 추가 (사용자 요청)
+- **기존 5 row (ho / ho_power / ln_ho / is_small / ho_x_support) 의 backward-compatible 보강**:
+  - `정의` / `생성방식` / `계산공식` column = **불변 freeze** (기존 spec 보호)
+  - `사유` column 에만 `+ high-risk: 표준 F 규격 불일치 (코덱스 review / ho_v2 별도 산출)` append
+  - 추가 / 변경 영역 의 audit 가능성 보장
 
-### 3.6 운영 코드 / parquet 변경 차단 (fail-closed)
+### 3.6 Fail-closed protocol (repo-wide allowlist)
 
-- `scripts/prepare_primary_market_dataset.py` / `src/visionai/price_engine/api/primary_feature_builder.py` 변경 X (코드 freeze)
-- `data/saatchi_cleaned.parquet` / `data/primary_market_dataset.parquet` 변경 X (read-only)
-- pre/post sha-256 검증 의무
+본 cycle 의 변경 허용 경로 (allowlist) — **그 외 diff 발생 시 즉시 abort**:
+
+#### Allowed (변경 허용)
+| 경로 | 영역 |
+|---|---|
+| `scripts/compute_ho_v2.py` | 신규 산출 코드 |
+| `data/dataset_tiers_cleansed_20260508/*_with_ho_v2.csv` | 9 column 추가 cleansed CSV (T0-T6) |
+| `data/dataset_tiers_cleansed_20260508/column_dictionary.csv` | 53 → 62 entries (기존 row 의 사유 만 append / 정의/공식/생성방식 불변) |
+| `data/dataset_tiers_cleansed_20260508/INDEX.md` / `INDEX.json` | 설명 영역 update |
+| `experiments/structural_v1/results/ho_table_correction_summary_20260508.json` | 정량 record |
+| `docs/ho_table_correction_prereg_20260508.md` | prereg (본 file) |
+| `docs/ho_table_correction_results_20260508.md` | 결과 보고서 |
+
+#### Frozen (변경 금지 / pre/post sha-256 검증 의무)
+| 경로 | 영역 |
+|---|---|
+| `scripts/prepare_primary_market_dataset.py` | 운영 코드 (HO_TABLE_F freeze) |
+| `src/visionai/price_engine/api/primary_feature_builder.py` | 운영 inference 코드 |
+| `src/visionai/price_engine/preprocessing/dimension_parser.py` | 표준 F 테이블 source (read-only import) |
+| `data/saatchi_cleaned.parquet` | 운영 raw |
+| `data/primary_market_dataset.parquet` | 운영 raw |
+| `data/dataset_tiers_cleansed_20260508/T*_*.csv` (기존 51 col) | 기존 cleansed CSV body |
+| `data/dataset_tiers_cleansed_20260508/display_companion_T0.csv` | 기존 display companion |
+| `data/dataset_tiers_cleansed_20260508/human_readable_T0.csv` | 기존 한글 파생본 |
+| `data/dataset_tiers_cleansed_20260508/removed_columns_log.csv` | 기존 제거 record |
+
+#### Fail-closed 검증 protocol
+
+1. 실행 시작 시 **frozen list 의 모든 path 의 sha-256 + git diff lines 기록** (logger info)
+2. **Output path 가 allowlist 외 / Frozen list 의 경로 인 경우 즉시 abort** (코드 레벨 가드)
+3. 실행 직후 **frozen list 의 모든 path 의 sha-256 / git diff 재산출 → pre-run digest 와 정확 동일 검증**
+4. 불일치 detect 시 = `RuntimeError("FAIL-CLOSED: <path> changed during run")` raise + rollback 의무
 
 ## 4. PASS / FAIL 기준
 
 ### 4.1 PASS (모두 충족)
 
 #### Reproducibility
-- ✅ 표준 F 테이블 정확 구현 (운영 `dimension_parser.py:33-42` 의 22 entries 모두 정합)
-- ✅ ho_v2 산출 = `np.interp(area_cm2, _HO_AREAS, _HO_KEYS)` 의 정확 결과
+- ✅ 표준 F 테이블 정확 구현 (운영 `dimension_parser.py:33-42` 의 22 entries 의 import + assertion: `len(HO_F_TABLE) == 22 AND HO_F_TABLE[0] == (18.0, 14.0) AND HO_F_TABLE[200] == (259.1, 193.9)` 등 spot-check)
+- ✅ ho_v2 산출 = `area_to_ho_f(area_cm2)` 의 정확 결과 (= `np.interp(area_cm2, _HO_AREAS, _HO_KEYS)` 의 spec)
+- ✅ ho_v2_int = `np.rint(ho_v2).astype(int)` (rounding rule freeze)
 - ✅ Derived columns (ho_power_v2 / ln_ho_v2 / is_small_v2 / ho_x_support_v2) 의 정의 일치
-- ✅ cleansed Tier CSV 업데이트 = 기존 51 column 변경 X / 9 신규 column 추가 = 60 column
+- ✅ cleansed Tier CSV 업데이트 = 기존 51 column 변경 X / 9 신규 column 추가 = **60 column**
 
-#### Fail-closed
-- ✅ 운영 `prepare_primary_market_dataset.py` git diff = 0 line
-- ✅ 운영 `primary_feature_builder.py` git diff = 0 line
-- ✅ 운영 `data/saatchi_cleaned.parquet` / `data/primary_market_dataset.parquet` sha-256 = 변경 X
-- ✅ 기존 cleansed Tier CSV 의 51 column 영역 = 변경 X (column 영역 추가 만)
+#### Fail-closed (allowlist 기반 / §3.6)
+- ✅ Frozen list 의 모든 path 의 pre/post sha-256 정확 동일
+- ✅ Output path 가 allowlist 의 경로 만 (그 외 = 즉시 abort)
+- ✅ column_dictionary 의 기존 ho 계열 5 row 의 `정의` / `생성방식` / `계산공식` 불변 (사유 만 append)
 
 #### 정량 record (보고값 / PASS-FAIL 미적용)
 - 운영 ho vs ho_v2_int mismatch 의 정량 (artist 단위 + artwork 단위) — 결과 보고서 record 만
@@ -187,7 +228,7 @@ is_size_out_of_range_v2 (area <=0 OR > 250,000)
 - ✅ 운영 ho vs ho_v2 의 정량 mismatch record (사용자 의 후속 결정 영역 의 정량 입력)
 - ✅ column_dictionary 의 ho 영역 의 high-risk 사유 추가
 
-> **본 cycle 의 PASS = 운영 ho 의 표준 불일치 의 정량 confirm 만**. 운영 코드 의 표준 단일 소스 통합 / 모델 retraining = 별도 decision-binding cycle 의무 (코덱스 권고 영역).
+> **본 cycle 의 PASS = 운영 ho 의 표준 불일치 의 정량 confirm 만 (record only / adoption inference 금지)**. 운영 코드 의 표준 단일 소스 통합 / 모델 retraining = 별도 decision-binding cycle 의무 (코덱스 권고 영역). 결과 보고서 의 모든 정량 = adoption / efficacy / 운영 채택 결정 의 직접 근거 X.
 
 ## 6. 실행 protocol
 
@@ -209,4 +250,5 @@ is_size_out_of_range_v2 (area <=0 OR > 250,000)
 | 차수 | 내용 |
 |---|---|
 | HO 변환 review (2026-05-08) | provenance 불명 / 표준 불일치 / canvas_type dead feature / silent clipping / calibration 영향 / 거버넌스 이중 정의 (1차시장 hardcoded vs 경매 dimension_parser) — high-risk 기록 + 표준 단일 소스 통합 별도 결정 안건 + 관측 플래그 권고 + 3안 offline backtest 권고 |
-| 본 prereg 사후 검수 (예정) | 본 commit 직후 |
+| 본 prereg round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×4 (fail-closed allowlist 결손 / ho_v2_int rounding rule / 표준 table import 원칙 / 8↔9 column 오타) + 보완 3 (clipped threshold 절대값 / dictionary backward append / record only 반복) — round 1 fix |
+| 본 prereg round 2 사후 검수 (예정) | round 1 fix commit 직후 |
