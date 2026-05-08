@@ -68,9 +68,10 @@
 - 2/4 method 이상 영역 에서 영향도 하위 5% (또는 ≤ 0.5%) → DROP-A/B/C 의 후보 의 자격
 - placeholder 영역 (4/4 모두 = 0%) = DROP-A 의 즉시 후보
 
-**ADD candidate consensus**:
-- SHAP 의 영역 OR Permutation 의 영역 의 1 method 이상 의 유의 signal (interaction effect / marginal impact) → ADD-A/C 의 후보 의 자격
-- ADD-B 의 영역 = warm 의 SHAP 의 individual prediction 의 변동 영역 의 의무 정합
+**ADD candidate consensus** (코덱스 round 2 P2 보강):
+- SHAP 의 영역 의 mean(\|SHAP value\|) 영역 의 의무 ≥ 0.5% (전체 SHAP 합 영역 대비) OR Permutation Importance 영역 의 의무 ≥ 0.3% (MdAPE delta 영역) 의 1 method 이상 → ADD-A/C 의 후보 의 자격
+- ADD-B 의 영역 = warm 의 SHAP 의 individual prediction 의 변동 영역 의 의무 정합 (mean(\|SHAP\|) ≥ 0.5%)
+- 유의 signal 의 정량 기준 = locked (prereg)
 
 **Tie-break rule**:
 - 4 method 의 영역 의 rank 가 충돌 시 → SHAP 의 영역 (개별 prediction 영역) 의 우선 (트리 모델 의 정합 가장 높음)
@@ -181,28 +182,63 @@
 
 #### B. Fold-internal computation 의무
 
+**핵심 의무 (코덱스 round 2 P1 fix)**: train-row 의 영역 의 as-of feature 생성 시 self / 같은 날 다른 row / 미래 train row 의 영역 = **모두 배제 의무**. test-row 의 영역 의 lookup 의 영역 = train-fold 의 영역 의 < transaction_date 만 의 영역 의 의무.
+
+**train-row + test-row 공통 strict 의무**:
+1. **strict less-than (`<`)**: 자기 자신 의 transaction_date 영역 의 의무 미만 만 의무 사용 (≤ X / strict <)
+2. **self-exclusion**: 자기 자신 의 row 영역 의 의무 통계 산출 영역 의 의무 X
+3. **same-day tie 처리**: 같은 날 의 영역 의 모든 row (자기 + 다른 row) 의 영역 의 의무 X
+4. **시간순 순차 누적**: train fold 내부 의 영역 의 영역 의 의무 ASC 정렬 의 의무 누적 통계 (각 row 의 의무 시점 의 의무 의무 < 의무 정합)
+5. **fold-cross leakage 의무 X**: 다른 fold 의 영역 의 의무 영역 의 의무 lookup table 의 영역 의 의무 X
+
 ```python
-# Fix-3: as-of feature 의 영역 의 의무 protocol (ADD-B + ADD-C)
+# Fix-3 + 코덱스 round 2 P1 fix: as-of feature 의 영역 의 의무 protocol
+def compute_asof_for_row(target_row, source_data, group_col, time_col, stat):
+    """target_row 의 의무 strict < 의무 same-group 영역 의 영역 의 통계.
+
+    ⚠️ self-exclusion 의무: target_row.transaction_date 의 영역 의 의무 strict <
+    영역 의 영역 의 의무 row 만 의 의무. 같은 날 의 영역 의 영역 (self + others) X.
+    """
+    same_group = source_data[source_data[group_col] == target_row[group_col]]
+    past_only = same_group[same_group[time_col] < target_row[time_col]]  # strict <
+    if len(past_only) < 3:
+        return None  # low-count → fillna(0) + has_asof=0
+    return past_only["price"].agg(stat)
+
+
 for fold_idx, (train_idx, test_idx) in enumerate(cv.split(X, y, groups)):
-    train_data = df.iloc[train_idx]
+    train_data = df.iloc[train_idx].sort_values("transaction_date")  # ASC 의무
     test_data = df.iloc[test_idx]
 
-    # ⚠️ 의무: train-fold 만 fit / test-fold 미사용
-    asof_lookup = compute_asof_stats(
-        train_data,
-        time_col="transaction_date",
-        group_col="artist_slug",  # ADD-B (warm)
-        # group_col="gallery_name" / "medium_category"  # ADD-C
-        stat="median",
-        min_count=3,  # low-count shrinkage 의무
-    )
+    # ⚠️ train-row as-of: self/future train-row 모두 배제 의무
+    train_asof = []
+    for _, row in train_data.iterrows():
+        # train_data 만 source / strict < / self-exclusion 의무
+        val = compute_asof_for_row(row, train_data, "artist_slug", "transaction_date", "median")
+        train_asof.append(val)
 
-    # ⚠️ 의무: test row 의 영역 = train-fold 의 영역 의 < transaction_date 만 lookup
-    X_train_asof = lookup_asof(train_data, asof_lookup)
-    X_test_asof = lookup_asof(test_data, asof_lookup)  # train-fold lookup table 만
+    # ⚠️ test-row as-of: train_data 의 영역 의 의무 strict < transaction_date 만
+    test_asof = []
+    for _, row in test_data.iterrows():
+        val = compute_asof_for_row(row, train_data, "artist_slug", "transaction_date", "median")
+        test_asof.append(val)
 
-    # ⚠️ 의무: test 영역 의 정보 의 fit 영역 X (다른 fold 의 영역 의 의무 X)
+    # ⚠️ 다른 fold 의 영역 의 의무 lookup X / test 정보 의무 fit 영역 X
 ```
+
+#### B-1. Train-row leakage 방지 의무 (코덱스 round 2 P1)
+
+| Leakage type | 차단 의무 |
+|---|---|
+| **self leakage** (자기 row 의 자기 통계 영역) | `strict <` + self-exclusion |
+| **same-day leakage** (같은 날 의 다른 row 영역) | `strict <` (≤ X / 같은 날 모두 X) |
+| **future train-row leakage** (미래 train row 영역) | `strict <` (자기 transaction_date 미만 만) |
+| **fold-cross leakage** (다른 fold 의 영역 영역) | fold 내 source 만 의무 / cross-fold lookup X |
+
+**leakage detection smoke test** 의 의무:
+1. 매 train row 의 영역 의 의무 lookup row 의 영역 의 의무 transaction_date < target.transaction_date 의 의무 정합 검증
+2. self row 의 영역 의 의무 lookup 의 의무 X 검증
+3. 같은 날 의 영역 의 row 영역 의 의무 lookup 의 의무 X 검증
 
 #### C. Calibration 의 영역 의 영향
 
@@ -214,10 +250,14 @@ for fold_idx, (train_idx, test_idx) in enumerate(cv.split(X, y, groups)):
 - as-of lookup 의 영역 의 결측 (train-fold 에 해당 group 영역 X / count < min_count) → fillna(0) + has_asof flag = 0
 - has_asof flag = 0 의 영역 = model 영역 의 의무 (정보 영역 의 의무 분리)
 
-#### E. Low-count shrinkage
+#### E. Low-count shrinkage (코덱스 round 2 P2 보강 / 통계별 분리)
 
-- group 영역 의 count < 3 → Bayesian shrinkage 의 영역 의 의무 (global mean 의 영역 으로 영역)
-- shrinkage formula: `(count × group_mean + 5 × global_mean) / (count + 5)` (소수 영역 의 영향 완화)
+| stat | shrinkage 영역 의 의무 |
+|---|---|
+| **median (median price)** | `count < 3` → fillna(0) + has_asof=0 (median 의 영역 의 영역 = shrinkage 영역 의 의무 robust X / NaN flag 의무) |
+| **mean (mean price)** | `count < 3` → Bayesian shrinkage: `(count × group_mean + 5 × global_mean) / (count + 5)` |
+| **std (price std)** | `count < 5` → fillna(0) + has_asof=0 (std 의 영역 = small sample 영역 의 의무 unreliable) |
+| **count (transaction count)** | shrinkage X / raw count 영역 의 의무 사용 (의미 영역 = 데이터 영역 의 의무 정합) |
 
 #### F. Leakage detection 의 의무
 
@@ -230,10 +270,10 @@ for fold_idx, (train_idx, test_idx) in enumerate(cv.split(X, y, groups)):
 
 ### 3.8 Phase 7 (수렴 검사 / 1 일)
 
-- **수렴 criterion (Fix-4 정합)**:
-  - 최근 3 iter 의 \|Δ Cold MdAPE\| < 0.1%p (cold fold std × 0.2-0.3 / practical significance band)
-  - AND 최근 3 iter 의 \|Δ Warm MdAPE\| < 0.05%p (warm fold std × 0.2-0.3)
-  - Phase 0 의 영역 의 의무 baseline fold std 의 영역 의 의무 정합 후 의무 의 의무 (§4.2)
+- **수렴 criterion (locked / 코덱스 round 2 P1 fix)**:
+  - 최근 3 iter 의 \|Δ Cold MdAPE\| **< 0.1%p** (locked / 참고: cold fold std × 0.25)
+  - AND 최근 3 iter 의 \|Δ Warm MdAPE\| **< 0.05%p** (locked / 참고: warm fold std × 0.25)
+  - 본 cycle 동안 의 의무 변경 X (§4.2 B 의 의무 정합)
 - **YES**: 수렴 / Phase 8 진입
 - **NO**: 다른 strategy 의 의무 / Phase 1-6 의 추가 iteration
 
@@ -275,13 +315,16 @@ for fold_idx, (train_idx, test_idx) in enumerate(cv.split(X, y, groups)):
 - 동일 artist 의 의무 train/test 의 의무 영역 X (artist-level signal leakage 방지).
 - 의무: 매 iteration 의 영역 의 영역 의 의무 record (낙관편향 의 의무 정량화).
 
-**의무 영역**:
+**의무 영역** (코덱스 round 2 P2 보강 / escalation rule):
 - ADD-B 의 영역 (artist 통계 추가) 의 영역 의 KFold ↔ GroupKFold 의 의무 gap 의 의무 정합 검증.
-- gap > 1.0%p 의 영역 = leakage 의무 의 의무 의심 / 코덱스 검수 의 의무 영역.
+- **escalation rule (locked)**:
+  - gap ≤ +0.5%p → 정상 (낙관편향 의 영역 의 영역 작음)
+  - +0.5%p < gap ≤ +1.0%p → 경고 / iteration log 의 영역 의 의무 record + 코덱스 의 영역 의 의무 영역
+  - gap > +1.0%p → **phase 의 의무 ADD-B 채택 거부** (낙관편향 의 영역 의 영역 큼 / leakage 의 의무 의심) + 코덱스 검수 의 의무 영역
 
-### 4.2 Baseline 변동성 (Fix-4 / 코덱스 1차)
+### 4.2 Baseline 변동성 (Fix-4 / 코덱스 1차 + round 2 P1)
 
-Guard / convergence threshold 의 영역 의 의무 근거 의 의무 baseline run 의 영역 의 fold-level 변동성 의 의무:
+Guard / convergence threshold 의 영역 의 의무 근거 의 의무 baseline run 의 영역 의 fold-level 변동성 의 의무.
 
 #### A. baseline 의 의무 fold-level metric dump
 
@@ -290,34 +333,43 @@ Phase 0 의 영역 의 의무:
 - **Warm MdAPE fold std (KFold)**: 5 fold 의 영역 의 의무 std (예상: 0.1-0.3%p)
 - **Warm MdAPE fold std (GroupKFold guard)**: 동일
 
-#### B. threshold 의 의무 정합
+#### B. Threshold prereg locking (코덱스 round 2 P1 fix)
 
-| Threshold | 정합 의 의무 영역 |
-|---|---|
-| Guard G1 (Warm KFold ≤ +0.5%p) | warm fold std × 1.5-2.0 (noise band 의 영역 의 영역) |
-| Guard G2 (Overall ≤ +0.8%p) | overall fold std × 1.5-2.0 |
-| Guard G3-G4 (Source ≤ +1.0%p) | source segment 의 영역 의 fold std × 1.5-2.0 (segment 의 영역 = 변동성 큼) |
-| Convergence (3 iter \|Δ MdAPE\| < 0.1%p) | cold fold std × 0.2-0.3 (practical significance 의 영역) |
+본 prereg 의 의무 = **고정 threshold 영역 (primary)** + **fold std 의 영역 의 의무 참고치 영역 (reference only)**. 사후 조정 재량 의무 = X.
 
-#### C. 검증 의 의무
+| Threshold | **prereg 고정값 (primary)** | fold std × 계수 (reference / 사후 조정 X) |
+|---|---|---|
+| **Guard G1** | **+0.5%p (Warm KFold MdAPE 악화)** | warm fold std × 1.75 (참고 / 의무 X) |
+| **Guard G2** | **+0.8%p (Overall ensemble 악화)** | overall fold std × 1.75 (참고 / 의무 X) |
+| **Guard G3** | **+1.0%p (Artsy segment cold 악화)** | Artsy fold std × 1.75 (참고 / 의무 X) |
+| **Guard G4** | **+1.0%p (Saatchi segment cold 악화)** | Saatchi fold std × 1.75 (참고 / 의무 X) |
+| **Convergence cold** | **\|Δ Cold\| < 0.1%p (3 iter)** | cold fold std × 0.25 (참고 / 의무 X) |
+| **Convergence warm** | **\|Δ Warm\| < 0.05%p (3 iter)** | warm fold std × 0.25 (참고 / 의무 X) |
 
-Phase 0 의 영역 의 의무 영역 의 의무 fold-level std 의 영역 의 영역 의 의무 산출 → §5 + §3.8 의 영역 의 threshold 의 영역 의 영역 의 의무 정합 의 영역 의 의무 검증.
+**의무 영역**:
+- prereg 고정값 = **불변 (locked)**. 본 cycle 동안 의 변경 의무 X.
+- fold std × 계수 = **참고 metric only**. 산출 의무 (record) / threshold 의 영역 의 변경 의무 X.
+- 만약 fold std 영역 의 의무 매우 큰 영역 (예: cold > 0.8%p / 고정 threshold + std × 1.75 의 영역 의 의무 정합 X) = **본 cycle 종료 후 의 별도 prereg 영역 의 의무 영역** (본 cycle 의 의무 변경 X).
 
-만약 fold std 영역 의 의무 큰 영역 (예: cold > 0.7%p) → threshold 의 영역 의 영역 의 의무 영역 의 의무 조정 (코덱스 검수 의 의무 영역).
+#### C. fold-level std 의 영역 의 의무 record only
+
+Phase 0 의 영역 의 의무 영역 의 의무 fold-level std 산출 → iteration log 의 영역 의 의무 record. **threshold 영역 의 변경 의무 X**. 사후 분석 / 후속 cycle 의 의무 입력 영역 만.
 
 ## 5. Guard metric (every phase / 4 영역)
 
-| # | Guard | 임계 | 정합 영역 (Fix-4) |
+**프리레그 고정 (locked / 코덱스 round 2 P1 fix)**: 본 cycle 동안 의 의무 변경 X.
+
+| # | Guard | **임계 (locked)** | 참고 (reference / 의무 X) |
 |---|---|---|---|
-| **G1** | Warm KFold MdAPE 악화 | ≤ +0.5%p | warm fold std × 1.5-2.0 (Phase 0 의 의무 정합) |
-| **G2** | Overall ensemble 악화 | ≤ +0.8%p | overall fold std × 1.5-2.0 |
-| **G3** | Artsy segment cold 악화 | ≤ +1.0%p | Artsy segment fold std × 1.5-2.0 |
-| **G4** | Saatchi segment cold 악화 | ≤ +1.0%p | Saatchi segment fold std × 1.5-2.0 |
+| **G1** | Warm KFold MdAPE 악화 | **≤ +0.5%p** | warm fold std × 1.75 |
+| **G2** | Overall ensemble 악화 | **≤ +0.8%p** | overall fold std × 1.75 |
+| **G3** | Artsy segment cold 악화 | **≤ +1.0%p** | Artsy fold std × 1.75 |
+| **G4** | Saatchi segment cold 악화 | **≤ +1.0%p** | Saatchi fold std × 1.75 |
 
 > 1 phase 의 채택 = **Local primary metric (§3 의 Fix-1)** PASS AND Guard 4 영역 모두 PASS.
 > Local primary 는 phase 별 영역 (§3 상단 의 영역 정합).
 >
-> Threshold 의 영역 의 baseline fold std 의 영역 의 의무 의 정합 의 영역 = §4.2 의 영역 의 의무 검증 의 영역.
+> **임계 의무**: 위 4 영역 의 임계 영역 = **prereg 고정 (locked)**. 사후 조정 재량 의무 X (§4.2 B 의 의무 정합).
 
 ## 6. Decision binding
 
@@ -389,5 +441,7 @@ Phase 0 의 영역 의 의무 영역 의 의무 fold-level std 의 영역 의 �
 | 차수 | 내용 |
 |---|---|
 | 1차 사전 자문 (commit ec93513 직후) | NEEDS FIX / 5 영역 (§3 phase primary / §4 Warm CV / §3.10 As-of Contract / §4.2 baseline 변동성 / §3.1 multi-method consensus) |
-| 1차 fix patch (본 commit) | §3 Fix-1 (phase primary 분리) / §3.1 B-1 Fix-5 (consensus rule) / §3.10 Fix-3 (As-of Contract) / §4.1 Fix-2 (Warm CV 정의 + GroupKFold guard) / §4.2 Fix-4 (baseline 변동성) / §3.8 Fix-7 (iteration cap) |
-| 2차 사후 검수 (예정) | 본 fix commit 직후 / GO 의무 |
+| 1차 fix patch (commit 687bbe7) | §3 Fix-1 (phase primary 분리) / §3.1 B-1 Fix-5 (consensus rule) / §3.10 Fix-3 (As-of Contract) / §4.1 Fix-2 (Warm CV 정의 + GroupKFold guard) / §4.2 Fix-4 (baseline 변동성) / §3.8 Fix-7 (iteration cap) |
+| 2차 사후 검수 (round 2) | NEEDS FIX (P1 2 영역) / §3.10 train-row leakage 차단 명시 / §4.2 + §5 threshold prereg locking + P2 3 영역 |
+| 2차 fix patch (본 commit) | §3.10 B/B-1 (train-row self/future/same-day leakage 차단 + smoke test) / §4.2 B + §5 (threshold locking / prereg 고정) / §3.1 B-1 (ADD signal 정량 ≥ 0.5%) / §4.1 escalation rule / §3.10 E shrinkage 통계별 분리 |
+| 3차 사후 검수 (예정) | 본 fix commit 직후 / GO 의무 |
