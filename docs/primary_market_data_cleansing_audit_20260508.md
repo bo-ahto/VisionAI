@@ -134,7 +134,11 @@ T4 + 다음 모두 충족 (boundary 모두 strict — `>` / `<` / 단독 `≥` /
 - `artist_total_works > 0` (placeholder 제거)
 - `gallery_city_count > 0` (placeholder 제거)
 
-> **Boundary 통일**: 위 rule = 본 audit script (`scripts/audit_primary_market_data.py`) 의 정확 한 정의. §2.2 의 fail count 의 boundary 와 정합 (예: `area_cm2 < 100` (§2.2 fail 52) = T6 의 `area_cm2 > 100` 의 violator 와 정확 동일).
+> **Boundary 통일** (audit script `scripts/audit_primary_market_data.py` 의 정확 정의):
+> - T6 pass = `area_cm2 > 100 AND area_cm2 < 50,000` (strict 양쪽)
+> - T6 fail = §2.2 Rule 4 (`area_cm2 ≤ 100`, n=52) ∪ Rule 5 (`area_cm2 ≥ 50,000`, n=135) — boundary `≤`/`≥` 정확 동일
+> - 즉, `area_cm2 == 100` 또는 `area_cm2 == 50,000` 인 row = T6 미충족 영역
+> - 같은 원리 가 price (`>100,000 AND <1,000,000,000`) / aspect (`>0 AND ≤10`) / ho (`>0 AND ≤200`) 에도 적용 — 각 boundary 의 `≤`/`≥` 처리 = §2.2 의 fail rule 과 정확 동일
 
 ### 3.3 T4 → T6 rule 별 drop count (정량 분해)
 
@@ -224,4 +228,5 @@ Cycle 1 의 Track 2 Stage 3 운영 채택 baseline 24.07% 는 **curated dataset 
 |---|---|
 | 본 audit 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×3 (§4.1/§4.2 over-claim, anomaly-free 표현 과대) / P1×5 (threshold 근거 결손, T6 분해 정량 부족, anomaly taxonomy 혼재, placeholder 분리 결손, trade-off 정량 부족) / P2×4 (area 기준 불일치, 시간 기준 정리, §6 disclaimer, 라벨 톤다운) |
 | 본 audit 보고서 round 2 사후 검수 (2026-05-08, NEEDS FIX) | P2×2 (boundary 표기 불일치 — area/price 의 ≤/< 통일 / §1.2.1 "noise feature 영역" 표현 톤다운) — round 2 fix: §2.2 boundary `≤`/`≥` 명시 + §3.2/§3.3 boundary 의 explicit AND 표현 + §1.2.1 톤다운 |
-| 본 audit 보고서 round 3 사후 검수 (예정) | round 2 fix commit 직후 |
+| 본 audit 보고서 round 3 사후 검수 (2026-05-08, NEEDS FIX) | P2-1 잔존 (§3.2 의 boundary 통일 설명 예시 의 `<` 잔존) / 신규 issue 없음 — round 3 fix: §3.2 의 Boundary 통일 설명 의 area `≤`/`≥` explicit + price/aspect/ho 동일 원리 명시 |
+| 본 audit 보고서 round 4 사후 검수 (예정) | round 3 fix commit 직후 |
