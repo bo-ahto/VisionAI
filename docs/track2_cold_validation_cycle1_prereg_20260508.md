@@ -19,7 +19,7 @@
 | Baseline source | `docs/트랙2_Stage2_freeze_20260506.md` §2 / `docs/stage3_*` Stage 3 100-seed 결과 |
 | Comparator (트랙 1) | `v3_filtered_tuned` 32 features (운영 main, gradient boosting) |
 
-> **Single primary hypothesis**: 트랙 2 의 Stage 3 cold signal (24.07%) 이 Stage 4 v3 broader 모집단 + out-of-time split 에서도 유지되는가.
+> **Intersection-union confirmatory gate**: 트랙 2 의 Stage 3 cold signal (24.07%) 이 Stage 4 v3 broader 모집단 (Primary 1) + out-of-time split (Primary 2) 모두에서 유지되는가 — 두 gate 모두 충족 시 PASS / 둘 중 하나라도 미충족 시 BORDERLINE 또는 FAIL.
 
 ### 1.2 데이터셋 freeze
 
@@ -59,25 +59,39 @@ Stage 3 baseline 의 영역 정의와 동일.
 
 | 영역 | Metric | 사전 임계 |
 |---|---|---|
-| **Primary 1 metric** | Stage 4 v3 모집단 cold MdAPE | **≤ 24.07% + 2.0%p = 26.07%** (Stage 3 signal 의 broader 모집단 유지 검증) |
-| **Cluster bootstrap CI** | artist-cluster bootstrap 95% CI 상한 (Δ vs Stage 3 baseline) | **≤ +2.0%p** (CI 상한 사전 고정) |
+| **Primary 1 point estimate** | Stage 4 v3 모집단 cold MdAPE (point) | **≤ 26.07%** (Stage 3 baseline 24.07% + 2.0%p tolerance) |
+| **Primary 1 CI** | Stage 4 cold MdAPE 의 **절대 95% CI 상한** (paired bootstrap X — Stage 3 와 Stage 4 모집단/artist universe 다름 / 본 cycle = Stage 4 cold MdAPE 의 절대 CI 만 고정) | **≤ 26.07%** (CI 상한 사전 고정 — 단일 임계) |
 
 #### Primary 2 (D family) — Out-of-time split
 
 | 영역 | Metric | 사전 임계 |
 |---|---|---|
-| **Primary 2 metric** | Time-split cold MdAPE (train ≤ 2023 / test 2024+) | **≤ 26.07%** (Primary 1 임계와 동일 — 시간축 비열화) |
+| **Primary 2 metric** | Time-split cold MdAPE (train ≤ 2023 / test 2024+, cold = test 작가 의 train 작품 < 10건) | **≤ 26.07%** (Primary 1 임계와 동일 — 시간축 비열화) |
 | **Time-split degradation** | Test cold MdAPE − Train cold MdAPE | **≤ +3.0%p** (out-of-time degradation 임계) |
 
 #### Hard gates (Secondary — 한 gate 라도 fail = rollout 후보 X)
 
 | Gate | 사전 임계 |
 |---|---|
-| **🔴 Low-price segment harm** | Δ_low (저가 P25 이하 segment cold MdAPE Δ) | ≤ **+2.0%p** (Stage 4 v3 BORDERLINE 의 저가 harm 재발 방지) |
-| **🔴 Depth slice harm** | depth 10-14 / 15-24 / 25+ slice 별 cold MdAPE Δ | 각 ≤ **+3.0%p** (Stage 4 v3 의 depth 15-24 harm 재발 방지) |
+| **🔴 Low-price segment harm** | 저가 P25 이하 segment 의 cold MdAPE (Stage 4 v3 모집단) | ≤ **26.07% + 2.0%p = 28.07%** (Stage 4 v3 BORDERLINE 의 저가 harm 재발 방지) |
+| **🔴 Cold sub-bin harm** | **Cold 하위 구간** train_count `0 / 1-4 / 5-9` 별 cold MdAPE | 각 ≤ **28.07%** (cold 영역 내 train 이력 분포 별 harm 점검 — depth 10-14/15-24/25+ 는 warm-path finding 이라 cold cycle 부정합 / cold sub-bin 으로 재정의) |
 | **🔴 Source slice asymmetry** | (Saatchi 미포함 — 본 cycle scope 외) | N/A (Cycle 2 영역) |
 | **🟡 Calibration robustness (Supportive)** | calibration plot residual 의 quantile 별 분포 | exploratory (decision-binding X) |
 | **🟡 Bootstrap robustness (Supportive)** | 100-seed cluster bootstrap 의 seed 별 stability | exploratory |
+
+#### 임계 정당화 (Justification)
+
+- **+2.0%p tolerance** (24.07% → 26.07%): Stage 3 100-seed 의 std (4.18%) 의 약 1/2 — broader 모집단 shift 허용폭으로 보수적 (1 std 의 절반).
+- **time-split degradation +3.0%p**: 운영 환경에서 시간축 drift 의 자연 noise 추정 (Stage 3 std 4.18% 의 70% 수준).
+- **Cold sub-bin harm +2.0%p (28.07%)**: Primary 임계 (+2.0%p) 와 동일 budget — cold 영역 내부 분포 별 harm 도 모집단 평균 임계 와 동일 수준 보수적.
+- **95% CI**: confirmatory gate 의 표준 — Stage 3 prereg 와 동일 알파.
+
+#### Bootstrap hygiene (사전 고정 — 코덱스 P1)
+
+- **방법**: artist-cluster bootstrap (with replacement on artists, all rows of selected artists in each replica)
+- **n_boot**: **2,000** (Stage 3 spec 동일)
+- **CI 방식**: percentile (2.5% / 97.5%)
+- **Seed policy**: base seed = **42** (Stage 3 동일) / Bootstrap 내부 seed = `range(2000)`
 
 ### 1.6 Stop rule (Stage 별 — 코덱스 권고)
 
@@ -113,12 +127,16 @@ Stage 3 baseline 의 영역 정의와 동일.
 ### 2.1 Stage 1 — B+D Primary 평가
 
 1. Stage 4 v3 모집단 (`stage4_full.parquet`, 8,495 / 807) 의 train/test split:
-   - **Random LAO (Leave-Artist-Out, 80/20)** — Primary 1 base
-   - **Out-of-time split** — train: `date` ≤ 2023 / test: `date` 2024+ — Primary 2 base
+   - **Random LAO (Leave-Artist-Out, 80/20)** — Primary 1 base (artist-level fold / test fold = 정의상 모두 cold)
+   - **Out-of-time split** — train: `year_made` ≤ 2023 / test: `year_made` 2024+ — Primary 2 base (cold 정의 = test 작가 의 train 작품 < 10건)
 2. F4 + log_area spline + Huber 학습 (Stage 3 spec 그대로)
-3. Cold/Warm 영역 평가 (영역 정의 §1.4 적용)
-4. Primary 1 + Primary 2 metric 산출 + Cluster bootstrap CI
-5. Hard gates 평가 (low-price + depth slice 별)
+3. 영역 별 평가:
+   - **Random LAO**: test fold 가 정의상 모두 cold → Cold MdAPE only (warm 영역 평가 X)
+   - **Time-split**: cold (train < 10건) + warm (train ≥ 10건) 분리 / cold 만 Primary 2 / warm = supportive
+4. Primary 1 + Primary 2 metric 산출 + Cluster bootstrap CI (§1.5 hygiene)
+5. Hard gates 평가:
+   - Low-price (P25 이하) segment cold MdAPE
+   - Cold sub-bin (train_count `0 / 1-4 / 5-9` — Time-split base) 별 cold MdAPE
 
 ### 2.2 Stage 2 — Bootstrap robustness (조건부)
 
