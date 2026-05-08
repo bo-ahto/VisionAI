@@ -242,4 +242,4 @@ P_NEW_2 = r"\b(19[2-9]\d|200[0-5])\s+year\s+birth\b"
 | Saatchi 재수집 의견 (2026-05-08) | year_made 우선순위 → birth_year 2순위 / regex 확장 만으로 몇 %p 오르는지 먼저 측정 / decision-binding X |
 | 본 prereg round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×2 (fail-closed protocol binding 부족 / PR merge 의 adoption 오인) / P1×8 (regex `\|` literal 오류 / PASS rule 비대칭 / FP 기준 약 / 수동 검수 binding 부족 / regression-free 좁음 / P_NEW_1 false positive risk / P_NEW_1 false negative risk / 첫 매칭 우선 precision risk / validity range 근거 결손) / P2×3 (hypothesis vs PASS 분리 / §5 반복 / summary JSON 필드 명시) |
 | 본 prereg round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×1 (§4.1 Precision 의 "0~1 FP 허용" 표현 의 수학적 부정확 — n=18-19 의 95% threshold 는 사실상 0 FP 만 PASS) — round 2 fix: 정확한 수학적 binding 표 명시 + n 별 (18 / 19 / 20 / 39 / 40) PASS 영역 의 정확 한 정수 round-down 표기 |
-| 본 prereg round 3 사후 검수 (예정) | round 2 fix commit 직후 |
+| 본 prereg round 3 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음. §4.1 precision binding 의 정수 round-down + UNCERTAIN=FP 처리 정합 |
