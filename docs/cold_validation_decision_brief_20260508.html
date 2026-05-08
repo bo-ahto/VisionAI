@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Cold 영역 의사결정 brief — Track 2 운영 적용 검토 (2026-05-08)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1100px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.5em; }
+h2 { background: #f4f4f4; padding: 8px 12px; border-left: 4px solid #2c5aa0; margin-top: 28px; font-size: 1.15em; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+.summary-box { border: 2px solid #2c5aa0; background: #f4f8fc; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.fail-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 4px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.blue { background: #cfe2ff; color: #084298; }
+.evidence { font-size: 0.85em; color: #666; }
+.col-A { background: #f8f9fa; }
+.col-B { background: #fff8e1; }
+.col-recom { background: #e7f5ff; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+ul li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Cold 영역 운영 적용 의사결정 brief</h1>
+<p style="color: #666;"><strong>작성일</strong>: 2026-05-08 | <strong>대상</strong>: 의사결정자 (사용자 + 외부 협력자 inheriting 가능) | <strong>본 문서 성격</strong>: 1 page 의사결정 자료</p>
+
+<h2>0. 본 문서의 결정 범위</h2>
+
+<table>
+<tr>
+  <th width="50%">본 페이지 가 다루는 결정</th>
+  <th width="50%">본 페이지 가 다루지 않는 결정</th>
+</tr>
+<tr>
+  <td>
+    <ul>
+      <li>운영 main 모델 (Track 1 <code>v3_filtered_tuned</code>) 의 즉시 변경 여부</li>
+      <li>다음 cycle 승인 여부 (B / C / D / E)</li>
+      <li>외부 협력 영역 우선순위</li>
+    </ul>
+  </td>
+  <td>
+    <ul>
+      <li>최종 연구 종료 선언</li>
+      <li>Track 1 superiority 확정</li>
+      <li>Track 2 영구 폐기</li>
+    </ul>
+  </td>
+</tr>
+</table>
+
+<h2>1. 한 줄 요약</h2>
+
+<div class="summary-box">
+<p><strong>현재 증거 기준 으로는 Track 2 의 운영 적용 결정 을 지지할 수 없으며, 운영 main 모델 (Track 1) 그대로 유지 가 안전 안.</strong> 다음 의사결정에 필요한 추가 검증 (Lane 1 = 운영 artifact 직접 평가) 은 현재 평가 환경에서 미실행 이라 별도 cycle 의 승인 이 필요함.</p>
+</div>
+
+<h2>2. 이번 판단 의 핵심 결론</h2>
+
+<table>
+<tr>
+  <th width="35%">결론</th>
+  <th>증거 등급</th>
+  <th>의미</th>
+</tr>
+<tr>
+  <td><strong>Cycle 1 verdict: FAIL</strong></td>
+  <td><span class="pill red">관찰</span></td>
+  <td>Stage 3 의 cold MdAPE 24.07% (curated 1,378) 신호가 broader 모집단 (8,495) 에서 <strong>재현되지 않음</strong></td>
+</tr>
+<tr>
+  <td>Lane 2 비교 상 일관된 우위 X</td>
+  <td><span class="pill red">관찰</span></td>
+  <td>Random LAO 와 Time-split 에서 결과 방향 다름 — Track 2 가 일관 우위 라고 결론할 수 없음</td>
+</tr>
+<tr>
+  <td>Train → Test gap 패턴 차이</td>
+  <td><span class="pill yellow">시사</span></td>
+  <td>Track 1 surrogate 와 Track 2 의 generalization gap 차이 시사 (단정 X — single split 기반)</td>
+</tr>
+<tr>
+  <td>Lane 1 schema audit FAIL</td>
+  <td><span class="pill red">결론 불가</span></td>
+  <td>운영 Track 1 (32 features) 의 직접 평가 미실행 → <strong>decision-binding 비교 미충족</strong></td>
+</tr>
+</table>
+
+<h2>3. 핵심 사실 (수치 비교)</h2>
+
+<p><strong>영역 정의</strong>: 학습 데이터 작가 이력 < 10건 = Cold (신규 작가) / ≥ 10건 = Warm.</p>
+
+<table>
+<tr>
+  <th>비교 지표</th>
+  <th>Track 1 surrogate (CatBoost, 14 feat)</th>
+  <th>Track 2 (F4 + spline + Huber)</th>
+  <th>해석</th>
+</tr>
+<tr>
+  <td>Random LAO 80/20 cold MdAPE</td>
+  <td>39.42% (CI 33.69-46.50)</td>
+  <td>36.18% (CI 31.47-45.10)</td>
+  <td>Track 2 점추정 -3.24%p, CI 광범위 겹침 → 통계적 유의성 결론 X</td>
+</tr>
+<tr>
+  <td>Time-split 2024+ cold MdAPE</td>
+  <td>35.88% (CI 32.36-40.25)</td>
+  <td>43.15% (CI 38.63-47.57)</td>
+  <td>Track 1 surrogate 점추정 -7.28%p</td>
+</tr>
+<tr>
+  <td>Train → Test gap (Time-split)</td>
+  <td>+15.88%p (train 19.99%)</td>
+  <td>+4.08%p (train 39.08%)</td>
+  <td>모델-패밀리 generalization gap 차이 시사 (단정 X)</td>
+</tr>
+<tr>
+  <td>Track 2 자체 baseline (Stage 3 curated)</td>
+  <td colspan="2" style="text-align: center;">24.07% (curated 1,378 / 100 작가, 100-seed)</td>
+  <td>broader 모집단 에서 재현 X</td>
+</tr>
+<tr>
+  <td>운영 Track 1 reported (참고 only)</td>
+  <td colspan="2" style="text-align: center;">38.3% (calibrated cold, 운영 학습 28K + calibration)</td>
+  <td>위 surrogate 와 직접 비교 X</td>
+</tr>
+</table>
+
+<div class="warn-box">
+<strong>3 caveat (직접 비교 불가 사유)</strong>:
+<ol>
+<li><strong>모집단 다름</strong>: 운영 Track 1 = 28K Artsy + Saatchi 통합 / 본 비교 surrogate = 8,495 Artsy only</li>
+<li><strong>Split protocol 다름</strong>: 운영 Track 1 = GroupKFold + calibration / 본 비교 = Random LAO + Time-split (calibration 미적용)</li>
+<li><strong>Metric 문맥 다름</strong>: 운영 reported = 운영 학습/calibration 결과 / 본 비교 = offline cold validation</li>
+</ol>
+</div>
+
+<h2>4. 의사결정 옵션 (A-E)</h2>
+
+<table>
+<tr>
+  <th>옵션</th>
+  <th>무엇을 하는가</th>
+  <th>기대 효과</th>
+  <th>주요 리스크</th>
+  <th>작업량</th>
+  <th>권고도</th>
+</tr>
+<tr class="col-A">
+  <td><strong>A. 운영 유지 / Track 2 cold 보류</strong></td>
+  <td>운영 main 모델 (Track 1 32 features) 그대로 유지 / Track 2 cold 적용 X</td>
+  <td>현재 증거 와 정합 / 안전 / 즉시 실행 가능</td>
+  <td>Cold 영역 정확도 개선 X (현 수준 유지)</td>
+  <td>없음</td>
+  <td><span class="pill green">기본 안전 안</span></td>
+</tr>
+<tr class="col-B">
+  <td><strong>B. Lane 1 cycle 진입 (운영 artifact 직접 평가)</strong></td>
+  <td>운영 Track 1 artifact (CatBoost+XGBoost ensemble, 32 features) 의 같은 dataset / 같은 split 직접 평가 — schema gap 보강 (Saatchi enrichment / feature reconstruction) 선행</td>
+  <td>승인 가능한 다음 결정 의 근거 확보 (decision-binding)</td>
+  <td>Schema gap 보강 작업량 ↑ / 운영 artifact 평가 환경 의무</td>
+  <td>중-상 (Schema audit + 보강 + 학습 + 평가)</td>
+  <td><span class="pill blue">필수 후속 검증</span></td>
+</tr>
+<tr>
+  <td><strong>C. Cycle 2 source-expansion</strong></td>
+  <td>Saatchi 모집단 통합 (year_made enrichment 적용) + Track 2 재학습 + broader 모집단 재평가</td>
+  <td>외부 일반화 evidence 확보 / Track 2 의 재기 가능성 평가</td>
+  <td>B 없이 단독 진행 시 평가 구속력 약함 / 데이터 provenance 봉인 의무</td>
+  <td>중</td>
+  <td><span class="pill yellow">B 또는 D 와 결합</span></td>
+</tr>
+<tr>
+  <td><strong>D. 외부 협력 영역 우선</strong></td>
+  <td>외부 데이터 source 의 license / acquisition / 운영 환경 입력 정합성 확장 협조</td>
+  <td>Cold 영역 정확도 개선 의 근본 path / 리드타임 길어 조기 착수 유리</td>
+  <td>외부 의존 / 일정 불확실</td>
+  <td>중-상 (외부 협조 영역)</td>
+  <td><span class="pill blue">병행 권고</span></td>
+</tr>
+<tr>
+  <td><strong>E. Track 2 spec 변형 시도</strong></td>
+  <td>Feature 추가 / loss 변경 / nested CV 등 추가 실험</td>
+  <td>탐색 연구 / 미세 개선 가능성</td>
+  <td>현재 실패 사유 (모집단 retract) 가 spec tuning 부족 인지 불명확</td>
+  <td>저-중</td>
+  <td><span class="pill yellow">탐색 후순위</span></td>
+</tr>
+</table>
+
+<h2>5. 권고 안 (조합)</h2>
+
+<div class="success-box">
+<strong>보수적 기본 안</strong>: <strong>A + B</strong>
+<ul>
+<li>A: 즉시 운영 유지 (안전 default)</li>
+<li>B: 동시에 Lane 1 cycle 승인 — 다음 결정 의 근거 확보</li>
+</ul>
+</div>
+
+<div class="info-box">
+<strong>현실적 확장 안</strong>: <strong>A + B + D 병행</strong>
+<ul>
+<li>D 의 외부 협력 영역 (license / data source / API contract) = 리드타임 길어 조기 착수 유리</li>
+<li>B 와 D 가 서로 독립 — 동시 진행 가능</li>
+</ul>
+</div>
+
+<div class="info-box">
+<strong>공격적 재도전 안</strong>: <strong>A + B + D 후 C</strong>
+<ul>
+<li>C (Saatchi 통합) 는 B 의 schema 보강 + D 의 외부 협력 정합 후 진행 가치 ↑</li>
+</ul>
+</div>
+
+<p><strong>E</strong>: 어느 안에서도 <strong>탐색 후순위</strong> — 현재 결정 병목 해소력 낮음.</p>
+
+<h2>6. 옵션 별 짧은 권고</h2>
+
+<table>
+<tr><th>옵션</th><th>한 줄 권고</th></tr>
+<tr><td>A</td><td>지금 당장 운영 판단 에 가장 적합</td></tr>
+<tr><td>B</td><td>승인 가능 한 다음 결론 을 만들기 위한 <strong>필수 검증</strong></td></tr>
+<tr><td>C</td><td>데이터 확장 가설 검증용, 단독 우선순위 는 낮음</td></tr>
+<tr><td>D</td><td>외부 의존성 이 크면 <strong>조기 착수 가치 높음</strong></td></tr>
+<tr><td>E</td><td>탐색 연구 로는 가능 하나 현재 결정 병목 해소력 낮음</td></tr>
+</table>
+
+<h2>7. 본 페이지 에서 결정 해 주실 항목</h2>
+
+<table>
+<tr>
+  <th>결정 항목</th>
+  <th>옵션</th>
+  <th>승인 / 보류</th>
+</tr>
+<tr>
+  <td>1. 운영 main 모델 즉시 변경 여부</td>
+  <td>A (그대로 유지) / 다른 안</td>
+  <td>(승인 / 보류 / 다른 안)</td>
+</tr>
+<tr>
+  <td>2. 다음 cycle 승인 여부</td>
+  <td>B (Lane 1 / 필수) / C (source-expansion) / E (spec 변형)</td>
+  <td>(B 승인 / B+C 승인 / 보류 / 다른 안)</td>
+</tr>
+<tr>
+  <td>3. 외부 협력 영역 진입</td>
+  <td>D 의 license / data source / API contract 협조</td>
+  <td>(승인 / 보류 / 단계적)</td>
+</tr>
+</table>
+
+<div class="warn-box">
+<strong>각 옵션 승인 시 의 입력 의무</strong>:
+<ul>
+<li><strong>B 승인</strong>: schema gap 보강 우선순위 결정 (Saatchi enrichment vs feature reconstruction) + 평가 환경 (운영 artifact 적용 가능 환경) 확보</li>
+<li><strong>C 승인</strong>: B 또는 D 의 선행 결정 / Saatchi year_made provenance 봉인 의무</li>
+<li><strong>D 승인</strong>: 외부 협력 우선순위 + license / acquisition 협조 영역 결정 (외부 협력자 영역)</li>
+</ul>
+</div>
+
+<h2>8. 본 문서 의 한계 / 비결정 사항</h2>
+
+<ul>
+<li>본 문서 = "Track 2 운영 적용 여부" + "다음 cycle 승인" 까지 만 다룸</li>
+<li>본 문서 ≠ 최종 연구 종료 선언</li>
+<li>본 문서 ≠ Track 1 superiority 확정</li>
+<li>본 문서 ≠ Track 2 영구 폐기</li>
+<li>운영 환경 (production rollout / shadow / canary) = 본 페이지 외 영역</li>
+</ul>
+
+<div class="footer">
+<p><strong>본 문서의 위치</strong>: 의사결정자 1 page brief. 상세 결과 보고서 + raw evidence 는 별첨 (`docs/track2_cold_validation_cycle1_results_20260508.md` / `docs/track1_vs_track2_comparison_results_20260508.md`).</p>
+</div>
+
+</body>
+</html>
