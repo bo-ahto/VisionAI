@@ -23,9 +23,9 @@
 | Train rows | 6,806 (artists: 645) |
 | Test rows | 1,689 (artists: 162, 정의상 모두 cold) |
 | **Cold MdAPE (point)** | **36.18%** |
-| **Cold MdAPE 95% CI** (artist-cluster bootstrap n=2,000) | **[31.47, 44.86]** |
+| **Cold MdAPE 95% CI** (artist-cluster bootstrap n=2,000, prereg-faithful seed) | **[31.47, 45.10]** |
 | 사전 임계 (point + CI 상한) | ≤ 26.07% |
-| 판정 | ✗ **FAIL** (point 36.18% > 26.07% / CI 상한 44.86% > 26.07%) |
+| 판정 | ✗ **FAIL** (point 36.18% > 26.07% / CI 상한 45.10% > 26.07%) |
 
 ### 1.2 Primary 2 (D family) — Time-split (≤2023 / 2024+)
 
@@ -67,7 +67,12 @@
 | Hard gate (cold sub-bin all) | ✗ |
 | **Verdict** | **FAIL** (전 항목 미충족) |
 
-> **Verdict 정의**: Primary 1 + 2 + 모든 hard gate 통과 시 PASS / 일부 통과 시 BORDERLINE / 전 항목 미충족 시 FAIL → **본 cycle = FAIL**.
+> **Verdict 정의** (prereg §1.7 logic):
+> - **PASS**: Primary 1 + Primary 2 모두 충족 + 모든 hard gate 충족
+> - **FAIL**: Primary 1 임계 미충족 OR hard gate ≥ 2건 violation
+> - **BORDERLINE**: Primary 1 충족 + (Primary 2 미충족 OR hard gate 1건 violation)
+>
+> 본 cycle = **FAIL** (Primary 1 미충족 + hard gate 4건 violation).
 
 ## 3. 핵심 finding 해석
 
@@ -98,7 +103,7 @@
 | Verdict | **FAIL** |
 | 트랙 2 cold 운영 적용 | **보류** (코덱스 prereg + 본 결과 일치) |
 | 콜론30 외부 보고 | **의무** (한계 + 후속 cycle 권고 명시) |
-| 외부 보고서 (PR #44, #45) 정정 | **권고** (curated 24.07% vs broader 36-43% 차이 명시) |
+| 외부 보고서 (PR #44, #45) 정정 | **의무** (curated 24.07% vs broader 36-43% 차이 명시 — 본 cycle FAIL 후 외부 표현 reconcile) |
 | 후속 cycle (Cycle 2 source-expansion: A+C+G) | **재평가 의무** (Stage 4 v3 retract 후 Cycle 2 priority 변동 가능) |
 
 ## 5. Stage 2 (조건부) 진입 여부

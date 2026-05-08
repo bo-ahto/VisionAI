@@ -578,3 +578,40 @@
   * `docs/stage5c_modeling_prereg_20260507.md` (5C modeling, baseline/metric/Holm/PASS 사전 fix, 5A 결과 보기 전 freeze)
 - **HARK control**: 5A-5B prereg ↔ 5C prereg 분리 (코덱스 권고)
 - **Stage 4 결과 input**: Feature 부족 가설 3/3 시그니처 입증 → Stage 5 design 의 핵심 근거
+
+## 트랙 2 Cold Validation Cycle 1 (2026-05-08)
+
+> Archive cycle 종결 후 새 cycle (사용자 결정 + 코덱스 자문) — 트랙 2 Stage 3 운영 채택 cold 모델 (F4 + log_area spline + Huber, curated 24.07%) 의 broader 모집단 + 시간축 readiness 검증.
+
+### 2026-05-08 — [Cycle 1 Stage 1] Stage 3 cold signal retract (Verdict: FAIL, none + critical finding)
+
+- **Pre-registered analysis plan**: `docs/track2_cold_validation_cycle1_prereg_20260508.md` (round 3 GO 후 freeze)
+- **사전 자문 (코덱스)**: B+D primary 우선순위 / Cycle 1+2 분할 / hard gate 권고 / IU confirmatory gate / bootstrap hygiene 사전 고정
+- **prereg 사후 검수 (코덱스 round 1-3)**: P0×2 + P1×3 + P2×1 fix → GO
+- **실험 spec**:
+  * Baseline: F4 + log_area spline + Huber (sklearn HuberRegressor `epsilon=1.35` / `alpha=0.0001`) — Stage 3 운영 채택 spec
+  * Dataset: `data/curated/stage4_full.parquet` (8,495 / 807 작가, SHA-16 `b7b51b81d3a033b5`)
+  * Bootstrap: artist-cluster, n_boot=2000, percentile CI, internal seed = `range(2000)` (prereg-faithful)
+- **Stage 1 결과**:
+  * Primary 1 (Random LAO 80/20): cold MdAPE **36.18%** / CI **[31.47, 45.10]** — 임계 26.07% 미충족
+  * Primary 2 (Time-split 2024+): cold MdAPE **43.15%** / CI [38.83, 47.35] / degradation +4.08%p — 임계 + degradation 모두 미충족
+  * Hard gates: low-price (P25) cold 63.67% / cold sub-bin (0=48.91%, 1-4=42.19%, 5-9=35.47%) — **모두 ≥ 28.07% 임계 초과**
+- **Verdict (prereg §1.7 logic)**: **FAIL** (Primary 1 미충족 + hard gate 4건 violation)
+- **핵심 finding**: Stage 3 24.07% cold signal (1,378/100 curated, 100-seed) 이 broader 모집단 retract — Random LAO +12.11%p / Time-split +19.08%p 회복
+- **회복 사유 가설** (본 cycle 미검증 / confirmatory X):
+  1. Curated dataset 의 selection bias (top works artists only)
+  2. Sample size effect (curated 의 systematic shift 미반영)
+  3. Time drift (2024+ Test 의 분포 shift)
+- **Decision binding 적용 (사용자 환경: shadow 평가 X)**:
+  * 트랙 2 cold 운영 적용 = **보류**
+  * 콜론30 외부 의사결정 요청 자료 = **의무** (별도 작성)
+  * 외부 보고서 (PR #44, #45) 정정 = **의무** (cold 24.07% sub-claim 의 curated 한정 명시)
+- **Stage 2 진입 X**: FAIL (BORDERLINE X) → Bootstrap robustness 추가 의미 없음 (CI 광범위하게 임계 초과)
+- **분류**: **none (정상 흐름)** + **critical finding** (Stage 3 cold signal 의 broader retract)
+- **운영 영향 X**: 운영 main 모델 (트랙 1 `v3_filtered_tuned` 32f) 그대로 유지
+- **본 cycle 의 가치 (정직 보고)**: Stage 3 signal 의 retract 를 사전 정의 평가 protocol 로 정직 검증 / "cold 영역 트랙 2 우위" 의 한계 명확화 / 운영 main 모델 안전 유지 (미검증 후속 모델 회피)
+- **후속 cycle 권고** (Cycle 2 priority 재평가 의무):
+  * 같은 spec 의 트랙 1 vs 트랙 2 직접 비교 (stage4_full.parquet)
+  * Cycle 2 source-expansion (Saatchi 통합) priority 재평가
+  * 외부 협력 영역 (외부 데이터 source / 입력 정합성 확장) 우선순위 ↑
+- **승인**: 사용자 검토 + 코덱스 prereg + 결과 사후 검수

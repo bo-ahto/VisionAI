@@ -92,15 +92,17 @@ def mdape_pct(y_true_log: np.ndarray, y_pred_log: np.ndarray) -> float:
     return float(np.median(ape) * 100)
 
 
-def cluster_bootstrap_ci(test_df: pd.DataFrame, y_pred_log: np.ndarray, n_boot: int = N_BOOT, seed: int = SEED) -> tuple[float, float]:
-    """Artist-cluster bootstrap percentile CI for cold MdAPE."""
-    rng_master = np.random.default_rng(seed)
+def cluster_bootstrap_ci(test_df: pd.DataFrame, y_pred_log: np.ndarray, n_boot: int = N_BOOT) -> tuple[float, float]:
+    """Artist-cluster bootstrap percentile CI for cold MdAPE.
+
+    Prereg §1.5 bootstrap hygiene: internal seed = range(n_boot) (b 별 결정론).
+    """
     test_df = test_df.copy()
     test_df["__y_pred_log"] = y_pred_log
     artists = test_df["artist_slug"].unique()
     boot_mdapes = []
     for b in range(n_boot):
-        rng = np.random.default_rng(rng_master.integers(0, 2**32 - 1))
+        rng = np.random.default_rng(b)  # prereg-faithful: internal seed = b
         sampled = rng.choice(artists, size=len(artists), replace=True)
         boot_df = pd.concat(
             [test_df[test_df["artist_slug"] == a] for a in sampled],
@@ -240,7 +242,12 @@ def evaluate_time_split(df: pd.DataFrame) -> dict:
 
 
 def judgment(p1: dict, p2: dict) -> dict:
-    """Intersection-union confirmatory gate."""
+    """Intersection-union confirmatory gate (prereg §1.7 logic).
+
+    PASS: Primary 1 + Primary 2 모두 충족 + 모든 hard gate 충족
+    FAIL: Primary 1 임계 미충족 OR hard gate ≥ 2건 violation
+    BORDERLINE: Primary 1 충족 + (Primary 2 미충족 OR hard gate 1건 violation)
+    """
     p1_point_pass = p1["cold_mdape"] <= PRIMARY_THRESHOLD_PCT
     p1_ci_pass = p1["ci_95"][1] <= PRIMARY_THRESHOLD_PCT
     p1_pass = p1_point_pass and p1_ci_pass
@@ -249,20 +256,24 @@ def judgment(p1: dict, p2: dict) -> dict:
     p2_degrad_pass = p2["time_degradation_pp"] is not None and p2["time_degradation_pp"] <= TIME_DEGRADATION_THRESHOLD
     p2_pass = p2_point_pass and p2_degrad_pass
 
-    # Hard gates (Time-split base — Random LAO 도 점검 가능 but Time-split 의 cold sub-bin 이 더 정확)
+    # Hard gates (Time-split base)
     low_price_pass = p2["low_price_cold_mdape"] is None or p2["low_price_cold_mdape"] <= LOW_PRICE_HARM_THRESHOLD
-    sub_bin_pass = all(
-        v["mdape"] is None or v["mdape"] <= COLD_SUB_BIN_HARM_THRESHOLD
-        for v in p2["cold_sub_bins"].values()
-    )
-    hard_gate_pass = low_price_pass and sub_bin_pass
+    sub_bin_violations = [
+        label for label, v in p2["cold_sub_bins"].items()
+        if v["mdape"] is not None and v["mdape"] > COLD_SUB_BIN_HARM_THRESHOLD
+    ]
+    sub_bin_pass = len(sub_bin_violations) == 0
+    hard_gate_violations = (0 if low_price_pass else 1) + len(sub_bin_violations)
+    hard_gate_pass = hard_gate_violations == 0
 
+    # Prereg §1.7 verdict logic
     if p1_pass and p2_pass and hard_gate_pass:
         verdict = "PASS"
-    elif (p1_point_pass or p2_point_pass) and not (p1_pass and p2_pass and hard_gate_pass):
-        verdict = "BORDERLINE"
-    else:
+    elif (not p1_pass) or hard_gate_violations >= 2:
         verdict = "FAIL"
+    else:
+        # Primary 1 충족 + (Primary 2 미충족 OR hard gate 1건)
+        verdict = "BORDERLINE"
 
     return {
         "verdict": verdict,
@@ -273,8 +284,9 @@ def judgment(p1: dict, p2: dict) -> dict:
         "primary_2_point_pass": p2_point_pass,
         "primary_2_degradation_pass": p2_degrad_pass,
         "hard_gate_pass": hard_gate_pass,
+        "hard_gate_violations": hard_gate_violations,
         "low_price_pass": low_price_pass,
-        "sub_bin_pass": sub_bin_pass,
+        "sub_bin_violations": sub_bin_violations,
     }
 
 

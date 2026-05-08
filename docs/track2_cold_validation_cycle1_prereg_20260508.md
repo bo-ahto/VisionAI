@@ -39,7 +39,7 @@
 | `birth_year_centered` | artist_birth_year - mean(birth_year) |
 | `log_artist_total_works` | log(artist 별 total works count) |
 | `log_area` 의 3-knot restricted cubic spline | 추가 항 (-1.24%p) |
-| **Loss** | **Huber** (delta = 1.345 — Stage 3 운영 채택 spec) |
+| **Loss** | **Huber** (sklearn HuberRegressor `epsilon = 1.35` — Stage 3 운영 채택 spec, `stage3_huber_validation.py:72` 일치) |
 | **Train target** | `log(price_krw)` |
 
 > 변경 X — Stage 3 운영 채택 spec 그대로 freeze.
