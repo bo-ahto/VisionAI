@@ -175,8 +175,14 @@ P_NEW_2 = r"\b(19[2-9]\d|200[0-5])\s+year\s+birth\b"
 #### Precision (수동 검수)
 
 - ✅ 추가 추출 의 전수 수동 검수 의 **TP rate ≥ 95%** (= FP 또는 UNCERTAIN 비율 ≤ 5%)
-  - 추가 추출 < 20 작가 시 의 95% threshold = 사실상 "0~1 FP 허용" (작은 sample 의 의미)
-  - 정확 영역 의 보호 의무 — UNCERTAIN 도 보수적 FP 처리
+  - **정확 한 binding 의 의미 (수학적)**: TP rate = (TP count) / (추가 추출 전체 n). FP + UNCERTAIN ≤ 5% × n 의 정수 round-down 영역 만 PASS.
+    - n = 18 → 17/18 = 94.44% → FP 1 시 FAIL / **0 FP 만 PASS**
+    - n = 19 → 18/19 = 94.74% → FP 1 시 FAIL / **0 FP 만 PASS**
+    - n = 20 → 19/20 = 95.00% → FP 1 시 PASS (95% ≥ 95% 이므로) / **최대 1 FP PASS**
+    - n = 39 → 37/39 = 94.87% → FP 2 시 FAIL / **최대 1 FP PASS** (38/39 = 97.44%)
+    - n = 40 → 38/40 = 95.00% → FP 2 시 PASS / **최대 2 FP PASS**
+  - 본 cycle 의 추가 추출 예상 ≈ 18-19 작가 → 사실상 **0 FP 만 PASS** (1 FP 라도 발생 시 FAIL).
+  - UNCERTAIN 도 보수적 FP 처리 (= TP 가 아닌 모든 판정 = FP 와 동등 처리)
 
 > **회수율 증분 (artist 단위) = 보고값 만 / PASS / FAIL 미적용**.
 > "측정 pilot" 의 본질 — 회수율 의 크기 자체 가 PASS / FAIL 결정 영역 X (0%p 도 valid 측정 결과 / 0 < x < 0.5%p 도 valid). 회수율 = 결과 보고서 의 정량 record 만 / 후속 cycle 의 입력.
@@ -235,4 +241,5 @@ P_NEW_2 = r"\b(19[2-9]\d|200[0-5])\s+year\s+birth\b"
 |---|---|
 | Saatchi 재수집 의견 (2026-05-08) | year_made 우선순위 → birth_year 2순위 / regex 확장 만으로 몇 %p 오르는지 먼저 측정 / decision-binding X |
 | 본 prereg round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×2 (fail-closed protocol binding 부족 / PR merge 의 adoption 오인) / P1×8 (regex `\|` literal 오류 / PASS rule 비대칭 / FP 기준 약 / 수동 검수 binding 부족 / regression-free 좁음 / P_NEW_1 false positive risk / P_NEW_1 false negative risk / 첫 매칭 우선 precision risk / validity range 근거 결손) / P2×3 (hypothesis vs PASS 분리 / §5 반복 / summary JSON 필드 명시) |
-| 본 prereg round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 prereg round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×1 (§4.1 Precision 의 "0~1 FP 허용" 표현 의 수학적 부정확 — n=18-19 의 95% threshold 는 사실상 0 FP 만 PASS) — round 2 fix: 정확한 수학적 binding 표 명시 + n 별 (18 / 19 / 20 / 39 / 40) PASS 영역 의 정확 한 정수 round-down 표기 |
+| 본 prereg round 3 사후 검수 (예정) | round 2 fix commit 직후 |
