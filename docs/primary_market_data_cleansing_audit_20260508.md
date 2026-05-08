@@ -36,7 +36,7 @@
 | `medium_price_level` | 100% zero | 위 동일 |
 | `profile_completeness` | 100% zero | 위 동일 |
 
-위 3 컬럼 = source data 미존재 → operational 코드 가 0.0 으로 채움 (모델 input 의 noise feature 영역).
+위 3 컬럼 = source data 미존재 → operational 코드 가 0.0 으로 채움 (관측 사실 만 / 모델 영향 의 인과 해석 영역 X).
 
 #### 1.2.2 원래 희소 (source data 의 sparse 분포)
 
@@ -78,10 +78,10 @@
 | # | Rule | Fail n | 분류 | Threshold 근거 |
 |---|---|---|---|---|
 | 1 | `price_krw` null/zero/negative | 0 | A | source 의 정량 무결성 |
-| 2 | `price_krw > 1,000,000,000` (10억 초과) | 3 | D | 1차 시장 의 통상 범위 외 (운영 reported 의 max 약 49.68억 = outlier) |
+| 2 | `price_krw ≥ 1,000,000,000` (10억 이상) | 3 | D | 1차 시장 의 통상 범위 외 (운영 reported 의 max 약 49.68억 = outlier) |
 | 3 | `area_cm2` null/zero | 0 | A | source 정량 무결성 |
-| 4 | `area_cm2 < 100` (10×10 미만) | 52 | C | 1차 시장 의 통상 작품 크기 의 conservative cutoff |
-| 5 | `area_cm2 > 50,000` (224×224 초과) | 135 | D | 운영 dataset 의 95-percentile 영역 의 conservative filter (anomaly cutoff X — 대형 valid 작품 가능) |
+| 4 | `area_cm2 ≤ 100` (10×10 이하) | 52 | C | 1차 시장 의 통상 작품 크기 의 conservative cutoff |
+| 5 | `area_cm2 ≥ 50,000` (224×224 이상) | 135 | D | 운영 dataset 의 95-percentile 영역 의 conservative filter (anomaly cutoff X — 대형 valid 작품 가능) |
 | 6 | `area_cm2 > 100,000` (316×316 초과) | 30 | D | 운영 max 187,200 cm² 영역 의 outlier (1차 시장 의 통상 외) |
 | 7 | `aspect_ratio ≤ 0` / null | 0 | A | source 정량 무결성 |
 | 8 | `aspect_ratio > 10` (1:10 초과) | 20 | D | 1차 시장 의 통상 작품 비율 의 conservative cutoff |
@@ -122,31 +122,34 @@
 
 ### 3.2 T6 의 rule-filter 정의
 
-T4 + 다음 모두 충족:
-- `100,000 < price_krw < 1,000,000,000`
-- `100 < area_cm2 < 50,000` ⚠️ (50,000 = conservative filter / anomaly cutoff X)
-- `0 < aspect_ratio ≤ 10`
-- `0 < ho ≤ 200`
-- `1950 ≤ year_made ≤ 2026` ⚠️ (1950 = scope filter / `year_made < 1950` 의 데이터 오류 영역 X)
-- `year_made - artist_birth_year ≥ 10` (데이터 오류 + 의심 영역 동시 제거)
-- `0 ≤ work_age ≤ 100`
+T4 + 다음 모두 충족 (boundary 모두 strict — `>` / `<` / 단독 `≥` / `≤` 명시):
+
+- `price_krw > 100,000` AND `price_krw < 1,000,000,000`
+- `area_cm2 > 100` AND `area_cm2 < 50,000` ⚠️ (50,000 = conservative filter / anomaly cutoff X)
+- `aspect_ratio > 0` AND `aspect_ratio ≤ 10`
+- `ho > 0` AND `ho ≤ 200`
+- `year_made ≥ 1950` AND `year_made ≤ 2026` ⚠️ (1950 = scope filter / `year_made < 1950` 의 데이터 오류 영역 X)
+- `(year_made - artist_birth_year) ≥ 10` (데이터 오류 + 의심 영역 동시 제거)
+- `work_age ≥ 0` AND `work_age ≤ 100`
 - `artist_total_works > 0` (placeholder 제거)
 - `gallery_city_count > 0` (placeholder 제거)
+
+> **Boundary 통일**: 위 rule = 본 audit script (`scripts/audit_primary_market_data.py`) 의 정확 한 정의. §2.2 의 fail count 의 boundary 와 정합 (예: `area_cm2 < 100` (§2.2 fail 52) = T6 의 `area_cm2 > 100` 의 violator 와 정확 동일).
 
 ### 3.3 T4 → T6 rule 별 drop count (정량 분해)
 
 T4 base = 4,628 rows / T6 = 4,460 / drop = 168.
 
-| Rule | Single fail (해당 rule 만 fail) | Total fail (다른 rule fail 도 포함) |
+| Rule (T6 boundary 와 정확 동일) | Single fail (해당 rule 만 fail) | Total fail (다른 rule fail 도 포함) |
 |---|---|---|
-| `0 < ho ≤ 200` | 38 | 87 |
+| `ho > 0` AND `ho ≤ 200` | 38 | 87 |
 | `gallery_city_count > 0` | 60 | 61 |
-| `100 < area < 50,000` | 10 | 59 |
-| `1950 ≤ year_made ≤ 2026` | 0 | 6 |
-| `0 ≤ work_age ≤ 100` | 0 | 6 |
-| `year - birth ≥ 10` | 2 | 4 |
-| `aspect_ratio ≤ 10` | 2 | 3 |
-| `price 10만 ≤ x < 10억` | 1 | 1 |
+| `area_cm2 > 100` AND `area_cm2 < 50,000` | 10 | 59 |
+| `year_made ≥ 1950` AND `year_made ≤ 2026` | 0 | 6 |
+| `work_age ≥ 0` AND `work_age ≤ 100` | 0 | 6 |
+| `(year_made - artist_birth_year) ≥ 10` | 2 | 4 |
+| `aspect_ratio > 0` AND `aspect_ratio ≤ 10` | 2 | 3 |
+| `price_krw > 100,000` AND `price_krw < 1,000,000,000` | 1 | 1 |
 | `artist_total_works > 0` | 0 | 0 |
 
 > **Drop rows (n=168) 의 fail rule 수 평균 = 1.35** (대부분 single rule fail / overlap 일부).
@@ -220,4 +223,5 @@ Cycle 1 의 Track 2 Stage 3 운영 채택 baseline 24.07% 는 **curated dataset 
 | 차수 | 내용 |
 |---|---|
 | 본 audit 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×3 (§4.1/§4.2 over-claim, anomaly-free 표현 과대) / P1×5 (threshold 근거 결손, T6 분해 정량 부족, anomaly taxonomy 혼재, placeholder 분리 결손, trade-off 정량 부족) / P2×4 (area 기준 불일치, 시간 기준 정리, §6 disclaimer, 라벨 톤다운) |
-| 본 audit 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 audit 보고서 round 2 사후 검수 (2026-05-08, NEEDS FIX) | P2×2 (boundary 표기 불일치 — area/price 의 ≤/< 통일 / §1.2.1 "noise feature 영역" 표현 톤다운) — round 2 fix: §2.2 boundary `≤`/`≥` 명시 + §3.2/§3.3 boundary 의 explicit AND 표현 + §1.2.1 톤다운 |
+| 본 audit 보고서 round 3 사후 검수 (예정) | round 2 fix commit 직후 |
