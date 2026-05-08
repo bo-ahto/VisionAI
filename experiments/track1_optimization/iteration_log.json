@@ -255,6 +255,83 @@
           "ln_followers × medium_category → sparsity/category 영역 의 의무 warm 개선/cold 악화 가능"
         ]
       }
+    },
+    {
+      "iter": 4,
+      "phase": "Phase 4",
+      "strategy": "ADD-A (interaction / sequential 누적)",
+      "n_features_before": 32,
+      "n_features_after": 33,
+      "candidates_processed": 2,
+      "candidate_3_deferred": "ln_followers × medium_category (label_encode 곱셈 비권고 / post-hoc only)",
+      "accepted_interactions": ["artist_total_works_x_ho"],
+      "timestamp": "2026-05-09T01:04:44Z",
+      "results_path": "experiments/track1_optimization/phase4/phase4_add_a_results.json",
+      "iter_1": {
+        "interaction": "career_stage_x_gallery_tier",
+        "deltas": {"cold_ensemble": -0.057, "warm_kfold_xgboost": -0.042},
+        "primary_pass": false,
+        "guards_pass": true,
+        "iter_pass": false,
+        "verdict": "FAIL → rollback"
+      },
+      "iter_2": {
+        "interaction": "artist_total_works_x_ho",
+        "deltas": {
+          "cold_ensemble": -0.015,
+          "warm_kfold_xgboost": -0.117,
+          "cold_artsy_ensemble": 0.453,
+          "cold_saatchi_ensemble": -0.529
+        },
+        "primary_pass": true,
+        "guards_pass": true,
+        "iter_pass": true,
+        "verdict": "PASS → ACCEPTED",
+        "note": "Δ Warm -0.117 ≤ -0.1 (dual-primary 영역 의 의무 만족) / Saatchi cold 영역 의 의무 영역 의 의무 -0.529 개선 / Artsy cold +0.453 (G3 영역 의 의무 영역 의 의무 PASS)"
+      },
+      "verdict": "PASS (1 interaction accepted / 32 → 33 / first PASS in cycle)",
+      "codex_phase4_pre_review": {
+        "verdict": "NEEDS FIX (P1) → fix applied",
+        "p1_fixes_applied": [
+          "1. termination = cap 6 만 (Δ Cold > +0.1 hard stop X / prereg ADD-A 전용 termination 영역 의 의무 X)",
+          "2. candidate 3 (ln_followers × medium_category) = 보류 (label_encode 곱셈 비권고)"
+        ]
+      },
+      "codex_phase4_post_review": {
+        "verdict": "GO with P2",
+        "p2_followup": [
+          "해석 문구: 'endorsement effect' → 'source-conditional interaction pattern' (인과 단정 X)",
+          "해석 문구: '통계적으로 유의' → 'preregistered primary threshold 충족 / 운영상 개선' (formal significance test X)"
+        ],
+        "phase4_outcome": "PASS / 1 interaction accepted / 32 → 33 / cycle 영역 의 의무 영역 의 의무 첫 PASS",
+        "interpretation_notes": [
+          "Δ Warm -0.117 영역 의 의무 영역 의 의무 warm noise band (std × 0.25 = 0.04) 영역 의 의무 영역 의 의무 큰 영역 → meaningful 영역 의 의무 영역 의 의무 영역 의 의무",
+          "Δ Cold -0.015 영역 의 의무 영역 의 의무 cold noise band (1.18) 영역 의 의무 영역 의 의무 영역 의 의무 작은 영역 → cold 개선 영역 의 의무 영역 의 의무 영역 의 의무 X",
+          "Saatchi cold -0.529 / Artsy cold +0.453 = source-conditional interaction pattern (인과 단정 X)"
+        ]
+      }
+    },
+    {
+      "iter": 5,
+      "phase": "Phase 5",
+      "strategy": "ADD-B (warm artist 통계 / as-of contract) — SKIP",
+      "verdict": "SKIP (recommended)",
+      "skip_reason": "transaction_date column 영역 의 의무 영역 의 의무 X (1차 시장 inventory-only 데이터). §3.10 As-of Feature Contract 영역 의 의무 영역 의 의무 충족 X. year_made = 25% only / 거래시점 X / strict < 의미 영역 의 의무 영역 의 의무 X.",
+      "candidates_skipped": ["artist_price_median", "artist_price_std", "artist_price_count"],
+      "n_features_before": 33,
+      "n_features_after": 33,
+      "timestamp": "2026-05-09T01:04:44Z",
+      "codex_phase5_pre_review": {
+        "verdict": "SKIP (recommended)",
+        "reasoning": [
+          "prereg §3.10 = transaction_date strict 의무",
+          "dataset = 1차 시장 (gallery / online / saatchi 현재 판매 중) / for_sale ratio 영역 의 의무 영역 의 의무 transaction event X",
+          "year_made (25%) = 제작시점 / 거래시점 X / strict < 영역 의 의무 영역 의 의무 영역 의 의무 의미 X",
+          "row index / fold internal 영역 의 의무 영역 의 의무 = as-of 의미 영역 의 의무 영역 의 의무 X / prereg 비정합",
+          "옵션 A (SKIP) 영역 의 의무 영역 의 의무 = prereg 정합 영역 의 의무 권고"
+        ],
+        "phase6_partial_proceed": "source_conditional_ho_power 만 진행 (gallery_avg_price / medium_avg_price = same as-of contract / 보류)"
+      }
     }
   ]
 }
