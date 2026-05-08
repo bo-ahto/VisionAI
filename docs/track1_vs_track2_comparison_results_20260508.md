@@ -6,7 +6,13 @@
 > **실험 결과**: `experiments/structural_v1/results/track1_vs_track2_comparison.json`
 > **Decision binding**: ❌ **X** — descriptive only / surrogate 비교 / 운영 채택 결정 근거 X
 
-> ⚠️ **본 결과 의 caveat (코덱스 의무)**: Track 1 surrogate (14 derivable features 의 CatBoost) ≠ 운영 트랙 1 (32 features + 운영 학습 28K + Optuna best_params + calibration). 본 결과 는 **GBM family vs hedonic regression family** 비교 만 — 운영 의사결정 근거 X.
+> ⚠️ **본 결과 의 caveat (코덱스 필수 3 항목)**:
+>
+> 1. **모집단 다름**: 운영 Track 1 = 28K Artsy + Saatchi 통합 / 본 surrogate = 8,495 Artsy only
+> 2. **Split protocol 다름**: 운영 Track 1 = GroupKFold + calibration / 본 surrogate = Random LAO 80/20 + Time-split (calibration 미적용)
+> 3. **Metric 문맥 다름**: 운영 Track 1 metric = 운영 학습/calibration 결과 / 본 surrogate metric = Stage 4 v3 offline cold validation
+>
+> Track 1 surrogate (14 derivable features 의 CatBoost) ≠ 운영 트랙 1 (32 features + 운영 학습 28K + Optuna best_params + calibration). 본 결과 는 **GBM family vs hedonic regression family** 비교 만 — 운영 의사결정 근거 X.
 
 ## 0. 한 줄 요약
 
@@ -39,26 +45,28 @@
 | **트랙 2** (F4 + spline + Huber) | 43.15% | [38.63, 47.57] | 39.08% | **+4.08%p** ✅ |
 | **Δ (T2 - T1)** | +7.28%p (T1 우위) | CI 부분 겹침 | T2 만 train ≈ test | T1 surrogate gap 약 4 배 |
 
-### 2.1 해석 — Robustness 패턴 비대칭 (핵심 finding)
+### 2.1 해석 — Train→Test gap 패턴 차이 (보조 신호)
 
-**Track 1 surrogate 의 Time degradation = +15.88%p**:
+> ⚠️ **본 해석의 근거 강도**: degradation = train_df 에 다시 예측한 in-sample cold error 와 test cold MdAPE 의 gap. **out-of-time generalization gap 의 시그널** 수준 — 모델 family 의 robustness 단정 근거 X (in-sample fit 은 model fitness 만 측정 / 실제 robustness = repeated split 또는 nested CV 의무).
+
+**Track 1 surrogate Time gap = +15.88%p**:
 - Train cold (in-sample) MdAPE 19.99% vs Test cold (2024+) MdAPE 35.88%
-- → **CatBoost 의 GBM overfitting 패턴** (in-sample 에 strong fit / out-of-time 큰 gap)
-- 1,000 iteration / depth 6 의 surrogate 가 8,495 rows 에 over-flex 가능성
+- → **out-of-time gap 큼** (in-sample fit 강함 + test gap 큼)
+- 1,000 iteration / depth 6 의 surrogate 가 8,495 rows 에 over-flex 가능성 시사 (단정 X)
 
-**Track 2 의 Time degradation = +4.08%p**:
+**Track 2 Time gap = +4.08%p**:
 - Train cold MdAPE 39.08% vs Test cold MdAPE 43.15%
-- → **Hedonic regression 의 robust 패턴** (in-sample ≈ out-of-sample)
-- 4 features 의 simple spec → underfitting 안전 영역
+- → **in-sample ≈ out-of-sample 패턴** (4 features simple spec)
+- generalization gap 작음 시사 (단정 X)
 
 ### 2.2 운영 의미 (caveat 의무 / decision X)
 
 > ⚠️ **다음 해석은 surrogate 비교 한정 / 운영 의사결정 근거 X**:
 >
-> - Time-split test 의 point estimate 만 보면 Track 1 surrogate 우위 (35.88% vs 43.15%)
-> - 그러나 Train→Test degradation gap 이 4 배 차이 (15.88 vs 4.08) — Track 1 surrogate 의 큰 overfitting 시사
-> - 운영 환경의 시간 drift 에 대한 robustness = Track 2 의 hedonic regression 가 더 안정적일 가능성
-> - **단**: 운영 트랙 1 (28K 학습 + calibration) 은 본 surrogate 와 다름 → 직접 결론 X
+> - Time-split test 의 point estimate = Track 1 surrogate 우위 (35.88% vs 43.15%)
+> - Train→Test gap 차이 (+15.88%p vs +4.08%p) = 모델 family 의 generalization 패턴 차이 **시사** (단정 X)
+> - 운영 환경의 시간 drift 에 대한 robustness 결론 = nested CV / repeated split 의무 (본 cycle 미실행)
+> - 운영 트랙 1 (28K 학습 + calibration) 은 본 surrogate 와 다름 → 직접 결론 X
 
 ## 3. 종합 비교 (양쪽 split)
 
@@ -72,12 +80,12 @@
 
 → **"트랙 1 < 트랙 2 cold" 일관된 결론 X** / **"트랙 2 < 트랙 1 cold" 일관된 결론 X**.
 
-### 3.2 모델-패밀리 차이 (descriptive)
+### 3.2 모델-패밀리 차이 (descriptive 시사)
 
-- **Track 1 (GBM family)**: high in-sample flexibility / 시간 drift 에 큰 sensitivity
-- **Track 2 (Hedonic regression family)**: stable in-sample = out-of-sample / 시간 drift 에 robust
+- **Track 1 (GBM family) surrogate**: high in-sample flexibility (train cold 19.99%) / Time-split 시 큰 gap (+15.88%p)
+- **Track 2 (Hedonic regression family)**: stable in-sample / out-of-sample (gap +4.08%p)
 
-본 차이는 모델 family 의 일반적 trade-off — **운영 환경에서는 robustness 가 우선** 일 수 있음 (단, 운영 트랙 1 의 calibration 적용 후 실제 패턴은 본 surrogate 와 다를 수 있음).
+본 차이 시사 = 모델 family 의 일반적 trade-off (단정 X — 본 cycle 의 single split 만으로 robustness 단정 X / nested CV / repeated split 의무 = 본 cycle 미실행 영역). **운영 환경에서의 실제 robustness** = 운영 트랙 1 의 calibration 적용 + 운영 학습 28K 의 fit 패턴 의무 — 본 surrogate 와 다를 수 있음.
 
 ## 4. Cycle 1 결과 와 의 정합성
 

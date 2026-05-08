@@ -5,7 +5,13 @@
 > **Decision binding**: ❌ **X** — descriptive only / supportive analysis / 운영 채택 결정 근거 X
 > **사전 자문**: 코덱스 (Lane 1 vs Lane 2 / schema audit FAIL → Lane 2 권고)
 
-> ⚠️ **Caveat (코덱스 필수 명시)**: 본 비교 = "Track 1 surrogate (stage4_full.parquet 의 13-15 features 로 재학습된 GBM) vs 트랙 2 (F4 + spline + Huber)". **운영 Track 1 직접 평가 X / decision-binding 비교 X**. 본 결과는 "GBM family vs hedonic regression family" 의 모델-패밀리 비교 supportive 자료.
+> ⚠️ **Caveat (코덱스 필수 3 항목)**:
+>
+> 1. **모집단 다름**: 운영 Track 1 = 28K Artsy + Saatchi 통합 / 본 surrogate = 8,495 Artsy only
+> 2. **Split protocol 다름**: 운영 Track 1 = GroupKFold + calibration / 본 surrogate = Random LAO 80/20 + Time-split (학습 외 calibration 미적용)
+> 3. **Metric 문맥 다름**: 운영 Track 1 metric = 운영 학습/calibration 결과 / 본 surrogate metric = Stage 4 v3 offline cold validation
+>
+> 본 비교 = "Track 1 surrogate (stage4_full.parquet 의 14 features 로 재학습된 CatBoost) vs 트랙 2 (F4 + spline + Huber)". **운영 Track 1 직접 평가 X / decision-binding 비교 X**. 본 결과는 "GBM family vs hedonic regression family" 의 모델-패밀리 비교 supportive 자료.
 
 ## 1. 비교 실험 의 본질
 
@@ -47,7 +53,7 @@
 7. `ln_followers` (log1p of artist_followers)
 8. `for_sale_ratio` (artist_for_sale / artist_total_works, capped 0-1)
 9. `has_seoul` (Seoul in gallery_cities)
-10. `has_international` (len of gallery_cities > 1 or non-Korean cities)
+10. `has_international` (gallery_cities 중 'Seoul' 외 모든 도시 = international 처리 — 코드 구현 동일 / 국내 비서울 도시 포함 caveat: Busan/Daegu 등도 international 으로 처리됨, surrogate 단순화)
 11. `gallery_city_count` (count of gallery_cities)
 12. `is_krw` (price_currency == 'KRW')
 13. `gallery_type` (categorical)
