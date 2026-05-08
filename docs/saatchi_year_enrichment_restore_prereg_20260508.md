@@ -42,7 +42,8 @@
 | Path | 처리 | Pre-run digest 기록 | Post-run digest 검증 |
 |---|---|---|---|
 | `data/saatchi_cleaned.parquet` | **변경 X** (read-only 입력) | shasum -a 256 기록 | 실행 직후 재산출 / 변경 시 즉시 abort |
-| `data/primary_market_dataset.parquet` (Artsy) | 영향 X | 기록 의무 | 재산출 의무 |
+
+> **Artsy parquet (`data/primary_market_dataset.parquet`) 영역 제외**: 본 cycle 은 Saatchi enrichment 영역 만 / Artsy parquet 의 read / write 영역 X / 따라서 fail-closed protocol 미적용 (truly irrelevant).
 
 **Fail-closed protocol** (실행 코드 의 의무):
 1. 실행 시작 시 input parquet sha-256 기록 (logger info)
@@ -167,4 +168,5 @@ operational `scripts/saatchi_year_made_merger.py` 의 다음 함수 호출 (실�
 |---|---|
 | Saatchi 재수집 의견 (2026-05-08) | year_made 우선순위 / batch 운영 cache 분리 / B-3 정량 입력 만 / decision-binding X / git history 복원 권고 |
 | 본 prereg round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×2 (restoration-only 명시 강화 / fail-closed protocol 승격) / P1×6 (merger 함수명 정정 / audit script 부재 / blob id vs sha-256 분리 / PASS tolerance tighter / variant 선택 근거 / 신선도 risk / artifact freeze unconditional) / P2×2 (WORK_AGE 표현 / decision-binding 강화) |
-| 본 prereg round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 prereg round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×1 (Artsy parquet 의 fail-closed 처리 정합성 결손 — pre-run digest 기록 의무 인데 PASS / FAIL 판정 미반영) — round 2 fix: Artsy parquet 영역 제외 명시 (본 cycle = Saatchi 영역 만 / Artsy 사용 X / truly irrelevant) |
+| 본 prereg round 3 사후 검수 (예정) | round 2 fix commit 직후 |
