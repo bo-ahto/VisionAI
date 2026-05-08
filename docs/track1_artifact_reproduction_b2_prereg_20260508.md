@@ -184,4 +184,4 @@ operational reported sanity 비교 (판정 영향 X):
 | B-2 → B-3 사전 자문 (2026-05-08) | B-2 (reproducibility) → B-3 (new split) 순서 권고 / 본 cycle 의 28,376 행 + GroupKFold + calibrated CatBoost 가 main metric path |
 | 본 prereg round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×1 (§9 supportive evidence 표현 오염) / P1×5 (cold/warm 정의 미해결, env freeze 결손, tolerance 근거 결손, calibration 절차 미완성, 데이터 hash 결손) / P2×4 (Hypothesis 통일, 단계별 row 수, secondary metric 무관 명시, B-3 prerequisite 명시) |
 | 본 prereg round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×2 (thread_count freeze 결손 / tolerance 근거 방어 불가능) — round 2 fix: thread_count=1 deterministic freeze + tolerance 근거 재서술 (operational multi-thread → 본 single-thread drift 의 ±0.20%p 보수적 margin) + per-cell factor exact → ±0.005 tolerance (median robustness) |
-| 본 prereg round 3 사후 검수 (예정) | round 2 fix commit 직후 |
+| 본 prereg round 3 사후 검수 (2026-05-08, **GO**) | 미충족 fix 영역 없음 / 신규 issue 없음. thread_count freeze + tolerance 재정의 + per-cell direction+값 tolerance 의 핵심 취약점 해소 |
