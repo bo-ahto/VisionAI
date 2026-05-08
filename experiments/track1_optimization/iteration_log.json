@@ -128,6 +128,66 @@
         "p2_followup": "Phase 2 시작 시 baseline = Phase 0 (32 features) 명시 / Phase 1 FAIL → DROP-A 29-feature 상태 carry-forward X / DROP-B 1-by-1 진행 영역 의 의무 정합",
         "phase1_outcome": "verdict FAIL (locked criterion) / 절차 정합 PASS (procedural GO) / record only"
       }
+    },
+    {
+      "iter": 2,
+      "phase": "Phase 2",
+      "strategy": "DROP-B (low-importance / 1-by-1 누적)",
+      "n_features_before": 32,
+      "n_features_after": 32,
+      "candidates_ordered_shap_asc": ["is_edition", "is_unique", "attribution_class", "price_currency", "gallery_city_count", "is_krw", "is_small", "support_factor"],
+      "candidates_processed": 1,
+      "iter_1_dropped": "is_edition",
+      "iter_1_n_features": 31,
+      "accepted_drops": [],
+      "phase_terminated": true,
+      "termination_reason": "iter 1 Δ Cold ensemble +0.243 > +0.1%p (locked termination rule)",
+      "timestamp": "2026-05-09T00:33:42Z",
+      "results_path": "experiments/track1_optimization/phase2/phase2_drop_b_results.json",
+      "iter_1_metrics": {
+        "feature_dropped": "is_edition",
+        "n_features": 31,
+        "cold_ensemble_mean": "(see results JSON)",
+        "deltas_vs_baseline": {
+          "cold_ensemble":            0.243,
+          "warm_kfold_xgboost":       0.019
+        },
+        "guard_check_locked": {
+          "G1_warm_kfold":      {"delta": 0.019, "pass": true},
+          "G2_overall_ensemble":{"delta": 0.243, "pass": true},
+          "G3_artsy_cold":      {"pass": true},
+          "G4_saatchi_cold":    {"pass": true}
+        },
+        "primary_pass": false,
+        "all_guards_pass": true,
+        "iter_pass": false,
+        "termination_triggered": true
+      },
+      "noise_context": {
+        "cold_ensemble_fold_std": 4.734,
+        "delta_cold_in_noise_band": "Δ Cold +0.243%p << fold std × 0.25 = 1.18%p (reference). 통계적 영역 의 의무 영역 X / locked termination 영역 의 의무 영역 의 의무 noise 영역 의 의무 영역 의 의무.",
+        "interpretation": "Phase 2 termination 영역 의 의무 영역 = noise band 영역 의 의무 영역 의 의무 / Guard 4 PASS / record only"
+      },
+      "verdict": "TERMINATED (iter 1 / Δ Cold > +0.1 locked / Guard 4 PASS / 0 features dropped)",
+      "codex_phase2_pre_review": {
+        "verdict": "GO with P2",
+        "p2_fixes_applied": [
+          "1. baseline anchor = §2 frozen + Phase 0 fold std mean (둘 다 record / primary = Phase 0)",
+          "2. 후보 순서 = SHAP avg ASC (tie-break primary)",
+          "3. N 변화 = 32 → 24 (cap 8)",
+          "4. PASS 문구 = Local primary AND Guard 4 / termination Δ = Cold ensemble"
+        ]
+      },
+      "codex_phase2_post_review": {
+        "verdict": "GO with P2",
+        "p2_followup": [
+          "DROP-B local primary / termination metric = cold_ensemble (Phase 0 baseline anchor) — 본 log 명시",
+          "Phase 2 accepted_drops = 0 → Phase 3 restarts from 32-feature baseline (carry-forward X)"
+        ],
+        "phase2_outcome": "TERMINATED on iter 1 / record only / 0 features dropped / 절차 정합 PASS"
+      },
+      "drop_b_primary_metric_locked": "cold_ensemble (Phase 0 baseline anchor / 38.6224)",
+      "drop_b_termination_rule_locked": "Δ cold_ensemble > +0.1%p → phase 종료"
     }
   ]
 }
