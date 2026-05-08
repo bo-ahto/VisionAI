@@ -332,6 +332,128 @@
         ],
         "phase6_partial_proceed": "source_conditional_ho_power 만 진행 (gallery_avg_price / medium_avg_price = same as-of contract / 보류)"
       }
+    },
+    {
+      "iter": 6,
+      "phase": "Phase 6",
+      "strategy": "ADD-C (source_conditional_ho_power only / currency-based)",
+      "scope": "prereg §3.7 / gallery_avg + medium_avg = same as-of / 보류",
+      "n_features_before": 33,
+      "n_features_after": 33,
+      "added_feature_attempted": "source_conditional_ho_power",
+      "currency_mapping": "ho^0.74 (KRW) / ho^0.84 (USD/EUR/GBP/HKD)",
+      "phase4_carry_forward": "artist_total_works_x_ho",
+      "timestamp": "2026-05-09T01:16:17Z",
+      "results_path": "experiments/track1_optimization/phase6/phase6_add_c_results.json",
+      "metrics": {
+        "cold_ensemble": 39.482,
+        "cold_artsy_ensemble": 34.170,
+        "cold_saatchi_ensemble": 42.451,
+        "warm_kfold_xgboost": 9.616,
+        "warm_kfold_ensemble": 10.306
+      },
+      "deltas_vs_phase_local_33": {
+        "cold_ensemble": 0.875,
+        "cold_artsy_ensemble": 0.197,
+        "cold_saatchi_ensemble": 1.241,
+        "warm_kfold_xgboost": 0.019,
+        "warm_kfold_ensemble": 0.006
+      },
+      "deltas_vs_cycle_ref_32": {
+        "cold_ensemble": 0.860,
+        "warm_kfold_xgboost": -0.098
+      },
+      "guard_check_locked": {
+        "G1_warm_kfold":      {"delta": 0.019, "pass": true},
+        "G2_overall_ensemble":{"delta": 0.875, "pass": false, "note": "G2 FAIL (>+0.8)"},
+        "G3_artsy_cold":      {"delta": 0.197, "pass": true},
+        "G4_saatchi_cold":    {"delta": 1.241, "pass": false, "note": "G4 FAIL (>+1.0)"}
+      },
+      "primary_pass": false,
+      "all_guards_pass": false,
+      "iter_pass": false,
+      "verdict": "FAIL (Δ Cold +0.875 / G2 FAIL / G4 FAIL / 0 added)",
+      "interpretation": {
+        "source_conditional_collinearity_with_existing_ho_power": "운영 ho_power = ho^0.74 (모든 row) / source_conditional = currency별 다른 β (KRW=0.74 / USD=0.84). 본 추가 영역 의 의무 영역 의 의무 = 기존 ho_power 영역 의 의무 영역 의 의무 영역 의 의무 영역 의 의무 중복/공선성 가능성 영역 의 의무 영역 의 의무 (사후 해석 / 인과 단정 X).",
+        "saatchi_g4_violation": "Δ Saatchi cold +1.241 영역 의 의무 영역 의 의무 = currency-conditional β=0.84 영역 의 의무 영역 의 의무 Saatchi 영역 의 의무 영역 의 의무 영역 의 의무 ho_power 영역 의 의무 영역 의 의무 영역 의 의무 영역 의 의무 = 중복 신호 / 분산 증가 가능성 영역 의 의무.",
+        "baseline_split_role": "phase-local 33 = 판정 base / cycle reference 32 = 장기 추세 참고 (둘 다 record / 판정 영역 의 의무 33 만)"
+      },
+      "codex_phase6_pre_review": {
+        "verdict": "GO with P2",
+        "p2_fixes_applied": [
+          "1. baseline split: cycle ref=32 / phase-local=33 (Phase 4 carry-forward)",
+          "2. Δ 산출 = vs 33 baseline (phase-local) / vs 32 (cycle reference)",
+          "3. G1-G4 모두 PASS 명시",
+          "4. currency-based (artsy ≠ KRW / artsy USD 85% / saatchi 100% USD)"
+        ]
+      },
+      "codex_phase6_post_review": {
+        "verdict": "GO with P2",
+        "p2_followup": [
+          "baseline 영역 분리 명시 (33=판정 / 32=참고)",
+          "'redundant feature' → 'ho_power 중복/공선성 가능성' 완화 영역 의 의무",
+          "Phase 7 = '수렴 점검 단계 이동' (진행 X) / 현재 = NOT CONVERGED 명시"
+        ],
+        "phase6_outcome": "FAIL / 0 added / record only / Phase 4 PASS state (33) 유지"
+      }
+    },
+    {
+      "iter": 7,
+      "phase": "Phase 7",
+      "strategy": "수렴 검사 (convergence check)",
+      "n_features_current": 33,
+      "current_incumbent": "Phase 4 PASS (artist_total_works × ho carry-forward)",
+      "timestamp": "2026-05-09T01:16:30Z",
+      "convergence_criterion_locked": {
+        "delta_cold_threshold_pp": 0.1,
+        "delta_warm_threshold_pp": 0.05,
+        "lookback_iters": 3
+      },
+      "recent_3_iter_deltas": {
+        "phase4_iter1_career_x_gallery_tier": {"delta_cold": -0.057, "delta_warm": -0.042},
+        "phase4_iter2_artist_x_ho":            {"delta_cold": -0.015, "delta_warm": -0.117},
+        "phase6_iter_source_conditional":     {"delta_cold": +0.875, "delta_warm": +0.019}
+      },
+      "convergence_check": {
+        "delta_cold_max_abs": 0.875,
+        "delta_cold_threshold": 0.1,
+        "delta_cold_converged": false,
+        "delta_warm_max_abs": 0.117,
+        "delta_warm_threshold": 0.05,
+        "delta_warm_converged": false,
+        "verdict": "NOT CONVERGED"
+      },
+      "verdict": "NOT CONVERGED",
+      "exhausted_strategies": {
+        "DROP-A": "FAIL (Phase 1)",
+        "DROP-B": "TERMINATED iter 1 (Phase 2)",
+        "DROP-C": "TERMINATED iter 1 (Phase 3)",
+        "ADD-A": "PASS 1/2 (Phase 4 / artist_total_works × ho accepted)",
+        "ADD-B": "SKIP (transaction_date X / Phase 5)",
+        "ADD-C": "FAIL (Phase 6 / source_conditional_ho_power)"
+      },
+      "iteration_count_used": 6,
+      "iteration_cap_total": 36,
+      "remaining_capacity": 30,
+      "remaining_candidates_within_prereg_literal": 0,
+      "cycle_status_locked": "NOT CONVERGED",
+      "model_update_outcome_locked": "1 accept (Phase 4 / artist_total_works × ho)",
+      "phase8_eligibility": "INELIGIBLE (prereg §3.8: NOT CONVERGED → Phase 8 진입 X)",
+      "next_action_options": [
+        "A. 같은 prereg 틀 영역 의 의무 영역 의 의무 추가 prereg Phase 1-6 iter (다른 strategy) — 다만 prereg literal 후보 영역 의 의무 영역 의 의무 모두 영역 의 의무 진행 / 추가 candidate 영역 의 의무 영역 의 의무 X",
+        "B. prereg 바깥 post-hoc amendment cycle 영역 의 의무 별도 cycle (예: ADD-A 영역 의 의무 영역 의 의무 추가 interaction / DROP-B low-band 영역 의 의무 영역 의 의무 추가 candidate / Saatchi 영역 의 의무 영역 의 의무 별도 source-conditional cycle)",
+        "C. 본 cycle 영역 의 의무 영역 의 의무 NOT CONVERGED 영역 의 의무 영역 의 의무 record only / closeout 영역 의 의무 영역 의 의무 영역 의 의무 사용자 결정 영역"
+      ],
+      "iter_inclusion_rule_locked": "executed iteration 기준 (rollback 영역 의 의무 영역 의 의무 포함 / accepted only X). 본 cycle = 결론 영역 의 의무 영역 의 의무 변경 X (Phase 6 Δ Cold +0.875 영역 의 의무 영역 의 의무 영역 의 의무 가장 영역 의 의무 영역 의 의무).",
+      "codex_phase7_review": {
+        "verdict": "NEEDS FIX (P1) → fix applied",
+        "p1_fixes_applied": [
+          "1. Phase 8 진입 → INELIGIBLE 명시 (prereg §3.8 literal 정합)",
+          "2. cycle_status / model_update_outcome 분리 명시 (audit 영역 의 의무 정합)",
+          "3. next_action options A/B/C 명시 (사용자 결정 영역)",
+          "4. iter inclusion rule = executed (rollback 포함 / accepted only X)"
+        ]
+      }
     }
   ]
 }
