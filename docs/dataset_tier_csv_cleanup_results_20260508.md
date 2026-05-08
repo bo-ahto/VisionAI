@@ -197,4 +197,4 @@ attribution_class (4 unique values)
 |---|---|
 | Cleanup 사전 자문 (2026-05-08) | 제거 13 / 분리 2 / 보존+정의명시 1 / 한글 header 형식 옵션 C (별도 dictionary) 권고 + decision-binding 명시 의무 |
 | 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×3 (§1 = 28 분류 vs 66 전체 의 관계 명시 / §2.1 = 보존 51 = 50 + 1 명시 / §5 has_special_finish 사유 sparse 통일) — round 1 fix |
-| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 결과 보고서 round 2 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음 |
