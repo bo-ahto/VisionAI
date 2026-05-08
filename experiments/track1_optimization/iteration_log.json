@@ -188,6 +188,73 @@
       },
       "drop_b_primary_metric_locked": "cold_ensemble (Phase 0 baseline anchor / 38.6224)",
       "drop_b_termination_rule_locked": "Δ cold_ensemble > +0.1%p → phase 종료"
+    },
+    {
+      "iter": 3,
+      "phase": "Phase 3",
+      "strategy": "DROP-C (correlated / strict literal scope / 1-by-1 누적)",
+      "scope": "prereg §3.4 literal (호수/면적/작가 group within-group only)",
+      "n_features_before": 32,
+      "n_features_after": 32,
+      "candidates_ordered_within_group_shap_asc": ["has_birth_year", "ho"],
+      "candidates_processed": 1,
+      "iter_1_dropped": "has_birth_year",
+      "accepted_drops": [],
+      "phase_terminated": true,
+      "termination_reason": "iter 1 Δ Cold ensemble +0.557 > +0.1%p AND G4 Saatchi cold +1.183 > +1.0%p (locked)",
+      "timestamp": "2026-05-09T00:47:48Z",
+      "results_path": "experiments/track1_optimization/phase3/phase3_drop_c_results.json",
+      "iter_1_metrics": {
+        "feature_dropped": "has_birth_year",
+        "n_features": 31,
+        "deltas_vs_baseline": {
+          "cold_catboost": 0.515,
+          "cold_xgboost": -0.196,
+          "cold_ensemble": 0.557,
+          "cold_artsy_ensemble": 0.106,
+          "cold_saatchi_catboost": 1.538,
+          "cold_saatchi_ensemble": 1.183,
+          "warm_kfold_xgboost": 0.011,
+          "warm_kfold_ensemble": 0.032,
+          "warm_groupkfold_xgboost": 0.090,
+          "warm_groupkfold_ensemble": 0.555
+        },
+        "guard_check_locked": {
+          "G1_warm_kfold":      {"delta": 0.011, "pass": true},
+          "G2_overall_ensemble":{"delta": 0.557, "pass": true},
+          "G3_artsy_cold":      {"delta": 0.106, "pass": true},
+          "G4_saatchi_cold":    {"delta": 1.183, "pass": false, "note": "G4 FAIL"}
+        },
+        "primary_pass": false,
+        "all_guards_pass": false,
+        "iter_pass": false,
+        "termination_triggered": true
+      },
+      "interpretation": {
+        "corr_1.000_artist_birth_year_has_birth_year": "corr=1.000 영역 의 의무 영역 의 의무 ≠ redundant. has_birth_year 영역 = NaN flag (Saatchi 영역 의 의무 birth_year 영역 의 의무 영역 의 의무 missing 영역 의 의무 영역 의 의무) / 모델 영역 의 의무 영역 의 의무 NaN 처리 영역 의 의무 영역 의 의무 정보 영역 의 의무 손실 영역.",
+        "saatchi_segment_impact": "Saatchi cold catboost +1.538 / cold ensemble +1.183 / G4 FAIL — Saatchi 영역 의 의무 영역 의 의무 birth_year missing rate 영역 의 의무 영역 의 의무 큼 영역 의 의무 영역 의 의무 = has_birth_year flag 영역 의 의무 영역 의 의무 영역 의 의무 영역 의 의무 영역 의 의무 학습 영역 의 의무 영역 의 의무 = 큰 악화"
+      },
+      "verdict": "TERMINATED (iter 1 / Δ Cold +0.557 > +0.1 / G4 Saatchi FAIL +1.183 > +1.0 / 0 dropped)",
+      "codex_phase3_pre_review": {
+        "verdict": "GO with P2 (A' strict literal scope)",
+        "p2_fixes_applied": [
+          "1. scope = prereg §3.4 literal only (호수/면적/작가 within-group)",
+          "2. is_edition / is_unique / gallery_type / ho_x_support 영역 의 의무 = scope 외 (post-hoc only)",
+          "3. corr matrix |corr|>0.95 within-group only = 2 candidates"
+        ]
+      },
+      "codex_phase3_post_review": {
+        "verdict": "GO with P2",
+        "p2_followup": [
+          "closeout 영역 의 의무 = Δ Cold + G4 Saatchi 둘 다 명시 (iteration log 영역 의 의무 적용 ✓)",
+          "corr=1.000 ≠ semantic redundancy 해석 = '해석형' 영역 의 의무 명시 (단정형 X)"
+        ],
+        "phase3_outcome": "TERMINATED on iter 1 (Δ Cold +0.557 + G4 Saatchi +1.183 둘 다 violation) / 0 dropped / 절차 정합",
+        "next_phase4_risks": [
+          "artist_total_works × ho → Saatchi G4 영역 의 의무 주의",
+          "ln_followers × medium_category → sparsity/category 영역 의 의무 warm 개선/cold 악화 가능"
+        ]
+      }
     }
   ]
 }
