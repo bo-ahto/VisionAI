@@ -20,7 +20,7 @@
 - 재현 cold baseline MdAPE ∈ [39.18, 39.58] (operational 39.38 ± 0.20)
 - 재현 cold calibrated cross-fit guarded MdAPE ∈ [38.09, 38.49] (operational 38.29 ± 0.20)
 
-> **Tolerance 정량적 근거**: 같은 random_seed=42 / 같은 dataset / 같은 hyperparameter 의 환경 에서 CatBoost 의 결정성은 단일 thread 시 deterministic / multi-thread 시 thread 수 에 따라 미세 차이 가능 (`bagging_temperature=0.18` 의 random sampling 이 thread-deterministic). ±0.20%p tolerance = MdAPE 의 floating-point precision 영역 의 보수적 허용치 (실제 차이 가 ±0.20%p 초과 시 = environment / library version drift 의 detection 의무).
+> **Tolerance 정량적 근거**: 본 cycle = **`thread_count=1` freeze (§3.1)** 의 fully deterministic 환경. 같은 random_seed=42 / 같은 dataset / 같은 hyperparameter 에서 CatBoost 1.2.10 single-thread 는 deterministic 보장 (multi-thread reduction order 비결정성 제거). 기대 결과 = operational reported 와 의 차이 ≤ 0.05%p (numerical precision floor). **±0.20%p tolerance = operational artifact 가 multi-thread 로 학습 됐을 가능성 의 thread reduction-order drift 의 보수적 추가 margin**. 실제 차이 가 ±0.20%p 초과 시 = environment / library version drift 의 detection 의무 / FAIL 처리 ([설명 가능 차이] vs [reproducibility 결손] 의 경계).
 
 ## 2. Data freeze
 
@@ -69,7 +69,7 @@ operational `train_primary_market_v3_filtered.py:68` `load_data()` + `:395` filt
 | catboost | 1.2.10 |
 | `random_seed` | 42 (operational `train_primary_market_v3_filtered.py:177`) |
 | GPU | 미사용 (CPU only) |
-| `thread_count` | CatBoost default (시스템 의존 — 결과 의 ±0.20%p 영역 의 미세 차이 영향 가능, §1 tolerance 근거) |
+| `thread_count` | **1 (deterministic freeze)** — multi-thread reduction order 비결정성 제거 / 같은 머신 재실행 시 fully deterministic (operational artifact 와 의 차이 가 thread drift 영역 인지 vs 재현성 결손 인지 의 경계 명확화) |
 | Git commit (재현 시점) | 본 cycle PR merge commit SHA (실행 시 기록 의무) |
 
 ### 3.2 GroupKFold (operational `cv_groupkfold()` 정확 동일)
@@ -130,7 +130,11 @@ operational cross-fit guarded calibration 의 알고리즘:
 - ✅ Cell N (artsy_gallery / artsy_online / saatchi_online) = 868 / 6,421 / 21,087 (exact)
 - ✅ 재현 cold baseline MdAPE ∈ [39.18, 39.58]
 - ✅ 재현 cold calibrated cross-fit guarded MdAPE ∈ [38.09, 38.49]
-- ✅ Per-cell `applied_factor` 가 operational 과 정확 동일 (artsy_gallery=1.0 skipped / artsy_online=0.9426 applied / saatchi_online=0.9569 applied)
+- ✅ Per-cell `applied_factor` direction (skipped vs applied) 가 operational 과 정확 동일:
+  - artsy_gallery: `skipped_due_to_regression == True` (factor=1.0)
+  - artsy_online: `skipped_due_to_regression == False` (factor ∈ [0.9376, 0.9476], operational 0.9426 ± 0.005)
+  - saatchi_online: `skipped_due_to_regression == False` (factor ∈ [0.9519, 0.9619], operational 0.9569 ± 0.005)
+  - **Tolerance ±0.005 근거**: median(actual/pred) 의 thread_count drift 영역 의 보수적 영역 (median 은 ranking-based 으로 robust 하지만 boundary row 이동 가능)
 
 ### 4.2 FAIL
 
@@ -179,4 +183,5 @@ operational reported sanity 비교 (판정 영향 X):
 |---|---|
 | B-2 → B-3 사전 자문 (2026-05-08) | B-2 (reproducibility) → B-3 (new split) 순서 권고 / 본 cycle 의 28,376 행 + GroupKFold + calibrated CatBoost 가 main metric path |
 | 본 prereg round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×1 (§9 supportive evidence 표현 오염) / P1×5 (cold/warm 정의 미해결, env freeze 결손, tolerance 근거 결손, calibration 절차 미완성, 데이터 hash 결손) / P2×4 (Hypothesis 통일, 단계별 row 수, secondary metric 무관 명시, B-3 prerequisite 명시) |
-| 본 prereg round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 prereg round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×2 (thread_count freeze 결손 / tolerance 근거 방어 불가능) — round 2 fix: thread_count=1 deterministic freeze + tolerance 근거 재서술 (operational multi-thread → 본 single-thread drift 의 ±0.20%p 보수적 margin) + per-cell factor exact → ±0.005 tolerance (median robustness) |
+| 본 prereg round 3 사후 검수 (예정) | round 2 fix commit 직후 |
