@@ -71,11 +71,11 @@ Stage 3 baseline 의 영역 정의와 동일.
 
 #### Hard gates (Secondary — 한 gate 라도 fail = rollout 후보 X)
 
-| Gate | 사전 임계 |
-|---|---|
-| **🔴 Low-price segment harm** | 저가 P25 이하 segment 의 cold MdAPE (Stage 4 v3 모집단) | ≤ **26.07% + 2.0%p = 28.07%** (Stage 4 v3 BORDERLINE 의 저가 harm 재발 방지) |
-| **🔴 Cold sub-bin harm** | **Cold 하위 구간** train_count `0 / 1-4 / 5-9` 별 cold MdAPE | 각 ≤ **28.07%** (cold 영역 내 train 이력 분포 별 harm 점검 — depth 10-14/15-24/25+ 는 warm-path finding 이라 cold cycle 부정합 / cold sub-bin 으로 재정의) |
-| **🔴 Source slice asymmetry** | (Saatchi 미포함 — 본 cycle scope 외) | N/A (Cycle 2 영역) |
+| Gate | Metric | 사전 임계 |
+|---|---|---|
+| **🔴 Low-price segment harm** | 저가 P25 이하 segment 의 cold MdAPE (Stage 4 v3 모집단) | ≤ **28.07%** (26.07% + 2.0%p / Stage 4 v3 BORDERLINE 의 저가 harm 재발 방지) |
+| **🔴 Cold sub-bin harm** | Cold 하위 구간 (train_count `0 / 1-4 / 5-9`) 별 cold MdAPE | 각 ≤ **28.07%** (cold 영역 내 train 이력 분포 별 harm 점검) |
+| **🔴 Source slice asymmetry** | Saatchi 미포함 — 본 cycle scope 외 | N/A (Cycle 2 영역) |
 | **🟡 Calibration robustness (Supportive)** | calibration plot residual 의 quantile 별 분포 | exploratory (decision-binding X) |
 | **🟡 Bootstrap robustness (Supportive)** | 100-seed cluster bootstrap 의 seed 별 stability | exploratory |
 
@@ -119,7 +119,7 @@ Stage 3 baseline 의 영역 정의와 동일.
 |---|---|
 | Primary 1 (B) Stage 4 모집단 cold 재평가 | **Confirmatory** (decision-binding) |
 | Primary 2 (D) Time-split cold | **Confirmatory** (decision-binding) |
-| Hard gate (low-price / depth / source) | **Confirmatory** (rollout 후보 자격 차단) |
+| Hard gate (low-price / cold sub-bin / source) | **Confirmatory** (rollout 후보 자격 차단) |
 | Calibration plot / Bootstrap robustness | **Supportive** (exploratory / decision-binding X) |
 
 ## 2. 진행 protocol (Stage 1 / 2 / 종결)
