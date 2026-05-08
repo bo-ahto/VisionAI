@@ -10,7 +10,7 @@
 ## 0. 한 줄 요약
 
 > **VERDICT (Reproducibility): ✅ PASS** / **VERDICT (Precision): ❌ FAIL** (TP rate 87.50% < 95%) / **VERDICT (Overall): ❌ FAIL**.
-> P_NEW_1 패턴 의 추가 추출 = 24 작가 (artist 회수 +2.8846%p / artwork 회수 +3.8396%p). 그 중 **3 명확한 FP** (multi-year bio 의 "Born in [place]" 다음 의 first year 가 birth year 아님). prereg §3.4 의 명시 한 false positive risk 가 실제로 발생.
+> 신규 패턴 (P_NEW_1 + P_NEW_2) 추가 추출 = **24 작가** (P_NEW_1: 23 / P_NEW_2: 1) — artist 회수 +2.8846%p / artwork 회수 +3.8396%p. 그 중 **3 명확한 FP (모두 P_NEW_1 에서 발생)** = multi-year bio 의 "Born in [place]" 다음 의 first year 가 birth year 아닌 case. prereg §3.4 의 명시 한 P_NEW_1 false positive risk 가 실제로 발현.
 > **본 FAIL = pilot 측정 의 valid 결과**: P_NEW_1 패턴 의 spec 좁힘 (dis-confirming context exclusion 등) 의 정량 입력 / 별도 후속 cycle 의 영역.
 
 ## 1. PASS / FAIL 판정 (prereg §4.1 binding)
@@ -43,7 +43,7 @@ Reproducibility PASS + Precision FAIL → **Overall FAIL**.
 | Denominator (artists) | 832 |
 | Old extracted (운영 5 패턴) | 35 (4.21%) |
 | Pilot extracted (전체 / old + P_NEW_1 + P_NEW_2) | 59 (7.09%) |
-| Added artists (새 패턴 만) | **24** (+2.8846%p) |
+| Added artists (P_NEW_1 + P_NEW_2 합계) | **24** (P_NEW_1: 23 / P_NEW_2: 1) (+2.8846%p) |
 | Added artwork (새 추출 작가 의 작품 수) | 834 (+3.8396%p of 21,721) |
 
 > **본 회수 = 보고값 만 / PASS-FAIL 미적용** (prereg §4.1). 단, **TP 만** 의 회수 = 21 작가 / 정확 한 회수 효과 = +2.5240%p (artist) — Precision FAIL 로 인 한 효과 영역 의 보수적 영역.
@@ -130,8 +130,8 @@ Reproducibility PASS + Precision FAIL → **Overall FAIL**.
 본 결과 의 활용 가능 영역 (모두 별도 prereg 의무):
 
 1. **P_NEW_1 spec 좁힘 cycle** (recommended):
-   - dis-confirming context exclusion (예: "Born in [place], I came to [place B] [year]" 의 두 번째 year 배제)
-   - 또는 "[year] Born in" 의 prefix-year 우선 매칭 (한국 작가 이력서 형식 대응)
+   - dis-confirming context exclusion (예: "Born in [place], I came to [place B] [year]" 의 두 번째 year 배제) — **가능한 후보 / 별도 cycle 의 spec 결정 영역**
+   - "[year] Born in" 의 prefix-year 우선 매칭 (한국 작가 이력서 형식 대응) — **가능한 후보 / 가설 수준 / 별도 cycle 의 검증 영역**
 2. **외부 source enrichment cycle** (Wikipedia / Artsy / 갤러리 — 한국 작가 영역 sparse / 별도 cycle)
 3. **현 상태 유지** + 운영 의 V_year_saatchi_warm 의 옵션 B disable 패턴 으로 birth_year 결손 영역 분리 처리
 
@@ -149,4 +149,5 @@ Reproducibility PASS + Precision FAIL → **Overall FAIL**.
 | Prereg round 1 (NEEDS FIX) | P0×2 + P1×8 + P2×3 → fix |
 | Prereg round 2 (NEEDS FIX) | P1×1 (precision binding 수학 정정) → fix |
 | Prereg round 3 (**GO**) | 미충족 영역 없음 |
-| 본 결과 보고서 사후 검수 (예정) | 본 commit 직후 |
+| 본 결과 보고서 round 1 (2026-05-08, NEEDS FIX) | P1×1 (§0 한 줄 요약 의 pattern-level 귀속 오류 — "P_NEW_1 추가 추출 24" → 정정: 신규 패턴 (P_NEW_1 + P_NEW_2) 합계 24 / FP 3건 모두 P_NEW_1 분리 명시) — round 1 fix: §0 / §2 의 pattern 분포 분리 (P_NEW_1 23 / P_NEW_2 1) + §5 후속 cycle 의 가설 영역 명시 |
+| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
