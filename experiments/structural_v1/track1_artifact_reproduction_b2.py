@@ -183,6 +183,16 @@ def main() -> dict:
     cold_guarded_mdape = _mdape(y_price, cold_pred_guarded)
     logger.info("Cold guarded overall MdAPE=%.4f", cold_guarded_mdape)
 
+    # Secondary sanity metrics (W30/W50/ratio on baseline OOF — operational reported reference)
+    # operational `train_primary_market_v3_filtered.py:46-53` 의 _within_pct + _ratio 정확 동일
+    abs_pct_err = np.abs(y_price - cb_pred_price) / np.abs(y_price)
+    w30 = float((abs_pct_err <= 0.30).mean() * 100)
+    w50 = float((abs_pct_err <= 0.50).mean() * 100)
+    ratio = float(np.mean(cb_pred_price / y_price))
+    logger.info(
+        "Cold baseline secondary: W30=%.2f W50=%.2f ratio=%.2f", w30, w50, ratio
+    )
+
     # 8. PASS / FAIL
     checks = {
         "n_total_exact": n_total == OPERATIONAL["n_total"],
@@ -228,6 +238,7 @@ def main() -> dict:
         "cell_n": cell_n,
         "cold_baseline_mdape": cold_baseline,
         "cold_calibrated_guarded_mdape": cold_guarded_mdape,
+        "cold_baseline_secondary": {"W30": w30, "W50": w50, "ratio": ratio},
         "cold_breakdown": cold_breakdown,
         "checks": checks,
         "factor_checks": factor_checks,

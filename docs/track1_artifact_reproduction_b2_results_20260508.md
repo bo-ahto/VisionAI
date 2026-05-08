@@ -8,7 +8,7 @@
 
 ## 0. 한 줄 요약
 
-> **VERDICT: ✅ PASS** — 운영 트랙 1 artifact 가 동일 환경 (thread_count=1 deterministic) 에서 **bit-exact 재현** 됨. cold baseline 39.3768% / cold calibrated guarded 38.2897% / per-cell factor 모두 operational 과 정확 동일.
+> **VERDICT: ✅ PASS** — 운영 트랙 1 의 **reported metrics 와 applied factors 가 동일 환경 (thread_count=1 deterministic) 에서 exact-match (Δ=0)** 확인. cold baseline 39.3768% / cold calibrated guarded 38.2897% / per-cell factor 모두 operational 과 정확 동일. (artifact 전체 의 일반적 재현성 주장 X — 본 cycle 의 입증 영역 = reported outputs 만)
 
 ## 1. PASS / FAIL 판정
 
@@ -27,7 +27,7 @@
 | saatchi_online direction (applied) | False | False | ✅ 동일 |
 | saatchi_online applied factor | 0.9568848 | 0.9568848 | ✅ exact (Δ=0) |
 
-→ **모든 PASS 조건 충족**. tolerance (±0.20%p / ±0.005) 영역 의 차이 가 아니라, **bit-exact 재현 (Δ=0 to floating-point precision)**.
+→ **모든 PASS 조건 충족**. tolerance (±0.20%p / ±0.005) 영역 의 차이 가 아니라, **reported metrics + applied factors exact-match (Δ=0 to floating-point precision)**.
 
 ## 2. Per-cell breakdown
 
@@ -74,19 +74,26 @@
 | Concatenated | 29,361 | 29,361 ✅ |
 | After `is_excluded_for_training==0` | 28,376 | 28,376 ✅ |
 
-## 5. Reproduction 가 bit-exact 인 이유 (해석)
+## 5. Reproduction 이 exact-match 인 이유 (가능한 해석)
 
-prereg §1 의 tolerance 설정 (±0.20%p / ±0.005) 는 **operational artifact 가 multi-thread 학습 됐을 가능성** 의 thread reduction-order drift 의 보수적 margin. 실제 결과 = bit-exact 재현 → 다음 중 하나:
+prereg §1 의 tolerance 설정 (±0.20%p / ±0.005) 는 **operational artifact 가 multi-thread 학습 됐을 가능성** 의 thread reduction-order drift 의 보수적 margin. 실제 결과 = exact-match (Δ=0) → 가능한 설명:
 
 1. **operational artifact 도 thread_count=1 으로 학습됨** (deterministic) — 본 reproduction 이 같은 deterministic 결과 도출
 2. **operational artifact 는 multi-thread 였지만, 본 dataset / hyperparameter / random_seed 환경 에서 thread reduction-order drift 가 floating-point precision 영역 미만** — 본 reproduction 도 같은 결과 도출
 
-위 두 시나리오 의 구분 = 본 cycle 의 분석 영역 X (decision-binding X / artifact integrity gate 통과 만). 결과 = operational artifact 의 reproducibility 가 강하게 입증 됨.
+위 두 시나리오 의 구분 = **본 cycle 의 분석 영역 X** (decision-binding X / artifact integrity gate 통과 만). **본 cycle 로는 두 시나리오 의 구분 불가** — 따라서 결론 영역 = "**same-environment 의 reported-output reproducibility 확인됨**" 만 (artifact 전체 또는 일반적 재현성 주장 영역 X).
 
 ## 6. Secondary metric (sanity check 만 / PASS-FAIL 판정 미적용)
 
-prereg §4.3 에 따라 판정 영향 X. operational reported 와 의 비교:
-- (별도 산출 가능 / 본 보고서 영역 미포함 — operational `_metrics.json` 의 W30/W50/ratio 영역 의 reproduction 은 본 PASS 조건 외 영역)
+prereg §4.3 에 따라 판정 영향 X / sanity check 자료 만. cold baseline OOF (CatBoost) 기준 의 operational reported 와 의 비교:
+
+| Metric | Operational reported | Reproduction | 판정 영향 |
+|---|---|---|---|
+| Cold baseline W30 | 39.8% | 39.78% | 없음 (rounding 영역 동일) |
+| Cold baseline W50 | 59.8% | 59.79% | 없음 (rounding 영역 동일) |
+| Cold baseline ratio | 1.31 | 1.31 | 없음 (exact) |
+
+→ 본 secondary metric 의 reproduction 도 operational reported 와 동일 영역 — sanity check 자료 / PASS-FAIL 판정 미적용.
 
 ## 7. Decision binding 적용
 
@@ -100,12 +107,12 @@ prereg §4.3 에 따라 판정 영향 X. operational reported 와 의 비교:
 | 운영 채택 결정 | **영향 X** |
 | 외부 보고서 | **본 결과 미반영 영역** |
 
-**B-2 PASS 의 의미** = 운영 artifact integrity / reproducibility gate 통과 만. **B-3 cycle (Random LAO + Time-split 운영 artifact 적용) 의 운영 prerequisite 충족** — B-3 cycle 진입 가능.
+**B-2 PASS 의 의미** = 운영 artifact integrity / reproducibility gate 통과 만. **B-3 cycle 진입 을 위한 artifact integrity / reproducibility prerequisite 충족** (B-3 의 모든 prerequisite 충족 X — split 정의 / decision-binding 정의 등 의 별도 prereg 영역 은 본 cycle 영향 외).
 
 ## 8. 본 cycle 의 가치
 
-✅ **운영 pipeline 의 reproducibility 가 강하게 입증** — bit-exact 재현 (tolerance 영역 내 가 아니라 정확 동일)
-✅ **B-3 cycle 의 prerequisite 충족** — 운영 artifact 의 integrity 가 확인 됨 / B-3 의 새 split 적용 가능
+✅ **same-environment 의 reported-output reproducibility 확인됨** — reported metrics + applied factors exact-match (Δ=0) (artifact 전체 또는 일반적 재현성 주장 영역 X)
+✅ **B-3 cycle 진입 을 위한 artifact integrity / reproducibility prerequisite 충족** — B-3 의 새 split 코드 작성 진입 가능 (B-3 의 모든 prerequisite 충족 X)
 ❌ **운영 의사결정 근거 X** (decision-binding X)
 ❌ **Cycle 1 verdict 변경 근거 X** (Cycle 1 = 트랙 2 의 baseline 24.07% 대비 cold validation / 본 cycle 무관)
 
@@ -126,4 +133,5 @@ prereg §4.3 에 따라 판정 영향 X. operational reported 와 의 비교:
 | Prereg round 1 사후 검수 (2026-05-08, NEEDS FIX) | P0×1 + P1×5 + P2×4 → fix |
 | Prereg round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×2 (thread_count freeze + tolerance 근거) → fix |
 | Prereg round 3 사후 검수 (2026-05-08, **GO**) | 미충족 fix 영역 없음 / 신규 issue 없음 |
-| 본 결과 보고서 사후 검수 (예정) | 본 commit 직후 |
+| 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | 5개 issue: (1) §6 secondary metric 누락 (W30/W50/ratio 실측값 추가 요구), (2) §0/§1/§5/§8 "bit-exact 재현" oversold → "reported metrics + applied factors exact-match" 좁힘, (3) §5 결론 "강하게 입증" 톤다운 → "구분 불가 / reported-output reproducibility 확인" 만, (4) §7 "B-3 의 운영 prerequisite 충족" → "B-3 진입 prerequisite 충족" 좁힘, (5) §8 "강하게 입증" 톤다운 |
+| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
