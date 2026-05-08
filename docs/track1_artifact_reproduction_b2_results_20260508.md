@@ -134,4 +134,4 @@ prereg §4.3 에 따라 판정 영향 X / sanity check 자료 만. cold baseline
 | Prereg round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×2 (thread_count freeze + tolerance 근거) → fix |
 | Prereg round 3 사후 검수 (2026-05-08, **GO**) | 미충족 fix 영역 없음 / 신규 issue 없음 |
 | 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | 5개 issue: (1) §6 secondary metric 누락 (W30/W50/ratio 실측값 추가 요구), (2) §0/§1/§5/§8 "bit-exact 재현" oversold → "reported metrics + applied factors exact-match" 좁힘, (3) §5 결론 "강하게 입증" 톤다운 → "구분 불가 / reported-output reproducibility 확인" 만, (4) §7 "B-3 의 운영 prerequisite 충족" → "B-3 진입 prerequisite 충족" 좁힘, (5) §8 "강하게 입증" 톤다운 |
-| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 결과 보고서 round 2 사후 검수 (2026-05-08, **GO**) | 미충족 fix 영역 없음 / 신규 issue 없음. round 1 의 5개 issue 모두 해소 |
