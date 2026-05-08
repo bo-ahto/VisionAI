@@ -134,7 +134,7 @@
 
 ## 8. 다음 단계
 
-1. ✅ **본 결과 보고서 코덱스 사후 검수 round 1-6 GO** (P0×1 + P1×3 + P2×3 fix 완료)
+1. ✅ **본 결과 보고서 코덱스 사후 검수 round 1-8 GO** (P0×1 + P1×3 + P2×3 fix 완료)
 2. ⏳ **콜론30 외부 의사결정 요청 자료** 작성 (외부 친화 톤 / 본 결과 + 후속 결정 요청)
 3. ⏳ **외부 보고서 (PR #44, #45) 정정 의무** — "cold 영역 트랙 2 우위" 표현 reconcile
 4. ⏳ (조건부) Cycle 2 source-expansion priority 재평가
@@ -149,4 +149,4 @@
 |---|---|
 | Cold validation cycle 사전 자문 (2026-05-08) | B+D primary / Cycle 1+2 분할 / hard gate 권고 |
 | Cycle 1 prereg 사후 검수 (round 1-3) | P0×2 + P1×3 + P2×1 fix → GO |
-| 본 결과 보고서 사후 검수 (round 1-4) | P0×1 + P1×3 + P2×1 fix → GO |
+| 본 결과 보고서 사후 검수 (round 1-8) | P0×1 + P1×3 + P2×3 fix → GO (round 7 ancestry 검증 오류 정정 + round 8 self-consistency 정합) |
