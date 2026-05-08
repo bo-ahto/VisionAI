@@ -19,7 +19,7 @@
 > 같은 dataset / 같은 split 의 비교 결과:
 > - **Random LAO 80/20**: 트랙 2 가 -3.24%p 우위 (point estimate / CI 겹침)
 > - **Time-split 2024+ cold**: 트랙 1 surrogate 가 +7.28%p 우위 (point estimate)
-> - **단, Time-split 의 degradation 패턴이 매우 다름**: T1 surrogate +15.88%p (큰 GBM overfitting 의심) vs T2 +4.08%p (robust)
+> - **단, Time-split 의 train→test gap 차이 시사**: T1 surrogate +15.88%p / T2 +4.08%p (단정 X — single split 만 / robustness 결론 = nested CV 의무)
 >
 > 일관된 우위 X — 평가 spec 별 결과 다름. 본 결과 = supportive only / 운영 의사결정 근거 X.
 
@@ -76,14 +76,14 @@
 |---|---|---|
 | Random LAO 80/20 | 트랙 2 | -3.24%p (point) |
 | Time-split 2024+ point | 트랙 1 surrogate | +7.28%p (point) |
-| Time-split degradation | 트랙 2 | -11.80%p (T2 더 robust) |
+| Time-split degradation gap | 트랙 2 더 작음 | -11.80%p (gap 차이 / robustness 단정 X) |
 
 → **"트랙 1 < 트랙 2 cold" 일관된 결론 X** / **"트랙 2 < 트랙 1 cold" 일관된 결론 X**.
 
 ### 3.2 모델-패밀리 차이 (descriptive 시사)
 
 - **Track 1 (GBM family) surrogate**: high in-sample flexibility (train cold 19.99%) / Time-split 시 큰 gap (+15.88%p)
-- **Track 2 (Hedonic regression family)**: stable in-sample / out-of-sample (gap +4.08%p)
+- **Track 2 (Hedonic regression family) surrogate**: in-sample 과 out-of-sample 의 gap +4.08%p (작은 gap 시사)
 
 본 차이 시사 = 모델 family 의 일반적 trade-off (단정 X — 본 cycle 의 single split 만으로 robustness 단정 X / nested CV / repeated split 의무 = 본 cycle 미실행 영역). **운영 환경에서의 실제 robustness** = 운영 트랙 1 의 calibration 적용 + 운영 학습 28K 의 fit 패턴 의무 — 본 surrogate 와 다를 수 있음.
 
@@ -125,14 +125,14 @@
 본 비교 결과 가 외부 보고서 (PR #44 / #45 적재본) 의 "cold 영역 트랙 2 우위" 표현 reconcile 의 추가 evidence:
 
 - **Random LAO 의 트랙 2 우위 (-3.24%p)** = 같은 spec 의 broader 모집단 trial 에서 트랙 2 가 약간 우위 (CI 겹침)
-- **Time-split 의 트랙 1 surrogate 점추정 우위 (+7.28%p) but T1 의 큰 degradation (+15.88%p)** = 일관된 우위 X
+- **Time-split 의 트랙 1 surrogate 점추정 우위 (+7.28%p) + train→test gap 차이 (T1 +15.88%p / T2 +4.08%p, 단정 X)** = 일관된 우위 X
 - → 외부 표현 = "**같은 broader 모집단 spec 에서 비교 시 일관된 우위 X / 영역 별 결과 다름**" 정확화 의무
 
 ## 8. 본 cycle 의 가치
 
 - ✅ 사용자 의문 ("트랙 1 vs 트랙 2 어느 게 cold 우위?") 의 **descriptive 답변** — surrogate 비교 한정
 - ✅ Cycle 1 결과 의 외부 reconcile 영역 의 추가 정량 evidence
-- ✅ 모델-패밀리 trade-off (GBM overfitting vs hedonic robustness) 의 정량 입증
+- ✅ 모델-패밀리 train→test gap 차이 의 정량 시사 (단정 X — single split 한정 / nested CV 의무)
 - ❌ **운영 의사결정 근거 X** (decision-binding X)
 - ❌ Lane 1 (운영 artifact 직접 평가) = 별도 prereg cycle 의무 (schema audit + Saatchi 통합)
 
