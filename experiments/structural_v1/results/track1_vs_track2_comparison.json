@@ -1,0 +1,69 @@
+{
+  "prereg": "docs/track1_vs_track2_comparison_prereg_20260508.md",
+  "decision_binding": false,
+  "caveat": "Track 1 surrogate (14 derivable features, CatBoost) ≠ 운영 Track 1 (32 features). decision-binding X / supportive only.",
+  "dataset": "stage4_full.parquet",
+  "n_total": 8495,
+  "random_lao": {
+    "n_train": 6806,
+    "n_test": 1689,
+    "track1_surrogate": {
+      "cold_mdape": 39.422180644370606,
+      "ci_95": [
+        33.68711085584003,
+        46.49834658411365
+      ]
+    },
+    "track2": {
+      "cold_mdape": 36.18350004676539,
+      "ci_95": [
+        31.465259230687025,
+        45.09858199856438
+      ]
+    },
+    "delta_t2_minus_t1": -3.2386805976052173
+  },
+  "time_split": {
+    "n_train": 4207,
+    "n_test": 4288,
+    "n_test_cold": 3260,
+    "track1_surrogate": {
+      "cold_mdape": 35.8754992287941,
+      "ci_95_cold": [
+        32.35675364418315,
+        40.24896960153788
+      ],
+      "train_cold_mdape": 19.99815199261617,
+      "time_degradation_pp": 15.877347236177929
+    },
+    "track2": {
+      "cold_mdape": 43.15189263007524,
+      "ci_95_cold": [
+        38.63133358412092,
+        47.57327057488222
+      ],
+      "train_cold_mdape": 39.075753424055364,
+      "time_degradation_pp": 4.0761392060198745
+    },
+    "delta_t2_minus_t1": 7.27639340128114
+  },
+  "spec": {
+    "track1_surrogate": {
+      "model": "CatBoost",
+      "n_features": 14,
+      "iterations": 1000,
+      "learning_rate": 0.05,
+      "depth": 6
+    },
+    "track2": {
+      "model": "HuberRegressor (sklearn)",
+      "epsilon": 1.35,
+      "alpha": 0.0001,
+      "n_features": 4,
+      "features": "F4 + log_area_spline"
+    },
+    "n_boot": 2000,
+    "seed": 42,
+    "cold_threshold": 10
+  }
+}
