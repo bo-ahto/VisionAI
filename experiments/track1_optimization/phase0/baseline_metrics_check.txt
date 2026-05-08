@@ -1,0 +1,22 @@
+=== Metrics 정합 검증 ===
+features=32 / artists=1551 / data_n=28376
+parquet rows=7640 / cols=57
+
+--- Cold (GroupKFold) ---
+  catboost: MdAPE=39.4 / W30=39.8 / W50=59.8
+  xgboost:  MdAPE=39.1 / W30=40.0
+  ensemble: MdAPE=38.7 / W30=41.1
+  Artsy cb cold: 33.5
+  Saatchi cb cold: 41.7
+
+--- Warm (KFold / XGBoost) ---
+  warm slice n: 27062 / artists: 930
+  xgboost warm: MdAPE=9.7 / W30=82.8
+  ensemble warm: MdAPE=10.5 / W30=82.4
+
+--- prereg §2 baseline 정합 ---
+  ✓ Cold ensemble overall: prereg=38.7 / metrics=38.7
+  ✓ Cold catboost overall: prereg=39.4 / metrics=39.4
+  ✓ Warm xgboost (slice): prereg=9.7 / metrics=9.7
+  ✓ Artsy cold catboost: prereg=33.5 / metrics=33.5
+  ✓ Saatchi cold catboost: prereg=41.7 / metrics=41.7
