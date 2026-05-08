@@ -23,17 +23,29 @@ th { background: #f0f0f0; }
 .col-B { background: #fff8e1; }
 .footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
 ul li { margin-bottom: 4px; }
+
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  body { max-width: none; margin: 0; padding: 0; font-size: 11px; line-height: 1.4; }
+  h1 { font-size: 1.2em; padding-bottom: 6px; margin-top: 0; }
+  h2 { font-size: 1em; padding: 5px 8px; margin-top: 12px; }
+  table { font-size: 10px; margin: 4px 0; page-break-inside: avoid; }
+  th, td { padding: 4px 6px; }
+  .summary-box, .warn-box, .info-box, .success-box { padding: 6px 10px; margin: 5px 0; page-break-inside: avoid; }
+  .footer { margin-top: 12px; padding-top: 8px; font-size: 10px; }
+  ul li { margin-bottom: 2px; }
+}
 </style>
 </head>
 <body>
 
 <h1>Cold (신규 작가) 영역 의사결정 brief</h1>
-<p style="color: #666;"><strong>작성일</strong>: 2026-05-08 | <strong>대상</strong>: 의사결정자 (사용자 + 외부 협력자 inheriting 가능) | <strong>1 page brief</strong></p>
+<p style="color: #666;"><strong>작성일</strong>: 2026-05-08 | <strong>대상</strong>: 의사결정자 (사용자 + 외부 협력자 공유 가능) | <strong>1 page brief</strong></p>
 
 <h2>1. 한 줄 요약 + 본 페이지의 결정 범위</h2>
 
 <div class="summary-box">
-<p><strong>현재 증거 기준 으로는 신규 작가 영역에 Track 2 모델을 운영 적용 할 근거 가 부족 합니다.</strong> 운영 main 모델 (Track 1 <code>v3_filtered_tuned</code>) 을 그대로 유지 하는 것이 안전 안 이며, 다음 의사결정 에 필요한 추가 검증 (Lane 1 = 운영 모델 직접 평가) 은 별도 cycle 의 승인 이 필요합니다.</p>
+<p><strong>현재 증거 기준으로는 신규 작가 영역에 Track 2 모델을 운영 적용할 근거가 부족합니다.</strong> 운영 main 모델 (Track 1 <code>v3_filtered_tuned</code>) 을 그대로 유지하는 것이 안전한 방안이며, 다음 의사결정에 필요한 추가 검증 (운영 모델 직접 평가 cycle) 은 별도 승인이 필요합니다.</p>
 </div>
 
 <table>
@@ -131,7 +143,7 @@ ul li { margin-bottom: 4px; }
 </tr>
 <tr class="col-B">
 <td><strong>B. 운영 모델 직접 평가 cycle</strong></td>
-<td>운영 Track 1 (32 features) 을 같은 dataset / 같은 split 으로 직접 평가 (schema gap 보강 + Saatchi 통합 등 선행)</td>
+<td>운영 Track 1 (32 features) 을 같은 dataset / 같은 split 으로 직접 평가 (입력 feature 정합성 보강 + Saatchi 통합 등 선행)</td>
 <td>승인 가능 한 다음 결정 의 근거 확보</td>
 <td>Schema 보강 작업량 ↑ / 평가 환경 의무</td>
 <td>중-상</td>
@@ -197,7 +209,7 @@ ul li { margin-bottom: 4px; }
 <div class="info-box">
 <strong>각 옵션 승인 시 필요한 추가 입력</strong>:
 <ul style="margin-bottom: 0;">
-<li><strong>B 승인</strong>: schema gap 보강 우선순위 (Saatchi enrichment vs feature reconstruction) + 운영 모델 평가 환경 확보</li>
+<li><strong>B 승인</strong>: 입력 feature 정합성 보강 우선순위 (Saatchi 통합 vs feature 재구성) + 운영 모델 평가 환경 확보</li>
 <li><strong>C 승인</strong>: B 또는 D 의 선행 결정 / Saatchi year_made provenance 봉인</li>
 <li><strong>D 승인</strong>: 외부 협력 우선순위 + license / acquisition 협조 영역 결정 (외부 협력자 영역)</li>
 </ul>
