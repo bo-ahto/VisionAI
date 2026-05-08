@@ -4,7 +4,7 @@
 > **연계**: `docs/트랙2_methodology_pipeline_20260507.md` §10 / `docs/stage4_확장검증계획_20260507.md` §6.4
 > **작성 규율**: 차이 발생 즉시 기록, major deviation (가설/metric/임계 변경) 시 새 exploratory cycle 분리
 
-> ⚠️ **본 PR scope (Track 1 closeout)**: 본 deviation log 는 **Track 1 entries 만** 포함. Track 2 (Stage 4 v3 / Stage 6 / Feature Track Axis A / Axis B / Sample size sensitivity / Progressive sampling) entries 는 **후속 PR 에서 append** (코덱스 권고 분할 step 3-5).
+> ⚠️ **본 deviation log 의 적재 history**: 초기 PR #28 (Track 1 closeout) 시점에는 Track 1 entries 만 포함. 이후 후속 PR (#36 Progressive + Sample size / #37 Track 2 + Axis B + Feature Track + Stage 5) 로 entries append 완료. 현재는 트랙 1 / 트랙 2 / Phase 1 → 2 전이 / Axis B / Feature Track / Sample size / Progressive sampling / Cold Validation Cycle 1 entries 모두 누적.
 
 ## Format
 
