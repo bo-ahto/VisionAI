@@ -13,7 +13,9 @@
 
 > 66 columns 의 검수 → **51 보존 + 2 분리 + 13 제거** 적용 한 cleansed Tier CSV (T0-T6) + 별도 column dictionary + 한글 column 명 사람용 파생본 산출. 운영 코드 / parquet 변경 X (read-only).
 
-## 1. 검수 결과 (66 columns)
+## 1. 검수 결과 (66 전체 columns 중 28 계산/파생 column 의 분류)
+
+> **본 절 의 분류 합계 = 28** (= EXACT 12 + MISMATCH 1 + PLACEHOLDER 3 + SPARSE 3 + REQUIRES_SOURCE_AUDIT 5 + OK 4). 이는 **66 전체 column 중 의 계산 / 파생 / placeholder column 영역 만** 의 분류 / 나머지 38 column = identifier (6) + 수집 raw (8) + 수집+환산 (1) + 수집/enrichment / regex (2) + 수집→정규화 (3) + categorical 정규화 (7) + training_metadata (3) + mediums_json/supports_json (2) + 검증 외 derivation (6) 영역 의 직접 검증 외.
 
 ### 1.1 EXACT (12) — 정확 일치 / 보존 의무
 
@@ -85,6 +87,8 @@ attribution_class (4 unique values)
 | **보존 + 정의 명시 (1)** | has_international (source-conditional operational flag) |
 | **보존 (50)** | EXACT 12 + identifier 6 + 수집 raw + categorical 정규화 + 검수 통과 |
 
+> **총 보존 51 = 일반 보존 50 + 보존+정의명시 1** (cleansed CSV body 의 column 수 51 정합). + 분리 2 (display companion) + 제거 13 = **66 (원본 column 수) 정합**.
+
 ### 2.2 한글 header 형식
 
 코덱스 권고 1순위 = **옵션 C (별도 dictionary)** — 영문 column 명 유지 / column_dictionary.csv 별도. 본 cycle = 권고 그대로 적용.
@@ -141,7 +145,7 @@ attribution_class (4 unique values)
 | profile_completeness | 100% zero / placeholder |
 | request_ratio | 94.69% zero / sparse / Artsy only |
 | artist_is_p1 | 99.68% False / sparse |
-| has_special_finish | 99.59% zero / source audit 결손 |
+| has_special_finish | 99.59% zero / sparse (변별력 거의 없음) |
 | vintage_premium | 99.93% zero / 사실상 미작동 |
 | freshness_discount | career_stage_int 미포함 / 검수 불가 |
 | value_grade_note | 99.09% empty |
@@ -192,4 +196,5 @@ attribution_class (4 unique values)
 | 차수 | 내용 |
 |---|---|
 | Cleanup 사전 자문 (2026-05-08) | 제거 13 / 분리 2 / 보존+정의명시 1 / 한글 header 형식 옵션 C (별도 dictionary) 권고 + decision-binding 명시 의무 |
-| 본 결과 보고서 사후 검수 (예정) | 본 commit 직후 |
+| 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×3 (§1 = 28 분류 vs 66 전체 의 관계 명시 / §2.1 = 보존 51 = 50 + 1 명시 / §5 has_special_finish 사유 sparse 통일) — round 1 fix |
+| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
