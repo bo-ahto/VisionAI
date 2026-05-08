@@ -150,4 +150,4 @@ Reproducibility PASS + Precision FAIL → **Overall FAIL**.
 | Prereg round 2 (NEEDS FIX) | P1×1 (precision binding 수학 정정) → fix |
 | Prereg round 3 (**GO**) | 미충족 영역 없음 |
 | 본 결과 보고서 round 1 (2026-05-08, NEEDS FIX) | P1×1 (§0 한 줄 요약 의 pattern-level 귀속 오류 — "P_NEW_1 추가 추출 24" → 정정: 신규 패턴 (P_NEW_1 + P_NEW_2) 합계 24 / FP 3건 모두 P_NEW_1 분리 명시) — round 1 fix: §0 / §2 의 pattern 분포 분리 (P_NEW_1 23 / P_NEW_2 1) + §5 후속 cycle 의 가설 영역 명시 |
-| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 결과 보고서 round 2 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음 |
