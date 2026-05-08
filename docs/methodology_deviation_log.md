@@ -594,7 +594,7 @@
   * Bootstrap: artist-cluster, n_boot=2000, percentile CI, internal seed = `range(2000)` (prereg-faithful)
 - **Stage 1 결과**:
   * Primary 1 (Random LAO 80/20): cold MdAPE **36.18%** / CI **[31.47, 45.10]** — 임계 26.07% 미충족
-  * Primary 2 (Time-split 2024+): cold MdAPE **43.15%** / CI [38.83, 47.35] / degradation +4.08%p — 임계 + degradation 모두 미충족
+  * Primary 2 (Time-split 2024+): cold MdAPE **43.15%** / CI [38.63, 47.57] / degradation +4.08%p — 임계 + degradation 모두 미충족
   * Hard gates: low-price (P25) cold 63.67% / cold sub-bin (0=48.91%, 1-4=42.19%, 5-9=35.47%) — **모두 ≥ 28.07% 임계 초과**
 - **Verdict (prereg §1.7 logic)**: **FAIL** (Primary 1 미충족 + hard gate 4건 violation)
 - **핵심 finding**: Stage 3 24.07% cold signal (1,378/100 curated, 100-seed) 이 broader 모집단 retract — Random LAO +12.11%p / Time-split +19.08%p 회복

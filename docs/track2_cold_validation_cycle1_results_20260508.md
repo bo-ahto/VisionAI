@@ -9,7 +9,7 @@
 ## 0. 한 줄 요약
 
 > **Cycle 1 Stage 1 판정: FAIL** — Stage 3 운영 채택 cold 모델 (F4 + log_area spline + Huber, curated 24.07%) 이 Stage 4 v3 broader 모집단 + 시간축 검증에서 **retract**:
-> - Primary 1 (Random LAO 80/20): cold MdAPE **36.18%** (CI [31.47, 44.86]) — 임계 **26.07% 미충족**
+> - Primary 1 (Random LAO 80/20): cold MdAPE **36.18%** (CI [31.47, 45.10]) — 임계 **26.07% 미충족**
 > - Primary 2 (Time-split 2024+): cold MdAPE **43.15%** / degradation 4.08%p — 임계 + degradation **모두 미충족**
 >
 > **결론**: Stage 3 의 24.07% cold signal 은 1,378 작품 / 100 작가 curated dataset 의 특수 sample 에서만 관찰. broader 모집단 (8,495 / 807) + out-of-time 분할 시 cold MdAPE 36-43% 로 회복 — **트랙 2 cold 운영 적용 보류**.
@@ -36,7 +36,7 @@
 | Test cold rows | 3,260 (artists: 475) — train 작품 < 10건 |
 | Test warm rows | 1,028 |
 | **Cold MdAPE (point)** | **43.15%** |
-| **Cold MdAPE 95% CI** | **[38.83, 47.35]** |
+| **Cold MdAPE 95% CI** | **[38.63, 47.57]** |
 | Train cold MdAPE (in-sample) | 39.08% |
 | **Time degradation** | **+4.08%p** |
 | Warm MdAPE (supportive) | 35.33% |
@@ -114,7 +114,7 @@
 
 → **Cycle 1 종결**.
 
-## 6. 콜론30 외부 의사결정 요청 자료 (작성 권고)
+## 6. 콜론30 외부 의사결정 요청 자료 (작성 의무)
 
 본 결과 의 외부 보고 의무 항목:
 1. **Cold 영역 트랙 2 우위 sub-claim 의 retract**: PR #44/#45 의 24.07% 는 curated dataset 한정 / broader 모집단 36-43%
@@ -136,7 +136,7 @@
 
 1. ⏳ **본 결과 보고서 코덱스 사후 검수**
 2. ⏳ **콜론30 외부 의사결정 요청 자료** 작성 (외부 친화 톤 / 본 결과 + 후속 결정 요청)
-3. ⏳ **외부 보고서 (PR #44, #45) 정정 권고** — "cold 영역 트랙 2 우위" 표현 reconcile
+3. ⏳ **외부 보고서 (PR #44, #45) 정정 의무** — "cold 영역 트랙 2 우위" 표현 reconcile
 4. ⏳ (조건부) Cycle 2 source-expansion priority 재평가
 
 ## 9. Methodology deviation log entry 의무
