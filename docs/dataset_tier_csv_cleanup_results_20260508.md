@@ -221,4 +221,5 @@ attribution_class (4 unique values)
 | 본 결과 보고서 round 2 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음 |
 | Dictionary 보강 추가 round (사용자 요청, 2026-05-08) | column_dictionary.csv 의 ① 새 컬럼 추가 (생성방식 / 계산공식) ② 제거 13 row 자체 삭제 (66 entries → 53 entries / 6 cols → 8 cols) ③ removed_columns_log.csv 별도 산출 |
 | Dictionary 보강 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×4: career_stage 공식 (ln→log1p) / gallery_city_count (빈 토큰 제외) / classify_medium·support (substring rule-first) / mediums·supports_json (parser.mediums·supports 직접) / solo·group·fair_count (source-conditional / Artsy 직접 vs Saatchi heuristic) / year_made·artist_birth_year regex 표기 (코드 reference 로 대체) — round 1 fix 반영 |
-| Dictionary 보강 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| Dictionary 보강 round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×2: medium_category line:84 → :93 정정 (classify_medium 영역) / group·fair_count Saatchi 코드 reference (prepare_saatchi_dataset.py:117) 누락 — round 2 fix |
+| Dictionary 보강 round 3 사후 검수 (예정) | round 2 fix commit 직후 |
