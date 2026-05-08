@@ -1,0 +1,99 @@
+{
+  "prereg": "docs/track2_cold_validation_cycle1_prereg_20260508.md",
+  "dataset": "stage4_full.parquet",
+  "n_total": 8495,
+  "primary_1": {
+    "n_train": 6806,
+    "n_test": 1689,
+    "n_train_artists": 645,
+    "n_test_artists": 162,
+    "cold_mdape": 36.18350004676539,
+    "ci_95": [
+      31.465259230687025,
+      45.09858199856438
+    ],
+    "low_price_p25_threshold_krw": 1656000.0,
+    "low_price_n": 335,
+    "low_price_mdape": 41.32122412421075,
+    "cold_sub_bins": {
+      "0": {
+        "n": 1689,
+        "mdape": 36.18350004676539
+      },
+      "1-4": {
+        "n": 0,
+        "mdape": null
+      },
+      "5-9": {
+        "n": 0,
+        "mdape": null
+      }
+    }
+  },
+  "primary_2": {
+    "n_train": 4207,
+    "n_test": 4288,
+    "n_train_artists": 555,
+    "n_test_artists": 552,
+    "n_test_cold": 3260,
+    "n_test_warm": 1028,
+    "n_test_cold_artists": 475,
+    "cold_mdape": 43.15189263007524,
+    "warm_mdape": 35.332615609735804,
+    "ci_95_cold": [
+      38.63133358412092,
+      47.57327057488222
+    ],
+    "train_cold_mdape": 39.075753424055364,
+    "time_degradation_pp": 4.0761392060198745,
+    "low_price_p25_threshold_krw": 2622000.0,
+    "low_price_cold_n": 1606,
+    "low_price_cold_mdape": 63.669407485515706,
+    "cold_sub_bins": {
+      "0": {
+        "n": 1600,
+        "mdape": 48.912326044919816
+      },
+      "1-4": {
+        "n": 925,
+        "mdape": 42.190936407650106
+      },
+      "5-9": {
+        "n": 735,
+        "mdape": 35.46848189465794
+      }
+    }
+  },
+  "judgment": {
+    "verdict": "FAIL",
+    "primary_1_pass": false,
+    "primary_1_point_pass": false,
+    "primary_1_ci_pass": false,
+    "primary_2_pass": false,
+    "primary_2_point_pass": false,
+    "primary_2_degradation_pass": false,
+    "hard_gate_pass": false,
+    "hard_gate_violations": 4,
+    "low_price_pass": false,
+    "sub_bin_violations": [
+      "0",
+      "1-4",
+      "5-9"
+    ]
+  },
+  "thresholds": {
+    "primary": 26.07,
+    "low_price_harm": 28.07,
+    "cold_sub_bin_harm": 28.07,
+    "time_degradation": 3.0
+  },
+  "spec": {
+    "huber_epsilon": 1.35,
+    "huber_alpha": 0.0001,
+    "n_boot": 2000,
+    "seed": 42,
+    "test_size": 0.2,
+    "cold_threshold": 10,
+    "time_split_year": 2023
+  }
+}

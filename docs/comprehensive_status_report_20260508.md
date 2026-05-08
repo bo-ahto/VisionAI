@@ -12,7 +12,7 @@
 | **Track 1 (운영 main 모델)** | ✅ **운영 기준선 유지 / cycle closed** — `v3_filtered_tuned` 32f 변경 X | [track1_phase0_closeout_20260507.md](track1_phase0_closeout_20260507.md) |
 | **Track 2 (cold-start 해석 가능 모델 연구)** | ✅ **Architecture-only close 확정** (Stage 6B + Axis A 5 step 종결) / **일반 warm path 운영 미승인** / **Slice-conditional (depth ≥25) 제한 후보 + Phase A shadow 1주 착수 승인 가능** | [stage6b_results §0 (종결 사유)](stage6b_results_20260507.md) + [§2 (Cycle 일관성)](stage6b_results_20260507.md) / [Axis A 종결 HTML #sec2 (의사결정자 권고)](트랙2_종합보고서_axis_a_종결_20260507.html#sec2) + [#sec3 (Cycle 결론)](트랙2_종합보고서_axis_a_종결_20260507.html#sec3) / [트랙2_README.md (line 99 Phase A shadow)](트랙2_README.md) |
 | **v3.6 production server bundle** | 🟡 **main 적재 / swap blocked** — code/monitoring/ETL ready, swap target artifact bundle 부재 + 운영 환경 prerequisite 미충족 | [v3_6_swap_readiness_report_20260508.md](v3_6_swap_readiness_report_20260508.md) |
-| **archive cycle** | ✅ **closed + retained** — PR 16건 merged (#27~#42 분할 train + 잔존) + 본 PR (TBD) / frozen branch + tag / 잔존 작업 1-5 완료 / 잔존 6 LLM 영역 종결 | [archive closeout](archive/2026-05-08-gallery-tier-v4-research-closeout.md) (#27-#33) + 잔존 1-5 (#34-#40) + 잔존 6 (#41-#42) |
+| **archive cycle** | ✅ **closed + retained** — PR 16+1건 merged (#27~#42 분할 train + 잔존) + 본 PR #43 (Comprehensive status) / frozen branch + tag / 잔존 작업 1-5 완료 / 잔존 6 LLM 영역 종결 | [archive closeout](archive/2026-05-08-gallery-tier-v4-research-closeout.md) (#27-#33) + 잔존 1-5 (#34-#40) + 잔존 6 (#41-#42) |
 | **사전등록 governance** | ✅ **도입 cycle 정상 작동** — Track 1 fail-and-close / Track 2 architecture close 확정 / HARK 위험 실질적 저감 | [methodology_deviation_log.md](methodology_deviation_log.md) |
 
 **한 줄 요약**: 운영 main 모델 (`v3_filtered_tuned` 32f) **그대로 유지**, 트랙 2 Architecture-only close 확정 (일반 warm 경로 운영 미승인 / Slice-conditional 제한 후보 + Phase A shadow 1주 착수 승인 가능), v3.6 server bundle main 적재 + swap **blocked** (사용자 권한 영역), archive cycle 정상 종결.
@@ -141,9 +141,9 @@ drift features 9개 중 7 (severe) 가 학습 분포 OOF 에서 **유의미한 �
 | 잔존 5 | #40 | archive retention policy §6 보강 | ✅ MERGED |
 | 잔존 6 LLM | #41 | v3.6 swap readiness report (Blocked 판정) | ✅ MERGED |
 | 잔존 6 split | #42 | v3.6 swap user action checklist (사용자 권한 영역 standalone) | ✅ MERGED |
-| **(본 PR)** | TBD | Comprehensive status report (Track 1+2 통합 view) | ⏳ |
+| #43 | Comprehensive status report (Track 1+2 통합 view) | governance / canonical anchor | ✅ MERGED |
 
-**Total**: 16 PR merged (#27~#42 archive train + 잔존 작업) + **본 PR (TBD, comprehensive status report)** / 230+ files / +52,000+ lines main 적재 (본 PR merge 후 확정).
+**Total**: 17 PR merged (#27~#43 archive train + 잔존 작업 + comprehensive status report) / 230+ files / +52,000+ lines main 적재.
 
 ### 5.2 Frozen archive
 
@@ -242,7 +242,7 @@ drift features 9개 중 7 (severe) 가 학습 분포 OOF 에서 **유의미한 �
 - Tag: `archive/gallery-tier-v4-research-20260508` (HEAD `52ac44d`)
 
 ### 8.5 Governance
-- [Methodology deviation log](methodology_deviation_log.md) — Track 1 + Phase 1→2 전이 + Track 2 + Axis B + Progressive + Sample size entries (PR #28 + PR #36 + PR #37 누적 / 문서 상단 stale note 는 초기 PR #28 적재 시점 기준 — 후속 entries 본문 추가 적용)
+- [Methodology deviation log](methodology_deviation_log.md) — Track 1 + Phase 1→2 전이 + Track 2 + Axis B + Progressive + Sample size + Cold Validation Cycle 1 entries (PR #28 + PR #36 + PR #37 + Cycle 1 누적 / 헤더 적재 history 정합 적용)
 - [README §canonical artifact manifest](../README.md) — 운영 v3 모델 reference anchor
 
 ### 8.6 Code reference
@@ -257,7 +257,7 @@ drift features 9개 중 7 (severe) 가 학습 분포 OOF 에서 **유의미한 �
 | 차수 | 내용 |
 |---|---|
 | 종합 보고서 사전 자문 (2026-05-08) | 별도 통합 문서 권고 + Markdown canonical + HTML executive summary 분리 / 결론 + 포인터 / 본문 재서술 X |
-| 본 보고서 사후 검수 (round 1, 예정) | 정합성 + 링크 + 판정 보수성 + 중복 제거 |
+| 본 보고서 사후 검수 (round 1-6) | 정합성 + 링크 + 판정 보수성 + 중복 제거 → GO (PR #43 merged) |
 
 ## 10. 본 cycle 종결
 
