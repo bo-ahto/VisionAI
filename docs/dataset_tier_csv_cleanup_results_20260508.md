@@ -123,18 +123,18 @@ attribution_class (4 unique values)
 | `생성방식` | 각 column 이 어떻게 만들어지는지 (Source API 직접 / regex 추출 / 키워드 매칭 / 수치 계산 등) |
 | `계산공식` | 정확 한 공식 / 공식 표기 (예: `area_cm2 = width_cm × height_cm`) |
 
-### 3.2 분류 별 생성 방식 (대표 형식)
+### 3.2 분류 별 생성 방식 (대표 형식 / 코드 reference)
 
 | 분류 | 생성 방식 의 예시 |
 |---|---|
 | **identifier / 수집** | Source API 직접 수집 / 변환 X |
-| **수집+환산** | source 통화 → KRW 환율 적용 (price_krw 만) |
-| **수집/enrichment** | year_made: Artsy=source / Saatchi=detail HTML regex (PR #51) |
-| **수집/regex추출** | artist_birth_year: Artsy=source / Saatchi=bio 5-pattern regex |
-| **수집→정규화** | solo/group/fair_count: exhibitions 텍스트 의 정규식 매칭 + count |
-| **categorical 정규화** | medium_category: classify_medium 의 키워드 매칭 (oil/acrylic/...) → 표준 분류 |
-| **계산** | ln_price = log(price_krw) / area_cm2 = w × h / ho = HO_TABLE_F closest mapping 등 |
-| **계산 (source-conditional)** | has_international: Artsy=city_count≥2 조건 / Saatchi=항상 1 (online policy) |
+| **수집+환산** | price_krw: source 통화 → KRW 환율 적용 |
+| **수집/enrichment** | year_made: Artsy=source / Saatchi=detail HTML primary regex + JSON fallback (saatchi_detail_enricher.py:46) |
+| **수집/regex추출** | artist_birth_year: Artsy=source / Saatchi=bio 5 pattern sequential + 1920-2005 validity (prepare_saatchi_dataset.py:101-118) |
+| **수집/source-conditional (정규화)** | solo_count / group_count / fair_count: Artsy=shows_data 의 직접 type filter / Saatchi=bio + exhibitions 의 line-heuristic count |
+| **categorical 정규화** | medium_category / support_type: substring rule-first 매칭 (`for label, kws in MEDIUM_RULES: if any(kw in medium.lower() for kw in kws): return label`) — prepare_primary_market_dataset.py:84 |
+| **계산** | ln_price = log(price_krw) / area_cm2 = width_cm × height_cm / ho = argmin_h \|area - HO_TABLE_F[h]\| / career_stage_v2 = clip(age_score) + log1p(activity) + ln_followers/6 |
+| **계산 (source-conditional)** | has_international: Artsy=(gallery_city_count >= 2) / Saatchi=항상 1 (online gallery source policy) |
 
 > 모든 CSV = `*.csv` gitignore 영역 (자동 추적 X / working tree only).
 
@@ -220,4 +220,5 @@ attribution_class (4 unique values)
 | 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×3 (§1 = 28 분류 vs 66 전체 의 관계 명시 / §2.1 = 보존 51 = 50 + 1 명시 / §5 has_special_finish 사유 sparse 통일) — round 1 fix |
 | 본 결과 보고서 round 2 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음 |
 | Dictionary 보강 추가 round (사용자 요청, 2026-05-08) | column_dictionary.csv 의 ① 새 컬럼 추가 (생성방식 / 계산공식) ② 제거 13 row 자체 삭제 (66 entries → 53 entries / 6 cols → 8 cols) ③ removed_columns_log.csv 별도 산출 |
-| Dictionary 보강 사후 검수 (예정) | 본 commit 직후 |
+| Dictionary 보강 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×4: career_stage 공식 (ln→log1p) / gallery_city_count (빈 토큰 제외) / classify_medium·support (substring rule-first) / mediums·supports_json (parser.mediums·supports 직접) / solo·group·fair_count (source-conditional / Artsy 직접 vs Saatchi heuristic) / year_made·artist_birth_year regex 표기 (코드 reference 로 대체) — round 1 fix 반영 |
+| Dictionary 보강 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
