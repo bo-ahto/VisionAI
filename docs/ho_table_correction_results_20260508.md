@@ -169,4 +169,4 @@ T0 artist 의 평균 ho 차이 (`mean_ho_v2_int − mean_ho`):
 | Prereg round 2 (NEEDS FIX): P1×2 (hardcoded 잔존 / 패턴 충돌) → fix |
 | Prereg round 3 (**GO**) |
 | 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×3 (deterministic misclassification 표현 over-claim / artist 단위 mismatch 누락 / "정합" 인과 표현) + P2×1 (PASS 표 의 freeze 표현 정리) — round 1 fix |
-| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 결과 보고서 round 2 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음 |
