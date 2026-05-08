@@ -165,7 +165,13 @@ is_size_out_of_range_v2 (int8 / area_cm2 <= 0.0 OR > 250000.0)
 | `src/visionai/price_engine/preprocessing/dimension_parser.py` | 표준 F 테이블 source (read-only import) |
 | `data/saatchi_cleaned.parquet` | 운영 raw |
 | `data/primary_market_dataset.parquet` | 운영 raw |
-| `data/dataset_tiers_cleansed_20260508/T*_*.csv` (기존 51 col) | 기존 cleansed CSV body |
+| `data/dataset_tiers_cleansed_20260508/T0_operational_28376_cleansed.csv` | 기존 cleansed CSV body (51 col / 명시 열거) |
+| `data/dataset_tiers_cleansed_20260508/T1_artsy_only_cleansed.csv` | 기존 cleansed CSV body (51 col / 명시 열거) |
+| `data/dataset_tiers_cleansed_20260508/T2_artsy_year_notna_cleansed.csv` | 기존 cleansed CSV body (51 col / 명시 열거) |
+| `data/dataset_tiers_cleansed_20260508/T3_artsy_year_birth_notna_cleansed.csv` | 기존 cleansed CSV body (51 col / 명시 열거) |
+| `data/dataset_tiers_cleansed_20260508/T4_artsy_strict_4field_cleansed.csv` | 기존 cleansed CSV body (51 col / 명시 열거) |
+| `data/dataset_tiers_cleansed_20260508/T5_krw_only_cleansed.csv` | 기존 cleansed CSV body (51 col / 명시 열거) |
+| `data/dataset_tiers_cleansed_20260508/T6_t4_anomaly_filtered_cleansed.csv` | 기존 cleansed CSV body (51 col / 명시 열거) |
 | `data/dataset_tiers_cleansed_20260508/display_companion_T0.csv` | 기존 display companion |
 | `data/dataset_tiers_cleansed_20260508/human_readable_T0.csv` | 기존 한글 파생본 |
 | `data/dataset_tiers_cleansed_20260508/removed_columns_log.csv` | 기존 제거 record |
@@ -234,7 +240,7 @@ is_size_out_of_range_v2 (int8 / area_cm2 <= 0.0 OR > 250000.0)
 
 1. ✅ 본 prereg 작성 + 코덱스 사후 검수
 2. ⏳ 산출 코드 작성 (`scripts/compute_ho_v2.py`)
-   - 표준 F 테이블 import (또는 hardcoded copy)
+   - 표준 F 테이블 import (`from visionai.price_engine.preprocessing.dimension_parser import HO_F_TABLE, area_to_ho_f` 만 / hardcoded copy 금지 / §3.1 정합)
    - cleansed Tier CSV 의 area_cm2 에 area_to_ho_f 적용 → 9 신규 column 산출
    - 운영 ho vs ho_v2 mismatch 정량 + clipped flag 정량
    - fail-closed digest 검증 (pre/post)
@@ -251,4 +257,5 @@ is_size_out_of_range_v2 (int8 / area_cm2 <= 0.0 OR > 250000.0)
 |---|---|
 | HO 변환 review (2026-05-08) | provenance 불명 / 표준 불일치 / canvas_type dead feature / silent clipping / calibration 영향 / 거버넌스 이중 정의 (1차시장 hardcoded vs 경매 dimension_parser) — high-risk 기록 + 표준 단일 소스 통합 별도 결정 안건 + 관측 플래그 권고 + 3안 offline backtest 권고 |
 | 본 prereg round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×4 (fail-closed allowlist 결손 / ho_v2_int rounding rule / 표준 table import 원칙 / 8↔9 column 오타) + 보완 3 (clipped threshold 절대값 / dictionary backward append / record only 반복) — round 1 fix |
-| 본 prereg round 2 사후 검수 (예정) | round 1 fix commit 직후 |
+| 본 prereg round 2 사후 검수 (2026-05-08, NEEDS FIX) | P1×2 (§6 step 2 의 "또는 hardcoded copy" 문구 잔존 — §3.1 정합 X / §3.6 frozen `T*_*.csv` 패턴 이 allowed `*_with_ho_v2.csv` 와 겹침) — round 2 fix: frozen list 의 7 cleansed CSV 명시 열거 + step 2 import 원칙 만 |
+| 본 prereg round 3 사후 검수 (예정) | round 2 fix commit 직후 |
