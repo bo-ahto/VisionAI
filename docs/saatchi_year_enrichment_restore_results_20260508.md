@@ -136,4 +136,4 @@
 | Prereg round 3 (2026-05-08, **GO**) | 미충족 영역 없음 |
 | 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×2 (PASS exact-match 표현 vs 코드 정합 결손 — URL set check 코드 추가 / work_age np.allclose → strict ==, fill-rate 97.9001% → 97.8992% 정정) / P2×1 (fail-closed 표현 정확화) — round 1 fix: 코드 에 URL set equality + work_age strict == 추가 + 보고서 fill-rate / 표현 정정 |
 | 본 결과 보고서 round 2 사후 검수 (2026-05-08, NEEDS FIX) | 신규 P1×1 (unresolved 비율 2.0999% → 2.1008% 정정 / 443 / 21,087 = 0.0210082041) — round 2 fix: §4 unresolved % 정정 |
-| 본 결과 보고서 round 3 사후 검수 (예정) | round 2 fix commit 직후 |
+| 본 결과 보고서 round 3 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음 / 본문·코드·summary JSON 정합성 확인 |
