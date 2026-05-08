@@ -22,8 +22,8 @@
 | Frozen 15 path 변경 X (sha-256 + git diff) | ✅ |
 | 7 Tier 모두 처리 (T0-T6) | ✅ |
 | 모든 Tier 51 → 60 cols (9 신규 column 추가) | ✅ |
-| ho_v2_int = np.rint(ho_v2).astype(int) (rounding rule freeze) | ✅ |
-| column_dictionary backward (기존 5 row 의 사유 만 append) | ✅ |
+| ho_v2_int 산출 의 rounding rule 구현 확인 (`np.rint`) | ✅ |
+| column_dictionary 기존 5 row 의 사유 column 만 append (구현 확인) | ✅ |
 
 ### 1.2 Fail-closed (allowlist 기반)
 
@@ -51,7 +51,21 @@
 | T5 (868 KRW) | 868 | 372 | 256 | 240 | 496 | 57.14% |
 | T6 (4,460 anomaly free) | 4,460 | 1,954 | 1,361 | 1,145 | 2,506 | 56.19% |
 
-> **모든 Tier 의 mismatch 비율 ≥ 54%**. 운영 의 정수 ho 와 표준 보간 ho_v2_int 의 절반 이상 차이. 코덱스 review 의 deterministic misclassification 정량 confirm.
+> **모든 Tier 의 mismatch 비율 ≥ 54%**. 운영 의 정수 ho 와 표준 보간 ho_v2_int 의 절반 이상 의 행 에서 불일치 record (record only / 운영 ho 의 잘못 / 표준 의 정확성 / 모델 영향 모두 본 cycle 의 결정 영역 X).
+
+### 2.1.1 T0 Artist 단위 mismatch (1,551 artists)
+
+| 영역 | n | % |
+|---|---:|---:|
+| 모든 작품 exact (`ho == ho_v2_int` 모든 row) | 204 | 13.15% |
+| 모든 작품 mismatch | 341 | 21.99% |
+| 일부 작품 만 mismatch (partial) | 1,006 | 64.86% |
+| **1+ 작품 mismatch (any mismatch)** | **1,347** | **86.85%** |
+
+T0 artist 의 평균 ho 차이 (`mean_ho_v2_int − mean_ho`):
+- median: -0.40 / mean: -2.23 / p10: -4.75 / p90: +1.00
+
+> Artist 단위 영역 record 만 / **artist 의 잘못 / 평균 차이 의 의미 / 모델 영향 모두 본 cycle 의 결정 영역 X**.
 
 ### 2.2 Clipped / out-of-range flag
 
@@ -65,7 +79,7 @@
 | T5 | 7 | 27 | 0 |
 | **T6 (anomaly free)** | **0** | **0** | **0** ⭐ |
 
-> **T6 = audit rule-filter 적용 후 의 영역 / clipped 모두 0** = audit anomaly filter 의 효과 정합 (코덱스 권고 의 "관측 플래그" 의 실측 영역 가능).
+> **T6 = audit rule-filter 적용 후 의 영역 / clipped 모두 0** — T6 의 area 영역 의 audit rule (100 < area < 50,000) 와 본 cycle 의 clipped threshold (252 / 50,239) 가 **consistent with** 하는 관측 (인과 영역 X / 본 cycle 의 결정 영역 X).
 
 ### 2.3 ho_power 변화 분포 (T0 28,376 / 운영 ho_power vs ho_power_v2)
 
@@ -80,7 +94,7 @@
 | max | +55.00% |
 | mean | +1.68% |
 
-> 운영 ho_power 의 약 **반수 가 ±10% 영역 변화**, **상위 10% 가 +17% 이상** / 하위 10% 가 -10% 이하. ho_power 의 가격 함수 영향 의 정량 (record only / efficacy 영역 X).
+> 중앙값 0% / 상위 10% 는 +17.24% 이상 / 하위 10% 는 -10.07% 이하. record only / 가격 함수 영향 / efficacy / 운영 영역 모두 본 cycle 의 결정 영역 X.
 
 ## 3. 산출 파일 (`data/dataset_tiers_cleansed_20260508/`)
 
@@ -154,4 +168,5 @@
 | Prereg round 1 (NEEDS FIX): P1×4 + 보완×3 → fix |
 | Prereg round 2 (NEEDS FIX): P1×2 (hardcoded 잔존 / 패턴 충돌) → fix |
 | Prereg round 3 (**GO**) |
-| 본 결과 보고서 사후 검수 (예정) | 본 commit 직후 |
+| 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×3 (deterministic misclassification 표현 over-claim / artist 단위 mismatch 누락 / "정합" 인과 표현) + P2×1 (PASS 표 의 freeze 표현 정리) — round 1 fix |
+| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
