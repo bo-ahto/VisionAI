@@ -179,12 +179,26 @@ def main() -> dict:
         n_saatchi_in_filter, n_year_filled, n_year_filled / n_saatchi_in_filter * 100
     )
 
-    # work_age = 2026 - year_made 정합 (notna 영역)
+    # work_age = 2026 - year_made 정합 (notna 영역) — strict equality
     notna_mask = saatchi_in_filter["year_made"].notna()
-    expected_work_age = WORK_AGE_REF_YEAR - saatchi_in_filter.loc[notna_mask, "year_made"]
-    actual_work_age = saatchi_in_filter.loc[notna_mask, "work_age"]
-    work_age_exact = bool(np.allclose(expected_work_age, actual_work_age))
-    logger.info("work_age = 2026 - year_made (notna 영역): exact=%s", work_age_exact)
+    expected_work_age = (WORK_AGE_REF_YEAR - saatchi_in_filter.loc[notna_mask, "year_made"]).to_numpy()
+    actual_work_age = saatchi_in_filter.loc[notna_mask, "work_age"].to_numpy()
+    work_age_strict_equal = bool((expected_work_age == actual_work_age).all())
+    work_age_n_mismatch = int((expected_work_age != actual_work_age).sum())
+    logger.info(
+        "work_age = 2026 - year_made (notna 영역): strict_equal=%s mismatch_n=%d",
+        work_age_strict_equal, work_age_n_mismatch,
+    )
+
+    # URL set verification (jsonl unique URL == 운영 saatchi in-filter URL set)
+    op_in_filter_urls = set(in_filter[in_filter["source"] == "saatchi"]["artwork_url"])
+    url_set_equal = (unique_urls == op_in_filter_urls)
+    n_jsonl_only = len(unique_urls - op_in_filter_urls)
+    n_op_only = len(op_in_filter_urls - unique_urls)
+    logger.info(
+        "URL set check: jsonl_unique=%d / op_in_filter=%d / equal=%s / jsonl_only=%d / op_only=%d",
+        len(unique_urls), len(op_in_filter_urls), url_set_equal, n_jsonl_only, n_op_only,
+    )
 
     # ─── PASS/FAIL ────────────────────────────────────────────────────
     checks = {
@@ -196,7 +210,8 @@ def main() -> dict:
         "blob_doc_exact": blob_doc == EXPECTED_BLOB_DOC,
         "operational_unchanged": pre_sha == post_sha,
         "saatchi_in_filter_year_filled_exact_20644": n_year_filled == 20644,
-        "work_age_exact_recompute": work_age_exact,
+        "work_age_strict_equal_recompute": work_age_strict_equal,
+        "url_set_equal_jsonl_vs_in_filter": url_set_equal,
     }
     pass_overall = all(checks.values())
 
@@ -234,8 +249,14 @@ def main() -> dict:
         "restoration_coverage": {
             "saatchi_in_filter_rows": n_saatchi_in_filter,
             "year_made_filled": n_year_filled,
-            "fill_rate_pct": round(n_year_filled / n_saatchi_in_filter * 100, 4),
+            "fill_rate_pct_4dp": round(n_year_filled / n_saatchi_in_filter * 100, 4),
+            "fill_rate_raw": n_year_filled / n_saatchi_in_filter,
             "year_made_unresolved": n_saatchi_in_filter - n_year_filled,
+            "work_age_strict_equal": work_age_strict_equal,
+            "work_age_mismatch_n": work_age_n_mismatch,
+            "url_set_equal_jsonl_vs_in_filter": url_set_equal,
+            "url_only_in_jsonl": n_jsonl_only,
+            "url_only_in_op_in_filter": n_op_only,
         },
         "checks": checks,
         "decision_binding": {

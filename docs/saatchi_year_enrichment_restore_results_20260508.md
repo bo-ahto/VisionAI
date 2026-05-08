@@ -8,7 +8,7 @@
 
 ## 0. 한 줄 요약
 
-> **VERDICT: ✅ PASS** — commit `dce0dfa` (2026-05-01) 의 enrichment artifact 의 git history 복원 + merger 적용 후 의 모든 정량 영역 = **exact-match** (Δ=0). Saatchi (in-filter) 21,087 rows 의 `year_made` 결손 영역 의 정량 회수 = **20,644 rows (97.90%)**. 운영 `saatchi_cleaned.parquet` 변경 X (fail-closed 통과).
+> **VERDICT: ✅ PASS** — commit `dce0dfa` (2026-05-01) 의 enrichment artifact 의 git history 복원 + merger 적용 후 의 모든 정량 영역 = **strict-equal** (10개 check 정확 동일). Saatchi (in-filter) 21,087 rows 의 `year_made` 결손 영역 의 정량 회수 = **20,644 rows (97.8992%)**. 운영 `saatchi_cleaned.parquet` 변경 X (pre/post sha-256 동일 + output ≠ input guard 통과).
 
 ## 1. PASS / FAIL 판정
 
@@ -20,13 +20,13 @@
 | 복원 raw.jsonl git blob id | `4fb8b53d9242ee62a49fb826c34276d7104c3870` | 정확 동일 | ✅ |
 | 복원 summary.json git blob id | `dc8c07d090af88576c614272009ef54c64cbbf18` | 정확 동일 | ✅ |
 | 복원 v3_4_2_step4_full_results.md git blob id | `e1dcae48574d41ca3871c707dbddad6b30b84b81` | 정확 동일 | ✅ |
-| jsonl unique URL ⊆ 운영 saatchi (in-filter) URL | 0 mismatch | 0 mismatch | ✅ |
+| jsonl unique URL set == 운영 saatchi (in-filter) URL set | 정확 동일 (jsonl_only=0 / op_only=0) | jsonl_only=0 / op_only=0 | ✅ |
 | 운영 saatchi (in-filter) rows | 21,087 | 21,087 | ✅ |
-| enriched parquet 의 Saatchi (in-filter) rows year_made notna | 20,644 (exact) | **20,644 (97.9001%)** | ✅ |
-| enriched parquet work_age = `2026 - year_made` (notna 영역) | 정확 정합 | exact (allclose) | ✅ |
+| enriched parquet 의 Saatchi (in-filter) rows year_made notna | 20,644 (exact) | **20,644 (97.8992%)** | ✅ |
+| enriched parquet work_age = `2026 - year_made` (notna 영역) | strict equal (`==`, mismatch_n=0) | strict equal / mismatch_n=0 | ✅ |
 | 운영 saatchi_cleaned.parquet pre vs post sha-256 | 정확 동일 (변경 X) | 정확 동일 | ✅ |
 
-→ **모든 PASS 조건 충족 / Tolerance = 0 / 모든 영역 exact-match**.
+→ **모든 PASS 조건 충족** / 코드 의 strict equality (==) + URL set equality 검증 통과 (`work_age` 도 `np.allclose` 가 아닌 strict `==` / mismatch_n=0 / URL set jsonl_only=0 / op_only=0).
 
 ## 2. Provenance
 
@@ -64,14 +64,14 @@
 | Unique URL with `fetch_status='ok'` AND `year_created` valid | 20,644 |
 | Unique URL with unresolved year (`5xx` / `network_error` / 영구 fail) | 443 (= 21,087 - 20,644) |
 
-> **해석**: 21,973 rows = main pass (21,087) + retry pass 1 (443 retried, 0 recovered) + retry pass 2 (443 retried, 0 recovered) = retry duplicate 886. summary.json 의 `fill_rate_year=0.9789917958932044` 와 정확 동일 (20,644 / 21,087 = 97.9001%).
+> **해석**: 21,973 rows = main pass (21,087) + retry pass 1 (443 retried, 0 recovered) + retry pass 2 (443 retried, 0 recovered) = retry duplicate 886. summary.json 의 `fill_rate_year=0.9789917958932044` 와 정확 동일 (20,644 / 21,087 = 97.8992%).
 
 ## 4. Restoration coverage (in-filter Saatchi)
 
 | 영역 | n | % |
 |---|---|---|
 | Saatchi (in-filter, `is_excluded_for_training==0`) rows | 21,087 | 100.00% |
-| Saatchi year_made filled (enriched) | **20,644** | **97.9001%** |
+| Saatchi year_made filled (enriched) | **20,644** | **97.8992%** |
 | Saatchi year_made unresolved | 443 | 2.0999% |
 
 > **단계별 정합**:
@@ -91,7 +91,7 @@
 | Audit 보고서 (PR #50) 의 cleansed dataset 후보 (T0-T6) | **변경 X** (T0 28,376 의 정의 변경 X / enriched parquet 은 별도 후속 cycle 의 입력) |
 | 트랙 1 / 트랙 2 efficacy claim | **갱신 X** |
 | 운영 채택 결정 | **영향 X** |
-| 운영 saatchi_cleaned.parquet | **변경 X** (fail-closed 통과) |
+| 운영 saatchi_cleaned.parquet | **변경 X** (pre/post sha-256 동일 + output ≠ input guard 통과) |
 | 외부 보고서 | 본 결과 미반영 영역 |
 
 **본 cycle 의 영향 영역 만**:
@@ -134,4 +134,5 @@
 | Prereg round 1 (2026-05-08, NEEDS FIX) | P0×2 + P1×6 + P2×2 → fix |
 | Prereg round 2 (2026-05-08, NEEDS FIX) | P1×1 (Artsy parquet 정합성) → fix |
 | Prereg round 3 (2026-05-08, **GO**) | 미충족 영역 없음 |
-| 본 결과 보고서 사후 검수 (예정) | 본 commit 직후 |
+| 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×2 (PASS exact-match 표현 vs 코드 정합 결손 — URL set check 코드 추가 / work_age np.allclose → strict ==, fill-rate 97.9001% → 97.8992% 정정) / P2×1 (fail-closed 표현 정확화) — round 1 fix: 코드 에 URL set equality + work_age strict == 추가 + 보고서 fill-rate / 표현 정정 |
+| 본 결과 보고서 round 2 사후 검수 (예정) | round 1 fix commit 직후 |
