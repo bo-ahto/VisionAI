@@ -112,8 +112,29 @@ attribution_class (4 unique values)
 | `T6_t4_anomaly_filtered_cleansed.csv` | 4,460 | 51 | 2.38 MB |
 | `display_companion_T0.csv` | 28,376 | 5 | mediums_json / supports_json 분리 보존 |
 | `human_readable_T0.csv` | 28,376 | 51 | 한글 column 명 사람용 파생본 |
-| `column_dictionary.csv` | 66 entries | 6 | 영문 / 한글 / 분류 / 정의 / 처리결정 / 사유 |
+| `column_dictionary.csv` | **53 entries** | **8 cols** | 영문 / 한글 / 분류 / 정의 / 처리결정 / 사유 / **생성방식** / **계산공식** (제거 13 row 미포함) |
+| `removed_columns_log.csv` | 13 entries | 2 | 제거된 column 의 영문명 + 사유 record (별도) |
 | `INDEX.json` / `INDEX.md` | — | — | summary index |
+
+### 3.1 column_dictionary.csv 의 새 컬럼 (round 2 보강)
+
+| 컬럼 | 의미 |
+|---|---|
+| `생성방식` | 각 column 이 어떻게 만들어지는지 (Source API 직접 / regex 추출 / 키워드 매칭 / 수치 계산 등) |
+| `계산공식` | 정확 한 공식 / 공식 표기 (예: `area_cm2 = width_cm × height_cm`) |
+
+### 3.2 분류 별 생성 방식 (대표 형식)
+
+| 분류 | 생성 방식 의 예시 |
+|---|---|
+| **identifier / 수집** | Source API 직접 수집 / 변환 X |
+| **수집+환산** | source 통화 → KRW 환율 적용 (price_krw 만) |
+| **수집/enrichment** | year_made: Artsy=source / Saatchi=detail HTML regex (PR #51) |
+| **수집/regex추출** | artist_birth_year: Artsy=source / Saatchi=bio 5-pattern regex |
+| **수집→정규화** | solo/group/fair_count: exhibitions 텍스트 의 정규식 매칭 + count |
+| **categorical 정규화** | medium_category: classify_medium 의 키워드 매칭 (oil/acrylic/...) → 표준 분류 |
+| **계산** | ln_price = log(price_krw) / area_cm2 = w × h / ho = HO_TABLE_F closest mapping 등 |
+| **계산 (source-conditional)** | has_international: Artsy=city_count≥2 조건 / Saatchi=항상 1 (online policy) |
 
 > 모든 CSV = `*.csv` gitignore 영역 (자동 추적 X / working tree only).
 
@@ -198,3 +219,5 @@ attribution_class (4 unique values)
 | Cleanup 사전 자문 (2026-05-08) | 제거 13 / 분리 2 / 보존+정의명시 1 / 한글 header 형식 옵션 C (별도 dictionary) 권고 + decision-binding 명시 의무 |
 | 본 결과 보고서 round 1 사후 검수 (2026-05-08, NEEDS FIX) | P1×3 (§1 = 28 분류 vs 66 전체 의 관계 명시 / §2.1 = 보존 51 = 50 + 1 명시 / §5 has_special_finish 사유 sparse 통일) — round 1 fix |
 | 본 결과 보고서 round 2 사후 검수 (2026-05-08, **GO**) | 미충족 영역 없음 / 신규 issue 없음 |
+| Dictionary 보강 추가 round (사용자 요청, 2026-05-08) | column_dictionary.csv 의 ① 새 컬럼 추가 (생성방식 / 계산공식) ② 제거 13 row 자체 삭제 (66 entries → 53 entries / 6 cols → 8 cols) ③ removed_columns_log.csv 별도 산출 |
+| Dictionary 보강 사후 검수 (예정) | 본 commit 직후 |
