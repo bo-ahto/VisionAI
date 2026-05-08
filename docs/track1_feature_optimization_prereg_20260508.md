@@ -443,5 +443,12 @@ Phase 0 의 영역 의 의무 영역 의 의무 fold-level std 산출 → iterat
 | 1차 사전 자문 (commit ec93513 직후) | NEEDS FIX / 5 영역 (§3 phase primary / §4 Warm CV / §3.10 As-of Contract / §4.2 baseline 변동성 / §3.1 multi-method consensus) |
 | 1차 fix patch (commit 687bbe7) | §3 Fix-1 (phase primary 분리) / §3.1 B-1 Fix-5 (consensus rule) / §3.10 Fix-3 (As-of Contract) / §4.1 Fix-2 (Warm CV 정의 + GroupKFold guard) / §4.2 Fix-4 (baseline 변동성) / §3.8 Fix-7 (iteration cap) |
 | 2차 사후 검수 (round 2) | NEEDS FIX (P1 2 영역) / §3.10 train-row leakage 차단 명시 / §4.2 + §5 threshold prereg locking + P2 3 영역 |
-| 2차 fix patch (본 commit) | §3.10 B/B-1 (train-row self/future/same-day leakage 차단 + smoke test) / §4.2 B + §5 (threshold locking / prereg 고정) / §3.1 B-1 (ADD signal 정량 ≥ 0.5%) / §4.1 escalation rule / §3.10 E shrinkage 통계별 분리 |
-| 3차 사후 검수 (예정) | 본 fix commit 직후 / GO 의무 |
+| 2차 fix patch (commit cd18a26) | §3.10 B/B-1 (train-row self/future/same-day leakage 차단 + smoke test) / §4.2 B + §5 (threshold locking / prereg 고정) / §3.1 B-1 (ADD signal 정량 ≥ 0.5%) / §4.1 escalation rule / §3.10 E shrinkage 통계별 분리 |
+| **3차 사후 검수 (round 3) = GO** | prereg 영역 의 의무 결함 X. 잔여 영역 = 구현 단계 의 의무 영역 (pseudocode 분기 + datetime normalize). |
+
+## 12. 구현 단계 의 의무 영역 (코덱스 round 3 GO 의 의무 영역)
+
+본 prereg 의 의무 영역 X (구현 시 의 의무 의무 영역):
+
+1. **pseudocode 분기 의무**: §3.10 B 의 의무 영역 의 의무 `compute_asof_for_row` 의 의무 영역 = median 기준 의 의무 영역 만. 구현 시 의 의무 의무 영역 = §3.10 E 의 의무 영역 의 의무 통계별 분기 (median / mean / std / count) 의 의무 정합.
+2. **datetime normalize 의무**: §3.10 A 의 의무 영역 의 의무 `transaction_date` 영역 의 의무 datetime 영역 의 의무 (시각 영역 의 의무 포함) 영역 의 의무 = "같은 날 다른 시각" 의 의무 영역 의 의무 `<` 의 의무 통과 영역 의 의무 risk. 구현 시 의 의무 의무 영역 = `dt.date()` 의 의무 normalize 영역 의 의무 strict < 의 의무 의무 정합.
