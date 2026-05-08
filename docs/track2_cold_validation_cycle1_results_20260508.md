@@ -139,10 +139,9 @@
 3. ⏳ **외부 보고서 (PR #44, #45) 정정 의무** — "cold 영역 트랙 2 우위" 표현 reconcile
 4. ⏳ (조건부) Cycle 2 source-expansion priority 재평가
 
-## 9. Methodology deviation log entry 의무
+## 9. Methodology deviation log entry (적재 완료)
 
-본 cycle 의 결과는 `docs/methodology_deviation_log.md` 에 새 entry 로 기록 의무:
-- Cycle 1 freeze + Stage 1 실행 + FAIL 결과 + 후속 cycle 권고
+본 cycle 의 결과는 `docs/methodology_deviation_log.md` 의 §Cold Validation Cycle 1 (line 582-) 에 entry 로 적재 완료 — Cycle 1 freeze + Stage 1 실행 + FAIL 결과 + 후속 cycle 권고.
 
 ## 10. 코덱스 자문 이력
 
@@ -150,4 +149,4 @@
 |---|---|
 | Cold validation cycle 사전 자문 (2026-05-08) | B+D primary / Cycle 1+2 분할 / hard gate 권고 |
 | Cycle 1 prereg 사후 검수 (round 1-3) | P0×2 + P1×3 + P2×1 fix → GO |
-| 본 결과 보고서 사후 검수 (예정) | 본 commit 직후 |
+| 본 결과 보고서 사후 검수 (round 1-4) | P0×1 + P1×3 + P2×1 fix → GO |

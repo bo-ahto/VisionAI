@@ -242,7 +242,7 @@ drift features 9개 중 7 (severe) 가 학습 분포 OOF 에서 **유의미한 �
 - Tag: `archive/gallery-tier-v4-research-20260508` (HEAD `52ac44d`)
 
 ### 8.5 Governance
-- [Methodology deviation log](methodology_deviation_log.md) — Track 1 + Phase 1→2 전이 + Track 2 + Axis B + Progressive + Sample size entries (PR #28 + PR #36 + PR #37 누적 / 문서 상단 stale note 는 초기 PR #28 적재 시점 기준 — 후속 entries 본문 추가 적용)
+- [Methodology deviation log](methodology_deviation_log.md) — Track 1 + Phase 1→2 전이 + Track 2 + Axis B + Progressive + Sample size + Cold Validation Cycle 1 entries (PR #28 + PR #36 + PR #37 + Cycle 1 누적 / 헤더 적재 history 정합 적용)
 - [README §canonical artifact manifest](../README.md) — 운영 v3 모델 reference anchor
 
 ### 8.6 Code reference
