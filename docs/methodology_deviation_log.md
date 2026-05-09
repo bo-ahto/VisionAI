@@ -615,3 +615,46 @@
   * Cycle 2 source-expansion (Saatchi 통합) priority 재평가
   * 외부 협력 영역 (외부 데이터 source / 입력 정합성 확장) 우선순위 ↑
 - **승인**: 사용자 검토 + 코덱스 prereg + 결과 사후 검수
+
+## 2026-05-09 — Feature Sweep amendment cycle (post-hoc)
+
+### 2026-05-09 — [Feature Sweep amendment] config-space + warm-seed major deviation
+
+- **사전등록** (`docs/feature_sweep_amendment_20260509.md`):
+  - N grid: 12 (5/8/10/12/15/18/20/22/25/28/30/32)
+  - Models: 6 (CatBoost / XGBoost / LightGBM / RandomForest / HistGradientBoosting / Ensemble)
+  - Warm seeds: 3 (42 / 7 / 13) — sensitivity median primary
+  - Total fits: 5 ranking + 360 cold + 1080 warm = ~1445 fits / 추정 3-4시간
+  - Locked rule: 모든 72 config dump / 1-SE winner band / 운영 정합 priority
+
+- **실제** (kill-restart due to thermal throttling):
+  - N grid: **7** (5/10/15/20/25/30/32)
+  - Models: **3** (CatBoost / XGBoost / Ensemble — winner-eligible only / LightGBM/RF/HGB 생략)
+  - Warm seeds: **1** (42 only)
+  - Total fits: 5 ranking + 105 cold + 105 warm = 215 fits / 40분 (kill-restart 후)
+  - Original run (`bfje92pd3`): warm fold 1=8분 → fold 2=24분 → fold 3=112분 (thermal throttling) → 24+ 시간 추정 → killed
+  - Restart (`btitaqenw`) with simplified config
+
+- **이유**:
+  - System thermal throttling / fold당 시간 점진 증가 (8분→112분 / fold 3까지)
+  - 24+ 시간 추정 / 실용 X
+  - kill + simplified restart = ~40분 종료
+
+- **분류**: **major** (config-space + warm-seed deviation)
+
+- **영향**:
+  - winner declaration = "amendment-locked winner" X / "**provisional reduced-sweep winner**" 재라벨
+  - exact optimum 주장 X (8/12/18/22/28 N + LGBM/RF/HGB 미실행)
+  - warm 1-seed = G1 판정 신뢰도 약함 (3-seed median locked rule 미충족)
+  - winner warm Δ -0.49 / G1 margin (locked +0.5) 얇음
+  - rerun 의무 X (다음 cycle = Confirmatory / Locked Holdout test 통해 검증)
+
+- **승인**:
+  - 사용자 (kill+restart 결정 / 시간 제약)
+  - 코덱스 round 1 (사전 자문) = NEEDS FIX (P1 4 영역) → fix 적용
+  - 코덱스 round 2 (사후 검수) = NEEDS FIX (P1) → 본 deviation log + 보고서 wording fix → GO with P2
+
+- **후속 조치**:
+  - **다음 Confirmatory cycle (decision-binding)** = Top 15 + XGBoost / Locked Holdout 20% test (multi-seed warm 의무)
+  - 또는 별도 fine-grid sweep (N=8/12/18/22/28) — 시간 제약 영역 의 의무
+  - winner declaration = provisional / amendment-locked X
