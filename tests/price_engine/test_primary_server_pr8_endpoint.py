@@ -101,9 +101,15 @@ def _run_predict(req: PredictRequest):
 
 
 def _patch_server(predictor, matcher):
-    """공통 patch — 실 ML 의존성 우회."""
+    """공통 patch — 실 ML 의존성 우회.
+
+    PR2A.5: server 영역 의 의무 영역 의 의무 router.dispatch() 영역 의 의무 영역 의 의무
+    routed_predictor 사용 / default OFF 영역 의 의무 영역 의 의무 = router.unified =
+    `_predictor`. 따라서 두 영역 의 의무 영역 의 의무 모두 patch.
+    """
     return [
         patch.object(primary_server, "_predictor", predictor),
+        patch.object(primary_server._router, "unified", predictor),  # PR2A.5
         patch.object(primary_server, "_matcher", matcher),
         patch.object(primary_server, "_log_prediction"),
         patch.object(primary_server, "_find_matched_artworks", return_value=[]),

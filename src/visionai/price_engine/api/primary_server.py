@@ -49,13 +49,17 @@ from .primary_schemas import (
     PriceRange,
     Processing,
 )
+from .source_router import RouteDecision, SourceRouter, decide_route
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 # ─── 글로벌 상태 ───
 _matcher = ArtistMatcher()
-_predictor = PrimaryPredictor()
+# PR2A.5: SourceRouter (3 predictor / default OFF / unified만 load) +
+# _predictor proxy = router.unified (backward compat)
+_router = SourceRouter()
+_predictor: PrimaryPredictor = _router.unified
 _start_time = time.time()
 _model_version = "v3-tuned"  # 기본값. calibration artifact 로드 시 'v3-tuned-cal' (DB VARCHAR(20) 호환)
 _model_info_cache: ModelInfoResponse | None = None  # startup에서 캐시 (Codex 5차 P2: stale 방지)
@@ -450,10 +454,13 @@ def _load_models() -> None:
     PrimaryPredictor.load_models가 4개 artifact (cb/xgb/warm/label_maps)를
     한 번에 로드 + schema 검증. 누락 또는 invalid 시 RuntimeError.
 
+    PR2A.5: SourceRouter.load_models() — default OFF면 unified만 / active mode면
+    artsy + saatchi predictor 추가 load (fail-closed).
+
     Codex 5차 P2: 같은 model_dir 스냅샷에서 model_info를 캐시 (런타임 disk 변경 무관).
     """
     model_dir = _resolve_model_dir()
-    _predictor.load_models(model_dir)
+    _router.load_models(model_dir)
     _build_model_info_cache(model_dir)
 
 
@@ -478,6 +485,9 @@ def _build_model_info_cache(model_dir: Path) -> None:
             training_count=0, artist_count=0,
             mdape_groupkfold=0.0, mdape_kfold=0.0,
             features_count=len(_predictor.cb_features),
+            router_mode=_router.mode,
+            default_variant=_predictor.variant,
+            available_variants=sorted(SUPPORTED_VARIANTS.keys()),
         )
         return
     with metrics_path.open(encoding="utf-8") as f:
@@ -506,6 +516,10 @@ def _build_model_info_cache(model_dir: Path) -> None:
         mdape_groupkfold=cold_mdape,
         mdape_kfold=warm_mdape,
         features_count=int(metrics.get("features", 0)),
+        # PR2A.5: router metadata
+        router_mode=_router.mode,
+        default_variant=_predictor.variant,
+        available_variants=sorted(SUPPORTED_VARIANTS.keys()),
     )
     logger.info("model_info cache built: version=%s, cold=%.2f, warm=%.2f, features=%d",
                 _model_info_cache.model_version, cold_mdape, warm_mdape,
@@ -660,10 +674,15 @@ async def metrics() -> str:
             .replace("\n", "\\n")
         )
 
+    # PR2A.5: variant label = router mode 의 의미. mode=off 영역 = static unified
+    # variant / 활성 mode 영역 = static "router" (mixed traffic / per-request
+    # routed_variant 영역 의 의무 영역 의 의무 별도 log 영역 의 의무 영역 의 의무 영역).
+    variant_label = _predictor.variant if _router.mode == "off" else "router"
     labels = (
         f'worker="{_escape_label_value(_WORKER_INSTANCE_ID)}",'
         f'server="{_escape_label_value(_SERVER_INSTANCE)}",'
-        f'variant="{_escape_label_value(_predictor.variant)}"'
+        f'variant="{_escape_label_value(variant_label)}",'
+        f'router_mode="{_escape_label_value(_router.mode)}"'
     )
 
     def gauge(name: str, help_text: str, value: float | int | bool) -> str:
@@ -862,8 +881,17 @@ async def predict(req: PredictRequest):
         year_made=year_made,
     )
 
-    # 5. 예측 — artist_slug 전달 (학습 시 warm artist set lookup용, Codex 5차 P1)
-    result = _predictor.predict(
+    # 5. PR2A.5: SourceRouter dispatch — match.profile.source 권위 (unmatched X)
+    match_profile_source = (
+        profile.get("source") if (is_matched and isinstance(profile, dict)) else None
+    )
+    routed_predictor, route_decision = _router.dispatch(
+        is_matched=bool(is_matched),
+        match_profile_source=match_profile_source,
+        cohort_key=artist_slug_for_routing or req.artist_name,
+    )
+    # 예측 — artist_slug 전달 (학습 시 warm artist set lookup용, Codex 5차 P1)
+    result = routed_predictor.predict(
         features=features,
         is_matched=is_matched,
         training_count=training_count,
@@ -873,10 +901,10 @@ async def predict(req: PredictRequest):
     )
 
     # SHAP 설명 (CatBoost 경로만, threadpool에서 실행)
-    # v3.6 PR7: variant-aware model_type → 'catboost_*' prefix 로 분기
+    # PR2A.5: routed predictor 기준 cb_features (variant-aware / source-conditional)
     feature_contributions = []
     if result["model_type"].startswith("catboost_"):
-        cb_features_for_shap = _predictor.cb_features  # variant-aware
+        cb_features_for_shap = routed_predictor.cb_features  # routed-aware
 
         def _compute_shap():
             df_explain = pd.DataFrame([features])
@@ -921,13 +949,17 @@ async def predict(req: PredictRequest):
         # PR10b (코덱스 P2): match.profile.source 만 권위. is_matched=False 일 때
         # external_collector 가 채운 profile.source 는 별도 external_collector_source
         # 필드로만 기록 → match_profile_source 오염 차단.
-        "match_profile_source": (
-            profile.get("source") if (is_matched and isinstance(profile, dict)) else None
-        ),
+        "match_profile_source": match_profile_source,
         "slug_in_warm_set": (
-            _predictor.is_warm_artist(artist_slug_for_routing)
+            routed_predictor.is_warm_artist(artist_slug_for_routing)
             if artist_slug_for_routing else False
         ),
+        # PR2A.5: source routing log
+        "routing_source": route_decision.routing_source,
+        "routing_reason": route_decision.routing_reason,
+        "routed_variant": route_decision.variant,
+        "router_mode": _router.mode,
+        "cohort_in_canary": route_decision.cohort_in_canary,
         "external_collector_source": sources_used[0] if sources_used else "none",
         "year_made_route": year_made_route,
         "year_made_used": year_made,
@@ -936,8 +968,8 @@ async def predict(req: PredictRequest):
         "enrichment_latency_ms": enrichment_ms,
         "predict_total_latency_ms": total_ms,
         # 배포/설정 분리 (v3.5 step 3 §3.2 코덱스 P0): D7/D30 hit rate 해석 시 트래픽
-        # 변화 vs 설정 변화 분리.
-        "model_variant": _predictor.variant,
+        # 변화 vs 설정 변화 분리. PR2A.5: routed_variant 우선 (실제 serving model).
+        "model_variant": routed_predictor.variant,
         "artifact_version": _ARTIFACT_VERSION,
         "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
         "rollout_rule_version": _ROLLOUT_RULE_VERSION,
@@ -960,6 +992,9 @@ async def predict(req: PredictRequest):
             model_type=result["model_type"],
             is_known_artist=result["is_known_artist"],
             training_count=result["training_count"],
+            routing_source=route_decision.routing_source,
+            routing_reason=route_decision.routing_reason,
+            routed_variant=route_decision.variant,
         ),
         processing=Processing(total_ms=total_ms, external_fetch_ms=external_ms),
         external_sources_used=sources_used,
@@ -1058,7 +1093,16 @@ async def predict_batch(req: BatchPredictRequest):
                 is_saatchi_warm=is_saatchi_warm,
                 year_made=year_made,
             )
-            result = _predictor.predict(
+            # PR2A.5: SourceRouter dispatch (batch / 동일 routing matrix)
+            item_match_profile_source = (
+                profile.get("source") if (is_matched and isinstance(profile, dict)) else None
+            )
+            routed_predictor, route_decision = _router.dispatch(
+                is_matched=bool(is_matched),
+                match_profile_source=item_match_profile_source,
+                cohort_key=artist_slug or item.artist_name,
+            )
+            result = routed_predictor.predict(
                 features=features, is_matched=is_matched,
                 training_count=training_count, target_market=item.target_market,
                 has_manual_profile=len(manual) > 0,
@@ -1096,14 +1140,17 @@ async def predict_batch(req: BatchPredictRequest):
                 "has_manual_profile": len(manual) > 0,
                 "matched": bool(is_matched),  # PR14b' (코덱스 P1): DDL spec 정합
                 "is_saatchi_warm": bool(is_saatchi_warm),
-                "match_profile_source": (
-                    profile.get("source")
-                    if (is_matched and isinstance(profile, dict)) else None
-                ),
+                "match_profile_source": item_match_profile_source,
                 "slug_in_warm_set": (
-                    _predictor.is_warm_artist(artist_slug)
+                    routed_predictor.is_warm_artist(artist_slug)
                     if artist_slug else False
                 ),
+                # PR2A.5: source routing log (batch)
+                "routing_source": route_decision.routing_source,
+                "routing_reason": route_decision.routing_reason,
+                "routed_variant": route_decision.variant,
+                "router_mode": _router.mode,
+                "cohort_in_canary": route_decision.cohort_in_canary,
                 "external_collector_source": sources[0] if sources else "none",
                 "year_made_route": year_made_route,
                 "year_made_used": year_made,
@@ -1112,7 +1159,7 @@ async def predict_batch(req: BatchPredictRequest):
                 "enrichment_latency_ms": enrichment_ms,
                 "predict_total_latency_ms": item_total_ms,
                 "total_ms": item_total_ms,  # _monitor avg_ms 합산용 (단건 호환)
-                "model_variant": _predictor.variant,
+                "model_variant": routed_predictor.variant,
                 "artifact_version": _ARTIFACT_VERSION,
                 "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
                 "rollout_rule_version": _ROLLOUT_RULE_VERSION,
@@ -1132,6 +1179,9 @@ async def predict_batch(req: BatchPredictRequest):
                 model_info=ModelInfo(
                     model_type=result["model_type"], is_known_artist=result["is_known_artist"],
                     training_count=result["training_count"],
+                    routing_source=route_decision.routing_source,
+                    routing_reason=route_decision.routing_reason,
+                    routed_variant=route_decision.variant,
                 ),
                 external_sources_used=sources,
             ))

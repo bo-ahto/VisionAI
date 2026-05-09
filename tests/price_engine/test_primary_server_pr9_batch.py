@@ -77,11 +77,15 @@ def _make_batch_item(artist_name: str, **kw) -> BatchItem:
 
 
 def _patch_server(predictor, matcher_side_effects):
-    """matcher.match 가 입력별 다른 결과 반환 (artist_name → MatchResult|None)."""
+    """matcher.match 가 입력별 다른 결과 반환 (artist_name → MatchResult|None).
+
+    PR2A.5: router.unified 도 patch (default OFF / dispatch 시 _predictor 정합).
+    """
     mtcher = MagicMock()
     mtcher.match.side_effect = matcher_side_effects
     return [
         patch.object(primary_server, "_predictor", predictor),
+        patch.object(primary_server._router, "unified", predictor),  # PR2A.5
         patch.object(primary_server, "_matcher", mtcher),
         patch.object(primary_server, "_log_prediction"),
     ]

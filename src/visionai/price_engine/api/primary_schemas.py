@@ -67,6 +67,10 @@ class ModelInfo(BaseModel):
     model_type: str
     is_known_artist: bool
     training_count: int
+    # PR2A.5: source-conditional routing (additive / backward compat / default OFF)
+    routing_source: str | None = None  # "artsy" / "saatchi" / "unified"
+    routing_reason: str | None = None  # "matched_artsy" / "router_off" / 등
+    routed_variant: str | None = None  # "source_conditional_v1_artsy" / "v3_filtered_tuned" / 등
 
 
 class Processing(BaseModel):
@@ -189,6 +193,10 @@ class ModelInfoResponse(BaseModel):
     mdape_groupkfold: float
     mdape_kfold: float
     features_count: int
+    # PR2A.5: router metadata (additive / backward compat)
+    router_mode: str | None = None  # "off" / "shadow" / "canary" / "on"
+    default_variant: str | None = None  # default = "v3_filtered_tuned"
+    available_variants: list[str] | None = None
 
 
 class HealthResponse(BaseModel):
