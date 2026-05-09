@@ -73,6 +73,8 @@ PREDICT_LOGS_COLUMNS: tuple[str, ...] = (
     "shadow_routing_source",
     "shadow_routing_reason",
     "shadow_prediction_price_krw",
+    # PR2B-prereq.2: source_router_rule_version (routing matrix pin)
+    "source_router_rule_version",
 )
 
 def map_row_to_columns(row: dict[str, Any]) -> dict[str, Any]:

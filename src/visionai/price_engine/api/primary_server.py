@@ -102,6 +102,10 @@ _monitor = {
     "total_ms": 0,
     "external_lookup_count": 0,
     "known_artist_count": 0,
+    # PR2B-prereq.2: source-conditional router metrics
+    "by_routed_variant": {},  # variant → count (production / shadow 분리 X / mode label 영역 의 의무 영역 의 의무)
+    "by_routing_decision": {},  # f"{routing_source}|{routing_reason}" → count
+    "shadow_total": 0,  # mode=shadow shadow inference count (production count 영역 의 의무 영역 의 의무 영역 의 의무 분리)
 }
 
 # ─── 예측 로그 (JSONL 파일) ───
@@ -187,6 +191,18 @@ def _log_prediction(entry: dict, *, count_toward_monitor: bool = True) -> None:
             _monitor["known_artist_count"] += 1
         if entry.get("has_manual_profile") or len(entry.get("external_sources", [])) > 0:
             _monitor["external_lookup_count"] += 1
+        # PR2B-prereq.2: per-route counters
+        rv = entry.get("routed_variant")
+        if rv:
+            _monitor["by_routed_variant"][rv] = _monitor["by_routed_variant"].get(rv, 0) + 1
+        rs = entry.get("routing_source")
+        rr = entry.get("routing_reason")
+        if rs and rr:
+            key = f"{rs}|{rr}"
+            _monitor["by_routing_decision"][key] = _monitor["by_routing_decision"].get(key, 0) + 1
+        # Shadow inference count (mode=shadow only / shadow_routed_variant 영역 의 의무 영역 의 의무 영역 의 의무)
+        if entry.get("shadow_routed_variant"):
+            _monitor["shadow_total"] += 1
 
     # 파일 적재 (production + shadow 모두 / shadow는 별도 row schema)
     if _log_file:
@@ -825,6 +841,32 @@ async def metrics() -> str:
         _monitor["known_artist_count"],
     ))
 
+    # PR2B-prereq.2: per-route counters (source-conditional rollout 의무)
+    # by_routed_variant: 실제 serving variant 별 count (production / shadow 분리)
+    for variant, count in sorted(_monitor["by_routed_variant"].items()):
+        lines.append(
+            f"# HELP visionai_predictions_total_by_routed_variant Production predictions by routed variant\n"
+            f"# TYPE visionai_predictions_total_by_routed_variant counter\n"
+            f"visionai_predictions_total_by_routed_variant"
+            f"{{{labels},routed_variant=\"{_escape_label_value(variant)}\"}} {count}\n"
+        )
+    # by_routing_decision: routing_source * routing_reason 분포
+    for key, count in sorted(_monitor["by_routing_decision"].items()):
+        rs, rr = key.split("|", 1)
+        lines.append(
+            f"# HELP visionai_routing_decision_total Production routing decisions\n"
+            f"# TYPE visionai_routing_decision_total counter\n"
+            f"visionai_routing_decision_total"
+            f"{{{labels},routing_source=\"{_escape_label_value(rs)}\","
+            f"routing_reason=\"{_escape_label_value(rr)}\"}} {count}\n"
+        )
+    # Shadow inference total (mode=shadow only / production count 영역 의 의무 영역 의 의무 분리)
+    lines.append(counter(
+        "visionai_shadow_inferences_total",
+        "Shadow inference count (mode=shadow only / not counted in predictions_total)",
+        _monitor["shadow_total"],
+    ))
+
     return "".join(lines)
 
 
@@ -1053,7 +1095,8 @@ async def predict(req: PredictRequest):
         "model_variant": routed_predictor.variant,
         "artifact_version": _ARTIFACT_VERSION,
         "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
-        "rollout_rule_version": _ROLLOUT_RULE_VERSION,
+        "rollout_rule_version": _ROLLOUT_RULE_VERSION,  # cohort/rollout policy pin
+        "source_router_rule_version": _router.rule_version,  # PR2B-prereq.2: routing matrix pin
         "rollout_cohort": _ROLLOUT_COHORT,
         "server_instance": _SERVER_INSTANCE,
         "worker_instance_id": _WORKER_INSTANCE_ID,
@@ -1254,6 +1297,7 @@ async def predict_batch(req: BatchPredictRequest):
                 "artifact_version": _ARTIFACT_VERSION,
                 "warm_artist_slugs_version": _WARM_ARTIST_SLUGS_VERSION,
                 "rollout_rule_version": _ROLLOUT_RULE_VERSION,
+                "source_router_rule_version": _router.rule_version,  # PR2B-prereq.2
                 "rollout_cohort": _ROLLOUT_COHORT,
                 "server_instance": _SERVER_INSTANCE,
                 "worker_instance_id": _WORKER_INSTANCE_ID,

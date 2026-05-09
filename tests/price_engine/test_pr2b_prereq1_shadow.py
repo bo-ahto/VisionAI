@@ -217,6 +217,6 @@ class TestETLWhitelistAdditive:
             assert col in PREDICT_LOGS_COLUMNS
 
     def test_etl_column_count(self):
-        """25 (existing) + 9 (new) = 34 columns."""
+        """25 (existing) + 9 (PR2B-prereq.1) + 1 (PR2B-prereq.2) = 35 columns."""
         from etl_predict_logs import PREDICT_LOGS_COLUMNS
-        assert len(PREDICT_LOGS_COLUMNS) == 34
+        assert len(PREDICT_LOGS_COLUMNS) == 35

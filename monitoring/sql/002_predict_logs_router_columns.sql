@@ -18,7 +18,10 @@ ALTER TABLE predict_logs
     ADD COLUMN IF NOT EXISTS shadow_routed_variant    VARCHAR(64),       -- mode=on simulate routed variant
     ADD COLUMN IF NOT EXISTS shadow_routing_source    VARCHAR(16),       -- artsy | saatchi | unified
     ADD COLUMN IF NOT EXISTS shadow_routing_reason    VARCHAR(64),       -- matched_artsy | unmatched_fallback | 등
-    ADD COLUMN IF NOT EXISTS shadow_prediction_price_krw INT;            -- shadow predict price (primary와 비교)
+    ADD COLUMN IF NOT EXISTS shadow_prediction_price_krw INT,            -- shadow predict price (primary와 비교)
+
+    -- PR2B-prereq.2: source_router_rule_version (routing matrix pin / rollout_rule_version 영역 의 의무 영역 의 의무 분리)
+    ADD COLUMN IF NOT EXISTS source_router_rule_version VARCHAR(32);     -- v1 | v2 | 등
 
 -- Index for routing analysis (slice drift / cohort agreement)
 CREATE INDEX IF NOT EXISTS idx_predict_logs_routing_ts
