@@ -34,7 +34,8 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# DDL 의 25 column. logging row 의 alias / 추가 field 는 적재 안 함.
+# DDL 의 34 column (PR2B-prereq.1 추가 9: routing 5 + shadow 4).
+# logging row 의 alias / 추가 field 는 적재 안 함.
 PREDICT_LOGS_COLUMNS: tuple[str, ...] = (
     "request_id",                 # row['id']
     "timestamp",                  # row['ts']
@@ -61,6 +62,17 @@ PREDICT_LOGS_COLUMNS: tuple[str, ...] = (
     "server_instance",
     "worker_instance_id",
     "cache_epoch",
+    # PR2A.5 + PR2B-prereq.1: source-conditional routing (5 columns / additive)
+    "routing_source",
+    "routing_reason",
+    "routed_variant",
+    "router_mode",
+    "cohort_in_canary",
+    # PR2B-prereq.1: shadow dual-log (4 columns / mode=shadow only / NULL otherwise)
+    "shadow_routed_variant",
+    "shadow_routing_source",
+    "shadow_routing_reason",
+    "shadow_prediction_price_krw",
 )
 
 def map_row_to_columns(row: dict[str, Any]) -> dict[str, Any]:

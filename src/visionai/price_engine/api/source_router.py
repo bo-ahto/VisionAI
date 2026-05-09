@@ -150,6 +150,25 @@ def decide_route(
     )
 
 
+def simulate_route_on(
+    is_matched: bool,
+    match_profile_source: str | None,
+    cohort_key: str | None = None,
+) -> RouteDecision:
+    """Shadow simulation: mode='on' decide_route 호출 (canary 100%).
+
+    PR2B-prereq.1: mode=shadow 영역 의 의무 영역 의 의무 영역 의 의무 primary serving =
+    unified / shadow_routed_variant 영역 의 의무 영역 의 의무 영역 의 의무 영역 = mode=on
+    routing decision (100% routed).
+    """
+    return decide_route(
+        is_matched=is_matched,
+        match_profile_source=match_profile_source,
+        mode="on",
+        cohort_key=cohort_key,
+    )
+
+
 class SourceRouter:
     """3 predictor eager-load + row-level dispatch (PR2A scope).
 
@@ -229,3 +248,16 @@ class SourceRouter:
             return self.saatchi, decision
         # unreachable
         raise RuntimeError(f"Unknown route variant: {decision.variant}")
+
+    def get_predictor_for_variant(self, variant: str) -> PrimaryPredictor | None:
+        """Get predictor instance for a routed variant (PR2B-prereq.1 / shadow inference).
+
+        Returns None if predictor not loaded (mode=off + active variant requested).
+        """
+        if variant == UNIFIED_VARIANT:
+            return self.unified
+        if variant == ARTSY_VARIANT:
+            return self.artsy
+        if variant == SAATCHI_VARIANT:
+            return self.saatchi
+        return None

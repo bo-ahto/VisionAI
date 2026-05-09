@@ -49,7 +49,13 @@ from .primary_schemas import (
     PriceRange,
     Processing,
 )
-from .source_router import RouteDecision, SourceRouter, decide_route
+from .source_router import (
+    UNIFIED_VARIANT,
+    RouteDecision,
+    SourceRouter,
+    decide_route,
+    simulate_route_on,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -110,20 +116,79 @@ def _init_log() -> None:
     logger.info("Prediction log: %s", _LOG_DIR / "predictions.jsonl")
 
 
-def _log_prediction(entry: dict) -> None:
-    # 인메모리 카운터 업데이트
-    _monitor["total_predictions"] += 1
-    grade = entry.get("confidence_grade", "D")
-    _monitor["by_grade"][grade] = _monitor["by_grade"].get(grade, 0) + 1
-    mt = entry.get("model_type", "unknown")
-    _monitor["by_model"][mt] = _monitor["by_model"].get(mt, 0) + 1
-    _monitor["total_ms"] += entry.get("total_ms", 0)
-    if entry.get("is_known_artist"):
-        _monitor["known_artist_count"] += 1
-    if entry.get("has_manual_profile") or len(entry.get("external_sources", [])) > 0:
-        _monitor["external_lookup_count"] += 1
+def _run_shadow_inference(
+    *,
+    features: dict,
+    is_matched: bool,
+    match_profile_source: str | None,
+    training_count: int,
+    target_market: str,
+    has_manual_profile: bool,
+    artist_slug: str | None,
+) -> dict:
+    """Shadow inference (fail-open / mode=shadow only).
 
-    # 파일 적재
+    PR2B-prereq.1: mode=shadow 영역 의 의무 영역 의 의무 = primary serving = unified /
+    shadow 영역 의 의무 영역 의 의무 영역 의 의무 = simulate_route_on() (mode='on' decision)
+    + predict (SHAP X / response assembly X). Exception fail-open / primary 5xx 영향 X.
+
+    Returns dict with shadow_* fields (or empty dict if mode != shadow).
+    """
+    if _router.mode != "shadow":
+        return {}
+    try:
+        decision = simulate_route_on(
+            is_matched=is_matched,
+            match_profile_source=match_profile_source,
+            cohort_key=artist_slug,
+        )
+        predictor = _router.get_predictor_for_variant(decision.variant)
+        if predictor is None:
+            return {
+                "shadow_error": f"predictor_not_loaded:{decision.variant}",
+                "shadow_routed_variant": decision.variant,
+                "shadow_routing_source": decision.routing_source,
+                "shadow_routing_reason": decision.routing_reason,
+            }
+        shadow_result = predictor.predict(
+            features=features,
+            is_matched=is_matched,
+            training_count=training_count,
+            target_market=target_market,
+            has_manual_profile=has_manual_profile,
+            artist_slug=artist_slug,
+        )
+        return {
+            "shadow_routed_variant": decision.variant,
+            "shadow_routing_source": decision.routing_source,
+            "shadow_routing_reason": decision.routing_reason,
+            "shadow_prediction_price_krw": shadow_result["price_krw"],
+        }
+    except Exception as e:
+        logger.warning("Shadow inference failed (fail-open): %s", e)
+        return {"shadow_error": str(e)[:200]}
+
+
+def _log_prediction(entry: dict, *, count_toward_monitor: bool = True) -> None:
+    """Predict log writer.
+
+    PR2B-prereq.1: count_toward_monitor=False 영역 의 의무 영역 의 의무 영역 의 의무 = shadow
+    log path / 운영 monitor counter 영역 의 의무 영역 의 의무 영역 의 의무 X (오염 방지).
+    """
+    # 인메모리 카운터 업데이트 (production path만 / shadow 제외)
+    if count_toward_monitor:
+        _monitor["total_predictions"] += 1
+        grade = entry.get("confidence_grade", "D")
+        _monitor["by_grade"][grade] = _monitor["by_grade"].get(grade, 0) + 1
+        mt = entry.get("model_type", "unknown")
+        _monitor["by_model"][mt] = _monitor["by_model"].get(mt, 0) + 1
+        _monitor["total_ms"] += entry.get("total_ms", 0)
+        if entry.get("is_known_artist"):
+            _monitor["known_artist_count"] += 1
+        if entry.get("has_manual_profile") or len(entry.get("external_sources", [])) > 0:
+            _monitor["external_lookup_count"] += 1
+
+    # 파일 적재 (production + shadow 모두 / shadow는 별도 row schema)
     if _log_file:
         try:
             _log_file.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -916,6 +981,20 @@ async def predict(req: PredictRequest):
         loop = asyncio.get_event_loop()
         feature_contributions = await loop.run_in_executor(None, _compute_shap)
 
+    # PR2B-prereq.1: Shadow inference (mode=shadow only / fail-open / SHAP X)
+    shadow_fields = await asyncio.get_event_loop().run_in_executor(
+        None,
+        lambda: _run_shadow_inference(
+            features=features,
+            is_matched=bool(is_matched),
+            match_profile_source=match_profile_source,
+            training_count=training_count,
+            target_market=req.target_market,
+            has_manual_profile=has_manual,
+            artist_slug=artist_slug_for_routing,
+        ),
+    )
+
     total_ms = int((time.time() - t0) * 1000)
 
     # 예측 로그 (JSONL)
@@ -960,6 +1039,8 @@ async def predict(req: PredictRequest):
         "routed_variant": route_decision.variant,
         "router_mode": _router.mode,
         "cohort_in_canary": route_decision.cohort_in_canary,
+        # PR2B-prereq.1: shadow inference fields (mode=shadow only / null otherwise)
+        **shadow_fields,
         "external_collector_source": sources_used[0] if sources_used else "none",
         "year_made_route": year_made_route,
         "year_made_used": year_made,
@@ -1151,6 +1232,16 @@ async def predict_batch(req: BatchPredictRequest):
                 "routed_variant": route_decision.variant,
                 "router_mode": _router.mode,
                 "cohort_in_canary": route_decision.cohort_in_canary,
+                # PR2B-prereq.1: shadow inference fields (batch / mode=shadow only)
+                **_run_shadow_inference(
+                    features=features,
+                    is_matched=bool(is_matched),
+                    match_profile_source=item_match_profile_source,
+                    training_count=training_count,
+                    target_market=item.target_market,
+                    has_manual_profile=len(manual) > 0,
+                    artist_slug=artist_slug,
+                ),
                 "external_collector_source": sources[0] if sources else "none",
                 "year_made_route": year_made_route,
                 "year_made_used": year_made,
