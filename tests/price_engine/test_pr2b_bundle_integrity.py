@@ -48,24 +48,47 @@ def test_warm_artists_schema(source: str):
 
 
 @pytest.mark.parametrize("source", SOURCES)
-def test_source_calibration_no_op_schema(source: str):
-    """No-op calibration: cold_factors / warm_factors 모두 1.0 / loader schema 정합."""
+def test_source_calibration_fitted_schema(source: str):
+    """Fitted calibration (Phase 2 / commit per-source): cold/warm factors / per-cell guard."""
     path = ARTIFACTS / f"source_conditional_v1_{source}_source_calibration.json"
     data = json.loads(path.read_text())
-    assert data["version"].startswith("v1-source-conditional-noop")
+    assert data["version"] == "v1-source-conditional-fitted"
     assert data["model_target"] == f"source_conditional_v1_{source}"
+    assert data["source"] == source
+
     cold = data["cold_factors"]
     warm = data["warm_factors"]
     assert isinstance(cold, dict)
     assert isinstance(warm, dict)
-    assert all(v == 1.0 for v in cold.values()), f"cold_factors not no-op: {cold}"
-    assert all(v == 1.0 for v in warm.values()), f"warm_factors not no-op: {warm}"
 
     # Per-source cells
     if source == "artsy":
         assert set(cold.keys()) == {"artsy_gallery", "artsy_online"}
     else:
         assert set(cold.keys()) == {"saatchi_online"}
+
+    # Sanity bound (loader 영역 의 의무 영역 의 의무 [0.1, 10.0] 정합)
+    for f in cold.values():
+        assert 0.1 <= f <= 10.0, f"cold factor {f} out of sanity bound"
+    for f in warm.values():
+        assert 0.1 <= f <= 10.0, f"warm factor {f} out of sanity bound"
+
+    # Cold overall metrics 영역 의 의무 영역 의 의무 (cross-fit + guard)
+    cold_overall = data["cold_overall"]
+    assert "baseline_mdape" in cold_overall
+    assert "calibrated_mdape_cross_fit_guarded" in cold_overall
+    # Guard: calibrated <= baseline (regression cell → factor=1.0 fallback)
+    cold_g = cold_overall["calibrated_mdape_cross_fit_guarded"]
+    assert cold_g <= cold_overall["baseline_mdape"] + 0.01
+
+    # Warm overall metrics
+    warm_overall = data["warm_overall"]
+    assert "baseline_mdape" in warm_overall
+    assert "calibrated_mdape_cross_fit_guarded" in warm_overall
+
+    # Per-cell breakdown 영역 의 의무 영역 의 의무 (cross-fit unguarded + guard fallback)
+    assert "cold_per_cell" in data
+    assert "warm_per_cell" in data
 
 
 @pytest.mark.parametrize("source", SOURCES)
