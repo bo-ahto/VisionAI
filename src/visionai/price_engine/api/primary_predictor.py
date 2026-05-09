@@ -81,6 +81,17 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
         "cb_features": CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM,
         "expected_target": "v3_5_v_year_saatchi_warm",
     },
+    # PR2A: Source-conditional separate models (artifact bundle PR1 = commit f74f73b)
+    "source_conditional_v1_artsy": {
+        "prefix": "source_conditional_v1_artsy",
+        "cb_features": CB_FEATURES_BASE,
+        "expected_target": "source_conditional_v1_artsy",
+    },
+    "source_conditional_v1_saatchi": {
+        "prefix": "source_conditional_v1_saatchi",
+        "cb_features": CB_FEATURES_BASE,
+        "expected_target": "source_conditional_v1_saatchi",
+    },
 }
 
 DEFAULT_VARIANT = "v3_filtered_tuned"
