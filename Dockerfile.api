@@ -23,6 +23,26 @@ COPY model_test_results/integrated_v3_filtered_tuned_source_calibration.json ./m
 # v3 fallback (구 모델 보존, 회귀 시 quick rollback 용)
 COPY model_test_results/integrated_v3_catboost.cbm ./models/integrated_v3_catboost.cbm
 COPY model_test_results/integrated_v3_xgboost.json ./models/integrated_v3_xgboost.json
+
+# PR2B: Source-conditional v1 bundle (CHAMPION verdict 적용 / always present).
+# Default OFF (SOURCE_ROUTER_MODE=off) → unified만 load. shadow/canary/on
+# 활성화 시 router 가 artsy + saatchi 추가 load (fail-closed). PR2B-prereq
+# (shadow dual-log + DDL alter) 후 rollout 진행.
+# Artsy bundle (7,289 rows / 734 artists / 409 warm)
+COPY model_test_results/source_conditional_v1_artsy_catboost.cbm ./models/source_conditional_v1_artsy_catboost.cbm
+COPY model_test_results/source_conditional_v1_artsy_xgboost.json ./models/source_conditional_v1_artsy_xgboost.json
+COPY model_test_results/source_conditional_v1_artsy_xgboost_label_maps.json ./models/source_conditional_v1_artsy_xgboost_label_maps.json
+COPY model_test_results/source_conditional_v1_artsy_warm_artists.json ./models/source_conditional_v1_artsy_warm_artists.json
+COPY model_test_results/source_conditional_v1_artsy_source_calibration.json ./models/source_conditional_v1_artsy_source_calibration.json
+COPY model_test_results/source_conditional_v1_artsy_metrics.json ./models/source_conditional_v1_artsy_metrics.json
+# Saatchi bundle (21,087 rows / 817 artists / 521 warm)
+COPY model_test_results/source_conditional_v1_saatchi_catboost.cbm ./models/source_conditional_v1_saatchi_catboost.cbm
+COPY model_test_results/source_conditional_v1_saatchi_xgboost.json ./models/source_conditional_v1_saatchi_xgboost.json
+COPY model_test_results/source_conditional_v1_saatchi_xgboost_label_maps.json ./models/source_conditional_v1_saatchi_xgboost_label_maps.json
+COPY model_test_results/source_conditional_v1_saatchi_warm_artists.json ./models/source_conditional_v1_saatchi_warm_artists.json
+COPY model_test_results/source_conditional_v1_saatchi_source_calibration.json ./models/source_conditional_v1_saatchi_source_calibration.json
+COPY model_test_results/source_conditional_v1_saatchi_metrics.json ./models/source_conditional_v1_saatchi_metrics.json
+
 COPY data/primary_market_dataset.parquet ./data/primary_market_dataset.parquet
 COPY data/saatchi_cleaned.parquet ./data/saatchi_cleaned.parquet
 # primary_medium_parser 룰 시트 (추론 시 lazy load)
@@ -33,6 +53,12 @@ ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
 ENV MODEL_DIR=/app/models
 ENV LOG_DIR=/app/logs
+
+# PR2B: SourceRouter rollout flags (default OFF / 운영 영향 X)
+# 활성화 = env override (SOURCE_ROUTER_MODE=shadow|canary|on) / image rebuild X
+ENV SOURCE_ROUTER_MODE=off
+ENV SOURCE_ROUTER_PERCENT=0
+ENV SOURCE_ROUTER_RULE_VERSION=v1
 
 RUN mkdir -p /app/logs
 
