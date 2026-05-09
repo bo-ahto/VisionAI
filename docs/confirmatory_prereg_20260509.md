@@ -147,7 +147,8 @@
 ## 4. 한계 / Risk
 
 - **Holdout 1회 test**: 다수 비교 X / 결과 noise 영역 의 의무 영역 의 의무 영역 의 의무 가능
-- **Top 15 ranking** = sweep amendment cycle 영역 의 의무 영역 의 의무 산출 / 본 Confirmatory 영역 의 의무 영역 의 의무 재산출 X = ranking selection 영역 의 의무 영역 의 의무 영역 의 의무 동일 데이터 사용 (다만 Holdout 영역 의 의무 영역 의 의무 영역 의 의무 X = 영역 의 의무 영역 의 의무 정합)
+- **Top 15 ranking** = §2.2 정합 / 본 Confirmatory 영역 의 의무 영역 의 의무 80% 내부 fold-internal 4-method 재산출 (Holdout 영역 의 의무 영역 의 의무 영역 의 의무 X / selection leakage 방지 ✓ / sweep amendment ranking = reference only)
+- **Holdout warm 정의 conflict** (P2 / 본 cycle 영역 의 의무 영역 의 의무 명시): warm = "작품수 ≥ 5" 정의 / 다만 Holdout = artist GroupShuffleSplit (unseen artist) → "warm slice within Holdout" 영역 의 의무 영역 의 의무 영역 의 의무 = 모든 row cold-equivalent / G1 warm verdict 영역 의 의무 영역 의 의무 영역 의 의무 포함 / 해석력 낮음 / 다음 cycle 영역 의 의무 영역 의 의무 재정의 의무
 - **HP tuning X**: 32 features 운영 best_params 영역 의 의무 영역 의 의무 = N=15 영역 의 의무 영역 의 의무 영역 의 의무 sub-optimal 영역 의 의무 영역 의 의무 영역 의 의무 가능 (다만 본 cycle scope X / 별도 cycle)
 - **Ensemble vs XGBoost only**: provisional winner = XGBoost / ensemble Top 15 영역 의 의무 영역 의 의무 영역 의 의무 별도 비교 영역 의 의무 영역 의 의무 가능 (post-hoc note 영역 의 의무 영역 의 의무 영역 의 의무 record)
 
