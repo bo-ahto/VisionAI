@@ -187,6 +187,25 @@ def test_artifact_prefix_pattern_v3_5():
     ]
 
 
+def test_artifact_prefix_pattern_v3_filtered_tuned_b_warm():
+    """PR-WARM-B / R3 minor follow-up: bundle naming contract 명시 검증."""
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_b_warm"]
+    expected_files = [
+        f"{cfg['prefix']}_catboost.cbm",
+        f"{cfg['prefix']}_xgboost.json",
+        f"{cfg['prefix']}_warm_artists.json",
+        f"{cfg['prefix']}_xgboost_label_maps.json",
+        f"{cfg['prefix']}_source_calibration.json",
+    ]
+    assert expected_files == [
+        "integrated_v3_filtered_tuned_b_warm_catboost.cbm",
+        "integrated_v3_filtered_tuned_b_warm_xgboost.json",
+        "integrated_v3_filtered_tuned_b_warm_warm_artists.json",
+        "integrated_v3_filtered_tuned_b_warm_xgboost_label_maps.json",
+        "integrated_v3_filtered_tuned_b_warm_source_calibration.json",
+    ]
+
+
 # ---- model_target 정합 ----
 
 
