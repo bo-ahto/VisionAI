@@ -92,6 +92,15 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
         "cb_features": CB_FEATURES_BASE,
         "expected_target": "source_conditional_v1_saatchi",
     },
+    # PR-WARM-B: Cycle B (commit 3a27002) ADOPT_warm_retuned 운영 적용
+    # Cold path = default tuned 그대로 (CB params 동일 / random_seed=42 / data 동일)
+    # Warm path = B-retuned XGB (warm-only Optuna 50 trials / 5/5 seed PASS / 평균 Δ_warm=-1.62pp)
+    # Default OFF — MODEL_VARIANT 환경변수로만 활성화 (canary / shadow 단계적 rollout)
+    "v3_filtered_tuned_b_warm": {
+        "prefix": "integrated_v3_filtered_tuned_b_warm",
+        "cb_features": CB_FEATURES_BASE,
+        "expected_target": "v3_filtered_tuned_b_warm",
+    },
 }
 
 DEFAULT_VARIANT = "v3_filtered_tuned"

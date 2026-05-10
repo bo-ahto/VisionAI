@@ -1,0 +1,64 @@
+{
+  "prefix": "integrated_v3_filtered_tuned_b_warm",
+  "created_at": "2026-05-10T09:08:55.911376+00:00",
+  "git_commit": "3a27002fc6b924e8b880753a294b7d666e2a14e7",
+  "params_provenance": {
+    "catboost": "COPY from integrated_v3_filtered_tuned (cold path bit-identical)",
+    "xgboost": "B-retuned warm (cycle 3a27002 / warm_only_retuned_best_params.json)",
+    "cycle_b_commit": "3a27002",
+    "cycle_b_validation": "5/5 PASS / 평균 Δ_warm=-1.62pp / 표준편차 0.137"
+  },
+  "artifact_files": {
+    "integrated_v3_filtered_tuned_b_warm_catboost.cbm": {
+      "sha256": "a8b909735bebd953bc32e8a881d6de6b19512421b2d65b884cdebbb3805c9d12",
+      "size": 4312524
+    },
+    "integrated_v3_filtered_tuned_b_warm_xgboost.json": {
+      "sha256": "d6a78aa05753b3ce4ab051cc2731df622ea5557d76b0a9e787cfa59f58951642",
+      "size": 11604337
+    },
+    "integrated_v3_filtered_tuned_b_warm_xgboost_label_maps.json": {
+      "sha256": "164327b04e817e307c55b96b0d846689079a7d72306c61f6c161bcef45a8b583",
+      "size": 629
+    },
+    "integrated_v3_filtered_tuned_b_warm_warm_artists.json": {
+      "sha256": "284e65a73e4fe88784ff63207fd75d24eb46e96414a5d8f33db0172028eb6e51",
+      "size": 16046
+    },
+    "integrated_v3_filtered_tuned_b_warm_source_calibration.json": {
+      "sha256": "3376f3728258c5a04105b7bc34418bed2622062e2581c9ae70d0e02d89ffa73f",
+      "size": 3974
+    },
+    "integrated_v3_filtered_tuned_b_warm_metrics.json": {
+      "sha256": "9d0fa5b7d90cd1d2980ae8e2e4c8047c92e855664f353f9956d3f43c3f8069e5",
+      "size": 6275
+    },
+    "integrated_v3_filtered_tuned_b_warm_best_params.json": {
+      "sha256": "70ed18db30db1e9a18bc56ac203942920a3f0e1fbeaf908a9993ea747019f021",
+      "size": 844
+    }
+  },
+  "integrity_check": {
+    "catboost_match": true,
+    "label_maps_match": true,
+    "warm_artists_match": true,
+    "calibration_carry_forward": {
+      "source": "integrated_v3_filtered_tuned_source_calibration.json",
+      "model_target_renamed": "v3_filtered_tuned_b_warm",
+      "warm_factors_re_fit_status": "deferred"
+    }
+  },
+  "cv_summary": {
+    "groupkfold_cold_ensemble_mdape": 39.0,
+    "kfold_warm_ensemble_mdape": 9.5,
+    "kfold_warm_xgboost_only_mdape": 8.0,
+    "_note": "kfold_warm_xgboost_only_mdape (8.00%) ≈ cycle B best_warm_cv (8.01%) / 정합 확인"
+  },
+  "prediction_parity_test": {
+    "cb_cold_max_abs_delta": 0.0,
+    "cb_cold_mean_abs_delta": 0.0,
+    "cb_cold_exact_match": true,
+    "xgb_warm_signed_delta_mean_logscale": -0.0876,
+    "_note": "CB cold prediction byte-identical (COPY 결과) / XGB warm 다름 expected (B-retuned 효과)"
+  }
+}

@@ -60,6 +60,16 @@ def test_v3_5_v_year_saatchi_warm_config():
     assert "work_age" in cfg["cb_features"]
 
 
+def test_v3_filtered_tuned_b_warm_config():
+    """PR-WARM-B: cycle B (3a27002) ADOPT_warm_retuned 운영 적용 variant."""
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_b_warm"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_b_warm"
+    assert cfg["expected_target"] == "v3_filtered_tuned_b_warm"
+    # cold path = N=32 그대로 (warm XGB params만 변경)
+    assert cfg["cb_features"] == CB_FEATURES_BASE
+    assert len(cfg["cb_features"]) == 32
+
+
 # ---- CB_FEATURES backward compat ----
 
 
