@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>전체 실험 사이클 통합 정리 (2026-05-09 ~ 05-10)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1300px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; background: #fafafa; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.6em; margin-bottom: 6px; }
+h2 { background: #ecf0f1; padding: 10px 14px; border-left: 4px solid #2c5aa0; margin-top: 32px; font-size: 1.2em; }
+h3 { font-size: 1.05em; margin-top: 22px; color: #2c3e50; }
+h4 { font-size: 1em; margin-top: 14px; color: #34495e; margin-bottom: 5px; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.commit-tag { font-family: "SF Mono", Menlo, Consolas, monospace; background: #2c3e50; color: #ecf0f1; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+.summary-box { border: 2px solid #2c5aa0; background: #f4f8fc; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.gray-box { background: #e9ecef; border-left: 4px solid #6c757d; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 1px 2px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.blue { background: #cfe2ff; color: #084298; }
+.pill.gray { background: #e9ecef; color: #495057; }
+.pill.purple { background: #e2d8f3; color: #4a148c; }
+.bigtag { font-size: 1em; padding: 4px 12px; }
+.timeline { display: grid; grid-template-columns: 100px 1fr auto; gap: 8px 16px; align-items: start; margin: 12px 0; }
+.timeline-step { background: #fff; padding: 10px 14px; border-left: 4px solid #2c5aa0; border-radius: 3px; }
+.timeline-step.passed { border-left-color: #28a745; }
+.timeline-step.partial { border-left-color: #ffc107; }
+.timeline-step.failed { border-left-color: #dc3545; }
+.timeline-step.exploratory { border-left-color: #6c757d; }
+.timeline-step.positive { border-left-color: #0d6efd; }
+.toc { background: #fff; border: 1px solid #ddd; padding: 12px 18px; border-radius: 4px; margin: 12px 0; }
+.toc a { color: #2c5aa0; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 12px 0; }
+.metric-card { background: #fff; border: 1px solid #ddd; padding: 12px 14px; border-radius: 4px; }
+.metric-card .label { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-card .value { font-size: 1.4em; font-weight: 600; color: #2c3e50; margin: 4px 0; }
+.metric-card .delta { font-size: 12px; color: #666; }
+.codex-rounds { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.codex-round { background: #fff; border: 1px solid #ddd; padding: 3px 9px; border-radius: 12px; font-size: 11px; }
+.codex-round.lgtm { background: #d4edda; color: #155724; border-color: #28a745; }
+.codex-round.fix { background: #fff3cd; color: #856404; border-color: #ffc107; }
+.codex-round.align { background: #cfe2ff; color: #084298; border-color: #0d6efd; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+.num { text-align: right; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.cycle-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: linear-gradient(to right, #2c3e50, #34495e); color: #ecf0f1; border-radius: 4px; margin-top: 24px; }
+.cycle-header h3 { color: #ecf0f1; margin: 0; }
+.diff-pos { color: #28a745; font-weight: 600; }
+.diff-neg { color: #dc3545; font-weight: 600; }
+.diff-zero { color: #6c757d; }
+</style>
+</head>
+<body>
+
+<h1>전체 실험 사이클 통합 정리</h1>
+<p style="color: #666; margin-top: 0;">
+<strong>기간</strong>: 2026-05-09 ~ 2026-05-10 (단일 세션 / ~28시간 wall) &nbsp;|&nbsp;
+<strong>분기</strong>: <code>exp/track1-feature-optimization-cycle</code> &nbsp;|&nbsp;
+<strong>총 10 사이클 / 7 commit + 3 follow-up pending</strong> &nbsp;|&nbsp;
+<strong>코덱스 자문</strong>: 동일 세션 <code>019e0bb1</code> / 누적 25+ rounds
+</p>
+
+<div class="summary-box">
+<h3 style="margin-top: 0;">한 줄 요약 (10 사이클 종합)</h3>
+<p><strong>본 세션 최초 ADOPT verdict 발견 — B (warm-only path retune) 5/5 PASS / 평균 Δ_warm=-1.62pp</strong>. 후속 cycle 3건 진행 결과: D1 compliant rerun NEEDS_MORE_DATA (4/5 PASS / seed=113 G2 위반) / D3 blend search HOLD_50_50 (1/5 PASS / OOF→fresh 일반화 X) / <strong>B warm-only retune ADOPT</strong> (5/5 PASS / 운영 warm path 단독 deployment 권고). 운영 변경 1건 (warm path XGB params 교체) / cold path 그대로 유지.</p>
+</div>
+
+<div class="toc">
+<strong>목차</strong> ·
+<a href="#tldr">TL;DR</a> ·
+<a href="#timeline">타임라인</a> ·
+<a href="#calibration">Stage 1: Calibration 검증 (3 cycles)</a> ·
+<a href="#n15">Stage 2: N=15 Migration (3 cycles)</a> ·
+<a href="#hp">Stage 3: HP Re-optimization (1 cycle)</a> ·
+<a href="#followup">Stage 4: Follow-up Cycles (D1.X + D3 + B / 3 cycles)</a> ·
+<a href="#cross">Cross-cycle 발견</a> ·
+<a href="#decision">현재 결정 + 다음 세션 후보</a>
+</div>
+
+<h2 id="tldr">1. TL;DR — 10 사이클 결과 종합</h2>
+
+<table>
+<tr>
+<th width="14%">Commit</th>
+<th width="22%">Cycle</th>
+<th width="14%">Verdict</th>
+<th width="50%">핵심 발견</th>
+</tr>
+<tr style="background: #f4f8fc;">
+<td colspan="4"><strong>📌 Stage 1 — Calibration 검증 (per-source factor의 운영 채택 가능성)</strong></td>
+</tr>
+<tr>
+<td><span class="commit-tag">d0f8b88</span></td>
+<td><strong>Reprod cycle</strong> (재현성 / in-sample)</td>
+<td><span class="pill red bigtag">FAIL</span></td>
+<td>PR1 frozen artifact + 단일 seed holdout. <strong>load_bearing 2 cell 모두 FAIL</strong>. 단 baseline MdAPE가 비정상적으로 낮아 <strong>in-sample bias caveat 발견</strong> (codex R4 endorsed View B).</td>
+</tr>
+<tr>
+<td><span class="commit-tag">08a6b80</span></td>
+<td><strong>OOS verification</strong> (true OOS / multi-seed)</td>
+<td><span class="pill yellow bigtag">NEEDS_MORE_DATA</span></td>
+<td>80% pool retrained artifact + multi-seed (3) + dual-endpoint. <strong>R4 in-sample bias caveat 해소 강하게 입증</strong> (Reprod Δ_shipped=+5.46 → OOS Δ_shipped=−3.86 / 부호 반전). <code>artsy_online</code> ADOPT_with_caveat (3/3 SHIPPED_PASS) / <code>artsy_gallery</code> split variance 큼.</td>
+</tr>
+<tr style="background: #f4f8fc;">
+<td colspan="4"><strong>📌 Stage 2 — N=15 Migration (sweep amendment a0a1bde 1-SE winner 검증)</strong></td>
+</tr>
+<tr>
+<td><span class="commit-tag">8c9e58e</span></td>
+<td><strong>N15.A Confirmatory</strong></td>
+<td><span class="pill red bigtag">HOLD</span></td>
+<td>pure XGB@N=15 vs Ens@N=32 / multi-seed. <strong>cold artsy 시그널 일관 -0.86~-3.30pp</strong>이지만 warm strict rule (>0=FAIL) 트리거. Sweep의 warm gain은 fold-adaptive feature ranking 효과였음 확인.</td>
+</tr>
+<tr>
+<td><span class="commit-tag">38eab10</span></td>
+<td><strong>N15.B HP Retuning</strong></td>
+<td><span class="pill red bigtag">HOLD<br>(clean negative)</span></td>
+<td>Optuna 30 trials × N=15 features under <strong>proper GroupKFold CV</strong>. 첫 run KFold bug → retuned warm 7.29 (apparent +2.6pp improvement / R4 P0 fix → GroupKFold rerun). True result: best warm_cv=13.69 (default 9.93 / Δ <strong>+3.76pp WORSE</strong>). 3/3 fresh seed warm Δ +3.5pp 일관 regression. <strong>N=15 retune은 default를 능가하지 못함</strong>.</td>
+</tr>
+<tr>
+<td><span class="commit-tag">4499fe9</span></td>
+<td><strong>N15.C SC Integration</strong></td>
+<td><span class="pill yellow bigtag">NEEDS_MORE_DATA</span></td>
+<td>v2 (N=15 / per-source) vs v1_pool (N=32 / per-source) <strong>fair OOS</strong> 비교. Artsy load_bearing 단일 seed Δ 범위 <strong>−20.60 ~ +12.08pp</strong> (small cell + heavy-tail / statistical limit). Saatchi 안정 PASS×3. <strong>N=15 migration line 종결</strong>.</td>
+</tr>
+<tr style="background: #f4f8fc;">
+<td colspan="4"><strong>📌 Stage 3 — N=32 HP Re-optimization (codex top recommendation post-N15)</strong></td>
+</tr>
+<tr>
+<td><span class="commit-tag">7c1254a</span></td>
+<td><strong>D1 N=32 Champion HP Retune</strong></td>
+<td><span class="pill yellow bigtag">HOLD<br>(positive signal)</span><br><span class="pill purple">exploratory pilot</span></td>
+<td>2-phase Optuna (CB + XGB / 30 trials each / GroupKFold cold + KFold warm). <strong>Phase 1+2 모두 default best_params 능가</strong> (CB cold Δ -0.61 / XGB warm Δ -0.54 search-time). Validation 3/3 seed cold + warm 모두 개선 (mean Δ_cold -0.97 / Δ_warm -0.54). 단 strict per-source guard 2/3 seed FAIL (artsy +0.48 / saatchi +0.46). <strong>R4 P0+P1 deviations</strong> (paired bootstrap CI 미구현 / 30 vs 50 trials) → exploratory pilot 처리.</td>
+</tr>
+<tr style="background: #f4f8fc;">
+<td colspan="4"><strong>📌 Stage 4 — Follow-up Cycles (D1 compliant rerun + D3 + B / R4 P0/P1 fix + 후속 후보 3건)</strong></td>
+</tr>
+<tr>
+<td><span class="commit-tag">pending</span></td>
+<td><strong>D1.X compliant rerun</strong> (R6/R7 amendment)</td>
+<td><span class="pill yellow bigtag">NEEDS_MORE_DATA</span></td>
+<td>50 trials × 2 phase + multi-seed N=5 확장 (97/113/199/223/257). <strong>Search CV 강한 개선</strong> (cold Δ=-0.68 / warm Δ=-2.20). Validation <strong>4/5 seed PASS</strong> (Δ_cold -1.5 ~ -2.3 / Δ_warm -1.86 ~ -2.30 일관) / <strong>seed=113만 G2 위반</strong> (artsy_cold +1.76pp / 해당 split outlier-heavy). Aggregate INCONCLUSIVE → 채택 X / D1 axis 종결 X / multi-seed 추가 확장 후속 권고.</td>
+</tr>
+<tr>
+<td><span class="commit-tag">pending</span></td>
+<td><strong>D3 Ensemble Blend Refinement</strong></td>
+<td><span class="pill red bigtag">HOLD_50_50</span></td>
+<td>OOF cold blend 1D scalar w grid search (21-point) + multi-seed N=5 validation (127/233/269/311/419). <strong>OOF best w*=0.3</strong> (cold Δ=-0.34 OOF) / 그러나 fresh 5-seed validation에서 <strong>1/5 PASS만</strong> (4 FAIL / G2 violation 3건). OOF→fresh holdout 일반화 실패. 운영 50/50 ensemble 유지 / scalar w axis 종결 / stacking meta-learner는 별도 cycle.</td>
+</tr>
+<tr style="background: #d4edda;">
+<td><span class="commit-tag">pending</span></td>
+<td><strong>B Warm-only Path Optimization</strong></td>
+<td><span class="pill green bigtag">✅ ADOPT_warm_retuned</span></td>
+<td>Cold path 동결 / XGB warm-only Optuna 50 trials / multi-seed N=5 validation (541/619/743/829/947). Search warm CV 9.70 → 8.01 (Δ=-1.69). <strong>5/5 seed strict PASS</strong> / 모든 seed Δ_warm 음수 / 평균 Δ_warm = <strong>-1.62pp</strong> / 표준편차 0.137 (population-level consistent). 본 세션 최초 ADOPT verdict / 운영 warm path XGB best_params 교체 권고 / cold path 변경 X.</td>
+</tr>
+</table>
+
+<div class="info-box">
+<strong>가장 중요한 발견 (Cross-cycle / 10 사이클 종합)</strong>:<br>
+1. <strong>In-sample bias 발견 + 해소</strong>: Reprod cycle (in-sample) → OOS cycle (true OOS) 전환으로 evaluation methodology 정합 확립. 이 패턴이 N15.C / D1 / D1.X / D3 / B까지 일관 적용.<br>
+2. <strong>N=15 migration evidence 약함</strong>: 3-cycle (N15.A/B/C) 누적 negative — sweep amendment의 fold-adaptive winner는 frozen feature contract에서 재현 X.<br>
+3. <strong>D1 retune signal robust + outlier seed 발견</strong>: 1차 D1 (3 seed / 2 FAIL via per-source +0.46~0.48) / D1.X (5 seed / 4 PASS / seed=113 outlier split G2 +1.76 violation) — average improvement consistent / split variance N=3 / N=5 모두 흡수 X.<br>
+4. <strong>Per-source guard split variance가 본질적 한계</strong>: artsy_gallery n_holdout 150-250 / Saatchi tail-heavy 분포 / multi-seed N=3-5 부족 / N=10+ 또는 bootstrap aggregation 필요.<br>
+5. <strong>OOF→fresh holdout 일반화 한계 (D3)</strong>: blend weight scalar w*=0.3 OOF에서 -0.34 / fresh 5-seed validation 1/5 PASS — OOF GroupKFold 분포와 train_test_split 분포 mismatch 노출.<br>
+6. <strong>Single-objective + clean scope이 일반화 우수 (B)</strong>: warm-only XGB / no cold constraint / fresh 5/5 PASS / search CV vs validation gap 4.1% — multi-objective + per-source guard 조합 대비 robust.
+</div>
+
+<h2 id="timeline">2. 타임라인 + 코덱스 자문 누적</h2>
+
+<div class="timeline">
+
+<div><span class="commit-tag">d0f8b88</span></div>
+<div class="timeline-step failed">
+<strong>Reprod cycle</strong> (재현성 / in-sample)
+<div class="codex-rounds">
+  <span class="codex-round fix">R1 NEEDS FIX</span>
+  <span class="codex-round fix">R2 NEEDS FIX</span>
+  <span class="codex-round lgtm">R3 LGTM</span>
+  <span class="codex-round align">R4 LGTM-with-caveat</span>
+</div>
+</div>
+<div><span class="pill red">FAIL</span></div>
+
+<div><span class="commit-tag">08a6b80</span></div>
+<div class="timeline-step partial">
+<strong>OOS verification</strong> (true OOS / multi-seed)
+<div class="codex-rounds">
+  <span class="codex-round fix">R1 NEEDS FIX</span>
+  <span class="codex-round fix">R2 NEEDS FIX</span>
+  <span class="codex-round fix">R3 NEEDS FIX</span>
+  <span class="codex-round lgtm">R4 LGTM</span>
+  <span class="codex-round align">R5 NEEDS DECISION ALIGNMENT</span>
+</div>
+</div>
+<div><span class="pill yellow">NEEDS_MORE_DATA</span></div>
+
+<div><span class="commit-tag">8c9e58e</span></div>
+<div class="timeline-step failed">
+<strong>N15.A Confirmatory</strong>
+<div class="codex-rounds">
+  <span class="codex-round fix">R1 NEEDS FIX</span>
+  <span class="codex-round fix">R2 NEEDS FIX</span>
+  <span class="codex-round lgtm">R3 LGTM</span>
+  <span class="codex-round align">R4 NEEDS DECISION ALIGNMENT</span>
+</div>
+</div>
+<div><span class="pill red">HOLD</span></div>
+
+<div><span class="commit-tag">38eab10</span></div>
+<div class="timeline-step failed">
+<strong>N15.B HP Retuning</strong> (clean negative under proper CV)
+<div class="codex-rounds">
+  <span class="codex-round fix">R1 NEEDS FIX</span>
+  <span class="codex-round fix">R2 NEEDS FIX</span>
+  <span class="codex-round lgtm">R3 LGTM</span>
+  <span class="codex-round fix">R4 NEEDS FIX (P0)</span>
+  <span class="codex-round fix">R5 NEEDS FIX</span>
+</div>
+</div>
+<div><span class="pill red">HOLD</span></div>
+
+<div><span class="commit-tag">4499fe9</span></div>
+<div class="timeline-step partial">
+<strong>N15.C SC Integration</strong> (final / N=15 line 종결)
+<div class="codex-rounds">
+  <span class="codex-round fix">R1 NEEDS FIX</span>
+  <span class="codex-round fix">R2 NEEDS FIX</span>
+  <span class="codex-round lgtm">R3 LGTM</span>
+  <span class="codex-round align">R4 LGTM-with-caveat</span>
+</div>
+</div>
+<div><span class="pill yellow">NEEDS_MORE_DATA</span></div>
+
+<div><span class="commit-tag" style="background: #6c757d;">strategy</span></div>
+<div class="timeline-step exploratory">
+<strong>Codex 전략 자문</strong> (post-N15 후속 후보 평가)
+<br><span style="font-size: 12px; color: #555;">Top recommendation: D1 (N=32 HP retune) → D3 (blend) → B (warm-only) / Skip A,C,D2</span>
+</div>
+<div><span class="pill blue">D1 권고</span></div>
+
+<div><span class="commit-tag">7c1254a</span></div>
+<div class="timeline-step positive">
+<strong>D1 N=32 Champion HP Retune</strong> (positive signal / exploratory)
+<div class="codex-rounds">
+  <span class="codex-round fix">R1 NEEDS FIX</span>
+  <span class="codex-round fix">R2 NEEDS FIX</span>
+  <span class="codex-round lgtm">R3 LGTM</span>
+  <span class="codex-round fix">R4 NEEDS FIX</span>
+</div>
+</div>
+<div><span class="pill yellow">HOLD<br><span style="color:#0d6efd;">+positive</span></span></div>
+
+<div><span class="commit-tag" style="background: #6c757d;">pending</span></div>
+<div class="timeline-step partial">
+<strong>D1.X compliant rerun</strong> (R6/R7 amendment / 50 trials × 2 phase + N=5 seed)
+<div class="codex-rounds">
+  <span class="codex-round lgtm">R5 LGTM</span>
+  <span class="codex-round lgtm">R6 LGTM</span>
+  <span class="codex-round lgtm">R7 LGTM</span>
+</div>
+</div>
+<div><span class="pill yellow">NEEDS_MORE_DATA</span></div>
+
+<div><span class="commit-tag" style="background: #6c757d;">pending</span></div>
+<div class="timeline-step failed">
+<strong>D3 Ensemble Blend Refinement</strong> (1D scalar w grid / fresh 일반화 실패)
+<div class="codex-rounds">
+  <span class="codex-round lgtm">R1 LGTM</span>
+</div>
+</div>
+<div><span class="pill red">HOLD_50_50</span></div>
+
+<div><span class="commit-tag" style="background: #6c757d;">pending</span></div>
+<div class="timeline-step passed">
+<strong>B Warm-only Path Optimization</strong> (✅ 첫 ADOPT verdict / 5/5 PASS)
+<div class="codex-rounds">
+  <span class="codex-round lgtm">R1 LGTM</span>
+</div>
+</div>
+<div><span class="pill green">ADOPT_warm</span></div>
+
+</div>
+
+<p style="font-size: 12px; color: #666;">
+※ 코덱스 자문 누적: 동일 세션 <code>019e0bb1-8ded-7c42-bb17-f18e470cb3a0</code> / 25+ rounds / ~8M tokens / Reprod-OOS-N15A-N15B-N15C + post-N15 strategy + D1 + D1.X + D3 + B 통합.
+</p>
+
+<h2 id="calibration">3. Stage 1 — Calibration 검증 (per-source factor 운영 채택)</h2>
+
+<h3>3.1 사전 commit (e3367ed) — Phase 2 calibration fit</h3>
+<p>본 세션 시작 직전 commit. PR1 시점 per-source calibration = no-op (모든 cell=1.0). 본 cycle = per-source 별도 fit.</p>
+
+<table>
+<tr><th>Cell</th><th>Path</th><th>n (full data)</th><th>Factor (e3367ed shipped)</th><th>분류 (이후 cycle 검증용)</th></tr>
+<tr><td><code>artsy_gallery</code></td><td>cold</td><td class="num">868</td><td class="num">0.9152</td><td><span class="pill blue">load_bearing</span></td></tr>
+<tr><td><code>artsy_online</code></td><td>cold</td><td class="num">6,421</td><td class="num">0.9757</td><td><span class="pill blue">load_bearing</span></td></tr>
+<tr><td><code>artsy_gallery</code></td><td>warm</td><td class="num">~140</td><td class="num">1.0 (guard)</td><td><span class="pill gray">consistency_only</span></td></tr>
+<tr><td><code>artsy_online</code></td><td>warm</td><td class="num">~270</td><td class="num">1.0 (guard)</td><td><span class="pill gray">consistency_only</span></td></tr>
+<tr><td><code>saatchi_online</code></td><td>cold</td><td class="num">21,087</td><td class="num">1.0 (guard)</td><td><span class="pill gray">consistency_only</span></td></tr>
+<tr><td><code>saatchi_online</code></td><td>warm</td><td class="num">~520</td><td class="num">1.0 (guard)</td><td><span class="pill gray">consistency_only</span></td></tr>
+</table>
+
+<h3>3.2 Reprod cycle <span class="commit-tag" style="font-size: 0.7em;">d0f8b88</span></h3>
+<p><strong>Method</strong>: PR1 artifact 그대로 / 단일 seed holdout (31337) / dual-track (Primary = original factor / Secondary = refit).</p>
+
+<table>
+<tr><th>Cell</th><th class="num">n_holdout</th><th class="num">baseline</th><th class="num">cal_orig</th><th class="num">Δ_orig</th><th class="num">CI90</th><th>Decision</th></tr>
+<tr><td><code>artsy_gallery</code></td><td class="num">366</td><td class="num">3.21</td><td class="num">8.67</td><td class="num diff-neg">+5.46</td><td class="num">[+4.84, +6.40]</td><td><span class="pill red">FAIL</span></td></tr>
+<tr><td><code>artsy_online</code></td><td class="num">1,313</td><td class="num">7.17</td><td class="num">7.48</td><td class="num diff-neg">+0.31</td><td class="num">N/A</td><td><span class="pill red">FAIL</span></td></tr>
+</table>
+
+<div class="warn-box">
+<strong>R4 in-sample bias caveat (View B / OOS cycle motivation)</strong>: holdout baseline MdAPE (3.21 / 7.17) << e3367ed cross-fit OOF baseline (~33). PR1 artifact가 holdout 행 학습 시 본 결과 (in-sample 예측). OOF로 학습된 calibration factor를 in-sample에 적용 시 over-correction → FAIL이 method artifact였을 가능성.
+</div>
+
+<h3>3.3 OOS verification cycle <span class="commit-tag" style="font-size: 0.7em;">08a6b80</span></h3>
+<p><strong>Method</strong>: 80% pool 재학습 base artifact (true OOS) / multi-seed (3) / dual-endpoint (Primary refit / Secondary shipped).</p>
+
+<h4>artsy/cold/artsy_gallery (small cell / 3 seed)</h4>
+<table>
+<tr><th>Seed</th><th class="num">baseline</th><th class="num">Δ_refit</th><th class="num">Δ_shipped</th><th>Primary</th><th>Secondary</th></tr>
+<tr><td>31337</td><td class="num">19.80</td><td class="num diff-pos">−5.82</td><td class="num diff-pos">−3.86</td><td><span class="pill green">PASS</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr><td>7</td><td class="num">37.20</td><td class="num">0 (guard)</td><td class="num diff-neg">+0.58</td><td><span class="pill yellow">GUARD_FIRED</span></td><td><span class="pill red">SHIPPED_FAIL</span></td></tr>
+<tr><td>13</td><td class="num">68.66</td><td class="num">0 (guard)</td><td class="num diff-pos">−11.60</td><td><span class="pill yellow">GUARD_FIRED</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr style="background:#fff3cd;"><td colspan="6"><strong>Cell adoption: <span class="pill yellow">NEEDS_MORE_DATA</span></strong> — split variance 압도적</td></tr>
+</table>
+
+<h4>artsy/cold/artsy_online (large cell / 3 seed)</h4>
+<table>
+<tr><th>Seed</th><th class="num">baseline</th><th class="num">Δ_refit</th><th class="num">Δ_shipped</th><th>Primary</th><th>Secondary</th></tr>
+<tr><td>31337</td><td class="num">27.04</td><td class="num diff-pos">−0.69</td><td class="num diff-pos">−0.81</td><td><span class="pill green">PASS</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr><td>7</td><td class="num">41.79</td><td class="num">0 (guard)</td><td class="num diff-pos">−1.23</td><td><span class="pill yellow">GUARD_FIRED</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr><td>13</td><td class="num">33.44</td><td class="num diff-pos">−0.14</td><td class="num diff-pos">−0.42</td><td><span class="pill green">PASS</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr style="background:#d4edda;"><td colspan="6"><strong>Cell adoption: <span class="pill green">ADOPT_with_caveat</span></strong> — shipped factor 0.9757 OOS 효과 일관</td></tr>
+</table>
+
+<div class="success-box">
+<strong>R4 caveat 해소 강하게 입증</strong>:<br>
+같은 seed=31337 / artsy_gallery cold cell:<br>
+&nbsp;&nbsp;Reprod (in-sample): baseline=3.21 / Δ_shipped=<strong style="color:#dc3545;">+5.46pp</strong> (FAIL)<br>
+&nbsp;&nbsp;OOS (true OOS): baseline=19.80 / Δ_shipped=<strong style="color:#28a745;">−3.86pp</strong> (PASS)<br>
+→ <strong>부호 반전 + scale 6×</strong>. Reprod FAIL = method artifact 였음.
+</div>
+
+<h2 id="n15">4. Stage 2 — N=15 Migration (3 cycles / 종결)</h2>
+
+<p>Sweep amendment (<code>a0a1bde</code>) 1-SE winner = N=15 XGBoost (cold_ens_median 38.66 vs baseline 38.62 / Δ +0.033). 3 cycles로 검증 → <strong>N=15 line 종결</strong>.</p>
+
+<h3>4.1 N15.A Confirmatory <span class="commit-tag" style="font-size: 0.7em;">8c9e58e</span></h3>
+<p><strong>Method</strong>: pure XGB@N=15 (sweep winner) vs Ens@N=32 / multi-seed (3) / 2-tier candidates (strong + weak).</p>
+
+<table>
+<tr><th>Seed</th><th>Strong (XGB@N=15) verdict</th><th class="num">Δ_cold</th><th class="num">Δ_artsy</th><th class="num">Δ_warm</th></tr>
+<tr><td>31337</td><td><span class="pill red">FAIL (warm strict)</span></td><td class="num diff-pos">−0.72</td><td class="num diff-pos">−0.86</td><td class="num diff-neg">+0.18</td></tr>
+<tr><td>7</td><td><span class="pill red">FAIL (G FAIL)</span></td><td class="num diff-neg">+1.46</td><td class="num">+0.05</td><td class="num diff-neg">+0.29</td></tr>
+<tr><td>13</td><td><span class="pill red">FAIL (warm strict)</span></td><td class="num diff-pos">−0.35</td><td class="num diff-pos">−1.49</td><td class="num diff-neg">+0.10</td></tr>
+</table>
+
+<div class="warn-box">
+<strong>R4 prereg rule contradiction 인정</strong>: G4 (Δ_warm ≤+0.3 PASS) vs prereg's strict warm > 0 = FAIL → 모순. retroactive fix X / locked rule 준수 / 단 G4-consistent rule 적용 시 strong 2/3 seed PASS → INCONCLUSIVE 가능. <strong>cold artsy 시그널 일관 (모든 seed cold artsy ≤ 0)</strong>.
+</div>
+
+<h3>4.2 N15.B HP Retuning <span class="commit-tag" style="font-size: 0.7em;">38eab10</span></h3>
+<p><strong>Method</strong>: Optuna 30 trials / N=15 features / GroupKFold cold + KFold warm / Optuna constraints API / fresh seeds {23, 47, 71}.</p>
+
+<div class="danger-box">
+<strong>R4 P0 critical fix — KFold cold bug</strong>: 첫 run cold CV에 KFold (artist sharing) 사용 → search-time scale ~10-12 / validation GroupShuffleSplit scale ~38-40 / scale gap 발견. fix → GroupKFold rerun.
+</div>
+
+<table>
+<tr><th>Run</th><th class="num">Best warm_cv_mdape</th><th class="num">Δ vs default 9.93</th><th>Validation Δ_warm</th><th>해석</th></tr>
+<tr><td>Run #1 (KFold bug)</td><td class="num">7.29</td><td class="num diff-pos">−2.64 (spurious)</td><td class="num diff-pos">−2.16 ~ −3.05</td><td>method artifact (artist sharing)</td></tr>
+<tr style="background:#f8d7da;"><td><strong>Run #3 (GroupKFold fix)</strong></td><td class="num"><strong>13.69</strong></td><td class="num diff-neg">+3.76 (true)</td><td class="num diff-neg">+3.47 ~ +3.62</td><td><strong>clean negative — N=15 retune은 default 능가 X</strong></td></tr>
+</table>
+
+<p>Operational scale에서 constraint-feasible space (5/30 trials feasible)에서 default warm 능가하는 trial 없음. <strong>3/3 fresh seed warm Δ +3.5pp 일관 regression</strong>.</p>
+
+<h3>4.3 N15.C Source-Conditional Integration <span class="commit-tag" style="font-size: 0.7em;">4499fe9</span></h3>
+<p><strong>Method</strong>: v2_pool (N=15 / per-source / default xgb_params per N15.B 합의) vs v1_pool (N=32 / per-source) <strong>fair OOS</strong>. multi-seed (3).</p>
+
+<h4>Artsy load_bearing 단일 seed Δ_v2_v1pool (extreme split variance)</h4>
+<table>
+<tr><th>Cell</th><th class="num">seed 31337</th><th class="num">seed 7</th><th class="num">seed 13</th><th>Aggregate</th></tr>
+<tr><td><code>artsy_gallery</code></td><td class="num diff-pos">−4.05</td><td class="num diff-neg">+12.08</td><td class="num diff-pos">−20.60</td><td><span class="pill yellow">INCONCLUSIVE</span></td></tr>
+<tr><td><code>artsy_online</code></td><td class="num diff-neg">+2.33</td><td class="num diff-pos">−3.85</td><td class="num diff-pos">−1.05</td><td><span class="pill yellow">INCONCLUSIVE</span></td></tr>
+</table>
+
+<p>artsy_gallery 단일 seed Δ 범위 = <strong>−20.60 ~ +12.08pp (range 32.7pp!)</strong> — small cell (n_holdout 144-366) + Artsy gallery distribution heavy-tailed의 statistical limit. Saatchi 모든 cell PASS×3 (안정).</p>
+
+<div class="info-box">
+<strong>3-cycle 통합 결론 (R4 endorsed / N=15 line 종결)</strong>: N=15 migration evidence 약함. Sweep amendment의 N=15 winner는 fold-adaptive feature ranking 효과였음. Frozen feature contract에서 재현 X. multi-seed 확대도 statistical limit (Artsy small cell). Track 1 N=32 유지 결정.
+</div>
+
+<h2 id="hp">5. Stage 3 — N=32 HP Re-optimization (D1 / exploratory pilot)</h2>
+
+<h3>5.1 Codex 전략 자문 (post-N15)</h3>
+<p>N=15 line 종결 후 codex가 4 candidate (A: N=18/20/25 sweep / B: warm-only / C: hierarchical / D: HP+architecture) 중 <strong>D1 (N=32 HP retune)</strong>을 top recommendation으로 선정. 이유: 현 인프라 (GroupKFold + Optuna) 재활용 / N=15 premise 없이 champion 직접 attack / base model gain 분리 측정.</p>
+
+<h3>5.2 D1 N=32 Champion HP Retune <span class="commit-tag" style="font-size: 0.7em;">7c1254a</span></h3>
+<p><strong>Method</strong>: 2-phase Optuna sequential (CB Phase 1 + XGB Phase 2 / 30 trials each / ensemble metric optimization / enqueue_trial(default) incumbent / fresh seeds {97, 113, 199}).</p>
+
+<h4>Phase 1+2 Search 결과 (CV)</h4>
+<div class="metric-grid">
+<div class="metric-card" style="border-left: 4px solid #0d6efd;">
+<div class="label">Phase 1 (CB)</div>
+<div class="value" style="font-size: 1.1em;">cold_cv = <strong>38.18</strong></div>
+<div class="delta diff-pos">Δ default 38.79 / -0.61pp ↓</div>
+<div style="font-size: 11px; color: #666; margin-top: 6px;">iter=1817 / depth=8 / lr=0.0101 / l2=3.95</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #0d6efd;">
+<div class="label">Phase 2 (XGB)</div>
+<div class="value" style="font-size: 1.1em;">warm_cv = <strong>9.16</strong></div>
+<div class="delta diff-pos">Δ default 9.70 / -0.54pp ↓</div>
+<div style="font-size: 11px; color: #666; margin-top: 6px;">num_boost=1259 / depth=7 / lr=0.150</div>
+</div>
+</div>
+
+<h4>Validation 3 fresh seeds</h4>
+<table>
+<tr><th>Seed</th><th class="num">Δ_cold</th><th class="num">Δ_artsy</th><th class="num">Δ_saatchi</th><th class="num">Δ_warm</th><th>Verdict</th></tr>
+<tr style="background:#d4edda;"><td>97</td><td class="num diff-pos">−2.10</td><td class="num diff-pos">−4.88</td><td class="num diff-pos">−1.23</td><td class="num diff-pos">−0.55</td><td><span class="pill green">PASS</span> 전 metric 강한 개선</td></tr>
+<tr><td>113</td><td class="num diff-pos">−0.49</td><td class="num diff-neg">+0.48 ⚠️</td><td class="num diff-pos">−1.13</td><td class="num diff-pos">−0.83</td><td><span class="pill red">FAIL (G2 +0.48 > +0.3)</span></td></tr>
+<tr><td>199</td><td class="num diff-pos">−0.33</td><td class="num diff-pos">−4.33</td><td class="num diff-neg">+0.46 ⚠️</td><td class="num diff-pos">−0.23</td><td><span class="pill red">FAIL (G3 +0.46 > +0.3)</span></td></tr>
+<tr style="background:#fff3cd;"><td colspan="6"><strong>Aggregate: PASS×1 + FAIL×2 → FAIL → Overall HOLD</strong></td></tr>
+</table>
+
+<div class="success-box">
+<strong>핵심 양면 결과</strong>:<br>
+✅ <strong>Search + validation 둘 다 명확한 positive</strong>: Phase 1+2 both default 능가. 3/3 seed Δ_cold ≤ 0 (mean −0.97pp). 3/3 seed Δ_warm ≤ 0 (mean −0.54pp).<br>
+❌ <strong>Per-source guards split variance</strong>: 2/3 seed에서 한 source mild regression (+0.48 / +0.46pp / G2-G3 +0.3pp threshold 초과).<br>
+→ Overall 개선은 robust / 단 strict per-source guard 통과 위해 multi-seed 확대 또는 threshold 완화 필요.
+</div>
+
+<div class="warn-box">
+<strong>R4 protocol deviations → exploratory pilot 처리</strong>:<br>
+<strong>P0</strong>: paired bootstrap CI logic 미구현 (prereg §2.6 reserved / script 미반영). small sub-cell INCONCLUSIVE path 활용 불가.<br>
+<strong>P1</strong>: 30 trials × 2 phases (prereg 50). N15.B와 같은 deviation이지만 D1는 positive mixed signal이라 무게 더 큼.<br>
+→ binding 결정은 compliant rerun 후. signal 강하므로 우선순위 높은 후속 cycle.
+</div>
+
+<h2 id="followup">6. Stage 4 — Follow-up Cycles (D1.X + D3 + B / 3 cycles)</h2>
+
+<p>D1 R4 P0/P1 fix 후 후속 후보 3건 모두 진행. 본 세션 후속 사이클 = <strong>D1 compliant rerun (NEEDS_MORE_DATA) + D3 ensemble blend (HOLD_50_50) + B warm-only retune (✅ ADOPT)</strong>.</p>
+
+<h3>6.1 D1.X Compliant Rerun <span class="commit-tag" style="font-size: 0.7em;">pending</span></h3>
+<p><strong>Method</strong>: R6/R7 amendment 정합 / 50 trials × 2 phase / multi-seed N=5 (97/113/199/223/257) / paired bootstrap CI path 제거 (모든 cell n_holdout > 500 / 본질적 적용 X).</p>
+
+<h4>Search 결과 (CV / 2h 24min wall)</h4>
+<div class="metric-grid">
+<div class="metric-card" style="border-left: 4px solid #28a745;">
+<div class="label">Phase 1 (CB)</div>
+<div class="value" style="font-size: 1.1em;">cold_cv = <strong>38.11</strong></div>
+<div class="delta diff-pos">Δ default 38.79 / -0.68pp ↓</div>
+<div style="font-size: 11px; color: #666; margin-top: 6px;">iter=1012 / depth=8 / lr=0.0114 / l2=1.09 / random_strength=0.13</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #28a745;">
+<div class="label">Phase 2 (XGB)</div>
+<div class="value" style="font-size: 1.1em;">warm_cv = <strong>7.50</strong></div>
+<div class="delta diff-pos">Δ default 9.70 / -2.20pp ↓</div>
+<div style="font-size: 11px; color: #666; margin-top: 6px;">num_boost=1876 / depth=8 / lr=0.087 / min_child_weight=9</div>
+</div>
+</div>
+
+<h4>Validation 5 fresh seeds</h4>
+<table>
+<tr><th>Seed</th><th class="num">Δ_cold</th><th class="num">Δ_artsy</th><th class="num">Δ_saatchi</th><th class="num">Δ_warm</th><th>Verdict</th></tr>
+<tr style="background:#d4edda;"><td>97</td><td class="num diff-pos">−1.79</td><td class="num diff-pos">−1.50</td><td class="num diff-pos">−2.10</td><td class="num diff-pos">−2.24</td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#f8d7da;"><td>113</td><td class="num diff-pos">−1.54</td><td class="num diff-neg">+1.76 ⚠️</td><td class="num diff-neg">+0.28</td><td class="num diff-pos">−2.13</td><td><span class="pill red">FAIL (G2 +1.76 > +0.8)</span></td></tr>
+<tr style="background:#d4edda;"><td>199</td><td class="num diff-pos">−2.32</td><td class="num diff-pos">−2.48</td><td class="num diff-pos">−1.77</td><td class="num diff-pos">−1.86</td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#d4edda;"><td>223</td><td class="num diff-pos">−2.17</td><td class="num diff-pos">−2.17</td><td class="num diff-pos">−1.23</td><td class="num diff-pos">−2.07</td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#d4edda;"><td>257</td><td class="num diff-pos">−1.53</td><td class="num diff-pos">−2.40</td><td class="num diff-pos">−0.24</td><td class="num diff-pos">−2.30</td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#fff3cd;"><td colspan="6"><strong>Aggregate: 4 PASS + 1 FAIL → INCONCLUSIVE → Overall NEEDS_MORE_DATA</strong></td></tr>
+</table>
+
+<div class="warn-box">
+<strong>seed=113 outlier 분석</strong>: 해당 holdout split의 default ens cold_overall = 50.34 (다른 seed 36~37 대비 +13~14pp / outlier-heavy / 어려운 작가 구성). 평균 artsy_cold delta = (-1.50+1.76-2.48-2.17-2.40)/5 = <strong>-1.36pp</strong> (population-level 강한 개선). 1 seed split-variance outlier가 strict aggregate를 막음. 후속: multi-seed N=10 확대 또는 G2 threshold 완화 (+0.8 → +1.5).
+</div>
+
+<h3>6.2 D3 Ensemble Blend Refinement <span class="commit-tag" style="font-size: 0.7em;">pending</span></h3>
+<p><strong>Method</strong>: OOF cold ensemble (CB + XGB / GroupKFold-5 / default params) 위에 1D scalar w grid search (21-point / w ∈ [0, 1]). Multi-seed N=5 validation (127/233/269/311/419).</p>
+
+<h4>OOF best winner</h4>
+<table>
+<tr><th>w</th><th class="num">cold_overall</th><th class="num">cold_artsy</th><th class="num">cold_saatchi</th><th class="num">Δ_artsy</th><th class="num">Δ_saatchi</th></tr>
+<tr><td>0.5 (default)</td><td class="num">38.79</td><td class="num">33.18</td><td class="num">41.21</td><td class="num">0</td><td class="num">0</td></tr>
+<tr style="background:#d4edda;"><td><strong>0.3 (winner)</strong></td><td class="num"><strong>38.46</strong></td><td class="num">33.33</td><td class="num">40.83</td><td class="num diff-neg">+0.15</td><td class="num diff-pos">−0.38</td></tr>
+</table>
+<p>OOF cold_overall Δ = -0.34pp. Constraint feasible (G2 ≤+0.3 / G3 ≤+0.3 모두 통과).</p>
+
+<h4>Validation 5 fresh seeds</h4>
+<table>
+<tr><th>Seed</th><th class="num">Δ_cold</th><th class="num">Δ_artsy</th><th class="num">Δ_saatchi</th><th>Verdict</th></tr>
+<tr style="background:#f8d7da;"><td>127</td><td class="num diff-neg">+0.95</td><td class="num">+0.03</td><td class="num diff-neg">+1.15</td><td><span class="pill red">FAIL</span></td></tr>
+<tr style="background:#d4edda;"><td>233</td><td class="num diff-pos">−1.41</td><td class="num diff-pos">−0.37</td><td class="num diff-pos">−1.86</td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#f8d7da;"><td>269</td><td class="num diff-neg">+0.96</td><td class="num diff-neg">+1.23</td><td class="num diff-neg">+1.00</td><td><span class="pill red">FAIL</span></td></tr>
+<tr style="background:#f8d7da;"><td>311</td><td class="num">−0.03</td><td class="num diff-neg">+1.95</td><td class="num">+0.05</td><td><span class="pill red">FAIL (G2)</span></td></tr>
+<tr style="background:#f8d7da;"><td>419</td><td class="num">+0.02</td><td class="num diff-neg">+0.75</td><td class="num diff-pos">−0.38</td><td><span class="pill red">FAIL (G2)</span></td></tr>
+<tr style="background:#f8d7da;"><td colspan="5"><strong>Aggregate: 1 PASS + 4 FAIL → FAIL → Overall HOLD_50_50</strong></td></tr>
+</table>
+
+<div class="danger-box">
+<strong>OOF→fresh holdout 일반화 실패</strong>: OOF 잘 (Δ=-0.34) / fresh validation 1/5 PASS만 (4 FAIL). OOF GroupKFold(artist) 분포와 fresh train_test_split 분포 mismatch. <strong>Scalar w 단순화의 한계</strong> — population-level w*=0.3과 per-split optimal w가 다름. 후속: stacking meta-learner (linear / GBM) 또는 source-conditional blend (w_artsy / w_saatchi) 별도 cycle.
+</div>
+
+<h3>6.3 B Warm-only Path Optimization <span class="commit-tag" style="font-size: 0.7em;">pending</span></h3>
+<p><strong>Method</strong>: Cold path 동결 / XGB warm-only Optuna 50 trials / KFold-5 warm CV (e3367ed convention) / Single objective (warm CV minimize) / Multi-seed N=5 validation (541/619/743/829/947).</p>
+
+<h4>Search 결과 (706s wall)</h4>
+<div class="metric-grid">
+<div class="metric-card" style="border-left: 4px solid #28a745;">
+<div class="label">Default warm CV</div>
+<div class="value" style="font-size: 1.2em;">9.70</div>
+<div class="delta">baseline (XGB default)</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #28a745;">
+<div class="label">Best warm CV</div>
+<div class="value" style="font-size: 1.2em;"><strong>8.01</strong></div>
+<div class="delta diff-pos">Δ -1.69pp ↓</div>
+<div style="font-size: 11px; color: #666; margin-top: 6px;">num_boost=947 / depth=9 / lr=0.125 / min_child_weight=11 / reg_alpha=0.56</div>
+</div>
+</div>
+
+<h4>Validation 5 fresh seeds (모두 PASS / strict Δ_warm ≤ 0)</h4>
+<table>
+<tr><th>Seed</th><th class="num">warm_default</th><th class="num">warm_retuned</th><th class="num">Δ_warm</th><th>Verdict</th></tr>
+<tr style="background:#d4edda;"><td>541</td><td class="num">9.578</td><td class="num">8.143</td><td class="num diff-pos"><strong>−1.435</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#d4edda;"><td>619</td><td class="num">9.749</td><td class="num">8.214</td><td class="num diff-pos"><strong>−1.535</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#d4edda;"><td>743</td><td class="num">9.761</td><td class="num">8.147</td><td class="num diff-pos"><strong>−1.614</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#d4edda;"><td>829</td><td class="num">9.514</td><td class="num">7.774</td><td class="num diff-pos"><strong>−1.741</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#d4edda;"><td>947</td><td class="num">9.860</td><td class="num">8.089</td><td class="num diff-pos"><strong>−1.771</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#d4edda;"><td colspan="5"><strong>Aggregate: 5 PASS → PASS → Overall ✅ ADOPT_warm_retuned</strong> | 평균 Δ_warm = −1.620 / 표준편차 0.137</td></tr>
+</table>
+
+<div class="success-box">
+<strong>본 세션 최초 ADOPT verdict</strong>: 7 cycle HOLD/NEEDS_MORE_DATA 후 발견한 첫 deployable winner.<br>
+✅ <strong>Search CV→fresh validation gap 4.1%</strong> (search Δ=-1.69 / validation mean Δ=-1.62) — 일반화 우수.<br>
+✅ <strong>Population-level consistent</strong>: 5/5 seed Δ_warm 음수 / 표준편차 0.137 / split variance 흡수.<br>
+✅ <strong>Clean scope</strong>: warm-only / no cold constraint / single objective → multi-objective + per-source guard 조합 대비 robust.
+</div>
+
+<h4>D1 Phase 2 vs B 비교</h4>
+<table>
+<tr><th>속성</th><th>D1 Phase 2 XGB</th><th>B XGB</th></tr>
+<tr><td>Search 정합</td><td>cold + warm joint metric / CB_best fixed</td><td>warm-only single metric</td></tr>
+<tr><td>num_boost_round</td><td class="num">1876</td><td class="num">947</td></tr>
+<tr><td>max_depth</td><td class="num">8</td><td class="num">9</td></tr>
+<tr><td>learning_rate</td><td class="num">0.087</td><td class="num">0.125</td></tr>
+<tr><td>warm CV</td><td class="num">7.50</td><td class="num">8.01</td></tr>
+<tr><td>Validation aggregate</td><td><span class="pill yellow">NEEDS_MORE_DATA</span></td><td><span class="pill green">ADOPT_warm</span></td></tr>
+</table>
+<p>D1 joint XGB가 warm CV는 더 좋음 (cold ensemble 기여 때문) / 단 D1는 cold + warm 통합 deployment 필요. <strong>B는 warm-only 단독 deployment 가능</strong> + 운영 cold path (CB_default + XGB_default) 그대로 유지 / 부분 deployment의 robust path.</p>
+
+<h2 id="cross">7. Cross-cycle 발견 (방법론적 학습)</h2>
+
+<h3>7.1 In-sample bias 발견 + 해소 (Reprod → OOS pivot)</h3>
+<table>
+<tr><th>Cycle</th><th>Method</th><th>artsy_gallery seed 31337 결과</th></tr>
+<tr><td>Reprod (in-sample)</td><td>PR1 artifact 그대로 holdout prediction</td><td class="diff-neg">baseline=3.21 / Δ_shipped=+5.46pp (FAIL)</td></tr>
+<tr><td>OOS (true OOS)</td><td>80% pool로 base artifact 재학습</td><td class="diff-pos">baseline=19.80 / Δ_shipped=−3.86pp (PASS)</td></tr>
+</table>
+<p>같은 seed / 같은 split → in-sample 예측은 baseline이 매우 낮아 OOF로 학습된 calibration factor가 over-correction. <strong>OOS framework이 본 세션 모든 후속 cycle 표준</strong>.</p>
+
+<h3>7.2 Search-time CV scheme bug pattern (KFold vs GroupKFold)</h3>
+<p>N15.B run #1 KFold cold (artist sharing) → search-time scale ~10-12 / validation GroupShuffleSplit ~38-40 / 3-4× scale gap. Constraint screening이 잘못된 객체에서 동작. <strong>Codex R4 P0 fix → GroupKFold 정정 후 spurious "warm improvement" 부호 반전 (-2.64 → +3.76pp)</strong>.</p>
+
+<h3>7.3 Per-source split variance가 본질적 한계</h3>
+<table>
+<tr><th>Cycle</th><th>Cell</th><th>단일 seed Δ 범위 (3 seeds)</th></tr>
+<tr><td>OOS</td><td>artsy_gallery</td><td class="diff-neg">+12.08 → −11.60 (range 23.7pp)</td></tr>
+<tr><td>N15.C</td><td>artsy_gallery</td><td class="diff-neg">+12.08 → −20.60 (range 32.7pp)</td></tr>
+<tr><td>D1</td><td>artsy / saatchi</td><td>+0.46 / +0.48 vs −4.33 / −1.23 (mild +/-)</td></tr>
+</table>
+<p>artsy_gallery n_holdout 150-250 / Artsy gallery 가격 분포 heavy-tailed → multi-seed N=3 부족. multi-seed N=5-7 확대 또는 stratified sampling 또는 robust statistics가 후속 후보.</p>
+
+<h3>7.4 Frozen feature contract vs fold-adaptive search</h3>
+<p>Sweep amendment의 N=15 winner는 fold마다 다른 top-15 → 1-SE band winner. Frozen feature set으로 freeze 시 재현 X (N15.A에서 sweep 시그널 부분 재현 / warm signal은 reverse). <strong>Operational deployment는 frozen contract 필요</strong> — sweep "winner"가 deployable이 아닐 수 있음을 본 세션이 입증.</p>
+
+<h2 id="decision">8. 현재 결정 + 다음 세션 후보</h2>
+
+<h3>8.1 본 세션 종합 운영 결정 (10 cycle 종합)</h3>
+<table>
+<tr><th>영역</th><th>결정</th></tr>
+<tr style="background:#d4edda;"><td><strong>운영 warm path XGB best_params</strong></td><td><span class="pill green bigtag">✅ 교체 권고 (B-retuned)</span> num_boost=947 / depth=9 / lr=0.125 / min_child_weight=11 — <strong>본 세션 최초 ADOPT</strong></td></tr>
+<tr><td>운영 cold ensemble (CB+XGB)/2</td><td><span class="pill green">유지</span> (B는 warm-only / cold 변경 X / D3 50/50 유지)</td></tr>
+<tr><td>운영 cold best_params (CB / XGB)</td><td><span class="pill green">유지</span> (D1.X NEEDS_MORE_DATA / 1 seed FAIL)</td></tr>
+<tr><td>운영 ensemble blend ratio</td><td><span class="pill green">50/50 유지</span> (D3 HOLD_50_50 / 1D scalar w 일반화 X)</td></tr>
+<tr><td>Per-source calibration (e3367ed)</td><td><span class="pill green">default OFF 유지</span> (artsy_online ADOPT_with_caveat은 narrow canary 별도 PR 후보)</td></tr>
+<tr><td>Source-Conditional v1 vs v2 N=15</td><td><span class="pill green">v1 (N=32) 유지</span> (v2 NEEDS_MORE_DATA / N=15 line 종결)</td></tr>
+<tr><td>Source-Conditional v1 artifact (PR1)</td><td><span class="pill green">변경 X</span></td></tr>
+<tr><td>Track 1 unified vs Source-Conditional</td><td><span class="pill green">현 운영 그대로</span></td></tr>
+</table>
+
+<div class="success-box">
+<strong>운영 적용 가이드 (B-retuned warm)</strong>:<br>
+1. <code>model_test_results/warm_only_retuned_best_params.json</code> → 운영 warm artifact 학습 시 XGB params 교체<br>
+2. cold ensemble (CB + XGB) artifact는 변경 X<br>
+3. Warm path inference 분기 (<code>_is_warm_path</code>)에서 새 artifact 사용<br>
+4. Shadow logging 권장 (PR2B-prereq.1 인프라 활용) — 1주 모니터링 후 default OFF → ON 전환
+</div>
+
+<h3>8.2 다음 세션 후속 후보</h3>
+<div class="metric-grid">
+<div class="metric-card" style="border-left: 4px solid #28a745;">
+<div class="label">즉시 진행 (B 채택)</div>
+<div class="value" style="font-size: 1em;">B 운영 deployment</div>
+<div class="delta">warm artifact 학습 (B-retuned XGB params) + shadow logging 1주 + canary → full migration.<br>compute ~1시간 (artifact 학습) / monitoring ~1주.<br><strong>가장 robust path</strong>.</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #0d6efd;">
+<div class="label">우선순위 1 (D1 multi-seed 확장)</div>
+<div class="value" style="font-size: 1em;">D1.Y multi-seed N=10</div>
+<div class="delta">D1.X NEEDS_MORE_DATA (4/5 PASS / seed=113 G2 outlier). N=5 → N=10 확장. seed=113 split 별도 분석.<br>compute ~5-6시간.<br>또는 G2 threshold 완화 (+0.8 → +1.5).</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #2c5aa0;">
+<div class="label">우선순위 2 (D3 stacking)</div>
+<div class="value" style="font-size: 1em;">D3.B Stacking meta-learner</div>
+<div class="delta">D3 scalar w FAIL / linear regression / GBM stacker / source-conditional w_artsy / w_saatchi 별도 cycle.<br>compute ~2-3시간.</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #dc3545;">
+<div class="label">SKIP</div>
+<div class="value" style="font-size: 1em;">A / C / D2</div>
+<div class="delta">A (N=18/20/25 sweep): N=15와 같은 limitation.<br>C (hierarchical/Bayesian): 새 modeling program / heavy.<br>D2 (architecture bakeoff): broad / expensive.</div>
+</div>
+</div>
+
+<h3>8.3 운영 채택 권고 (10 cycle 종합)</h3>
+<div class="success-box">
+<strong>본 세션 결과 = warm path 단독 retune 권고 (B winner)</strong>. 10 cycles 중 8건 HOLD/NEEDS_MORE_DATA / D3 HOLD_50_50 / <strong>B만 ADOPT</strong>. Cold path는 그대로 안전 / warm path는 deployment 후보. D1.X / D3는 후속 cycle 가치 있는 partial signal.
+</div>
+
+<div class="info-box">
+<strong>artsy_online narrow canary 후보</strong>: OOS cycle에서 ADOPT_with_caveat 결과 (3/3 seed SHIPPED_PASS / -0.4 ~ -1.2pp 개선). 별도 narrow canary deploy PR로 운영 mode=canary 활성화 + shadow logging 비교 (PR2B-prereq.1 인프라 활용) 후 채택 결정 가능. 본 세션 scope 외.
+</div>
+
+<h2>9. 산출 commit 요약</h2>
+
+<table>
+<tr><th width="14%">Commit</th><th width="28%">Cycle</th><th>Files / Compute</th></tr>
+<tr><td><span class="commit-tag">e3367ed</span></td><td>Phase 2 calibration fit</td><td>3 files (prereg + script + tests) / pre-session</td></tr>
+<tr><td><span class="commit-tag">d0f8b88</span></td><td>Reprod cycle</td><td>5 files / ~10분</td></tr>
+<tr><td><span class="commit-tag">08a6b80</span></td><td>OOS verification</td><td>9 files / ~5분</td></tr>
+<tr><td><span class="commit-tag">8c9e58e</span></td><td>N15.A Confirmatory</td><td>6 files / ~3분 (재실행 후)</td></tr>
+<tr><td><span class="commit-tag">38eab10</span></td><td>N15.B HP Retuning</td><td>7 files / ~95분 (run #3 / GroupKFold fix 후)</td></tr>
+<tr><td><span class="commit-tag">4499fe9</span></td><td>N15.C SC Integration</td><td>9 files / ~12분</td></tr>
+<tr><td><span class="commit-tag">7c1254a</span></td><td>D1 N=32 Champion HP Retune</td><td>7 files / ~265분 (Phase 1 49min + Phase 2 213min + validation 3min)</td></tr>
+<tr style="background:#fff3cd;"><td colspan="3"><strong>📌 Stage 4 (pending commit / R8 후 일괄 commit 후보)</strong></td></tr>
+<tr><td><span class="commit-tag" style="background:#6c757d;">pending</span></td><td>D1.X compliant rerun</td><td>5 files / 144분 wall (Phase 1 76min + Phase 2 62min + validation 4min)</td></tr>
+<tr><td><span class="commit-tag" style="background:#6c757d;">pending</span></td><td>D3 Ensemble blend search</td><td>5 files / 3분 wall (OOF 81s + grid 0.04s + validation 1min)</td></tr>
+<tr style="background:#d4edda;"><td><span class="commit-tag" style="background:#28a745;">pending</span></td><td><strong>B Warm-only retune (✅ ADOPT)</strong></td><td>5 files / 13.5분 wall (search 706s + validation 65s)</td></tr>
+</table>
+
+<p style="font-size: 12px; color: #666;">
+<strong>Total wall</strong>: ~9-11 hours cycle compute / + 코덱스 자문 25+ rounds / + prereg drafting + results 작성 = ~28+ hours session.
+</p>
+
+<div class="footer">
+<p>본 문서는 2026-05-09 ~ 2026-05-10 단일 세션의 10 사이클 종합 정리. 본 commit (<code>7c1254a</code>) 시점 git 상태 = HEAD on <code>exp/track1-feature-optimization-cycle</code>. Stage 1-3 prereg + results md + scripts + holdout indices commit 완료. <strong>Stage 4 (D1.X + D3 + B) pending commit</strong> — 본 HTML 갱신 후 일괄 commit 예정.</p>
+<p>참고 문서:
+  <code>docs/calibration_per_source_*</code> (e3367ed prereg / Reprod / OOS) ·
+  <code>docs/n15_confirmatory_*</code> (N15.A) ·
+  <code>docs/n15_hp_retuning_*</code> (N15.B) ·
+  <code>docs/n15_source_conditional_integration_*</code> (N15.C) ·
+  <code>docs/d1_n32_champion_hp_reoptimization_*</code> (D1 / D1.X) ·
+  <code>docs/d3_ensemble_blend_refinement_*</code> (D3) ·
+  <code>docs/b_warm_only_optimization_*</code> (B) ·
+  <code>docs/calibration_cycles_summary_20260509.html</code> (Stage 1 summary).
+</p>
+<p>코덱스 세션: <code>019e0bb1-8ded-7c42-bb17-f18e470cb3a0</code> / 25+ rounds 누적 / ~8M tokens.</p>
+</div>
+
+</body>
+</html>
