@@ -58,7 +58,7 @@ FAIL 시 → 현 best_params 유지 (retune은 default를 능가 X / 본 axis te
 | `reg_lambda` | [0, 5.0] | uniform |
 
 **Sampler**: Optuna TPE (default / `seed=42`).
-**Trials**: 50 per phase (TPE convergence acceptable / compute budget consideration / decision-binding 자격 위해 codex R5 "50 trials acceptable lower bound" 정합).
+**Trials**: **50 per phase** (compliant rerun / R4 P1 fix from initial 30-trial run).
 
 ### 2.3 Search-time CV
 
@@ -95,9 +95,11 @@ FAIL 시 → 현 best_params 유지 (retune은 default를 능가 X / 본 axis te
 
 **CB subsample 활성화 시 bootstrap_type=Bernoulli 고정** (R1 note / underspecified avoid).
 
-### 2.5 Validation (fresh multi-seed)
+### 2.5 Validation (fresh multi-seed / R4 expansion)
 
-`split_seed ∈ {97, 113, 199}` — **새 seeds** (이전 세션 사용 X / 31337-7-13 / 23-47-71 / 비중복).
+`split_seed ∈ {97, 113, 199, 223, 257}` — **N=5 fresh seeds** (R4 권고 multi-seed 확대 / 이전 세션 31337-7-13 / 23-47-71 / 비중복 / 추가 223, 257).
+
+Multi-seed N=3 → N=5 확대 motivation: per-source guard split variance 흡수 (이전 30-trial run에서 PASS×1+FAIL×2 결과의 split variance 본질 진단).
 
 각 seed × 80% pool 위:
 1. **Baseline retrain (current best_params / N=32)**:
@@ -112,9 +114,9 @@ Per-seed metrics:
 - `Δ_cold_overall`, `Δ_cold_artsy`, `Δ_cold_saatchi`, `Δ_warm` (candidate − baseline)
 - 4 Guard 적용 (Track 1 prereg locked thresholds / N15.A 정합)
 
-### 2.6 Paired Bootstrap CI (small sub-cell)
+### 2.6 Paired Bootstrap CI (REMOVED per R4 P0 amendment)
 
-특정 source × cell (e.g., artsy_gallery cold) n_holdout < 500 시 paired bootstrap 1000-iter / 90% CI / Δ_cold_artsy 기준.
+> **R4 P0 amendment (compliant rerun)**: 본 cycle의 per-source delta granularity (cold_artsy n~1413 / cold_saatchi n~4087 / warm n~5400) 모두 n > 500 → CI threshold 미발동 / sub-cell drill-down (artsy_gallery 등) 본 prereg 範위 외. **Paired bootstrap CI path 본 cycle scope 외**. small-sample uncertainty는 multi-seed N=5 확대 (§2.5)로 흡수.
 
 ## 3. Decision Criterion
 
@@ -131,28 +133,29 @@ Per-seed metrics:
 
 **INCONCLUSIVE**:
 - G1-G4 PASS BUT Δ_cold_ensemble_overall ∈ (0, +0.3]pp (no improvement / not strict regression)
-- 또는 small sub-cell paired bootstrap CI 상한 > 0
 
 **FAIL**:
 - 임의 G FAIL
 - Δ_cold_ensemble_overall > +0.3pp (regression)
 - Δ_warm > +0.1pp (warm regression)
 
-### 3.2 Multi-seed aggregate (3 seeds)
+### 3.2 Multi-seed aggregate (R4 amendment / 5 seeds)
 
-| Per-seed 분포 | Aggregate |
+| Per-seed 분포 (5 seeds) | Aggregate |
 |---|---|
-| PASS × 3 | **PASS** (champion 교체 권고) |
-| PASS × 2 + INCONCLUSIVE × 1 | **INCONCLUSIVE** |
-| PASS × 2 + FAIL × 1 | **INCONCLUSIVE** (split variance) |
-| FAIL × 2 이상 | **FAIL** |
+| PASS × 5 | **PASS** (champion 교체 strict 권고) |
+| PASS × 4 + INCONCLUSIVE × 1 | **PASS_with_caveat** |
+| PASS × 4 + FAIL × 1 | **INCONCLUSIVE** (split variance / 1 outlier) |
+| PASS × 3 + 나머지 | **INCONCLUSIVE** (majority pass / split variance significant) |
+| FAIL × 3 이상 | **FAIL** |
 | 기타 | **INCONCLUSIVE** |
 
-### 3.3 채택 결정
+### 3.3 채택 결정 (R6 P1 fix / PASS_with_caveat 매핑 명시)
 
-- Aggregate PASS → 운영 N=32 best_params 교체 권고 (champion migration).
-- Aggregate FAIL → 현 best_params 유지 / **D axis (HP optimization) terminate**.
-- Aggregate INCONCLUSIVE → multi-seed 확대 후속 cycle (선택).
+- **Aggregate PASS** (PASS × 5 strict) → 운영 N=32 best_params 교체 권고 (full champion migration).
+- **Aggregate PASS_with_caveat** (PASS × 4 + INCONCLUSIVE × 1) → **canary deployment 후보** (guarded migration / mode=canary 활성화 + shadow logging 비교 후 full migration 결정 / 별도 narrow PR).
+- **Aggregate FAIL** → 현 best_params 유지 / **D axis (HP optimization) terminate**.
+- **Aggregate INCONCLUSIVE** → multi-seed N 확대 후속 cycle 또는 다른 axis 전환 (선택).
 
 ## 4. Output / Artifacts
 
@@ -195,3 +198,6 @@ Per-seed metrics:
 | 2차 verification (resume) | NEEDS FIX → 반영 완료 | R2: §2.4 Phase 2 cold ensemble guard structure 가 Phase 1과 inconsistent → c2 (overall +0.1pp) + c3 (artsy +0.4pp) + c4 (saatchi +0.4pp) 추가. |
 | 3차 verification (resume) | **LGTM** | Phase 2 constraints 정합 / Phase 1과 cold ensemble guard structure 일관 → **prereg 잠금 / 구현 진입** |
 | 4차 사후 검수 (resume) | NEEDS FIX → exploratory pilot downgrade | P0: paired bootstrap CI 미구현 / P1: 30 vs 50 trials deviation. 본 cycle = exploratory pilot / compliant rerun 후 binding. signal 강함 (overall 개선 3/3) / 후속 D1 rerun > D3 > B 우선순위. 상세: results §1, §6 |
+| 5차 amendment (compliant rerun prereg fix) | 진행 | P0 fix: §2.6 CI path 제거 (per-source delta n>500이라 미발동 / sub-cell scope 외). P1 fix: 50 trials per phase. R4 expansion: multi-seed N=5 (97/113/199/223/257). §3.2 5-seed aggregate logic. |
+| 6차 verification (예정) | (예정) | amendment 5번 검증 후 LGTM 확인 |
+| 7차 사후 검수 (compliant rerun) | (예정) | 50-trial × 5-seed 결과 후 binding 결정 |

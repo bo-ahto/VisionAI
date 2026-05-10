@@ -58,10 +58,10 @@ BEST_PARAMS_PATH = ARTIFACTS_DIR / "n32_champion_retuned_best_params.json"
 STUDY_CB_PATH = ARTIFACTS_DIR / "n32_champion_optuna_study_cb.json"
 STUDY_XGB_PATH = ARTIFACTS_DIR / "n32_champion_optuna_study_xgb.json"
 
-VALIDATION_SEEDS = (97, 113, 199)
+VALIDATION_SEEDS = (97, 113, 199, 223, 257)  # R6 amendment: N=5 expansion
 ARTIFACT_SEED = 42
 FOLD_SEED = 42
-N_TRIALS_DEFAULT = 30
+N_TRIALS_DEFAULT = 50  # R6 amendment: P1 compliant rerun (vs 30 original)
 
 
 def _dataset_fingerprint(df: pd.DataFrame) -> str:
@@ -375,10 +375,16 @@ def validate_seed(
 
 
 def _aggregate(per_seed_verdicts: list[str]) -> str:
+    """R6 amendment / 5-seed aggregate logic.
+    PASS×5 → PASS / PASS×4+INCONC×1 → PASS_with_caveat / FAIL×3+ → FAIL / 기타 → INCONCLUSIVE.
+    """
+    n = len(per_seed_verdicts)
     cnt = {v: per_seed_verdicts.count(v) for v in ("PASS", "INCONCLUSIVE", "FAIL")}
-    if cnt["PASS"] == len(per_seed_verdicts):
+    if cnt["PASS"] == n:
         return "PASS"
-    if cnt["FAIL"] >= 2:
+    if n >= 5 and cnt["PASS"] == n - 1 and cnt["INCONCLUSIVE"] == 1:
+        return "PASS_with_caveat"
+    if cnt["FAIL"] >= max(3, n - 2):
         return "FAIL"
     return "INCONCLUSIVE"
 
@@ -525,6 +531,8 @@ def main() -> None:
 
     if aggregate == "PASS":
         overall = "ADOPT_retuned_n32"
+    elif aggregate == "PASS_with_caveat":
+        overall = "ADOPT_canary_candidate"
     elif aggregate == "FAIL":
         overall = "HOLD"
     else:
