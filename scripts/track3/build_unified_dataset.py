@@ -56,6 +56,8 @@ OUT_PATH = OUT_DIR / "track3_unified_v1.parquet"
 OUT_SUMMARY = OUT_DIR / "track3_unified_v1_summary.json"
 OUT_COLUMNS = OUT_DIR / "track3_unified_v1_columns.csv"
 OUT_SAMPLE_KR = OUT_DIR / "track3_unified_v1_sample_kr.csv"
+OUT_TRAIN = OUT_DIR / "track3_unified_v1_train.csv"
+OUT_TRAIN_KR = OUT_DIR / "track3_unified_v1_train_kr.csv"
 
 # Column 메타: 영문 → (한글명, 학습 마크, 그룹, 설명).
 # 마크 의미: ★ = 학습 input 필수 / △ = 선택 (모델 의존) / · = 학습 미사용
@@ -1141,6 +1143,21 @@ def main() -> None:
         OUT_SAMPLE_KR, index=False, encoding="utf-8-sig"
     )
     logger.info(f"✅ Sample (한글 헤더): {OUT_SAMPLE_KR}")
+
+    # 학습용 CSV (is_outlier=0만)
+    train_df = unified[unified["is_outlier"] == 0].copy()
+    train_df.to_csv(OUT_TRAIN, index=False, encoding="utf-8-sig")
+    logger.info(
+        f"✅ Train (영문 헤더, is_outlier=0만): {OUT_TRAIN} ({len(train_df)} rows)"
+    )
+
+    # 학습용 CSV — 한글 헤더 + ★ 마크 view
+    train_df.rename(columns=rename_map).to_csv(
+        OUT_TRAIN_KR, index=False, encoding="utf-8-sig"
+    )
+    logger.info(
+        f"✅ Train (한글 헤더, is_outlier=0만): {OUT_TRAIN_KR} ({len(train_df)} rows)"
+    )
 
     # Summary
     summary = {

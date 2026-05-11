@@ -34,7 +34,8 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 |---|---|
 | `data/track3_unified_v1.parquet` | **메인 데이터셋** 41,365 rows × 22 cols, 1.5 MB (전체 + is_outlier flag) |
 | `data/track3_unified_v1.csv` | CSV export (전체, UTF-8 BOM) — 영문 헤더 |
-| `data/track3_unified_v1_train.csv` | **학습용 CSV** (is_outlier=0만, 40,137 rows) — 권장 학습 input |
+| `data/track3_unified_v1_train.csv` | **학습용 CSV** (is_outlier=0만, 40,137 rows) — 영문 헤더, 학습 코드용 |
+| `data/track3_unified_v1_train_kr.csv` | **학습용 CSV — 한글 헤더 + ★ 마크** (is_outlier=0만, 40,137 rows) — Excel/Numbers 검토용 |
 | `data/track3_unified_v1_sample.csv` | Sample 500 rows (영문 헤더) |
 | `data/track3_unified_v1_sample_kr.csv` | **Sample 500 rows (한글 헤더 + ★ 마크)** — Excel/Numbers 사람용 |
 | `data/track3_unified_v1_columns.csv` | **컬럼 사전** (영문/한글명/학습 마크/그룹/설명) |
