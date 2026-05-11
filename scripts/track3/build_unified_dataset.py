@@ -54,6 +54,34 @@ DATA_DIR = REPO / "data"
 OUT_DIR = DATA_DIR
 OUT_PATH = OUT_DIR / "track3_unified_v1.parquet"
 OUT_SUMMARY = OUT_DIR / "track3_unified_v1_summary.json"
+OUT_COLUMNS = OUT_DIR / "track3_unified_v1_columns.csv"
+OUT_SAMPLE_KR = OUT_DIR / "track3_unified_v1_sample_kr.csv"
+
+# Column 메타: 영문 → (한글명, 학습 마크, 그룹, 설명).
+# 마크 의미: ★ = 학습 input 필수 / △ = 선택 (모델 의존) / · = 학습 미사용
+COLUMN_SCHEMA: list[tuple[str, str, str, str, str]] = [
+    ("source_platform", "소스플랫폼", "·", "IDs", "artsy/saatchi/artue — bias 위험 운영 모델 미사용"),
+    ("source_listing_id", "소스 작품ID", "·", "IDs", "source 내 작품 ID (dedup용)"),
+    ("artist_entity_id_raw", "작가ID", "·", "IDs", "source 내 작가 ID"),
+    ("artist_name_raw", "작가명(원문)", "·", "IDs", "source 원본 영문/한글명 (debugging)"),
+    ("artist_name_ko", "작가명(한글)", "★", "IDs", "한글 작가명 — cold-start 핵심 feature"),
+    ("medium_category", "매체 분류", "★", "Core", "oil/acrylic/ink/watercolor/pigment/mixed/pastel/pencil/other"),
+    ("support_category", "바탕 분류", "★", "Core", "canvas/paper/linen/panel/silk/metal/other"),
+    ("width_cm", "가로(cm)", "△", "Core", "가로 — 선택 (트리: orientation+area로 cover)"),
+    ("height_cm", "세로(cm)", "△", "Core", "세로 — 선택"),
+    ("depth_cm", "깊이(cm)", "△", "Core", "깊이 (3D 작품) — measured 안 됨 → 0"),
+    ("has_depth", "깊이있음", "★", "Core", "depth_cm > 0 (missing indicator)"),
+    ("area_cm2", "면적(cm²)", "·", "Core", "width × height (log_area로 derive — 중복 회피)"),
+    ("log_area", "면적(log)", "★", "Core", "log(area_cm2) — heavy tail 안정화"),
+    ("estimated_ho", "추정 호수", "★", "Core", "한국 캔버스 호수 (F타입 보간) — 가격 segment"),
+    ("orientation", "비율", "★", "Core", "portrait/landscape/square/unknown"),
+    ("price_amount_raw", "가격(원본통화)", "·", "가격", "원본 통화 가격 (USD/EUR/KRW 등)"),
+    ("price_currency_raw", "원본통화", "·", "가격", "USD/KRW/EUR/GBP/HKD"),
+    ("price_krw", "가격(소스KRW)", "·", "가격", "source 표기 KRW (보존만)"),
+    ("was_converted", "환전여부", "·", "가격", "0=원래KRW / 1=외화환전됨"),
+    ("price_krw_unified", "가격(통일KRW)", "·", "Target", "통일 환율 KRW (평가/복원 exp(pred)용)"),
+    ("ln_price_krw_unified", "가격(log)", "★", "Target", "log(price_krw_unified) — 학습 target"),
+]
 
 CURRENT_YEAR = 2026  # listing year baseline (Track 1과 동일)
 PRICE_MIN_KRW = 100_000
@@ -1076,6 +1104,20 @@ def main() -> None:
     # Save
     unified.to_parquet(OUT_PATH, index=False)
     logger.info(f"\n✅ Saved: {OUT_PATH} ({len(unified)} rows / {len(cols)} cols)")
+
+    # Column dictionary (한글명 + 학습 마크 + 그룹 + 설명)
+    dict_df = pd.DataFrame(
+        COLUMN_SCHEMA, columns=["영문 컬럼명", "한글명", "학습", "그룹", "설명"]
+    )
+    dict_df.to_csv(OUT_COLUMNS, index=False, encoding="utf-8-sig")
+    logger.info(f"✅ Columns dict: {OUT_COLUMNS}")
+
+    # Sample (500 rows) — 한글 헤더 + ★ 마크 (Excel/Numbers view용)
+    rename_map = {col: f"{mark} {ko} ({col})" for col, ko, mark, _, _ in COLUMN_SCHEMA}
+    unified.head(500).rename(columns=rename_map).to_csv(
+        OUT_SAMPLE_KR, index=False, encoding="utf-8-sig"
+    )
+    logger.info(f"✅ Sample (한글 헤더): {OUT_SAMPLE_KR}")
 
     # Summary
     summary = {

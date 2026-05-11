@@ -32,12 +32,26 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 | 파일 | 설명 |
 |---|---|
-| `data/track3_unified_v1.parquet` | 메인 데이터셋 (41,365 rows × 20 cols, ~1.3MB) |
-| `data/track3_unified_v1.csv` | CSV export (6.0 MB, UTF-8 BOM) |
-| `data/track3_unified_v1_sample.csv` | 100 rows/source = 300 rows (44 KB) |
+| `data/track3_unified_v1.parquet` | **메인 데이터셋 (학습 input)** 41,365 rows × 21 cols, 1.5 MB |
+| `data/track3_unified_v1.csv` | CSV export (6.9 MB, UTF-8 BOM) — 영문 헤더 |
+| `data/track3_unified_v1_sample.csv` | Sample 500 rows (92 KB) — 영문 헤더 |
+| `data/track3_unified_v1_sample_kr.csv` | **Sample 500 rows (한글 헤더 + ★ 마크)** — Excel/Numbers 사람용 |
+| `data/track3_unified_v1_columns.csv` | **컬럼 사전** (영문/한글명/학습 마크/그룹/설명) |
 | `data/track3_unified_v1_summary.json` | 분포/통계 summary |
 | `scripts/track3/build_unified_dataset.py` | Pipeline (재생성 가능) |
-| `scripts/track3/validate_unified_dataset.py` | Validation (11 checks) |
+| `scripts/track3/validate_unified_dataset.py` | Validation (12 checks) |
+
+**한글 헤더 sample 예시** (`*_sample_kr.csv` 컬럼명 형식):
+```
+· 소스플랫폼 (source_platform), · 소스 작품ID (source_listing_id), ...,
+★ 작가명(한글) (artist_name_ko), ★ 매체 분류 (medium_category), ...,
+△ 가로(cm) (width_cm), △ 세로(cm) (height_cm), ★ 깊이있음 (has_depth),
+· 면적(cm²) (area_cm2), ★ 면적(log) (log_area), ★ 추정 호수 (estimated_ho),
+★ 비율 (orientation), ..., ★ 가격(log) (ln_price_krw_unified)
+```
+- `★` = 학습 input 필수 (7개 + target 1)
+- `△` = 학습 input 선택 (3개)
+- `·` = 학습 미사용 — 메타/평가 복원 등 (10개)
 
 **Git 상태**: `.parquet` / `data/*.json`은 `.gitignore`. 데이터셋 자체는 git에 들어가지 않음 — 별도 sharing (S3 / Drive / 직접 전달) 필요.
 
