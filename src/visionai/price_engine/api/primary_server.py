@@ -66,6 +66,10 @@ _matcher = ArtistMatcher()
 # _predictor proxy = router.unified (backward compat)
 _router = SourceRouter()
 _predictor: PrimaryPredictor = _router.unified
+# PR-WARM-B Stage 3 옵션 A: VARIANT_SHADOW env var → 별도 shadow predictor
+# (e.g. VARIANT_SHADOW=v3_filtered_tuned_b_warm 로 B-retuned warm artifact 동시 inference)
+# Default OFF — env var 미설정 시 _variant_shadow_predictor=None / shadow inference skip
+_variant_shadow_predictor: PrimaryPredictor | None = None
 _start_time = time.time()
 _model_version = "v3-tuned"  # 기본값. calibration artifact 로드 시 'v3-tuned-cal' (DB VARCHAR(20) 호환)
 _model_info_cache: ModelInfoResponse | None = None  # startup에서 캐시 (Codex 5차 P2: stale 방지)
@@ -171,6 +175,52 @@ def _run_shadow_inference(
     except Exception as e:
         logger.warning("Shadow inference failed (fail-open): %s", e)
         return {"shadow_error": str(e)[:200]}
+
+
+def _run_variant_shadow_inference(
+    *,
+    features: dict,
+    is_matched: bool,
+    training_count: int,
+    target_market: str,
+    has_manual_profile: bool,
+    artist_slug: str | None,
+) -> dict:
+    """PR-WARM-B Stage 3 옵션 A: VARIANT_SHADOW shadow inference (fail-open).
+
+    Primary serving은 _predictor (default variant) / shadow는 별도 variant predictor.
+    PR2B-prereq.1 source_router shadow (mode=shadow / 같은 artifact set의 routing 비교)
+    와 직교 (orthogonal): 본 함수는 **전체 variant 비교** (e.g. default 대 b_warm).
+
+    Default OFF — _variant_shadow_predictor가 None이면 빈 dict 반환.
+    Fail-open: shadow predict 예외 시 빈 dict + warning log (primary 5xx 영향 X).
+
+    Returns dict with `variant_shadow_variant` + `variant_shadow_prediction_price_krw`
+    필드 (or `variant_shadow_error` / empty). R1 P1 amendment: `variant_shadow_*` prefix로
+    PR2B-prereq.1 `shadow_*` 와 log key collision 회피.
+    """
+    if _variant_shadow_predictor is None:
+        return {}
+    try:
+        result = _variant_shadow_predictor.predict(
+            features=features,
+            is_matched=is_matched,
+            training_count=training_count,
+            target_market=target_market,
+            has_manual_profile=has_manual_profile,
+            artist_slug=artist_slug,
+        )
+        # R1 P1 amendment: variant_shadow_* prefix (PR2B-prereq.1 shadow_*과 collision 회피)
+        return {
+            "variant_shadow_variant": _variant_shadow_predictor.variant,
+            "variant_shadow_prediction_price_krw": result["price_krw"],
+        }
+    except Exception as e:
+        logger.warning(
+            "Variant shadow inference failed (fail-open): variant=%r / err=%s",
+            _variant_shadow_predictor.variant if _variant_shadow_predictor else None, e,
+        )
+        return {"variant_shadow_error": str(e)[:200]}
 
 
 def _log_prediction(entry: dict, *, count_toward_monitor: bool = True) -> None:
@@ -539,10 +589,50 @@ def _load_models() -> None:
     artsy + saatchi predictor 추가 load (fail-closed).
 
     Codex 5차 P2: 같은 model_dir 스냅샷에서 model_info를 캐시 (런타임 disk 변경 무관).
+
+    PR-WARM-B Stage 3 옵션 A: VARIANT_SHADOW env var 설정 시 별도 shadow predictor load.
     """
     model_dir = _resolve_model_dir()
     _router.load_models(model_dir)
+    _init_variant_shadow_predictor(model_dir)
     _build_model_info_cache(model_dir)
+
+
+def _init_variant_shadow_predictor(model_dir: Path) -> None:
+    """PR-WARM-B Stage 3 옵션 A: VARIANT_SHADOW env var → 별도 shadow predictor load.
+
+    Default OFF — env var 미설정 / primary와 같은 variant 시 _variant_shadow_predictor=None.
+    Fail-open: load 실패 시 warning log + shadow disabled (primary 영향 X).
+    """
+    global _variant_shadow_predictor
+    shadow_variant = os.environ.get("VARIANT_SHADOW", "").strip()
+    if not shadow_variant:
+        _variant_shadow_predictor = None
+        return
+    if shadow_variant == _predictor.variant:
+        logger.info("VARIANT_SHADOW=%r equals primary variant / shadow disabled (no-op)",
+                    shadow_variant)
+        _variant_shadow_predictor = None
+        return
+    if shadow_variant not in SUPPORTED_VARIANTS:
+        logger.warning(
+            "VARIANT_SHADOW=%r not in SUPPORTED_VARIANTS=%s / shadow disabled (fail-open)",
+            shadow_variant, sorted(SUPPORTED_VARIANTS.keys()),
+        )
+        _variant_shadow_predictor = None
+        return
+    try:
+        new_shadow = PrimaryPredictor()
+        new_shadow.load_models(model_dir, variant=shadow_variant)
+        _variant_shadow_predictor = new_shadow
+        logger.info("Variant shadow predictor loaded: variant=%r (primary=%r)",
+                    shadow_variant, _predictor.variant)
+    except Exception as e:
+        logger.warning(
+            "Variant shadow load failed (fail-open): variant=%r / err=%s",
+            shadow_variant, e,
+        )
+        _variant_shadow_predictor = None
 
 
 def _build_model_info_cache(model_dir: Path) -> None:
@@ -1037,6 +1127,19 @@ async def predict(req: PredictRequest):
         ),
     )
 
+    # PR-WARM-B Stage 3 옵션 A: Variant shadow inference (VARIANT_SHADOW only / fail-open)
+    variant_shadow_fields = await asyncio.get_event_loop().run_in_executor(
+        None,
+        lambda: _run_variant_shadow_inference(
+            features=features,
+            is_matched=bool(is_matched),
+            training_count=training_count,
+            target_market=req.target_market,
+            has_manual_profile=has_manual,
+            artist_slug=artist_slug_for_routing,
+        ),
+    )
+
     total_ms = int((time.time() - t0) * 1000)
 
     # 예측 로그 (JSONL)
@@ -1083,6 +1186,8 @@ async def predict(req: PredictRequest):
         "cohort_in_canary": route_decision.cohort_in_canary,
         # PR2B-prereq.1: shadow inference fields (mode=shadow only / null otherwise)
         **shadow_fields,
+        # PR-WARM-B Stage 3 옵션 A: variant shadow fields (VARIANT_SHADOW only / empty otherwise)
+        **variant_shadow_fields,
         "external_collector_source": sources_used[0] if sources_used else "none",
         "year_made_route": year_made_route,
         "year_made_used": year_made,
