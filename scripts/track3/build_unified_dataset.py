@@ -9,18 +9,18 @@ Codex schema v1 정합. 본 세션 Track 1 교훈 반영:
 운영 원칙 (필수 제약): 운영 수집 가능 / missingness explicit / source neutral.
 평가 기준 (parsimony): 모델 선택 시 적은 피처로 동등 성능이면 그쪽 선호.
 
-Cold-start core columns (Codex schema v1):
-- source_platform / source_listing_id
+Schema v2 (User feedback: 3 source 모두 공통인 columns만 유지):
+- DROP: year_made / has_year_made / age_years (Saatchi raw에 없음)
+- DROP: artist_birth_year / has_birth_year / artist_age_at_execution (Saatchi/Artue raw에 없음)
+- DROP: attribution_class (Saatchi/Artue raw에 없음, 추정만 가능)
+
+Cold-start core (9):
 - medium_category / support_category
-- attribution_class (unique/edition)
 - width_cm / height_cm / depth_cm / has_depth
 - area_cm2 / log_area / orientation
-- year_made / has_year_made / age_years
 
-Optional (enrichment):
-- artist_birth_year / has_birth_year / artist_age_at_execution
+Enrichment (2):
 - nationality_region / has_nationality
-- target_market (한국/해외 etc — 추후 enrichment)
 
 Target:
 - price_krw / ln_price_krw
@@ -181,45 +181,19 @@ def load_artsy() -> pd.DataFrame:
 
     df = pd.DataFrame({"source_listing_id": a["artwork_id"].astype(str).values})
     df["source_platform"] = "artsy"
-
-    # medium / support
     df["medium_category"] = a["medium"].apply(classify_medium)
     df["support_category"] = a["medium"].apply(classify_support)
-
-    # attribution_class — Artsy는 raw에 "Unique" / "Limited edition" / ...
-    df["attribution_class"] = (
-        a["attribution_class"]
-        .fillna("Unique")
-        .apply(lambda x: "edition" if "edition" in str(x).lower() else "unique")
-    )
-
-    # dimensions
     df["width_cm"] = pd.to_numeric(a["width_cm"], errors="coerce")
     df["height_cm"] = pd.to_numeric(a["height_cm"], errors="coerce")
     df["depth_cm"] = pd.to_numeric(a["depth_cm"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
-
-    # year
-    df["year_made"] = a["date"].apply(parse_year)
-    df["has_year_made"] = df["year_made"].notna().astype(int)
-
-    # birth_year
-    df["artist_birth_year"] = pd.to_numeric(a["artist_birth_year"], errors="coerce")
-    df["has_birth_year"] = df["artist_birth_year"].notna().astype(int)
-
-    # nationality
     df["nationality_region"] = a["artist_nationality"].apply(nationality_to_region)
     df["has_nationality"] = (
         a["artist_nationality"].notna() & (a["artist_nationality"] != "")
     ).astype(int)
-
-    # target
     df["price_krw"] = pd.to_numeric(a["price_krw"], errors="coerce")
-
-    # artist_entity_id — slug for cross-source dedup
     df["artist_entity_id_raw"] = a["artist_slug"].astype(str)
     df["artist_name_raw"] = a["artist_name"].astype(str)
-
     return df
 
 
@@ -230,47 +204,19 @@ def load_saatchi() -> pd.DataFrame:
 
     df = pd.DataFrame({"source_listing_id": s["artwork_id"].astype(str).values})
     df["source_platform"] = "saatchi"
-
-    # medium / support
     df["medium_category"] = s["mediums"].apply(classify_medium)
     df["support_category"] = s["materials"].apply(classify_support)
-
-    # attribution_class — Saatchi raw에 명시 없음 (style "limited edition" 등 가능)
-    df["attribution_class"] = s.apply(
-        lambda r: "edition"
-        if "edition" in str(r.get("styles", "")).lower()
-        or "edition" in str(r.get("subject", "")).lower()
-        else "unique",
-        axis=1,
-    )
-
-    # dimensions
     df["width_cm"] = pd.to_numeric(s["width_cm"], errors="coerce")
     df["height_cm"] = pd.to_numeric(s["height_cm"], errors="coerce")
     df["depth_cm"] = pd.to_numeric(s["depth_cm"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
-
-    # year — Saatchi raw에 year_made 없음
-    df["year_made"] = pd.NA
-    df["has_year_made"] = 0
-
-    # birth_year — Saatchi raw에 없음
-    df["artist_birth_year"] = pd.NA
-    df["has_birth_year"] = 0
-
-    # nationality
     df["nationality_region"] = s["country"].apply(nationality_to_region)
     df["has_nationality"] = (s["country"].notna() & (s["country"] != "")).astype(int)
-
-    # target
     df["price_krw"] = pd.to_numeric(s["price_krw"], errors="coerce")
-
-    # artist info
     df["artist_entity_id_raw"] = s["artist_id"].astype(str)
     df["artist_name_raw"] = (
         s["artist_first_name"].fillna("") + " " + s["artist_last_name"].fillna("")
     ).str.strip()
-
     return df
 
 
@@ -281,39 +227,17 @@ def load_artue() -> pd.DataFrame:
 
     df = pd.DataFrame({"source_listing_id": a["Handle"].astype(str).values})
     df["source_platform"] = "artue"
-
-    # medium / support — Medium (EN) 사용
     df["medium_category"] = a["Medium (EN)"].apply(classify_medium)
     df["support_category"] = a["Medium (EN)"].apply(classify_support)
-
-    # attribution_class — Artue raw에 명시 없음 (대부분 unique 가정)
-    df["attribution_class"] = "unique"
-
-    # dimensions
     df["width_cm"] = pd.to_numeric(a["Width (cm)"], errors="coerce")
     df["height_cm"] = pd.to_numeric(a["Height (cm)"], errors="coerce")
     df["depth_cm"] = pd.to_numeric(a["Depth (cm)"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
-
-    # year
-    df["year_made"] = a["Year"].apply(parse_year)
-    df["has_year_made"] = df["year_made"].notna().astype(int)
-
-    # birth_year — Artue raw에 없음
-    df["artist_birth_year"] = pd.NA
-    df["has_birth_year"] = 0
-
-    # nationality
     df["nationality_region"] = a["Nationality"].apply(nationality_to_region)
     df["has_nationality"] = (a["Nationality"].notna() & (a["Nationality"] != "")).astype(int)
-
-    # target
     df["price_krw"] = pd.to_numeric(a["Price (KRW)"], errors="coerce")
-
-    # artist info
-    df["artist_entity_id_raw"] = a["Handle"].astype(str)  # platform-specific handle
+    df["artist_entity_id_raw"] = a["Handle"].astype(str)
     df["artist_name_raw"] = a["Artist"].astype(str)
-
     return df
 
 
@@ -321,40 +245,17 @@ def load_artue() -> pd.DataFrame:
 
 
 def add_derived(df: pd.DataFrame) -> pd.DataFrame:
-    """area_cm2 / log_area / age_years / artist_age_at_execution / orientation."""
-    # area / log_area
+    """Schema v2: area_cm2 / log_area / orientation only."""
     df["area_cm2"] = df["width_cm"] * df["height_cm"]
     df["log_area"] = df["area_cm2"].apply(
         lambda v: math.log(v) if pd.notna(v) and v > 0 else float("nan")
     )
-
-    # orientation
     df["orientation"] = df.apply(
         lambda r: orientation_from_dims(r["width_cm"], r["height_cm"]),
         axis=1,
     )
-
-    # age_years (CURRENT_YEAR - year_made), 또는 NaN
-    df["age_years"] = df["year_made"].apply(
-        lambda y: CURRENT_YEAR - int(y) if pd.notna(y) else float("nan")
-    )
-
-    # artist_age_at_execution (year_made - birth_year)
-    df["artist_age_at_execution"] = df.apply(
-        lambda r: (int(r["year_made"]) - int(r["artist_birth_year"]))
-        if pd.notna(r["year_made"]) and pd.notna(r["artist_birth_year"])
-        else float("nan"),
-        axis=1,
-    )
-
-    # depth NaN → 0 (모델 입력 안전), has_depth가 missingness 표시
+    # depth NaN → 0 (has_depth가 missingness 표시)
     df["depth_cm"] = df["depth_cm"].fillna(0)
-    # year_made / birth_year NaN → 0 (has_* flag가 missingness 표시)
-    df["year_made"] = df["year_made"].fillna(0).astype(int)
-    df["artist_birth_year"] = df["artist_birth_year"].fillna(0).astype(int)
-    df["age_years"] = df["age_years"].fillna(0)
-    df["artist_age_at_execution"] = df["artist_age_at_execution"].fillna(0)
-
     return df
 
 
@@ -411,17 +312,16 @@ def main() -> None:
     unified, drops = apply_filters(unified)
     logger.info(f"After filter: {len(unified)} rows kept (drops={drops})")
 
-    # column order — schema v1
+    # column order — schema v2 (3 source 공통 features only / 17 cols)
     cols = [
         # IDs (학습 비feature)
         "source_platform",
         "source_listing_id",
         "artist_entity_id_raw",
         "artist_name_raw",
-        # Cold-start core
+        # Cold-start core (9)
         "medium_category",
         "support_category",
-        "attribution_class",
         "width_cm",
         "height_cm",
         "depth_cm",
@@ -429,16 +329,10 @@ def main() -> None:
         "area_cm2",
         "log_area",
         "orientation",
-        "year_made",
-        "has_year_made",
-        "age_years",
-        # Enrichment (optional / Saatchi에서는 모두 missing)
-        "artist_birth_year",
-        "has_birth_year",
-        "artist_age_at_execution",
+        # Enrichment (2)
         "nationality_region",
         "has_nationality",
-        # Target
+        # Target (2)
         "price_krw",
         "ln_price_krw",
     ]
@@ -461,19 +355,11 @@ def main() -> None:
         },
         "missingness_flags": {
             "has_depth": int(unified["has_depth"].sum()),
-            "has_year_made": int(unified["has_year_made"].sum()),
-            "has_birth_year": int(unified["has_birth_year"].sum()),
             "has_nationality": int(unified["has_nationality"].sum()),
         },
         "missingness_flags_by_source": {
             src: {
                 "has_depth": int(unified[unified["source_platform"] == src]["has_depth"].sum()),
-                "has_year_made": int(
-                    unified[unified["source_platform"] == src]["has_year_made"].sum()
-                ),
-                "has_birth_year": int(
-                    unified[unified["source_platform"] == src]["has_birth_year"].sum()
-                ),
                 "has_nationality": int(
                     unified[unified["source_platform"] == src]["has_nationality"].sum()
                 ),
@@ -483,7 +369,6 @@ def main() -> None:
         },
         "medium_category_top5": unified["medium_category"].value_counts().head(5).to_dict(),
         "support_category_top5": unified["support_category"].value_counts().head(5).to_dict(),
-        "attribution_class": unified["attribution_class"].value_counts().to_dict(),
         "nationality_region": unified["nationality_region"].value_counts().to_dict(),
         "orientation": unified["orientation"].value_counts().to_dict(),
         "filter_drops": drops,
@@ -507,7 +392,7 @@ def main() -> None:
     for src, stats in summary["missingness_flags_by_source"].items():
         n = stats["n_rows"]
         print(f"  {src} (n={n:,}):")
-        for k in ["has_depth", "has_year_made", "has_birth_year", "has_nationality"]:
+        for k in ["has_depth", "has_nationality"]:
             print(f"    {k}: {stats[k]:,} ({100*stats[k]/n:.1f}%)")
 
 

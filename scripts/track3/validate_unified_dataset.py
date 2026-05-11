@@ -32,10 +32,9 @@ EXPECTED_COLS = [
     "source_listing_id",
     "artist_entity_id_raw",
     "artist_name_raw",
-    # Cold-start core
+    # Cold-start core (9)
     "medium_category",
     "support_category",
-    "attribution_class",
     "width_cm",
     "height_cm",
     "depth_cm",
@@ -43,22 +42,15 @@ EXPECTED_COLS = [
     "area_cm2",
     "log_area",
     "orientation",
-    "year_made",
-    "has_year_made",
-    "age_years",
-    # Enrichment
-    "artist_birth_year",
-    "has_birth_year",
-    "artist_age_at_execution",
+    # Enrichment (2)
     "nationality_region",
     "has_nationality",
-    # Target
+    # Target (2)
     "price_krw",
     "ln_price_krw",
 ]
 EXPECTED_SOURCES = {"artsy", "saatchi", "artue"}
 EXPECTED_ORIENTATIONS = {"portrait", "landscape", "square", "unknown"}
-EXPECTED_ATTRIBUTION = {"unique", "edition"}
 PRICE_MIN_KRW = 100_000
 PRICE_MAX_KRW = 5_000_000_000
 
@@ -123,39 +115,18 @@ def check_size(df: pd.DataFrame) -> tuple[bool, str]:
 
 
 def check_categorical_values(df: pd.DataFrame) -> tuple[bool, str]:
-    issues = []
     o = set(df["orientation"].unique())
     if not o.issubset(EXPECTED_ORIENTATIONS):
-        issues.append(f"orientation extra: {o - EXPECTED_ORIENTATIONS}")
-    a = set(df["attribution_class"].unique())
-    if not a.issubset(EXPECTED_ATTRIBUTION):
-        issues.append(f"attribution extra: {a - EXPECTED_ATTRIBUTION}")
-    if issues:
-        return False, "; ".join(issues)
-    return True, (
-        f"orientation {dict(df['orientation'].value_counts())}, "
-        f"attribution {dict(df['attribution_class'].value_counts())}"
-    )
+        return False, f"orientation extra: {o - EXPECTED_ORIENTATIONS}"
+    return True, f"orientation {dict(df['orientation'].value_counts())}"
 
 
 def check_flag_consistency(df: pd.DataFrame) -> tuple[bool, str]:
-    """has_X flags should agree with underlying value."""
-    issues = []
-    # has_depth: depth_cm > 0
+    """has_X flags should agree with underlying value (schema v2: has_depth only)."""
     inconsistent = ((df["has_depth"] == 1) != (df["depth_cm"] > 0)).sum()
     if inconsistent > 0:
-        issues.append(f"has_depth: {inconsistent} inconsistent")
-    # has_year_made: year_made > 0
-    inconsistent = ((df["has_year_made"] == 1) != (df["year_made"] > 0)).sum()
-    if inconsistent > 0:
-        issues.append(f"has_year_made: {inconsistent} inconsistent")
-    # has_birth_year: artist_birth_year > 0
-    inconsistent = ((df["has_birth_year"] == 1) != (df["artist_birth_year"] > 0)).sum()
-    if inconsistent > 0:
-        issues.append(f"has_birth_year: {inconsistent} inconsistent")
-    if issues:
-        return False, "; ".join(issues)
-    return True, "All has_X flags consistent with underlying values"
+        return False, f"has_depth: {inconsistent} inconsistent"
+    return True, "has_depth flag consistent with depth_cm > 0"
 
 
 def check_missingness_rates(df: pd.DataFrame) -> tuple[bool, str]:
@@ -166,8 +137,7 @@ def check_missingness_rates(df: pd.DataFrame) -> tuple[bool, str]:
         n = len(sub)
         rates.append(
             f"{src}({n:,}): depth {100*sub['has_depth'].sum()/n:.0f}% / "
-            f"year {100*sub['has_year_made'].sum()/n:.0f}% / "
-            f"birth {100*sub['has_birth_year'].sum()/n:.0f}%"
+            f"nat {100*sub['has_nationality'].sum()/n:.0f}%"
         )
     return True, "; ".join(rates)
 
