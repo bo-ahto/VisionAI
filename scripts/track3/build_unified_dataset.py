@@ -880,7 +880,7 @@ def load_artue() -> pd.DataFrame:
 
 
 def add_derived(df: pd.DataFrame) -> pd.DataFrame:
-    """area_cm2 / log_area / orientation + Hybrid 가격 (price_krw_unified, was_converted)."""
+    """area_cm2 / log_area / orientation + estimated_ho + Hybrid 가격."""
     df["area_cm2"] = df["width_cm"] * df["height_cm"]
     df["log_area"] = df["area_cm2"].apply(
         lambda v: math.log(v) if pd.notna(v) and v > 0 else float("nan")
@@ -889,6 +889,15 @@ def add_derived(df: pd.DataFrame) -> pd.DataFrame:
         lambda r: orientation_from_dims(r["width_cm"], r["height_cm"]),
         axis=1,
     )
+
+    # 호수 (estimated_ho): 면적 → F 타입 캔버스 호수 보간.
+    # 기존 visionai 모듈의 area_to_ho_f() 사용 (HO_F_TABLE 기반 np.interp).
+    # 예: 60.6×50.0 cm (3030cm²) → 12호 / 72.7×60.6 cm (4406cm²) → 20호.
+    from visionai.price_engine.preprocessing.dimension_parser import area_to_ho_f
+    df["estimated_ho"] = df["area_cm2"].apply(
+        lambda x: round(area_to_ho_f(x), 2) if pd.notna(x) and x > 0 else 0.0
+    )
+
     # depth NaN → 0 (has_depth가 missingness 표시)
     df["depth_cm"] = df["depth_cm"].fillna(0)
 
@@ -976,7 +985,7 @@ def main() -> None:
     unified, drops = apply_filters(unified)
     logger.info(f"After filter: {len(unified)} rows kept (drops={drops})")
 
-    # column order — schema v5 (artist_name_ko 추가 / 20 cols)
+    # column order — schema v10 (estimated_ho 추가 / 21 cols)
     cols = [
         # IDs (학습 비feature)
         "source_platform",
@@ -984,7 +993,7 @@ def main() -> None:
         "artist_entity_id_raw",
         "artist_name_raw",
         "artist_name_ko",
-        # Cold-start core (9)
+        # Cold-start core (10) — width/height/area + estimated_ho
         "medium_category",
         "support_category",
         "width_cm",
@@ -993,6 +1002,7 @@ def main() -> None:
         "has_depth",
         "area_cm2",
         "log_area",
+        "estimated_ho",
         "orientation",
         # Hybrid 가격 (4) — 원본 + 통일 환율 + 환전 flag
         "price_amount_raw",
