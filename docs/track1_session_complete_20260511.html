@@ -570,6 +570,79 @@ python3 scripts/pr_28_hf_daily_shadow_metric.py --days 7
 <tr><td><span class="pill gray">P3</span></td><td>T2-T6 (Layer 0 후속): seller / time / work-type</td><td>운영 데이터 의존 audit</td></tr>
 </table>
 
+<h2>7.5. Layer 2 follow-up — artist_total_works 단독 cycle (REJECTED)</h2>
+
+<div class="info-box">
+<strong>Update (2026-05-11 12:21)</strong>: 본 세션 P1 후속 — Codex 이전 권고 ("artist_total_works는 별도 판단") 검증.
+</div>
+
+<h3>7.5.1. Cycle 결과 — 28_hf → 27_hf (drop: artist_total_works)</h3>
+
+<table>
+<tr><th>Metric</th><th>27_hf</th><th>28_hf baseline</th><th>Δ vs 28_hf</th><th>평가</th></tr>
+<tr><td>cold_ensemble</td><td class="num">41.00</td><td class="num">39.65</td><td class="num delta-pos">+1.35pp</td><td>cold std=3.96 / Δ/std=0.34 (within 0.5σ)</td></tr>
+<tr class="row-pass"><td>cold_artsy_ensemble</td><td class="num">35.11</td><td class="num">36.06</td><td class="num delta-neg">−0.94pp</td><td>🟢 artsy 개선 (의외)</td></tr>
+<tr class="row-fail"><td>cold_saatchi_ensemble</td><td class="num">44.35</td><td class="num">42.40</td><td class="num delta-pos">+1.96pp</td><td>🔴 saatchi 큰 손실</td></tr>
+<tr class="row-fail"><td><strong>warm_kfold_xgb</strong></td><td class="num">10.95</td><td class="num">9.85</td><td class="num delta-pos"><strong>+1.10pp</strong></td><td>🔴🔴 <strong>9.3σ</strong> (warm std=0.118)</td></tr>
+<tr class="row-fail"><td>warm_kfold_ens</td><td class="num">11.93</td><td class="num">10.58</td><td class="num delta-pos">+1.36pp</td><td>🔴🔴 명백한 손실</td></tr>
+</table>
+
+<p><strong>VERDICT (auto)</strong>: PARTIAL_PASS — cold within noise이지만 warm 9.3σ 명백한 손실</p>
+
+<h3>7.5.2. Codex R2 verdict: REJECT</h3>
+
+<div class="codex-quote">
+<strong>Q1 verdict</strong>: "REJECT 합당 — cold_artsy 하락이 있고 전 구간 일관 개선이 아니라서 R2에서 보수적으로 막는 판단이 맞습니다."
+<br><br>
+<strong>Q2 keep 권고</strong>: "warm_xgb 유의성도 강해 제거보다 유지 후 가드 추가가 낫습니다."
+<br><br>
+<strong>Q3 cold_artsy 의외</strong>: "소스별 분포 차이 또는 missing/long-tail 편향 신호."
+</div>
+
+<h3>7.5.3. 핵심 해석</h3>
+
+<div class="warn-box">
+<ul class="compact">
+<li><strong>artist_total_works는 warm path real signal 확정</strong> — ln_followers와 동일 패턴 (27f FAIL과 동치)</li>
+<li><strong>Saatchi median 102 작품/작가가 의미 있는 split signal</strong> — saatchi cold +1.96pp 손실</li>
+<li><strong>Artsy median 31 좁은 분포는 noise였을 가능성</strong> — cold artsy -0.94pp 개선 (의외)</li>
+<li>즉 source-conditional 의미: Saatchi 작가에서 useful, Artsy에서 noise</li>
+<li><strong>그러나 warm path 9.3σ 손실</strong>은 명백 — feature keep 권고</li>
+</ul>
+</div>
+
+<h3>7.5.4. 결정 — artist_total_works KEEP, no commit</h3>
+
+<table>
+<tr><th>Action</th><th>결정</th></tr>
+<tr><td>27_hf variant 추가</td><td><span class="pill red">REJECTED</span> Codex R2</td></tr>
+<tr><td>artist_total_works feature</td><td><span class="pill green">KEEP</span> (28_hf 유지)</td></tr>
+<tr><td>Audit doc 업데이트</td><td><span class="pill blue">본 section 추가</span></td></tr>
+</table>
+
+<h3>7.5.5. 후속 검토 후보 (Codex Q4 우선순위)</h3>
+
+<table>
+<tr><th>Priority</th><th>Option</th><th>비고</th></tr>
+<tr><td><span class="pill yellow">P1</span></td><td>(b) keep + doc 우선</td><td>✅ 본 update로 완료</td></tr>
+<tr><td><span class="pill blue">P2</span></td><td>(a) <code>has_total_works</code> flag cycle</td><td>has_followers 패턴 — unmatched 시 0 vs real 0 분리</td></tr>
+<tr><td><span class="pill gray">P3</span></td><td>(c) median fallback</td><td>"missing과 typical artist를 섞어 feature semantics 흐림" (Codex deferred)</td></tr>
+</table>
+
+<h3>7.5.6. PR Family 변경 없음</h3>
+
+<p>본 cycle 결과로 인한 variant family 변경 없음. <strong>28_hf 그대로 default candidate 유지</strong>:</p>
+
+<table>
+<tr><th>Variant</th><th>Features</th><th>Status</th></tr>
+<tr><td>32f (legacy)</td><td>32</td><td>production default</td></tr>
+<tr><td>29f</td><td>29</td><td>OFF</td></tr>
+<tr><td>28f</td><td>28</td><td>OFF</td></tr>
+<tr><td>29f_hf</td><td>29</td><td>OFF</td></tr>
+<tr><td><strong>28_hf</strong> ★</td><td>28</td><td>OFF (deploy candidate)</td></tr>
+<tr><td>27_hf (proposed)</td><td>27</td><td><span class="pill red">REJECTED</span></td></tr>
+</table>
+
 <h2>8. 결론</h2>
 
 <div class="summary-box">
