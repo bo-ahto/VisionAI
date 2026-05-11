@@ -59,6 +59,16 @@ CURRENT_YEAR = 2026  # listing year baseline (Track 1과 동일)
 PRICE_MIN_KRW = 100_000
 PRICE_MAX_KRW = 5_000_000_000
 
+# Unified FX rates (Track 1 + Artsy raw 정합).
+# 외화 → KRW 통일 환율. KRW는 1.0 (identity).
+UNIFIED_FX_TO_KRW = {
+    "USD": 1380.0,
+    "EUR": 1530.0,
+    "GBP": 1780.0,
+    "HKD": 178.0,
+    "KRW": 1.0,
+}
+
 
 # ─── Medium / Support 분류 (Track 1 정합) ───
 SUPPORT_RULES = [
@@ -187,6 +197,9 @@ def load_artsy() -> pd.DataFrame:
     df["depth_cm"] = pd.to_numeric(a["depth_cm"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
     df["price_krw"] = pd.to_numeric(a["price_krw"], errors="coerce")
+    # Hybrid 가격 — 원본 + 통일 환율
+    df["price_amount_raw"] = pd.to_numeric(a["price_amount"], errors="coerce")
+    df["price_currency_raw"] = a["price_currency"].fillna("USD").astype(str)
     df["artist_entity_id_raw"] = a["artist_slug"].astype(str)
     df["artist_name_raw"] = a["artist_name"].astype(str)
     return df
@@ -206,6 +219,9 @@ def load_saatchi() -> pd.DataFrame:
     df["depth_cm"] = pd.to_numeric(s["depth_cm"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
     df["price_krw"] = pd.to_numeric(s["price_krw"], errors="coerce")
+    # Hybrid 가격 — Saatchi는 USD 단일 (확인됨, 100%)
+    df["price_amount_raw"] = pd.to_numeric(s["price_usd"], errors="coerce")
+    df["price_currency_raw"] = "USD"
     df["artist_entity_id_raw"] = s["artist_id"].astype(str)
     df["artist_name_raw"] = (
         s["artist_first_name"].fillna("") + " " + s["artist_last_name"].fillna("")
@@ -227,6 +243,9 @@ def load_artue() -> pd.DataFrame:
     df["depth_cm"] = pd.to_numeric(a["Depth (cm)"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
     df["price_krw"] = pd.to_numeric(a["Price (KRW)"], errors="coerce")
+    # Hybrid 가격 — Artue는 USD 표기 (확인됨, 100%)
+    df["price_amount_raw"] = pd.to_numeric(a["Price (USD)"], errors="coerce")
+    df["price_currency_raw"] = "USD"
     df["artist_entity_id_raw"] = a["Handle"].astype(str)
     df["artist_name_raw"] = a["Artist"].astype(str)
     return df
@@ -236,7 +255,7 @@ def load_artue() -> pd.DataFrame:
 
 
 def add_derived(df: pd.DataFrame) -> pd.DataFrame:
-    """Schema v2: area_cm2 / log_area / orientation only."""
+    """area_cm2 / log_area / orientation + Hybrid 가격 (price_krw_unified, was_converted)."""
     df["area_cm2"] = df["width_cm"] * df["height_cm"]
     df["log_area"] = df["area_cm2"].apply(
         lambda v: math.log(v) if pd.notna(v) and v > 0 else float("nan")
@@ -247,20 +266,38 @@ def add_derived(df: pd.DataFrame) -> pd.DataFrame:
     )
     # depth NaN → 0 (has_depth가 missingness 표시)
     df["depth_cm"] = df["depth_cm"].fillna(0)
+
+    # Hybrid 가격:
+    # - 원래 KRW면 그대로 (price_krw 사용), was_converted=0
+    # - 외화면 통일 환율 (UNIFIED_FX_TO_KRW) 적용, was_converted=1
+    def compute_unified(row):
+        cur = str(row["price_currency_raw"]).upper().strip()
+        amount = row["price_amount_raw"]
+        if cur == "KRW":
+            return row["price_krw"] if pd.notna(row["price_krw"]) else float("nan")
+        if pd.isna(amount) or amount <= 0:
+            return float("nan")
+        rate = UNIFIED_FX_TO_KRW.get(cur)
+        if rate is None:
+            return float("nan")  # unknown currency
+        return float(amount) * rate
+
+    df["price_krw_unified"] = df.apply(compute_unified, axis=1)
+    df["was_converted"] = (df["price_currency_raw"].str.upper().str.strip() != "KRW").astype(int)
     return df
 
 
 def apply_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
-    """가격/크기 필터 (Track 1 정합)."""
+    """가격/크기 필터. price_krw_unified 기준 (학습 target)."""
     n0 = len(df)
     drops = {}
 
-    # price filter
-    mask = df["price_krw"].notna() & (df["price_krw"] > 0)
+    # price filter — unified 기준 (학습 target)
+    mask = df["price_krw_unified"].notna() & (df["price_krw_unified"] > 0)
     drops["price_null_or_zero"] = (~mask).sum()
     df = df[mask].copy()
 
-    mask = (df["price_krw"] >= PRICE_MIN_KRW) & (df["price_krw"] <= PRICE_MAX_KRW)
+    mask = (df["price_krw_unified"] >= PRICE_MIN_KRW) & (df["price_krw_unified"] <= PRICE_MAX_KRW)
     drops["price_out_of_range"] = (~mask).sum()
     df = df[mask].copy()
 
@@ -274,8 +311,8 @@ def apply_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     drops["size_invalid"] = (~mask).sum()
     df = df[mask].copy()
 
-    # ln_price
-    df["ln_price_krw"] = np.log(df["price_krw"])
+    # ln_price — unified 기준 (학습 target)
+    df["ln_price_krw_unified"] = np.log(df["price_krw_unified"])
 
     drops["total_in"] = n0
     drops["total_kept"] = len(df)
@@ -303,7 +340,7 @@ def main() -> None:
     unified, drops = apply_filters(unified)
     logger.info(f"After filter: {len(unified)} rows kept (drops={drops})")
 
-    # column order — schema v3 (변별력 있는 features only / 15 cols)
+    # column order — schema v4 (Hybrid 가격 추가 / 19 cols)
     cols = [
         # IDs (학습 비feature)
         "source_platform",
@@ -320,9 +357,14 @@ def main() -> None:
         "area_cm2",
         "log_area",
         "orientation",
-        # Target (2)
+        # Hybrid 가격 (4) — 원본 + 통일 환율 + 환전 flag
+        "price_amount_raw",
+        "price_currency_raw",
         "price_krw",
-        "ln_price_krw",
+        "was_converted",
+        # Target (2) — 학습용 unified
+        "price_krw_unified",
+        "ln_price_krw_unified",
     ]
     unified = unified[cols]
 
@@ -335,12 +377,15 @@ def main() -> None:
         "rows": int(len(unified)),
         "cols": int(len(cols)),
         "by_source": unified["source_platform"].value_counts().to_dict(),
-        "price_stats": {
-            "median_krw": int(unified["price_krw"].median()),
-            "mean_krw": int(unified["price_krw"].mean()),
-            "q05": int(unified["price_krw"].quantile(0.05)),
-            "q95": int(unified["price_krw"].quantile(0.95)),
+        "price_stats_unified": {
+            "median_krw": int(unified["price_krw_unified"].median()),
+            "mean_krw": int(unified["price_krw_unified"].mean()),
+            "q05": int(unified["price_krw_unified"].quantile(0.05)),
+            "q95": int(unified["price_krw_unified"].quantile(0.95)),
         },
+        "fx_rates_unified": UNIFIED_FX_TO_KRW,
+        "was_converted_counts": unified["was_converted"].value_counts().to_dict(),
+        "currency_distribution": unified["price_currency_raw"].value_counts().to_dict(),
         "missingness_flags": {
             "has_depth": int(unified["has_depth"].sum()),
         },
@@ -365,8 +410,12 @@ def main() -> None:
     print("=" * 70)
     print(f"\nBy source: {summary['by_source']}")
     print(
-        f"Price (KRW): median={summary['price_stats']['median_krw']:,}, mean={summary['price_stats']['mean_krw']:,}"
+        f"Price (KRW unified): median={summary['price_stats_unified']['median_krw']:,}, "
+        f"mean={summary['price_stats_unified']['mean_krw']:,}"
     )
+    print(f"Currency distribution: {summary['currency_distribution']}")
+    print(f"Was converted (0=KRW raw / 1=외화 환전): {summary['was_converted_counts']}")
+    print(f"FX rates applied: {summary['fx_rates_unified']}")
     print(f"Missingness (has_X=1 count):")
     for k, v in summary["missingness_flags"].items():
         pct = 100 * v / len(unified)

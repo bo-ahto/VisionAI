@@ -32,7 +32,7 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 | 파일 | 설명 |
 |---|---|
-| `data/track3_unified_v1.parquet` | 메인 데이터셋 (41,366 rows × 15 cols, ~1.3MB) |
+| `data/track3_unified_v1.parquet` | 메인 데이터셋 (41,365 rows × 19 cols, ~1.3MB) |
 | `data/track3_unified_v1.csv` | CSV export (6.0 MB, UTF-8 BOM) |
 | `data/track3_unified_v1_sample.csv` | 100 rows/source = 300 rows (44 KB) |
 | `data/track3_unified_v1_summary.json` | 분포/통계 summary |
@@ -80,12 +80,33 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 | `log_area` | float | 100% | log(area_cm2) — heavy tail 안정화 |
 | `orientation` | categorical (4) | 100% | portrait / landscape / square / unknown |
 
-### 3.3 Target (2)
+### 3.3 Hybrid 가격 (4) — User 요구 정합
+
+원본 표기 + 통일 환율 모두 제공. 환전 여부 명시.
 
 | Column | Type | Description |
 |---|---|---|
-| `price_krw` | int | 한화 가격 (100K ~ 5B 필터됨) |
-| `ln_price_krw` | float | log(price_krw) — 학습 target |
+| `price_amount_raw` | float | **원본 통화 가격** (예: USD 12500.0 / EUR 2000.0 / KRW 3750000.0) |
+| `price_currency_raw` | str | **원본 통화** (USD / KRW / EUR / GBP / HKD) |
+| `price_krw` | int | source 표기 그대로 (Artsy/Saatchi raw 1,380 fixed / Artue 변동 환율) |
+| `was_converted` | binary | **환전 여부** (0=원래 KRW, 1=외화 환전됨) |
+
+**통일 환율 (UNIFIED_FX_TO_KRW)**: Track 1 + Artsy raw 정합 fixed rate.
+
+| 통화 | KRW 환율 |
+|---|---:|
+| USD | 1,380 |
+| EUR | 1,530 |
+| GBP | 1,780 |
+| HKD | 178 |
+| KRW | 1.0 (identity) |
+
+### 3.4 Target (2)
+
+| Column | Type | Description |
+|---|---|---|
+| `price_krw_unified` | int | **통일 환율 적용 KRW 가격** (학습/평가 standard, 100K ~ 5B 필터) |
+| `ln_price_krw_unified` | float | log(price_krw_unified) — **학습 target** |
 
 ## 4. 데이터 분포
 
@@ -261,8 +282,9 @@ Track 3는 **운영 fidelity 최우선** + **신규 작가 cold-start 강화** �
 ## 12. 변경 이력
 
 - **v1 (2026-05-11)**: 초기 release. 41,366 rows / 24 cols. Codex schema v1 정합.
-- **v2 (2026-05-11)**: 41,366 rows / **17 cols**. User 결정 적용 — 3 source 모두 raw에 없는 7 columns 제거 (year_made / birth_year / attribution_class family).
-- **v3 (2026-05-11)**: 41,366 rows / **15 cols**. User 결정 적용 — 변별력 없는 2 columns 제거 (nationality_region 98.4% korea / has_nationality 100% constant).
+- **v2 (2026-05-11)**: 41,366 rows / **17 cols**. 3 source raw에 없는 7 columns 제거.
+- **v3 (2026-05-11)**: 41,366 rows / **15 cols**. 변별력 없는 2 columns 제거.
+- **v4 (2026-05-11)**: 41,365 rows / **19 cols**. Hybrid 가격 추가 (price_amount_raw, price_currency_raw, was_converted) + 통일 환율 적용 (price_krw_unified, ln_price_krw_unified). target = ln_price_krw_unified.
 
 ## 13. 참고 자료
 

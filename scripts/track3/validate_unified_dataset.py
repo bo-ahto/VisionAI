@@ -42,9 +42,14 @@ EXPECTED_COLS = [
     "area_cm2",
     "log_area",
     "orientation",
-    # Target (2)
+    # Hybrid 가격 (4)
+    "price_amount_raw",
+    "price_currency_raw",
     "price_krw",
-    "ln_price_krw",
+    "was_converted",
+    # Target (2) — unified 학습용
+    "price_krw_unified",
+    "ln_price_krw_unified",
 ]
 EXPECTED_SOURCES = {"artsy", "saatchi", "artue"}
 EXPECTED_ORIENTATIONS = {"portrait", "landscape", "square", "unknown"}
@@ -84,20 +89,20 @@ def check_sources(df: pd.DataFrame) -> tuple[bool, str]:
 
 
 def check_price_range(df: pd.DataFrame) -> tuple[bool, str]:
-    p = df["price_krw"]
+    p = df["price_krw_unified"]
     if (p < PRICE_MIN_KRW).any():
-        return False, f"price < {PRICE_MIN_KRW:,}: {(p < PRICE_MIN_KRW).sum()}"
+        return False, f"price_krw_unified < {PRICE_MIN_KRW:,}: {(p < PRICE_MIN_KRW).sum()}"
     if (p > PRICE_MAX_KRW).any():
-        return False, f"price > {PRICE_MAX_KRW:,}: {(p > PRICE_MAX_KRW).sum()}"
-    return True, (f"price ∈ [{p.min():,.0f}, {p.max():,.0f}] / " f"median={p.median():,.0f}")
+        return False, f"price_krw_unified > {PRICE_MAX_KRW:,}: {(p > PRICE_MAX_KRW).sum()}"
+    return True, (f"unified ∈ [{p.min():,.0f}, {p.max():,.0f}] / median={p.median():,.0f}")
 
 
 def check_ln_price_consistency(df: pd.DataFrame) -> tuple[bool, str]:
-    expected = np.log(df["price_krw"])
-    diff = (df["ln_price_krw"] - expected).abs().max()
+    expected = np.log(df["price_krw_unified"])
+    diff = (df["ln_price_krw_unified"] - expected).abs().max()
     if diff > 1e-6:
-        return False, f"ln_price_krw mismatch: max diff {diff}"
-    return True, f"ln_price_krw consistent (max diff {diff:.2e})"
+        return False, f"ln_price_krw_unified mismatch: max diff {diff}"
+    return True, f"ln_price_krw_unified consistent (max diff {diff:.2e})"
 
 
 def check_size(df: pd.DataFrame) -> tuple[bool, str]:
@@ -137,8 +142,8 @@ def check_missingness_rates(df: pd.DataFrame) -> tuple[bool, str]:
 
 
 def check_no_null(df: pd.DataFrame) -> tuple[bool, str]:
-    """ID columns + numeric features should have no null."""
-    nullable_allowed = set()  # 본 schema는 NaN 자체 없음 (전부 0/flag 처리됨)
+    """price_amount_raw는 KRW source 또는 결측 가능 → 허용."""
+    nullable_allowed = {"price_amount_raw"}
     null_cols = []
     for col in df.columns:
         if col in nullable_allowed:
@@ -148,7 +153,20 @@ def check_no_null(df: pd.DataFrame) -> tuple[bool, str]:
             null_cols.append(f"{col}({n_null})")
     if null_cols:
         return False, f"Null found: {null_cols}"
-    return True, "No null in any column"
+    return True, "No null in critical columns (price_amount_raw nullable allowed)"
+
+
+def check_hybrid_price_consistency(df: pd.DataFrame) -> tuple[bool, str]:
+    """Hybrid 가격 일관성: KRW source → was_converted=0, 외화 → was_converted=1."""
+    krw_rows = df[df["price_currency_raw"].str.upper() == "KRW"]
+    if (krw_rows["was_converted"] != 0).any():
+        return False, f"KRW source에 was_converted=1: {(krw_rows['was_converted'] != 0).sum()}"
+    non_krw = df[df["price_currency_raw"].str.upper() != "KRW"]
+    if (non_krw["was_converted"] != 1).any():
+        return False, f"외화 source에 was_converted=0: {(non_krw['was_converted'] != 1).sum()}"
+    return True, (
+        f"was_converted consistent: KRW {len(krw_rows):,} (0) / 외화 {len(non_krw):,} (1)"
+    )
 
 
 CHECKS = [
@@ -156,13 +174,14 @@ CHECKS = [
     ("2. Schema (column names + order)", check_schema, True),
     ("3. Row count (≥ 1,000)", check_row_count, True),
     ("4. Source distribution", check_sources, True),
-    ("5. Price range filter", check_price_range, True),
-    ("6. ln_price_krw consistency", check_ln_price_consistency, True),
+    ("5. Price range filter (unified)", check_price_range, True),
+    ("6. ln_price_krw_unified consistency", check_ln_price_consistency, True),
     ("7. Size (width/height/area)", check_size, True),
-    ("8. Categorical values (orientation/attribution)", check_categorical_values, True),
+    ("8. Categorical values (orientation)", check_categorical_values, True),
     ("9. has_X flag consistency", check_flag_consistency, True),
     ("10. Missingness rates (informational)", check_missingness_rates, True),
-    ("11. No null in any column", check_no_null, True),
+    ("11. No null in critical columns", check_no_null, True),
+    ("12. Hybrid 가격 (was_converted) consistency", check_hybrid_price_consistency, True),
 ]
 
 
