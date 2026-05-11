@@ -6,6 +6,9 @@ Codex schema v1 정합. 본 세션 Track 1 교훈 반영:
 - Missing detection flags (has_year_made, has_birth_year, has_depth)
 - Hedonic + GBM hybrid 학습 대상
 
+운영 원칙 (필수 제약): 운영 수집 가능 / missingness explicit / source neutral.
+평가 기준 (parsimony): 모델 선택 시 적은 피처로 동등 성능이면 그쪽 선호.
+
 Cold-start core columns (Codex schema v1):
 - source_platform / source_listing_id
 - medium_category / support_category

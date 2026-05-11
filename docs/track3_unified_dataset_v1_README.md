@@ -8,7 +8,7 @@
 
 Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋. Artsy / Saatchi / Artue 3개 source 의 한국 작가 작품을 unified schema로 결합.
 
-### 1.1 설계 원칙 (Codex 사전 조율 — `docs/track3_session_complete_*` 참조)
+### 1.1 운영 원칙 (필수 제약 — Codex 사전 조율)
 
 | 원칙 | 적용 |
 |---|---|
@@ -16,7 +16,17 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 | **운영 입력 가능 features만** | 작품 물성 + self-reported artist metadata + missingness flags |
 | **Missingness explicit** | `has_depth` / `has_year_made` / `has_birth_year` / `has_nationality` flags |
 | **Source neutral** | source_platform tag는 추적용 (모델 input 사용 권고 X) |
-| **피처 최소** | 24 cols (IDs 4 + features 18 + target 2) |
+
+### 1.2 평가 기준 (모델 비교 시 적용)
+
+| 기준 | 의미 |
+|---|---|
+| **Predictive performance** | MdAPE / MAE (artist-holdout cold-start 기준) |
+| **Parsimony** | 피처 수 적게 동등 성능이면 우월 (단순한 모델 선호) |
+| **Generalization** | cold-start (unmatched artist) 분포에서 robust |
+| **Latency** | serving cost / model complexity |
+
+본 데이터셋은 18개 features를 제공 (cold-start 13 + enrichment 5). 모델 실험 시 일부만 선택 사용 가능 — **적은 피처로 비슷한 성능이면 그쪽이 선호됨**.
 
 ## 2. 파일 위치
 
@@ -235,6 +245,7 @@ Track 3는 **운영 fidelity 최우선** + **신규 작가 cold-start 강화** �
 3. **Linear + nonlinear ensemble**
 4. **Cross-source dedup** — artist normalization 별도 PR
 5. **Two-stage model** — matched (warm artist) + unmatched (cold-start) 분리
+6. **Feature subset search** — parsimony 원칙: 적은 피처로 비슷 성능이면 그쪽 채택 (e.g. size + medium만으로 hedonic, 그 후 +1 feature씩 incremental)
 
 ## 11. 팀 공유
 
