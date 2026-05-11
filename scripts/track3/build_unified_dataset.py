@@ -146,6 +146,236 @@ KOREAN_SURNAME_TO_KO = {
     "ban": "반",
     "jang_uh": "장",
     "joung": "정",
+    # 추가: user 예시 + 한국 흔한 성
+    "bang": "방", "pang": "방",
+    "seok": "석", "suk": "석", "sok": "석",
+    "oh": "오", "o": "오",
+    "bac": "백",
+    "yoon_kr": "윤",
+    "kwak": "곽", "gwak": "곽",
+    "ryu_l": "유",
+    "ok": "옥",
+    "jin": "진",  # 성 (보통 first name이지만 surname 가능)
+    "ham": "함",
+    "ku_kr": "구",
+}
+
+# Romanization → Hangul 음절 매핑 (greedy longest match).
+# 한국 이름 first name + 외국인 이름 한국어 발음 표기.
+# 표 구조: 5-char → 4-char → 3-char → 2-char → 1-char (longest first match).
+HANGUL_SYLLABLE_MAP: dict[str, str] = {
+    # === 5-char (CV+yV+CC 등) ===
+    "kyoung": "경", "kyeong": "경", "myoung": "명", "myeong": "명",
+    "byoung": "병", "byeong": "병", "hyoung": "형", "hyeong": "형",
+    "young": "영", "yeong": "영", "ryong": "용", "hyang": "향",
+    "kwang": "광", "hwang": "황", "joong": "중", "joung": "정",
+    "kyong": "경", "myong": "명", "byong": "병",
+    # 추가 5-char: byung/hyeon 등 자주 누락
+    "byung": "병", "pyung": "평", "tyung": "퉁", "ryung": "륭",
+    "syung": "슝", "nyung": "능", "myung": "명", "dyung": "둥",
+    "hyeon": "현", "kyeon": "견", "myeon": "면", "byeon": "변",
+    "pyeon": "편", "ryeon": "련", "syeon": "션",
+    "kweon": "권", "kwoen": "권",
+    # === 4-char ===
+    "hyun": "현", "hyon": "현", "kyun": "균", "myun": "면",
+    "byun": "변", "pyun": "편", "tyun": "튠",
+    "hwan": "환", "kwan": "관", "rwan": "롼",
+    "yeon": "연", "yeon": "연", "yong": "용", "yoon": "윤",
+    "soon": "순", "moon": "문", "joon": "준", "doon": "둔",
+    "geun": "근", "geon": "건", "seon": "선", "seul": "슬",
+    "heun": "흔", "heon": "헌",
+    "kyul": "규", "byul": "별", "myul": "멸", "pyul": "별",
+    "syul": "슈", "tyul": "튤", "ryul": "률", "hyul": "휼",
+    "ryun": "륜", "ryul": "률", "ryup": "륩",
+    "deuk": "득", "seul": "슬", "neul": "늘",
+    "wook": "욱", "kook": "국", "kyung": "경",
+    "ahn": "안", "huh": "허", "hee": "희", "hye": "혜",
+    "hyo": "효", "hyu": "휴",
+    "yul": "율", "yup": "윱",
+    # 추가 4-char: eun-/eul-/eum- + 자주 누락된 음절
+    "eun": "은", "eul": "을", "eum": "음", "eup": "읍",
+    "seok": "석", "suk": "석", "sok": "석",
+    "hyuk": "혁", "hyok": "혁", "hyuck": "혁",
+    "jeok": "적", "jok": "족",
+    "geuk": "극", "guk": "국",
+    "duek": "득", "deuk": "득",
+    "yook": "육", "yuk": "육",
+    "guen": "근", "geun": "근",
+    "yeun": "연",
+    "kook": "국",
+    "ook": "욱",
+    "weon": "원", "weon": "원",
+    "byeok": "벽", "byok": "벽",
+    "myeok": "멱",
+    "saek": "색",
+    "naek": "낵",
+    "baek": "백", "paek": "백", "back": "백",
+    # === 3-char (-ng / -k / -n / -m / -l / -p 받침) ===
+    # -ang
+    "bang": "방", "dang": "당", "gang": "강", "hang": "항", "jang": "장",
+    "kang": "강", "mang": "망", "nang": "낭", "pang": "팡", "rang": "랑",
+    "sang": "상", "tang": "탕", "wang": "왕", "yang": "양", "chang": "창",
+    "lang": "랑",
+    # -eng
+    "deng": "뎅", "geng": "겡", "heng": "헹", "jeng": "젱",
+    # -ing
+    "bing": "빙", "ding": "딩", "ging": "깅", "hing": "힝", "jing": "징",
+    "king": "킹", "ling": "링", "ming": "밍", "ning": "닝", "ping": "핑",
+    "ring": "링", "sing": "싱", "ting": "팅", "wing": "윙", "ying": "잉",
+    # -ong
+    "bong": "봉", "dong": "동", "gong": "공", "hong": "홍", "jong": "종",
+    "kong": "공", "long": "롱", "mong": "몽", "nong": "농", "pong": "퐁",
+    "rong": "롱", "song": "송", "tong": "통", "yong": "용", "chong": "청",
+    # -ung
+    "bung": "붕", "dung": "둥", "gung": "궁", "hung": "흥", "jung": "정",
+    "kung": "쿵", "lung": "룽", "mung": "뭉", "nung": "눙", "pung": "풍",
+    "rung": "룽", "sung": "성", "tung": "퉁", "yung": "융", "chung": "충",
+    # -an
+    "ban": "반", "dan": "단", "gan": "간", "han": "한", "jan": "잔",
+    "kan": "칸", "lan": "란", "man": "만", "nan": "난", "pan": "판",
+    "ran": "란", "san": "산", "tan": "탄", "wan": "완", "yan": "얀",
+    "chan": "찬", "shan": "샨",
+    # -en
+    "ben": "벤", "den": "덴", "gen": "겐", "hen": "헨", "jen": "젠",
+    "ken": "켄", "len": "렌", "men": "맨", "nen": "넨", "pen": "펜",
+    "ren": "렌", "sen": "센", "ten": "텐", "wen": "웬", "yen": "옌",
+    "chen": "첸",
+    # -in
+    "bin": "빈", "din": "딘", "gin": "긴", "hin": "힌", "jin": "진",
+    "kin": "킨", "lin": "린", "min": "민", "nin": "닌", "pin": "핀",
+    "rin": "린", "sin": "신", "tin": "틴", "win": "윈", "yin": "인",
+    "chin": "친", "shin": "신",
+    # -im / -rim
+    "bim": "빔", "dim": "딤", "gim": "김", "him": "힘", "jim": "짐",
+    "kim": "킴", "lim": "림", "mim": "밈", "nim": "님", "pim": "핌",
+    "rim": "림", "sim": "심", "tim": "팀", "yim": "임",
+    "shim": "심", "shik": "식",
+    # -wan / -won / -wun
+    "hwan": "환", "kwan": "관", "rwan": "롼",
+    "hwon": "환", "kwon": "권", "rwon": "권",
+    # -on
+    "bon": "본", "don": "돈", "gon": "곤", "hon": "혼", "jon": "존",
+    "kon": "콘", "lon": "론", "mon": "몬", "non": "논", "pon": "폰",
+    "ron": "론", "son": "선", "ton": "톤", "won": "원", "yon": "연",
+    # -un / -oon
+    "bun": "분", "dun": "둔", "gun": "군", "hun": "훈", "jun": "준",
+    "kun": "쿤", "lun": "룬", "mun": "문", "nun": "눈", "pun": "푼",
+    "run": "룬", "sun": "선", "tun": "툰", "yun": "윤", "chun": "천",
+    # -al / -el / -il / -ol / -ul
+    "bal": "발", "dal": "달", "gal": "갈", "hal": "할", "jal": "잘",
+    "kal": "칼", "lal": "랄", "mal": "말", "nal": "날", "pal": "팔",
+    "ral": "랄", "sal": "살", "tal": "탈", "wal": "왈", "yal": "얄",
+    "bel": "벨", "del": "델", "gel": "겔", "hel": "헬", "jel": "젤",
+    "bil": "빌", "dil": "딜", "gil": "길", "hil": "힐", "jil": "질",
+    "kil": "킬", "mil": "밀", "nil": "닐", "pil": "필", "ril": "릴",
+    "sil": "실", "til": "틸",
+    "bol": "볼", "dol": "돌", "gol": "골", "hol": "홀", "jol": "졸",
+    "kol": "콜", "lol": "롤", "mol": "몰", "nol": "놀", "pol": "폴",
+    "rol": "롤", "sol": "솔", "tol": "톨",
+    "bul": "불", "dul": "둘", "gul": "굴", "hul": "훌", "jul": "줄",
+    "kul": "쿨", "mul": "물", "nul": "눌", "pul": "풀", "rul": "룰",
+    "sul": "술", "tul": "툴", "yul": "율",
+    # -ak / -ek / -ik / -ok / -uk
+    "bak": "박", "dak": "닥", "gak": "각", "hak": "학", "jak": "작",
+    "kak": "칵", "lak": "락", "mak": "막", "nak": "낙", "pak": "팍",
+    "rak": "락", "sak": "삭", "tak": "탁", "wak": "왁", "yak": "약",
+    "bek": "벡", "dek": "덱", "gek": "겍", "hek": "헥", "jek": "젝",
+    "bik": "빅", "dik": "딕", "gik": "긱", "hik": "힉", "jik": "직",
+    "kik": "킥", "mik": "믹", "nik": "닉", "pik": "픽", "rik": "릭",
+    "sik": "식", "tik": "틱",
+    "bok": "복", "dok": "독", "gok": "곡", "hok": "혹", "jok": "족",
+    "kok": "콕", "lok": "록", "mok": "목", "nok": "녹", "pok": "폭",
+    "rok": "록", "sok": "속", "tok": "톡", "wok": "왁", "yok": "욕",
+    "buk": "북", "duk": "둑", "guk": "국", "huk": "훅", "juk": "죽",
+    "kuk": "쿡", "luk": "룩", "muk": "묵", "nuk": "눅", "puk": "푹",
+    "ruk": "룩", "suk": "석", "tuk": "툭", "wuk": "욱", "yuk": "육",
+    "suk": "석", "wook": "욱",
+    "hyok": "혁", "hyuk": "혁",
+    # -ap / -ep / -ip / -op / -up
+    "bap": "밥", "dap": "답", "gap": "갑", "hap": "합", "jap": "잡",
+    "kap": "캅", "lap": "랍", "map": "맙", "nap": "납", "pap": "팝",
+    "rap": "랍", "sap": "삽", "tap": "탑",
+    "bep": "벱", "gep": "겝", "hep": "헵", "jep": "젭",
+    "bip": "빕", "dip": "딥", "gip": "깁", "hip": "힙", "jip": "집",
+    "kip": "킵", "mip": "밉", "nip": "닙", "pip": "핍", "rip": "립",
+    "sip": "십", "tip": "팁",
+    "bop": "봅", "dop": "돕", "gop": "곱", "hop": "홉", "jop": "좁",
+    "kop": "콥", "lop": "롭", "mop": "몹", "nop": "놉", "pop": "팝",
+    "rop": "롭", "sop": "솝", "top": "톱",
+    "bup": "붑", "dup": "둡", "gup": "굽", "hup": "훕", "jup": "줍",
+    "kup": "쿱", "mup": "뭅", "nup": "눕", "pup": "풉", "rup": "룹",
+    "sup": "섭", "tup": "툽",
+    # -ae 류
+    "bae": "배", "dae": "대", "gae": "개", "hae": "해", "jae": "재",
+    "kae": "캐", "lae": "래", "mae": "매", "nae": "내", "pae": "배",
+    "rae": "래", "sae": "새", "tae": "태", "wae": "왜", "yae": "얘",
+    "chae": "채", "shae": "섀",
+    # -eo
+    "beo": "버", "deo": "더", "geo": "거", "heo": "허", "jeo": "저",
+    "keo": "커", "meo": "머", "neo": "너", "peo": "퍼", "reo": "러",
+    "seo": "서", "teo": "터", "yeo": "여", "cheo": "처", "sheo": "셔",
+    # -oo / -oa / -ue 등
+    "boo": "부", "doo": "두", "goo": "구", "hoo": "후", "joo": "주",
+    "koo": "쿠", "loo": "루", "moo": "무", "noo": "누", "poo": "푸",
+    "roo": "루", "soo": "수", "too": "투", "woo": "우", "yoo": "유",
+    # 자주 사용 음절 (한국 이름)
+    "kim": "김", "lee": "이", "yi": "이", "park": "박",
+    "ahn": "안", "hee": "희", "hye": "혜", "hyo": "효", "hyu": "휴",
+    "ji": "지", "ye": "예", "jin": "진", "jun": "준",
+    "kwon": "권", "sub": "섭", "sup": "섭", "hwa": "화", "kwa": "콰",
+    # 추가: jam/sam/nam/dam/ham
+    "jam": "잼", "sam": "샘", "ham": "햄", "dam": "댐", "nam": "남",
+    "bom": "봄", "gom": "곰", "tom": "톰", "rom": "롬", "hom": "홈",
+    "kom": "콤", "lom": "롬", "mom": "맘", "pom": "폼", "som": "솜",
+    "dum": "둠", "gum": "굼", "hum": "험", "jum": "줌", "kum": "쿰",
+    "lum": "룸", "mum": "맘", "num": "넘", "pum": "품", "rum": "룸",
+    "sum": "섬", "tum": "툼", "yum": "윰",
+    "yang": "양", "yong": "용", "yung": "융",
+    # cha / che / chi / cho / chu / chae
+    "cha": "차", "che": "체", "chi": "치", "cho": "초", "chu": "추",
+    "chae": "채", "chai": "차이",
+    # sha / she / shi / sho / shu
+    "sha": "샤", "she": "셰", "shi": "시", "sho": "쇼", "shu": "슈",
+    "shim": "심",
+    # tha / the / thi / tho / thu (외국어)
+    "tha": "타", "the": "더", "thi": "디", "tho": "도", "thu": "두",
+    # gha 등
+    "gha": "가", "ghe": "게", "ghi": "기", "gho": "고", "ghu": "구",
+    # -en
+    "ren": "렌",
+    # === 2-char ===
+    "an": "안", "ah": "아", "ae": "애", "ai": "아이", "au": "아우",
+    "ba": "바", "bo": "보", "bu": "부", "be": "베", "bi": "비",
+    "ca": "카", "co": "코", "cu": "쿠", "ce": "세", "ci": "시",
+    "da": "다", "de": "데", "di": "디", "do": "도", "du": "두",
+    "ea": "이아", "ee": "이", "eo": "어", "eu": "으", "ei": "에이",
+    "fa": "파", "fe": "페", "fi": "피", "fo": "포", "fu": "푸",
+    "ga": "가", "ge": "게", "gi": "기", "go": "고", "gu": "구",
+    "ha": "하", "he": "헤", "hi": "히", "ho": "호", "hu": "후",
+    "ja": "자", "je": "제", "ji": "지", "jo": "조", "ju": "주",
+    "ka": "카", "ke": "케", "ki": "키", "ko": "코", "ku": "쿠",
+    "la": "라", "le": "레", "li": "리", "lo": "로", "lu": "루",
+    "ma": "마", "me": "메", "mi": "미", "mo": "모", "mu": "무",
+    "na": "나", "ne": "네", "ni": "니", "no": "노", "nu": "누",
+    "oa": "오아", "oe": "외", "oi": "오이", "ou": "오우",
+    "pa": "파", "pe": "페", "pi": "피", "po": "포", "pu": "푸",
+    "ra": "라", "re": "레", "ri": "리", "ro": "로", "ru": "루",
+    "sa": "사", "se": "세", "si": "시", "so": "소", "su": "수",
+    "ta": "타", "te": "테", "ti": "티", "to": "토", "tu": "투",
+    "ua": "우아", "ue": "우에", "ui": "의", "un": "운",
+    "va": "바", "ve": "베", "vi": "비", "vo": "보", "vu": "부",
+    "wa": "와", "we": "웨", "wi": "위", "wo": "워",
+    "ya": "야", "ye": "예", "yi": "이", "yo": "요", "yu": "유",
+    "za": "자", "ze": "제", "zi": "지", "zo": "조", "zu": "주",
+    "en": "엔", "in": "인", "on": "온",
+    "ar": "아", "er": "어", "ir": "이", "or": "오", "ur": "우",
+    "ng": "응",
+    # === 1-char (fallback) ===
+    "a": "아", "b": "브", "c": "크", "d": "드", "e": "에",
+    "f": "프", "g": "그", "h": "흐", "i": "이", "j": "즈",
+    "k": "크", "l": "르", "m": "므", "n": "느", "o": "오",
+    "p": "프", "q": "크", "r": "르", "s": "스", "t": "트",
+    "u": "우", "v": "브", "w": "우", "x": "엑스", "y": "이", "z": "즈",
 }
 
 
@@ -268,6 +498,32 @@ def _korean_surname_from_token(token: str) -> str | None:
     return KOREAN_SURNAME_TO_KO.get(t)
 
 
+def _romanize_to_hangul(text: str) -> str:
+    """영문 음역 → 한글 (greedy longest match).
+
+    한국 이름 first name + 외국인 이름 한국어 발음 표기 cover.
+    예: "soyun" → "소윤", "yeji" → "예지", "smith" → "스미스"
+    정확하지 않을 수 있으나 user 의도 "최대한 한글로 표기" 정합.
+    """
+    s = re.sub(r"[^a-z]", "", str(text).lower())
+    if not s:
+        return ""
+    result = []
+    i = 0
+    while i < len(s):
+        matched = False
+        for length in (5, 4, 3, 2, 1):
+            chunk = s[i : i + length]
+            if chunk in HANGUL_SYLLABLE_MAP:
+                result.append(HANGUL_SYLLABLE_MAP[chunk])
+                i += length
+                matched = True
+                break
+        if not matched:
+            i += 1
+    return "".join(result)
+
+
 def _extract_first_last_tokens(name: str) -> tuple[str, str] | None:
     """영문명에서 first / last 토큰 추출. (first_concatenated, last_token)."""
     cleaned = re.sub(r"[^a-zA-Z\s\-]", "", str(name))
@@ -284,15 +540,16 @@ def _capitalize_first(s: str) -> str:
 
 
 def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
-    """artist_name_raw → name_ko (4-stage cascading).
+    """artist_name_raw → name_ko (5-stage cascading, 한글 우선).
 
-    Stage 1: 매핑 dict exact lookup (영문 + name-order swap)
+    Stage 1: 매핑 dict exact lookup (영문 + name-order swap) — 가장 정확
     Stage 2: raw에 한글 있으면 추출 (예: "Songfeel 송필" → "송필")
-    Stage 3: 한국 성 추정 — 영문 last token이 KOREAN_SURNAME_TO_KO 매칭 시
-             "{한글 성} + {영문 first name (Capitalized)}" 형식 반환
-             예: "Eun-hye Seo" → "서 Eun-Hye" (last=Seo → 서, first=eunhye)
-             단 last token "kim/lee/park/..." 등 일반 한국 성만 한정.
-    Stage 4: 위 모두 실패 → None
+    Stage 3: 한국 성 + 한글 음역 — 한국 작가
+             "Bang Soyun" → "방소윤" (성=방, 이름=Soyun 음역)
+             "Kim Hongbin" → "김홍빈" (한국식 Last First)
+    Stage 4: 외국인 이름도 음역 — 비-한국 성 전체 음역
+             "Smith John" → "스미스존" (외국 작가 한국어 발음 표기)
+    Stage 5: None
     """
     if name is None or pd.isna(name):
         return None
@@ -300,7 +557,7 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
     if not name_str:
         return None
 
-    # Stage 1: dict lookup (name-order swap)
+    # Stage 1: dict lookup
     for variant in _norm_en_variants(name_str):
         if variant in ko_map:
             return ko_map[variant]
@@ -311,33 +568,38 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
         if match:
             return match.group(0).strip()
 
-    # Stage 3: 한국 성 추정 (last token이 한국 성)
-    parts = _extract_first_last_tokens(name_str)
-    if parts:
-        first_concat, last_token = parts
-        # 일반적 "First Last"
-        ko_surname = _korean_surname_from_token(last_token)
-        if ko_surname:
-            # first name 영문 그대로 (Capitalized)
-            first_clean = re.sub(r"[^a-zA-Z]", "", first_concat)
-            return f"{ko_surname} {_capitalize_first(first_clean)}"
-        # 한국식 "Last First" 시도
-        first_token_korean = _korean_surname_from_token(
-            re.sub(r"[^a-z]", "", first_concat.lower())[: max(2, len(first_concat) // 2)]
-            if first_concat else ""
-        )
-        # 첫 토큰만 (multi-token first일 수 있음) — 더 명확히
-        first_tokens = re.split(r"[\s\-]+", re.sub(r"[^a-zA-Z\s\-]", "", name_str.lower()))
-        first_tokens = [t for t in first_tokens if t]
-        if first_tokens:
-            ko_surname_first = _korean_surname_from_token(first_tokens[0])
-            if ko_surname_first:
-                # "Last First" 형식 — last가 첫 토큰
-                rest = " ".join(first_tokens[1:])
-                rest_clean = re.sub(r"[^a-zA-Z\s]", "", rest)
-                return f"{ko_surname_first} {_capitalize_first(rest_clean.replace(' ', ''))}"
+    # Stage 3 / 4: 영문 토큰화
+    cleaned = re.sub(r"[^a-zA-Z\s\-]", "", name_str)
+    tokens = [t for t in re.split(r"[\s\-]+", cleaned) if t]
+    if not tokens:
+        return None
 
-    return None
+    if len(tokens) == 1:
+        # 단일 토큰 — 한국 성이면 한글 성, 아니면 음역
+        ko = _korean_surname_from_token(tokens[0])
+        if ko:
+            return ko
+        # 외국 단일 이름 음역
+        return _romanize_to_hangul(tokens[0]) or None
+
+    # 다중 토큰
+    # Stage 3a: "First Last" — last가 한국 성
+    ko_surname_last = _korean_surname_from_token(tokens[-1])
+    if ko_surname_last:
+        first_concat = "".join(tokens[:-1])
+        first_ko = _romanize_to_hangul(first_concat)
+        return f"{ko_surname_last}{first_ko}" if first_ko else ko_surname_last
+
+    # Stage 3b: "Last First" (한국식) — first 토큰이 한국 성
+    ko_surname_first = _korean_surname_from_token(tokens[0])
+    if ko_surname_first:
+        rest_concat = "".join(tokens[1:])
+        rest_ko = _romanize_to_hangul(rest_concat)
+        return f"{ko_surname_first}{rest_ko}" if rest_ko else ko_surname_first
+
+    # Stage 4: 외국인 이름 — 전체 음역
+    full_ko = _romanize_to_hangul("".join(tokens))
+    return full_ko if full_ko else None
 
 
 def nationality_to_region(nat) -> str:

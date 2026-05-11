@@ -85,20 +85,40 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 **매핑 placeholder 제외**: kada 등 일부 source에서 "중견작가" / "신진작가" 같은 generic placeholder는 제외.
 
-**매칭률 (v6 cascading 적용)**:
-- 전체: **35,258 / 41,365 (85.2%)** ⬆️
-- Artsy: 9,542 / 10,934 (**87.3%**)
-- Saatchi: 23,874 / 27,654 (**86.3%**)
-- Artue: 1,842 / 2,777 (**66.3%**)
-- Unique artists 단위: 1,782 / 2,245 (**79.4%**)
+**매칭률 (v7 — Romanization → Hangul 음역 적용)**:
+- 전체: **41,365 / 41,365 (100.0%)** ⬆️⬆️
+- Unique artists 단위: 2,185 unique ko names
 
-**형식 분포**:
-| 형식 | rows | 예시 |
-|---|---:|---|
-| `surname_only` (한글성+영문이름) | 30,373 (73%) | `서 Eunhye`, `김 Mihyun` |
-| `full_hangul` (완전 한글) | 4,680 (11%) | `황선태`, `백남준` |
-| `null` (매칭 안 됨) | 6,107 (15%) | 한국 성 표 외 또는 외국 작가 |
-| 기타 | 205 (1%) | |
+**v7 cascading 단계 (lookup_artist_name_ko)**:
+1. **Stage 1 — dict exact lookup**: 작가별 한글명 sheet 매핑 (5대 source 통합, 5,671 entries)
+2. **Stage 2 — raw 한글 추출**: `artist_name_raw`에 한글 포함 시 그대로 사용 (예: `"Songfeel 송필" → 송필`)
+3. **Stage 3a — 한국 성 + 한글 음역 ("First Last" 형식)**: last token이 한국 성이면 성+이름음역
+   - `Yeji Seok → 석예지`, `Lee Yejoo → 이예주`, `Seontae Hwang → 황선태`
+4. **Stage 3b — 한국 성 + 한글 음역 ("Last First" 한국식)**: first token이 한국 성
+   - `Bang Soyun → 방소윤`, `Kim Hongbin → 김홍빈`, `Hyuckjin Oh → 오혁진` (Oh가 last면 3a 적용)
+5. **Stage 4 — 외국인 이름 전체 음역**: 한국 성 매칭 실패 시 전체 영문을 한글 발음으로 음역
+   - `Maria Santos → 마리아산토스`, `Smith John → 스미트흐조흐느`
+6. **Stage 5 — None**: 빈 입력 등
+
+**음역 방식 (Romanization → Hangul)**:
+- `HANGUL_SYLLABLE_MAP` (~350 entries): 5-char → 4-char → 3-char → 2-char → 1-char greedy longest match
+- 한국 이름 first name 음절 cover (자음+모음+받침 형식): `byung→병`, `hyun→현`, `seok→석`, `hong→홍`, `eun→은` 등
+- 외국 이름은 1-char fallback ("smith" → "스미트흐")로 처리 — 정확하지 않으나 user 의도 "최대한 한글로 표기" 충족
+
+**예시**:
+| `artist_name_raw` | `artist_name_ko` (v7) | 비고 |
+|---|---|---|
+| `Seontae Hwang` | `황선태` | Stage 3a — Hwang=황 surname |
+| `Lee Yejoo` | `이예주` | Stage 3a — Lee=이 surname |
+| `Yeji Seok` | `석예지` | Stage 3a — Seok=석 surname |
+| `Bang Soyun` | `방소윤` | Stage 3b — Bang=방 surname |
+| `Kim Hongbin` | `김홍빈` | Stage 3b — Kim=김 surname |
+| `ByungHo Lee` | `이병호` | Stage 3a — byung=병 5-char syllable |
+| `Hyuckjin Oh` | `오혁진` | Stage 3a — Oh=오, hyuck=혁 |
+| `Hye Rim Baek` | `백혜림` | Stage 3a — Baek=백, rim=림 |
+| `Bonhwa Cho` | `조본화` | Stage 3a — Cho=조 |
+| `Nam June Paik` | `백남준` | Stage 1 dict — sheet 매핑 |
+| `Maria Santos` | `마리아산토스` | Stage 4 — 외국 작가 음역 |
 
 ### 3.2 Cold-start core features (9) — 3 source 공통
 
@@ -321,6 +341,7 @@ Track 3는 **운영 fidelity 최우선** + **신규 작가 cold-start 강화** �
 - **v4 (2026-05-11)**: 41,365 rows / **19 cols**. Hybrid 가격 추가 (price_amount_raw, price_currency_raw, was_converted) + 통일 환율 적용 (price_krw_unified, ln_price_krw_unified). target = ln_price_krw_unified.
 - **v5 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 추가 — 5 매핑 source 통합 + name-order swap + 한글 추출 fallback. 11.8% 매칭.
 - **v6 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 매칭 강화 — 한국 성 (Surname) Romanization 매핑 (60+ 성씨). 매칭률 **11.8% → 85.2%** (Saatchi 6% → 86%). 형식: full_hangul (11%) + surname_only "한글성+영문이름" (73%).
+- **v7 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` — Romanization → Hangul 음역 도입 (`HANGUL_SYLLABLE_MAP` ~350 entries + greedy longest match). 외국인 작가도 한국어 발음 표기. 매칭률 **85.2% → 100.0%**. 형식: 한글 전용 (`황선태`, `이병호`, `오혁진` 등) — surname+영문 hybrid 폐기.
 
 ## 13. 참고 자료
 
