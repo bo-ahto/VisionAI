@@ -191,6 +191,8 @@ def build_features(
 
     birth_year = _pick("artist_birth_year", "birth_year", None) or p.get("birth_year_from_source")
     total_works = _pick("artist_total_works", "total_works", 0)
+    # PR-HTW-FLAG: has_total_works = (total_works > 0). Unmatched 시 0.
+    has_total_works = 1 if (total_works is not None and total_works > 0) else 0
     # PR-FOLLOWERS-FALLBACK: followers None 별도 감지 — unmatched vs real zero 분리.
     # _pick(default=None)로 None preserve, 그 후 has_followers 계산.
     followers_raw = _pick("followers", "followers", None)
@@ -251,6 +253,7 @@ def build_features(
         "ln_followers": math.log(followers + 1),
         "has_followers": has_followers,
         "artist_total_works": total_works,
+        "has_total_works": has_total_works,
         "for_sale_ratio": for_sale_ratio,
         # 가격 레벨 (2)
         "ho_price_level": 0.0,

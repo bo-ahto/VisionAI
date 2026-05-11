@@ -94,6 +94,14 @@ CB_FEATURES_BASE_29_HF = [*CB_FEATURES_BASE_28, "has_followers"]
 # - Saatchi cold +0.39pp 의외 (ensemble tree 구조 변경 효과 추정)
 CB_FEATURES_BASE_28_HF = [f for f in CB_FEATURES_BASE_29_HF if f != "gallery_tier"]
 
+# PR-HTW-FLAG (2026-05-11): 29 features = CB_FEATURES_BASE_28_HF + has_total_works.
+# - Layer 2 follow-up: artist_total_works keep 확정 (27_hf REJECTED, warm 9.3σ real signal)
+# - Codex 후속 권고: has_followers 패턴 정합 (missing detection)
+# - Distribution: Artsy 0.01% / Saatchi 1.98% has_total_works=0 (sparse)
+# - Isolated cycle (28_hf → 29_hf_htw): Δ_cold -0.51pp / Δ_warm -0.01pp (PASS_IMPROVED)
+# - 본 세션 첫 명백한 일관 개선 (모든 metric 음수) → 신규 default candidate
+CB_FEATURES_BASE_29_HF_HTW = [*CB_FEATURES_BASE_28_HF, "has_total_works"]
+
 # Backward compat: 기존 import 호환
 CB_FEATURES = CB_FEATURES_BASE
 
@@ -226,6 +234,17 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
         "cb_features": CB_FEATURES_BASE_28_HF,
         "cat_features": CAT_FEATURES_29,
         "expected_target": "v3_filtered_tuned_b_warm_28_hf",
+    },
+    # PR-HTW-FLAG (2026-05-11): 29-feature variant (28_hf + has_total_works).
+    # 본 세션 첫 명백한 일관 개선 (cold -0.51 / artsy -0.43 / saatchi -0.55 / warm -0.01).
+    # has_total_works: matched artist with positive total_works → 1, unmatched/0 → 0
+    # cb_features: 29 (CB_FEATURES_BASE_28_HF + has_total_works) / cat_features: 5
+    # Default OFF. B winner 후속 PR로 분리 (Codex R2 권고).
+    "v3_filtered_tuned_29_hf_htw": {
+        "prefix": "integrated_v3_filtered_tuned_29_hf_htw",
+        "cb_features": CB_FEATURES_BASE_29_HF_HTW,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_29_hf_htw",
     },
 }
 

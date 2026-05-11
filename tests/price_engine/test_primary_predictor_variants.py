@@ -27,6 +27,7 @@ from visionai.price_engine.api.primary_predictor import (
     CB_FEATURES_BASE_28_HF,
     CB_FEATURES_BASE_29,
     CB_FEATURES_BASE_29_HF,
+    CB_FEATURES_BASE_29_HF_HTW,
     CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM,
     DEFAULT_VARIANT,
     SUPPORTED_VARIANTS,
@@ -555,3 +556,76 @@ def test_artifact_prefix_pattern_28_hf():
             f"{cfg['prefix']}_source_calibration.json",
         ]
         assert all(f.startswith(cfg["prefix"]) for f in expected_files)
+
+
+# ---- PR-HTW-FLAG: 29_hf_htw variant (28_hf + has_total_works) ----
+
+
+def test_cb_features_base_29_hf_htw_count():
+    """29_hf_htw = 28_hf + has_total_works."""
+    assert len(CB_FEATURES_BASE_29_HF_HTW) == 29
+    assert "has_total_works" in CB_FEATURES_BASE_29_HF_HTW
+
+
+def test_cb_features_base_29_hf_htw_extends_28_hf():
+    assert CB_FEATURES_BASE_29_HF_HTW[:28] == CB_FEATURES_BASE_28_HF
+    assert CB_FEATURES_BASE_29_HF_HTW[28] == "has_total_works"
+    assert "has_followers" in CB_FEATURES_BASE_29_HF_HTW
+    assert "gallery_tier" not in CB_FEATURES_BASE_29_HF_HTW
+
+
+def test_v3_filtered_tuned_29_hf_htw_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_29_hf_htw"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_29_hf_htw"
+    assert cfg["expected_target"] == "v3_filtered_tuned_29_hf_htw"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_29_HF_HTW
+    assert cfg["cat_features"] == CAT_FEATURES_29
+    assert len(cfg["cb_features"]) == 29
+
+
+def test_resolve_variant_29_hf_htw_explicit():
+    assert _resolve_variant("v3_filtered_tuned_29_hf_htw") == "v3_filtered_tuned_29_hf_htw"
+
+
+def test_get_cb_features_29_hf_htw():
+    f = get_cb_features("v3_filtered_tuned_29_hf_htw")
+    assert "has_total_works" in f
+    assert "has_followers" in f
+    assert "artist_total_works" in f
+    assert "gallery_tier" not in f
+
+
+def test_feature_builder_has_total_works_matched():
+    """matched artist with positive total_works → has_total_works=1."""
+    from visionai.price_engine.api.primary_feature_builder import build_features
+
+    f = build_features(
+        50.0,
+        50.0,
+        "oil on canvas",
+        artist_profile={"source": "artsy", "total_works": 30, "followers": 100},
+    )
+    assert f["has_total_works"] == 1
+    assert f["artist_total_works"] == 30
+
+
+def test_feature_builder_has_total_works_unmatched():
+    """unmatched → has_total_works=0."""
+    from visionai.price_engine.api.primary_feature_builder import build_features
+
+    f = build_features(50.0, 50.0, "oil", artist_profile={"source": "manual"})
+    assert f["has_total_works"] == 0
+    assert f["artist_total_works"] == 0
+
+
+def test_feature_builder_has_total_works_real_zero():
+    """matched with total_works=0 → has_total_works=0 (train consistency)."""
+    from visionai.price_engine.api.primary_feature_builder import build_features
+
+    f = build_features(
+        50.0,
+        50.0,
+        "oil",
+        artist_profile={"source": "saatchi", "total_works": 0, "followers": 0},
+    )
+    assert f["has_total_works"] == 0
