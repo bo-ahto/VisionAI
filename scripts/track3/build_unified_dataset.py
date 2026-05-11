@@ -172,6 +172,10 @@ KOREAN_SURNAME_TO_KO = {
     "leem": "임", "leim": "임",
     "chon": "천", "cheon": "천",  # 한국 성 "천"
     "rhew": "유",
+    # 추가 (v12): 드문 한국 성 + variant
+    "yong": "용",
+    "rhee_s": "이",
+    "im_kr": "임", "yim": "임",
 }
 
 # 한국 성 중 first-token 일 가능성이 높은 5대 성 (모호 해결용).
@@ -187,6 +191,19 @@ ENGLISH_FIRSTNAME_TO_KO = {
     "stone": "스톤", "rain": "레인", "moon_en": "문",
     "one": "원",  # "Sungone Jung", "Suk One" 같은 표기
     "eury": "유리", "lacey": "레이시", "karis": "카리스",
+    # 추가 (v12): 빈도 audit 발견된 영어 first name
+    "kris": "크리스", "denis": "데니스", "dennis": "데니스",
+    "molly": "몰리", "johnny": "자니", "jenny": "제니",
+    "melody": "멜로디", "stella": "스텔라", "jeremy": "제레미",
+    "tina": "티나", "lina": "리나", "nina": "니나",
+    "irene": "아이린", "ellen": "엘렌", "sally": "샐리",
+    "betty": "베티", "amy": "에이미", "jane": "제인",
+    "judy": "주디", "kelly": "켈리", "kerry": "케리",
+    "polly": "폴리", "sandy": "샌디", "vicky": "비키",
+    "wendy": "웬디", "yumi": "유미",
+    "philip": "필립", "phillip": "필립", "kevin": "케빈",
+    "henry": "헨리", "alex": "알렉스", "leo": "레오",
+    "vakki": "박기",  # 한국 작가 nickname 자주 매핑
     "mia": "미아", "jenny": "제니", "rachel": "레이첼",
     "leo": "레오", "joy": "조이", "lily": "릴리",
     "sky": "스카이", "ray": "레이", "pearl": "펄",
@@ -232,9 +249,10 @@ ENGLISH_FIRSTNAME_TO_KO = {
 KOREAN_SURNAME_FIRST_PRIORITY = {
     "kim", "lee", "park", "choi", "choe", "jung", "jeong", "chung",
     "kang", "cho", "jo", "yoon", "yun", "jang", "han", "shin", "sin",
-    "seo", "kwon", "hwang", "ahn", "song", "hong", "bae", "baek",
+    "seo", "suh", "kwon", "hwang", "ahn", "song", "hong", "bae", "baek",
     "moon", "yang", "son", "go", "ko", "ryu", "oh", "yoo", "yu",
-    "no", "noh", "min", "im", "lim", "ham", "ku", "koo",
+    "no", "noh", "min", "im", "lim", "leem", "ham", "ku", "koo",
+    "nam", "jeon", "rhee", "chon", "cheon",
 }
 
 # Romanization → Hangul 음절 매핑 (greedy longest match).
@@ -482,6 +500,10 @@ HANGUL_SYLLABLE_MAP: dict[str, str] = {
     "zin": "진", "zi": "지",
     "ts": "쓰",
     "tz": "츠",
+    # 추가 (v12): pyo=표 등 audit 발견
+    "pyo": "표", "phyo": "표",
+    "cho_s": "조", "joh": "조",
+    "tt": "트", "tch": "치",
     # 추가: jam/sam/nam/dam/ham
     "jam": "잼", "sam": "샘", "ham": "햄", "dam": "댐", "nam": "남",
     "bom": "봄", "gom": "곰", "tom": "톰", "rom": "롬", "hom": "홈",
@@ -738,10 +760,13 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
         return None
 
     if len(tokens) == 1:
-        # 단일 토큰 — 한국 성이면 한글 성, 아니면 음역
+        # 단일 토큰 — 한국 성 → 영어 사전 → 음역 순
         ko = _korean_surname_from_token(tokens[0])
         if ko:
             return ko
+        tok_norm = re.sub(r"[^a-z]", "", tokens[0].lower())
+        if tok_norm in ENGLISH_FIRSTNAME_TO_KO:
+            return ENGLISH_FIRSTNAME_TO_KO[tok_norm]
         # 외국 단일 이름 음역
         return _romanize_to_hangul(tokens[0]) or None
 
