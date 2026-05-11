@@ -164,6 +164,10 @@ KOREAN_SURNAME_TO_KO = {
     "ki": "기", "gi": "기",
     "ku": "구",
     "ki_kr": "기",
+    # 추가 (v9): um=엄 surname 보강
+    "um": "엄",
+    "eom_kr": "엄",
+    "kheem": "김", "gheem": "김",  # 드문 Kim 표기
 }
 
 # 한국 성 중 first-token 일 가능성이 높은 5대 성 (모호 해결용).
@@ -173,6 +177,17 @@ KOREAN_SURNAME_TO_KO = {
 # 영어 흔한 first name → 한국어 표기 (음역으로 처리 불가능한 영단어).
 # 예: "Eugene Ahn" 같은 한국계-영어이름 작가 처리용.
 ENGLISH_FIRSTNAME_TO_KO = {
+    # 한국계가 자주 쓰는 영어식 이름 + 한국식 발음
+    "eury": "유리", "lacey": "레이시", "karis": "카리스",
+    "mia": "미아", "jenny": "제니", "rachel": "레이첼",
+    "leo": "레오", "joy": "조이", "lily": "릴리",
+    "sky": "스카이", "ray": "레이", "pearl": "펄",
+    "rose": "로즈", "iris": "아이리스", "june": "준",
+    "mark": "마크", "matt": "맷", "max": "맥스",
+    "nick": "닉", "tony": "토니", "andy": "앤디",
+    "billy": "빌리", "jimmy": "지미", "tommy": "토미",
+    "ben": "벤", "kai": "카이", "lee_en": "리",
+    "sun": "선", "luna": "루나",
     "eugene": "유진", "christine": "크리스틴", "stephanie": "스테파니",
     "stephen": "스티븐", "steven": "스티븐", "daniel": "다니엘",
     "justin": "저스틴", "brian": "브라이언", "jenny": "제니",
@@ -271,6 +286,22 @@ HANGUL_SYLLABLE_MAP: dict[str, str] = {
     "zoo": "주", "zoon": "준", "joo": "주", "joon": "준",
     "gyu": "규", "kyu": "규", "gyul": "귤",
     "yoo": "유", "you": "유",
+    # 추가 (v9): 한국 이름 자주 음절 보강
+    "youn": "윤", "yun_kr": "윤",
+    "tai": "태", "tay": "태",
+    "byok": "벽", "byoek": "벽",
+    "joeng": "정",
+    "jihea": "지혜", "jihye": "지혜", "jihyea": "지혜",
+    "kheem": "김", "gheem": "김",
+    "miryang": "미향",  # 일부 영문 표기 특수
+    "beom": "범", "beob": "법", "bup": "법",
+    "gyo": "교", "kyo": "교",
+    # 주의: "gyob"=교 같은 4-char 매핑은 추가하지 말것 — greedy가
+    # "gyobeom" → gyob(교)+eom 로 잘못 분해. gyo(3)+beom(4) 분해가 정답.
+    "gyom": "굠",
+    "hyea": "혜", "hyae": "혜",
+    "ryang": "량", "lyang": "량",
+    "myang": "먕",
     "jeok": "적", "jok": "족",
     "geuk": "극", "guk": "국",
     "duek": "득", "deuk": "득",
@@ -401,6 +432,23 @@ HANGUL_SYLLABLE_MAP: dict[str, str] = {
     # 추가 (v8): ki/gi/cha 등 일반 음절
     "ki": "기", "gi": "기", "cha": "차", "gam": "감", "kam": "감",
     "sy": "시", "sye": "셰",
+    # 추가 (v9): 2-3 char 자주 누락
+    "oh": "오",  # 1-char "o"=오와 충돌 방지
+    "ok": "옥", "og": "옥",
+    "il": "일", "ir": "일", "yil": "일",
+    "ip": "입", "ib": "입",
+    "yt": "이",
+    "ae": "애",  # 이미 있음
+    "ah": "아",
+    "ee": "이",  # 이미 있음
+    "mee": "미",
+    "hea": "혜", "heah": "혜",
+    "gab": "갑", "gap": "갑",
+    "ub": "웁", "up": "웁",
+    "ud": "우드",
+    "zin": "진", "zi": "지",
+    "ts": "쓰",
+    "tz": "츠",
     # 추가: jam/sam/nam/dam/ham
     "jam": "잼", "sam": "샘", "ham": "햄", "dam": "댐", "nam": "남",
     "bom": "봄", "gom": "곰", "tom": "톰", "rom": "롬", "hom": "홈",
