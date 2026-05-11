@@ -57,7 +57,18 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 | `nationality_region` | **98.4% korea** (변별력 없음) | **v3** |
 | `has_nationality` | **100% = 1** (사실상 constant) | **v3** |
 
-### 3.1 IDs (5) — 모델 input 아님, 추적/매칭용
+### 3.1 IDs (5) — 추적/매칭용 + artist_name_ko는 cold-start 핵심 feature
+
+**범례**: `★` = 학습 input 필수 / `·` = 학습 미사용 (메타데이터)
+
+| Mark | Column | 비고 |
+|---|---|---|
+| · | `source_platform` | artsy / saatchi / artue — source bias 분석용. **운영 모델에선 미사용** (source 정보 누설 위험). |
+| · | `source_listing_id` | source 내 작품 ID — dedup / debugging. |
+| · | `artist_entity_id_raw` | source 내 작가 ID — overlap 분석. |
+| · | `artist_name_raw` | source 원본 영문/한글명 — debugging. |
+| ★ | `artist_name_ko` | **한글 작가명 — cold-start 핵심**. target encoding / hash / FE (artist fixed effect) 등 적용. v12 매칭률 100%. |
+
 
 | Column | Type | Description |
 |---|---|---|
@@ -122,18 +133,20 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 ### 3.2 Cold-start core features (10) — 3 source 공통
 
-| Column | Type | Source coverage | Description |
-|---|---|---|---|
-| `medium_category` | categorical (8) | 100% | oil / acrylic / ink / watercolor / pigment / mixed / pastel / pencil / other |
-| `support_category` | categorical (7) | 100% | canvas / paper / linen / panel / silk / metal / other |
-| `width_cm` | float | 100% | 가로 (cm) |
-| `height_cm` | float | 100% | 세로 (cm) |
-| `depth_cm` | float | 78% measured | 깊이 (cm). measured 안 됨 → 0 + `has_depth`=0 |
-| `has_depth` | binary | 100% | depth_cm > 0 |
-| `area_cm2` | float | 100% | width × height |
-| `log_area` | float | 100% | log(area_cm2) — heavy tail 안정화 |
-| `estimated_ho` | float | 100% | **한국 캔버스 호수 (F 타입 보간)**. `visionai.price_engine.preprocessing.dimension_parser.area_to_ho_f()` 적용. 면적(cm²)을 `HO_F_TABLE` 표준 호수 면적과 `np.interp` 선형 보간. 예: 60.6×50.0=12호 / 72.7×60.6=20호 / 116.8×91.0=50호 / 162.2×130.3=100호. 표준 호수 매칭률 100% 검증 완료. |
-| `orientation` | categorical (4) | 100% | portrait / landscape / square / unknown |
+**범례**: `★` = 학습 input 필수 / `△` = 학습 input 선택 (모델 종류 따라) / `·` = 학습 미사용 (derive 가능 / 보존만)
+
+| Mark | Column | Type | Source coverage | Description |
+|---|---|---|---|---|
+| ★ | `medium_category` | categorical (8) | 100% | oil / acrylic / ink / watercolor / pigment / mixed / pastel / pencil / other |
+| ★ | `support_category` | categorical (7) | 100% | canvas / paper / linen / panel / silk / metal / other |
+| △ | `width_cm` | float | 100% | 가로 (cm). 트리 모델은 area/orientation으로 cover됨 — 선택. |
+| △ | `height_cm` | float | 100% | 세로 (cm). width와 동일 (선택). |
+| △ | `depth_cm` | float | 78% measured | 깊이 (cm). 3D 작품 한정 input. measured 안 됨 → 0 + `has_depth`=0 |
+| ★ | `has_depth` | binary | 100% | depth_cm > 0. **missing indicator**로 필수. |
+| · | `area_cm2` | float | 100% | width × height. `log_area`로 derive됨 — 학습엔 `log_area`만 사용 권장. |
+| ★ | `log_area` | float | 100% | log(area_cm2) — heavy tail 안정화. **선형/NN 필수, 트리도 권장.** |
+| ★ | `estimated_ho` | float | 100% | **한국 캔버스 호수 (F 타입 보간)**. `visionai.price_engine.preprocessing.dimension_parser.area_to_ho_f()` 적용. `HO_F_TABLE` 표준 호수 면적과 `np.interp` 선형 보간. 예: 60.6×50.0=12호 / 72.7×60.6=20호 / 116.8×91.0=50호 / 162.2×130.3=100호. 표준 호수 매칭 100%. **한국 시장 가격 segment cover.** |
+| ★ | `orientation` | categorical (4) | 100% | portrait / landscape / square / unknown. width/height 비율 정보. |
 
 ### 3.3 Hybrid 가격 (4) — User 요구 정합
 
@@ -158,10 +171,34 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 ### 3.4 Target (2)
 
-| Column | Type | Description |
+| Mark | Column | Type | Description |
+|---|---|---|---|
+| · | `price_krw_unified` | int | **통일 환율 적용 KRW 가격** (100K ~ 5B 필터). 학습 직접 사용 안 함 — **평가/복원 (`exp(pred)`)용 보존**. |
+| ★ | `ln_price_krw_unified` | float | log(price_krw_unified) — **학습 target**. heavy-tail 정규화 + RMSE log scale = MAPE 안정. |
+
+### 3.5 모델 사용 컬럼 요약 (input 13 + target 1)
+
+**필수 (★)**: `artist_name_ko` + `medium_category` + `support_category` + `has_depth` + `log_area` + `estimated_ho` + `orientation` (= 7개)
+
+**선택 (△)** (모델/도메인 따라): `width_cm` + `height_cm` + `depth_cm` (= 3개)
+
+**Target**: `ln_price_krw_unified` (학습) / `price_krw_unified` (평가 복원)
+
+**미사용 (·)**: `area_cm2` (log_area 사용 시 중복 — 트리에서는 무해하지만 권장 미사용)
+
+#### 로그 변환 vs 원본 가이드
+
+| 모델 종류 | area 권장 | price 권장 |
 |---|---|---|
-| `price_krw_unified` | int | **통일 환율 적용 KRW 가격** (학습/평가 standard, 100K ~ 5B 필터) |
-| `ln_price_krw_unified` | float | log(price_krw_unified) — **학습 target** |
+| **선형 회귀 (헤도닉)** | `log_area`만 | `ln_price` (학습) → `exp(pred)` |
+| **트리 (XGBoost/LightGBM/CatBoost)** | 단조 변환 invariant — `log_area` 1개 (또는 `area_cm2`, 둘 중 하나만) | `ln_price` (RMSE log scale = MAPE 안정) |
+| **Neural Network** | `log_area`만 (스케일 정규화) | `ln_price` |
+
+핵심 원칙:
+- 트리 모델은 split이 단조 변환에 invariant → `area_cm2`와 `log_area` 둘 다 넣으면 **동일 split 결과 + 메모리 낭비**.
+- 선형/NN은 heavy-tail에서 `log_area`가 등분산성/선형성 보장 → **원본은 절대 미사용**.
+- `estimated_ho`는 area의 비선형 변환이지만 한국 시장 도메인 정보 (가격이 호수 단위 cluster) cover → `log_area`와 함께 사용 권장.
+- `width`/`height` 단독은 `area + orientation`으로 derive됨. 트리 모델에서 추가 효과 미미 — 선택.
 
 ## 4. 데이터 분포
 
