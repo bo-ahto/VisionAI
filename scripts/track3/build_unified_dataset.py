@@ -699,6 +699,29 @@ def build_artist_ko_map(data_dir: Path) -> dict[str, str]:
                 if variant and variant not in mapping:
                     mapping[variant] = ko
     logger.info(f"  artist_name_ko mapping: {len(mapping)} entries (raw {total_rows})")
+
+    # Manual overrides (사용자 검수 결과) — 기존 매핑을 OVERRIDE.
+    # 형식: artist_name_raw, artist_name_ko
+    # 위치: scripts/track3/artist_ko_manual_overrides.csv (git tracked config)
+    override_path = Path(__file__).parent / "artist_ko_manual_overrides.csv"
+    if override_path.exists():
+        try:
+            overrides = pd.read_csv(override_path)
+            n_ovr = 0
+            for _, row in overrides.iterrows():
+                raw_name = str(row["artist_name_raw"]).strip()
+                ko = str(row["artist_name_ko"]).strip()
+                if not raw_name or not ko or ko.lower() == "nan":
+                    continue
+                # _norm_en_variants로 정규화한 모든 variant를 override
+                for variant in _norm_en_variants(raw_name):
+                    if variant:
+                        mapping[variant] = ko  # 덮어쓰기 (manual 최우선)
+                        n_ovr += 1
+            logger.info(f"  Manual overrides 적용: {len(overrides)} 작가 / {n_ovr} variant")
+        except Exception as e:
+            logger.warning(f"  Manual overrides load 실패: {e}")
+
     return mapping
 
 
