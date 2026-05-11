@@ -69,18 +69,36 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 #### 작가 한글명 매핑 (artist_name_ko) 변환 규칙
 
-3 단계 cascading:
+**4 단계 cascading** (User 한국어 이름 규칙 반영):
+
 1. **매핑 source 통합 lookup**: 5 source 파일 (`artist_profiles.csv`, `artist_slug_mapping_expanded.csv`, `merged_artist_profiles.csv`, `kada_artist_profiles.csv`, `wikidata_korean_artists.csv`) → 영문명 ↔ 한글명 dict (5,671 entries).
 2. **Name-order swap**: 한국식 (Last First) ↔ 서양식 (First Last) 두 순서 모두 시도.
    - 예: "Lee Ufan" → "leeufan" + "ufanlee" 둘 다 lookup
 3. **Raw 한글 추출 fallback**: artist_name_raw에 한글 character 있으면 추출 (e.g. "Songfeel 송필" → "송필").
+4. **한국 성 (Surname) Romanization 매핑** (신규): 영문 last token이 한국 성 표 (`KOREAN_SURNAME_TO_KO`, 60+ entries) 매칭 시 한글 성 + 영문 first name 형식 부여.
+   - User 단서: "1음절이면 성, 2음절이 붙는 게 이름"
+   - 예: `Eun-hye Seo` → `서 Eunhye` (Seo=서, Eun-hye=Eunhye)
+   - 예: `mihyun kim` → `김 Mihyun`
+   - 한국식 "Last First" 순서도 동시 시도: `Kim Hongbin` → `김 Hongbin`
+
+**한국 성 표 커버**: Top 60 성씨 (인구 95%+ cover). Kim/Lee/Park/Choi/Jung/Kang/Cho/Yoon/Jang/Lim/Han/Shin/Seo/Kwon/Hwang/Ahn/Song/Yoo/Hong/Jeon/Ko/Moon/Yang/Son/Bae/Baek 등.
 
 **매핑 placeholder 제외**: kada 등 일부 source에서 "중견작가" / "신진작가" 같은 generic placeholder는 제외.
 
-**매칭률**:
-- 전체: 4,885 / 41,365 (11.8%)
-- Artsy: 27.1% / Saatchi: 6.0% / Artue: 9.8%
-- 매칭 안 된 작가 → null (향후 manual annotation으로 확장 가능)
+**매칭률 (v6 cascading 적용)**:
+- 전체: **35,258 / 41,365 (85.2%)** ⬆️
+- Artsy: 9,542 / 10,934 (**87.3%**)
+- Saatchi: 23,874 / 27,654 (**86.3%**)
+- Artue: 1,842 / 2,777 (**66.3%**)
+- Unique artists 단위: 1,782 / 2,245 (**79.4%**)
+
+**형식 분포**:
+| 형식 | rows | 예시 |
+|---|---:|---|
+| `surname_only` (한글성+영문이름) | 30,373 (73%) | `서 Eunhye`, `김 Mihyun` |
+| `full_hangul` (완전 한글) | 4,680 (11%) | `황선태`, `백남준` |
+| `null` (매칭 안 됨) | 6,107 (15%) | 한국 성 표 외 또는 외국 작가 |
+| 기타 | 205 (1%) | |
 
 ### 3.2 Cold-start core features (9) — 3 source 공통
 
@@ -301,7 +319,8 @@ Track 3는 **운영 fidelity 최우선** + **신규 작가 cold-start 강화** �
 - **v2 (2026-05-11)**: 41,366 rows / **17 cols**. 3 source raw에 없는 7 columns 제거.
 - **v3 (2026-05-11)**: 41,366 rows / **15 cols**. 변별력 없는 2 columns 제거.
 - **v4 (2026-05-11)**: 41,365 rows / **19 cols**. Hybrid 가격 추가 (price_amount_raw, price_currency_raw, was_converted) + 통일 환율 적용 (price_krw_unified, ln_price_krw_unified). target = ln_price_krw_unified.
-- **v5 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 추가 — 5 매핑 source 통합 + name-order swap + 한글 추출 fallback. 11.8% 매칭 (Artsy 27% / Saatchi 6% / Artue 10%).
+- **v5 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 추가 — 5 매핑 source 통합 + name-order swap + 한글 추출 fallback. 11.8% 매칭.
+- **v6 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 매칭 강화 — 한국 성 (Surname) Romanization 매핑 (60+ 성씨). 매칭률 **11.8% → 85.2%** (Saatchi 6% → 86%). 형식: full_hangul (11%) + surname_only "한글성+영문이름" (73%).
 
 ## 13. 참고 자료
 

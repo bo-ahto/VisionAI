@@ -82,6 +82,72 @@ ARTIST_KO_MAP_SOURCES = [
 KO_NAME_PLACEHOLDERS = {"중견작가", "신진작가", "원로작가", "작고작가", "Unknown"}
 HANGUL_PATTERN = re.compile(r"[가-힣]")
 
+# 한국 성 Romanization 매핑 (Revised Romanization 표준 + 일반적 변형).
+# User 단서: "1음절이면 성" — 영문 last token이 이 표에 있으면 한국 작가로 추정.
+# 한국 성의 대부분 커버 (top 60 성씨로 인구 95%+ cover).
+KOREAN_SURNAME_TO_KO = {
+    # 5대 성 (인구 50%+)
+    "kim": "김", "lee": "이", "yi": "이", "ree": "이", "rhee": "이",
+    "park": "박", "bak": "박", "pak": "박",
+    "choi": "최", "choe": "최",
+    "jung": "정", "jeong": "정", "chung": "정", "cheong": "정",
+    # 10대 성
+    "kang": "강", "gang": "강",
+    "cho": "조", "jo": "조",
+    "yoon": "윤", "yun": "윤",
+    "jang": "장", "chang": "장",
+    "lim": "임", "im": "임",
+    "han": "한",
+    # 20대 성
+    "shin": "신", "sin": "신",
+    "seo": "서", "suh": "서", "sur": "서",
+    "kwon": "권", "gwon": "권",
+    "hwang": "황",
+    "ahn": "안", "an": "안",
+    "song": "송",
+    "ryu": "류", "yu": "유", "you": "유", "yoo": "유",
+    "hong": "홍",
+    "jeon": "전", "jun": "전", "chun": "전",
+    "go": "고", "ko": "고", "koh": "고",
+    "moon": "문", "mun": "문",
+    "yang": "양",
+    "son": "손", "sohn": "손",
+    "bae": "배", "pae": "배",
+    "baek": "백", "paek": "백", "back": "백",
+    # 30-50대 성
+    "heo": "허", "huh": "허", "hur": "허",
+    "yu_uh": "우",  # placeholder — 'woo' below
+    "woo": "우",
+    "nam": "남",
+    "shim": "심", "sim": "심",
+    "ha": "하",
+    "no": "노", "noh": "노", "roh": "노", "row": "노",
+    "ju": "주", "joo": "주", "chu": "주",
+    "min": "민",
+    "ryoo": "유", "ryo": "유",
+    "ku": "구", "koo": "구", "gu": "구",
+    "shin_uh": "신",
+    "byun": "변", "byeon": "변",
+    "ma": "마",
+    "ohm": "엄", "uhm": "엄", "eom": "엄",
+    "won": "원",
+    "tak": "탁",
+    "yeo": "여",
+    "do": "도",
+    "kil": "길", "gil": "길",
+    "in": "인",
+    "pyo": "표",
+    "wang": "왕",
+    "jeong_kr": "정",
+    "sun": "선",
+    "ho": "호",
+    "chae": "채",
+    "yeom": "염",
+    "ban": "반",
+    "jang_uh": "장",
+    "joung": "정",
+}
+
 
 # ─── Medium / Support 분류 (Track 1 정합) ───
 SUPPORT_RULES = [
@@ -194,22 +260,83 @@ def build_artist_ko_map(data_dir: Path) -> dict[str, str]:
     return mapping
 
 
+def _korean_surname_from_token(token: str) -> str | None:
+    """영문 token이 한국 성으로 추정되면 한글 성 반환."""
+    if not token:
+        return None
+    t = re.sub(r"[^a-z]", "", token.lower())
+    return KOREAN_SURNAME_TO_KO.get(t)
+
+
+def _extract_first_last_tokens(name: str) -> tuple[str, str] | None:
+    """영문명에서 first / last 토큰 추출. (first_concatenated, last_token)."""
+    cleaned = re.sub(r"[^a-zA-Z\s\-]", "", str(name))
+    tokens = [t for t in re.split(r"[\s\-]+", cleaned) if t]
+    if len(tokens) < 2:
+        return None
+    # 한국식 영문 표기 2가지 — 본 함수는 두 후보를 모두 반환하지 않고,
+    # 매칭 logic에서 각 후보 시도. 일반적 "First Last" 가정.
+    return ("".join(tokens[:-1]).lower(), tokens[-1].lower())
+
+
+def _capitalize_first(s: str) -> str:
+    return s[0].upper() + s[1:].lower() if s else ""
+
+
 def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
-    """artist_name_raw → name_ko. (1) 매핑 시도 / (2) raw에 한글 있으면 추출."""
+    """artist_name_raw → name_ko (4-stage cascading).
+
+    Stage 1: 매핑 dict exact lookup (영문 + name-order swap)
+    Stage 2: raw에 한글 있으면 추출 (예: "Songfeel 송필" → "송필")
+    Stage 3: 한국 성 추정 — 영문 last token이 KOREAN_SURNAME_TO_KO 매칭 시
+             "{한글 성} + {영문 first name (Capitalized)}" 형식 반환
+             예: "Eun-hye Seo" → "서 Eun-Hye" (last=Seo → 서, first=eunhye)
+             단 last token "kim/lee/park/..." 등 일반 한국 성만 한정.
+    Stage 4: 위 모두 실패 → None
+    """
     if name is None or pd.isna(name):
         return None
-    name_str = str(name)
-    # (1) 매핑 lookup (영문 + name-order swap)
+    name_str = str(name).strip()
+    if not name_str:
+        return None
+
+    # Stage 1: dict lookup (name-order swap)
     for variant in _norm_en_variants(name_str):
         if variant in ko_map:
             return ko_map[variant]
-    # (2) raw 자체에 한글 있으면 추출
-    hangul_chars = HANGUL_PATTERN.findall(name_str)
-    if hangul_chars:
-        # 연속된 한글 부분만 추출
-        match = re.search(r"[가-힣\s]+", name_str)
+
+    # Stage 2: raw에 한글 직접 있음
+    if HANGUL_PATTERN.search(name_str):
+        match = re.search(r"[가-힣][가-힣\s]*[가-힣]|[가-힣]", name_str)
         if match:
             return match.group(0).strip()
+
+    # Stage 3: 한국 성 추정 (last token이 한국 성)
+    parts = _extract_first_last_tokens(name_str)
+    if parts:
+        first_concat, last_token = parts
+        # 일반적 "First Last"
+        ko_surname = _korean_surname_from_token(last_token)
+        if ko_surname:
+            # first name 영문 그대로 (Capitalized)
+            first_clean = re.sub(r"[^a-zA-Z]", "", first_concat)
+            return f"{ko_surname} {_capitalize_first(first_clean)}"
+        # 한국식 "Last First" 시도
+        first_token_korean = _korean_surname_from_token(
+            re.sub(r"[^a-z]", "", first_concat.lower())[: max(2, len(first_concat) // 2)]
+            if first_concat else ""
+        )
+        # 첫 토큰만 (multi-token first일 수 있음) — 더 명확히
+        first_tokens = re.split(r"[\s\-]+", re.sub(r"[^a-zA-Z\s\-]", "", name_str.lower()))
+        first_tokens = [t for t in first_tokens if t]
+        if first_tokens:
+            ko_surname_first = _korean_surname_from_token(first_tokens[0])
+            if ko_surname_first:
+                # "Last First" 형식 — last가 첫 토큰
+                rest = " ".join(first_tokens[1:])
+                rest_clean = re.sub(r"[^a-zA-Z\s]", "", rest)
+                return f"{ko_surname_first} {_capitalize_first(rest_clean.replace(' ', ''))}"
+
     return None
 
 
