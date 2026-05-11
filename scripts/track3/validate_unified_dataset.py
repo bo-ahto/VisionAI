@@ -33,7 +33,7 @@ EXPECTED_COLS = [
     "artist_entity_id_raw",
     "artist_name_raw",
     "artist_name_ko",
-    # Cold-start core (10) — width/height/area + estimated_ho
+    # Cold-start core (11) — width/height/area + estimated_ho + is_outlier
     "medium_category",
     "support_category",
     "width_cm",
@@ -44,6 +44,7 @@ EXPECTED_COLS = [
     "log_area",
     "estimated_ho",
     "orientation",
+    "is_outlier",
     # Hybrid 가격 (4)
     "price_amount_raw",
     "price_currency_raw",

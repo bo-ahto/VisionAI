@@ -75,6 +75,7 @@ COLUMN_SCHEMA: list[tuple[str, str, str, str, str]] = [
     ("log_area", "면적(log)", "★", "Core", "log(area_cm2) — heavy tail 안정화"),
     ("estimated_ho", "추정 호수", "★", "Core", "한국 캔버스 호수 (F타입 보간) — 가격 segment"),
     ("orientation", "비율", "★", "Core", "portrait/landscape/square/unknown"),
+    ("is_outlier", "이상값", "·", "Core", "옵션B 이상값 flag (학습 시 0만 사용 — df[df.is_outlier==0])"),
     ("price_amount_raw", "가격(원본통화)", "·", "가격", "원본 통화 가격 (USD/EUR/KRW 등)"),
     ("price_currency_raw", "원본통화", "·", "가격", "USD/KRW/EUR/GBP/HKD"),
     ("price_krw", "가격(소스KRW)", "·", "가격", "source 표기 KRW (보존만)"),
@@ -1034,9 +1035,30 @@ def apply_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     # ln_price — unified 기준 (학습 target)
     df["ln_price_krw_unified"] = np.log(df["price_krw_unified"])
 
+    # is_outlier — 옵션 B (학습 시 df[df.is_outlier==0] 필터 권장)
+    # 조건:
+    #   A. 명확한 입력 오류: area <50 OR >100K, 단가 <100 KRW/cm², price <200K
+    #   B. 도메인 외: ho=0 (1호 미만 미니어처), ho>200 (호수표 외삽 한계),
+    #               ko_len>15 (확실한 외국 작가 음역)
+    unit_price = df["price_krw_unified"] / df["area_cm2"].replace(0, np.nan)
+    ko_len = df["artist_name_ko"].str.len().fillna(0)
+    is_out = (
+        (df["area_cm2"] < 50)
+        | (df["area_cm2"] > 100_000)
+        | (unit_price < 100)
+        | (df["price_krw_unified"] < 200_000)
+        | (df["estimated_ho"] == 0)
+        | (df["estimated_ho"] > 200)
+        | (ko_len > 15)
+    )
+    df["is_outlier"] = is_out.astype(int)
+    drops["is_outlier_flagged"] = int(is_out.sum())
+
     drops["total_in"] = n0
     drops["total_kept"] = len(df)
     drops["kept_pct"] = round(100 * len(df) / max(n0, 1), 2)
+    drops["training_kept"] = int((~is_out).sum())
+    drops["training_kept_pct"] = round(100 * (~is_out).sum() / max(n0, 1), 2)
 
     return df, drops
 
@@ -1071,7 +1093,7 @@ def main() -> None:
     unified, drops = apply_filters(unified)
     logger.info(f"After filter: {len(unified)} rows kept (drops={drops})")
 
-    # column order — schema v10 (estimated_ho 추가 / 21 cols)
+    # column order — schema v13 (is_outlier 추가 / 22 cols)
     cols = [
         # IDs (학습 비feature)
         "source_platform",
@@ -1079,7 +1101,7 @@ def main() -> None:
         "artist_entity_id_raw",
         "artist_name_raw",
         "artist_name_ko",
-        # Cold-start core (10) — width/height/area + estimated_ho
+        # Cold-start core (11) — width/height/area + estimated_ho + is_outlier flag
         "medium_category",
         "support_category",
         "width_cm",
@@ -1090,6 +1112,7 @@ def main() -> None:
         "log_area",
         "estimated_ho",
         "orientation",
+        "is_outlier",
         # Hybrid 가격 (4) — 원본 + 통일 환율 + 환전 flag
         "price_amount_raw",
         "price_currency_raw",
