@@ -158,6 +158,60 @@ KOREAN_SURNAME_TO_KO = {
     "jin": "진",  # 성 (보통 first name이지만 surname 가능)
     "ham": "함",
     "ku_kr": "구",
+    # 추가 (v8): user 누락 보강
+    "gam": "감", "kam": "감",
+    "cha": "차", "char": "차",
+    "ki": "기", "gi": "기",
+    "ku": "구",
+    "ki_kr": "기",
+}
+
+# 한국 성 중 first-token 일 가능성이 높은 5대 성 (모호 해결용).
+# 예: "Choi Moon Seok" — Choi(first)와 Seok(last) 모두 성씨 매핑이 있어
+# 영어식("First Last") 가정으로 Seok이 성으로 잡히는 실수를 보정.
+# 본 집합에 속한 first token이 한국 성이면 Stage 3b (Last First) 우선 적용.
+# 영어 흔한 first name → 한국어 표기 (음역으로 처리 불가능한 영단어).
+# 예: "Eugene Ahn" 같은 한국계-영어이름 작가 처리용.
+ENGLISH_FIRSTNAME_TO_KO = {
+    "eugene": "유진", "christine": "크리스틴", "stephanie": "스테파니",
+    "stephen": "스티븐", "steven": "스티븐", "daniel": "다니엘",
+    "justin": "저스틴", "brian": "브라이언", "jenny": "제니",
+    "eric": "에릭", "tony": "토니", "david": "데이비드",
+    "jay": "제이", "john": "존", "james": "제임스",
+    "michael": "마이클", "sara": "사라", "sarah": "사라",
+    "lily": "릴리", "anna": "안나", "andy": "앤디",
+    "andrew": "앤드류", "anthony": "앤서니", "ben": "벤",
+    "benjamin": "벤자민", "carol": "캐롤", "caroline": "캐롤라인",
+    "catherine": "캐서린", "charles": "찰스", "chris": "크리스",
+    "christopher": "크리스토퍼", "diana": "다이애나", "edward": "에드워드",
+    "elizabeth": "엘리자베스", "emma": "엠마", "fiona": "피오나",
+    "frank": "프랭크", "george": "조지", "grace": "그레이스",
+    "helen": "헬렌", "henry": "헨리", "ian": "이안",
+    "isabella": "이사벨라", "jack": "잭", "jason": "제이슨",
+    "jennifer": "제니퍼", "jessica": "제시카", "joseph": "조셉",
+    "julia": "줄리아", "karen": "카렌", "kate": "케이트",
+    "kevin": "케빈", "laura": "로라", "leo": "레오",
+    "lisa": "리사", "lucy": "루시", "mark": "마크",
+    "martin": "마틴", "mary": "메리", "matt": "맷", "matthew": "매튜",
+    "max": "맥스", "nick": "닉", "nicholas": "니콜라스",
+    "oliver": "올리버", "patrick": "패트릭", "paul": "폴",
+    "peter": "피터", "rachel": "레이첼", "richard": "리처드",
+    "robert": "로버트", "ruth": "루스", "ryan": "라이언",
+    "sam": "샘", "samuel": "사무엘", "scott": "스콧",
+    "simon": "사이먼", "sophia": "소피아", "susan": "수잔",
+    "thomas": "토마스", "tim": "팀", "tom": "톰",
+    "victor": "빅터", "william": "윌리엄", "alex": "알렉스",
+    "alice": "앨리스", "amy": "에이미", "angela": "안젤라",
+    "amelia": "아멜리아", "noah": "노아", "lucas": "루카스",
+    "ethan": "이단", "olivia": "올리비아", "emily": "에밀리",
+}
+
+KOREAN_SURNAME_FIRST_PRIORITY = {
+    "kim", "lee", "park", "choi", "choe", "jung", "jeong", "chung",
+    "kang", "cho", "jo", "yoon", "yun", "jang", "han", "shin", "sin",
+    "seo", "kwon", "hwang", "ahn", "song", "hong", "bae", "baek",
+    "moon", "yang", "son", "go", "ko", "ryu", "oh", "yoo", "yu",
+    "no", "noh", "min", "im", "lim", "ham", "ku", "koo",
 }
 
 # Romanization → Hangul 음절 매핑 (greedy longest match).
@@ -176,6 +230,18 @@ HANGUL_SYLLABLE_MAP: dict[str, str] = {
     "hyeon": "현", "kyeon": "견", "myeon": "면", "byeon": "변",
     "pyeon": "편", "ryeon": "련", "syeon": "션",
     "kweon": "권", "kwoen": "권",
+    # 추가 5-char (v8): user 누락 보강
+    "seung": "승", "jeung": "정", "cheung": "청", "leung": "량",
+    "myeong": "명", "jeong": "정", "yeong": "영", "seong": "성",
+    "jaegyu": "재규",  # whole-name shortcut
+    "yoonji": "윤지",
+    "saem": "샘",
+    # === 6-char syllables (greedy range 6 활성화 활용) ===
+    "kyeong": "경", "byeong": "병", "myeong": "명", "hyeong": "형",
+    "pyeong": "평", "ryeong": "령", "syeong": "성",
+    "kyoung": "경", "byoung": "병", "myoung": "명", "hyoung": "형",
+    "pyoung": "평",
+    "seonbi": "선비",
     # === 4-char ===
     "hyun": "현", "hyon": "현", "kyun": "균", "myun": "면",
     "byun": "변", "pyun": "편", "tyun": "튠",
@@ -196,6 +262,15 @@ HANGUL_SYLLABLE_MAP: dict[str, str] = {
     "eun": "은", "eul": "을", "eum": "음", "eup": "읍",
     "seok": "석", "suk": "석", "sok": "석",
     "hyuk": "혁", "hyok": "혁", "hyuck": "혁",
+    # 추가 (v8): chul / choi / eui / ouk / zoo / gyu
+    # chul/chol/cheol — 한국 영문 표기에서 "철" (예: "현철", "철수"). 표준 Revised는 cheol.
+    "chul": "철", "chol": "철", "cheol": "철",
+    "choi": "최", "choe": "최",
+    "eui": "의", "ui": "의",
+    "ouk": "옥", "uk": "욱",
+    "zoo": "주", "zoon": "준", "joo": "주", "joon": "준",
+    "gyu": "규", "kyu": "규", "gyul": "귤",
+    "yoo": "유", "you": "유",
     "jeok": "적", "jok": "족",
     "geuk": "극", "guk": "국",
     "duek": "득", "deuk": "득",
@@ -323,6 +398,9 @@ HANGUL_SYLLABLE_MAP: dict[str, str] = {
     "ahn": "안", "hee": "희", "hye": "혜", "hyo": "효", "hyu": "휴",
     "ji": "지", "ye": "예", "jin": "진", "jun": "준",
     "kwon": "권", "sub": "섭", "sup": "섭", "hwa": "화", "kwa": "콰",
+    # 추가 (v8): ki/gi/cha 등 일반 음절
+    "ki": "기", "gi": "기", "cha": "차", "gam": "감", "kam": "감",
+    "sy": "시", "sye": "셰",
     # 추가: jam/sam/nam/dam/ham
     "jam": "잼", "sam": "샘", "ham": "햄", "dam": "댐", "nam": "남",
     "bom": "봄", "gom": "곰", "tom": "톰", "rom": "롬", "hom": "홈",
@@ -353,7 +431,7 @@ HANGUL_SYLLABLE_MAP: dict[str, str] = {
     "ga": "가", "ge": "게", "gi": "기", "go": "고", "gu": "구",
     "ha": "하", "he": "헤", "hi": "히", "ho": "호", "hu": "후",
     "ja": "자", "je": "제", "ji": "지", "jo": "조", "ju": "주",
-    "ka": "카", "ke": "케", "ki": "키", "ko": "코", "ku": "쿠",
+    "ka": "카", "ke": "케", "ko": "코", "ku": "쿠",
     "la": "라", "le": "레", "li": "리", "lo": "로", "lu": "루",
     "ma": "마", "me": "메", "mi": "미", "mo": "모", "mu": "무",
     "na": "나", "ne": "네", "ni": "니", "no": "노", "nu": "누",
@@ -512,7 +590,8 @@ def _romanize_to_hangul(text: str) -> str:
     i = 0
     while i < len(s):
         matched = False
-        for length in (5, 4, 3, 2, 1):
+        # 6-char까지 검사: kyeong=경, byeong=병, myoung=명, hyoung=형 등.
+        for length in (6, 5, 4, 3, 2, 1):
             chunk = s[i : i + length]
             if chunk in HANGUL_SYLLABLE_MAP:
                 result.append(HANGUL_SYLLABLE_MAP[chunk])
@@ -569,7 +648,10 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
             return match.group(0).strip()
 
     # Stage 3 / 4: 영문 토큰화
-    cleaned = re.sub(r"[^a-zA-Z\s\-]", "", name_str)
+    # metadata 제거: "(b.1984)", "(1965-)", "[2024]" 등 괄호 내 + 숫자
+    cleaned = re.sub(r"\([^)]*\)|\[[^\]]*\]", " ", name_str)
+    cleaned = re.sub(r"[^a-zA-Z\s\-]", "", cleaned)
+    # len>=1 보존 — "Geon U Cha"의 "U"(우) 같은 1글자 토큰도 의미 있음
     tokens = [t for t in re.split(r"[\s\-]+", cleaned) if t]
     if not tokens:
         return None
@@ -582,19 +664,45 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
         # 외국 단일 이름 음역
         return _romanize_to_hangul(tokens[0]) or None
 
-    # 다중 토큰
-    # Stage 3a: "First Last" — last가 한국 성
+    # 다중 토큰 — 모호 해결: first가 5대 성 우선 매핑이면 Stage 3b 먼저
+    first_norm = re.sub(r"[^a-z]", "", tokens[0].lower())
+    last_norm = re.sub(r"[^a-z]", "", tokens[-1].lower())
+    ko_surname_first = _korean_surname_from_token(tokens[0])
     ko_surname_last = _korean_surname_from_token(tokens[-1])
+
+    # Stage 3 우선 순위 결정:
+    # - first가 5대 우선 surname + last도 surname → first 우선 (Choi Moon Seok)
+    # - 그 외 → last 우선 (영어식 "First Last")
+    use_first_as_surname = (
+        ko_surname_first
+        and first_norm in KOREAN_SURNAME_FIRST_PRIORITY
+        and ko_surname_last is not None  # 둘 다 surname인 모호 case만
+    )
+
+    def _convert_first_part(tokens_part: list[str]) -> str:
+        """first name part 변환: 영어 사전 우선, 그 외 음역."""
+        out = []
+        for tok in tokens_part:
+            tok_norm = re.sub(r"[^a-z]", "", tok.lower())
+            if tok_norm in ENGLISH_FIRSTNAME_TO_KO:
+                out.append(ENGLISH_FIRSTNAME_TO_KO[tok_norm])
+            else:
+                out.append(_romanize_to_hangul(tok))
+        return "".join(out)
+
+    if use_first_as_surname:
+        # Stage 3b 우선 — "Last First" 한국식
+        rest_ko = _convert_first_part(tokens[1:])
+        return f"{ko_surname_first}{rest_ko}" if rest_ko else ko_surname_first
+
+    # Stage 3a: "First Last" — last가 한국 성
     if ko_surname_last:
-        first_concat = "".join(tokens[:-1])
-        first_ko = _romanize_to_hangul(first_concat)
+        first_ko = _convert_first_part(tokens[:-1])
         return f"{ko_surname_last}{first_ko}" if first_ko else ko_surname_last
 
     # Stage 3b: "Last First" (한국식) — first 토큰이 한국 성
-    ko_surname_first = _korean_surname_from_token(tokens[0])
     if ko_surname_first:
-        rest_concat = "".join(tokens[1:])
-        rest_ko = _romanize_to_hangul(rest_concat)
+        rest_ko = _convert_first_part(tokens[1:])
         return f"{ko_surname_first}{rest_ko}" if rest_ko else ko_surname_first
 
     # Stage 4: 외국인 이름 — 전체 음역

@@ -342,6 +342,7 @@ Track 3는 **운영 fidelity 최우선** + **신규 작가 cold-start 강화** �
 - **v5 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 추가 — 5 매핑 source 통합 + name-order swap + 한글 추출 fallback. 11.8% 매칭.
 - **v6 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 매칭 강화 — 한국 성 (Surname) Romanization 매핑 (60+ 성씨). 매칭률 **11.8% → 85.2%** (Saatchi 6% → 86%). 형식: full_hangul (11%) + surname_only "한글성+영문이름" (73%).
 - **v7 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` — Romanization → Hangul 음역 도입 (`HANGUL_SYLLABLE_MAP` ~350 entries + greedy longest match). 외국인 작가도 한국어 발음 표기. 매칭률 **85.2% → 100.0%**. 형식: 한글 전용 (`황선태`, `이병호`, `오혁진` 등) — surname+영문 hybrid 폐기.
+- **v8 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 4글자 이상 한국 이름 정확도 향상. (1) `HANGUL_SYLLABLE_MAP` greedy range 5→6으로 확장 — `kyeong`, `byeong`, `myoung`, `hyoung` 등 6-char 음절 매칭. (2) 추가 음절: `chul→철`, `choi→최`, `eui→의`, `ouk→옥`, `zoo→주`, `gyu→규`, `seung→승`, `seong→성`, `saem→샘` 등. (3) `KOREAN_SURNAME_FIRST_PRIORITY` 도입 — first/last 둘 다 한국 성 매핑일 때 (예: `Choi Moon Seok`) first 우선 적용해 `최문석` 올바르게 처리. (4) `ENGLISH_FIRSTNAME_TO_KO` 사전 (~80 entries) — `Eugene→유진`, `David→데이비드` 등 영어 단어형 first name cover. (5) 토큰 cleaning — `(b.1984)` 같은 metadata 제거, 1글자 토큰 (`U`=우) 보존. **검증 결과 30/30 (100%)** — 4글자 이상 한국 이름 패턴 cover.
 
 ## 13. 참고 자료
 
