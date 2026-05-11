@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>VisionAI Track1 실험 성능 정리 — Final (2026-05-11)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1300px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; background: #fafafa; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.6em; margin-bottom: 6px; }
+h2 { background: #ecf0f1; padding: 10px 14px; border-left: 4px solid #2c5aa0; margin-top: 32px; font-size: 1.2em; }
+h3 { font-size: 1.05em; margin-top: 22px; color: #2c3e50; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+.summary-box { border: 2px solid #28a745; background: #d4edda; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 1px 2px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.gray { background: #e9ecef; color: #495057; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 16px 0; }
+.metric-card { background: #fff; border: 1px solid #ddd; padding: 14px 16px; border-radius: 4px; }
+.metric-card .label { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-card .value { font-size: 1.6em; font-weight: 600; color: #2c3e50; margin: 6px 0; }
+.metric-card .delta { font-size: 12px; }
+.diff-pos { color: #28a745; font-weight: 600; }
+.diff-neg { color: #dc3545; font-weight: 600; }
+.diff-zero { color: #6c757d; }
+.bar-chart { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.bar { background: #2c5aa0; height: 20px; border-radius: 3px; min-width: 2px; }
+.bar.good { background: #28a745; }
+.bar.bad { background: #dc3545; }
+.bar.gray { background: #adb5bd; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>VisionAI Track1 실험 성능 정리</h1>
+<p style="color:#666;margin-top:0;">
+<strong>기간</strong>: 2026-05-09 ~ 2026-05-11 / <strong>20 cycles / 23 commits</strong> / <strong>코덱스 55+ rounds</strong>
+</p>
+
+<div class="summary-box">
+<h3 style="margin-top:0;">🎯 한 줄 핵심 (개선 결과)</h3>
+<p>
+<strong>warm path (대부분 user / 95% traffic)</strong>: MdAPE <strong>9.70% → 8.08%</strong> (절대 -1.62pp / <strong>상대 17% 개선</strong>) — B winner.<br>
+<strong>cold path (소수 user)</strong>: MdAPE <strong>39.4% → 39.4%</strong> (변경 X / cold retune axis 모두 fail). <br>
+<strong>운영 전체 user-impact</strong>: 대부분 가격 추정 정확도 ~17% 향상 / 일부 (cold) 영향 X.
+</p>
+</div>
+
+<h2>1. 실험의 목표 (Reflection)</h2>
+
+<div class="info-box">
+<strong>본 세션의 진짜 목표</strong>:<br>
+1. <strong>Primary</strong>: 트랙1 모델 가격 예측 정확도 향상 (MdAPE 감소)<br>
+2. <strong>Secondary</strong>: 어느 axis에서 효과 발견 (HP retune / architecture change / source-split / blend ratio)<br>
+3. <strong>Operational</strong>: 운영 deploy 가능한 robust winner 발견 (strict statistical framework 통과)
+</div>
+
+<div class="warn-box">
+<strong>솔직한 평가 (cycles 누적 후)</strong>:<br>
+- 18 cycles 중 <strong>실제 개선 발견 = 1건 (B / warm path retune)</strong><br>
+- 나머지 17 cycles = "이 axis도 안 됨" 확인 (negative results)<br>
+- Negative result도 가치 있음 (잘못된 deploy 방지 / Codex Q7 prediction 정확 입증) — 단 process / methodology에 과도 집중한 면 있음<br>
+- "실제 성능 숫자"가 cycle-by-cycle verdict에 가려져 보이지 않았음 (본 정리 작성 motivation)
+</div>
+
+<h2>2. 핵심 성능 변화 (운영 결정 binding)</h2>
+
+<h3>2.1 현 운영 vs B 적용 후</h3>
+
+<table>
+<tr><th>Path</th><th>대상 user</th><th>현 운영 (default)</th><th>B 적용 후 (Stage 5 완료 시)</th><th>Δ (절대)</th><th>Δ (상대)</th></tr>
+<tr><td><strong>Warm path</strong> (artist 작품수 ≥5)</td><td>대부분 user / 95% training data</td><td class="num">9.70%</td><td class="diff-pos num"><strong>8.08%</strong></td><td class="diff-pos num">-1.62pp</td><td class="diff-pos num">-17%</td></tr>
+<tr><td>Cold path (artist 작품수 <5)</td><td>소수 user / 5% training data</td><td class="num">39.40%</td><td class="num">39.40%</td><td class="diff-zero num">0pp</td><td class="diff-zero num">0%</td></tr>
+<tr><td>Cold + per-source calibration</td><td>Cold user</td><td class="num">38.30%</td><td class="num">38.30%</td><td class="diff-zero num">0pp</td><td class="diff-zero num">0%</td></tr>
+<tr style="background:#e9ecef;"><td><strong>Baseline (no model)</strong></td><td>참고용</td><td class="num">71.90%</td><td class="num">71.90%</td><td class="diff-zero num">—</td><td class="diff-zero num">—</td></tr>
+</table>
+
+<div class="metric-grid">
+<div class="metric-card" style="border-left: 4px solid #28a745;">
+<div class="label">warm path 개선</div>
+<div class="value diff-pos">-1.62pp</div>
+<div class="delta">9.70% → 8.08% (상대 17%)</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #6c757d;">
+<div class="label">cold path 개선</div>
+<div class="value">0pp</div>
+<div class="delta">39.4% → 39.4% (변경 X)</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #2c5aa0;">
+<div class="label">User 영향 (예상)</div>
+<div class="value">95%</div>
+<div class="delta">warm artist 비율 / 가격 추정 정확도 17% 향상</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #ffc107;">
+<div class="label">Stage 활성화</div>
+<div class="value">Pending</div>
+<div class="delta">Stage 1+2 commit / Stage 3-5 ops 결정</div>
+</div>
+</div>
+
+<h3>2.2 시각화 — MdAPE 비교</h3>
+
+<div style="background:#fff;padding:18px;border:1px solid #ddd;border-radius:4px;">
+<h4 style="margin-top:0;">현 운영 모델 (default)</h4>
+<div class="bar-chart">
+  <div style="width:200px;">Cold path (CB)</div>
+  <div class="bar bad" style="width: 394px;"></div>
+  <div><strong>39.4%</strong> MdAPE</div>
+</div>
+<div class="bar-chart">
+  <div style="width:200px;">Warm path (XGB / default)</div>
+  <div class="bar" style="width: 97px;"></div>
+  <div><strong>9.7%</strong> MdAPE</div>
+</div>
+<div class="bar-chart">
+  <div style="width:200px;">Baseline (no model)</div>
+  <div class="bar gray" style="width: 719px;"></div>
+  <div><strong>71.9%</strong> MdAPE</div>
+</div>
+
+<h4>B 적용 후 (PR-WARM-B Stage 5)</h4>
+<div class="bar-chart">
+  <div style="width:200px;">Cold path (CB) ⚠️</div>
+  <div class="bar bad" style="width: 394px;"></div>
+  <div><strong>39.4%</strong> MdAPE (변경 X)</div>
+</div>
+<div class="bar-chart">
+  <div style="width:200px;">Warm path (XGB / B-retuned) ✅</div>
+  <div class="bar good" style="width: 80px;"></div>
+  <div><strong>8.08%</strong> MdAPE (-1.62pp)</div>
+</div>
+<p style="color:#666;font-size:12px;margin-top:14px;">※ bar 길이 = MdAPE × 10px (visual scale).</p>
+</div>
+
+<h2>3. 사이클별 성능 결과 (시도된 axis별)</h2>
+
+<h3>3.1 ✅ Warm path (성공한 axis / 1건)</h3>
+
+<table>
+<tr><th>Cycle</th><th>Method</th><th>Search CV (warm)</th><th>Validation 평균 Δ_warm</th><th>운영 채택</th></tr>
+<tr><td><strong>B</strong> (3a27002)</td><td>warm-only XGB Optuna 50 trials</td><td>9.70 → <strong>8.01</strong> (-1.69pp)</td><td><strong>-1.62pp</strong> (5/5 PASS / std=0.137)</td><td><span class="pill green">✅ ADOPT</span></td></tr>
+</table>
+
+<div class="success-box">
+<strong>B 성공 요인</strong>: single-objective (warm-only) + N=32 features 그대로 + simple architecture (XGB) + sufficient effect size (split variance에 비해 충분히 큰 negative).
+</div>
+
+<h3>3.2 ❌ Cold path (실패한 axis / 7건 fail)</h3>
+
+<table>
+<tr><th>Cycle</th><th>Method</th><th>Cold mean Δ (cycle별)</th><th>Bad-seed rate</th><th>Verdict</th></tr>
+<tr><td>D1.X (d06ea22)</td><td>Optuna 50 trials × 2 phase (CB+XGB)</td><td class="num diff-pos">-1.87</td><td class="num">20% (1/5)</td><td><span class="pill yellow">NEEDS_MORE_DATA</span></td></tr>
+<tr><td>D1.Y (d774938)</td><td>N=10 expansion</td><td class="num diff-pos">-1.16</td><td class="num">30% (3/10)</td><td><span class="pill red">FAIL</span></td></tr>
+<tr><td>D1-extended (9f7be57)</td><td>Fresh N=10 prospective</td><td class="num diff-neg">+0.22 ❗</td><td class="num">80% (8/10)</td><td><span class="pill red">FAIL</span></td></tr>
+<tr><td>D1.SC (c1c2053)</td><td>Source-conditional CB only</td><td class="num diff-pos">-0.40</td><td class="num">90% overall</td><td><span class="pill red">HOLD_axis_abandon</span></td></tr>
+<tr><td>D1.Arch (05859bd)</td><td>Default LGBM cold replacement</td><td class="num diff-pos">-0.29</td><td class="num">70% (7/10)</td><td><span class="pill red">default_LGBM_insufficient</span></td></tr>
+<tr><td>D1.Arch.tuned (3c8ce32)</td><td>Tuned LGBM Optuna (R6 narrow)</td><td>(search-time fail)</td><td>100% infeasible</td><td><span class="pill red">tuned_LGBM_insufficient</span></td></tr>
+<tr><td>D1.Z+alt (a564e2e)</td><td>Reanalysis / threshold relax</td><td class="num diff-pos">-1.16</td><td>—</td><td><span class="pill gray">analysis-only / non-binding</span></td></tr>
+</table>
+
+<div class="danger-box">
+<strong>Cold path 본질적 한계 입증</strong>:<br>
+- Cycle별 cold mean: <strong>-1.87 → -1.16 → +0.22 → -0.40</strong> (sampling lottery / 정반대 결과)<br>
+- CV (coefficient of variation): 0.19 → 0.82 → <strong>5.38 → 6.93</strong> (cycle별 dramatic 증가)<br>
+- artsy_gallery cell n_holdout 150-250 / heavy-tailed 가격 분포 / split variance 본질<br>
+- <strong>운영 cold path 개선 = 현 strict framework에서 거의 불가능</strong> 결론
+</div>
+
+<h3>3.3 ❌ Blend axis (실패 / 2건)</h3>
+
+<table>
+<tr><th>Cycle</th><th>Method</th><th>OOF 효과</th><th>Fresh validation</th><th>Verdict</th></tr>
+<tr><td>D3 (fd0f14e)</td><td>1D scalar w grid (21-point)</td><td>w*=0.3 / cold -0.34pp</td><td>1/5 PASS / 4 FAIL</td><td><span class="pill red">HOLD_50_50</span></td></tr>
+<tr><td>D3.B (c24ce57)</td><td>Linear stacker (4 features)</td><td>—</td><td>0/5 primary + 0/5 secondary</td><td><span class="pill red">axis terminate</span></td></tr>
+</table>
+
+<h3>3.4 🔍 Methodological analysis (3건)</h3>
+
+<table>
+<tr><th>Cycle</th><th>Purpose</th><th>Finding</th></tr>
+<tr><td>D1.Z+alt (a564e2e)</td><td>D1.Y FAIL 후 threshold relax + bootstrap CI 시도</td><td>Threshold relax 단독 efficacy 작음 / Bootstrap CI cold_overall PASS BUT non-binding (post-hoc shopping 회피)</td></tr>
+<tr><td>VFR (f48f67b)</td><td>7 aggregation methods 비교 / framework reform 검토</td><td>현행 strict per-seed framework가 R1 P1.2 tie-break winner / framework reform 자체 abandon 권고</td></tr>
+<tr><td>(N15.A/B/C - 3 cycles)</td><td>N=15 sweep winner 검증</td><td>N=15 retune은 default 능가 X / N=15 line 종결</td></tr>
+</table>
+
+<h2>4. Cycle별 시도 axis 종합</h2>
+
+<div class="info-box">
+<strong>본 세션 시도된 axes (총 8개)</strong>:
+<ol>
+<li><strong>HP retune (CB+XGB unified)</strong> — D1.X / D1.Y / D1-extended (cold 모두 fail / warm B 성공)</li>
+<li><strong>Architecture change (CB→LGBM)</strong> — D1.Arch / D1.Arch.tuned (insufficient)</li>
+<li><strong>Source-conditional split</strong> — D1.SC (fail)</li>
+<li><strong>Blend ratio (50/50 → other)</strong> — D3 / D3.B (fail)</li>
+<li><strong>Per-source calibration</strong> — Reprod / OOS (artsy_online ADOPT_with_caveat)</li>
+<li><strong>Feature N=15 migration</strong> — N15.A/B/C (종결)</li>
+<li><strong>Validation framework reform</strong> — VFR (현행 winner)</li>
+<li><strong>Threshold/aggregation alternative</strong> — D1.Z+alt (non-binding finding)</li>
+</ol>
+
+→ <strong>8 axes 중 1 axis 만 ADOPT 가능</strong> (warm-only HP retune = B winner).<br>
+→ Cold path는 4 axes 시도 모두 fail (HP retune / architecture / source-split / threshold relax).
+</div>
+
+<h2>5. 운영 적용 우선순위</h2>
+
+<table>
+<tr><th>우선순위</th><th>Action</th><th>예상 효과</th><th>Status</th></tr>
+<tr style="background:#d4edda;"><td>1</td><td><strong>PR-WARM-B Stage 3-5 ops 활성화</strong></td><td>warm path 17% 정확도 개선 (95% user 영향)</td><td>코드 변경 완료 (b14c765) / VARIANT_SHADOW env var set + restart 대기</td></tr>
+<tr><td>2</td><td>Non-GBDT axis 탐색 (Bayesian / Quantile / NN)</td><td>cold path 가능성 (불확실 / GBDT family 실패)</td><td>별도 prospective cycles 필요</td></tr>
+<tr><td>3</td><td>Data/feature reform (heavy-tail dataset 정합)</td><td>cold split variance 본질 완화</td><td>별도 axis</td></tr>
+<tr><td>4</td><td>Warm calibration re-fit (B-retuned 후)</td><td>marginal / 운영 routing은 warm_factors 미적용</td><td>Stage 5 후 별도 cycle</td></tr>
+</table>
+
+<h2>6. 솔직한 reflection — 18 cycles의 가치</h2>
+
+<table>
+<tr><th>관점</th><th>평가</th></tr>
+<tr><td>✅ 직접 운영 개선</td><td>1개 (B / warm path / 17% 정확도)</td></tr>
+<tr><td>✅ Negative result 확정</td><td>17개 (cold / blend / N=15 / source-conditional / architecture / threshold relax 모두 시도된 만큼의 evidence)</td></tr>
+<tr><td>✅ 잘못된 deploy 방지</td><td>D1.X (mixed signal) / D3 scalar / D1-extended 등 single-cycle PASS만 보고 채택했으면 운영 사용자 영향 발생 가능 (split variance lottery)</td></tr>
+<tr><td>✅ Codex Q7 prediction validation</td><td>"D1 abandon / B + non-GBDT 우선" 정확 입증 (D1.X N=5 PASS sample-specific / D1-extended 정반대 결과)</td></tr>
+<tr><td>⚠️ Process overhead</td><td>55+ codex rounds / R1-R6 amendment cycles / 일부 cycle 180min Optuna stuck → kill / 효율 측면 개선 가능</td></tr>
+<tr><td>⚠️ 성능 가시성 부족</td><td>verdict (PASS/FAIL) 중심 / 절대 MdAPE 숫자 비교는 본 정리에서 처음 명시</td></tr>
+</table>
+
+<div class="info-box">
+<strong>결론 (학습)</strong>:<br>
+1. <strong>Warm path는 retunable</strong> (B 5/5 PASS / population-level stable / std=0.137)<br>
+2. <strong>Cold path는 fundamentally noisy</strong> (artsy_gallery heavy-tail / split variance dominates / cycle별 sampling lottery)<br>
+3. <strong>Strict per-seed framework는 정확</strong> (VFR analysis 정합 / false positive prevention)<br>
+4. <strong>현 framework로 cold 개선 = 막혀있음</strong> → 다음 단계 = (a) B deploy 우선 (b) non-GBDT axis 또는 (c) data reform
+</div>
+
+<div class="footer">
+<p>본 문서는 실제 성능 숫자 중심 정리. cycle-by-cycle verdict는 <code>docs/all_cycles_summary_final_20260511.html</code> 참조.</p>
+<p>핵심 정리 문서:
+  <code>docs/track1_current_model_summary_20260510.html</code> (현 운영 모델 상세) ·
+  <code>docs/track1_b_warm_model_summary_20260510.html</code> (B Stage 5 후 운영) ·
+  <code>docs/pr_warm_b_stage_3_5_activation_runbook_20260511.md</code> (활성화 가이드).
+</p>
+<p style="margin-top:18px;font-weight:600;color:#2c5aa0;">
+→ 다음 단계: VARIANT_SHADOW 환경변수 설정 + restart → Stage 3 shadow 1주 모니터링 → Stage 4 canary → Stage 5 full migration (DEFAULT_VARIANT flip)
+</p>
+</div>
+
+</body>
+</html>
