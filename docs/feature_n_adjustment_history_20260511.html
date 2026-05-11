@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Feature N 조정 시도 종합 정리 (2026-05-07 ~ 05-11)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1320px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; background: #fafafa; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.6em; margin-bottom: 6px; }
+h2 { background: #ecf0f1; padding: 10px 14px; border-left: 4px solid #2c5aa0; margin-top: 32px; font-size: 1.2em; }
+h3 { font-size: 1.05em; margin-top: 22px; color: #2c3e50; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+.commit-tag { font-family: "SF Mono", Menlo, Consolas, monospace; background: #2c3e50; color: #ecf0f1; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+.summary-box { border: 2px solid #2c5aa0; background: #f4f8fc; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 1px 2px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.blue { background: #cfe2ff; color: #084298; }
+.pill.gray { background: #e9ecef; color: #495057; }
+.num { text-align: right; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff-pos { color: #28a745; font-weight: 600; }
+.diff-neg { color: #dc3545; font-weight: 600; }
+.diff-zero { color: #6c757d; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Feature N 조정 시도 종합 정리</h1>
+<p style="color:#666;margin-top:0;">
+<strong>기간</strong>: 2026-05-07 ~ 2026-05-11 (5일간 누적) &nbsp;|&nbsp;
+<strong>시도된 N values</strong>: 15 / 29 / 32 / 33 / 35 &nbsp;|&nbsp;
+<strong>총 cycles</strong>: 15+ feature sweep / migration / interaction
+</p>
+
+<div class="summary-box">
+<h3 style="margin-top:0;">한 줄 요약</h3>
+<p>
+<strong>운영 N=32 default이 모든 feature N 시도에서 winner</strong>. N=29 (drop) / N=15 (sweep winner 검증) 모두 fail. N=33 (interaction add)는 record-only PASS / 운영 채택 X. N=35 (year_made 추가 variant)는 v3.6 phase variant로 등록만. 본 세션 (N=32 + B winner) 결과로 <strong>feature 변경 없이 warm path retune만으로 17% 정확도 향상 가능</strong> 입증.
+</p>
+</div>
+
+<h2>1. Feature N 시도 누적 종합 표</h2>
+
+<table>
+<tr><th>N</th><th>방법</th><th>Cycle / Commit</th><th>Result</th><th>운영 채택</th></tr>
+<tr style="background:#d4edda;"><td><strong>32 (default)</strong></td><td>Champion (CB_FEATURES_BASE)</td><td>본 세션 base / `v3_filtered_tuned`</td><td><span class="pill green">현 운영 default</span></td><td><span class="pill green">✅ 유지</span></td></tr>
+<tr><td>29</td><td>Drop placeholder 3 features (DROP-A)</td><td><span class="commit-tag">23ed878</span> Phase 1</td><td><span class="pill red">FAIL</span></td><td>변경 X</td></tr>
+<tr><td>15</td><td>Sweep amendment 1-SE winner</td><td><span class="commit-tag">a0a1bde</span> + N15.A/B/C 3 cycles</td><td><span class="pill red">N=15 line 종결</span></td><td>변경 X</td></tr>
+<tr><td>33</td><td>Add interaction (artist_total_works × ho)</td><td><span class="commit-tag">6db5deb</span> Phase 4</td><td><span class="pill yellow">PASS (record-only)</span></td><td>변경 X (binding X)</td></tr>
+<tr><td>35</td><td>+year_made + has_year_made + work_age</td><td>v3.6 PR4 / `v3_5_v_year_saatchi_warm` variant</td><td><span class="pill gray">variant 등록만</span></td><td>opt-in (DEFAULT X)</td></tr>
+</table>
+
+<h2>2. 본 세션 (2026-05-09 ~ 05-11) — N=15 vs N=32 검증</h2>
+
+<h3>2.1 N=15 cycles (3건 / N15.A/B/C / Stage 2)</h3>
+
+<p>이전 세션 sweep amendment (<code>a0a1bde</code>) 의 1-SE band winner = N=15 XGBoost. 본 세션에서 frozen feature contract으로 재검증:</p>
+
+<table>
+<tr><th>Cycle</th><th>Method</th><th>Result</th><th>핵심 발견</th></tr>
+<tr><td><span class="commit-tag">8c9e58e</span> N15.A Confirmatory</td><td>pure XGB@N=15 vs Ens@N=32 / multi-seed (3)</td><td><span class="pill red">HOLD (warm strict)</span></td><td>cold artsy 일관 -0.86~-3.30pp 개선 BUT warm strict rule (Δ>0=FAIL) trigger. Sweep의 fold-adaptive winner는 frozen contract 재현 X.</td></tr>
+<tr><td><span class="commit-tag">38eab10</span> N15.B HP Retuning</td><td>Optuna 30 trials × N=15 / GroupKFold cold + KFold warm</td><td><span class="pill red">HOLD clean negative</span></td><td>GroupKFold cold bug fix 후 best warm_cv = 13.69 (default 9.93 / <strong>Δ +3.76pp WORSE</strong>) / 3/3 seed warm regression 일관</td></tr>
+<tr><td><span class="commit-tag">4499fe9</span> N15.C SC Integration</td><td>v2 (N=15 SC) vs v1_pool (N=32 SC) fair OOS / multi-seed (3)</td><td><span class="pill yellow">NEEDS_MORE_DATA</span></td><td>Artsy load_bearing 단일 seed Δ 범위 <strong>-20.60 ~ +12.08pp</strong> (range 32.7pp / heavy-tail 본질) / N=15 line 종결</td></tr>
+</table>
+
+<div class="danger-box">
+<strong>N=15 line 종결 사유</strong>:<br>
+1. Sweep amendment winner는 fold마다 다른 top-15 (fold-adaptive) / frozen contract 재현 X<br>
+2. N=15 retune (default best_params) warm Δ +3.76pp (regression)<br>
+3. Source-conditional N=15 v2도 Artsy heavy-tail 본질 한계 (single seed Δ 32.7pp range)<br>
+→ <strong>본 세션 결과 N=15 채택 X / N=32 default 유지 결정</strong>
+</div>
+
+<h3>2.2 본 세션 Stage 3+ — N=32 그대로 (B winner)</h3>
+
+<table>
+<tr><th>Cycle</th><th>N</th><th>Result</th></tr>
+<tr><td>D1.X / D1.Y / D1-extended (cold HP retune)</td><td>N=32</td><td>모두 fail</td></tr>
+<tr><td>D1.SC (source-conditional)</td><td>N=32</td><td>fail</td></tr>
+<tr><td>D1.Arch / D1.Arch.tuned (LGBM)</td><td>N=32</td><td>fail (insufficient)</td></tr>
+<tr style="background:#d4edda;"><td><strong>B (warm-only retune)</strong></td><td><strong>N=32</strong></td><td><strong>5/5 PASS / 유일 ADOPT</strong></td></tr>
+<tr><td>D3 / D3.B (blend axis)</td><td>N=32</td><td>fail</td></tr>
+</table>
+
+<div class="success-box">
+<strong>본 세션 Stage 3+ 결론</strong>: <strong>N=32 그대로 + warm path HP retune (B)만으로 17% 정확도 향상 가능</strong>. Feature N 변경 없이 운영 deploy 가능한 winner 발견.
+</div>
+
+<h2>3. 이전 세션 Phase 0-7 Feature Sweep (2026-05-08+)</h2>
+
+<p>Track1 feature optimization cycle / 본 세션 시작 전 진행된 sweep:</p>
+
+<table>
+<tr><th>Phase</th><th>Commit</th><th>Method (N 변화)</th><th>Result</th></tr>
+<tr><td>Phase 0 baseline</td><td><span class="commit-tag">9b152e2</span> → <span class="commit-tag">aba411c</span> → <span class="commit-tag">f1fd67d</span></td><td>N=32 multi-method 영향도 산출 / consensus rule prereg</td><td>GO</td></tr>
+<tr><td><strong>Phase 1 DROP-A</strong></td><td><span class="commit-tag">23ed878</span></td><td>placeholder 3 features 제거 / <strong>32 → 29</strong></td><td><span class="pill red">FAIL</span> (절차상 GO / 효과 X)</td></tr>
+<tr><td>Phase 2 DROP-B</td><td><span class="commit-tag">58a92a0</span></td><td>low importance 1-by-1 누적</td><td><span class="pill red">TERMINATED iter 1</span></td></tr>
+<tr><td>Phase 3 DROP-C</td><td><span class="commit-tag">6aa2f83</span></td><td>correlated (strict literal A')</td><td><span class="pill red">TERMINATED iter 1</span></td></tr>
+<tr style="background:#fff3cd;"><td><strong>Phase 4 ADD interaction</strong></td><td><span class="commit-tag">6db5deb</span></td><td>artist_total_works × ho / <strong>32 → 33</strong></td><td><span class="pill yellow">PASS (record only)</span> / decision binding X</td></tr>
+<tr><td>Phase 5 (next add)</td><td>(in same commit)</td><td>—</td><td><span class="pill gray">SKIP</span></td></tr>
+<tr><td>Phase 6</td><td><span class="commit-tag">84acd2d</span></td><td>—</td><td><span class="pill red">FAIL</span></td></tr>
+<tr><td>Phase 7</td><td><span class="commit-tag">84acd2d</span></td><td>—</td><td><span class="pill red">NOT CONVERGED</span></td></tr>
+<tr style="background:#fff3cd;"><td><strong>Sweep amendment</strong></td><td><span class="commit-tag">a0a1bde</span></td><td>provisional reduced-sweep / <strong>N=15 XGB winner</strong> (1-SE band)</td><td><span class="pill yellow">winner identified</span> / 단 fold-adaptive top-15 / frozen 재현 X (N15.A/B/C에서 검증 fail)</td></tr>
+</table>
+
+<h3>3.1 Phase 4 N=33 결과 상세 (record-only PASS)</h3>
+
+<div class="info-box">
+<strong>commit 6db5deb</strong> / artist_total_works × ho interaction 추가 (32 → 33):<br>
+- Phase 4 통계 PASS (improvement signal 발견)<br>
+- 단 <strong>decision binding X</strong> / record only (prereg §3.5 정합)<br>
+- 운영 채택 X — N=32 default 유지<br>
+- 이유: 본 세션 D1 cycles에서 운영 strict framework 통과 검증 필요했으나 미진행<br>
+- → 추가 검증 cycle 가치 있는 axis (별도 후속 후보)
+</div>
+
+<h2>4. Feature Track Axis A series (2026-05-07 / Track 2 extension)</h2>
+
+<p>Track 2 (cold-only) 연장 / Feature track axis A.1-A.5 (cheap metadata 확장):</p>
+
+<table>
+<tr><th>Axis</th><th>docs</th><th>핵심</th></tr>
+<tr><td>A.1</td><td><code>docs/feature_track_axis_a1_results_20260507.md</code></td><td>100-seed mean improvement -1.34pp / 단 cluster bootstrap 95% CI [-9.41, +1.94] 0 걸침 / <strong>promising but non-robust</strong></td></tr>
+<tr><td>A.2-A.5</td><td><code>docs/feature_track_axis_a2-a5_*.md</code></td><td>A.1 escalation / 추가 features 검토 / 운영 채택 binding X</td></tr>
+</table>
+
+<div class="info-box">
+<strong>Feature Track Axis A 결론</strong>: cheap metadata 확장으로 평균 개선 신호 관측 / 단 inferential 근거 불충분 (CI 0 걸침). <strong>운영 변경 없이 종결</strong>. 본 세션 (D1 cycles)과 정합 — feature N 변경만으로 cold path 본질 한계 미해소.
+</div>
+
+<h2>5. v3.5 / v3.6 Feature Variants (variant 시스템)</h2>
+
+<table>
+<tr><th>Variant 이름</th><th>N</th><th>추가 features</th><th>현 상태</th></tr>
+<tr style="background:#d4edda;"><td><code>v3_filtered_tuned</code></td><td>32</td><td>CB_FEATURES_BASE (현 운영 default)</td><td><span class="pill green">✅ DEFAULT_VARIANT</span></td></tr>
+<tr><td><code>v3_5_v_year_saatchi_warm</code></td><td>35</td><td>+ year_made, has_year_made, work_age</td><td><span class="pill blue">opt-in / MODEL_VARIANT env로 활성화</span></td></tr>
+<tr><td><code>source_conditional_v1_artsy</code></td><td>32</td><td>artsy source-specific 학습 / N 그대로</td><td><span class="pill gray">PR1 v1 / default OFF</span></td></tr>
+<tr><td><code>source_conditional_v1_saatchi</code></td><td>32</td><td>saatchi source-specific 학습 / N 그대로</td><td><span class="pill gray">PR1 v1 / default OFF</span></td></tr>
+<tr style="background:#fff3cd;"><td><code>v3_filtered_tuned_b_warm</code></td><td><strong>32</strong></td><td>N 그대로 / warm XGB params만 B-retuned</td><td><span class="pill yellow">Stage 3-5 활성화 ready (옵션 A)</span></td></tr>
+</table>
+
+<h3>5.1 v3_5_v_year_saatchi_warm (N=35) 상세</h3>
+
+<div class="info-box">
+<strong>v3.6 PR4 (PR5+6) variant</strong> — saatchi warm cohort 한정 year_made 3종 추가 (N=32 + 3 = 35):<br>
+- year_made (제작년도)<br>
+- has_year_made (year_made 존재 여부)<br>
+- work_age (현재 - year_made / 작품 나이)<br>
+- 단 <strong>variant 등록만</strong> (DEFAULT 변경 X) / opt-in MODEL_VARIANT env var로 활성화<br>
+- v3.6 phased rollout 일환 / Stage 3-5 활성화 정합 framework
+</div>
+
+<h2>6. Feature N 변경 시도 종합 평가</h2>
+
+<div class="warn-box">
+<strong>본 프로젝트 누적 Feature N 시도 결과 (5일간 / 15+ cycles)</strong>:<br>
+<table style="background:none;">
+<tr><th>방향</th><th>시도 count</th><th>Result</th></tr>
+<tr><td>축소 (N&lt;32)</td><td>5 cycles (Phase 1 DROP-A / N15.A/B/C / sweep amendment)</td><td>모두 fail 또는 frozen-contract 재현 X</td></tr>
+<tr><td>유지 (N=32)</td><td>본 세션 9 cycles</td><td>1건 ADOPT (B / warm retune) / 8건 fail</td></tr>
+<tr><td>확장 (N&gt;32)</td><td>2 cycles (Phase 4 N=33 PASS / v3.6 PR4 N=35 variant)</td><td>record-only PASS / opt-in variant 등록만</td></tr>
+</table>
+</div>
+
+<h3>6.1 Codex 전략 자문 (post-N15 / 2026-05-10)</h3>
+
+<p>N=15 line 종결 후 후속 4 candidates 중 N 변경 axis 평가:</p>
+
+<table>
+<tr><th>Candidate</th><th>방향</th><th>Codex 평가</th></tr>
+<tr style="background:#d4edda;"><td><strong>D1 (N=32 HP retune)</strong></td><td>same N / different HP</td><td><span class="pill green">top priority</span> ← 본 세션 선택 / B winner 발견</td></tr>
+<tr><td>A (N=18/20/25 sweep)</td><td>축소 / 새 N values</td><td><span class="pill red">skip</span> "N=15와 같은 limitation" / fold-adaptive winner는 frozen contract X</td></tr>
+<tr><td>C (hierarchical / Bayesian)</td><td>different architecture (N 무관)</td><td><span class="pill yellow">heavy modeling program</span></td></tr>
+<tr><td>D2 (architecture bakeoff)</td><td>different architecture (N 무관)</td><td><span class="pill yellow">broad / D1 후 고려</span></td></tr>
+</table>
+
+<h2>7. 결론 + 후속 후보</h2>
+
+<div class="success-box">
+<strong>핵심 결론 (Feature N 측면)</strong>:<br>
+1. <strong>N=32 default가 모든 시도에서 winner</strong> (N=29 / N=15 / N=33 / N=35 모두 운영 채택 X)<br>
+2. <strong>본 세션 B winner는 N=32 그대로 + warm HP retune만 변경</strong> (운영 단순 deploy 가능)<br>
+3. <strong>Feature N 변경 axis는 본 세션 강한 priority X</strong> (Codex deprioritize / N=15 line 종결 정합)
+</div>
+
+<h3>7.1 시도 안 된 / 후속 가능한 Feature 변경 후보</h3>
+
+<table>
+<tr><th>후보</th><th>설명</th><th>우선순위</th></tr>
+<tr><td>Phase 4 N=33 (artist_total_works × ho) 운영 검증</td><td>이미 record-only PASS / 본 세션 D1 framework 재검증 가능 / interaction 단일 추가</td><td><span class="pill blue">low-medium</span> / 후속 cycle 가치</td></tr>
+<tr><td>v3.5 N=35 (year_made) variant 활성화</td><td>v3.6 PR4 variant 이미 등록 / saatchi warm cohort 한정 효과 검증 필요</td><td><span class="pill blue">low</span> / opt-in 그대로 유지 충분</td></tr>
+<tr><td>Data/feature reform (heavy-tail 정합)</td><td>log-transform / outlier handling / target transformation</td><td><span class="pill yellow">medium</span> / cold path 본질 한계 완화 가능성</td></tr>
+<tr><td>Non-GBDT axis (Bayesian / Quantile)</td><td>Feature N 무관 architecture change</td><td><span class="pill yellow">medium</span> / Codex Q7 답변 정합</td></tr>
+<tr><td>N=18 / N=20 / N=25 sweep</td><td>새 N values / Codex skip 권고</td><td><span class="pill red">low</span> / Codex deprioritize</td></tr>
+</table>
+
+<div class="footer">
+<p>본 문서는 Feature N 조정 시도 종합 정리. 자세한 cycle 결과는 commit별 docs/ 참조.</p>
+<p>참고 문서:
+  <code>docs/n15_confirmatory_*.md</code> ·
+  <code>docs/n15_hp_retuning_*.md</code> ·
+  <code>docs/n15_source_conditional_integration_*.md</code> ·
+  <code>docs/feature_sweep_amendment_20260509.md</code> ·
+  <code>docs/feature_track_axis_a1-a5_*.md</code> ·
+  <code>docs/performance_summary_20260511.html</code> (운영 성능 정리).
+</p>
+<p style="margin-top:18px;font-weight:600;color:#2c5aa0;">
+→ 본 세션 운영 채택 = B (N=32 + warm HP retune 17% 정확도 향상). Feature N 변경 없이 deploy 가능.
+</p>
+</div>
+
+</body>
+</html>
