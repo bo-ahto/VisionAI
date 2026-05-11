@@ -9,18 +9,17 @@ Codex schema v1 정합. 본 세션 Track 1 교훈 반영:
 운영 원칙 (필수 제약): 운영 수집 가능 / missingness explicit / source neutral.
 평가 기준 (parsimony): 모델 선택 시 적은 피처로 동등 성능이면 그쪽 선호.
 
-Schema v2 (User feedback: 3 source 모두 공통인 columns만 유지):
-- DROP: year_made / has_year_made / age_years (Saatchi raw에 없음)
-- DROP: artist_birth_year / has_birth_year / artist_age_at_execution (Saatchi/Artue raw에 없음)
-- DROP: attribution_class (Saatchi/Artue raw에 없음, 추정만 가능)
+Schema v3 (User feedback 누적):
+- v2 DROP: year_made / has_year_made / age_years (Saatchi raw에 없음)
+- v2 DROP: artist_birth_year / has_birth_year / artist_age_at_execution (Saatchi/Artue raw)
+- v2 DROP: attribution_class (Saatchi/Artue raw에 없음, 추정만)
+- v3 DROP: nationality_region (98.4% korea, 변별력 없음)
+- v3 DROP: has_nationality (100% = 1, constant)
 
 Cold-start core (9):
 - medium_category / support_category
 - width_cm / height_cm / depth_cm / has_depth
 - area_cm2 / log_area / orientation
-
-Enrichment (2):
-- nationality_region / has_nationality
 
 Target:
 - price_krw / ln_price_krw
@@ -187,10 +186,6 @@ def load_artsy() -> pd.DataFrame:
     df["height_cm"] = pd.to_numeric(a["height_cm"], errors="coerce")
     df["depth_cm"] = pd.to_numeric(a["depth_cm"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
-    df["nationality_region"] = a["artist_nationality"].apply(nationality_to_region)
-    df["has_nationality"] = (
-        a["artist_nationality"].notna() & (a["artist_nationality"] != "")
-    ).astype(int)
     df["price_krw"] = pd.to_numeric(a["price_krw"], errors="coerce")
     df["artist_entity_id_raw"] = a["artist_slug"].astype(str)
     df["artist_name_raw"] = a["artist_name"].astype(str)
@@ -210,8 +205,6 @@ def load_saatchi() -> pd.DataFrame:
     df["height_cm"] = pd.to_numeric(s["height_cm"], errors="coerce")
     df["depth_cm"] = pd.to_numeric(s["depth_cm"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
-    df["nationality_region"] = s["country"].apply(nationality_to_region)
-    df["has_nationality"] = (s["country"].notna() & (s["country"] != "")).astype(int)
     df["price_krw"] = pd.to_numeric(s["price_krw"], errors="coerce")
     df["artist_entity_id_raw"] = s["artist_id"].astype(str)
     df["artist_name_raw"] = (
@@ -233,8 +226,6 @@ def load_artue() -> pd.DataFrame:
     df["height_cm"] = pd.to_numeric(a["Height (cm)"], errors="coerce")
     df["depth_cm"] = pd.to_numeric(a["Depth (cm)"], errors="coerce")
     df["has_depth"] = (df["depth_cm"].notna() & (df["depth_cm"] > 0)).astype(int)
-    df["nationality_region"] = a["Nationality"].apply(nationality_to_region)
-    df["has_nationality"] = (a["Nationality"].notna() & (a["Nationality"] != "")).astype(int)
     df["price_krw"] = pd.to_numeric(a["Price (KRW)"], errors="coerce")
     df["artist_entity_id_raw"] = a["Handle"].astype(str)
     df["artist_name_raw"] = a["Artist"].astype(str)
@@ -312,7 +303,7 @@ def main() -> None:
     unified, drops = apply_filters(unified)
     logger.info(f"After filter: {len(unified)} rows kept (drops={drops})")
 
-    # column order — schema v2 (3 source 공통 features only / 17 cols)
+    # column order — schema v3 (변별력 있는 features only / 15 cols)
     cols = [
         # IDs (학습 비feature)
         "source_platform",
@@ -329,9 +320,6 @@ def main() -> None:
         "area_cm2",
         "log_area",
         "orientation",
-        # Enrichment (2)
-        "nationality_region",
-        "has_nationality",
         # Target (2)
         "price_krw",
         "ln_price_krw",
@@ -355,21 +343,16 @@ def main() -> None:
         },
         "missingness_flags": {
             "has_depth": int(unified["has_depth"].sum()),
-            "has_nationality": int(unified["has_nationality"].sum()),
         },
         "missingness_flags_by_source": {
             src: {
                 "has_depth": int(unified[unified["source_platform"] == src]["has_depth"].sum()),
-                "has_nationality": int(
-                    unified[unified["source_platform"] == src]["has_nationality"].sum()
-                ),
                 "n_rows": int((unified["source_platform"] == src).sum()),
             }
             for src in unified["source_platform"].unique()
         },
         "medium_category_top5": unified["medium_category"].value_counts().head(5).to_dict(),
         "support_category_top5": unified["support_category"].value_counts().head(5).to_dict(),
-        "nationality_region": unified["nationality_region"].value_counts().to_dict(),
         "orientation": unified["orientation"].value_counts().to_dict(),
         "filter_drops": drops,
     }
@@ -391,9 +374,7 @@ def main() -> None:
     print(f"\nPer-source missingness:")
     for src, stats in summary["missingness_flags_by_source"].items():
         n = stats["n_rows"]
-        print(f"  {src} (n={n:,}):")
-        for k in ["has_depth", "has_nationality"]:
-            print(f"    {k}: {stats[k]:,} ({100*stats[k]/n:.1f}%)")
+        print(f"  {src} (n={n:,}): has_depth {stats['has_depth']:,} ({100*stats['has_depth']/n:.1f}%)")
 
 
 if __name__ == "__main__":

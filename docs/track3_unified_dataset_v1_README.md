@@ -32,7 +32,7 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 | 파일 | 설명 |
 |---|---|
-| `data/track3_unified_v1.parquet` | 메인 데이터셋 (41,366 rows × 17 cols, ~1.3MB) |
+| `data/track3_unified_v1.parquet` | 메인 데이터셋 (41,366 rows × 15 cols, ~1.3MB) |
 | `data/track3_unified_v1.csv` | CSV export (6.0 MB, UTF-8 BOM) |
 | `data/track3_unified_v1_sample.csv` | 100 rows/source = 300 rows (44 KB) |
 | `data/track3_unified_v1_summary.json` | 분포/통계 summary |
@@ -41,18 +41,21 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 **Git 상태**: `.parquet` / `data/*.json`은 `.gitignore`. 데이터셋 자체는 git에 들어가지 않음 — 별도 sharing (S3 / Drive / 직접 전달) 필요.
 
-## 3. Schema v2 (17 columns)
+## 3. Schema v3 (15 columns)
 
-> **변경 이력 (User 요구)**: schema v1 → v2에서 7 columns 제거.
-> 3 source 모두 raw 데이터에 systematic absence인 columns 제거 (통일된 schema).
+> **변경 이력 (User 요구)**: v1 (24) → v2 (17) → v3 (15). 9 columns 제거.
+> 1) 3 source raw에 systematic absence 컬럼 (v2)
+> 2) 변별력 없는 컬럼 (v3 — 95%+ same value)
 
-### 3.0 v1 → v2 변경 (제거됨)
+### 3.0 v1 → v3 변경 (제거됨)
 
-| 제거 column | 이유 |
-|---|---|
-| `year_made` / `has_year_made` / `age_years` | Saatchi raw에 없음 |
-| `artist_birth_year` / `has_birth_year` / `artist_age_at_execution` | Saatchi/Artue raw에 없음 |
-| `attribution_class` | Saatchi/Artue raw에 없음 (추정만 가능) |
+| 제거 column | 이유 | Version |
+|---|---|---|
+| `year_made` / `has_year_made` / `age_years` | Saatchi raw에 없음 | v2 |
+| `artist_birth_year` / `has_birth_year` / `artist_age_at_execution` | Saatchi/Artue raw에 없음 | v2 |
+| `attribution_class` | Saatchi/Artue raw에 없음 (추정만 가능) | v2 |
+| `nationality_region` | **98.4% korea** (변별력 없음) | **v3** |
+| `has_nationality` | **100% = 1** (사실상 constant) | **v3** |
 
 ### 3.1 IDs (4) — 모델 input 아님, 추적/매칭용
 
@@ -77,14 +80,7 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 | `log_area` | float | 100% | log(area_cm2) — heavy tail 안정화 |
 | `orientation` | categorical (4) | 100% | portrait / landscape / square / unknown |
 
-### 3.3 Enrichment features (2)
-
-| Column | Type | Source coverage | Description |
-|---|---|---|---|
-| `nationality_region` | categorical (5) | 100% | korea / asia_other / north_america / europe / other / unknown |
-| `has_nationality` | binary | 100% | nationality 정보 있음 |
-
-### 3.4 Target (2)
+### 3.3 Target (2)
 
 | Column | Type | Description |
 |---|---|---|
@@ -107,9 +103,8 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 | Flag | Artsy | Saatchi | Artue |
 |---|---:|---:|---:|
 | `has_depth` | 29% | **~100%** | 60% |
-| `has_nationality` | 100% | 100% | ~100% |
 
-**Schema v2 적용 후**: 모든 column이 3 source에서 raw data로 수집 가능. systematic absence 없음.
+**Schema v3 적용 후**: 모든 feature가 3 source에서 raw 수집 가능 + 변별력 있음.
 
 ### 4.3 Price stats (KRW)
 
@@ -120,9 +115,9 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 ### 4.4 Categorical distributions
 
-- `orientation`: portrait 17,313 / landscape 15,278 / square 8,775
-- `medium_category` top: oil / acrylic / mixed / ink / pigment
-- `nationality_region`: korea (대다수) / asia_other / 기타
+- `orientation`: portrait 17,313 (42%) / landscape 15,278 (37%) / square 8,775 (21%)
+- `medium_category` top: acrylic / oil / mixed / ink / pigment
+- `support_category` top: canvas (59%) / paper / panel
 
 ## 5. Cross-source 작가 overlap (참고)
 
@@ -174,8 +169,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.linear_model import Ridge
 
 # Encode categoricals
-cat_cols = ["medium_category", "support_category",
-            "orientation", "nationality_region"]
+cat_cols = ["medium_category", "support_category", "orientation"]
 num_cols = [c for c in X_cols if c not in cat_cols]
 
 # (실제 baseline은 ColumnTransformer + Pipeline 권고)
@@ -204,7 +198,7 @@ PYTHONPATH=src python3 scripts/track3/validate_unified_dataset.py  # 11/11 PASS
 | # | Check | 통과 기준 |
 |---|---|---|
 | 1 | File existence | parquet + summary 존재 |
-| 2 | Schema (17 cols + 순서) | EXPECTED_COLS 일치 |
+| 2 | Schema (15 cols + 순서) | EXPECTED_COLS 일치 |
 | 3 | Row count | ≥ 1,000 |
 | 4 | Source distribution | {artsy, saatchi, artue} |
 | 5 | Price range filter | [100K, 5B] |
@@ -219,7 +213,7 @@ PYTHONPATH=src python3 scripts/track3/validate_unified_dataset.py  # 11/11 PASS
 
 ## 8. 알려진 제약 (Known Limitations)
 
-1. **Year_made / artist_birth_year / attribution_class 제거됨** (schema v2) — Saatchi/Artue raw에 systematic absent. User 결정: "3 source 서로 없는 데이터 모두 제거" 적용.
+1. **9 columns 제거됨** (v1 → v3): Saatchi/Artue raw에 systematic absent (year/birth/attribution — v2) + 변별력 없는 컬럼 (nationality 98.4% korea — v3). User 결정 반영.
 2. **Artsy 가격 공개 36%만** — Saatchi/Artue 대비 sparse.
 3. **Cross-source 작가 disjoint** — 80~89 작가만 cross-source overlap. 작가 단위 통합 분석은 별도 작업.
 4. **Gallery 정보 없음** — Track 1 교훈으로 의도 제외 (train-only signal).
@@ -229,7 +223,7 @@ PYTHONPATH=src python3 scripts/track3/validate_unified_dataset.py  # 11/11 PASS
 
 | 항목 | Track 1 v3_filtered_tuned_29_hf_htw | Track 3 unified v1 |
 |---|---|---|
-| Features | 29 (cold-start core 27 + has flags) | **11** (cold-start 9 + enrichment 2) |
+| Features | 29 (cold-start core 27 + has flags) | **9** (cold-start only — parsimony) |
 | Rows | 28,376 (Artsy 7,640 + Saatchi 21,721 trained) | **41,366** (+Artue 2,778) |
 | Source feature | 제거됨 (PR-29F) | 제거됨 |
 | Gallery features | 제거됨 (gallery_tier) | 제거됨 |
@@ -268,6 +262,7 @@ Track 3는 **운영 fidelity 최우선** + **신규 작가 cold-start 강화** �
 
 - **v1 (2026-05-11)**: 초기 release. 41,366 rows / 24 cols. Codex schema v1 정합.
 - **v2 (2026-05-11)**: 41,366 rows / **17 cols**. User 결정 적용 — 3 source 모두 raw에 없는 7 columns 제거 (year_made / birth_year / attribution_class family).
+- **v3 (2026-05-11)**: 41,366 rows / **15 cols**. User 결정 적용 — 변별력 없는 2 columns 제거 (nationality_region 98.4% korea / has_nationality 100% constant).
 
 ## 13. 참고 자료
 

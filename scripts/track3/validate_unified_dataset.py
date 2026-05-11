@@ -42,9 +42,6 @@ EXPECTED_COLS = [
     "area_cm2",
     "log_area",
     "orientation",
-    # Enrichment (2)
-    "nationality_region",
-    "has_nationality",
     # Target (2)
     "price_krw",
     "ln_price_krw",
@@ -135,10 +132,7 @@ def check_missingness_rates(df: pd.DataFrame) -> tuple[bool, str]:
     for src in sorted(df["source_platform"].unique()):
         sub = df[df["source_platform"] == src]
         n = len(sub)
-        rates.append(
-            f"{src}({n:,}): depth {100*sub['has_depth'].sum()/n:.0f}% / "
-            f"nat {100*sub['has_nationality'].sum()/n:.0f}%"
-        )
+        rates.append(f"{src}({n:,}): depth {100*sub['has_depth'].sum()/n:.0f}%")
     return True, "; ".join(rates)
 
 
