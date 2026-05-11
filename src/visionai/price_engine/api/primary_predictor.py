@@ -72,6 +72,12 @@ CB_FEATURES_BASE_29 = [
     f for f in CB_FEATURES_BASE if f not in ("ho_price_level", "medium_price_level", "source")
 ]
 
+# PR-28F (2026-05-11): 28 features (CB_FEATURES_BASE_29 − for_sale_ratio).
+# - Layer 2 audit: for_sale_ratio PSI=8.95 (saatchi 100% 1.0 constant) + serving 4 위치 1.0 하드코딩
+# - Layer 2.B isolated cycle: Δ_cold -0.36pp / Δ_warm +0.10pp vs 29f (PASS_WITHIN_NOISE, saatchi cold -0.94pp 개선)
+# - train-only signal, deployment 무용지물
+CB_FEATURES_BASE_28 = [f for f in CB_FEATURES_BASE_29 if f != "for_sale_ratio"]
+
 # Backward compat: 기존 import 호환
 CB_FEATURES = CB_FEATURES_BASE
 
@@ -153,6 +159,23 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
         "cb_features": CB_FEATURES_BASE_29,
         "cat_features": CAT_FEATURES_29,
         "expected_target": "v3_filtered_tuned_b_warm_29f",
+    },
+    # PR-28F (2026-05-11): 28-feature artifact bundle — Layer 2 audit follow-up.
+    # for_sale_ratio: train-only signal (saatchi 100% constant 1.0 / serving 모두 1.0 하드코딩 / PSI=8.95)
+    # Layer 2.B isolated cycle: Δ_cold -0.36pp / Δ_warm +0.10pp vs 29f (PASS_WITHIN_NOISE)
+    # cb_features: 28 (CB_FEATURES_BASE_29 − for_sale_ratio) / cat_features: 5 (변동 없음)
+    # Default OFF — MODEL_VARIANT=v3_filtered_tuned_28f 또는 VARIANT_SHADOW 로 활성화.
+    "v3_filtered_tuned_28f": {
+        "prefix": "integrated_v3_filtered_tuned_28f",
+        "cb_features": CB_FEATURES_BASE_28,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_28f",
+    },
+    "v3_filtered_tuned_b_warm_28f": {
+        "prefix": "integrated_v3_filtered_tuned_b_warm_28f",
+        "cb_features": CB_FEATURES_BASE_28,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_b_warm_28f",
     },
 }
 

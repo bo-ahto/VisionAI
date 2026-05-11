@@ -23,6 +23,7 @@ from visionai.price_engine.api.primary_predictor import (
     CAT_FEATURES_29,
     CB_FEATURES,
     CB_FEATURES_BASE,
+    CB_FEATURES_BASE_28,
     CB_FEATURES_BASE_29,
     CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM,
     DEFAULT_VARIANT,
@@ -308,6 +309,75 @@ def test_get_cb_features_29f():
 def test_artifact_prefix_pattern_29f():
     """PR-29F: 신규 artifact bundle naming contract."""
     for name in ("v3_filtered_tuned_29f", "v3_filtered_tuned_b_warm_29f"):
+        cfg = SUPPORTED_VARIANTS[name]
+        expected_files = [
+            f"{cfg['prefix']}_catboost.cbm",
+            f"{cfg['prefix']}_xgboost.json",
+            f"{cfg['prefix']}_warm_artists.json",
+            f"{cfg['prefix']}_xgboost_label_maps.json",
+            f"{cfg['prefix']}_source_calibration.json",
+        ]
+        assert all(f.startswith(cfg["prefix"]) for f in expected_files)
+
+
+# ---- PR-28F: 28-feature variant (for_sale_ratio 추가 제거) ----
+
+
+def test_cb_features_base_28_count():
+    """28 = 29 - 1 (for_sale_ratio)."""
+    assert len(CB_FEATURES_BASE_28) == 28
+
+
+def test_cb_features_base_28_drops_correct():
+    """for_sale_ratio 만 추가 제거 (dead 2 + source 는 29f에서 이미 제거)."""
+    dropped_from_29f = set(CB_FEATURES_BASE_29) - set(CB_FEATURES_BASE_28)
+    assert dropped_from_29f == {"for_sale_ratio"}
+    dropped_from_base = set(CB_FEATURES_BASE) - set(CB_FEATURES_BASE_28)
+    assert dropped_from_base == {
+        "ho_price_level",
+        "medium_price_level",
+        "source",
+        "for_sale_ratio",
+    }
+
+
+def test_v3_filtered_tuned_28f_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_28f"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_28f"
+    assert cfg["expected_target"] == "v3_filtered_tuned_28f"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_28
+    assert cfg["cat_features"] == CAT_FEATURES_29  # 5개, source 제외
+    assert len(cfg["cb_features"]) == 28
+    assert len(cfg["cat_features"]) == 5
+
+
+def test_v3_filtered_tuned_b_warm_28f_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_b_warm_28f"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_b_warm_28f"
+    assert cfg["expected_target"] == "v3_filtered_tuned_b_warm_28f"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_28
+    assert cfg["cat_features"] == CAT_FEATURES_29
+
+
+def test_resolve_variant_28f_explicit():
+    assert _resolve_variant("v3_filtered_tuned_28f") == "v3_filtered_tuned_28f"
+    assert _resolve_variant("v3_filtered_tuned_b_warm_28f") == "v3_filtered_tuned_b_warm_28f"
+
+
+def test_get_cb_features_28f():
+    assert get_cb_features("v3_filtered_tuned_28f") == CB_FEATURES_BASE_28
+    f = get_cb_features("v3_filtered_tuned_28f")
+    assert "for_sale_ratio" not in f
+    assert "source" not in f
+    assert "ho_price_level" not in f
+    assert "medium_price_level" not in f
+    # 29f에 있던 ln_followers는 28f에도 존재 (Layer 2.B 결정 — followers는 유지)
+    assert "ln_followers" in f
+
+
+def test_artifact_prefix_pattern_28f():
+    """PR-28F: 신규 artifact bundle naming contract."""
+    for name in ("v3_filtered_tuned_28f", "v3_filtered_tuned_b_warm_28f"):
         cfg = SUPPORTED_VARIANTS[name]
         expected_files = [
             f"{cfg['prefix']}_catboost.cbm",
