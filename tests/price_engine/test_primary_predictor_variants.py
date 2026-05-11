@@ -629,3 +629,31 @@ def test_feature_builder_has_total_works_real_zero():
         artist_profile={"source": "saatchi", "total_works": 0, "followers": 0},
     )
     assert f["has_total_works"] == 0
+
+
+def test_v3_filtered_tuned_b_warm_29_hf_htw_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_b_warm_29_hf_htw"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_b_warm_29_hf_htw"
+    assert cfg["expected_target"] == "v3_filtered_tuned_b_warm_29_hf_htw"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_29_HF_HTW
+    assert cfg["cat_features"] == CAT_FEATURES_29
+    assert len(cfg["cb_features"]) == 29
+
+
+def test_resolve_variant_b_warm_29_hf_htw():
+    assert (
+        _resolve_variant("v3_filtered_tuned_b_warm_29_hf_htw")
+        == "v3_filtered_tuned_b_warm_29_hf_htw"
+    )
+
+
+def test_artifact_prefix_pattern_b_warm_29_hf_htw():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_b_warm_29_hf_htw"]
+    expected_files = [
+        f"{cfg['prefix']}_catboost.cbm",
+        f"{cfg['prefix']}_xgboost.json",
+        f"{cfg['prefix']}_warm_artists.json",
+        f"{cfg['prefix']}_xgboost_label_maps.json",
+        f"{cfg['prefix']}_source_calibration.json",
+    ]
+    assert all(f.startswith(cfg["prefix"]) for f in expected_files)

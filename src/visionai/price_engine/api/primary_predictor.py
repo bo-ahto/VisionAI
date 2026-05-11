@@ -239,12 +239,20 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
     # 본 세션 첫 명백한 일관 개선 (cold -0.51 / artsy -0.43 / saatchi -0.55 / warm -0.01).
     # has_total_works: matched artist with positive total_works → 1, unmatched/0 → 0
     # cb_features: 29 (CB_FEATURES_BASE_28_HF + has_total_works) / cat_features: 5
-    # Default OFF. B winner 후속 PR로 분리 (Codex R2 권고).
+    # Default OFF.
     "v3_filtered_tuned_29_hf_htw": {
         "prefix": "integrated_v3_filtered_tuned_29_hf_htw",
         "cb_features": CB_FEATURES_BASE_29_HF_HTW,
         "cat_features": CAT_FEATURES_29,
         "expected_target": "v3_filtered_tuned_29_hf_htw",
+    },
+    # PR-HTW-FLAG B winner (2026-05-11): CB copy from default-29_hf_htw (bit-identical cold) +
+    # XGB B-retuned warm fit. PR-WARM-B 패턴 정합. Default OFF.
+    "v3_filtered_tuned_b_warm_29_hf_htw": {
+        "prefix": "integrated_v3_filtered_tuned_b_warm_29_hf_htw",
+        "cb_features": CB_FEATURES_BASE_29_HF_HTW,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_b_warm_29_hf_htw",
     },
 }
 

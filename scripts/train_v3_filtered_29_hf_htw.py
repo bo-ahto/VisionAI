@@ -421,8 +421,19 @@ def main() -> None:
         data_info=result["data_info"],
     )
 
-    # B winner는 후속 PR (Codex R2 권고: variant 추가만)
-    logger.info("Note: B winner 학습은 후속 PR로 분리 (variant 추가 commit only)")
+    # B winner 29_hf_htw 학습 (PR-HTW-FLAG B winner 후속 PR)
+    train_b_warm_29_hf_htw(result)
+
+    # CB bit-identical 검증 (Codex R1 권고: sha256 비교 자동화 fail-fast)
+    cb_default_path = OUT_DIR / f"{DEFAULT_29_HF_HTW_PREFIX}_catboost.cbm"
+    cb_b_warm_path = OUT_DIR / f"{B_WARM_29_HF_HTW_PREFIX}_catboost.cbm"
+    if _sha256_file(cb_default_path) != _sha256_file(cb_b_warm_path):
+        raise RuntimeError(
+            f"CB sha256 mismatch — bit-identical cold path 보장 실패\n"
+            f"  default: {cb_default_path.name}\n"
+            f"  b_warm:  {cb_b_warm_path.name}"
+        )
+    logger.info("✅ CB sha256 verified bit-identical (default-29_hf_htw ↔ b_warm-29_hf_htw)")
 
     logger.info("=" * 70)
     logger.info(f"PR-HTW-FLAG training complete (total {time.time()-t0_total:.1f}s)")

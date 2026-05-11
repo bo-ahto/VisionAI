@@ -41,9 +41,9 @@ logger = logging.getLogger(__name__)
 
 ARTIFACTS = REPO / "model_test_results"
 DEFAULT_VARIANT = "v3_filtered_tuned_29_hf_htw"
+B_WINNER_VARIANT = "v3_filtered_tuned_b_warm_29_hf_htw"
 DEFAULT_PREFIX = "integrated_v3_filtered_tuned_29_hf_htw"
-# B winner 29_hf_htw는 후속 PR (Codex R2 권고: variant 추가만)
-# 본 verification은 default-only 검증
+B_WINNER_PREFIX = "integrated_v3_filtered_tuned_b_warm_29_hf_htw"
 
 
 # ─── Sample requests for smoke test ───
@@ -84,8 +84,8 @@ SAMPLE_REAL_ZERO_FOLLOWERS = {
 
 
 def check_1_artifact_files() -> tuple[bool, str]:
-    """7 artifact files for default 29_hf_htw (B winner 후속 PR)."""
-    required_suffixes = [
+    """7 default + 8 B winner = 15 artifact files."""
+    default_suffixes = [
         "_catboost.cbm",
         "_xgboost.json",
         "_xgboost_label_maps.json",
@@ -95,33 +95,39 @@ def check_1_artifact_files() -> tuple[bool, str]:
         "_best_params.json",
     ]
     missing = []
-    for suf in required_suffixes:
-        path = ARTIFACTS / f"{DEFAULT_PREFIX}{suf}"
-        if not path.exists():
-            missing.append(path.name)
+    for prefix in (DEFAULT_PREFIX, B_WINNER_PREFIX):
+        for suf in default_suffixes:
+            path = ARTIFACTS / f"{prefix}{suf}"
+            if not path.exists():
+                missing.append(path.name)
+    # B winner extras: manifest.json
+    manifest = ARTIFACTS / f"{B_WINNER_PREFIX}_manifest.json"
+    if not manifest.exists():
+        missing.append(manifest.name)
     if missing:
         return False, f"Missing {len(missing)} files: {missing[:5]}..."
-    return True, "All 7 default artifact files present (B winner 후속 PR)"
+    return True, "All 15 artifact files present (default 7 + B winner 8)"
 
 
 def check_2_variant_registration() -> tuple[bool, str]:
-    """SUPPORTED_VARIANTS에 29_hf_htw default 등록 + features count."""
+    """SUPPORTED_VARIANTS에 29_hf_htw default + B winner 등록."""
     from visionai.price_engine.api.primary_predictor import (
         CAT_FEATURES_29,
         CB_FEATURES_BASE_29_HF_HTW,
         SUPPORTED_VARIANTS,
     )
 
-    if DEFAULT_VARIANT not in SUPPORTED_VARIANTS:
-        return False, f"{DEFAULT_VARIANT} not in SUPPORTED_VARIANTS"
-    cfg = SUPPORTED_VARIANTS[DEFAULT_VARIANT]
-    if cfg["cb_features"] != CB_FEATURES_BASE_29_HF_HTW:
-        return False, f"cb_features mismatch"
-    if cfg["cat_features"] != CAT_FEATURES_29:
-        return False, f"cat_features mismatch"
-    if len(cfg["cb_features"]) != 29:
-        return False, f"cb_features count={len(cfg['cb_features'])} != 29"
-    return True, "Default variant registered (29 cb / 5 cat) — B winner 후속"
+    for v in (DEFAULT_VARIANT, B_WINNER_VARIANT):
+        if v not in SUPPORTED_VARIANTS:
+            return False, f"{v} not in SUPPORTED_VARIANTS"
+        cfg = SUPPORTED_VARIANTS[v]
+        if cfg["cb_features"] != CB_FEATURES_BASE_29_HF_HTW:
+            return False, f"{v} cb_features mismatch"
+        if cfg["cat_features"] != CAT_FEATURES_29:
+            return False, f"{v} cat_features mismatch"
+        if len(cfg["cb_features"]) != 29:
+            return False, f"{v} cb_features count={len(cfg['cb_features'])} != 29"
+    return True, "Both variants registered (29 cb / 5 cat)"
 
 
 def check_3_predictor_load() -> tuple[bool, str, dict]:
@@ -129,7 +135,7 @@ def check_3_predictor_load() -> tuple[bool, str, dict]:
     from visionai.price_engine.api.primary_predictor import PrimaryPredictor
 
     predictors = {}
-    for v in (DEFAULT_VARIANT,):
+    for v in (DEFAULT_VARIANT, B_WINNER_VARIANT):
         try:
             p = PrimaryPredictor()
             p.load_models(ARTIFACTS, variant=v)
@@ -139,7 +145,7 @@ def check_3_predictor_load() -> tuple[bool, str, dict]:
             predictors[v] = p
         except Exception as e:
             return False, f"{v} load failed: {e}", {}
-    return True, "Default 29_hf_htw loaded successfully", predictors
+    return True, "Both 29_hf_htw variants (default + B winner) loaded successfully", predictors
 
 
 def check_4_smoke_predict(predictors: dict) -> tuple[bool, str]:
@@ -212,12 +218,13 @@ def check_6_variant_mapping_consistency() -> tuple[bool, str]:
     """Variant 매핑 일관성 (variant name ↔ prefix ↔ expected_target)."""
     from visionai.price_engine.api.primary_predictor import SUPPORTED_VARIANTS
 
-    cfg = SUPPORTED_VARIANTS[DEFAULT_VARIANT]
-    expected_prefix = f"integrated_{DEFAULT_VARIANT}"
-    if cfg["prefix"] != expected_prefix:
-        return False, f"prefix mismatch: {cfg['prefix']} vs {expected_prefix}"
-    if cfg["expected_target"] != DEFAULT_VARIANT:
-        return False, f"expected_target mismatch: {cfg['expected_target']}"
+    for v in (DEFAULT_VARIANT, B_WINNER_VARIANT):
+        cfg = SUPPORTED_VARIANTS[v]
+        expected_prefix = f"integrated_{v}"
+        if cfg["prefix"] != expected_prefix:
+            return False, f"{v} prefix mismatch: {cfg['prefix']} vs {expected_prefix}"
+        if cfg["expected_target"] != v:
+            return False, f"{v} expected_target mismatch: {cfg['expected_target']}"
     return True, "Variant mapping consistent (variant ↔ prefix ↔ expected_target)"
 
 
