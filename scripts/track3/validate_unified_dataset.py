@@ -1,0 +1,247 @@
+"""Track 3 unified dataset validation — quality checks + integrity verification.
+
+본 script은 build_unified_dataset.py 산출물 검증.
+
+Usage:
+    PYTHONPATH=src python3 scripts/track3/validate_unified_dataset.py
+
+Exit code:
+    0 = PASS (모든 check 통과)
+    1 = FAIL (어느 check든 실패)
+"""
+from __future__ import annotations
+
+import json
+import logging
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
+
+REPO = Path(__file__).resolve().parent.parent.parent
+DATA_PATH = REPO / "data" / "track3_unified_v1.parquet"
+SUMMARY_PATH = REPO / "data" / "track3_unified_v1_summary.json"
+
+EXPECTED_COLS = [
+    # IDs
+    "source_platform",
+    "source_listing_id",
+    "artist_entity_id_raw",
+    "artist_name_raw",
+    # Cold-start core
+    "medium_category",
+    "support_category",
+    "attribution_class",
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "has_depth",
+    "area_cm2",
+    "log_area",
+    "orientation",
+    "year_made",
+    "has_year_made",
+    "age_years",
+    # Enrichment
+    "artist_birth_year",
+    "has_birth_year",
+    "artist_age_at_execution",
+    "nationality_region",
+    "has_nationality",
+    # Target
+    "price_krw",
+    "ln_price_krw",
+]
+EXPECTED_SOURCES = {"artsy", "saatchi", "artue"}
+EXPECTED_ORIENTATIONS = {"portrait", "landscape", "square", "unknown"}
+EXPECTED_ATTRIBUTION = {"unique", "edition"}
+PRICE_MIN_KRW = 100_000
+PRICE_MAX_KRW = 5_000_000_000
+
+
+def check_file_exists() -> tuple[bool, str]:
+    if not DATA_PATH.exists():
+        return False, f"Missing dataset: {DATA_PATH}"
+    if not SUMMARY_PATH.exists():
+        return False, f"Missing summary: {SUMMARY_PATH}"
+    return True, f"{DATA_PATH.name} ({DATA_PATH.stat().st_size:,} bytes)"
+
+
+def check_schema(df: pd.DataFrame) -> tuple[bool, str]:
+    got = list(df.columns)
+    if got != EXPECTED_COLS:
+        extra = set(got) - set(EXPECTED_COLS)
+        missing = set(EXPECTED_COLS) - set(got)
+        return False, f"Schema mismatch: extra={extra} / missing={missing}"
+    return True, f"All {len(EXPECTED_COLS)} columns present in correct order"
+
+
+def check_row_count(df: pd.DataFrame) -> tuple[bool, str]:
+    if len(df) < 1000:
+        return False, f"Row count too low: {len(df)}"
+    return True, f"{len(df):,} rows"
+
+
+def check_sources(df: pd.DataFrame) -> tuple[bool, str]:
+    sources = set(df["source_platform"].unique())
+    if sources != EXPECTED_SOURCES:
+        return False, f"Source mismatch: got={sources} expected={EXPECTED_SOURCES}"
+    counts = df["source_platform"].value_counts().to_dict()
+    return True, f"Sources: {counts}"
+
+
+def check_price_range(df: pd.DataFrame) -> tuple[bool, str]:
+    p = df["price_krw"]
+    if (p < PRICE_MIN_KRW).any():
+        return False, f"price < {PRICE_MIN_KRW:,}: {(p < PRICE_MIN_KRW).sum()}"
+    if (p > PRICE_MAX_KRW).any():
+        return False, f"price > {PRICE_MAX_KRW:,}: {(p > PRICE_MAX_KRW).sum()}"
+    return True, (f"price ∈ [{p.min():,.0f}, {p.max():,.0f}] / " f"median={p.median():,.0f}")
+
+
+def check_ln_price_consistency(df: pd.DataFrame) -> tuple[bool, str]:
+    expected = np.log(df["price_krw"])
+    diff = (df["ln_price_krw"] - expected).abs().max()
+    if diff > 1e-6:
+        return False, f"ln_price_krw mismatch: max diff {diff}"
+    return True, f"ln_price_krw consistent (max diff {diff:.2e})"
+
+
+def check_size(df: pd.DataFrame) -> tuple[bool, str]:
+    if (df["width_cm"] <= 1).any() or (df["height_cm"] <= 1).any():
+        return False, "width/height ≤ 1 found"
+    if not (df["area_cm2"] == df["width_cm"] * df["height_cm"]).all():
+        return False, "area_cm2 != width*height"
+    return True, (
+        f"size OK / width median {df['width_cm'].median():.0f}cm / "
+        f"height median {df['height_cm'].median():.0f}cm"
+    )
+
+
+def check_categorical_values(df: pd.DataFrame) -> tuple[bool, str]:
+    issues = []
+    o = set(df["orientation"].unique())
+    if not o.issubset(EXPECTED_ORIENTATIONS):
+        issues.append(f"orientation extra: {o - EXPECTED_ORIENTATIONS}")
+    a = set(df["attribution_class"].unique())
+    if not a.issubset(EXPECTED_ATTRIBUTION):
+        issues.append(f"attribution extra: {a - EXPECTED_ATTRIBUTION}")
+    if issues:
+        return False, "; ".join(issues)
+    return True, (
+        f"orientation {dict(df['orientation'].value_counts())}, "
+        f"attribution {dict(df['attribution_class'].value_counts())}"
+    )
+
+
+def check_flag_consistency(df: pd.DataFrame) -> tuple[bool, str]:
+    """has_X flags should agree with underlying value."""
+    issues = []
+    # has_depth: depth_cm > 0
+    inconsistent = ((df["has_depth"] == 1) != (df["depth_cm"] > 0)).sum()
+    if inconsistent > 0:
+        issues.append(f"has_depth: {inconsistent} inconsistent")
+    # has_year_made: year_made > 0
+    inconsistent = ((df["has_year_made"] == 1) != (df["year_made"] > 0)).sum()
+    if inconsistent > 0:
+        issues.append(f"has_year_made: {inconsistent} inconsistent")
+    # has_birth_year: artist_birth_year > 0
+    inconsistent = ((df["has_birth_year"] == 1) != (df["artist_birth_year"] > 0)).sum()
+    if inconsistent > 0:
+        issues.append(f"has_birth_year: {inconsistent} inconsistent")
+    if issues:
+        return False, "; ".join(issues)
+    return True, "All has_X flags consistent with underlying values"
+
+
+def check_missingness_rates(df: pd.DataFrame) -> tuple[bool, str]:
+    """Report missingness per source (informational, always PASS)."""
+    rates = []
+    for src in sorted(df["source_platform"].unique()):
+        sub = df[df["source_platform"] == src]
+        n = len(sub)
+        rates.append(
+            f"{src}({n:,}): depth {100*sub['has_depth'].sum()/n:.0f}% / "
+            f"year {100*sub['has_year_made'].sum()/n:.0f}% / "
+            f"birth {100*sub['has_birth_year'].sum()/n:.0f}%"
+        )
+    return True, "; ".join(rates)
+
+
+def check_no_null(df: pd.DataFrame) -> tuple[bool, str]:
+    """ID columns + numeric features should have no null."""
+    nullable_allowed = set()  # 본 schema는 NaN 자체 없음 (전부 0/flag 처리됨)
+    null_cols = []
+    for col in df.columns:
+        if col in nullable_allowed:
+            continue
+        n_null = df[col].isna().sum()
+        if n_null > 0:
+            null_cols.append(f"{col}({n_null})")
+    if null_cols:
+        return False, f"Null found: {null_cols}"
+    return True, "No null in any column"
+
+
+CHECKS = [
+    ("1. File existence", check_file_exists, False),
+    ("2. Schema (column names + order)", check_schema, True),
+    ("3. Row count (≥ 1,000)", check_row_count, True),
+    ("4. Source distribution", check_sources, True),
+    ("5. Price range filter", check_price_range, True),
+    ("6. ln_price_krw consistency", check_ln_price_consistency, True),
+    ("7. Size (width/height/area)", check_size, True),
+    ("8. Categorical values (orientation/attribution)", check_categorical_values, True),
+    ("9. has_X flag consistency", check_flag_consistency, True),
+    ("10. Missingness rates (informational)", check_missingness_rates, True),
+    ("11. No null in any column", check_no_null, True),
+]
+
+
+def main() -> int:
+    logger.info("=" * 70)
+    logger.info("Track 3 unified dataset v1 — validation")
+    logger.info("=" * 70)
+
+    # First check file exists
+    ok, msg = check_file_exists()
+    marker = "✅" if ok else "❌"
+    logger.info("%s 1. File existence — %s", marker, msg)
+    if not ok:
+        return 1
+
+    df = pd.read_parquet(DATA_PATH)
+    summary = json.loads(SUMMARY_PATH.read_text())
+    logger.info("Loaded dataset: %d rows, %d cols", len(df), len(df.columns))
+    logger.info("Loaded summary: by_source=%s", summary.get("by_source"))
+    logger.info("")
+
+    all_pass = True
+    for name, fn, needs_df in CHECKS[1:]:
+        try:
+            if needs_df:
+                ok, msg = fn(df)
+            else:
+                ok, msg = fn()
+        except Exception as e:
+            ok, msg = False, f"exception: {e}"
+        if not ok:
+            all_pass = False
+        marker = "✅" if ok else "❌"
+        logger.info("%s %s — %s", marker, name, msg)
+
+    logger.info("=" * 70)
+    if all_pass:
+        logger.info("VERDICT: ✅ PASS (모든 check 통과 — 데이터셋 공유 준비됨)")
+        return 0
+    else:
+        logger.error("VERDICT: ❌ FAIL")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
