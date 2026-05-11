@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>전체 실험 사이클 통합 정리 — Final (2026-05-09 ~ 05-11)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1320px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; background: #fafafa; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.6em; margin-bottom: 6px; }
+h2 { background: #ecf0f1; padding: 10px 14px; border-left: 4px solid #2c5aa0; margin-top: 32px; font-size: 1.2em; }
+h3 { font-size: 1.05em; margin-top: 22px; color: #2c3e50; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.commit-tag { font-family: "SF Mono", Menlo, Consolas, monospace; background: #2c3e50; color: #ecf0f1; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+.summary-box { border: 2px solid #28a745; background: #d4edda; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 1px 2px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.blue { background: #cfe2ff; color: #084298; }
+.pill.gray { background: #e9ecef; color: #495057; }
+.pill.bigtag { font-size: 0.95em; padding: 4px 12px; }
+.toc { background: #fff; border: 1px solid #ddd; padding: 12px 18px; border-radius: 4px; margin: 12px 0; }
+.toc a { color: #2c5aa0; text-decoration: none; }
+.num { text-align: right; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff-pos { color: #28a745; font-weight: 600; }
+.diff-neg { color: #dc3545; font-weight: 600; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>VisionAI Track1 전체 실험 사이클 통합 정리 (Final)</h1>
+<p style="color: #666; margin-top: 0;">
+<strong>기간</strong>: 2026-05-09 ~ 2026-05-11 &nbsp;|&nbsp;
+<strong>분기</strong>: <code>exp/track1-feature-optimization-cycle</code> &nbsp;|&nbsp;
+<strong>총 20 cycles / 22 commits</strong> &nbsp;|&nbsp;
+<strong>코덱스 자문</strong>: 동일 세션 <code>019e0bb1</code> / 55+ rounds
+</p>
+
+<div class="summary-box">
+<h3 style="margin-top: 0;">🎯 한 줄 요약</h3>
+<p>
+  <strong>유일 ADOPT = B (warm-only XGB retune / 평균 Δ_warm = -1.62pp / 5/5 strict PASS)</strong>.
+  Cold path 7 cycles (HP retune / data partition / LGBM default & tuned) 모두 fail / GBDT family 본질 한계 확인.
+  Blend axis 2 cycles fail / Framework reform 1 cycle / 현행 strict framework 정확 입증.
+  Stage 1+2 commit + Stage 3-5 deliverables (runbook + monitoring + canary cohort) + 옵션 A 코드 변경 (VARIANT_SHADOW) 완료.
+  운영 활성화는 ops 결정 대기.
+</p>
+</div>
+
+<div class="toc">
+<strong>목차</strong> ·
+<a href="#tldr">TL;DR</a> ·
+<a href="#timeline">타임라인</a> ·
+<a href="#cycles">사이클 결과 상세</a> ·
+<a href="#decision">최종 운영 결정</a> ·
+<a href="#stage345">Stage 3-5 활성화 가이드</a> ·
+<a href="#followup">후속 후보</a>
+</div>
+
+<h2 id="tldr">1. TL;DR — 20 사이클 종합</h2>
+
+<table>
+<tr><th width="15%">Commit</th><th width="22%">Cycle</th><th width="14%">Verdict</th><th>핵심 발견</th></tr>
+
+<tr style="background:#f4f8fc;"><td colspan="4"><strong>📌 Stage 1 — Calibration 검증 (2 cycles)</strong></td></tr>
+<tr><td><span class="commit-tag">d0f8b88</span></td><td>Reprod cycle</td><td><span class="pill red">FAIL</span></td><td>In-sample bias 발견 (load_bearing 2 cell 모두 FAIL)</td></tr>
+<tr><td><span class="commit-tag">08a6b80</span></td><td>OOS verification</td><td><span class="pill yellow">NEEDS_MORE_DATA</span></td><td>True OOS retrained / artsy_online ADOPT_with_caveat / artsy_gallery split variance</td></tr>
+
+<tr style="background:#f4f8fc;"><td colspan="4"><strong>📌 Stage 2 — N=15 Migration (3 cycles / 종결)</strong></td></tr>
+<tr><td><span class="commit-tag">8c9e58e</span></td><td>N15.A Confirmatory</td><td><span class="pill red">HOLD</span></td><td>Sweep winner frozen contract 재현 X</td></tr>
+<tr><td><span class="commit-tag">38eab10</span></td><td>N15.B HP Retuning</td><td><span class="pill red">HOLD clean negative</span></td><td>GroupKFold fix 후 warm Δ +3.76pp (regression)</td></tr>
+<tr><td><span class="commit-tag">4499fe9</span></td><td>N15.C SC Integration</td><td><span class="pill yellow">NEEDS_MORE_DATA</span></td><td>Artsy heavy-tailed extreme variance / N=15 line 종결</td></tr>
+
+<tr style="background:#f4f8fc;"><td colspan="4"><strong>📌 Stage 3 — D1 Cold Path Retune (5 cycles / 모두 fail / abandon)</strong></td></tr>
+<tr><td><span class="commit-tag">7c1254a</span></td><td>D1 (exploratory pilot)</td><td><span class="pill yellow">HOLD positive signal</span></td><td>R4 protocol deviation / compliant rerun trigger</td></tr>
+<tr><td><span class="commit-tag">d06ea22</span></td><td>D1.X compliant rerun</td><td><span class="pill yellow">NEEDS_MORE_DATA</span></td><td>4/5 PASS / seed=113 G2 violation</td></tr>
+<tr><td><span class="commit-tag">d774938</span></td><td>D1.Y N=10 expansion</td><td><span class="pill red">FAIL</span></td><td>7/10 PASS + 3 FAIL → strict aggregate FAIL</td></tr>
+<tr><td><span class="commit-tag">a564e2e</span></td><td>D1.Z+alt reanalysis</td><td><span class="pill gray">analysis-only</span></td><td>Threshold relax 단독 efficacy 작음 / Bootstrap PASS / non-binding</td></tr>
+<tr><td><span class="commit-tag">9f7be57</span></td><td>D1-extended (fresh N=10)</td><td><span class="pill red">FAIL 80%</span></td><td>2/10 PASS / bootstrap CI 정반대 / D1.Y outlier-light lucky sample 입증</td></tr>
+
+<tr style="background:#f4f8fc;"><td colspan="4"><strong>📌 Blend Axis (2 cycles / 종결)</strong></td></tr>
+<tr><td><span class="commit-tag">fd0f14e</span></td><td>D3 scalar w grid</td><td><span class="pill red">HOLD_50_50</span></td><td>1/5 PASS / OOF→fresh 일반화 X</td></tr>
+<tr><td><span class="commit-tag">c24ce57</span></td><td>D3.B Stacking meta</td><td><span class="pill red">HOLD axis terminate</span></td><td>0/5 primary + 0/5 secondary / stacker fresh fail</td></tr>
+
+<tr style="background:#f4f8fc;"><td colspan="4"><strong>📌 ⭐ Warm Path B (유일 ADOPT)</strong></td></tr>
+<tr style="background:#d4edda;"><td><span class="commit-tag">3a27002</span></td><td><strong>B warm-only retune</strong></td><td><span class="pill green bigtag">✅ ADOPT 5/5</span></td><td><strong>평균 Δ_warm=-1.62pp / std=0.137 / population-level robust</strong></td></tr>
+
+<tr style="background:#f4f8fc;"><td colspan="4"><strong>📌 Source-conditional + Framework + Architecture (5 cycles)</strong></td></tr>
+<tr><td><span class="commit-tag">c1c2053</span></td><td>D1.SC source-conditional</td><td><span class="pill red">HOLD axis abandon</span></td><td>artsy 6/10 + saatchi 3/10 + overall 1/10 → axis 종결</td></tr>
+<tr><td><span class="commit-tag">f48f67b</span></td><td>VFR framework analysis</td><td><span class="pill gray">analysis-only</span></td><td>현행 strict framework winner / 7 methods 비교</td></tr>
+<tr><td><span class="commit-tag">05859bd</span></td><td>D1.Arch default LGBM</td><td><span class="pill red">default_LGBM_insufficient</span></td><td>3/10 PASS / GBDT family doubt</td></tr>
+<tr><td><span class="commit-tag">3c8ce32</span></td><td>D1.Arch.tuned Optuna</td><td><span class="pill red">tuned_LGBM_insufficient</span></td><td>20 trials all infeasible (search-time / R6 narrow)</td></tr>
+
+<tr style="background:#f4f8fc;"><td colspan="4"><strong>📌 ⭐ PR-WARM-B Deploy (Stage 1-5 / 본 세션 종합)</strong></td></tr>
+<tr style="background:#d4edda;"><td><span class="commit-tag">d68a794</span><br><span class="commit-tag">d4861a3</span></td><td><strong>Stage 1+2 deploy</strong></td><td><span class="pill green">commit completed</span></td><td>Artifact bundle + variant 등록 + 22 tests / default OFF</td></tr>
+<tr style="background:#d4edda;"><td><span class="commit-tag">77f5598</span></td><td>Stage 3-5 deliverables</td><td><span class="pill green">commit completed</span></td><td>Runbook + daily monitoring + canary cohort utility (22 tests)</td></tr>
+<tr style="background:#d4edda;"><td><span class="commit-tag">b14c765</span></td><td><strong>Stage 3 옵션 A 코드</strong></td><td><span class="pill green">commit completed</span></td><td>VARIANT_SHADOW env var / fail-open / 10 tests / R1+R2 LGTM</td></tr>
+</table>
+
+<div class="info-box">
+<strong>핵심 통계</strong>:<br>
+- ✅ ADOPT 1 (B / warm-only retune) → PR-WARM-B Stage 1-2 commit + Stage 3 옵션 A 코드 변경<br>
+- ❌ Cold path 7 cycles 모두 fail (D1.X / D1.Y / D1-extended / D1.SC / D1.Arch / D1.Arch.tuned / D1.Z+alt non-binding)<br>
+- ❌ Blend axis 2 cycles fail (D3 scalar / D3.B stacker)<br>
+- 🔍 VFR analysis-only → 현행 framework 정확 입증<br>
+- 🔍 Codex Q7 prediction validation: "D1 abandon / B + non-GBDT exploration 우선" 정확
+</div>
+
+<h2 id="timeline">2. 타임라인 + 코덱스 자문 누적</h2>
+
+<table>
+<tr><th>Date</th><th>Cycle</th><th>Codex rounds</th><th>Status</th></tr>
+<tr><td>2026-05-09</td><td>Stage 1 calibration (Reprod + OOS) / Stage 2 N=15 (A/B/C) / D1 exploratory pilot</td><td>21+ rounds (R4 caveat 해소)</td><td>commit 1-7</td></tr>
+<tr><td>2026-05-10 (오전)</td><td>D1.X compliant rerun / D3 scalar / B winner / Stage 1+2 deploy + Stage 1 HTML 정리</td><td>R1-R3 LGTM cycles × 4</td><td>commit 8-15</td></tr>
+<tr><td>2026-05-10 (오후)</td><td>D1.Y N=10 / D3.B Stacking / D1.Z+alt analysis / D1-extended fresh / D1.SC source-conditional</td><td>R1 HOLD / R3 LGTM cycles × 5</td><td>commit 16-19</td></tr>
+<tr><td>2026-05-10 (저녁)</td><td>VFR analysis / D1.Arch default LGBM / D1.Arch.tuned Optuna (180min stuck → narrow rerun)</td><td>R1-R6 amendment cycles × 3</td><td>commit 20-22</td></tr>
+<tr><td>2026-05-11 (새벽)</td><td>Stage 3-5 deliverables + Stage 3 옵션 A 코드 변경 (VARIANT_SHADOW)</td><td>R1-R2 LGTM cycles × 2</td><td>commit 23-24</td></tr>
+</table>
+
+<p style="font-size:12px;color:#666;">총 55+ codex rounds / ~9M tokens / 동일 session 019e0bb1-8ded-7c42-bb17-f18e470cb3a0.</p>
+
+<h2 id="cycles">3. 사이클 결과 상세</h2>
+
+<h3>3.1 ⭐ B (warm-only retune / 유일 ADOPT)</h3>
+
+<div class="success-box">
+<strong>commit 3a27002</strong> / 5/5 strict PASS / 평균 Δ_warm = <strong>-1.62pp</strong> / std = 0.137 (CV=0.09 / 매우 stable)
+</div>
+
+<table>
+<tr><th>항목</th><th>값</th></tr>
+<tr><td>Method</td><td>XGB warm-only Optuna 50 trials / KFold-5 warm CV / single objective</td></tr>
+<tr><td>Best params</td><td>num_boost=947 / depth=9 / lr=0.125 / mcw=11 / reg_alpha=0.56</td></tr>
+<tr><td>Validation seeds</td><td>{541, 619, 743, 829, 947}</td></tr>
+<tr><td>Per-seed Δ_warm</td><td>-1.44 / -1.54 / -1.61 / -1.74 / -1.77 (모두 음수)</td></tr>
+<tr><td>Search CV vs Validation gap</td><td>4.1% (search 9.70→8.01 / validation mean -1.62)</td></tr>
+</table>
+
+<h3>3.2 ❌ D1 Cold Path 5 cycles 모두 fail (Cold retune axis abandon)</h3>
+
+<table>
+<tr><th>Cycle</th><th>Approach</th><th>PASS / FAIL</th><th>CV (cold)</th></tr>
+<tr><td>D1.X (d06ea22)</td><td>50 trials × 2 phase Optuna (CB + XGB) / N=5</td><td>4 PASS + 1 FAIL</td><td>0.19</td></tr>
+<tr><td>D1.Y (d774938)</td><td>N=10 expansion</td><td>7 PASS + 3 FAIL</td><td>0.82</td></tr>
+<tr><td>D1-extended (9f7be57)</td><td>Fresh N=10 prospective</td><td>2 PASS + 8 FAIL</td><td>5.38</td></tr>
+<tr><td>D1.SC (c1c2053)</td><td>Source-conditional (CB only / data partition)</td><td>1/10 overall PASS</td><td>6.93</td></tr>
+<tr><td>D1.Arch (05859bd)</td><td>Default LGBM cold-only</td><td>3/10 PASS</td><td>~4-5</td></tr>
+<tr><td>D1.Arch.tuned (3c8ce32)</td><td>Tuned LGBM Optuna (R6 narrow / 20 trials)</td><td>All infeasible at search-time</td><td>(search-time fail)</td></tr>
+</table>
+
+<div class="danger-box">
+<strong>Cold path 본질 한계 입증</strong>:<br>
+- Cycle별 cold mean: -1.87 / -1.16 / +0.22 / -0.40 (sampling lottery / 정반대 결과)<br>
+- CV 0.19 → 0.82 → 5.38 → 6.93 (cycle별 dramatic 증가)<br>
+- GBDT family 7 cycles all fail → R1 P1.1 narrow "non-GBDT axis 가능성 보존"
+</div>
+
+<h3>3.3 ❌ Blend Axis 2 cycles 종결</h3>
+
+<table>
+<tr><th>Cycle</th><th>Approach</th><th>Result</th></tr>
+<tr><td>D3 (fd0f14e)</td><td>1D scalar w grid (21-point / 0.0-1.0)</td><td>OOF best w*=0.3 (cold -0.34) / 1/5 fresh PASS / HOLD_50_50</td></tr>
+<tr><td>D3.B (c24ce57)</td><td>Linear stacker meta-learner / 4 features</td><td>0/5 primary + 0/5 secondary / blend axis terminate</td></tr>
+</table>
+
+<h3>3.4 🔍 VFR Framework Analysis (analysis-only)</h3>
+
+<table>
+<tr><th>Aggregation Method</th><th>B (positive)</th><th>D1-ext (clear neg)</th><th>D1.SC (clear neg)</th><th>Score</th></tr>
+<tr style="background:#d4edda;"><td><strong>1_strict_per_seed (winner)</strong></td><td>PASS</td><td>FAIL</td><td>FAIL</td><td>+10 / <strong>simplest</strong></td></tr>
+<tr><td>2_bootstrap_ci_mean</td><td>PASS</td><td>FAIL</td><td>FAIL</td><td>+10</td></tr>
+<tr><td>3_trimmed_mean</td><td>PASS</td><td>INC</td><td>PASS ❌</td><td>0 (false positive)</td></tr>
+<tr><td>4_median_ci</td><td>PASS</td><td>FAIL</td><td>FAIL</td><td>+10</td></tr>
+<tr><td>5_cell_weighted</td><td>N/A ❌</td><td>INC</td><td>INC</td><td>-100</td></tr>
+<tr><td>6_quantile_p75</td><td>PASS</td><td>FAIL</td><td>FAIL</td><td>+10</td></tr>
+<tr><td>7_cohens_d</td><td>PASS</td><td>FAIL</td><td>INC</td><td>+10</td></tr>
+</table>
+
+<p>R1 P1.2 tie-break ordering 정합: B PASS mandatory + clear-neg FAIL preserved + simplest winner = <strong>현행 strict per-seed framework</strong>.</p>
+
+<h2 id="decision">4. 최종 운영 결정</h2>
+
+<table>
+<tr><th>영역</th><th>결정</th></tr>
+<tr style="background:#d4edda;"><td><strong>운영 warm path XGB best_params</strong></td><td><span class="pill green bigtag">✅ 교체 (B-retuned)</span> num_boost=947 / depth=9 / lr=0.125 / 본 세션 유일 ADOPT</td></tr>
+<tr><td>운영 cold path (CB + XGB)</td><td><span class="pill green">유지</span> (7 cycles fail / GBDT family insufficient)</td></tr>
+<tr><td>운영 ensemble blend</td><td><span class="pill green">50/50 유지</span> (D3 scalar + D3.B stacker 모두 fail)</td></tr>
+<tr><td>Per-source calibration</td><td><span class="pill green">e3367ed shipped 유지</span></td></tr>
+<tr><td>Source router</td><td><span class="pill green">default OFF 유지</span> (D1.SC fail)</td></tr>
+<tr><td>Validation framework</td><td><span class="pill green">현행 strict per-seed 유지</span> (VFR 정확 입증)</td></tr>
+</table>
+
+<h2 id="stage345">5. Stage 3-5 활성화 가이드</h2>
+
+<h3>5.1 Stage 1+2 완료 (commit d68a794 + d4861a3)</h3>
+- ✅ Artifact bundle (`integrated_v3_filtered_tuned_b_warm_*` 7 files)
+- ✅ Variant `v3_filtered_tuned_b_warm` 등록 (SUPPORTED_VARIANTS / DEFAULT 변경 X)
+- ✅ 22 tests passing
+- ✅ Default OFF / 운영 traffic 영향 X
+
+<h3>5.2 Stage 3-5 Deliverables (commit 77f5598 + b14c765)</h3>
+
+<table>
+<tr><th>Deliverable</th><th>File</th><th>Status</th></tr>
+<tr><td>Activation runbook</td><td><code>docs/pr_warm_b_stage_3_5_activation_runbook_20260511.md</code></td><td>✅ commit 77f5598</td></tr>
+<tr><td>Daily monitoring script</td><td><code>scripts/pr_warm_b_daily_shadow_metric.py</code></td><td>✅ commit 77f5598</td></tr>
+<tr><td>Canary cohort utility</td><td><code>scripts/canary_cohort.py</code> + tests (22 passing)</td><td>✅ commit 77f5598</td></tr>
+<tr><td><strong>Stage 3 옵션 A 코드 변경</strong></td><td><code>primary_server.py</code> VARIANT_SHADOW + tests (10 passing)</td><td><strong>✅ commit b14c765</strong></td></tr>
+</table>
+
+<h3>5.3 운영 활성화 절차 (ops 결정)</h3>
+
+<ol>
+<li><strong>Stage 3 (shadow / 1주)</strong>:
+  <ul>
+    <li>Staging instance: <code>VARIANT_SHADOW=v3_filtered_tuned_b_warm</code> + restart</li>
+    <li>Smoke test (10 requests / variant_shadow_* 필드 기록 확인)</li>
+    <li>운영 instance: rolling restart with env var</li>
+    <li>7일 모니터링: <code>scripts/pr_warm_b_daily_shadow_metric.py</code></li>
+    <li><strong>Sign-off (R1 amendment)</strong>: 7-day Δ_warm ≤ -0.8pp / 5/7 daily ≤ -0.5pp / no day > +0.3pp</li>
+  </ul>
+</li>
+<li><strong>Stage 4 (canary / 3일)</strong>:
+  <ul>
+    <li>Cohort key: artist_slug hash (R1 P0 / fallback request_id)</li>
+    <li>10% (bucket 0) → 50% (0-4) → 100% (0-9) / 각 24시간</li>
+    <li>Sign-off: canary MdAPE ≤ control + 0.3pp / latency ≤ +5%</li>
+  </ul>
+</li>
+<li><strong>Stage 5 (full migration / 1주)</strong>:
+  <ul>
+    <li><code>DEFAULT_VARIANT = "v3_filtered_tuned_b_warm"</code> commit</li>
+    <li>1주 안정 모니터링 / fallback artifact 보존</li>
+  </ul>
+</li>
+</ol>
+
+<div class="warn-box">
+<strong>옵션 A 코드 변경 핵심 (b14c765)</strong>:<br>
+- <code>VARIANT_SHADOW</code> env var → 별도 PrimaryPredictor instance load (default OFF)<br>
+- <code>_run_variant_shadow_inference()</code> fail-open (primary 5xx 영향 X)<br>
+- predict_logs 추가 필드: <code>variant_shadow_variant</code> / <code>variant_shadow_prediction_price_krw</code> / <code>variant_shadow_error</code><br>
+- R1 P1 amendment: PR2B-prereq.1 <code>shadow_*</code> key와 collision 회피 (variant_shadow_* prefix)<br>
+- 10 tests passing (env var states / fail-open / collision / orthogonal)
+</div>
+
+<h2 id="followup">6. 남은 후속 후보 (별도 axis / 운영팀 의존)</h2>
+
+<table>
+<tr><th>우선순위</th><th>후보</th><th>근거</th></tr>
+<tr style="background:#d4edda;"><td>1 (즉시)</td><td><strong>PR-WARM-B Stage 3 운영 활성화</strong></td><td>옵션 A 코드 완료 / VARIANT_SHADOW 환경변수 설정 + restart / ops 결정 / Codex Q5 최우선</td></tr>
+<tr><td>2</td><td>Non-GBDT axis (Bayesian / Quantile / NN)</td><td>R1 P1.1 narrow "architecture-independent" 가능성 / VFR §10 후속 후보 / heavy-tail 정합</td></tr>
+<tr><td>3</td><td>Data/feature reform</td><td>Heavy-tail dataset 정합 features 변경 / log-transform / outlier handling</td></tr>
+<tr><td>4</td><td>Warm calibration re-fit (B-retuned 후)</td><td>Stage 5 후 별도 cycle / 단 운영 routing은 warm_factors 미적용이라 immediate impact 작음</td></tr>
+</table>
+
+<h2>7. 산출 commit 요약 (전체 22 commits)</h2>
+
+<table>
+<tr><th width="14%">Commit</th><th>Cycle / Deliverable</th><th>비고</th></tr>
+<tr><td><span class="commit-tag">d0f8b88</span></td><td>Reprod cycle</td><td>Stage 1 / FAIL</td></tr>
+<tr><td><span class="commit-tag">08a6b80</span></td><td>OOS verification</td><td>Stage 1 / NEEDS_MORE_DATA</td></tr>
+<tr><td><span class="commit-tag">8c9e58e</span></td><td>N15.A</td><td>Stage 2 / HOLD</td></tr>
+<tr><td><span class="commit-tag">38eab10</span></td><td>N15.B</td><td>Stage 2 / clean negative</td></tr>
+<tr><td><span class="commit-tag">4499fe9</span></td><td>N15.C</td><td>Stage 2 / N=15 line 종결</td></tr>
+<tr><td><span class="commit-tag">7c1254a</span></td><td>D1 exploratory</td><td>Stage 3 / R4 deviation</td></tr>
+<tr><td><span class="commit-tag">d06ea22</span></td><td>D1.X compliant</td><td>Stage 3 / NEEDS_MORE_DATA</td></tr>
+<tr><td><span class="commit-tag">fd0f14e</span></td><td>D3 scalar w</td><td>Blend / HOLD_50_50</td></tr>
+<tr style="background:#d4edda;"><td><span class="commit-tag">3a27002</span></td><td><strong>B warm-only retune</strong></td><td>유일 ADOPT / 5/5 PASS / Δ=-1.62pp</td></tr>
+<tr><td><span class="commit-tag">d68a794</span></td><td>Stage 1+2 deploy</td><td>Artifact + variant 등록</td></tr>
+<tr><td><span class="commit-tag">d4861a3</span></td><td>Stage 1+2 follow-up</td><td>Prefix test + source hashes</td></tr>
+<tr><td><span class="commit-tag">d774938</span></td><td>D1.Y N=10</td><td>FAIL 3/10</td></tr>
+<tr><td><span class="commit-tag">c24ce57</span></td><td>D3.B Stacking</td><td>Blend axis terminate</td></tr>
+<tr><td><span class="commit-tag">a564e2e</span></td><td>D1.Z+alt analysis</td><td>Non-binding finding</td></tr>
+<tr><td><span class="commit-tag">9f7be57</span></td><td>D1-extended</td><td>FAIL 80% / D1.Y outlier-light 입증</td></tr>
+<tr><td><span class="commit-tag">c1c2053</span></td><td>D1.SC source-conditional</td><td>Axis abandon</td></tr>
+<tr><td><span class="commit-tag">f48f67b</span></td><td>VFR framework analysis</td><td>현행 framework 정확 입증</td></tr>
+<tr><td><span class="commit-tag">05859bd</span></td><td>D1.Arch default LGBM</td><td>insufficient</td></tr>
+<tr><td><span class="commit-tag">3c8ce32</span></td><td>D1.Arch.tuned</td><td>Search-time infeasible</td></tr>
+<tr style="background:#d4edda;"><td><span class="commit-tag">77f5598</span></td><td><strong>Stage 3-5 deliverables</strong></td><td>Runbook + monitoring + cohort utility</td></tr>
+<tr style="background:#d4edda;"><td><span class="commit-tag">b14c765</span></td><td><strong>Stage 3 옵션 A 코드</strong></td><td>VARIANT_SHADOW env var / fail-open / 10 tests</td></tr>
+</table>
+
+<div class="footer">
+<p>본 문서는 2026-05-09 ~ 2026-05-11 (3일) 단일 세션의 20 cycles / 22 commits 통합 정리. 본 commit (<code>b14c765</code>) 시점 git HEAD = <code>exp/track1-feature-optimization-cycle</code>.</p>
+<p>핵심 deliverables 위치:
+  <code>docs/track1_current_model_summary_20260510.html</code> (현 운영 모델 정합) ·
+  <code>docs/track1_b_warm_model_summary_20260510.html</code> (B Stage 5 후 운영) ·
+  <code>docs/pr_warm_b_stage_3_5_activation_runbook_20260511.md</code> (활성화 가이드) ·
+  <code>docs/all_cycles_summary_final_20260511.html</code> (본 문서).
+</p>
+<p>코덱스 자문 누적: <code>019e0bb1-8ded-7c42-bb17-f18e470cb3a0</code> / 55+ rounds / ~9M tokens / 모든 cycle prereg + 사후 검수 거침.</p>
+<p style="margin-top: 18px; font-weight: 600; color: #2c5aa0;">→ 다음 단계: Stage 3 활성화 (ops 결정 / VARIANT_SHADOW 환경변수 설정) / Codex Q5 priority answer: "B deploy > non-GBDT exploration > no more GBDT cold retune"</p>
+</div>
+
+</body>
+</html>
