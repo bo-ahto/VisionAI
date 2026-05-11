@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Track1 본 세션 Complete Summary — 성능 + Audit + Deploy (2026-05-11)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1500px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; background: #fafafa; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.7em; margin-bottom: 6px; }
+h2 { background: #ecf0f1; padding: 10px 14px; border-left: 4px solid #2c5aa0; margin-top: 32px; font-size: 1.25em; }
+h3 { font-size: 1.05em; margin-top: 22px; color: #2c3e50; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 12.5px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 7px 9px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.delta-pos { color: #b04040; }
+.delta-neg { color: #2c7d2c; }
+.delta-zero { color: #777; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+.summary-box { border: 2px solid #2c5aa0; background: #f4f8fc; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.codex-quote { background: #f4f8fc; border-left: 4px solid #2c5aa0; padding: 10px 14px; margin: 8px 0; font-size: 13px; font-style: italic; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 1px 2px; font-weight: 600; white-space: nowrap; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.blue { background: #cfe2ff; color: #084298; }
+.pill.gray { background: #e9ecef; color: #495057; }
+.row-pass { background: #f0fef5; }
+.row-fail { background: #fef0f0; }
+.row-neutral { background: #fffbf0; }
+.commit-hash { font-family: monospace; background: #e9ecef; padding: 1px 4px; font-size: 11px; }
+.tldr { background: linear-gradient(90deg, #f0f8ff, #fafafa); padding: 12px 18px; border-left: 6px solid #2c5aa0; margin: 15px 0; font-size: 13.5px; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+ul.compact { margin: 4px 0; padding-left: 22px; }
+ul.compact li { margin: 2px 0; }
+.toc { background: #f4f8fc; padding: 10px 15px; border-radius: 4px; margin: 10px 0; }
+.toc ol { margin: 4px 0; padding-left: 22px; }
+.metric-card { display: inline-block; background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 8px 14px; margin: 4px 6px; }
+.metric-card .label { font-size: 11px; color: #666; text-transform: uppercase; }
+.metric-card .value { font-size: 1.4em; font-weight: 600; color: #2c5aa0; font-variant-numeric: tabular-nums; }
+.metric-card .delta { font-size: 11px; color: #b04040; }
+</style>
+</head>
+<body>
+
+<h1>Track1 본 세션 Complete Summary</h1>
+<p style="color:#666;margin-top:0;">
+<strong>작성일</strong>: 2026-05-11 &nbsp;|&nbsp;
+<strong>분기</strong>: <code>exp/track1-feature-optimization-cycle</code> &nbsp;|&nbsp;
+<strong>세션 commits</strong>: 7개 (<code>c1d76d9</code> → <code>6c1ef49</code>) &nbsp;|&nbsp;
+<strong>Codex 검수</strong>: ~20+ rounds (R1/R2/R3)
+</p>
+
+<div class="tldr">
+<strong>TL;DR</strong> — 본 세션 핵심:
+<ul class="compact" style="margin-top:6px;">
+<li>32 → 28 features 정리: train-only signal 5종 (<code>ho_price_level</code>, <code>medium_price_level</code>, <code>source</code>, <code>for_sale_ratio</code>, <code>gallery_tier</code>) 제거</li>
+<li>5 variant family 운영 준비 (default OFF), <code>v3_filtered_tuned_28_hf</code> = 신규 default candidate</li>
+<li>성능: warm path 영향 0 (2σ noise 내), cold path 미세 손실 (within 0.5σ)</li>
+<li>Deploy framework 완료 (Stage 3-5 runbook + shadow monitor) — 운영팀 수동 활성화</li>
+</ul>
+</div>
+
+<div class="metric-card">
+<div class="label">총 commits</div>
+<div class="value">7</div>
+</div>
+<div class="metric-card">
+<div class="label">Variant family</div>
+<div class="value">5</div>
+<div class="delta">total 10 variants (default+B)</div>
+</div>
+<div class="metric-card">
+<div class="label">Tests passing</div>
+<div class="value">55</div>
+<div class="delta">+23 신규</div>
+</div>
+<div class="metric-card">
+<div class="label">Artifact files</div>
+<div class="value">32</div>
+<div class="delta">4 variant × 8 file</div>
+</div>
+<div class="metric-card">
+<div class="label">Audit Layers</div>
+<div class="value">4</div>
+<div class="delta">L0/L1/L2/L3</div>
+</div>
+<div class="metric-card">
+<div class="label">Isolated cycles</div>
+<div class="value">5</div>
+<div class="delta">PASS 4 / FAIL 1</div>
+</div>
+
+<h2>목차</h2>
+<div class="toc">
+<ol>
+<li>본 세션 commits 종합</li>
+<li>성능 — 실제 MdAPE 수치 (vs 32f baseline)</li>
+<li>Audit framework + Layer-by-Layer 결과</li>
+<li>핵심 Codex 발견 quotes</li>
+<li>5 Variant family 정리</li>
+<li>운영 deploy 준비 상태</li>
+<li>미해결 후속 후보</li>
+<li>결론</li>
+</ol>
+</div>
+
+<h2>1. 본 세션 commits 종합</h2>
+
+<table>
+<tr>
+<th>#</th>
+<th>Commit</th>
+<th>PR</th>
+<th>Scope</th>
+<th>변경 파일</th>
+</tr>
+<tr>
+<td>1</td>
+<td><span class="commit-hash">c1d76d9</span></td>
+<td><strong>PR-29F</strong></td>
+<td>dead 2 + source 제거 → 29f variant + B winner 재발행</td>
+<td>4 files / +920</td>
+</tr>
+<tr>
+<td>2</td>
+<td><span class="commit-hash">5cefff4</span></td>
+<td><strong>PR-28F</strong></td>
+<td>for_sale_ratio 제거 → 28f variant + B winner 재발행</td>
+<td>3 files / +539</td>
+</tr>
+<tr>
+<td>3</td>
+<td><span class="commit-hash">6d993aa</span></td>
+<td><strong>PR-FOLLOWERS-FALLBACK</strong></td>
+<td>has_followers flag → 29f_hf variant + serving fallback 개선</td>
+<td>4 files / +574</td>
+</tr>
+<tr>
+<td>4</td>
+<td><span class="commit-hash">cde6c52</span></td>
+<td><strong>PR-GALLERY-TIER</strong></td>
+<td>gallery_tier 제거 → 28_hf variant + B winner 재발행</td>
+<td>3 files / +505</td>
+</tr>
+<tr>
+<td>5</td>
+<td><span class="commit-hash">53eaaf0</span></td>
+<td>docs</td>
+<td>Layer Audit 종합 정리 HTML</td>
+<td>1 file / +391</td>
+</tr>
+<tr>
+<td>6</td>
+<td><span class="commit-hash">6c1ef49</span></td>
+<td><strong>PR-28F-HF deploy</strong></td>
+<td>Stage 3-5 runbook + shadow monitoring script</td>
+<td>2 files / +458</td>
+</tr>
+<tr>
+<td>7</td>
+<td>(본 doc)</td>
+<td>docs</td>
+<td>본 세션 final complete summary (성능 포함)</td>
+<td>1 file</td>
+</tr>
+</table>
+
+<h2>2. 성능 — 실제 MdAPE 수치 (vs 32f baseline)</h2>
+
+<h3>2.1. 모든 cycle 결과 종합</h3>
+
+<table>
+<tr>
+<th rowspan="2">Variant</th>
+<th rowspan="2">N</th>
+<th colspan="3">Cold path MdAPE (GroupKFold-5)</th>
+<th colspan="2">Warm path MdAPE (KFold-5)</th>
+<th rowspan="2">Cold std</th>
+<th rowspan="2">Verdict</th>
+</tr>
+<tr>
+<th>ensemble</th>
+<th>artsy slice</th>
+<th>saatchi slice</th>
+<th>xgb</th>
+<th>ensemble</th>
+</tr>
+<tr style="background:#f8f8f8;font-weight:600;">
+<td>32f baseline anchor</td>
+<td class="num">32</td>
+<td class="num">38.62</td>
+<td class="num">33.52</td>
+<td class="num">41.74</td>
+<td class="num">9.71</td>
+<td class="num">10.47</td>
+<td class="num">—</td>
+<td><span class="pill gray">baseline</span></td>
+</tr>
+<tr class="row-pass">
+<td>Layer 1 (dead 2 only)</td>
+<td class="num">30</td>
+<td class="num">39.09 <span class="delta-pos">(+0.47)</span></td>
+<td class="num">33.50 <span class="delta-neg">(-0.02)</span></td>
+<td class="num">41.71 <span class="delta-neg">(-0.04)</span></td>
+<td class="num">9.68 <span class="delta-neg">(-0.03)</span></td>
+<td class="num">10.47 <span class="delta-zero">(+0.00)</span></td>
+<td class="num">4.49</td>
+<td><span class="pill green">PASS</span></td>
+</tr>
+<tr class="row-pass">
+<td><strong>29f</strong> (PR-29F)</td>
+<td class="num">29</td>
+<td class="num">39.30 <span class="delta-pos">(+0.67)</span></td>
+<td class="num">34.28 <span class="delta-pos">(+0.76)</span></td>
+<td class="num">42.54 <span class="delta-pos">(+0.80)</span></td>
+<td class="num">9.78 <span class="delta-pos">(+0.07)</span></td>
+<td class="num">10.48 <span class="delta-pos">(+0.02)</span></td>
+<td class="num">4.29</td>
+<td><span class="pill green">PASS</span></td>
+</tr>
+<tr class="row-pass">
+<td><strong>28f</strong> (PR-28F)</td>
+<td class="num">28</td>
+<td class="num">38.94 <span class="delta-pos">(+0.31)</span></td>
+<td class="num">34.41 <span class="delta-pos">(+0.89)</span></td>
+<td class="num">41.60 <span class="delta-neg">(-0.14)</span></td>
+<td class="num">9.88 <span class="delta-pos">(+0.17)</span></td>
+<td class="num">10.62 <span class="delta-pos">(+0.15)</span></td>
+<td class="num">4.05</td>
+<td><span class="pill green">PASS</span></td>
+</tr>
+<tr class="row-fail">
+<td>27f (FAIL — ln_followers 제거)</td>
+<td class="num">27</td>
+<td class="num">41.78 <span class="delta-pos">(+3.16)</span></td>
+<td class="num">35.29 <span class="delta-pos">(+1.77)</span></td>
+<td class="num">45.23 <span class="delta-pos">(+3.49)</span></td>
+<td class="num">10.39 <span class="delta-pos">(+0.68)</span></td>
+<td class="num">11.22 <span class="delta-pos">(+0.75)</span></td>
+<td class="num">4.14</td>
+<td><span class="pill red">FAIL</span></td>
+</tr>
+<tr class="row-neutral">
+<td><strong>29f_hf</strong> (PR-FOLLOWERS)</td>
+<td class="num">29</td>
+<td class="num">39.51 <span class="delta-pos">(+0.89)</span></td>
+<td class="num">35.43 <span class="delta-pos">(+1.91)</span></td>
+<td class="num">42.01 <span class="delta-pos">(+0.27)</span></td>
+<td class="num">9.81 <span class="delta-pos">(+0.10)</span></td>
+<td class="num">10.57 <span class="delta-pos">(+0.10)</span></td>
+<td class="num">4.36</td>
+<td><span class="pill yellow">NEUTRAL</span></td>
+</tr>
+<tr class="row-pass">
+<td><strong>28_hf</strong> (PR-GALLERY-TIER) ★</td>
+<td class="num">28</td>
+<td class="num">39.65 <span class="delta-pos">(+1.02)</span></td>
+<td class="num">36.06 <span class="delta-pos">(+2.54)</span></td>
+<td class="num">42.40 <span class="delta-pos">(+0.66)</span></td>
+<td class="num">9.85 <span class="delta-pos">(+0.14)</span></td>
+<td class="num">10.58 <span class="delta-pos">(+0.11)</span></td>
+<td class="num">4.27</td>
+<td><span class="pill green">PASS</span></td>
+</tr>
+</table>
+
+<p>★ <strong>v3_filtered_tuned_28_hf</strong> = 신규 default candidate (deploy runbook 대상)</p>
+
+<h3>2.2. 통계적 유의성 해석</h3>
+
+<div class="success-box">
+<strong>모든 PASS cycle 공통 패턴</strong>:
+<ul class="compact">
+<li><strong>Warm path 영향 0</strong>: 모든 PASS variant의 warm xgb Δ ≤ +0.17pp (warm xgb std=0.14~0.23, → Δ/std &lt; 2σ noise threshold)</li>
+<li><strong>Cold path 미세 손실</strong>: 가장 큰 Δ_cold_ensemble = +1.02pp (28_hf) / cold std=4.27, Δ/std=0.24 (within 0.5σ)</li>
+<li><strong>Saatchi cold 일부 개선</strong>: 28f -0.14pp / 29f_hf +0.27pp (29f의 +0.80에서 회복)</li>
+<li><strong>Artsy cold 일관된 손실</strong>: 28_hf +2.54pp 최대 — Codex 해석: "CV 내부 효용 있지만 serve-time identifiability 없음"</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>27f FAIL의 의미</strong>:
+<ul class="compact">
+<li>ln_followers 단독 제거 시 warm xgb +0.68pp (warm std=0.14 → ≈5σ 악화)</li>
+<li>→ <strong>ln_followers는 warm path real signal, 보존 필요</strong> 확정</li>
+<li>이 결과로 Layer 2.B (for_sale_ratio 단독 제거)로 분리 → 28f PASS</li>
+<li>has_followers flag로 missingness explicit하게 처리 (29f_hf 방향)</li>
+</ul>
+</div>
+
+<h3>2.3. Per-source slice 분석</h3>
+
+<div class="info-box">
+<strong>Artsy / Saatchi cold MdAPE 차이의 본질</strong>:
+<ul class="compact">
+<li>32f baseline: Artsy 33.52 / Saatchi 41.74 — <strong>Saatchi cold MdAPE 8.22pp 더 높음</strong></li>
+<li>이유: <strong>artist_slug overlap = 0</strong> (Artsy "yujin-ju" vs Saatchi "1889924") → GroupKFold가 자동 source-split</li>
+<li>즉 cold task = "new artist + source/domain shift" 결합 (Codex Layer 0 해석)</li>
+<li>모든 variant에서 이 격차는 유지됨 (구조적 결과)</li>
+</ul>
+</div>
+
+<h2>3. Audit framework + Layer-by-Layer 결과</h2>
+
+<h3>3.1. User 결정 흐름</h3>
+
+<table>
+<tr><th width="15%">시점</th><th width="40%">User 핵심 결정</th><th>의미</th></tr>
+<tr><td>세션 시작</td><td>"제대로 된 피처가 아니면 실험도 의미가 없어. 피처 정리부터 최우선."</td><td>실험보다 audit 우선. Codex 의견 조율 진행.</td></tr>
+<tr><td>L1 진행 중</td><td>"소스 피처는 빼고 — 서비스 운영에서 출처 입력 불가."</td><td>train/serve mismatch 해소 (model uplift 보다 fidelity)</td></tr>
+<tr><td>L2 후</td><td>"팔로워도 신규 작가 수집 어려운 데이터, 제거하는게 좋아."</td><td>운영적 관점 feature 정리 (학습/운영 정합)</td></tr>
+<tr><td>L3 후</td><td>"운영 deploy 진행"</td><td>Stage 3-5 framework 구축 (runbook + monitoring)</td></tr>
+</table>
+
+<h3>3.2. Codex collaboration framework (mini-prereg)</h3>
+
+<div class="info-box">
+각 PR / cycle 마다:
+<ol style="margin:6px 0;">
+<li><strong>R1 (사전)</strong>: 가설 / scope / 예상 결과 / 검증 protocol 검수 — GO / HOLD / FAIL</li>
+<li><strong>Cycle 실행</strong>: isolated cycle (32→30, 32→29, 29→27, 29→28, 28→29_hf, 29_hf→28_hf)</li>
+<li><strong>R2 (사후)</strong>: 결과 해석 / 통계적 유의성 / PASS / FAIL / CONDITIONAL 판정</li>
+<li><strong>R3 (commit-ready)</strong>: commit scope / variant naming / family complexity 검토</li>
+</ol>
+약 20+ Codex 검수 rounds 진행 (모든 결정 evidence-based).
+</div>
+
+<h3>3.3. Layer-by-Layer audit 결과</h3>
+
+<h4>Layer 0: Target/Source bias audit (T0-T6)</h4>
+
+<table>
+<tr><th>Step</th><th>Audit</th><th>결과</th></tr>
+<tr><td>T0</td><td>Price type 일관성</td><td><span class="pill green">CLEAN</span> 두 source 모두 list/asking price (sold 아님)</td></tr>
+<tr><td>T1</td><td>Artist overlap price ratio</td><td><span class="pill yellow">CONDITIONAL</span> name-match 37명 / median log-ratio -0.05 (≈0.95x) / IQR 1.16 (큰 dispersion)</td></tr>
+<tr><td>T2-T6</td><td>seller/time/inventory 분리</td><td><span class="pill gray">DEFERRED</span> 운영 데이터 의존, 본 세션 미진행</td></tr>
+</table>
+
+<div class="info-box">
+<strong>🔴 구조적 발견</strong>: <code>artist_slug overlap = 0</code> (757 ∩ 832 = 0) — Artsy slug 형식과 Saatchi slug 형식 완전 분리. GroupKFold(artist_slug)가 자동 source-split.
+<br>→ <strong>cold task = "new artist + source/domain shift" 결합 task</strong> (단순 new artist generalization 아님)
+</div>
+
+<h4>Layer 1: Dead feature audit — <span class="pill green">PASS</span></h4>
+
+<table>
+<tr><th>Feature</th><th>Train 상태</th><th>Serving 상태</th><th>Action</th></tr>
+<tr class="row-fail">
+<td><code>ho_price_level</code></td>
+<td>100% zero (학습 fillna)</td>
+<td>line 251 하드코딩 0.0</td>
+<td>제거 (PR-29F)</td>
+</tr>
+<tr class="row-fail">
+<td><code>medium_price_level</code></td>
+<td>100% zero</td>
+<td>line 252 하드코딩 0.0</td>
+<td>제거 (PR-29F)</td>
+</tr>
+</table>
+
+<p>Layer 1 isolated cycle 결과: 32→30 (dead 2 only) Δ_cold +0.47 / Δ_warm 0.00 → <strong>PASS_WITHIN_NOISE</strong></p>
+
+<h4>Layer 2: Snapshot drift audit (PSI based)</h4>
+
+<table>
+<tr><th>Feature</th><th>Artsy</th><th>Saatchi</th><th>PSI</th><th>Action</th></tr>
+<tr class="row-fail">
+<td><code>for_sale_ratio</code></td>
+<td>median 0.88 / 245 unique</td>
+<td><strong>median 1.0 / 1 unique / std=0</strong></td>
+<td class="num">8.95</td>
+<td>제거 (PR-28F)</td>
+</tr>
+<tr class="row-neutral">
+<td><code>artist_total_works</code></td>
+<td>median 31 (Q90 130)</td>
+<td>median 102 (Q90 485)</td>
+<td class="num">0.87</td>
+<td><span class="pill yellow">HOLD</span> composition 차이, real signal</td>
+</tr>
+<tr class="row-neutral">
+<td><code>ln_followers</code></td>
+<td>median 2.30 (≈10)</td>
+<td>median 3.53 (≈34)</td>
+<td class="num">0.45</td>
+<td><span class="pill blue">KEEP + hf flag</span> (PR-FOLLOWERS)</td>
+</tr>
+</table>
+
+<div class="danger-box">
+<strong>🔴 for_sale_ratio = train-only signal</strong>:
+<ul class="compact">
+<li>Saatchi 100% constant 1.0 (학습 신호 zero)</li>
+<li>Serving 4 위치 모두 1.0 하드코딩 (<code>primary_feature_builder.py:207</code>, <code>artist_matcher.py:98</code>, <code>artsy_client.py:174</code>, <code>saatchi_client.py:148</code>)</li>
+<li>즉 inference 시 변별력 zero — 제거 안전</li>
+</ul>
+</div>
+
+<h4>Layer 3: Missing/fallback audit</h4>
+
+<table>
+<tr><th>Feature</th><th>Missing rate</th><th>Verdict</th></tr>
+<tr class="row-pass">
+<td><code>artist_birth_year</code></td>
+<td>Artsy 19.1% / Saatchi 90.9%</td>
+<td><span class="pill green">CLEAN</span> has_birth_year flag로 잘 처리됨</td>
+</tr>
+<tr class="row-neutral">
+<td><code>career_stage</code> (composite)</td>
+<td>0%</td>
+<td><span class="pill yellow">FUNCTIONAL</span> saatchi birth_year missing 영향은 별도 audit</td>
+</tr>
+<tr class="row-fail">
+<td><code>gallery_tier</code></td>
+<td>0%</td>
+<td><span class="pill red">REMOVE</span> Saatchi 100% constant=3 / serving 하드코딩 (PR-GALLERY-TIER)</td>
+</tr>
+</table>
+
+<p>Layer 3.A isolated cycle (29f_hf → 28_hf, drop gallery_tier): Δ_cold +0.13 / Δ_warm +0.04 → <strong>PASS_WITHIN_NOISE</strong></p>
+
+<h2>4. 핵심 Codex 발견 quotes</h2>
+
+<div class="codex-quote">
+<strong>Layer 0/source bias (User 지적 후)</strong>: "B는 운영상 쓸 수는 있지만, 조직적으로는 '모델이 좋아졌다'보다 '혼합 target을 덜 맞췄다'에 더 가까울 수 있다. T0(target definition)가 모든 audit의 가장 상위."
+</div>
+
+<div class="codex-quote">
+<strong>PR-29F R2 (HOLD verdict)</strong>: "feature contract가 variant별 artifact와 묶여 있는데, source_conditional 2개와 default unified artifact 호환성 처리도 필요. 신규 variant + 자체 artifact 재발행이 가장 깔끔."
+</div>
+
+<div class="codex-quote">
+<strong>Layer 2.A (27f FAIL) R2</strong>: "ln_followers warm signal 명확. for_sale_ratio 단독 분리 측정 필요. 4σ 악화는 명백한 손실."
+</div>
+
+<div class="codex-quote">
+<strong>PR-FOLLOWERS-FALLBACK R2</strong>: "improvement proven이 아니라 safe to deploy for fidelity reasons. median fallback은 missing과 typical artist를 섞어 feature semantics를 흐림 — 이번 scope에서 제외."
+</div>
+
+<div class="codex-quote">
+<strong>Layer 3 gallery_tier R1</strong>: "Artsy 내부에서 gallery_tier가 유의미했을 가능성과 별개로, serving에서 matched=3 / unmatched=4 두 값만 나오므로 train에서 학습한 2,5 tier signal은 거의 deploy되지 않는다. CV 내부 효용은 있을 수 있지만 serve-time identifiability가 없는 feature."
+</div>
+
+<div class="codex-quote">
+<strong>Deploy R1</strong>: "이번 isolated 결과가 거의 noise 수준이라, shadow는 '개선 입증'보다 '운영 regression 부재 확인' 기준이 적절. Non-inferior 기준 (aggregate Δ ≤ +0.3pp)."
+</div>
+
+<h2>5. 5 Variant family 정리</h2>
+
+<table>
+<tr>
+<th>Variant base</th>
+<th>Features</th>
+<th>제거된 (vs 32f)</th>
+<th>추가된</th>
+<th>Default OFF</th>
+<th>Commit</th>
+</tr>
+<tr>
+<td><code>32f</code> (legacy)</td>
+<td class="num">32</td>
+<td>—</td>
+<td>—</td>
+<td><span class="pill gray">production default</span></td>
+<td>기존</td>
+</tr>
+<tr class="row-pass">
+<td><code>29f</code> (PR-29F)</td>
+<td class="num">29</td>
+<td>ho_price_level, medium_price_level, source</td>
+<td>—</td>
+<td>✅</td>
+<td><span class="commit-hash">c1d76d9</span></td>
+</tr>
+<tr class="row-pass">
+<td><code>28f</code> (PR-28F)</td>
+<td class="num">28</td>
+<td>+ for_sale_ratio</td>
+<td>—</td>
+<td>✅</td>
+<td><span class="commit-hash">5cefff4</span></td>
+</tr>
+<tr class="row-neutral">
+<td><code>29f_hf</code> (PR-FOLLOWERS)</td>
+<td class="num">29</td>
+<td>for_sale_ratio (28f base)</td>
+<td>has_followers</td>
+<td>✅</td>
+<td><span class="commit-hash">6d993aa</span></td>
+</tr>
+<tr class="row-pass">
+<td><strong><code>28_hf</code></strong> (PR-GALLERY-TIER) ★</td>
+<td class="num">28</td>
+<td>+ gallery_tier (from 29f_hf)</td>
+<td>has_followers</td>
+<td>✅</td>
+<td><span class="commit-hash">cde6c52</span></td>
+</tr>
+</table>
+
+<p>★ <strong>v3_filtered_tuned_28_hf</strong> = 신규 default candidate. 각 base × {default, B winner} = 10 variants.</p>
+
+<h2>6. 운영 deploy 준비 상태</h2>
+
+<h3>6.1. Deploy framework (Stage 3-5)</h3>
+
+<table>
+<tr><th>Stage</th><th>설명</th><th>활성화 방식</th><th>Sign-off 기준</th></tr>
+<tr>
+<td><strong>Stage 3</strong></td>
+<td>Shadow (7-day)</td>
+<td><code>VARIANT_SHADOW=v3_filtered_tuned_28_hf</code></td>
+<td>aggregate Δ ≤ +0.3pp, slice ≤ +0.5pp</td>
+</tr>
+<tr>
+<td><strong>Stage 4</strong></td>
+<td>Canary (점진적)</td>
+<td>5% → 10% → 25% → 50% → 100%</td>
+<td>각 단계 3-5 day monitoring</td>
+</tr>
+<tr>
+<td><strong>Stage 5</strong></td>
+<td>Full migration</td>
+<td>DEFAULT_VARIANT 변경 + commit</td>
+<td>Stage 4 PASS</td>
+</tr>
+</table>
+
+<h3>6.2. Sign-off 기준 (Codex R1 non-inferior)</h3>
+
+<div class="info-box">
+<ul class="compact">
+<li>7-day aggregate Δ_MdAPE ≤ <strong>+0.3pp</strong> (isolated +0.13pp 정합)</li>
+<li>Cold slice (Artsy / Saatchi) Δ ≤ +0.5pp</li>
+<li>Warm slice Δ ≤ +0.5pp</li>
+<li>Latency P95 ≤ primary + 10%</li>
+<li>Error rate / empty-output regression 없음</li>
+</ul>
+<strong>판정</strong>: 6 criteria 모두 통과 시 PASS → Stage 4 진입
+</div>
+
+<h3>6.3. 운영팀 활성화 절차 (runbook §2.3)</h3>
+
+<pre style="background:#f4f4f4;padding:10px;border-radius:4px;font-size:12px;">
+# Step 1: Staging 검증
+export MODEL_VARIANT=v3_filtered_tuned          # primary 유지 (32f)
+export VARIANT_SHADOW=v3_filtered_tuned_28_hf   # 신규 shadow
+
+# Step 2: Smoke test (10 request 위 primary + shadow 모두 출력 확인)
+# Step 3: Production env 적용 (rolling restart)
+# Step 4: Daily monitoring 7-day
+python3 scripts/pr_28_hf_daily_shadow_metric.py --days 7
+</pre>
+
+<h2>7. 미해결 후속 후보</h2>
+
+<table>
+<tr><th>Priority</th><th>Topic</th><th>Trigger / 기대 효과</th></tr>
+<tr><td><span class="pill red">P0</span></td><td>운영 deploy / shadow monitoring</td><td>Production predict_log 활성화 후 28_hf 7-day shadow → canary</td></tr>
+<tr><td><span class="pill yellow">P1</span></td><td>artist_total_works 단독 cycle</td><td>Layer 2 Codex 권고 follow-up (28_hf → 27_hf candidate)</td></tr>
+<tr><td><span class="pill yellow">P1</span></td><td>career_stage saatchi birth_year missing audit</td><td>Layer 3 Codex Q3 — composite 신뢰성 (saatchi 90.9% missing)</td></tr>
+<tr><td><span class="pill blue">P2</span></td><td>ln_followers median fallback PR</td><td>has_followers=0인데 ln_followers=median 보완 (Codex deferred)</td></tr>
+<tr><td><span class="pill blue">P2</span></td><td>Layer 4 audit — support_factor / attribution_class</td><td>잠재 train-only signal 추가 탐색</td></tr>
+<tr><td><span class="pill gray">P3</span></td><td>Variant family cleanup PR</td><td>10 variants 관리 부담 (Codex R3 권고)</td></tr>
+<tr><td><span class="pill gray">P3</span></td><td>T2-T6 (Layer 0 후속): seller / time / work-type</td><td>운영 데이터 의존 audit</td></tr>
+</table>
+
+<h2>8. 결론</h2>
+
+<div class="summary-box">
+<ol>
+<li><strong>운영 fidelity 정리</strong>: 32 → 28 features (5 train-only signals 제거: <code>ho_price_level</code>, <code>medium_price_level</code>, <code>source</code>, <code>for_sale_ratio</code>, <code>gallery_tier</code>). 운영에서 inference 변별력 없는 features 모두 정리.</li>
+<li><strong>Train/serve consistency 개선</strong>: source 입력 불가 환경 정합 / <code>has_followers</code> flag로 missingness explicit.</li>
+<li><strong>Performance 거의 동일</strong>: 모든 PASS cycle warm path 영향 0 (2σ noise 내). Cold path 미세 손실 (within 0.5σ). 28_hf cold +1.02pp 가장 큼이지만 within noise.</li>
+<li><strong>Variant infrastructure 확장</strong>: 5 base × 2 = 10 variants. <code>VARIANT_SHADOW</code> / <code>MODEL_VARIANT</code> 활성화 가능.</li>
+<li><strong>Deploy framework 완료</strong>: Stage 3-5 runbook + monitoring script + sign-off 기준. 운영팀 수동 활성화 ready.</li>
+<li><strong>실제 효과는 production에서</strong>: isolated cycle은 학습 분포 내 측정. <strong>운영 unmatched 신규 작가 / train-serve drift 실제 효과는 shadow monitoring에서만 측정 가능</strong>.</li>
+</ol>
+</div>
+
+<h3>한 줄 요약</h3>
+
+<p style="font-size:1.05em; font-weight:600; color:#2c5aa0; margin:15px 0;">
+"32 → 28 features 정리 + 5 variant family 운영 준비 + Stage 3-5 deploy framework 완성. 본 commit으로 production 변경 없음 (default OFF), 실제 deploy는 운영팀 runbook 따라 수동 진행."
+</p>
+
+<div class="footer">
+<p>본 문서는 본 세션 (2026-05-11) audit + 6 PR + deploy framework 결과 종합. 실제 운영 deploy 결정은 별도 prereg 필요.</p>
+<p>참고 문서:
+  <code>docs/feature_risk_audit_recommendations_20260511.html</code> (초기 audit) ·
+  <code>docs/layer_audit_session_summary_20260511.html</code> (Layer 0-3 audit 종합) ·
+  <code>docs/pr_28_hf_stage_3_5_activation_runbook_20260511.md</code> (deploy runbook) ·
+  <code>scripts/pr_28_hf_daily_shadow_metric.py</code> (monitoring script) ·
+  <code>experiments/track1_audit_2026_05_11/</code> (모든 isolated cycle scripts + results JSON)
+</p>
+</div>
+
+</body>
+</html>
