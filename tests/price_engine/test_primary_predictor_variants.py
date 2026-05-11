@@ -25,6 +25,7 @@ from visionai.price_engine.api.primary_predictor import (
     CB_FEATURES_BASE,
     CB_FEATURES_BASE_28,
     CB_FEATURES_BASE_29,
+    CB_FEATURES_BASE_29_HF,
     CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM,
     DEFAULT_VARIANT,
     SUPPORTED_VARIANTS,
@@ -387,3 +388,118 @@ def test_artifact_prefix_pattern_28f():
             f"{cfg['prefix']}_source_calibration.json",
         ]
         assert all(f.startswith(cfg["prefix"]) for f in expected_files)
+
+
+# ---- PR-FOLLOWERS-FALLBACK: 29-feature_hf variant (28 + has_followers) ----
+
+
+def test_cb_features_base_29_hf_count():
+    """29_hf = 28 + has_followers."""
+    assert len(CB_FEATURES_BASE_29_HF) == 29
+    assert "has_followers" in CB_FEATURES_BASE_29_HF
+
+
+def test_cb_features_base_29_hf_extends_28():
+    """28f + has_followers."""
+    assert CB_FEATURES_BASE_29_HF[:28] == CB_FEATURES_BASE_28
+    assert CB_FEATURES_BASE_29_HF[28] == "has_followers"
+
+
+def test_v3_filtered_tuned_29f_hf_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_29f_hf"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_29f_hf"
+    assert cfg["expected_target"] == "v3_filtered_tuned_29f_hf"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_29_HF
+    assert cfg["cat_features"] == CAT_FEATURES_29
+    assert len(cfg["cb_features"]) == 29
+    assert "has_followers" in cfg["cb_features"]
+
+
+def test_v3_filtered_tuned_b_warm_29f_hf_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_b_warm_29f_hf"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_b_warm_29f_hf"
+    assert cfg["expected_target"] == "v3_filtered_tuned_b_warm_29f_hf"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_29_HF
+
+
+def test_resolve_variant_29f_hf_explicit():
+    assert _resolve_variant("v3_filtered_tuned_29f_hf") == "v3_filtered_tuned_29f_hf"
+    assert _resolve_variant("v3_filtered_tuned_b_warm_29f_hf") == "v3_filtered_tuned_b_warm_29f_hf"
+
+
+def test_artifact_prefix_pattern_29f_hf():
+    for name in ("v3_filtered_tuned_29f_hf", "v3_filtered_tuned_b_warm_29f_hf"):
+        cfg = SUPPORTED_VARIANTS[name]
+        expected_files = [
+            f"{cfg['prefix']}_catboost.cbm",
+            f"{cfg['prefix']}_xgboost.json",
+            f"{cfg['prefix']}_warm_artists.json",
+            f"{cfg['prefix']}_xgboost_label_maps.json",
+            f"{cfg['prefix']}_source_calibration.json",
+        ]
+        assert all(f.startswith(cfg["prefix"]) for f in expected_files)
+
+
+# ---- PR-FOLLOWERS-FALLBACK: feature_builder serving fallback ----
+
+
+def test_feature_builder_has_followers_unmatched():
+    """primary_feature_builder: unmatched (no followers in profile) → has_followers=0."""
+    from visionai.price_engine.api.primary_feature_builder import build_features
+
+    features = build_features(
+        50.0,
+        50.0,
+        "oil on canvas",
+        artist_profile={"gallery_tier": 3, "source": "manual"},
+    )
+    assert features["has_followers"] == 0
+    assert features["ln_followers"] == 0.0
+
+
+def test_feature_builder_has_followers_matched_positive():
+    """matched artist with positive followers → has_followers=1, ln_followers > 0."""
+    import math
+    from visionai.price_engine.api.primary_feature_builder import build_features
+
+    features = build_features(
+        50.0,
+        50.0,
+        "oil on canvas",
+        artist_profile={"gallery_tier": 3, "source": "artsy", "followers": 100},
+    )
+    assert features["has_followers"] == 1
+    assert features["ln_followers"] == math.log(101)
+
+
+def test_feature_builder_has_followers_real_zero():
+    """matched artist with real 0 followers → has_followers=0 (train consistency).
+
+    Note: Codex Q2 권고 "real 0 → has_followers=1"은 학습 데이터에 None과 real 0
+    구분이 없어서 미실현. 학습/서빙 동일 logic (followers > 0 → has_followers=1).
+    """
+    from visionai.price_engine.api.primary_feature_builder import build_features
+
+    features = build_features(
+        50.0,
+        50.0,
+        "oil on canvas",
+        artist_profile={"gallery_tier": 3, "source": "saatchi", "followers": 0},
+    )
+    assert features["has_followers"] == 0
+    assert features["ln_followers"] == 0.0
+
+
+def test_feature_builder_has_followers_manual_override():
+    """manual_overrides followers → has_followers reflects."""
+    from visionai.price_engine.api.primary_feature_builder import build_features
+
+    features = build_features(
+        50.0,
+        50.0,
+        "oil on canvas",
+        manual_overrides={"followers": 50},
+        artist_profile={"source": "manual"},
+    )
+    assert features["has_followers"] == 1
+    assert features["ln_followers"] > 0

@@ -78,6 +78,14 @@ CB_FEATURES_BASE_29 = [
 # - train-only signal, deployment 무용지물
 CB_FEATURES_BASE_28 = [f for f in CB_FEATURES_BASE_29 if f != "for_sale_ratio"]
 
+# PR-FOLLOWERS-FALLBACK (2026-05-11): 29 features = CB_FEATURES_BASE_28 + has_followers.
+# - User 결정: 신규 작가 운영 시 followers 수집 거의 불가 → unmatched ln_followers=0 vs 진짜 0 collapse
+# - Layer 2.A 27f (ln_followers 제거) FAIL_BEYOND_NOISE: warm 0.6pp 손실 (signal 보존 필요)
+# - Step A isolated cycle: has_followers flag 추가 → Δ_cold +0.58pp / Δ_warm -0.07pp vs 28f (PASS_NEUTRAL)
+# - Codex R2 GO: "safe to deploy for fidelity reasons" / median fallback은 별도 scope 제외
+# - has_followers: serving 시 unmatched detection (real 0 vs unknown 분리)
+CB_FEATURES_BASE_29_HF = [*CB_FEATURES_BASE_28, "has_followers"]
+
 # Backward compat: 기존 import 호환
 CB_FEATURES = CB_FEATURES_BASE
 
@@ -176,6 +184,23 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
         "cb_features": CB_FEATURES_BASE_28,
         "cat_features": CAT_FEATURES_29,
         "expected_target": "v3_filtered_tuned_b_warm_28f",
+    },
+    # PR-FOLLOWERS-FALLBACK (2026-05-11): 29-feature (28 + has_followers) — Layer 2 audit follow-up.
+    # Codex R2 GO: train/serve consistency 정합 / unmatched followers None detection
+    # has_followers: 1 if followers>0, 0 if followers==0 or None (real zero vs unknown 분리)
+    # cb_features: 29 (CB_FEATURES_BASE_28 + has_followers) / cat_features: 5 (변동 없음)
+    # Default OFF.
+    "v3_filtered_tuned_29f_hf": {
+        "prefix": "integrated_v3_filtered_tuned_29f_hf",
+        "cb_features": CB_FEATURES_BASE_29_HF,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_29f_hf",
+    },
+    "v3_filtered_tuned_b_warm_29f_hf": {
+        "prefix": "integrated_v3_filtered_tuned_b_warm_29f_hf",
+        "cb_features": CB_FEATURES_BASE_29_HF,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_b_warm_29f_hf",
     },
 }
 

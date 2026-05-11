@@ -191,7 +191,11 @@ def build_features(
 
     birth_year = _pick("artist_birth_year", "birth_year", None) or p.get("birth_year_from_source")
     total_works = _pick("artist_total_works", "total_works", 0)
-    followers = _pick("followers", "followers", 0)
+    # PR-FOLLOWERS-FALLBACK: followers None 별도 감지 — unmatched vs real zero 분리.
+    # _pick(default=None)로 None preserve, 그 후 has_followers 계산.
+    followers_raw = _pick("followers", "followers", None)
+    has_followers = 1 if (followers_raw is not None and followers_raw > 0) else 0
+    followers = followers_raw if (followers_raw is not None and followers_raw > 0) else 0
     solo = _pick("solo_count", "solo_count", 0)
     group = _pick("group_count", "group_count", 0)
     fair = p.get("fair_count", 0) or 0
@@ -245,6 +249,7 @@ def build_features(
         "has_birth_year": has_birth_year,
         "career_stage": career_stage,
         "ln_followers": math.log(followers + 1),
+        "has_followers": has_followers,
         "artist_total_works": total_works,
         "for_sale_ratio": for_sale_ratio,
         # 가격 레벨 (2)
