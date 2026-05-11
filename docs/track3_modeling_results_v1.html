@@ -19,7 +19,7 @@
 </style></head><body>
 
 <h1>Track 3 — 가격 예측 모델링 결과 v1</h1>
-<p class="meta">생성일: 2026-05-11 22:33 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</p>
+<p class="meta">생성일: 2026-05-11 23:11 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</p>
 
 <h2>🎯 목표 & 데이터</h2>
 <ul>
@@ -190,20 +190,35 @@ XGBoost는 2K+ unique categorical 처리 약함.</blockquote>
 <blockquote>Outer holdout = 전부 unseen artist이므로 Warm 모델 본질적으로 cold-start 시나리오. 운영 시 unseen 작가는 Cold LAD로 라우팅 권장.</blockquote>
 <h2>🎯 운영 권장 (라우팅 + 모델)</h2>
 <table>
-<tr><th>조건</th><th>모델</th><th>예상 정확도</th></tr>
-<tr><td>학습 ≥3건 작가</td><td>Warm LightGBM</td><td class='best'>med_APE ~0.12 / W30 ~75%</td></tr>
-<tr><td>학습 1-2건 작가 (rare)</td><td>Warm/Cold blend</td><td>med_APE ~0.20-0.30 (추정)</td></tr>
-<tr><td>학습 0건 작가 (cold)</td><td>Cold LAD</td><td>med_APE ~0.39-0.43</td></tr>
-<tr><td>고가 작품 (&gt;10M)</td><td>Warm 2-stage</td><td class='best'>&gt;100M: med_APE ~0.04</td></tr>
+<tr><th>조건</th><th>모델</th><th>예상 정확도</th><th>주의사항</th></tr>
+<tr><td>학습 ≥3건 작가</td><td>Warm LightGBM</td><td class='best'>med_APE ~0.12 / W30 ~75%</td><td>⚠️ 학습된 작가 신규 작품 기준</td></tr>
+<tr><td>학습 1-2건 작가 (rare)</td><td>Warm/Cold blend</td><td>med_APE ~0.20-0.30 (추정)</td><td>blend 비율은 후속 PR에서 grid search</td></tr>
+<tr><td>학습 0건 작가 (cold)</td><td>Cold LAD</td><td>med_APE ~0.39-0.43</td><td>outer holdout 0.389 / dev OOF 0.429</td></tr>
+<tr><td>고가 작품 (&gt;10M, &lt;100M)</td><td>Warm 2-stage</td><td class='best'>med_APE ~0.15</td><td>학습된 작가 한정</td></tr>
+<tr class='warn'><td>고가 작품 (&gt;100M) Cold</td><td>예측 불가</td><td class='err'>med_APE 0.889</td><td>🔴 가격 가이드 비공개 또는 "문의" 처리 권장</td></tr>
+<tr><td>고가 작품 (&gt;100M) Warm</td><td>Warm 2-stage</td><td class='best'>med_APE 0.042</td><td>거장 학습 데이터 있을 때만</td></tr>
 </table>
 
 <h2>⚠️ 주요 한계 (외부 보고 시 명시)</h2>
 <ul>
-  <li>본 모델은 <b>"listing-price prediction"</b>이지 "시장가치 예측" 아님 (절대가격 해석 보수적으로)</li>
-  <li>시간 split 없음 — temporal validation 불가</li>
-  <li>Singleton artist 299명 / ≤2건 516명 — 운영은 rare artist fallback 규칙</li>
-  <li>&gt;100M 작품 Cold 예측은 여전히 어려움 (med_APE 0.889) — Warm 라우팅 필수</li>
+  <li>🔴 본 모델은 <b>"listing-price prediction"</b>이지 "시장가치 예측" 아님 (절대가격 해석 보수적으로)</li>
+  <li>🔴 <b>Warm med_APE 0.123은 "학습된 작가의 신규 작품" 기준</b>. 실 운영에서 신규 작가가 섞이면 평균 정확도는 더 낮음 (cold mix 비율에 따라 0.15-0.30 사이 추정).</li>
+  <li>🔴 <b>&gt;100M 고가 작품 Cold-start는 사실상 예측 불가</b> (med_APE 0.889). 운영 시 가격 가이드 비공개 또는 "문의" 처리 권장. Warm 모델 (학습 작가)은 정상 (med_APE 0.042).</li>
+  <li>⚠️ Phase 2 비선형 모델은 <b>default hyperparameter</b> 사용. Optuna tuning한 LightGBM이 후속 PR에서 LAD를 추월할 가능성 — Cold 모델 final 결정은 tuning 후 재검토.</li>
+  <li>시간 split 없음 — temporal validation 불가 (가격 트렌드 변화 평가 X)</li>
+  <li>Singleton artist 299명 / ≤2건 516명 — 운영은 rare artist fallback 규칙. blend 비율은 Phase 5에서 정성적 권장만, grid search는 후속 PR.</li>
+  <li>Cold LAD 5-fold OOF (0.429) vs outer holdout (0.389) 차이는 작가 sampling variance로 추정. 두 추정치 모두 합리적 범위 (단정 X).</li>
+  <li>Warm 95% CI [0.120, 0.126]는 같은 dev pool random split correlation 큼 → "분포 폭"이 아니라 "split sensitivity" 추정치로 해석.</li>
 </ul>
+
+<h2>🔄 후속 PR 권장</h2>
+<ol>
+  <li><b>LightGBM Optuna tuning</b> (Cold + Warm) — default → tuned 비교</li>
+  <li><b>Rare artist blend 비율 grid search</b> (1건/2건 가중치 결정)</li>
+  <li><b>Conformal prediction</b> 도입 — 점추정 외 신뢰구간 (Plan v2.1 §4.6 미실행)</li>
+  <li><b>Multi-seed Cold LAD</b> (GroupShuffleSplit) — split variance 측정</li>
+  <li><b>가격 데이터 source bias audit</b> — Artsy 갤러리 마크업 vs Saatchi 직거래 등 listing price 차이 정량화</li>
+</ol>
 
 <h2>📂 산출물</h2>
 <ul>
