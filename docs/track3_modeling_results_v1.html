@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>Track 3 — 가격 예측 모델링 결과 v1</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 1100px; margin: 30px auto; padding: 20px; color: #222; }
+  h1 { border-bottom: 3px solid #2563eb; padding-bottom: 8px; }
+  h2 { color: #1e40af; margin-top: 32px; border-left: 4px solid #2563eb; padding-left: 12px; }
+  h3 { color: #1e3a8a; }
+  table { border-collapse: collapse; margin: 12px 0; }
+  th, td { border: 1px solid #d1d5db; padding: 6px 12px; text-align: left; }
+  th { background: #eff6ff; }
+  td.num { text-align: right; font-family: ui-monospace, monospace; }
+  .best { background: #d1fae5; font-weight: bold; }
+  .warn { background: #fef3c7; }
+  .err { background: #fee2e2; }
+  .meta { color: #6b7280; font-size: 0.9em; }
+  blockquote { background: #f3f4f6; border-left: 4px solid #9ca3af; padding: 10px 16px; margin: 12px 0; }
+  code { background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+</style></head><body>
+
+<h1>Track 3 — 가격 예측 모델링 결과 v1</h1>
+<p class="meta">생성일: 2026-05-11 22:33 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</p>
+
+<h2>🎯 목표 & 데이터</h2>
+<ul>
+  <li><b>Primary</b>: Cold-start (unseen artist) 예측 정확도 향상</li>
+  <li><b>Secondary</b>: Warm-start (seen artist) 예측 정확도 향상</li>
+  <li><b>운영 라우팅</b>: 3-way (Warm ≥3건 / Blend 1-2건 / Cold unseen)</li>
+</ul>
+<table>
+<tr><th>항목</th><th>값</th></tr>
+<tr><td>Dev pool</td><td class="num">32,891 rows / 1,706 작가</td></tr>
+<tr><td>Outer holdout (Phase 5 감사)</td><td class="num">7,246 rows / 426 작가 (20%)</td></tr>
+<tr><td>Source</td><td>Artsy 10,584 / Saatchi 26,844 (67%) / Artue 2,709</td></tr>
+<tr><td>Target</td><td><code>ln_price_krw_unified</code> (학습) → <code>exp()</code> 복원 (평가)</td></tr>
+<tr><td>Feature (Cold)</td><td>medium, support, has_depth, log_area, estimated_ho, orientation (6개)</td></tr>
+<tr><td>Feature (Warm)</td><td>Cold 6개 + <code>artist_name_ko</code> (native categorical)</td></tr>
+</table>
+
+<h2>🏆 최종 Best 모델</h2>
+<table>
+<tr><th>시나리오</th><th>모델</th><th>med_APE</th><th>W30</th><th>비고</th></tr>
+<tr class="best"><td><b>Cold-start</b></td><td>LAD (Quantile q=0.5)</td><td class="num">0.429</td><td class="num">0.349</td><td>선형, outlier robust</td></tr>
+<tr class="best"><td><b>Warm-start</b></td><td>LightGBM (artist native)</td><td class="num">0.123</td><td class="num">0.748</td><td>비선형, artist signal</td></tr>
+<tr class="best"><td><b>거장 (&gt;100M)</b></td><td>Warm 2-stage</td><td class="num">0.042</td><td>—</td><td>분류기 + 구간별 회귀</td></tr>
+</table>
+
+<h2>📊 Phase 0 — Baseline + ho/area Ablation</h2>
+<table>
+<tr><th>Variant</th><th>med_APE</th><th>MAPE</th><th>W30</th></tr>
+<tr><td>median baseline</td><td class='num'>0.754</td><td class='num'>1.264</td><td class='num'>0.190</td></tr>
+<tr><td>LGB both</td><td class='num'>0.472</td><td class='num'>0.813</td><td class='num'>0.336</td></tr>
+<tr><td>LGB area_only</td><td class='num'>0.473</td><td class='num'>0.948</td><td class='num'>0.332</td></tr>
+<tr><td>LGB ho_only</td><td class='num'>0.505</td><td class='num'>0.827</td><td class='num'>0.327</td></tr>
+</table>
+<p><b>ho/area ablation</b>: <code>both</code>(area+ho)와 <code>area_only</code> median_APE 거의 동일(Δ=0.001), MAPE는 both -13.5pp. → <code>both</code> 유지.</p>
+<h2>📐 Phase 1 — 선형 모델</h2>
+<h3>Cold (5-fold GroupKFold OOF)</h3>
+<table>
+<tr><th>Model</th><th>med_APE</th><th>MAPE</th><th>RMSE_log</th><th>W30</th></tr>
+<tr class=''><td>OLS</td><td class='num'>0.544</td><td class='num'>0.719</td><td class='num'>0.861</td><td class='num'>0.305</td></tr>
+<tr class=''><td>Ridge</td><td class='num'>0.544</td><td class='num'>0.719</td><td class='num'>0.861</td><td class='num'>0.304</td></tr>
+<tr class=''><td>Lasso</td><td class='num'>0.543</td><td class='num'>0.716</td><td class='num'>0.863</td><td class='num'>0.311</td></tr>
+<tr class=''><td>Huber</td><td class='num'>0.438</td><td class='num'>0.665</td><td class='num'>0.801</td><td class='num'>0.351</td></tr>
+<tr class='best'><td>Quantile_q05</td><td class='num'>0.429</td><td class='num'>0.659</td><td class='num'>0.801</td><td class='num'>0.349</td></tr>
+<tr class=''><td>Quantile_q01</td><td class='num'>0.542</td><td class='num'>0.535</td><td class='num'>1.216</td><td class='num'>0.197</td></tr>
+<tr class=''><td>Quantile_q09</td><td class='num'>2.301</td><td class='num'>3.474</td><td class='num'>1.452</td><td class='num'>0.090</td></tr>
+</table>
+<h3>Warm (random 80/10/10 × N=3 in Phase 1, N=20 in Phase 5)</h3>
+<table>
+<tr><th>Model</th><th>med_APE</th><th>MAPE</th><th>W30</th></tr>
+<tr class=''><td>OLS</td><td class='num'>0.322±0.002</td><td class='num'>0.482</td><td class='num'>0.469</td></tr>
+<tr class=''><td>Ridge</td><td class='num'>0.322±0.002</td><td class='num'>0.482</td><td class='num'>0.469</td></tr>
+<tr class=''><td>Lasso</td><td class='num'>0.321±0.003</td><td class='num'>0.482</td><td class='num'>0.469</td></tr>
+<tr class=''><td>Huber</td><td class='num'>0.317±0.001</td><td class='num'>0.469</td><td class='num'>0.475</td></tr>
+<tr class='best'><td>Quantile_q05</td><td class='num'>0.314±0.000</td><td class='num'>0.464</td><td class='num'>0.481</td></tr>
+</table>
+<blockquote><b>핵심 발견</b>: Cold에서 <b>Huber/LAD가 OLS 대비 -10pp 향상</b> (long-tail outlier robust 효과 입증). Warm은 Cold 대비 <b>-11.5pp 향상</b> (artist target encoding 가치).</blockquote>
+
+<h2>🌲 Phase 2 — 비선형 모델</h2>
+<h3>Cold</h3>
+<table>
+<tr><th>Model</th><th>med_APE</th><th>MAPE</th><th>RMSE_log</th><th>W30</th></tr>
+<tr class='best'><td>LightGBM</td><td class='num'>0.473</td><td class='num'>0.802</td><td class='num'>0.831</td><td class='num'>0.340</td></tr>
+<tr class=''><td>XGBoost</td><td class='num'>0.491</td><td class='num'>0.870</td><td class='num'>0.842</td><td class='num'>0.332</td></tr>
+<tr class=''><td>CatBoost</td><td class='num'>0.475</td><td class='num'>0.776</td><td class='num'>0.821</td><td class='num'>0.335</td></tr>
+</table>
+<h3>Warm</h3>
+<table>
+<tr><th>Model</th><th>med_APE</th><th>MAPE</th><th>W30</th></tr>
+<tr class='best'><td>LightGBM</td><td class='num'>0.119±0.002</td><td class='num'>0.282</td><td class='num'>0.752</td></tr>
+<tr class=''><td>XGBoost</td><td class='num'>0.541±0.002</td><td class='num'>0.891</td><td class='num'>0.307</td></tr>
+<tr class=''><td>CatBoost</td><td class='num'>0.185±0.009</td><td class='num'>0.312</td><td class='num'>0.674</td></tr>
+</table>
+<blockquote><b>예상 외</b>: <b>Cold는 선형(LAD 0.429) > 비선형(LGB 0.473)</b>. 6 features만 쓰는 cold는 비선형 학습 여지 적고, tree default squared loss가 long-tail에 약함.<br>
+<b>Warm은 LightGBM 압도</b> (0.119, -19.5pp). artist categorical native signal 강력.<br>
+XGBoost는 2K+ unique categorical 처리 약함.</blockquote>
+
+<h2>🔀 Phase 3 — Hybrid (단순 blend)</h2>
+<h3>Cold</h3>
+<table>
+<tr><th>Variant</th><th>med_APE</th><th>W30</th></tr>
+<tr><td>lin_only (LAD)</td><td class='num'>0.429</td><td class='num'>0.349</td></tr>
+<tr><td>lgb_only</td><td class='num'>0.469</td><td class='num'>0.329</td></tr>
+<tr><td>blend 50/50</td><td class='num'>0.435</td><td class='num'>0.351</td></tr>
+<tr><td>blend 70 lin / 30 lgb</td><td class='num'>0.432</td><td class='num'>0.351</td></tr>
+<tr><td><b>best (oracle)</b></td><td class='num'>0.421</td><td>w_lin median=0.90</td></tr>
+</table>
+<h3>Warm</h3>
+<table>
+<tr><th>Variant</th><th>med_APE</th><th>W30</th></tr>
+<tr><td>lin_only</td><td class='num'>0.316</td><td class='num'>0.478</td></tr>
+<tr class='best'><td>lgb_only</td><td class='num'>0.121</td><td class='num'>0.752</td></tr>
+<tr><td>blend 50/50</td><td class='num'>0.205</td><td class='num'>0.645</td></tr>
+<tr><td>blend 30 lin / 70 lgb</td><td class='num'>0.165</td><td class='num'>0.720</td></tr>
+<tr><td><b>best (oracle)</b></td><td class='num'>0.121</td><td>w_lin mean=0.00</td></tr>
+</table>
+<blockquote>Hybrid 큰 효과 없음. Cold는 LAD가, Warm은 LGB가 단독 최선.</blockquote>
+<h2>❄️ Phase 4 — Cold-start 특화</h2>
+<table>
+<tr><th>Model</th><th>med_APE</th><th>MAPE</th><th>W30</th></tr>
+<tr><td>Prototype_K8</td><td class='num'>0.597</td><td class='num'>0.869</td><td class='num'>0.280</td></tr>
+<tr><td>Prototype_K16</td><td class='num'>0.575</td><td class='num'>0.811</td><td class='num'>0.291</td></tr>
+<tr><td>Prototype_K32</td><td class='num'>0.527</td><td class='num'>0.871</td><td class='num'>0.302</td></tr>
+<tr><td>Segmented_Experts</td><td class='num'>0.602</td><td class='num'>0.787</td><td class='num'>0.279</td></tr>
+<tr><td>KNN_k5</td><td class='num'>0.518</td><td class='num'>0.989</td><td class='num'>0.304</td></tr>
+<tr><td>KNN_k10</td><td class='num'>0.494</td><td class='num'>0.960</td><td class='num'>0.305</td></tr>
+<tr><td>KNN_k20</td><td class='num'>0.500</td><td class='num'>0.964</td><td class='num'>0.313</td></tr>
+</table>
+<blockquote>모두 Phase 1 LAD (0.429) 대비 열세. 6 features 한계로 prototype/KNN 효과 제한.</blockquote>
+
+<h2>🌟 Phase 4.5 — 2-stage 거장 long-tail (Trigger 발동)</h2>
+<table>
+<tr><th>Variant</th><th>med_APE</th><th>B4 (&gt;10M)</th><th>&gt;100M</th><th>W30</th></tr>
+<tr><td>Phase 2 Cold LGB (단일)</td><td class='num'>0.473</td><td class='num warn'>0.640</td><td class='num err'>0.986</td><td class='num'>0.340</td></tr>
+<tr class='best'><td>Cold 2-stage</td><td class='num'>0.476</td><td class='num'>0.590</td><td class='num warn'>0.889</td><td class='num'>0.340</td></tr>
+<tr><td>Phase 2 Warm LGB (단일)</td><td class='num'>0.119</td><td>—</td><td>—</td><td class='num'>0.752</td></tr>
+<tr class='best'><td>Warm 2-stage</td><td class='num'>0.125</td><td class='num'>0.148</td><td class='num best'><b>0.042</b></td><td class='num'>0.739</td></tr>
+</table>
+<blockquote><b>핵심 성과</b>: Warm 2-stage가 <b>&gt;100M 작품 med_APE 4.2%</b>로 사실상 정확. Cold 2-stage는 &gt;100M 0.986 → 0.889로 -10pp 개선이나 여전히 큼.</blockquote>
+<h2>📈 Phase 5 — 최종 평가</h2>
+<h3>[1] Cold LAD (5-fold GroupKFold OOF)</h3>
+<table>
+<tr><th>Metric</th><th>값</th><th>95% CI</th></tr>
+<tr><td>median APE</td><td class='num'>0.429</td><td class='num'>[0.393, 0.540]</td></tr>
+<tr><td>MAPE</td><td class='num'>0.659</td><td>—</td></tr>
+<tr><td>RMSE (log)</td><td class='num'>0.801</td><td>—</td></tr>
+<tr><td>Within-30%</td><td class='num'>0.349</td><td>—</td></tr>
+<tr><td>Within-50%</td><td class='num'>0.578</td><td>—</td></tr>
+</table>
+
+<h4>Source breakdown</h4>
+<table>
+<tr><th>Source</th><th>n</th><th>med_APE</th><th>W30</th></tr>
+<tr><td>artsy</td><td class='num'>8,345</td><td class='num'>0.549</td><td class='num'>0.277</td></tr>
+<tr><td>saatchi</td><td class='num'>22,470</td><td class='num'>0.400</td><td class='num'>0.385</td></tr>
+<tr><td>artue</td><td class='num'>2,076</td><td class='num'>0.597</td><td class='num'>0.281</td></tr>
+</table>
+<h4>Price-band breakdown</h4>
+<table>
+<tr><th>Band</th><th>n</th><th>med_APE</th><th>W30</th></tr>
+<tr class=''><td>B1</td><td class='num'>7,100</td><td class='num'>0.555</td><td class='num'>0.275</td></tr>
+<tr class=''><td>B2</td><td class='num'>10,340</td><td class='num'>0.373</td><td class='num'>0.416</td></tr>
+<tr class=''><td>B3</td><td class='num'>9,957</td><td class='num'>0.351</td><td class='num'>0.436</td></tr>
+<tr class='warn'><td>B4</td><td class='num'>5,494</td><td class='num'>0.672</td><td class='num'>0.173</td></tr>
+<tr class='warn'><td>>100M</td><td class='num'>887</td><td class='num'>0.984</td><td class='num'>0.002</td></tr>
+</table>
+<h3>[2] Warm LightGBM (N=20 random seeds)</h3>
+<table>
+<tr><th>Metric</th><th>mean±std</th><th>95% CI</th></tr>
+<tr><td>median APE</td><td class='num'>0.123±0.004</td><td class='num'>[0.120, 0.126]</td></tr>
+<tr><td>MAPE</td><td class='num'>0.281±0.013</td><td>—</td></tr>
+<tr><td>RMSE (log)</td><td class='num'>0.430±0.015</td><td>—</td></tr>
+<tr><td>Within-30%</td><td class='num'>0.748±0.009</td><td>—</td></tr>
+</table>
+
+<h3>[3] Source-balanced stress test (Warm, N=3)</h3>
+<table>
+<tr><th>Metric</th><th>mean±std</th><th>vs 메인</th></tr>
+<tr><td>median APE</td><td class='num'>0.119±0.005</td><td class='num'>-0.004</td></tr>
+</table>
+<blockquote>Saatchi 67% 편향이 모델 순위에 영향 미미. 운영 시 train-all 유지 OK.</blockquote>
+
+<h3>[4] Outer Holdout 최종 감사 (격리 426 작가)</h3>
+<table>
+<tr><th>모델</th><th>med_APE</th><th>W30</th><th>비고</th></tr>
+<tr class='best'><td>Cold LAD</td><td class='num'>0.389</td><td class='num'>0.392</td><td>dev 0.429보다 좋음 (robust 입증)</td></tr>
+<tr class='warn'><td>Warm LGB</td><td class='num'>0.420</td><td class='num'>0.364</td><td>unseen 작가 → 자동 cold-start</td></tr>
+</table>
+<blockquote>Outer holdout = 전부 unseen artist이므로 Warm 모델 본질적으로 cold-start 시나리오. 운영 시 unseen 작가는 Cold LAD로 라우팅 권장.</blockquote>
+<h2>🎯 운영 권장 (라우팅 + 모델)</h2>
+<table>
+<tr><th>조건</th><th>모델</th><th>예상 정확도</th></tr>
+<tr><td>학습 ≥3건 작가</td><td>Warm LightGBM</td><td class='best'>med_APE ~0.12 / W30 ~75%</td></tr>
+<tr><td>학습 1-2건 작가 (rare)</td><td>Warm/Cold blend</td><td>med_APE ~0.20-0.30 (추정)</td></tr>
+<tr><td>학습 0건 작가 (cold)</td><td>Cold LAD</td><td>med_APE ~0.39-0.43</td></tr>
+<tr><td>고가 작품 (&gt;10M)</td><td>Warm 2-stage</td><td class='best'>&gt;100M: med_APE ~0.04</td></tr>
+</table>
+
+<h2>⚠️ 주요 한계 (외부 보고 시 명시)</h2>
+<ul>
+  <li>본 모델은 <b>"listing-price prediction"</b>이지 "시장가치 예측" 아님 (절대가격 해석 보수적으로)</li>
+  <li>시간 split 없음 — temporal validation 불가</li>
+  <li>Singleton artist 299명 / ≤2건 516명 — 운영은 rare artist fallback 규칙</li>
+  <li>&gt;100M 작품 Cold 예측은 여전히 어려움 (med_APE 0.889) — Warm 라우팅 필수</li>
+</ul>
+
+<h2>📂 산출물</h2>
+<ul>
+  <li><code>scripts/track3/split_data.py</code> — Outer holdout + Cold/Warm split</li>
+  <li><code>scripts/track3/baseline.py</code> — median + ho/area ablation</li>
+  <li><code>scripts/track3/train_linear_{cold,warm}.py</code> — Phase 1</li>
+  <li><code>scripts/track3/train_tree_{cold,warm}.py</code> — Phase 2</li>
+  <li><code>scripts/track3/train_hybrid.py</code> — Phase 3</li>
+  <li><code>scripts/track3/train_coldstart.py</code> — Phase 4</li>
+  <li><code>scripts/track3/train_two_stage.py</code> — Phase 4.5</li>
+  <li><code>scripts/track3/train_phase5_final.py</code> — Phase 5 최종 평가</li>
+  <li><code>data/track3_phase{0..5}_results.json</code> — Phase별 결과</li>
+</ul>
+
+<p class="meta">Track 3 모델링 완료 — 9개 Phase, 모든 Gate 통과.</p>
+
+</body></html>
