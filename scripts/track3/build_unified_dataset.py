@@ -168,6 +168,10 @@ KOREAN_SURNAME_TO_KO = {
     "um": "엄",
     "eom_kr": "엄",
     "kheem": "김", "gheem": "김",  # 드문 Kim 표기
+    # 추가 (v11): leem=임, chon=천 등 surname variant
+    "leem": "임", "leim": "임",
+    "chon": "천", "cheon": "천",  # 한국 성 "천"
+    "rhew": "유",
 }
 
 # 한국 성 중 first-token 일 가능성이 높은 5대 성 (모호 해결용).
@@ -178,6 +182,10 @@ KOREAN_SURNAME_TO_KO = {
 # 예: "Eugene Ahn" 같은 한국계-영어이름 작가 처리용.
 ENGLISH_FIRSTNAME_TO_KO = {
     # 한국계가 자주 쓰는 영어식 이름 + 한국식 발음
+    "summer": "썸머", "winter": "윈터", "autumn": "어텀", "spring": "스프링",
+    "lydia": "리디아", "lynn": "린", "noel": "노엘", "erin": "에린",
+    "stone": "스톤", "rain": "레인", "moon_en": "문",
+    "one": "원",  # "Sungone Jung", "Suk One" 같은 표기
     "eury": "유리", "lacey": "레이시", "karis": "카리스",
     "mia": "미아", "jenny": "제니", "rachel": "레이첼",
     "leo": "레오", "joy": "조이", "lily": "릴리",
@@ -302,6 +310,31 @@ HANGUL_SYLLABLE_MAP: dict[str, str] = {
     "hyea": "혜", "hyae": "혜",
     "ryang": "량", "lyang": "량",
     "myang": "먕",
+    # 추가 (v11): jee=지, seob=섭 등 누락 발견 케이스
+    "jee": "지", "ree": "리", "lee_s": "리",
+    "seob": "섭", "seop": "섭", "seub": "습", "seup": "습",
+    "yeob": "엽", "yeop": "엽",
+    "jeob": "접", "jeop": "접",
+    "kyeob": "겁",
+    "hyeob": "협", "hyeop": "협",
+    "byeob": "법",
+    # 추가 (v11): -jeon (전), -hoon (훈), -mook (묵), -taek (택) 등 빈출
+    "jeon": "전", "jen_kr": "전",
+    "cheon": "천",
+    "hoon": "훈", "hwun": "훈", "hun": "훈",
+    "mook": "묵", "muk_kr": "묵",
+    "taek": "택", "taeg": "택",
+    "gyeom": "겸", "kyeom": "겸",
+    "yune": "윤", "yuen": "윤",
+    "reum": "름", "leum": "름",
+    "ram": "람", "lam": "람",
+    "woon": "운", "wun": "운",
+    "haeng": "행",
+    "sook": "숙", "suk_kr": "숙",
+    "hyen": "현", "hyeon_l": "현",
+    "boram": "보람", "bora": "보라",
+    "ryeob": "렵", "ryeop": "렵",
+    "kook_kr": "국",
     "jeok": "적", "jok": "족",
     "geuk": "극", "guk": "국",
     "duek": "득", "deuk": "득",
@@ -753,8 +786,8 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
         rest_ko = _convert_first_part(tokens[1:])
         return f"{ko_surname_first}{rest_ko}" if rest_ko else ko_surname_first
 
-    # Stage 4: 외국인 이름 — 전체 음역
-    full_ko = _romanize_to_hangul("".join(tokens))
+    # Stage 4: 외국인 이름 — 전체 음역 (토큰별 영어 사전 우선 적용)
+    full_ko = _convert_first_part(tokens)
     return full_ko if full_ko else None
 
 
