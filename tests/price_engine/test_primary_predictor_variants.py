@@ -24,6 +24,7 @@ from visionai.price_engine.api.primary_predictor import (
     CB_FEATURES,
     CB_FEATURES_BASE,
     CB_FEATURES_BASE_28,
+    CB_FEATURES_BASE_28_HF,
     CB_FEATURES_BASE_29,
     CB_FEATURES_BASE_29_HF,
     CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM,
@@ -460,6 +461,7 @@ def test_feature_builder_has_followers_unmatched():
 def test_feature_builder_has_followers_matched_positive():
     """matched artist with positive followers → has_followers=1, ln_followers > 0."""
     import math
+
     from visionai.price_engine.api.primary_feature_builder import build_features
 
     features = build_features(
@@ -503,3 +505,53 @@ def test_feature_builder_has_followers_manual_override():
     )
     assert features["has_followers"] == 1
     assert features["ln_followers"] > 0
+
+
+# ---- PR-GALLERY-TIER: 28-feature_hf variant (29f_hf − gallery_tier) ----
+
+
+def test_cb_features_base_28_hf_count():
+    """28_hf = 29f_hf - gallery_tier."""
+    assert len(CB_FEATURES_BASE_28_HF) == 28
+
+
+def test_cb_features_base_28_hf_drops_gallery_tier():
+    """gallery_tier 만 추가 제거 (29f_hf 대비)."""
+    dropped = set(CB_FEATURES_BASE_29_HF) - set(CB_FEATURES_BASE_28_HF)
+    assert dropped == {"gallery_tier"}
+    assert "has_followers" in CB_FEATURES_BASE_28_HF
+    assert "gallery_tier" not in CB_FEATURES_BASE_28_HF
+
+
+def test_v3_filtered_tuned_28_hf_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_28_hf"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_28_hf"
+    assert cfg["expected_target"] == "v3_filtered_tuned_28_hf"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_28_HF
+    assert cfg["cat_features"] == CAT_FEATURES_29
+    assert len(cfg["cb_features"]) == 28
+
+
+def test_v3_filtered_tuned_b_warm_28_hf_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_b_warm_28_hf"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_b_warm_28_hf"
+    assert cfg["expected_target"] == "v3_filtered_tuned_b_warm_28_hf"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_28_HF
+
+
+def test_resolve_variant_28_hf_explicit():
+    assert _resolve_variant("v3_filtered_tuned_28_hf") == "v3_filtered_tuned_28_hf"
+    assert _resolve_variant("v3_filtered_tuned_b_warm_28_hf") == "v3_filtered_tuned_b_warm_28_hf"
+
+
+def test_artifact_prefix_pattern_28_hf():
+    for name in ("v3_filtered_tuned_28_hf", "v3_filtered_tuned_b_warm_28_hf"):
+        cfg = SUPPORTED_VARIANTS[name]
+        expected_files = [
+            f"{cfg['prefix']}_catboost.cbm",
+            f"{cfg['prefix']}_xgboost.json",
+            f"{cfg['prefix']}_warm_artists.json",
+            f"{cfg['prefix']}_xgboost_label_maps.json",
+            f"{cfg['prefix']}_source_calibration.json",
+        ]
+        assert all(f.startswith(cfg["prefix"]) for f in expected_files)

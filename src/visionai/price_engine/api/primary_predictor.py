@@ -86,6 +86,14 @@ CB_FEATURES_BASE_28 = [f for f in CB_FEATURES_BASE_29 if f != "for_sale_ratio"]
 # - has_followers: serving 시 unmatched detection (real 0 vs unknown 분리)
 CB_FEATURES_BASE_29_HF = [*CB_FEATURES_BASE_28, "has_followers"]
 
+# PR-GALLERY-TIER (2026-05-11): 28 features = CB_FEATURES_BASE_29_HF − gallery_tier.
+# - Layer 3 audit: Saatchi 100% gallery_tier=3 (constant, std=0) / Artsy 4 unique values
+# - Serving: matched=3 (artist_matcher.py:102) / unmatched=4 (primary_feature_builder.py:218) 하드코딩
+# - for_sale_ratio와 동일 패턴 — train-only signal, serve-time identifiability zero
+# - Layer 3.A isolated cycle (29f_hf → 28_hf): Δ_cold +0.13pp / Δ_warm +0.04pp (PASS_WITHIN_NOISE)
+# - Saatchi cold +0.39pp 의외 (ensemble tree 구조 변경 효과 추정)
+CB_FEATURES_BASE_28_HF = [f for f in CB_FEATURES_BASE_29_HF if f != "gallery_tier"]
+
 # Backward compat: 기존 import 호환
 CB_FEATURES = CB_FEATURES_BASE
 
@@ -201,6 +209,23 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
         "cb_features": CB_FEATURES_BASE_29_HF,
         "cat_features": CAT_FEATURES_29,
         "expected_target": "v3_filtered_tuned_b_warm_29f_hf",
+    },
+    # PR-GALLERY-TIER (2026-05-11): 28-feature variant (29f_hf − gallery_tier).
+    # gallery_tier: Saatchi 100% constant=3 / serving matched=3 / unmatched=4 하드코딩
+    # → for_sale_ratio와 동일 train-only signal 패턴
+    # Layer 3.A cycle: Δ_cold +0.13pp / Δ_warm +0.04pp vs 29f_hf (PASS_WITHIN_NOISE)
+    # Default OFF.
+    "v3_filtered_tuned_28_hf": {
+        "prefix": "integrated_v3_filtered_tuned_28_hf",
+        "cb_features": CB_FEATURES_BASE_28_HF,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_28_hf",
+    },
+    "v3_filtered_tuned_b_warm_28_hf": {
+        "prefix": "integrated_v3_filtered_tuned_b_warm_28_hf",
+        "cb_features": CB_FEATURES_BASE_28_HF,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_b_warm_28_hf",
     },
 }
 
