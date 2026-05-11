@@ -19,8 +19,11 @@ import os
 import pytest
 
 from visionai.price_engine.api.primary_predictor import (
+    CAT_FEATURES,
+    CAT_FEATURES_29,
     CB_FEATURES,
     CB_FEATURES_BASE,
+    CB_FEATURES_BASE_29,
     CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM,
     DEFAULT_VARIANT,
     SUPPORTED_VARIANTS,
@@ -227,3 +230,90 @@ def test_resolve_variant_does_not_leak_env(monkeypatch):
     assert _resolve_variant() == DEFAULT_VARIANT
     # os.environ 에 잔존 X
     assert "MODEL_VARIANT" not in os.environ
+
+
+# ---- PR-29F: 29-feature variant (dead 2 + source 제거) ----
+
+
+def test_cb_features_base_29_count():
+    """29 = 32 - 3 (ho_price_level, medium_price_level, source)."""
+    assert len(CB_FEATURES_BASE_29) == 29
+
+
+def test_cb_features_base_29_drops_correct():
+    dropped = set(CB_FEATURES_BASE) - set(CB_FEATURES_BASE_29)
+    assert dropped == {"ho_price_level", "medium_price_level", "source"}
+
+
+def test_cat_features_29_count():
+    """5 = 6 - 1 (source)."""
+    assert len(CAT_FEATURES_29) == 5
+    assert "source" not in CAT_FEATURES_29
+    # 나머지 5개 동일
+    assert set(CAT_FEATURES_29) == set(CAT_FEATURES) - {"source"}
+
+
+def test_v3_filtered_tuned_29f_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_29f"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_29f"
+    assert cfg["expected_target"] == "v3_filtered_tuned_29f"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_29
+    assert cfg["cat_features"] == CAT_FEATURES_29
+    assert len(cfg["cb_features"]) == 29
+    assert len(cfg["cat_features"]) == 5
+
+
+def test_v3_filtered_tuned_b_warm_29f_config():
+    cfg = SUPPORTED_VARIANTS["v3_filtered_tuned_b_warm_29f"]
+    assert cfg["prefix"] == "integrated_v3_filtered_tuned_b_warm_29f"
+    assert cfg["expected_target"] == "v3_filtered_tuned_b_warm_29f"
+    assert cfg["cb_features"] == CB_FEATURES_BASE_29
+    assert cfg["cat_features"] == CAT_FEATURES_29
+
+
+def test_legacy_variants_keep_32f_cat_features():
+    """Legacy 5개 variant는 32f / 6 cat — backward compat."""
+    for name in (
+        "v3_filtered_tuned",
+        "v3_5_v_year_saatchi_warm",
+        "source_conditional_v1_artsy",
+        "source_conditional_v1_saatchi",
+        "v3_filtered_tuned_b_warm",
+    ):
+        cfg = SUPPORTED_VARIANTS[name]
+        assert (
+            cfg.get("cat_features") == CAT_FEATURES
+        ), f"{name}: cat_features != CAT_FEATURES (legacy 6-feature schema)"
+
+
+def test_resolve_variant_29f_explicit():
+    assert _resolve_variant("v3_filtered_tuned_29f") == "v3_filtered_tuned_29f"
+    assert _resolve_variant("v3_filtered_tuned_b_warm_29f") == "v3_filtered_tuned_b_warm_29f"
+
+
+def test_resolve_variant_29f_via_env(monkeypatch):
+    monkeypatch.setenv("MODEL_VARIANT", "v3_filtered_tuned_29f")
+    assert _resolve_variant() == "v3_filtered_tuned_29f"
+
+
+def test_get_cb_features_29f():
+    assert get_cb_features("v3_filtered_tuned_29f") == CB_FEATURES_BASE_29
+    assert get_cb_features("v3_filtered_tuned_b_warm_29f") == CB_FEATURES_BASE_29
+    f = get_cb_features("v3_filtered_tuned_29f")
+    assert "source" not in f
+    assert "ho_price_level" not in f
+    assert "medium_price_level" not in f
+
+
+def test_artifact_prefix_pattern_29f():
+    """PR-29F: 신규 artifact bundle naming contract."""
+    for name in ("v3_filtered_tuned_29f", "v3_filtered_tuned_b_warm_29f"):
+        cfg = SUPPORTED_VARIANTS[name]
+        expected_files = [
+            f"{cfg['prefix']}_catboost.cbm",
+            f"{cfg['prefix']}_xgboost.json",
+            f"{cfg['prefix']}_warm_artists.json",
+            f"{cfg['prefix']}_xgboost_label_maps.json",
+            f"{cfg['prefix']}_source_calibration.json",
+        ]
+        assert all(f.startswith(cfg["prefix"]) for f in expected_files)

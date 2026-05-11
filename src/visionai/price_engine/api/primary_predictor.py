@@ -65,8 +65,38 @@ CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM = [
     "work_age",
 ]
 
+# PR-29F (2026-05-11): 29 features (CB_FEATURES_BASE − dead 2 − source).
+# - ho_price_level / medium_price_level: train/serve 모두 0.0 placeholder (Layer 1 audit PASS_WITHIN_NOISE)
+# - source: serving 시 user-controllable 아님 (default "manual" / train ∈ {artsy, saatchi}) → train/serve mismatch 해소
+CB_FEATURES_BASE_29 = [
+    f for f in CB_FEATURES_BASE if f not in ("ho_price_level", "medium_price_level", "source")
+]
+
 # Backward compat: 기존 import 호환
 CB_FEATURES = CB_FEATURES_BASE
+
+# Removed for train/serve drift consistency:
+# - career_age, work_age, vintage_premium, freshness_discount (Codex 4차 P1, 2026-04-28)
+#   학습 데이터는 정상 계산, 서빙은 0 하드코딩.
+#   (v3.6 PR4: V_year_saatchi_warm variant 만 work_age 재도입, gating 적용)
+# - gallery_name (Codex 14차 P1, 2026-04-28)
+#   학습 vocab은 실제 갤러리명 59개 (예: "Kukje Gallery"), 서빙은 artist_matcher가
+#   "Gallery"/"Saatchi Art"로 하드코딩. Saatchi는 vocab에 있지만 Artsy 작가는 매번
+#   sentinel → 신호 활용 불가. 제거로 정렬.
+#   (Note: importance XGB warm 0.5%, CB cold 1.5% — 영향 작음. 추후 PredictRequest에
+#    gallery_name 필드 추가 시 다시 도입 검토.)
+
+CAT_FEATURES = [
+    "support_type",
+    "medium_category",
+    "attribution_class",
+    "gallery_type",
+    "price_currency",
+    "source",
+]
+
+# PR-29F: source 제거된 categorical (5개) — v3_filtered_tuned_29f / v3_filtered_tuned_b_warm_29f 용
+CAT_FEATURES_29 = [c for c in CAT_FEATURES if c != "source"]
 
 # v3.6 Phase 1 PR5+6: variant 별 artifact bundle + feature contract
 # (v3.5 step 2 §6.5 명세)
@@ -74,22 +104,26 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
     "v3_filtered_tuned": {
         "prefix": "integrated_v3_filtered_tuned",
         "cb_features": CB_FEATURES_BASE,
+        "cat_features": CAT_FEATURES,
         "expected_target": "integrated_v3_filtered_tuned",
     },
     "v3_5_v_year_saatchi_warm": {
         "prefix": "integrated_v3_5_v_year_saatchi_warm",
         "cb_features": CB_FEATURES_V3_5_V_YEAR_SAATCHI_WARM,
+        "cat_features": CAT_FEATURES,
         "expected_target": "v3_5_v_year_saatchi_warm",
     },
     # PR2A: Source-conditional separate models (artifact bundle PR1 = commit f74f73b)
     "source_conditional_v1_artsy": {
         "prefix": "source_conditional_v1_artsy",
         "cb_features": CB_FEATURES_BASE,
+        "cat_features": CAT_FEATURES,
         "expected_target": "source_conditional_v1_artsy",
     },
     "source_conditional_v1_saatchi": {
         "prefix": "source_conditional_v1_saatchi",
         "cb_features": CB_FEATURES_BASE,
+        "cat_features": CAT_FEATURES,
         "expected_target": "source_conditional_v1_saatchi",
     },
     # PR-WARM-B: Cycle B (commit 3a27002) ADOPT_warm_retuned 운영 적용
@@ -99,7 +133,26 @@ SUPPORTED_VARIANTS: dict[str, dict] = {
     "v3_filtered_tuned_b_warm": {
         "prefix": "integrated_v3_filtered_tuned_b_warm",
         "cb_features": CB_FEATURES_BASE,
+        "cat_features": CAT_FEATURES,
         "expected_target": "v3_filtered_tuned_b_warm",
+    },
+    # PR-29F (2026-05-11): 29-feature artifact bundle — Layer 1 audit + source 제거 후속.
+    # User 요구: 서비스 운영에서 source 입력 불가 → train/serve mismatch 해소.
+    # Codex R2 검수: 신규 variant + 자체 artifact 재발행이 가장 깔끔 (legacy 32f variant는 전환 전까지 유지).
+    # cb_features: 29 (CB_FEATURES_BASE − ho_price_level − medium_price_level − source)
+    # cat_features: 5 (CAT_FEATURES − source)
+    # Default OFF — MODEL_VARIANT=v3_filtered_tuned_29f 또는 VARIANT_SHADOW 로 활성화.
+    "v3_filtered_tuned_29f": {
+        "prefix": "integrated_v3_filtered_tuned_29f",
+        "cb_features": CB_FEATURES_BASE_29,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_29f",
+    },
+    "v3_filtered_tuned_b_warm_29f": {
+        "prefix": "integrated_v3_filtered_tuned_b_warm_29f",
+        "cb_features": CB_FEATURES_BASE_29,
+        "cat_features": CAT_FEATURES_29,
+        "expected_target": "v3_filtered_tuned_b_warm_29f",
     },
 }
 
@@ -124,27 +177,6 @@ def _resolve_variant(variant: str | None = None) -> str:
 def get_cb_features(variant: str | None = None) -> list[str]:
     """variant 의 CB_FEATURES list 반환."""
     return SUPPORTED_VARIANTS[_resolve_variant(variant)]["cb_features"]
-
-
-# Removed for train/serve drift consistency:
-# - career_age, work_age, vintage_premium, freshness_discount (Codex 4차 P1, 2026-04-28)
-#   학습 데이터는 정상 계산, 서빙은 0 하드코딩.
-#   (v3.6 PR4: V_year_saatchi_warm variant 만 work_age 재도입, gating 적용)
-# - gallery_name (Codex 14차 P1, 2026-04-28)
-#   학습 vocab은 실제 갤러리명 59개 (예: "Kukje Gallery"), 서빙은 artist_matcher가
-#   "Gallery"/"Saatchi Art"로 하드코딩. Saatchi는 vocab에 있지만 Artsy 작가는 매번
-#   sentinel → 신호 활용 불가. 제거로 정렬.
-#   (Note: importance XGB warm 0.5%, CB cold 1.5% — 영향 작음. 추후 PredictRequest에
-#    gallery_name 필드 추가 시 다시 도입 검토.)
-
-CAT_FEATURES = [
-    "support_type",
-    "medium_category",
-    "attribution_class",
-    "gallery_type",
-    "price_currency",
-    "source",
-]
 
 
 def determine_confidence(
@@ -243,6 +275,7 @@ class PrimaryPredictor:
         variant_config = SUPPORTED_VARIANTS[resolved_variant]
         prefix = variant_config["prefix"]
         new_cb_features = variant_config["cb_features"]
+        new_cat_features = variant_config.get("cat_features", CAT_FEATURES)
         expected_target = variant_config["expected_target"]
 
         # 1) artifact 경로 — variant prefix 적용
@@ -290,11 +323,12 @@ class PrimaryPredictor:
         if not isinstance(new_label_maps, dict):
             raise RuntimeError(f"label_maps schema invalid ({label_maps_path}): must be dict")
         # Codex 13차 P2: schema 검증을 predict() 요구사항과 정합 — non-empty + int values
-        for col in CAT_FEATURES:
+        # PR-29F: variant 별 cat_features 사용 (29f variant는 source 미포함)
+        for col in new_cat_features:
             if col not in new_label_maps:
                 raise RuntimeError(
                     f"label_maps schema invalid ({label_maps_path}): '{col}' key 누락 "
-                    f"(CAT_FEATURES={CAT_FEATURES})"
+                    f"(cat_features={new_cat_features})"
                 )
             cat_map = new_label_maps[col]
             if not isinstance(cat_map, dict):
@@ -399,8 +433,10 @@ class PrimaryPredictor:
         self._label_maps = new_label_maps
         self._cold_calibration_factors = new_cold_calib
         # v3.6 PR5+6: variant + cb_features 도 atomic swap
+        # PR-29F: cat_features 도 atomic swap (variant 별 categorical 분리)
         self._variant = resolved_variant
         self._cb_features = new_cb_features
+        self._cat_features = new_cat_features
 
         # 4) 로깅
         logger.info("CatBoost loaded: %s", cb_path)
@@ -447,8 +483,9 @@ class PrimaryPredictor:
         Codex 13차 P1: categorical normalization을 학습과 일치 (nan/None → 'unknown').
         """
         # 피처 DataFrame 생성 — 학습 train_primary_market_v3_filtered.py와 동일 정규화
+        # PR-29F: variant 별 _cat_features 사용 (29f variant는 source 제외)
         df = pd.DataFrame([features])
-        for col in CAT_FEATURES:
+        for col in self._cat_features:
             if col in df.columns:
                 df[col] = (
                     df[col]
@@ -476,8 +513,9 @@ class PrimaryPredictor:
             # XGBoost는 categorical을 label encoding
             # Codex 12차 P1: 학습 시 _label_encode_xgb와 동일하게 unseen=sentinel(len(mapping)) 사용.
             # 런타임에 mapping을 mutate하지 않음 — artifact가 권위적이며 새 ID 추가는 ID shift 위험.
+            # PR-29F: variant 별 _cat_features 사용
             df_xgb = df[self._cb_features].copy()
-            for col in CAT_FEATURES:
+            for col in self._cat_features:
                 mapping = self._label_maps.get(col, {})
                 if not mapping:
                     raise RuntimeError(

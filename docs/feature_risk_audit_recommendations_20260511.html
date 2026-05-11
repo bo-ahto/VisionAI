@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>32 Features Risk 평가 + 추가 수집 후보 (Codex 의견 조율)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1320px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; background: #fafafa; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.6em; margin-bottom: 6px; }
+h2 { background: #ecf0f1; padding: 10px 14px; border-left: 4px solid #2c5aa0; margin-top: 32px; font-size: 1.2em; }
+h3 { font-size: 1.05em; margin-top: 22px; color: #2c3e50; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+.summary-box { border: 2px solid #2c5aa0; background: #f4f8fc; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 1px 2px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.gray { background: #e9ecef; color: #495057; }
+.pill.blue { background: #cfe2ff; color: #084298; }
+.row-danger { background: #fef0f0; }
+.row-warn { background: #fffbf0; }
+.row-ok { background: #f0fef5; }
+.codex-quote { background: #f4f8fc; border-left: 4px solid #2c5aa0; padding: 10px 14px; margin: 8px 0; font-size: 13px; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>32 Features Risk 평가 + 추가 수집 후보</h1>
+<p style="color:#666;margin-top:0;">
+<strong>작성일</strong>: 2026-05-11 &nbsp;|&nbsp;
+<strong>Codex 의견 조율</strong>: ✅ 동일 session <code>019e0bb1</code> / 60+ rounds &nbsp;|&nbsp;
+<strong>분류</strong>: hypothesis-generating analysis (non-binding)
+</p>
+
+<div class="summary-box">
+<h3 style="margin-top:0;">🎯 핵심 결론 (Codex 한 줄 요약)</h3>
+<p style="font-size:1.05em;">
+<strong>"지금은 새 feature를 더 늘리기 전에, time-dependent / composite feature의 운영 안정성부터 정리하는 게 맞습니다."</strong> — Codex
+</p>
+<p>
+가장 큰 운영 리스크는 <strong>target leakage가 아닌 train/serve mismatch + snapshot drift</strong>. <code>ho_price_level</code> / <code>medium_price_level</code>은 dead placeholder (즉시 정리 후보). 진짜 위험한 건 <code>for_sale_ratio</code>, <code>artist_total_works</code>, <code>ln_followers</code>, <code>career_stage</code>.
+</p>
+</div>
+
+<h2>1. 32 피처 Risk 평가 (Codex + 내 의견 조율)</h2>
+
+<table>
+<tr><th width="8%">#</th><th width="20%">Feature</th><th width="12%">Risk Level</th><th>주요 risk</th><th>Codex 권고</th></tr>
+
+<tr class="row-danger"><td>19</td><td><code>ho_price_level</code></td><td><span class="pill red">DEAD</span></td><td>학습/serving 모두 hardcoded 0.0 (placeholder)</td><td>즉시 제거 또는 재설계</td></tr>
+<tr class="row-danger"><td>20</td><td><code>medium_price_level</code></td><td><span class="pill red">DEAD</span></td><td>학습/serving 모두 hardcoded 0.0 (placeholder)</td><td>즉시 제거 또는 재설계</td></tr>
+<tr class="row-danger"><td>18</td><td><code>for_sale_ratio</code></td><td><span class="pill red">매우 위험 (1순위)</span></td><td>live/profile snapshot 의존 / artist_total_works 파생 / drift heavy</td><td>snapshot drift audit + 재정의</td></tr>
+<tr class="row-danger"><td>15</td><td><code>career_stage</code></td><td><span class="pill red">매우 위험 (2순위)</span></td><td>composite (birth_year + exhibitions + followers) / heuristic 정의</td><td>composite 분해 + 재정의</td></tr>
+<tr class="row-warn"><td>17</td><td><code>artist_total_works</code></td><td><span class="pill yellow">위험 (3순위)</span></td><td>train snapshot vs serving live count mismatch</td><td>train/serve consistency 검증 우선</td></tr>
+<tr class="row-warn"><td>16</td><td><code>ln_followers</code></td><td><span class="pill yellow">위험 (4순위)</span></td><td>시간 의존 / scale drift (그래도 해석 가능한 수준)</td><td>PSI/KS drift 측정</td></tr>
+<tr class="row-warn"><td>22</td><td><code>gallery_tier</code></td><td><span class="pill yellow">위험 (5순위)</span></td><td>heuristic / stale risk / 외부 lookup</td><td>missing/fallback audit</td></tr>
+<tr class="row-warn"><td>13</td><td><code>artist_birth_year</code></td><td><span class="pill yellow">missing 빈번</span></td><td>외부 source 의존 / 단 has_birth_year 보조 있음</td><td>missing rate 측정 / fallback 검증</td></tr>
+<tr class="row-warn"><td>29</td><td><code>attribution_class</code> ⓒ</td><td><span class="pill yellow">정의 모호</span></td><td>저작권 정보 누락 빈번 / category 정의</td><td>missing rate audit</td></tr>
+<tr class="row-warn"><td>21</td><td><code>profile_completeness</code></td><td><span class="pill yellow">composite</span></td><td>composite metric / 외부 source 의존</td><td>component-wise 분해 검토</td></tr>
+<tr class="row-warn"><td>8</td><td><code>support_factor</code></td><td><span class="pill yellow">derived</span></td><td>training data에서 도출 / 새 지지체 등장 시 unseen</td><td>OOV (out-of-vocabulary) handling 검증</td></tr>
+<tr class="row-ok"><td>1-7, 12</td><td>작품 크기 그룹</td><td><span class="pill green">안전</span></td><td>ho, area, aspect_ratio 등 / 입력 명확</td><td>유지</td></tr>
+<tr class="row-ok"><td>10-11, 24-26</td><td>has_depth / is_unique / is_edition / has_seoul / has_international / is_krw</td><td><span class="pill green">안전</span></td><td>binary / serving 시점 명확</td><td>유지</td></tr>
+<tr class="row-ok"><td>14</td><td><code>has_birth_year</code></td><td><span class="pill green">안전 (imputation flag)</span></td><td>artist_birth_year 보조 / 좋은 design</td><td>유지</td></tr>
+<tr class="row-ok"><td>27-28, 30-32</td><td>categorical 6개 (support_type / medium_category / gallery_type / price_currency / source)</td><td><span class="pill green">안전</span></td><td>label encoding + unseen sentinel handling</td><td>유지 / unseen 카테고리 모니터링</td></tr>
+</table>
+
+<h2>2. 운영 stability worst 5 (Codex 의견)</h2>
+
+<div class="danger-box">
+<strong>Codex priority ranking (snapshot drift + composite + live source 의존도)</strong>:
+<ol>
+<li><code>for_sale_ratio</code> — live snapshot / artist_total_works 파생</li>
+<li><code>career_stage</code> — composite (birth + exhibits + followers)</li>
+<li><code>artist_total_works</code> — train snapshot vs serving live</li>
+<li><code>ln_followers</code> — 시간 의존 scale drift</li>
+<li><code>gallery_tier</code> — heuristic / stale</li>
+</ol>
+<p style="margin-top:8px;"><code>artist_birth_year</code>는 missing 크지만 <code>has_birth_year</code> 보조로 위 5개보다 한 단계 아래.</p>
+</div>
+
+<h2>3. Target leakage 의심 검토 결과 (Codex 발견)</h2>
+
+<div class="info-box">
+<strong>발견</strong>: <code>ho_price_level</code> / <code>medium_price_level</code> 은 <strong>active target leakage 아님</strong>:
+<ul>
+<li>학습: <code>train_primary_market_v3_filtered.py:83</code> — 없으면 <code>0.0</code> 으로 채움</li>
+<li>Serving: <code>primary_feature_builder.py:250</code> — 둘 다 hardcoded <code>0.0</code></li>
+</ul>
+<strong>즉 dead placeholder</strong> — "fold-level isolation 안 된 target aggregate" 위험이 아니라 <strong>아예 신호를 못 쓰는 상태</strong>.<br>
+<strong>Codex 권고</strong>: 누수 검증보다 <strong>dead feature로 분류하고 제거 또는 재설계</strong> 결정 우선.
+</div>
+
+<h2>4. 추가 수집 후보 prioritization (Codex 의견)</h2>
+
+<table>
+<tr><th>우선순위</th><th>후보</th><th>Codex 평가</th></tr>
+<tr style="background:#d4edda;"><td><strong>1 (즉시 검토)</strong></td><td><code>year_made</code> / <code>work_age</code></td><td>해석 가능 / 이미 v3.5 variant (N=35)에서 시도된 축 / 가장 싸고 안전 / saatchi warm cohort 외 확장 가치</td></tr>
+<tr style="background:#fff3cd;"><td>2</td><td><strong>Cheap interaction features</strong></td><td><code>artist_x_gallery_tier</code> / <code>ho_x_medium_category</code> / 구현비용 낮음 / Phase 4 N=33 (<code>artist_total_works × ho</code>) 정합</td></tr>
+<tr style="background:#fff3cd;"><td>3</td><td><strong>Timestamp-consistent 시계열 features</strong></td><td>가치 크지만 <strong>snapshot discipline 없이는 현 문제 증폭</strong> — drift audit 후 진입 권고</td></tr>
+<tr style="background:#f8d7da;"><td>4 (지금은 X)</td><td>Text/Image embeddings</td><td>infra cost 너무 큼 / 현 단계 우선순위 아님</td></tr>
+</table>
+
+<h2>5. ⚠️ Layer 0: Target/Source bias audit (Update: 2026-05-11)</h2>
+
+<div class="danger-box">
+<strong>핵심 발견 (user 지적)</strong>: 기존 risk 분석은 <strong>feature contamination</strong>만 다룸. 그런데 더 본질적인 차원이 빠져 있음 —
+<br><br>
+<strong>target 자체 (y=price)가 source별로 체계적으로 다르다</strong>면, feature audit는 잘못된 y에 fit하는 feature를 평가하는 셈.
+즉 <strong>Layer 0 = target/source bias</strong>가 모든 feature audit보다 먼저 와야 함.
+</div>
+
+<h3>5.1. Source-driven price discrepancy 후보 요인</h3>
+
+<table>
+<tr><th>요인</th><th>설명</th><th>Severity</th></tr>
+<tr class="row-danger"><td><strong>List vs sold price</strong></td><td>artsy: 일부 hammer/sold / saatchi: list price (협상 전)</td><td><span class="pill red">매우 큼</span></td></tr>
+<tr class="row-danger"><td><strong>Market segment</strong></td><td>artsy: gallery/auction (curated, 고가) / saatchi: artist-direct (long tail)</td><td><span class="pill red">큼</span></td></tr>
+<tr class="row-warn"><td><strong>작품 유형 분포</strong></td><td>동일 작가라도 원화/edition/print 비율 source별 상이</td><td><span class="pill yellow">큼</span></td></tr>
+<tr class="row-warn"><td><strong>Currency normalization</strong></td><td>KRW 변환 시점 / FX source 일관성 (price_currency 분리되어 있지만 FX 정합성 별개)</td><td><span class="pill yellow">중</span></td></tr>
+<tr class="row-warn"><td><strong>Platform fee</strong></td><td>수수료 포함/제외 정의 source별 불일치 가능</td><td><span class="pill yellow">중</span></td></tr>
+<tr class="row-warn"><td><strong>Survivorship/listing bias</strong></td><td>source별 가격대 cutoff (artsy 고가 위주, saatchi 저가 진입 장벽 X)</td><td><span class="pill yellow">큼</span></td></tr>
+</table>
+
+<h3>5.2. 현 model의 source bias 처리 상태</h3>
+
+<div class="warn-box">
+<ul>
+<li><code>source</code> (#32 categorical) → feature로 들어감 → <strong>model이 source=price level proxy로 직접 학습</strong></li>
+<li><code>source_conditional_v1</code> variant 시도 (D1.SC cycle) → <strong>FAIL</strong> (각 source 별 sample 부족 + warm/cold imbalance)</li>
+<li><code>source_router_mode</code> (off/shadow/canary/on) infra는 있지만 <strong>source-conditional model이 fail해서 활용 불가</strong></li>
+<li>결과: 현재는 <strong>source bias가 model에 직접 새겨져 있고, 분리 메커니즘 없음</strong></li>
+</ul>
+</div>
+
+<h3>5.3. Target/Source bias audit (T0-T6) — Codex amendment 반영</h3>
+
+<table>
+<tr><th>Step</th><th>Audit</th><th>측정 방법</th><th>의사결정 기준</th></tr>
+<tr style="background:#fef0f0;"><td><strong>T0</strong> (priority 최상)</td><td>Price type 일관성</td><td>source별 list/sold/hammer 비율 / 정의 통일성</td><td>1개 source 내 mixed면 즉시 분리 / 학습 데이터 재정의</td></tr>
+<tr style="background:#fef0f0;"><td><strong>T1</strong></td><td><strong>Artist overlap price ratio</strong></td><td>양 source 모두에 있는 작가 → within-artist <strong>median log(price_artsy / price_saatchi)</strong> + artist별 ratio IQR 동시에 측정</td><td>아래 threshold 표 참조 — median + IQR 같이 벌어져 있을 때 bias 확정</td></tr>
+<tr><td><strong>T2</strong></td><td>Work-type stratification</td><td>원화/edition/print/photograph 분리 시 source gap이 사라지는가</td><td>사라지면 composition issue / 남으면 진짜 source bias</td></tr>
+<tr><td><strong>T3</strong></td><td>Currency normalization audit</td><td>KRW 변환 일관성 / FX timestamp / source-conversion 일관성</td><td>conversion 시점 다르면 정합성 정정</td></tr>
+<tr style="background:#fffbf0;"><td><strong>T4</strong> 🆕 (codex)</td><td><strong>Seller/Gallery effect 분리</strong></td><td>artist overlap 차이가 seller/gallery mix 차이인지 분리 — artist × gallery 고정 후 source effect 측정</td><td>seller premium을 source bias로 오인하지 말 것</td></tr>
+<tr style="background:#fffbf0;"><td><strong>T5</strong> 🆕 (codex)</td><td><strong>Time alignment</strong></td><td>같은 작가/유형이라도 수집 시점 다르면 market regime 차이가 source 차이로 발현. <code>same quarter</code> 또는 <code>rolling 90d</code> 정렬 필요</td><td>time-control 후 gap 잔존 여부</td></tr>
+<tr style="background:#fffbf0;"><td><strong>T6</strong> 🆕 (codex)</td><td><strong>Inventory state / Liquidity</strong></td><td>listing age, markdown history, sold-through prior. 특히 asking-price source는 duration-dependent decay 큼</td><td>asking price source의 listing age 분포 측정</td></tr>
+</table>
+
+<h3>5.3.1. T1 threshold 가이드 (codex)</h3>
+
+<div class="info-box">
+<strong>"median ratio 하나로 확정하지 말고 effect size + stability 같이 본다"</strong>
+<ul>
+<li>중심값: <code>within-artist median log(price_artsy / price_saatchi)</code></li>
+<li>Dispersion: <code>artist별 ratio IQR</code> 또는 <code>25-75% band</code></li>
+</ul>
+<table style="margin-top:8px;">
+<tr><th>Ratio range</th><th>해석</th><th>Action</th></tr>
+<tr><td>1.0-1.2x</td><td>미미</td><td>현 학습 유지</td></tr>
+<tr><td>1.2-1.5x</td><td>경계</td><td>composition control (T2/T4) 후 재평가</td></tr>
+<tr><td>1.5-2.0x</td><td>유의한 source effect</td><td>cohort 분리 또는 target normalization 검토</td></tr>
+<tr><td>2.0x+</td><td>강한 bias 의심</td><td>즉시 대응 — global model 사용 위험</td></tr>
+<tr><td>3-5x+</td><td>(확정 아닌) 심각한 mixing 상태</td><td>그 전에 이미 대응했어야 함</td></tr>
+</table>
+<p style="margin-top:8px;"><strong>median + IQR 둘 다 안정적으로 벌어져 있을 때</strong> source bias로 판정. median만 큰데 IQR도 크면 sampling noise일 수 있음.</p>
+</div>
+
+<h3>5.4. 본 세션 결과 재해석 (Codex 동의)</h3>
+
+<div class="codex-quote">
+<strong>Codex</strong>: "B winner = saatchi warm 단일 cohort retune이라면, 성능 개선 일부가 모델 개선이라기보다 <strong>source/target heterogeneity 제거 효과</strong>일 가능성이 높다.
+<br><br>
+한 줄 요약: <strong>B는 운영상 쓸 수는 있지만, 조직적으로는 '모델이 좋아졌다'보다 '혼합 target을 덜 맞췄다'에 더 가까울 수 있다.</strong>"
+</div>
+
+<div class="info-box">
+<ul>
+<li><strong>18 cycle 중 17 FAIL</strong> → 일부는 source bias가 underlying target heterogeneity로 발현된 결과</li>
+<li><strong>Cold path FAIL이 많은 이유</strong> → cold split이 source-conditional하게 갈리는 경우 target distribution이 mixed</li>
+<li><strong>B winner 성공의 본질</strong> → 단일 cohort (saatchi warm) 내 retune → source bias가 자연스럽게 통제된 결과</li>
+<li><strong>B를 "global winner"가 아닌 "cohort-local winner"로 라벨링해야 함</strong> (codex 권고)</li>
+</ul>
+</div>
+
+<h3>5.5. 운영 / future cycle 영향 (Codex 권고)</h3>
+
+<div class="warn-box">
+<ul>
+<li><strong>현재 Stage 3-5에서 B가 동일 cohort(saatchi warm)에만 적용</strong>되면 즉시 위험은 낮음 → 배포 계획 변경 불요</li>
+<li>다만 B를 <strong>"일반적 개선"으로 해석하면 안 됨</strong></li>
+<li>Future cycle부터 <strong>global winner와 cohort-local winner 분리 평가</strong> 필수</li>
+<li><strong>"source-cohort locked eval"을 기본 리포트에 추가</strong> 권고</li>
+<li>Warm 성공을 전체 Track1 성공 신호로 사용하지 말고 <strong>"heterogeneity-controlled local success"로 라벨링</strong></li>
+</ul>
+</div>
+
+<h2>6. Codex 추천 후속 작업 (Layer 0 → feature audit → cycle 진입)</h2>
+
+<div class="info-box">
+<strong>핵심 우선순위 원칙 (Codex)</strong>: <em>"T0(target definition)가 흔들리면 나머지 해석은 약하다. T0가 가장 상위."</em>
+</div>
+
+<div class="info-box">
+<ol>
+<li><strong>🆕 Layer 0 (T0-T6): Target/Source bias audit</strong> — 가장 먼저
+  <ul>
+    <li><strong>T0 (최상위)</strong>: price type 일관성</li>
+    <li>T1: artist overlap median + IQR</li>
+    <li>T2: work-type stratification</li>
+    <li>T3: currency normalization</li>
+    <li>T4: seller/gallery effect 분리</li>
+    <li>T5: time alignment</li>
+    <li>T6: inventory/liquidity / listing age</li>
+    <li><strong>결과에 따라 학습 파이프라인 재정의 필요</strong></li>
+  </ul>
+</li>
+<li><strong>Dead feature audit</strong>: <code>ho_price_level</code>, <code>medium_price_level</code> 제거 여부 결정</li>
+<li><strong>Snapshot drift audit</strong>: <code>artist_total_works</code>, <code>for_sale_ratio</code>, <code>ln_followers</code>
+  <ul>
+    <li>최근 serving 로그 ↔ training 데이터 분포 비교 / PSI / KS / median shift 측정 (source별 분리)</li>
+  </ul>
+</li>
+<li><strong>Missing/fallback audit</strong>: <code>birth_year</code>, <code>career_stage</code>, <code>gallery_tier</code></li>
+<li><strong>다음 feature cycle 진입</strong>: <code>year_made</code> / <code>work_age</code> + cheap interactions (위 1-4 정리 후)</li>
+</ol>
+</div>
+
+<h3>6.1. T0-T6 결과 기반 분기 (Codex)</h3>
+
+<table>
+<tr><th>분기</th><th>판정 시그널</th><th>Action</th></tr>
+<tr style="background:#d4edda;"><td><strong>(a) 현 학습 유지</strong></td><td>
+<ul style="margin:0;">
+<li>T1 effect 작음 (1.2x 이하)</li>
+<li>T2 stratification 후 source gap 대부분 사라짐</li>
+<li>T0에서 price type mix 거의 없음</li>
+<li>T3 FX 영향 미미</li>
+</ul>
+source는 proxy가 아니라 composition issue
+</td><td>현 학습 유지 / feature audit으로 진행</td></tr>
+<tr style="background:#fff3cd;"><td><strong>(b) source bias 큼</strong></td><td>
+<ul style="margin:0;">
+<li>T1 gap이 stratification 후에도 남음 (1.5x+)</li>
+<li>T4 seller/gallery 또는 T5 time control 후에도 gap 유지</li>
+<li>cold split에서 source-conditioned failure 반복</li>
+</ul>
+</td><td>
+<strong>source feature 추가 X</strong>. <code>cohort 분리</code> 또는 <code>target normalization</code> 우선. D1.SC fail이므로 source-conditional joint model보다 <strong>operational cohort 분리</strong>가 현실적
+</td></tr>
+<tr style="background:#f8d7da;"><td><strong>(c) price type mixed</strong></td><td>
+<ul style="margin:0;">
+<li>T0에서 sold/list/hammer 정의 실질적으로 섞임</li>
+<li>T2보다 T0가 더 큰 설명력</li>
+<li>source gap 대부분이 거래 타입 정의 차이</li>
+</ul>
+</td><td><strong>거의 무조건 target 재정의 후 재학습</strong></td></tr>
+</table>
+
+<h2>7. Phase 4 N=33 interaction 재검증 평가</h2>
+
+<div class="codex-quote">
+<strong>Codex</strong>: "지금은 재검증 우선순위가 낮습니다. <code>artist_total_works</code> 자체가 snapshot-drift 리스크가 큰데, interaction은 그 불안정한 신호를 증폭할 가능성이 큽니다. 먼저 <code>artist_total_works</code>의 train/serve consistency를 검증하고, 그다음 interaction을 보는 게 맞습니다."
+</div>
+
+<p>이전 본 세션 정리에서 "Phase 4 N=33 운영 검증" 후속 후보로 제안했으나, <strong>artist_total_works 자체 drift audit 우선</strong>. Interaction은 그 후 검토.</p>
+
+<h2>8. 운영 측면 시사 (B winner deploy 결정)</h2>
+
+<div class="success-box">
+<strong>본 세션 B winner (warm path retune)는 32 features 그대로 사용</strong>:
+<ul>
+<li>위 risk 검토 결과가 B winner 효과에는 영향 X — 동일 feature set에서 retune 효과만 측정</li>
+<li>B는 cycle별 std=0.137 (warm path / population-level robust)</li>
+<li>Cold path는 위 risky features (artist_total_works / career_stage 등) 가 cold split variance 본질에 기여 가능성 있음 (D1 cycles fail 정합)</li>
+</ul>
+<p><strong>운영 Stage 3 활성화 (B deploy)는 정합</strong>. Feature reform 작업은 별도 axis / 향후 cycle.</p>
+</div>
+
+<h2>9. 액션 아이템 (Layer 0 추가 후 reordered)</h2>
+
+<table>
+<tr><th>액션</th><th>우선순위</th><th>예상 cost</th><th>Status</th></tr>
+<tr style="background:#fef0f0;"><td><strong>🆕 T0-T6: Target/Source bias audit</strong> (price type / artist overlap median+IQR / work-type strat / currency norm / seller-gallery effect / time alignment / inventory state)</td><td><span class="pill red">P0 (최우선)</span></td><td>4-6시간 (SQL + 분석 노트북)</td><td>본 commit으로 시작 권고</td></tr>
+<tr><td>Dead feature audit (ho_price_level / medium_price_level)</td><td><span class="pill red">P0</span></td><td>30분 (코드 inspection)</td><td>본 commit으로 시작</td></tr>
+<tr><td>Snapshot drift audit (artist_total_works / for_sale_ratio / ln_followers)</td><td><span class="pill red">P0-P1</span></td><td>1-2시간 (predict log SQL + 분석)</td><td>운영 환경 의존</td></tr>
+<tr><td>Missing rate audit (birth_year / career_stage / gallery_tier)</td><td><span class="pill yellow">P1</span></td><td>1시간 (predict log SQL)</td><td>운영 환경 의존</td></tr>
+<tr><td>year_made / work_age 추가 검증 (v3.5 variant 확장)</td><td><span class="pill yellow">P2</span></td><td>본 세션 D1 framework 정합 cycle</td><td>위 P0/P1 후</td></tr>
+<tr><td>Cheap interactions 후보 (artist × gallery_tier / ho × medium)</td><td><span class="pill blue">P3</span></td><td>cycle / 본 framework 정합</td><td>위 후</td></tr>
+</table>
+
+<div class="warn-box">
+<strong>판단 분기</strong> (T0-T3 결과 기반):
+<ul>
+<li><strong>T1 artist overlap ratio가 1.0에 가까움</strong> (e.g. 0.8-1.2배) → source bias 미미 / feature audit으로 직접 진행</li>
+<li><strong>T1 ratio가 큼</strong> (e.g. 3x+) → source-conditional 학습 재시도 / 또는 source 별 model 분리 / 또는 target normalization (log scale + source-specific intercept)</li>
+<li><strong>T0에서 price type mixed 발견</strong> → 학습 데이터 재정의 (sold price만 사용 / list price만 사용) 후 전체 재학습</li>
+</ul>
+</div>
+
+<div class="footer">
+<p>본 문서는 Codex 의견 조율 결과 정리. 본 결정은 binding decision 아님 / hypothesis-generating analysis (non-binding). 실제 audit / feature cycle 진입은 별도 prereg + codex R1 사전 검수 필요.</p>
+<p>참고 source:
+  <code>scripts/prepare_primary_market_dataset.py</code> (feature 정의) ·
+  <code>scripts/train_primary_market_v3_filtered.py</code> (학습) ·
+  <code>src/visionai/price_engine/api/primary_feature_builder.py</code> (serving feature builder) ·
+  <code>docs/performance_summary_20260511.html</code> (성능 정리) ·
+  <code>docs/feature_n_adjustment_history_20260511.html</code> (Feature N history).
+</p>
+<p style="margin-top:18px;font-weight:600;color:#2c5aa0;">
+→ Codex 핵심 한 줄 (1차): "지금은 새 feature를 더 늘리기 전에, time-dependent / composite feature의 운영 안정성부터 정리하는 게 맞습니다."
+</p>
+<p style="margin-top:8px;font-weight:600;color:#c0392b;">
+→ Codex 핵심 한 줄 (2차, source bias update): <strong>"B는 운영상 쓸 수는 있지만, 조직적으로는 '모델이 좋아졌다'보다 '혼합 target을 덜 맞췄다'에 더 가까울 수 있다. T0(target definition)가 모든 audit의 가장 상위."</strong>
+</p>
+</div>
+
+</body>
+</html>
