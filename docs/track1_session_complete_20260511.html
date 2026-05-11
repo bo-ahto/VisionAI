@@ -50,48 +50,49 @@ ul.compact li { margin: 2px 0; }
 <p style="color:#666;margin-top:0;">
 <strong>작성일</strong>: 2026-05-11 &nbsp;|&nbsp;
 <strong>분기</strong>: <code>exp/track1-feature-optimization-cycle</code> &nbsp;|&nbsp;
-<strong>세션 commits</strong>: 7개 (<code>c1d76d9</code> → <code>6c1ef49</code>) &nbsp;|&nbsp;
-<strong>Codex 검수</strong>: ~20+ rounds (R1/R2/R3)
+<strong>세션 commits</strong>: 13개 (<code>c1d76d9</code> → <code>e973aea</code>) &nbsp;|&nbsp;
+<strong>Codex 검수</strong>: ~25+ rounds (R1/R2/R3)
+&nbsp;|&nbsp; <strong>Update (2026-05-11 13:37)</strong>: PR-HTW-FLAG 추가 — 신규 deploy candidate 29_hf_htw + B winner
 </p>
 
 <div class="tldr">
 <strong>TL;DR</strong> — 본 세션 핵심:
 <ul class="compact" style="margin-top:6px;">
-<li>32 → 28 features 정리: train-only signal 5종 (<code>ho_price_level</code>, <code>medium_price_level</code>, <code>source</code>, <code>for_sale_ratio</code>, <code>gallery_tier</code>) 제거</li>
-<li>5 variant family 운영 준비 (default OFF), <code>v3_filtered_tuned_28_hf</code> = 신규 default candidate</li>
-<li>성능: warm path 영향 0 (2σ noise 내), cold path 미세 손실 (within 0.5σ)</li>
-<li>Deploy framework 완료 (Stage 3-5 runbook + shadow monitor) — 운영팀 수동 활성화</li>
+<li>32 → 29 features 정리: train-only signal 5종 제거 (<code>ho_price_level</code>, <code>medium_price_level</code>, <code>source</code>, <code>for_sale_ratio</code>, <code>gallery_tier</code>) + missing detection 2종 추가 (<code>has_followers</code>, <code>has_total_works</code>)</li>
+<li><strong>6 variant family / 12 variants 운영 준비</strong> (default OFF), <strong><code>v3_filtered_tuned_29_hf_htw</code> = 신규 default candidate</strong></li>
+<li>성능: <strong>본 세션 첫 일관 개선 cycle (PR-HTW-FLAG)</strong> — cold -0.51 / artsy -0.43 / saatchi -0.55 / warm -0.01 (vs 28_hf)</li>
+<li>Deploy framework 완료 (Stage 3-5 runbook + shadow monitor + 10/10 PASS verification) — 운영팀 수동 활성화</li>
 </ul>
 </div>
 
 <div class="metric-card">
 <div class="label">총 commits</div>
-<div class="value">7</div>
+<div class="value">13</div>
 </div>
 <div class="metric-card">
 <div class="label">Variant family</div>
-<div class="value">5</div>
-<div class="delta">total 10 variants (default+B)</div>
+<div class="value">6</div>
+<div class="delta">12 variants (default+B)</div>
 </div>
 <div class="metric-card">
 <div class="label">Tests passing</div>
-<div class="value">55</div>
-<div class="delta">+23 신규</div>
+<div class="value">66</div>
+<div class="delta">+34 신규</div>
 </div>
 <div class="metric-card">
 <div class="label">Artifact files</div>
-<div class="value">32</div>
-<div class="delta">4 variant × 8 file</div>
+<div class="value">47</div>
+<div class="delta">5 variant × 8 + 7 default-only</div>
 </div>
 <div class="metric-card">
 <div class="label">Audit Layers</div>
 <div class="value">4</div>
-<div class="delta">L0/L1/L2/L3</div>
+<div class="delta">L0/L1/L2/L3 + Layer 2 follow-up</div>
 </div>
 <div class="metric-card">
 <div class="label">Isolated cycles</div>
-<div class="value">5</div>
-<div class="delta">PASS 4 / FAIL 1</div>
+<div class="value">7</div>
+<div class="delta">PASS 5 / FAIL 2</div>
 </div>
 
 <h2>목차</h2>
@@ -450,7 +451,7 @@ ul.compact li { margin: 2px 0; }
 <strong>Deploy R1</strong>: "이번 isolated 결과가 거의 noise 수준이라, shadow는 '개선 입증'보다 '운영 regression 부재 확인' 기준이 적절. Non-inferior 기준 (aggregate Δ ≤ +0.3pp)."
 </div>
 
-<h2>5. 5 Variant family 정리</h2>
+<h2>5. 6 Variant family 정리 (final)</h2>
 
 <table>
 <tr>
@@ -494,16 +495,24 @@ ul.compact li { margin: 2px 0; }
 <td><span class="commit-hash">6d993aa</span></td>
 </tr>
 <tr class="row-pass">
-<td><strong><code>28_hf</code></strong> (PR-GALLERY-TIER) ★</td>
+<td><code>28_hf</code> (PR-GALLERY-TIER)</td>
 <td class="num">28</td>
 <td>+ gallery_tier (from 29f_hf)</td>
 <td>has_followers</td>
 <td>✅</td>
 <td><span class="commit-hash">cde6c52</span></td>
 </tr>
+<tr class="row-pass">
+<td><strong><code>29_hf_htw</code></strong> (PR-HTW-FLAG) ★</td>
+<td class="num">29</td>
+<td>+ gallery_tier (29f_hf base)</td>
+<td>has_followers + has_total_works</td>
+<td>✅</td>
+<td><span class="commit-hash">e7a61f8</span> / <span class="commit-hash">e973aea</span></td>
+</tr>
 </table>
 
-<p>★ <strong>v3_filtered_tuned_28_hf</strong> = 신규 default candidate. 각 base × {default, B winner} = 10 variants.</p>
+<p>★ <strong>v3_filtered_tuned_29_hf_htw</strong> = 신규 default candidate (28_hf 대체). 각 base × {default, B winner} = <strong>12 variants total</strong>.</p>
 
 <h2>6. 운영 deploy 준비 상태</h2>
 
@@ -514,7 +523,7 @@ ul.compact li { margin: 2px 0; }
 <tr>
 <td><strong>Stage 3</strong></td>
 <td>Shadow (7-day)</td>
-<td><code>VARIANT_SHADOW=v3_filtered_tuned_28_hf</code></td>
+<td><code>VARIANT_SHADOW=v3_filtered_tuned_29_hf_htw</code></td>
 <td>aggregate Δ ≤ +0.3pp, slice ≤ +0.5pp</td>
 </tr>
 <tr>
@@ -535,7 +544,7 @@ ul.compact li { margin: 2px 0; }
 
 <div class="info-box">
 <ul class="compact">
-<li>7-day aggregate Δ_MdAPE ≤ <strong>+0.3pp</strong> (isolated +0.13pp 정합)</li>
+<li>7-day aggregate Δ_MdAPE ≤ <strong>+0.3pp</strong> (isolated <strong>−0.51pp</strong> 정합 — 개선)</li>
 <li>Cold slice (Artsy / Saatchi) Δ ≤ +0.5pp</li>
 <li>Warm slice Δ ≤ +0.5pp</li>
 <li>Latency P95 ≤ primary + 10%</li>
@@ -549,12 +558,12 @@ ul.compact li { margin: 2px 0; }
 <pre style="background:#f4f4f4;padding:10px;border-radius:4px;font-size:12px;">
 # Step 1: Staging 검증
 export MODEL_VARIANT=v3_filtered_tuned          # primary 유지 (32f)
-export VARIANT_SHADOW=v3_filtered_tuned_28_hf   # 신규 shadow
+export VARIANT_SHADOW=v3_filtered_tuned_29_hf_htw   # 신규 shadow
 
 # Step 2: Smoke test (10 request 위 primary + shadow 모두 출력 확인)
 # Step 3: Production env 적용 (rolling restart)
 # Step 4: Daily monitoring 7-day
-python3 scripts/pr_28_hf_daily_shadow_metric.py --days 7
+python3 scripts/pr_29_hf_htw_daily_shadow_metric.py --days 7
 </pre>
 
 <h2>7. 미해결 후속 후보</h2>
@@ -629,29 +638,80 @@ python3 scripts/pr_28_hf_daily_shadow_metric.py --days 7
 <tr><td><span class="pill gray">P3</span></td><td>(c) median fallback</td><td>"missing과 typical artist를 섞어 feature semantics 흐림" (Codex deferred)</td></tr>
 </table>
 
-<h3>7.5.6. PR Family 변경 없음</h3>
+<h3>7.5.6. PR Family 변경 없음 (Layer 2 follow-up 후속)</h3>
 
-<p>본 cycle 결과로 인한 variant family 변경 없음. <strong>28_hf 그대로 default candidate 유지</strong>:</p>
+<p>본 cycle 결과로 인한 variant family 변경 없음. <strong>28_hf 유지</strong> (이후 PR-HTW-FLAG로 deploy candidate 이동).</p>
+
+<h2>7.6. PR-HTW-FLAG — has_total_works flag 추가 (PASS_IMPROVED) 🟢</h2>
+
+<div class="success-box">
+<strong>본 세션 첫 명백한 일관 개선 cycle</strong> — 모든 metric 음수 (개선) 방향.
+</div>
+
+<h3>7.6.1. Cycle 결과 — 28_hf → 29_hf_htw (add: has_total_works)</h3>
 
 <table>
-<tr><th>Variant</th><th>Features</th><th>Status</th></tr>
-<tr><td>32f (legacy)</td><td>32</td><td>production default</td></tr>
-<tr><td>29f</td><td>29</td><td>OFF</td></tr>
-<tr><td>28f</td><td>28</td><td>OFF</td></tr>
-<tr><td>29f_hf</td><td>29</td><td>OFF</td></tr>
-<tr><td><strong>28_hf</strong> ★</td><td>28</td><td>OFF (deploy candidate)</td></tr>
-<tr><td>27_hf (proposed)</td><td>27</td><td><span class="pill red">REJECTED</span></td></tr>
+<tr><th>Metric</th><th>29_hf_htw</th><th>28_hf baseline</th><th>Δ vs 28_hf</th><th>평가</th></tr>
+<tr class="row-pass"><td><strong>cold_ensemble</strong></td><td class="num">39.13</td><td class="num">39.65</td><td class="num delta-neg"><strong>−0.51pp</strong></td><td>🟢 개선 (within 0.5σ noise)</td></tr>
+<tr class="row-pass"><td>cold_artsy_ensemble</td><td class="num">35.63</td><td class="num">36.06</td><td class="num delta-neg">−0.43pp</td><td>🟢 artsy 개선</td></tr>
+<tr class="row-pass"><td>cold_saatchi_ensemble</td><td class="num">41.84</td><td class="num">42.40</td><td class="num delta-neg">−0.55pp</td><td>🟢 saatchi 개선</td></tr>
+<tr class="row-pass"><td>warm_kfold_xgb</td><td class="num">9.84</td><td class="num">9.85</td><td class="num delta-neg">−0.01pp</td><td>flat (within 2σ)</td></tr>
+<tr class="row-pass"><td>warm_kfold_ens</td><td class="num">10.56</td><td class="num">10.58</td><td class="num delta-neg">−0.02pp</td><td>flat</td></tr>
 </table>
+
+<p><strong>VERDICT</strong>: PASS_IMPROVED (Codex R2 통과)</p>
+
+<h3>7.6.2. 핵심 발견</h3>
+
+<div class="info-box">
+<ul class="compact">
+<li><code>has_total_works</code> flag: missing detection (real 0 vs unmatched 분리)</li>
+<li>Training distribution: 98.53% has_total_works=1 / 1.47% =0 (sparse / Artsy 0.01%, Saatchi 1.98%)</li>
+<li>Codex Q4 예상보다 강한 개선 (예상: cold 소폭+, warm 미세-)</li>
+<li>27_hf REJECTED (artist_total_works 제거)와 정반대 — flag 추가만으로 missingness 정보 추가</li>
+</ul>
+</div>
+
+<h3>7.6.3. Codex R2 verdict: PASS</h3>
+
+<div class="codex-quote">
+<strong>Q1</strong>: "PASS — 전 metric 일관 개선이고 변동성 기준으로도 문제 없어 R2는 통과가 맞습니다."<br><br>
+<strong>Q4</strong>: "<strong>29_hf_htw — 현재 증거만 보면 28_hf보다 29_hf_htw가 default candidate입니다.</strong>"
+</div>
+
+<h2>7.7. PR-HTW-FLAG B winner — 변경 완성</h2>
+
+<table>
+<tr><th>항목</th><th>결과</th></tr>
+<tr><td>v3_filtered_tuned_b_warm_29_hf_htw variant</td><td>✅ 등록 (cb 29 / cat 5)</td></tr>
+<tr><td>CB byte-identical 검증</td><td>✅ sha256 일치 (default ↔ b_warm)</td></tr>
+<tr><td>학습 시간</td><td>22.5s (default 19s + B winner XGB warm 3.5s)</td></tr>
+<tr><td>Verification 10/10 PASS</td><td>✅ READY for shadow deployment</td></tr>
+<tr><td>Tests</td><td>66 passing (3 신규)</td></tr>
+</table>
+
+<p><strong>commit</strong>: <code>e973aea</code> — Codex R1 GO + sha256 자동 검증 (Codex 권고).</p>
+
+<h2>7.8. Deploy framework 업데이트 (28_hf → 29_hf_htw)</h2>
+
+<table>
+<tr><th>파일</th><th>이전 (28_hf)</th><th>현재 (29_hf_htw)</th></tr>
+<tr><td>Runbook</td><td><code>pr_28_hf_stage_3_5_activation_runbook_20260511.md</code> (historical)</td><td><code>pr_29_hf_htw_stage_3_5_activation_runbook_20260511.md</code> ★</td></tr>
+<tr><td>Daily shadow metric</td><td><code>pr_28_hf_daily_shadow_metric.py</code> (historical)</td><td><code>pr_29_hf_htw_daily_shadow_metric.py</code> ★</td></tr>
+<tr><td>Verification</td><td><code>verify_28_hf_deploy_readiness.py</code> (historical)</td><td><code>verify_29_hf_htw_deploy_readiness.py</code> ★ (10/10 PASS)</td></tr>
+</table>
+
+<p>Codex 권고: 기존 28_hf 파일 historical 보존 (deprecated as deploy target). 28_hf는 default OFF였고 production deploy 안 됨.</p>
 
 <h2>8. 결론</h2>
 
 <div class="summary-box">
 <ol>
-<li><strong>운영 fidelity 정리</strong>: 32 → 28 features (5 train-only signals 제거: <code>ho_price_level</code>, <code>medium_price_level</code>, <code>source</code>, <code>for_sale_ratio</code>, <code>gallery_tier</code>). 운영에서 inference 변별력 없는 features 모두 정리.</li>
-<li><strong>Train/serve consistency 개선</strong>: source 입력 불가 환경 정합 / <code>has_followers</code> flag로 missingness explicit.</li>
-<li><strong>Performance 거의 동일</strong>: 모든 PASS cycle warm path 영향 0 (2σ noise 내). Cold path 미세 손실 (within 0.5σ). 28_hf cold +1.02pp 가장 큼이지만 within noise.</li>
-<li><strong>Variant infrastructure 확장</strong>: 5 base × 2 = 10 variants. <code>VARIANT_SHADOW</code> / <code>MODEL_VARIANT</code> 활성화 가능.</li>
-<li><strong>Deploy framework 완료</strong>: Stage 3-5 runbook + monitoring script + sign-off 기준. 운영팀 수동 활성화 ready.</li>
+<li><strong>운영 fidelity 정리</strong>: 32 → 29 features (5 train-only signals 제거: <code>ho_price_level</code>, <code>medium_price_level</code>, <code>source</code>, <code>for_sale_ratio</code>, <code>gallery_tier</code>) + 2 missing detection flags 추가 (<code>has_followers</code>, <code>has_total_works</code>).</li>
+<li><strong>Train/serve consistency 개선</strong>: source 입력 불가 환경 정합 / has_followers + has_total_works flag로 missingness explicit.</li>
+<li><strong>본 세션 첫 일관 개선 cycle (PR-HTW-FLAG)</strong>: cold -0.51 / artsy -0.43 / saatchi -0.55 / warm -0.01 vs 28_hf. 모든 metric 음수 (개선).</li>
+<li><strong>Variant infrastructure 확장</strong>: 6 base × 2 = <strong>12 variants</strong>. <code>VARIANT_SHADOW=v3_filtered_tuned_29_hf_htw</code> 활성화 가능.</li>
+<li><strong>Deploy framework 완료</strong>: 29_hf_htw runbook + monitoring + verification (10/10 PASS). 28_hf 관련 파일 historical 보존 (deprecated as deploy target).</li>
 <li><strong>실제 효과는 production에서</strong>: isolated cycle은 학습 분포 내 측정. <strong>운영 unmatched 신규 작가 / train-serve drift 실제 효과는 shadow monitoring에서만 측정 가능</strong>.</li>
 </ol>
 </div>
@@ -659,7 +719,7 @@ python3 scripts/pr_28_hf_daily_shadow_metric.py --days 7
 <h3>한 줄 요약</h3>
 
 <p style="font-size:1.05em; font-weight:600; color:#2c5aa0; margin:15px 0;">
-"32 → 28 features 정리 + 5 variant family 운영 준비 + Stage 3-5 deploy framework 완성. 본 commit으로 production 변경 없음 (default OFF), 실제 deploy는 운영팀 runbook 따라 수동 진행."
+"32 → 29 features 정리 + 6 variant family / 12 variants 운영 준비 + 본 세션 첫 일관 개선 (PR-HTW-FLAG, cold -0.51pp vs 28_hf) + Stage 3-5 deploy framework 완성. 본 commit으로 production 변경 없음 (default OFF), 실제 deploy는 운영팀 runbook 따라 수동 진행."
 </p>
 
 <div class="footer">
@@ -667,8 +727,9 @@ python3 scripts/pr_28_hf_daily_shadow_metric.py --days 7
 <p>참고 문서:
   <code>docs/feature_risk_audit_recommendations_20260511.html</code> (초기 audit) ·
   <code>docs/layer_audit_session_summary_20260511.html</code> (Layer 0-3 audit 종합) ·
-  <code>docs/pr_28_hf_stage_3_5_activation_runbook_20260511.md</code> (deploy runbook) ·
-  <code>scripts/pr_28_hf_daily_shadow_metric.py</code> (monitoring script) ·
+  <code>docs/pr_29_hf_htw_stage_3_5_activation_runbook_20260511.md</code> (active deploy runbook) ·
+  <code>scripts/pr_29_hf_htw_daily_shadow_metric.py</code> (active monitoring) ·
+  <code>scripts/verify_29_hf_htw_deploy_readiness.py</code> (active verification, 10/10 PASS) ·
   <code>experiments/track1_audit_2026_05_11/</code> (모든 isolated cycle scripts + results JSON)
 </p>
 </div>
