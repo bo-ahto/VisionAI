@@ -21,8 +21,14 @@
 Split: random 80/20 (warm-start scenario, multi-seed N=5로 평균/std)
 
 Output:
-    - 콘솔 결과 표 + 통계적 유의성
+    - 콘솔 결과 표 + seed간 일관성 요약 (N=5 sign test)
     - data/depth_ablation_results.json (재현용)
+
+주의:
+    - random split이라 singleton 작가는 test에 unseen으로 섞일 수 있음 → "mostly warm-start"
+    - 진짜 cold-start (unseen artist) 평가는 GroupShuffleSplit by artist_name_ko 별도 필요
+    - has_depth와 depth_cm은 build 단계에서 depth_cm.fillna(0) + has_depth=(depth_cm>0) 강제 →
+      사실상 thresholded copy 관계 (독립 기여 분리하려면 4-way ablation 필요)
 
 Dependencies (pip):
     pandas, numpy, scikit-learn, xgboost (>=2.0)
@@ -167,15 +173,31 @@ def run_variant(df: pd.DataFrame, variant_name: str, features: list[str]) -> dic
 
 
 def compare_variants(result_A: dict, result_B: dict) -> dict:
-    """A (with depth) vs B (without depth) 비교 + paired diff."""
+    """A (with depth) vs B (without depth) 비교 + paired diff.
+
+    Metric 방향성 (lower_is_better):
+      - mape / median_ape / rmse_log: 낮을수록 좋음 → A가 좋으면 diff<0
+      - within_30pct / within_50pct: 높을수록 좋음 → A가 좋으면 diff>0
+    `better_seeds` = A가 B보다 좋은 seed 수 (metric 방향성 반영).
+    """
+    LOWER_IS_BETTER = {
+        "mape": True, "median_ape": True, "rmse_log": True,
+        "within_30pct": False, "within_50pct": False,
+    }
     diffs = {}
-    for k in ["mape", "median_ape", "rmse_log", "within_30pct", "within_50pct"]:
+    for k, lower_better in LOWER_IS_BETTER.items():
         # seed-paired diff (A - B)
         paired = [a[k] - b[k] for a, b in zip(result_A["per_seed"], result_B["per_seed"])]
+        # A가 더 좋은 seed 수 (metric 방향성 반영)
+        if lower_better:
+            n_better = sum(1 for d in paired if d < 0)
+        else:
+            n_better = sum(1 for d in paired if d > 0)
         diffs[k] = {
             "mean": float(np.mean(paired)),
             "std": float(np.std(paired)),
-            "negative_seeds": int(sum(1 for d in paired if d < 0)),
+            "lower_is_better": lower_better,
+            "better_seeds": int(n_better),  # A가 B보다 좋은 seed 수
             "n_seeds": len(paired),
         }
     return diffs
@@ -184,9 +206,12 @@ def compare_variants(result_A: dict, result_B: dict) -> dict:
 def main() -> None:
     logger.info("=" * 70)
     logger.info("Depth Feature Ablation — XGBoost (N=5 seeds, random 80/20)")
+    logger.info("주의: random split이라 일부 singleton 작가는 test에 unseen으로 섞임 (mostly warm-start)")
     logger.info("=" * 70)
 
     df = load_data()
+    n_unique_artists = int(df["artist_name_ko"].nunique())
+    logger.info(f"Dataset: {len(df):,} rows / {n_unique_artists:,} unique artists")
 
     # Variant A: with depth (has_depth + depth_cm)
     features_A = COMMON_FEATURES + DEPTH_FEATURES
@@ -202,10 +227,11 @@ def main() -> None:
     # 결과 출력
     print()
     print("=" * 70)
-    print("📊 비교 결과 (A=with depth / B=no depth, N=5 seeds)")
+    print(f"📊 비교 결과 (A=with depth / B=no depth, N={len(SEEDS)} seeds, mostly warm-start)")
+    print(f"   Dataset: {len(df):,} rows / {n_unique_artists:,} unique artists")
     print("=" * 70)
-    print(f"{'Metric':<15} {'A (mean±std)':<22} {'B (mean±std)':<22} {'Δ (A-B)':<18}")
-    print("-" * 75)
+    print(f"{'Metric':<15} {'A (mean±std)':<22} {'B (mean±std)':<22} {'Δ (A-B)':<18} {'A better':<10}")
+    print("-" * 90)
     for k, label in [
         ("mape", "MAPE"),
         ("median_ape", "median APE"),
@@ -216,18 +242,25 @@ def main() -> None:
         a_mean, a_std = result_A["mean"][k], result_A["std"][k]
         b_mean, b_std = result_B["mean"][k], result_B["std"][k]
         d = diffs[k]
+        # 방향성 반영 sign (A가 좋으면 ✓)
+        a_is_better = (d["mean"] < 0) if d["lower_is_better"] else (d["mean"] > 0)
         sign = "↓" if d["mean"] < 0 else "↑"
+        better_mark = "✓" if a_is_better else "✗"
         print(
             f"{label:<15} {a_mean:.4f}±{a_std:.4f}      "
             f"{b_mean:.4f}±{b_std:.4f}      "
-            f"{sign}{abs(d['mean']):.4f} ({d['negative_seeds']}/{d['n_seeds']})"
+            f"{sign}{abs(d['mean']):.4f}          "
+            f"{d['better_seeds']}/{d['n_seeds']} {better_mark}"
         )
 
     print()
-    print("📝 해석 가이드:")
-    print("  - MAPE/median APE/RMSE: 낮을수록 좋음 → A가 낮으면 (Δ<0) depth 피처 효과 있음")
-    print("  - Within-30%/50%: 높을수록 좋음 → A가 높으면 (Δ>0) depth 피처 효과 있음")
-    print(f"  - negative_seeds: A가 B보다 좋은 seed 수 (예: 5/5 → 일관됨, 3/5 → 불확실)")
+    print("📝 해석 가이드 (Codex R1 검수 반영):")
+    print("  - MAPE/median APE/RMSE: 낮을수록 좋음")
+    print("  - Within-30%/50%: 높을수록 좋음")
+    print(f"  - A better N/{len(SEEDS)}: A가 B보다 좋은 seed 수 (metric 방향성 반영)")
+    print(f"    {len(SEEDS)}/{len(SEEDS)} = 모든 seed에서 일관됨 (sign test p≈0.031, N=5)")
+    print(f"  - N={len(SEEDS)}는 방향성 확인용. 통계적 유의성 강하게 주장하려면 N=20-30 권장")
+    print(f"  - random split이라 일부 작가는 test에 unseen으로 섞임 (mostly warm-start)")
     print()
 
     # 결과 JSON 저장
