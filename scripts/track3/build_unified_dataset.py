@@ -69,6 +69,19 @@ UNIFIED_FX_TO_KRW = {
     "KRW": 1.0,
 }
 
+# 작가 한글명 매핑 source files (모두 통합).
+# Schema: 각 file 의 영문명(name_eng) + 한글명(name_kor) column 추출.
+ARTIST_KO_MAP_SOURCES = [
+    ("artist_profiles.csv", "name_eng", "name_kor"),
+    ("artist_slug_mapping_expanded.csv", "en_name", "ko_name"),
+    ("merged_artist_profiles.csv", "name_eng", "name_kor"),
+    ("kada_artist_profiles.csv", "name_eng", "name_kor"),
+    ("wikidata_korean_artists.csv", "name_en", "name_ko"),
+]
+# kada에서 placeholder로 사용된 한글명 — 제외
+KO_NAME_PLACEHOLDERS = {"중견작가", "신진작가", "원로작가", "작고작가", "Unknown"}
+HANGUL_PATTERN = re.compile(r"[가-힣]")
+
 
 # ─── Medium / Support 분류 (Track 1 정합) ───
 SUPPORT_RULES = [
@@ -131,6 +144,73 @@ def orientation_from_dims(w: float, h: float) -> str:
     if abs(ratio - 1.0) < 0.1:
         return "square"
     return "portrait" if ratio > 1 else "landscape"
+
+
+def _norm_en_variants(name: str) -> set[str]:
+    """영문명 정규화 + 순서 swap variants (한국식 vs 서양식).
+
+    예: "Lee Ufan" → {"leeufan", "ufanlee"}
+    """
+    if name is None or pd.isna(name) or str(name).strip() == "":
+        return set()
+    cleaned = re.sub(r"[^a-z\s]", "", str(name).lower())
+    tokens = [t for t in cleaned.split() if t]
+    if not tokens:
+        return set()
+    variants = {"".join(tokens)}
+    if len(tokens) >= 2:
+        variants.add("".join(tokens[::-1]))  # last-first ↔ first-last
+    return variants
+
+
+def build_artist_ko_map(data_dir: Path) -> dict[str, str]:
+    """모든 매핑 source 통합 → {en_norm_variant: ko_name} dict."""
+    mapping: dict[str, str] = {}
+    total_rows = 0
+    for fname, en_col, ko_col in ARTIST_KO_MAP_SOURCES:
+        path = data_dir / fname
+        if not path.exists():
+            logger.warning(f"  매핑 source 없음: {fname}")
+            continue
+        try:
+            df = pd.read_csv(path, low_memory=False)
+        except Exception as e:
+            logger.warning(f"  매핑 source load 실패 {fname}: {e}")
+            continue
+        if en_col not in df.columns or ko_col not in df.columns:
+            logger.warning(f"  매핑 source col 누락 {fname}: {en_col}/{ko_col}")
+            continue
+        sub = df[[en_col, ko_col]].dropna()
+        # 한글 character 있어야 + placeholder 제외
+        sub = sub[~sub[ko_col].astype(str).isin(KO_NAME_PLACEHOLDERS)]
+        sub = sub[sub[ko_col].astype(str).str.contains(HANGUL_PATTERN, na=False)]
+        total_rows += len(sub)
+        for _, row in sub.iterrows():
+            en, ko = str(row[en_col]), str(row[ko_col])
+            for variant in _norm_en_variants(en):
+                if variant and variant not in mapping:
+                    mapping[variant] = ko
+    logger.info(f"  artist_name_ko mapping: {len(mapping)} entries (raw {total_rows})")
+    return mapping
+
+
+def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
+    """artist_name_raw → name_ko. (1) 매핑 시도 / (2) raw에 한글 있으면 추출."""
+    if name is None or pd.isna(name):
+        return None
+    name_str = str(name)
+    # (1) 매핑 lookup (영문 + name-order swap)
+    for variant in _norm_en_variants(name_str):
+        if variant in ko_map:
+            return ko_map[variant]
+    # (2) raw 자체에 한글 있으면 추출
+    hangul_chars = HANGUL_PATTERN.findall(name_str)
+    if hangul_chars:
+        # 연속된 한글 부분만 추출
+        match = re.search(r"[가-힣\s]+", name_str)
+        if match:
+            return match.group(0).strip()
+    return None
 
 
 def nationality_to_region(nat) -> str:
@@ -329,6 +409,10 @@ def main() -> None:
     logger.info("Track 3 unified dataset builder (Artsy + Saatchi + Artue)")
     logger.info("=" * 70)
 
+    # 작가 한글명 매핑 build
+    logger.info("Building artist_name_ko mapping...")
+    ko_map = build_artist_ko_map(DATA_DIR)
+
     a = load_artsy()
     s = load_saatchi()
     artue = load_artue()
@@ -336,17 +420,25 @@ def main() -> None:
     unified = pd.concat([a, s, artue], ignore_index=True)
     logger.info(f"\nConcat: {len(unified)} rows total")
 
+    # artist_name_ko apply
+    unified["artist_name_ko"] = unified["artist_name_raw"].apply(
+        lambda n: lookup_artist_name_ko(n, ko_map)
+    )
+    n_ko = unified["artist_name_ko"].notna().sum()
+    logger.info(f"  artist_name_ko matched: {n_ko:,}/{len(unified):,} ({100*n_ko/len(unified):.1f}%)")
+
     unified = add_derived(unified)
     unified, drops = apply_filters(unified)
     logger.info(f"After filter: {len(unified)} rows kept (drops={drops})")
 
-    # column order — schema v4 (Hybrid 가격 추가 / 19 cols)
+    # column order — schema v5 (artist_name_ko 추가 / 20 cols)
     cols = [
         # IDs (학습 비feature)
         "source_platform",
         "source_listing_id",
         "artist_entity_id_raw",
         "artist_name_raw",
+        "artist_name_ko",
         # Cold-start core (9)
         "medium_category",
         "support_category",

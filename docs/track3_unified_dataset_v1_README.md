@@ -32,7 +32,7 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 
 | 파일 | 설명 |
 |---|---|
-| `data/track3_unified_v1.parquet` | 메인 데이터셋 (41,365 rows × 19 cols, ~1.3MB) |
+| `data/track3_unified_v1.parquet` | 메인 데이터셋 (41,365 rows × 20 cols, ~1.3MB) |
 | `data/track3_unified_v1.csv` | CSV export (6.0 MB, UTF-8 BOM) |
 | `data/track3_unified_v1_sample.csv` | 100 rows/source = 300 rows (44 KB) |
 | `data/track3_unified_v1_summary.json` | 분포/통계 summary |
@@ -57,14 +57,30 @@ Track 3 신규 모델 (선형 + 비선형 hybrid) 학습용 통합 데이터셋.
 | `nationality_region` | **98.4% korea** (변별력 없음) | **v3** |
 | `has_nationality` | **100% = 1** (사실상 constant) | **v3** |
 
-### 3.1 IDs (4) — 모델 input 아님, 추적/매칭용
+### 3.1 IDs (5) — 모델 input 아님, 추적/매칭용
 
 | Column | Type | Description |
 |---|---|---|
 | `source_platform` | str (artsy/saatchi/artue) | 데이터 origin |
 | `source_listing_id` | str | 원본 platform의 artwork ID |
 | `artist_entity_id_raw` | str | 원본 platform의 artist ID (Artsy slug / Saatchi numeric / Artue handle) |
-| `artist_name_raw` | str | 원본 platform의 artist name |
+| `artist_name_raw` | str | 원본 platform의 artist name (영문) |
+| `artist_name_ko` | str / null | **한글명** (매핑 source 통합 + name-order swap + raw 한글 추출, 11.8% 매칭) |
+
+#### 작가 한글명 매핑 (artist_name_ko) 변환 규칙
+
+3 단계 cascading:
+1. **매핑 source 통합 lookup**: 5 source 파일 (`artist_profiles.csv`, `artist_slug_mapping_expanded.csv`, `merged_artist_profiles.csv`, `kada_artist_profiles.csv`, `wikidata_korean_artists.csv`) → 영문명 ↔ 한글명 dict (5,671 entries).
+2. **Name-order swap**: 한국식 (Last First) ↔ 서양식 (First Last) 두 순서 모두 시도.
+   - 예: "Lee Ufan" → "leeufan" + "ufanlee" 둘 다 lookup
+3. **Raw 한글 추출 fallback**: artist_name_raw에 한글 character 있으면 추출 (e.g. "Songfeel 송필" → "송필").
+
+**매핑 placeholder 제외**: kada 등 일부 source에서 "중견작가" / "신진작가" 같은 generic placeholder는 제외.
+
+**매칭률**:
+- 전체: 4,885 / 41,365 (11.8%)
+- Artsy: 27.1% / Saatchi: 6.0% / Artue: 9.8%
+- 매칭 안 된 작가 → null (향후 manual annotation으로 확장 가능)
 
 ### 3.2 Cold-start core features (9) — 3 source 공통
 
@@ -285,6 +301,7 @@ Track 3는 **운영 fidelity 최우선** + **신규 작가 cold-start 강화** �
 - **v2 (2026-05-11)**: 41,366 rows / **17 cols**. 3 source raw에 없는 7 columns 제거.
 - **v3 (2026-05-11)**: 41,366 rows / **15 cols**. 변별력 없는 2 columns 제거.
 - **v4 (2026-05-11)**: 41,365 rows / **19 cols**. Hybrid 가격 추가 (price_amount_raw, price_currency_raw, was_converted) + 통일 환율 적용 (price_krw_unified, ln_price_krw_unified). target = ln_price_krw_unified.
+- **v5 (2026-05-11)**: 41,365 rows / **20 cols**. `artist_name_ko` 추가 — 5 매핑 source 통합 + name-order swap + 한글 추출 fallback. 11.8% 매칭 (Artsy 27% / Saatchi 6% / Artue 10%).
 
 ## 13. 참고 자료
 

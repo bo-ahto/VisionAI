@@ -32,6 +32,7 @@ EXPECTED_COLS = [
     "source_listing_id",
     "artist_entity_id_raw",
     "artist_name_raw",
+    "artist_name_ko",
     # Cold-start core (9)
     "medium_category",
     "support_category",
@@ -142,8 +143,8 @@ def check_missingness_rates(df: pd.DataFrame) -> tuple[bool, str]:
 
 
 def check_no_null(df: pd.DataFrame) -> tuple[bool, str]:
-    """price_amount_raw는 KRW source 또는 결측 가능 → 허용."""
-    nullable_allowed = {"price_amount_raw"}
+    """price_amount_raw, artist_name_ko는 nullable 허용."""
+    nullable_allowed = {"price_amount_raw", "artist_name_ko"}
     null_cols = []
     for col in df.columns:
         if col in nullable_allowed:
