@@ -105,7 +105,10 @@ def main():
     logger.info("=" * 70)
 
     df = pd.read_csv(DATA_PATH)
-    df = df[df["is_outlier"] == 0].reset_index(drop=True)
+    # release_split은 이미 is_outlier=0만 포함, 컬럼도 제거됨
+    if "is_outlier" in df.columns:
+        df = df[df["is_outlier"] == 0]
+    df = df.reset_index(drop=True)
     logger.info(f"Training data: {len(df):,} rows / {df[ARTIST_COL].nunique():,} artists")
 
     PROD_DIR.mkdir(parents=True, exist_ok=True)

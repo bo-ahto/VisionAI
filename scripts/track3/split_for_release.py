@@ -126,12 +126,32 @@ def main():
         print(f"  Price median: {d[PRICE_COL].median():,.0f}원")
         print(f"  Price Q25/Q75: {d[PRICE_COL].quantile(0.25):,.0f} / {d[PRICE_COL].quantile(0.75):,.0f}")
 
-    # ─── source_platform 컬럼 제거 (사용자 요청: 모델이 source 정보 참고하면 안 됨) ───
-    COL_DROP = "source_platform"
+    # ─── 학습에 쓰일 컬럼만 유지 (사용자 요청: 학습 외 메타데이터 제거) ───
+    KEEP_COLS = [
+        "artist_name_ko",          # ★ Warm용 categorical
+        "medium_category",         # ★
+        "support_category",        # ★
+        "has_depth",               # △ (PR11 결과 효과 작음)
+        "depth_cm",                # △
+        "width_cm",                # △ (aspect_ratio derive용)
+        "height_cm",               # △ (aspect_ratio derive용)
+        "log_area",                # ★
+        "estimated_ho",            # ★
+        "orientation",             # ★
+        "price_krw_unified",       # 평가 시 원본 KRW (학습 input 아님)
+        "ln_price_krw_unified",    # ★ target
+    ]
     for d_name, d in [("train", train_df), ("test_warm", test_warm_df), ("test_cold", test_cold_df)]:
-        if COL_DROP in d.columns:
-            d.drop(columns=[COL_DROP], inplace=True)
-    logger.info(f"\n⚠️  source_platform 컬럼 제거 (CSV에서 영구 삭제)")
+        # 학습용 컬럼만 유지 (source_platform, source_listing_id, area_cm2, is_outlier 등 제거)
+        cols_keep = [c for c in KEEP_COLS if c in d.columns]
+        d_new = d[cols_keep].copy()
+        if d_name == "train":
+            train_df = d_new
+        elif d_name == "test_warm":
+            test_warm_df = d_new
+        else:
+            test_cold_df = d_new
+    logger.info(f"\n⚠️  학습 외 메타 컬럼 영구 제거 ({len(KEEP_COLS)} cols만 유지)")
 
     # ─── Save ───
     OUT_DIR.mkdir(parents=True, exist_ok=True)

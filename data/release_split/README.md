@@ -120,32 +120,32 @@ test_cold["artist_works_log"] = np.log1p(test_cold["artist_name_ko"].map(artist_
 - 실 운영 모델은 `train_count >= 1` → Warm, `== 0` → Cold 라우팅
 - 평가도 동일: test_warm에는 Warm 모델, test_cold에는 Cold 모델 적용
 
-## 📋 Schema (모든 CSV 공통, 21 columns — source_platform 제거됨)
+## 📋 Schema (모든 CSV 공통, 12 columns — 학습 외 메타 모두 제거됨)
+
+> 🔴 **데이터셋 축소**: 학습에 사용되지 않는 모든 메타 컬럼 제거 (사용자 요청).
+> 21 cols → **12 cols** (모델이 학습 외 정보 참고 못 함).
 
 | Column | Type | 학습 input? |
 |---|---|---|
 | `artist_name_ko` | str | ★ (Warm), ✗ (Cold) |
 | `medium_category` | str | ★ |
 | `support_category` | str | ★ |
-| `has_depth` | int | △ (제거 가능, PR11 결과) |
+| `has_depth` | int | △ (PR11 결과 효과 미미) |
 | `depth_cm` | float | △ |
-| `width_cm` | float | △ |
-| `height_cm` | float | △ |
-| `area_cm2` | float | △ |
+| `width_cm` | float | △ (aspect_ratio derive용) |
+| `height_cm` | float | △ (aspect_ratio derive용) |
 | `log_area` | float | ★ |
 | `estimated_ho` | float | ★ |
 | `orientation` | str | ★ |
-| `is_outlier` | int | (이미 0만 포함) |
-| ~~`source_platform`~~ | ~~str~~ | 🔴 **데이터셋에서 영구 제거** (사용자 요청) |
-| `price_amount_raw` | float | — |
-| `price_currency_raw` | str | — |
-| `price_krw` | float | — |
-| `was_converted` | int | — |
-| `price_krw_unified` | int | (raw target) |
+| `price_krw_unified` | int | 평가 시 원본 KRW (학습 input 아님) |
 | `ln_price_krw_unified` | float | **target (학습용)** |
-| `source_listing_id` | str | (메타) |
-| `artist_entity_id_raw` | str | (메타) |
-| `artist_name_raw` | str | (메타) |
+
+**제거된 컬럼** (9개):
+- ~~`source_platform`~~ — Artsy +45.5% bias 차단
+- ~~`source_listing_id`~~, ~~`artist_entity_id_raw`~~, ~~`artist_name_raw`~~ — 메타 ID
+- ~~`area_cm2`~~ — log_area로 derive 가능
+- ~~`is_outlier`~~ — 모두 0 (필터링 완료)
+- ~~`price_amount_raw`~~, ~~`price_currency_raw`~~, ~~`price_krw`~~, ~~`was_converted`~~ — 원본 가격 형식 정보
 
 추가 derive (학습 시 직접 생성, train만 보고):
 - `medium_ho_bucket` = medium × ho_bucket interaction
