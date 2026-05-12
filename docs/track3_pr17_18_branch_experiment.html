@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Track 3 — Branch × Depth Feature 실험 결과 (PR17/18) v2</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+         max-width: 1100px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #222; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+  h2 { color: #1a73e8; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+  h3 { color: #444; margin-top: 24px; }
+  .meta { color: #666; font-size: 0.9em; margin-bottom: 30px; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 0.92em; }
+  th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: center; }
+  th { background: #f5f7fa; font-weight: 600; }
+  td.left { text-align: left; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.baseline { background: #fffde7; }
+  tr.degenerate td { color: #999; font-style: italic; }
+  .good { color: #2e7d32; font-weight: 600; }
+  .bad  { color: #c62828; font-weight: 600; }
+  .neutral { color: #555; }
+  .partial { color: #f57c00; font-weight: 600; }  /* 일부 개선 */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;
+         margin-right: 4px; }
+  .tag-ok    { background: #e8f5e9; color: #1b5e20; }
+  .tag-warn  { background: #fff3e0; color: #e65100; }
+  .tag-bad   { background: #ffebee; color: #b71c1c; }
+  .tag-info  { background: #e3f2fd; color: #0d47a1; }
+  blockquote { border-left: 4px solid #1a73e8; padding: 8px 16px; background: #f8fbff;
+               margin: 16px 0; color: #333; }
+  .key-finding { background: #fff8e1; border: 1px solid #ffc107;
+                 padding: 12px 16px; border-radius: 6px; margin: 14px 0; }
+  .key-finding strong { color: #e65100; }
+  .codex-note { background: #f3e5f5; border-left: 4px solid #9c27b0;
+                padding: 10px 16px; border-radius: 4px; margin: 14px 0;
+                font-size: 0.92em; }
+  .codex-note strong { color: #6a1b9a; }
+  pre { background: #f4f6f8; padding: 12px; border-radius: 6px; overflow-x: auto;
+        font-size: 0.85em; line-height: 1.4; }
+  .variants { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 14px 0; }
+  .vcard { border: 1px solid #ddd; border-radius: 6px; padding: 14px; }
+  .vcard h4 { margin: 0 0 8px; color: #1a73e8; }
+  .vcard.current { border-color: #4caf50; background: #f1f8e9; }
+  .vcard.current h4 { color: #2e7d32; }
+  .vcard pre { background: #fafafa; font-size: 0.78em; margin-top: 8px; }
+  .changelog { background: #e8f0fe; padding: 12px 16px; border-radius: 4px;
+               font-size: 0.88em; color: #1a73e8; }
+</style>
+</head>
+<body>
+
+<h1>Track 3 — Branch × Depth Feature 실험 결과 (PR17/18) <span style="font-size:0.6em;color:#888">v2 (Codex 검토 반영)</span></h1>
+<div class="meta">
+  2026-05-12 · release_split v3 / production v1.2 baseline ·
+  실험 코드: <code>scripts/track3/pr17_branch_models.py</code>,
+  <code>scripts/track3/pr18_branch_depth_matrix.py</code> ·
+  결과 JSON: <code>data/track3_pr18_matrix_results.json</code>
+</div>
+
+<div class="changelog">
+  <strong>v2 변경사항 (Codex 검토 반영)</strong>:
+  ① 표현 보수적 조정 (분기 "noise" → "full 채택 근거 부족, cold 2D 국소 신호 후속 검증 가치")
+  ② <strong>새 표 3개 추가</strong>: seed별 slice 일관성 / V2_has_only vs V2_cm_only 직접 비교 / slice별 표본 수
+  ③ V0_has_only "5 seeds 모두 일관" → 실제 4/5 큰 악화 + 1/5 소폭 개선으로 정정
+  ④ Cold variance 해석을 "평가 프로토콜 신뢰도 문제" 관점으로 재서술
+  ⑤ V2_has_only 색상 강조 약화 (absolute는 V2_cm_only가 더 우수)
+  ⑥ Frozen cold benchmark 후속 실험 권고 추가
+</div>
+
+<!-- ─────────────────────── 개요 ─────────────────────── -->
+<h2>1. 실험 목적</h2>
+<blockquote>
+  사용자 가설: <strong>입체 작품(3D)과 평면 작품(2D)을 모델 분기로 따로 학습</strong>하면
+  depth feature 효과가 살아나서 정확도가 올라갈까?<br>
+  추가: depth 정보를 <code>depth_cm</code>(실수)만 / <code>has_depth</code>(유무)만 / 둘 다 넣어보면 어떻게 다른가?
+</blockquote>
+
+<p>
+  Track 3 모델은 현재 <strong>작가 상태로만 분기</strong>:
+  학습된 작가 → Warm (LightGBM), 신규 작가 → Cold (LAD Quantile).
+  여기에 작품 유형(2D/3D) 분기를 어디까지 적용할지를 4가지 variant로 비교.
+</p>
+
+<h3>V0 / V1 / V2 / V3 차이</h3>
+<div class="variants">
+  <div class="vcard current">
+    <h4>V0 (현재 운영) — 분기 없음</h4>
+    <pre>작가 학습됨 → Warm LGB 1개
+작가 신규  → Cold LAD 1개
+총 2개 모델</pre>
+  </div>
+  <div class="vcard">
+    <h4>V1 — Warm만 분기</h4>
+    <pre>학습됨 → 2D → Warm LGB (2D)
+        → 3D → Warm LGB (3D)
+신규   → Cold LAD 1개
+총 3개 모델</pre>
+  </div>
+  <div class="vcard">
+    <h4>V2 — Cold만 분기</h4>
+    <pre>학습됨 → Warm LGB 1개
+신규   → 2D → Cold LAD (2D)
+       → 3D → Cold LAD (3D)
+총 3개 모델</pre>
+  </div>
+  <div class="vcard">
+    <h4>V3 — Full 분기</h4>
+    <pre>학습됨 → 2D → Warm LGB (2D)
+        → 3D → Warm LGB (3D)
+신규   → 2D → Cold LAD (2D)
+       → 3D → Cold LAD (3D)
+총 4개 모델</pre>
+  </div>
+</div>
+
+<h3>Depth feature variant (3가지)</h3>
+<table>
+  <thead>
+    <tr><th>Variant</th><th>설명</th><th>의미</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>cm_only</code></td><td><code>depth_cm</code>(실수 cm 값)만 학습</td><td>현 운영 (PR15 B_cm)</td></tr>
+    <tr><td><code>has_only</code></td><td><code>has_depth</code>(0/1)만 학습</td><td>깊이 유무만 binary</td></tr>
+    <tr><td><code>both</code></td><td><code>depth_cm</code> + <code>has_depth</code> 둘 다</td><td>전체 정보</td></tr>
+  </tbody>
+</table>
+
+<!-- ─────────────────────── 평가 protocol ─────────────────────── -->
+<h2>2. 평가 protocol</h2>
+<ul>
+  <li><strong>train 내부 mini hold-out</strong> 사용 (release_split test는 최종 1회 확인용으로 보존)
+    <ul>
+      <li>cold-mini: 작가 100명 통째 hold-out (low/mid/high 50/30/20 stratified)</li>
+      <li>warm-mini: 나머지 작가에서 1건씩 hold-out</li>
+      <li>mini-train: 나머지로 학습</li>
+    </ul>
+  </li>
+  <li><strong>5 seeds 반복</strong> (42, 123, 7, 2024, 999)</li>
+  <li>분기 모델 학습 시 <code>artist_works_log_branch</code> — branch별 작가 작품수로 재계산 (leakage 방지)</li>
+  <li>2D branch에선 <code>depth_cm</code> 제거 (constant 0)</li>
+  <li>분기 라우팅 fallback: <code>global_seen but branch_unseen</code> 작가는 branch Cold로 보냄</li>
+  <li>Paired metric: row-wise <code>APE delta</code> + win-rate + catastrophic regression (APE 2배 악화)</li>
+</ul>
+
+<div class="codex-note">
+  <strong>⚠️ 평가 프로토콜 신뢰도 한계 (Codex 지적)</strong>:
+  mini hold-out의 stratify 기준은 <code>artist works count</code>뿐.
+  <strong>가격대, 2D/3D 비율, medium 구성은 통제 안 함</strong>.
+  결과적으로 cold row 수가 seed별로 747~1509로 2배 변동, cold 2D는 155~274 변동.
+  Cold std 0.23은 단순 sample size 이슈가 아니라
+  <strong>이 평가 프록시가 cold 성능 차이를 안정적으로 측정하지 못한다</strong>는 신호.
+</div>
+
+<div class="key-finding">
+  <strong>분기 모델의 has_depth degenerate 처리</strong>:
+  V1/V2/V3에서 <code>has_depth</code>는 branch 내 constant (2D=0, 3D=1).
+  → <code>has_only</code>는 사실상 "depth signal 없음", <code>both</code>는 <code>cm_only</code>와 동등.
+  12 cells 표시하되 unique 학습은 9개.
+</div>
+
+<!-- ─────────────────────── 표 1: 12 cells matrix ─────────────────────── -->
+<h2>3. 결과 — 12 cells 매트릭스 (5 seeds 평균 ± std)</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Cell</th><th>Effective</th>
+      <th>Warm med_APE</th><th>Cold med_APE</th><th>비고</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="baseline"><td><strong>V0_cm_only</strong></td><td>V0_cm</td>
+        <td class="num good">0.2064 ± 0.009</td><td class="num">0.5379 ± 0.232</td>
+        <td><span class="tag tag-ok">현 운영 baseline</span></td></tr>
+    <tr><td>V0_has_only</td><td>V0_has</td>
+        <td class="num">0.2217 ± 0.003</td><td class="num">0.5432 ± 0.225</td>
+        <td><span class="tag tag-bad">Cold 2D 부작용</span></td></tr>
+    <tr><td>V0_both</td><td>V0_both</td>
+        <td class="num">0.2064 ± 0.009</td><td class="num">0.5413 ± 0.225</td>
+        <td>LGB가 has_depth 무시</td></tr>
+
+    <tr><td>V1_cm_only</td><td>V1_depth_active</td>
+        <td class="num bad">0.2147 ± 0.009</td><td class="num">0.5379 ± 0.232</td>
+        <td>Warm 분기 effect</td></tr>
+    <tr class="degenerate"><td>V1_has_only</td><td>V1_no_depth</td>
+        <td class="num">0.2344 ± 0.015</td><td class="num">0.5432 ± 0.225</td>
+        <td>= no_depth_signal</td></tr>
+    <tr class="degenerate"><td>V1_both</td><td>V1_depth_active</td>
+        <td class="num">0.2147 ± 0.009</td><td class="num">0.5413 ± 0.225</td>
+        <td>≡ V1_cm_only</td></tr>
+
+    <tr><td>V2_cm_only</td><td>V2_depth_active</td>
+        <td class="num">0.2064 ± 0.009</td><td class="num partial">0.5234 ± 0.236</td>
+        <td>Cold 분기 — overall best</td></tr>
+    <tr class="degenerate"><td>V2_has_only</td><td>V2_no_depth</td>
+        <td class="num">0.2217 ± 0.003</td><td class="num">0.5339 ± 0.235</td>
+        <td>cm_only보다 absolute worse</td></tr>
+    <tr class="degenerate"><td>V2_both</td><td>V2_depth_active</td>
+        <td class="num">0.2064 ± 0.009</td><td class="num">0.5234 ± 0.236</td>
+        <td>≡ V2_cm_only</td></tr>
+
+    <tr><td>V3_cm_only</td><td>V3_depth_active</td>
+        <td class="num bad">0.2147 ± 0.009</td><td class="num partial">0.5234 ± 0.236</td>
+        <td>Full 분기</td></tr>
+    <tr class="degenerate"><td>V3_has_only</td><td>V3_no_depth</td>
+        <td class="num">0.2344 ± 0.015</td><td class="num">0.5339 ± 0.235</td>
+        <td>= no_depth_signal</td></tr>
+    <tr class="degenerate"><td>V3_both</td><td>V3_depth_active</td>
+        <td class="num">0.2147 ± 0.009</td><td class="num">0.5234 ± 0.236</td>
+        <td>≡ V3_cm_only</td></tr>
+  </tbody>
+</table>
+
+<!-- ─────────────────────── 표 2: Paired delta ─────────────────────── -->
+<h2>4. Paired delta vs V0_cm_only (5 seeds 평균)</h2>
+
+<table>
+  <thead>
+    <tr><th>Cell</th><th>Slice</th><th>Δmed_APE</th><th>WinRate</th><th>Catastrophic 2x</th><th>해석</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>V0_has_only</td><td>warm</td><td class="num bad">+0.0046</td><td class="num">0.46</td><td class="num bad">0.17</td><td>warm 악화</td></tr>
+    <tr><td>V0_has_only</td><td>cold</td><td class="num">+0.0014</td><td class="num">0.43</td><td class="num">0.09</td><td>overall은 작지만 2D slice서 큰 부작용 (표 5)</td></tr>
+    <tr><td>V0_both</td><td>cold</td><td class="num">+0.0123</td><td class="num">0.42</td><td class="num">0.11</td><td>2D 부작용 잔존</td></tr>
+
+    <tr><td>V1_cm_only</td><td>warm</td><td class="num bad">+0.0029</td><td class="num">0.48</td><td class="num bad">0.20</td><td>warm 악화</td></tr>
+    <tr><td>V1_has_only</td><td>warm</td><td class="num bad">+0.0081</td><td class="num">0.45</td><td class="num bad">0.24</td><td>warm 가장 큰 악화</td></tr>
+
+    <tr><td><strong>V2_cm_only</strong></td><td><strong>cold</strong></td><td class="num partial">-0.0020</td><td class="num">0.46</td><td class="num">0.06</td><td>overall noise, <strong>cold 2D 일관 개선</strong> (표 5)</td></tr>
+    <tr><td>V2_has_only</td><td>cold</td><td class="num">-0.0006</td><td class="num">0.560</td><td class="num">0.04</td><td>baseline 대비 WinRate만 좋음 (표 6 확인)</td></tr>
+
+    <tr><td>V3_cm_only</td><td>warm</td><td class="num bad">+0.0029</td><td class="num">0.48</td><td class="num bad">0.20</td><td>warm 손실</td></tr>
+    <tr><td>V3_cm_only</td><td>cold</td><td class="num partial">-0.0020</td><td class="num">0.46</td><td class="num">0.06</td><td>(V2와 동등)</td></tr>
+  </tbody>
+</table>
+
+<!-- ─────────────────────── 표 3: 2D/3D slice ─────────────────────── -->
+<h2>5. 2D / 3D slice — 작품 유형별 효과</h2>
+
+<table>
+  <thead>
+    <tr><th>Cell</th><th>warm 2D</th><th>warm 3D</th><th>cold 2D</th><th>cold 3D</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>V0_has_only</td>
+        <td class="num">+0.001 / 0.48</td>
+        <td class="num">+0.006 / 0.45</td>
+        <td class="num bad">+0.107 / 0.44</td>
+        <td class="num">+0.001 / 0.41</td></tr>
+    <tr><td>V0_both</td>
+        <td class="num">0</td><td class="num">0</td>
+        <td class="num bad">+0.078 / 0.44</td>
+        <td class="num">+0.002 / 0.40</td></tr>
+    <tr><td><strong>V2_cm_only</strong></td>
+        <td class="num">0</td><td class="num">0</td>
+        <td class="num partial">-0.024 / 0.57</td>
+        <td class="num">+0.000 / 0.42</td></tr>
+    <tr><td>V2_has_only</td>
+        <td class="num">+0.001 / 0.48</td>
+        <td class="num">+0.006 / 0.45</td>
+        <td class="num">+0.107 / 0.44</td>
+        <td class="num">+0.001 / 0.41</td></tr>
+    <tr><td>V3_cm_only</td>
+        <td class="num bad">+0.009 / 0.46</td>
+        <td class="num">+0.001 / 0.49</td>
+        <td class="num partial">-0.024 / 0.57</td>
+        <td class="num">+0.000 / 0.42</td></tr>
+  </tbody>
+</table>
+<p class="neutral" style="font-size:0.88em;">
+  각 셀: <code>Δmed_APE / WinRate</code>. ⚠️ Codex 지적 — <code>0.06 catastrophic</code>은 overall cold 기준, cold 2D 전용 risk가 아님.
+</p>
+
+<!-- ─────────────────────── 표 4 (신규): Seed별 일관성 ─────────────────────── -->
+<h2>6. Seed별 일관성 — V0_cm_only vs V2_cm_only (cold 2D / cold 3D)</h2>
+
+<div class="codex-note">
+  <strong>Codex 권고 추가</strong>: 5 seeds 평균만 보면 cold 2D의 "절반 이상 row에서 개선" 같은 일관 신호가 묻힘.
+  WinRate는 5/5 seeds 모두 >0.5, Δmed_APE는 3/5 seeds 개선 (방향 일관, 크기는 seed 의존).
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">Seed</th>
+      <th colspan="4">cold 2D</th>
+      <th colspan="4">cold 3D</th>
+    </tr>
+    <tr>
+      <th>n</th><th>V0_med</th><th>V2_med</th><th>Δ / WinRate</th>
+      <th>n</th><th>V0_med</th><th>V2_med</th><th>Δ / WinRate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>42</td><td>274</td><td class="num">0.3219</td><td class="num">0.3038</td><td class="num good">-0.018 / 0.60</td>
+        <td>680</td><td class="num">0.2902</td><td class="num">0.2983</td><td class="num bad">+0.008 / 0.38</td></tr>
+    <tr><td>123</td><td>155</td><td class="num">0.7009</td><td class="num">0.6568</td><td class="num good">-0.044 / 0.58</td>
+        <td>871</td><td class="num">0.4728</td><td class="num">0.4156</td><td class="num good">-0.057 / 0.51</td></tr>
+    <tr><td>7</td><td>258</td><td class="num">0.4563</td><td class="num">0.4196</td><td class="num good">-0.037 / 0.55</td>
+        <td>906</td><td class="num">0.5124</td><td class="num">0.5053</td><td class="num good">-0.007 / 0.57</td></tr>
+    <tr><td>2024</td><td>253</td><td class="num">0.4018</td><td class="num">0.4144</td><td class="num bad">+0.013 / 0.55</td>
+        <td>494</td><td class="num">0.3956</td><td class="num">0.3844</td><td class="num good">-0.011 / 0.47</td></tr>
+    <tr><td>999</td><td>216</td><td class="num">0.6980</td><td class="num">0.7598</td><td class="num bad">+0.062 / 0.57</td>
+        <td>1293</td><td class="num">0.9796</td><td class="num">0.9793</td><td class="num">-0.000 / 0.24</td></tr>
+  </tbody>
+</table>
+
+<p style="font-size:0.92em;">
+  <strong>요약</strong>:
+  <span class="good">cold 2D Δmed</span>: 3/5 seeds 개선 (-0.018 ~ -0.044), 2/5 악화 (+0.013, +0.062). 절대 크기는 seed에 따라 변동 큼.<br>
+  <strong>WinRate cold 2D</strong>: <strong>5/5 seeds 모두 >0.5</strong> (0.55 ~ 0.60) — 절반 이상 row 일관 개선.<br>
+  <span class="bad">cold 3D</span>: 들쭉날쭉 (4/5 seeds Δmed 개선이지만 WinRate는 0.24 ~ 0.57 변동) — 일관 신호 없음, 오히려 overall cold delta를 끌어내림.
+</p>
+
+<!-- ─────────────────────── 표 5 (신규): V0_has_only seed별 ─────────────────────── -->
+<h2>7. V0_has_only — Cold 2D 부작용 seed별 (Codex 정정)</h2>
+
+<table>
+  <thead>
+    <tr><th>Seed</th><th>n</th><th>Δmed_APE (V0_has - V0_cm)</th><th>WinRate (V0_has &lt; V0_cm)</th><th>판정</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>42</td><td>274</td><td class="num bad">+0.1789</td><td class="num">0.383</td><td><span class="tag tag-bad">큰 악화</span></td></tr>
+    <tr><td>123</td><td>155</td><td class="num bad">+0.0326</td><td class="num">0.458</td><td><span class="tag tag-bad">악화</span></td></tr>
+    <tr><td>7</td><td>258</td><td class="num bad">+0.0836</td><td class="num">0.419</td><td><span class="tag tag-bad">큰 악화</span></td></tr>
+    <tr><td>2024</td><td>253</td><td class="num bad">+0.0601</td><td class="num">0.526</td><td><span class="tag tag-bad">악화</span></td></tr>
+    <tr><td>999</td><td>216</td><td class="num good">-0.0583</td><td class="num">0.403</td><td><span class="tag tag-warn">소폭 개선 (예외)</span></td></tr>
+  </tbody>
+</table>
+
+<p style="font-size:0.92em;">
+  <strong>정정</strong>: 리포트 v1에서 "5 seeds 모두 일관"이라 했으나 실제로는
+  <strong>4/5 seeds 큰 악화 + 1/5 seed 소폭 개선</strong>. 방향성은 명확히 나쁘지만 "전 seed 일관"은 아님.<br>
+  <strong>원인 (Codex 분석)</strong>: <code>has_depth</code> binary는 단일 V0 모델에서만 진짜 binary feature로 작동.
+  부작용의 본질은 <strong>"깊이 크기 정보(depth_cm)를 버리고 2D/3D 유무만 단일 cold 모델에 강제로 주입"</strong>한 결과.
+</p>
+
+<!-- ─────────────────────── 표 6 (신규): V2_has vs V2_cm 직접 비교 ─────────────────────── -->
+<h2>8. V2_has_only vs V2_cm_only — 직접 비교 (branched 설계 내부)</h2>
+
+<div class="codex-note">
+  <strong>Codex 지적</strong>: V2_has_only의 WinRate 0.560은 baseline (V0) 대비. 하지만
+  branched 설계 내부에서 비교하면 <strong>V2_cm_only가 V2_has_only보다 더 좋음</strong> (absolute med_APE 0.5234 vs 0.5339).
+  즉 "Cold 분기 + no depth가 효과적"이 아니라 <strong>baseline 대비 상대적 현상</strong>.
+</div>
+
+<table>
+  <thead>
+    <tr><th>Seed</th><th>V2_cm med_APE</th><th>V2_has med_APE</th><th>Δmed_APE</th><th>WinRate (V2_has &lt; V2_cm)</th><th>Catastrophic 2x</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>42</td><td class="num good">0.3038</td><td class="num">0.3038</td><td class="num">0.000</td><td class="num bad">0.451</td><td class="num">0.039</td></tr>
+    <tr><td>123</td><td class="num good">0.6568</td><td class="num">0.6568</td><td class="num">0.000</td><td class="num bad">0.430</td><td class="num">0.057</td></tr>
+    <tr><td>7</td><td class="num good">0.4196</td><td class="num">0.4196</td><td class="num">0.000</td><td class="num bad">0.375</td><td class="num">0.030</td></tr>
+    <tr><td>2024</td><td class="num good">0.4144</td><td class="num">0.4144</td><td class="num">0.000</td><td class="num bad">0.359</td><td class="num">0.037</td></tr>
+    <tr><td>999</td><td class="num">0.7598</td><td class="num good">0.7592</td><td class="num">-0.001</td><td class="num good">0.659</td><td class="num">0.023</td></tr>
+  </tbody>
+</table>
+
+<p style="font-size:0.92em;">
+  <strong>결론</strong>: 5 seeds 중 4 seeds에서 V2_cm_only가 V2_has_only보다 더 좋음 (WinRate &lt; 0.5).
+  Branched 설계 내부에서는 <strong>depth_cm를 포함하는 게 명확히 우월</strong>.
+  V2_has_only의 baseline 대비 WinRate 0.560은 V2 분기 효과 자체이지 "depth signal 제거" 효과 아님.
+</p>
+
+<!-- ─────────────────────── 표 7 (신규): Sample size 변동 ─────────────────────── -->
+<h2>9. Slice별 표본 수 변동 — 평가 프록시 한계 증거</h2>
+
+<table>
+  <thead>
+    <tr><th>Seed</th><th>cold total</th><th>cold 2D</th><th>cold 3D</th><th>2D 비중</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>42</td><td class="num">954</td><td class="num">274</td><td class="num">680</td><td class="num">28.7%</td></tr>
+    <tr><td>123</td><td class="num">1,026</td><td class="num">155</td><td class="num">871</td><td class="num">15.1%</td></tr>
+    <tr><td>7</td><td class="num">1,164</td><td class="num">258</td><td class="num">906</td><td class="num">22.2%</td></tr>
+    <tr><td>2024</td><td class="num">747</td><td class="num">253</td><td class="num">494</td><td class="num">33.9%</td></tr>
+    <tr><td>999</td><td class="num">1,509</td><td class="num">216</td><td class="num">1,293</td><td class="num">14.3%</td></tr>
+  </tbody>
+</table>
+
+<p style="font-size:0.92em;">
+  Seed 변경만으로 cold total이 <strong>747 ~ 1,509로 2배 변동</strong>, cold 2D는 <strong>155 ~ 274로 1.8배 변동</strong>.
+  Stratify가 <code>artist works count</code>만 통제하니 가격대/유형/medium 구성이 seed별로 크게 흔들림.
+  → Cold med_APE std 0.23은 모델 차이가 아니라 <strong>평가 프록시 자체의 불안정성</strong>.
+</p>
+
+<!-- ─────────────────────── 결정 ─────────────────────── -->
+<h2>10. 운영 결정 (Codex 권고 반영)</h2>
+
+<blockquote>
+  <strong>운영 채택: V0_cm_only (현 운영 v1.2) 유지.</strong><br>
+  단 분기 가설 전체 기각이 아니라 <strong>full replacement 불가 + cold 2D 국소 신호 후속 검증 가치 있음</strong>.
+</blockquote>
+
+<table>
+  <thead>
+    <tr><th>판단</th><th>근거</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Full replacement 불가</strong></td>
+        <td>warm 분기 (V1/V3) 명확 악화 (catastrophic 20%) + cold overall std 0.23 → 안정적 우위 없음</td></tr>
+    <tr><td><strong>V0_has_only 채택 금지</strong></td>
+        <td>cold 2D 작품에 4/5 seeds 큰 악화. PR15 재확인</td></tr>
+    <tr><td><strong>V2_has_only / V3_has_only</strong></td>
+        <td>baseline 대비 WinRate 0.560이지만 V2_cm_only보다 absolute worse. branched 내부에선 의미 없음</td></tr>
+    <tr><td><strong>Cold 2D 국소 신호</strong></td>
+        <td>V2_cm_only/V3_cm_only가 5/5 seeds WinRate &gt;0.5, Δmed 3/5 개선. 후속 검증 가치</td></tr>
+    <tr><td><strong>Cold 평가 자체 한계</strong></td>
+        <td>mini hold-out stratify 부족 → cold 차이 안정 측정 어려움. 평가 protocol 보강 필요</td></tr>
+  </tbody>
+</table>
+
+<!-- ─────────────────────── 후속 실험 ─────────────────────── -->
+<h2>11. 후속 검증 권고 — Frozen Cold Benchmark</h2>
+
+<div class="codex-note">
+  <strong>Codex 권고 closure 실험</strong>: 평가 프록시 안정화 + cold 2D 신호 closure.
+</div>
+
+<h3>설계</h3>
+<ol>
+  <li><strong>Frozen cold benchmark</strong> 1회 fix
+    <ul>
+      <li>artist-group holdout (cold 작가 100명)</li>
+      <li>Stratify 기준: 2D/3D 비율, 가격대 (low/mid/high), medium 구성 — <strong>모두 통제</strong></li>
+      <li>seed-free (한 번 만들어 영구 사용)</li>
+    </ul>
+  </li>
+  <li><strong>비교 대상 3개</strong>: <code>V0_cm_only</code> vs <code>V2_cm_only</code> vs <code>V2_no_depth (=has_only)</code></li>
+  <li><strong>판단 기준 3개</strong>:
+    <ol>
+      <li>cold 2D 이득 재현되는가</li>
+      <li>cold 3D 손실 없는가</li>
+      <li>overall cold에서 우위 남는가</li>
+    </ol>
+  </li>
+  <li>셋 중 하나라도 무너지면 → branch 가설 종료, V0 영구 유지</li>
+</ol>
+
+<!-- ─────────────────────── 부록 ─────────────────────── -->
+<h2>12. 부록 — 실험 사양 요약</h2>
+<table>
+  <tbody>
+    <tr><td class="left"><strong>학습 데이터</strong></td><td class="left"><code>data/release_split/track3_train.csv</code> (34,859 rows / 1,966 작가)</td></tr>
+    <tr><td class="left"><strong>mini hold-out</strong></td><td class="left">cold 100명 통째 + 나머지 작가 1건 hold-out (seed별 변동)</td></tr>
+    <tr><td class="left"><strong>Seeds</strong></td><td class="left">42, 123, 7, 2024, 999</td></tr>
+    <tr><td class="left"><strong>Cold 모델</strong></td><td class="left">LAD Quantile (q=0.5, alpha=0)</td></tr>
+    <tr><td class="left"><strong>Warm 모델</strong></td><td class="left">Tuned LightGBM, 분기 2D용 보수적 (num_leaves 64)</td></tr>
+    <tr><td class="left"><strong>실행 시간</strong></td><td class="left">PR18 약 1시간 18분 (60 학습)</td></tr>
+    <tr><td class="left"><strong>리포트 검토</strong></td><td class="left">Codex 2차 리뷰 통과 (해석/표현 보수적 조정)</td></tr>
+  </tbody>
+</table>
+
+<h3>관련 파일</h3>
+<ul>
+  <li><code>scripts/track3/pr17_branch_models.py</code> — PR17 4 variant 단일 seed</li>
+  <li><code>scripts/track3/pr18_branch_depth_matrix.py</code> — PR18 12 cells × 5 seeds</li>
+  <li><code>data/track3_pr18_matrix_results.json</code> — ape_array 전체 보존</li>
+  <li><code>data/production/track3_metadata.json</code> — v1.2 운영 모델 metric (유지)</li>
+</ul>
+
+<p style="text-align:center; margin-top:40px; color:#999; font-size:0.85em;">
+  Generated 2026-05-12 · Track 3 PR17/18 결과 리포트 v2 (Codex 검토 반영)
+</p>
+
+</body>
+</html>
