@@ -2,6 +2,11 @@
 
 영구 분리된 학습/평가 데이터. Codex 검수 통과 (Hybrid 분리).
 
+> 🔴 **중요 변경**: `source_platform` 컬럼이 데이터셋에서 **영구 제거**됨.
+> 사용자 요청: 모델이 source 정보를 참고하지 않도록 데이터 단계에서 차단.
+> 영향: PR5에서 발견한 Artsy +45.5% bias를 모델이 학습 못 함 → Cold 정확도 약간 저하 예상 (~+1-2pp).
+> 운영 의도: 출처 정보 없이도 작동하는 모델.
+
 ## 📦 파일 구성
 
 | 파일 | rows | 작가 | 비중 | 용도 |
@@ -115,7 +120,7 @@ test_cold["artist_works_log"] = np.log1p(test_cold["artist_name_ko"].map(artist_
 - 실 운영 모델은 `train_count >= 1` → Warm, `== 0` → Cold 라우팅
 - 평가도 동일: test_warm에는 Warm 모델, test_cold에는 Cold 모델 적용
 
-## 📋 Schema (모든 CSV 공통, 22 columns)
+## 📋 Schema (모든 CSV 공통, 21 columns — source_platform 제거됨)
 
 | Column | Type | 학습 input? |
 |---|---|---|
@@ -131,7 +136,7 @@ test_cold["artist_works_log"] = np.log1p(test_cold["artist_name_ko"].map(artist_
 | `estimated_ho` | float | ★ |
 | `orientation` | str | ★ |
 | `is_outlier` | int | (이미 0만 포함) |
-| `source_platform` | str | ★ (PR5 Artsy +45.5% bias) |
+| ~~`source_platform`~~ | ~~str~~ | 🔴 **데이터셋에서 영구 제거** (사용자 요청) |
 | `price_amount_raw` | float | — |
 | `price_currency_raw` | str | — |
 | `price_krw` | float | — |
@@ -146,6 +151,12 @@ test_cold["artist_works_log"] = np.log1p(test_cold["artist_name_ko"].map(artist_
 - `medium_ho_bucket` = medium × ho_bucket interaction
 - `aspect_ratio` = log(width / height)
 - `artist_works_log` = log1p(train 작가 작품 수)
+
+> ⚠️ **source_platform 제거의 영향**:
+> - PR5에서 Artsy listing이 동일 특성 대비 +45.5% 비쌈을 발견했으나, source 컬럼 제거로 모델이 이 정보 활용 불가
+> - PR7 ALL ablation: source feature가 Cold med_APE -0.016 향상시켰음 → 제거 시 약 +1-2pp 정확도 저하 예상
+> - 그러나 운영 시 source 정보 없이도 작동해야 하는 의도라 일관성 유지가 더 중요
+> - **운영 영향**: Artsy 작품은 평균적으로 underestimate, Saatchi/Artue는 정상 예측 경향
 
 ## 📁 생성 코드
 

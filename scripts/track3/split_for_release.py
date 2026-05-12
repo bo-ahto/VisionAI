@@ -126,6 +126,13 @@ def main():
         print(f"  Price median: {d[PRICE_COL].median():,.0f}원")
         print(f"  Price Q25/Q75: {d[PRICE_COL].quantile(0.25):,.0f} / {d[PRICE_COL].quantile(0.75):,.0f}")
 
+    # ─── source_platform 컬럼 제거 (사용자 요청: 모델이 source 정보 참고하면 안 됨) ───
+    COL_DROP = "source_platform"
+    for d_name, d in [("train", train_df), ("test_warm", test_warm_df), ("test_cold", test_cold_df)]:
+        if COL_DROP in d.columns:
+            d.drop(columns=[COL_DROP], inplace=True)
+    logger.info(f"\n⚠️  source_platform 컬럼 제거 (CSV에서 영구 삭제)")
+
     # ─── Save ───
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     train_df.to_csv(OUT_DIR / "track3_train.csv", index=False, encoding="utf-8-sig")

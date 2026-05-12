@@ -15,7 +15,7 @@ Usage:
         "width_cm": 60.6, "height_cm": 50.0, "depth_cm": 0,
         "estimated_ho": 12.0,
         "orientation": "landscape",
-        "source_platform": "saatchi",  # ★ PR5 source bias 흡수 위해 필수
+        # source_platform 제거됨 (학습에 사용 안 함)
     })
     # result = {
     #     "predicted_price_krw": 2_500_000,
@@ -44,10 +44,10 @@ PROD_DIR = REPO / "data" / "production"
 
 COLD_FEATURES = ["medium_category", "support_category", "has_depth",
                  "log_area", "estimated_ho", "orientation",
-                 "source_platform", "medium_ho_bucket",
+                 "medium_ho_bucket",
                  "artist_works_log", "aspect_ratio"]
 COLD_CAT = ["medium_category", "support_category", "orientation",
-            "source_platform", "medium_ho_bucket"]
+            "medium_ho_bucket"]
 WARM_FEATURES = COLD_FEATURES + ["artist_name_ko"]
 WARM_CAT = COLD_CAT + ["artist_name_ko"]
 
@@ -95,7 +95,7 @@ class Predictor:
         """Single record 예측 → KRW 가격 + 라우팅 정보."""
         # 필수 input 검증
         required = ["medium_category", "support_category", "width_cm",
-                    "height_cm", "estimated_ho", "orientation", "source_platform"]
+                    "height_cm", "estimated_ho", "orientation"]
         missing = [k for k in required if k not in row]
         if missing:
             return {"error": f"Missing required fields: {missing}"}
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         "width_cm": 60.6, "height_cm": 50.0, "depth_cm": 0,
         "estimated_ho": 12.0,
         "orientation": "landscape",
-        "source_platform": "saatchi",
+        # source_platform 제거됨
     })
     for k, v in result.items():
         if k == "predicted_price_krw":
@@ -183,7 +183,7 @@ if __name__ == "__main__":
         "width_cm": 50, "height_cm": 70, "depth_cm": 0,
         "estimated_ho": 15.0,
         "orientation": "portrait",
-        "source_platform": "artsy",
+        # source_platform 제거됨
     })
     for k, v in result.items():
         if k == "predicted_price_krw":
@@ -198,6 +198,6 @@ if __name__ == "__main__":
         "medium_category": "oil",
         "width_cm": 50, "height_cm": 50,
         "estimated_ho": 10, "orientation": "square",
-        # source_platform 누락
+        # 일부 필드 누락
     })
     print(f"  {result}")

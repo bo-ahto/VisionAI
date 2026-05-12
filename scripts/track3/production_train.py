@@ -29,18 +29,18 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 REPO = Path(__file__).resolve().parent.parent.parent
-DATA_PATH = REPO / "data" / "track3_unified_v1_train.csv"
+DATA_PATH = REPO / "data" / "release_split" / "track3_train.csv"  # 새 release split (source 없음)
 PROD_DIR = REPO / "data" / "production"
 
 ARTIST_COL = "artist_name_ko"
 TARGET = "ln_price_krw_unified"
-SOURCE_COL = "source_platform"
+# source_platform 제거됨 (사용자 요청)
 BASE_FEATURES = ["medium_category", "support_category", "has_depth",
                  "log_area", "estimated_ho", "orientation"]
 BASE_CAT = ["medium_category", "support_category", "orientation"]
-ALL_FEATURES = BASE_FEATURES + ["source_platform", "medium_ho_bucket",
+ALL_FEATURES = BASE_FEATURES + ["medium_ho_bucket",
                                   "artist_works_log", "aspect_ratio"]
-ALL_CAT = BASE_CAT + ["source_platform", "medium_ho_bucket"]
+ALL_CAT = BASE_CAT + ["medium_ho_bucket"]
 WARM_FEATURES = ALL_FEATURES + [ARTIST_COL]
 WARM_CAT = ALL_CAT + [ARTIST_COL]
 SEED = 42
