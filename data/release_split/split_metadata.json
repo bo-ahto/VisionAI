@@ -2,29 +2,36 @@
   "seed": 42,
   "n_cold_artists": 200,
   "warm_per_artist": 1,
+  "homonym_handling": "PR16e v3: manual review 적용 + 한글명 정정 (유수즈이→유수지, 이효윤→이효연, 이진우_B→이우진)",
+  "keep_cols": [
+    "artist_name_ko",
+    "medium_category",
+    "support_category",
+    "depth_cm",
+    "width_cm",
+    "height_cm",
+    "log_area",
+    "estimated_ho",
+    "orientation",
+    "price_krw_unified",
+    "ln_price_krw_unified"
+  ],
+  "n_cols": 11,
   "train": {
-    "n_rows": 34629,
-    "n_artists": 1932
+    "n_rows": 34859,
+    "n_artists": 1966
   },
   "test_warm": {
-    "n_rows": 1685,
-    "n_artists": 1685,
-    "description": "학습된 작가별 1건 — warm-start eval"
+    "n_rows": 1717,
+    "n_artists": 1717
   },
   "test_cold": {
-    "n_rows": 3823,
+    "n_rows": 3561,
     "n_artists": 200,
-    "description": "완전 unseen 작가 — cold-start eval",
     "stratification": {
-      "low (≤2건)": 100,
-      "mid (3-10건)": 60,
-      "high (>10건)": 40
+      "low": 100,
+      "mid": 60,
+      "high": 40
     }
-  },
-  "leakage_prevention": [
-    "train과 test_cold 작가 100% 분리 (overlap 0)",
-    "test_warm 작가는 train에 ≥1건 남아 있음 (warm 평가 가능)",
-    "사용 시 categorical fit/scaler 등은 train만 보고 fit, test에 apply",
-    "artist_works_log 등 aggregate feature는 split 후 train만으로 재계산"
-  ]
+  }
 }

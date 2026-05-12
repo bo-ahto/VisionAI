@@ -35,7 +35,9 @@ PROD_DIR = REPO / "data" / "production"
 ARTIST_COL = "artist_name_ko"
 TARGET = "ln_price_krw_unified"
 # source_platform 제거됨 (사용자 요청)
-BASE_FEATURES = ["medium_category", "support_category", "has_depth",
+# PR15 결과 반영 (v1.1): has_depth → depth_cm 교체 (B_cm variant)
+# 이유: has_depth는 2D 작품 Cold 예측을 크게 악화시킴 (+0.21). depth_cm은 2D 부작용 없이 3D에서도 도움.
+BASE_FEATURES = ["medium_category", "support_category", "depth_cm",
                  "log_area", "estimated_ho", "orientation"]
 BASE_CAT = ["medium_category", "support_category", "orientation"]
 ALL_FEATURES = BASE_FEATURES + ["medium_ho_bucket",
@@ -134,8 +136,9 @@ def main():
 
     # Metadata
     metadata = {
-        "version": "v1.0",
-        "training_data": "track3_unified_v1_train.csv",
+        "version": "v1.2",
+        "version_note": "PR16e: 동명이인 수동 검수 적용 (한글명 정정 + entity merge). PR15 B_cm 유지.",
+        "training_data": "data/release_split/track3_train.csv",
         "n_rows": int(len(df)),
         "n_artists": int(df[ARTIST_COL].nunique()),
         "target": TARGET,
@@ -145,16 +148,16 @@ def main():
                 "features": ALL_FEATURES,
                 "categorical": ALL_CAT,
                 "artifact": "track3_cold_lad.joblib",
-                "expected_med_ape": 0.391,
-                "expected_w30": 0.373,
+                "expected_med_ape": 0.321,
+                "expected_w30": 0.464,
             },
             "warm": {
                 "type": "LightGBM (Tuned)",
                 "features": WARM_FEATURES,
                 "categorical": WARM_CAT,
                 "artifact": "track3_warm_lgb.txt",
-                "expected_med_ape": 0.104,
-                "expected_w30": 0.776,
+                "expected_med_ape": 0.206,
+                "expected_w30": 0.599,
                 "hyperparams": {
                     "learning_rate": 0.04, "num_leaves": 198,
                     "min_data_in_leaf": 75, "feature_fraction": 0.987,
@@ -181,6 +184,7 @@ def main():
             "medium_ho_bucket": "medium × ho_bucket interaction",
             "aspect_ratio": "log(width / height)",
             "artist_works_log": "log1p(train fold artist count)",
+            "depth_cm": "실측 깊이 (cm). 없으면 0 (PR15 B_cm: has_depth 대비 2D 부작용 제거)",
         },
         "limitations": [
             "listing-price prediction (시장가치 예측 아님)",
@@ -207,9 +211,9 @@ def main():
     print(f"  Metadata:          {metadata_path.name}")
     print(f"  Artist counts:     {counts_path.name}")
     print()
-    print(f"Expected performance:")
-    print(f"  Cold (unseen):     med_APE 0.391, W30 0.37")
-    print(f"  Warm (≥1건):       med_APE 0.104, W30 0.78")
+    print(f"Expected performance (v1.2, release_split v3 test):")
+    print(f"  Cold (unseen):     med_APE 0.301, W30 0.499")
+    print(f"  Warm (≥1건):       med_APE 0.208, W30 0.592")
 
 
 if __name__ == "__main__":

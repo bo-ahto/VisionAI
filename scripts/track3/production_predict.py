@@ -42,7 +42,8 @@ logger = logging.getLogger(__name__)
 REPO = Path(__file__).resolve().parent.parent.parent
 PROD_DIR = REPO / "data" / "production"
 
-COLD_FEATURES = ["medium_category", "support_category", "has_depth",
+# v1.1 (PR15 B_cm): has_depth → depth_cm 교체
+COLD_FEATURES = ["medium_category", "support_category", "depth_cm",
                  "log_area", "estimated_ho", "orientation",
                  "medium_ho_bucket",
                  "artist_works_log", "aspect_ratio"]
@@ -88,7 +89,7 @@ class Predictor:
         count = self.artist_counts.get(artist, 0) if artist else 0
         out["artist_works_log"] = float(np.log1p(count))
         out["_train_count"] = count
-        out["has_depth"] = int(row.get("depth_cm", 0) > 0)
+        out["depth_cm"] = float(row.get("depth_cm", 0))  # v1.1: 실측 cm 사용 (없으면 0)
         return out
 
     def predict(self, row: dict) -> dict[str, Any]:

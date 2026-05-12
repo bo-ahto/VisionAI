@@ -1,0 +1,230 @@
+{
+  "version": "v1.2",
+  "version_note": "PR16e: 동명이인 수동 검수 적용 (한글명 정정 + entity merge). PR15 B_cm 유지.",
+  "training_data": "data/release_split/track3_train.csv",
+  "n_rows": 34859,
+  "n_artists": 1966,
+  "target": "ln_price_krw_unified",
+  "models": {
+    "cold": {
+      "type": "LAD (Quantile q=0.5)",
+      "features": [
+        "medium_category",
+        "support_category",
+        "depth_cm",
+        "log_area",
+        "estimated_ho",
+        "orientation",
+        "medium_ho_bucket",
+        "artist_works_log",
+        "aspect_ratio"
+      ],
+      "categorical": [
+        "medium_category",
+        "support_category",
+        "orientation",
+        "medium_ho_bucket"
+      ],
+      "artifact": "track3_cold_lad.joblib",
+      "expected_med_ape": 0.3012,
+      "expected_w30": 0.4987,
+      "eval_full": {
+        "n": 3561,
+        "median_ape": 0.3011729981796314,
+        "mape": 0.4348804899981378,
+        "rmse_log": 0.5986475372047985,
+        "within_30pct": 0.4987363100252738,
+        "within_50pct": 0.7304128053917439
+      },
+      "eval_by_source": {
+        "artsy": {
+          "n": 614,
+          "median_ape": 0.3991840585764907,
+          "mape": 0.5430692007035602,
+          "rmse_log": 0.8039084382322498,
+          "within_30pct": 0.3794788273615635,
+          "within_50pct": 0.6042345276872965
+        },
+        "saatchi": {
+          "n": 2023,
+          "median_ape": 0.27123474948309956,
+          "mape": 0.3741781781562119,
+          "rmse_log": 0.504351624385745,
+          "within_30pct": 0.5289174493326743,
+          "within_50pct": 0.7839841819080573
+        },
+        "artue": {
+          "n": 106,
+          "median_ape": 0.5800715599036899,
+          "mape": 0.8717252641212228,
+          "rmse_log": 1.143158787090973,
+          "within_30pct": 0.12264150943396226,
+          "within_50pct": 0.41509433962264153
+        }
+      },
+      "eval_by_medium": {
+        "other": {
+          "n": 406,
+          "median_ape": 0.4071739488854537,
+          "mape": 0.596194485888993,
+          "rmse_log": 0.7773506833229278,
+          "within_30pct": 0.4236453201970443,
+          "within_50pct": 0.5665024630541872
+        },
+        "oil": {
+          "n": 1390,
+          "median_ape": 0.22699329457885437,
+          "mape": 0.3509466996968908,
+          "rmse_log": 0.5233309783620965,
+          "within_30pct": 0.5827338129496403,
+          "within_50pct": 0.7366906474820144
+        },
+        "acrylic": {
+          "n": 1099,
+          "median_ape": 0.3042153732058711,
+          "mape": 0.41856948828234675,
+          "rmse_log": 0.5168207264354152,
+          "within_30pct": 0.4858962693357598,
+          "within_50pct": 0.8116469517743403
+        },
+        "mixed": {
+          "n": 57,
+          "median_ape": 0.4933694651457626,
+          "mape": 0.7462502515398812,
+          "rmse_log": 1.2637975122557832,
+          "within_30pct": 0.3508771929824561,
+          "within_50pct": 0.5087719298245614
+        },
+        "ink": {
+          "n": 259,
+          "median_ape": 0.33803879164805584,
+          "mape": 0.6127732894919788,
+          "rmse_log": 0.5623403782022841,
+          "within_30pct": 0.4671814671814672,
+          "within_50pct": 0.6061776061776062
+        },
+        "pigment": {
+          "n": 92,
+          "median_ape": 0.5240426612605578,
+          "mape": 0.6821043062324919,
+          "rmse_log": 1.1463975623239033,
+          "within_30pct": 0.29347826086956524,
+          "within_50pct": 0.42391304347826086
+        },
+        "pencil": {
+          "n": 187,
+          "median_ape": 0.3509890638304069,
+          "mape": 0.40623721385758166,
+          "rmse_log": 0.42513659884905164,
+          "within_30pct": 0.19786096256684493,
+          "within_50pct": 0.9197860962566845
+        },
+        "watercolor": {
+          "n": 67,
+          "median_ape": 0.12797784868710352,
+          "mape": 0.1997451301218568,
+          "rmse_log": 0.5912506160592347,
+          "within_30pct": 0.8208955223880597,
+          "within_50pct": 0.8656716417910447
+        }
+      }
+    },
+    "warm": {
+      "type": "LightGBM (Tuned)",
+      "features": [
+        "medium_category",
+        "support_category",
+        "depth_cm",
+        "log_area",
+        "estimated_ho",
+        "orientation",
+        "medium_ho_bucket",
+        "artist_works_log",
+        "aspect_ratio",
+        "artist_name_ko"
+      ],
+      "categorical": [
+        "medium_category",
+        "support_category",
+        "orientation",
+        "medium_ho_bucket",
+        "artist_name_ko"
+      ],
+      "artifact": "track3_warm_lgb.txt",
+      "expected_med_ape": 0.2076,
+      "expected_w30": 0.5917,
+      "hyperparams": {
+        "learning_rate": 0.04,
+        "num_leaves": 198,
+        "min_data_in_leaf": 75,
+        "feature_fraction": 0.987,
+        "bagging_fraction": 0.978,
+        "reg_alpha": 0.36,
+        "reg_lambda": 4.75
+      },
+      "eval_full": {
+        "n": 1717,
+        "median_ape": 0.20758387927839195,
+        "mape": 0.49682548021476086,
+        "rmse_log": 0.6297961026554854,
+        "within_30pct": 0.5917297612114153,
+        "within_50pct": 0.7390797903319744
+      },
+      "eval_by_source": {
+        "artsy": {
+          "n": 509,
+          "median_ape": 0.2550218809043855,
+          "mape": 0.6264862197882088,
+          "rmse_log": 0.7269095795799346,
+          "within_30pct": 0.5284872298624754,
+          "within_50pct": 0.6738703339882122
+        },
+        "saatchi": {
+          "n": 551,
+          "median_ape": 0.19551692022884717,
+          "mape": 0.403807501214859,
+          "rmse_log": 0.5529224078727025,
+          "within_30pct": 0.6279491833030852,
+          "within_50pct": 0.7822141560798548
+        },
+        "artue": {
+          "n": 168,
+          "median_ape": 0.225361654109997,
+          "mape": 0.5655762388908402,
+          "rmse_log": 0.7868279514440741,
+          "within_30pct": 0.5654761904761905,
+          "within_50pct": 0.7083333333333334
+        }
+      }
+    }
+  },
+  "routing": {
+    "rule": "train_count >= 1 → Warm; else → Cold",
+    "rare_artist_blend": "1건 작가는 Warm 100% (PR2), 2건도 Warm 100%"
+  },
+  "high_price_caveat": {
+    ">100M_cold": "예측 불가 (med_APE 0.98). 비공개 권장",
+    ">100M_warm": "Warm 2-stage 별도 모델 (med_APE 0.04)"
+  },
+  "source_bias_caveat": {
+    "artsy_markup": "+45.5% vs Saatchi (동일 특성). source feature로 흡수.",
+    "operational_note": "source 정보 입력 필수"
+  },
+  "artist_counts_count": 1966,
+  "artist_counts_path": "track3_artist_counts.json",
+  "feature_engineering": {
+    "ho_bucket": "estimated_ho를 [0-5, 5-20, 20-50, 50+]로 분류",
+    "medium_ho_bucket": "medium × ho_bucket interaction",
+    "aspect_ratio": "log(width / height)",
+    "artist_works_log": "log1p(train fold artist count)",
+    "depth_cm": "실측 깊이 (cm). 없으면 0 (PR15 B_cm: has_depth 대비 2D 부작용 제거)"
+  },
+  "limitations": [
+    "listing-price prediction (시장가치 예측 아님)",
+    "시간 split 없음 (temporal validation 불가)",
+    ">100M Cold 사실상 예측 불가",
+    "Source 정보 없으면 ±20-45% 오차 가능"
+  ],
+  "eval_protocol": "release_split v3 test sets (test_cold 3,561 + test_warm 1,717)",
+  "eval_date": "2026-05-12"
+}
