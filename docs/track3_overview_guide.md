@@ -71,25 +71,27 @@
 - 트리 모델보다 robust 선형 계열이 더 안정적이었음
 - `LightGBM`, `XGBoost`, `CatBoost`, Optuna 튜닝 모두 운영 채택 근거 부족
 - 작가 정보 없이도 작품 구조 변수만으로 baseline은 성립함
-- 남은 과제는 baseline 자체보다 약점 slice 보완임
+- 3D 작품은 3D 피처를 조건부 적용할 때 개선됨
 - 현재 운영 판단
-- `Cold = LAD`
+- `Cold = H32 조건부 fallback`
+- 2D / 일반 작품은 기본 LAD 계열
+- 3D 작품은 3D 피처 포함 LAD 계열
 
 ### Warm
 
 - 선형보다 트리 모델이 확실히 우세했음
 - `LightGBM`가 가장 안정적이었고 `CatBoost`는 열세였음
 - 현재 운영 판단
-- `Warm = tuned LightGBM`
+- `Warm = H66 larger-low-lr LightGBM`
 
-### production 평가
+### 현재 후보 성능
 
 - Cold
-- `med_APE 0.3207`
-- `W30 0.4640`
+- H32 median APE `0.2786`
 - Warm
-- `med_APE 0.2056`
-- `W30 0.5988`
+- H66 mean median APE `0.1051`
+- 가격 범위
+- H70 내부 calibration 기준 Warm coverage `0.821`, Cold coverage `0.855`
 
 ## 6. 현재까지 확인된 핵심 해석
 
@@ -102,10 +104,10 @@
 
 ### 아직 더 봐야 하는 것
 
-- Cold 약점 slice를 제한적으로 보완할 수 있는지
-- 특히 `Cold 2D` 구간을 별도 fallback으로 다룰 가치가 있는지
-- H13~H15처럼 재료 세분화, 크기-재료 조합, 결측 패턴 피처가 약점 slice를 줄이는지
-- 이때 공통 피처는 Cold뿐 아니라 Warm에서도 같이 확인해야 함
+- 작가 이력 피처를 거래일/등록일 기준으로 temporal-safe하게 다시 계산할 수 있는지
+- release split 반복 사용에 따른 의사결정 과적합 가능성을 최종 출시 전 새 holdout 또는 내부 CV로 줄일 수 있는지
+- H70 calibration split 방식을 production 학습 pipeline에 고정할 수 있는지
+- 운영 입력 결측 데이터가 확보될 때 H15/H9 결측 대응을 다시 검증할지
 
 ## 7. 지금 바로 실험을 시작한다면 어떤 순서로 하면 되는가
 
@@ -130,10 +132,11 @@
 
 ## 8. 지금 가장 유력한 다음 실험
 
-- `Cold 2D` 한정 fallback 또는 expert 구조
+- `작가 이력 피처 temporal-safe 재검증`
 - 이유
-- `PR17`, `PR18`, `PR19`에서 전면 모델 교체 근거는 약했지만
-- `Cold 2D`에서는 반복적으로 개선 신호가 있었음
+- 현재 Warm 최적 후보는 작가 가격 통계에 크게 의존함
+- 하지만 현재 release split에는 날짜 컬럼이 없어 예측 시점 이후 정보가 섞이지 않는지 아직 확정할 수 없음
+- 거래일/등록일 컬럼 확보 후 예측 시점 이전 데이터만으로 H10/H17/H66을 다시 확인해야 함
 
 ## 9. 어떤 문서를 언제 보면 되는가
 
@@ -175,15 +178,18 @@
 - 문서 구조 순서도
 - [`docs/track3_document_flowchart.md`](/Users/bo/VisionAI/docs/track3_document_flowchart.md:1)
 - 3
+- 현재 의사결정 요약
+- [`docs/track3_current_decision_summary.md`](/Users/bo/VisionAI/docs/track3_current_decision_summary.md:1)
+- 4
 - 가설 상태표
 - [`docs/track3_hypothesis_table.md`](/Users/bo/VisionAI/docs/track3_hypothesis_table.md:1)
-- 4
+- 5
 - 가설 결과 종합표
 - [`docs/track3_hypothesis_result_summary.md`](/Users/bo/VisionAI/docs/track3_hypothesis_result_summary.md:1)
-- 5
+- 6
 - 계획서
 - [`docs/track3_experiment_plan_v1.md`](/Users/bo/VisionAI/docs/track3_experiment_plan_v1.md:1)
-- 6
+- 7
 - 실험 결과 요약표 또는 개별 기록
 - [`docs/track3_experiment_results_table.md`](/Users/bo/VisionAI/docs/track3_experiment_results_table.md:1)
 - [`docs/track3_experiments/INDEX.md`](/Users/bo/VisionAI/docs/track3_experiments/INDEX.md:1)
@@ -197,4 +203,4 @@
 
 ## 10. 한 줄 정리
 
-- Track 3는 현재 `Cold = LAD`, `Warm = tuned LightGBM`를 기본 운영안으로 두고 있으며, 다음 개선 우선순위는 `Cold 2D` 약점 구간을 제한적으로 보완할 수 있는지 확인하는 것임
+- Track 3는 현재 `Warm = H66 LightGBM`, `Cold = H32 조건부 fallback`을 최우선 후보로 두고 있으며, 운영 확정 전 핵심 과제는 작가 이력 피처의 temporal-safe 재검증과 calibration pipeline 고정임

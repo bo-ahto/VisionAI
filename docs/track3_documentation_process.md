@@ -48,7 +48,18 @@
 - 가설이 새로 생기거나
 - 기존 가설의 해석이 달라질 때 수정
 
-### C. 가설 요약표
+### C. 현재 의사결정 요약
+
+- 문서
+- [`docs/track3_current_decision_summary.md`](/Users/bo/VisionAI/docs/track3_current_decision_summary.md:1)
+- 역할
+- 현재 운영 후보와 남은 리스크를 한 장으로 정리
+- 언제 수정하는가
+- Warm / Cold 최종 후보가 바뀔 때
+- 가격 범위 / 신뢰도 정책이 바뀔 때
+- 운영 전 필수 리스크가 새로 확인되거나 닫힐 때
+
+### D. 가설 요약표
 
 - 문서
 - [`docs/track3_hypothesis_table.md`](/Users/bo/VisionAI/docs/track3_hypothesis_table.md:1)
@@ -57,7 +68,7 @@
 - 언제 수정하는가
 - 가설 상태가 바뀔 때 즉시 수정
 
-### D. 실험 결과 요약표
+### E. 실험 결과 요약표
 
 - 문서
 - [`docs/track3_experiment_results_table.md`](/Users/bo/VisionAI/docs/track3_experiment_results_table.md:1)
@@ -66,7 +77,7 @@
 - 언제 수정하는가
 - 실험 종료 후 바로 수정
 
-### E. 개별 실험 기록
+### F. 개별 실험 기록
 
 - 폴더
 - [`docs/track3_experiments`](/Users/bo/VisionAI/docs/track3_experiments/README.md:1)
@@ -76,7 +87,7 @@
 - 실험 시작 전 초안 작성
 - 실험 종료 후 결과/해석/결론 보완
 
-### F. 재현 요약 문서
+### G. 재현 요약 문서
 
 - 문서
 - [`docs/track3_reproduction_summary_20260513.md`](/Users/bo/VisionAI/docs/track3_reproduction_summary_20260513.md:1)
@@ -86,7 +97,7 @@
 - 한 번에 여러 실험을 재현하거나
 - 한 세션의 종합 결론을 남길 때 작성
 
-### G. 원본 결과 파일
+### H. 원본 결과 파일
 
 - 위치
 - `data/track3_*.json`
@@ -95,7 +106,7 @@
 - 언제 생성하는가
 - 실험 스크립트 실행 시 자동 생성 또는 갱신
 
-### H. HTML 대시보드
+### I. HTML 대시보드
 
 - 문서
 - [`docs/track3_experiment_dashboard.html`](/Users/bo/VisionAI/docs/track3_experiment_dashboard.html:1)
@@ -175,6 +186,8 @@
 - 필요 시 업데이트할 문서
 - [`docs/track3_hypothesis_table.md`](/Users/bo/VisionAI/docs/track3_hypothesis_table.md:1)
 - 가설 상태가 바뀌면 즉시 반영
+- [`docs/track3_current_decision_summary.md`](/Users/bo/VisionAI/docs/track3_current_decision_summary.md:1)
+- 현재 Warm / Cold 후보, 가격 범위 정책, 운영 리스크가 바뀌면 즉시 반영
 
 ### 단계 6. 해석이 바뀌었을 때
 
@@ -216,6 +229,8 @@
 - 실험 종료 당일 바로 업데이트
 - 실험 결과 요약표
 - 실험 종료 직후 바로 업데이트
+- 현재 의사결정 요약
+- 최종 후보나 운영 리스크가 바뀌는 실험 종료 직후 업데이트
 - 가설 요약표
 - 상태가 바뀌는 즉시 업데이트
 - HTML 대시보드
@@ -241,6 +256,7 @@
 - 개별 실험 기록을 업데이트했는가
 - 실험 결과 요약표를 업데이트했는가
 - 인덱스를 업데이트했는가
+- 현재 의사결정 요약을 업데이트해야 하는 실험인가
 - HTML 대시보드를 자동 생성했는가
 - 사용 변수와 Warm / Cold 결과가 문서에서 바로 보이는가
 - 해석과 결론이 분리되어 적혀 있는가

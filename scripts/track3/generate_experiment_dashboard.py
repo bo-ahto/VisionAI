@@ -81,6 +81,7 @@ def render_hypothesis_rows(rows: list[dict[str, str]]) -> str:
             f"<td>{inline_md_to_html(row['가설 ID'])}</td>"
             f"<td>{inline_md_to_html(row.get('세부 목표', ''))}</td>"
             f'<td><span class="status {status_class(status)}">{html.escape(status)}</span></td>'
+            f"<td>{inline_md_to_html(row.get('검증 강도', ''))}</td>"
             f"<td>{inline_md_to_html(row['가설 요약'])}</td>"
             f"<td>{inline_md_to_html(row['관련 실험'])}</td>"
             f"<td>{inline_md_to_html(row['현재 판단'])}</td>"
@@ -423,7 +424,7 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
           </div>
           <div class="table-wrap">
             <table id="hypothesisTable">
-              <thead><tr><th>가설</th><th>세부 목표</th><th>상태</th><th>요약</th><th>관련 실험</th><th>현재 판단</th><th>후속</th></tr></thead>
+              <thead><tr><th>가설</th><th>세부 목표</th><th>상태</th><th>검증 강도</th><th>요약</th><th>관련 실험</th><th>현재 판단</th><th>후속</th></tr></thead>
               <tbody>
 {hypothesis_body}
               </tbody>
@@ -481,6 +482,7 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
         <h2>기준 문서 링크</h2>
         <div class="cards">
           <div class="card"><h3>실험 계획서</h3><p><a href="track3_experiment_plan_v1.md">track3_experiment_plan_v1.md</a></p></div>
+          <div class="card"><h3>현재 의사결정 요약</h3><p><a href="track3_current_decision_summary.md">track3_current_decision_summary.md</a></p></div>
           <div class="card"><h3>가설 리스트</h3><p><a href="track3_hypothesis_list_v1.md">track3_hypothesis_list_v1.md</a></p></div>
           <div class="card"><h3>가설 요약표</h3><p><a href="track3_hypothesis_table.md">track3_hypothesis_table.md</a></p></div>
           <div class="card"><h3>가설 결과 종합</h3><p><a href="track3_hypothesis_result_summary.md">track3_hypothesis_result_summary.md</a></p></div>

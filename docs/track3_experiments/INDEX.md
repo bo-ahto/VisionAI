@@ -14,6 +14,8 @@
 - [`docs/track3_docs_structure.md`](/Users/bo/VisionAI/docs/track3_docs_structure.md:1)
 - 실험 계획서
 - [`docs/track3_experiment_plan_v1.md`](/Users/bo/VisionAI/docs/track3_experiment_plan_v1.md:1)
+- 현재 의사결정 요약
+- [`docs/track3_current_decision_summary.md`](/Users/bo/VisionAI/docs/track3_current_decision_summary.md:1)
 - 가설 리스트
 - [`docs/track3_hypothesis_list_v1.md`](/Users/bo/VisionAI/docs/track3_hypothesis_list_v1.md:1)
 - 가설 요약표
