@@ -954,6 +954,38 @@
 - Cold 2D는 기존 Cold 모델 유지
 - Cold 3D에만 3D 피처 후보를 적용하는 fallback 검증
 
+### H73-H80. Cold 저위험/고위험 구분으로 가격 범위 폭을 줄일 수 있는가
+
+- 관련 실험
+- `H73_H80_cold_risk_segmentation`
+- 사용 모델
+- H32 Cold 조건부 fallback
+- 실험 원칙
+- test residual을 보고 위험 기준을 만들지 않음
+- train 또는 내부 Cold calibration split에서 만든 기준만 사용
+- 내부 calibration 폭을 Cold test에 적용해 coverage와 폭을 확인
+- 기준 결과
+- 전체 Cold: `x2.27`, coverage `0.855`, median APE `0.2786`, p95 APE `1.4860`
+- 주요 후보 결과
+- 표준 3D: `x2.06`, coverage `0.887`, median APE `0.2094`, p95 APE `1.1119`
+- 선택적 서비스 후보: `x2.10`, coverage `0.881`, median APE `0.2222`, p95 APE `1.1711`
+- 크기 low-risk: `x2.14`, coverage `0.875`, median APE `0.2346`, p95 APE `1.3036`
+- 복합 low-risk: `x2.17`, coverage `0.880`, median APE `0.2486`, p95 APE `1.2048`
+- 크기 high-risk: `x2.88`, coverage `0.794`, median APE `0.4448`, p95 APE `1.9132`
+- 복합 high-risk: `x2.83`, coverage `0.811`, median APE `0.4557`, p95 APE `1.8998`
+- 극단 이상치: `x3.00`, coverage `0.865`, median APE `0.4313`, p95 APE `1.6496`
+- 핵심 결과
+- 저위험/고위험 구분은 가능함
+- high-risk 구간은 명확히 더 어렵고 신뢰도 경고 후보로 적합함
+- 그러나 low-risk 후보도 가격 범위가 `x2.06~x2.17`로 여전히 넓음
+- 현재 결론
+- H73, H74, H76, H78, H79, H80은 부분 채택
+- H75, H77은 미채택
+- Cold는 일부 안정 구간을 구분할 수 있지만 정확한 단일 가격 서비스 수준까지 개선되지는 않음
+- 남은 액션
+- Cold 서비스 정책은 `참고 추정가 + 넓은 범위 + 낮은 신뢰도` 중심으로 유지
+- high-risk 조건은 운영 경고 정책에 연결
+
 ## 3. 현재 전체 요약
 
 - Warm 결과 기준 요약
