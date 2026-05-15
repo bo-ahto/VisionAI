@@ -52,6 +52,8 @@
 - `docs/track4_overview_guide.md`
 - 실험 계획서
 - `docs/track4_experiment_plan_v1.md`
+- 클렌징 파이프라인 문서
+- `docs/track4_cleaning_pipeline.md`
 - 가설/실험 기록
 - `docs/track4_experiments/`
 - 실험 스크립트
@@ -78,4 +80,3 @@
 - Track 4 가설 ID 체계를 확정
 - 실험 결과 기록 형식을 확정
 - Track 3 문서와 Track 4 문서를 섞어 수정하지 않도록 확인
-

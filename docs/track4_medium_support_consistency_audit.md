@@ -45,7 +45,7 @@
 ## 6. 제안 매칭 규칙
 
 - 재료 표준 카테고리
-- `oil`, `acrylic`, `watercolor`, `ink`, `gouache`, `charcoal`, `pencil`, `pastel`, `print`, `photo`, `digital`, `ceramic`, `sculpture_material`, `textile`, `collage`, `painting_material`, `mixed_media`, `other`, `unknown`
+- `oil`, `acrylic`, `watercolor`, `ink`, `gouache`, `charcoal`, `pencil`, `pastel`, `print`, `photo`, `digital`, `ceramic`, `sculpture_material`, `textile`, `collage`, `mixed_media`, `other`, `unknown`
 - 지지체 표준 카테고리
 - `canvas`, `linen`, `paper`, `panel`, `glass`, `wood`, `metal`, `fabric`, `unknown`
 - 매칭 방식

@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-15 | T4-E017 | T4-H0 | 완료 | 추가 데이터 수집 후 재실행 가능한 Track 4 클렌징 파이프라인 문서화 및 실행 스크립트 추가 | [기록](2026-05-15_T4-E017_cleaning_pipeline_documentation.md) |
 | 2026-05-15 | T4-E016 | T4-C1~T4-C7 | 완료 | cleaned_v2 전체 94개 컬럼 값 정합성 재점검, 파생값 계산 불일치 0건 확인 | [기록](2026-05-15_T4-E016_column_value_consistency_audit.md) |
 | 2026-05-15 | T4-E015 | T4-H0 | 완료 | Track 4 Warm/Cold split 생성, `artist_name_ko` 포함 train `28,930`건 확보 | [기록](2026-05-15_T4-E015_split_generation.md) |
 | 2026-05-15 | T4-E014 | T4-C1~T4-C7 | 완료 | 감사 결과 반영 `cleaned_v2` 생성, 학습 후보 `34,239`건과 한글 작가명 `54,840`건 확보 | [기록](2026-05-15_T4-E014_cleaned_v2_generation.md) |
