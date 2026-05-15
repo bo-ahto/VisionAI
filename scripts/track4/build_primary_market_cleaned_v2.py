@@ -144,6 +144,7 @@ def write_outputs(df: pd.DataFrame) -> dict:
     df.to_csv(OUT_CSV, index=False, encoding="utf-8-sig")
     feature_cols = [
         "artist_key",
+        "artist_name_ko",
         "artist_name_standardized",
         "title_raw",
         "price_krw",
@@ -179,6 +180,7 @@ def write_outputs(df: pd.DataFrame) -> dict:
         "n_rows": int(len(df)),
         "training_candidates": int(df["is_training_candidate"].sum()),
         "excluded_rows": int((~df["is_training_candidate"]).sum()),
+        "artist_name_ko_rows": int(df["artist_name_ko"].fillna("").astype(str).ne("").sum()),
         "source_counts": {str(k): int(v) for k, v in df["track4_source"].value_counts().items()},
         "training_candidate_source_counts": {str(k): int(v) for k, v in df.loc[df["is_training_candidate"], "track4_source"].value_counts().items()},
         "exclude_reasons": dict(sorted(reasons.items(), key=lambda kv: kv[1], reverse=True)),
@@ -199,6 +201,7 @@ def render_md(summary: dict) -> str:
         f"- 전체 rows: `{summary['n_rows']:,}`",
         f"- 학습 후보 rows: `{summary['training_candidates']:,}`",
         f"- 제외 rows: `{summary['excluded_rows']:,}`",
+        f"- 한글 작가명 rows: `{summary['artist_name_ko_rows']:,}`",
         "",
         "## 1. 출처별 row 수",
         "",

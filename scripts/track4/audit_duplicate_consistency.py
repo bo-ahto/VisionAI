@@ -98,7 +98,7 @@ def load_base_frame() -> pd.DataFrame:
     )
     artist = pd.read_csv(
         ARTIST_AUDIT,
-        usecols=["track4_source", "track4_source_row_index", "artist_name_standardized", "artist_key"],
+        usecols=["track4_source", "track4_source_row_index", "artist_name_standardized", "artist_name_ko", "artist_key"],
         dtype={"track4_source": "string", "artist_name_standardized": "string", "artist_key": "string"},
         keep_default_na=False,
     )
@@ -160,6 +160,7 @@ def make_audit_frame(df: pd.DataFrame) -> pd.DataFrame:
                 "title_raw": ident["title_raw"],
                 "title_key": title_key,
                 "artist_name_standardized": clean(row.get("artist_name_standardized")),
+                "artist_name_ko": clean(row.get("artist_name_ko")),
                 "artist_key": artist_key,
                 "price_krw": row.get("price_krw"),
                 "price_bucket_10k": price_bucket,

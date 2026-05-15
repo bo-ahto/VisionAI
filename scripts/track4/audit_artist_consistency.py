@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,9 @@ import pandas as pd
 
 
 REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))
+from scripts.track3.build_unified_dataset import build_artist_ko_map, lookup_artist_name_ko  # noqa: E402
+
 RAW_COLLECTED = REPO / "data" / "track4_primary_market_raw_collected.csv"
 OUT_CSV = REPO / "data" / "track4_artist_consistency_audit.csv"
 OUT_JSON = REPO / "data" / "track4_artist_consistency_audit_summary.json"
@@ -126,11 +130,14 @@ def source_artist(row: pd.Series) -> dict[str, Any]:
 
 
 def make_audit_frame(df: pd.DataFrame) -> pd.DataFrame:
+    artist_ko_map = build_artist_ko_map(REPO / "data")
     rows: list[dict[str, Any]] = []
     for _, row in df.iterrows():
         artist = source_artist(row)
         name = normalize_name(artist["artist_name_raw"])
         key = artist_key(name)
+        mapped_ko = artist["artist_name_ko_raw"] or lookup_artist_name_ko(name, artist_ko_map) or ""
+        artist_name_ko_source = "raw_ko" if artist["artist_name_ko_raw"] else ("track3_mapping" if mapped_ko else "")
         birth_year = artist["birth_year"]
         status: list[str] = []
 
@@ -169,6 +176,8 @@ def make_audit_frame(df: pd.DataFrame) -> pd.DataFrame:
                 "track4_source_row_index": int(row["track4_source_row_index"]),
                 "artist_name_raw": artist["artist_name_raw"],
                 "artist_name_standardized": name,
+                "artist_name_ko": mapped_ko,
+                "artist_name_ko_source": artist_name_ko_source,
                 "artist_key": key,
                 "artist_slug": artist["artist_slug"],
                 "artist_name_ko_raw": artist["artist_name_ko_raw"],
@@ -236,6 +245,7 @@ def build_summary(audit: pd.DataFrame) -> dict[str, Any]:
             "missing_artist_name": int(group["artist_audit_status"].str.contains("missing_artist_name", regex=False).sum()),
             "birth_year_available": int(group["birth_year"].notna().sum()),
             "nationality_available": int(group["nationality_raw"].ne("").sum()),
+            "artist_name_ko_available": int(group["artist_name_ko"].ne("").sum()),
             "slug_available": int(group["artist_slug"].ne("").sum()),
             "meta_available_avg": float(group["artist_meta_available_count"].mean()),
         }
@@ -262,6 +272,8 @@ def build_summary(audit: pd.DataFrame) -> dict[str, Any]:
         "unique_artist_keys": int(unique_artists),
         "cross_source_artist_keys": int(cross_source_artists),
         "cross_source_artist_rows": int(audit["is_cross_source_artist_key"].sum()),
+        "artist_name_ko_available": int(audit["artist_name_ko"].ne("").sum()),
+        "artist_name_ko_source_counts": {str(k): int(v) for k, v in audit["artist_name_ko_source"].replace("", "missing").value_counts().items()},
         "issue_counts": issue_counts,
         "meta_coverage": meta_coverage,
         "by_source": by_source,
@@ -291,24 +303,35 @@ def render_md(summary: dict[str, Any]) -> str:
         f"- 정상 rows: `{summary['ok_rows']:,}`",
         f"- 이슈 rows: `{summary['issue_rows']:,}`",
         f"- 표준 작가 key 수: `{summary['unique_artist_keys']:,}`",
+        f"- 한글 작가명 매핑 rows: `{summary['artist_name_ko_available']:,}`",
         f"- 여러 출처에 걸친 작가 key 수: `{summary['cross_source_artist_keys']:,}`",
         f"- 여러 출처에 걸친 작가 row 수: `{summary['cross_source_artist_rows']:,}`",
         "",
         "## 1. 출처별 작가 요약",
         "",
-        "| 출처 | rows | 정상 | 이슈 | 작가 key 수 | 이름 결측 | slug 있음 | 출생연도 있음 | 국적 있음 | 메타 평균 개수 |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| 출처 | rows | 정상 | 이슈 | 작가 key 수 | 한글명 있음 | 이름 결측 | slug 있음 | 출생연도 있음 | 국적 있음 | 메타 평균 개수 |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for source, item in summary["by_source"].items():
         lines.append(
             f"| {source} | `{item['rows']:,}` | `{item['ok_rows']:,}` | `{item['issue_rows']:,}` | "
-            f"`{item['unique_artist_keys']:,}` | `{item['missing_artist_name']:,}` | `{item['slug_available']:,}` | "
+            f"`{item['unique_artist_keys']:,}` | `{item['artist_name_ko_available']:,}` | `{item['missing_artist_name']:,}` | `{item['slug_available']:,}` | "
             f"`{item['birth_year_available']:,}` | `{item['nationality_available']:,}` | `{item['meta_available_avg']:.2f}` |"
         )
 
     lines += [
         "",
-        "## 2. 작가 메타데이터 커버리지",
+        "## 2. 한글 작가명 매핑 출처",
+        "",
+        "| 매핑 출처 | rows |",
+        "|---|---:|",
+    ]
+    for source, count in summary["artist_name_ko_source_counts"].items():
+        lines.append(f"| `{source}` | `{count:,}` |")
+
+    lines += [
+        "",
+        "## 3. 작가 메타데이터 커버리지",
         "",
         "| 메타데이터 | 값 있음 | 활용 판단 |",
         "|---|---:|---|",
@@ -327,7 +350,7 @@ def render_md(summary: dict[str, Any]) -> str:
 
     lines += [
         "",
-        "## 3. 이슈 카운트",
+        "## 4. 이슈 카운트",
         "",
         "| 이슈 | 건수 | 해석 |",
         "|---|---:|---|",
@@ -347,26 +370,31 @@ def render_md(summary: dict[str, Any]) -> str:
 
     lines += [
         "",
-        "## 4. 현재 판단",
+        "## 5. 현재 판단",
         "",
         "- Warm/Cold split에는 `artist_name_standardized`와 `artist_key`를 우선 사용함",
+        "- 표시/리포트용 작가명은 `artist_name_ko`를 우선 사용함",
+        "- `artist_name_ko`는 Track 3 한글명 매핑 로직을 재사용해 생성함",
         "- slug는 출처 내부 식별 보조값으로 사용하되, 출처 간 공통 artist id로 바로 쓰지 않음",
         "- 작가 메타데이터는 출처별 커버리지와 생성 방식이 달라 모델 피처로 바로 넣으면 출처 누수 위험이 있음",
         "- 운영에서 다시 만들 수 있는 작가 메타데이터와, 수집 출처에만 있는 메타데이터를 분리해야 함",
         "- `artist_total_works`, `followers`, `for_sale`은 플랫폼 지표이므로 기본 모델 피처가 아니라 후보/비교 실험 대상으로 둠",
         "- 기본 Warm 피처는 원본 메타보다 학습 데이터에서 계산 가능한 `artist_works_log` 같은 이력 기반 피처가 더 안전함",
         "",
-        "## 5. 제안 클렌징 규칙",
+        "## 6. 제안 클렌징 규칙",
         "",
         "- 작가명이 없으면 Warm/Cold split 대상에서 제외하거나 작가 미상 그룹으로 별도 관리",
         "- 작가명은 공백/대소문자/특수문자만 정리한 `artist_name_standardized`를 생성",
+        "- 작가 한글명은 `artist_name_ko`로 별도 생성",
+        "- 원본에 한글명이 있으면 원본 한글명을 우선 사용",
+        "- 원본 한글명이 없으면 Track 3 매핑/음역 로직을 사용",
         "- split용 key는 `artist_key`로 고정하되, 한글/영문 동명이인 병합 위험은 audit flag로 관리",
         "- 출생연도는 1800~2026 범위만 유지하고, 2015년 이후는 수동 검토 후보로 관리",
         "- 국적은 원본 보존 후 표준화 사전이 생기기 전까지 모델 피처로 쓰지 않음",
         "- followers/for_sale/플랫폼 total works는 출처 종속 메타로 분류하고 기본 학습 피처에서 제외",
         "- 작가 DB가 확보되면 별도 `artist_master` 테이블로 관리하고 작품 데이터에는 `artist_master_id`만 연결",
         "",
-        "## 6. 작가 메타데이터 운영 방향",
+        "## 7. 작가 메타데이터 운영 방향",
         "",
         "- 1단계: 작품 raw 데이터에서는 작가명 원본과 표준 key만 안정화",
         "- 2단계: 작가 DB는 별도 테이블로 분리",
@@ -374,7 +402,7 @@ def render_md(summary: dict[str, Any]) -> str:
         "- 4단계: 모델에는 운영 시점에 재현 가능한 메타데이터만 투입",
         "- 5단계: 출처별 플랫폼 지표는 성능 개선 실험용으로만 검토하고 최종 운영 피처는 보류",
         "",
-        "## 7. 다음 단계",
+        "## 8. 다음 단계",
         "",
         "- 위 규칙을 `standardized_v1` 또는 `cleaned_v2` 생성 스크립트에 반영",
         "- 작가명 정합성 이후 재료/지지체 정합성 `T4-C3` 진행",

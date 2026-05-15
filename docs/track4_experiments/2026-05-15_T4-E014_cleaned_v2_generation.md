@@ -26,6 +26,7 @@
 - 전체 rows: `54,842`
 - 학습 후보 rows: `34,239`
 - 제외 rows: `20,603`
+- 한글 작가명 rows: `54,840`
 
 ## 3. 출처별 학습 후보
 
@@ -54,6 +55,8 @@
 
 - source 계열 컬럼은 feature 후보 파일에서 제외
 - gallery_name / gallery_tier는 기본 feature 후보에서 제외
+- `artist_name_ko`는 feature 후보 파일에 포함
+- `artist_name_ko`는 Track 3 한글명 매핑 로직을 재사용
 - source와 gallery 정보는 원본 추적과 품질 감사 용도로만 유지
 - feature 후보 파일에는 운영 재현 가능성이 높은 작품/작가 key 기반 컬럼만 우선 포함
 

@@ -13,6 +13,7 @@
 - 기준:
   - `artist_key` 기준으로 Cold 작가를 train에서 완전히 제외
   - Warm 평가는 train에 남아 있는 작가의 작품 1건을 holdout
+  - `artist_name_ko`는 표시/리포트용 작가명으로 split에 함께 보존
   - source는 split 기준이나 모델 피처로 사용하지 않음
 
 ## 2. 생성 파일
