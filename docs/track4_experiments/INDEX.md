@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-15 | T4-E010 | T4-C3 | 완료 | 재료/지지체 1차 매핑 감사, 재료 정상 후보 `53,646`건 확인 | [기록](2026-05-15_T4-E010_medium_support_consistency_audit.md) |
 | 2026-05-15 | T4-E009 | T4-C4 | 완료 | 작가명 정합성 감사, split 후보 작가 key `3,033`개와 artist master 후보 `120`명 확인 | [기록](2026-05-15_T4-E009_artist_consistency_audit.md) |
 | 2026-05-15 | T4-E008 | T4-C2 | 완료 | raw collected 기준 크기 정합성 감사, 정상 후보 `54,441`건 확인 | [기록](2026-05-15_T4-E008_size_consistency_audit.md) |
 | 2026-05-15 | T4-E007 | T4-C1 | 완료 | raw collected 기준 가격 정합성 감사, 정상 후보 `34,883`건 확인 | [기록](2026-05-15_T4-E007_price_consistency_audit.md) |
