@@ -365,7 +365,7 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
             <li>현재 결론: Warm / Cold 단일 공유 모델보다 분리 운영이 타당</li>
             <li>Warm: H66 <code>larger-low-lr LightGBM</code> 후보를 우선 유지</li>
             <li>Cold: H32 <code>2D 기본 + 3D 전용</code> 조건부 fallback 후보 유지</li>
-            <li>서비스 출력: 단일 가격보다 가격 범위와 신뢰도 경고를 함께 제공</li>
+            <li>서비스 출력: 단일 가격만 제공하는 것은 위험하며, 가격 범위는 아직 “운영 검토 후보”로 관리</li>
             <li>운영 확정 전 필수 보완: temporal-safe 작가 피처, calibration pipeline 고정</li>
           </ul>
           <div class="meta">
@@ -376,12 +376,12 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
           </div>
         </div>
         <div class="panel">
-          <h2>운영 후보 지표</h2>
+          <h2>운영 판단 지표</h2>
           <div class="score-grid">
             <div class="score"><small>Warm 최종 후보</small><strong>0.1051</strong><span>H66, larger-low-lr multi-seed 평균</span></div>
             <div class="score"><small>Cold 최적 후보</small><strong>0.2786</strong><span>H32, 3D 조건부 fallback</span></div>
-            <div class="score"><small>Warm 가격범위 커버리지</small><strong>0.821</strong><span>H70 내부 calibration 기준</span></div>
-            <div class="score"><small>Cold 가격범위 커버리지</small><strong>0.855</strong><span>H70 내부 calibration 기준</span></div>
+            <div class="score"><small>Warm 가격 범위 폭</small><strong>x1.52</strong><span>전체 기준, 저이력은 x1.94 필요</span></div>
+            <div class="score"><small>Cold 가격 범위 폭</small><strong>x2.27</strong><span>전체 기준, 고위험은 x2.88~x3.11 필요</span></div>
           </div>
         </div>
       </section>
@@ -406,6 +406,11 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
           <h3>운영 전 blocker</h3>
           <strong>temporal-safe 미해결</strong>
           <p>작가 가격 통계는 거래 시점 이전 정보만 쓰는 방식으로 재검증해야 운영 확정 가능.</p>
+        </div>
+        <div class="brief amber">
+          <h3>가격 범위 상태</h3>
+          <strong>후보, 확정 아님</strong>
+          <p>H70 coverage는 목표에 근접했지만 범위가 넓다. 서비스 적용 전 문구, UX, 구간별 실패율 기준이 필요.</p>
         </div>
       </section>
 

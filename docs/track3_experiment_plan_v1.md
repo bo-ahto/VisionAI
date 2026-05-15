@@ -498,6 +498,12 @@
 - conformal prediction
 - coverage / interval width calibration
 - 정보량 수준별 신뢰도 등급화
+- 판단 기준
+- coverage가 목표치에 근접해도 바로 서비스 가능으로 보지 않음
+- 가격 범위 폭이 사용자가 이해할 수 있는 수준인지 함께 확인함
+- 특정 구간의 coverage가 낮으면 전체 coverage가 좋아도 신뢰도 경고 후보로 둠
+- 내부 calibration split에서 정한 폭을 test set에서 검증하는 방식으로 관리함
+- test residual을 직접 사용해 가격 범위를 정하면 운영 과적합 위험이 있으므로 금지함
 
 ### 10.5 5단계: 모델 방식 비교
 

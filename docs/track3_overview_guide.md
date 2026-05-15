@@ -91,7 +91,9 @@
 - Warm
 - H66 mean median APE `0.1051`
 - 가격 범위
-- H70 내부 calibration 기준 Warm coverage `0.821`, Cold coverage `0.855`
+- H70 내부 calibration 기준 Warm 전체 범위 `x1.52`, Cold 전체 범위 `x2.27`
+- Warm coverage `0.821`, Cold coverage `0.855`는 목표 80%에 근접하지만 서비스 확정 지표는 아님
+- 가격 범위는 폭과 사용자 해석 가능성을 함께 검토해야 하므로 현재는 운영 검토 후보로 봄
 
 ## 6. 현재까지 확인된 핵심 해석
 
