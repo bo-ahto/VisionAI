@@ -1,0 +1,356 @@
+{
+  "experiment_id": "H68_warm_routing_threshold",
+  "date": "2026-05-14",
+  "reason": "Test whether Warm model routing should require more than one training artwork per artist.",
+  "data": {
+    "train_rows": 34629,
+    "warm_rows": 1685,
+    "train_artists": 1932
+  },
+  "models": {
+    "warm": "H66 larger-low-lr LightGBM, averaged over seeds 11/22/33",
+    "fallback": "Cold base Quantile/LAD model using COLD_BASE_FEATURES, applied to Warm low-count artists"
+  },
+  "warm_per_seed": [
+    {
+      "n": 1685,
+      "median_ape": 0.10265602889728233,
+      "mape": 0.35257848259489,
+      "rmse_log": 0.4899111865786197,
+      "within_30pct": 0.7590504451038576,
+      "within_50pct": 0.8664688427299704,
+      "p90_ape": 0.6140354819717525,
+      "p95_ape": 0.9716753192325827,
+      "seed": 11,
+      "best_iteration": 1415
+    },
+    {
+      "n": 1685,
+      "median_ape": 0.11318262264820488,
+      "mape": 0.3668136427619876,
+      "rmse_log": 0.49604817324217376,
+      "within_30pct": 0.7543026706231454,
+      "within_50pct": 0.8557863501483679,
+      "p90_ape": 0.6394305246824031,
+      "p95_ape": 0.99039904868397,
+      "seed": 22,
+      "best_iteration": 946
+    },
+    {
+      "n": 1685,
+      "median_ape": 0.09949606548591286,
+      "mape": 0.3536233923324104,
+      "rmse_log": 0.4936312713870797,
+      "within_30pct": 0.7489614243323442,
+      "within_50pct": 0.8652818991097923,
+      "p90_ape": 0.6194806381900194,
+      "p95_ape": 0.9416957754724591,
+      "seed": 33,
+      "best_iteration": 1515
+    }
+  ],
+  "references": {
+    "always_warm": {
+      "n": 1685,
+      "median_ape": 0.10242915381273411,
+      "mape": 0.35361060292174024,
+      "rmse_log": 0.4900347615380393,
+      "within_30pct": 0.7596439169139466,
+      "within_50pct": 0.8623145400593472,
+      "p90_ape": 0.6170575157676632,
+      "p95_ape": 0.9653273402121703,
+      "warm_model_rows": 1685,
+      "fallback_rows": 0,
+      "warm_model_ratio": 1.0
+    },
+    "always_cold_fallback_on_warm": {
+      "n": 1685,
+      "median_ape": 0.4982499955041311,
+      "mape": 0.7711892972663515,
+      "rmse_log": 0.8905802680293404,
+      "within_30pct": 0.3068249258160237,
+      "within_50pct": 0.5026706231454006,
+      "p90_ape": 1.5617449050787209,
+      "p95_ape": 2.571563084366379,
+      "warm_model_rows": 0,
+      "fallback_rows": 1685,
+      "warm_model_ratio": 0.0
+    }
+  },
+  "threshold_policies": {
+    "warm_if_count_ge_1": {
+      "n": 1685,
+      "median_ape": 0.10242915381273411,
+      "mape": 0.35361060292174024,
+      "rmse_log": 0.4900347615380393,
+      "within_30pct": 0.7596439169139466,
+      "within_50pct": 0.8623145400593472,
+      "p90_ape": 0.6170575157676632,
+      "p95_ape": 0.9653273402121703,
+      "threshold": 1,
+      "warm_model_rows": 1685,
+      "fallback_rows": 0,
+      "warm_model_ratio": 1.0
+    },
+    "warm_if_count_ge_2": {
+      "n": 1685,
+      "median_ape": 0.11883651258296747,
+      "mape": 0.3121234976138445,
+      "rmse_log": 0.5003561167731857,
+      "within_30pct": 0.7317507418397626,
+      "within_50pct": 0.8373887240356083,
+      "p90_ape": 0.7112730872081,
+      "p95_ape": 1.1285054054735293,
+      "threshold": 2,
+      "warm_model_rows": 1516,
+      "fallback_rows": 169,
+      "warm_model_ratio": 0.8997032640949555
+    },
+    "warm_if_count_ge_3": {
+      "n": 1685,
+      "median_ape": 0.13694181268886174,
+      "mape": 0.3518721293952161,
+      "rmse_log": 0.5629270029446724,
+      "within_30pct": 0.6908011869436201,
+      "within_50pct": 0.8059347181008902,
+      "p90_ape": 0.8374915662188324,
+      "p95_ape": 1.3494989965969826,
+      "threshold": 3,
+      "warm_model_rows": 1350,
+      "fallback_rows": 335,
+      "warm_model_ratio": 0.8011869436201781
+    },
+    "warm_if_count_ge_5": {
+      "n": 1685,
+      "median_ape": 0.18282860966690595,
+      "mape": 0.45784724239808744,
+      "rmse_log": 0.6472566061514862,
+      "within_30pct": 0.629080118694362,
+      "within_50pct": 0.7554896142433234,
+      "p90_ape": 0.9311898130299611,
+      "p95_ape": 1.7265250999547839,
+      "threshold": 5,
+      "warm_model_rows": 1113,
+      "fallback_rows": 572,
+      "warm_model_ratio": 0.6605341246290801
+    },
+    "warm_if_count_ge_10": {
+      "n": 1685,
+      "median_ape": 0.2654733450909383,
+      "mape": 0.5717298168251552,
+      "rmse_log": 0.7287887510780963,
+      "within_30pct": 0.5258160237388724,
+      "within_50pct": 0.6682492581602374,
+      "p90_ape": 1.255540839409819,
+      "p95_ape": 2.106286470197234,
+      "threshold": 10,
+      "warm_model_rows": 756,
+      "fallback_rows": 929,
+      "warm_model_ratio": 0.44866468842729973
+    },
+    "warm_if_count_ge_20": {
+      "n": 1685,
+      "median_ape": 0.37910098332102227,
+      "mape": 0.6603408709936005,
+      "rmse_log": 0.8048836924088043,
+      "within_30pct": 0.4332344213649852,
+      "within_50pct": 0.5893175074183976,
+      "p90_ape": 1.408662374320611,
+      "p95_ape": 2.367866241633509,
+      "threshold": 20,
+      "warm_model_rows": 430,
+      "fallback_rows": 1255,
+      "warm_model_ratio": 0.2551928783382789
+    },
+    "warm_if_count_ge_50": {
+      "n": 1685,
+      "median_ape": 0.47106539096894856,
+      "mape": 0.7378114382673884,
+      "rmse_log": 0.867681312212254,
+      "within_30pct": 0.34658753709198814,
+      "within_50pct": 0.5270029673590505,
+      "p90_ape": 1.5184825902375765,
+      "p95_ape": 2.5304016763486215,
+      "threshold": 50,
+      "warm_model_rows": 158,
+      "fallback_rows": 1527,
+      "warm_model_ratio": 0.09376854599406528
+    }
+  },
+  "slice_metrics": {
+    "warm_h66": {
+      "count_1": {
+        "n": 169,
+        "median_ape": 0.259589974879474,
+        "mape": 1.247764466163576,
+        "rmse_log": 0.936878367247541,
+        "within_30pct": 0.5502958579881657,
+        "within_50pct": 0.6863905325443787,
+        "p90_ape": 1.3000272738515053,
+        "p95_ape": 2.902185219153915,
+        "artist_count_min": 1.0,
+        "artist_count_max": 1.0
+      },
+      "count_2_4": {
+        "n": 403,
+        "median_ape": 0.1319442327912142,
+        "mape": 0.3706678821942718,
+        "rmse_log": 0.5081144935265024,
+        "within_30pct": 0.6774193548387096,
+        "within_50pct": 0.8039702233250621,
+        "p90_ape": 0.769188644053974,
+        "p95_ape": 1.4434789679416182,
+        "artist_count_min": 2.0,
+        "artist_count_max": 4.0
+      },
+      "count_5_9": {
+        "n": 357,
+        "median_ape": 0.1291645806780501,
+        "mape": 0.2767543476059069,
+        "rmse_log": 0.40620636192134,
+        "within_30pct": 0.7675070028011205,
+        "within_50pct": 0.8823529411764706,
+        "p90_ape": 0.5606431792584692,
+        "p95_ape": 0.809889451430026,
+        "artist_count_min": 5.0,
+        "artist_count_max": 9.0
+      },
+      "count_10_19": {
+        "n": 326,
+        "median_ape": 0.08593034462519468,
+        "mape": 0.2033337947712478,
+        "rmse_log": 0.3813184828622199,
+        "within_30pct": 0.8190184049079755,
+        "within_50pct": 0.9141104294478528,
+        "p90_ape": 0.43091060934988823,
+        "p95_ape": 0.8020706129452944,
+        "artist_count_min": 10.0,
+        "artist_count_max": 19.0
+      },
+      "count_20_plus": {
+        "n": 430,
+        "median_ape": 0.06676344624486627,
+        "mape": 0.16394045448014152,
+        "rmse_log": 0.3268349395098293,
+        "within_30pct": 0.8674418604651163,
+        "within_50pct": 0.9302325581395349,
+        "p90_ape": 0.35112664638793517,
+        "p95_ape": 0.5764357005918478,
+        "artist_count_min": 20.0,
+        "artist_count_max": 698.0
+      }
+    },
+    "cold_fallback": {
+      "count_1": {
+        "n": 169,
+        "median_ape": 0.5651476001514252,
+        "mape": 0.8341208422357405,
+        "rmse_log": 0.9897779571896586,
+        "within_30pct": 0.27218934911242604,
+        "within_50pct": 0.4378698224852071,
+        "p90_ape": 1.6104497619940328,
+        "p95_ape": 2.75197781465754,
+        "artist_count_min": 1.0,
+        "artist_count_max": 1.0
+      },
+      "count_2_4": {
+        "n": 403,
+        "median_ape": 0.5611022833660698,
+        "mape": 0.9799594701879426,
+        "rmse_log": 0.9813549444929337,
+        "within_30pct": 0.24813895781637718,
+        "within_50pct": 0.46153846153846156,
+        "p90_ape": 2.0196879378199344,
+        "p95_ape": 2.7761432625268925,
+        "artist_count_min": 2.0,
+        "artist_count_max": 4.0
+      },
+      "count_5_9": {
+        "n": 357,
+        "median_ape": 0.5504689602203955,
+        "mape": 0.8142673389493502,
+        "rmse_log": 0.8333888319024134,
+        "within_30pct": 0.2801120448179272,
+        "within_50pct": 0.47058823529411764,
+        "p90_ape": 1.874905673382647,
+        "p95_ape": 2.6215790462384696,
+        "artist_count_min": 5.0,
+        "artist_count_max": 9.0
+      },
+      "count_10_19": {
+        "n": 326,
+        "median_ape": 0.49742426536610607,
+        "mape": 0.6613387833412787,
+        "rmse_log": 0.8652264467332575,
+        "within_30pct": 0.34049079754601225,
+        "within_50pct": 0.5061349693251533,
+        "p90_ape": 1.407351444946175,
+        "p95_ape": 2.3837165375104004,
+        "artist_count_min": 10.0,
+        "artist_count_max": 19.0
+      },
+      "count_20_plus": {
+        "n": 430,
+        "median_ape": 0.4185235923235142,
+        "mape": 0.5983116132466196,
+        "rmse_log": 0.8222995350783263,
+        "within_30pct": 0.37209302325581395,
+        "within_50pct": 0.5906976744186047,
+        "p90_ape": 1.0135151392223705,
+        "p95_ape": 2.0616818847831633,
+        "artist_count_min": 20.0,
+        "artist_count_max": 698.0
+      }
+    }
+  },
+  "paired_low_count_comparison": {
+    "artist_count_le_1": {
+      "n": 169,
+      "warm_median_ape": 0.259589974879474,
+      "fallback_median_ape": 0.5651476001514252,
+      "fallback_win_rate": 0.31952662721893493,
+      "fallback_better_10pp": 41,
+      "fallback_worse_10pp": 99
+    },
+    "artist_count_le_2": {
+      "n": 335,
+      "warm_median_ape": 0.20375355069031537,
+      "fallback_median_ape": 0.5809705129160689,
+      "fallback_win_rate": 0.2716417910447761,
+      "fallback_better_10pp": 74,
+      "fallback_worse_10pp": 211
+    },
+    "artist_count_le_3": {
+      "n": 456,
+      "warm_median_ape": 0.15676971022591432,
+      "fallback_median_ape": 0.5688794227928233,
+      "fallback_win_rate": 0.24780701754385964,
+      "fallback_better_10pp": 88,
+      "fallback_worse_10pp": 306
+    },
+    "artist_count_le_5": {
+      "n": 660,
+      "warm_median_ape": 0.14799637903267399,
+      "fallback_median_ape": 0.5504575988678471,
+      "fallback_win_rate": 0.24696969696969698,
+      "fallback_better_10pp": 117,
+      "fallback_worse_10pp": 445
+    },
+    "artist_count_le_10": {
+      "n": 991,
+      "warm_median_ape": 0.14190658257361227,
+      "fallback_median_ape": 0.5549722167415062,
+      "fallback_win_rate": 0.23208879919273462,
+      "fallback_better_10pp": 156,
+      "fallback_worse_10pp": 677
+    }
+  },
+  "judgement": {
+    "best_threshold_policy": "warm_if_count_ge_1",
+    "best_threshold_median_ape": 0.10242915381273411,
+    "always_warm_median_ape": 0.10242915381273411,
+    "delta_best_vs_always_warm": 0.0,
+    "adopt_threshold_routing": false,
+    "note": "If threshold routing does not improve median APE meaningfully, keep artist_count>=1 as Warm and expose low-count confidence warnings instead."
+  }
+}

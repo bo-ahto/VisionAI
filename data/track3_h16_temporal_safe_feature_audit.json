@@ -1,0 +1,83 @@
+{
+  "experiment_id": "H16_temporal_safe_feature_audit",
+  "date_candidates": [
+    "sale_date",
+    "sold_date",
+    "transaction_date",
+    "auction_date",
+    "created_at",
+    "registered_at",
+    "listed_at",
+    "year",
+    "creation_year"
+  ],
+  "required_columns": [
+    "artist_name_ko",
+    "ln_price_krw_unified",
+    "price_krw_unified"
+  ],
+  "files": {
+    "track3_train.csv": {
+      "columns": [
+        "artist_name_ko",
+        "medium_category",
+        "support_category",
+        "has_depth",
+        "depth_cm",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "estimated_ho",
+        "orientation",
+        "price_krw_unified",
+        "ln_price_krw_unified"
+      ],
+      "date_columns_found": [],
+      "missing_required_columns": [],
+      "can_order_artist_history_by_time": false
+    },
+    "track3_test_warm.csv": {
+      "columns": [
+        "artist_name_ko",
+        "medium_category",
+        "support_category",
+        "has_depth",
+        "depth_cm",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "estimated_ho",
+        "orientation",
+        "price_krw_unified",
+        "ln_price_krw_unified"
+      ],
+      "date_columns_found": [],
+      "missing_required_columns": [],
+      "can_order_artist_history_by_time": false
+    },
+    "track3_test_cold.csv": {
+      "columns": [
+        "artist_name_ko",
+        "medium_category",
+        "support_category",
+        "has_depth",
+        "depth_cm",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "estimated_ho",
+        "orientation",
+        "price_krw_unified",
+        "ln_price_krw_unified"
+      ],
+      "date_columns_found": [],
+      "missing_required_columns": [],
+      "can_order_artist_history_by_time": false
+    }
+  },
+  "judgement": {
+    "can_run_temporal_safe_revalidation": false,
+    "reason": "release split has no transaction/listing date column for ordering artist history",
+    "next_requirement": "add sale_date, transaction_date, auction_date, or another reliable prediction-time column"
+  }
+}

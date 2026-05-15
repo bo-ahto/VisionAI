@@ -1,0 +1,1113 @@
+# Track 3 가설 결과 종합표
+
+- 목적: `H1 ~ H15` 각 가설에 대해 `어떤 실험이 연결되는지`, `무슨 결과가 나왔는지`, `현재 결론이 무엇인지`를 한 번에 보기 위한 문서
+- 기록 유형:
+- 가설 기준 종합 요약
+- 역할:
+- 이 문서는 `가설 설명 문서`와 `실험 결과 요약표` 사이의 연결 문서임
+- 가설별로 관련 실험과 현재 결론을 묶어서 보여줌
+- 관련 문서:
+- 가설 설명 문서
+- [`docs/track3_hypothesis_list_v1.md`](/Users/bo/VisionAI/docs/track3_hypothesis_list_v1.md:1)
+- 가설 요약표
+- [`docs/track3_hypothesis_table.md`](/Users/bo/VisionAI/docs/track3_hypothesis_table.md:1)
+- 실험 결과 요약표
+- [`docs/track3_experiment_results_table.md`](/Users/bo/VisionAI/docs/track3_experiment_results_table.md:1)
+- 계획서 ↔ 가설 ↔ 실험 매핑표
+- [`docs/track3_plan_hypothesis_experiment_map.md`](/Users/bo/VisionAI/docs/track3_plan_hypothesis_experiment_map.md:1)
+
+## 1. 보는 방법
+
+- `관련 실험`
+- 이 가설을 직접 또는 간접으로 검증한 실행 실험
+- `사용 변수`
+- 해당 가설 검증에서 핵심이 된 변수 축
+- `Warm / Cold 결과 요약`
+- 핵심 지표 또는 방향성
+- `핵심 결과`
+- 현재 결론을 만드는 데 가장 중요했던 수치 또는 비교 결과
+- `현재 결론`
+- 지금 시점에서 이 가설을 어떻게 해석하는지
+- `남은 액션`
+- 아직 더 확인할 가치가 있는 후속 실험
+
+## 2. 가설별 결과
+
+### H1. 크기 정보는 대표 표현으로 정리하는 것이 더 안정적일 것이다
+
+- 관련 실험
+- `baseline`
+- `PR20`
+- `PR21`
+- `H1_size_representation_confirm`
+- 상세 기록
+- [`2026-05-13_reproduction_log.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_reproduction_log.md:1)
+- [`2026-05-13_pr20_pr29_confirmatory_suite.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_pr20_pr29_confirmatory_suite.md:1)
+- [`2026-05-13_h1_size_representation_confirm.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_h1_size_representation_confirm.md:1)
+- 사용 변수
+- `width_cm`
+- `height_cm`
+- `log_area`
+- `estimated_ho`
+- Warm 결과 요약
+- `V0_all 0.2055`
+- `V1_log_ho 0.2277`
+- Cold 결과 요약
+- `V0_all 0.3237`
+- `V1_log_ho 0.3217`
+- 핵심 결과
+- Cold confirm
+- `V0_all 0.3237`
+- `V1_log_ho 0.3217`
+- Warm confirm
+- `V0_all 0.2055`
+- `V1_log_ho 0.2277`
+- 현재 결론
+- 검증 완료
+- Cold에서는 대표 표현이 거의 비슷했지만 전면 채택할 만큼 확실한 우위는 아님
+- Warm confirm에서 `0.2055 -> 0.2277`로 악화됨
+- 따라서 대표 표현 전면 단순화는 기각하고 `V0_all`을 유지함
+- 남은 액션
+- 없음
+- 신규 크기 피처를 만들기 전까지 H1은 종결
+
+### H2. 작가 정보 없이도 작품 구조 정보만으로 Cold 예측이 가능할 것이다
+
+- 관련 실험
+- `baseline`
+- `train_linear_cold`
+- `train_tree_cold`
+- `PR1`
+- `PR4`
+- `PR15`
+- `H2_H3_H4_feature_foundation_confirm`
+- 상세 기록
+- [`2026-05-12_pr2_pr5_foundation_checks.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-12_pr2_pr5_foundation_checks.md:1)
+- [`2026-05-12_pr8_pr15_exploratory_followups.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-12_pr8_pr15_exploratory_followups.md:1)
+- [`2026-05-13_reproduction_log.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_reproduction_log.md:1)
+- [`2026-05-13_h2_h3_h4_feature_foundation_confirm.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_h2_h3_h4_feature_foundation_confirm.md:1)
+- 사용 변수
+- `medium_category`
+- `support_category`
+- `depth_cm`
+- `width_cm`
+- `height_cm`
+- `log_area`
+- `estimated_ho`
+- `orientation`
+- Warm 결과 요약
+- 해당 가설의 핵심 판단 대상 아님
+- Cold 결과 요약
+- `Quantile_q05 0.429`
+- `LightGBM 0.473`
+- `Cold production 0.3207`
+- 핵심 결과
+- Phase 1 Cold 선형 최고
+- `Quantile_q05 med_APE 0.429`
+- Phase 2 Cold 비선형 최고
+- `LightGBM 0.473`
+- PR4 multi-seed Cold LAD
+- `median_ape_mean 0.4309`
+- `median_ape_std 0.0281`
+- 현재 결론
+- 검증 완료
+- 가능함
+- 작가 정보 없이도 구조 정보 기반 Cold baseline은 성립함
+- 그리고 현재까지는 `robust 선형 계열`이 가장 안정적임
+- 남은 액션
+- 없음
+- Cold baseline 자체는 종결함
+- 약점 slice 제한 보완은 H7/H8/H13/H14/H15로 이관함
+
+### H3. Warm에서는 작가 정보를 포함할 때 성능이 유의미하게 좋아질 것이다
+
+- 관련 실험
+- `train_linear_warm`
+- `train_tree_warm`
+- `PR7`
+- `H3_artist_feature_confirm`
+- `H2_H3_H4_feature_foundation_confirm`
+- 상세 기록
+- [`2026-05-13_reproduction_log.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_reproduction_log.md:1)
+- [`2026-05-13_h2_h3_h4_feature_foundation_confirm.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_h2_h3_h4_feature_foundation_confirm.md:1)
+- 사용 변수
+- 작품 기본 변수
+- `artist_name_ko`
+- `artist_works_log`
+- Warm 결과 요약
+- `baseline 0.115`
+- `popularity 0.103`
+- `all 0.104`
+- Cold 결과 요약
+- 해당 가설의 핵심 판단 대상 아님
+- 핵심 결과
+- Warm 선형 최고
+- `Quantile_q05 0.314`
+- Warm 비선형 최고
+- `LightGBM 0.119`
+- PR7 Warm
+- `baseline 0.115`
+- `popularity 0.103`
+- `all 0.104`
+- H3 release confirm
+- `no_artist 0.4105`
+- `artist_name 0.2510`
+- `artist_works 0.3133`
+- `artist_both 0.2347`
+- 현재 결론
+- 검증 완료
+- 작가 정보 포함이 Warm에서 유의미한 개선을 만든다는 근거가 충분함
+- 특히 `artist_works_log` 계열은 유지 가치가 높음
+- 남은 액션
+- 없음
+- 작가 정보 필요성은 종결함
+- 작가 DB 기반 추가 확장은 H10에서 별도 검증함
+
+### H4. 운영 가능한 파생 피처가 추가 성능 개선을 줄 것이다
+
+- 관련 실험
+- `PR7`
+- `PR8`
+- `PR9`
+- `PR22`
+- `PR23`
+- `H2_H3_H4_feature_foundation_confirm`
+- 상세 기록
+- [`2026-05-12_pr8_pr15_exploratory_followups.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-12_pr8_pr15_exploratory_followups.md:1)
+- [`2026-05-13_reproduction_log.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_reproduction_log.md:1)
+- [`2026-05-13_pr20_pr29_confirmatory_suite.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_pr20_pr29_confirmatory_suite.md:1)
+- [`2026-05-13_h2_h3_h4_feature_foundation_confirm.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_h2_h3_h4_feature_foundation_confirm.md:1)
+- 사용 변수
+- `aspect_ratio`
+- `medium_ho_bucket`
+- `medium_support_combo`
+- `artist_works_log`
+- Warm 결과 요약
+- `popularity 0.103`
+- combo confirm은 운영 채택 실패
+- Cold 결과 요약
+- `source` 포함 시 일부 개선
+- 운영 가능 피처만 남기면 뚜렷한 승자 약함
+- 핵심 결과
+- PR7 Cold
+- `baseline 0.429`
+- `all 0.391`
+- 다만 `source` 포함
+- PR7 Warm
+- `baseline 0.115`
+- `popularity 0.103`
+- PR22/23 confirm
+- `medium_support_combo` 등 신규 파생 피처는 운영 채택 실패
+- PR22
+- release split confirm 후보 없음
+- PR23
+- `V0_base` 유지
+- 현재 결론
+- 검증 완료
+- 일부 신호는 있었지만 운영 제약을 고려하면 강한 승자는 제한적임
+- Warm에서는 `artist_works_log`가 상대적으로 유효
+- Cold에서는 `source` 제외 시 뚜렷한 승자가 약함
+- 남은 액션
+- H13/H14/H15로 이관
+- 새 파생 피처를 넓게 늘리지 않고 `약점 slice 설명 가능 피처` 중심으로 좁혀서 봄
+
+### H5. Warm에서는 비선형 트리 모델이 선형보다 우세할 것이다
+
+- 관련 실험
+- `train_linear_warm`
+- `train_tree_warm`
+- `PR24`
+- `PR1`
+- 상세 기록
+- [`2026-05-13_reproduction_log.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_reproduction_log.md:1)
+- [`2026-05-13_pr20_pr29_confirmatory_suite.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_pr20_pr29_confirmatory_suite.md:1)
+- 사용 변수
+- 작품 기본 변수 + Warm용 작가 변수
+- Warm 결과 요약
+- 선형 최고 `0.314`
+- LGB `0.119`
+- tuned LGB `0.116`
+- CatBoost `0.2679 ± 0.0060`
+- Cold 결과 요약
+- 해당 가설의 핵심 판단 대상 아님
+- 핵심 결과
+- Warm 선형 최고
+- `0.314`
+- Warm LGB
+- `0.119`
+- Warm tuned LGB
+- `0.116`
+- PR24
+- Warm LGB `0.2012 ± 0.0056`
+- Warm CatBoost `0.2679 ± 0.0060`
+- 현재 결론
+- 검증 완료
+- Warm에서는 `tuned LightGBM` 우세가 반복적으로 확인됨
+- 남은 액션
+- 낮음
+- 구조 변경보다 운영 안정성과 피처 품질 개선이 우선
+
+### H6. Cold에서는 robust 선형 계열이 더 안정적일 것이다
+
+- 관련 실험
+- `train_linear_cold`
+- `train_tree_cold`
+- `PR1`
+- `PR4`
+- `PR9`
+- 상세 기록
+- [`2026-05-12_pr2_pr5_foundation_checks.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-12_pr2_pr5_foundation_checks.md:1)
+- [`2026-05-12_pr8_pr15_exploratory_followups.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-12_pr8_pr15_exploratory_followups.md:1)
+- [`2026-05-13_reproduction_log.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_reproduction_log.md:1)
+- 사용 변수
+- 작가 비의존 작품 구조 변수
+- Warm 결과 요약
+- 해당 가설의 핵심 판단 대상 아님
+- Cold 결과 요약
+- 선형 최고 `0.429`
+- 비선형 최고 `0.473`
+- tuned LGB `0.488`
+- 핵심 결과
+- Cold 선형 최고
+- `Quantile_q05 0.429`
+- Cold 비선형 최고
+- `LightGBM 0.473`
+- PR1 tuned LGB
+- `0.488`
+- PR9 quantile/reweight 계열도 baseline LAD를 넘지 못함
+- 현재 결론
+- 검증 완료
+- Cold에서는 복잡한 비선형보다 `robust 선형 계열`이 더 안정적임
+- 남은 액션
+- 낮음
+- 전체 구조 교체 우선순위는 낮음
+
+### H7. 2D / 3D 분기는 특정 약점 구간 보완용으로 더 적합할 것이다
+
+- 관련 실험
+- `PR11`
+- `PR15`
+- `PR17`
+- `PR18`
+- `PR19`
+- 상세 기록
+- [`2026-05-12_pr8_pr15_exploratory_followups.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-12_pr8_pr15_exploratory_followups.md:1)
+- [`2026-05-13_pr17_pr18_pr19_depth_branch.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_pr17_pr18_pr19_depth_branch.md:1)
+- 사용 변수
+- `depth_cm`
+- `has_depth`
+- `artist_works_log_branch`
+- Warm 결과 요약
+- 전반 개선 근거 약함
+- `V2_cm_only 0.2071 ± 0.0089`
+- Cold 결과 요약
+- `Cold 2D 0.5883 → 0.5586`
+- `Cold 3D 0.4199 → 0.4260`
+- 핵심 결과
+- PR15
+- `C_both`가 Cold `0.2925`, Warm `0.2056`
+- depth 정보 유지 가치 확인
+- PR17
+- `V0 0.4448`
+- `V2/V3 0.4141`
+- Cold 전체 개선 신호 있으나 Warm 2D 악화
+- PR18
+- `V0_cm_only 0.4770 ± 0.1038`
+- `V2_cm_only 0.4636 ± 0.0904`
+- `Cold 2D 0.5883 → 0.5586`
+- `Cold 3D 0.4199 → 0.4260`
+- PR19
+- `depth_cm` 전역 제거 기각
+- H8 release confirm
+- Cold 2D fallback 채택 실패
+- 현재 결론
+- 검증 완료
+- `Cold 2D` mini 개선 신호는 있었음
+- 하지만 release split의 Cold 2D 한정 fallback에서 악화되어 운영 채택하지 않음
+- 전면 분기와 한정 fallback 모두 현재 기준 채택 근거 부족
+- 남은 액션
+- 없음
+- 다음 약점 보완은 H13~H15 공통 피처 실험으로 이관
+
+### H8. Cold 2D 한정 fallback이 전체 모델 교체보다 효율적일 것이다
+
+- 관련 실험
+- `H8_cold_2d_fallback_confirm`
+- 간접 근거
+- `PR17`
+- `PR18`
+- `PR19`
+- 상세 기록
+- [`2026-05-13_pr17_pr18_pr19_depth_branch.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_pr17_pr18_pr19_depth_branch.md:1)
+- [`2026-05-13_h8_cold_2d_fallback_confirm.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_h8_cold_2d_fallback_confirm.md:1)
+- 사용 변수
+- `depth_cm`
+- `has_depth`
+- `2D / 3D` branch indicator
+- `medium_ho_bucket`
+- `artist_works_log`
+- `aspect_ratio`
+- Warm 결과 요약
+- 해당 없음
+- H8은 Cold 전용 라우팅 구조 실험
+- Cold 결과 요약
+- 전체 Cold
+- `baseline 0.3207`
+- `fallback 0.3267`
+- Cold 2D
+- `baseline 0.3871`
+- `fallback 0.4735`
+- Cold 3D
+- `baseline 0.3103`
+- `fallback 0.3103`
+- 핵심 결과
+- Cold 2D 전용 fallback이 오히려 2D 대표 오차를 크게 악화시킴
+- 전체 Cold도 악화됨
+- 3D는 baseline 유지라 변화 없음
+- 현재 결론
+- 검증 완료
+- 중단
+- Cold 2D 한정 fallback은 채택하지 않음
+- 남은 액션
+- 없음
+- H13~H15로 약점 보완 방향 이동
+
+### H9. 일부 정보를 의도적으로 가리고 학습한 모델이 결측 상황에서 더 잘 버틸 것이다
+
+- 관련 실험
+- `H9_masking_robustness_confirm`
+- 사용 변수
+- 재료
+- 사이즈
+- 결측 여부 피처
+- `missing_medium`
+- `missing_support`
+- `missing_size`
+- `missing_count`
+- `info_completeness_score`
+- Warm 결과 요약
+- clean: `0.2056 -> 0.2837`
+- material_missing: `0.3230 -> 0.3386`
+- size_missing: `0.6887 -> 0.6332`
+- material_size_missing: `0.6773 -> 0.6609`
+- Cold 결과 요약
+- clean: `0.3207 -> 0.3352`
+- material_missing: `0.3794 -> 0.4014`
+- size_missing: `0.7476 -> 0.7396`
+- material_size_missing: `0.7543 -> 0.7493`
+- 핵심 결과
+- 크기 결측 상황에서는 일부 개선
+- clean 성능과 재료 결측 성능은 악화
+- 기본 모델 학습 방식으로 채택하기에는 손실이 큼
+- 현재 결론
+- 검증 완료
+- 중단
+- 남은 액션
+- 전체 학습에 마스킹을 섞는 방식은 중단
+- 결측 대응은 별도 fallback 또는 입력 품질 경고 방식으로 검토
+
+### H10. 작가명 자체보다 거래 이력 기반 구조화 피처가 Warm에서 더 안정적일 것이다
+
+- 관련 실험
+- `H10_artist_history_feature_confirm`
+- 사용 변수
+- `artist_name_ko`
+- `artist_works_log`
+- `artist_ln_price_median`
+- `artist_ln_price_mean`
+- `artist_ln_price_iqr`
+- Warm 결과 요약
+- `artist_name_ko` 단독: `0.2289`
+- 작가 이력 피처만 사용: `0.1257`
+- `artist_name_ko + 작가 이력 피처`: `0.1204`
+- Cold 결과 요약
+- 해당 가설의 핵심 판단 대상 아님
+- 핵심 결과
+- 작가 이력 피처가 작가명 단독보다 Warm 성능을 크게 개선함
+- 작가명과 작가 이력을 함께 쓰는 방식이 가장 좋음
+- 현재 결과는 train split 기준 이력으로 계산했으며, 거래일 기준 temporal-safe 검증은 아직 아님
+- 현재 결론
+- 검증 완료
+- 채택
+- 남은 액션
+- 운영 반영 전 거래일 이전 이력만 사용하는 방식으로 재계산 필요
+- H12 residual 구조와 연결해 추가 검증
+
+### H11. 정보량에 따라 가격 범위와 신뢰도를 함께 주는 방식이 더 실용적일 것이다
+
+- 관련 실험
+- `H11_prediction_interval_confirm`
+- `PR3` 간접 참고
+- 사용 변수
+- 예측값
+- 예측 구간
+- coverage
+- interval width
+- 정보량 수준
+- Warm 결과 요약
+- 80% 구간 coverage: `0.701`
+- 90% 구간 coverage: `0.810`
+- 구간 폭 중앙값: `0.554 / 0.928`
+- Cold 결과 요약
+- 80% 구간 coverage: `0.855`
+- 90% 구간 coverage: `0.922`
+- 구간 폭 중앙값: `2.179 / 3.486`
+- 핵심 결과
+- Warm은 목표 coverage보다 실제 coverage가 낮음
+- Cold는 coverage는 충분하지만 구간 폭이 큼
+- point prediction 대체안이 아니라 보조 출력 후보로 보는 것이 맞음
+- 현재 결론
+- 검증 완료
+- 보류
+- 남은 액션
+- Warm / Cold별 별도 calibration 보완 필요
+- 가격대별 또는 작가 이력 정보량별 calibration 검토
+
+### H12. 작가 기본 가격대와 작품별 편차를 분리한 2단계 구조가 일부 Warm에서 더 설명력 있을 것이다
+
+- 관련 실험
+- `H12_artist_residual_confirm`
+- 사용 변수
+- `artist_ln_price_median`
+- 작품 구조 변수
+- 작가 이력 피처
+- 작품별 residual target
+- Warm 결과 요약
+- 작가 중앙 가격만 사용: `0.3660`
+- 직접 작가 이력 모델: `0.1204`
+- 작가 기준가격 + 잔차 모델: `0.1228`
+- Cold 결과 요약
+- 해당 가설의 핵심 판단 대상 아님
+- 핵심 결과
+- 잔차 구조는 직접 모델과 거의 비슷한 성능을 냄
+- 직접 모델을 이기지는 못함
+- 설명 가능성은 높지만 최종 성능 기준 1순위는 아님
+- 현재 결론
+- 검증 완료
+- 보류
+- 남은 액션
+- 설명용 보조 구조로 유지 검토
+- H10과 함께 temporal-safe 작가 이력 기준으로 재검증
+
+### H13. 재료를 더 세분화한 피처가 Cold 정확도를 개선할 것이다
+
+- 관련 실험
+- `H13_material_granularity_confirm`
+- 상위 연결 가설
+- H2
+- H2에서 확인된 Cold baseline의 약점 slice를 보완하기 위한 후속 가설
+- 상세 기록
+- [`2026-05-13_h13_material_granularity_confirm.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_h13_material_granularity_confirm.md:1)
+- 사용 변수
+- `medium_category`
+- `is_oil`
+- `is_acrylic`
+- `is_mixed_media`
+- `is_print_like`
+- `is_water_based`
+- `is_drawing`
+- `is_pigment`
+- `is_other_medium`
+- `medium_rarity_bucket`
+- Warm 결과 요약
+- `V0_base 0.2056`
+- `V1_flags 0.2286`
+- `V2_rarity 0.2170`
+- `V3_flags_rarity 0.2128`
+- Cold 결과 요약
+- `V0_base 0.3207`
+- `V1_flags 0.3207`
+- `V2_rarity 0.3207`
+- `V3_flags_rarity 0.3207`
+- 핵심 결과
+- Cold 개선 없음
+- Warm은 모든 재료 세분화 variant가 baseline보다 악화
+- 현재 결론
+- 검증 완료
+- 중단
+- 현재 방식의 재료 flag와 희소도 bucket은 채택하지 않음
+- 남은 액션
+- 없음
+- 재료 정보는 기존 `medium_category`, `medium_ho_bucket` 유지
+
+### H14. 크기와 재료의 조합 효과가 단독 피처보다 가격을 더 잘 설명할 것이다
+
+- 관련 실험
+- `H14_medium_size_combo_confirm`
+- 상위 연결 가설
+- H2
+- H2에서 확인된 Cold baseline의 약점 slice를 보완하기 위한 후속 가설
+- 다만 조합 피처는 Warm에도 들어갈 수 있으므로 Warm / Cold 공통 평가 대상
+- 상세 기록
+- [`2026-05-13_h14_medium_size_combo_confirm.md`](/Users/bo/VisionAI/docs/track3_experiments/2026-05-13_h14_medium_size_combo_confirm.md:1)
+- 간접 근거
+- `medium_ho_bucket` 계열 PR7 / PR22 / PR23
+- 사용 변수
+- `medium_category`
+- `log_area`
+- `estimated_ho`
+- `ho_bucket`
+- `medium_size_bucket`
+- `is_large_oil`
+- `is_small_print`
+- `is_large_2d`
+- Warm 결과 요약
+- `V0_base 0.2056`
+- `V1_combo_cat 0.2056`
+- `V2_combo_flags 0.2021`
+- `V3_combo_all 0.2021`
+- Cold 결과 요약
+- `V0_base 0.3207`
+- `V1_combo_cat 0.3207`
+- `V2_combo_flags 0.3223`
+- `V3_combo_all 0.3223`
+- 핵심 결과
+- Warm은 조합 flag에서 소폭 개선
+- Cold는 개선 없음 또는 악화
+- 기존 `medium_ho_bucket` 대비 추가 가치 부족
+- 현재 결론
+- 검증 완료
+- 중단
+- 현재 방식의 크기-재료 조합 피처는 채택하지 않음
+- 남은 액션
+- 없음
+- 기존 `medium_ho_bucket` 유지
+
+### H15. 결측 패턴 자체가 신뢰도와 가격 오차를 설명할 것이다
+
+- 관련 실험
+- `H15_missing_pattern_audit`
+- 상위 연결 가설
+- H2
+- Cold 약점 보완과 연결되지만, 정보량 피처는 Warm / Cold 모두의 신뢰도 판단에 영향을 줄 수 있음
+- 사용 변수
+- `artist_name_ko`
+- `medium_category`
+- `support_category`
+- `depth_cm`
+- `width_cm`
+- `height_cm`
+- `log_area`
+- `estimated_ho`
+- `orientation`
+- Warm 결과 요약
+- 핵심 입력 변수 결측 작품 수 `0`
+- 결측 패턴 피처 실험 불가
+- Cold 결과 요약
+- 핵심 입력 변수 결측 작품 수 `0`
+- 결측 패턴 피처 실험 불가
+- 핵심 결과
+- train / warm / cold 모두 핵심 입력 변수 결측이 없음
+- 결측 피처를 만들어도 모든 값이 같아 모델 학습 신호가 없음
+- 현재 결론
+- 보류
+- H9와 연결되지만, H15는 입력 정보량 자체를 피처로 쓰는 별도 가설임
+- 남은 액션
+- 운영 입력에서 실제 결측 사례가 확보되면 재검증
+- H9 masking 실험은 완료됐고, 전체 마스킹 학습 방식은 채택하지 않음
+
+### H16. 작가 이력 피처는 거래일 기준으로 다시 계산할 수 있어야 운영 피처로 채택 가능하다
+
+- 관련 실험
+- `H16_temporal_safe_feature_audit`
+- 사용 변수
+- 날짜 후보 컬럼
+- `artist_name_ko`
+- `ln_price_krw_unified`
+- `price_krw_unified`
+- Warm 결과 요약
+- 날짜 후보 컬럼 없음
+- temporal-safe 재검증 불가
+- Cold 결과 요약
+- 해당 가설의 핵심 판단 대상 아님
+- 핵심 결과
+- `track3_train.csv`, `track3_test_warm.csv`, `track3_test_cold.csv` 모두 날짜 후보 컬럼 없음
+- 현재 결론
+- 보류
+- 남은 액션
+- 거래일, 판매일, 경매일, 등록일 중 하나를 원천 데이터에 추가해야 함
+
+### H17. 작가 이력 피처의 Warm 개선 효과는 반복 학습에서도 안정적으로 유지될 것이다
+
+- 관련 실험
+- `H17_artist_history_stability_confirm`
+- 사용 변수
+- `artist_name_ko`
+- `artist_works_log`
+- `artist_ln_price_median`
+- `artist_ln_price_mean`
+- `artist_ln_price_iqr`
+- Warm 결과 요약
+- `artist_name_ko` 단독 평균: `0.2363`
+- 작가 이력만 평균: `0.1192`
+- `artist_name_ko + 작가 이력` 평균: `0.1147`
+- Cold 결과 요약
+- 해당 가설의 핵심 판단 대상 아님
+- 핵심 결과
+- 작가 이력 피처의 개선 효과가 3개 seed에서 안정적으로 유지됨
+- 현재 결론
+- 검증 완료
+- 채택
+- 남은 액션
+- H16 조건 해결 후 temporal-safe 방식으로 재검증
+
+### H18. 예측 구간 calibration quantile을 조정하면 Warm coverage 부족을 줄일 수 있다
+
+- 관련 실험
+- `H18_interval_calibration_grid`
+- 사용 변수
+- 예측값
+- calibration residual
+- calibration quantile grid
+- Warm 결과 요약
+- q 0.80: coverage `0.701`, width `0.554`
+- q 0.90: coverage `0.810`, width `0.928`
+- q 0.975: coverage `0.926`, width `2.117`
+- Cold 결과 요약
+- q 0.80: coverage `0.855`, width `2.179`
+- q 0.90: coverage `0.922`, width `3.486`
+- 핵심 결과
+- Warm 80% 구간은 q 0.90으로 보완 가능
+- Cold는 coverage는 충분하지만 구간 폭이 커서 실무 해석성 낮음
+- 현재 결론
+- 검증 완료
+- 부분 채택
+- 남은 액션
+- Warm 80% 보조 구간 중심으로 검토
+- 최종 모델 확정 후 calibration 재수행
+
+### H19. 호수 구간을 더 세분화하면 Warm/Cold 성능이 개선될 것이다
+
+- 관련 실험
+- `H19_H22_ho_feature_ablation`
+- 사용 변수
+- `ho_bucket_refined`
+- Warm 결과 요약
+- 축소 기준: `0.2056`
+- `ho_bucket_refined` 추가: `0.2039`
+- Cold 결과 요약
+- 축소 기준: `0.3207`
+- `ho_bucket_refined` 추가: `0.3184`
+- 핵심 결과
+- 세분화 호수 구간은 Warm / Cold 모두 소폭 개선
+- 현재 결론
+- 검증 완료
+- 채택 후보
+- 남은 액션
+- 반복 안정성 확인
+
+### H20. 큰 호수/초대형 호수 여부는 가격 예측에 별도 신호를 줄 것이다
+
+- 관련 실험
+- `H19_H22_ho_feature_ablation`
+- 사용 변수
+- `is_large_ho`
+- `is_extra_large_ho`
+- Warm 결과 요약
+- 축소 기준: `0.2056`
+- 대형 flag 추가: `0.2056`
+- Cold 결과 요약
+- 축소 기준: `0.3207`
+- 대형 flag 추가: `0.3178`
+- 핵심 결과
+- 대형 호수 flag는 Cold에서 소폭 개선
+- Warm에는 영향 거의 없음
+- 현재 결론
+- 검증 완료
+- Cold 채택 후보
+- 남은 액션
+- H30에서 대형 slice 중심으로 재확인
+
+### H21. 실제 면적과 추정 호수의 불일치 정도가 가격 오차를 설명할 것이다
+
+- 관련 실험
+- `H19_H22_ho_feature_ablation`
+- 사용 변수
+- `area_per_ho_log`
+- `ho_per_area_log`
+- `ho_area_gap_abs`
+- Warm 결과 요약
+- 축소 기준: `0.2056`
+- 일관성 피처 추가: `0.2047`
+- Cold 결과 요약
+- 축소 기준: `0.3207`
+- 일관성 피처 추가: `0.3370`
+- 핵심 결과
+- 일관성 피처 단독은 Cold를 악화시킴
+- 전체 조합에서는 개선 가능성이 있어 단독 기각까진 보류
+- 현재 결론
+- 검증 완료
+- 단독 채택 보류
+- 남은 액션
+- H30에서 약점 slice별 기여 확인
+
+### H22. 호수는 선형값보다 로그값이나 구간값으로 쓰는 것이 더 안정적일 것이다
+
+- 관련 실험
+- `H19_H22_ho_feature_ablation`
+- 사용 변수
+- `estimated_ho`
+- `log_ho`
+- `ho_bucket_refined`
+- Warm 결과 요약
+- 축소 기준: `0.2056`
+- `log_ho + ho_bucket_refined` 대체: `0.2039`
+- 전체 호수 피처 조합: `0.1958`
+- Cold 결과 요약
+- 축소 기준: `0.3207`
+- `log_ho + ho_bucket_refined` 대체: `0.3195`
+- 전체 호수 피처 조합: `0.3163`
+- 핵심 결과
+- `log_ho` 단순 추가는 Cold 악화
+- `log_ho + ho_bucket_refined` 대체는 성능 유지 또는 소폭 개선
+- 전체 호수 피처 조합은 Warm / Cold 모두 최고
+- 현재 결론
+- 검증 완료
+- 부분 채택
+- 남은 액션
+- 최종 채택 전 반복 안정성과 H30 slice 분석 필요
+
+### H23. 크기 구간/극단 크기 피처가 Warm/Cold 성능을 개선할 것이다
+
+- 관련 실험
+- `H23_H25_size_3d_relative_ablation`
+- 사용 변수
+- `area_size_bucket`
+- `is_tiny_work`
+- `is_very_large_area`
+- Warm 결과 요약
+- 기준: `0.1958`
+- 크기 구간 피처 추가: `0.2080`
+- Cold 결과 요약
+- 기준: `0.3163`
+- 크기 구간 피처 추가: `0.3173`
+- 핵심 결과
+- Warm / Cold 모두 개선하지 못함
+- 현재 결론
+- 검증 완료
+- 중단
+- 남은 액션
+- 없음
+
+### H24. 3D 작품은 면적보다 부피/긴 변 피처가 더 설명력이 있을 것이다
+
+- 관련 실험
+- `H23_H25_size_3d_relative_ablation`
+- 사용 변수
+- `is_3d_work`
+- `volume_log`
+- `max_side_log`
+- `min_side_log`
+- Warm 결과 요약
+- 기준: `0.1958`
+- 3D 피처 추가: `0.1993`
+- Cold 결과 요약
+- 기준: `0.3163`
+- 3D 피처 추가: `0.2824`
+- Cold 3D slice: `0.2936 -> 0.2364`
+- 핵심 결과
+- Cold 전체와 Cold 3D slice가 크게 개선됨
+- Warm은 소폭 악화됨
+- 현재 결론
+- 검증 완료
+- Cold 채택 후보
+- 남은 액션
+- H29에서 Cold 전용 피처 분리 여부 판단
+- H30에서 3D slice 반복 확인
+
+### H25. 같은 재료 안에서의 상대적 크기 순위가 절대 크기보다 가격 설명력이 있을 것이다
+
+- 관련 실험
+- `H23_H25_size_3d_relative_ablation`
+- 사용 변수
+- `medium_area_percentile`
+- `medium_ho_percentile`
+- Warm 결과 요약
+- 기준: `0.1958`
+- 상대 크기 추가: `0.2017`
+- Cold 결과 요약
+- 기준: `0.3163`
+- 상대 크기 추가: `0.3022`
+- 핵심 결과
+- Cold는 개선되지만 Warm은 악화됨
+- 현재 결론
+- 검증 완료
+- Cold 채택 후보
+- 남은 액션
+- H29에서 Cold 전용 피처 분리 여부 판단
+
+### H26. 크기 관련 피처가 중복되어 있어 일부를 제거하면 성능이 유지되거나 안정성이 좋아질 것이다
+
+- 관련 실험
+- `H26_H28_size_feature_reduction`
+- 사용 변수
+- `depth_cm`
+- `width_cm`
+- `height_cm`
+- `log_area`
+- `estimated_ho`
+- `aspect_ratio`
+- Warm 결과 요약
+- 전체 크기 피처: `0.2045`
+- `width_cm`, `height_cm` 제거: `0.2056`
+- Cold 결과 요약
+- 전체 크기 피처: `0.3237`
+- `width_cm`, `height_cm` 제거: `0.3207`
+- 핵심 결과
+- `width_cm`, `height_cm`를 제거해도 Warm은 거의 유지되고 Cold는 소폭 개선됨
+- 현재 결론
+- 검증 완료
+- 부분 채택
+- 남은 액션
+- H29에서 Warm/Cold 공통 피처로 유지할지 최종 정리
+
+### H27. `estimated_ho`와 `log_area` 중 하나만 남겨도 성능 차이가 크지 않을 것이다
+
+- 관련 실험
+- `H26_H28_size_feature_reduction`
+- 사용 변수
+- `estimated_ho`
+- `log_area`
+- `aspect_ratio`
+- Warm 결과 요약
+- 전체 크기 피처: `0.2045`
+- `log_area` 중심 축소: `0.2087`
+- `estimated_ho` only: `0.2086`
+- Cold 결과 요약
+- 전체 크기 피처: `0.3237`
+- `log_area` 중심 축소: `0.3231`
+- `estimated_ho` only: `0.4071`
+- 핵심 결과
+- `estimated_ho`만 남기면 Cold가 크게 악화됨
+- `log_area` 중심 축소는 가능하지만 Warm에서 소폭 악화됨
+- 현재 결론
+- 검증 완료
+- `estimated_ho` only 기각
+- 남은 액션
+- H22 결과와 함께 최종 호수 표현 정리
+
+### H28. `width_cm`, `height_cm`는 `log_area`, `aspect_ratio`로 대체 가능할 것이다
+
+- 관련 실험
+- `H26_H28_size_feature_reduction`
+- 사용 변수
+- `width_cm`
+- `height_cm`
+- `log_area`
+- `aspect_ratio`
+- Warm 결과 요약
+- `width_cm`, `height_cm` 제거: `0.2056`
+- `aspect_ratio` 제거: `0.2223`
+- Cold 결과 요약
+- `width_cm`, `height_cm` 제거: `0.3207`
+- `aspect_ratio` 제거: `0.3260`
+- 핵심 결과
+- `width_cm`, `height_cm`는 `log_area + aspect_ratio`로 대체 가능함
+- `aspect_ratio`까지 제거하면 Warm이 뚜렷하게 악화됨
+- 현재 결론
+- 검증 완료
+- 부분 채택
+- 남은 액션
+- H29 결과 기준으로 Warm/Cold 피처 정책에 반영
+
+### H29. Warm과 Cold에서 필요한 크기/호수 피처 구성이 다를 것이다
+
+- 관련 실험
+- `H29_H30_feature_policy_slice_analysis`
+- 사용 변수
+- Warm 후보: `V0_warm_policy_ho_enhanced`
+- Cold 후보: `V1_cold_policy_3d`
+- Warm 결과 요약
+- Warm 후보: `0.1958`
+- Cold 3D 피처 적용: `0.1993`
+- Cold 결과 요약
+- Warm 후보: `0.3163`
+- Cold 3D 피처 적용: `0.2824`
+- 핵심 결과
+- Warm 최적 후보와 Cold 최적 후보가 다름
+- Cold 3D 피처는 Cold를 크게 개선하지만 Warm은 소폭 악화됨
+- 현재 결론
+- 검증 완료
+- Warm / Cold 피처 정책 분리 필요
+- 남은 액션
+- Cold 3D 조건부 적용 실험
+
+### H30. 파생 피처는 전체 성능보다 약점 slice에서만 개선될 수 있다
+
+- 관련 실험
+- `H29_H30_feature_policy_slice_analysis`
+- 사용 변수
+- H19~H25 파생 피처 후보
+- Cold slice 결과 요약
+- 전체: `0.3163 -> 0.2824`
+- 3D: `0.2936 -> 0.2364`
+- 2D: `0.3767 -> 0.6071`
+- 대형 호수: `0.5130 -> 0.4448`
+- 초대형 호수: `0.7432 -> 0.5522`
+- 핵심 결과
+- Cold 개선은 3D/대형/초대형 구간에 집중됨
+- Cold 2D는 크게 악화됨
+- 현재 결론
+- 검증 완료
+- slice 안전장치 필요
+- 남은 액션
+- Cold 2D는 기존 Cold 모델 유지
+- Cold 3D에만 3D 피처 후보를 적용하는 fallback 검증
+
+## 3. 현재 전체 요약
+
+- Warm 결과 기준 요약
+- H3, H5는 검증 완료
+- Cold 결과 기준 요약
+- H2, H6는 baseline 유지 쪽으로 검증 완료
+- 약점 slice 결과 기준 요약
+- H7, H8은 release fallback까지 확인 후 운영 채택 실패
+- 결측 대응 결과 요약
+- H9는 마스킹 학습 방식 채택 실패
+- 공통 피처 기반 약점 보완 요약
+- H13, H14는 채택 기준 미달
+- H15는 현재 데이터 결측 0건으로 검증 보류
+- 후속 재검증 결과 요약
+- H16은 날짜 컬럼 부재로 temporal-safe 재검증 보류
+- H17은 작가 이력 피처 안정성 확인
+- H18은 Warm 80% 예측 구간 보정 가능성 확인
+- 호수 피처 결과 요약
+- H19, H20, H22는 개선 신호가 있어 채택 후보
+- H21은 단독 채택 보류
+- 크기/3D/상대 크기 결과 요약
+- H23은 중단
+- H24, H25는 Cold 채택 후보
+- Warm은 H19-H22 기준 피처가 현재 최선
+- 크기 피처 축소 결과 요약
+- H26~H28은 `width_cm`, `height_cm` 제거 가능성을 확인했지만 `estimated_ho` 단독 사용은 기각함
+- 피처 정책 종합 결과
+- H29는 Warm / Cold 피처 정책 분리 필요를 확인함
+- H30은 개선이 3D/대형 slice에 집중되고 2D는 악화되는 것을 확인함
+- 재실험 결과
+- H31은 H17 Warm champion 기준에서도 호수+3D 피처가 `0.1147 -> 0.1090`으로 개선됨을 확인함
+- H32는 Cold 3D 조건부 fallback이 2D 악화 없이 전체 Cold `0.3163 -> 0.2786`으로 개선됨을 확인함
+- H33은 PR7 운영 가능 피처가 release split에서 최고 `0.2251`에 그쳐 H31 `0.1090`을 대체하지 못함을 확인함
+- 후속 정책 검증 결과
+- H34는 Cold 3D fallback이 전체적으로 유효하지만 3D 중간 부피 구간은 악화 신호가 있음을 확인함
+- H35는 Warm/Cold 단일 공유 모델이 Cold `0.5938`로 열세라 분리 정책을 유지해야 함을 확인함
+- H36은 Warm 저이력 작가 구간에서 오차가 크다는 점을 확인함
+- H37은 `artist_works_log`가 Warm 신뢰도 피처 후보임을 확인함
+- H38은 작가명 단독보다 구조화된 작가 이력 피처가 강함을 확인함
+- H39는 Cold 대형/초대형 작품이 약점 구간임을 확인함
+- H40은 Cold에서 크기/호수 피처 제거가 가장 크게 악화됨을 확인함
+- H41은 H31/H32 현재 후보의 순위가 유지됨을 확인함
+- H42는 큰 오차가 3D/대형/저이력 쪽에 집중되는 경향을 확인함
+- H43은 단일 가격보다 가격 범위/신뢰도 출력이 필요하다는 근거를 추가함
+- 우선순위 후속 검증 결과
+- H44는 저이력 Warm에서도 구조-only fallback이 악화되어 기각함
+- H45는 Cold 3D 중간 부피 구간을 기본 Cold 모델로 예외 처리하면 전체 Cold가 `0.2786 -> 0.2765`로 소폭 개선됨을 확인함
+- H46은 H69에서 Warm D, Cold 2D, Cold 대형/초대형 조건별 가격 범위 정책으로 닫음
+- H47은 작가 이력 수 기반 Warm 신뢰도 등급이 가능함을 확인함
+- 모델 성능 개선 후속 검증 결과
+- H61은 Cold slice별 tree expert가 악화되어 기각함
+- H62는 H31 피처셋 기준 LightGBM 재튜닝에서 단일 seed 개선 신호를 확인함
+- H63은 Cold LAD alpha 튜닝이 악화되어 기각함
+- H64는 Ridge base가 LAD base보다 개선됐지만 H32 조건부 후보를 대체하지 못해 미채택함
+- H65는 Warm blending이 전체 성능을 아주 소폭 개선했지만 저이력 개선 목적을 충족하지 못해 미채택함
+- H66은 H62 Warm LightGBM 재튜닝 개선 신호가 multi-seed에서도 유지됨을 확인하고 `larger_low_lr`를 Warm 후보로 채택함
+- H48은 Cold high-risk 기준을 `large_ho`, `very_large_area`, `extra_large_ho` 중심으로 좁히는 것이 더 적절함을 확인함
+- H49는 Cold 3D 중간 부피 예외가 median APE는 개선하지만 p95를 악화시켜 채택 보류함
+- H50~H52는 Warm 등급별 가격 범위와 Cold 조건별 가격 범위가 필요하다는 근거를 확인함
+- H57은 multi-seed에서 개선 신호는 있으나 채택 기준을 넘지 못해 현재 Warm 후보에는 미반영함
+- H58은 multi-seed에서 H66보다 악화되어 기각함
+- H59는 Cold 재료별 스케일 보정 개선 폭이 너무 작아 채택 보류함
+- H60은 Cold medium/support 조합 정리가 H32보다 악화되어 기각함
+- H67은 H57/H58 확장 피처의 multi-seed 검증을 완료했고, Warm 후보는 H66 유지로 결론냄
+- H68은 Warm 라우팅 기준을 3건/5건 이상으로 올리면 오히려 성능이 악화되어 `artist_train_count >= 1` 기준 유지를 확인함
+- H69는 H46 가격 범위 calibration을 종료했고 Warm D, Cold 2D, Cold 대형/초대형에 별도 넓은 가격 범위가 필요함을 확인함
+- `검증 완료`
+- H1
+- H2
+- H3
+- H4
+- H5
+- H6
+- H7
+- H8
+- H9
+- H10
+- H11
+- H12
+- H13
+- H14
+- H17
+- H18
+- H19
+- H20
+- H21
+- H22
+- H23
+- H24
+- H25
+- H26
+- H27
+- H28
+- H29
+- H30
+- H31
+- H32
+- H33
+- H34
+- H35
+- H36
+- H37
+- H38
+- H39
+- H40
+- H41
+- H42
+- H43
+- H44
+- H45
+- H46
+- H48
+- H49
+- H50
+- H51
+- H52
+- H57
+- H58
+- H59
+- H60
+- H47
+- H61
+- H62
+- H63
+- H64
+- H65
+- H66
+- H67
+- H68
+- H69
+- `보류`
+- H15
+- H16
+- `후속 보완 가치가 높은 항목`
+- 날짜 컬럼 확보 후 H10/H12/H17 temporal-safe 재검증
+- 최종 모델 재학습 시 H69 calibration 값 재계산
+- H12 설명용 구조 재검토
+- H31/H32 production 후보 반영 검토
+- H34 3D 중간 부피 구간 추가 분석
+- H36/H37 저이력 Warm 신뢰도 정책 설계
+- H39/H42 Cold 대형/초대형 high-risk flag를 운영 정책에 반영
+- H43/H46/H69 가격 범위 정책을 최종 운영안에 반영
+- H45 p90/p95 기준까지 포함한 조건부 예외 채택 판단
+- H47 Warm 신뢰도 등급 production 출력 정책 연결
+- H66 larger-low-lr Warm 후보를 production 학습 설정에 반영 검토
+- H48~H52 운영 출력 정책은 H69 calibration 기준으로 연결 완료
+- H57 확장 이력 피처는 데이터 증가 후 재검토
+- 저이력 Warm 작가는 Cold 전환이 아니라 신뢰도 경고/넓은 가격 범위로 관리
+
+## 4. 다음으로 보기 좋은 문서
+
+- 가설 설명
+- [`docs/track3_hypothesis_list_v1.md`](/Users/bo/VisionAI/docs/track3_hypothesis_list_v1.md:1)
+- 실험 인덱스
+- [`docs/track3_experiments/INDEX.md`](/Users/bo/VisionAI/docs/track3_experiments/INDEX.md:1)
+- 결과 요약표
+- [`docs/track3_experiment_results_table.md`](/Users/bo/VisionAI/docs/track3_experiment_results_table.md:1)

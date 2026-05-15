@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Track 3 — F1~F6 실험 종결 리포트 (v1.2 유지)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+         max-width: 1100px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #222; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+  h2 { color: #1a73e8; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+  h3 { color: #444; margin-top: 24px; }
+  h4 { color: #555; }
+  .meta { color: #666; font-size: 0.9em; margin-bottom: 30px; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 0.92em; }
+  th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: center; }
+  th { background: #f5f7fa; font-weight: 600; }
+  td.left { text-align: left; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.baseline { background: #fffde7; }
+  .good { color: #2e7d32; font-weight: 600; }
+  .bad  { color: #c62828; font-weight: 600; }
+  .neutral { color: #555; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.82em;
+         margin-right: 4px; font-weight: 600; }
+  .tag-reject  { background: #ffebee; color: #b71c1c; }
+  .tag-keep    { background: #e8f5e9; color: #1b5e20; }
+  .tag-infra   { background: #e3f2fd; color: #0d47a1; }
+  .tag-analysis { background: #f3e5f5; color: #6a1b9a; }
+  blockquote { border-left: 4px solid #1a73e8; padding: 10px 18px; background: #f8fbff;
+               margin: 16px 0; color: #333; }
+  .summary-box { background: #fff8e1; border: 1px solid #ffc107;
+                 padding: 14px 18px; border-radius: 6px; margin: 18px 0; }
+  .summary-box strong { color: #e65100; }
+  .codex-note { background: #f3e5f5; border-left: 4px solid #9c27b0;
+                padding: 10px 16px; border-radius: 4px; margin: 14px 0;
+                font-size: 0.92em; }
+  .codex-note strong { color: #6a1b9a; }
+  .closed-banner { background: linear-gradient(90deg, #2e7d32 0%, #4caf50 100%);
+                   color: white; padding: 16px 24px; border-radius: 8px;
+                   text-align: center; font-size: 1.15em; margin: 24px 0; }
+  .closed-banner strong { font-size: 1.3em; }
+  pre { background: #f4f6f8; padding: 10px 14px; border-radius: 4px;
+        font-size: 0.85em; line-height: 1.4; overflow-x: auto; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 16px 0; }
+  .card { border: 1px solid #ddd; border-radius: 6px; padding: 14px 18px; }
+  .card h4 { margin: 0 0 8px; color: #1a73e8; }
+  .card.kept { border-color: #4caf50; background: #f1f8e9; }
+  .card.kept h4 { color: #2e7d32; }
+  .card.rejected { border-color: #ef9a9a; background: #ffebee; }
+  .card.rejected h4 { color: #c62828; }
+  .arrow { color: #999; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Track 3 — F1~F6 실험 종결 리포트</h1>
+<div class="meta">
+  2026-05-13 · 작품 가격 예측 모델 · 공식 기준: <code>docs/track3_experiment_plan_v1.md</code> ·
+  최종 운영: <strong>v1.2 (PR16e)</strong> 유지 확정
+</div>
+
+<div class="closed-banner">
+  <strong>Track 3 CLOSED</strong> — 운영 모델 v1.2 유지, 다음 단계는 데이터 축 확장
+</div>
+
+<!-- ───────────── 개요 ───────────── -->
+<h2>1. 한눈에 보기 (Executive Summary)</h2>
+
+<div class="summary-box">
+  <strong>결론</strong>: F1~F5의 모든 모델링 가설이 reject. 운영 모델 <code>v1.2</code>가 현 가설 공간 안에서 강한 plateau 확인.
+  <strong>운영 결정</strong>: v1.2 유지. 다음 ROI는 모델 미세조정보다 <strong>데이터 축 확장</strong> (시간 split / 추가 작가 / source 안정화)에 있음.
+</div>
+
+<div class="grid-2">
+  <div class="card kept">
+    <h4>유지: v1.2 운영 모델</h4>
+    <ul>
+      <li>Cold LAD: <strong>med_APE 0.301</strong> / W30 0.499</li>
+      <li>Warm Tuned LightGBM: <strong>med_APE 0.208</strong> / W30 0.592</li>
+      <li>release_split v3 test 기준 (test_cold 3,561 / test_warm 1,717)</li>
+      <li>artifact: <code>data/production/track3_*.{joblib,txt,json}</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>인프라: F6 Frozen Cold Benchmark 신규 구축</h4>
+    <ul>
+      <li>seed-free deterministic split (100 작가 hold-out)</li>
+      <li>2D/3D · medium · price · 작가수 4축 균형 통제</li>
+      <li>V0 baseline ape_array 캐싱 — paired 비교용</li>
+      <li>loader: <code>scripts/track3/_frozen_loader.py</code></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ───────────── 평가 protocol ───────────── -->
+<h2>2. 검증 protocol — 2단계 paired</h2>
+
+<p>모든 F1-F5 실험은 동일 protocol 따름:</p>
+
+<pre>1. mini hold-out (5 seeds 또는 frozen benchmark) → 후보 선별
+2. 후보 발견 시 release_split test 1회 paired confirm
+3. 동일 row 위에서 V0 vs 후보 paired 비교
+4. 판정: median Δ + WinRate + tail risk (p95/p99/max/10x errors) 동시 통과
+</pre>
+
+<div class="codex-note">
+  <strong>Codex 권고 핵심</strong>: heavy-tail cold APE 환경에서 mean / Cohen's d는 outlier 1건에 좌우됨.
+  <strong>median Δ + WR + 작품 단위 tail percentile</strong> 중심으로 판단해야 false positive 차단.
+</div>
+
+<p><strong>검증 protocol 가치</strong>: F2 (medium_support_combo)와 F5-B (KNN blend) 두 번 mini 신호 → release_split 반전. 2단계 protocol이 false positive를 정확히 차단.</p>
+
+<!-- ───────────── F1-F6 종합표 ───────────── -->
+<h2>3. F1~F6 실험 결과표</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>실험</th><th>가설</th><th>결과</th><th>핵심 이유</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>F1</strong><br>PR20/21</td>
+      <td class="left">크기 변수 redundancy<br>(width/height/log_area/estimated_ho 중복?)</td>
+      <td><span class="tag tag-reject">REJECT</span></td>
+      <td class="left">V1_log_ho는 Cold 동등이지만 Warm <strong>tail risk 증가</strong><br>(max_ape +24%, catastrophic 16%)</td>
+    </tr>
+    <tr>
+      <td><strong>F2</strong><br>PR22/23</td>
+      <td class="left">새 파생 변수 4개<br>(combo / maxside / square / area_depth)</td>
+      <td><span class="tag tag-reject">REJECT</span></td>
+      <td class="left">4개 모두. F1_combo는 mini에서 4/5 seeds 일관 신호 →<br>release_split에서 <strong>반전</strong> (false positive)</td>
+    </tr>
+    <tr>
+      <td><strong>F3</strong><br>PR24</td>
+      <td class="left">CatBoost vs LightGBM Warm</td>
+      <td><span class="tag tag-reject">REJECT</span></td>
+      <td class="left">CatBoost <strong>5/5 seeds 패배</strong> (med Δ +0.069)</td>
+    </tr>
+    <tr>
+      <td><strong>F4</strong><br>PR25</td>
+      <td class="left">rare-artist Warm/Cold blend<br>(1건/2건 작가에 Cold blend)</td>
+      <td><span class="tag tag-reject">REJECT</span></td>
+      <td class="left">모든 blend variant <strong>0/5 seeds 개선</strong>, WR 5-16%<br>(blend 적용된 row가 대부분 worse)</td>
+    </tr>
+    <tr>
+      <td><strong>F5 step 1</strong><br>PR27</td>
+      <td class="left">Cold 약점 영역 식별 (분석)</td>
+      <td><span class="tag tag-analysis">DONE</span></td>
+      <td class="left">Artue / pigment·mixed·other / 고가 / 대형 50+호 /<br>2D 회화에서 weak 식별</td>
+    </tr>
+    <tr>
+      <td><strong>F5-B</strong><br>PR28/29</td>
+      <td class="left">Cold KNN retrieval blend</td>
+      <td><span class="tag tag-reject">REJECT</span></td>
+      <td class="left">frozen benchmark 신호 → release_split <strong>반전</strong><br>(prolific cold artist 86% imbalance)</td>
+    </tr>
+    <tr>
+      <td><strong>F6</strong><br>PR26</td>
+      <td class="left">Frozen Cold Benchmark 인프라</td>
+      <td><span class="tag tag-infra">BUILT</span></td>
+      <td class="left">seed-free stratified + V0 baseline ape_array 캐싱<br>+ loader 구축</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ───────────── F1 ───────────── -->
+<h2>4. F1 — 크기 변수 redundancy</h2>
+
+<p><strong>가설</strong>: <code>width_cm</code> / <code>height_cm</code> / <code>log_area</code> / <code>estimated_ho</code>는 같은 크기 축의 다른 표현 → 단순화 가능?</p>
+
+<table>
+  <thead>
+    <tr><th>Variant</th><th>크기 input</th><th>Cold</th><th>Warm</th></tr>
+  </thead>
+  <tbody>
+    <tr class="baseline"><td>V0_all (운영)</td><td>4개 모두</td><td class="num">0.4523 ± 0.10</td><td class="num">0.2038 ± 0.008</td></tr>
+    <tr><td><strong>V1_log_ho</strong></td><td>log_area + estimated_ho</td><td class="num good">0.4521 ± 0.10</td><td class="num">0.2081 ± 0.009</td></tr>
+    <tr><td>V2_log_only</td><td>log_area만</td><td class="num">0.4650</td><td class="num">0.2125</td></tr>
+    <tr><td>V3_wh_only</td><td>width + height</td><td class="num">0.5212</td><td class="num">0.2098</td></tr>
+    <tr><td>V4_ho_only</td><td>estimated_ho만</td><td class="num">0.5161</td><td class="num">0.2116</td></tr>
+  </tbody>
+</table>
+
+<p>V1_log_ho는 mini에서 동등 신호. release_split confirm에서 <strong>Warm tail risk 증가</strong>:
+max_ape <code>13.23 → 16.42</code> (+24%), catastrophic_2x <strong>16%</strong> (6건 중 1건이 baseline 2배 이상 악화).
+→ width/height/aspect_ratio가 Warm 극단 작품 예측 안정성에 차별적 기여 확인. <strong>V0 유지</strong>.</p>
+
+<!-- ───────────── F2 ───────────── -->
+<h2>5. F2 — 새 파생 변수 4개</h2>
+
+<p>4개 후보를 단일-feature ablation으로 검증. mini에서 가장 유력했던 <code>medium_support_combo</code>도 release_split confirm에서 반전.</p>
+
+<table>
+  <thead>
+    <tr><th>Variant</th><th>mini med_Δ vs V0</th><th>mini WR</th><th>release_split med_Δ</th><th>판정</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>F1_combo</td><td class="num good">-0.0150 (4/5 seeds)</td><td class="num">0.547</td><td class="num bad">+0.0061 ❌</td><td><span class="tag tag-reject">REJECT</span></td></tr>
+    <tr><td>F2_maxside</td><td class="num">+0.0002</td><td class="num">0.447</td><td>—</td><td><span class="tag tag-reject">REJECT</span></td></tr>
+    <tr><td>F3_square</td><td class="num">-0.0027 (작음)</td><td class="num">0.579</td><td>—</td><td><span class="tag tag-reject">REJECT</span></td></tr>
+    <tr><td>F4_area_depth</td><td class="num bad">tail max_ape +25,943,500% ❌</td><td>—</td><td>—</td><td><span class="tag tag-reject">REJECT (use 금지)</span></td></tr>
+  </tbody>
+</table>
+
+<p><strong>F2 false positive 사례</strong>: F1_combo가 mini에서 4/5 seeds 일관 음수 + WR 0.547로 강한 신호.
+release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot).
+2단계 protocol이 정확히 차단.</p>
+
+<!-- ───────────── F3 ───────────── -->
+<h2>6. F3 — CatBoost vs LightGBM (Warm)</h2>
+
+<table>
+  <thead>
+    <tr><th>모델</th><th>5 seeds med_APE</th><th>Paired (CatBoost vs LGB)</th></tr>
+  </thead>
+  <tbody>
+    <tr class="baseline"><td>LightGBM (운영)</td><td class="num">0.2038 ± 0.008</td><td>—</td></tr>
+    <tr><td>CatBoost</td><td class="num bad">0.2714 ± 0.006</td><td>med Δ <strong>+0.0309</strong>, <strong>0/5 seeds CatBoost 우위</strong></td></tr>
+  </tbody>
+</table>
+
+<p>5 seeds 모두 LGB 우위. Cohen's d 작지만 방향 완전 일관 → CatBoost reject.</p>
+
+<p class="neutral" style="font-size:0.88em;">
+  ⓘ CatBoost default hyperparam vs LGB Optuna-tuned 공정 비교 한계. 그러나 differential -0.07p가 크고 5/5 seeds 일관 → 정식 튜닝 재실험 우선순위 낮음 (Codex 권고).
+</p>
+
+<!-- ───────────── F4 ───────────── -->
+<h2>7. F4 — Rare-artist Warm/Cold blend</h2>
+
+<p><strong>가설</strong>: 1건/2건 작가는 Warm 모델 학습 신호 약함 → Cold blend로 안정화?</p>
+
+<table>
+  <thead>
+    <tr><th>Variant</th><th>Rule</th><th>med_APE</th><th>Paired WR</th><th>판정</th></tr>
+  </thead>
+  <tbody>
+    <tr class="baseline"><td>V0_pure_warm</td><td>train_count≥1 → Warm 100%</td><td class="num">0.2038</td><td>—</td><td>(baseline)</td></tr>
+    <tr><td>F4_b1</td><td>count==1, α=0.5</td><td class="num">0.2052</td><td class="num bad">0.055</td><td><span class="tag tag-reject">REJECT</span></td></tr>
+    <tr><td>F4_b2</td><td>count==1, α=0.3</td><td class="num">0.2051</td><td class="num bad">0.053</td><td><span class="tag tag-reject">REJECT</span></td></tr>
+    <tr><td>F4_b3</td><td>count≤2, α=0.5</td><td class="num">0.2083</td><td class="num bad">0.088</td><td><span class="tag tag-reject">REJECT</span></td></tr>
+    <tr><td>F4_b4</td><td>count≤5, α=0.5</td><td class="num">0.2206</td><td class="num bad">0.163</td><td><span class="tag tag-reject">REJECT (tail 폭주)</span></td></tr>
+  </tbody>
+</table>
+
+<p>blend 적용된 row의 paired WR이 5-16% — 거의 모든 작품에서 Warm LGB가 Cold LAD보다 정확.
+<strong>1건만 있는 작가라도 Warm 모델이 작가 prior를 활용</strong>해서 Cold 단독보다 우위.
+→ Codex 사전 가설 "rare artist 구간 취약"이 데이터로 reject.</p>
+
+<!-- ───────────── F5 step 1 ───────────── -->
+<h2>8. F5 step 1 — Cold weak regime 분석</h2>
+
+<p>운영 v1.2 Cold model이 어디서 깨지는지 release_split test_cold (3,561 rows)로 1차원 + 2차원 분해.</p>
+
+<h3>1차원 분해 — Worst regimes</h3>
+<table>
+  <thead>
+    <tr><th>축</th><th>강점</th><th>약점</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Source</td><td>Saatchi (0.27)</td><td class="bad">Artue 0.60 / Artsy 0.40</td></tr>
+    <tr><td>Medium</td><td>watercolor 0.13 / oil 0.23</td><td class="bad">pigment 0.52 / mixed 0.49 / other 0.41</td></tr>
+    <tr><td>Price tertile</td><td>mid 0.22</td><td class="bad">high 0.42</td></tr>
+    <tr><td>2D/3D</td><td>3D 0.28</td><td class="bad">2D 0.40 (회화가 더 어려움)</td></tr>
+    <tr><td>크기 (ho)</td><td>0-5호 0.18</td><td class="bad">50호+ 0.59</td></tr>
+  </tbody>
+</table>
+
+<h3>2차원 cross-tab — 최악 5개 regimes</h3>
+<ul>
+  <li><strong>price_low × pigment</strong> (n=14): med_APE 0.691</li>
+  <li><strong>artue × other</strong> (n=25): 0.685</li>
+  <li><strong>artsy × oil</strong> (n=108): 0.680 ⚠️ (Artsy 고가 유화)</li>
+  <li><strong>price_low × other</strong> (n=109): 0.600</li>
+  <li><strong>artue × acrylic</strong> (n=29): 0.580</li>
+</ul>
+
+<p>핵심 약점 patterns: <strong>(Artue 전반) + (Artsy 고가 oil) + (pigment/mixed/other 매체) + (대형 작품) + (2D 회화)</strong>.</p>
+
+<!-- ───────────── F5-B ───────────── -->
+<h2>9. F5-B — Cold KNN retrieval blend</h2>
+
+<p>Codex 1순위 후속 제안. weak regime을 train의 유사 작품 KNN으로 보정 시도.</p>
+
+<h3>Frozen Cold Benchmark (n=751) 결과</h3>
+<table>
+  <thead>
+    <tr><th>Variant</th><th>med_APE</th><th>WR</th><th>max_ape</th><th>판정</th></tr>
+  </thead>
+  <tbody>
+    <tr class="baseline"><td>V0</td><td class="num">0.4423</td><td>—</td><td class="num">7.3e14 (outlier)</td><td>baseline</td></tr>
+    <tr><td>knn10_a50</td><td class="num good">0.4267</td><td class="num good">0.531</td><td class="num good">0 (-100%)</td><td>mini 유력</td></tr>
+    <tr><td><strong>knn10_a70</strong></td><td class="num good">0.4148</td><td class="num good">0.550</td><td class="num good">0 (-100%)</td><td>mini 가장 유력</td></tr>
+  </tbody>
+</table>
+
+<h3>release_split confirm (n=3,561) — 반전!</h3>
+<table>
+  <thead>
+    <tr><th>Variant</th><th>med_APE</th><th>paired med Δ</th><th>WR</th><th>판정</th></tr>
+  </thead>
+  <tbody>
+    <tr class="baseline"><td>V0 (운영)</td><td class="num">0.3012</td><td>—</td><td>—</td><td>유지</td></tr>
+    <tr><td>knn10_a50</td><td class="num bad">0.3394</td><td class="num bad">+0.0230 ❌</td><td class="num bad">0.411</td><td><span class="tag tag-reject">REJECT</span></td></tr>
+    <tr><td>knn10_a70</td><td class="num">0.3073</td><td class="num bad">+0.0069 ❌</td><td class="num bad">0.454</td><td><span class="tag tag-reject">REJECT</span></td></tr>
+  </tbody>
+</table>
+
+<div class="codex-note">
+  <strong>반전 원인 (Codex 분해 분석)</strong>:
+  release_split test_cold가 prolific cold artist에 크게 unbalanced — 안교범 1 작가가 1,088건 (30.6%).
+  count>10 작가가 전체의 86.4% 차지, 이 영역에서 KNN systematically worse.
+  frozen benchmark(균등)에선 안 보이던 패턴.
+</div>
+
+<h4>F5-B 분해 — selective 적용 가능성 (운영 채택은 안 함)</h4>
+<table>
+  <thead>
+    <tr><th>조건</th><th>med Δ</th><th>WR</th><th>KNN 효과</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>rare cold (count≤2)</td><td class="num good">-0.015</td><td>0.544</td><td>도움</td></tr>
+    <tr><td>medium = mixed</td><td class="num good">-0.052</td><td>0.632</td><td>도움</td></tr>
+    <tr><td>medium = ink</td><td class="num good">-0.037</td><td>0.548</td><td>도움</td></tr>
+    <tr><td>대형 50+ / 소품 0-5</td><td class="num good">-0.017 / -0.012</td><td>0.555 / 0.553</td><td>도움</td></tr>
+    <tr><td>medium = pencil</td><td class="num bad">+0.676</td><td>0.075</td><td>큰 부작용</td></tr>
+    <tr><td>prolific (count>10, 86%)</td><td class="num bad">+0.024</td><td>0.397</td><td>worse</td></tr>
+  </tbody>
+</table>
+
+<p>국소 이득은 좁은 sub-population에 한정 + 분포 변동에 취약. <strong>selective routing 채택 시 split overfit 위험</strong> → reject 유지.</p>
+
+<!-- ───────────── F6 ───────────── -->
+<h2>10. F6 — Frozen Cold Benchmark 인프라</h2>
+
+<p>탐색 신호 품질을 높이기 위해 seed-free 평가 인프라 구축.</p>
+
+<table>
+  <tbody>
+    <tr><td class="left"><strong>구성</strong></td><td class="left">cold benchmark 100 작가 (751 rows) + mini_train 1,866 작가 (34,108 rows)</td></tr>
+    <tr><td class="left"><strong>Stratification</strong></td><td class="left">works_count(50/30/20) × price_tertile(33/33/34), medium · 3D · log_price 분포 검증 통과 (편차 ≤ 10%)</td></tr>
+    <tr><td class="left"><strong>SEED</strong></td><td class="left">2 (42→1 실패 후)</td></tr>
+    <tr><td class="left"><strong>V0 baseline 캐시</strong></td><td class="left">Cold LAD 학습 + ape_array 저장 → 향후 paired comparison 직접 사용 가능</td></tr>
+    <tr><td class="left"><strong>Loader</strong></td><td class="left"><code>scripts/track3/_frozen_loader.py</code></td></tr>
+  </tbody>
+</table>
+
+<pre>from scripts.track3._frozen_loader import load_frozen_benchmark
+mini_train, cold_mini, baseline = load_frozen_benchmark()
+# 향후 모든 Track 3 mini 실험에서 이 frozen을 사용 → seed 변동성 제거</pre>
+
+<!-- ───────────── 종합 진단 ───────────── -->
+<h2>11. 종합 진단 — v1.2가 강한 plateau</h2>
+
+<div class="summary-box">
+  <strong>Codex 사전 진단</strong> (F3 후 시점, F4/F5/F6 결과로 다시 확인):<br>
+  "현재 가설 공간 안에서는 이미 강한 plateau에 올라와 있다. 근접 변형으론 이득이 안 나고,
+  나와도 release_split에서 뒤집히거나 Warm tail에서 비용을 치르는 상태."
+</div>
+
+<h3>왜 plateau인가</h3>
+<ol>
+  <li><strong>모든 단순 변형 reject</strong>: 크기 redundancy / 새 파생 / 모델 가족 / 라우팅 변경 / KNN 후처리 모두</li>
+  <li><strong>v1.2 baseline 자체가 이미 dataset 정제 + leakage 방지 + feature ablation 거친 결과</strong> (PR1-PR16e)</li>
+  <li><strong>알고리즘이 아니라 데이터 커버리지가 병목</strong> — Codex 진단대로 시간 split / 추가 작가 / source 안정화가 다음 ROI</li>
+</ol>
+
+<h3>검증 protocol 가치 입증</h3>
+<ul>
+  <li>F2 (medium_support_combo): mini 4/5 seeds 일관 → release_split 반전</li>
+  <li>F5-B (KNN blend): frozen benchmark 신호 → release_split 반전</li>
+  <li>둘 다 <strong>2단계 confirm protocol</strong>이 false positive를 정확히 차단</li>
+  <li>이 protocol 가치는 향후 어떤 Track 실험에도 적용 가능</li>
+</ul>
+
+<!-- ───────────── 다음 단계 ───────────── -->
+<h2>12. 다음 단계 (Codex 권고)</h2>
+
+<table>
+  <thead>
+    <tr><th>우선</th><th>액션</th><th>이유</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 (단기)</td>
+      <td class="left"><strong>v1.2 운영 안정화 + 모니터링</strong></td>
+      <td class="left">현 best 모델 운영, 실제 input 분포 변화 관찰</td>
+    </tr>
+    <tr>
+      <td>2 (중기)</td>
+      <td class="left"><strong>데이터 축 확장</strong> — 시간 split / 추가 작가 / source 안정화</td>
+      <td class="left">알고리즘보다 데이터 커버리지가 병목. 추가 모델링보다 ROI 큼.</td>
+    </tr>
+    <tr>
+      <td>3 (후순위)</td>
+      <td class="left">regime-specific median fallback (F5-A)</td>
+      <td class="left">저비용 guardrail로만 검토, 모델링 차원 X</td>
+    </tr>
+    <tr>
+      <td>보류</td>
+      <td class="left">CatBoost full Optuna 재실험</td>
+      <td class="left">5/5 패배는 단순 튜닝 부족 아님 — ROI 낮음</td>
+    </tr>
+    <tr>
+      <td>금지</td>
+      <td class="left">selective KNN routing 운영 적용</td>
+      <td class="left">좁은 sub-population, split overfit 위험</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ───────────── 부록 ───────────── -->
+<h2>13. 부록 — 산출물 경로</h2>
+
+<h3>운영 (변경 없음)</h3>
+<ul>
+  <li><code>data/production/track3_cold_lad.joblib</code> — Cold LAD v1.2</li>
+  <li><code>data/production/track3_warm_lgb.txt</code> — Warm Tuned LightGBM v1.2</li>
+  <li><code>data/production/track3_metadata.json</code> — 메타 + eval metric</li>
+  <li><code>data/release_split/</code> — 공식 train/test 분리 (v3)</li>
+</ul>
+
+<h3>실험 스크립트 (PR17-PR29)</h3>
+<ul>
+  <li><code>scripts/track3/pr17_branch_models.py</code>, <code>pr18_branch_depth_matrix.py</code> — 분기 모델 검증 (F0 pre-F1)</li>
+  <li><code>scripts/track3/pr20_size_redundancy.py</code>, <code>pr21_size_v0_v1_confirm.py</code> — F1</li>
+  <li><code>scripts/track3/pr22_new_features_ablation.py</code>, <code>pr23_f1_combo_confirm.py</code> — F2</li>
+  <li><code>scripts/track3/pr24_catboost_warm.py</code> — F3</li>
+  <li><code>scripts/track3/pr25_rare_artist_blend.py</code> — F4</li>
+  <li><code>scripts/track3/pr27_cold_regime_analysis.py</code> — F5 step 1</li>
+  <li><code>scripts/track3/pr28_knn_retrieval_blend.py</code>, <code>pr29_knn_release_split_confirm.py</code> — F5-B</li>
+  <li><code>scripts/track3/pr26_frozen_cold_benchmark.py</code>, <code>_frozen_loader.py</code> — F6 인프라</li>
+</ul>
+
+<h3>결과 JSON</h3>
+<ul>
+  <li><code>data/track3_pr{17..29}_*_results.json</code> — 모든 실험 결과 (ape_array 보존)</li>
+  <li><code>data/track3_pr26_baseline_cache.json</code> — Frozen V0 baseline</li>
+</ul>
+
+<h3>인프라</h3>
+<ul>
+  <li><code>data/track3_splits/frozen_mini_cold.csv</code> + <code>frozen_mini_cold_artists.json</code> + <code>frozen_mini_train.csv</code></li>
+</ul>
+
+<h3>문서</h3>
+<ul>
+  <li><code>docs/track3_experiment_plan_v1.md</code> — 공식 기준 문서 (F1-F6 결과 + 종결 선언 추가됨)</li>
+  <li><code>docs/track3_pr17_18_branch_experiment.html</code> — Branch 실험 시각 리포트</li>
+  <li><strong><code>docs/track3_f1_f6_closure_report.html</code></strong> — 이 종결 리포트</li>
+</ul>
+
+<p style="text-align:center; margin-top:50px; color:#999; font-size:0.85em;">
+  Track 3 F1~F6 종결 · Generated 2026-05-13 · 공식 기준: docs/track3_experiment_plan_v1.md
+</p>
+
+</body>
+</html>

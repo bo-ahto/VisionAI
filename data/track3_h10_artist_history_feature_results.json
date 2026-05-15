@@ -1,0 +1,130 @@
+{
+  "experiment_id": "H10_artist_history_feature_confirm",
+  "data": {
+    "train_rows": 34629,
+    "test_warm_rows": 1685,
+    "train_artists": 1932,
+    "test_warm_artists": 1685,
+    "note": "artist history features are computed from train split only; no temporal transaction date is available"
+  },
+  "variants": {
+    "V0_artist_name": {
+      "features": [
+        "medium_category",
+        "support_category",
+        "depth_cm",
+        "log_area",
+        "estimated_ho",
+        "orientation",
+        "medium_ho_bucket",
+        "aspect_ratio",
+        "artist_name_ko"
+      ],
+      "categorical": [
+        "medium_category",
+        "support_category",
+        "orientation",
+        "medium_ho_bucket",
+        "artist_name_ko"
+      ],
+      "warm": {
+        "n": 1685,
+        "median_ape": 0.22892015429514015,
+        "mape": 0.45089178330637586,
+        "rmse_log": 0.6384344477545562,
+        "within_30pct": 0.5756676557863502,
+        "within_50pct": 0.7204747774480712,
+        "p95_ape": 1.5011671283257744
+      },
+      "paired_vs_artist_name": null,
+      "delta_median_ape_vs_artist_name": 0.0
+    },
+    "V1_history_only": {
+      "features": [
+        "medium_category",
+        "support_category",
+        "depth_cm",
+        "log_area",
+        "estimated_ho",
+        "orientation",
+        "medium_ho_bucket",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_ln_price_median",
+        "artist_ln_price_mean",
+        "artist_ln_price_iqr"
+      ],
+      "categorical": [
+        "medium_category",
+        "support_category",
+        "orientation",
+        "medium_ho_bucket"
+      ],
+      "warm": {
+        "n": 1685,
+        "median_ape": 0.12565290203386914,
+        "mape": 0.36366897558332023,
+        "rmse_log": 0.5002555246755604,
+        "within_30pct": 0.7370919881305638,
+        "within_50pct": 0.856973293768546,
+        "p95_ape": 0.9904178017709612
+      },
+      "paired_vs_artist_name": {
+        "median_delta": -0.03430417889004029,
+        "mean_delta": -0.08722280772305557,
+        "variant_win_rate": 0.627299703264095,
+        "variant_worse_10pp": 262,
+        "variant_better_10pp": 649
+      },
+      "delta_median_ape_vs_artist_name": -0.10326725226127101
+    },
+    "V2_artist_name_history": {
+      "features": [
+        "medium_category",
+        "support_category",
+        "depth_cm",
+        "log_area",
+        "estimated_ho",
+        "orientation",
+        "medium_ho_bucket",
+        "aspect_ratio",
+        "artist_name_ko",
+        "artist_works_log",
+        "artist_ln_price_median",
+        "artist_ln_price_mean",
+        "artist_ln_price_iqr"
+      ],
+      "categorical": [
+        "medium_category",
+        "support_category",
+        "orientation",
+        "medium_ho_bucket",
+        "artist_name_ko"
+      ],
+      "warm": {
+        "n": 1685,
+        "median_ape": 0.12044843460019877,
+        "mape": 0.36489734554467085,
+        "rmse_log": 0.49469353194552007,
+        "within_30pct": 0.7495548961424332,
+        "within_50pct": 0.8599406528189911,
+        "p95_ape": 0.9760557706821644
+      },
+      "paired_vs_artist_name": {
+        "median_delta": -0.04060547693427072,
+        "mean_delta": -0.08599443776170496,
+        "variant_win_rate": 0.6611275964391692,
+        "variant_worse_10pp": 237,
+        "variant_better_10pp": 670
+      },
+      "delta_median_ape_vs_artist_name": -0.10847171969494138
+    }
+  },
+  "judgement": {
+    "best_variant": "V2_artist_name_history",
+    "history_replaces_artist_name": true,
+    "history_complements_artist_name": true,
+    "adoptable": true,
+    "temporal_caveat": "requires transaction-date-safe feature generation before production use"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "experiment_id": "H12_artist_residual_confirm",
+  "data": {
+    "train_rows": 34629,
+    "test_warm_rows": 1685,
+    "note": "artist baseline is computed from train split only; temporal-safe transaction history is still required"
+  },
+  "variants": {
+    "V0_artist_median_only": {
+      "n": 1685,
+      "median_ape": 0.36600226735421165,
+      "mape": 0.9280947055851804,
+      "rmse_log": 0.8622420007495741,
+      "within_30pct": 0.45341246290801185,
+      "within_50pct": 0.5875370919881305,
+      "p95_ape": 3.000000000000001
+    },
+    "V1_direct_artist_history_model": {
+      "n": 1685,
+      "median_ape": 0.12044843460019877,
+      "mape": 0.36489734554467085,
+      "rmse_log": 0.49469353194552007,
+      "within_30pct": 0.7495548961424332,
+      "within_50pct": 0.8599406528189911,
+      "p95_ape": 0.9760557706821644
+    },
+    "V2_artist_baseline_plus_residual": {
+      "n": 1685,
+      "median_ape": 0.12284491516693957,
+      "mape": 0.3848344672938958,
+      "rmse_log": 0.503388183217511,
+      "within_30pct": 0.7471810089020772,
+      "within_50pct": 0.8557863501483679,
+      "p95_ape": 0.9872072700908118
+    }
+  },
+  "judgement": {
+    "residual_beats_direct": false,
+    "residual_interpretable": true,
+    "adoptable": true,
+    "temporal_caveat": "requires transaction-date-safe artist baseline before production use"
+  }
+}
