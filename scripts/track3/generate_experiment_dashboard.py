@@ -276,6 +276,10 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
       margin-bottom: 10px;
     }}
     .goal-card p {{ margin: 0; color: #465047; font-size: 13px; }}
+    .legend-grid {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0 20px; }}
+    .legend-item {{ border: 1px solid var(--line); border-radius: 16px; background: #f7eddd; padding: 14px; }}
+    .legend-item strong {{ display: block; font-size: 13px; margin-bottom: 5px; }}
+    .legend-item span {{ display: block; color: var(--muted); font-size: 12px; }}
     .toolbar {{ display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }}
     input, select {{ border: 1px solid var(--line); border-radius: 12px; background: #fffaf1; padding: 10px 12px; font: inherit; min-height: 42px; }}
     input {{ min-width: 260px; flex: 1; }}
@@ -338,7 +342,7 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
       .page {{ display: block; }}
       aside {{ position: static; height: auto; }}
       main {{ padding: 22px; }}
-      .hero, .cards, .decision, .goal-grid, .brief-grid {{ grid-template-columns: 1fr; }}
+      .hero, .cards, .decision, .goal-grid, .brief-grid, .legend-grid {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
@@ -447,6 +451,14 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
       <section class="panel" id="records">
         <h2>가설 / 실험 기록</h2>
         <p class="foot">표시는 최신순이다. 가설은 H번호가 큰 순서, 실험 결과는 날짜가 최신인 순서로 먼저 보여준다.</p>
+        <div class="legend-grid" aria-label="검증 강도 설명">
+          <div class="legend-item"><strong>release split 검증</strong><span>고정된 Warm / Cold 평가셋에서 결과를 확인한 상태</span></div>
+          <div class="legend-item"><strong>multi-seed 재검증</strong><span>seed를 바꿔도 결과 방향이 유지되는지 확인한 상태</span></div>
+          <div class="legend-item"><strong>내부 calibration + release test 검증</strong><span>정책/범위는 내부 calibration에서 정하고 release test에는 검증만 한 상태</span></div>
+          <div class="legend-item"><strong>내부 calibration 선택 + release test 검증</strong><span>여러 후보 중 선택은 내부 calibration에서 하고, test에는 선택된 후보만 적용한 상태</span></div>
+          <div class="legend-item"><strong>temporal-safe 필요</strong><span>성능은 확인됐지만 예측 시점 이후 정보 누수 가능성을 아직 닫지 못한 상태</span></div>
+          <div class="legend-item"><strong>보류/데이터 조건 미충족</strong><span>현재 데이터만으로는 검증을 완료할 수 없는 상태</span></div>
+        </div>
         <div class="tabs">
           <button class="tab-btn active" data-tab="hypothesesPanel">가설 상태</button>
           <button class="tab-btn" data-tab="experimentsPanel">실험 결과</button>
