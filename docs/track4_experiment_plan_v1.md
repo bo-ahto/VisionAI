@@ -16,6 +16,8 @@
 - 가격 범위 폭
 - 신뢰도 경고 기준
 - 배포 및 재학습 가능성
+- Warm / Cold 분리 프로세스 상세 문서
+- `docs/track4_warm_cold_process.md`
 
 ## 2. Track 3 보존 원칙
 
@@ -94,14 +96,28 @@
 - 어떤 결과를 비교 기준으로 볼지 먼저 고정함
 - 2단계: Track 4 데이터 기준 정의
 - 기존 release split을 그대로 쓸지, 추가 holdout을 만들지 결정함
+- Track 4에서는 `track4_train.csv`를 공통 학습 데이터로 사용하되, Warm / Cold 평가는 분리함
+- Warm / Cold 프로세스는 `docs/track4_warm_cold_process.md` 기준으로 진행함
 - 3단계: 가설별 연구 방법 작성
 - 바로 실험하지 않고 먼저 방법을 문서화함
 - 4단계: 실험 실행
 - 스크립트와 결과 파일은 `track4` 이름으로 저장함
 - 5단계: 결과 검증
 - Warm / Cold를 분리해서 판단함
+- Warm은 작가 정보 활용 모델, Cold는 작가 정보 제외 모델을 별도 후보로 관리함
 - 6단계: 운영 판단 정리
 - 채택, 보류, 중단으로 결론을 남김
+
+### 7.1 Warm / Cold 분리 실행 순서
+
+| 순서 | Warm | Cold | 공통 판단 |
+|---:|---|---|---|
+| 1 | Warm split 작가가 train에 존재하는지 확인 | Cold split 작가가 train에 없는지 확인 | split 검증 실패 시 모델 실험 중단 |
+| 2 | 작품 구조 only baseline 생성 | 작품 구조 only baseline 생성 | 같은 기본 피처에서 출발 |
+| 3 | 작가명/작가 이력 피처 추가 | 작가 피처 제외 유지 | Warm/Cold 정보 차이 명확화 |
+| 4 | LightGBM/CatBoost/XGBoost/선형 비교 | LAD/Quantile/Huber/Ridge/Tree 비교 | 모델군을 분리해서 비교 |
+| 5 | 저이력 Warm 오차와 가격 범위 확인 | 2D/3D/대형/unknown 구간 오차와 가격 범위 확인 | 신뢰도 정책 분리 |
+| 6 | Warm 최종 후보 test 확인 | Cold 최종 후보 test 확인 | validation 선택, test 최종 확인 |
 
 ## 8. 평가 지표
 

@@ -54,6 +54,8 @@
 - `docs/track4_experiment_plan_v1.md`
 - 클렌징 파이프라인 문서
 - `docs/track4_cleaning_pipeline.md`
+- Warm / Cold 분리 프로세스 문서
+- `docs/track4_warm_cold_process.md`
 - 가설/실험 기록
 - `docs/track4_experiments/`
 - 실험 스크립트
