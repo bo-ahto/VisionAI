@@ -7,7 +7,8 @@
 ## 1. 기본 방향
 
 - Track 4는 split부터 시작하지 않음
-- 먼저 파편화된 1차 시장 데이터를 하나의 공통 schema로 모음
+- 먼저 파편화된 1차 시장 데이터를 원본 컬럼 그대로 모음
+- 그다음 공통 schema로 표준화함
 - 그다음 가격, 작가명, 작품명, 크기, 재료, 지지체를 정리함
 - 마지막에 학습 / 검증 / 테스트, Warm / Cold split을 생성함
 
@@ -108,14 +109,44 @@
 
 ## 5. 산출물
 
-- 원본 통합 데이터
+- 원본 보존 통합 데이터
+- `data/track4_primary_market_raw_collected.csv`
+- 원본 보존 통합 요약
+- `data/track4_primary_market_raw_collected_summary.json`
+- 원본 보존 생성 스크립트
+- `scripts/track4/build_primary_market_raw_collected.py`
+- 표준화 raw 통합 데이터
 - `data/track4_primary_market_raw_unified.csv`
-- 통합 요약
+- 표준화 raw 통합 요약
 - `data/track4_primary_market_raw_unified_summary.json`
-- 생성 스크립트
+- 표준화 raw 생성 스크립트
 - `scripts/track4/build_primary_market_unified.py`
 
-## 6. 현재 1차 통합 결과
+## 6. 현재 원본 보존 통합 결과
+
+- 생성일: 2026-05-15
+- 통합 파일
+- `data/track4_primary_market_raw_collected.csv`
+- 요약 파일
+- `data/track4_primary_market_raw_collected_summary.json`
+- 통합 규모
+- 전체 rows: `54,842`
+- 전체 columns: `132`
+- 출처별 rows
+- Saatchi: `21,721`
+- Artsy: `30,046`
+- Artue: `2,783`
+- Gallery primary: `292`
+- 처리 방식
+- 원천 파일의 컬럼명을 `<source>__<original_column>` 형태로 보존함
+- 다른 출처에 없는 컬럼은 빈칸으로 둠
+- 가격 파싱, 크기 파싱, 재료 분류, 파생값 생성을 하지 않음
+- 추가한 컬럼은 추적용 3개뿐임
+- `track4_source`
+- `track4_source_file`
+- `track4_source_row_index`
+
+## 7. 현재 표준화 raw 통합 결과
 
 - 생성일: 2026-05-15
 - 통합 파일
@@ -144,9 +175,12 @@
 - Q75: `7,245,000원`
 - 최대값: `55,200,000,000원`
 
-## 7. 현재 확인된 주의점
+## 8. 현재 확인된 주의점
 
-- 이 파일은 아직 최종 학습 데이터가 아님
+- `track4_primary_market_raw_collected.csv`가 최상위 원본 보존 파일임
+- `track4_primary_market_raw_unified.csv`는 이미 표준화/파생값이 일부 들어간 중간 산출물임
+- `track4_primary_market_cleaned_v1.csv`는 감사 규칙을 반영한 1차 클렌징 산출물임
+- cleaned 파일은 아직 최종 학습 데이터가 아님
 - 가격 이상치가 남아 있음
 - 예: 매우 낮은 가격, 수백억 단위 가격
 - 출처별 가격 분포 차이가 큼
@@ -156,11 +190,16 @@
 - 동명이인, 영문/한글명 통합, 표기 흔들림은 아직 정리 전임
 - `source`는 감사/분포 확인용으로 보존하되 운영 입력 피처로 사용하지 않음
 
-## 8. 다음 단계
+## 9. 다음 단계
 
-- 1단계: 원천 파일 통합
-- 2단계: 가격/크기/재료/작가명 결측률 점검
-- 3단계: 학습 제외 조건 정의
-- 4단계: 작가명 정규화 및 동명이인 후보 점검
-- 5단계: Track 4 기준 split 생성
-- 6단계: Warm / Cold baseline 재평가
+- 1단계: 원천 파일 원본 보존 통합
+- 완료: `track4_primary_market_raw_collected.csv`
+- 2단계: 표준화 raw 통합
+- 진행 중: `track4_primary_market_raw_unified.csv`
+- 3단계: 가격/크기/재료/작가명 결측률 점검
+- 진행 중
+- 4단계: 학습 제외 조건 정의
+- 진행 중: `track4_primary_market_cleaned_v1.csv`
+- 5단계: 작가명 정규화 및 동명이인 후보 점검
+- 6단계: Track 4 기준 split 생성
+- 7단계: Warm / Cold baseline 재평가
