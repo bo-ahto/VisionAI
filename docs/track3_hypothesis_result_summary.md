@@ -1017,6 +1017,37 @@
 - 추가 holdout 또는 CV에서 shrink 정책 재검증
 - 운영 적용 시 가격 범위 축소가 아니라 extreme prediction 완화 정책으로 분리 관리
 
+### H87-H92. Warm 가격 범위 폭을 줄일 수 있는가
+
+- 관련 실험
+- `H87_H92_warm_interval_width_reduction`
+- 사용 모델
+- H66 Warm larger-low-lr LightGBM 3개 seed 평균
+- 실험 원칙
+- 내부 Warm calibration residual로 그룹별 80% 가격 범위 폭을 계산
+- release Warm test에서는 coverage와 오차만 검증
+- 기준 결과
+- 전체 Warm: `x1.52`, coverage `0.821`, median APE `0.1024`
+- 주요 그룹 결과
+- A등급: `x1.26`, coverage `0.813`, median APE `0.0603`, p95 `0.5450`
+- B등급: `x1.31`, coverage `0.826`, median APE `0.0694`, p95 `0.6946`
+- C등급: `x1.59`, coverage `0.841`, median APE `0.1327`, p95 `0.9115`
+- D등급: `x1.94`, coverage `0.794`, median APE `0.1568`, p95 `2.2005`
+- 복합 low-risk: `x1.30`, coverage `0.823`, median APE `0.0617`, p95 `0.5513`
+- 복합 high-risk: `x1.61`, coverage `0.816`, median APE `0.1130`, p95 `1.2834`
+- 핵심 결과
+- Warm은 작가 이력 등급별로 가격 범위를 다르게 주면 일부 구간의 폭을 줄일 수 있음
+- A/B/복합 low-risk는 `x1.26~x1.31` 수준으로 좁은 범위가 가능함
+- D등급은 `x1.94`와 p95 `2.2005`로 신뢰도 경고가 필요함
+- shrink 보정 후보는 calibration 기준을 통과하지 못함
+- 현재 결론
+- H87, H88, H89, H91, H92는 채택
+- H90은 미채택
+- Warm은 모델 보정보다 구간별 출력 정책으로 가격 범위를 줄이는 것이 적절함
+- 남은 액션
+- 최종 운영 전 별도 holdout 또는 CV로 등급별 범위 재검증
+- production pipeline에 작가 이력 등급과 calibration 폭 산출 절차 고정
+
 ## 3. 현재 전체 요약
 
 - Warm 결과 기준 요약

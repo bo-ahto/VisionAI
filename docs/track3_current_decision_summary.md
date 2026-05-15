@@ -146,6 +146,22 @@
 | C: 4-10건 | x1.59 | 0.841 | 일반 범위 |
 | D: 1-3건 | x1.94 | 0.794 | 넓은 범위 + 신뢰도 경고 |
 
+### Warm 가격 범위 축소 추가 검증
+
+- H87-H92에서 Warm 가격 범위 폭을 줄일 수 있는지 추가 검증함
+- H66 Warm 모델을 기준으로 내부 calibration 폭을 계산하고 Warm test에 적용함
+- 주요 결과
+- A등급: `x1.26`, coverage `0.813`, median APE `0.0603`
+- B등급: `x1.31`, coverage `0.826`, median APE `0.0694`
+- 복합 low-risk: `x1.30`, coverage `0.823`, median APE `0.0617`
+- C등급: `x1.59`, coverage `0.841`, median APE `0.1327`
+- D등급: `x1.94`, coverage `0.794`, p95 APE `2.2005`
+- 판단
+- Warm은 전체 `x1.52`를 동일하게 적용하지 않는 것이 좋음
+- 작가 이력 등급별로 A/B는 좁은 범위, C는 일반 범위, D는 넓은 범위와 신뢰도 경고를 주는 방식이 더 적절함
+- shrink 보정 후보는 calibration 기준을 통과하지 못해 미채택
+- 운영 확정 전 별도 holdout 또는 CV 재검증 필요
+
 ### Cold 가격 범위 후보
 
 | Cold 구간 | 80% 가격 범위 배수 | test coverage | 판단 |

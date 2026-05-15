@@ -196,9 +196,9 @@
             <li>운영 확정 전 필수 보완: temporal-safe 작가 피처, calibration pipeline 고정</li>
           </ul>
           <div class="meta">
-            <span class="pill green">검증 완료 79개</span>
+            <span class="pill green">검증 완료 85개</span>
             <span class="pill amber">보류 2개</span>
-            <span class="pill">최신 가설 H86</span>
+            <span class="pill">최신 가설 H92</span>
             <span class="pill">최종 생성 2026-05-15</span>
           </div>
         </div>
@@ -305,6 +305,12 @@
             <table id="hypothesisTable">
               <thead><tr><th>가설</th><th>세부 목표</th><th>상태</th><th>검증 강도</th><th>요약</th><th>관련 실험</th><th>현재 판단</th><th>후속</th></tr></thead>
               <tbody>
+              <tr><td>H92</td><td>G6 안정성 확인 / G8 최종 후보 정책 결정</td><td><span class="status done">검증 완료</span></td><td>release test 반복 사용 리스크 확인</td><td>Warm 가격 범위 정책도 별도 holdout 또는 CV로 최종 재검증해야 한다</td><td><code>H87_H92_warm_interval_width_reduction</code></td><td>release test 반복 사용으로 운영 확정 전 추가 검증 필요</td><td>채택</td></tr>
+              <tr><td>H91</td><td>G8 최종 후보 정책 결정 / G7 신뢰도 대응</td><td><span class="status done">검증 완료</span></td><td>내부 calibration + release test 검증</td><td>Warm은 모델 교체보다 구간별 출력 정책으로 가격 범위를 줄이는 것이 적절할 것이다</td><td><code>H87_H92_warm_interval_width_reduction</code></td><td>전체 단일 폭보다 등급별 폭 적용이 더 실용적</td><td>채택</td></tr>
+              <tr><td>H90</td><td>G2 Warm 성능 개선 / G7 신뢰도 대응</td><td><span class="status done">검증 완료</span></td><td>내부 calibration + release test 검증</td><td>Warm high-risk 예측값 shrink로 전체 가격 범위 폭을 줄일 수 있을 것이다</td><td><code>H87_H92_warm_interval_width_reduction</code></td><td>calibration 기준을 통과한 shrink 후보 없음</td><td>미채택</td></tr>
+              <tr><td>H89</td><td>G7 신뢰도 대응 / G8 최종 후보 정책 결정</td><td><span class="status done">검증 완료</span></td><td>내부 calibration + release test 검증</td><td>Warm high-risk subset은 별도 넓은 범위와 신뢰도 경고가 필요할 것이다</td><td><code>H87_H92_warm_interval_width_reduction</code></td><td>D등급 p95 <code>2.2005</code>, 복합 high-risk <code>x1.61</code>로 경고 필요</td><td>채택</td></tr>
+              <tr><td>H88</td><td>G7 신뢰도 대응 / G8 최종 후보 정책 결정</td><td><span class="status done">검증 완료</span></td><td>내부 calibration + release test 검증</td><td>Warm low-risk subset은 전체 Warm보다 좁은 가격 범위로도 coverage를 유지할 수 있을 것이다</td><td><code>H87_H92_warm_interval_width_reduction</code></td><td>복합 low-risk는 <code>x1.30</code>, coverage <code>0.823</code>, median APE <code>0.0617</code></td><td>채택</td></tr>
+              <tr><td>H87</td><td>G2 Warm 성능 개선 / G7 신뢰도 대응</td><td><span class="status done">검증 완료</span></td><td>내부 calibration + release test 검증</td><td>작가 이력 등급별로 가격 범위를 나누면 일부 Warm 구간의 폭을 줄일 수 있을 것이다</td><td><code>H87_H92_warm_interval_width_reduction</code></td><td>A/B 등급은 <code>x1.26~x1.31</code>로 좁은 범위 가능, D는 <code>x1.94</code> 필요</td><td>채택</td></tr>
               <tr><td>H86</td><td>G6 안정성 확인 / G8 최종 후보 정책 결정</td><td><span class="status done">검증 완료</span></td><td>내부 calibration 선택 + release test 검증</td><td>tail 보정은 p95 개선과 median APE 손실을 함께 보는 기준이 필요하다</td><td><code>H81_H86_cold_tail_risk_mitigation</code></td><td>p95만 개선된 후보는 q80 폭/median/within-30%를 함께 봐야 함</td><td>채택</td></tr>
               <tr><td>H85</td><td>G7 신뢰도 대응 / G8 최종 후보 정책 결정</td><td><span class="status done">검증 완료</span></td><td>내부 calibration 선택 + release test 검증</td><td>Cold tail risk는 모델 보정보다 신뢰도 경고와 함께 관리하는 것이 더 적절할 것이다</td><td><code>H81_H86_cold_tail_risk_mitigation</code></td><td>tail은 줄일 수 있지만 가격 범위 폭은 줄지 않아 경고 정책이 계속 필요함</td><td>채택</td></tr>
               <tr><td>H84</td><td>G3 Cold 성능 개선 / G5 약점 구간 보완</td><td><span class="status done">검증 완료</span></td><td>내부 calibration 선택 + release test 검증</td><td>high-risk 작품에만 예측값 상하한 cap을 적용하면 큰 오차가 줄어들 것이다</td><td><code>H81_H86_cold_tail_risk_mitigation</code></td><td>cap 방식은 shrink보다 강한 후보로 남지 않음</td><td>미채택</td></tr>
@@ -412,6 +418,7 @@
             <table id="experimentTable">
               <thead><tr><th>날짜</th><th>실험 ID</th><th>가설</th><th>상태</th><th>Warm 결과</th><th>Cold 결과</th><th>결론</th><th>기록</th></tr></thead>
               <tbody>
+              <tr><td>2026-05-15</td><td>H87_H92_warm_interval_width_reduction</td><td>H87-H92</td><td><span class="status done">종결</span></td><td>A/B 등급 <code>x1.26~x1.31</code>, 복합 low-risk <code>x1.30</code>, D등급 <code>x1.94</code>; shrink 후보 없음</td><td>해당 없음</td><td>Warm은 모델 보정보다 작가 이력 등급별 가격 범위 출력으로 폭을 줄이는 것이 적절</td><td><a href="track3_experiments/2026-05-15_h87_h92_warm_interval_width_reduction.md">H87-H92 Warm 가격 범위 축소 기록</a></td></tr>
               <tr><td>2026-05-15</td><td>H81_H86_cold_tail_risk_mitigation</td><td>H81-H86</td><td><span class="status done">종결</span></td><td>해당 없음</td><td>best shrink 후보 p95 <code>1.4860 -&gt; 1.2961</code>, median <code>0.2786 -&gt; 0.2739</code>, q80 배수 <code>x2.00 -&gt; x2.08</code></td><td>tail risk는 줄일 수 있지만 가격 범위 폭은 줄지 않아 보정 후보로만 유지</td><td><a href="track3_experiments/2026-05-15_h81_h86_cold_tail_risk_mitigation.md">H81-H86 Cold tail risk 완화 기록</a></td></tr>
               <tr><td>2026-05-15</td><td>H73_H80_cold_risk_segmentation</td><td>H73-H80</td><td><span class="status done">종결</span></td><td>해당 없음</td><td>표준 3D <code>x2.06</code>, 선택적 후보 <code>x2.10</code>, 크기 low-risk <code>x2.14</code>; high-risk는 <code>x2.83~x3.00</code></td><td>Cold 저위험/고위험 구분은 가능하지만 low-risk도 폭이 넓어 단일 가격 서비스 수준은 아님</td><td><a href="track3_experiments/2026-05-15_h73_h80_cold_risk_segmentation.md">H73-H80 Cold 위험도 구분 기록</a></td></tr>
               <tr><td>2026-05-15</td><td>H70_H72_operational_revalidation</td><td>H70, H71, H72</td><td><span class="status done">종결</span></td><td>내부 calibration 기준 Warm 전체 coverage <code>0.821</code>, D등급 <code>0.794</code>; train 기준 Cold 3D 중간 부피 예외는 p95 악화</td><td>내부 Cold calibration 기준 전체 coverage <code>0.855</code>; H60 combo grid는 모든 기준에서 H32보다 median APE 악화</td><td>가격 범위 정책은 유지, Cold 3D 중간 부피 예외와 combo 정리는 미채택</td><td><a href="track3_experiments/2026-05-15_h70_h72_operational_revalidation.md">H70-H72 운영 전 재검증 기록</a></td></tr>
