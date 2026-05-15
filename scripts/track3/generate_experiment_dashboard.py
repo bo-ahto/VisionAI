@@ -239,6 +239,21 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
     .score small {{ display: block; color: var(--muted); font-weight: 700; margin-bottom: 6px; }}
     .score strong {{ display: block; font-size: 34px; letter-spacing: -0.05em; }}
     .score span {{ display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }}
+    .brief-grid {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }}
+    .brief {{
+      background: rgba(255, 250, 241, 0.9);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(44, 35, 22, 0.08);
+    }}
+    .brief h3 {{ font-size: 15px; margin: 0 0 8px; }}
+    .brief p {{ margin: 0; color: #465047; font-size: 13px; }}
+    .brief strong {{ display: block; margin-bottom: 4px; font-size: 20px; letter-spacing: -0.04em; }}
+    .brief.green {{ border-top: 5px solid var(--green); }}
+    .brief.blue {{ border-top: 5px solid var(--blue); }}
+    .brief.amber {{ border-top: 5px solid var(--amber); }}
+    .brief.red {{ border-top: 5px solid var(--red); }}
     .cards {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }}
     .card {{ background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 20px; }}
     .card p, .card li {{ margin: 0; color: #465047; font-size: 14px; }}
@@ -323,7 +338,7 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
       .page {{ display: block; }}
       aside {{ position: static; height: auto; }}
       main {{ padding: 22px; }}
-      .hero, .cards, .decision, .goal-grid {{ grid-template-columns: 1fr; }}
+      .hero, .cards, .decision, .goal-grid, .brief-grid {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
@@ -345,27 +360,52 @@ def dashboard_html(hypothesis_rows: list[dict[str, str]], experiment_rows: list[
     <main>
       <section class="hero" id="summary">
         <div class="panel">
-          <h1>Track 3 실험 현황</h1>
+          <h1>Track 3 현재 판단</h1>
           <ul class="summary-list">
-            <li>목표: 작품 1건의 정보를 기반으로 가격 예측 모델 후보를 선정</li>
-            <li>평가 원칙: Warm / Cold를 합치지 않고 분리 판단</li>
-            <li>Warm 현재 후보: H66 <code>H31 피처셋 + larger-low-lr LightGBM</code></li>
-            <li>Cold 현재 후보: H32 <code>2D 기본 + 3D 전용</code> 조건부 fallback</li>
+            <li>현재 결론: Warm / Cold 단일 공유 모델보다 분리 운영이 타당</li>
+            <li>Warm: H66 <code>larger-low-lr LightGBM</code> 후보를 우선 유지</li>
+            <li>Cold: H32 <code>2D 기본 + 3D 전용</code> 조건부 fallback 후보 유지</li>
+            <li>서비스 출력: 단일 가격보다 가격 범위와 신뢰도 경고를 함께 제공</li>
+            <li>운영 확정 전 필수 보완: temporal-safe 작가 피처, calibration pipeline 고정</li>
           </ul>
           <div class="meta">
             <span class="pill green">검증 완료 {done}개</span>
             <span class="pill amber">보류 {hold}개</span>
             <span class="pill">최신 가설 {latest}</span>
+            <span class="pill">최종 생성 {today}</span>
           </div>
         </div>
         <div class="panel">
-          <h2>핵심 지표</h2>
+          <h2>운영 후보 지표</h2>
           <div class="score-grid">
             <div class="score"><small>Warm 최종 후보</small><strong>0.1051</strong><span>H66, larger-low-lr multi-seed 평균</span></div>
-            <div class="score"><small>Warm 탐색 최고 기록</small><strong>0.1031</strong><span>PR7, 탐색/CV 기준</span></div>
             <div class="score"><small>Cold 최적 후보</small><strong>0.2786</strong><span>H32, 3D 조건부 fallback</span></div>
-            <div class="score"><small>Cold 2D 위험</small><strong>0.6071</strong><span>3D 피처 일괄 적용 시 악화</span></div>
+            <div class="score"><small>Warm 가격범위 커버리지</small><strong>0.821</strong><span>H70 내부 calibration 기준</span></div>
+            <div class="score"><small>Cold 가격범위 커버리지</small><strong>0.855</strong><span>H70 내부 calibration 기준</span></div>
           </div>
+        </div>
+      </section>
+
+      <section class="brief-grid">
+        <div class="brief green">
+          <h3>모델 라우팅</h3>
+          <strong>작가 학습 이력 1건 기준</strong>
+          <p>학습 데이터에 작가가 있으면 Warm, 없으면 Cold. H68에서 3건/5건 기준은 성능 악화로 미채택.</p>
+        </div>
+        <div class="brief blue">
+          <h3>운영 입력 피처</h3>
+          <strong>운영 가능 피처만 유지</strong>
+          <p>작품 구조, 호수, 3D, Warm 작가 이력 피처를 사용. 데이터 출처/가격대 같은 운영 불가 피처는 제외.</p>
+        </div>
+        <div class="brief amber">
+          <h3>검증 리스크</h3>
+          <strong>test 반복 사용 주의</strong>
+          <p>release split으로 많은 결정을 했으므로, 출시 전 새 holdout 또는 내부 CV로 최종 재확인이 필요.</p>
+        </div>
+        <div class="brief red">
+          <h3>운영 전 blocker</h3>
+          <strong>temporal-safe 미해결</strong>
+          <p>작가 가격 통계는 거래 시점 이전 정보만 쓰는 방식으로 재검증해야 운영 확정 가능.</p>
         </div>
       </section>
 
