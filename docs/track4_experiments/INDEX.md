@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-15 | T4-E008 | T4-C2 | 완료 | raw collected 기준 크기 정합성 감사, 정상 후보 `54,441`건 확인 | [기록](2026-05-15_T4-E008_size_consistency_audit.md) |
 | 2026-05-15 | T4-E007 | T4-C1 | 완료 | raw collected 기준 가격 정합성 감사, 정상 후보 `34,883`건 확인 | [기록](2026-05-15_T4-E007_price_consistency_audit.md) |
 | 2026-05-15 | T4-E006 | T4-H0 | 완료 | raw collected 기반 클렌징 실험 계획 수립 | [기록](2026-05-15_T4-E006_cleaning_experiment_plan.md) |
 | 2026-05-15 | T4-E005 | T4-H0 | 완료 | 원본 컬럼 보존 raw collected `54,842`건 생성 | [기록](2026-05-15_T4-E005_raw_collected_union.md) |
