@@ -986,6 +986,37 @@
 - Cold 서비스 정책은 `참고 추정가 + 넓은 범위 + 낮은 신뢰도` 중심으로 유지
 - high-risk 조건은 운영 경고 정책에 연결
 
+### H81-H86. Cold tail risk를 후처리로 줄일 수 있는가
+
+- 관련 실험
+- `H81_H86_cold_tail_risk_mitigation`
+- 사용 모델
+- H32 Cold 조건부 fallback
+- 실험 원칙
+- 정책 선택은 내부 Cold calibration에서만 수행
+- release Cold test는 최종 검증에만 사용
+- 기준 결과
+- median APE `0.2786`
+- p95 APE `1.4860`
+- p99 APE `3.6093`
+- q80 가격 배수 `x2.00`
+- 주요 후보 결과
+- 복합 high-risk 중앙값 shrink 0.40: p95 `1.4860 -> 1.2226`, median `0.2786 -> 0.2828`, q80 배수 `x2.00 -> x2.13`
+- high-risk 재료 중앙값 shrink 0.30: p95 `1.4860 -> 1.2961`, median `0.2786 -> 0.2739`, q80 배수 `x2.00 -> x2.08`
+- high-risk 중앙값 shrink 0.20: p95 `1.4860 -> 1.3130`, median `0.2786 -> 0.2706`, q80 배수 `x2.00 -> x2.03`
+- 핵심 결과
+- p95 tail risk는 줄일 수 있음
+- median APE도 일부 후보에서 유지 또는 개선됨
+- 하지만 q80 가격 배수는 줄지 않음
+- 현재 결론
+- H82/H83은 tail-risk 보정 후보로 부분 채택
+- H81/H84는 미채택
+- H85/H86은 채택
+- Cold는 tail 보정만으로 가격 범위가 좁아지지는 않으므로 신뢰도 경고가 계속 필요함
+- 남은 액션
+- 추가 holdout 또는 CV에서 shrink 정책 재검증
+- 운영 적용 시 가격 범위 축소가 아니라 extreme prediction 완화 정책으로 분리 관리
+
 ## 3. 현재 전체 요약
 
 - Warm 결과 기준 요약
