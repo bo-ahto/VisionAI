@@ -24,7 +24,7 @@
 </style></head><body>
 
 <h1>Track 3 — 가격 예측 모델링 결과 v2</h1>
-<p class="meta">생성일: 2026-05-12 01:19 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</p>
+<p class="meta">생성일: 2026-05-12 01:19 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code>(실험 계획 검토 완료)</p>
 
 <blockquote style="background: #dbeafe; border-color: #2563eb;">
 <b>v1 → v2 변경</b>:
@@ -37,13 +37,13 @@
 </ul>
 </blockquote>
 
-<h2>🎯 최종 운영 권장 (v2)</h2>
+<h2>🎯 최종 운영 제안 (v2)</h2>
 <table>
 <tr><th>조건</th><th>모델</th><th>med_APE</th><th>W30</th><th>80% 신뢰구간</th><th>주의사항</th></tr>
 <tr class='best'><td><b>학습 ≥1건 작가</b></td><td>Warm LightGBM (tuned)</td><td class='num'>0.116</td><td class='num'>0.75</td><td>±44%</td><td>artist signal 활용</td></tr>
-<tr><td>학습 0건 (신규)</td><td>Cold LAD</td><td class='num'>0.431±0.028</td><td class='num'>0.37</td><td>±115%</td><td>outer holdout 0.389</td></tr>
+<tr><td>학습 0건 (신규)</td><td>Cold LAD</td><td class='num'>0.431±0.028</td><td class='num'>0.37</td><td>±115%</td><td>outer 검증용 분리 데이터 0.389</td></tr>
 <tr class='warn'><td>거장 (&gt;10M, Warm)</td><td>Warm 2-stage</td><td class='num'>0.15</td><td>—</td><td>—</td><td>&gt;100M med_APE 0.04</td></tr>
-<tr class='critical'><td>거장 (&gt;100M, Cold)</td><td>예측 불가</td><td class='num err'>0.984</td><td>—</td><td class='err'>비신뢰</td><td>🔴 가격 가이드 비공개 권장</td></tr>
+<tr class='critical'><td>거장 (&gt;100M, Cold)</td><td>예측 불가</td><td class='num err'>0.984</td><td>—</td><td class='err'>비신뢰</td><td>🔴 가격 가이드 비공개 제안</td></tr>
 </table>
 
 <h2>🔴 가장 중요한 운영 caveat</h2>
@@ -54,12 +54,12 @@
     <ul>
       <li>운영 시 source 정보 없이 예측하면 ±20-45% 오차</li>
       <li>Artsy 작품을 Saatchi 모델로 예측 → underestimate ~30%</li>
-      <li><b>권장</b>: 운영에서 source 정보 입력 또는 source별 calibration factor 적용</li>
+      <li><b>제안</b>: 운영에서 source 정보 입력 또는 source별 가격 범위 보정 factor 적용</li>
     </ul>
   </li>
   <li>🔴 <b>Warm 0.123은 "학습된 작가 신규 작품" 기준</b>. 실 운영에서 신규 작가 섞이면 평균 정확도는 더 낮음 (0.15-0.40 사이).</li>
   <li>🔴 <b>&gt;100M Cold 작품은 사실상 예측 불가</b> (med_APE 0.889). Warm 라우팅 필수.</li>
-  <li>⚠️ 시간 split 없음 — temporal validation 불가 (가격 트렌드 변화 X)</li>
+  <li>⚠️ 시간 split 없음 — 시간 기준 검증 불가 (가격 트렌드 변화 X)</li>
   <li>⚠️ 실제 거래가 ≠ 게시가 (미판매 / 협상 / 갤러리 마진)</li>
 </ul>
 </blockquote>
@@ -133,7 +133,7 @@
 <h3>Linear Regression — Source Effect (controls: medium/area/ho/orientation)</h3>
 <table>
 <tr><th>Source</th><th>log coefficient</th><th>vs Saatchi (%)</th></tr>
-<tr><td>Saatchi (baseline)</td><td class='num'>0</td><td class='num'>—</td></tr>
+<tr><td>Saatchi (비교 기준)</td><td class='num'>0</td><td class='num'>—</td></tr>
 <tr class='critical'><td><b>Artsy</b></td><td class='num'>+0.375</td><td class='num'><b>+45.5%</b></td></tr>
 <tr><td>Artue</td><td class='num'>+0.010</td><td class='num'>+1.0%</td></tr>
 </table>
@@ -141,7 +141,7 @@
 <blockquote style="background: #fee2e2;">
 <b>🔴 결론</b>: 동일 작품 특성 (medium/크기/호수/orientation) 대비 <b>Artsy listing이 Saatchi 대비 45.5% 비쌈</b>.
 갤러리 마크업 가설 정량 입증.<br>
-<b>운영 영향</b>: source 정보 없이 예측 시 ±20-45% 오차 가능 → source 입력 또는 calibration 필요.
+<b>운영 영향</b>: source 정보 없이 예측 시 ±20-45% 오차 가능 → source 입력 또는 가격 범위 보정 필요.
 </blockquote>
 
 <h2>📐 PR1 — LightGBM Optuna Tuning</h2>
@@ -177,7 +177,7 @@
 <h2>📏 PR3 — Conformal Prediction</h2>
 <h3>Coverage + 폭 (예측가 대비)</h3>
 <table>
-<tr><th>모델</th><th>Target</th><th>Overall coverage</th><th>폭 (±%)</th><th>B4 coverage</th></tr>
+<tr><th>모델</th><th>Target</th><th>Overall 포함률</th><th>폭 (±%)</th><th>B4 포함률</th></tr>
 <tr class=''><td>Warm LGB</td><td>80pct</td><td class='num'>0.816</td><td class='num'>±44.2%</td><td class='num'>0.747</td></tr>
 <tr class=''><td>Warm LGB</td><td>90pct</td><td class='num'>0.914</td><td class='num'>±78.2%</td><td class='num'>0.862</td></tr>
 <tr class='warn'><td>Cold LAD</td><td>80pct</td><td class='num'>0.806</td><td class='num'>±115.7%</td><td class='num'>0.471</td></tr>
@@ -196,22 +196,22 @@
 <h2>📋 Phase별 진행 요약</h2>
 <table>
 <tr><th>Phase</th><th>목표 / Gate</th><th>최선 결과</th><th>핵심 발견</th></tr>
-<tr><td>0</td><td>baseline + ho/area ablation</td><td>median 0.754 / LGB both 0.472</td><td>both 유지 (MAPE 안정)</td></tr>
+<tr><td>0</td><td>비교 기준 + ho/area ablation</td><td>median 0.754 / LGB both 0.472</td><td>both 유지 (MAPE 안정)</td></tr>
 <tr><td>1 (선형)</td><td>cold &lt; 75%</td><td>LAD 0.429 / Quantile 0.314</td><td>Cold LAD가 outlier robust</td></tr>
 <tr><td>2 (비선형)</td><td>cold &lt; 60%</td><td>LGB 0.473 / Warm LGB 0.119</td><td>Cold는 선형이 우세</td></tr>
 <tr><td>3 (Hybrid)</td><td>cold &lt; 55%</td><td>best blend 0.421</td><td>Hybrid 가치 작음</td></tr>
 <tr><td>4 (Cold 특화)</td><td>cold &lt; 50%</td><td>KNN_k10 0.494</td><td>6 features 한계</td></tr>
 <tr><td>4.5 (거장 2-stage)</td><td>B4/&gt;100M 해결</td><td>Warm &gt;100M 0.042</td><td>Cold는 부분 해결</td></tr>
-<tr><td>5 (최종)</td><td>95% CI + 감사</td><td>Cold 0.429, Warm 0.123</td><td>Outer holdout Cold 0.389</td></tr>
+<tr><td>5 (최종)</td><td>95% CI + 감사</td><td>Cold 0.429, Warm 0.123</td><td>Outer 검증용 분리 데이터 Cold 0.389</td></tr>
 </table>
 
 <h2>📂 산출물</h2>
 <ul>
-  <li><b>Plan</b>: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</li>
+  <li><b>Plan</b>: <code>docs/track3_modeling_plan_v2_1.md</code>(실험 계획 검토 완료)</li>
   <li><b>최종 모델 코드</b>:
     <ul>
       <li><code>scripts/track3/split_data.py</code></li>
-      <li><code>scripts/track3/baseline.py</code> / <code>train_linear_{cold,warm}.py</code> / <code>train_tree_{cold,warm}.py</code></li>
+      <li><code>scripts/track3/비교 기준.py</code> / <code>train_linear_{cold,warm}.py</code> / <code>train_tree_{cold,warm}.py</code></li>
       <li><code>scripts/track3/train_hybrid.py</code> / <code>train_coldstart.py</code> / <code>train_two_stage.py</code></li>
       <li><code>scripts/track3/train_phase5_final.py</code></li>
     </ul>
@@ -230,14 +230,14 @@
 
 <h2>🔄 미실행 (향후 작업)</h2>
 <ol>
-  <li><b>Source feature 학습 input 추가</b> (PR5 결과 반영) — Artsy +45.5% calibration</li>
-  <li><b>Time-aware validation</b> — listing year 수집 후 temporal split</li>
-  <li><b>Multi-seed Warm + Outer holdout balanced</b></li>
+  <li><b>Source feature 학습 input 추가</b> (PR5 결과 반영) — Artsy +45.5% 가격 범위 보정</li>
+  <li><b>시간 기준 검증</b> — listing year 수집 후 temporal split</li>
+  <li><b>Multi-seed Warm + Outer 검증용 분리 데이터 balanced</b></li>
   <li><b>Cold 호수별 separate model</b> — B4 거장만 별도 학습</li>
-  <li><b>운영 라우팅 production 구현</b> + monitoring</li>
+  <li><b>운영 모델 선택 규칙 구현</b> + 운영 모니터링</li>
 </ol>
 
-<p class="meta" style="margin-top: 36px;">Track 3 모델링 — 9-phase + 5-PR 완료. Codex 3회 검수 통과.<br>
+<p class="meta" style="margin-top: 36px;">Track 3 모델링 — 9-phase + 5-PR 완료. 반복 검토 완료.<br>
 v2: 후속 PR 5건 통합 + source bias 발견 + 운영 가이드 단순화.</p>
 
 </body></html>

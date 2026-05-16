@@ -21,7 +21,7 @@
 </style></head><body>
 
 <h1>Track 3 — 가격 예측 모델링 결과 v3</h1>
-<p class="meta">생성일: 2026-05-12 02:13 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</p>
+<p class="meta">생성일: 2026-05-12 02:13 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code>(실험 계획 검토 완료)</p>
 
 <blockquote class="new" style="border-color: #2563eb;">
 <b>v2 → v3 변경</b>:
@@ -32,8 +32,8 @@
       <li>Warm ALL features: <b>0.115 → 0.104 (-0.012, 10% 향상)</b></li>
     </ul>
   </li>
-  <li>🔬 <b>Codex 권장 정확</b>: Source feature 효과 (Cold -0.016) + popularity Cold 위험 (+0.016 악화)</li>
-  <li>📋 다음 단계: <b>PR8 (Conditional expert + fallback)</b> — Codex 검수 통과</li>
+  <li>🔬 <b>초기 판단과 일치</b>: Source feature 효과 (Cold -0.016) + popularity Cold 위험 (+0.016 악화)</li>
+  <li>📋 다음 단계: <b>PR8 (Conditional expert + 보조 방식)</b> — 검토 완료</li>
 </ul>
 </blockquote>
 
@@ -50,8 +50,8 @@
 
 <h3>Cold LAD (5-fold GroupKFold OOF, fold-median)</h3>
 <table>
-<tr><th>Variant</th><th>med_APE</th><th>MAPE</th><th>RMSE_log</th><th>W30</th><th>vs baseline</th></tr>
-<tr class=''><td>baseline</td><td class='num'>0.429</td><td class='num'>0.659</td><td class='num'>0.801</td><td class='num'>0.349</td><td class='num'>+0.000</td></tr>
+<tr><th>Variant</th><th>med_APE</th><th>MAPE</th><th>RMSE_log</th><th>W30</th><th>vs 비교 기준</th></tr>
+<tr class=''><td>비교 기준</td><td class='num'>0.429</td><td class='num'>0.659</td><td class='num'>0.801</td><td class='num'>0.349</td><td class='num'>+0.000</td></tr>
 <tr class='new'><td>source</td><td class='num'>0.413</td><td class='num'>0.671</td><td class='num'>0.780</td><td class='num'>0.361</td><td class='num'>-0.016</td></tr>
 <tr class=''><td>interaction</td><td class='num'>0.426</td><td class='num'>0.661</td><td class='num'>0.794</td><td class='num'>0.368</td><td class='num'>-0.002</td></tr>
 <tr class='err'><td>popularity</td><td class='num'>0.444</td><td class='num'>0.628</td><td class='num'>0.799</td><td class='num'>0.354</td><td class='num'>+0.016</td></tr>
@@ -61,8 +61,8 @@
 
 <h3>Warm Tuned LGB (random 80/10/10 × N=3)</h3>
 <table>
-<tr><th>Variant</th><th>med_APE (mean±std)</th><th>MAPE</th><th>W30</th><th>vs baseline</th></tr>
-<tr class=''><td>baseline</td><td class='num'>0.115±0.003</td><td class='num'>0.276</td><td class='num'>0.753</td><td class='num'>+0.000</td></tr>
+<tr><th>Variant</th><th>med_APE (mean±std)</th><th>MAPE</th><th>W30</th><th>vs 비교 기준</th></tr>
+<tr class=''><td>비교 기준</td><td class='num'>0.115±0.003</td><td class='num'>0.276</td><td class='num'>0.753</td><td class='num'>+0.000</td></tr>
 <tr class=''><td>source</td><td class='num'>0.116±0.003</td><td class='num'>0.272</td><td class='num'>0.761</td><td class='num'>+0.000</td></tr>
 <tr class=''><td>interaction</td><td class='num'>0.117±0.001</td><td class='num'>0.279</td><td class='num'>0.750</td><td class='num'>+0.001</td></tr>
 <tr class='best'><td>popularity</td><td class='num'>0.103±0.001</td><td class='num'>0.262</td><td class='num'>0.773</td><td class='num'>-0.012</td></tr>
@@ -71,21 +71,21 @@
 </table>
 
 <blockquote>
-<b>핵심 발견 (Codex 예측 정확)</b>:
+<b>핵심 발견 (초기 판단과 일치)</b>:
 <ul>
   <li>✅ <b>Cold source -0.016</b>: PR5에서 입증된 +45.5% bias 정량 흡수 확인</li>
-  <li>⚠️ <b>Cold popularity +0.016 악화</b>: cold-start unseen 작가에 popularity 의미 없음 (Codex 경고 적중)</li>
+  <li>⚠️ <b>Cold popularity +0.016 악화</b>: cold-start unseen 작가에 popularity 의미 없음 (초기 우려와 일치)</li>
   <li>★ <b>Cold ALL -0.038 (9% 향상)</b>: 단일 feature 합보다 더 큰 효과 (상호보완)</li>
   <li>✅ <b>Warm popularity -0.012</b>: artist signal과 결합 효과 최대</li>
   <li>· Warm source 효과 미미: artist categorical이 이미 source 정보 포함</li>
-  <li>· N=3이라 0.103/0.104는 사실상 동률 (Codex 경고)</li>
+  <li>· N=3이라 0.103/0.104는 사실상 동률 (해석 주의)</li>
 </ul>
 </blockquote>
 
 <h2>🔴 Source Bias (PR5 — v2에서 발견, PR7 흡수)</h2>
 <table>
 <tr><th>Source</th><th>log coef</th><th>vs Saatchi (%)</th></tr>
-<tr><td>Saatchi (baseline)</td><td class='num'>0</td><td>—</td></tr>
+<tr><td>Saatchi (비교 기준)</td><td class='num'>0</td><td>—</td></tr>
 <tr class='critical'><td><b>Artsy</b></td><td class='num'>+0.375</td><td class='num'><b>+45.5%</b></td></tr>
 <tr><td>Artue</td><td class='num'>+0.010</td><td class='num'>+1.0%</td></tr>
 </table>
@@ -103,12 +103,12 @@ PR7에서 Cold source feature 추가 → med_APE -0.016 (직접 흡수 확인).
 <tr><td>PR4 Multi-seed Cold</td><td>✓ 완료</td><td>CI [0.407, 0.454]</td></tr>
 <tr><td>PR5 Source bias</td><td>✓ 완료</td><td>🔴 Artsy +45.5% 입증</td></tr>
 <tr class='best'><td><b>PR7 Feature Eng 묶음</b></td><td><b>✓ 완료 (v3)</b></td><td><b>Cold -3.8pp, Warm -1.2pp</b></td></tr>
-<tr class='new'><td><b>PR8 Conditional expert</b></td><td><b>🔄 진행 중</b></td><td>price-band/source soft expert, Codex 권장</td></tr>
+<tr class='new'><td><b>PR8 Conditional expert</b></td><td><b>🔄 진행 중</b></td><td>price-band/source soft expert, 후속 검토 후보</td></tr>
 <tr><td>PR9 Quantile + reweight</td><td>대기</td><td>PR8 다음 (분리 평가)</td></tr>
 <tr><td>PR10 Time-aware</td><td>데이터 의존</td><td>listing year 수집 후</td></tr>
 </table>
 
-<h2>🎯 운영 권장 (v3 갱신)</h2>
+<h2>🎯 운영 제안 (v3 갱신)</h2>
 <table>
 <tr><th>조건</th><th>모델</th><th>med_APE</th><th>W30</th><th>주의</th></tr>
 <tr class='best'><td>학습 ≥1건 작가</td><td>Warm Tuned LGB + ALL features</td><td class='num'>0.104</td><td class='num'>0.78</td><td>artist signal 활용</td></tr>
@@ -123,13 +123,13 @@ PR7에서 Cold source feature 추가 → med_APE -0.016 (직접 흡수 확인).
   <li>🔴 <b>Source bias +45.5%</b> (Artsy 갤러리 마크업) — PR7에서 부분 흡수, 운영 시 source 입력 필수</li>
   <li>🔴 <b>Warm 0.104는 "학습된 작가 신규 작품" 기준</b>. 실 운영 신규 작가 섞이면 0.15-0.40</li>
   <li>🔴 <b>&gt;100M Cold 0.98</b>: 사실상 예측 불가, PR8에서 conditional expert로 시도 중</li>
-  <li>⚠️ 시간 split 없음 — temporal validation 불가</li>
-  <li>⚠️ Cold popularity feature는 cold-start에 악화 (운영 시 사용 X 권장)</li>
+  <li>⚠️ 시간 split 없음 — 시간 기준 검증 불가</li>
+  <li>⚠️ Cold popularity feature는 cold-start에 악화 (운영 시 사용 제외 제안)</li>
 </ul>
 
 <h2>📂 산출물</h2>
 <ul>
-  <li><b>Plan</b>: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</li>
+  <li><b>Plan</b>: <code>docs/track3_modeling_plan_v2_1.md</code>(실험 계획 검토 완료)</li>
   <li><b>최종 모델 코드 (8 phase)</b>: <code>scripts/track3/split_data.py</code> ~ <code>train_phase5_final.py</code></li>
   <li><b>후속 PR 코드 (6건)</b>:
     <ul>
@@ -144,7 +144,7 @@ PR7에서 Cold source feature 추가 → med_APE -0.016 (직접 흡수 확인).
   </li>
 </ul>
 
-<p class="meta" style="margin-top: 36px;">Track 3 모델링 — 9-phase + 7-PR 완료, PR8 진행 중. Codex 4회 검수 통과.<br>
+<p class="meta" style="margin-top: 36px;">Track 3 모델링 — 9-phase + 7-PR 완료, PR8 진행 중. 반복 검토 완료.<br>
 v3: PR7 통합 + Cold/Warm 모두 의미 있는 향상 (9-10%).</p>
 
 </body></html>

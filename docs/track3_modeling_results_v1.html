@@ -19,7 +19,7 @@
 </style></head><body>
 
 <h1>Track 3 — 가격 예측 모델링 결과 v1</h1>
-<p class="meta">생성일: 2026-05-11 23:11 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</p>
+<p class="meta">생성일: 2026-05-11 23:11 / Plan: <code>docs/track3_modeling_plan_v2_1.md</code>(실험 계획 검토 완료)</p>
 
 <h2>🎯 목표 & 데이터</h2>
 <ul>
@@ -30,7 +30,7 @@
 <table>
 <tr><th>항목</th><th>값</th></tr>
 <tr><td>Dev pool</td><td class="num">32,891 rows / 1,706 작가</td></tr>
-<tr><td>Outer holdout (Phase 5 감사)</td><td class="num">7,246 rows / 426 작가 (20%)</td></tr>
+<tr><td>Outer 검증용 분리 데이터 (Phase 5 감사)</td><td class="num">7,246 rows / 426 작가 (20%)</td></tr>
 <tr><td>Source</td><td>Artsy 10,584 / Saatchi 26,844 (67%) / Artue 2,709</td></tr>
 <tr><td>Target</td><td><code>ln_price_krw_unified</code> (학습) → <code>exp()</code> 복원 (평가)</td></tr>
 <tr><td>Feature (Cold)</td><td>medium, support, has_depth, log_area, estimated_ho, orientation (6개)</td></tr>
@@ -48,7 +48,7 @@
 <h2>📊 Phase 0 — Baseline + ho/area Ablation</h2>
 <table>
 <tr><th>Variant</th><th>med_APE</th><th>MAPE</th><th>W30</th></tr>
-<tr><td>median baseline</td><td class='num'>0.754</td><td class='num'>1.264</td><td class='num'>0.190</td></tr>
+<tr><td>median 비교 기준</td><td class='num'>0.754</td><td class='num'>1.264</td><td class='num'>0.190</td></tr>
 <tr><td>LGB both</td><td class='num'>0.472</td><td class='num'>0.813</td><td class='num'>0.336</td></tr>
 <tr><td>LGB area_only</td><td class='num'>0.473</td><td class='num'>0.948</td><td class='num'>0.332</td></tr>
 <tr><td>LGB ho_only</td><td class='num'>0.505</td><td class='num'>0.827</td><td class='num'>0.327</td></tr>
@@ -187,15 +187,15 @@ XGBoost는 2K+ unique categorical 처리 약함.</blockquote>
 <tr class='best'><td>Cold LAD</td><td class='num'>0.389</td><td class='num'>0.392</td><td>dev 0.429보다 좋음 (robust 입증)</td></tr>
 <tr class='warn'><td>Warm LGB</td><td class='num'>0.420</td><td class='num'>0.364</td><td>unseen 작가 → 자동 cold-start</td></tr>
 </table>
-<blockquote>Outer holdout = 전부 unseen artist이므로 Warm 모델 본질적으로 cold-start 시나리오. 운영 시 unseen 작가는 Cold LAD로 라우팅 권장.</blockquote>
-<h2>🎯 운영 권장 (라우팅 + 모델)</h2>
+<blockquote>Outer 검증용 분리 데이터 = 전부 unseen artist이므로 Warm 모델 본질적으로 cold-start 시나리오. 운영 시 unseen 작가는 Cold LAD로 모델 선택 규칙 제안.</blockquote>
+<h2>🎯 운영 제안 (라우팅 + 모델)</h2>
 <table>
 <tr><th>조건</th><th>모델</th><th>예상 정확도</th><th>주의사항</th></tr>
 <tr><td>학습 ≥3건 작가</td><td>Warm LightGBM</td><td class='best'>med_APE ~0.12 / W30 ~75%</td><td>⚠️ 학습된 작가 신규 작품 기준</td></tr>
 <tr><td>학습 1-2건 작가 (rare)</td><td>Warm/Cold blend</td><td>med_APE ~0.20-0.30 (추정)</td><td>blend 비율은 후속 PR에서 grid search</td></tr>
-<tr><td>학습 0건 작가 (cold)</td><td>Cold LAD</td><td>med_APE ~0.39-0.43</td><td>outer holdout 0.389 / dev OOF 0.429</td></tr>
+<tr><td>학습 0건 작가 (cold)</td><td>Cold LAD</td><td>med_APE ~0.39-0.43</td><td>outer 검증용 분리 데이터 0.389 / dev OOF 0.429</td></tr>
 <tr><td>고가 작품 (&gt;10M, &lt;100M)</td><td>Warm 2-stage</td><td class='best'>med_APE ~0.15</td><td>학습된 작가 한정</td></tr>
-<tr class='warn'><td>고가 작품 (&gt;100M) Cold</td><td>예측 불가</td><td class='err'>med_APE 0.889</td><td>🔴 가격 가이드 비공개 또는 "문의" 처리 권장</td></tr>
+<tr class='warn'><td>고가 작품 (&gt;100M) Cold</td><td>예측 불가</td><td class='err'>med_APE 0.889</td><td>🔴 가격 가이드 비공개 또는 "문의" 처리 제안</td></tr>
 <tr><td>고가 작품 (&gt;100M) Warm</td><td>Warm 2-stage</td><td class='best'>med_APE 0.042</td><td>거장 학습 데이터 있을 때만</td></tr>
 </table>
 
@@ -203,15 +203,15 @@ XGBoost는 2K+ unique categorical 처리 약함.</blockquote>
 <ul>
   <li>🔴 본 모델은 <b>"listing-price prediction"</b>이지 "시장가치 예측" 아님 (절대가격 해석 보수적으로)</li>
   <li>🔴 <b>Warm med_APE 0.123은 "학습된 작가의 신규 작품" 기준</b>. 실 운영에서 신규 작가가 섞이면 평균 정확도는 더 낮음 (cold mix 비율에 따라 0.15-0.30 사이 추정).</li>
-  <li>🔴 <b>&gt;100M 고가 작품 Cold-start는 사실상 예측 불가</b> (med_APE 0.889). 운영 시 가격 가이드 비공개 또는 "문의" 처리 권장. Warm 모델 (학습 작가)은 정상 (med_APE 0.042).</li>
+  <li>🔴 <b>&gt;100M 고가 작품 Cold-start는 사실상 예측 불가</b> (med_APE 0.889). 운영 시 가격 가이드 비공개 또는 "문의" 처리 제안. Warm 모델 (학습 작가)은 정상 (med_APE 0.042).</li>
   <li>⚠️ Phase 2 비선형 모델은 <b>default hyperparameter</b> 사용. Optuna tuning한 LightGBM이 후속 PR에서 LAD를 추월할 가능성 — Cold 모델 final 결정은 tuning 후 재검토.</li>
-  <li>시간 split 없음 — temporal validation 불가 (가격 트렌드 변화 평가 X)</li>
-  <li>Singleton artist 299명 / ≤2건 516명 — 운영은 rare artist fallback 규칙. blend 비율은 Phase 5에서 정성적 권장만, grid search는 후속 PR.</li>
-  <li>Cold LAD 5-fold OOF (0.429) vs outer holdout (0.389) 차이는 작가 sampling variance로 추정. 두 추정치 모두 합리적 범위 (단정 X).</li>
+  <li>시간 split 없음 — 시간 기준 검증 불가 (가격 트렌드 변화 평가 X)</li>
+  <li>Singleton artist 299명 / ≤2건 516명 — 운영은 rare artist 보조 방식 규칙. blend 비율은 Phase 5에서 정성적 제안만, grid search는 후속 PR.</li>
+  <li>Cold LAD 5-fold OOF (0.429) vs outer 검증용 분리 데이터 (0.389) 차이는 작가 sampling variance로 추정. 두 추정치 모두 합리적 범위 (단정 X).</li>
   <li>Warm 95% CI [0.120, 0.126]는 같은 dev pool random split correlation 큼 → "분포 폭"이 아니라 "split sensitivity" 추정치로 해석.</li>
 </ul>
 
-<h2>🔄 후속 PR 권장</h2>
+<h2>🔄 후속 실험 제안</h2>
 <ol>
   <li><b>LightGBM Optuna tuning</b> (Cold + Warm) — default → tuned 비교</li>
   <li><b>Rare artist blend 비율 grid search</b> (1건/2건 가중치 결정)</li>
@@ -222,8 +222,8 @@ XGBoost는 2K+ unique categorical 처리 약함.</blockquote>
 
 <h2>📂 산출물</h2>
 <ul>
-  <li><code>scripts/track3/split_data.py</code> — Outer holdout + Cold/Warm split</li>
-  <li><code>scripts/track3/baseline.py</code> — median + ho/area ablation</li>
+  <li><code>scripts/track3/split_data.py</code> — Outer 검증용 분리 데이터 + Cold/Warm split</li>
+  <li><code>scripts/track3/비교 기준.py</code> — median + ho/area ablation</li>
   <li><code>scripts/track3/train_linear_{cold,warm}.py</code> — Phase 1</li>
   <li><code>scripts/track3/train_tree_{cold,warm}.py</code> — Phase 2</li>
   <li><code>scripts/track3/train_hybrid.py</code> — Phase 3</li>

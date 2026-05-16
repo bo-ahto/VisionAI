@@ -23,7 +23,7 @@
 </style></head><body>
 
 <h1>Track 3 — 가격 예측 모델링 최종 결과 v4</h1>
-<p class="meta">생성일: 2026-05-12 09:44 / 9-phase + 9-PR 완료 / Codex 4회 검수 통과</p>
+<p class="meta">생성일: 2026-05-12 09:44 / 9-phase + 9-PR 완료 / 반복 검토 완료</p>
 
 <blockquote class="new" style="border-color: #2563eb;">
 <b>v3 → v4 변경 (최종판)</b>:
@@ -136,15 +136,15 @@ LAD는 <b>"예측과 실제의 차이를 절반은 위, 절반은 아래로 균�
 <tr class='best'><td>PR4 Multi-seed Cold</td><td>GroupShuffleSplit×10</td><td>—</td><td>✓ Phase 5 robust 입증</td></tr>
 <tr class='best'><td>PR5 Source bias</td><td>Artsy vs Saatchi audit</td><td>—</td><td>🔴 Artsy +45.5% 발견</td></tr>
 <tr class='best'><td><b>PR7 Feature Eng</b></td><td><b>source/interaction/popularity/aspect 묶음</b></td><td class='num'><b>-0.038 (9%)</b></td><td><b>✓ 유일한 향상! Cold 0.429→0.391, Warm 0.115→0.104</b></td></tr>
-<tr class='neg'><td>PR8 Conditional expert</td><td>Source/cell/soft expert + fallback</td><td class='num'>+0.042 ~ +0.071</td><td>✗ 모든 variant 악화 (표본 부족)</td></tr>
+<tr class='neg'><td>PR8 Conditional expert</td><td>Source/cell/soft expert + 보조 방식</td><td class='num'>+0.042 ~ +0.071</td><td>✗ 모든 variant 악화 (표본 부족)</td></tr>
 <tr class='neg'><td>PR9 Quantile + reweight</td><td>heteroscedastic 처리</td><td class='num'>+0.029 ~ +0.049 overall</td><td>✗ Overall 악화. <b>B4만 -7pp 개선</b></td></tr>
 </table>
 
 <h2>🔬 PR7 — Feature Engineering (★ 유일한 성공)</h2>
 <h3>Cold LAD</h3>
 <table>
-<tr><th>Variant</th><th>med_APE</th><th>W30</th><th>vs baseline</th></tr>
-<tr class=''><td>baseline</td><td class='num'>0.429</td><td class='num'>0.349</td><td class='num'>+0.000</td></tr>
+<tr><th>Variant</th><th>med_APE</th><th>W30</th><th>vs 비교 기준</th></tr>
+<tr class=''><td>비교 기준</td><td class='num'>0.429</td><td class='num'>0.349</td><td class='num'>+0.000</td></tr>
 <tr class=''><td>source</td><td class='num'>0.413</td><td class='num'>0.361</td><td class='num'>-0.016</td></tr>
 <tr class=''><td>interaction</td><td class='num'>0.426</td><td class='num'>0.368</td><td class='num'>-0.002</td></tr>
 <tr class='err'><td>popularity</td><td class='num'>0.444</td><td class='num'>0.354</td><td class='num'>+0.016</td></tr>
@@ -154,8 +154,8 @@ LAD는 <b>"예측과 실제의 차이를 절반은 위, 절반은 아래로 균�
 
 <h3>Warm Tuned LGB</h3>
 <table>
-<tr><th>Variant</th><th>med_APE</th><th>W30</th><th>vs baseline</th></tr>
-<tr class=''><td>baseline</td><td class='num'>0.115</td><td class='num'>0.753</td><td class='num'>+0.000</td></tr>
+<tr><th>Variant</th><th>med_APE</th><th>W30</th><th>vs 비교 기준</th></tr>
+<tr class=''><td>비교 기준</td><td class='num'>0.115</td><td class='num'>0.753</td><td class='num'>+0.000</td></tr>
 <tr class=''><td>source</td><td class='num'>0.116</td><td class='num'>0.761</td><td class='num'>+0.000</td></tr>
 <tr class=''><td>interaction</td><td class='num'>0.117</td><td class='num'>0.750</td><td class='num'>+0.001</td></tr>
 <tr class='best'><td>popularity</td><td class='num'>0.103</td><td class='num'>0.773</td><td class='num'>-0.012</td></tr>
@@ -166,19 +166,19 @@ LAD는 <b>"예측과 실제의 차이를 절반은 위, 절반은 아래로 균�
 <h2>🚫 PR8 — Conditional Expert (negative result)</h2>
 <table>
 <tr><th>Variant</th><th>med_APE</th><th>W30</th><th>vs PR7 ALL</th></tr>
-<tr class='best'><td>baseline_pr7_all</td><td class='num'>0.391</td><td class='num'>0.373</td><td class='num'>+0.000</td></tr>
+<tr class='best'><td>비교 기준_pr7_all</td><td class='num'>0.391</td><td class='num'>0.373</td><td class='num'>+0.000</td></tr>
 <tr class='neg'><td>source_conditional</td><td class='num'>0.432</td><td class='num'>0.365</td><td class='num'>+0.042</td></tr>
 <tr class='neg'><td>source_x_ho_cell</td><td class='num'>0.462</td><td class='num'>0.346</td><td class='num'>+0.071</td></tr>
 <tr class='neg'><td>soft_price_band</td><td class='num'>0.440</td><td class='num'>0.341</td><td class='num'>+0.050</td></tr>
 </table>
 <blockquote>
-<b>원인 (Codex 사전 경고 정확)</b>: 표본 부족 (40K rows × 12 cells = 평균 3K/cell, Artue 2,709). LAD 학습 불안정 → variance 큼.
+<b>원인 (초기 우려와 일치)</b>: 표본 부족 (40K rows × 12 cells = 평균 3K/cell, Artue 2,709). LAD 학습 불안정 → variance 큼.
 </blockquote>
 
 <h2>🌀 PR9 — Quantile + Reweighting (overall negative, B4 +7pp)</h2>
 <table>
 <tr><th>Variant</th><th>med_APE</th><th>W30</th><th>B4 (&gt;10M)</th><th>vs base</th></tr>
-<tr class='best'><td>A_baseline_lad</td><td class='num'>0.391</td><td class='num'>0.373</td><td class='num'>0.602</td><td class='num'>+0.000</td></tr>
+<tr class='best'><td>A_비교 기준_lad</td><td class='num'>0.391</td><td class='num'>0.373</td><td class='num'>0.602</td><td class='num'>+0.000</td></tr>
 <tr class='warn'><td>B_lgb_quantile</td><td class='num'>0.419</td><td class='num'>0.380</td><td class='num'>0.575</td><td class='num'>+0.029</td></tr>
 <tr class='warn'><td>C_lgb_q_priceweight</td><td class='num'>0.431</td><td class='num'>0.348</td><td class='num'>0.570</td><td class='num'>+0.041</td></tr>
 <tr class='warn'><td>D_lgb_q_sourceweight</td><td class='num'>0.428</td><td class='num'>0.368</td><td class='num'>0.578</td><td class='num'>+0.038</td></tr>
@@ -186,7 +186,7 @@ LAD는 <b>"예측과 실제의 차이를 절반은 위, 절반은 아래로 균�
 </table>
 <blockquote>
 <b>흥미로운 발견</b>: Overall 악화하지만 B4 (&gt;10M)만 LGB combined로 -7pp 개선 (0.602 → 0.533).
-운영 시 soft routing 가능성 있으나 1차 예측 noise 위험으로 단순 LAD 유지 권장.
+운영 시 완화된 모델 선택 규칙 가능성 있으나 1차 예측 noise 위험으로 단순 LAD 유지 제안.
 </blockquote>
 
 <h2>🎓 학습 내용 (Lessons Learned)</h2>
@@ -209,14 +209,14 @@ LAD는 <b>"예측과 실제의 차이를 절반은 위, 절반은 아래로 균�
 <ul>
   <li>PR8 모든 variant negative result (표본 부족)</li>
   <li>40K rows / 12 cells = 평균 3K/cell — LAD 학습에 불충분</li>
-  <li>Codex 사전 경고 정확</li>
+  <li>초기 우려와 일치</li>
 </ul>
 
 <h3>4. Heteroscedastic 처리는 trade-off</h3>
 <ul>
   <li>PR9 Quantile + reweight: B4 -7pp, 일반 +3-5pp</li>
   <li>거장 작품 정확도 ↑ vs 일반 작품 정확도 ↓</li>
-  <li>Soft routing 가능성 있으나 추가 noise 위험</li>
+  <li>완화된 모델 선택 규칙 가능성 있으나 추가 noise 위험</li>
 </ul>
 
 <h3>5. Source bias 정량화의 가치</h3>
@@ -227,7 +227,7 @@ LAD는 <b>"예측과 실제의 차이를 절반은 위, 절반은 아래로 균�
 </ul>
 </div>
 
-<h2>🎯 운영 권장 (최종)</h2>
+<h2>🎯 운영 제안 (최종)</h2>
 <table>
 <tr><th>조건</th><th>모델</th><th>med_APE</th><th>W30</th><th>주의사항</th></tr>
 <tr class='best'><td>학습 ≥1건 작가</td><td>Warm Tuned LGB + ALL</td><td class='num'>0.104</td><td class='num'>0.78</td><td>artist signal 활용</td></tr>
@@ -242,15 +242,15 @@ LAD는 <b>"예측과 실제의 차이를 절반은 위, 절반은 아래로 균�
   <li>🔴 <b>Source bias +45.5%</b> (Artsy 갤러리 마크업) — PR7에서 흡수, 운영 시 source 입력 필수</li>
   <li>🔴 <b>Warm 0.104는 "학습된 작가 신규 작품" 기준</b>. 신규 작가 섞이면 0.15-0.40</li>
   <li>🔴 <b>&gt;100M Cold</b>는 사실상 예측 불가 (0.98)</li>
-  <li>⚠️ 시간 split 없음 — temporal validation 불가</li>
+  <li>⚠️ 시간 split 없음 — 시간 기준 검증 불가</li>
   <li>⚠️ 데이터 40K로 conditional expert/segmentation 위험 (PR8 입증)</li>
 </ul>
 
 <h2>🚀 다음 단계 (B: 운영 구현)</h2>
 <ol>
-  <li><b>Production model artifact</b> — PR7 ALL 학습 + joblib/pickle 저장</li>
+  <li><b>서비스 적용 후보 모델 파일</b> — PR7 ALL 학습 + joblib/pickle 저장</li>
   <li><b>운영 라우팅 함수</b> — train_count 기반 Warm/Cold 분기</li>
-  <li><b>Source 입력 검증</b> — 없을 때 fallback 또는 reject</li>
+  <li><b>Source 입력 검증</b> — 없을 때 보조 방식 또는 reject</li>
   <li><b>예측 API</b> — single record / batch inference</li>
   <li><b>Monitoring</b> — 운영 데이터 분포 drift / 정확도 추적</li>
   <li><b>A/B testing 인프라</b> — Track 1 vs Track 3 비교 시 활용</li>
@@ -258,14 +258,14 @@ LAD는 <b>"예측과 실제의 차이를 절반은 위, 절반은 아래로 균�
 
 <h2>📂 산출물 (최종)</h2>
 <ul>
-  <li><b>Plan</b>: <code>docs/track3_modeling_plan_v2_1.md</code> (Codex R3 통과)</li>
+  <li><b>Plan</b>: <code>docs/track3_modeling_plan_v2_1.md</code>(실험 계획 검토 완료)</li>
   <li><b>Phase 코드 (9 scripts)</b>: <code>split_data.py</code> ~ <code>train_phase5_final.py</code></li>
   <li><b>PR 코드 (7 scripts)</b>: PR1~9 (PR6 skipped, PR10 데이터 의존)</li>
   <li><b>리포트</b>: v1 → v2 → v3 → <b>v4 (최종)</b></li>
   <li><b>데이터</b>: <code>data/track3_unified_v1_train.csv</code> (40,137 rows, is_outlier=0)</li>
 </ul>
 
-<p class="meta" style="margin-top: 36px;">Track 3 모델링 — 9-phase + 9-PR (PR1~5, 7, 8, 9) 완료. Codex 4회 검수 통과.<br>
+<p class="meta" style="margin-top: 36px;">Track 3 모델링 — 9-phase + 9-PR (PR1~5, 7, 8, 9) 완료. 반복 검토 완료.<br>
 v4: 최종판. PR8/9 negative result 포함. 운영 구현 준비.</p>
 
 </body></html>

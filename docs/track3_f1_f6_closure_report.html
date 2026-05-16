@@ -77,8 +77,8 @@
     <ul>
       <li>Cold LAD: <strong>med_APE 0.301</strong> / W30 0.499</li>
       <li>Warm Tuned LightGBM: <strong>med_APE 0.208</strong> / W30 0.592</li>
-      <li>release_split v3 test 기준 (test_cold 3,561 / test_warm 1,717)</li>
-      <li>artifact: <code>data/production/track3_*.{joblib,txt,json}</code></li>
+      <li>고정 평가 데이터 v3 test 기준 (test_cold 3,561 / test_warm 1,717)</li>
+      <li>결과 파일: <code>data/production/track3_*.{joblib,txt,json}</code></li>
     </ul>
   </div>
   <div class="card">
@@ -86,7 +86,7 @@
     <ul>
       <li>seed-free deterministic split (100 작가 hold-out)</li>
       <li>2D/3D · medium · price · 작가수 4축 균형 통제</li>
-      <li>V0 baseline ape_array 캐싱 — paired 비교용</li>
+      <li>V0 비교 기준 ape_array 캐싱 — paired 비교용</li>
       <li>loader: <code>scripts/track3/_frozen_loader.py</code></li>
     </ul>
   </div>
@@ -98,17 +98,17 @@
 <p>모든 F1-F5 실험은 동일 protocol 따름:</p>
 
 <pre>1. mini hold-out (5 seeds 또는 frozen benchmark) → 후보 선별
-2. 후보 발견 시 release_split test 1회 paired confirm
+2. 후보 발견 시 고정 평가 데이터 test 1회 paired confirm
 3. 동일 row 위에서 V0 vs 후보 paired 비교
-4. 판정: median Δ + WinRate + tail risk (p95/p99/max/10x errors) 동시 통과
+4. 판정: median Δ + WinRate + 큰 오차 위험 (p95/p99/max/10x errors) 동시 통과
 </pre>
 
 <div class="codex-note">
-  <strong>Codex 권고 핵심</strong>: heavy-tail cold APE 환경에서 mean / Cohen's d는 outlier 1건에 좌우됨.
+  <strong>후속 검토 핵심</strong>: heavy-tail cold APE 환경에서 mean / Cohen's d는 outlier 1건에 좌우됨.
   <strong>median Δ + WR + 작품 단위 tail percentile</strong> 중심으로 판단해야 false positive 차단.
 </div>
 
-<p><strong>검증 protocol 가치</strong>: F2 (medium_support_combo)와 F5-B (KNN blend) 두 번 mini 신호 → release_split 반전. 2단계 protocol이 false positive를 정확히 차단.</p>
+<p><strong>검증 protocol 가치</strong>: F2 (medium_support_combo)와 F5-B (KNN blend) 두 번 mini 신호 → 고정 평가 데이터 반전. 2단계 protocol이 false positive를 정확히 차단.</p>
 
 <!-- ───────────── F1-F6 종합표 ───────────── -->
 <h2>3. F1~F6 실험 결과표</h2>
@@ -124,13 +124,13 @@
       <td><strong>F1</strong><br>PR20/21</td>
       <td class="left">크기 변수 redundancy<br>(width/height/log_area/estimated_ho 중복?)</td>
       <td><span class="tag tag-reject">REJECT</span></td>
-      <td class="left">V1_log_ho는 Cold 동등이지만 Warm <strong>tail risk 증가</strong><br>(max_ape +24%, catastrophic 16%)</td>
+      <td class="left">V1_log_ho는 Cold 동등이지만 Warm <strong>큰 오차 위험 증가</strong><br>(max_ape +24%, catastrophic 16%)</td>
     </tr>
     <tr>
       <td><strong>F2</strong><br>PR22/23</td>
       <td class="left">새 파생 변수 4개<br>(combo / maxside / square / area_depth)</td>
       <td><span class="tag tag-reject">REJECT</span></td>
-      <td class="left">4개 모두. F1_combo는 mini에서 4/5 seeds 일관 신호 →<br>release_split에서 <strong>반전</strong> (false positive)</td>
+      <td class="left">4개 모두. F1_combo는 mini에서 4/5 seeds 일관 신호 →<br>고정 평가 데이터에서 <strong>반전</strong> (false positive)</td>
     </tr>
     <tr>
       <td><strong>F3</strong><br>PR24</td>
@@ -154,13 +154,13 @@
       <td><strong>F5-B</strong><br>PR28/29</td>
       <td class="left">Cold KNN retrieval blend</td>
       <td><span class="tag tag-reject">REJECT</span></td>
-      <td class="left">frozen benchmark 신호 → release_split <strong>반전</strong><br>(prolific cold artist 86% imbalance)</td>
+      <td class="left">frozen benchmark 신호 → 고정 평가 데이터 <strong>반전</strong><br>(prolific cold artist 86% imbalance)</td>
     </tr>
     <tr>
       <td><strong>F6</strong><br>PR26</td>
       <td class="left">Frozen Cold Benchmark 인프라</td>
       <td><span class="tag tag-infra">BUILT</span></td>
-      <td class="left">seed-free stratified + V0 baseline ape_array 캐싱<br>+ loader 구축</td>
+      <td class="left">seed-free stratified + V0 비교 기준 ape_array 캐싱<br>+ loader 구축</td>
     </tr>
   </tbody>
 </table>
@@ -183,18 +183,18 @@
   </tbody>
 </table>
 
-<p>V1_log_ho는 mini에서 동등 신호. release_split confirm에서 <strong>Warm tail risk 증가</strong>:
-max_ape <code>13.23 → 16.42</code> (+24%), catastrophic_2x <strong>16%</strong> (6건 중 1건이 baseline 2배 이상 악화).
+<p>V1_log_ho는 mini에서 동등 신호. 고정 평가 데이터 confirm에서 <strong>Warm 큰 오차 위험 증가</strong>:
+max_ape <code>13.23 → 16.42</code> (+24%), catastrophic_2x <strong>16%</strong> (6건 중 1건이 비교 기준 2배 이상 악화).
 → width/height/aspect_ratio가 Warm 극단 작품 예측 안정성에 차별적 기여 확인. <strong>V0 유지</strong>.</p>
 
 <!-- ───────────── F2 ───────────── -->
 <h2>5. F2 — 새 파생 변수 4개</h2>
 
-<p>4개 후보를 단일-feature ablation으로 검증. mini에서 가장 유력했던 <code>medium_support_combo</code>도 release_split confirm에서 반전.</p>
+<p>4개 후보를 단일-feature ablation으로 검증. mini에서 가장 유력했던 <code>medium_support_combo</code>도 고정 평가 데이터 confirm에서 반전.</p>
 
 <table>
   <thead>
-    <tr><th>Variant</th><th>mini med_Δ vs V0</th><th>mini WR</th><th>release_split med_Δ</th><th>판정</th></tr>
+    <tr><th>Variant</th><th>mini med_Δ vs V0</th><th>mini WR</th><th>고정 평가 데이터 med_Δ</th><th>판정</th></tr>
   </thead>
   <tbody>
     <tr><td>F1_combo</td><td class="num good">-0.0150 (4/5 seeds)</td><td class="num">0.547</td><td class="num bad">+0.0061 ❌</td><td><span class="tag tag-reject">REJECT</span></td></tr>
@@ -205,7 +205,7 @@ max_ape <code>13.23 → 16.42</code> (+24%), catastrophic_2x <strong>16%</strong
 </table>
 
 <p><strong>F2 false positive 사례</strong>: F1_combo가 mini에서 4/5 seeds 일관 음수 + WR 0.547로 강한 신호.
-release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot).
+고정 평가 데이터 test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot).
 2단계 protocol이 정확히 차단.</p>
 
 <!-- ───────────── F3 ───────────── -->
@@ -224,7 +224,7 @@ release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot
 <p>5 seeds 모두 LGB 우위. Cohen's d 작지만 방향 완전 일관 → CatBoost reject.</p>
 
 <p class="neutral" style="font-size:0.88em;">
-  ⓘ CatBoost default hyperparam vs LGB Optuna-tuned 공정 비교 한계. 그러나 differential -0.07p가 크고 5/5 seeds 일관 → 정식 튜닝 재실험 우선순위 낮음 (Codex 권고).
+  ⓘ CatBoost default hyperparam vs LGB Optuna-tuned 공정 비교 한계. 그러나 differential -0.07p가 크고 5/5 seeds 일관 → 정식 튜닝 재실험 우선순위 낮음 (후속 검토).
 </p>
 
 <!-- ───────────── F4 ───────────── -->
@@ -237,7 +237,7 @@ release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot
     <tr><th>Variant</th><th>Rule</th><th>med_APE</th><th>Paired WR</th><th>판정</th></tr>
   </thead>
   <tbody>
-    <tr class="baseline"><td>V0_pure_warm</td><td>train_count≥1 → Warm 100%</td><td class="num">0.2038</td><td>—</td><td>(baseline)</td></tr>
+    <tr class="baseline"><td>V0_pure_warm</td><td>train_count≥1 → Warm 100%</td><td class="num">0.2038</td><td>—</td><td>(비교 기준)</td></tr>
     <tr><td>F4_b1</td><td>count==1, α=0.5</td><td class="num">0.2052</td><td class="num bad">0.055</td><td><span class="tag tag-reject">REJECT</span></td></tr>
     <tr><td>F4_b2</td><td>count==1, α=0.3</td><td class="num">0.2051</td><td class="num bad">0.053</td><td><span class="tag tag-reject">REJECT</span></td></tr>
     <tr><td>F4_b3</td><td>count≤2, α=0.5</td><td class="num">0.2083</td><td class="num bad">0.088</td><td><span class="tag tag-reject">REJECT</span></td></tr>
@@ -247,12 +247,12 @@ release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot
 
 <p>blend 적용된 row의 paired WR이 5-16% — 거의 모든 작품에서 Warm LGB가 Cold LAD보다 정확.
 <strong>1건만 있는 작가라도 Warm 모델이 작가 prior를 활용</strong>해서 Cold 단독보다 우위.
-→ Codex 사전 가설 "rare artist 구간 취약"이 데이터로 reject.</p>
+→ 초기 가정 "rare artist 구간 취약"이 데이터로 reject.</p>
 
 <!-- ───────────── F5 step 1 ───────────── -->
 <h2>8. F5 step 1 — Cold weak regime 분석</h2>
 
-<p>운영 v1.2 Cold model이 어디서 깨지는지 release_split test_cold (3,561 rows)로 1차원 + 2차원 분해.</p>
+<p>운영 v1.2 Cold model이 어디서 깨지는지 고정 평가 데이터 test_cold (3,561 rows)로 1차원 + 2차원 분해.</p>
 
 <h3>1차원 분해 — Worst regimes</h3>
 <table>
@@ -282,7 +282,7 @@ release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot
 <!-- ───────────── F5-B ───────────── -->
 <h2>9. F5-B — Cold KNN retrieval blend</h2>
 
-<p>Codex 1순위 후속 제안. weak regime을 train의 유사 작품 KNN으로 보정 시도.</p>
+<p>우선 후속 검토 항목. weak regime을 train의 유사 작품 KNN으로 보정 시도.</p>
 
 <h3>Frozen Cold Benchmark (n=751) 결과</h3>
 <table>
@@ -290,13 +290,13 @@ release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot
     <tr><th>Variant</th><th>med_APE</th><th>WR</th><th>max_ape</th><th>판정</th></tr>
   </thead>
   <tbody>
-    <tr class="baseline"><td>V0</td><td class="num">0.4423</td><td>—</td><td class="num">7.3e14 (outlier)</td><td>baseline</td></tr>
+    <tr class="baseline"><td>V0</td><td class="num">0.4423</td><td>—</td><td class="num">7.3e14 (outlier)</td><td>비교 기준</td></tr>
     <tr><td>knn10_a50</td><td class="num good">0.4267</td><td class="num good">0.531</td><td class="num good">0 (-100%)</td><td>mini 유력</td></tr>
     <tr><td><strong>knn10_a70</strong></td><td class="num good">0.4148</td><td class="num good">0.550</td><td class="num good">0 (-100%)</td><td>mini 가장 유력</td></tr>
   </tbody>
 </table>
 
-<h3>release_split confirm (n=3,561) — 반전!</h3>
+<h3>고정 평가 데이터 confirm (n=3,561) — 반전!</h3>
 <table>
   <thead>
     <tr><th>Variant</th><th>med_APE</th><th>paired med Δ</th><th>WR</th><th>판정</th></tr>
@@ -309,8 +309,8 @@ release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot
 </table>
 
 <div class="codex-note">
-  <strong>반전 원인 (Codex 분해 분석)</strong>:
-  release_split test_cold가 prolific cold artist에 크게 unbalanced — 안교범 1 작가가 1,088건 (30.6%).
+  <strong>반전 원인 (원인 분석)</strong>:
+  고정 평가 데이터 test_cold가 prolific cold artist에 크게 unbalanced — 안교범 1 작가가 1,088건 (30.6%).
   count>10 작가가 전체의 86.4% 차지, 이 영역에서 KNN systematically worse.
   frozen benchmark(균등)에선 안 보이던 패턴.
 </div>
@@ -330,7 +330,7 @@ release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot
   </tbody>
 </table>
 
-<p>국소 이득은 좁은 sub-population에 한정 + 분포 변동에 취약. <strong>selective routing 채택 시 split overfit 위험</strong> → reject 유지.</p>
+<p>국소 이득은 좁은 sub-population에 한정 + 분포 변동에 취약. <strong>조건부 모델 선택 규칙 채택 시 split overfit 위험</strong> → reject 유지.</p>
 
 <!-- ───────────── F6 ───────────── -->
 <h2>10. F6 — Frozen Cold Benchmark 인프라</h2>
@@ -342,41 +342,41 @@ release_split test에서 paired med Δ <code>+0.0061</code>로 반전 (overshoot
     <tr><td class="left"><strong>구성</strong></td><td class="left">cold benchmark 100 작가 (751 rows) + mini_train 1,866 작가 (34,108 rows)</td></tr>
     <tr><td class="left"><strong>Stratification</strong></td><td class="left">works_count(50/30/20) × price_tertile(33/33/34), medium · 3D · log_price 분포 검증 통과 (편차 ≤ 10%)</td></tr>
     <tr><td class="left"><strong>SEED</strong></td><td class="left">2 (42→1 실패 후)</td></tr>
-    <tr><td class="left"><strong>V0 baseline 캐시</strong></td><td class="left">Cold LAD 학습 + ape_array 저장 → 향후 paired comparison 직접 사용 가능</td></tr>
+    <tr><td class="left"><strong>V0 비교 기준 캐시</strong></td><td class="left">Cold LAD 학습 + ape_array 저장 → 향후 paired comparison 직접 사용 가능</td></tr>
     <tr><td class="left"><strong>Loader</strong></td><td class="left"><code>scripts/track3/_frozen_loader.py</code></td></tr>
   </tbody>
 </table>
 
 <pre>from scripts.track3._frozen_loader import load_frozen_benchmark
-mini_train, cold_mini, baseline = load_frozen_benchmark()
+mini_train, cold_mini, 비교 기준 = load_frozen_benchmark()
 # 향후 모든 Track 3 mini 실험에서 이 frozen을 사용 → seed 변동성 제거</pre>
 
 <!-- ───────────── 종합 진단 ───────────── -->
 <h2>11. 종합 진단 — v1.2가 강한 plateau</h2>
 
 <div class="summary-box">
-  <strong>Codex 사전 진단</strong> (F3 후 시점, F4/F5/F6 결과로 다시 확인):<br>
+  <strong>사전 진단</strong> (F3 후 시점, F4/F5/F6 결과로 다시 확인):<br>
   "현재 가설 공간 안에서는 이미 강한 plateau에 올라와 있다. 근접 변형으론 이득이 안 나고,
-  나와도 release_split에서 뒤집히거나 Warm tail에서 비용을 치르는 상태."
+  나와도 고정 평가 데이터에서 뒤집히거나 Warm tail에서 비용을 치르는 상태."
 </div>
 
 <h3>왜 plateau인가</h3>
 <ol>
   <li><strong>모든 단순 변형 reject</strong>: 크기 redundancy / 새 파생 / 모델 가족 / 라우팅 변경 / KNN 후처리 모두</li>
-  <li><strong>v1.2 baseline 자체가 이미 dataset 정제 + leakage 방지 + feature ablation 거친 결과</strong> (PR1-PR16e)</li>
-  <li><strong>알고리즘이 아니라 데이터 커버리지가 병목</strong> — Codex 진단대로 시간 split / 추가 작가 / source 안정화가 다음 ROI</li>
+  <li><strong>v1.2 비교 기준 자체가 이미 dataset 정제 + leakage 방지 + feature ablation 거친 결과</strong> (PR1-PR16e)</li>
+  <li><strong>알고리즘이 아니라 데이터 커버리지가 병목</strong> — 진단 결과처럼 시간 split / 추가 작가 / source 안정화가 다음 ROI</li>
 </ol>
 
 <h3>검증 protocol 가치 입증</h3>
 <ul>
-  <li>F2 (medium_support_combo): mini 4/5 seeds 일관 → release_split 반전</li>
-  <li>F5-B (KNN blend): frozen benchmark 신호 → release_split 반전</li>
+  <li>F2 (medium_support_combo): mini 4/5 seeds 일관 → 고정 평가 데이터 반전</li>
+  <li>F5-B (KNN blend): frozen benchmark 신호 → 고정 평가 데이터 반전</li>
   <li>둘 다 <strong>2단계 confirm protocol</strong>이 false positive를 정확히 차단</li>
   <li>이 protocol 가치는 향후 어떤 Track 실험에도 적용 가능</li>
 </ul>
 
 <!-- ───────────── 다음 단계 ───────────── -->
-<h2>12. 다음 단계 (Codex 권고)</h2>
+<h2>12. 다음 단계 (후속 검토)</h2>
 
 <table>
   <thead>
@@ -395,7 +395,7 @@ mini_train, cold_mini, baseline = load_frozen_benchmark()
     </tr>
     <tr>
       <td>3 (후순위)</td>
-      <td class="left">regime-specific median fallback (F5-A)</td>
+      <td class="left">regime-specific median 보조 방식 (F5-A)</td>
       <td class="left">저비용 guardrail로만 검토, 모델링 차원 X</td>
     </tr>
     <tr>
@@ -405,7 +405,7 @@ mini_train, cold_mini, baseline = load_frozen_benchmark()
     </tr>
     <tr>
       <td>금지</td>
-      <td class="left">selective KNN routing 운영 적용</td>
+      <td class="left">selective KNN 모델 선택 규칙 운영 적용</td>
       <td class="left">좁은 sub-population, split overfit 위험</td>
     </tr>
   </tbody>
@@ -430,14 +430,14 @@ mini_train, cold_mini, baseline = load_frozen_benchmark()
   <li><code>scripts/track3/pr24_catboost_warm.py</code> — F3</li>
   <li><code>scripts/track3/pr25_rare_artist_blend.py</code> — F4</li>
   <li><code>scripts/track3/pr27_cold_regime_analysis.py</code> — F5 step 1</li>
-  <li><code>scripts/track3/pr28_knn_retrieval_blend.py</code>, <code>pr29_knn_release_split_confirm.py</code> — F5-B</li>
+  <li><code>scripts/track3/pr28_knn_retrieval_blend.py</code>, <code>pr29_knn_고정 평가 데이터_confirm.py</code> — F5-B</li>
   <li><code>scripts/track3/pr26_frozen_cold_benchmark.py</code>, <code>_frozen_loader.py</code> — F6 인프라</li>
 </ul>
 
 <h3>결과 JSON</h3>
 <ul>
   <li><code>data/track3_pr{17..29}_*_results.json</code> — 모든 실험 결과 (ape_array 보존)</li>
-  <li><code>data/track3_pr26_baseline_cache.json</code> — Frozen V0 baseline</li>
+  <li><code>data/track3_pr26_비교 기준_cache.json</code> — Frozen V0 비교 기준</li>
 </ul>
 
 <h3>인프라</h3>
