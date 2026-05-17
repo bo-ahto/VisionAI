@@ -7,6 +7,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E039 | T4-H11,H24,H29 | 완료 | train, val/test warm/cold | Warm Ridge, Cold Quantile | interval policy, confidence group | q80 coverage `0.8540`, range x`3.77` | q90 coverage `0.7955`, range x`5.54`, high risk x`69.58` | Warm 범위는 가능, Cold 전체 범위는 과대/부족하여 세부 가설 필요 | [기록](../experiments/2026-05-17_T4-E039_interval_policy.md), [결과](../../../data/track4/results/t4_e039_interval_policy_metrics.json) |
 | 2026-05-17 | T4-E038 | T4-H1,H2,H3,H4,H15,H21,H23 | 완료 | train, val/test warm/cold | Warm Ridge, Cold Quantile | Warm artist stats, Cold area/full size | best test median APE `0.2201`, p95 `1.1118` | best test median APE `0.4199`, p95 `2.7609` | Warm 후보는 강함, Cold는 가격 범위/신뢰도 정책 필수 | [기록](../experiments/2026-05-17_T4-E038_candidate_closure.md), [결과](../../../data/track4/results/t4_e038_candidate_closure_metrics.json) |
 | 2026-05-17 | T4-E037 | T4-H3 | 완료 | `track4_train`, `val_warm` | Ridge | artist key/count/train-only price stats | artist_key_price_stats median APE `0.2326`, p95 `1.0538` | - | Warm 최고 성능 조합이나 가격 통계 운영 가능성 확인 필요 | [기록](../experiments/2026-05-17_T4-E037_warm_artist_history.md), [결과](../../../data/track4/results/t4_e037_warm_artist_history_metrics.json) |
 | 2026-05-17 | T4-E036 | T4-H23 | 완료 | `track4_train`, `val_warm`, `val_cold` | Warm Ridge, Cold Quantile | source는 audit slice만 사용, 모델 피처 제외 | artsy `0.3913`, saatchi `0.2545`, artue 9건 `0.1663` | saatchi `0.2334~0.2569`, artsy `0.4044~0.4122`, artue `0.4949~0.5501` | 출처별 성능 차이 확인, source 피처 제외 원칙 유지 | [기록](../experiments/2026-05-17_T4-E036_source_slice_audit.md), [결과](../../../data/track4/results/t4_e036_source_slice_audit_metrics.json) |
@@ -32,6 +33,5 @@
 
 ## 다음 실험 후보
 
-- T4-E039: T4-H11/T4-H24 가격 범위와 경고 정책 보완
 - T4-E040: Cold tail risk 세부 가설 생성 및 저위험 구간 검증
 - T4-E041: Warm 가격 통계 피처 운영 가능성 재검증

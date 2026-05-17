@@ -238,3 +238,15 @@ python3 scripts/track4/run_t4_e038_candidate_closure.py
 - `data/track4/predictions/t4_e038_candidate_closure_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E038_candidate_closure.md`
+
+- `T4-E039` 가격 범위와 신뢰도 정책 보완
+
+```bash
+python3 scripts/track4/run_t4_e039_interval_policy.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e039_interval_policy_metrics.json`
+- `data/track4/predictions/t4_e039_interval_policy_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E039_interval_policy.md`
