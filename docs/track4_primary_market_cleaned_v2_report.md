@@ -7,6 +7,8 @@
 - 학습 후보 rows: `34,239`
 - 제외 rows: `20,603`
 - 한글 작가명 rows: `54,840`
+- 동명이인 분리 작가 수: `31`
+- 동명이인 분리 작품 rows: `1,819`
 
 ## 1. 출처별 row 수
 
@@ -37,7 +39,16 @@
 - gallery_name / gallery_tier는 기본 feature 후보에서 제외함
 - source와 gallery 정보는 원본 추적과 품질 감사 용도로만 사용함
 
-## 4. 다음 단계
+## 4. 동명이인 처리
+
+- Track 3 방식과 동일하게 같은 한글명 안에서 여러 작가 key가 있는 경우를 점검함
+- 보조 작가 key가 3건 이상이고, key별 가격 중앙값 차이가 큰 경우만 동명이인으로 봄
+- 동명이인은 `artist_name_ko` 뒤에 `_A`, `_B`, `_C` suffix를 붙여 분리함
+- 원래 한글명은 `artist_name_ko_orig`에 보존함
+- 동명이인 여부는 `is_homonym`으로 표시함
+- Track 4 split은 이미 `artist_key` 기준으로 나누고 있어, 이번 처리는 이름 표시와 후속 피처 계산의 혼선을 막는 목적임
+
+## 5. 다음 단계
 
 - `track4_primary_market_feature_candidates_v1.csv` 기준으로 Warm/Cold split 생성
 - split 생성 시 `artist_key` 기준으로 Cold 작가를 분리
