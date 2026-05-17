@@ -1,0 +1,160 @@
+{
+  "experiment_id": "T4-E045",
+  "hypothesis_id": [
+    "T4-H12",
+    "T4-H30",
+    "T4-H35"
+  ],
+  "date": "2026-05-17",
+  "manifest": "configs/track4/feature_manifest.json",
+  "feature_checks": [
+    {
+      "name": "warm_final_conditional_stats",
+      "features": [
+        "artist_key",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price",
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "conditional_allow_exact": [
+        "artist_train_iqr_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_median_log_price"
+      ],
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    },
+    {
+      "name": "cold_final_full_size",
+      "features": [
+        "medium_category",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "conditional_allow_exact": [
+        "artist_train_iqr_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_median_log_price"
+      ],
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    }
+  ],
+  "routing_policy": {
+    "warm": "입력 작가가 train 작가 집합에 있으면 Warm final 모델 사용",
+    "cold": "입력 작가가 train 작가 집합에 없으면 Cold final 모델 사용"
+  },
+  "conditional_feature_policy": {
+    "artist_train_median_log_price": "예측 시점 이전 train/거래 데이터만 사용해 작가별 로그 가격 중앙값을 계산한다.",
+    "artist_train_mean_log_price": "예측 시점 이전 train/거래 데이터만 사용해 작가별 로그 가격 평균값을 계산한다.",
+    "artist_train_iqr_log_price": "예측 시점 이전 train/거래 데이터만 사용해 작가별 로그 가격 IQR을 계산한다."
+  },
+  "output_policy": {
+    "warm_low_history": "경고 + q90 넓은 범위 후보",
+    "warm_mid_high_history": "일반 q80 범위 후보",
+    "cold_low_risk": "q90 제한적 범위 후보",
+    "cold_mid_high_risk": "단일 가격 보류 또는 강한 경고"
+  },
+  "artifacts": {
+    "warm_final_conditional_stats": {
+      "artifact": "data/track4/models/track4_warm_final_conditional_stats_ridge.joblib",
+      "features": [
+        "artist_key",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price",
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "metrics": {
+        "rows": 137,
+        "median_ape": 0.22008229604208757,
+        "p95_ape": 1.1118303450019842,
+        "within_30": 0.6131386861313869,
+        "within_50": 0.8321167883211679
+      },
+      "group_metrics": {
+        "high_history": {
+          "rows": 30,
+          "median_ape": 0.18890923569382712,
+          "p95_ape": 0.8448624252224686,
+          "within_30": 0.7666666666666667,
+          "within_50": 0.9
+        },
+        "low_history": {
+          "rows": 37,
+          "median_ape": 0.3580833357212237,
+          "p95_ape": 1.6149164252710673,
+          "within_30": 0.4594594594594595,
+          "within_50": 0.7027027027027027
+        },
+        "mid_history": {
+          "rows": 70,
+          "median_ape": 0.20683173581091235,
+          "p95_ape": 0.9421804212930593,
+          "within_30": 0.6285714285714286,
+          "within_50": 0.8714285714285714
+        }
+      }
+    },
+    "cold_final_full_size": {
+      "artifact": "data/track4/models/track4_cold_final_full_size_quantile.joblib",
+      "features": [
+        "medium_category",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "metrics": {
+        "rows": 3277,
+        "median_ape": 0.41986892997462866,
+        "p95_ape": 2.760944366911861,
+        "within_30": 0.3698504729935917,
+        "within_50": 0.5916997253585596
+      },
+      "group_metrics": {
+        "high_risk": {
+          "rows": 51,
+          "median_ape": 0.5671736395340811,
+          "p95_ape": 4.245609531511507,
+          "within_30": 0.19607843137254902,
+          "within_50": 0.39215686274509803
+        },
+        "low_risk": {
+          "rows": 2738,
+          "median_ape": 0.40766754369285063,
+          "p95_ape": 2.638369066720195,
+          "within_30": 0.3798392987582177,
+          "within_50": 0.5986121256391527
+        },
+        "mid_risk": {
+          "rows": 488,
+          "median_ape": 0.427428724608494,
+          "p95_ape": 4.193224808523055,
+          "within_30": 0.3319672131147541,
+          "within_50": 0.5737704918032787
+        }
+      }
+    }
+  },
+  "passed": true
+}

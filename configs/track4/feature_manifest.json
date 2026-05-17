@@ -59,9 +59,43 @@
     "is_large_acrylic",
     "is_large_mixed_media",
     "is_small_print",
-    "is_large_unknown_support"
+    "is_large_unknown_support",
+    "artist_train_median_log_price",
+    "artist_train_mean_log_price",
+    "artist_train_iqr_log_price"
   ],
+  "conditional_allow_exact": [
+    "artist_train_median_log_price",
+    "artist_train_mean_log_price",
+    "artist_train_iqr_log_price"
+  ],
+  "conditional_allow_rules": {
+    "artist_train_median_log_price": "예측 시점 이전 train/거래 데이터만 사용해 작가별 로그 가격 중앙값을 계산한다.",
+    "artist_train_mean_log_price": "예측 시점 이전 train/거래 데이터만 사용해 작가별 로그 가격 평균값을 계산한다.",
+    "artist_train_iqr_log_price": "예측 시점 이전 train/거래 데이터만 사용해 작가별 로그 가격 IQR을 계산한다."
+  },
   "model_feature_sets": {
+    "warm_final_conditional_stats": [
+      "artist_key",
+      "artist_works_log",
+      "artist_works_count_train",
+      "artist_train_median_log_price",
+      "artist_train_mean_log_price",
+      "artist_train_iqr_log_price",
+      "medium_category",
+      "support_category",
+      "log_area",
+      "aspect_ratio"
+    ],
+    "cold_final_full_size": [
+      "medium_category",
+      "width_cm",
+      "height_cm",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate"
+    ],
     "warm_current_candidate": [
       "artist_key",
       "artist_works_log",
@@ -149,6 +183,7 @@
   "notes": [
     "source/gallery/url/image/title 컬럼은 원본 추적과 감사에는 필요하지만 모델 입력에는 넣지 않는다.",
     "price/ln_price 계열은 정답값이므로 모델 피처에 들어가면 누수로 본다.",
+    "artist_train_*_log_price 피처는 예측 시점 이전 데이터만 사용해 계산할 때만 조건부로 허용한다.",
     "is_high_price_candidate는 분석용 위험 구간 flag이며 실제 예측 전에는 알 수 없으므로 모델 피처에서는 금지한다."
   ]
 }

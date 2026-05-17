@@ -11,6 +11,9 @@
     "track4_test_cold.csv"
   ],
   "generated_operational_columns": [
+    "artist_train_iqr_log_price",
+    "artist_train_mean_log_price",
+    "artist_train_median_log_price",
     "is_large_acrylic",
     "is_large_mixed_media",
     "is_large_oil",
@@ -20,7 +23,47 @@
     "size_bucket",
     "support_size_bucket"
   ],
+  "conditional_allow_exact": [
+    "artist_train_iqr_log_price",
+    "artist_train_mean_log_price",
+    "artist_train_median_log_price"
+  ],
   "model_feature_checks": [
+    {
+      "feature_set": "warm_final_conditional_stats",
+      "features": [
+        "artist_key",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price",
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "conditional_allow_enabled": true,
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    },
+    {
+      "feature_set": "cold_final_full_size",
+      "features": [
+        "medium_category",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "conditional_allow_enabled": true,
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    },
     {
       "feature_set": "warm_current_candidate",
       "features": [
@@ -36,6 +79,7 @@
         "has_depth",
         "is_3d_candidate"
       ],
+      "conditional_allow_enabled": true,
       "missing_columns": [],
       "violations": {},
       "passed": true
@@ -52,6 +96,7 @@
         "has_depth",
         "is_3d_candidate"
       ],
+      "conditional_allow_enabled": true,
       "missing_columns": [],
       "violations": {},
       "passed": true
@@ -65,6 +110,7 @@
         "has_depth",
         "is_3d_candidate"
       ],
+      "conditional_allow_enabled": true,
       "missing_columns": [],
       "violations": {},
       "passed": true
@@ -79,6 +125,7 @@
         "has_depth",
         "is_3d_candidate"
       ],
+      "conditional_allow_enabled": true,
       "missing_columns": [],
       "violations": {},
       "passed": true
@@ -101,6 +148,7 @@
         "is_small_print",
         "is_large_unknown_support"
       ],
+      "conditional_allow_enabled": true,
       "missing_columns": [],
       "violations": {},
       "passed": true
@@ -119,6 +167,7 @@
         "is_small_print",
         "is_large_unknown_support"
       ],
+      "conditional_allow_enabled": true,
       "missing_columns": [],
       "violations": {},
       "passed": true
@@ -132,6 +181,7 @@
         "track4_source",
         "log_area"
       ],
+      "conditional_allow_enabled": false,
       "missing_columns": [],
       "violations": {
         "track4_source": [
@@ -148,6 +198,7 @@
         "price_krw",
         "log_area"
       ],
+      "conditional_allow_enabled": false,
       "missing_columns": [],
       "violations": {
         "price_krw": [
@@ -164,6 +215,7 @@
         "gallery_tier",
         "log_area"
       ],
+      "conditional_allow_enabled": false,
       "missing_columns": [
         "gallery_tier"
       ],

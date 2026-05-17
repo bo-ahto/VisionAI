@@ -38,7 +38,9 @@ def split_columns() -> dict[str, list[str]]:
     return columns
 
 
-def reasons_for_feature(feature: str, manifest: dict[str, Any]) -> list[str]:
+def reasons_for_feature(feature: str, manifest: dict[str, Any], allow_conditional: bool = False) -> list[str]:
+    if allow_conditional and feature in set(manifest.get("conditional_allow_exact", [])):
+        return []
     reasons: list[str] = []
     forbidden_exact = set(manifest.get("forbidden_exact", []))
     if feature in forbidden_exact:
@@ -50,16 +52,23 @@ def reasons_for_feature(feature: str, manifest: dict[str, Any]) -> list[str]:
     return reasons
 
 
-def validate_feature_set(name: str, features: list[str], manifest: dict[str, Any], available_columns: set[str]) -> dict[str, Any]:
+def validate_feature_set(
+    name: str,
+    features: list[str],
+    manifest: dict[str, Any],
+    available_columns: set[str],
+    allow_conditional: bool = False,
+) -> dict[str, Any]:
     missing = sorted(feature for feature in features if feature not in available_columns)
     violations = {
-        feature: reasons_for_feature(feature, manifest)
+        feature: reasons_for_feature(feature, manifest, allow_conditional=allow_conditional)
         for feature in features
-        if reasons_for_feature(feature, manifest)
+        if reasons_for_feature(feature, manifest, allow_conditional=allow_conditional)
     }
     return {
         "feature_set": name,
         "features": features,
+        "conditional_allow_enabled": allow_conditional,
         "missing_columns": missing,
         "violations": violations,
         "passed": not missing and not violations,
@@ -75,11 +84,11 @@ def main() -> None:
     available_model_columns = common_columns | generated_columns
 
     model_checks = [
-        validate_feature_set(name, features, manifest, available_model_columns)
+        validate_feature_set(name, features, manifest, available_model_columns, allow_conditional=True)
         for name, features in manifest.get("model_feature_sets", {}).items()
     ]
     negative_checks = [
-        validate_feature_set(name, features, manifest, available_model_columns)
+        validate_feature_set(name, features, manifest, available_model_columns, allow_conditional=False)
         for name, features in manifest.get("negative_control_feature_sets", {}).items()
     ]
     target_presence = {
@@ -97,6 +106,7 @@ def main() -> None:
         "manifest": str(MANIFEST_PATH.relative_to(REPO)),
         "split_files": REQUIRED_SPLITS,
         "generated_operational_columns": sorted(generated_columns),
+        "conditional_allow_exact": sorted(manifest.get("conditional_allow_exact", [])),
         "model_feature_checks": model_checks,
         "negative_control_checks": negative_checks,
         "target_columns_present_for_training_label": target_presence,
