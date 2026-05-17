@@ -1,0 +1,374 @@
+{
+  "experiment_id": "T4-E044",
+  "hypothesis_id": [
+    "T4-H34"
+  ],
+  "date": "2026-05-17",
+  "policy_question": "Warm 과거 가격 통계 피처를 운영 피처로 조건부 허용할지 여부",
+  "condition_for_allowing": [
+    "예측 시점 이전 학습/거래 데이터만 사용해 계산한다.",
+    "예측 대상 작품의 정답 가격은 절대 포함하지 않는다.",
+    "운영 데이터 파이프라인에서 같은 계산을 재현할 수 있어야 한다."
+  ],
+  "candidates": {
+    "deployable_count_only": {
+      "description": "현재 manifest 통과 보수 후보",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "overall": {
+        "rows": 137,
+        "median_ape": 0.28104762538307493,
+        "p95_ape": 2.55037332513539,
+        "within_30": 0.5401459854014599,
+        "within_50": 0.6861313868613139
+      },
+      "history_groups": {
+        "high_history": {
+          "rows": 30,
+          "median_ape": 0.18719549231386037,
+          "p95_ape": 0.7925102992974351,
+          "within_30": 0.7666666666666667,
+          "within_50": 0.9
+        },
+        "low_history": {
+          "rows": 37,
+          "median_ape": 0.5437948683137529,
+          "p95_ape": 2.9875020538074875,
+          "within_30": 0.2702702702702703,
+          "within_50": 0.43243243243243246
+        },
+        "mid_history": {
+          "rows": 70,
+          "median_ape": 0.26613219490970796,
+          "p95_ape": 1.347300012680298,
+          "within_30": 0.5857142857142857,
+          "within_50": 0.7285714285714285
+        }
+      }
+    },
+    "stats_median_only": {
+      "description": "작가 train 중앙 가격만 추가",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price"
+      ],
+      "overall": {
+        "rows": 137,
+        "median_ape": 0.24673527636869994,
+        "p95_ape": 1.2057040551941067,
+        "within_30": 0.6131386861313869,
+        "within_50": 0.8029197080291971
+      },
+      "history_groups": {
+        "high_history": {
+          "rows": 30,
+          "median_ape": 0.16025593924427056,
+          "p95_ape": 0.8177919817615333,
+          "within_30": 0.7333333333333333,
+          "within_50": 0.9
+        },
+        "low_history": {
+          "rows": 37,
+          "median_ape": 0.30661100191308777,
+          "p95_ape": 1.7150581944449603,
+          "within_30": 0.4864864864864865,
+          "within_50": 0.6756756756756757
+        },
+        "mid_history": {
+          "rows": 70,
+          "median_ape": 0.23530775148045313,
+          "p95_ape": 0.9805599071196516,
+          "within_30": 0.6285714285714286,
+          "within_50": 0.8285714285714286
+        }
+      }
+    },
+    "stats_median_iqr": {
+      "description": "작가 train 중앙 가격과 변동 폭 추가",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_iqr_log_price"
+      ],
+      "overall": {
+        "rows": 137,
+        "median_ape": 0.24631061070442428,
+        "p95_ape": 1.2039590932864237,
+        "within_30": 0.6131386861313869,
+        "within_50": 0.8029197080291971
+      },
+      "history_groups": {
+        "high_history": {
+          "rows": 30,
+          "median_ape": 0.16050442628195546,
+          "p95_ape": 0.8184674434351193,
+          "within_30": 0.7333333333333333,
+          "within_50": 0.9
+        },
+        "low_history": {
+          "rows": 37,
+          "median_ape": 0.30803485093877525,
+          "p95_ape": 1.7141626167145951,
+          "within_30": 0.4864864864864865,
+          "within_50": 0.6756756756756757
+        },
+        "mid_history": {
+          "rows": 70,
+          "median_ape": 0.23447226589884806,
+          "p95_ape": 0.9808613291062291,
+          "within_30": 0.6285714285714286,
+          "within_50": 0.8285714285714286
+        }
+      }
+    },
+    "stats_mean_only": {
+      "description": "작가 train 평균 가격만 추가",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_mean_log_price"
+      ],
+      "overall": {
+        "rows": 137,
+        "median_ape": 0.22820832314422043,
+        "p95_ape": 1.081952721420219,
+        "within_30": 0.6204379562043796,
+        "within_50": 0.8248175182481752
+      },
+      "history_groups": {
+        "high_history": {
+          "rows": 30,
+          "median_ape": 0.18134840311462241,
+          "p95_ape": 0.8413337504731003,
+          "within_30": 0.7666666666666667,
+          "within_50": 0.9
+        },
+        "low_history": {
+          "rows": 37,
+          "median_ape": 0.3569229402093958,
+          "p95_ape": 1.6206225574539868,
+          "within_30": 0.4864864864864865,
+          "within_50": 0.6756756756756757
+        },
+        "mid_history": {
+          "rows": 70,
+          "median_ape": 0.20900627801959534,
+          "p95_ape": 0.9815602420310215,
+          "within_30": 0.6285714285714286,
+          "within_50": 0.8714285714285714
+        }
+      }
+    },
+    "stats_all": {
+      "description": "작가 train 가격 통계 전체 추가",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price"
+      ],
+      "overall": {
+        "rows": 137,
+        "median_ape": 0.22008229604208757,
+        "p95_ape": 1.111830345001951,
+        "within_30": 0.6131386861313869,
+        "within_50": 0.8321167883211679
+      },
+      "history_groups": {
+        "high_history": {
+          "rows": 30,
+          "median_ape": 0.18890923569382445,
+          "p95_ape": 0.844862425222459,
+          "within_30": 0.7666666666666667,
+          "within_50": 0.9
+        },
+        "low_history": {
+          "rows": 37,
+          "median_ape": 0.358083335721226,
+          "p95_ape": 1.6149164252710935,
+          "within_30": 0.4594594594594595,
+          "within_50": 0.7027027027027027
+        },
+        "mid_history": {
+          "rows": 70,
+          "median_ape": 0.20683173581093006,
+          "p95_ape": 0.9421804212930209,
+          "within_30": 0.6285714285714286,
+          "within_50": 0.8714285714285714
+        }
+      }
+    }
+  },
+  "improvements_vs_deployable_count_only": {
+    "stats_median_only": {
+      "median_ape_abs_delta": 0.03431234901437499,
+      "median_ape_relative_reduction": 0.12208731159925797,
+      "p95_ape_abs_delta": 1.3446692699412834,
+      "p95_ape_relative_reduction": 0.5272440927329334
+    },
+    "stats_median_iqr": {
+      "median_ape_abs_delta": 0.034737014678650646,
+      "median_ape_relative_reduction": 0.123598321214432,
+      "p95_ape_abs_delta": 1.3464142318489665,
+      "p95_ape_relative_reduction": 0.5279282913522043
+    },
+    "stats_mean_only": {
+      "median_ape_abs_delta": 0.052839302238854496,
+      "median_ape_relative_reduction": 0.18800835682860942,
+      "p95_ape_abs_delta": 1.4684206037151712,
+      "p95_ape_relative_reduction": 0.5757669237060492
+    },
+    "stats_all": {
+      "median_ape_abs_delta": 0.06096532934098736,
+      "median_ape_relative_reduction": 0.21692170235521505,
+      "p95_ape_abs_delta": 1.438542980133439,
+      "p95_ape_relative_reduction": 0.5640519236755552
+    }
+  },
+  "feature_checks": {
+    "deployable_count_only": {
+      "current_manifest": {
+        "name": "deployable_count_only",
+        "conditional_price_stats_allowed": false,
+        "missing_columns": [],
+        "violations": {},
+        "passed": true
+      },
+      "conditional_allow_price_stats": {
+        "name": "deployable_count_only",
+        "conditional_price_stats_allowed": true,
+        "missing_columns": [],
+        "violations": {},
+        "passed": true
+      }
+    },
+    "stats_median_only": {
+      "current_manifest": {
+        "name": "stats_median_only",
+        "conditional_price_stats_allowed": false,
+        "missing_columns": [],
+        "violations": {
+          "artist_train_median_log_price": [
+            "forbidden_pattern:price"
+          ]
+        },
+        "passed": false
+      },
+      "conditional_allow_price_stats": {
+        "name": "stats_median_only",
+        "conditional_price_stats_allowed": true,
+        "missing_columns": [],
+        "violations": {},
+        "passed": true
+      }
+    },
+    "stats_median_iqr": {
+      "current_manifest": {
+        "name": "stats_median_iqr",
+        "conditional_price_stats_allowed": false,
+        "missing_columns": [],
+        "violations": {
+          "artist_train_median_log_price": [
+            "forbidden_pattern:price"
+          ],
+          "artist_train_iqr_log_price": [
+            "forbidden_pattern:price"
+          ]
+        },
+        "passed": false
+      },
+      "conditional_allow_price_stats": {
+        "name": "stats_median_iqr",
+        "conditional_price_stats_allowed": true,
+        "missing_columns": [],
+        "violations": {},
+        "passed": true
+      }
+    },
+    "stats_mean_only": {
+      "current_manifest": {
+        "name": "stats_mean_only",
+        "conditional_price_stats_allowed": false,
+        "missing_columns": [],
+        "violations": {
+          "artist_train_mean_log_price": [
+            "forbidden_pattern:price"
+          ]
+        },
+        "passed": false
+      },
+      "conditional_allow_price_stats": {
+        "name": "stats_mean_only",
+        "conditional_price_stats_allowed": true,
+        "missing_columns": [],
+        "violations": {},
+        "passed": true
+      }
+    },
+    "stats_all": {
+      "current_manifest": {
+        "name": "stats_all",
+        "conditional_price_stats_allowed": false,
+        "missing_columns": [],
+        "violations": {
+          "artist_train_median_log_price": [
+            "forbidden_pattern:price"
+          ],
+          "artist_train_mean_log_price": [
+            "forbidden_pattern:price"
+          ],
+          "artist_train_iqr_log_price": [
+            "forbidden_pattern:price"
+          ]
+        },
+        "passed": false
+      },
+      "conditional_allow_price_stats": {
+        "name": "stats_all",
+        "conditional_price_stats_allowed": true,
+        "missing_columns": [],
+        "violations": {},
+        "passed": true
+      }
+    }
+  },
+  "best_candidate": "stats_all",
+  "recommendation": {
+    "allow_conditionally": true,
+    "reason": "성능 개선 폭이 크고 조건부 manifest에서는 통과하므로 예측 시점 이전 가격 통계로만 계산한다는 조건에서 허용 권장",
+    "best_candidate_median_ape": 0.22008229604208757,
+    "deployable_candidate_median_ape": 0.28104762538307493,
+    "best_candidate_p95_ape": 1.111830345001951,
+    "deployable_candidate_p95_ape": 2.55037332513539
+  }
+}
