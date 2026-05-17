@@ -1,0 +1,116 @@
+{
+  "manifest_id": "track4_feature_manifest_v1",
+  "date": "2026-05-17",
+  "purpose": "Track 4 모델 학습 전 운영 불가 피처와 누수 가능 피처를 자동 검사한다.",
+  "target_columns": [
+    "price_krw",
+    "ln_price_krw"
+  ],
+  "forbidden_exact": [
+    "track4_source",
+    "track4_source_row_index",
+    "source_artwork_id",
+    "artwork_url",
+    "image_url",
+    "artist_name_ko_orig",
+    "artist_name_standardized",
+    "title_raw",
+    "price_krw",
+    "ln_price_krw",
+    "gallery_name",
+    "gallery_tier",
+    "gallery_tier_source",
+    "is_training_candidate",
+    "cleaning_exclude_reasons",
+    "is_high_price_candidate"
+  ],
+  "forbidden_patterns": [
+    "source",
+    "url",
+    "image",
+    "gallery",
+    "tier",
+    "price",
+    "title",
+    "exclude"
+  ],
+  "trace_only_columns": [
+    "track4_source",
+    "track4_source_row_index",
+    "source_artwork_id",
+    "artwork_url",
+    "image_url",
+    "title_raw",
+    "artist_name_ko_orig",
+    "artist_name_standardized",
+    "cleaning_exclude_reasons"
+  ],
+  "analysis_only_columns": [
+    "is_training_candidate",
+    "is_high_price_candidate",
+    "track4_source",
+    "gallery_tier"
+  ],
+  "model_feature_sets": {
+    "warm_current_candidate": [
+      "artist_key",
+      "artist_works_log",
+      "artist_works_count_train",
+      "medium_category",
+      "support_category",
+      "log_area",
+      "aspect_ratio",
+      "width_cm",
+      "height_cm",
+      "has_depth",
+      "is_3d_candidate"
+    ],
+    "cold_current_candidate": [
+      "medium_category",
+      "support_category",
+      "log_area",
+      "aspect_ratio",
+      "width_cm",
+      "height_cm",
+      "has_depth",
+      "is_3d_candidate"
+    ],
+    "cold_reduced_candidate": [
+      "medium_category",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate"
+    ],
+    "structure_only_baseline": [
+      "medium_category",
+      "support_category",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate"
+    ]
+  },
+  "negative_control_feature_sets": {
+    "source_leak_example": [
+      "medium_category",
+      "track4_source",
+      "log_area"
+    ],
+    "target_leak_example": [
+      "medium_category",
+      "price_krw",
+      "log_area"
+    ],
+    "gallery_leak_example": [
+      "medium_category",
+      "gallery_tier",
+      "log_area"
+    ]
+  },
+  "notes": [
+    "source/gallery/url/image/title 컬럼은 원본 추적과 감사에는 필요하지만 모델 입력에는 넣지 않는다.",
+    "price/ln_price 계열은 정답값이므로 모델 피처에 들어가면 누수로 본다.",
+    "is_high_price_candidate는 분석용 위험 구간 flag이며 실제 예측 전에는 알 수 없으므로 모델 피처에서는 금지한다."
+  ]
+}

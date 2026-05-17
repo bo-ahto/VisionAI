@@ -1,0 +1,212 @@
+{
+  "experiment_id": "T4-E034",
+  "hypothesis_id": "T4-H25",
+  "date": "2026-05-17",
+  "manifest": "configs/track4/feature_manifest.json",
+  "split_files": [
+    "track4_train.csv",
+    "track4_val_warm.csv",
+    "track4_val_cold.csv",
+    "track4_test_warm.csv",
+    "track4_test_cold.csv"
+  ],
+  "model_feature_checks": [
+    {
+      "feature_set": "warm_current_candidate",
+      "features": [
+        "artist_key",
+        "artist_works_log",
+        "artist_works_count_train",
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "width_cm",
+        "height_cm",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    },
+    {
+      "feature_set": "cold_current_candidate",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "width_cm",
+        "height_cm",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    },
+    {
+      "feature_set": "cold_reduced_candidate",
+      "features": [
+        "medium_category",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    },
+    {
+      "feature_set": "structure_only_baseline",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    }
+  ],
+  "negative_control_checks": [
+    {
+      "feature_set": "source_leak_example",
+      "features": [
+        "medium_category",
+        "track4_source",
+        "log_area"
+      ],
+      "missing_columns": [],
+      "violations": {
+        "track4_source": [
+          "forbidden_exact",
+          "forbidden_pattern:source"
+        ]
+      },
+      "passed": false
+    },
+    {
+      "feature_set": "target_leak_example",
+      "features": [
+        "medium_category",
+        "price_krw",
+        "log_area"
+      ],
+      "missing_columns": [],
+      "violations": {
+        "price_krw": [
+          "forbidden_exact",
+          "forbidden_pattern:price"
+        ]
+      },
+      "passed": false
+    },
+    {
+      "feature_set": "gallery_leak_example",
+      "features": [
+        "medium_category",
+        "gallery_tier",
+        "log_area"
+      ],
+      "missing_columns": [
+        "gallery_tier"
+      ],
+      "violations": {
+        "gallery_tier": [
+          "forbidden_exact",
+          "forbidden_pattern:gallery",
+          "forbidden_pattern:tier"
+        ]
+      },
+      "passed": false
+    }
+  ],
+  "target_columns_present_for_training_label": {
+    "track4_train.csv": [
+      "ln_price_krw",
+      "price_krw"
+    ],
+    "track4_val_warm.csv": [
+      "ln_price_krw",
+      "price_krw"
+    ],
+    "track4_val_cold.csv": [
+      "ln_price_krw",
+      "price_krw"
+    ],
+    "track4_test_warm.csv": [
+      "ln_price_krw",
+      "price_krw"
+    ],
+    "track4_test_cold.csv": [
+      "ln_price_krw",
+      "price_krw"
+    ]
+  },
+  "trace_columns_present_for_audit_only": {
+    "track4_train.csv": [
+      "artist_name_ko_orig",
+      "artist_name_standardized",
+      "artwork_url",
+      "cleaning_exclude_reasons",
+      "image_url",
+      "source_artwork_id",
+      "title_raw",
+      "track4_source",
+      "track4_source_row_index"
+    ],
+    "track4_val_warm.csv": [
+      "artist_name_ko_orig",
+      "artist_name_standardized",
+      "artwork_url",
+      "cleaning_exclude_reasons",
+      "image_url",
+      "source_artwork_id",
+      "title_raw",
+      "track4_source",
+      "track4_source_row_index"
+    ],
+    "track4_val_cold.csv": [
+      "artist_name_ko_orig",
+      "artist_name_standardized",
+      "artwork_url",
+      "cleaning_exclude_reasons",
+      "image_url",
+      "source_artwork_id",
+      "title_raw",
+      "track4_source",
+      "track4_source_row_index"
+    ],
+    "track4_test_warm.csv": [
+      "artist_name_ko_orig",
+      "artist_name_standardized",
+      "artwork_url",
+      "cleaning_exclude_reasons",
+      "image_url",
+      "source_artwork_id",
+      "title_raw",
+      "track4_source",
+      "track4_source_row_index"
+    ],
+    "track4_test_cold.csv": [
+      "artist_name_ko_orig",
+      "artist_name_standardized",
+      "artwork_url",
+      "cleaning_exclude_reasons",
+      "image_url",
+      "source_artwork_id",
+      "title_raw",
+      "track4_source",
+      "track4_source_row_index"
+    ]
+  },
+  "all_model_feature_sets_passed": true,
+  "negative_controls_detected": true,
+  "passed": true
+}

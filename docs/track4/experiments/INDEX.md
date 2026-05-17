@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E034 | T4-H25 | 완료 | 금지 피처 manifest 검사 구현, source/price/gallery 누수 예시 차단 확인 | [기록](2026-05-17_T4-E034_feature_manifest_check.md) |
 | 2026-05-17 | T4-E033 | T4-H15 | 완료 | 크기 피처 축소 실험, Warm은 area_aspect, Cold는 median/tail 기준 후보 분리 | [기록](2026-05-17_T4-E033_size_feature_reduction.md) |
 | 2026-05-17 | T4-E032 | T4-H13 | 완료 | 재료 세분화 피처 실험, 개선 폭이 작아 단독 채택 보류 | [기록](2026-05-17_T4-E032_material_granularity.md) |
 | 2026-05-17 | T4-E031 | T4-H18, T4-H29 | 완료 | validation 기반 가격 범위와 신뢰도 calibration, Warm은 목표 근접, Cold는 부족 | [기록](2026-05-17_T4-E031_calibration_confidence.md) |

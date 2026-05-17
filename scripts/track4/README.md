@@ -177,3 +177,16 @@ python3 scripts/track4/run_t4_e033_size_feature_reduction.py
 - `data/track4/predictions/t4_e033_size_feature_reduction_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E033_size_feature_reduction.md`
+
+- `T4-E034` 금지 피처 manifest 검사
+
+```bash
+python3 scripts/track4/check_feature_manifest.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e034_feature_manifest_check.json`
+- manifest 파일
+- `configs/track4/feature_manifest.json`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E034_feature_manifest_check.md`
