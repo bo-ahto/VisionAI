@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E026 | T4-H6, T4-H14 | 완료 | support unknown ablation 실행, Warm은 support 유지, Cold는 support 제외와 위험 flag 분리 검토 | [기록](2026-05-17_T4-E026_support_unknown_ablation.md) |
 | 2026-05-17 | T4-E025 | T4-H4 | 완료 | Cold 모델 비교 실행, Quantile median APE `0.3486`, Huber p95 APE `1.2373` 확인 | [기록](2026-05-17_T4-E025_cold_model_comparison.md) |
 | 2026-05-17 | T4-E024 | T4-H2, T4-H20 | 완료 | Warm 작가 피처 ablation 실행, 작가 key+이력 median APE `0.2697` 확인 | [기록](2026-05-17_T4-E024_warm_artist_ablation.md) |
 | 2026-05-17 | T4-E023 | T4-H1 | 완료 | 구조-only Warm/Cold baseline 실행, Huber 기준 Warm `0.4148`, Cold `0.3567` 확인 | [기록](2026-05-17_T4-E023_structure_baseline.md) |

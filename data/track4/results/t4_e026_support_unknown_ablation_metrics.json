@@ -1,0 +1,378 @@
+{
+  "experiment_id": "T4-E026",
+  "hypothesis_id": [
+    "T4-H6",
+    "T4-H14"
+  ],
+  "date": "2026-05-17",
+  "target": "ln_price_krw",
+  "warm_model": "ridge",
+  "cold_model": "quantile_median",
+  "splits": {
+    "train": {
+      "rows": 28905,
+      "artists": 1834,
+      "support_unknown_rows": 2321,
+      "support_unknown_rate": 0.08029752637951912
+    },
+    "val_warm": {
+      "rows": 67,
+      "artists": 67,
+      "support_unknown_rows": 7,
+      "support_unknown_rate": 0.1044776119402985
+    },
+    "val_cold": {
+      "rows": 1814,
+      "artists": 108,
+      "support_unknown_rows": 206,
+      "support_unknown_rate": 0.11356119073869901
+    }
+  },
+  "feature_sets": {
+    "no_support": {
+      "warm": {
+        "description": "support 정보를 모두 제외",
+        "features": [
+          "medium_category",
+          "artist_key",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate",
+          "artist_works_log",
+          "artist_works_count_train"
+        ],
+        "metrics": {
+          "median_ape": 0.2884766562093719,
+          "mape": 0.4878169974662642,
+          "rmse_log": 0.6232229476244397,
+          "within_30": 0.5223880597014925,
+          "within_50": 0.6567164179104478,
+          "p90_ape": 1.298533845962842,
+          "p95_ape": 1.7671274287983267
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 60,
+            "median_ape": 0.2859624058999707,
+            "p95_ape": 1.6650631248782637
+          },
+          "support_unknown": {
+            "rows": 7,
+            "median_ape": 0.35580779577460836,
+            "p95_ape": 1.9925362273671057
+          }
+        }
+      },
+      "cold": {
+        "description": "support 정보를 모두 제외",
+        "features": [
+          "medium_category",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate"
+        ],
+        "metrics": {
+          "median_ape": 0.3409592965146401,
+          "mape": 0.4965630419448924,
+          "rmse_log": 0.6973082498597405,
+          "within_30": 0.4558985667034179,
+          "within_50": 0.6273428886438809,
+          "p90_ape": 0.925657831719463,
+          "p95_ape": 1.311969771968896
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 1608,
+            "median_ape": 0.3201390065081206,
+            "p95_ape": 1.3321828837224408
+          },
+          "support_unknown": {
+            "rows": 206,
+            "median_ape": 0.5558722757268666,
+            "p95_ape": 0.9939347801555456
+          }
+        }
+      }
+    },
+    "support_category": {
+      "warm": {
+        "description": "support_category를 범주형으로 사용",
+        "features": [
+          "medium_category",
+          "support_category",
+          "artist_key",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate",
+          "artist_works_log",
+          "artist_works_count_train"
+        ],
+        "metrics": {
+          "median_ape": 0.26968842454077935,
+          "mape": 0.4846123841761418,
+          "rmse_log": 0.6124793034314435,
+          "within_30": 0.5223880597014925,
+          "within_50": 0.6567164179104478,
+          "p90_ape": 1.1742253882944063,
+          "p95_ape": 1.648814511018459
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 60,
+            "median_ape": 0.27685203747937615,
+            "p95_ape": 1.6288584857754995
+          },
+          "support_unknown": {
+            "rows": 7,
+            "median_ape": 0.24196254408549825,
+            "p95_ape": 2.1687184188999735
+          }
+        }
+      },
+      "cold": {
+        "description": "support_category를 범주형으로 사용",
+        "features": [
+          "medium_category",
+          "support_category",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate"
+        ],
+        "metrics": {
+          "median_ape": 0.3485651452706776,
+          "mape": 0.4918516095881717,
+          "rmse_log": 0.6725382210569644,
+          "within_30": 0.4487320837927233,
+          "within_50": 0.6306504961411246,
+          "p90_ape": 0.9175218801418386,
+          "p95_ape": 1.2464387166810564
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 1608,
+            "median_ape": 0.32405346599130325,
+            "p95_ape": 1.2113719149398379
+          },
+          "support_unknown": {
+            "rows": 206,
+            "median_ape": 0.589470480254451,
+            "p95_ape": 1.4999326066402374
+          }
+        }
+      }
+    },
+    "support_unknown_flag": {
+      "warm": {
+        "description": "support_category 대신 unknown 여부만 사용",
+        "features": [
+          "medium_category",
+          "artist_key",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate",
+          "is_support_unknown",
+          "artist_works_log",
+          "artist_works_count_train"
+        ],
+        "metrics": {
+          "median_ape": 0.2826853411106087,
+          "mape": 0.4899271157521508,
+          "rmse_log": 0.6218831106204602,
+          "within_30": 0.5223880597014925,
+          "within_50": 0.6716417910447762,
+          "p90_ape": 1.260287075224916,
+          "p95_ape": 1.7351297385744306
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 60,
+            "median_ape": 0.2912145238196974,
+            "p95_ape": 1.6425771799646471
+          },
+          "support_unknown": {
+            "rows": 7,
+            "median_ape": 0.23456201028691917,
+            "p95_ape": 2.1487929954318123
+          }
+        }
+      },
+      "cold": {
+        "description": "support_category 대신 unknown 여부만 사용",
+        "features": [
+          "medium_category",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate",
+          "is_support_unknown"
+        ],
+        "metrics": {
+          "median_ape": 0.3506505125832332,
+          "mape": 0.5012142757117748,
+          "rmse_log": 0.6825626746095708,
+          "within_30": 0.4448732083792723,
+          "within_50": 0.6245865490628445,
+          "p90_ape": 0.9224111285572355,
+          "p95_ape": 1.2300901157145177
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 1608,
+            "median_ape": 0.3231780772185375,
+            "p95_ape": 1.2181132869657776
+          },
+          "support_unknown": {
+            "rows": 206,
+            "median_ape": 0.5769686708182868,
+            "p95_ape": 1.5567209730599498
+          }
+        }
+      }
+    },
+    "medium_support_bucket": {
+      "warm": {
+        "description": "재료와 지지체 조합 bucket 사용",
+        "features": [
+          "medium_category",
+          "medium_support_bucket",
+          "artist_key",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate",
+          "artist_works_log",
+          "artist_works_count_train"
+        ],
+        "metrics": {
+          "median_ape": 0.2926251596187171,
+          "mape": 0.49973961414863743,
+          "rmse_log": 0.6177990354465497,
+          "within_30": 0.5223880597014925,
+          "within_50": 0.6119402985074627,
+          "p90_ape": 1.1116345959805052,
+          "p95_ape": 1.5994568411867662
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 60,
+            "median_ape": 0.2955451328137815,
+            "p95_ape": 1.5727713949608444
+          },
+          "support_unknown": {
+            "rows": 7,
+            "median_ape": 0.29110960704715755,
+            "p95_ape": 2.2066236537039083
+          }
+        }
+      },
+      "cold": {
+        "description": "재료와 지지체 조합 bucket 사용",
+        "features": [
+          "medium_category",
+          "medium_support_bucket",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate"
+        ],
+        "metrics": {
+          "median_ape": 0.3624076206084966,
+          "mape": 0.49931987654628107,
+          "rmse_log": 0.6829019082950775,
+          "within_30": 0.43715545755237045,
+          "within_50": 0.62348401323043,
+          "p90_ape": 0.9460727049639908,
+          "p95_ape": 1.2601395255362164
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 1608,
+            "median_ape": 0.33075480712295774,
+            "p95_ape": 1.2376614920141216
+          },
+          "support_unknown": {
+            "rows": 206,
+            "median_ape": 0.5618233731870133,
+            "p95_ape": 1.5946369354668246
+          }
+        }
+      }
+    },
+    "support_category_plus_unknown_flag": {
+      "warm": {
+        "description": "support_category와 unknown 여부를 함께 사용",
+        "features": [
+          "medium_category",
+          "support_category",
+          "artist_key",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate",
+          "is_support_unknown",
+          "artist_works_log",
+          "artist_works_count_train"
+        ],
+        "metrics": {
+          "median_ape": 0.26980429531699524,
+          "mape": 0.4846544058900667,
+          "rmse_log": 0.6124948234210018,
+          "within_30": 0.5223880597014925,
+          "within_50": 0.6567164179104478,
+          "p90_ape": 1.1741911297770469,
+          "p95_ape": 1.6488434539348524
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 60,
+            "median_ape": 0.27690515904177015,
+            "p95_ape": 1.628899243649171
+          },
+          "support_unknown": {
+            "rows": 7,
+            "median_ape": 0.24140348433721923,
+            "p95_ape": 2.169395365203654
+          }
+        }
+      },
+      "cold": {
+        "description": "support_category와 unknown 여부를 함께 사용",
+        "features": [
+          "medium_category",
+          "support_category",
+          "log_area",
+          "aspect_ratio",
+          "has_depth",
+          "is_3d_candidate",
+          "is_support_unknown"
+        ],
+        "metrics": {
+          "median_ape": 0.34756281834891545,
+          "mape": 0.49186747178364754,
+          "rmse_log": 0.6723676093617457,
+          "within_30": 0.4498346196251378,
+          "within_50": 0.6306504961411246,
+          "p90_ape": 0.9182093669324914,
+          "p95_ape": 1.2474901671541525
+        },
+        "slice_metrics": {
+          "support_known": {
+            "rows": 1608,
+            "median_ape": 0.3232383563351749,
+            "p95_ape": 1.210542747511223
+          },
+          "support_unknown": {
+            "rows": 206,
+            "median_ape": 0.5887221347552191,
+            "p95_ape": 1.5051584200010448
+          }
+        }
+      }
+    }
+  }
+}
