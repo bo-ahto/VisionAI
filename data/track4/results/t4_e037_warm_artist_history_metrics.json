@@ -1,0 +1,137 @@
+{
+  "experiment_id": "T4-E037",
+  "hypothesis_id": "T4-H3",
+  "date": "2026-05-17",
+  "important_note": "artist price stats are calculated from track4_train only. No validation target is used.",
+  "feature_sets": {
+    "structure_only": {
+      "description": "작가 관련 피처 제외",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "metrics": {
+        "rows": 67,
+        "median_ape": 0.5399897124159085,
+        "mape": 0.8726468444450245,
+        "rmse_log": 0.7724920402027378,
+        "within_30": 0.3582089552238806,
+        "within_50": 0.47761194029850745,
+        "p95_ape": 2.6356954062932756
+      }
+    },
+    "artist_key_only": {
+      "description": "작가 key만 추가",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "metrics": {
+        "rows": 67,
+        "median_ape": 0.2664561115603125,
+        "mape": 0.4785019645554125,
+        "rmse_log": 0.5998885921237241,
+        "within_30": 0.5373134328358209,
+        "within_50": 0.6567164179104478,
+        "p95_ape": 1.4995707025985416
+      }
+    },
+    "artist_count_only": {
+      "description": "train 기준 작가 작품 수만 추가",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "metrics": {
+        "rows": 67,
+        "median_ape": 0.5039978263665151,
+        "mape": 0.8619829180682059,
+        "rmse_log": 0.7674534651453544,
+        "within_30": 0.2835820895522388,
+        "within_50": 0.4925373134328358,
+        "p95_ape": 2.5784040107747703
+      }
+    },
+    "artist_price_stats_only": {
+      "description": "train 기준 작가 가격 통계만 추가",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price"
+      ],
+      "metrics": {
+        "rows": 67,
+        "median_ape": 0.30069321966446294,
+        "mape": 0.48048998355578415,
+        "rmse_log": 0.6772920404582224,
+        "within_30": 0.4925373134328358,
+        "within_50": 0.7164179104477612,
+        "p95_ape": 1.2280311230187895
+      }
+    },
+    "artist_key_count": {
+      "description": "현재 Warm 기준 후보",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "metrics": {
+        "rows": 67,
+        "median_ape": 0.259722268969027,
+        "mape": 0.48107718952800604,
+        "rmse_log": 0.6000254165320705,
+        "within_30": 0.5522388059701493,
+        "within_50": 0.6567164179104478,
+        "p95_ape": 1.5644226287656293
+      }
+    },
+    "artist_key_price_stats": {
+      "description": "작가 key와 train 기준 가격 통계를 함께 사용",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price"
+      ],
+      "metrics": {
+        "rows": 67,
+        "median_ape": 0.23259588362591951,
+        "mape": 0.3789426940672692,
+        "rmse_log": 0.6081703966852758,
+        "within_30": 0.5970149253731343,
+        "within_50": 0.7910447761194029,
+        "p95_ape": 1.0538199078327848
+      }
+    }
+  },
+  "best_by_median_ape": {
+    "feature_set": "artist_key_price_stats",
+    "median_ape": 0.23259588362591951
+  }
+}

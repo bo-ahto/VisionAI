@@ -214,3 +214,15 @@ python3 scripts/track4/run_t4_e036_source_slice_audit.py
 - `data/track4/predictions/t4_e036_source_slice_audit_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E036_source_slice_audit.md`
+
+- `T4-E037` Warm 작가 이력 피처 검증
+
+```bash
+python3 scripts/track4/run_t4_e037_warm_artist_history.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e037_warm_artist_history_metrics.json`
+- `data/track4/predictions/t4_e037_warm_artist_history_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E037_warm_artist_history.md`
