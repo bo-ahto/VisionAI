@@ -117,3 +117,15 @@ python3 scripts/track4/run_t4_e028_shared_vs_split_repeated.py
 - `data/track4/predictions/t4_e028_shared_vs_split_repeated_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E028_shared_vs_split_repeated.md`
+
+- `T4-E029` 작가 작품 수 기준 라우팅 threshold
+
+```bash
+python3 scripts/track4/run_t4_e029_routing_threshold.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e029_routing_threshold_metrics.json`
+- `data/track4/predictions/t4_e029_routing_threshold_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E029_routing_threshold.md`
