@@ -1,0 +1,559 @@
+{
+  "experiment_id": "T4-E040",
+  "hypothesis_id": [
+    "T4-H31"
+  ],
+  "date": "2026-05-17",
+  "target_coverages": [
+    0.7,
+    0.8,
+    0.9
+  ],
+  "decision_thresholds": {
+    "q80_min_coverage": 0.8,
+    "q80_max_single_price_range": 4.0,
+    "q90_min_range_only_coverage": 0.78,
+    "q90_max_low_risk_range": 6.0,
+    "mid_high_max_range": 10.0
+  },
+  "risk_group_definition": {
+    "low_risk": "risk flag 0개",
+    "mid_risk": "risk flag 1개",
+    "high_risk": "risk flag 2개 이상",
+    "risk_flags": [
+      "3D 후보",
+      "지지체 unknown",
+      "train 기준 상위 10% 대형",
+      "극단 가로세로비"
+    ]
+  },
+  "candidates": {
+    "cold_full_size": {
+      "description": "Cold median APE 후보",
+      "features": [
+        "medium_category",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "point_metrics": {
+        "overall": {
+          "rows": 3277,
+          "median_ape": 0.41986892997462866,
+          "p95_ape": 2.760944366911861,
+          "within_30": 0.3698504729935917,
+          "within_50": 0.5916997253585596
+        },
+        "groups": {
+          "high_risk": {
+            "rows": 51,
+            "median_ape": 0.5671736395340811,
+            "p95_ape": 4.245609531511507,
+            "within_30": 0.19607843137254902,
+            "within_50": 0.39215686274509803
+          },
+          "low_risk": {
+            "rows": 2738,
+            "median_ape": 0.40766754369285063,
+            "p95_ape": 2.638369066720195,
+            "within_30": 0.3798392987582177,
+            "within_50": 0.5986121256391527
+          },
+          "mid_risk": {
+            "rows": 488,
+            "median_ape": 0.427428724608494,
+            "p95_ape": 4.193224808523055,
+            "within_30": 0.3319672131147541,
+            "within_50": 0.5737704918032787
+          }
+        }
+      },
+      "validation_policy": {
+        "q70": {
+          "target_coverage": 0.7,
+          "overall": {
+            "rows": 1814,
+            "abs_log_error": 0.5436425957660008,
+            "half_width_multiplier": 1.7222689797729116,
+            "full_range_multiplier": 2.9662104386880253
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 72,
+              "abs_log_error": 1.2113984430378855,
+              "half_width_multiplier": 3.3581775904523967,
+              "full_range_multiplier": 11.277356729016663,
+              "fallback_to_overall": false
+            },
+            "low_risk": {
+              "rows": 1436,
+              "abs_log_error": 0.511407832122991,
+              "half_width_multiplier": 1.6676372964553035,
+              "full_range_multiplier": 2.781014152528754,
+              "fallback_to_overall": false
+            },
+            "mid_risk": {
+              "rows": 306,
+              "abs_log_error": 0.7159053527862591,
+              "half_width_multiplier": 2.046038230392634,
+              "full_range_multiplier": 4.186272440228221,
+              "fallback_to_overall": false
+            }
+          }
+        },
+        "q80": {
+          "target_coverage": 0.8,
+          "overall": {
+            "rows": 1814,
+            "abs_log_error": 0.7030720479039017,
+            "half_width_multiplier": 2.019948564366261,
+            "full_range_multiplier": 4.080192202685319
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 72,
+              "abs_log_error": 1.842693213359487,
+              "half_width_multiplier": 6.313519038153655,
+              "full_range_multiplier": 39.860522645128654,
+              "fallback_to_overall": false
+            },
+            "low_risk": {
+              "rows": 1436,
+              "abs_log_error": 0.6307401375064217,
+              "half_width_multiplier": 1.879000783684264,
+              "full_range_multiplier": 3.530643945086078,
+              "fallback_to_overall": false
+            },
+            "mid_risk": {
+              "rows": 306,
+              "abs_log_error": 1.0136071572639747,
+              "half_width_multiplier": 2.755522713467448,
+              "full_range_multiplier": 7.592905424435005,
+              "fallback_to_overall": false
+            }
+          }
+        },
+        "q90": {
+          "target_coverage": 0.9,
+          "overall": {
+            "rows": 1814,
+            "abs_log_error": 1.009432633093855,
+            "half_width_multiplier": 2.7440436936915846,
+            "full_range_multiplier": 7.529775792888556
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 72,
+              "abs_log_error": 2.1212184191631707,
+              "half_width_multiplier": 8.341294491741346,
+              "full_range_multiplier": 69.57719379795451,
+              "fallback_to_overall": false
+            },
+            "low_risk": {
+              "rows": 1436,
+              "abs_log_error": 0.8560361922758695,
+              "half_width_multiplier": 2.3538121193106396,
+              "full_range_multiplier": 5.540431493013646,
+              "fallback_to_overall": false
+            },
+            "mid_risk": {
+              "rows": 306,
+              "abs_log_error": 1.394280080505954,
+              "half_width_multiplier": 4.032070761160044,
+              "full_range_multiplier": 16.257594623001744,
+              "fallback_to_overall": false
+            }
+          }
+        }
+      },
+      "test_interval_summary": {
+        "q70": {
+          "target_coverage": 0.7,
+          "overall": {
+            "rows": 3277,
+            "coverage": 0.6011595971925542,
+            "median_full_range_multiplier": 2.7810141525287544,
+            "p90_full_range_multiplier": 4.186272440228214
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 51,
+              "coverage": 0.6274509803921569,
+              "median_full_range_multiplier": 11.277356729016683,
+              "p90_full_range_multiplier": 11.277356729016685
+            },
+            "low_risk": {
+              "rows": 2738,
+              "coverage": 0.5883856829802776,
+              "median_full_range_multiplier": 2.7810141525287544,
+              "p90_full_range_multiplier": 2.781014152528755
+            },
+            "mid_risk": {
+              "rows": 488,
+              "coverage": 0.6700819672131147,
+              "median_full_range_multiplier": 4.186272440228214,
+              "p90_full_range_multiplier": 4.186272440228229
+            }
+          }
+        },
+        "q80": {
+          "target_coverage": 0.8,
+          "overall": {
+            "rows": 3277,
+            "coverage": 0.6728715288373512,
+            "median_full_range_multiplier": 3.5306439450860783,
+            "p90_full_range_multiplier": 7.592905424435005
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 51,
+              "coverage": 0.8823529411764706,
+              "median_full_range_multiplier": 39.860522645128654,
+              "p90_full_range_multiplier": 39.860522645128725
+            },
+            "low_risk": {
+              "rows": 2738,
+              "coverage": 0.6581446311176041,
+              "median_full_range_multiplier": 3.530643945086078,
+              "p90_full_range_multiplier": 3.5306439450860783
+            },
+            "mid_risk": {
+              "rows": 488,
+              "coverage": 0.7336065573770492,
+              "median_full_range_multiplier": 7.592905424435005,
+              "p90_full_range_multiplier": 7.59290542443502
+            }
+          }
+        },
+        "q90": {
+          "target_coverage": 0.9,
+          "overall": {
+            "rows": 3277,
+            "coverage": 0.7955447055233446,
+            "median_full_range_multiplier": 5.540431493013646,
+            "p90_full_range_multiplier": 16.257594623001744
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 51,
+              "coverage": 0.9607843137254902,
+              "median_full_range_multiplier": 69.57719379795451,
+              "p90_full_range_multiplier": 69.57719379795464
+            },
+            "low_risk": {
+              "rows": 2738,
+              "coverage": 0.783418553688824,
+              "median_full_range_multiplier": 5.540431493013646,
+              "p90_full_range_multiplier": 5.540431493013655
+            },
+            "mid_risk": {
+              "rows": 488,
+              "coverage": 0.8463114754098361,
+              "median_full_range_multiplier": 16.257594623001744,
+              "p90_full_range_multiplier": 16.257594623001744
+            }
+          }
+        }
+      },
+      "service_decisions": {
+        "high_risk": {
+          "decision": "warning_or_hold",
+          "reason": "필요한 가격 범위가 넓어 서비스 설명력이 낮음",
+          "rows": 51,
+          "median_ape": 0.5671736395340811,
+          "p95_ape": 4.245609531511507,
+          "q80_coverage": 0.8823529411764706,
+          "q80_median_range_multiplier": 39.860522645128654,
+          "q90_coverage": 0.9607843137254902,
+          "q90_median_range_multiplier": 69.57719379795451
+        },
+        "low_risk": {
+          "decision": "range_only_borderline_candidate",
+          "reason": "q80은 부족하지만 q90 기준 가격 범위는 제한 운영 후보",
+          "rows": 2738,
+          "median_ape": 0.40766754369285063,
+          "p95_ape": 2.638369066720195,
+          "q80_coverage": 0.6581446311176041,
+          "q80_median_range_multiplier": 3.530643945086078,
+          "q90_coverage": 0.783418553688824,
+          "q90_median_range_multiplier": 5.540431493013646
+        },
+        "mid_risk": {
+          "decision": "warning_or_hold",
+          "reason": "필요한 가격 범위가 넓어 서비스 설명력이 낮음",
+          "rows": 488,
+          "median_ape": 0.427428724608494,
+          "p95_ape": 4.193224808523055,
+          "q80_coverage": 0.7336065573770492,
+          "q80_median_range_multiplier": 7.592905424435005,
+          "q90_coverage": 0.8463114754098361,
+          "q90_median_range_multiplier": 16.257594623001744
+        }
+      }
+    },
+    "cold_area_only": {
+      "description": "Cold tail risk 비교 후보",
+      "features": [
+        "medium_category",
+        "log_area"
+      ],
+      "point_metrics": {
+        "overall": {
+          "rows": 3277,
+          "median_ape": 0.4364880177737676,
+          "p95_ape": 2.917725090674551,
+          "within_30": 0.35489777235276165,
+          "within_50": 0.5709490387549588
+        },
+        "groups": {
+          "high_risk": {
+            "rows": 51,
+            "median_ape": 0.8084973709505303,
+            "p95_ape": 3.6164349364939605,
+            "within_30": 0.09803921568627451,
+            "within_50": 0.19607843137254902
+          },
+          "low_risk": {
+            "rows": 2738,
+            "median_ape": 0.43600203092872225,
+            "p95_ape": 2.917725090674551,
+            "within_30": 0.36194302410518625,
+            "within_50": 0.5803506208911614
+          },
+          "mid_risk": {
+            "rows": 488,
+            "median_ape": 0.417312740575453,
+            "p95_ape": 4.166180383051622,
+            "within_30": 0.3422131147540984,
+            "within_50": 0.5573770491803278
+          }
+        }
+      },
+      "validation_policy": {
+        "q70": {
+          "target_coverage": 0.7,
+          "overall": {
+            "rows": 1814,
+            "abs_log_error": 0.5772264092917752,
+            "half_width_multiplier": 1.7810915546301123,
+            "full_range_multiplier": 3.17228712597471
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 72,
+              "abs_log_error": 2.0112641325676397,
+              "half_width_multiplier": 7.472757935660965,
+              "full_range_multiplier": 55.842111164983926,
+              "fallback_to_overall": false
+            },
+            "low_risk": {
+              "rows": 1436,
+              "abs_log_error": 0.5329494907245049,
+              "half_width_multiplier": 1.7039506909022661,
+              "full_range_multiplier": 2.90344795702631,
+              "fallback_to_overall": false
+            },
+            "mid_risk": {
+              "rows": 306,
+              "abs_log_error": 0.6791341046525172,
+              "half_width_multiplier": 1.9721693004539178,
+              "full_range_multiplier": 3.889451749652895,
+              "fallback_to_overall": false
+            }
+          }
+        },
+        "q80": {
+          "target_coverage": 0.8,
+          "overall": {
+            "rows": 1814,
+            "abs_log_error": 0.7065936503379557,
+            "half_width_multiplier": 2.0270745602448854,
+            "full_range_multiplier": 4.109031272791996
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 72,
+              "abs_log_error": 2.3171113674836006,
+              "half_width_multiplier": 10.146322935467754,
+              "full_range_multiplier": 102.94786911079899,
+              "fallback_to_overall": false
+            },
+            "low_risk": {
+              "rows": 1436,
+              "abs_log_error": 0.6428877559760942,
+              "half_width_multiplier": 1.9019653684194968,
+              "full_range_multiplier": 3.6174722626671123,
+              "fallback_to_overall": false
+            },
+            "mid_risk": {
+              "rows": 306,
+              "abs_log_error": 0.9755799900919797,
+              "half_width_multiplier": 2.652705307694468,
+              "full_range_multiplier": 7.036845449470404,
+              "fallback_to_overall": false
+            }
+          }
+        },
+        "q90": {
+          "target_coverage": 0.9,
+          "overall": {
+            "rows": 1814,
+            "abs_log_error": 0.9877530280238176,
+            "half_width_multiplier": 2.685194132686945,
+            "full_range_multiplier": 7.210267530216396
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 72,
+              "abs_log_error": 2.865224317316919,
+              "half_width_multiplier": 17.552990202667825,
+              "full_range_multiplier": 308.1074650549527,
+              "fallback_to_overall": false
+            },
+            "low_risk": {
+              "rows": 1436,
+              "abs_log_error": 0.824727142818233,
+              "half_width_multiplier": 2.2812582227110223,
+              "full_range_multiplier": 5.2041390786866515,
+              "fallback_to_overall": false
+            },
+            "mid_risk": {
+              "rows": 306,
+              "abs_log_error": 1.5686691959750538,
+              "half_width_multiplier": 4.800255741506446,
+              "full_range_multiplier": 23.042455183865606,
+              "fallback_to_overall": false
+            }
+          }
+        }
+      },
+      "test_interval_summary": {
+        "q70": {
+          "target_coverage": 0.7,
+          "overall": {
+            "rows": 3277,
+            "coverage": 0.5883429966432713,
+            "median_full_range_multiplier": 2.90344795702631,
+            "p90_full_range_multiplier": 3.889451749652895
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 51,
+              "coverage": 0.7254901960784313,
+              "median_full_range_multiplier": 55.842111164983876,
+              "p90_full_range_multiplier": 55.842111164983976
+            },
+            "low_risk": {
+              "rows": 2738,
+              "coverage": 0.5781592403214025,
+              "median_full_range_multiplier": 2.90344795702631,
+              "p90_full_range_multiplier": 2.90344795702631
+            },
+            "mid_risk": {
+              "rows": 488,
+              "coverage": 0.6311475409836066,
+              "median_full_range_multiplier": 3.889451749652895,
+              "p90_full_range_multiplier": 3.889451749652902
+            }
+          }
+        },
+        "q80": {
+          "target_coverage": 0.8,
+          "overall": {
+            "rows": 3277,
+            "coverage": 0.6899603295697284,
+            "median_full_range_multiplier": 3.6174722626671123,
+            "p90_full_range_multiplier": 7.036845449470404
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 51,
+              "coverage": 0.9215686274509803,
+              "median_full_range_multiplier": 102.94786911079918,
+              "p90_full_range_multiplier": 102.94786911079919
+            },
+            "low_risk": {
+              "rows": 2738,
+              "coverage": 0.6793279766252739,
+              "median_full_range_multiplier": 3.6174722626671123,
+              "p90_full_range_multiplier": 3.6174722626671127
+            },
+            "mid_risk": {
+              "rows": 488,
+              "coverage": 0.7254098360655737,
+              "median_full_range_multiplier": 7.036845449470404,
+              "p90_full_range_multiplier": 7.0368454494704045
+            }
+          }
+        },
+        "q90": {
+          "target_coverage": 0.9,
+          "overall": {
+            "rows": 3277,
+            "coverage": 0.7876106194690266,
+            "median_full_range_multiplier": 5.2041390786866515,
+            "p90_full_range_multiplier": 23.042455183865645
+          },
+          "groups": {
+            "high_risk": {
+              "rows": 51,
+              "coverage": 0.9607843137254902,
+              "median_full_range_multiplier": 308.1074650549527,
+              "p90_full_range_multiplier": 308.10746505495274
+            },
+            "low_risk": {
+              "rows": 2738,
+              "coverage": 0.7753834915997078,
+              "median_full_range_multiplier": 5.2041390786866515,
+              "p90_full_range_multiplier": 5.204139078686652
+            },
+            "mid_risk": {
+              "rows": 488,
+              "coverage": 0.8381147540983607,
+              "median_full_range_multiplier": 23.042455183865645,
+              "p90_full_range_multiplier": 23.04245518386565
+            }
+          }
+        }
+      },
+      "service_decisions": {
+        "high_risk": {
+          "decision": "warning_or_hold",
+          "reason": "필요한 가격 범위가 넓어 서비스 설명력이 낮음",
+          "rows": 51,
+          "median_ape": 0.8084973709505303,
+          "p95_ape": 3.6164349364939605,
+          "q80_coverage": 0.9215686274509803,
+          "q80_median_range_multiplier": 102.94786911079918,
+          "q90_coverage": 0.9607843137254902,
+          "q90_median_range_multiplier": 308.1074650549527
+        },
+        "low_risk": {
+          "decision": "needs_more_validation",
+          "reason": "coverage 또는 범위 폭 중 하나가 기준 미달",
+          "rows": 2738,
+          "median_ape": 0.43600203092872225,
+          "p95_ape": 2.917725090674551,
+          "q80_coverage": 0.6793279766252739,
+          "q80_median_range_multiplier": 3.6174722626671123,
+          "q90_coverage": 0.7753834915997078,
+          "q90_median_range_multiplier": 5.2041390786866515
+        },
+        "mid_risk": {
+          "decision": "warning_or_hold",
+          "reason": "필요한 가격 범위가 넓어 서비스 설명력이 낮음",
+          "rows": 488,
+          "median_ape": 0.417312740575453,
+          "p95_ape": 4.166180383051622,
+          "q80_coverage": 0.7254098360655737,
+          "q80_median_range_multiplier": 7.036845449470404,
+          "q90_coverage": 0.8381147540983607,
+          "q90_median_range_multiplier": 23.042455183865645
+        }
+      }
+    }
+  }
+}

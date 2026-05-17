@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E040 | T4-H31 | 완료 | Cold low_risk 구간만 제한적 가격 범위 후보인지 검증, mid/high는 범위 과대로 보류 | [기록](2026-05-17_T4-E040_cold_low_risk_policy.md) |
 | 2026-05-17 | T4-E039 | T4-H11,H24,H29 | 완료 | 가격 범위와 신뢰도 정책 보완, Cold 전체 적용은 범위 과대로 세부 가설 분리 | [기록](2026-05-17_T4-E039_interval_policy.md) |
 | 2026-05-17 | T4-E038 | T4-H1,H2,H3,H4,H15,H21,H23 | 완료 | 최종 후보 validation/test 닫기 실험, Warm은 강하고 Cold는 신뢰도 정책 필요 | [기록](2026-05-17_T4-E038_candidate_closure.md) |
 | 2026-05-17 | T4-E037 | T4-H3 | 완료 | Warm 작가 이력 피처 검증, artist_key와 train-only 가격 통계 조합이 최고 성능 | [기록](2026-05-17_T4-E037_warm_artist_history.md) |
