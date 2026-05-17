@@ -14,16 +14,16 @@
 
 | split | rows | artist_key 수 | 한글명 수 | 동명이인 rows | artist_works_log 범위 | 파일 |
 |---|---:|---:|---:|---:|---:|---|
-| `train` | `28,920` | `1,836` | `1,788` | `921` | `0.69~6.55` | `data/track4_split/track4_train.csv` |
-| `val_warm` | `68` | `68` | `68` | `2` | `1.10~5.51` | `data/track4_split/track4_val_warm.csv` |
-| `val_cold` | `1,835` | `108` | `107` | `66` | `0.00~0.00` | `data/track4_split/track4_val_cold.csv` |
-| `test_warm` | `137` | `137` | `136` | `6` | `1.10~5.54` | `data/track4_split/track4_test_warm.csv` |
-| `test_cold` | `3,269` | `216` | `216` | `99` | `0.00~0.00` | `data/track4_split/track4_test_cold.csv` |
+| `train` | `28,905` | `1,834` | `1,785` | `1,075` | `0.69~6.55` | `data/track4_split/track4_train.csv` |
+| `val_warm` | `67` | `67` | `66` | `2` | `1.10~5.51` | `data/track4_split/track4_val_warm.csv` |
+| `val_cold` | `1,814` | `108` | `108` | `44` | `0.00~0.00` | `data/track4_split/track4_val_cold.csv` |
+| `test_warm` | `137` | `137` | `137` | `4` | `0.69~5.54` | `data/track4_split/track4_test_warm.csv` |
+| `test_cold` | `3,277` | `216` | `215` | `72` | `0.00~0.00` | `data/track4_split/track4_test_cold.csv` |
 
 ## 2. 중복/누수 방지
 
-- train에서 제거한 동일 작품 후보 rows: `10`
-- 제거된 rows의 작가 수: `8`
+- train에서 제거한 동일 작품 후보 rows: `18`
+- 제거된 rows의 작가 수: `9`
 - 제거 기준: 같은 `artist_key`, 제목, 가격, 크기, 재료/지지체가 평가셋에도 있는 경우
 - 평가셋은 그대로 두고 train에서만 제거해 평가 성능 과대평가를 줄임
 
@@ -35,10 +35,10 @@
 - test warm 작가가 train에 모두 존재: `True`
 - validation cold의 `artist_works_log > 0` rows: `0`
 - test cold의 `artist_works_log > 0` rows: `0`
-- validation cold와 train 한글 표시명 겹침: `6`
-- test cold와 train 한글 표시명 겹침: `20`
+- validation cold와 train 한글 표시명 겹침: `7`
+- test cold와 train 한글 표시명 겹침: `16`
 - validation cold와 train 원본 한글명 겹침: `8`
-- test cold와 train 원본 한글명 겹침: `23`
+- test cold와 train 원본 한글명 겹침: `19`
 
 ## 4. 동명이인 해석
 

@@ -5,28 +5,28 @@
 - 컬럼별 요약 CSV: `data/track4_column_value_consistency_audit.csv`
 - 이슈 샘플 CSV: `data/track4_column_value_issue_samples.csv`
 - 전체 rows: `54,842`
-- 전체 columns: `94`
+- 전체 columns: `97`
 - 이슈가 있는 columns: `8`
 
 ## 1. 핵심 결론
 
-- 학습 후보 rows: `34,239`
+- 학습 후보 rows: `34,219`
 - 학습 후보 중 한글 작가명 누락: `0`
 - 학습 후보 중 `medium_category=unknown`: `26`
-- 학습 후보 중 `support_category=unknown`: `2,786`
+- 학습 후보 중 `support_category=unknown`: `2,783`
 
 ## 2. 컬럼별 주요 이슈
 
 | 컬럼 | 결측 rows | 고유값 수 | 이슈 rows | 이슈 내용 |
 |---|---:|---:|---:|---|
 | `price_krw` | `18,928` | `4,813` | `18,928` | missing_required=18928 |
-| `width_cm` | `97` | `1,661` | `133` | above_max_1000=36;missing_required=97 |
-| `height_cm` | `93` | `1,744` | `132` | above_max_1000=39;missing_required=93 |
-| `area_cm2` | `97` | `8,378` | `33` | above_max_1e+06=33 |
+| `height_cm` | `97` | `1,703` | `136` | above_max_1000=39;missing_required=97 |
+| `width_cm` | `93` | `1,702` | `129` | above_max_1000=36;missing_required=93 |
+| `area_cm2` | `97` | `8,370` | `33` | above_max_1e+06=33 |
 | `medium_raw` | `28` | `5,319` | `28` | missing_required=28 |
-| `depth_cm` | `24,324` | `424` | `15` | above_max_1000=15 |
-| `aspect_ratio` | `97` | `6,197` | `2` | above_max_100=2 |
-| `artist_name_ko` | `2` | `2,833` | `2` | missing_required=2 |
+| `depth_cm` | `24,324` | `418` | `15` | above_max_1000=15 |
+| `aspect_ratio` | `97` | `6,186` | `2` | above_max_100=2 |
+| `artist_name_ko` | `2` | `2,871` | `2` | missing_required=2 |
 
 ## 3. 파생값 계산 검증
 

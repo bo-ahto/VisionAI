@@ -54,10 +54,17 @@ def remove_train_eval_duplicates(splits: dict[str, pd.DataFrame]) -> tuple[dict[
     removed = train.loc[remove_mask].copy()
     out = {k: v.copy() for k, v in splits.items()}
     out["train"] = train.loc[~remove_mask].copy()
+    train_artists_after_removal = set(out["train"]["artist_key"])
+    warm_removed: dict[str, int] = {}
+    for name in ["val_warm", "test_warm"]:
+        warm_mask = out[name]["artist_key"].isin(train_artists_after_removal)
+        warm_removed[name] = int((~warm_mask).sum())
+        out[name] = out[name].loc[warm_mask].copy()
     return out, {
         "duplicate_key_columns": DUPLICATE_KEY_COLS,
         "removed_train_rows": int(remove_mask.sum()),
         "removed_train_artists": int(removed["artist_key"].nunique()) if len(removed) else 0,
+        "removed_warm_eval_rows_after_train_duplicate_removal": warm_removed,
     }
 
 

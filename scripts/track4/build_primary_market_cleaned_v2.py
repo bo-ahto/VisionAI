@@ -164,6 +164,7 @@ def reason_list(row: pd.Series) -> list[str]:
     width = pd.to_numeric(row.get("width_cm"), errors="coerce")
     height = pd.to_numeric(row.get("height_cm"), errors="coerce")
     area = pd.to_numeric(row.get("area_cm2"), errors="coerce")
+    aspect = pd.to_numeric(row.get("aspect_ratio"), errors="coerce")
 
     if pd.isna(price):
         reasons.append("missing_price_krw")
@@ -185,6 +186,10 @@ def reason_list(row: pd.Series) -> list[str]:
             reasons.append("area_under_10cm2")
         if area > 1_000_000:
             reasons.append("area_over_1m_cm2")
+    if not pd.isna(aspect) and aspect > 10:
+        reasons.append("extreme_aspect_ratio")
+    if (not pd.isna(width) and width > 1_000) or (not pd.isna(height) and height > 1_000):
+        reasons.append("width_or_height_over_1000cm")
 
     if str(row.get("medium_support_audit_status", "ok")) != "ok":
         if "missing_medium_raw" in str(row.get("medium_support_audit_status")):

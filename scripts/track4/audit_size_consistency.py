@@ -37,47 +37,82 @@ def parse_number(value: object) -> float | None:
         return None
 
 
-def parse_dimensions_cm(value: object) -> tuple[float | None, float | None, float | None]:
+def parse_dimension_values_cm(value: object) -> list[float]:
     text = clean(value)
     if not text:
-        return None, None, None
+        return []
     if re.search(r"\bdiameter\b|지름", text, flags=re.IGNORECASE):
         diameter = parse_number(text)
         if diameter is not None:
-            return diameter, diameter, None
+            return [diameter, diameter]
     cm_part = re.split(r"\(| in\b| inches\b", text, flags=re.IGNORECASE)[0]
-    values = [float(x) for x in re.findall(r"-?\d+(?:\.\d+)?", cm_part.replace(",", ""))]
+    return [float(x) for x in re.findall(r"-?\d+(?:\.\d+)?", cm_part.replace(",", ""))]
+
+
+def normalize_dimensions(
+    values: list[float],
+    *,
+    source_order: str,
+) -> tuple[float | None, float | None, float | None, str]:
+    """Return width/height/depth and a normalization note.
+
+    크롤링 원본은 출처마다 `height x width x depth` 또는 `width x height x depth`
+    순서가 섞인다. 특히 2D 작품은 세 값 중 하나가 2~5cm 두께로 들어오는 경우가
+    많으므로, 명확한 얇은 값을 depth로 재배치한다.
+    """
     if len(values) >= 3:
-        return values[0], values[1], values[2]
+        first, second, third = values[:3]
+        dims = [first, second, third]
+        small = [v for v in dims if 0 < v <= 10]
+        large = [v for v in dims if v > 10]
+        if len(small) == 1 and len(large) == 2:
+            return large[0], large[1], small[0], "thin_dimension_reordered_to_depth"
+        if source_order == "height_width_depth":
+            return second, first, third, "source_height_width_depth"
+        return first, second, third, "source_width_height_depth"
     if len(values) == 2:
-        return values[0], values[1], None
+        first, second = values[:2]
+        if source_order == "height_width_depth":
+            return second, first, None, "source_height_width"
+        return first, second, None, "source_width_height"
     if len(values) == 1:
-        return values[0], None, None
-    return None, None, None
+        return values[0], None, None, "single_dimension"
+    return None, None, None, "missing"
+
+
+def parse_dimensions_cm(value: object, *, source_order: str = "width_height_depth") -> tuple[float | None, float | None, float | None, str]:
+    values = parse_dimension_values_cm(value)
+    return normalize_dimensions(values, source_order=source_order)
 
 
 def source_size(row: pd.Series) -> dict[str, Any]:
     source = row["track4_source"]
     if source == "saatchi":
-        h, w, d = parse_dimensions_cm(row.get("saatchi__dimensions_cm"))
+        w, h, d, note = parse_dimensions_cm(row.get("saatchi__dimensions_cm"), source_order="height_width_depth")
         return {
             "size_raw": clean(row.get("saatchi__dimensions_cm")),
             "width_cm": w,
             "height_cm": h,
             "depth_cm": d,
-            "size_origin": "parsed_dimensions_cm",
+            "size_origin": f"parsed_dimensions_cm:{note}",
         }
     if source == "artsy":
-        h, w, d = parse_dimensions_cm(row.get("artsy__dimensions_cm"))
-        width = parse_number(row.get("artsy__width_cm")) or w
-        height = parse_number(row.get("artsy__height_cm")) or h
-        depth = parse_number(row.get("artsy__depth_cm")) or d
+        parsed_w, parsed_h, parsed_d, note = parse_dimensions_cm(row.get("artsy__dimensions_cm"), source_order="width_height_depth")
+        source_w = parse_number(row.get("artsy__width_cm"))
+        source_h = parse_number(row.get("artsy__height_cm"))
+        source_d = parse_number(row.get("artsy__depth_cm"))
+        if note == "thin_dimension_reordered_to_depth":
+            width, height, depth = parsed_w, parsed_h, parsed_d
+        else:
+            width = source_w or parsed_w
+            height = source_h or parsed_h
+            depth = source_d or parsed_d
         return {
             "size_raw": clean(row.get("artsy__dimensions_cm")),
             "width_cm": width,
             "height_cm": height,
             "depth_cm": depth,
-            "size_origin": "source_width_height_depth",
+            "size_origin": f"source_width_height_depth:{note}",
         }
     if source == "artue":
         return {

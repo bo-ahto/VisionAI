@@ -4,29 +4,31 @@
 - cleaned 파일: `data/track4_primary_market_cleaned_v2.csv`
 - feature 후보 파일: `data/track4_primary_market_feature_candidates_v1.csv`
 - 전체 rows: `54,842`
-- 학습 후보 rows: `34,239`
-- 제외 rows: `20,603`
+- 학습 후보 rows: `34,219`
+- 제외 rows: `20,623`
 - 한글 작가명 rows: `54,840`
-- 동명이인 분리 작가 수: `31`
-- 동명이인 분리 작품 rows: `1,819`
+- 동명이인 분리 작가 수: `32`
+- 동명이인 분리 작품 rows: `1,926`
 
 ## 1. 출처별 row 수
 
 | 출처 | 전체 | 학습 후보 |
 |---|---:|---:|
-| artsy | `30,046` | `10,739` |
-| saatchi | `21,721` | `20,530` |
-| artue | `2,783` | `2,683` |
-| gallery_primary | `292` | `287` |
+| artsy | `30,046` | `10,722` |
+| saatchi | `21,721` | `20,531` |
+| artue | `2,783` | `2,680` |
+| gallery_primary | `292` | `286` |
 
 ## 2. 제외 사유
 
 | 사유 | rows |
 |---|---:|
 | `missing_price_krw` | `18,928` |
-| `duplicate_non_representative` | `1,953` |
+| `duplicate_non_representative` | `1,956` |
 | `missing_core_size` | `97` |
 | `price_under_10000` | `55` |
+| `width_or_height_over_1000cm` | `54` |
+| `extreme_aspect_ratio` | `52` |
 | `area_over_1m_cm2` | `33` |
 | `area_under_10cm2` | `31` |
 | `missing_medium_raw` | `28` |

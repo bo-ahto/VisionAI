@@ -4,17 +4,17 @@
 - 입력: `data/track4_primary_market_raw_collected.csv`
 - 감사 CSV: `data/track4_duplicate_consistency_audit.csv`
 - 전체 rows: `54,842`
-- 중복/검토 flag 없음: `51,449`
-- 중복/검토 flag 있음: `3,393`
+- 중복/검토 flag 없음: `51,486`
+- 중복/검토 flag 있음: `3,356`
 
 ## 1. 출처별 요약
 
 | 출처 | rows | flag 없음 | flag 있음 | ID 중복 | 같은 출처 의미 중복 | 출처 간 엄격 중복 | 출처 간 느슨한 후보 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| artsy | `30,046` | `28,723` | `1,323` | `0` | `1,020` | `4` | `235` |
+| artsy | `30,046` | `28,739` | `1,307` | `0` | `1,025` | `4` | `214` |
 | artue | `2,783` | `2,516` | `267` | `0` | `108` | `4` | `169` |
 | gallery_primary | `292` | `292` | `0` | `0` | `0` | `0` | `0` |
-| saatchi | `21,721` | `19,918` | `1,803` | `0` | `1,773` | `0` | `35` |
+| saatchi | `21,721` | `19,939` | `1,782` | `0` | `1,771` | `0` | `14` |
 
 ## 2. 중복 그룹 수
 
@@ -25,14 +25,14 @@
 | `same_source_image_groups` | `0` | 같은 출처 안에서 이미지 URL이 같은 그룹 |
 | `same_source_semantic_groups` | `954` | 같은 출처 안에서 작가+제목+가격+크기가 같은 그룹 |
 | `cross_source_semantic_groups` | `4` | 출처가 달라도 작가+제목+가격+크기가 같은 그룹 |
-| `loose_cross_source_groups` | `180` | 출처가 달라도 작가+제목+크기가 같은 후보 그룹 |
+| `loose_cross_source_groups` | `160` | 출처가 달라도 작가+제목+크기가 같은 후보 그룹 |
 
 ## 3. 이슈 카운트
 
 | 이슈 | 건수 | 해석 |
 |---|---:|---|
-| `same_source_semantic_duplicate` | `2,901` | 같은 출처 안에서 작가+제목+가격+크기 중복 |
-| `loose_cross_source_candidate` | `439` | 출처 간 작가+제목+크기 기준 중복 후보 |
+| `same_source_semantic_duplicate` | `2,904` | 같은 출처 안에서 작가+제목+가격+크기 중복 |
+| `loose_cross_source_candidate` | `397` | 출처 간 작가+제목+크기 기준 중복 후보 |
 | `missing_title_key` | `70` | 제목 key 없음 |
 | `cross_source_semantic_duplicate` | `8` | 출처 간 작가+제목+가격+크기 중복 |
 
