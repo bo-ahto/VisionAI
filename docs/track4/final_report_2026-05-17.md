@@ -8,6 +8,7 @@
 ## 1. 최종 결론
 
 - Warm은 서비스 후보로 사용할 수 있는 수준의 1차 후보가 만들어졌다.
+- 추가 검증에서 Warm 비선형 모델 중 RandomForest가 기존 Ridge 후보보다 좋은 성능을 보였고 artifact 생성까지 완료했다.
 - Cold는 단일 가격만 제시하기에는 아직 위험이 크다.
 - Cold는 낮은 위험 구간만 가격 범위와 함께 제한적으로 사용하는 방향이 적절하다.
 - Warm / Cold는 하나의 모델로 합치기보다 분리해서 운영하는 것이 현재 결과 기준으로 더 안전하다.
@@ -26,8 +27,9 @@
 
 ### Warm 최종 후보
 
-- 모델: Ridge
-- artifact: `data/track4/models/track4_warm_final_conditional_stats_ridge.joblib`
+- 최종 권장 모델: RandomForest
+- 기존 artifact 모델: Ridge
+- 최종 권장 artifact: `data/track4/models/track4_warm_final_conditional_stats_random_forest.joblib`
 - 사용 피처:
   - `artist_key`
   - `artist_works_log`
@@ -42,6 +44,7 @@
 - 조건:
   - 작가 가격 통계 피처는 예측 대상 작품 가격을 포함하면 안 된다.
   - 예측 시점 이전의 학습/거래 데이터로만 계산해야 한다.
+  - RandomForest artifact dry-run은 완료되었다.
 
 ### Cold 최종 후보
 
@@ -63,8 +66,16 @@
 
 | 구분 | rows | median APE | p95 APE | Within-30% | Within-50% |
 |---|---:|---:|---:|---:|---:|
-| Warm final | 137 | 0.2201 | 1.1118 | 0.6131 | 0.8321 |
+| Warm final RF | 137 | 0.1970 | 0.9219 | 0.6715 | 0.8613 |
+| Warm previous Ridge | 137 | 0.2201 | 1.1118 | 0.6131 | 0.8321 |
 | Cold final | 3,277 | 0.4199 | 2.7609 | 0.3699 | 0.5917 |
+
+### Warm 추가 모델 비교 결과
+
+| 후보 | test median APE 평균 | test p95 APE 평균 | 해석 |
+|---|---:|---:|---|
+| Ridge 기존 artifact | 0.2201 | 1.1118 | 기존 최종 artifact |
+| RandomForest 최종 권장 | 0.1970 | 0.9219 | artifact 생성 완료 |
 
 - median APE는 낮을수록 좋다.
 - p95 APE는 큰 오차 구간을 보는 지표이며 낮을수록 좋다.
@@ -119,6 +130,7 @@
   - 작가 가격 통계 피처를 조건부 허용했을 때 성능 개선 폭이 컸다.
   - 보수 후보 대비 median APE가 약 21.69% 개선되었다.
   - p95 APE도 약 56.41% 개선되어 큰 오차 감소 효과가 있었다.
+  - 추가 비선형 비교에서 RandomForest가 Ridge보다 test median APE와 p95 APE 모두 개선했다.
 - Cold:
   - 범위 폭을 줄이는 실험을 했지만 coverage를 유지하면서 폭을 줄인 후보가 없었다.
   - 따라서 현재는 모델 자체 교체보다 위험 구간 분리 정책이 더 현실적이다.
@@ -138,13 +150,15 @@
 ## 9. 남은 리스크
 
 - Warm 작가 가격 통계 피처를 실제 운영 DB에서 같은 방식으로 계산하는 파이프라인이 필요하다.
+- Cold 최종 full-size 피처셋 기준 모델군 재비교 결과 Quantile 유지가 확인되었다.
 - Cold는 단일 가격 예측 신뢰도가 낮으므로 외부 작가 DB나 이력 데이터 확보가 필요하다.
 - 가격 범위 UI는 별도 정책 검증이 필요하다.
 - 신규 데이터가 들어오면 같은 split 기준 또는 새 고정 split 기준으로 재검증해야 한다.
 
 ## 10. 최종 산출물
 
-- 최종 Warm 모델: `data/track4/models/track4_warm_final_conditional_stats_ridge.joblib`
+- 최종 Warm artifact: `data/track4/models/track4_warm_final_conditional_stats_random_forest.joblib`
+- 이전 Warm artifact: `data/track4/models/track4_warm_final_conditional_stats_ridge.joblib`
 - 최종 Cold 모델: `data/track4/models/track4_cold_final_full_size_quantile.joblib`
 - 최종 결과 JSON: `data/track4/results/t4_e045_final_artifact_dry_run.json`
 - 피처 manifest: `configs/track4/feature_manifest.json`

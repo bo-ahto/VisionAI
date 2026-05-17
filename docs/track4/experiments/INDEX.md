@@ -5,6 +5,10 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E050 | T4-H37 | 완료 | Cold 최종 full-size 피처셋 기준 모델군 재비교, Quantile 후보 유지 확인 | [기록](2026-05-17_T4-E050_cold_final_feature_model_comparison.md) |
+| 2026-05-17 | T4-E049 | T4-H38 | 완료 | Warm RandomForest artifact 생성, Ridge 대비 test median APE와 p95 APE 개선 확인 | [기록](2026-05-17_T4-E049_warm_random_forest_artifact_dry_run.md) |
+| 2026-05-17 | T4-E048 | T4-H36,H37,H38 | 완료 | 피처 확정 후 모델 비교가 빠진 유사 사례를 점검하고 후속 우선순위 정리 | [기록](2026-05-17_T4-E048_experiment_gap_audit.md) |
+| 2026-05-17 | T4-E047 | T4-H36 | 완료 | Warm 최종 피처셋 기준 비선형 모델 비교, RandomForest가 Ridge보다 우세 | [기록](2026-05-17_T4-E047_warm_nonlinear_model_comparison.md) |
 | 2026-05-17 | T4-E046 | T4-H12,H30,H35 | 완료 | Track 4 최종 후보 모델, 피처, 라우팅, 출력 정책을 최종 보고서로 고정 | [기록](2026-05-17_T4-E046_final_summary_report.md) |
 | 2026-05-17 | T4-E045 | T4-H12,H30,H35 | 완료 | 조건부 허용 manifest 기반 최종 Warm/Cold artifact 생성, 최종 후보 성능 재현 확인 | [기록](2026-05-17_T4-E045_final_artifact_dry_run.md) |
 | 2026-05-17 | T4-E044 | T4-H34 | 완료 | Warm 과거 가격 통계 피처 조건부 허용 검증, 성능 개선 폭이 커서 조건부 허용 권장 | [기록](2026-05-17_T4-E044_warm_price_stats_policy.md) |
