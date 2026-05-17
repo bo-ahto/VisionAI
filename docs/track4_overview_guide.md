@@ -52,10 +52,18 @@
 - `docs/track4_overview_guide.md`
 - 실험 계획서
 - `docs/track4_experiment_plan_v1.md`
+- 문서 체계
+- `docs/track4_docs_structure.md`
+- 실험 대시보드
+- `docs/track4_experiment_dashboard.html`
 - 클렌징 파이프라인 문서
 - `docs/track4_cleaning_pipeline.md`
 - Warm / Cold 분리 프로세스 문서
 - `docs/track4_warm_cold_process.md`
+- 가설 상태표
+- `docs/track4_hypothesis_table.md`
+- 실험 결과 요약표
+- `docs/track4_experiment_results_table.md`
 - 가설/실험 기록
 - `docs/track4_experiments/`
 - 실험 스크립트
@@ -83,7 +91,16 @@
 - 실험 결과 기록 형식을 확정
 - Track 3 문서와 Track 4 문서를 섞어 수정하지 않도록 확인
 
-## 8. 추가 데이터 반영 시 먼저 볼 문서
+## 8. 실험 문서 업데이트 순서
+
+- 1단계: `docs/track4_hypothesis_table.md`에 가설과 연구 방법을 먼저 등록함
+- 2단계: 실험 스크립트를 작성하고 실행함
+- 3단계: `docs/track4_experiments/`에 개별 실험 기록을 남김
+- 4단계: `docs/track4_experiment_results_table.md`에 결과를 요약함
+- 5단계: `docs/track4_hypothesis_table.md`의 상태와 현재 판단을 업데이트함
+- 6단계: `python3 scripts/track4/generate_experiment_dashboard.py`로 대시보드를 재생성함
+
+## 9. 추가 데이터 반영 시 먼저 볼 문서
 
 - 추가 원본 CSV를 반영할 때는 모델 실험보다 데이터셋 파이프라인을 먼저 실행함
 - 기준 문서: `docs/track4_cleaning_pipeline.md`

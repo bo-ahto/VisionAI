@@ -52,6 +52,9 @@
 ## 5. Track 4 가설 관리 방식
 
 - 데이터 통합/클렌징은 모델 실험 가설이 아니라 실험 준비 체크포인트로 관리함
+- 문서 체계 상세 기준은 `docs/track4_docs_structure.md`에서 관리함
+- 실험 현황 확인은 `docs/track4_experiment_dashboard.html`을 기준으로 함
+- 대시보드는 직접 수정하지 않고 `python3 scripts/track4/generate_experiment_dashboard.py`로 생성함
 - 실험 준비 체크포인트는 `T4-D번호` 형식으로 관리함
 - 예시
 - `T4-D0`
@@ -73,6 +76,12 @@
 - 검증 강도
 - 현재 판단
 - 후속 필요
+- 가설 상태표
+- `docs/track4_hypothesis_table.md`
+- 실험 결과 요약표
+- `docs/track4_experiment_results_table.md`
+- 개별 실험 기록
+- `docs/track4_experiments/`
 
 ## 6. 실험 준비 체크포인트
 
