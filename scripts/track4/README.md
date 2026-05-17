@@ -129,3 +129,15 @@ python3 scripts/track4/run_t4_e029_routing_threshold.py
 - `data/track4/predictions/t4_e029_routing_threshold_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E029_routing_threshold.md`
+
+- `T4-E030` Cold 위험 구간 및 출력 정책 후보
+
+```bash
+python3 scripts/track4/run_t4_e030_cold_risk_policy.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e030_cold_risk_policy_metrics.json`
+- `data/track4/predictions/t4_e030_cold_risk_policy_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E030_cold_risk_policy.md`

@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E030 | T4-H9, T4-H17, T4-H24, T4-H26 | 완료 | Cold 위험 구간 분석, low risk와 high risk의 median APE 차이 확인 | [기록](2026-05-17_T4-E030_cold_risk_policy.md) |
 | 2026-05-17 | T4-E029 | T4-H10, T4-H19 | 완료 | 작가 작품 수 기준 라우팅 threshold 실험, 기본 Warm 라우팅 유지 결론 | [기록](2026-05-17_T4-E029_routing_threshold.md) |
 | 2026-05-17 | T4-E028 | T4-H21, T4-H22 | 완료 | 공유 모델/분리 모델 반복 검증, Warm은 분리 정책 우세, Cold는 split 민감도 확인 | [기록](2026-05-17_T4-E028_shared_vs_split_repeated.md) |
 | 2026-05-17 | T4-E027 | T4-H8, T4-H16, T4-H27 | 완료 | 2D/3D slice 및 depth 피처 실험, 3D fallback은 median 개선이나 tail risk 악화로 보류 | [기록](2026-05-17_T4-E027_3d_depth_slice.md) |
