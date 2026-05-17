@@ -190,3 +190,15 @@ python3 scripts/track4/check_feature_manifest.py
 - `configs/track4/feature_manifest.json`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E034_feature_manifest_check.md`
+
+- `T4-E035` 재료-크기 조합 피처 실험
+
+```bash
+python3 scripts/track4/run_t4_e035_medium_size_combo.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e035_medium_size_combo_metrics.json`
+- `data/track4/predictions/t4_e035_medium_size_combo_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E035_medium_size_combo.md`

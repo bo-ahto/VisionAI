@@ -71,13 +71,15 @@ def main() -> None:
     manifest = load_manifest()
     columns_by_split = split_columns()
     common_columns = set.intersection(*(set(cols) for cols in columns_by_split.values()))
+    generated_columns = set(manifest.get("generated_operational_columns", []))
+    available_model_columns = common_columns | generated_columns
 
     model_checks = [
-        validate_feature_set(name, features, manifest, common_columns)
+        validate_feature_set(name, features, manifest, available_model_columns)
         for name, features in manifest.get("model_feature_sets", {}).items()
     ]
     negative_checks = [
-        validate_feature_set(name, features, manifest, common_columns)
+        validate_feature_set(name, features, manifest, available_model_columns)
         for name, features in manifest.get("negative_control_feature_sets", {}).items()
     ]
     target_presence = {
@@ -94,6 +96,7 @@ def main() -> None:
         "date": date.today().isoformat(),
         "manifest": str(MANIFEST_PATH.relative_to(REPO)),
         "split_files": REQUIRED_SPLITS,
+        "generated_operational_columns": sorted(generated_columns),
         "model_feature_checks": model_checks,
         "negative_control_checks": negative_checks,
         "target_columns_present_for_training_label": target_presence,
