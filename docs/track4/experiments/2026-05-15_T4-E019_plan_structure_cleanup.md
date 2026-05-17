@@ -22,11 +22,11 @@
 ## 3. 현재 문서 구조
 
 - 전체 실험 계획
-- `docs/track4_experiment_plan_v1.md`
+- `docs/track4/planning/experiment_plan_v1.md`
 - 데이터셋 구성/클렌징/추가 수집 파이프라인
-- `docs/track4_cleaning_pipeline.md`
+- `docs/track4/dataset/cleaning_pipeline.md`
 - Warm / Cold 모델 실험 프로세스
-- `docs/track4_warm_cold_process.md`
+- `docs/track4/planning/warm_cold_process.md`
 
 ## 4. 판단
 
@@ -38,5 +38,5 @@
 ## 5. 다음 작업
 
 - 모델 실험을 시작할 때는 `T4-H1`부터 별도 실험 기록으로 진행
-- 추가 데이터가 들어오면 `docs/track4_cleaning_pipeline.md` 기준으로 파이프라인 재실행
+- 추가 데이터가 들어오면 `docs/track4/dataset/cleaning_pipeline.md` 기준으로 파이프라인 재실행
 - 데이터 준비 체크포인트 숫자가 바뀌면 계획서가 아니라 파이프라인 리포트와 실험 기록에 반영

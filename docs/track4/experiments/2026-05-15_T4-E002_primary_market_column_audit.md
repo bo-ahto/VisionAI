@@ -25,7 +25,7 @@ python3 scripts/track4/audit_primary_market_unified.py
 
 ## 4. 생성 파일
 
-- 감사 문서: `docs/track4_primary_market_column_audit.md`
+- 감사 문서: `docs/track4/dataset/primary_market_column_audit.md`
 - 감사 JSON: `data/track4_primary_market_column_audit.json`
 
 ## 5. 주요 이상 신호

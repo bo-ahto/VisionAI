@@ -14,13 +14,14 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data"
 DOCS = ROOT / "docs"
+TRACK4_DOCS = DOCS / "track4"
 SPLIT = DATA / "track4_split"
 
 CLEANED_PATH = DATA / "track4_primary_market_cleaned_v2.csv"
 FEATURE_PATH = DATA / "track4_primary_market_feature_candidates_v1.csv"
 COLUMN_PROFILE_PATH = DATA / "track4_dataset_column_profile_20260517.csv"
 SIZE_REVIEW_SAMPLE_PATH = DATA / "track4_dataset_size_review_samples_20260517.csv"
-REPORT_PATH = DOCS / "track4_dataset_final_quality_review_2026-05-17.md"
+REPORT_PATH = TRACK4_DOCS / "dataset" / "final_quality_review_2026-05-17.md"
 
 SPLIT_FILES = {
     "train": SPLIT / "track4_train.csv",

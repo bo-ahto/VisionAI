@@ -25,7 +25,7 @@ python3 scripts/track4/build_primary_market_cleaned_v1.py
 
 - `data/track4_primary_market_cleaned_v1.csv`
 - `data/track4_primary_market_cleaned_v1_summary.json`
-- 보고서: `docs/track4_primary_market_cleaned_v1_report.md`
+- 보고서: `docs/track4/dataset/primary_market_cleaned_v1_report.md`
 
 ## 5. 주요 결과
 

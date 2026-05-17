@@ -19,7 +19,7 @@
   - `data/track4_primary_market_cleaned_v2.csv`
   - `data/track4_primary_market_feature_candidates_v1.csv`
   - `data/track4_primary_market_cleaned_v2_summary.json`
-  - `docs/track4_primary_market_cleaned_v2_report.md`
+  - `docs/track4/dataset/primary_market_cleaned_v2_report.md`
 
 ## 2. 주요 결과
 

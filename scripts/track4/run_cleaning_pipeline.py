@@ -43,7 +43,9 @@ REQUIRED_OUTPUTS = [
     "data/track4_split/track4_test_warm.csv",
     "data/track4_split/track4_test_cold.csv",
     "data/track4_column_value_consistency_audit.csv",
-    "docs/track4_column_value_consistency_audit.md",
+    "docs/track4/audits/column_value_consistency_audit.md",
+    "docs/track4/dataset/primary_market_cleaned_v2_report.md",
+    "docs/track4/dataset/split_report.md",
 ]
 
 

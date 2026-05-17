@@ -13,7 +13,7 @@
 
 ## 2. 결과 문서
 
-- `docs/track4_raw_unified_column_provenance.md`
+- `docs/track4/dataset/raw_unified_column_provenance.md`
 
 ## 3. 핵심 결론
 

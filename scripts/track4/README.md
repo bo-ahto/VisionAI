@@ -42,4 +42,4 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - 출처/URL/이미지 컬럼은 추적용이며 모델 입력 피처로 사용하지 않음
 
 - 상세 기준 문서
-- `docs/track4_cleaning_pipeline.md`
+- `docs/track4/dataset/cleaning_pipeline.md`

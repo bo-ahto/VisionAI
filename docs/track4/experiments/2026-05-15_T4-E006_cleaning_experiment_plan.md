@@ -16,7 +16,7 @@
 
 ## 3. 결과 문서
 
-- `docs/track4_cleaning_experiment_plan.md`
+- `docs/track4/planning/cleaning_experiment_plan.md`
 
 ## 4. 핵심 원칙
 

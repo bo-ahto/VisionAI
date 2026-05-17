@@ -16,31 +16,44 @@
 
 | 문서 | 역할 | 수정 주체 |
 |---|---|---|
-| `docs/track4_overview_guide.md` | Track 4 전체 입구 문서 | 필요 시 |
-| `docs/track4_experiment_plan_v1.md` | 실험 원칙, 평가 지표, 진행 순서 | 기준 변경 시 |
-| `docs/track4_cleaning_pipeline.md` | 데이터 추가/클렌징/검증 파이프라인 | 데이터 기준 변경 시 |
-| `docs/track4_dataset_final_quality_review_2026-05-17.md` | 현재 데이터셋 최종 품질 검토 | 파이프라인 재실행 시 |
-| `docs/track4_warm_cold_process.md` | Warm / Cold 분리 실험 절차 | 라우팅 기준 변경 시 |
-| `docs/track4_hypothesis_table.md` | 가설 상태 요약표 | 가설 추가/상태 변경 시 |
-| `docs/track4_experiment_results_table.md` | 실험 결과 요약표 | 실험 실행 후 |
-| `docs/track4_experiments/` | 개별 실험 상세 기록 | 실험 실행 후 |
-| `docs/track4_experiment_dashboard.html` | 자동 생성 대시보드 | 스크립트로 생성 |
+| `docs/track4/planning/overview_guide.md` | Track 4 전체 입구 문서 | 필요 시 |
+| `docs/track4/planning/experiment_plan_v1.md` | 실험 원칙, 평가 지표, 진행 순서 | 기준 변경 시 |
+| `docs/track4/dataset/cleaning_pipeline.md` | 데이터 추가/클렌징/검증 파이프라인 | 데이터 기준 변경 시 |
+| `docs/track4/dataset/final_quality_review_2026-05-17.md` | 현재 데이터셋 최종 품질 검토 | 파이프라인 재실행 시 |
+| `docs/track4/planning/warm_cold_process.md` | Warm / Cold 분리 실험 절차 | 라우팅 기준 변경 시 |
+| `docs/track4/tables/hypothesis_table.md` | 가설 상태 요약표 | 가설 추가/상태 변경 시 |
+| `docs/track4/tables/experiment_results_table.md` | 실험 결과 요약표 | 실험 실행 후 |
+| `docs/track4/experiments/` | 개별 실험 상세 기록 | 실험 실행 후 |
+| `docs/track4/dashboard/experiment_dashboard.html` | 자동 생성 대시보드 | 스크립트로 생성 |
+
+## 2.1 산출물 폴더 역할
+
+| 폴더 | 역할 |
+|---|---|
+| `scripts/track4/` | Track 4 전용 실행 스크립트 |
+| `docs/track4/` | Track 4 문서, 표, 대시보드 |
+| `docs/track4/experiments/` | 개별 실험 문서 기록 |
+| `data/track4/results/` | 실험별 성능 결과 JSON/CSV |
+| `data/track4/predictions/` | 실험별 예측 결과 CSV |
+| `experiments/track4/` | 실행 로그, 임시 분석 산출물, 실험별 작업 폴더 |
 
 ## 3. 실험 진행 순서
 
 - 1단계: 가설 등록
-- `docs/track4_hypothesis_table.md`에 가설 ID, 목표, 연구 방법, 성공 기준을 먼저 작성함
+- `docs/track4/tables/hypothesis_table.md`에 가설 ID, 목표, 연구 방법, 성공 기준을 먼저 작성함
 - 2단계: 실험 방법 확정
 - 사용할 데이터, 피처, 모델, 비교군, 평가 지표를 정함
 - 3단계: 실험 실행
 - 스크립트는 `scripts/track4/`에 둠
-- 결과 파일은 `data/track4_*.json` 또는 `data/track4_*.csv`로 저장함
+- 모델 실험 결과 파일은 `data/track4/results/` 아래에 저장함
+- 예측 결과는 `data/track4/predictions/` 아래에 저장함
+- 실행 단위 산출물은 `experiments/track4/` 아래에 저장함
 - 4단계: 개별 기록 작성
-- `docs/track4_experiments/YYYY-MM-DD_T4-E###_name.md` 형식으로 작성함
+- `docs/track4/experiments/YYYY-MM-DD_T4-E###_name.md` 형식으로 작성함
 - 5단계: 결과표 업데이트
-- `docs/track4_experiment_results_table.md`에 핵심 성능과 결론을 추가함
+- `docs/track4/tables/experiment_results_table.md`에 핵심 성능과 결론을 추가함
 - 6단계: 가설 상태 업데이트
-- `docs/track4_hypothesis_table.md`의 상태, 현재 판단, 후속 필요를 수정함
+- `docs/track4/tables/hypothesis_table.md`의 상태, 현재 판단, 후속 필요를 수정함
 - 7단계: 대시보드 재생성
 - `python3 scripts/track4/generate_experiment_dashboard.py`
 
@@ -62,10 +75,10 @@
 ## 5. 대시보드 운영 방식
 
 - 대시보드는 아래 문서를 읽어 자동 생성함
-- `docs/track4_hypothesis_table.md`
-- `docs/track4_experiment_results_table.md`
-- `docs/track4_dataset_final_quality_review_2026-05-17.md`
-- `docs/track4_split_report.md`
+- `docs/track4/tables/hypothesis_table.md`
+- `docs/track4/tables/experiment_results_table.md`
+- `docs/track4/dataset/final_quality_review_2026-05-17.md`
+- `docs/track4/dataset/split_report.md`
 - HTML은 결과물로만 관리함
 - 대시보드에서 직접 내용을 고치지 않음
 - 가설 상태나 실험 결과를 바꾸려면 Markdown 표를 먼저 수정함

@@ -15,7 +15,7 @@
   - `data/track4_duplicate_consistency_audit.csv`
 - 감사 결과 CSV: `data/track4_source_bias_audit.csv`
 - 감사 요약 JSON: `data/track4_source_bias_audit_summary.json`
-- 요약 문서: `docs/track4_source_bias_audit.md`
+- 요약 문서: `docs/track4/audits/source_bias_audit.md`
 
 ## 2. 주요 결과
 

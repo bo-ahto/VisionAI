@@ -16,7 +16,7 @@ MEDIUM = REPO / "data" / "track4_medium_support_consistency_audit.csv"
 DUP = REPO / "data" / "track4_duplicate_consistency_audit.csv"
 OUT_CSV = REPO / "data" / "track4_source_bias_audit.csv"
 OUT_JSON = REPO / "data" / "track4_source_bias_audit_summary.json"
-OUT_MD = REPO / "docs" / "track4_source_bias_audit.md"
+OUT_MD = REPO / "docs" / "track4" / "audits" / "source_bias_audit.md"
 
 
 def load_frame() -> pd.DataFrame:

@@ -4,9 +4,9 @@
 - 기준일: 2026-05-15
 - 전제: Track 4 클렌징 파이프라인으로 `cleaned_v2`, `feature_candidates`, Warm/Cold split이 생성되어 있어야 함
 - 관련 문서:
-- `docs/track4_cleaning_pipeline.md`
-- `docs/track4_experiment_plan_v1.md`
-- `docs/track4_split_report.md`
+- `docs/track4/dataset/cleaning_pipeline.md`
+- `docs/track4/planning/experiment_plan_v1.md`
+- `docs/track4/dataset/split_report.md`
 
 ## 1. 전체 목표
 

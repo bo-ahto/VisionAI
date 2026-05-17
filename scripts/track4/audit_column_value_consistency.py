@@ -16,7 +16,7 @@ INPUT = REPO / "data" / "track4_primary_market_cleaned_v2.csv"
 OUT_SUMMARY_CSV = REPO / "data" / "track4_column_value_consistency_audit.csv"
 OUT_SAMPLES_CSV = REPO / "data" / "track4_column_value_issue_samples.csv"
 OUT_JSON = REPO / "data" / "track4_column_value_consistency_audit_summary.json"
-OUT_MD = REPO / "docs" / "track4_column_value_consistency_audit.md"
+OUT_MD = REPO / "docs" / "track4" / "audits" / "column_value_consistency_audit.md"
 
 NUMERIC_RULES: dict[str, dict[str, float | None]] = {
     "track4_source_row_index": {"min": 0, "max": None},

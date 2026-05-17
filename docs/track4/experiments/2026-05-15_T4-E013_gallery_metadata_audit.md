@@ -11,7 +11,7 @@
 - 티어 기준표: `data/art_gallery_tier_list_v3.xlsx - 전체 리스트.csv`
 - 감사 결과 CSV: `data/track4_gallery_metadata_audit.csv`
 - 감사 요약 JSON: `data/track4_gallery_metadata_audit_summary.json`
-- 요약 문서: `docs/track4_gallery_metadata_audit.md`
+- 요약 문서: `docs/track4/audits/gallery_metadata_audit.md`
 
 ## 2. 주요 결과
 

@@ -18,7 +18,7 @@ SIZE_AUDIT = REPO / "data" / "track4_size_consistency_audit.csv"
 ARTIST_AUDIT = REPO / "data" / "track4_artist_consistency_audit.csv"
 OUT_CSV = REPO / "data" / "track4_duplicate_consistency_audit.csv"
 OUT_JSON = REPO / "data" / "track4_duplicate_consistency_audit_summary.json"
-OUT_MD = REPO / "docs" / "track4_duplicate_consistency_audit.md"
+OUT_MD = REPO / "docs" / "track4" / "audits" / "duplicate_consistency_audit.md"
 
 
 def clean(value: object) -> str:

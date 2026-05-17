@@ -17,7 +17,7 @@
 - 신뢰도 경고 기준
 - 배포 및 재학습 가능성
 - Warm / Cold 분리 프로세스 상세 문서
-- `docs/track4_warm_cold_process.md`
+- `docs/track4/planning/warm_cold_process.md`
 
 ## 2. Track 3 보존 원칙
 
@@ -52,8 +52,8 @@
 ## 5. Track 4 가설 관리 방식
 
 - 데이터 통합/클렌징은 모델 실험 가설이 아니라 실험 준비 체크포인트로 관리함
-- 문서 체계 상세 기준은 `docs/track4_docs_structure.md`에서 관리함
-- 실험 현황 확인은 `docs/track4_experiment_dashboard.html`을 기준으로 함
+- 문서 체계 상세 기준은 `docs/track4/planning/docs_structure.md`에서 관리함
+- 실험 현황 확인은 `docs/track4/dashboard/experiment_dashboard.html`을 기준으로 함
 - 대시보드는 직접 수정하지 않고 `python3 scripts/track4/generate_experiment_dashboard.py`로 생성함
 - 실험 준비 체크포인트는 `T4-D번호` 형식으로 관리함
 - 예시
@@ -77,18 +77,18 @@
 - 현재 판단
 - 후속 필요
 - 가설 상태표
-- `docs/track4_hypothesis_table.md`
+- `docs/track4/tables/hypothesis_table.md`
 - 실험 결과 요약표
-- `docs/track4_experiment_results_table.md`
+- `docs/track4/tables/experiment_results_table.md`
 - 개별 실험 기록
-- `docs/track4_experiments/`
+- `docs/track4/experiments/`
 
 ## 6. 실험 준비 체크포인트
 
 - 아래 항목은 모델 성능을 검증하는 가설이 아님
 - 모델 실험을 시작하기 전에 데이터 기준이 믿을 수 있는지 확인하는 준비 단계임
 - 상세 실행 방법과 추가 데이터 반영 방법은 별도 문서에서 관리함
-- 상세 문서: `docs/track4_cleaning_pipeline.md`
+- 상세 문서: `docs/track4/dataset/cleaning_pipeline.md`
 - 실행 스크립트: `scripts/track4/run_cleaning_pipeline.py`
 
 | 체크포인트 ID | 영역 | 확인 내용 | 주요 산출물 | 상태 |
@@ -125,7 +125,7 @@
 - 2단계: Track 4 데이터 기준 정의
 - 기존 release split을 그대로 쓸지, 추가 holdout을 만들지 결정함
 - Track 4에서는 `track4_train.csv`를 공통 학습 데이터로 사용하되, Warm / Cold 평가는 분리함
-- Warm / Cold 프로세스는 `docs/track4_warm_cold_process.md` 기준으로 진행함
+- Warm / Cold 프로세스는 `docs/track4/planning/warm_cold_process.md` 기준으로 진행함
 - 3단계: 가설별 연구 방법 작성
 - 바로 실험하지 않고 먼저 방법을 문서화함
 - 4단계: 실험 실행

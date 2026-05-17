@@ -14,7 +14,7 @@ REPO = Path(__file__).resolve().parents[2]
 RAW_COLLECTED = REPO / "data" / "track4_primary_market_raw_collected.csv"
 OUT_CSV = REPO / "data" / "track4_price_consistency_audit.csv"
 OUT_JSON = REPO / "data" / "track4_price_consistency_audit_summary.json"
-OUT_MD = REPO / "docs" / "track4_price_consistency_audit.md"
+OUT_MD = REPO / "docs" / "track4" / "audits" / "price_consistency_audit.md"
 
 
 def clean(value: object) -> str:

@@ -15,7 +15,7 @@ ARTIST = REPO / "data" / "track4_artist_consistency_audit.csv"
 TIER_REF = REPO / "data" / "art_gallery_tier_list_v3.xlsx - 전체 리스트.csv"
 OUT_CSV = REPO / "data" / "track4_gallery_metadata_audit.csv"
 OUT_JSON = REPO / "data" / "track4_gallery_metadata_audit_summary.json"
-OUT_MD = REPO / "docs" / "track4_gallery_metadata_audit.md"
+OUT_MD = REPO / "docs" / "track4" / "audits" / "gallery_metadata_audit.md"
 
 
 def clean(value: object) -> str:

@@ -17,7 +17,7 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[2]
 DATA_PATH = REPO / "data" / "track4_primary_market_raw_unified.csv"
 OUT_JSON = REPO / "data" / "track4_primary_market_column_audit.json"
-OUT_MD = REPO / "docs" / "track4_primary_market_column_audit.md"
+OUT_MD = REPO / "docs" / "track4" / "dataset" / "primary_market_column_audit.md"
 
 NUMERIC_COLS = [
     "year_made",

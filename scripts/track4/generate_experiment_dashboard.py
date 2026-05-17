@@ -10,10 +10,11 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 DOCS = REPO / "docs"
-HYPOTHESIS_TABLE = DOCS / "track4_hypothesis_table.md"
-RESULTS_TABLE = DOCS / "track4_experiment_results_table.md"
-QUALITY_REVIEW = DOCS / "track4_dataset_final_quality_review_2026-05-17.md"
-OUT_PATH = DOCS / "track4_experiment_dashboard.html"
+TRACK4_DOCS = DOCS / "track4"
+HYPOTHESIS_TABLE = TRACK4_DOCS / "tables" / "hypothesis_table.md"
+RESULTS_TABLE = TRACK4_DOCS / "tables" / "experiment_results_table.md"
+QUALITY_REVIEW = TRACK4_DOCS / "dataset" / "final_quality_review_2026-05-17.md"
+OUT_PATH = TRACK4_DOCS / "dashboard" / "experiment_dashboard.html"
 
 
 def split_md_row(row: str) -> list[str]:
@@ -362,7 +363,7 @@ def dashboard_html(goals: list[dict[str, str]], hypotheses: list[dict[str, str]]
       </div>
     </section>
     <footer>
-      Source: <code>track4_hypothesis_table.md</code>, <code>track4_experiment_results_table.md</code>, <code>track4_dataset_final_quality_review_2026-05-17.md</code>
+      Source: <code>../tables/hypothesis_table.md</code>, <code>../tables/experiment_results_table.md</code>, <code>../dataset/final_quality_review_2026-05-17.md</code>
     </footer>
   </main>
   <script>

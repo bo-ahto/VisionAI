@@ -18,7 +18,7 @@
 
 ## 2. 반영 내용
 
-- `docs/track4_cleaning_pipeline.md` 보완
+- `docs/track4/dataset/cleaning_pipeline.md` 보완
 - raw 통합부터 split 생성까지 전체 실행 순서 정리
 - 추가 데이터 반영 절차 정리
 - 작가 동명이인 처리 기준 정리
@@ -68,14 +68,14 @@ python3 scripts/track4/run_cleaning_pipeline.py
 
 ## 5. 실행 후 필수 확인
 
-- `docs/track4_price_consistency_audit.md`
-- `docs/track4_size_consistency_audit.md`
-- `docs/track4_artist_consistency_audit.md`
-- `docs/track4_medium_support_consistency_audit.md`
-- `docs/track4_duplicate_consistency_audit.md`
-- `docs/track4_primary_market_cleaned_v2_report.md`
-- `docs/track4_split_report.md`
-- `docs/track4_column_value_consistency_audit.md`
+- `docs/track4/audits/price_consistency_audit.md`
+- `docs/track4/audits/size_consistency_audit.md`
+- `docs/track4/audits/artist_consistency_audit.md`
+- `docs/track4/audits/medium_support_consistency_audit.md`
+- `docs/track4/audits/duplicate_consistency_audit.md`
+- `docs/track4/dataset/primary_market_cleaned_v2_report.md`
+- `docs/track4/dataset/split_report.md`
+- `docs/track4/audits/column_value_consistency_audit.md`
 
 ## 6. 누수/품질 확인 기준
 

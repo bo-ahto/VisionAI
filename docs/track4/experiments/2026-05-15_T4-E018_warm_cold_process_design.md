@@ -15,11 +15,11 @@
 ## 2. 작업 내용
 
 - Warm / Cold 분리 프로세스 문서 추가
-- `docs/track4_warm_cold_process.md`
+- `docs/track4/planning/warm_cold_process.md`
 - Track 4 실험 계획서에 Warm / Cold 분리 실행 순서 추가
-- `docs/track4_experiment_plan_v1.md`
+- `docs/track4/planning/experiment_plan_v1.md`
 - Track 4 종합 안내 문서에 프로세스 문서 링크 추가
-- `docs/track4_overview_guide.md`
+- `docs/track4/planning/overview_guide.md`
 
 ## 3. 핵심 결정
 

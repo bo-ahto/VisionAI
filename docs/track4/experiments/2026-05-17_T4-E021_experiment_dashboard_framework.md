@@ -13,13 +13,13 @@
 
 ## 2. 만든 문서
 
-- `docs/track4_docs_structure.md`
+- `docs/track4/planning/docs_structure.md`
 - Track 4 문서 역할과 업데이트 순서 정리
-- `docs/track4_hypothesis_table.md`
+- `docs/track4/tables/hypothesis_table.md`
 - 모델 실험 가설과 세부 목표 관리
-- `docs/track4_experiment_results_table.md`
+- `docs/track4/tables/experiment_results_table.md`
 - 실험 결과 요약 관리
-- `docs/track4_experiment_dashboard.html`
+- `docs/track4/dashboard/experiment_dashboard.html`
 - 가설/결과/데이터셋 상태를 자동 생성 HTML로 표시
 
 ## 3. 만든 스크립트
@@ -57,7 +57,7 @@
 
 - T4-H1 구조-only Warm / Cold baseline 실행
 - 실행 후 아래 문서를 순서대로 업데이트
-- `docs/track4_experiments/`
-- `docs/track4_experiment_results_table.md`
-- `docs/track4_hypothesis_table.md`
-- `docs/track4_experiment_dashboard.html`
+- `docs/track4/experiments/`
+- `docs/track4/tables/experiment_results_table.md`
+- `docs/track4/tables/hypothesis_table.md`
+- `docs/track4/dashboard/experiment_dashboard.html`

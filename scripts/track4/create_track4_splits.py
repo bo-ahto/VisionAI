@@ -11,7 +11,7 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[2]
 INPUT = REPO / "data" / "track4_primary_market_feature_candidates_v1.csv"
 OUT_DIR = REPO / "data" / "track4_split"
-OUT_MD = REPO / "docs" / "track4_split_report.md"
+OUT_MD = REPO / "docs" / "track4" / "dataset" / "split_report.md"
 OUT_JSON = OUT_DIR / "track4_split_summary.json"
 RANDOM_SEED = 20260515
 DUPLICATE_KEY_COLS = [

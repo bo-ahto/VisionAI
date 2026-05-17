@@ -13,7 +13,7 @@ REPO = Path(__file__).resolve().parents[2]
 OUT_CSV = REPO / "data" / "track4_primary_market_cleaned_v2.csv"
 OUT_FEATURE_CSV = REPO / "data" / "track4_primary_market_feature_candidates_v1.csv"
 OUT_JSON = REPO / "data" / "track4_primary_market_cleaned_v2_summary.json"
-OUT_MD = REPO / "docs" / "track4_primary_market_cleaned_v2_report.md"
+OUT_MD = REPO / "docs" / "track4" / "dataset" / "primary_market_cleaned_v2_report.md"
 
 PRICE = REPO / "data" / "track4_price_consistency_audit.csv"
 SIZE = REPO / "data" / "track4_size_consistency_audit.csv"

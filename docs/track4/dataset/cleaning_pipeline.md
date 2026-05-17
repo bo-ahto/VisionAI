@@ -180,14 +180,14 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - 4단계: 새 출처의 작품 URL, 이미지 URL, 원본 row id가 있으면 추적 컬럼에 연결함
 - 5단계: `python3 scripts/track4/run_cleaning_pipeline.py`를 실행함
 - 6단계: 아래 리포트를 확인함
-- `docs/track4_price_consistency_audit.md`
-- `docs/track4_size_consistency_audit.md`
-- `docs/track4_artist_consistency_audit.md`
-- `docs/track4_medium_support_consistency_audit.md`
-- `docs/track4_duplicate_consistency_audit.md`
-- `docs/track4_primary_market_cleaned_v2_report.md`
-- `docs/track4_split_report.md`
-- `docs/track4_column_value_consistency_audit.md`
+- `docs/track4/audits/price_consistency_audit.md`
+- `docs/track4/audits/size_consistency_audit.md`
+- `docs/track4/audits/artist_consistency_audit.md`
+- `docs/track4/audits/medium_support_consistency_audit.md`
+- `docs/track4/audits/duplicate_consistency_audit.md`
+- `docs/track4/dataset/primary_market_cleaned_v2_report.md`
+- `docs/track4/dataset/split_report.md`
+- `docs/track4/audits/column_value_consistency_audit.md`
 - 7단계: row 수, 학습 후보 수, 주요 이슈 수가 크게 바뀌었는지 기록함
 - 8단계: split 누수 체크가 0인지 확인함
 - 9단계: 문제가 없으면 split을 기준으로 모델 실험을 진행함

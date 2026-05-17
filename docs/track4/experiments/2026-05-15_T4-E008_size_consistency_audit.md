@@ -11,7 +11,7 @@
 - 입력 행 수: `54,842`
 - 감사 결과 CSV: `data/track4_size_consistency_audit.csv`
 - 감사 요약 JSON: `data/track4_size_consistency_audit_summary.json`
-- 요약 문서: `docs/track4_size_consistency_audit.md`
+- 요약 문서: `docs/track4/audits/size_consistency_audit.md`
 
 ## 2. 실행 방법
 

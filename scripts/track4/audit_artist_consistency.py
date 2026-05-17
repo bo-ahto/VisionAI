@@ -19,7 +19,7 @@ from scripts.track3.build_unified_dataset import build_artist_ko_map, lookup_art
 RAW_COLLECTED = REPO / "data" / "track4_primary_market_raw_collected.csv"
 OUT_CSV = REPO / "data" / "track4_artist_consistency_audit.csv"
 OUT_JSON = REPO / "data" / "track4_artist_consistency_audit_summary.json"
-OUT_MD = REPO / "docs" / "track4_artist_consistency_audit.md"
+OUT_MD = REPO / "docs" / "track4" / "audits" / "artist_consistency_audit.md"
 
 
 def clean(value: object) -> str:

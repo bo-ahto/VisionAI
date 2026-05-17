@@ -16,11 +16,11 @@
 - 전체 클렌징 실행 스크립트 추가
 - `scripts/track4/run_cleaning_pipeline.py`
 - 클렌징 기준 문서 추가
-- `docs/track4_cleaning_pipeline.md`
+- `docs/track4/dataset/cleaning_pipeline.md`
 - 스크립트 README 업데이트
 - `scripts/track4/README.md`
 - Track 4 종합 안내 문서에 클렌징 문서 링크 추가
-- `docs/track4_overview_guide.md`
+- `docs/track4/planning/overview_guide.md`
 
 ## 3. 실행 방식
 

@@ -65,7 +65,7 @@
 
 ## 6. 산출물
 
-- 컬럼별 감사 리포트: `docs/track4_column_value_consistency_audit.md`
+- 컬럼별 감사 리포트: `docs/track4/audits/column_value_consistency_audit.md`
 - 컬럼별 요약 CSV: `data/track4_column_value_consistency_audit.csv`
 - 이슈 샘플 CSV: `data/track4_column_value_issue_samples.csv`
 - 실행 스크립트: `scripts/track4/audit_column_value_consistency.py`

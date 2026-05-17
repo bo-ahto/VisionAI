@@ -15,7 +15,7 @@ REPO = Path(__file__).resolve().parents[2]
 RAW_COLLECTED = REPO / "data" / "track4_primary_market_raw_collected.csv"
 OUT_CSV = REPO / "data" / "track4_medium_support_consistency_audit.csv"
 OUT_JSON = REPO / "data" / "track4_medium_support_consistency_audit_summary.json"
-OUT_MD = REPO / "docs" / "track4_medium_support_consistency_audit.md"
+OUT_MD = REPO / "docs" / "track4" / "audits" / "medium_support_consistency_audit.md"
 
 
 MEDIUM_RULES: list[tuple[str, str]] = [
