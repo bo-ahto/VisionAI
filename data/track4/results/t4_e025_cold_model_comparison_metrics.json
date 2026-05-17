@@ -1,0 +1,145 @@
+{
+  "experiment_id": "T4-E025",
+  "hypothesis_id": "T4-H4",
+  "date": "2026-05-17",
+  "target": "ln_price_krw",
+  "features": [
+    "medium_category",
+    "support_category",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate"
+  ],
+  "forbidden_feature_check": "passed",
+  "splits": {
+    "train": {
+      "rows": 28905,
+      "artists": 1834,
+      "price_min": 11040.0,
+      "price_median": 3091200.0,
+      "price_max": 997150000.0,
+      "is_3d_candidate_rows": 485,
+      "support_unknown_rows": 2321
+    },
+    "val_cold": {
+      "rows": 1814,
+      "artists": 108,
+      "price_min": 38640.0,
+      "price_median": 2652020.0,
+      "price_max": 571360000.0,
+      "is_3d_candidate_rows": 70,
+      "support_unknown_rows": 206
+    }
+  },
+  "models": {
+    "dummy_median": {
+      "model_type": "baseline",
+      "metrics": {
+        "median_ape": 0.7423999999999998,
+        "mape": 1.3364729932251276,
+        "rmse_log": 1.1581920945186683,
+        "within_30": 0.19790518191841236,
+        "within_50": 0.32800441014332965,
+        "p90_ape": 2.9957295373665507,
+        "p95_ape": 4.152000000000002
+      }
+    },
+    "ridge": {
+      "model_type": "linear",
+      "metrics": {
+        "median_ape": 0.39622948725112095,
+        "mape": 0.5898605219276698,
+        "rmse_log": 0.696756459532359,
+        "within_30": 0.3941565600882029,
+        "within_50": 0.5782800441014333,
+        "p90_ape": 1.1782123021789426,
+        "p95_ape": 1.5736434515235143
+      }
+    },
+    "huber": {
+      "model_type": "robust_linear",
+      "metrics": {
+        "median_ape": 0.3567274511687334,
+        "mape": 0.5013085556660499,
+        "rmse_log": 0.6719786611291286,
+        "within_30": 0.4454244762954796,
+        "within_50": 0.6212789415656009,
+        "p90_ape": 0.948139372156652,
+        "p95_ape": 1.237343783421055
+      }
+    },
+    "quantile_median": {
+      "model_type": "robust_linear",
+      "metrics": {
+        "median_ape": 0.3485651452706776,
+        "mape": 0.4918516095881717,
+        "rmse_log": 0.6725382210569644,
+        "within_30": 0.4487320837927233,
+        "within_50": 0.6306504961411246,
+        "p90_ape": 0.9175218801418386,
+        "p95_ape": 1.2464387166810564
+      }
+    },
+    "hist_gradient_boosting": {
+      "model_type": "tree",
+      "metrics": {
+        "median_ape": 0.3835418325112843,
+        "mape": 0.5892264030321255,
+        "rmse_log": 0.6763169206496213,
+        "within_30": 0.43329658213891953,
+        "within_50": 0.603638368246968,
+        "p90_ape": 1.098057460853052,
+        "p95_ape": 1.6212278106965827
+      }
+    },
+    "random_forest": {
+      "model_type": "tree",
+      "metrics": {
+        "median_ape": 0.39832194656729225,
+        "mape": 0.6169154135220329,
+        "rmse_log": 0.7147103730608778,
+        "within_30": 0.38037486218302097,
+        "within_50": 0.6041896361631753,
+        "p90_ape": 1.2276302553438598,
+        "p95_ape": 1.7764648355872394
+      }
+    },
+    "lightgbm": {
+      "model_type": "tree",
+      "metrics": {
+        "median_ape": 0.37483961445079483,
+        "mape": 0.6024343923023407,
+        "rmse_log": 0.6801063822755538,
+        "within_30": 0.4145534729878721,
+        "within_50": 0.5997794928335171,
+        "p90_ape": 1.1966226653912415,
+        "p95_ape": 1.6651551202443384
+      }
+    },
+    "xgboost": {
+      "model_type": "tree",
+      "metrics": {
+        "median_ape": 0.38601123188405795,
+        "mape": 0.5697382862030498,
+        "rmse_log": 0.6661036256079097,
+        "within_30": 0.42337375964718854,
+        "within_50": 0.6058434399117971,
+        "p90_ape": 1.07398156596574,
+        "p95_ape": 1.4719231374283779
+      }
+    },
+    "catboost": {
+      "model_type": "tree",
+      "metrics": {
+        "median_ape": 0.3962084216551429,
+        "mape": 0.6004863607273009,
+        "rmse_log": 0.6783044586169631,
+        "within_30": 0.39305402425578834,
+        "within_50": 0.5909592061742006,
+        "p90_ape": 1.2034532736502659,
+        "p95_ape": 1.5358985135967727
+      }
+    }
+  }
+}

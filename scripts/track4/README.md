@@ -69,3 +69,15 @@ python3 scripts/track4/run_t4_e024_warm_artist_ablation.py
 - `data/track4/predictions/t4_e024_warm_artist_ablation_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E024_warm_artist_ablation.md`
+
+- `T4-E025` Cold robust 모델 비교
+
+```bash
+python3 scripts/track4/run_t4_e025_cold_model_comparison.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e025_cold_model_comparison_metrics.json`
+- `data/track4/predictions/t4_e025_cold_model_comparison_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E025_cold_model_comparison.md`

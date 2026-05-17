@@ -7,6 +7,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E025 | T4-H4 | 완료 | `track4_train`, `val_cold` | Quantile, Huber, Ridge, LightGBM, XGBoost, CatBoost 등 | 구조-only: medium/support/size/3D | - | Quantile median APE `0.3486`, Huber p95 APE `1.2373` | Cold는 robust 선형 계열 우세, Quantile/Huber를 후보 유지 | [기록](../experiments/2026-05-17_T4-E025_cold_model_comparison.md), [결과](../../../data/track4/results/t4_e025_cold_model_comparison_metrics.json) |
 | 2026-05-17 | T4-E024 | T4-H2, T4-H20 | 완료 | `track4_train`, `val_warm` | Ridge | 구조-only, 작가 이력, 작가 key | 작가 key+이력 median APE `0.2697`, 구조-only `0.4619`보다 개선 | - | Warm 작가 key는 유지 후보, 이력 단독 대체는 불리 | [기록](../experiments/2026-05-17_T4-E024_warm_artist_ablation.md), [결과](../../../data/track4/results/t4_e024_warm_artist_ablation_metrics.json) |
 | 2026-05-17 | T4-E023 | T4-H1 | 완료 | `track4_train`, `val_warm`, `val_cold` | Dummy median, Ridge, Huber | 구조-only: medium/support/size/3D | Huber median APE `0.4148`, dummy `0.7027`보다 개선 | Huber median APE `0.3567`, dummy `0.7424`보다 개선 | 구조-only baseline은 Huber를 기준 후보로 부분 채택 | [기록](../experiments/2026-05-17_T4-E023_structure_baseline.md), [결과](../../../data/track4/results/t4_e023_structure_baseline_metrics.json) |
 | 2026-05-17 | T4-E022 | T4-H13~T4-H30 | 완료 | Track 3 가설표, Track 4 데이터 품질 리포트 | 모델 미사용 | 가설/연구방법 문서 | - | - | Track 3 가설 축을 Track 4 1차 시장 데이터 특성에 맞게 확장 | [기록](../experiments/2026-05-17_T4-E022_hypothesis_expansion.md), [가설표](hypothesis_table.md) |
@@ -18,7 +19,6 @@
 
 ## 다음 실험 후보
 
-- T4-E025: T4-H4 Cold robust 모델 비교
 - T4-E026: T4-H6/T4-H14 support unknown 처리 ablation
 - T4-E027: T4-H8/T4-H16/T4-H27 2D/3D slice 및 depth 피처 실험
 - T4-E028: T4-H21/T4-H22 공유 모델/분리 모델 및 반복 검증
