@@ -46,9 +46,9 @@
         <li>source, URL, gallery tier는 모델 피처 제외</li>
       </ul>
       <div class="pills">
-        <span class="pill">가설 7개</span>
-        <span class="pill">최신 가설 T5-H7</span>
-        <span class="pill">최신 실험 T5-E001</span>
+        <span class="pill">가설 9개</span>
+        <span class="pill">최신 가설 T5-H9</span>
+        <span class="pill">최신 실험 T5-E006</span>
         <span class="pill">생성 2026-05-18</span>
       </div>
     </div>
@@ -82,17 +82,24 @@
   <section class="tabs">
     <div class="panel">
       <h2>가설 상태</h2>
-      <div class="table-wrap"><table><thead><tr><th>가설</th><th>목표</th><th>상태</th><th>요약</th><th>연구 방법</th><th>현재 판단</th></tr></thead><tbody><tr><td>T5-H7</td><td>T5-G7</td><td><span class='status hold'>예정</span></td><td>Cold는 위험 구간을 나누면 단일 가격 사용 가능 범위를 더 명확히 정할 수 있다</td><td>3D, 대형, unknown, low/high risk별 오차와 범위 폭 비교</td><td>아직 미실행</td></tr>
+      <div class="table-wrap"><table><thead><tr><th>가설</th><th>목표</th><th>상태</th><th>요약</th><th>연구 방법</th><th>현재 판단</th></tr></thead><tbody><tr><td>T5-H9</td><td>T5-G5</td><td><span class='status partial'>부분 검증</span></td><td>크기/지지체/3D 피처는 Warm과 Cold에서 같은 효과를 내지 않을 수 있으므로 기준 모델별로 따로 검증해야 한다</td><td>기준 Warm Ridge와 기준 Cold Quantile에서 size/support/3D 피처 제거·추가 조합을 비교</td><td>Warm/Cold 모두 full_size 후보가 안정적이며, Cold full_size median APE <code>0.3432</code>로 기준선 개선</td></tr>
+<tr><td>T5-H8</td><td>T5-G5, T5-G8</td><td><span class='status done'>검증 완료</span></td><td>피처 실험 전에 Warm/Cold 기준 모델과 기준 피처셋을 고정해야 이후 실험 해석이 가능하다</td><td>T5-E002~E004 결과를 종합해 Warm/Cold 기준 모델과 기준 피처셋을 문서로 고정</td><td>Warm은 Ridge+작가 key/이력/가격통계, Cold는 Quantile+구조 피처를 기준으로 고정</td></tr>
+<tr><td>T5-H7</td><td>T5-G7</td><td><span class='status hold'>예정</span></td><td>Cold는 위험 구간을 나누면 단일 가격 사용 가능 범위를 더 명확히 정할 수 있다</td><td>3D, 대형, unknown, low/high risk별 오차와 범위 폭 비교</td><td>아직 미실행</td></tr>
 <tr><td>T5-H6</td><td>T5-G6</td><td><span class='status hold'>예정</span></td><td>Track5 최종 후보는 fixed test와 반복 split에서 모두 안정적이어야 한다</td><td>후보 모델 확정 후 반복 Warm/Cold split 또는 seed 반복으로 평균/표준편차 확인</td><td>아직 미실행</td></tr>
 <tr><td>T5-H5</td><td>T5-G5</td><td><span class='status hold'>예정</span></td><td>Track4에서 미채택된 생성 조합 피처는 Track5 새 split에서도 최종 피처로 부적합할 가능성이 높다</td><td>baseline 피처와 조합 피처 추가 모델을 Track5 validation/test에서 비교</td><td>아직 미실행</td></tr>
-<tr><td>T5-H4</td><td>T5-G4</td><td><span class='status hold'>예정</span></td><td>Cold에서는 robust 선형 계열이 복잡한 트리 모델보다 안정적일 것이다</td><td>Quantile/Huber/Ridge와 트리 모델을 같은 Cold 피처셋으로 비교</td><td>아직 미실행</td></tr>
-<tr><td>T5-H3</td><td>T5-G3</td><td><span class='status hold'>예정</span></td><td>Warm에서는 작가 key와 train 기준 작가 이력 피처가 성능을 개선할 것이다</td><td>구조-only Warm 모델과 작가 피처 포함 모델 비교</td><td>아직 미실행</td></tr>
-<tr><td>T5-H2</td><td>T5-G2</td><td><span class='status hold'>예정</span></td><td>새 split에서도 작품 구조 정보만으로 Warm / Cold 기본 예측이 가능할 것이다</td><td>작가 피처 없이 구조-only baseline을 학습하고 Warm/Cold validation 성능 비교</td><td>아직 미실행</td></tr>
+<tr><td>T5-H4</td><td>T5-G4</td><td><span class='status done'>검증 완료</span></td><td>Cold에서는 robust 선형 계열이 복잡한 트리 모델보다 안정적일 것이다</td><td>Quantile/Huber/Ridge와 트리 모델을 같은 Cold 피처셋으로 비교</td><td>Quantile median APE <code>0.3564</code>, p95 <code>1.8218</code>로 최선</td></tr>
+<tr><td>T5-H3</td><td>T5-G3</td><td><span class='status done'>검증 완료</span></td><td>Warm에서는 작가 key와 train 기준 작가 이력 피처가 성능을 개선할 것이다</td><td>구조-only Warm 모델과 작가 피처 포함 모델 비교</td><td>작가 key+이력+train 가격 통계가 Warm median APE <code>0.2279</code>, p95 <code>0.9083</code>으로 최선</td></tr>
+<tr><td>T5-H2</td><td>T5-G2</td><td><span class='status done'>검증 완료</span></td><td>새 split에서도 작품 구조 정보만으로 Warm / Cold 기본 예측이 가능할 것이다</td><td>작가 피처 없이 구조-only baseline을 학습하고 Warm/Cold validation 성능 비교</td><td>Huber 기준 Warm median APE <code>0.4662</code>, Cold median APE <code>0.3718</code>로 단순 중앙값보다 개선</td></tr>
 <tr><td>T5-H1</td><td>T5-G1</td><td><span class='status done'>검증 완료</span></td><td>Track5 split은 Track4보다 Warm 최종 평가에 더 적합할 것이다</td><td>Track4 split과 Track5 split의 Warm/Cold rows, 작가 수, 누수 검증 결과 비교</td><td>Warm test <code>511</code>건, Cold/train 작가 겹침 <code>0</code>, Warm 평가 작가 train 존재 확인</td></tr></tbody></table></div>
     </div>
     <div class="panel" style="margin-top:20px">
       <h2>실험 결과</h2>
-      <div class="table-wrap"><table><thead><tr><th>날짜</th><th>실험</th><th>가설</th><th>상태</th><th>모델</th><th>Warm</th><th>Cold</th><th>결론</th><th>상세</th></tr></thead><tbody><tr><td>2026-05-18</td><td>T5-E001</td><td>T5-H1</td><td><span class='status done'>완료</span></td><td>모델 미사용</td><td>test_warm <code>511</code>건, <code>215</code>명</td><td>test_cold <code>2,896</code>건, <code>216</code>명, train 작가 겹침 <code>0</code></td><td>Track5 모델 실험 기준 split으로 사용 가능</td><td><a href="../experiments/2026-05-18_T5-E001_split_generation.md">기록</a>, <a href="../dataset/split_report.md">보고서</a></td></tr></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>날짜</th><th>실험</th><th>가설</th><th>상태</th><th>모델</th><th>Warm</th><th>Cold</th><th>결론</th><th>상세</th></tr></thead><tbody><tr><td>2026-05-18</td><td>T5-E006</td><td>T5-H9</td><td><span class='status done'>완료</span></td><td>Warm Ridge, Cold Quantile</td><td>warm_full_size median <code>0.2326</code>, p95 <code>0.8465</code>; area_only median <code>0.2298</code></td><td>cold_full_size median <code>0.3432</code>, p95 <code>1.8235</code></td><td>Warm/Cold 모두 full_size 후보 유지, 생성 조합 피처 후속 검증 필요</td><td><a href="../experiments/2026-05-18_T5-E006_feature_ablation.md">기록</a>, <a href="../../../data/track5/results/t5_e006_feature_ablation_metrics.json">결과</a></td></tr>
+<tr><td>2026-05-18</td><td>T5-E005</td><td>T5-H8</td><td><span class='status done'>완료</span></td><td>모델 미사용</td><td>Warm 기준 Ridge+작가 key/이력/가격통계, median APE <code>0.2279</code></td><td>Cold 기준 Quantile+구조 피처, median APE <code>0.3564</code></td><td>이후 피처 실험 기준선 고정</td><td><a href="../experiments/2026-05-18_T5-E005_baseline_model_freeze.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T5-E004</td><td>T5-H4</td><td><span class='status done'>완료</span></td><td>Quantile, Huber, Ridge, RF, HGB, LightGBM, XGBoost, CatBoost</td><td>-</td><td>Quantile median APE <code>0.3564</code>, p95 <code>1.8218</code></td><td>Cold 기준 모델은 QuantileRegressor로 설정</td><td><a href="../experiments/2026-05-18_T5-E004_cold_model_comparison.md">기록</a>, <a href="../../../data/track5/results/t5_e004_cold_model_comparison_metrics.json">결과</a></td></tr>
+<tr><td>2026-05-18</td><td>T5-E003</td><td>T5-H3</td><td><span class='status done'>완료</span></td><td>Ridge</td><td>best median APE <code>0.2279</code>, p95 <code>0.9083</code></td><td>-</td><td>Warm은 작가 key+이력+train 가격 통계 후보 유지</td><td><a href="../experiments/2026-05-18_T5-E003_warm_artist_ablation.md">기록</a>, <a href="../../../data/track5/results/t5_e003_warm_artist_ablation_metrics.json">결과</a></td></tr>
+<tr><td>2026-05-18</td><td>T5-E002</td><td>T5-H2</td><td><span class='status done'>완료</span></td><td>Dummy, Ridge, Huber</td><td>Huber median APE <code>0.4662</code>, p95 <code>2.9250</code></td><td>Huber median APE <code>0.3718</code>, p95 <code>1.8598</code></td><td>구조-only 기준 모델은 Huber로 설정</td><td><a href="../experiments/2026-05-18_T5-E002_structure_baseline.md">기록</a>, <a href="../../../data/track5/results/t5_e002_structure_baseline_metrics.json">결과</a></td></tr>
+<tr><td>2026-05-18</td><td>T5-E001</td><td>T5-H1</td><td><span class='status done'>완료</span></td><td>모델 미사용</td><td>test_warm <code>511</code>건, <code>215</code>명</td><td>test_cold <code>2,896</code>건, <code>216</code>명, train 작가 겹침 <code>0</code></td><td>Track5 모델 실험 기준 split으로 사용 가능</td><td><a href="../experiments/2026-05-18_T5-E001_split_generation.md">기록</a>, <a href="../dataset/split_report.md">보고서</a></td></tr></tbody></table></div>
     </div>
   </section>
 </main>

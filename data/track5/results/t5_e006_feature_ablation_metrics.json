@@ -1,0 +1,223 @@
+{
+  "experiment_id": "T5-E006",
+  "hypothesis_id": "T5-H9",
+  "date": "2026-05-18",
+  "warm_model": "Ridge",
+  "cold_model": "QuantileRegressor",
+  "warm": {
+    "warm_baseline": {
+      "description": "T5-E005 Warm 기준선",
+      "features": [
+        "artist_key",
+        "medium_category",
+        "support_category",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "metrics": {
+        "rows": 221,
+        "artists": 86,
+        "median_ape": 0.23334853619265367,
+        "mape": 0.33187039207534674,
+        "rmse_log": 0.4472695311440913,
+        "within_30": 0.6063348416289592,
+        "within_50": 0.7873303167420814,
+        "p90_ape": 0.6972013758217753,
+        "p95_ape": 0.9060145547842421
+      }
+    },
+    "warm_no_support": {
+      "description": "support_category 제거",
+      "features": [
+        "artist_key",
+        "medium_category",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "metrics": {
+        "rows": 221,
+        "artists": 86,
+        "median_ape": 0.2302979528621067,
+        "mape": 0.3275782674215462,
+        "rmse_log": 0.4442778813970372,
+        "within_30": 0.6470588235294118,
+        "within_50": 0.7963800904977375,
+        "p90_ape": 0.7024793734856056,
+        "p95_ape": 0.9092995125890505
+      }
+    },
+    "warm_full_size": {
+      "description": "width/height/3D flag 추가",
+      "features": [
+        "artist_key",
+        "medium_category",
+        "support_category",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price",
+        "log_area",
+        "aspect_ratio",
+        "width_cm",
+        "height_cm",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "metrics": {
+        "rows": 221,
+        "artists": 86,
+        "median_ape": 0.23264437696438506,
+        "mape": 0.3365974846429369,
+        "rmse_log": 0.4473046791870357,
+        "within_30": 0.6289592760180995,
+        "within_50": 0.8054298642533937,
+        "p90_ape": 0.698157417126776,
+        "p95_ape": 0.846498164333537
+      }
+    },
+    "warm_area_only": {
+      "description": "aspect_ratio 제거",
+      "features": [
+        "artist_key",
+        "medium_category",
+        "support_category",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price",
+        "log_area"
+      ],
+      "metrics": {
+        "rows": 221,
+        "artists": 86,
+        "median_ape": 0.2298256781314426,
+        "mape": 0.3307974893669013,
+        "rmse_log": 0.44645392565025255,
+        "within_30": 0.6153846153846154,
+        "within_50": 0.8009049773755657,
+        "p90_ape": 0.689659392946212,
+        "p95_ape": 0.9198377428396813
+      }
+    }
+  },
+  "cold": {
+    "cold_baseline": {
+      "description": "T5-E005 Cold 기준선",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "metrics": {
+        "rows": 1278,
+        "artists": 97,
+        "median_ape": 0.3564208517476496,
+        "mape": 0.5910421740955929,
+        "rmse_log": 0.652253106755004,
+        "within_30": 0.43583724569640064,
+        "within_50": 0.6447574334898278,
+        "p90_ape": 0.9559289320635279,
+        "p95_ape": 1.8218362632881824
+      }
+    },
+    "cold_no_support": {
+      "description": "support_category 제거",
+      "features": [
+        "medium_category",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "metrics": {
+        "rows": 1278,
+        "artists": 97,
+        "median_ape": 0.3489063649957964,
+        "mape": 0.6002288229609564,
+        "rmse_log": 0.6603070522748602,
+        "within_30": 0.4428794992175274,
+        "within_50": 0.6549295774647887,
+        "p90_ape": 0.9961670059774904,
+        "p95_ape": 1.927575705133406
+      }
+    },
+    "cold_full_size": {
+      "description": "width/height 추가",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "width_cm",
+        "height_cm",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "metrics": {
+        "rows": 1278,
+        "artists": 97,
+        "median_ape": 0.34322256982655425,
+        "mape": 0.603289118900074,
+        "rmse_log": 0.6516084460076771,
+        "within_30": 0.4538341158059468,
+        "within_50": 0.6658841940532081,
+        "p90_ape": 0.9399459049886237,
+        "p95_ape": 1.8235413718587774
+      }
+    },
+    "cold_area_only": {
+      "description": "aspect_ratio와 3D flag 제거",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area"
+      ],
+      "metrics": {
+        "rows": 1278,
+        "artists": 97,
+        "median_ape": 0.37306551256422055,
+        "mape": 0.5729948180960265,
+        "rmse_log": 0.6497854122280361,
+        "within_30": 0.40923317683881066,
+        "within_50": 0.6439749608763693,
+        "p90_ape": 0.9868083709335539,
+        "p95_ape": 1.8185043593624897
+      }
+    },
+    "cold_no_3d_flags": {
+      "description": "3D flag만 제거",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "metrics": {
+        "rows": 1278,
+        "artists": 97,
+        "median_ape": 0.3741412438114923,
+        "mape": 0.5830152412138035,
+        "rmse_log": 0.6532567690894218,
+        "within_30": 0.4154929577464789,
+        "within_50": 0.6463223787167449,
+        "p90_ape": 0.9740550983849006,
+        "p95_ape": 1.7907515669684002
+      }
+    }
+  }
+}
