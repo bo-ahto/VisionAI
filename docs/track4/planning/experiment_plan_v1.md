@@ -18,6 +18,8 @@
 - 배포 및 재학습 가능성
 - Warm / Cold 분리 프로세스 상세 문서
 - `docs/track4/planning/warm_cold_process.md`
+- 모델 완성 흐름 문서
+- `docs/track4/planning/model_completion_flow.md`
 
 ## 2. Track 3 보존 원칙
 
@@ -215,3 +217,15 @@
 - Track 3 Warm 최적 후보는 작가 이력/가격 통계 피처의 영향이 큼
 - 이 피처가 예측 시점 이후 정보를 포함하면 운영에서 사용할 수 없음
 - 이 문제가 닫혀야 Warm 모델을 운영 후보로 확정할 수 있음
+
+## 13. 모델 완성 단계 보완
+
+- 기존 실험은 탐색 실험이 많아 `부분 검증` 상태가 길게 유지될 수 있음
+- 앞으로는 아래 기준으로 가설을 닫음
+- validation에서 후보를 고름
+- test에서 후보 성능이 유지되는지 확인함
+- Warm / Cold를 분리해서 결론을 냄
+- median APE와 p95 APE를 함께 확인함
+- source는 피처로 쓰지 않고 감사 slice로만 확인함
+- 운영에서 만들 수 없는 피처는 최종 후보가 아니라 조건부 후보로 표시함
+- 상세 기준은 `docs/track4/planning/model_completion_flow.md`를 따름

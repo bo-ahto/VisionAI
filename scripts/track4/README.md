@@ -226,3 +226,15 @@ python3 scripts/track4/run_t4_e037_warm_artist_history.py
 - `data/track4/predictions/t4_e037_warm_artist_history_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E037_warm_artist_history.md`
+
+- `T4-E038` 최종 후보 validation/test 닫기 실험
+
+```bash
+python3 scripts/track4/run_t4_e038_candidate_closure.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e038_candidate_closure_metrics.json`
+- `data/track4/predictions/t4_e038_candidate_closure_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E038_candidate_closure.md`
