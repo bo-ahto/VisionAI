@@ -7,6 +7,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E036 | T4-H23 | 완료 | `track4_train`, `val_warm`, `val_cold` | Warm Ridge, Cold Quantile | source는 audit slice만 사용, 모델 피처 제외 | artsy `0.3913`, saatchi `0.2545`, artue 9건 `0.1663` | saatchi `0.2334~0.2569`, artsy `0.4044~0.4122`, artue `0.4949~0.5501` | 출처별 성능 차이 확인, source 피처 제외 원칙 유지 | [기록](../experiments/2026-05-17_T4-E036_source_slice_audit.md), [결과](../../../data/track4/results/t4_e036_source_slice_audit_metrics.json) |
 | 2026-05-17 | T4-E035 | T4-H28 | 완료 | `track4_train`, `val_warm`, `val_cold` | Warm Ridge, Cold Huber | size bucket, medium-size, support-size, combo flags | baseline median APE `0.2597` 유지 최선 | medium_size_bucket median APE `0.3524`, support_size p95 `1.1693` | 조합 피처는 Cold 개선 신호 있으나 Warm 기본 채택은 보류 | [기록](../experiments/2026-05-17_T4-E035_medium_size_combo.md), [결과](../../../data/track4/results/t4_e035_medium_size_combo_metrics.json) |
 | 2026-05-17 | T4-E034 | T4-H25 | 완료 | `track4_train`, `val_warm`, `val_cold`, `test_warm`, `test_cold` | 모델 미사용 | forbidden feature manifest | Warm 후보 피처셋 검사 통과 | Cold 후보 피처셋 검사 통과 | source/gallery/price 계열 금지 피처 자동 검사 장치 구현 | [기록](../experiments/2026-05-17_T4-E034_feature_manifest_check.md), [결과](../../../data/track4/results/t4_e034_feature_manifest_check.json) |
 | 2026-05-17 | T4-E033 | T4-H15 | 완료 | `track4_train`, `val_warm`, `val_cold` | Warm Ridge, Cold Quantile | no size/area/area+aspect/raw/full size | area_aspect median APE `0.2597`로 최선 | full_size median APE `0.3349`, area_only p95 `1.1135` | Warm은 대표 조합, Cold는 median/tail 기준 분리 판단 | [기록](../experiments/2026-05-17_T4-E033_size_feature_reduction.md), [결과](../../../data/track4/results/t4_e033_size_feature_reduction_metrics.json) |
@@ -29,6 +30,6 @@
 
 ## 다음 실험 후보
 
-- T4-E036: T4-H23 출처별 성능/결측 감사 slice
 - T4-E037: T4-H3 Warm 작가 이력 피처 temporal-safe 검증
 - T4-E038: T4-H11/T4-H24 가격 범위와 경고 정책 보완
+- T4-E039: 피처 조합 최종 후보 재검증 및 source slice 동시 확인

@@ -1,0 +1,351 @@
+{
+  "experiment_id": "T4-E036",
+  "hypothesis_id": "T4-H23",
+  "date": "2026-05-17",
+  "important_note": "track4_source is used only for audit grouping, not as a model feature.",
+  "source_distribution": {
+    "train": {
+      "artsy": {
+        "rows": 9049,
+        "artists": 854,
+        "median_price_krw": 4140000.0,
+        "missing_support_rate": 0.1626699082771577,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.04497734556304564
+      },
+      "artue": {
+        "rows": 2207,
+        "artists": 286,
+        "median_price_krw": 2800000.0,
+        "missing_support_rate": 0.21024014499320345,
+        "missing_medium_rate": 0.011780697779791573,
+        "three_d_rate": 0.026733121884911646
+      },
+      "gallery_primary": {
+        "rows": 241,
+        "artists": 61,
+        "median_price_krw": 11013040.0,
+        "missing_support_rate": 0.06224066390041494,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.0
+      },
+      "saatchi": {
+        "rows": 17408,
+        "artists": 699,
+        "median_price_krw": 2688930.0,
+        "missing_support_rate": 0.021254595588235295,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.001091452205882353
+      }
+    },
+    "val_warm": {
+      "artsy": {
+        "rows": 27,
+        "artists": 27,
+        "median_price_krw": 2346000.0,
+        "missing_support_rate": 0.14814814814814814,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.037037037037037035
+      },
+      "artue": {
+        "rows": 9,
+        "artists": 9,
+        "median_price_krw": 2283500.0,
+        "missing_support_rate": 0.2222222222222222,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.0
+      },
+      "saatchi": {
+        "rows": 31,
+        "artists": 31,
+        "median_price_krw": 2797260.0,
+        "missing_support_rate": 0.03225806451612903,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.0
+      }
+    },
+    "val_cold": {
+      "artsy": {
+        "rows": 670,
+        "artists": 51,
+        "median_price_krw": 3450000.0,
+        "missing_support_rate": 0.13432835820895522,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.08507462686567165
+      },
+      "artue": {
+        "rows": 261,
+        "artists": 29,
+        "median_price_krw": 3000000.0,
+        "missing_support_rate": 0.34099616858237547,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.04980842911877394
+      },
+      "gallery_primary": {
+        "rows": 3,
+        "artists": 3,
+        "median_price_krw": 99715000.0,
+        "missing_support_rate": 0.3333333333333333,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.0
+      },
+      "saatchi": {
+        "rows": 880,
+        "artists": 37,
+        "median_price_krw": 1904400.0,
+        "missing_support_rate": 0.029545454545454545,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.0
+      }
+    }
+  },
+  "model_specs": {
+    "warm_area_aspect": {
+      "description": "현재 Warm 기준 후보",
+      "split": "warm",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "overall": {
+        "rows": 67,
+        "artists": 67,
+        "median_ape": 0.259722268969027,
+        "mape": 0.48107718952800604,
+        "rmse_log": 0.6000254165320705,
+        "within_30": 0.5522388059701493,
+        "within_50": 0.6567164179104478,
+        "p95_ape": 1.5644226287656293,
+        "median_price_krw": 2346000.0,
+        "missing_support_rate": 0.1044776119402985,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.014925373134328358
+      },
+      "source_metrics": {
+        "artsy": {
+          "rows": 27,
+          "artists": 27,
+          "median_ape": 0.39127088690500605,
+          "mape": 0.647225659014138,
+          "rmse_log": 0.614191614162923,
+          "within_30": 0.4444444444444444,
+          "within_50": 0.5555555555555556,
+          "p95_ape": 1.6439929364545627,
+          "median_price_krw": 2346000.0,
+          "missing_support_rate": 0.14814814814814814,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.037037037037037035,
+          "sample_warning": false
+        },
+        "artue": {
+          "rows": 9,
+          "artists": 9,
+          "median_ape": 0.16631912983128022,
+          "mape": 0.3403114406278582,
+          "rmse_log": 0.8522783550992765,
+          "within_30": 0.6666666666666666,
+          "within_50": 0.7777777777777778,
+          "p95_ape": 1.058415203300868,
+          "median_price_krw": 2283500.0,
+          "missing_support_rate": 0.2222222222222222,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.0,
+          "sample_warning": true
+        },
+        "saatchi": {
+          "rows": 31,
+          "artists": 31,
+          "median_ape": 0.2545385249589299,
+          "mape": 0.37723470772077294,
+          "rmse_log": 0.48855916638445185,
+          "within_30": 0.6129032258064516,
+          "within_50": 0.7096774193548387,
+          "p95_ape": 0.9295153034581294,
+          "median_price_krw": 2797260.0,
+          "missing_support_rate": 0.03225806451612903,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.0,
+          "sample_warning": false
+        }
+      }
+    },
+    "cold_area_only": {
+      "description": "Cold p95 안정 후보",
+      "split": "cold",
+      "features": [
+        "medium_category",
+        "log_area"
+      ],
+      "overall": {
+        "rows": 1814,
+        "artists": 108,
+        "median_ape": 0.3612571976483264,
+        "mape": 0.4863269880010604,
+        "rmse_log": 0.7419754776302775,
+        "within_30": 0.43439911797133407,
+        "within_50": 0.6372657111356119,
+        "p95_ape": 1.113509786922803,
+        "median_price_krw": 2652020.0,
+        "missing_support_rate": 0.11356119073869901,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.03858875413450937
+      },
+      "source_metrics": {
+        "artsy": {
+          "rows": 670,
+          "artists": 51,
+          "median_ape": 0.4121762447778376,
+          "mape": 0.5309410307622353,
+          "rmse_log": 0.8888055635601736,
+          "within_30": 0.32238805970149254,
+          "within_50": 0.6164179104477612,
+          "p95_ape": 1.1008621001277292,
+          "median_price_krw": 3450000.0,
+          "missing_support_rate": 0.13432835820895522,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.08507462686567165,
+          "sample_warning": false
+        },
+        "artue": {
+          "rows": 261,
+          "artists": 29,
+          "median_ape": 0.49490884022155707,
+          "mape": 0.6336352855050068,
+          "rmse_log": 0.9563045829991587,
+          "within_30": 0.36398467432950193,
+          "within_50": 0.5019157088122606,
+          "p95_ape": 1.5045321985239875,
+          "median_price_krw": 3000000.0,
+          "missing_support_rate": 0.34099616858237547,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.04980842911877394,
+          "sample_warning": false
+        },
+        "gallery_primary": {
+          "rows": 3,
+          "artists": 3,
+          "median_ape": 0.8644922549094705,
+          "mape": 0.8713302025248414,
+          "rmse_log": 2.245659037815573,
+          "within_30": 0.0,
+          "within_50": 0.0,
+          "p95_ape": 0.937527110962974,
+          "median_price_krw": 99715000.0,
+          "missing_support_rate": 0.3333333333333333,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.0,
+          "sample_warning": true
+        },
+        "saatchi": {
+          "rows": 880,
+          "artists": 37,
+          "median_ape": 0.2568568995564634,
+          "mape": 0.4073566653395962,
+          "rmse_log": 0.49492348130441727,
+          "within_30": 0.5420454545454545,
+          "within_50": 0.6954545454545454,
+          "p95_ape": 1.095251476099884,
+          "median_price_krw": 1904400.0,
+          "missing_support_rate": 0.029545454545454545,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.0,
+          "sample_warning": false
+        }
+      }
+    },
+    "cold_full_size": {
+      "description": "Cold median APE 기준 후보",
+      "split": "cold",
+      "features": [
+        "medium_category",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "overall": {
+        "rows": 1814,
+        "artists": 108,
+        "median_ape": 0.3349228840793371,
+        "mape": 0.4961724001593691,
+        "rmse_log": 0.694304728789927,
+        "within_30": 0.45865490628445427,
+        "within_50": 0.6306504961411246,
+        "p95_ape": 1.3040529046373244,
+        "median_price_krw": 2652020.0,
+        "missing_support_rate": 0.11356119073869901,
+        "missing_medium_rate": 0.0,
+        "three_d_rate": 0.03858875413450937
+      },
+      "source_metrics": {
+        "artsy": {
+          "rows": 670,
+          "artists": 51,
+          "median_ape": 0.4044128550536562,
+          "mape": 0.5799086724534342,
+          "rmse_log": 0.801266551959679,
+          "within_30": 0.3716417910447761,
+          "within_50": 0.582089552238806,
+          "p95_ape": 1.3900864370357078,
+          "median_price_krw": 3450000.0,
+          "missing_support_rate": 0.13432835820895522,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.08507462686567165,
+          "sample_warning": false
+        },
+        "artue": {
+          "rows": 261,
+          "artists": 29,
+          "median_ape": 0.5500984798834399,
+          "mape": 0.7041929369724444,
+          "rmse_log": 0.9227355166264968,
+          "within_30": 0.31800766283524906,
+          "within_50": 0.4674329501915709,
+          "p95_ape": 1.507488891061528,
+          "median_price_krw": 3000000.0,
+          "missing_support_rate": 0.34099616858237547,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.04980842911877394,
+          "sample_warning": false
+        },
+        "gallery_primary": {
+          "rows": 3,
+          "artists": 3,
+          "median_ape": 0.8243156417513446,
+          "mape": 0.8462956391214321,
+          "rmse_log": 2.106829985181626,
+          "within_30": 0.0,
+          "within_50": 0.0,
+          "p95_ape": 0.9301420282678456,
+          "median_price_krw": 99715000.0,
+          "missing_support_rate": 0.3333333333333333,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.0,
+          "sample_warning": true
+        },
+        "saatchi": {
+          "rows": 880,
+          "artists": 37,
+          "median_ape": 0.23344526337598698,
+          "mape": 0.3695280453160481,
+          "rmse_log": 0.4870528888138129,
+          "within_30": 0.5681818181818182,
+          "within_50": 0.7181818181818181,
+          "p95_ape": 0.9483142828683369,
+          "median_price_krw": 1904400.0,
+          "missing_support_rate": 0.029545454545454545,
+          "missing_medium_rate": 0.0,
+          "three_d_rate": 0.0,
+          "sample_warning": false
+        }
+      }
+    }
+  }
+}

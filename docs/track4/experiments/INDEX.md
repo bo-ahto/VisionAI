@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E036 | T4-H23 | 완료 | 출처별 성능/결측 감사, source는 모델 피처 제외 유지 | [기록](2026-05-17_T4-E036_source_slice_audit.md) |
 | 2026-05-17 | T4-E035 | T4-H28 | 완료 | 재료-크기 조합 피처 실험, Cold 개선 신호 있으나 Warm 기본 채택은 보류 | [기록](2026-05-17_T4-E035_medium_size_combo.md) |
 | 2026-05-17 | T4-E034 | T4-H25 | 완료 | 금지 피처 manifest 검사 구현, source/price/gallery 누수 예시 차단 확인 | [기록](2026-05-17_T4-E034_feature_manifest_check.md) |
 | 2026-05-17 | T4-E033 | T4-H15 | 완료 | 크기 피처 축소 실험, Warm은 area_aspect, Cold는 median/tail 기준 후보 분리 | [기록](2026-05-17_T4-E033_size_feature_reduction.md) |
