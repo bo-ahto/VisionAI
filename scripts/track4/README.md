@@ -165,3 +165,15 @@ python3 scripts/track4/run_t4_e032_material_granularity.py
 - `data/track4/predictions/t4_e032_material_granularity_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E032_material_granularity.md`
+
+- `T4-E033` 크기 피처 축소/대표 조합 실험
+
+```bash
+python3 scripts/track4/run_t4_e033_size_feature_reduction.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e033_size_feature_reduction_metrics.json`
+- `data/track4/predictions/t4_e033_size_feature_reduction_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E033_size_feature_reduction.md`

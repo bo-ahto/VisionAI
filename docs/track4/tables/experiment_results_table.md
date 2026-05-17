@@ -7,6 +7,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E033 | T4-H15 | 완료 | `track4_train`, `val_warm`, `val_cold` | Warm Ridge, Cold Quantile | no size/area/area+aspect/raw/full size | area_aspect median APE `0.2597`로 최선 | full_size median APE `0.3349`, area_only p95 `1.1135` | Warm은 대표 조합, Cold는 median/tail 기준 분리 판단 | [기록](../experiments/2026-05-17_T4-E033_size_feature_reduction.md), [결과](../../../data/track4/results/t4_e033_size_feature_reduction_metrics.json) |
 | 2026-05-17 | T4-E032 | T4-H13 | 완료 | `track4_train`, `val_cold` | Cold Quantile | medium category, rare bucket, material flags | - | flags median APE `0.3627`, baseline `0.3642` | 개선 폭이 작아 단독 채택 보류 | [기록](../experiments/2026-05-17_T4-E032_material_granularity.md), [결과](../../../data/track4/results/t4_e032_material_granularity_metrics.json) |
 | 2026-05-17 | T4-E031 | T4-H18, T4-H29 | 완료 | train, val_warm/cold, test_warm/cold | Warm Ridge, Cold Quantile | validation q80 calibration, confidence group | test coverage `0.8102`, low_history `0.5946` | test coverage `0.6900`, high risk 범위 중앙 x`94.88` | Warm은 범위 후보, Cold는 calibration 재설계 필요 | [기록](../experiments/2026-05-17_T4-E031_calibration_confidence.md), [결과](../../../data/track4/results/t4_e031_calibration_confidence_metrics.json) |
 | 2026-05-17 | T4-E030 | T4-H9, T4-H17, T4-H24, T4-H26 | 완료 | `track4_train`, `val_cold` | Cold Quantile | risk flags: 3D/support unknown/large/high price 등 | - | low risk median APE `0.3400`, high risk `0.7080` | Cold는 위험 그룹별 출력 정책 분리 필요 | [기록](../experiments/2026-05-17_T4-E030_cold_risk_policy.md), [결과](../../../data/track4/results/t4_e030_cold_risk_policy_metrics.json) |
@@ -26,5 +27,4 @@
 
 ## 다음 실험 후보
 
-- T4-E033: T4-H15 크기 피처 축소/대표 조합 실험
 - T4-E034: T4-H25 금지 피처 manifest 구현
