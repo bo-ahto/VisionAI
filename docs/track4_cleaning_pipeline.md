@@ -5,6 +5,7 @@
 - 실행 스크립트: `scripts/track4/run_cleaning_pipeline.py`
 - 최종 클렌징 파일: `data/track4_primary_market_cleaned_v2.csv`
 - 최종 피처 후보 파일: `data/track4_primary_market_feature_candidates_v1.csv`
+- 최종 split 폴더: `data/track4_split/`
 
 ## 1. 기본 원칙
 
@@ -19,6 +20,11 @@
 - 출처는 원본 추적, 데이터 품질 감사, 분포 확인에만 사용함
 - 갤러리 티어도 현재는 모델 피처에서 제외함
 - 운영에서 입력받기 어려운 정보는 최종 피처 후보로 바로 채택하지 않음
+- 추적용 컬럼은 피처 후보 파일에 남기되 모델 입력에서는 제외함
+- 예: `track4_source`, `track4_source_row_index`, `source_artwork_id`, `artwork_url`, `image_url`
+- 작가 이력 수 피처는 split 이후 train에 남은 작품만 기준으로 계산함
+- Cold 평가셋의 작가는 train에 없으므로 `artist_works_log`는 0이어야 함
+- train/eval 사이 동일 작품 후보는 train에서 제거함
 
 ## 2. 현재 입력 원본
 
@@ -45,6 +51,8 @@
 - 5단계: 감사 결과를 merge해서 `cleaned_v2`를 생성함
 - 6단계: 모델에 넣을 후보 컬럼만 모아 `feature_candidates_v1`을 생성함
 - 7단계: `artist_key` 기준으로 Warm / Cold split을 생성함
+- 8단계: split 생성 뒤 `artist_works_log`를 train 기준으로 다시 계산함
+- 9단계: train/eval 간 동일 작품 후보를 train에서 제거함
 
 ## 4. 전체 실행 방법
 
@@ -108,6 +116,12 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - 원본 한글명이 없으면 Track 3 작가명 매핑으로 보강함
 - `artist_key`는 Warm/Cold split 기준으로 사용함
 - 숫자형 작가명 등 식별 불가 row는 감사 이슈로 남김
+- 동명이인은 Track 3 방식과 같은 기준으로 분리 표시함
+- 같은 한글명 안에 여러 `artist_key`가 있고, 보조 key가 3건 이상이며, 가격대 차이가 큰 경우를 동명이인 후보로 봄
+- 동명이인은 `artist_name_ko` 뒤에 `_A`, `_B`, `_C` suffix를 붙임
+- 원래 한글명은 `artist_name_ko_orig`에 보존함
+- 동명이인 여부는 `is_homonym`으로 표시함
+- 운영에서는 사용자가 입력한 한국어 이름을 내부 작가 ID로 매칭한 뒤 Warm/Cold를 판단하는 구조를 목표로 함
 
 ### 재료/지지체
 
@@ -126,6 +140,8 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - `is_duplicate_representative`로 대표 row 여부를 표시함
 - 대표가 아닌 중복 row는 학습 후보에서 제외함
 - 원본 추적을 위해 모든 중복 후보 row는 cleaned 파일에 남김
+- split 생성 후에도 train/eval 간 동일 작품 후보를 한 번 더 확인함
+- 같은 `artist_key`, 제목, 가격, 크기, 재료/지지체가 평가셋에도 있으면 train에서 제거함
 
 ### 갤러리/출처
 
@@ -133,6 +149,16 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - 현재 갤러리 티어는 최종 모델 피처에서 제외함
 - `track4_source`, `track4_source_file`, `track4_source_row_index`는 원본 추적용임
 - 출처 정보는 모델 학습 피처로 사용하지 않음
+
+### Split 생성
+
+- `track4_train.csv`는 Warm 모델과 Cold 모델이 함께 사용하는 공통 학습 데이터임
+- `track4_val_warm.csv`, `track4_test_warm.csv`는 train에 이미 있는 작가의 다른 작품 평가용임
+- `track4_val_cold.csv`, `track4_test_cold.csv`는 train에 없는 작가 평가용임
+- Warm/Cold 기준은 `artist_key`임
+- `artist_name_ko`는 표시/리포트용이며 최종 운영에서는 내부 `artist_master_id`로 대체하는 것이 목표임
+- `artist_works_log`는 split 생성 뒤 train 기준으로 재계산함
+- Cold split에서 `artist_works_log > 0`이면 누수 가능성이 있으므로 실패로 봄
 
 ## 7. 학습 후보 판단
 
@@ -151,16 +177,20 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - 1단계: 새 원본 파일을 `data/`에 저장함
 - 2단계: `scripts/track4/build_primary_market_raw_collected.py`의 `SOURCES`에 출처명과 파일 경로를 추가함
 - 3단계: 새 출처의 컬럼을 가격/크기/작가/재료 감사 스크립트에 매핑함
-- 4단계: `python3 scripts/track4/run_cleaning_pipeline.py`를 실행함
-- 5단계: 아래 리포트를 확인함
+- 4단계: 새 출처의 작품 URL, 이미지 URL, 원본 row id가 있으면 추적 컬럼에 연결함
+- 5단계: `python3 scripts/track4/run_cleaning_pipeline.py`를 실행함
+- 6단계: 아래 리포트를 확인함
 - `docs/track4_price_consistency_audit.md`
 - `docs/track4_size_consistency_audit.md`
 - `docs/track4_artist_consistency_audit.md`
 - `docs/track4_medium_support_consistency_audit.md`
 - `docs/track4_duplicate_consistency_audit.md`
+- `docs/track4_primary_market_cleaned_v2_report.md`
+- `docs/track4_split_report.md`
 - `docs/track4_column_value_consistency_audit.md`
-- 6단계: row 수, 학습 후보 수, 주요 이슈 수가 크게 바뀌었는지 기록함
-- 7단계: 문제가 없으면 split을 기준으로 모델 실험을 진행함
+- 7단계: row 수, 학습 후보 수, 주요 이슈 수가 크게 바뀌었는지 기록함
+- 8단계: split 누수 체크가 0인지 확인함
+- 9단계: 문제가 없으면 split을 기준으로 모델 실험을 진행함
 
 ## 9. 추가 데이터 반영 시 반드시 확인할 숫자
 
@@ -171,6 +201,10 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - 한글 작가명 누락 수
 - 작가 key 수
 - Warm/Cold split 작가 겹침 여부
+- Cold split의 `artist_works_log > 0` rows
+- train/eval 간 동일 작품 후보 rows
+- 동명이인 분리 작가 수와 작품 rows
+- 원본 한글명 기준 train/cold 겹침 수
 - `medium_category=unknown` 수
 - `support_category=unknown` 수
 - 크기 이상값 수
@@ -183,6 +217,16 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - 학습 후보 rows: `34,239`
 - feature 후보 파일 rows: `54,842`
 - 한글 작가명 rows: `54,840`
+- 동명이인 분리 작가 수: `31`
+- 동명이인 분리 작품 rows: `1,819`
+- train rows: `28,920`
+- validation warm rows: `68`
+- validation cold rows: `1,835`
+- test warm rows: `137`
+- test cold rows: `3,269`
+- train/eval 동일 작품 후보 제거 rows: `10`
+- validation cold의 `artist_works_log > 0` rows: `0`
+- test cold의 `artist_works_log > 0` rows: `0`
 - 학습 후보 중 한글 작가명 누락: `0`
 - 학습 후보 중 `medium_category=unknown`: `26`
 - 학습 후보 중 `support_category=unknown`: `2,786`
@@ -196,3 +240,6 @@ python3 scripts/track4/run_cleaning_pipeline.py
 - `track4_source`는 모델 피처가 아니라 감사/추적용임
 - `gallery_tier_validated`는 현재 매칭률과 운영 입력 가능성 문제로 모델 피처에서 제외함
 - split을 다시 만들면 모델 성능 비교 기준이 바뀌므로, split 변경 시 별도 실험 ID로 기록해야 함
+- `artist_works_log`는 cleaned 파일의 값을 그대로 쓰지 않고 split 이후 재계산된 값을 사용해야 함
+- Warm 평가셋 rows가 작으므로 모델 성능 실험에서는 반복 split 또는 내부 CV로 안정성을 확인해야 함
+- `support_category=unknown`이 많으므로 지지체 피처의 효과는 별도 가설로 확인해야 함

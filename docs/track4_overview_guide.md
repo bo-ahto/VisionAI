@@ -82,3 +82,16 @@
 - Track 4 가설 ID 체계를 확정
 - 실험 결과 기록 형식을 확정
 - Track 3 문서와 Track 4 문서를 섞어 수정하지 않도록 확인
+
+## 8. 추가 데이터 반영 시 먼저 볼 문서
+
+- 추가 원본 CSV를 반영할 때는 모델 실험보다 데이터셋 파이프라인을 먼저 실행함
+- 기준 문서: `docs/track4_cleaning_pipeline.md`
+- 실행 명령: `python3 scripts/track4/run_cleaning_pipeline.py`
+- 실행 후 확인 문서: `docs/track4_split_report.md`
+- 확인 기준
+- Cold 평가셋 작가가 train에 없어야 함
+- Cold split의 `artist_works_log > 0` rows가 0이어야 함
+- train/eval 간 동일 작품 후보가 제거되어야 함
+- 동명이인 처리 결과가 보존되어야 함
+- 출처/URL/이미지 컬럼은 모델 피처로 쓰지 않아야 함
