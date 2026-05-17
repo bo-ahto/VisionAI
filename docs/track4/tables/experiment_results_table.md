@@ -7,6 +7,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E046 | T4-H12,H30,H35 | 완료 | T4-E045 결과, 최종 artifact, manifest | 모델 미사용 | 최종 보고서 | Warm final median APE `0.2201`, low_history 경고 필요 | Cold final median APE `0.4199`, low_risk 제한적 범위 후보 | 최종 후보/라우팅/출력 정책을 보고서로 고정 | [기록](../experiments/2026-05-17_T4-E046_final_summary_report.md), [보고서](../final_report_2026-05-17.md) |
 | 2026-05-17 | T4-E045 | T4-H12,H30,H35 | 완료 | train, test warm/cold | Warm Ridge, Cold Quantile | final conditional manifest | Warm final median APE `0.2201`, p95 `1.1118` | Cold final median APE `0.4199`, p95 `2.7609` | 조건부 manifest 통과, 최종 artifact 생성 완료 | [기록](../experiments/2026-05-17_T4-E045_final_artifact_dry_run.md), [결과](../../../data/track4/results/t4_e045_final_artifact_dry_run.json) |
 | 2026-05-17 | T4-E044 | T4-H34 | 완료 | train, test warm | Warm Ridge | artist train price stats | stats_all median APE `0.2201`, p95 `1.1118`; 보수 후보 대비 median `21.69%` 개선 | - | 과거 가격 통계 피처는 예측 시점 이전 데이터 조건부 허용 권장 | [기록](../experiments/2026-05-17_T4-E044_warm_price_stats_policy.md), [결과](../../../data/track4/results/t4_e044_warm_price_stats_policy_metrics.json) |
 | 2026-05-17 | T4-E043 | T4-H12,H30 | 완료 | train, test warm/cold | Warm Ridge, Cold Quantile | deployable features, manifest | 배포 가능 후보 median APE `0.2810`, 성능 최고 가격 통계 후보는 manifest 차단 | 배포 가능 후보 median APE `0.4199` | artifact 생성 성공, Warm 가격 통계 피처 정책 결정 필요 | [기록](../experiments/2026-05-17_T4-E043_production_dry_run.md), [결과](../../../data/track4/results/t4_e043_production_dry_run.json) |
@@ -39,4 +40,4 @@
 
 ## 다음 실험 후보
 
-- T4-E046: Track 4 최종 결과 요약 보고서 작성
+- T4-E047: 운영 입력 schema 및 예측 API dry-run
