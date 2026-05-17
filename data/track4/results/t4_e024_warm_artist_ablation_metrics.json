@@ -1,0 +1,115 @@
+{
+  "experiment_id": "T4-E024",
+  "hypothesis_id": [
+    "T4-H2",
+    "T4-H20"
+  ],
+  "date": "2026-05-17",
+  "target": "ln_price_krw",
+  "splits": {
+    "train": {
+      "rows": 28905,
+      "artists": 1834,
+      "price_median": 3091200.0,
+      "artist_count_min": 1.0,
+      "artist_count_median": 41.0,
+      "artist_count_max": 699.0
+    },
+    "val_warm": {
+      "rows": 67,
+      "artists": 67,
+      "price_median": 2346000.0,
+      "artist_count_min": 2.0,
+      "artist_count_median": 9.0,
+      "artist_count_max": 247.0
+    }
+  },
+  "models": {
+    "structure_only": {
+      "description": "작가 정보 제외, 작품 구조 정보만 사용",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "metrics": {
+        "median_ape": 0.4619268043530878,
+        "mape": 0.9190943725712639,
+        "rmse_log": 0.7977414800307232,
+        "within_30": 0.34328358208955223,
+        "within_50": 0.5074626865671642,
+        "p90_ape": 2.2852506919024753,
+        "p95_ape": 3.128018659709794
+      }
+    },
+    "structure_plus_artist_history": {
+      "description": "작품 구조 정보 + train 기준 작가 작품 수",
+      "features": [
+        "medium_category",
+        "support_category",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "metrics": {
+        "median_ape": 0.5076496864592952,
+        "mape": 0.9055252984678472,
+        "rmse_log": 0.7970910075562011,
+        "within_30": 0.3283582089552239,
+        "within_50": 0.4925373134328358,
+        "p90_ape": 2.010103713377254,
+        "p95_ape": 3.198471721359473
+      }
+    },
+    "structure_plus_artist_key": {
+      "description": "작품 구조 정보 + 작가 key categorical",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "metrics": {
+        "median_ape": 0.2868844660600956,
+        "mape": 0.4837888762296889,
+        "rmse_log": 0.6125177953823377,
+        "within_30": 0.5223880597014925,
+        "within_50": 0.6417910447761194,
+        "p90_ape": 1.1445376237929379,
+        "p95_ape": 1.6607769872071936
+      }
+    },
+    "structure_plus_artist_key_history": {
+      "description": "작품 구조 정보 + 작가 key + train 기준 작가 작품 수",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "metrics": {
+        "median_ape": 0.26968842454077935,
+        "mape": 0.4846123841761418,
+        "rmse_log": 0.6124793034314435,
+        "within_30": 0.5223880597014925,
+        "within_50": 0.6567164179104478,
+        "p90_ape": 1.1742253882944063,
+        "p95_ape": 1.648814511018459
+      }
+    }
+  }
+}

@@ -57,3 +57,15 @@ python3 scripts/track4/run_t4_e023_structure_baseline.py
 - `data/track4/predictions/t4_e023_structure_baseline_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E023_structure_baseline.md`
+
+- `T4-E024` Warm 작가 피처 ablation
+
+```bash
+python3 scripts/track4/run_t4_e024_warm_artist_ablation.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e024_warm_artist_ablation_metrics.json`
+- `data/track4/predictions/t4_e024_warm_artist_ablation_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E024_warm_artist_ablation.md`
