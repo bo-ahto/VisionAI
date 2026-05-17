@@ -141,3 +141,15 @@ python3 scripts/track4/run_t4_e030_cold_risk_policy.py
 - `data/track4/predictions/t4_e030_cold_risk_policy_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E030_cold_risk_policy.md`
+
+- `T4-E031` 가격 범위와 신뢰도 calibration
+
+```bash
+python3 scripts/track4/run_t4_e031_calibration_confidence.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e031_calibration_confidence_metrics.json`
+- `data/track4/predictions/t4_e031_calibration_confidence_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E031_calibration_confidence.md`
