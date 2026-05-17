@@ -7,6 +7,11 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-18 | T5-E018 | T5-H21 | 완료 | val_cold calibration, test_cold | 모델 재학습 없음 | 예측 가격대별 residual 보정 | - | median `0.3918`→`0.3837`, Within-50 `0.5746`→`0.6008`, p95 개선 없음 | Cold 후처리 후보로 유지, tail risk는 별도 과제 | [기록](../experiments/2026-05-18_T5-E018_cold_price_band_correction.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
+| 2026-05-18 | T5-E017 | T5-H20 | 완료 | track5 train, val_cold | QuantileRegressor | support_unknown fallback | - | 전체 median `0.3401`, support_unknown p95 `8.2886` | fallback은 보류, support_unknown은 경고 조건에 적합 | [기록](../experiments/2026-05-18_T5-E017_cold_support_unknown_fallback.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
+| 2026-05-18 | T5-E016 | T5-H19 | 완료 | track5 train, val_cold | QuantileRegressor | missing flags | - | missing flag median `0.3437`, p95 `1.8242` | 단순 결측 flag 피처는 미채택 | [기록](../experiments/2026-05-18_T5-E016_cold_missing_flags.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
+| 2026-05-18 | T5-E015 | T5-H18 | 완료 | track5 train, val_warm | HuberRegressor | OOF artist stats | OOF extended median `0.1525`, p95 `0.6893` | - | OOF 확장 통계는 tail 안정화 후보 | [기록](../experiments/2026-05-18_T5-E015_warm_oof_artist_stats.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
+| 2026-05-18 | T5-E014 | T5-H17 | 완료 | track5 train, val_warm | HuberRegressor | extended artist stats | extended median `0.1516`, p95 `0.7049` | - | 확장 통계 단독은 보류 | [기록](../experiments/2026-05-18_T5-E014_warm_artist_stat_expansion.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
 | 2026-05-18 | T5-E013 | T5-H16 | 완료 | E008 validation predictions, E010 test predictions | 모델 재학습 없음 | final candidate predictions | p80 범위 coverage `0.7828`, 상한/하한 폭 `2.14배` | p80 범위 coverage `0.7845`, 상한/하한 폭 `4.63배` | Warm 범위 정책은 검토 가능, Cold는 범위만으로 실무 해석 어려움 | [기록](../experiments/2026-05-18_T5-E013_price_interval_coverage.md), [결과](../../../data/track5/results/t5_e013_price_interval_coverage_metrics.json) |
 | 2026-05-18 | T5-E012 | T5-H15 | 완료 | track5 test_cold, E010 predictions | 모델 재학습 없음 | risk flags | - | support_unknown median `0.5272`, p95 `4.4609`; medium_unknown median `0.8762` | Cold 위험 경고는 support/medium unknown 중심, 대형/3D 단독 기준은 약함 | [기록](../experiments/2026-05-18_T5-E012_cold_risk_slice_analysis.md), [결과](../../../data/track5/results/t5_e012_cold_risk_slice_analysis_metrics.json) |
 | 2026-05-18 | T5-E011 | T5-H14 | 완료 | track5 train, val_warm, test_warm | HuberRegressor | Warm full_size | max_iter 3000 test median `0.1580`, p95 `0.8723` | - | Huber 후보 유지, 운영 학습 설정은 max_iter 3000 권장 | [기록](../experiments/2026-05-18_T5-E011_warm_huber_convergence_recheck.md), [결과](../../../data/track5/results/t5_e011_warm_huber_convergence_recheck_metrics.json) |
@@ -23,5 +28,6 @@
 
 ## 다음 실험 후보
 
-- T5-E014: 최종 운영 후보 artifact 생성 전 재현성 점검
-- T5-E015: Cold 추가 정보 수집 필요 조건 정의
+- T5-E019: Warm OOF extended 후보를 `max_iter=3000`으로 재검증
+- T5-E020: Cold 가격대 보정 + 위험 경고 정책 결합 검증
+- T5-E021: 최종 운영 후보 artifact 생성 전 재현성 점검

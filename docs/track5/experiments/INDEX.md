@@ -5,6 +5,11 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-18 | T5-E018 | T5-H21 | 완료 | Cold 예측 가격대별 residual 보정으로 median/Within 개선, p95는 개선 없음 | [기록](2026-05-18_T5-E018_cold_price_band_correction.md) |
+| 2026-05-18 | T5-E017 | T5-H20 | 완료 | support_unknown 전용 fallback은 전체 median 소폭 개선이나 해당 구간 p95 악화로 보류 | [기록](2026-05-18_T5-E017_cold_support_unknown_fallback.md) |
+| 2026-05-18 | T5-E016 | T5-H19 | 완료 | Cold missing flag 추가는 기준선 대비 성능 개선이 없어 미채택 | [기록](2026-05-18_T5-E016_cold_missing_flags.md) |
+| 2026-05-18 | T5-E015 | T5-H18 | 완료 | Warm OOF 작가 통계 검증, 확장 통계에서 p95 개선 신호 확인 | [기록](2026-05-18_T5-E015_warm_oof_artist_stats.md) |
+| 2026-05-18 | T5-E014 | T5-H17 | 완료 | Warm 작가 가격 통계 확장 단독 추가는 median/p95 개선 없어 보류 | [기록](2026-05-18_T5-E014_warm_artist_stat_expansion.md) |
 | 2026-05-18 | T5-E013 | T5-H16 | 완료 | validation 오차 기반 가격 범위가 test에서 어느 정도 실제 가격을 포함하는지 확인 | [기록](2026-05-18_T5-E013_price_interval_coverage.md) |
 | 2026-05-18 | T5-E012 | T5-H15 | 완료 | Cold final 후보 예측 결과를 위험 구간별로 나누어 support/medium unknown 위험 신호 확인 | [기록](2026-05-18_T5-E012_cold_risk_slice_analysis.md) |
 | 2026-05-18 | T5-E011 | T5-H14 | 완료 | Warm Huber 반복 횟수 재검증, max_iter 3000에서 수렴 경고 해소와 후보 판단 유지 확인 | [기록](2026-05-18_T5-E011_warm_huber_convergence_recheck.md) |
