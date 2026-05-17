@@ -1,0 +1,575 @@
+{
+  "experiment_id": "T4-E041",
+  "hypothesis_id": [
+    "T4-H3",
+    "T4-H32"
+  ],
+  "date": "2026-05-17",
+  "target_coverages": [
+    0.7,
+    0.8,
+    0.9
+  ],
+  "decision_thresholds": {
+    "q80_min_coverage": 0.8,
+    "q80_max_range": 4.0,
+    "low_history_q90_min_coverage": 0.8,
+    "low_history_q90_max_range": 5.5
+  },
+  "history_group_definition": {
+    "low_history": "train 기준 작가 작품 수 5개 미만",
+    "mid_history": "train 기준 작가 작품 수 5개 이상 20개 미만",
+    "high_history": "train 기준 작가 작품 수 20개 이상"
+  },
+  "candidates": {
+    "warm_performance_artist_price_stats": {
+      "description": "Warm 성능 후보",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price"
+      ],
+      "point_metrics": {
+        "validation": {
+          "rows": 67,
+          "median_ape": 0.23259588362591951,
+          "p95_ape": 1.0538199078327848,
+          "within_30": 0.5970149253731343,
+          "within_50": 0.7910447761194029
+        },
+        "test": {
+          "rows": 137,
+          "median_ape": 0.22008229604208757,
+          "p95_ape": 1.111830345001951,
+          "within_30": 0.6131386861313869,
+          "within_50": 0.8321167883211679
+        },
+        "test_groups": {
+          "high_history": {
+            "rows": 30,
+            "median_ape": 0.18890923569382445,
+            "p95_ape": 0.844862425222459,
+            "within_30": 0.7666666666666667,
+            "within_50": 0.9
+          },
+          "low_history": {
+            "rows": 37,
+            "median_ape": 0.358083335721226,
+            "p95_ape": 1.6149164252710935,
+            "within_30": 0.4594594594594595,
+            "within_50": 0.7027027027027027
+          },
+          "mid_history": {
+            "rows": 70,
+            "median_ape": 0.20683173581093006,
+            "p95_ape": 0.9421804212930209,
+            "within_30": 0.6285714285714286,
+            "within_50": 0.8714285714285714
+          }
+        }
+      },
+      "validation_policy": {
+        "q70": {
+          "target_coverage": 0.7,
+          "overall": {
+            "rows": 67,
+            "abs_log_error": 0.3975092393596621,
+            "half_width_multiplier": 1.48811354311954,
+            "full_range_multiplier": 2.2144819172157915
+          },
+          "groups": {
+            "high_history": {
+              "rows": 18,
+              "abs_log_error": 0.3975092393596621,
+              "half_width_multiplier": 1.48811354311954,
+              "full_range_multiplier": 2.2144819172157915,
+              "fallback_to_overall": true
+            },
+            "low_history": {
+              "rows": 18,
+              "abs_log_error": 0.3975092393596621,
+              "half_width_multiplier": 1.48811354311954,
+              "full_range_multiplier": 2.2144819172157915,
+              "fallback_to_overall": true
+            },
+            "mid_history": {
+              "rows": 31,
+              "abs_log_error": 0.44173048916279534,
+              "half_width_multiplier": 1.5553964877304782,
+              "full_range_multiplier": 2.419258234044308,
+              "fallback_to_overall": false
+            }
+          }
+        },
+        "q80": {
+          "target_coverage": 0.8,
+          "overall": {
+            "rows": 67,
+            "abs_log_error": 0.5033108926797184,
+            "half_width_multiplier": 1.6541890565173774,
+            "full_range_multiplier": 2.7363414347018513
+          },
+          "groups": {
+            "high_history": {
+              "rows": 18,
+              "abs_log_error": 0.5033108926797184,
+              "half_width_multiplier": 1.6541890565173774,
+              "full_range_multiplier": 2.7363414347018513,
+              "fallback_to_overall": true
+            },
+            "low_history": {
+              "rows": 18,
+              "abs_log_error": 0.5033108926797184,
+              "half_width_multiplier": 1.6541890565173774,
+              "full_range_multiplier": 2.7363414347018513,
+              "fallback_to_overall": true
+            },
+            "mid_history": {
+              "rows": 31,
+              "abs_log_error": 0.6638857064915307,
+              "half_width_multiplier": 1.942324994911713,
+              "full_range_multiplier": 3.772626385858786,
+              "fallback_to_overall": false
+            }
+          }
+        },
+        "q90": {
+          "target_coverage": 0.9,
+          "overall": {
+            "rows": 67,
+            "abs_log_error": 0.7797728131633085,
+            "half_width_multiplier": 2.18097672000771,
+            "full_range_multiplier": 4.756659453215589
+          },
+          "groups": {
+            "high_history": {
+              "rows": 18,
+              "abs_log_error": 0.7797728131633085,
+              "half_width_multiplier": 2.18097672000771,
+              "full_range_multiplier": 4.756659453215589,
+              "fallback_to_overall": true
+            },
+            "low_history": {
+              "rows": 18,
+              "abs_log_error": 0.7797728131633085,
+              "half_width_multiplier": 2.18097672000771,
+              "full_range_multiplier": 4.756659453215589,
+              "fallback_to_overall": true
+            },
+            "mid_history": {
+              "rows": 31,
+              "abs_log_error": 0.8181202071289331,
+              "half_width_multiplier": 2.2662357771548347,
+              "full_range_multiplier": 5.135824597656577,
+              "fallback_to_overall": false
+            }
+          }
+        }
+      },
+      "test_interval_summary": {
+        "q70": {
+          "target_coverage": 0.7,
+          "overall": {
+            "rows": 137,
+            "coverage": 0.7518248175182481,
+            "median_full_range_multiplier": 2.4192582340442996,
+            "p90_full_range_multiplier": 2.419258234044308
+          },
+          "groups": {
+            "high_history": {
+              "rows": 30,
+              "coverage": 0.8666666666666667,
+              "median_full_range_multiplier": 2.214481917215792,
+              "p90_full_range_multiplier": 2.214481917215792
+            },
+            "low_history": {
+              "rows": 37,
+              "coverage": 0.5405405405405406,
+              "median_full_range_multiplier": 2.214481917215792,
+              "p90_full_range_multiplier": 2.214481917215792
+            },
+            "mid_history": {
+              "rows": 70,
+              "coverage": 0.8142857142857143,
+              "median_full_range_multiplier": 2.419258234044308,
+              "p90_full_range_multiplier": 2.419258234044308
+            }
+          }
+        },
+        "q80": {
+          "target_coverage": 0.8,
+          "overall": {
+            "rows": 137,
+            "coverage": 0.8540145985401459,
+            "median_full_range_multiplier": 3.772626385858779,
+            "p90_full_range_multiplier": 3.772626385858786
+          },
+          "groups": {
+            "high_history": {
+              "rows": 30,
+              "coverage": 0.9333333333333333,
+              "median_full_range_multiplier": 2.736341434701847,
+              "p90_full_range_multiplier": 2.736341434701847
+            },
+            "low_history": {
+              "rows": 37,
+              "coverage": 0.6756756756756757,
+              "median_full_range_multiplier": 2.736341434701847,
+              "p90_full_range_multiplier": 2.736341434701847
+            },
+            "mid_history": {
+              "rows": 70,
+              "coverage": 0.9142857142857143,
+              "median_full_range_multiplier": 3.772626385858786,
+              "p90_full_range_multiplier": 3.7726263858587865
+            }
+          }
+        },
+        "q90": {
+          "target_coverage": 0.9,
+          "overall": {
+            "rows": 137,
+            "coverage": 0.9197080291970803,
+            "median_full_range_multiplier": 5.135824597656567,
+            "p90_full_range_multiplier": 5.1358245976565815
+          },
+          "groups": {
+            "high_history": {
+              "rows": 30,
+              "coverage": 0.9666666666666667,
+              "median_full_range_multiplier": 4.7566594532155895,
+              "p90_full_range_multiplier": 4.75665945321559
+            },
+            "low_history": {
+              "rows": 37,
+              "coverage": 0.8378378378378378,
+              "median_full_range_multiplier": 4.7566594532155895,
+              "p90_full_range_multiplier": 4.75665945321559
+            },
+            "mid_history": {
+              "rows": 70,
+              "coverage": 0.9428571428571428,
+              "median_full_range_multiplier": 5.135824597656577,
+              "p90_full_range_multiplier": 5.135824597656587
+            }
+          }
+        }
+      },
+      "service_decisions": {
+        "high_history": {
+          "decision": "normal_range_candidate",
+          "reason": "q80 기준 coverage와 범위 폭이 허용 기준을 통과",
+          "rows": 30,
+          "median_ape": 0.18890923569382445,
+          "p95_ape": 0.844862425222459,
+          "q80_coverage": 0.9333333333333333,
+          "q80_median_range_multiplier": 2.736341434701847,
+          "q90_coverage": 0.9666666666666667,
+          "q90_median_range_multiplier": 4.7566594532155895
+        },
+        "low_history": {
+          "decision": "warning_plus_wider_range_candidate",
+          "reason": "q80은 부족하지만 q90 기준 더 넓은 범위와 경고는 가능",
+          "rows": 37,
+          "median_ape": 0.358083335721226,
+          "p95_ape": 1.6149164252710935,
+          "q80_coverage": 0.6756756756756757,
+          "q80_median_range_multiplier": 2.736341434701847,
+          "q90_coverage": 0.8378378378378378,
+          "q90_median_range_multiplier": 4.7566594532155895
+        },
+        "mid_history": {
+          "decision": "normal_range_candidate",
+          "reason": "q80 기준 coverage와 범위 폭이 허용 기준을 통과",
+          "rows": 70,
+          "median_ape": 0.20683173581093006,
+          "p95_ape": 0.9421804212930209,
+          "q80_coverage": 0.9142857142857143,
+          "q80_median_range_multiplier": 3.772626385858786,
+          "q90_coverage": 0.9428571428571428,
+          "q90_median_range_multiplier": 5.135824597656577
+        }
+      }
+    },
+    "warm_operational_artist_count": {
+      "description": "Warm 운영 보수 후보",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "point_metrics": {
+        "validation": {
+          "rows": 67,
+          "median_ape": 0.259722268969027,
+          "p95_ape": 1.5644226287656293,
+          "within_30": 0.5522388059701493,
+          "within_50": 0.6567164179104478
+        },
+        "test": {
+          "rows": 137,
+          "median_ape": 0.28104762538307493,
+          "p95_ape": 2.55037332513539,
+          "within_30": 0.5401459854014599,
+          "within_50": 0.6861313868613139
+        },
+        "test_groups": {
+          "high_history": {
+            "rows": 30,
+            "median_ape": 0.18719549231386037,
+            "p95_ape": 0.7925102992974351,
+            "within_30": 0.7666666666666667,
+            "within_50": 0.9
+          },
+          "low_history": {
+            "rows": 37,
+            "median_ape": 0.5437948683137529,
+            "p95_ape": 2.9875020538074875,
+            "within_30": 0.2702702702702703,
+            "within_50": 0.43243243243243246
+          },
+          "mid_history": {
+            "rows": 70,
+            "median_ape": 0.26613219490970796,
+            "p95_ape": 1.347300012680298,
+            "within_30": 0.5857142857142857,
+            "within_50": 0.7285714285714285
+          }
+        }
+      },
+      "validation_policy": {
+        "q70": {
+          "target_coverage": 0.7,
+          "overall": {
+            "rows": 67,
+            "abs_log_error": 0.5160303838054655,
+            "half_width_multiplier": 1.6753638805544984,
+            "full_range_multiplier": 2.8068441322666278
+          },
+          "groups": {
+            "high_history": {
+              "rows": 18,
+              "abs_log_error": 0.5160303838054655,
+              "half_width_multiplier": 1.6753638805544984,
+              "full_range_multiplier": 2.8068441322666278,
+              "fallback_to_overall": true
+            },
+            "low_history": {
+              "rows": 18,
+              "abs_log_error": 0.5160303838054655,
+              "half_width_multiplier": 1.6753638805544984,
+              "full_range_multiplier": 2.8068441322666278,
+              "fallback_to_overall": true
+            },
+            "mid_history": {
+              "rows": 31,
+              "abs_log_error": 0.5611543043281877,
+              "half_width_multiplier": 1.75269447590352,
+              "full_range_multiplier": 3.071937925862714,
+              "fallback_to_overall": false
+            }
+          }
+        },
+        "q80": {
+          "target_coverage": 0.8,
+          "overall": {
+            "rows": 67,
+            "abs_log_error": 0.7081350304074122,
+            "half_width_multiplier": 2.0302014618241477,
+            "full_range_multiplier": 4.121717975592906
+          },
+          "groups": {
+            "high_history": {
+              "rows": 18,
+              "abs_log_error": 0.7081350304074122,
+              "half_width_multiplier": 2.0302014618241477,
+              "full_range_multiplier": 4.121717975592906,
+              "fallback_to_overall": true
+            },
+            "low_history": {
+              "rows": 18,
+              "abs_log_error": 0.7081350304074122,
+              "half_width_multiplier": 2.0302014618241477,
+              "full_range_multiplier": 4.121717975592906,
+              "fallback_to_overall": true
+            },
+            "mid_history": {
+              "rows": 31,
+              "abs_log_error": 0.7690707068158424,
+              "half_width_multiplier": 2.1577601300088465,
+              "full_range_multiplier": 4.655928778655795,
+              "fallback_to_overall": false
+            }
+          }
+        },
+        "q90": {
+          "target_coverage": 0.9,
+          "overall": {
+            "rows": 67,
+            "abs_log_error": 0.9409515729055797,
+            "half_width_multiplier": 2.5624185866735196,
+            "full_range_multiplier": 6.565989013329919
+          },
+          "groups": {
+            "high_history": {
+              "rows": 18,
+              "abs_log_error": 0.9409515729055797,
+              "half_width_multiplier": 2.5624185866735196,
+              "full_range_multiplier": 6.565989013329919,
+              "fallback_to_overall": true
+            },
+            "low_history": {
+              "rows": 18,
+              "abs_log_error": 0.9409515729055797,
+              "half_width_multiplier": 2.5624185866735196,
+              "full_range_multiplier": 6.565989013329919,
+              "fallback_to_overall": true
+            },
+            "mid_history": {
+              "rows": 31,
+              "abs_log_error": 0.9763828010406712,
+              "half_width_multiplier": 2.6548357836294154,
+              "full_range_multiplier": 7.048153038039212,
+              "fallback_to_overall": false
+            }
+          }
+        }
+      },
+      "test_interval_summary": {
+        "q70": {
+          "target_coverage": 0.7,
+          "overall": {
+            "rows": 137,
+            "coverage": 0.6861313868613139,
+            "median_full_range_multiplier": 3.071937925862708,
+            "p90_full_range_multiplier": 3.071937925862714
+          },
+          "groups": {
+            "high_history": {
+              "rows": 30,
+              "coverage": 0.9333333333333333,
+              "median_full_range_multiplier": 2.8068441322666318,
+              "p90_full_range_multiplier": 2.806844132266632
+            },
+            "low_history": {
+              "rows": 37,
+              "coverage": 0.5135135135135135,
+              "median_full_range_multiplier": 2.8068441322666318,
+              "p90_full_range_multiplier": 2.806844132266632
+            },
+            "mid_history": {
+              "rows": 70,
+              "coverage": 0.6714285714285714,
+              "median_full_range_multiplier": 3.0719379258627137,
+              "p90_full_range_multiplier": 3.071937925862714
+            }
+          }
+        },
+        "q80": {
+          "target_coverage": 0.8,
+          "overall": {
+            "rows": 137,
+            "coverage": 0.8102189781021898,
+            "median_full_range_multiplier": 4.655928778655786,
+            "p90_full_range_multiplier": 4.655928778655795
+          },
+          "groups": {
+            "high_history": {
+              "rows": 30,
+              "coverage": 0.9666666666666667,
+              "median_full_range_multiplier": 4.121717975592905,
+              "p90_full_range_multiplier": 4.121717975592906
+            },
+            "low_history": {
+              "rows": 37,
+              "coverage": 0.5945945945945946,
+              "median_full_range_multiplier": 4.121717975592905,
+              "p90_full_range_multiplier": 4.121717975592909
+            },
+            "mid_history": {
+              "rows": 70,
+              "coverage": 0.8571428571428571,
+              "median_full_range_multiplier": 4.655928778655795,
+              "p90_full_range_multiplier": 4.655928778655795
+            }
+          }
+        },
+        "q90": {
+          "target_coverage": 0.9,
+          "overall": {
+            "rows": 137,
+            "coverage": 0.8759124087591241,
+            "median_full_range_multiplier": 7.0481530380391995,
+            "p90_full_range_multiplier": 7.048153038039213
+          },
+          "groups": {
+            "high_history": {
+              "rows": 30,
+              "coverage": 0.9666666666666667,
+              "median_full_range_multiplier": 6.56598901332991,
+              "p90_full_range_multiplier": 6.56598901332992
+            },
+            "low_history": {
+              "rows": 37,
+              "coverage": 0.7027027027027027,
+              "median_full_range_multiplier": 6.56598901332991,
+              "p90_full_range_multiplier": 6.565989013329921
+            },
+            "mid_history": {
+              "rows": 70,
+              "coverage": 0.9285714285714286,
+              "median_full_range_multiplier": 7.048153038039213,
+              "p90_full_range_multiplier": 7.048153038039225
+            }
+          }
+        }
+      },
+      "service_decisions": {
+        "high_history": {
+          "decision": "needs_warning_or_more_validation",
+          "reason": "coverage 또는 범위 폭이 기준 미달",
+          "rows": 30,
+          "median_ape": 0.18719549231386037,
+          "p95_ape": 0.7925102992974351,
+          "q80_coverage": 0.9666666666666667,
+          "q80_median_range_multiplier": 4.121717975592905,
+          "q90_coverage": 0.9666666666666667,
+          "q90_median_range_multiplier": 6.56598901332991
+        },
+        "low_history": {
+          "decision": "needs_warning_or_more_validation",
+          "reason": "coverage 또는 범위 폭이 기준 미달",
+          "rows": 37,
+          "median_ape": 0.5437948683137529,
+          "p95_ape": 2.9875020538074875,
+          "q80_coverage": 0.5945945945945946,
+          "q80_median_range_multiplier": 4.121717975592905,
+          "q90_coverage": 0.7027027027027027,
+          "q90_median_range_multiplier": 6.56598901332991
+        },
+        "mid_history": {
+          "decision": "needs_warning_or_more_validation",
+          "reason": "coverage 또는 범위 폭이 기준 미달",
+          "rows": 70,
+          "median_ape": 0.26613219490970796,
+          "p95_ape": 1.347300012680298,
+          "q80_coverage": 0.8571428571428571,
+          "q80_median_range_multiplier": 4.655928778655795,
+          "q90_coverage": 0.9285714285714286,
+          "q90_median_range_multiplier": 7.048153038039213
+        }
+      }
+    }
+  }
+}
