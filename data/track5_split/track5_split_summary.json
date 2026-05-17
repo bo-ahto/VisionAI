@@ -1,0 +1,96 @@
+{
+  "created_at": "2026-05-18",
+  "input": "data/track4_primary_market_feature_candidates_v1.csv",
+  "random_seed": 20260518,
+  "policy": {
+    "cold_test_artist_frac": 0.1,
+    "cold_val_artist_frac": 0.05,
+    "warm_test_artist_frac": 0.2,
+    "warm_val_artist_frac": 0.1,
+    "warm_eligible_min_works": 5,
+    "warm_max_holdout_per_artist": 3,
+    "warm_min_train_per_artist": 2
+  },
+  "files": {
+    "train": {
+      "path": "data/track5_split/track5_train.csv",
+      "rows": 29216,
+      "artists": 1844,
+      "artist_name_ko": 1790,
+      "price_median": 3063600.0,
+      "price_p90": 19320000.0,
+      "artist_rows_median": 6.0,
+      "artist_rows_p90": 33.0
+    },
+    "val_warm": {
+      "path": "data/track5_split/track5_val_warm.csv",
+      "rows": 221,
+      "artists": 86,
+      "artist_name_ko": 86,
+      "price_median": 3174000.0,
+      "price_p90": 22000000.0,
+      "artist_rows_median": 3.0,
+      "artist_rows_p90": 3.0
+    },
+    "test_warm": {
+      "path": "data/track5_split/track5_test_warm.csv",
+      "rows": 511,
+      "artists": 215,
+      "artist_name_ko": 215,
+      "price_median": 3864000.0,
+      "price_p90": 20700000.0,
+      "artist_rows_median": 3.0,
+      "artist_rows_p90": 3.0
+    },
+    "val_cold": {
+      "path": "data/track5_split/track5_val_cold.csv",
+      "rows": 1278,
+      "artists": 97,
+      "artist_name_ko": 97,
+      "price_median": 2632350.0,
+      "price_p90": 12544199.999999981,
+      "artist_rows_median": 6.0,
+      "artist_rows_p90": 25.80000000000001
+    },
+    "test_cold": {
+      "path": "data/track5_split/track5_test_cold.csv",
+      "rows": 2896,
+      "artists": 216,
+      "artist_name_ko": 213,
+      "price_median": 2500000.0,
+      "price_p90": 12741540.0,
+      "artist_rows_median": 6.0,
+      "artist_rows_p90": 34.0
+    }
+  },
+  "checks": {
+    "val_cold_overlap_train_artist_key": 0,
+    "val_cold_artist_works_log_nonzero": 0,
+    "test_cold_overlap_train_artist_key": 0,
+    "test_cold_artist_works_log_nonzero": 0,
+    "val_warm_artists_all_in_train": true,
+    "val_warm_min_train_count": 3,
+    "test_warm_artists_all_in_train": true,
+    "test_warm_min_train_count": 2,
+    "val_cold_overlap_train_artist_name_ko_orig": 12,
+    "test_cold_overlap_train_artist_name_ko_orig": 14
+  },
+  "duplicate_handling": {
+    "duplicate_key_columns": [
+      "artist_key",
+      "title_raw",
+      "price_krw",
+      "width_cm",
+      "height_cm",
+      "depth_cm",
+      "medium_category",
+      "support_category"
+    ],
+    "removed_train_rows": 92,
+    "removed_train_artists": 26,
+    "removed_warm_eval_rows_after_duplicate_removal": {
+      "val_warm": 2,
+      "test_warm": 3
+    }
+  }
+}
