@@ -93,3 +93,15 @@ python3 scripts/track4/run_t4_e026_support_unknown_ablation.py
 - `data/track4/predictions/t4_e026_support_unknown_ablation_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E026_support_unknown_ablation.md`
+
+- `T4-E027` 2D/3D slice 및 depth 피처 실험
+
+```bash
+python3 scripts/track4/run_t4_e027_3d_depth_slice.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e027_3d_depth_slice_metrics.json`
+- `data/track4/predictions/t4_e027_3d_depth_slice_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E027_3d_depth_slice.md`

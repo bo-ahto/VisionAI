@@ -1,0 +1,304 @@
+{
+  "experiment_id": "T4-E027",
+  "hypothesis_id": [
+    "T4-H8",
+    "T4-H16",
+    "T4-H27"
+  ],
+  "date": "2026-05-17",
+  "target": "ln_price_krw",
+  "warm_model": "ridge",
+  "cold_model": "quantile_median",
+  "splits": {
+    "train": {
+      "rows": 28905,
+      "artists": 1834,
+      "3d_rows": 485,
+      "depth_positive_rows": 21087
+    },
+    "val_warm": {
+      "rows": 67,
+      "artists": 67,
+      "3d_rows": 1,
+      "depth_positive_rows": 49
+    },
+    "val_cold": {
+      "rows": 1814,
+      "artists": 108,
+      "3d_rows": 70,
+      "depth_positive_rows": 1179
+    }
+  },
+  "strategies": {
+    "base_no_depth": {
+      "warm": {
+        "description": "2D/3D 공통 기본 크기 피처만 사용",
+        "features": [
+          "medium_category",
+          "artist_key",
+          "support_category",
+          "log_area",
+          "aspect_ratio",
+          "artist_works_log",
+          "artist_works_count_train"
+        ],
+        "slice_metrics": {
+          "overall": {
+            "rows": 67,
+            "median_ape": 0.2597222689691953,
+            "mape": 0.48107718952802014,
+            "rmse_log": 0.6000254165320797,
+            "within_30": 0.5522388059701493,
+            "within_50": 0.6567164179104478,
+            "p95_ape": 1.564422628765628
+          },
+          "2d": {
+            "rows": 66,
+            "median_ape": 0.25713039696409046,
+            "mape": 0.4831158615259751,
+            "rmse_log": 0.6022814602846593,
+            "within_30": 0.5606060606060606,
+            "within_50": 0.6515151515151515,
+            "p95_ape": 1.5734676839235662
+          },
+          "3d": {
+            "rows": 1,
+            "median_ape": 0.3465248376629878,
+            "mape": 0.3465248376629878,
+            "rmse_log": 0.4254507537755554,
+            "within_30": 0.0,
+            "within_50": 1.0,
+            "p95_ape": 0.3465248376629878
+          }
+        }
+      },
+      "cold": {
+        "description": "2D/3D 공통 기본 크기 피처만 사용",
+        "features": [
+          "medium_category",
+          "log_area",
+          "aspect_ratio"
+        ],
+        "slice_metrics": {
+          "overall": {
+            "rows": 1814,
+            "median_ape": 0.3641985848815021,
+            "mape": 0.49008382637474945,
+            "rmse_log": 0.7355188455760951,
+            "within_30": 0.43054024255788315,
+            "within_50": 0.6389195148842337,
+            "p95_ape": 1.1420736731073715
+          },
+          "2d": {
+            "rows": 1744,
+            "median_ape": 0.3528624982002554,
+            "mape": 0.4759184254750379,
+            "rmse_log": 0.6485015274133723,
+            "within_30": 0.4461009174311927,
+            "within_50": 0.6588302752293578,
+            "p95_ape": 1.1420736731073715
+          },
+          "3d": {
+            "rows": 70,
+            "median_ape": 0.8286436496558669,
+            "mape": 0.8430046716475627,
+            "rmse_log": 1.8818896377319096,
+            "within_30": 0.04285714285714286,
+            "within_50": 0.14285714285714285,
+            "p95_ape": 1.4093379091775957
+          }
+        }
+      }
+    },
+    "global_depth_features": {
+      "warm": {
+        "description": "depth/volume/longest edge를 전체 작품에 일괄 적용",
+        "features": [
+          "medium_category",
+          "artist_key",
+          "support_category",
+          "log_area",
+          "aspect_ratio",
+          "depth_cm_filled",
+          "log_volume",
+          "longest_edge_cm",
+          "artist_works_log",
+          "artist_works_count_train"
+        ],
+        "slice_metrics": {
+          "overall": {
+            "rows": 67,
+            "median_ape": 0.2819784703684712,
+            "mape": 0.48696115790915706,
+            "rmse_log": 0.5931052384523336,
+            "within_30": 0.5373134328358209,
+            "within_50": 0.6567164179104478,
+            "p95_ape": 1.5641035683742068
+          },
+          "2d": {
+            "rows": 66,
+            "median_ape": 0.28106851414482614,
+            "mape": 0.48843291959741797,
+            "rmse_log": 0.594479668328236,
+            "within_30": 0.5454545454545454,
+            "within_50": 0.6515151515151515,
+            "p95_ape": 1.5699513720022615
+          },
+          "3d": {
+            "rows": 1,
+            "median_ape": 0.38982488648393526,
+            "mape": 0.38982488648393526,
+            "rmse_log": 0.49400929167406105,
+            "within_30": 0.0,
+            "within_50": 1.0,
+            "p95_ape": 0.38982488648393526
+          }
+        }
+      },
+      "cold": {
+        "description": "depth/volume/longest edge를 전체 작품에 일괄 적용",
+        "features": [
+          "medium_category",
+          "log_area",
+          "aspect_ratio",
+          "depth_cm_filled",
+          "log_volume",
+          "longest_edge_cm"
+        ],
+        "slice_metrics": {
+          "overall": {
+            "rows": 1814,
+            "median_ape": 0.3634601520366994,
+            "mape": 0.48861604983136897,
+            "rmse_log": 0.7348021111898779,
+            "within_30": 0.42778390297684676,
+            "within_50": 0.639470782800441,
+            "p95_ape": 1.125491680240895
+          },
+          "2d": {
+            "rows": 1744,
+            "median_ape": 0.3515762975153993,
+            "mape": 0.4737431541913455,
+            "rmse_log": 0.6461774741652646,
+            "within_30": 0.44323394495412843,
+            "within_50": 0.6594036697247706,
+            "p95_ape": 1.1221604308070383
+          },
+          "3d": {
+            "rows": 70,
+            "median_ape": 0.8348474568421087,
+            "mape": 0.8591636212056656,
+            "rmse_log": 1.894508916595049,
+            "within_30": 0.04285714285714286,
+            "within_50": 0.14285714285714285,
+            "p95_ape": 1.59798049839534
+          }
+        }
+      }
+    },
+    "conditional_3d_fallback": {
+      "warm": {
+        "description": "2D는 기본 모델, 3D는 depth 피처 모델로 조건부 예측",
+        "features": {
+          "base_features": [
+            "medium_category",
+            "artist_key",
+            "support_category",
+            "log_area",
+            "aspect_ratio",
+            "artist_works_log",
+            "artist_works_count_train"
+          ],
+          "depth_features": [
+            "medium_category",
+            "artist_key",
+            "support_category",
+            "log_area",
+            "aspect_ratio",
+            "depth_cm_filled",
+            "log_volume",
+            "longest_edge_cm",
+            "artist_works_log",
+            "artist_works_count_train"
+          ]
+        },
+        "slice_metrics": {
+          "overall": {
+            "rows": 67,
+            "median_ape": 0.25950523751029025,
+            "mape": 0.4671184878068466,
+            "rmse_log": 0.5966938691638387,
+            "within_30": 0.5522388059701493,
+            "within_50": 0.6567164179104478,
+            "p95_ape": 1.4559889347572645
+          },
+          "2d": {
+            "rows": 66,
+            "median_ape": 0.2637388238474766,
+            "mape": 0.47297372095112267,
+            "rmse_log": 0.6011214284333419,
+            "within_30": 0.5454545454545454,
+            "within_50": 0.6515151515151515,
+            "p95_ape": 1.4617572591111718
+          },
+          "3d": {
+            "rows": 1,
+            "median_ape": 0.08067310028463008,
+            "mape": 0.08067310028463008,
+            "rmse_log": 0.07758408800639849,
+            "within_30": 1.0,
+            "within_50": 1.0,
+            "p95_ape": 0.08067310028463008
+          }
+        }
+      },
+      "cold": {
+        "description": "2D는 기본 모델, 3D는 depth 피처 모델로 조건부 예측",
+        "features": {
+          "base_features": [
+            "medium_category",
+            "log_area",
+            "aspect_ratio"
+          ],
+          "depth_features": [
+            "medium_category",
+            "log_area",
+            "aspect_ratio",
+            "depth_cm_filled",
+            "log_volume",
+            "longest_edge_cm"
+          ]
+        },
+        "slice_metrics": {
+          "overall": {
+            "rows": 1814,
+            "median_ape": 0.3544638536257956,
+            "mape": 0.4937879110501424,
+            "rmse_log": 0.6757220712760827,
+            "within_30": 0.4360529217199559,
+            "within_50": 0.6466372657111357,
+            "p95_ape": 1.1014549713847681
+          },
+          "2d": {
+            "rows": 1744,
+            "median_ape": 0.34644781232301225,
+            "mape": 0.46847220168895,
+            "rmse_log": 0.6511003791223767,
+            "within_30": 0.4466743119266055,
+            "within_50": 0.6588302752293578,
+            "p95_ape": 1.0948194602162644
+          },
+          "3d": {
+            "rows": 70,
+            "median_ape": 0.6105797693438559,
+            "mape": 1.1245107271347095,
+            "rmse_log": 1.1271714592780206,
+            "within_30": 0.17142857142857143,
+            "within_50": 0.34285714285714286,
+            "p95_ape": 6.715423457747798
+          }
+        }
+      }
+    }
+  }
+}
