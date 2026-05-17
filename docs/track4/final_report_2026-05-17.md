@@ -1,6 +1,7 @@
 # Track 4 최종 결과 요약 보고서
 
 - 작성일: 2026-05-17
+- 보완일: 2026-05-18
 - 목적: 작품 1건의 정보를 보고 가격을 예측하는 Track 4 모델 후보를 정리
 - 기준: Warm / Cold를 합치지 않고 분리 평가
 - 최종 판단 기준: 성능, 운영 가능성, 설명 가능성, 재현 가능성
@@ -9,6 +10,7 @@
 
 - Warm은 서비스 후보로 사용할 수 있는 수준의 1차 후보가 만들어졌다.
 - 추가 검증에서 Warm 비선형 모델 중 RandomForest가 기존 Ridge 후보보다 좋은 성능을 보였고 artifact 생성까지 완료했다.
+- 기존 Warm test가 137건으로 작다는 한계가 있어, 5개 seed 반복 Warm 재검증 split을 추가로 만들고 성능을 다시 확인했다.
 - 생성 조합 피처는 최종 모델 기준에서 test 성능을 개선하지 못해 최종 입력 피처로 채택하지 않는다.
 - Cold는 단일 가격만 제시하기에는 아직 위험이 크다.
 - Cold는 낮은 위험 구간만 가격 범위와 함께 제한적으로 사용하는 방향이 적절하다.
@@ -68,6 +70,7 @@
 | 구분 | rows | median APE | p95 APE | Within-30% | Within-50% |
 |---|---:|---:|---:|---:|---:|
 | Warm final RF | 137 | 0.1970 | 0.9219 | 0.6715 | 0.8613 |
+| Warm RF repeated recheck 평균 | 534.4 | 0.1687 | 0.9379 | 0.6879 | 0.8313 |
 | Warm previous Ridge | 137 | 0.2201 | 1.1118 | 0.6131 | 0.8321 |
 | Cold final | 3,277 | 0.4199 | 2.7609 | 0.3699 | 0.5917 |
 
@@ -77,10 +80,12 @@
 |---|---:|---:|---|
 | Ridge 기존 artifact | 0.2201 | 1.1118 | 기존 최종 artifact |
 | RandomForest 최종 권장 | 0.1970 | 0.9219 | artifact 생성 완료 |
+| RandomForest 반복 Warm recheck | 0.1687 ± 0.0103 | 0.9379 ± 0.0379 | 기존 137건 test 보완 검증 |
 
 - median APE는 낮을수록 좋다.
 - p95 APE는 큰 오차 구간을 보는 지표이며 낮을수록 좋다.
 - Within-30% / Within-50%는 높을수록 좋다.
+- Warm 최종 성능은 기존 fixed test 1회 수치와 반복 recheck 평균을 함께 보고한다.
 
 ## 5. 구간별 해석
 
@@ -144,6 +149,8 @@
 
 - 피처 manifest 검사:
   - `python3 scripts/track4/check_feature_manifest.py`
+- Warm 반복 재검증:
+  - `python3 scripts/track4/run_t4_e053_warm_recheck_split_revalidation.py`
 - 최종 artifact 재생성:
   - `python3 scripts/track4/run_t4_e045_final_artifact_dry_run.py`
 - 대시보드 재생성:
@@ -156,6 +163,7 @@
 - Cold는 단일 가격 예측 신뢰도가 낮으므로 외부 작가 DB나 이력 데이터 확보가 필요하다.
 - 가격 범위 UI는 별도 정책 검증이 필요하다.
 - 신규 데이터가 들어오면 같은 split 기준 또는 새 고정 split 기준으로 재검증해야 한다.
+- Warm fixed test가 작기 때문에 최종 성능 보고에는 T4-E053 반복 recheck 결과를 함께 사용해야 한다.
 
 ## 10. 최종 산출물
 
@@ -165,3 +173,4 @@
 - 최종 결과 JSON: `data/track4/results/t4_e045_final_artifact_dry_run.json`
 - 피처 manifest: `configs/track4/feature_manifest.json`
 - 실험 대시보드: `docs/track4/dashboard/experiment_dashboard.html`
+- Warm 재검증 split: `data/track4_warm_recheck_split/`

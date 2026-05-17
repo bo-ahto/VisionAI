@@ -1,0 +1,173 @@
+{
+  "experiment_id": "T4-E053",
+  "hypothesis_id": "T4-H40",
+  "date": "2026-05-18",
+  "purpose": "Revalidate Warm final RandomForest on repeated expanded Warm holdout splits.",
+  "input": "data/track4_primary_market_feature_candidates_v1.csv",
+  "base_split_reference": "data/track4_split",
+  "output_split_dir": "data/track4_warm_recheck_split",
+  "excluded_cold_eval_artists": 324,
+  "settings": {
+    "seeds": [
+      20260518,
+      20260519,
+      20260520,
+      20260521,
+      20260522
+    ],
+    "eligible_min_works": 5,
+    "eval_artist_frac": 0.2,
+    "max_eval_per_artist": 3,
+    "min_train_per_eval_artist": 2,
+    "features": [
+      "artist_key",
+      "medium_category",
+      "support_category",
+      "artist_works_log",
+      "artist_works_count_train",
+      "artist_train_median_log_price",
+      "artist_train_mean_log_price",
+      "artist_train_iqr_log_price",
+      "log_area",
+      "aspect_ratio"
+    ],
+    "model": "RandomForestRegressor"
+  },
+  "seed_results": [
+    {
+      "seed": 20260518,
+      "train_rows": 28595,
+      "train_artists": 1835,
+      "eval_rows": 533,
+      "eval_artists": 217,
+      "metrics": {
+        "rows": 533,
+        "artists": 217,
+        "median_ape": 0.1834399551345495,
+        "mape": 0.3855501185571427,
+        "rmse_log": 0.48037050720211205,
+        "within_30": 0.6697936210131332,
+        "within_50": 0.8067542213883677,
+        "p90_ape": 0.6845480890926123,
+        "p95_ape": 0.8819489961846957
+      }
+    },
+    {
+      "seed": 20260519,
+      "train_rows": 28591,
+      "train_artists": 1835,
+      "eval_rows": 537,
+      "eval_artists": 217,
+      "metrics": {
+        "rows": 537,
+        "artists": 217,
+        "median_ape": 0.1696979145570202,
+        "mape": 0.33340177520370323,
+        "rmse_log": 0.4661901906959542,
+        "within_30": 0.6945996275605214,
+        "within_50": 0.8324022346368715,
+        "p90_ape": 0.708895522362375,
+        "p95_ape": 0.9230552658077276
+      }
+    },
+    {
+      "seed": 20260520,
+      "train_rows": 28578,
+      "train_artists": 1835,
+      "eval_rows": 550,
+      "eval_artists": 217,
+      "metrics": {
+        "rows": 550,
+        "artists": 217,
+        "median_ape": 0.17019664642784782,
+        "mape": 0.3252795783468032,
+        "rmse_log": 0.4487723344749316,
+        "within_30": 0.6836363636363636,
+        "within_50": 0.8309090909090909,
+        "p90_ape": 0.6730687863324968,
+        "p95_ape": 0.933124395545376
+      }
+    },
+    {
+      "seed": 20260521,
+      "train_rows": 28601,
+      "train_artists": 1835,
+      "eval_rows": 527,
+      "eval_artists": 217,
+      "metrics": {
+        "rows": 527,
+        "artists": 217,
+        "median_ape": 0.16904296848015218,
+        "mape": 0.2978996633690891,
+        "rmse_log": 0.4758315033604342,
+        "within_30": 0.681214421252372,
+        "within_50": 0.8311195445920304,
+        "p90_ape": 0.6443059207111739,
+        "p95_ape": 0.9540620124831627
+      }
+    },
+    {
+      "seed": 20260522,
+      "train_rows": 28603,
+      "train_artists": 1835,
+      "eval_rows": 525,
+      "eval_artists": 217,
+      "metrics": {
+        "rows": 525,
+        "artists": 217,
+        "median_ape": 0.15118841517346712,
+        "mape": 0.29265193552752766,
+        "rmse_log": 0.44260916020362295,
+        "within_30": 0.7104761904761905,
+        "within_50": 0.8552380952380952,
+        "p90_ape": 0.681851055595432,
+        "p95_ape": 0.9973355726812315
+      }
+    }
+  ],
+  "summary": {
+    "seeds": 5,
+    "eval_rows_mean": 534.4,
+    "eval_artists_mean": 217.0,
+    "median_ape_mean": 0.16871317995460738,
+    "median_ape_std": 0.010269122877060648,
+    "median_ape_min": 0.15118841517346712,
+    "median_ape_max": 0.1834399551345495,
+    "mape_mean": 0.3269566142008532,
+    "mape_std": 0.033162233558307316,
+    "mape_min": 0.29265193552752766,
+    "mape_max": 0.3855501185571427,
+    "rmse_log_mean": 0.462754739187411,
+    "rmse_log_std": 0.014795075972686245,
+    "rmse_log_min": 0.44260916020362295,
+    "rmse_log_max": 0.48037050720211205,
+    "within_30_mean": 0.6879440447877162,
+    "within_30_std": 0.013749736029454646,
+    "within_30_min": 0.6697936210131332,
+    "within_30_max": 0.7104761904761905,
+    "within_50_mean": 0.8312846373528912,
+    "within_50_std": 0.015342273407100343,
+    "within_50_min": 0.8067542213883677,
+    "within_50_max": 0.8552380952380952,
+    "p90_ape_mean": 0.6785338748188181,
+    "p90_ape_std": 0.02083470248289301,
+    "p90_ape_min": 0.6443059207111739,
+    "p90_ape_max": 0.708895522362375,
+    "p95_ape_mean": 0.9379052485404387,
+    "p95_ape_std": 0.037861550863118175,
+    "p95_ape_min": 0.8819489961846957,
+    "p95_ape_max": 0.9973355726812315
+  },
+  "reference_single_test": {
+    "experiment_id": "T4-E049",
+    "test_warm_rows": 137,
+    "median_ape": 0.197,
+    "p95_ape": 0.9219,
+    "within_30": 0.6715,
+    "within_50": 0.8613
+  },
+  "conclusion": {
+    "status": "completed",
+    "decision": "Use repeated Warm recheck metrics together with the original fixed split before final Warm performance claims."
+  }
+}

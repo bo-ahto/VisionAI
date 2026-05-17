@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-18 | T4-E053 | T4-H40 | 완료 | 기존 Warm test 137건 한계를 보완하기 위해 반복 Warm recheck split 생성, Warm RF 성능 유지 확인 | [기록](2026-05-18_T4-E053_warm_recheck_split_revalidation.md) |
 | 2026-05-17 | T4-E052 | T4-H39 | 완료 | 피처 선정/조합 실험 누락 여부 최종 감사, 핵심 누락 없음으로 정리 | [기록](2026-05-17_T4-E052_feature_experiment_gap_audit.md) |
 | 2026-05-17 | T4-E051 | T4-H39 | 완료 | 최종 Warm RF/Cold Quantile 기준 생성 조합 피처 재검증, 최종 미채택 결론 | [기록](2026-05-17_T4-E051_final_model_feature_combo_audit.md) |
 | 2026-05-17 | T4-E050 | T4-H37 | 완료 | Cold 최종 full-size 피처셋 기준 모델군 재비교, Quantile 후보 유지 확인 | [기록](2026-05-17_T4-E050_cold_final_feature_model_comparison.md) |

@@ -1,7 +1,7 @@
 # Track 4 가설 상태표
 
 - 목적: Track 4 모델 실험 가설을 세부 목표별로 관리
-- 기준일: 2026-05-17
+- 기준일: 2026-05-18
 - 작성 방식: 개조식
 - 원칙: 데이터셋 구성/검증은 `T4-D` 체크포인트로 분리하고, 아래 표에는 모델 실험 가설만 둠
 
@@ -61,3 +61,4 @@
 | T4-H37 | T4-G3, T4-G6 | Cold 최종 피처셋에서도 모델군을 다시 비교해야 최종 모델을 확정할 수 있다 | Cold final full-size 피처셋으로 Quantile/Huber/Ridge/Tree 모델군 비교 | `track4_train`, `val_cold`, `test_cold` | Cold final full-size 피처셋 | T4-E045 Cold Quantile 후보 | Cold median APE 또는 p95 APE 개선 | 검증 완료 | validation→test | Quantile test median APE `0.4199`로 최선이라 기존 Cold 후보 유지 | T4-E050 | Cold는 모델보다 위험 구간/외부 정보 보완 필요 |
 | T4-H38 | T4-G8 | Warm 모델이 바뀌면 artifact와 가격 범위 정책도 다시 생성해야 한다 | RandomForest Warm artifact 생성 후 manifest, test 성능, 가격 범위 정책 재계산 | `track4_train`, `test_warm` | Warm final conditional stats 피처셋 | T4-E045 Ridge artifact | artifact 생성, manifest 통과, 기존보다 성능 유지 | 검증 완료 | artifact dry-run | RandomForest artifact 생성 완료, test median APE `0.1970`, p95 `0.9219`로 Ridge보다 개선 | T4-E049 | 최종 보고서와 운영 후보 갱신 |
 | T4-H39 | T4-G4, T4-G6 | 생성 조합 피처는 최종 모델 기준에서도 성능 개선을 줄 수 있다 | Warm RF와 Cold Quantile 기준으로 medium-size/support-size/rule flag 피처를 재검증 | `track4_train`, validation/test split | `medium_size_bucket`, `support_size_bucket`, combo flags | 최종 Warm/Cold baseline 피처셋 | test median APE 개선, p95 APE 큰 악화 없음 | 검증 완료 | validation→test | 생성 조합 피처는 Warm/Cold test median APE를 개선하지 못해 최종 미채택 | T4-E051 | 분석용 보조 피처로만 유지 |
+| T4-H40 | T4-G2, T4-G6 | Warm test rows가 작아 최종 성능 판단이 흔들릴 수 있으므로 반복/확장 Warm split으로 재검증해야 한다 | 기존 split은 보존하고 Warm 재검증 전용 split을 seed별로 생성해 최종 Warm RF 후보를 반복 평가 | `track4_feature_candidates`, `track4_warm_recheck_split` | Warm final conditional stats 피처셋 | 기존 T4-E049 137건 fixed test | 반복 median APE 평균이 유지되고 표준편차가 작으면 Warm 후보 유지 | 검증 완료 | 반복 holdout 5회 | 평균 534.4건/217명 평가에서 median APE `0.1687 ± 0.0103`으로 Warm RF 후보 유지 가능 | T4-E053 | 최종 보고 시 fixed test와 반복 recheck 수치를 함께 표기 |

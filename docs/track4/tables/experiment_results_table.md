@@ -1,12 +1,13 @@
 # Track 4 실험 결과 요약표
 
 - 목적: Track 4 실험 실행 결과를 한눈에 관리
-- 기준일: 2026-05-17
+- 기준일: 2026-05-18
 - 정렬 기준: 최신 실험이 위로 오도록 관리
 - 원칙: Warm / Cold 결과는 합치지 않고 분리 기록
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-18 | T4-E053 | T4-H40 | 완료 | feature candidates, warm recheck split | Warm RF | Warm final conditional stats | 평균 534.4건/217명 반복 평가, median APE `0.1687 ± 0.0103`, p95 `0.9379` | - | 기존 137건 fixed test만으로 판단하지 않고 반복 recheck 수치를 함께 사용, Warm RF 후보 유지 | [기록](../experiments/2026-05-18_T4-E053_warm_recheck_split_revalidation.md), [결과](../../../data/track4/results/t4_e053_warm_recheck_split_revalidation_metrics.json) |
 | 2026-05-17 | T4-E052 | T4-H39 | 완료 | Track 4 실험 문서/결과 | 모델 미사용 | 피처 실험 감사표 | Warm 피처 누락 보완 완료 | Cold 피처 누락 보완 완료 | 최종 모델 확정에 필요한 핵심 피처 실험 누락 없음 | [기록](../experiments/2026-05-17_T4-E052_feature_experiment_gap_audit.md) |
 | 2026-05-17 | T4-E051 | T4-H39 | 완료 | train, val/test warm/cold | Warm RF, Cold Quantile | final baseline + generated combo features | baseline test median APE `0.1927`, 생성 조합 후보는 모두 악화 | baseline test median APE `0.4195`, 생성 조합 후보는 모두 악화 | 생성 조합 피처는 최종 모델 입력에서 미채택 | [기록](../experiments/2026-05-17_T4-E051_final_model_feature_combo_audit.md), [결과](../../../data/track4/results/t4_e051_final_model_feature_combo_audit_metrics.json) |
 | 2026-05-17 | T4-E050 | T4-H37 | 완료 | train, val/test cold | Quantile, Huber, Ridge, RF, HGB, LightGBM, XGBoost, CatBoost | Cold final full-size | - | Quantile test median APE `0.4199`로 최선 | Cold 최종 모델은 기존 Quantile 후보 유지 | [기록](../experiments/2026-05-17_T4-E050_cold_final_feature_model_comparison.md), [결과](../../../data/track4/results/t4_e050_cold_final_feature_model_comparison_metrics.json) |
@@ -46,4 +47,4 @@
 
 ## 다음 실험 후보
 
-- T4-E053: 운영 입력 schema 및 예측 API dry-run
+- T4-E054: 운영 입력 schema 및 예측 API dry-run
