@@ -230,6 +230,11 @@ def build() -> pd.DataFrame:
 def write_outputs(df: pd.DataFrame) -> dict:
     df.to_csv(OUT_CSV, index=False, encoding="utf-8-sig")
     feature_cols = [
+        "track4_source",
+        "track4_source_row_index",
+        "source_artwork_id",
+        "artwork_url",
+        "image_url",
         "artist_key",
         "artist_name_ko",
         "artist_name_ko_orig",
@@ -274,7 +279,16 @@ def write_outputs(df: pd.DataFrame) -> dict:
         "source_counts": {str(k): int(v) for k, v in df["track4_source"].value_counts().items()},
         "training_candidate_source_counts": {str(k): int(v) for k, v in df.loc[df["is_training_candidate"], "track4_source"].value_counts().items()},
         "exclude_reasons": dict(sorted(reasons.items(), key=lambda kv: kv[1], reverse=True)),
-        "model_feature_exclusions": ["track4_source", "track4_source_file", "source_artwork_id", "gallery_name_raw", "gallery_tier_validated"],
+        "model_feature_exclusions": [
+            "track4_source",
+            "track4_source_file",
+            "track4_source_row_index",
+            "source_artwork_id",
+            "artwork_url",
+            "image_url",
+            "gallery_name_raw",
+            "gallery_tier_validated",
+        ],
         "homonym_handling": df.attrs.get("homonym_summary", {}),
     }
     OUT_JSON.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -317,7 +331,7 @@ def render_md(summary: dict) -> str:
         "",
         "## 3. 모델 피처 제외 원칙",
         "",
-        "- source 계열 컬럼은 feature 후보 파일에서 제외함",
+        "- source 계열 컬럼은 추적용으로만 남기고 모델 입력에서는 제외함",
         "- gallery_name / gallery_tier는 기본 feature 후보에서 제외함",
         "- source와 gallery 정보는 원본 추적과 품질 감사 용도로만 사용함",
         "",

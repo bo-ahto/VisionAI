@@ -35,7 +35,7 @@
 
 ## 3. 모델 피처 제외 원칙
 
-- source 계열 컬럼은 feature 후보 파일에서 제외함
+- source 계열 컬럼은 추적용으로만 남기고 모델 입력에서는 제외함
 - gallery_name / gallery_tier는 기본 feature 후보에서 제외함
 - source와 gallery 정보는 원본 추적과 품질 감사 용도로만 사용함
 
