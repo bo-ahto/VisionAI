@@ -1,0 +1,124 @@
+{
+  "experiment_id": "T4-E043",
+  "hypothesis_id": [
+    "T4-H12",
+    "T4-H30"
+  ],
+  "date": "2026-05-17",
+  "feature_checks": [
+    {
+      "name": "warm_performance_artist_price_stats",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train",
+        "artist_train_median_log_price",
+        "artist_train_mean_log_price",
+        "artist_train_iqr_log_price"
+      ],
+      "missing_columns": [],
+      "violations": {
+        "artist_train_median_log_price": [
+          "forbidden_pattern:price"
+        ],
+        "artist_train_mean_log_price": [
+          "forbidden_pattern:price"
+        ],
+        "artist_train_iqr_log_price": [
+          "forbidden_pattern:price"
+        ]
+      },
+      "passed": false
+    },
+    {
+      "name": "warm_deployable_artist_count",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    },
+    {
+      "name": "cold_deployable_full_size",
+      "features": [
+        "medium_category",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "missing_columns": [],
+      "violations": {},
+      "passed": true
+    }
+  ],
+  "routing_policy": {
+    "warm": "artist_key가 train 작가 집합에 있으면 Warm 모델 사용",
+    "cold": "artist_key가 train 작가 집합에 없으면 Cold 모델 사용"
+  },
+  "output_policy": {
+    "warm_low_history": "경고 + q90 넓은 범위 후보",
+    "warm_mid_high_history": "일반 q80 범위 후보",
+    "cold_low_risk": "q90 제한적 범위 후보",
+    "cold_mid_high_risk": "단일 가격 보류 또는 강한 경고"
+  },
+  "trained_artifacts": {
+    "warm_deployable_artist_count": {
+      "artifact": "data/track4/models/track4_warm_deployable_ridge.joblib",
+      "features": [
+        "medium_category",
+        "support_category",
+        "artist_key",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_count_train"
+      ],
+      "metrics": {
+        "rows": 137,
+        "median_ape": 0.28104762538307493,
+        "p95_ape": 2.55037332513539,
+        "within_30": 0.5401459854014599,
+        "within_50": 0.6861313868613139
+      }
+    },
+    "cold_deployable_full_size": {
+      "artifact": "data/track4/models/track4_cold_deployable_quantile.joblib",
+      "features": [
+        "medium_category",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "metrics": {
+        "rows": 3277,
+        "median_ape": 0.41986892997462866,
+        "p95_ape": 2.760944366911861,
+        "within_30": 0.3698504729935917,
+        "within_50": 0.5916997253585596
+      }
+    }
+  },
+  "blocked_candidate": {
+    "name": "warm_performance_artist_price_stats",
+    "reason": "현재 manifest가 price 패턴 피처를 금지하므로 최종 운영 후보로 자동 통과하지 못함",
+    "required_decision": "과거 거래 가격 통계를 운영 피처로 허용할지 별도 정책 결정 필요"
+  },
+  "passed": true
+}

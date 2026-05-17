@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E043 | T4-H12,H30 | 완료 | 최종 운영 후보 dry-run 실행, 배포 가능 artifact 생성과 Warm 가격 통계 피처 정책 이슈 확인 | [기록](2026-05-17_T4-E043_production_dry_run.md) |
 | 2026-05-17 | T4-E042 | T4-H33 | 완료 | Cold low_risk 범위 폭 축소 후보를 비교했으나 coverage 유지와 폭 축소를 동시에 만족한 후보 없음 | [기록](2026-05-17_T4-E042_cold_low_risk_width_reduction.md) |
 | 2026-05-17 | T4-E041 | T4-H3,H32 | 완료 | Warm low_history 구간 가격 범위 검증, 경고와 더 넓은 범위 필요 확인 | [기록](2026-05-17_T4-E041_warm_low_history_policy.md) |
 | 2026-05-17 | T4-E040 | T4-H31 | 완료 | Cold low_risk 구간만 제한적 가격 범위 후보인지 검증, mid/high는 범위 과대로 보류 | [기록](2026-05-17_T4-E040_cold_low_risk_policy.md) |

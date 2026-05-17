@@ -7,6 +7,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E043 | T4-H12,H30 | 완료 | train, test warm/cold | Warm Ridge, Cold Quantile | deployable features, manifest | 배포 가능 후보 median APE `0.2810`, 성능 최고 가격 통계 후보는 manifest 차단 | 배포 가능 후보 median APE `0.4199` | artifact 생성 성공, Warm 가격 통계 피처 정책 결정 필요 | [기록](../experiments/2026-05-17_T4-E043_production_dry_run.md), [결과](../../../data/track4/results/t4_e043_production_dry_run.json) |
 | 2026-05-17 | T4-E042 | T4-H33 | 완료 | train, val/test cold low_risk | Quantile, Huber, Ridge | size/medium/support 조합 | - | 최저 폭 x`4.96`은 coverage `0.7695`; 기준 coverage `0.7834` 유지 후보 없음 | 현재 후보군으로 Cold low_risk 범위 폭 축소 실패 | [기록](../experiments/2026-05-17_T4-E042_cold_low_risk_width_reduction.md), [결과](../../../data/track4/results/t4_e042_cold_low_risk_width_reduction_metrics.json) |
 | 2026-05-17 | T4-E041 | T4-H3,H32 | 완료 | train, val/test warm | Warm Ridge | artist price stats, history group, interval policy | best median APE `0.2201`; low_history q80 `0.6757`, q90 `0.8378`, range x`4.76` | - | Warm low_history는 경고+넓은 범위 필요, 가격 통계 후보 유지 | [기록](../experiments/2026-05-17_T4-E041_warm_low_history_policy.md), [결과](../../../data/track4/results/t4_e041_warm_low_history_policy_metrics.json) |
 | 2026-05-17 | T4-E040 | T4-H31 | 완료 | train, val/test cold | Cold Quantile | Cold risk group, interval policy | - | low_risk q90 coverage `0.7834`, range x`5.54`; mid/high range x`16.26`~x`69.58` | Cold low_risk만 제한적 범위 후보, 단일 가격과 mid/high는 보류 | [기록](../experiments/2026-05-17_T4-E040_cold_low_risk_policy.md), [결과](../../../data/track4/results/t4_e040_cold_low_risk_policy_metrics.json) |
@@ -36,4 +37,4 @@
 
 ## 다음 실험 후보
 
-- T4-E043: 최종 운영 후보 패키지 dry-run
+- T4-E044: Warm 과거 가격 통계 피처 허용 여부 정책 검증
