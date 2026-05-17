@@ -153,3 +153,15 @@ python3 scripts/track4/run_t4_e031_calibration_confidence.py
 - `data/track4/predictions/t4_e031_calibration_confidence_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E031_calibration_confidence.md`
+
+- `T4-E032` 재료 세분화 피처 실험
+
+```bash
+python3 scripts/track4/run_t4_e032_material_granularity.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e032_material_granularity_metrics.json`
+- `data/track4/predictions/t4_e032_material_granularity_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E032_material_granularity.md`

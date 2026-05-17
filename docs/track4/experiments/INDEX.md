@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E032 | T4-H13 | 완료 | 재료 세분화 피처 실험, 개선 폭이 작아 단독 채택 보류 | [기록](2026-05-17_T4-E032_material_granularity.md) |
 | 2026-05-17 | T4-E031 | T4-H18, T4-H29 | 완료 | validation 기반 가격 범위와 신뢰도 calibration, Warm은 목표 근접, Cold는 부족 | [기록](2026-05-17_T4-E031_calibration_confidence.md) |
 | 2026-05-17 | T4-E030 | T4-H9, T4-H17, T4-H24, T4-H26 | 완료 | Cold 위험 구간 분석, low risk와 high risk의 median APE 차이 확인 | [기록](2026-05-17_T4-E030_cold_risk_policy.md) |
 | 2026-05-17 | T4-E029 | T4-H10, T4-H19 | 완료 | 작가 작품 수 기준 라우팅 threshold 실험, 기본 Warm 라우팅 유지 결론 | [기록](2026-05-17_T4-E029_routing_threshold.md) |
