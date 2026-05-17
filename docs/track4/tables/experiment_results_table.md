@@ -7,6 +7,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E023 | T4-H1 | 완료 | `track4_train`, `val_warm`, `val_cold` | Dummy median, Ridge, Huber | 구조-only: medium/support/size/3D | Huber median APE `0.4148`, dummy `0.7027`보다 개선 | Huber median APE `0.3567`, dummy `0.7424`보다 개선 | 구조-only baseline은 Huber를 기준 후보로 부분 채택 | [기록](../experiments/2026-05-17_T4-E023_structure_baseline.md), [결과](../../../data/track4/results/t4_e023_structure_baseline_metrics.json) |
 | 2026-05-17 | T4-E022 | T4-H13~T4-H30 | 완료 | Track 3 가설표, Track 4 데이터 품질 리포트 | 모델 미사용 | 가설/연구방법 문서 | - | - | Track 3 가설 축을 Track 4 1차 시장 데이터 특성에 맞게 확장 | [기록](../experiments/2026-05-17_T4-E022_hypothesis_expansion.md), [가설표](hypothesis_table.md) |
 | 2026-05-17 | T4-E021 | - | 완료 | 문서 기준 | 모델 미사용 | 문서/대시보드 구조 | - | - | Track 4 가설표, 결과표, 자동 대시보드 체계 구축 | [기록](../experiments/2026-05-17_T4-E021_experiment_dashboard_framework.md), [대시보드](../dashboard/experiment_dashboard.html) |
 | 2026-05-17 | T4-E020 | T4-H5, T4-H7 | 완료 | `cleaned_v2`, `track4_split` | 모델 미사용 | 데이터셋 검증 | Warm split 작가 train 존재 확인, val_warm `67`, test_warm `137` | Cold/train 작가 겹침 `0`, Cold `artist_works_log > 0` `0` | 모델 실험 가능한 데이터셋으로 확정 | [기록](../experiments/2026-05-17_T4-E020_dataset_pipeline_update.md), [품질 검토](../dataset/final_quality_review_2026-05-17.md) |
@@ -16,7 +17,6 @@
 
 ## 다음 실험 후보
 
-- T4-E023: T4-H1 구조-only Warm / Cold baseline
 - T4-E024: T4-H2/T4-H20 Warm 작가 피처 ablation
 - T4-E025: T4-H4 Cold robust 모델 비교
 - T4-E026: T4-H6/T4-H14 support unknown 처리 ablation

@@ -5,6 +5,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E023 | T4-H1 | 완료 | 구조-only Warm/Cold baseline 실행, Huber 기준 Warm `0.4148`, Cold `0.3567` 확인 | [기록](2026-05-17_T4-E023_structure_baseline.md) |
 | 2026-05-17 | T4-E022 | T4-H13~T4-H30 | 완료 | Track 3 가설 축을 Track 4 1차 시장 데이터 특성에 맞게 확장 | [기록](2026-05-17_T4-E022_hypothesis_expansion.md) |
 | 2026-05-17 | T4-E021 | - | 완료 | Track 4 모델 실험 전 가설표, 결과표, 대시보드 자동 생성 체계 구축 | [기록](2026-05-17_T4-E021_experiment_dashboard_framework.md) |
 | 2026-05-17 | T4-E020 | - | 완료 | 추가 데이터 반영에 대비해 Track 4 데이터셋 파이프라인과 실행 후 누수/품질 확인 기준 정리 | [기록](2026-05-17_T4-E020_dataset_pipeline_update.md) |

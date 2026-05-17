@@ -43,3 +43,17 @@ python3 scripts/track4/run_cleaning_pipeline.py
 
 - 상세 기준 문서
 - `docs/track4/dataset/cleaning_pipeline.md`
+
+## 모델 실험 실행
+
+- `T4-E023` 구조-only Warm / Cold baseline
+
+```bash
+python3 scripts/track4/run_t4_e023_structure_baseline.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e023_structure_baseline_metrics.json`
+- `data/track4/predictions/t4_e023_structure_baseline_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E023_structure_baseline.md`
