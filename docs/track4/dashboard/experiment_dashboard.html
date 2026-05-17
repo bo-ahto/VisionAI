@@ -93,9 +93,9 @@
           <li>source, URL, gallery tier는 모델 피처에서 제외</li>
         </ul>
         <div class="pills">
-          <span class="pill green">가설 38개</span>
-          <span class="pill">최신 가설 T4-H38</span>
-          <span class="pill">최신 실험 T4-E050</span>
+          <span class="pill green">가설 39개</span>
+          <span class="pill">최신 가설 T4-H39</span>
+          <span class="pill">최신 실험 T4-E052</span>
           <span class="pill amber">생성 2026-05-17</span>
         </div>
       </div>
@@ -141,7 +141,8 @@
         <div class="table-wrap">
           <table data-page-size="8">
             <thead><tr><th>가설 ID</th><th>목표</th><th>상태</th><th>가설</th><th>연구 방법</th><th>성공 기준</th><th>현재 판단</th><th>후속 필요</th></tr></thead>
-            <tbody><tr><td>T4-H38</td><td>T4-G8</td><td><span class="status done">검증 완료</span></td><td>Warm 모델이 바뀌면 artifact와 가격 범위 정책도 다시 생성해야 한다</td><td>RandomForest Warm artifact 생성 후 manifest, test 성능, 가격 범위 정책 재계산</td><td>artifact 생성, manifest 통과, 기존보다 성능 유지</td><td>RandomForest artifact 생성 완료, test median APE <code>0.1970</code>, p95 <code>0.9219</code>로 Ridge보다 개선</td><td>최종 보고서와 운영 후보 갱신</td></tr>
+            <tbody><tr><td>T4-H39</td><td>T4-G4, T4-G6</td><td><span class="status done">검증 완료</span></td><td>생성 조합 피처는 최종 모델 기준에서도 성능 개선을 줄 수 있다</td><td>Warm RF와 Cold Quantile 기준으로 medium-size/support-size/rule flag 피처를 재검증</td><td>test median APE 개선, p95 APE 큰 악화 없음</td><td>생성 조합 피처는 Warm/Cold test median APE를 개선하지 못해 최종 미채택</td><td>분석용 보조 피처로만 유지</td></tr>
+<tr><td>T4-H38</td><td>T4-G8</td><td><span class="status done">검증 완료</span></td><td>Warm 모델이 바뀌면 artifact와 가격 범위 정책도 다시 생성해야 한다</td><td>RandomForest Warm artifact 생성 후 manifest, test 성능, 가격 범위 정책 재계산</td><td>artifact 생성, manifest 통과, 기존보다 성능 유지</td><td>RandomForest artifact 생성 완료, test median APE <code>0.1970</code>, p95 <code>0.9219</code>로 Ridge보다 개선</td><td>최종 보고서와 운영 후보 갱신</td></tr>
 <tr><td>T4-H37</td><td>T4-G3, T4-G6</td><td><span class="status done">검증 완료</span></td><td>Cold 최종 피처셋에서도 모델군을 다시 비교해야 최종 모델을 확정할 수 있다</td><td>Cold final full-size 피처셋으로 Quantile/Huber/Ridge/Tree 모델군 비교</td><td>Cold median APE 또는 p95 APE 개선</td><td>Quantile test median APE <code>0.4199</code>로 최선이라 기존 Cold 후보 유지</td><td>Cold는 모델보다 위험 구간/외부 정보 보완 필요</td></tr>
 <tr><td>T4-H36</td><td>T4-G2, T4-G6</td><td><span class="status done">검증 완료</span></td><td>Warm 최종 피처셋에서는 비선형 모델이 Ridge보다 성능을 개선할 수 있다</td><td>같은 Warm 최종 피처셋으로 Ridge/LightGBM/XGBoost/CatBoost/RandomForest를 반복 비교</td><td>test median APE 개선, p95 APE 악화 없음</td><td>RandomForest test median APE 평균 <code>0.2003</code>, p95 평균 <code>0.9131</code>로 Ridge보다 우세</td><td>Warm artifact 교체 dry-run 필요</td></tr>
 <tr><td>T4-H35</td><td>T4-G8</td><td><span class="status done">검증 완료</span></td><td>조건부 허용 피처 정책을 manifest와 최종 artifact에 반영하면 성능 후보를 운영 후보로 고정할 수 있다</td><td>조건부 허용 manifest를 적용해 Warm stats_all과 Cold full_size artifact를 다시 생성</td><td>manifest 통과, artifact 생성, 결과 재현</td><td>조건부 허용 manifest 통과, Warm/Cold final artifact 생성 완료</td><td>최종 보고서 정리</td></tr>
@@ -187,7 +188,9 @@
         <div class="table-wrap">
           <table data-page-size="8">
             <thead><tr><th>날짜</th><th>실험 ID</th><th>가설</th><th>상태</th><th>모델</th><th>피처</th><th>Warm</th><th>Cold</th><th>결론</th><th>상세</th></tr></thead>
-            <tbody><tr><td>2026-05-17</td><td>T4-E050</td><td>T4-H37</td><td><span class="status done">완료</span></td><td>Quantile, Huber, Ridge, RF, HGB, LightGBM, XGBoost, CatBoost</td><td>Cold final full-size</td><td>-</td><td>Quantile test median APE <code>0.4199</code>로 최선</td><td>Cold 최종 모델은 기존 Quantile 후보 유지</td><td><a href="../experiments/2026-05-17_T4-E050_cold_final_feature_model_comparison.md">기록</a>, <a href="../../../data/track4/results/t4_e050_cold_final_feature_model_comparison_metrics.json">결과</a></td></tr>
+            <tbody><tr><td>2026-05-17</td><td>T4-E052</td><td>T4-H39</td><td><span class="status done">완료</span></td><td>모델 미사용</td><td>피처 실험 감사표</td><td>Warm 피처 누락 보완 완료</td><td>Cold 피처 누락 보완 완료</td><td>최종 모델 확정에 필요한 핵심 피처 실험 누락 없음</td><td><a href="../experiments/2026-05-17_T4-E052_feature_experiment_gap_audit.md">기록</a></td></tr>
+<tr><td>2026-05-17</td><td>T4-E051</td><td>T4-H39</td><td><span class="status done">완료</span></td><td>Warm RF, Cold Quantile</td><td>final baseline + generated combo features</td><td>baseline test median APE <code>0.1927</code>, 생성 조합 후보는 모두 악화</td><td>baseline test median APE <code>0.4195</code>, 생성 조합 후보는 모두 악화</td><td>생성 조합 피처는 최종 모델 입력에서 미채택</td><td><a href="../experiments/2026-05-17_T4-E051_final_model_feature_combo_audit.md">기록</a>, <a href="../../../data/track4/results/t4_e051_final_model_feature_combo_audit_metrics.json">결과</a></td></tr>
+<tr><td>2026-05-17</td><td>T4-E050</td><td>T4-H37</td><td><span class="status done">완료</span></td><td>Quantile, Huber, Ridge, RF, HGB, LightGBM, XGBoost, CatBoost</td><td>Cold final full-size</td><td>-</td><td>Quantile test median APE <code>0.4199</code>로 최선</td><td>Cold 최종 모델은 기존 Quantile 후보 유지</td><td><a href="../experiments/2026-05-17_T4-E050_cold_final_feature_model_comparison.md">기록</a>, <a href="../../../data/track4/results/t4_e050_cold_final_feature_model_comparison_metrics.json">결과</a></td></tr>
 <tr><td>2026-05-17</td><td>T4-E049</td><td>T4-H38</td><td><span class="status done">완료</span></td><td>RandomForest</td><td>Warm final conditional stats</td><td>test median APE <code>0.1970</code>, p95 <code>0.9219</code>, q80 coverage <code>0.8832</code></td><td>-</td><td>Warm 최종 artifact는 RandomForest로 교체 권장</td><td><a href="../experiments/2026-05-17_T4-E049_warm_random_forest_artifact_dry_run.md">기록</a>, <a href="../../../data/track4/results/t4_e049_warm_random_forest_artifact_dry_run.json">결과</a></td></tr>
 <tr><td>2026-05-17</td><td>T4-E048</td><td>T4-H36,H37,H38</td><td><span class="status done">완료</span></td><td>모델 미사용</td><td>누락 점검표</td><td>Warm 비선형 비교 누락은 T4-E047로 보완</td><td>Cold final 피처셋 모델 재비교 필요</td><td>Warm RF artifact dry-run과 Cold final 모델 재비교를 후속 우선순위로 지정</td><td><a href="../experiments/2026-05-17_T4-E048_experiment_gap_audit.md">기록</a></td></tr>
 <tr><td>2026-05-17</td><td>T4-E047</td><td>T4-H36</td><td><span class="status done">완료</span></td><td>Ridge, RF, HGB, LightGBM, XGBoost, CatBoost</td><td>Warm final conditional stats</td><td>RandomForest test median APE <code>0.2003</code>, p95 <code>0.9131</code>; Ridge <code>0.2201</code>, p95 <code>1.1118</code></td><td>-</td><td>Warm 최종 후보는 Ridge에서 RandomForest 교체 검토 필요</td><td><a href="../experiments/2026-05-17_T4-E047_warm_nonlinear_model_comparison.md">기록</a>, <a href="../../../data/track4/results/t4_e047_warm_nonlinear_model_comparison_metrics.json">결과</a></td></tr>

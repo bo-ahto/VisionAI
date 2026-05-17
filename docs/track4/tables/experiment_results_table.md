@@ -7,6 +7,8 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E052 | T4-H39 | 완료 | Track 4 실험 문서/결과 | 모델 미사용 | 피처 실험 감사표 | Warm 피처 누락 보완 완료 | Cold 피처 누락 보완 완료 | 최종 모델 확정에 필요한 핵심 피처 실험 누락 없음 | [기록](../experiments/2026-05-17_T4-E052_feature_experiment_gap_audit.md) |
+| 2026-05-17 | T4-E051 | T4-H39 | 완료 | train, val/test warm/cold | Warm RF, Cold Quantile | final baseline + generated combo features | baseline test median APE `0.1927`, 생성 조합 후보는 모두 악화 | baseline test median APE `0.4195`, 생성 조합 후보는 모두 악화 | 생성 조합 피처는 최종 모델 입력에서 미채택 | [기록](../experiments/2026-05-17_T4-E051_final_model_feature_combo_audit.md), [결과](../../../data/track4/results/t4_e051_final_model_feature_combo_audit_metrics.json) |
 | 2026-05-17 | T4-E050 | T4-H37 | 완료 | train, val/test cold | Quantile, Huber, Ridge, RF, HGB, LightGBM, XGBoost, CatBoost | Cold final full-size | - | Quantile test median APE `0.4199`로 최선 | Cold 최종 모델은 기존 Quantile 후보 유지 | [기록](../experiments/2026-05-17_T4-E050_cold_final_feature_model_comparison.md), [결과](../../../data/track4/results/t4_e050_cold_final_feature_model_comparison_metrics.json) |
 | 2026-05-17 | T4-E049 | T4-H38 | 완료 | train, val/test warm | RandomForest | Warm final conditional stats | test median APE `0.1970`, p95 `0.9219`, q80 coverage `0.8832` | - | Warm 최종 artifact는 RandomForest로 교체 권장 | [기록](../experiments/2026-05-17_T4-E049_warm_random_forest_artifact_dry_run.md), [결과](../../../data/track4/results/t4_e049_warm_random_forest_artifact_dry_run.json) |
 | 2026-05-17 | T4-E048 | T4-H36,H37,H38 | 완료 | Track 4 실험 문서/결과 | 모델 미사용 | 누락 점검표 | Warm 비선형 비교 누락은 T4-E047로 보완 | Cold final 피처셋 모델 재비교 필요 | Warm RF artifact dry-run과 Cold final 모델 재비교를 후속 우선순위로 지정 | [기록](../experiments/2026-05-17_T4-E048_experiment_gap_audit.md) |
@@ -44,4 +46,4 @@
 
 ## 다음 실험 후보
 
-- T4-E051: 최종 보고서와 대시보드 운영 후보 표기 정리
+- T4-E053: 운영 입력 schema 및 예측 API dry-run

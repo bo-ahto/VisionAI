@@ -5,6 +5,8 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-17 | T4-E052 | T4-H39 | 완료 | 피처 선정/조합 실험 누락 여부 최종 감사, 핵심 누락 없음으로 정리 | [기록](2026-05-17_T4-E052_feature_experiment_gap_audit.md) |
+| 2026-05-17 | T4-E051 | T4-H39 | 완료 | 최종 Warm RF/Cold Quantile 기준 생성 조합 피처 재검증, 최종 미채택 결론 | [기록](2026-05-17_T4-E051_final_model_feature_combo_audit.md) |
 | 2026-05-17 | T4-E050 | T4-H37 | 완료 | Cold 최종 full-size 피처셋 기준 모델군 재비교, Quantile 후보 유지 확인 | [기록](2026-05-17_T4-E050_cold_final_feature_model_comparison.md) |
 | 2026-05-17 | T4-E049 | T4-H38 | 완료 | Warm RandomForest artifact 생성, Ridge 대비 test median APE와 p95 APE 개선 확인 | [기록](2026-05-17_T4-E049_warm_random_forest_artifact_dry_run.md) |
 | 2026-05-17 | T4-E048 | T4-H36,H37,H38 | 완료 | 피처 확정 후 모델 비교가 빠진 유사 사례를 점검하고 후속 우선순위 정리 | [기록](2026-05-17_T4-E048_experiment_gap_audit.md) |
