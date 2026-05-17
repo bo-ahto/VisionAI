@@ -7,6 +7,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-17 | T4-E028 | T4-H21, T4-H22 | 완료 | `track4_train` 내부 반복 split 5회 | 공유 Quantile, 분리 Warm Ridge/Cold Quantile | 공유 구조-only vs 분리 정책 | 분리 정책 median APE 평균 `0.3559`, 공유 `0.5325`보다 우세 | Cold median APE 평균 `0.4280`, 표준편차 `0.0454` | Warm/Cold 분리 정책 유지, 후속 실험도 반복 검증 권장 | [기록](../experiments/2026-05-17_T4-E028_shared_vs_split_repeated.md), [결과](../../../data/track4/results/t4_e028_shared_vs_split_repeated_metrics.json) |
 | 2026-05-17 | T4-E027 | T4-H8, T4-H16, T4-H27 | 완료 | `track4_train`, `val_warm`, `val_cold` | Warm Ridge, Cold Quantile | base size, depth/volume, 3D fallback | Warm 3D는 1건이라 참고만 가능 | conditional fallback 전체 median APE `0.3545`, 3D median `0.6106`, 3D p95 `6.7154` | 3D 별도 관리는 필요하지만 fallback은 tail risk 악화로 보류 | [기록](../experiments/2026-05-17_T4-E027_3d_depth_slice.md), [결과](../../../data/track4/results/t4_e027_3d_depth_slice_metrics.json) |
 | 2026-05-17 | T4-E026 | T4-H6, T4-H14 | 완료 | `track4_train`, `val_warm`, `val_cold` | Warm Ridge, Cold Quantile | support 제외/포함/unknown flag/bucket | support_category median APE `0.2697`로 최선 | no_support median APE `0.3410`로 최선, unknown 구간 오차 큼 | Warm은 support 유지, Cold는 예측 피처 제외와 위험 flag 분리 검토 | [기록](../experiments/2026-05-17_T4-E026_support_unknown_ablation.md), [결과](../../../data/track4/results/t4_e026_support_unknown_ablation_metrics.json) |
 | 2026-05-17 | T4-E025 | T4-H4 | 완료 | `track4_train`, `val_cold` | Quantile, Huber, Ridge, LightGBM, XGBoost, CatBoost 등 | 구조-only: medium/support/size/3D | - | Quantile median APE `0.3486`, Huber p95 APE `1.2373` | Cold는 robust 선형 계열 우세, Quantile/Huber를 후보 유지 | [기록](../experiments/2026-05-17_T4-E025_cold_model_comparison.md), [결과](../../../data/track4/results/t4_e025_cold_model_comparison_metrics.json) |
@@ -21,4 +22,6 @@
 
 ## 다음 실험 후보
 
-- T4-E028: T4-H21/T4-H22 공유 모델/분리 모델 및 반복 검증
+- T4-E029: T4-H10/T4-H19 작가 작품 수 기준 라우팅 threshold
+- T4-E030: T4-H17/T4-H24 Cold 위험 구간 및 출력 정책 후보
+- T4-E031: T4-H18/T4-H29 가격 범위와 신뢰도 calibration

@@ -105,3 +105,15 @@ python3 scripts/track4/run_t4_e027_3d_depth_slice.py
 - `data/track4/predictions/t4_e027_3d_depth_slice_predictions.csv`
 - 실험 기록
 - `docs/track4/experiments/2026-05-17_T4-E027_3d_depth_slice.md`
+
+- `T4-E028` 공유 모델 / 분리 모델 및 반복 검증
+
+```bash
+python3 scripts/track4/run_t4_e028_shared_vs_split_repeated.py
+```
+
+- 결과 파일
+- `data/track4/results/t4_e028_shared_vs_split_repeated_metrics.json`
+- `data/track4/predictions/t4_e028_shared_vs_split_repeated_predictions.csv`
+- 실험 기록
+- `docs/track4/experiments/2026-05-17_T4-E028_shared_vs_split_repeated.md`
