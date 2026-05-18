@@ -8,16 +8,16 @@
 
 ```mermaid
 flowchart TD
-    A[Train Feature 파일] --> C[모델 학습]
-    B[Train Label 파일<br/>정답 가격] --> C
+    A[Train Feature 파일<br/>warm/track6_train_warm_features.csv<br/>cold/track6_train_cold_features.csv] --> C[모델 학습]
+    B[Train Label 파일<br/>labels/track6_train_labels.csv<br/>정답 가격] --> C
 
     C --> D[학습된 모델]
 
-    E[Validation Feature 파일] --> F[Validation 예측]
+    E[Validation Feature 파일<br/>warm/track6_val_warm_warm_features.csv<br/>cold/track6_val_cold_cold_features.csv] --> F[Validation 예측]
     D --> F
     F --> G[Validation 예측값]
 
-    H[Validation Label 파일<br/>실제 가격] --> I[Validation 예측값 + 실제 가격 결합<br/>_track6_row_id 기준]
+    H[Validation Label 파일<br/>labels/track6_val_warm_labels.csv<br/>labels/track6_val_cold_labels.csv<br/>실제 가격] --> I[Validation 예측값 + 실제 가격 결합<br/>_track6_row_id 기준]
     G --> I
     I --> V[Validation 오차 계산<br/>예측값과 실제값 비교]
 
@@ -25,11 +25,11 @@ flowchart TD
 
     J --> K[최종 후보 고정]
 
-    L[Test Feature 파일] --> M[Test 예측]
+    L[Test Feature 파일<br/>warm/track6_test_warm_warm_features.csv<br/>cold/track6_test_cold_cold_features.csv] --> M[Test 예측]
     K --> M
     M --> N[Test 예측값]
 
-    O[Test Label 파일<br/>실제 가격] --> P[Test 예측값 + 실제 가격 결합<br/>_track6_row_id 기준]
+    O[Test Label 파일<br/>labels/track6_test_warm_labels.csv<br/>labels/track6_test_cold_labels.csv<br/>실제 가격] --> P[Test 예측값 + 실제 가격 결합<br/>_track6_row_id 기준]
     N --> P
     P --> T[Test 오차 계산<br/>예측값과 실제값 비교]
 
@@ -37,6 +37,9 @@ flowchart TD
 ```
 
 - 핵심 해석:
+  - `warm/`은 `data/track6_split/features/warm/`의 축약 표기
+  - `cold/`는 `data/track6_split/features/cold/`의 축약 표기
+  - `labels/`는 `data/track6_split/labels/`의 축약 표기
   - 예측 단계에서는 feature 파일만 사용함
   - 평가 단계에서 예측값과 label 파일을 `_track6_row_id` 기준으로 합침
   - 합친 뒤에야 예측 가격과 실제 가격을 비교할 수 있음
