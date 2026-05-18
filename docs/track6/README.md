@@ -14,6 +14,7 @@
 - split 생성 보고서: `docs/track6/dataset/split_report.md`
 - 컬럼 품질 검증 보고서: `docs/track6/dataset/column_quality_report.md`
 - feature/label 분리 보고서: `docs/track6/dataset/feature_label_pipeline_report.md`
+- 데이터 검증/누수 방지 프로세스: `docs/track6/dataset/leakage_prevention_validation_process.md`
 - 실험 인덱스: `docs/track6/experiments/INDEX.md`
 - 가설 상태표: `docs/track6/tables/hypothesis_table.md`
 - 실험 결과표: `docs/track6/tables/experiment_results_table.md`
@@ -38,6 +39,7 @@
 - Track3의 작가명 Warm/Cold 기준, Track4의 동명이인/클렌징 검증, Track5의 split/감사 방식을 반영함
 - 클렌징 기준을 먼저 고정한 뒤 validation/test 우선 split을 생성함
 - Track6 split을 새로 고정한 뒤 실험을 다시 실행함
+- 데이터 검증은 split 검증 → 컬럼 품질 검증 → feature/label 분리 → feature 누수 검사 순서로 진행함
 - 모델 학습/예측은 full split이 아니라 feature 파일만 읽음
 - 정답 가격은 평가 단계에서 labels 파일로만 읽음
 - Warm / Cold는 합치지 않고 분리 평가함

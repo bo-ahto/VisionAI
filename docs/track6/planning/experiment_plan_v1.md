@@ -47,6 +47,7 @@
 - 모델 실험은 full split CSV가 아니라 feature/label 분리 파일을 기준으로 진행
 - 학습/예측 스크립트는 `features/warm` 또는 `features/cold` 파일만 읽음
 - 평가 스크립트만 `labels` 파일을 읽음
+- 데이터 검증과 누수 방지 절차는 `docs/track6/dataset/leakage_prevention_validation_process.md`를 기준으로 진행
 
 ## 4. split 설계 원칙
 
@@ -89,7 +90,18 @@
 - 15단계: 가격 범위/신뢰도 정책 검증
 - 16단계: 최종 artifact 생성
 
-## 7. 기본 피처 후보
+## 7. 누수 방지 검증 원칙
+
+- full split CSV는 감사/재생성/품질 검증용으로만 사용
+- 모델 학습/예측 코드는 feature 파일만 사용
+- label 파일은 평가 스크립트에서만 사용
+- validation labels는 후보 선택에 사용 가능
+- test labels는 최종 후보 확정 후 최종 확인에만 사용
+- feature 파일에 가격성 컬럼이 남아 있으면 실험 중단
+- Cold feature에 작가 식별 또는 작가 이력 컬럼이 남아 있으면 실험 중단
+- split이 바뀌면 split 이후 모든 실험을 다시 실행
+
+## 8. 기본 피처 후보
 
 - 공통 작품 구조 피처:
   - `medium_category`
@@ -116,7 +128,7 @@
   - URL
   - image URL
 
-## 8. 평가 지표
+## 9. 평가 지표
 
 - 1순위:
   - median APE
@@ -138,7 +150,7 @@
   - RMSE(log)
   - 로그 가격 기준 안정성 확인
 
-## 9. 기록 원칙
+## 10. 기록 원칙
 
 - 모든 실험은 가설 ID와 실험 ID를 연결
 - 실험 전 연구 방법을 먼저 문서에 남김

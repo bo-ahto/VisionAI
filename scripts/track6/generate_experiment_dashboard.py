@@ -167,6 +167,7 @@ def main() -> None:
         <li>Track5는 종료하고 Track6에서 최종 보고용 split을 새로 구성</li>
         <li>Cold는 작가 ID와 한글명 기준 중복을 함께 제거</li>
         <li>Warm은 train에 충분한 작품이 남는 작가 중심으로 평가</li>
+        <li>모델 학습/예측은 feature 파일만 읽고, 정답 가격은 평가 단계에서만 사용</li>
         <li>validation에서 후보를 고르고 test는 최종 확인에만 사용</li>
       </ul>
       <div class="pills">
@@ -182,7 +183,7 @@ def main() -> None:
         <div class="card"><span>Split 상태</span><strong>{split_status}</strong></div>
         <div class="card"><span>최신 실험</span><strong>{html.escape(latest_e)}</strong></div>
         <div class="card"><span>최신 가설</span><strong>{html.escape(latest_h)}</strong></div>
-        <div class="card"><span>다음 작업</span><strong>T6-E001</strong><span>strict split 생성</span></div>
+        <div class="card"><span>다음 작업</span><strong>T6-E002</strong><span>누수 차단 기준 baseline</span></div>
       </div>
     </div>
   </section>
