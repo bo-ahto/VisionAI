@@ -1,0 +1,189 @@
+{
+  "date": "2026-05-18",
+  "results": {
+    "T5-E019": {
+      "n_iter": 3000,
+      "metrics": {
+        "val_warm": {
+          "rows": 221,
+          "artists": 86,
+          "median_ape": 0.1615115878824526,
+          "mape": 0.2553091990778457,
+          "rmse_log": 0.369018165216085,
+          "within_30": 0.6923076923076923,
+          "within_50": 0.8778280542986425,
+          "p90_ape": 0.5764079521073152,
+          "p95_ape": 0.7368413578675533
+        },
+        "test_warm": {
+          "rows": 511,
+          "artists": 215,
+          "median_ape": 0.15698700932299056,
+          "mape": 0.36442985340325085,
+          "rmse_log": 0.41952553881325405,
+          "within_30": 0.6947162426614482,
+          "within_50": 0.8610567514677103,
+          "p90_ape": 0.6074421253952794,
+          "p95_ape": 0.8471308833770281
+        }
+      }
+    },
+    "T5-E020": {
+      "baseline_overall": {
+        "rows": 2896,
+        "artists": 216,
+        "median_ape": 0.3917583516198011,
+        "mape": 1.1220808816526193,
+        "within_30": 0.39295580110497236,
+        "within_50": 0.574585635359116,
+        "p90_ape": 1.2179282936229239,
+        "p95_ape": 2.015245461283655
+      },
+      "corrected_overall": {
+        "rows": 2896,
+        "artists": 216,
+        "median_ape": 0.38371873517785793,
+        "mape": 1.1196210219075986,
+        "within_30": 0.4046961325966851,
+        "within_50": 0.600828729281768,
+        "p90_ape": 1.2014586475402476,
+        "p95_ape": 2.019365441432574
+      },
+      "baseline_by_policy_group": {
+        "caution": {
+          "rows": 771,
+          "artists": 143,
+          "median_ape": 0.4258440167558047,
+          "mape": 2.667979708708809,
+          "within_30": 0.35797665369649806,
+          "within_50": 0.5590142671854734,
+          "p90_ape": 1.5266073234203297,
+          "p95_ape": 2.5798179465463695
+        },
+        "standard": {
+          "rows": 2125,
+          "artists": 176,
+          "median_ape": 0.3808616943173268,
+          "mape": 0.5611924131065856,
+          "within_30": 0.4056470588235294,
+          "within_50": 0.5802352941176471,
+          "p90_ape": 1.1178104964988527,
+          "p95_ape": 1.7409411610682142
+        }
+      },
+      "corrected_by_policy_group": {
+        "caution": {
+          "rows": 771,
+          "artists": 143,
+          "median_ape": 0.4482213284505678,
+          "mape": 2.7347081851125745,
+          "within_30": 0.35149156939040205,
+          "within_50": 0.5447470817120622,
+          "p90_ape": 1.814752593586767,
+          "p95_ape": 2.808798837452936
+        },
+        "standard": {
+          "rows": 2125,
+          "artists": 176,
+          "median_ape": 0.3671245001583149,
+          "mape": 0.5336293970459346,
+          "within_30": 0.424,
+          "within_50": 0.6211764705882353,
+          "p90_ape": 1.023177564699092,
+          "p95_ape": 1.5991617132968263
+        }
+      },
+      "policy_definition": {
+        "standard": "medium/support known and not very_large",
+        "caution": "medium unknown or support unknown or very_large"
+      },
+      "hybrid_standard_corrected_caution_baseline": {
+        "rows": 2896,
+        "artists": 216,
+        "median_ape": 0.37637664940105053,
+        "mape": 1.101855947561154,
+        "within_30": 0.40642265193370164,
+        "within_50": 0.6046270718232044,
+        "p90_ape": 1.122821317008997,
+        "p95_ape": 1.9047039041711744
+      },
+      "hybrid_by_policy_group": {
+        "caution": {
+          "rows": 771,
+          "artists": 143,
+          "median_ape": 0.4258440167558047,
+          "mape": 2.667979708708809,
+          "within_30": 0.35797665369649806,
+          "within_50": 0.5590142671854734,
+          "p90_ape": 1.5266073234203297,
+          "p95_ape": 2.5798179465463695
+        },
+        "standard": {
+          "rows": 2125,
+          "artists": 176,
+          "median_ape": 0.3671245001583149,
+          "mape": 0.5336293970459346,
+          "within_30": 0.424,
+          "within_50": 0.6211764705882353,
+          "p90_ape": 1.023177564699092,
+          "p95_ape": 1.5991617132968263
+        }
+      }
+    },
+    "T5-E021": {
+      "date": "2026-05-18",
+      "status": "ready_for_artifact_generation",
+      "missing_files": [],
+      "final_candidates": {
+        "warm": {
+          "primary": "HuberRegressor + warm_full_size",
+          "challenger": "HuberRegressor + OOF extended artist stats",
+          "decision": "primary retained unless E019 test p95 improvement is prioritized over median simplicity"
+        },
+        "cold": {
+          "primary": "QuantileRegressor + cold_full_size",
+          "postprocess": "prediction price band correction",
+          "policy": "caution when medium/support unknown or very_large"
+        }
+      },
+      "files": {
+        "data/track5_split/track5_train.csv": {
+          "sha256": "745ad03352e3a403a23838eec9aa476718b1cd0314494d096ffcfde277d05c8a",
+          "bytes": 12078026
+        },
+        "data/track5_split/track5_val_warm.csv": {
+          "sha256": "5d6a81dfdc5c279d75245ed0d86830a3430b8d72c0c1518ccb4372ccfc73cd4d",
+          "bytes": 90880
+        },
+        "data/track5_split/track5_val_cold.csv": {
+          "sha256": "609b2cadf5b345b40d3e91560a2ef31c4e557c47f4a80ca8e5e039dcf443dcc5",
+          "bytes": 514037
+        },
+        "data/track5_split/track5_test_warm.csv": {
+          "sha256": "078bc931b5a191c69f5066e22f3f915670e3291352011823c29e4c881786c9ef",
+          "bytes": 208572
+        },
+        "data/track5_split/track5_test_cold.csv": {
+          "sha256": "ff7dae8ebfceb396613340c5b45a9172cc38a96e0e1c6fd9b637322807b903e6",
+          "bytes": 1142851
+        },
+        "data/track5/results/t5_e010_final_candidate_test_metrics.json": {
+          "sha256": "816e892ec09e23c851c235f63cd4a4b4be3e47123cd035122958d33103fcf657",
+          "bytes": 3625
+        },
+        "data/track5/results/t5_e019_e021_final_policy_checks_metrics.json": {
+          "sha256": "6dd2063d2c9cd5eaeea7a0324f3c847cccbfcea67de45b0f3bb803bf6fd8b6ff",
+          "bytes": 6366
+        },
+        "data/track5/predictions/t5_e010_final_candidate_test_predictions.csv": {
+          "sha256": "22cebfe1562b2b71b254eec2894ada3a139b5fc2fa495978326b21e2e3af3e21",
+          "bytes": 853445
+        },
+        "data/track5/predictions/t5_e014_e018_followup_improvement_predictions.csv": {
+          "sha256": "cfff81877bbb5b6091dcaca858246acb8d1b5c8d895f333965b0184e0b6962fb",
+          "bytes": 956265
+        }
+      }
+    }
+  }
+}

@@ -7,6 +7,9 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-18 | T5-E021 | T5-H24 | 완료 | Track5 split/results/predictions | 모델 재학습 없음 | artifact manifest | Warm 후보 파일 점검 | Cold 후보/정책 파일 점검 | manifest ready, artifact 생성 전 점검 통과 | [기록](../experiments/2026-05-18_T5-E021_artifact_precheck.md), [manifest](../../../data/track5/manifests/track5_candidate_artifact_precheck_manifest.json) |
+| 2026-05-18 | T5-E020 | T5-H23 | 완료 | test_cold, E010/E018 predictions | 모델 재학습 없음 | price correction + risk policy | - | hybrid median `0.3764`, p95 `1.9047`, Within-50 `0.6046` | standard만 보정, caution은 경고 유지 정책 채택 후보 | [기록](../experiments/2026-05-18_T5-E020_cold_correction_policy.md), [결과](../../../data/track5/results/t5_e019_e021_final_policy_checks_metrics.json) |
+| 2026-05-18 | T5-E019 | T5-H22 | 완료 | train, val_warm, test_warm | HuberRegressor | OOF extended artist stats | val median `0.1615`, test median `0.1570`, test p95 `0.8471` | - | Warm 1순위 교체는 보류, full_size 유지 | [기록](../experiments/2026-05-18_T5-E019_warm_oof_extended_final_setting.md), [결과](../../../data/track5/results/t5_e019_e021_final_policy_checks_metrics.json) |
 | 2026-05-18 | T5-E018 | T5-H21 | 완료 | val_cold calibration, test_cold | 모델 재학습 없음 | 예측 가격대별 residual 보정 | - | median `0.3918`→`0.3837`, Within-50 `0.5746`→`0.6008`, p95 개선 없음 | Cold 후처리 후보로 유지, tail risk는 별도 과제 | [기록](../experiments/2026-05-18_T5-E018_cold_price_band_correction.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
 | 2026-05-18 | T5-E017 | T5-H20 | 완료 | track5 train, val_cold | QuantileRegressor | support_unknown fallback | - | 전체 median `0.3401`, support_unknown p95 `8.2886` | fallback은 보류, support_unknown은 경고 조건에 적합 | [기록](../experiments/2026-05-18_T5-E017_cold_support_unknown_fallback.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
 | 2026-05-18 | T5-E016 | T5-H19 | 완료 | track5 train, val_cold | QuantileRegressor | missing flags | - | missing flag median `0.3437`, p95 `1.8242` | 단순 결측 flag 피처는 미채택 | [기록](../experiments/2026-05-18_T5-E016_cold_missing_flags.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
@@ -28,6 +31,6 @@
 
 ## 다음 실험 후보
 
-- T5-E019: Warm OOF extended 후보를 `max_iter=3000`으로 재검증
-- T5-E020: Cold 가격대 보정 + 위험 경고 정책 결합 검증
-- T5-E021: 최종 운영 후보 artifact 생성 전 재현성 점검
+- T5-E022: 최종 모델 artifact 생성
+- T5-E023: 운영 입력/출력 스키마 고정
+- T5-E024: 최종 리포트 작성

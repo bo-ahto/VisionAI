@@ -5,6 +5,9 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-18 | T5-E021 | T5-H24 | 완료 | 최종 artifact 생성 전 핵심 파일 존재와 SHA256 manifest 생성 확인 | [기록](2026-05-18_T5-E021_artifact_precheck.md) |
+| 2026-05-18 | T5-E020 | T5-H23 | 완료 | Cold 가격대 보정과 위험 경고 정책 결합, hybrid 정책이 baseline 대비 개선 | [기록](2026-05-18_T5-E020_cold_correction_policy.md) |
+| 2026-05-18 | T5-E019 | T5-H22 | 완료 | Warm OOF extended 후보를 최종 Huber 설정으로 재검증, 1순위 교체는 보류 | [기록](2026-05-18_T5-E019_warm_oof_extended_final_setting.md) |
 | 2026-05-18 | T5-E018 | T5-H21 | 완료 | Cold 예측 가격대별 residual 보정으로 median/Within 개선, p95는 개선 없음 | [기록](2026-05-18_T5-E018_cold_price_band_correction.md) |
 | 2026-05-18 | T5-E017 | T5-H20 | 완료 | support_unknown 전용 fallback은 전체 median 소폭 개선이나 해당 구간 p95 악화로 보류 | [기록](2026-05-18_T5-E017_cold_support_unknown_fallback.md) |
 | 2026-05-18 | T5-E016 | T5-H19 | 완료 | Cold missing flag 추가는 기준선 대비 성능 개선이 없어 미채택 | [기록](2026-05-18_T5-E016_cold_missing_flags.md) |
