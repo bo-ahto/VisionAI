@@ -5,6 +5,10 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-18 | T5-E025 | T5-H28 | 완료 | validation 기준으로 Cold 보정 정책을 다시 선택, test에서 보정 정책 미채택 결론 | [기록](2026-05-18_T5-E025_validation_based_policy_retest.md) |
+| 2026-05-18 | T5-E024 | T5-H27 | 완료 | Cold 이름 중복과 strict cold 성능을 비교, 이름 중복은 주원인이 아님 | [기록](2026-05-18_T5-E024_cold_name_strict_audit.md) |
+| 2026-05-18 | T5-E023 | T5-H26 | 완료 | Warm 작가 피처 영향과 저이력 구간 성능을 분리 검증 | [기록](2026-05-18_T5-E023_warm_artist_feature_low_history_audit.md) |
+| 2026-05-18 | T5-E022 | T5-H25 | 완료 | 보조 split 3개로 Warm/Cold 후보 성능 안정성 확인 | [기록](2026-05-18_T5-E022_repeated_split_stability.md) |
 | 2026-05-18 | T5-E021 | T5-H24 | 완료 | 최종 artifact 생성 전 핵심 파일 존재와 SHA256 manifest 생성 확인 | [기록](2026-05-18_T5-E021_artifact_precheck.md) |
 | 2026-05-18 | T5-E020 | T5-H23 | 완료 | Cold 가격대 보정과 위험 경고 정책 결합, hybrid 정책이 baseline 대비 개선 | [기록](2026-05-18_T5-E020_cold_correction_policy.md) |
 | 2026-05-18 | T5-E019 | T5-H22 | 완료 | Warm OOF extended 후보를 최종 Huber 설정으로 재검증, 1순위 교체는 보류 | [기록](2026-05-18_T5-E019_warm_oof_extended_final_setting.md) |

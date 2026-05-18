@@ -7,8 +7,12 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-18 | T5-E025 | T5-H28 | 완료 | val_cold, test_cold, E008/E010 predictions | 모델 재학습 없음 | validation 기반 정책 선택 | - | baseline median `0.3918`, validation 선택 hybrid median `0.4055` | Cold 가격 보정 정책은 최종 미채택, baseline+위험 경고 유지 | [기록](../experiments/2026-05-18_T5-E025_validation_based_policy_retest.md), [결과](../../../data/track5/results/t5_e022_e025_audit_closure_metrics.json) |
+| 2026-05-18 | T5-E024 | T5-H27 | 완료 | train, test_cold, E010 predictions | 모델 재학습 없음 | strict cold/name overlap flag | - | strict cold median `0.3928`, name overlap median `0.3668` | 이름 중복은 일부 있으나 Cold 결론의 주원인은 아님, strict cold 병행 보고 필요 | [기록](../experiments/2026-05-18_T5-E024_cold_name_strict_audit.md), [결과](../../../data/track5/results/t5_e022_e025_audit_closure_metrics.json) |
+| 2026-05-18 | T5-E023 | T5-H26 | 완료 | train, test_warm | HuberRegressor | structure, artist key, artist history, artist stats | structure-only median `0.4517`, artist key 포함 median `0.1601`, full_size median `0.1617` | - | Warm 개선은 작가 식별 정보 의존이 큼, 저이력 구간도 급락은 없음 | [기록](../experiments/2026-05-18_T5-E023_warm_artist_feature_low_history_audit.md), [결과](../../../data/track5/results/t5_e022_e025_audit_closure_metrics.json) |
+| 2026-05-18 | T5-E022 | T5-H25 | 완료 | Track5 전체 행 기반 보조 split 3개 | Warm Huber, Cold Quantile | final full_size 후보 | 반복 split median 평균 `0.1668`, 범위 `0.1496~0.1786` | 반복 split median 평균 `0.4144`, 범위 `0.3944~0.4416` | Warm/Cold 분리 결론은 유지, Cold p95 변동은 여전히 큼 | [기록](../experiments/2026-05-18_T5-E022_repeated_split_stability.md), [결과](../../../data/track5/results/t5_e022_e025_audit_closure_metrics.json) |
 | 2026-05-18 | T5-E021 | T5-H24 | 완료 | Track5 split/results/predictions | 모델 재학습 없음 | artifact manifest | Warm 후보 파일 점검 | Cold 후보/정책 파일 점검 | manifest ready, artifact 생성 전 점검 통과 | [기록](../experiments/2026-05-18_T5-E021_artifact_precheck.md), [manifest](../../../data/track5/manifests/track5_candidate_artifact_precheck_manifest.json) |
-| 2026-05-18 | T5-E020 | T5-H23 | 완료 | test_cold, E010/E018 predictions | 모델 재학습 없음 | price correction + risk policy | - | hybrid median `0.3764`, p95 `1.9047`, Within-50 `0.6046` | standard만 보정, caution은 경고 유지 정책 채택 후보 | [기록](../experiments/2026-05-18_T5-E020_cold_correction_policy.md), [결과](../../../data/track5/results/t5_e019_e021_final_policy_checks_metrics.json) |
+| 2026-05-18 | T5-E020 | T5-H23 | 완료 | test_cold, E010/E018 predictions | 모델 재학습 없음 | price correction + risk policy | - | hybrid median `0.3764`, p95 `1.9047`, Within-50 `0.6046` | test 기준 개선 신호였으나 T5-E025에서 validation 기반 채택 실패 | [기록](../experiments/2026-05-18_T5-E020_cold_correction_policy.md), [결과](../../../data/track5/results/t5_e019_e021_final_policy_checks_metrics.json) |
 | 2026-05-18 | T5-E019 | T5-H22 | 완료 | train, val_warm, test_warm | HuberRegressor | OOF extended artist stats | val median `0.1615`, test median `0.1570`, test p95 `0.8471` | - | Warm 1순위 교체는 보류, full_size 유지 | [기록](../experiments/2026-05-18_T5-E019_warm_oof_extended_final_setting.md), [결과](../../../data/track5/results/t5_e019_e021_final_policy_checks_metrics.json) |
 | 2026-05-18 | T5-E018 | T5-H21 | 완료 | val_cold calibration, test_cold | 모델 재학습 없음 | 예측 가격대별 residual 보정 | - | median `0.3918`→`0.3837`, Within-50 `0.5746`→`0.6008`, p95 개선 없음 | Cold 후처리 후보로 유지, tail risk는 별도 과제 | [기록](../experiments/2026-05-18_T5-E018_cold_price_band_correction.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
 | 2026-05-18 | T5-E017 | T5-H20 | 완료 | track5 train, val_cold | QuantileRegressor | support_unknown fallback | - | 전체 median `0.3401`, support_unknown p95 `8.2886` | fallback은 보류, support_unknown은 경고 조건에 적합 | [기록](../experiments/2026-05-18_T5-E017_cold_support_unknown_fallback.md), [결과](../../../data/track5/results/t5_e014_e018_followup_improvement_metrics.json) |
@@ -31,8 +35,4 @@
 
 ## 다음 실험 후보
 
-- T5-E022: Warm/Cold 반복 split 안정성 검증
-- T5-E023: Warm 작가 피처 영향 분해 및 저이력 구간 검증
-- T5-E024: Cold 이름 중복/엄격 Cold 분리 검증
-- T5-E025: validation 기반 정책 재선정 후 test 확인
 - T5-E026: 최종 모델 artifact 생성

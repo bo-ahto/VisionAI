@@ -3,7 +3,7 @@
 - 작성일: 2026-05-18
 - 목적: Track3/Track4에서 지적된 평가 방식 문제와 유사한 리스크가 Track5에도 남아 있는지 점검
 - 기준: 현재 Track5 split, 실험 스크립트, 실험 결과 문서
-- 결론: Track5는 1작가 1작품 문제를 상당 부분 보완했지만, 최종 운영 후보 확정 전 추가 검증이 필요함
+- 결론: Track5는 1작가 1작품 문제를 상당 부분 보완했고, 추가 감사 실험 T5-E022~T5-E025로 주요 리스크를 재검증함
 
 ## 1. 요약 결론
 
@@ -207,8 +207,33 @@
   - Cold 이름 기준 분리
   - test 재사용 없는 정책 검증
 
-## 12. 현재 결론
+## 12. 보완 실험 실행 결과
+
+- T5-E022 반복 split 안정성 검증
+  - Warm median APE 평균 `0.1668`, 범위 `0.1496~0.1786`
+  - Cold median APE 평균 `0.4144`, 범위 `0.3944~0.4416`
+  - Warm/Cold 분리 방향은 유지 가능
+  - Cold p95는 seed별 변동이 커서 tail risk가 남음
+- T5-E023 Warm 작가 피처 영향 분해
+  - 구조-only median APE `0.4517`
+  - 작가 key 포함 median APE `0.1601`
+  - full_size median APE `0.1617`
+  - Warm 성능은 작가 식별 정보 의존이 크며, 운영에서는 작가명 매칭 품질이 중요함
+- T5-E024 Cold 이름 중복 검증
+  - artist_key 기준 train 겹침 `0`
+  - 이름 중복 `126행 / 15명`
+  - strict cold median APE `0.3928`
+  - 이름 중복이 Cold 성능을 만든 주원인은 아님
+- T5-E025 validation 기반 정책 재선정
+  - test baseline median APE `0.3918`
+  - validation 선택 hybrid median APE `0.4055`
+  - T5-E020의 가격 보정 정책은 최종 미채택
+
+## 13. 현재 결론
 
 - Track5 결과는 Track3/Track4보다 신뢰도가 높음
-- 하지만 최종 모델 확정 전 감사 기준으로는 아직 보완 필요
-- 특히 `반복 split`, `작가 피처 영향 분해`, `test 재사용 방지`는 우선 처리해야 함
+- 1작가 1작품 문제는 Track5에서 상당 부분 완화됨
+- Warm 모델은 작가 식별 정보 의존이 크므로 작가명 정규화/동명이인 처리가 운영 핵심 리스크임
+- Cold 모델은 baseline 자체는 유지 가능하지만 tail risk가 크므로 단일 가격만 제시하는 방식은 위험함
+- Cold 가격 보정 후처리는 validation 기반 재검증에서 실패했으므로 최종 정책에서 제외함
+- 다음 단계는 최종 artifact 생성 전 `strict cold 병행 보고`, `작가명 매칭 검증`, `Cold 위험 경고 정책`을 명시하는 것임
