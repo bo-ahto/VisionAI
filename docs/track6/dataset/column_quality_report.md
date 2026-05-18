@@ -3,7 +3,7 @@
 - 생성일: `2026-05-18`
 - 상태: `review`
 - fail 이슈: `0`
-- review 이슈: `15`
+- review 이슈: `17`
 - 이슈 CSV: `data/track6/quality/track6_column_quality_issues.csv`
 
 ## 1. 검증 범위
@@ -16,10 +16,10 @@
 
 | split | rows | artists | columns | medium unknown | support unknown |
 |---|---:|---:|---:|---:|---:|
-| `train` | `27,982` | `1,879` | `32` | `26` | `2,351` |
-| `val_warm` | `261` | `90` | `32` | `0` | `24` |
-| `test_warm` | `608` | `208` | `32` | `0` | `45` |
-| `val_cold` | `1,952` | `80` | `32` | `0` | `55` |
+| `train` | `26,686` | `1,799` | `32` | `23` | `2,213` |
+| `val_warm` | `526` | `180` | `32` | `0` | `72` |
+| `test_warm` | `601` | `206` | `32` | `3` | `53` |
+| `val_cold` | `2,956` | `160` | `32` | `0` | `117` |
 | `test_cold` | `3,342` | `200` | `32` | `0` | `289` |
 
 ## 3. 핵심 통과 항목
@@ -44,14 +44,16 @@
 | `train` | `width` | `width_above_review_max` | `13` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
 | `train` | `height` | `height_above_review_max` | `23` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
 | `train` | `depth` | `depth_above_review_max` | `6` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
-| `train` | `aspect_ratio` | `aspect_ratio_above_review_max` | `3` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
-| `train` | `medium_category` | `unknown_or_blank_category` | `26` | `review` |  |
-| `train` | `support_category` | `unknown_or_blank_category` | `2,351` | `review` |  |
-| `val_warm` | `support_category` | `unknown_or_blank_category` | `24` | `review` |  |
-| `test_warm` | `support_category` | `unknown_or_blank_category` | `45` | `review` |  |
+| `train` | `aspect_ratio` | `aspect_ratio_above_review_max` | `2` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
+| `train` | `medium_category` | `unknown_or_blank_category` | `23` | `review` |  |
+| `train` | `support_category` | `unknown_or_blank_category` | `2,213` | `review` |  |
+| `val_warm` | `support_category` | `unknown_or_blank_category` | `72` | `review` |  |
+| `test_warm` | `medium_category` | `unknown_or_blank_category` | `3` | `review` |  |
+| `test_warm` | `support_category` | `unknown_or_blank_category` | `53` | `review` |  |
 | `val_cold` | `height` | `height_above_review_max` | `1` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
 | `val_cold` | `depth` | `depth_above_review_max` | `1` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
-| `val_cold` | `support_category` | `unknown_or_blank_category` | `55` | `review` |  |
+| `val_cold` | `aspect_ratio` | `aspect_ratio_above_review_max` | `1` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
+| `val_cold` | `support_category` | `unknown_or_blank_category` | `117` | `review` |  |
 | `test_cold` | `width` | `width_above_review_max` | `1` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
 | `test_cold` | `aspect_ratio` | `aspect_ratio_above_review_max` | `1` | `review` | 극단값 후보. 모델 제외가 아니라 slice 확인 대상 |
 | `test_cold` | `support_category` | `unknown_or_blank_category` | `289` | `review` |  |

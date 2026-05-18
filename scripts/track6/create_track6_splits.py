@@ -32,13 +32,13 @@ RANDOM_SEED = 20260518
 TARGET_LOG = "ln_price_krw"
 TARGET_PRICE = "price_krw"
 
-MIN_VAL_WARM_ROWS = 200
-MIN_VAL_WARM_ARTISTS = 80
-MIN_TEST_WARM_ROWS = 500
+MIN_VAL_WARM_ROWS = 500
+MIN_VAL_WARM_ARTISTS = 170
+MIN_TEST_WARM_ROWS = 600
 MIN_TEST_WARM_ARTISTS = 200
-MIN_VAL_COLD_ROWS = 1000
-MIN_VAL_COLD_ARTISTS = 80
-MIN_TEST_COLD_ROWS = 2500
+MIN_VAL_COLD_ROWS = 2500
+MIN_VAL_COLD_ARTISTS = 160
+MIN_TEST_COLD_ROWS = 3000
 MIN_TEST_COLD_ARTISTS = 200
 
 WARM_MIN_TRAIN_PER_ARTIST = 5
@@ -419,7 +419,7 @@ def render_split_report(summary: dict[str, Any]) -> str:
         f"- 입력: `{summary['input']}`",
         f"- random seed: `{summary['random_seed']}`",
         f"- 상태: `{summary['status']}`",
-        "- 방식: validation/test를 먼저 충분히 확보한 뒤 남은 데이터를 train으로 구성",
+        "- 방식: validation/test를 먼저 충분히 확보하고 규모를 근접하게 맞춘 뒤 남은 데이터를 train으로 구성",
         "- Cold 기준: `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 모두 train 겹침 0",
         "- Stable Warm 평가 기준: 평가 작가가 train에 최소 5작품 이상 남음",
         "- Low-history Warm 기준: train에 1~4작품만 있는 작가는 별도 분석 대상으로 관리",
@@ -494,7 +494,7 @@ def render_experiment(summary: dict[str, Any]) -> str:
 ## 실험 목적
 
 - Track5에서 남은 Cold 이름 중복, Warm 저이력, 1작가 1작품 평가 문제를 split 단계에서 보완
-- validation/test를 먼저 충분히 확보하고 남은 데이터를 train으로 구성
+- validation/test를 먼저 충분히 확보하고 규모를 근접하게 맞춘 뒤 남은 데이터를 train으로 구성
 
 ## 핵심 결과
 

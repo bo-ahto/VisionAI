@@ -4,12 +4,13 @@
 - 기준일: 2026-05-18
 - 정렬 기준: 최신 실험이 위로 오도록 관리
 - 원칙: Warm / Cold 결과는 합치지 않고 분리 기록
-- 상태: T6-E001B 컬럼 품질 검증 완료
+- 상태: T6-E001C feature/label 분리 완료
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 2026-05-18 | T6-E001B | T6-H1 | 검토 완료 | Track6 split | 모델 미사용 | column quality metadata | Warm 1작품 작가 0, train 누락 0 | Cold 이름 겹침 0, artist history 0 | fail 0, review 15. 모델 실험 진행 가능 | [기록](../experiments/2026-05-18_T6-E001B_column_quality_validation.md), [보고서](../dataset/column_quality_report.md) |
-| 2026-05-18 | T6-E001 | T6-H1 | 검증 완료 | Track4 feature candidates | 모델 미사용 | split metadata | val `261`건 / test `608`건 | val `1,952`건 / test `3,342`건, 이름 겹침 0 | Track6 split 상태 `pass` | [기록](../experiments/2026-05-18_T6-E001_strict_split_generation.md), [보고서](../dataset/split_report.md) |
+| 2026-05-18 | T6-E001C | T6-H1 | 검증 완료 | Track6 split v2 | 모델 미사용 | feature/label manifest | Warm feature 누수 컬럼 0 | Cold feature 누수 컬럼 0 | feature/label 분리 상태 `pass` | [기록](../experiments/2026-05-18_T6-E001C_feature_label_pipeline.md), [보고서](../dataset/feature_label_pipeline_report.md) |
+| 2026-05-18 | T6-E001B | T6-H1 | 검토 완료 | Track6 split v2 | 모델 미사용 | column quality metadata | Warm 1작품 작가 0, train 누락 0 | Cold 이름 겹침 0, artist history 0 | fail 0, review 17. 모델 실험 진행 가능 | [기록](../experiments/2026-05-18_T6-E001B_column_quality_validation.md), [보고서](../dataset/column_quality_report.md) |
+| 2026-05-18 | T6-E001 | T6-H1 | 검증 완료 | Track4 feature candidates | 모델 미사용 | split metadata | val `526`건 / test `601`건 | val `2,956`건 / test `3,342`건, 이름 겹침 0 | Track6 split v2 상태 `pass` | [기록](../experiments/2026-05-18_T6-E001_strict_split_generation.md), [보고서](../dataset/split_report.md) |
 
 ## 다음 실험 후보
 

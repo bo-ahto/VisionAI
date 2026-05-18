@@ -13,6 +13,7 @@
 - Track3의 작가명 라우팅, Track4의 동명이인 표시, Track5의 split 검증 방식을 반영함
 - split 전 `docs/track6/dataset/cleaning_plan_v1.md` 기준으로 학습 후보 row를 먼저 확정함
 - validation/test를 우선 확보하고 남은 데이터를 train으로 구성함
+- validation/test 규모는 완전히 같게 만들기보다 모델 선택과 최종 확인이 모두 가능한 수준으로 근접하게 맞춤
 - validation은 후보 선택용으로만 사용함
 - test는 최종 확인용으로만 사용함
 
@@ -96,6 +97,16 @@
 ## 9. 금지 피처
 
 - 아래 컬럼은 모델 피처로 사용하지 않음
+- 가격성 컬럼은 KRW 외 표현까지 포함해 feature 파일에서 제거함
+- 예시:
+  - `price_krw`
+  - `ln_price_krw`
+  - `price_raw`
+  - `price_currency`
+  - `price_amount`
+  - `Price (USD)`
+  - `Price (KRW)`
+  - `is_high_price_candidate`
 - `track4_source`
 - `source_artwork_id`
 - `artwork_url`
@@ -113,6 +124,10 @@
 - `data/track6_split/track6_test_cold.csv`
 - `data/track6_split/track6_split_summary.json`
 - `data/track6_split/track6_split_membership.csv`
+- `data/track6_split/features/warm/`
+- `data/track6_split/features/cold/`
+- `data/track6_split/labels/`
+- `data/track6/manifests/track6_feature_label_manifest.json`
 
 ## 11. split 검증 항목
 

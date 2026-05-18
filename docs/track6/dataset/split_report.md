@@ -4,7 +4,7 @@
 - 입력: `data/track4_primary_market_feature_candidates_v1.csv`
 - random seed: `20260518`
 - 상태: `pass`
-- 방식: validation/test를 먼저 충분히 확보한 뒤 남은 데이터를 train으로 구성
+- 방식: validation/test를 먼저 충분히 확보하고 규모를 근접하게 맞춘 뒤 남은 데이터를 train으로 구성
 - Cold 기준: `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 모두 train 겹침 0
 - Stable Warm 평가 기준: 평가 작가가 train에 최소 5작품 이상 남음
 - Low-history Warm 기준: train에 1~4작품만 있는 작가는 별도 분석 대상으로 관리
@@ -14,10 +14,10 @@
 
 | split | rows | 작가 수 | 한글명 수 | 가격 중앙값 | 가격 p90 | 작가당 rows 중앙값 | 1작품 작가 수 | 파일 |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
-| `train` | `27,982` | `1,879` | `1,812` | `2,842,800` | `15,180,000` | `6.0` | `270` | `data/track6_split/track6_train.csv` |
-| `val_warm` | `261` | `90` | `90` | `3,063,600` | `13,731,000` | `3.0` | `0` | `data/track6_split/track6_val_warm.csv` |
-| `test_warm` | `608` | `208` | `208` | `2,848,260` | `16,560,000` | `3.0` | `0` | `data/track6_split/track6_test_warm.csv` |
-| `val_cold` | `1,952` | `80` | `78` | `8,400,000` | `138,165,600` | `5.0` | `12` | `data/track6_split/track6_val_cold.csv` |
+| `train` | `26,686` | `1,799` | `1,734` | `2,805,305` | `15,000,000` | `5.0` | `259` | `data/track6_split/track6_train.csv` |
+| `val_warm` | `526` | `180` | `179` | `3,394,800` | `18,793,950` | `3.0` | `0` | `data/track6_split/track6_val_warm.csv` |
+| `test_warm` | `601` | `206` | `203` | `3,063,600` | `17,250,000` | `3.0` | `0` | `data/track6_split/track6_test_warm.csv` |
+| `val_cold` | `2,956` | `160` | `156` | `5,520,000` | `124,212,420` | `5.0` | `23` | `data/track6_split/track6_val_cold.csv` |
 | `test_cold` | `3,342` | `200` | `195` | `3,422,400` | `14,000,000` | `7.0` | `25` | `data/track6_split/track6_test_cold.csv` |
 
 ## 2. 핵심 검증

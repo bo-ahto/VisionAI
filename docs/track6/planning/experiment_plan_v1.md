@@ -44,6 +44,9 @@
   - `data/track6_split/track6_test_cold.csv`
 - split 기준은 `docs/track6/dataset/split_policy_v1.md`에 먼저 고정
 - split 생성 후 `docs/track6/dataset/split_report.md`에 rows, 작가 수, 누수 검증 결과 기록
+- 모델 실험은 full split CSV가 아니라 feature/label 분리 파일을 기준으로 진행
+- 학습/예측 스크립트는 `features/warm` 또는 `features/cold` 파일만 읽음
+- 평가 스크립트만 `labels` 파일을 읽음
 
 ## 4. split 설계 원칙
 
@@ -73,16 +76,18 @@
 - 2단계: 클렌징 계획 확인
 - 3단계: split 정책 고정
 - 4단계: Track6 split 생성 및 검증
-- 5단계: 기본 피처 정의
-- 6단계: 구조-only baseline 생성
-- 7단계: Warm 작가 피처 ablation
-- 8단계: Cold 모델 비교
-- 9단계: 피처 조합 실험
-- 10단계: 후보 모델군 비교
-- 11단계: validation 기준 최종 후보 선정
-- 12단계: test 최종 확인
-- 13단계: 가격 범위/신뢰도 정책 검증
-- 14단계: 최종 artifact 생성
+- 5단계: 컬럼 품질 검증
+- 6단계: feature/label 분리 파이프라인 생성
+- 7단계: 기본 피처 정의
+- 8단계: 구조-only baseline 생성
+- 9단계: Warm 작가 피처 ablation
+- 10단계: Cold 모델 비교
+- 11단계: 피처 조합 실험
+- 12단계: 후보 모델군 비교
+- 13단계: validation 기준 최종 후보 선정
+- 14단계: test 최종 확인
+- 15단계: 가격 범위/신뢰도 정책 검증
+- 16단계: 최종 artifact 생성
 
 ## 7. 기본 피처 후보
 

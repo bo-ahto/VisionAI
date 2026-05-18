@@ -32,17 +32,17 @@
 ## 검토 필요 항목
 
 - `support_category=unknown`이 일부 남아 있음
-  - train: `2,351`
-  - val_warm: `24`
-  - test_warm: `45`
-  - val_cold: `55`
+  - train: `2,213`
+  - val_warm: `72`
+  - test_warm: `53`
+  - val_cold: `117`
   - test_cold: `289`
-- `medium_category=unknown`은 train에만 `26`건 존재
+- `medium_category=unknown`은 train `23`건, test_warm `3`건 존재
 - 극단 크기 후보가 일부 존재
   - train width > 500cm: `13`
   - train height > 500cm: `23`
   - train depth > 500cm: `6`
-  - train aspect_ratio > 8: `3`
+  - train aspect_ratio > 8: `2`
 - `title_raw` 결측은 train에 `1`건 있음
 
 ## 해석

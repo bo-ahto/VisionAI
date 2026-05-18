@@ -100,10 +100,10 @@
 
 | split | 최소 rows | 최소 작가 수 | 주요 조건 |
 |---|---:|---:|---|
-| val_warm | 200 | 80 | Stable Warm: train에 최소 5작품 이상 남는 작가 |
-| test_warm | 500 | 200 | Stable Warm: train에 최소 5작품 이상 남는 작가 |
-| val_cold | 1,000 | 80 | train과 작가 ID/한글명 중복 0 |
-| test_cold | 2,500 | 200 | train과 작가 ID/한글명 중복 0 |
+| val_warm | 500 | 170 | Stable Warm: train에 최소 5작품 이상 남는 작가 |
+| test_warm | 600 | 200 | Stable Warm: train에 최소 5작품 이상 남는 작가 |
+| val_cold | 2,500 | 160 | train과 작가 ID/한글명 중복 0 |
+| test_cold | 3,000 | 200 | train과 작가 ID/한글명 중복 0 |
 
 ## 6. split 생성 우선순위
 
@@ -158,15 +158,19 @@
   - `data/track6_split/track6_test_warm.csv`
   - `data/track6_split/track6_val_cold.csv`
   - `data/track6_split/track6_test_cold.csv`
+- feature/label 분리 파일:
+  - `data/track6_split/features/warm/`
+  - `data/track6_split/features/cold/`
+  - `data/track6_split/labels/`
 
 ## 9. 실패 기준
 
 - Cold test 또는 val에서 train과 `artist_key`가 겹치면 실패
 - Cold test 또는 val에서 train과 `artist_name_ko_orig`가 겹치면 실패
-- Warm test rows가 500 미만이면 실패 또는 기준 재검토
-- Warm validation rows가 200 미만이면 실패 또는 기준 재검토
-- Cold test rows가 2,500 미만이면 실패 또는 기준 재검토
-- Cold validation rows가 1,000 미만이면 실패 또는 기준 재검토
+- Warm test rows가 600 미만이면 실패 또는 기준 재검토
+- Warm validation rows가 500 미만이면 실패 또는 기준 재검토
+- Cold test rows가 3,000 미만이면 실패 또는 기준 재검토
+- Cold validation rows가 2,500 미만이면 실패 또는 기준 재검토
 - Warm 평가 작가의 train 남은 작품 수가 5 미만이면 해당 작가는 Warm 평가셋에서 제외
 - split 후 `artist_works_log`가 Cold에서 0보다 크면 실패
 
