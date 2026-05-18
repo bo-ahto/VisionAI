@@ -20,13 +20,20 @@
 | 2026-05-18 | T6-E001B | T6-H1 | 검토 완료 | Track6 name-corrected split | 모델 미사용 | column quality metadata | Warm 1작품 작가 0, train 누락 0 | Cold 이름 겹침 0, artist history 0 | fail 0, review 14. 모델 실험 진행 가능 | [기록](../experiments/2026-05-18_T6-E001B_column_quality_validation.md), [보고서](../dataset/column_quality_report.md) |
 | 2026-05-18 | T6-E001 | T6-H1 | 검증 완료 | Track6 보정 후보 데이터 | 모델 미사용 | split metadata | val `523`건 / test `607`건 | val `2,793`건 / test `3,240`건, 이름 겹침 0 | Track6 name-corrected split 상태 `pass` | [기록](../experiments/2026-05-18_T6-E001_strict_split_generation.md), [보고서](../dataset/split_report.md) |
 
-## 다음 실험 후보
+## 완료된 실험 흐름
 
-- T6-E002: 구조-only baseline
-- T6-E003: Warm 작가 피처 ablation
-- T6-E004: Cold 모델 비교
-- T6-E005: 피처 조합 실험
-- T6-E006: validation 기준 최종 후보 선정
-- T6-E007: test 최종 확인
-- T6-E008: 가격 범위/신뢰도 정책 검증
-- T6-E009: 최종 artifact 생성
+- T6-E001~T6-E001C: split, 컬럼 품질, feature/label 분리 검증
+- T6-E002: 구조-only baseline 확인
+- T6-E003: Warm 작가 피처 효과 확인
+- T6-E004: Cold 모델 후보 비교
+- T6-E005: 운영 가능 피처 조합 비교
+- T6-E006: validation 기준 후보 고정
+- T6-E007: test holdout 최종 확인
+- T6-E008: 신뢰도/위험 구간 분석
+- T6-E009: 최종 후보 artifact manifest 생성
+
+## 후속 작업
+
+- 서비스 입력 스키마와 Track6 피처 생성 로직 연결
+- Warm/Cold 라우팅 로직 구현
+- 신뢰도 경고 문구와 가격 범위 표시 정책 구현
