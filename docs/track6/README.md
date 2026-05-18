@@ -15,6 +15,7 @@
 - 컬럼 품질 검증 보고서: `docs/track6/dataset/column_quality_report.md`
 - feature/label 분리 보고서: `docs/track6/dataset/feature_label_pipeline_report.md`
 - 데이터 검증/누수 방지 프로세스: `docs/track6/dataset/leakage_prevention_validation_process.md`
+- 학습/평가 라벨 사용 흐름: `docs/track6/dataset/train_eval_label_flow.md`
 - 실험 인덱스: `docs/track6/experiments/INDEX.md`
 - 가설 상태표: `docs/track6/tables/hypothesis_table.md`
 - 실험 결과표: `docs/track6/tables/experiment_results_table.md`
@@ -42,6 +43,7 @@
 - 데이터 검증은 split 검증 → 컬럼 품질 검증 → feature/label 분리 → feature 누수 검사 순서로 진행함
 - 모델 학습/예측은 full split이 아니라 feature 파일만 읽음
 - 정답 가격은 평가 단계에서 labels 파일로만 읽음
+- 라벨 파일은 학습과 평가 단계에서만 읽고, validation/test 예측 단계에서는 읽지 않음
 - Warm / Cold는 합치지 않고 분리 평가함
 - validation에서 후보를 고르고 test는 최종 확인에만 사용함
 - 운영에서 만들 수 없는 피처는 최종 후보에서 제외함

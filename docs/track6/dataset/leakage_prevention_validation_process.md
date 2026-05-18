@@ -3,6 +3,7 @@
 - 목적: 모델 실험 전에 데이터 검증 절차를 고정해 가격/정답/출처/작가 정보 누수를 줄임
 - 적용 범위: Track6 split 생성, 컬럼 품질 검증, feature/label 분리, 학습, validation 평가, test 최종 평가
 - 핵심 원칙: 모델 학습/예측 코드는 정답 가격이 들어 있는 full split 파일을 직접 읽지 않음
+- 학습/평가 라벨 사용 순서도: `docs/track6/dataset/train_eval_label_flow.md`
 
 ## 1. 기본 원칙
 
