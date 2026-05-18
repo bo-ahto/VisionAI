@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track 6 실험 대시보드</title>
+  <style>
+    :root { --bg:#eef2ec; --panel:#fffdf6; --ink:#17211b; --line:#d8d2c2; --green:#2f6f4e; --blue:#264f73; --amber:#a96a1f; }
+    body { margin:0; color:var(--ink); font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif; background:linear-gradient(135deg,#edf4ec,#f5ead9); line-height:1.55; }
+    main { max-width:1380px; margin:0 auto; padding:32px; }
+    .grid { display:grid; grid-template-columns:1.25fr .8fr; gap:20px; }
+    .panel { background:rgba(255,253,246,.95); border:1px solid var(--line); border-radius:24px; padding:24px; box-shadow:0 16px 40px rgba(35,30,20,.10); }
+    h1 { margin:0 0 14px; font-size:52px; letter-spacing:-.06em; }
+    h2 { margin:0 0 14px; }
+    code { background:rgba(38,79,115,.10); padding:1px 5px; border-radius:6px; }
+    .pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    .pill { padding:7px 10px; background:#eadfcd; border-radius:999px; font-weight:800; font-size:12px; }
+    .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:20px 0; }
+    .card, article { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; }
+    .card strong { display:block; font-size:24px; }
+    .card span, article p { color:#647064; font-size:13px; }
+    .goals { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+    article strong { display:inline-block; color:var(--green); margin-bottom:6px; }
+    article h3 { margin:0 0 6px; font-size:15px; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:18px; background:var(--panel); margin-top:14px; }
+    table { width:100%; border-collapse:collapse; min-width:1040px; }
+    th,td { padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13px; }
+    th { background:#eadfcd; text-align:left; position:sticky; top:0; }
+    .status { display:inline-flex; padding:4px 8px; border-radius:999px; font-weight:800; font-size:12px; }
+    .done { background:rgba(47,111,78,.14); color:var(--green); }
+    .hold { background:rgba(169,106,31,.14); color:var(--amber); }
+    .partial { background:rgba(38,79,115,.14); color:var(--blue); }
+    @media(max-width:900px) { .grid,.cards,.goals { grid-template-columns:1fr; } main { padding:18px; } }
+  </style>
+</head>
+<body>
+<main>
+  <section class="grid">
+    <div class="panel">
+      <h1>Track 6 실험 대시보드</h1>
+      <ul>
+        <li>Track5는 종료하고 Track6에서 최종 보고용 split을 새로 구성</li>
+        <li>Cold는 작가 ID와 한글명 기준 중복을 함께 제거</li>
+        <li>Warm은 train에 충분한 작품이 남는 작가 중심으로 평가</li>
+        <li>validation에서 후보를 고르고 test는 최종 확인에만 사용</li>
+      </ul>
+      <div class="pills">
+        <span class="pill">가설 8개</span>
+        <span class="pill">완료 0개</span>
+        <span class="pill">예정 8개</span>
+        <span class="pill">생성 2026-05-18</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>현재 상태</h2>
+      <div class="cards" style="grid-template-columns:1fr 1fr;">
+        <div class="card"><span>Split 상태</span><strong>생성 전</strong></div>
+        <div class="card"><span>최신 실험</span><strong>T6-E001</strong></div>
+        <div class="card"><span>최신 가설</span><strong>T6-H8</strong></div>
+        <div class="card"><span>다음 작업</span><strong>T6-E001</strong><span>strict split 생성</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:20px;">
+    <h2>세부 목표</h2>
+    <div class="goals"><article><strong>T6-G1</strong><h3>최종 split 기준 고정</h3><p>Cold 이름 중복과 Warm 저이력 문제를 split 단계에서 줄임</p></article>
+<article><strong>T6-G2</strong><h3>기본 예측 가능성 확인</h3><p>구조-only baseline으로 Track6 split의 기본 난이도 확인</p></article>
+<article><strong>T6-G3</strong><h3>Warm 성능 개선</h3><p>작가 이력 정보가 있는 상황에서 Warm 모델 최적화</p></article>
+<article><strong>T6-G4</strong><h3>Cold 성능 개선</h3><p>신규 작가 상황에서 작가 정보 없이 Cold 모델 최적화</p></article>
+<article><strong>T6-G5</strong><h3>운영 가능 피처 선정</h3><p>실제 서비스 입력에서 만들 수 있는 피처만 유지</p></article>
+<article><strong>T6-G6</strong><h3>모델 안정성 확인</h3><p>validation/test 및 반복 split에서 성능 유지 확인</p></article>
+<article><strong>T6-G7</strong><h3>신뢰도/가격 범위 정책</h3><p>단일 가격이 위험한 구간을 식별하고 표시 정책 설계</p></article>
+<article><strong>T6-G8</strong><h3>최종 운영 후보 확정</h3><p>Warm/Cold 모델, 피처, 라우팅, 출력 정책을 확정</p></article></div>
+  </section>
+
+  <section class="panel" style="margin-top:20px;">
+    <h2>가설 상태</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>가설</th><th>목표</th><th>상태</th><th>요약</th><th>연구 방법</th><th>현재 판단</th></tr></thead>
+        <tbody><tr><td>T6-H8</td><td>T6-G8</td><td><span class='status hold'>예정</span></td><td>최종 운영 후보는 성능, 운영 가능성, 설명 가능성, 재현 가능성을 모두 만족해야 한다</td><td>최종 모델, 피처, 전처리, manifest 생성</td><td>모든 실험 후 진행</td></tr>
+<tr><td>T6-H7</td><td>T6-G7</td><td><span class='status hold'>예정</span></td><td>Cold는 위험 구간을 나누어 신뢰도 경고를 제공해야 실무적으로 해석 가능하다</td><td>unknown, 대형, 3D, 저정보량 구간별 오차 비교</td><td>후보 선정 후 진행</td></tr>
+<tr><td>T6-H6</td><td>T6-G6</td><td><span class='status hold'>예정</span></td><td>최종 후보는 validation뿐 아니라 test에서도 같은 방향의 성능을 보여야 한다</td><td>validation에서 고른 후보만 test에 적용</td><td>후보 선정 후 진행</td></tr>
+<tr><td>T6-H5</td><td>T6-G5</td><td><span class='status hold'>예정</span></td><td>크기/재료/지지체 조합 피처는 일부 구간 성능을 개선할 수 있다</td><td>기본 피처에 조합 피처를 하나씩 추가하고 Warm/Cold validation 성능 비교</td><td>split 생성 후 진행</td></tr>
+<tr><td>T6-H4</td><td>T6-G4</td><td><span class='status hold'>예정</span></td><td>Cold에서는 robust 선형 계열이 복잡한 트리 모델보다 안정적일 것이다</td><td>Quantile, Huber, Ridge, LightGBM, XGBoost, CatBoost 비교</td><td>split 생성 후 진행</td></tr>
+<tr><td>T6-H3</td><td>T6-G3</td><td><span class='status hold'>예정</span></td><td>Warm에서는 작가 식별 정보와 train 기준 작가 이력 피처가 성능을 개선할 것이다</td><td>구조-only, artist_key, artist history, artist stats를 단계별 비교</td><td>split 생성 후 진행</td></tr>
+<tr><td>T6-H2</td><td>T6-G2</td><td><span class='status hold'>예정</span></td><td>Track6 split에서도 작품 구조 정보만으로 기본 예측이 가능할 것이다</td><td>작가 피처 없이 구조-only baseline을 Warm/Cold validation에서 평가</td><td>split 생성 후 진행</td></tr>
+<tr><td>T6-H1</td><td>T6-G1</td><td><span class='status hold'>예정</span></td><td>strict cold와 강화된 Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다</td><td>Track6 split 생성 후 rows, 작가 수, Warm train 작품 수, Cold 이름 중복 여부 검증</td><td>split 생성 전</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:20px;">
+    <h2>실험 결과</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>날짜</th><th>실험</th><th>가설</th><th>상태</th><th>모델</th><th>피처</th><th>Warm</th><th>Cold</th><th>결론</th></tr></thead>
+        <tbody><tr><td>2026-05-18</td><td>T6-E001</td><td>T6-H1</td><td><span class='status hold'>예정</span></td><td>모델 미사용</td><td>split metadata</td><td>예정</td><td>예정</td><td>Track6 split 생성 전</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

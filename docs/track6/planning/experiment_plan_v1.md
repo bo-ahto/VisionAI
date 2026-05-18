@@ -1,0 +1,121 @@
+# Track 6 실험 계획서 v1
+
+- 목적: 작품 1건의 정보를 보고 가격을 예측하는 최종 보고용 모델 기준을 재정리
+- 배경: Track5는 split을 개선했지만 Cold 이름 중복, Warm 작가 피처 의존, test 기반 정책 선택 리스크가 남음
+- 방향: Track6는 split 기준을 더 엄격히 고정한 뒤 모델/피처 실험을 다시 수행
+
+## 1. Track6에서 먼저 해결할 문제
+
+- 1작가 1작품 평가 문제를 split 단계에서 더 줄임
+- Cold 작가가 `artist_key`뿐 아니라 한글 작가명 기준으로도 train과 겹치지 않게 함
+- Warm 평가 작가는 train에 충분한 작품 수가 남도록 기준을 강화함
+- validation과 test 역할을 엄격히 분리함
+- test 결과를 보고 피처, 모델, 보정 정책을 고르지 않음
+- Track5에서 복잡해진 보조 검증을 Track6 기준 실험으로 정리함
+
+## 2. 예측 상황 정의
+
+- Warm:
+  - 예측 대상 작가가 학습 데이터에 존재하는 경우
+  - 학습 데이터에 해당 작가 작품이 충분히 남아 있는 경우
+  - 작품 구조 정보와 train 기준 작가 이력 피처 사용 가능
+- Cold:
+  - 예측 대상 작가가 학습 데이터에 없는 경우
+  - `artist_key` 또는 한글 작가명 기준으로도 train과 겹치지 않는 경우
+  - 작가 피처는 사용하지 않고 작품 구조 정보만 사용
+
+## 3. 데이터셋 고정 기준
+
+- 입력 원본:
+  - `data/track4_primary_market_feature_candidates_v1.csv`
+- Track6 split 출력:
+  - `data/track6_split/track6_train.csv`
+  - `data/track6_split/track6_val_warm.csv`
+  - `data/track6_split/track6_test_warm.csv`
+  - `data/track6_split/track6_val_cold.csv`
+  - `data/track6_split/track6_test_cold.csv`
+- split 기준은 `docs/track6/dataset/split_policy_v1.md`에 먼저 고정
+- split 생성 후 `docs/track6/dataset/split_report.md`에 rows, 작가 수, 누수 검증 결과 기록
+
+## 4. split 설계 원칙
+
+- Cold는 작가 단위로 train과 완전히 분리
+- Cold는 `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 기준 중복을 모두 점검
+- Warm은 평가 작가가 train에 반드시 존재해야 함
+- Warm 평가 작가는 train에 최소 5작품 이상 남기는 기준을 우선 검토
+- Warm 평가셋은 작가당 가능한 2~3작품 이상을 포함
+- 동일 작품 후보가 train과 평가셋에 동시에 있으면 train에서 제거
+- source, URL, gallery tier는 모델 피처로 사용하지 않음
+
+## 5. 실험 진행 순서
+
+- 1단계: split 정책 고정
+- 2단계: Track6 split 생성 및 검증
+- 3단계: 기본 피처 정의
+- 4단계: 구조-only baseline 생성
+- 5단계: Warm 작가 피처 ablation
+- 6단계: Cold 모델 비교
+- 7단계: 피처 조합 실험
+- 8단계: 후보 모델군 비교
+- 9단계: validation 기준 최종 후보 선정
+- 10단계: test 최종 확인
+- 11단계: 가격 범위/신뢰도 정책 검증
+- 12단계: 최종 artifact 생성
+
+## 6. 기본 피처 후보
+
+- 공통 작품 구조 피처:
+  - `medium_category`
+  - `support_category`
+  - `log_area`
+  - `aspect_ratio`
+  - `width_cm`
+  - `height_cm`
+  - `has_depth`
+  - `is_3d_candidate`
+- Warm 전용 후보:
+  - `artist_key`
+  - `artist_works_log`
+  - `artist_works_count_train`
+  - train 기준 작가 가격 통계
+- Cold 금지 피처:
+  - `artist_key`
+  - `artist_name_ko`
+  - `artist_works_log`
+  - `artist_works_count_train`
+  - 작가 가격 통계
+  - source
+  - gallery tier
+  - URL
+  - image URL
+
+## 7. 평가 지표
+
+- 1순위:
+  - median APE
+  - 대표 오차 수준
+  - 낮을수록 좋음
+- 2순위:
+  - p95 APE
+  - 큰 오차 위험 확인용
+  - 낮을수록 좋음
+- 3순위:
+  - Within-30
+  - 실제 가격의 30% 이내로 맞춘 비율
+  - 높을수록 좋음
+- 4순위:
+  - Within-50
+  - 실제 가격의 50% 이내로 맞춘 비율
+  - 높을수록 좋음
+- 보조:
+  - RMSE(log)
+  - 로그 가격 기준 안정성 확인
+
+## 8. 기록 원칙
+
+- 모든 실험은 가설 ID와 실험 ID를 연결
+- 실험 전 연구 방법을 먼저 문서에 남김
+- validation 결과로 후보를 고름
+- test는 최종 확인용으로만 사용함
+- Warm / Cold 결과는 합치지 않음
+- 사용 데이터, 피처, 모델, 비교 기준, 결과, 결론을 개별 실험 문서에 남김
