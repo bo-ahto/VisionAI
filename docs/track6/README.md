@@ -9,6 +9,7 @@
 
 - 실험 계획서: `docs/track6/planning/experiment_plan_v1.md`
 - 이전 트랙 방법 반영 기준: `docs/track6/planning/prior_track_method_reference.md`
+- 클렌징 계획서: `docs/track6/dataset/cleaning_plan_v1.md`
 - split 정책서: `docs/track6/dataset/split_policy_v1.md`
 - split 생성 보고서: `docs/track6/dataset/split_report.md`
 - 실험 인덱스: `docs/track6/experiments/INDEX.md`
@@ -29,6 +30,7 @@
 
 - Track5 결과는 참고만 함
 - Track3의 작가명 Warm/Cold 기준, Track4의 동명이인/클렌징 검증, Track5의 split/감사 방식을 반영함
+- 클렌징 기준을 먼저 고정한 뒤 validation/test 우선 split을 생성함
 - Track6 split을 새로 고정한 뒤 실험을 다시 실행함
 - Warm / Cold는 합치지 않고 분리 평가함
 - validation에서 후보를 고르고 test는 최종 확인에만 사용함

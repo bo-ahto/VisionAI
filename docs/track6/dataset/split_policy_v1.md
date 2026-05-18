@@ -11,6 +11,8 @@
 - Warm / Cold는 작가 기준으로 분리함
 - 운영에서는 작가 ID가 아니라 작가명을 입력받을 수 있으므로 한글 작가명 기준 검증을 포함함
 - Track3의 작가명 라우팅, Track4의 동명이인 표시, Track5의 split 검증 방식을 반영함
+- split 전 `docs/track6/dataset/cleaning_plan_v1.md` 기준으로 학습 후보 row를 먼저 확정함
+- validation/test를 우선 확보하고 남은 데이터를 train으로 구성함
 - validation은 후보 선택용으로만 사용함
 - test는 최종 확인용으로만 사용함
 
