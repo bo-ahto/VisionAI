@@ -31,6 +31,8 @@
 
 ## 다음 실험 후보
 
-- T5-E022: 최종 모델 artifact 생성
-- T5-E023: 운영 입력/출력 스키마 고정
-- T5-E024: 최종 리포트 작성
+- T5-E022: Warm/Cold 반복 split 안정성 검증
+- T5-E023: Warm 작가 피처 영향 분해 및 저이력 구간 검증
+- T5-E024: Cold 이름 중복/엄격 Cold 분리 검증
+- T5-E025: validation 기반 정책 재선정 후 test 확인
+- T5-E026: 최종 모델 artifact 생성
