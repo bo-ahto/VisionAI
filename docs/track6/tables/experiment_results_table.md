@@ -8,6 +8,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-18 | T6-E005 | T6-H5 | 검증 완료 | Track6 name-corrected split | CatBoost / HistQuantile / Huber | 운영 가능 조합 피처 | best `0.2665` (`base_medium_size`) | median best `0.3782` (`base`), p95 best `1.3835` (`base_size_shape`) | Warm/Cold별 후보 피처셋 분리 필요 | [기록](../experiments/2026-05-18_T6-E005_feature_combo_ablation.md) |
 | 2026-05-18 | T6-E004 | T6-H4 | 검증 완료 | Track6 name-corrected split | hist_quantile_ordinal / huber_onehot | Cold 구조 피처 | - | median best `0.3903` (`hist_quantile_ordinal`), p95 best `1.4674` (`huber_onehot`) | Cold 모델 후보 기준 확보 | [기록](../experiments/2026-05-18_T6-E004_cold_model_compare.md) |
 | 2026-05-18 | T6-E003 | T6-H3 | 검증 완료 | Track6 name-corrected split | CatBoost | Warm 작가 피처 ablation | best `0.2737` (`structure_plus_artist_key`), 구조-only 대비 `0.2248` 개선 | - | Warm 작가 피처 유지 가치 확인 | [기록](../experiments/2026-05-18_T6-E003_warm_artist_ablation.md) |
 | 2026-05-18 | T6-E002 | T6-H2 | 검증 완료 | Track6 name-corrected split | hist_gbdt_ordinal / lightgbm_basic | 구조-only 피처 | best `0.4579` (`hist_gbdt_ordinal`) | best `0.4029` (`lightgbm_basic`) | 구조 피처 baseline 기준 확보 | [기록](../experiments/2026-05-18_T6-E002_structure_only_baseline.md) |
