@@ -6,6 +6,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-18 | T6-E007 | T6-H6 | 검증 완료 | test 최종 확인 완료 | [기록](2026-05-18_T6-E007_test_confirmation.md) |
 | 2026-05-18 | T6-E006 | T6-H6 | 부분 검증 | validation 후보 선정 완료 | [기록](2026-05-18_T6-E006_validation_candidate_selection.md) |
 | 2026-05-18 | T6-E005 | T6-H5 | 검증 완료 | 피처 조합 ablation 완료 | [기록](2026-05-18_T6-E005_feature_combo_ablation.md) |
 | 2026-05-18 | T6-E004 | T6-H4 | 검증 완료 | Cold 모델 비교 완료 | [기록](2026-05-18_T6-E004_cold_model_compare.md) |
