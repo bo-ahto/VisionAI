@@ -17,10 +17,11 @@ flowchart TD
     D --> F
     F --> G[Validation 예측값]
 
-    H[Validation Label 파일<br/>정답 가격] --> I[Validation 평가]
+    H[Validation Label 파일<br/>실제 가격] --> I[Validation 예측값 + 실제 가격 결합<br/>_track6_row_id 기준]
     G --> I
+    I --> V[Validation 오차 계산<br/>예측값과 실제값 비교]
 
-    I --> J[모델 / 피처 / 설정 선택]
+    V --> J[모델 / 피처 / 설정 선택]
 
     J --> K[최종 후보 고정]
 
@@ -28,11 +29,18 @@ flowchart TD
     K --> M
     M --> N[Test 예측값]
 
-    O[Test Label 파일<br/>정답 가격] --> P[Test 최종 평가]
+    O[Test Label 파일<br/>실제 가격] --> P[Test 예측값 + 실제 가격 결합<br/>_track6_row_id 기준]
     N --> P
+    P --> T[Test 오차 계산<br/>예측값과 실제값 비교]
 
-    P --> Q[최종 성능 보고]
+    T --> Q[최종 성능 보고]
 ```
+
+- 핵심 해석:
+  - 예측 단계에서는 feature 파일만 사용함
+  - 평가 단계에서 예측값과 label 파일을 `_track6_row_id` 기준으로 합침
+  - 합친 뒤에야 예측 가격과 실제 가격을 비교할 수 있음
+  - 이 결합은 모델 입력이 아니라 성능 계산용으로만 사용함
 
 ## 2. 단계별 라벨 사용 기준
 
@@ -40,10 +48,10 @@ flowchart TD
 |---|---|---|---|---|
 | 학습 | train feature | train label | 모델이 입력과 정답의 관계를 학습 | 가능 |
 | validation 예측 | validation feature | 사용 안 함 | 후보 모델이 정답 없이 예측 | 금지 |
-| validation 평가 | validation 예측값 | validation label | 모델/피처/설정 선택 | 가능 |
+| validation 평가 | validation 예측값 | validation label | 예측값과 실제값을 결합해 오차 계산 | 가능 |
 | 후보 고정 | 실험 결과 문서 | 사용 안 함 | 최종 후보를 문서로 고정 | 금지 |
 | test 예측 | test feature | 사용 안 함 | 최종 후보가 정답 없이 예측 | 금지 |
-| test 최종 평가 | test 예측값 | test label | 최종 성능 확인 | 가능 |
+| test 최종 평가 | test 예측값 | test label | 예측값과 실제값을 결합해 최종 성능 확인 | 가능 |
 | 운영 예측 | 운영 입력 feature | 없음 | 실제 서비스 예측 | 불가 |
 
 ## 3. 학습 단계
@@ -95,6 +103,10 @@ pred_val = model.predict(val_features)
   - 예측값과 label을 `_track6_row_id` 기준으로 결합
   - 실제 가격과 예측 가격을 비교
   - median APE, p95 APE, Within-30, Within-50, RMSE(log)를 계산
+- 해석:
+  - label은 validation 예측값이 나온 뒤에 붙임
+  - label을 붙이는 이유는 예측값이 실제 가격과 얼마나 다른지 계산하기 위해서임
+  - label을 붙인 결과는 모델 재학습 입력으로 사용하지 않음
 - 목적:
   - 피처 선택
   - 모델 선택
@@ -146,6 +158,9 @@ APE = |예측가격 - 실제가격| / 실제가격
 - 사용 방식:
   - 예측값과 test label을 `_track6_row_id` 기준으로 결합
   - 최종 성능을 계산
+- 해석:
+  - test label은 test 예측값이 나온 뒤에만 붙임
+  - test label을 붙이는 이유는 최종 후보 모델의 예측값과 실제 가격을 비교하기 위해서임
 - 주의:
   - test 결과를 보고 피처나 모델을 다시 바꾸지 않음
   - test 결과를 보고 바꾸면 기존 test 결과는 최종 성능으로 사용하지 않음
