@@ -8,6 +8,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-18 | T6-E003 | T6-H3 | 검증 완료 | Track6 name-corrected split | CatBoost | Warm 작가 피처 ablation | best `0.2737` (`structure_plus_artist_key`), 구조-only 대비 `0.2248` 개선 | - | Warm 작가 피처 유지 가치 확인 | [기록](../experiments/2026-05-18_T6-E003_warm_artist_ablation.md) |
 | 2026-05-18 | T6-E002 | T6-H2 | 검증 완료 | Track6 name-corrected split | hist_gbdt_ordinal / lightgbm_basic | 구조-only 피처 | best `0.4579` (`hist_gbdt_ordinal`) | best `0.4029` (`lightgbm_basic`) | 구조 피처 baseline 기준 확보 | [기록](../experiments/2026-05-18_T6-E002_structure_only_baseline.md) |
 | 2026-05-18 | T6-E001C | T6-H1 | 검증 완료 | Track6 name-corrected split | 모델 미사용 | feature/label manifest | Warm feature 누수 컬럼 0 | Cold feature 누수 컬럼 0 | feature/label 분리 상태 `pass` | [기록](../experiments/2026-05-18_T6-E001C_feature_label_pipeline.md), [보고서](../dataset/feature_label_pipeline_report.md) |
 | 2026-05-18 | T6-E001B | T6-H1 | 검토 완료 | Track6 name-corrected split | 모델 미사용 | column quality metadata | Warm 1작품 작가 0, train 누락 0 | Cold 이름 겹침 0, artist history 0 | fail 0, review 14. 모델 실험 진행 가능 | [기록](../experiments/2026-05-18_T6-E001B_column_quality_validation.md), [보고서](../dataset/column_quality_report.md) |

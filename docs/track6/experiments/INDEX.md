@@ -6,6 +6,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-18 | T6-E003 | T6-H3 | 검증 완료 | Warm 작가 피처 ablation 완료 | [기록](2026-05-18_T6-E003_warm_artist_ablation.md) |
 | 2026-05-18 | T6-E002 | T6-H2 | 검증 완료 | 구조-only baseline 완료 | [기록](2026-05-18_T6-E002_structure_only_baseline.md) |
 | 2026-05-18 | T6-E001C | T6-H1 | 검증 완료 | feature/label 분리, 상태 `pass` | [기록](2026-05-18_T6-E001C_feature_label_pipeline.md) |
 | 2026-05-18 | T6-E001B | T6-H1 | 검토 완료 | 컬럼 품질 검증, fail 0 / review 14 | [기록](2026-05-18_T6-E001B_column_quality_validation.md) |
