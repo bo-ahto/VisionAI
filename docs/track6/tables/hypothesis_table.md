@@ -22,7 +22,7 @@
 
 | 가설 ID | 세부 목표 | 가설 요약 | 연구 방법 | 사용 데이터 | 핵심 피처 | 비교 기준 | 성공 기준 | 현재 상태 | 검증 강도 | 현재 판단 | 관련 실험 | 후속 필요 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T6-H1 | T6-G1 | strict cold와 강화된 Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다 | Track6 split 생성 후 rows, 작가 수, Warm train 작품 수, Cold 이름 중복 여부 검증 | Track4 feature candidates | split metadata | Track5 split | Cold 이름 중복 0, Warm train 최소 작품 수 기준 충족 | 예정 | 미실행 | split 생성 전 | T6-E001 | split 생성 스크립트 작성 |
+| T6-H1 | T6-G1 | strict cold와 강화된 Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다 | Track3/4/5 방법을 반영해 한글명, 동명이인, Warm train 작품 수, Cold 이름 중복, 작가당 평가 작품 수를 검증 | Track4 feature candidates | split metadata | Track5 split | Cold 이름 중복 0, Warm train 최소 작품 수 기준 충족, 1작가 1작품 비율 기록 | 예정 | 미실행 | split 생성 전 | T6-E001 | split 생성 스크립트 작성 |
 | T6-H2 | T6-G2 | Track6 split에서도 작품 구조 정보만으로 기본 예측이 가능할 것이다 | 작가 피처 없이 구조-only baseline을 Warm/Cold validation에서 평가 | Track6 split | 구조 피처 | 중앙값 baseline | median APE가 중앙값 baseline보다 개선 | 예정 | 미실행 | split 생성 후 진행 | T6-E002 | - |
 | T6-H3 | T6-G3 | Warm에서는 작가 식별 정보와 train 기준 작가 이력 피처가 성능을 개선할 것이다 | 구조-only, artist_key, artist history, artist stats를 단계별 비교 | Track6 split | 작가 피처 | 구조-only Warm | Warm median APE 개선 | 예정 | 미실행 | split 생성 후 진행 | T6-E003 | - |
 | T6-H4 | T6-G4 | Cold에서는 robust 선형 계열이 복잡한 트리 모델보다 안정적일 것이다 | Quantile, Huber, Ridge, LightGBM, XGBoost, CatBoost 비교 | Track6 split | Cold 구조 피처 | 구조-only baseline | Cold median/p95 개선 | 예정 | 미실행 | split 생성 후 진행 | T6-E004 | - |

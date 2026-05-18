@@ -7,6 +7,8 @@
 ## 1. Track6에서 먼저 해결할 문제
 
 - 1작가 1작품 평가 문제를 split 단계에서 더 줄임
+- 작가 이름 한글화 상태를 split 전에 검증함
+- 동명이인 후보를 split 전에 분리 또는 별도 표시함
 - Cold 작가가 `artist_key`뿐 아니라 한글 작가명 기준으로도 train과 겹치지 않게 함
 - Warm 평가 작가는 train에 충분한 작품 수가 남도록 기준을 강화함
 - validation과 test 역할을 엄격히 분리함
@@ -39,8 +41,10 @@
 
 ## 4. split 설계 원칙
 
+- Track3의 Warm/Cold 작가명 기준, Track4의 동명이인 처리, Track5의 split/감사 방식을 참고함
 - Cold는 작가 단위로 train과 완전히 분리
 - Cold는 `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 기준 중복을 모두 점검
+- Cold는 동명이인 suffix가 붙은 `artist_name_ko`와 원본명 `artist_name_ko_orig`를 함께 확인
 - Warm은 평가 작가가 train에 반드시 존재해야 함
 - Warm 평가 작가는 train에 최소 5작품 이상 남기는 기준을 우선 검토
 - Warm 평가셋은 작가당 가능한 2~3작품 이상을 포함
@@ -49,18 +53,20 @@
 
 ## 5. 실험 진행 순서
 
-- 1단계: split 정책 고정
-- 2단계: Track6 split 생성 및 검증
-- 3단계: 기본 피처 정의
-- 4단계: 구조-only baseline 생성
-- 5단계: Warm 작가 피처 ablation
-- 6단계: Cold 모델 비교
-- 7단계: 피처 조합 실험
-- 8단계: 후보 모델군 비교
-- 9단계: validation 기준 최종 후보 선정
-- 10단계: test 최종 확인
-- 11단계: 가격 범위/신뢰도 정책 검증
-- 12단계: 최종 artifact 생성
+- 1단계: 이전 트랙 방법 반영 기준 확인
+- 2단계: 작가명 한글화/동명이인 상태 점검
+- 3단계: split 정책 고정
+- 4단계: Track6 split 생성 및 검증
+- 5단계: 기본 피처 정의
+- 6단계: 구조-only baseline 생성
+- 7단계: Warm 작가 피처 ablation
+- 8단계: Cold 모델 비교
+- 9단계: 피처 조합 실험
+- 10단계: 후보 모델군 비교
+- 11단계: validation 기준 최종 후보 선정
+- 12단계: test 최종 확인
+- 13단계: 가격 범위/신뢰도 정책 검증
+- 14단계: 최종 artifact 생성
 
 ## 6. 기본 피처 후보
 
