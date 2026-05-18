@@ -4,15 +4,14 @@
 - 기준일: 2026-05-18
 - 정렬 기준: 최신 실험이 위로 오도록 관리
 - 원칙: Warm / Cold 결과는 합치지 않고 분리 기록
-- 상태: 실험 실행 전
+- 상태: T6-E001 완료
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 2026-05-18 | T6-E001 | T6-H1 | 예정 | Track4 feature candidates | 모델 미사용 | split metadata | 예정 | 예정 | Track6 split 생성 전 | 예정 |
+| 2026-05-18 | T6-E001 | T6-H1 | 검증 완료 | Track4 feature candidates | 모델 미사용 | split metadata | val `261`건 / test `608`건 | val `1,952`건 / test `3,342`건, 이름 겹침 0 | Track6 split 상태 `pass` | [기록](../experiments/2026-05-18_T6-E001_strict_split_generation.md), [보고서](../dataset/split_report.md) |
 
 ## 다음 실험 후보
 
-- T6-E001: strict split 생성 및 검증
 - T6-E002: 구조-only baseline
 - T6-E003: Warm 작가 피처 ablation
 - T6-E004: Cold 모델 비교

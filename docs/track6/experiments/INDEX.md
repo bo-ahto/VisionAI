@@ -6,4 +6,4 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
-| 2026-05-18 | T6-E001 | T6-H1 | 예정 | Track6 strict split 생성 및 검증 | 예정 |
+| 2026-05-18 | T6-E001 | T6-H1 | 검증 완료 | Track6 strict split 생성 및 검증, 상태 `pass` | [기록](2026-05-18_T6-E001_strict_split_generation.md) |
