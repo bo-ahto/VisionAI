@@ -8,6 +8,7 @@
 ## 1. 주요 문서
 
 - 실험 계획서: `docs/track6/planning/experiment_plan_v1.md`
+- 상사 보고용 실험 계획서: `docs/track6/planning/experiment_plan_for_report.md`
 - 이전 트랙 방법 반영 기준: `docs/track6/planning/prior_track_method_reference.md`
 - 클렌징 계획서: `docs/track6/dataset/cleaning_plan_v1.md`
 - 작가 한글명 개선 보고서: `docs/track6/dataset/artist_name_ko_improvement_report.md`
