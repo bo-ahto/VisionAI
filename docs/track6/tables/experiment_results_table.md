@@ -8,6 +8,7 @@
 
 | 날짜 | 실험 ID | 관련 가설 | 상태 | 사용 데이터 | 사용 모델 | 사용 피처 | Warm 결과 요약 | Cold 결과 요약 | 결론 | 상세 기록 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-18 | T6-E008 | T6-H7 | 검증 완료 | Track6 name-corrected split | slice 분석 | risk flags | 위험 구간 분석 | 위험 후보 `11`개 | 신뢰도/가격 범위 정책 필요 | [기록](../experiments/2026-05-18_T6-E008_risk_policy_analysis.md) |
 | 2026-05-18 | T6-E007 | T6-H6 | 검증 완료 | Track6 name-corrected split | CatBoost / HistQuantile / Huber | T6-E006 선정 후보 | test `0.3407` (`base_medium_size`) | median test `0.3799`, p95 test `2.2865` | test holdout 확인 완료 | [기록](../experiments/2026-05-18_T6-E007_test_confirmation.md) |
 | 2026-05-18 | T6-E006 | T6-H6 | 부분 검증 | Track6 name-corrected split | 후보 선정 로직 | validation 후보 피처 | Warm 후보 `0.2665` (`base_medium_size`) | Cold 후보 median `0.3782`, p95 `1.3835` | test 전 후보 고정 | [기록](../experiments/2026-05-18_T6-E006_validation_candidate_selection.md) |
 | 2026-05-18 | T6-E005 | T6-H5 | 검증 완료 | Track6 name-corrected split | CatBoost / HistQuantile / Huber | 운영 가능 조합 피처 | best `0.2665` (`base_medium_size`) | median best `0.3782` (`base`), p95 best `1.3835` (`base_size_shape`) | Warm/Cold별 후보 피처셋 분리 필요 | [기록](../experiments/2026-05-18_T6-E005_feature_combo_ablation.md) |
