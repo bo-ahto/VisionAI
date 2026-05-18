@@ -6,6 +6,7 @@
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-05-18 | T6-E009 | T6-H8 | 검증 완료 | 최종 artifact manifest 생성 | [기록](2026-05-18_T6-E009_final_artifact_manifest.md) |
 | 2026-05-18 | T6-E008 | T6-H7 | 검증 완료 | 신뢰도/위험 구간 분석 완료 | [기록](2026-05-18_T6-E008_risk_policy_analysis.md) |
 | 2026-05-18 | T6-E007 | T6-H6 | 검증 완료 | test 최종 확인 완료 | [기록](2026-05-18_T6-E007_test_confirmation.md) |
 | 2026-05-18 | T6-E006 | T6-H6 | 부분 검증 | validation 후보 선정 완료 | [기록](2026-05-18_T6-E006_validation_candidate_selection.md) |

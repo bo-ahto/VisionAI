@@ -1,0 +1,135 @@
+{
+  "created_at": "2026-05-18",
+  "track": "track6",
+  "training_policy": "train + validation only, test excluded",
+  "target": "ln_price_krw",
+  "price_label": "price_krw",
+  "routing_policy": {
+    "warm": "artist exists in training artist identity table",
+    "cold": "artist not found in training artist identity table"
+  },
+  "risk_policy_candidates": [
+    "cold_3d",
+    "cold_extreme_shape",
+    "cold_unbalanced_shape",
+    "warm_low_artist_history"
+  ],
+  "feature_generation": {
+    "warm": {
+      "size_bucket_source": "train+validation log_area quantiles",
+      "log_area_quantiles": [
+        2.3513752571634776,
+        7.168148371196247,
+        7.824046010856292,
+        8.4985872802736,
+        9.210340371976184,
+        13.3941065985546
+      ],
+      "large_area_cutoff_q80": 10000.0,
+      "generated_features": [
+        "size_bucket",
+        "shape_bucket",
+        "medium_size_bucket",
+        "support_size_bucket",
+        "medium_shape_bucket",
+        "is_large_2d",
+        "is_large_3d"
+      ]
+    },
+    "cold": {
+      "size_bucket_source": "train+validation log_area quantiles",
+      "log_area_quantiles": [
+        2.3513752571634776,
+        7.121823534088672,
+        7.798933310041217,
+        8.439533769173702,
+        9.185169007657445,
+        13.3941065985546
+      ],
+      "large_area_cutoff_q80": 9751.428000000005,
+      "generated_features": [
+        "size_bucket",
+        "shape_bucket",
+        "medium_size_bucket",
+        "support_size_bucket",
+        "medium_shape_bucket",
+        "is_large_2d",
+        "is_large_3d"
+      ]
+    }
+  },
+  "artifacts": [
+    {
+      "key": "warm_price_model",
+      "artifact": "data/track6/artifacts/track6_warm_catboost_base_medium_size.cbm",
+      "model": "CatBoostRegressor",
+      "feature_set": "base_medium_size",
+      "features": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "size_bucket",
+        "medium_size_bucket",
+        "artist_key"
+      ],
+      "training_rows": 27083
+    },
+    {
+      "key": "cold_median_price_model",
+      "artifact": "data/track6/artifacts/track6_cold_hist_quantile_base.joblib",
+      "model": "HistGradientBoostingRegressor(loss=quantile)",
+      "feature_set": "base",
+      "features": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category"
+      ],
+      "training_rows": 29353
+    },
+    {
+      "key": "cold_tail_reference_model",
+      "artifact": "data/track6/artifacts/track6_cold_huber_base_size_shape.joblib",
+      "model": "HuberRegressor",
+      "feature_set": "base_size_shape",
+      "features": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "size_bucket",
+        "shape_bucket"
+      ],
+      "training_rows": 29353
+    }
+  ],
+  "source_experiments": [
+    "T6-E001",
+    "T6-E002",
+    "T6-E003",
+    "T6-E004",
+    "T6-E005",
+    "T6-E006",
+    "T6-E007",
+    "T6-E008"
+  ]
+}

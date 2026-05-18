@@ -1,0 +1,71 @@
+{
+  "created_at": "2026-05-18",
+  "experiment_id": "T6-E009",
+  "hypothesis_id": "T6-H8",
+  "manifest_json": "data/track6/artifacts/track6_artifact_manifest.json",
+  "result_json": "data/track6/results/t6_e009_final_artifact_manifest.json",
+  "artifacts": [
+    {
+      "key": "warm_price_model",
+      "artifact": "data/track6/artifacts/track6_warm_catboost_base_medium_size.cbm",
+      "model": "CatBoostRegressor",
+      "feature_set": "base_medium_size",
+      "features": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "size_bucket",
+        "medium_size_bucket",
+        "artist_key"
+      ],
+      "training_rows": 27083
+    },
+    {
+      "key": "cold_median_price_model",
+      "artifact": "data/track6/artifacts/track6_cold_hist_quantile_base.joblib",
+      "model": "HistGradientBoostingRegressor(loss=quantile)",
+      "feature_set": "base",
+      "features": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category"
+      ],
+      "training_rows": 29353
+    },
+    {
+      "key": "cold_tail_reference_model",
+      "artifact": "data/track6/artifacts/track6_cold_huber_base_size_shape.joblib",
+      "model": "HuberRegressor",
+      "feature_set": "base_size_shape",
+      "features": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "size_bucket",
+        "shape_bucket"
+      ],
+      "training_rows": 29353
+    }
+  ]
+}

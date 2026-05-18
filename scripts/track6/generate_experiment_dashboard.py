@@ -118,6 +118,8 @@ def main() -> None:
     planned_count = sum(1 for r in hypothesis_rows if "예정" in r.get("현재 상태", ""))
     latest_h = max((r.get("가설 ID", "") for r in hypothesis_rows), key=lambda x: id_number(x, "T6-H"), default="-")
     latest_e = max((r.get("실험 ID", "") for r in result_rows), key=lambda x: id_number(x, "T6-E"), default="-")
+    next_task = "서비스 추론 연결" if planned_count == 0 else "남은 예정 가설 실행"
+    next_task_note = "Track6 artifact를 실제 입력 스키마와 연결" if planned_count == 0 else f"예정 {planned_count}개 확인"
     split_text = SPLIT_REPORT.read_text(encoding="utf-8") if SPLIT_REPORT.exists() else ""
     split_status = "생성 전" if "아직 split 생성 전" in split_text else "생성 완료"
 
@@ -183,7 +185,7 @@ def main() -> None:
         <div class="card"><span>Split 상태</span><strong>{split_status}</strong></div>
         <div class="card"><span>최신 실험</span><strong>{html.escape(latest_e)}</strong></div>
         <div class="card"><span>최신 가설</span><strong>{html.escape(latest_h)}</strong></div>
-        <div class="card"><span>다음 작업</span><strong>T6-E002</strong><span>누수 차단 기준 baseline</span></div>
+        <div class="card"><span>다음 작업</span><strong>{html.escape(next_task)}</strong><span>{html.escape(next_task_note)}</span></div>
       </div>
     </div>
   </section>

@@ -47,8 +47,8 @@
       </ul>
       <div class="pills">
         <span class="pill">가설 8개</span>
-        <span class="pill">완료 7개</span>
-        <span class="pill">예정 1개</span>
+        <span class="pill">완료 8개</span>
+        <span class="pill">예정 0개</span>
         <span class="pill">생성 2026-05-18</span>
       </div>
     </div>
@@ -56,9 +56,9 @@
       <h2>현재 상태</h2>
       <div class="cards" style="grid-template-columns:1fr 1fr;">
         <div class="card"><span>Split 상태</span><strong>생성 완료</strong></div>
-        <div class="card"><span>최신 실험</span><strong>T6-E008</strong></div>
+        <div class="card"><span>최신 실험</span><strong>T6-E009</strong></div>
         <div class="card"><span>최신 가설</span><strong>T6-H8</strong></div>
-        <div class="card"><span>다음 작업</span><strong>T6-E002</strong><span>누수 차단 기준 baseline</span></div>
+        <div class="card"><span>다음 작업</span><strong>서비스 추론 연결</strong><span>Track6 artifact를 실제 입력 스키마와 연결</span></div>
       </div>
     </div>
   </section>
@@ -80,7 +80,7 @@
     <div class="table-wrap">
       <table>
         <thead><tr><th>가설</th><th>목표</th><th>상태</th><th>요약</th><th>연구 방법</th><th>현재 판단</th></tr></thead>
-        <tbody><tr><td>T6-H8</td><td>T6-G8</td><td><span class='status hold'>예정</span></td><td>최종 운영 후보는 성능, 운영 가능성, 설명 가능성, 재현 가능성을 모두 만족해야 한다</td><td>최종 모델, 피처, 전처리, manifest 생성</td><td>모든 실험 후 진행</td></tr>
+        <tbody><tr><td>T6-H8</td><td>T6-G8</td><td><span class='status done'>검증 완료</span></td><td>최종 운영 후보는 성능, 운영 가능성, 설명 가능성, 재현 가능성을 모두 만족해야 한다</td><td>최종 모델, 피처, 전처리, manifest 생성</td><td>Warm/Cold artifact <code>3</code>개 생성, manifest ready</td></tr>
 <tr><td>T6-H7</td><td>T6-G7</td><td><span class='status done'>검증 완료</span></td><td>Cold는 위험 구간을 나누어 신뢰도 경고를 제공해야 실무적으로 해석 가능하다</td><td>3D, 대형, 소형, 비균형 형태, 저이력 구간별 오차 비교</td><td>위험 후보 <code>11</code>개, 대표 위험 <code>huber_cold__base_size_shape / 3d median 1.3504</code></td></tr>
 <tr><td>T6-H6</td><td>T6-G6</td><td><span class='status done'>검증 완료</span></td><td>최종 후보는 validation뿐 아니라 test에서도 같은 방향의 성능을 보여야 한다</td><td>validation에서 고른 후보만 test에 적용</td><td>Warm test <code>0.3407</code> (주의 유지), Cold median test <code>0.3799</code> (주의 유지), Cold tail p95 <code>2.2865</code> (주의 유지)</td></tr>
 <tr><td>T6-H5</td><td>T6-G5</td><td><span class='status done'>검증 완료</span></td><td>크기/재료/지지체 조합 피처는 일부 구간 성능을 개선할 수 있다</td><td>기본 피처에 운영 가능 조합 피처를 하나씩 추가하고 Warm/Cold validation 성능 비교</td><td>Warm best <code>0.2665</code> (<code>base_medium_size</code>), Cold median best <code>0.3782</code> (<code>base</code>), Cold p95 best <code>1.3835</code> (<code>base_size_shape</code>)</td></tr>
@@ -97,7 +97,8 @@
     <div class="table-wrap">
       <table>
         <thead><tr><th>날짜</th><th>실험</th><th>가설</th><th>상태</th><th>모델</th><th>피처</th><th>Warm</th><th>Cold</th><th>결론</th></tr></thead>
-        <tbody><tr><td>2026-05-18</td><td>T6-E008</td><td>T6-H7</td><td><span class='status done'>검증 완료</span></td><td>slice 분석</td><td>risk flags</td><td>위험 구간 분석</td><td>위험 후보 <code>11</code>개</td><td>신뢰도/가격 범위 정책 필요</td></tr>
+        <tbody><tr><td>2026-05-18</td><td>T6-E009</td><td>T6-H8</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>최종 후보 피처</td><td>artifact 생성</td><td>artifact 생성</td><td>최종 후보 manifest ready</td></tr>
+<tr><td>2026-05-18</td><td>T6-E008</td><td>T6-H7</td><td><span class='status done'>검증 완료</span></td><td>slice 분석</td><td>risk flags</td><td>위험 구간 분석</td><td>위험 후보 <code>11</code>개</td><td>신뢰도/가격 범위 정책 필요</td></tr>
 <tr><td>2026-05-18</td><td>T6-E007</td><td>T6-H6</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>T6-E006 선정 후보</td><td>test <code>0.3407</code> (<code>base_medium_size</code>)</td><td>median test <code>0.3799</code>, p95 test <code>2.2865</code></td><td>test holdout 확인 완료</td></tr>
 <tr><td>2026-05-18</td><td>T6-E006</td><td>T6-H6</td><td><span class='status partial'>부분 검증</span></td><td>후보 선정 로직</td><td>validation 후보 피처</td><td>Warm 후보 <code>0.2665</code> (<code>base_medium_size</code>)</td><td>Cold 후보 median <code>0.3782</code>, p95 <code>1.3835</code></td><td>test 전 후보 고정</td></tr>
 <tr><td>2026-05-18</td><td>T6-E005</td><td>T6-H5</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>운영 가능 조합 피처</td><td>best <code>0.2665</code> (<code>base_medium_size</code>)</td><td>median best <code>0.3782</code> (<code>base</code>), p95 best <code>1.3835</code> (<code>base_size_shape</code>)</td><td>Warm/Cold별 후보 피처셋 분리 필요</td></tr>
