@@ -62,7 +62,9 @@
 
 - validation/test를 먼저 설계함
 - Warm validation/test는 train에 충분히 남길 수 있는 작가에서만 holdout함
-- Warm 평가 작가는 holdout 후 train에 최소 5작품 이상 남기는 기준을 우선 적용함
+- Stable Warm 평가 작가는 holdout 후 train에 최소 5작품 이상 남기는 기준을 우선 적용함
+- `5작품` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준임
+- train 기준 1~4작품 작가는 Low-history Warm으로 별도 분석함
 - Warm 평가셋은 작가당 2~3작품 holdout을 우선함
 - Cold validation/test도 작가당 rows 분포를 확인함
 - 평가셋 내 1작품 작가 수와 비율을 반드시 보고함
@@ -98,8 +100,8 @@
 
 | split | 최소 rows | 최소 작가 수 | 주요 조건 |
 |---|---:|---:|---|
-| val_warm | 200 | 80 | train에 최소 5작품 이상 남는 작가 |
-| test_warm | 500 | 200 | train에 최소 5작품 이상 남는 작가 |
+| val_warm | 200 | 80 | Stable Warm: train에 최소 5작품 이상 남는 작가 |
+| test_warm | 500 | 200 | Stable Warm: train에 최소 5작품 이상 남는 작가 |
 | val_cold | 1,000 | 80 | train과 작가 ID/한글명 중복 0 |
 | test_cold | 2,500 | 200 | train과 작가 ID/한글명 중복 0 |
 
@@ -129,8 +131,8 @@
 - split별 작가 수
 - split별 작가당 rows 중앙값
 - split별 1작품 작가 수
-- Warm 평가 작가의 train 작품 수 최솟값
-- Warm 평가 작가의 train 작품 수 분포
+- Stable Warm 평가 작가의 train 작품 수 최솟값
+- Stable Warm 평가 작가의 train 작품 수 분포
 - Cold train `artist_key` 겹침
 - Cold train `artist_name_ko` 겹침
 - Cold train `artist_name_ko_orig` 겹침

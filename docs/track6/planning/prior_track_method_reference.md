@@ -12,9 +12,9 @@
 - 작가명은 모델 성능에 큰 영향을 주므로 Warm 전용 피처로만 사용
 - Cold 모델은 작가명 없이 작품 구조 정보만 사용
 - 작가명 매칭 상태에 따라 라우팅 기준을 나눔
-  - 학습 데이터에 충분히 등장하면 Warm
-  - 학습 데이터에 적게 등장하면 저이력 Warm 또는 fallback 검토
   - 학습 데이터에 없으면 Cold
+  - 학습 데이터에 1~4작품만 있으면 Low-history Warm 또는 fallback 검토
+  - 학습 데이터에 5작품 이상 있으면 Stable Warm
 - 반복 split 또는 Group 기준 검증이 필요함
 
 ## 2. Track4에서 반영할 내용
@@ -59,7 +59,9 @@
   - `is_homonym`, `artist_entity_suffix`가 있으면 split 검증에 포함
   - Cold는 `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 모두 train과 겹치지 않게 함
 - 1작가 1작품 평가 방지
-  - Warm 평가 작가는 train에 최소 5작품 이상 남기는 기준을 우선 적용
+  - Stable Warm 평가 작가는 train에 최소 5작품 이상 남기는 기준을 우선 적용
+  - `5작품` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준
+  - train 기준 1~4작품 작가는 Low-history Warm으로 별도 관리
   - Warm 평가셋에는 가능하면 작가당 2~3작품 포함
   - Cold 평가셋도 작가당 작품 수 분포를 보고 1작품 작가 비율을 기록
   - 1작품만 있는 작가는 전체 성능과 별도 slice 성능을 함께 보고
@@ -73,13 +75,13 @@
   - 한글 작가명 결측률 확인
   - 동명이인 후보 수 확인
   - Cold 이름 중복 제거 가능 여부 확인
-  - Warm 최소 train 작품 수 기준 적용 가능 여부 확인
+  - Stable Warm 최소 train 작품 수 기준 적용 가능 여부 확인
 - T6-E001 split 생성 후
   - Cold train 겹침 `artist_key = 0`
   - Cold train 겹침 `artist_name_ko = 0`
   - Cold train 겹침 `artist_name_ko_orig = 0`
   - Warm 평가 작가 train 존재 여부 확인
-  - Warm 평가 작가 train 작품 수 분포 확인
+  - Stable Warm 평가 작가 train 작품 수 분포 확인
   - Warm/Cold 평가셋의 작가당 작품 수 분포 확인
 - T6-E002 이후
   - split이 바뀌면 모든 모델 실험을 다시 실행

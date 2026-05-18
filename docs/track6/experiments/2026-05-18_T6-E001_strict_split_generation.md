@@ -20,7 +20,8 @@
 - val_cold rows/artists: `1,952` / `80`
 - test_cold rows/artists: `3,342` / `200`
 - Cold train 이름 중복: val `0`, test `0`
-- Warm 최소 train 작품 수: val `5`, test `5`
+- Stable Warm 평가 작가 최소 train 작품 수: val `5`, test `5`
+- 주의: `5작품` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준
 
 ## 결론
 

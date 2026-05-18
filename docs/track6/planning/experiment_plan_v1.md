@@ -17,14 +17,20 @@
 
 ## 2. 예측 상황 정의
 
-- Warm:
-  - 예측 대상 작가가 학습 데이터에 존재하는 경우
-  - 학습 데이터에 해당 작가 작품이 충분히 남아 있는 경우
-  - 작품 구조 정보와 train 기준 작가 이력 피처 사용 가능
 - Cold:
   - 예측 대상 작가가 학습 데이터에 없는 경우
   - `artist_key` 또는 한글 작가명 기준으로도 train과 겹치지 않는 경우
   - 작가 피처는 사용하지 않고 작품 구조 정보만 사용
+- Low-history Warm:
+  - 예측 대상 작가가 학습 데이터에 존재함
+  - 다만 train 기준 해당 작가 작품 수가 1~4개인 경우
+  - Warm/Cold 경계 구간으로 보고 별도 slice 성능과 신뢰도 경고를 검토
+- Stable Warm:
+  - 예측 대상 작가가 학습 데이터에 존재하는 경우
+  - train 기준 해당 작가 작품 수가 5개 이상인 경우
+  - 작품 구조 정보와 train 기준 작가 이력 피처 사용 가능
+- Track6의 공식 Warm validation/test는 Stable Warm 기준으로 구성함
+- `5개` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준임
 
 ## 3. 데이터셋 고정 기준
 
@@ -46,7 +52,8 @@
 - Cold는 `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 기준 중복을 모두 점검
 - Cold는 동명이인 suffix가 붙은 `artist_name_ko`와 원본명 `artist_name_ko_orig`를 함께 확인
 - Warm은 평가 작가가 train에 반드시 존재해야 함
-- Warm 평가 작가는 train에 최소 5작품 이상 남기는 기준을 우선 검토
+- Stable Warm 평가 작가는 train에 최소 5작품 이상 남기는 기준을 우선 검토
+- train 작품 수 1~4개 작가는 Low-history Warm으로 별도 관리
 - Warm 평가셋은 작가당 가능한 2~3작품 이상을 포함
 - 동일 작품 후보가 train과 평가셋에 동시에 있으면 train에서 제거
 - source, URL, gallery tier는 모델 피처로 사용하지 않음

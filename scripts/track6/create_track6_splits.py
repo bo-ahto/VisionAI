@@ -421,7 +421,9 @@ def render_split_report(summary: dict[str, Any]) -> str:
         f"- 상태: `{summary['status']}`",
         "- 방식: validation/test를 먼저 충분히 확보한 뒤 남은 데이터를 train으로 구성",
         "- Cold 기준: `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 모두 train 겹침 0",
-        "- Warm 기준: 평가 작가가 train에 최소 5작품 이상 남음",
+        "- Stable Warm 평가 기준: 평가 작가가 train에 최소 5작품 이상 남음",
+        "- Low-history Warm 기준: train에 1~4작품만 있는 작가는 별도 분석 대상으로 관리",
+        "- 주의: `5작품` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준",
         "",
         "## 1. split 결과",
         "",
@@ -464,10 +466,16 @@ def render_split_report(summary: dict[str, Any]) -> str:
         f"- test_cold rows 기준 통과: `{checks['test_cold_meets_min_rows']}`",
         f"- test_cold 작가 수 기준 통과: `{checks['test_cold_meets_min_artists']}`",
         "",
-        "## 4. 해석",
+        "## 4. 라우팅 해석",
+        "",
+        "- Cold: train 내 작가 작품 수 0개이면 Cold 모델 대상",
+        "- Low-history Warm: train 내 작가 작품 수 1~4개이면 별도 위험 구간으로 표시",
+        "- Stable Warm: train 내 작가 작품 수 5개 이상이면 Warm 모델 평가 기준에 해당",
+        "",
+        "## 5. 해석",
         "",
         "- Track6는 Track5보다 Cold 이름 중복 기준을 강화함",
-        "- Warm 평가는 train에 충분한 작품이 남는 작가 중심으로 구성함",
+        "- Stable Warm 평가는 train에 충분한 작품이 남는 작가 중심으로 구성함",
         "- split 상태가 `pass`이면 T6-E002 구조-only baseline으로 진행 가능",
     ]
     return "\n".join(lines)
@@ -496,7 +504,8 @@ def render_experiment(summary: dict[str, Any]) -> str:
 - val_cold rows/artists: `{summary['files']['val_cold']['rows']:,}` / `{summary['files']['val_cold']['artists']:,}`
 - test_cold rows/artists: `{summary['files']['test_cold']['rows']:,}` / `{summary['files']['test_cold']['artists']:,}`
 - Cold train 이름 중복: val `{summary['checks']['val_cold_overlap_train_artist_name_ko_orig']}`, test `{summary['checks']['test_cold_overlap_train_artist_name_ko_orig']}`
-- Warm 최소 train 작품 수: val `{summary['checks']['val_warm_min_train_count']}`, test `{summary['checks']['test_warm_min_train_count']}`
+- Stable Warm 평가 작가 최소 train 작품 수: val `{summary['checks']['val_warm_min_train_count']}`, test `{summary['checks']['test_warm_min_train_count']}`
+- 주의: `5작품` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준
 
 ## 결론
 
@@ -511,14 +520,14 @@ def update_management_tables(summary: dict[str, Any]) -> None:
     hypo = REPO / "docs" / "track6" / "tables" / "hypothesis_table.md"
     text = hypo.read_text(encoding="utf-8")
     old = (
-        "| T6-H1 | T6-G1 | strict cold와 강화된 Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다 | "
-        "Track3/4/5 방법을 반영해 클렌징 후보를 확정하고 validation/test 우선 split으로 한글명, 동명이인, Warm train 작품 수, Cold 이름 중복, 작가당 평가 작품 수를 검증 | "
-        "Track4 feature candidates | split metadata | Track5 split | Cold 이름 중복 0, Warm train 최소 작품 수 기준 충족, 평가셋 최소 rows 충족, 1작가 1작품 비율 기록 | 예정 | 미실행 | split 생성 전 | T6-E001 | split 생성 스크립트 작성 |"
+        "| T6-H1 | T6-G1 | strict cold와 Stable Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다 | "
+        "Track3/4/5 방법을 반영해 클렌징 후보를 확정하고 validation/test 우선 split으로 한글명, 동명이인, Stable Warm train 작품 수, Cold 이름 중복, 작가당 평가 작품 수를 검증 | "
+        "Track4 feature candidates | split metadata | Track5 split | Cold 이름 중복 0, Stable Warm train 최소 작품 수 기준 충족, 평가셋 최소 rows 충족, 1작가 1작품 비율 기록 | 예정 | 미실행 | split 생성 전 | T6-E001 | split 생성 스크립트 작성 |"
     )
     new = (
-        "| T6-H1 | T6-G1 | strict cold와 강화된 Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다 | "
-        "Track3/4/5 방법을 반영해 클렌징 후보를 확정하고 validation/test 우선 split으로 한글명, 동명이인, Warm train 작품 수, Cold 이름 중복, 작가당 평가 작품 수를 검증 | "
-        f"Track6 split | split metadata | Track5 split | Cold 이름 중복 0, Warm train 최소 작품 수 기준 충족, 평가셋 최소 rows 충족, 1작가 1작품 비율 기록 | {status} | split 생성 검증 | "
+        "| T6-H1 | T6-G1 | strict cold와 Stable Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다 | "
+        "Track3/4/5 방법을 반영해 클렌징 후보를 확정하고 validation/test 우선 split으로 한글명, 동명이인, Stable Warm train 작품 수, Cold 이름 중복, 작가당 평가 작품 수를 검증 | "
+        f"Track6 split | split metadata | Track5 split | Cold 이름 중복 0, Stable Warm train 최소 작품 수 기준 충족, 평가셋 최소 rows 충족, 1작가 1작품 비율 기록 | {status} | split 생성 검증 | "
         f"상태 `{summary['status']}`, test_warm `{summary['files']['test_warm']['rows']:,}`건, test_cold `{summary['files']['test_cold']['rows']:,}`건, Cold 이름 겹침 0 | T6-E001 | T6-E002 baseline 진행 |"
     )
     if old in text:

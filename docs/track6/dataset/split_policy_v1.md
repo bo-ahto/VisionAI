@@ -43,7 +43,25 @@
 - Cold 평가셋은 작가당 가능한 여러 작품을 포함함
 - Cold 평가에서는 작가명과 작가 이력 피처를 사용하지 않음
 
-## 5. Warm 기준
+## 5. Warm / Cold 운영 라우팅 기준
+
+- Warm / Cold 구분 기준은 train에 해당 작가가 있는지 여부임
+- `5작품` 기준은 Warm / Cold 구분 기준이 아님
+- `5작품` 기준은 Warm 평가를 안정적으로 하기 위한 Stable Warm 기준임
+
+| 구분 | train 내 작가 작품 수 | 의미 | 모델/평가 처리 |
+|---|---:|---|---|
+| Cold | 0 | 학습 데이터에 없는 신규 작가 | Cold 모델 사용 |
+| Low-history Warm | 1~4 | 학습 데이터에 작가는 있으나 이력이 적음 | Warm/Cold 경계 구간으로 별도 분석 |
+| Stable Warm | 5 이상 | 학습 데이터에 작가 이력이 충분함 | Warm 모델 평가 기준 |
+
+- 운영에서는 먼저 입력 작가명을 train 작가명 기준으로 조회함
+- 조회 결과가 없으면 Cold 모델을 적용함
+- 조회 결과가 있으나 train 작품 수가 1~4개면 Low-history Warm으로 표시함
+- 조회 결과가 있고 train 작품 수가 5개 이상이면 Stable Warm으로 처리함
+- Low-history Warm은 Warm 모델 적용 가능성은 있으나 신뢰도 경고 또는 별도 fallback 실험이 필요함
+
+## 6. Stable Warm 평가 기준
 
 - Warm 평가는 학습 DB에 작가가 있는 상황을 의미함
 - Warm 평가 작가는 train에 반드시 남아 있어야 함
@@ -53,7 +71,7 @@
   - 평가셋에는 작가당 최대 3작품 holdout
 - 기준을 만족하지 못하는 작가는 Warm test가 아니라 학습 또는 별도 low-history 분석 대상으로 둠
 
-## 6. 1작가 1작품 평가 방지 기준
+## 7. 1작가 1작품 평가 방지 기준
 
 - Warm 평가셋은 작가당 2~3작품 holdout을 우선함
 - Warm 평가셋에서 1작품만 있는 작가 수를 반드시 보고함
@@ -61,7 +79,7 @@
 - 작가당 1작품만 있는 평가 row는 전체 성능과 별도 slice 성능을 함께 기록함
 - 작가당 1작품 비율이 높으면 split을 다시 생성함
 
-## 7. 동일 작품 후보 처리
+## 8. 동일 작품 후보 처리
 
 - 같은 작품으로 볼 가능성이 높은 행은 train과 평가셋에 동시에 두지 않음
 - 동일 작품 후보 판단 컬럼:
@@ -75,7 +93,7 @@
   - `support_category`
 - 평가셋과 중복되는 동일 작품 후보가 train에 있으면 train에서 제거
 
-## 8. 금지 피처
+## 9. 금지 피처
 
 - 아래 컬럼은 모델 피처로 사용하지 않음
 - `track4_source`
@@ -86,7 +104,7 @@
 - `URL`
 - 수집 출처 관련 컬럼
 
-## 9. split 산출물
+## 10. split 산출물
 
 - `data/track6_split/track6_train.csv`
 - `data/track6_split/track6_val_warm.csv`
@@ -96,7 +114,7 @@
 - `data/track6_split/track6_split_summary.json`
 - `data/track6_split/track6_split_membership.csv`
 
-## 10. split 검증 항목
+## 11. split 검증 항목
 
 - train/validation/test rows 수
 - split별 작가 수

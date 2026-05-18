@@ -6,7 +6,9 @@
 - 상태: `pass`
 - 방식: validation/test를 먼저 충분히 확보한 뒤 남은 데이터를 train으로 구성
 - Cold 기준: `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 모두 train 겹침 0
-- Warm 기준: 평가 작가가 train에 최소 5작품 이상 남음
+- Stable Warm 평가 기준: 평가 작가가 train에 최소 5작품 이상 남음
+- Low-history Warm 기준: train에 1~4작품만 있는 작가는 별도 분석 대상으로 관리
+- 주의: `5작품` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준
 
 ## 1. split 결과
 
@@ -45,8 +47,14 @@
 - test_cold rows 기준 통과: `True`
 - test_cold 작가 수 기준 통과: `True`
 
-## 4. 해석
+## 4. 라우팅 해석
+
+- Cold: train 내 작가 작품 수 0개이면 Cold 모델 대상
+- Low-history Warm: train 내 작가 작품 수 1~4개이면 별도 위험 구간으로 표시
+- Stable Warm: train 내 작가 작품 수 5개 이상이면 Warm 모델 평가 기준에 해당
+
+## 5. 해석
 
 - Track6는 Track5보다 Cold 이름 중복 기준을 강화함
-- Warm 평가는 train에 충분한 작품이 남는 작가 중심으로 구성함
+- Stable Warm 평가는 train에 충분한 작품이 남는 작가 중심으로 구성함
 - split 상태가 `pass`이면 T6-E002 구조-only baseline으로 진행 가능
