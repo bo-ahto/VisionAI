@@ -31,14 +31,19 @@
 - Warm:
   - 예측 대상 작가가 학습 데이터에 존재하는 경우
   - 작가 식별값과 train 기준 작가 이력 피처를 사용할 수 있음
-  - Track6 공식 Warm 평가는 train에 해당 작가 작품이 최소 5개 이상 남는 Stable Warm 기준으로 구성
+  - Warm / Cold 구분은 작품 수가 아니라 학습 데이터에 작가가 있는지 여부로 결정
 - Cold:
   - 예측 대상 작가가 학습 데이터에 없는 경우
   - `artist_key`, `artist_name_ko`, `artist_name_ko_orig` 기준으로 모두 train과 겹치지 않아야 함
   - 작가명, 작가 이력, 작가 가격 통계 피처는 사용하지 않음
 - Low-history Warm:
   - train에 작가가 존재하지만 작품 수가 적은 경우
+  - train 기준 작가 작품 수가 1~4개인 경우
   - 모델 라우팅상 Warm에 가깝지만 신뢰도 경고 후보로 별도 관리
+- Stable Warm:
+  - Warm 작가 중 train에 최소 5개 이상의 작품이 남는 경우
+  - Track6 공식 Warm validation/test는 평가 안정성을 위해 Stable Warm 중심으로 구성
+  - `5개` 기준은 Warm / Cold를 나누는 기준이 아니라 Warm 평가 안정성을 위한 기준
 
 ## 4. 데이터셋 구성 계획
 
@@ -53,7 +58,9 @@
 - split 구성 원칙:
   - validation/test를 먼저 충분히 확보
   - 남은 데이터를 train으로 구성
-  - Warm 평가 작가는 train에 반드시 존재
+  - Warm 평가는 train에 작가가 존재하는 작품으로 구성
+  - 공식 Warm validation/test는 Stable Warm 기준으로 구성
+  - Low-history Warm은 Warm이지만 별도 위험 구간으로 관리
   - Cold 평가 작가는 train과 작가 ID/한글명/원본명 기준으로 모두 분리
   - test는 최종 확인용으로만 사용
 - 현재 split 규모:
@@ -71,7 +78,8 @@
   - Cold 작가가 train과 한글명 기준으로 겹치지 않는지 확인
 - split 검증:
   - Warm 평가 작가가 train에 존재하는지 확인
-  - Stable Warm 기준으로 train 최소 작품 수 확인
+  - Stable Warm 평가셋은 train 최소 작품 수 5개 이상을 만족하는지 확인
+  - Low-history Warm은 Warm/Cold 분류 기준이 아니라 신뢰도 위험 구간으로 따로 표시
   - Cold 작가가 train과 겹치지 않는지 확인
   - train/eval 동일 작품 후보 겹침 확인
 - 컬럼 품질 검증:
@@ -96,17 +104,25 @@
 
 ## 7. 기본 피처 계획
 
-- 공통 작품 구조 피처:
+- 운영 입력값:
   - `width_cm`
   - `height_cm`
   - `depth_cm`
+  - `medium_category`
+  - `support_category`
+- 크기 파생 피처:
   - `area_cm2`
   - `log_area`
   - `aspect_ratio`
   - `has_depth`
   - `is_3d_candidate`
-  - `medium_category`
-  - `support_category`
+- 크기 파생 피처를 둔 이유:
+  - 운영 입력은 가로/세로/깊이지만, 모델에는 크기의 대표값이 필요함
+  - `area_cm2`는 가로와 세로를 곱해 만든 면적값으로 별도 입력값이 아님
+  - `log_area`는 가격처럼 한쪽으로 치우친 크기 분포를 완화하기 위한 변환값
+  - `aspect_ratio`는 같은 면적이라도 정사각형/가로형/세로형 차이를 보기 위한 값
+  - 가로/세로와 면적을 함께 쓰는 것은 중복 가능성이 있으므로 T6-E005에서 피처 조합별로 검증함
+  - 최종 운영에서는 성능과 설명 가능성을 기준으로 필요한 크기 표현만 유지
 - Warm 전용 피처:
   - `artist_key`
   - `artist_works_log`
@@ -141,7 +157,8 @@
   - 목적: 신규 작가 상황에서 어떤 모델 계열이 안정적인지 확인
   - 관련 실험: T6-E004
 - 5단계: 운영 가능 피처 조합 실험
-  - 목적: 크기/재료/지지체 조합 피처가 성능 개선에 도움이 되는지 확인
+  - 목적: 가로/세로/면적/로그면적 등 크기 표현과 재료/지지체 조합 피처가 성능 개선에 도움이 되는지 확인
+  - 목적: 중복 피처가 성능을 높이는지, 아니면 복잡도만 늘리는지 확인
   - 관련 실험: T6-E005
 - 6단계: validation 기준 후보 고정
   - 목적: test를 보기 전에 Warm/Cold 후보를 확정
@@ -164,7 +181,7 @@
 | T6-H2 | 기본 예측 가능성 확인 | 작가 피처 없이 구조-only baseline 평가 | median APE가 단순 기준보다 개선 |
 | T6-H3 | Warm 성능 개선 | 작가 식별값과 작가 이력 피처 ablation | Warm median APE 개선 |
 | T6-H4 | Cold 성능 개선 | Huber, Ridge, Quantile, LightGBM, XGBoost, CatBoost 비교 | Cold median/p95 개선 |
-| T6-H5 | 운영 가능 피처 선정 | size/shape/material 조합 피처 비교 | median 또는 p95 개선 |
+| T6-H5 | 운영 가능 피처 선정 | 크기 표현과 size/shape/material 조합 피처 비교 | median 또는 p95 개선 |
 | T6-H6 | 모델 안정성 확인 | validation 후보를 test에 적용 | test 성능 급락 없음 |
 | T6-H7 | 신뢰도/가격 범위 정책 | 위험 slice별 오차 확인 | 위험 구간이 전체 대비 명확히 높음 |
 | T6-H8 | 최종 후보 확정 | 모델 artifact와 manifest 생성 | 파일 누락 없이 재현 가능 |
@@ -263,6 +280,9 @@
 
 - 작가가 학습 데이터에 있으면 Warm 모델 사용
 - 작가가 학습 데이터에 없으면 Cold 모델 사용
+- train 기준 작가 작품 수가 1~4개이면 Warm이지만 Low-history Warm으로 표시
+- train 기준 작가 작품 수가 5개 이상이면 Stable Warm으로 표시
+- `5개` 기준은 Warm/Cold 라우팅 기준이 아니라 신뢰도 구간 기준
 - Warm 모델:
   - CatBoost 기반
   - 작가 식별값 + 작품 구조 피처 + 재료/크기 조합 피처 사용

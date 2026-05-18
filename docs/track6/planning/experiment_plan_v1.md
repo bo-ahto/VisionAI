@@ -24,13 +24,15 @@
 - Low-history Warm:
   - 예측 대상 작가가 학습 데이터에 존재함
   - 다만 train 기준 해당 작가 작품 수가 1~4개인 경우
-  - Warm/Cold 경계 구간으로 보고 별도 slice 성능과 신뢰도 경고를 검토
+  - 분류상 Warm이지만 작가 이력이 적어 별도 slice 성능과 신뢰도 경고를 검토
 - Stable Warm:
   - 예측 대상 작가가 학습 데이터에 존재하는 경우
   - train 기준 해당 작가 작품 수가 5개 이상인 경우
   - 작품 구조 정보와 train 기준 작가 이력 피처 사용 가능
 - Track6의 공식 Warm validation/test는 Stable Warm 기준으로 구성함
 - `5개` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준임
+- 운영 라우팅에서 Warm/Cold는 학습 데이터에 작가가 있는지 여부로 먼저 결정함
+- `1~4개`와 `5개 이상` 기준은 Warm 안에서 신뢰도와 평가 안정성을 나누는 기준임
 
 ## 3. 데이터셋 고정 기준
 
@@ -105,15 +107,22 @@
 
 ## 8. 기본 피처 후보
 
-- 공통 작품 구조 피처:
-  - `medium_category`
-  - `support_category`
-  - `log_area`
-  - `aspect_ratio`
+- 운영 입력값:
   - `width_cm`
   - `height_cm`
+  - `depth_cm`
+  - `medium_category`
+  - `support_category`
+- 크기 파생 피처:
+  - `area_cm2`
+  - `log_area`
+  - `aspect_ratio`
   - `has_depth`
   - `is_3d_candidate`
+- 크기 파생 피처 설명:
+  - `area_cm2`는 가로와 세로에서 계산한 값이며 별도 운영 입력값이 아님
+  - `log_area`는 면적값의 치우친 분포를 완화하기 위한 변환값
+  - 가로/세로/면적/로그면적은 중복 가능성이 있으므로 피처 조합 실험에서 유지 여부를 판단함
 - Warm 전용 후보:
   - `artist_key`
   - `artist_works_log`
