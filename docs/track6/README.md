@@ -3,13 +3,14 @@
 - 목적: 최종 보고용 기준 split을 새로 구성하고, Warm / Cold 가격 예측 모델을 재실험
 - 핵심 방향: Track5에서 발견한 평가 리스크를 split 단계에서 먼저 제거
 - 작성 방식: 개조식
-- 상태: split v2 생성, 컬럼 품질 검증, feature/label 분리 완료
+- 상태: 작가 한글명 보정 입력 생성, split/컬럼 품질/feature-label 검증 완료
 
 ## 1. 주요 문서
 
 - 실험 계획서: `docs/track6/planning/experiment_plan_v1.md`
 - 이전 트랙 방법 반영 기준: `docs/track6/planning/prior_track_method_reference.md`
 - 클렌징 계획서: `docs/track6/dataset/cleaning_plan_v1.md`
+- 작가 한글명 개선 보고서: `docs/track6/dataset/artist_name_ko_improvement_report.md`
 - split 정책서: `docs/track6/dataset/split_policy_v1.md`
 - split 생성 보고서: `docs/track6/dataset/split_report.md`
 - 컬럼 품질 검증 보고서: `docs/track6/dataset/column_quality_report.md`
@@ -24,6 +25,7 @@
 ## 2. 주요 데이터 위치
 
 - 원본 후보 데이터: `data/track4_primary_market_feature_candidates_v1.csv`
+- Track6 보정 후보 데이터: `data/track6/track6_feature_candidates_name_corrected.csv`
 - Track6 split 출력 위치: `data/track6_split/`
 - Track6 결과 위치: `data/track6/results/`
 - Track6 예측값 위치: `data/track6/predictions/`

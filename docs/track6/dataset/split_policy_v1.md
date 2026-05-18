@@ -2,7 +2,8 @@
 
 - 목적: Track6에서 사용할 최종 보고용 train/validation/test split 기준을 먼저 고정
 - 상태: 초안
-- 입력 원본: `data/track4_primary_market_feature_candidates_v1.csv`
+- 1차 입력 원본: `data/track4_primary_market_feature_candidates_v1.csv`
+- Track6 split 입력: `data/track6/track6_feature_candidates_name_corrected.csv`
 
 ## 1. 기본 원칙
 

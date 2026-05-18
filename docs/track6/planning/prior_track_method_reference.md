@@ -21,7 +21,8 @@
 
 - 클렌징 후 학습 후보 파일을 따로 만듦
   - raw 통합본과 모델 후보 파일을 분리
-  - Track6 입력은 `data/track4_primary_market_feature_candidates_v1.csv` 사용
+  - Track6 1차 입력은 `data/track4_primary_market_feature_candidates_v1.csv` 사용
+  - 작가 한글명 보정 후 모델 split 입력은 `data/track6/track6_feature_candidates_name_corrected.csv` 사용
 - 동명이인 처리 방식 반영
   - 원래 한글명은 `artist_name_ko_orig`에 보존
   - 동명이인 여부는 `is_homonym`으로 표시

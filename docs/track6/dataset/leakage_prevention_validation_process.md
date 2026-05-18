@@ -28,8 +28,9 @@
 
 ## 3. 고정 검증 순서
 
-- 1단계: 원본 후보 데이터 확인
-  - 입력: `data/track4_primary_market_feature_candidates_v1.csv`
+- 1단계: 원본 후보 데이터 및 작가 한글명 보정 데이터 확인
+  - 1차 입력: `data/track4_primary_market_feature_candidates_v1.csv`
+  - Track6 보정 입력: `data/track6/track6_feature_candidates_name_corrected.csv`
   - 확인: 가격, 크기, 재료, 지지체, 작가명, 동명이인 후보, 중복 작품 후보
 
 - 2단계: split 생성

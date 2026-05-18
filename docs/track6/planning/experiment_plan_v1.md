@@ -34,8 +34,10 @@
 
 ## 3. 데이터셋 고정 기준
 
-- 입력 원본:
+- 1차 입력 원본:
   - `data/track4_primary_market_feature_candidates_v1.csv`
+- Track6 보정 입력:
+  - `data/track6/track6_feature_candidates_name_corrected.csv`
 - Track6 split 출력:
   - `data/track6_split/track6_train.csv`
   - `data/track6_split/track6_val_warm.csv`

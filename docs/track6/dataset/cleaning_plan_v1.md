@@ -3,7 +3,8 @@
 - 목적: Track6 split을 만들기 전에 데이터 품질 기준을 먼저 고정
 - 배경: Track4/5에서 평가셋 크기, 작가명, 동명이인, Cold 이름 중복 문제가 성능 해석에 영향을 줌
 - 원칙: 클렌징 → 학습 후보 확정 → 검증/테스트 우선 split → 남은 데이터 train 구성 순서로 진행
-- 입력 기준: `data/track4_primary_market_feature_candidates_v1.csv`
+- 1차 입력 기준: `data/track4_primary_market_feature_candidates_v1.csv`
+- Track6 보정 입력 기준: `data/track6/track6_feature_candidates_name_corrected.csv`
 
 ## 1. 전체 진행 순서
 
@@ -49,6 +50,8 @@
 - `artist_name_ko_orig`가 있으면 원본 한글명을 보존함
 - `artist_name_ko`와 `artist_name_ko_orig`가 다른 경우를 집계함
 - 운영 라우팅은 작가 ID가 아니라 작가명 입력을 받을 수 있으므로 한글명 기준 검증을 필수로 둠
+- 4글자 이상 한글식 이름 중 명백한 오표기는 `scripts/track6/artist_ko_overrides.csv`로 먼저 보정함
+- 예명, 외국 작가명, 단체명처럼 확정이 어려운 값은 자동 수정하지 않고 검토 후보로 남김
 
 ### 동명이인 필터
 

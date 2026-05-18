@@ -3,7 +3,7 @@
 - 날짜: 2026-05-18
 - 관련 가설: T6-H1
 - 상태: 검증 완료
-- 사용 데이터: Track6 split v2
+- 사용 데이터: Track6 name-corrected split
 - 사용 스크립트: `scripts/track6/export_feature_label_splits.py`
 - 결과 문서: `docs/track6/dataset/feature_label_pipeline_report.md`
 - manifest: `data/track6/manifests/track6_feature_label_manifest.json`

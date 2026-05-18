@@ -19,7 +19,7 @@ import pandas as pd
 
 
 REPO = Path(__file__).resolve().parents[2]
-INPUT = REPO / "data" / "track4_primary_market_feature_candidates_v1.csv"
+INPUT = REPO / "data" / "track6" / "track6_feature_candidates_name_corrected.csv"
 OUT_DIR = REPO / "data" / "track6_split"
 TRACK6_DATA = REPO / "data" / "track6"
 OUT_JSON = OUT_DIR / "track6_split_summary.json"
@@ -122,20 +122,20 @@ def select_name_groups(
     min_artists: int,
     rng: np.random.Generator,
 ) -> set[str]:
-    candidates = df.loc[~df["_artist_name_ko_orig_norm"].isin(excluded_names)]
+    candidates = df.loc[~df["_artist_name_ko_norm"].isin(excluded_names)]
     grouped = (
-        candidates.groupby("_artist_name_ko_orig_norm")
+        candidates.groupby("_artist_name_ko_norm")
         .agg(rows=("artist_key", "size"), artists=("artist_key", "nunique"))
         .reset_index()
     )
-    grouped = grouped.loc[grouped["_artist_name_ko_orig_norm"].ne("")]
+    grouped = grouped.loc[grouped["_artist_name_ko_norm"].ne("")]
     grouped["_rand"] = rng.random(len(grouped))
     grouped = grouped.sort_values(["_rand"]).reset_index(drop=True)
     selected: set[str] = set()
     rows = 0
     artists = 0
     for _, item in grouped.iterrows():
-        selected.add(str(item["_artist_name_ko_orig_norm"]))
+        selected.add(str(item["_artist_name_ko_norm"]))
         rows += int(item["rows"])
         artists += int(item["artists"])
         if rows >= min_rows and artists >= min_artists:
@@ -213,9 +213,13 @@ def create_splits(work: pd.DataFrame) -> tuple[dict[str, pd.DataFrame], dict[str
     cold_val_names = select_name_groups(work, cold_test_names, MIN_VAL_COLD_ROWS, MIN_VAL_COLD_ARTISTS, rng)
     cold_names = cold_test_names | cold_val_names
 
-    cold_test = work.loc[work["_artist_name_ko_orig_norm"].isin(cold_test_names)].copy()
-    cold_val = work.loc[work["_artist_name_ko_orig_norm"].isin(cold_val_names)].copy()
-    train_pool = work.loc[~work["_artist_name_ko_orig_norm"].isin(cold_names)].copy()
+    cold_test = work.loc[work["_artist_name_ko_norm"].isin(cold_test_names)].copy()
+    cold_val = work.loc[work["_artist_name_ko_norm"].isin(cold_val_names)].copy()
+    cold_orig_names = set(cold_test["_artist_name_ko_orig_norm"]) | set(cold_val["_artist_name_ko_orig_norm"])
+    train_pool = work.loc[
+        (~work["_artist_name_ko_norm"].isin(cold_names))
+        & (~work["_artist_name_ko_orig_norm"].isin(cold_orig_names))
+    ].copy()
 
     used_warm_artists: set[str] = set()
     warm_test_idx = holdout_warm(
@@ -487,7 +491,7 @@ def render_experiment(summary: dict[str, Any]) -> str:
 - 날짜: {summary['created_at']}
 - 관련 가설: T6-H1
 - 상태: {'검증 완료' if summary['status'] == 'pass' else '검토 필요'}
-- 사용 데이터: `data/track4_primary_market_feature_candidates_v1.csv`
+- 사용 데이터: `{summary['input']}`
 - 사용 스크립트: `scripts/track6/create_track6_splits.py`
 - 결과: `docs/track6/dataset/split_report.md`
 
@@ -522,7 +526,7 @@ def update_management_tables(summary: dict[str, Any]) -> None:
     old = (
         "| T6-H1 | T6-G1 | strict cold와 Stable Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다 | "
         "Track3/4/5 방법을 반영해 클렌징 후보를 확정하고 validation/test 우선 split으로 한글명, 동명이인, Stable Warm train 작품 수, Cold 이름 중복, 작가당 평가 작품 수를 검증 | "
-        "Track4 feature candidates | split metadata | Track5 split | Cold 이름 중복 0, Stable Warm train 최소 작품 수 기준 충족, 평가셋 최소 rows 충족, 1작가 1작품 비율 기록 | 예정 | 미실행 | split 생성 전 | T6-E001 | split 생성 스크립트 작성 |"
+        "Track6 보정 후보 데이터 | split metadata | Track5 split | Cold 이름 중복 0, Stable Warm train 최소 작품 수 기준 충족, 평가셋 최소 rows 충족, 1작가 1작품 비율 기록 | 예정 | 미실행 | split 생성 전 | T6-E001 | split 생성 스크립트 작성 |"
     )
     new = (
         "| T6-H1 | T6-G1 | strict cold와 Stable Warm 기준을 적용한 Track6 split이 최종 보고 기준으로 더 적합할 것이다 | "
@@ -536,10 +540,10 @@ def update_management_tables(summary: dict[str, Any]) -> None:
     results = REPO / "docs" / "track6" / "tables" / "experiment_results_table.md"
     text = results.read_text(encoding="utf-8")
     old_row = (
-        "| 2026-05-18 | T6-E001 | T6-H1 | 예정 | Track4 feature candidates | 모델 미사용 | split metadata | 예정 | 예정 | Track6 split 생성 전 | 예정 |"
+        "| 2026-05-18 | T6-E001 | T6-H1 | 예정 | Track6 보정 후보 데이터 | 모델 미사용 | split metadata | 예정 | 예정 | Track6 split 생성 전 | 예정 |"
     )
     new_row = (
-        f"| {summary['created_at']} | T6-E001 | T6-H1 | {status} | Track4 feature candidates | 모델 미사용 | split metadata | "
+        f"| {summary['created_at']} | T6-E001 | T6-H1 | {status} | Track6 보정 후보 데이터 | 모델 미사용 | split metadata | "
         f"val `{summary['files']['val_warm']['rows']:,}`건 / test `{summary['files']['test_warm']['rows']:,}`건 | "
         f"val `{summary['files']['val_cold']['rows']:,}`건 / test `{summary['files']['test_cold']['rows']:,}`건, 이름 겹침 0 | "
         f"Track6 split 상태 `{summary['status']}` | [기록](../experiments/2026-05-18_T6-E001_strict_split_generation.md), [보고서](../dataset/split_report.md) |"

@@ -1,7 +1,7 @@
 # Track 6 split 생성 보고서
 
 - 생성일: `2026-05-18`
-- 입력: `data/track4_primary_market_feature_candidates_v1.csv`
+- 입력: `data/track6/track6_feature_candidates_name_corrected.csv`
 - random seed: `20260518`
 - 상태: `pass`
 - 방식: validation/test를 먼저 충분히 확보하고 규모를 근접하게 맞춘 뒤 남은 데이터를 train으로 구성
@@ -14,11 +14,11 @@
 
 | split | rows | 작가 수 | 한글명 수 | 가격 중앙값 | 가격 p90 | 작가당 rows 중앙값 | 1작품 작가 수 | 파일 |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
-| `train` | `26,686` | `1,799` | `1,734` | `2,805,305` | `15,000,000` | `5.0` | `259` | `data/track6_split/track6_train.csv` |
-| `val_warm` | `526` | `180` | `179` | `3,394,800` | `18,793,950` | `3.0` | `0` | `data/track6_split/track6_val_warm.csv` |
-| `test_warm` | `601` | `206` | `203` | `3,063,600` | `17,250,000` | `3.0` | `0` | `data/track6_split/track6_test_warm.csv` |
-| `val_cold` | `2,956` | `160` | `156` | `5,520,000` | `124,212,420` | `5.0` | `23` | `data/track6_split/track6_val_cold.csv` |
-| `test_cold` | `3,342` | `200` | `195` | `3,422,400` | `14,000,000` | `7.0` | `25` | `data/track6_split/track6_test_cold.csv` |
+| `train` | `26,560` | `1,787` | `1,729` | `3,172,310` | `19,736,760` | `6.0` | `256` | `data/track6_split/track6_train.csv` |
+| `val_warm` | `523` | `178` | `178` | `2,967,000` | `19,101,960` | `3.0` | `0` | `data/track6_split/track6_val_warm.csv` |
+| `test_warm` | `607` | `207` | `207` | `3,670,800` | `20,700,000` | `3.0` | `0` | `data/track6_split/track6_test_warm.csv` |
+| `val_cold` | `2,793` | `160` | `153` | `1,794,000` | `10,881,576` | `5.0` | `24` | `data/track6_split/track6_val_cold.csv` |
+| `test_cold` | `3,240` | `200` | `192` | `3,172,620` | `15,500,000` | `6.0` | `27` | `data/track6_split/track6_test_cold.csv` |
 
 ## 2. 핵심 검증
 

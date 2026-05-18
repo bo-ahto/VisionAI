@@ -1,7 +1,7 @@
 # Track 6 클렌징 검토 요약
 
 - 생성일: `2026-05-18`
-- 입력: `data/track4_primary_market_feature_candidates_v1.csv`
+- 입력: `data/track6/track6_feature_candidates_name_corrected.csv`
 - 목적: Track6 split 전 학습 후보와 작가명/동명이인 상태 확인
 
 ## 1. 후보 데이터
