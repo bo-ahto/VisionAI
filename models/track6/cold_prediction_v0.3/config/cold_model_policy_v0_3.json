@@ -1,0 +1,50 @@
+{
+  "version": "v0.3",
+  "name": "cold_prediction_v0.3",
+  "status": "validated_two_layer_defense_freeze",
+  "created_at": "2026-06-07T00:00:00",
+  "purpose": "PP-COLD-DEFENSE1이 가산 검증한 guard+search 2단 방어를 작가 lookup fallback + 검수 플래그와 함께 고정.",
+  "representative_policy": {
+    "candidate": "component_pp_y18_qwidth_bin",
+    "metrics_test": {
+      "MdAPE": 0.4246626073887792,
+      "MAPE": 0.991041533611196,
+      "p95_APE": 3.3052975828185316
+    },
+    "note": "대표 점예측은 PP-Y18 유지."
+  },
+  "defense_policy": {
+    "layers": [
+      "guard (PP-QR4)",
+      "search per-artist delta (PP-H28 gallery_museum cap0.2)"
+    ],
+    "metrics_test": {
+      "MdAPE": 0.4098199778610642,
+      "MAPE": 0.8492600086568258,
+      "p95_APE": 2.3464651715770666
+    },
+    "guard_only_metrics_test": {
+      "MdAPE": 0.4177645009335748,
+      "MAPE": 0.9639625775134394,
+      "p95_APE": 2.537707619420415
+    },
+    "fallback": "uncovered artist -> guard only",
+    "search_coverage_test": 1.0,
+    "note": "두 방어 가산적(PP-COLD-DEFENSE1 redundancy gap≈0). 검색층은 분산 추가 → 검수 플래그 동반."
+  },
+  "review_flag_policy": {
+    "rule": "qwidth >= qwidth_q67 OR artist not covered by search lookup",
+    "review_rate_test": 0.45240400129073893
+  },
+  "confidence_range_policy": {
+    "display": "참고가 + 넓은 범위 + 낮은 신뢰도. review_flag=True는 수동 검수."
+  },
+  "relation": {
+    "v0_1": "guard only (post-processing freeze)",
+    "v0_2_operational": "search-free raw-input runnable",
+    "v0_3": "guard+search 최고 정확도(post-processing freeze, PP-Y18 base는 상류 search 의존)"
+  },
+  "operational_note": "후처리층만 실행 가능(component 예측 + artist_key 입력). 하부 Quantile/PP-Y18은 상류 참조. 검색 delta는 작가 단위 frozen snapshot(372 작가) — 신규 작가는 fallback(guard). 0604는 전부 warm(0 cold)이라 cold 운영 트래픽 확보 후 재평가 필요.",
+  "reproduced_defense1_guard_search_mdape": true,
+  "postprocessor_max_abs_diff": 3.552713678800501e-15
+}
