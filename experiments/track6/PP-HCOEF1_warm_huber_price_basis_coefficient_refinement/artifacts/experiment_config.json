@@ -1,0 +1,66 @@
+{
+  "experiment_id": "PP-HCOEF1",
+  "experiment_slug": "PP-HCOEF1_warm_huber_price_basis_coefficient_refinement",
+  "created_at": "2026-06-07T22:14:27",
+  "reference_candidate": "current_70_30",
+  "source_candidates": {
+    "blend_svcnum_ppv8_wsvc_0.70": "current_70_30",
+    "pp_v8_compact_blend_mape_guarded": "ppv8_defensive",
+    "fallback_numeric": "svc_fallback",
+    "baseline_huber": "baseline_huber"
+  },
+  "meta_feature_sets": {
+    "basis3": [
+      "ppv8_defensive",
+      "svc_fallback",
+      "shrunk_huber_refit"
+    ],
+    "basis5": [
+      "current_70_30",
+      "ppv8_defensive",
+      "svc_fallback",
+      "shrunk_huber_refit",
+      "shrunk_svc_prior"
+    ],
+    "basis_reliability": [
+      "current_70_30",
+      "ppv8_defensive",
+      "svc_fallback",
+      "shrunk_huber_refit",
+      "shrunk_svc_prior",
+      "raw_svc_prior",
+      "log_area",
+      "svc_group_n_log",
+      "current_ppv8_gap",
+      "current_shrunk_huber_gap",
+      "raw_shrunk_prior_gap"
+    ]
+  },
+  "residual_feature_sets": {
+    "resid_basis_gap": [
+      "ppv8_defensive",
+      "svc_fallback",
+      "shrunk_huber_refit",
+      "shrunk_svc_prior",
+      "current_ppv8_gap",
+      "current_shrunk_huber_gap",
+      "raw_shrunk_prior_gap",
+      "svc_group_n_log"
+    ],
+    "resid_basis_size_reliability": [
+      "ppv8_defensive",
+      "svc_fallback",
+      "shrunk_huber_refit",
+      "shrunk_svc_prior",
+      "log_area",
+      "svc_group_n_log",
+      "svc_prior_iqr",
+      "current_ppv8_gap",
+      "current_shrunk_huber_gap",
+      "raw_shrunk_prior_gap"
+    ]
+  },
+  "selection_policy": "validation score: 0.40 MdAPE + 0.35 MAPE + 0.25 p95, fixed test confirmation",
+  "shrink_k": 5.0,
+  "folds": 5
+}
