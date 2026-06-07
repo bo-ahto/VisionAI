@@ -1,0 +1,73 @@
+{
+  "experiment_id": "PP-WHUBER11",
+  "experiment_slug": "PP-WHUBER11_warm_cause_correction_mape_guard",
+  "current_candidate": "blend_svcnum_ppv8_wsvc_0.70",
+  "seed": 20260606,
+  "n_artist_splits": 5,
+  "n_artist_repeats": 8,
+  "overpred_risk_causes": [
+    "유사작품_적음+작가이력_적음",
+    "유사작품_표본_부족",
+    "작가이력_표본_부족"
+  ],
+  "hierarchies": {
+    "risk_pred": [
+      [
+        "risk_cause",
+        "pred_log_bin"
+      ],
+      [
+        "risk_cause"
+      ]
+    ],
+    "works_pred": [
+      [
+        "artist_works_bin",
+        "pred_log_bin"
+      ],
+      [
+        "artist_works_bin"
+      ]
+    ],
+    "pred_svc": [
+      [
+        "pred_log_bin",
+        "svc_reliability_bin"
+      ],
+      [
+        "svc_reliability_bin"
+      ]
+    ]
+  },
+  "min_rows": [
+    8,
+    20
+  ],
+  "caps": [
+    0.05,
+    0.08,
+    0.12
+  ],
+  "strengths": [
+    0.25,
+    0.5
+  ],
+  "smooth_rows": [
+    20
+  ],
+  "selected_candidates": [
+    {
+      "candidate": "PP-WHUBER11_guard_risk_pred_min20_cap0p05_s0p25_smooth20",
+      "objective": "p95/MAPE 방어 [risk_pred]"
+    },
+    {
+      "candidate": "PP-WHUBER11_guard_pred_svc_min20_cap0p05_s0p5_smooth20",
+      "objective": "p95/MAPE 방어 [pred_svc]"
+    },
+    {
+      "candidate": "PP-WHUBER11_guard_works_pred_min8_cap0p05_s0p5_smooth20",
+      "objective": "p95/MAPE 방어 [works_pred]"
+    }
+  ],
+  "representative_candidate": "PP-WHUBER11_guard_risk_pred_min20_cap0p05_s0p25_smooth20"
+}
