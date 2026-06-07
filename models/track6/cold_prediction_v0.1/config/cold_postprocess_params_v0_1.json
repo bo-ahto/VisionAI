@@ -1,0 +1,17 @@
+{
+  "version": "v0.1",
+  "candidate": "guard_y18_lgb_q40_qwidth67_gap50_down_w0p50",
+  "components": {
+    "base": "y18_qwidth_pred_log",
+    "comp": "lgb_q40_pred_log"
+  },
+  "thresholds": {
+    "qwidth_q67": 1.4612207078910142,
+    "gap_q50": 0.07715547281151025
+  },
+  "gap_definition": "gap_q50 = validation 50th pct of (y18_qwidth_pred_log - cat_q40_pred_log)",
+  "mask": "qwidth >= qwidth_q67 AND (base - lgb_q40) >= gap_q50 AND lgb_q40 < base",
+  "weight": 0.5,
+  "direction": "down_only",
+  "source": "PP-QR4 validated; thresholds fit on Track6 validation split"
+}
