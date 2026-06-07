@@ -1,0 +1,74 @@
+# PP-AMW6 Warm 작가 메타 잔차 보정 반복 재검증
+
+- 작성일: 2026-06-07 12:25
+- 기준 후보: `blend_svcnum_ppv8_wsvc_0.70`
+- 목적: PP-AMW5에서 확인된 작가 메타 잔차 보정 신호가 작가 단위 반복 holdout에서도 유지되는지 확인.
+- 반복 검증: validation 작가 단위 `12`회 x `5`fold.
+- test 안정성: row/artist bootstrap `400`회.
+
+## 0. 실행 결론
+
+- 작가 메타 Huber 보정 후보는 test MdAPE/MAPE/p95를 모두 소폭 개선했지만 bootstrap 개선 확률이 강하지 않아 즉시 기본 모델 교체까지는 보류.
+- 생년 구간 median 보정 후보는 test MAPE와 p95_APE 방어가 가장 안정적이며, 반복 validation과 bootstrap에서 평균오차/큰오차 방어 신호가 더 강함.
+- 전시/갤러리 후보는 반복 validation에서는 좋아 보였지만 test에서 MdAPE/MAPE/p95가 모두 악화되어 현재 데이터 품질에서는 운영 보정축으로 채택하지 않음.
+- 후속 방향: 대표 가격은 작가 메타 Huber 후보, 큰 오차 방어는 생년 구간 median 후보로 목적을 분리해 0604 신규 데이터와 운영 artifact 재현성 검증을 진행.
+
+## 1. 반복 validation 요약
+
+| experiment_id | candidate | source_candidate | role | kind | iterations | MdAPE_mean | MdAPE_std | delta_MdAPE_mean | delta_MdAPE_median | improvement_probability_MdAPE | MAPE_mean | MAPE_std | delta_MAPE_mean | delta_MAPE_median | improvement_probability_MAPE | p95_APE_mean | p95_APE_std | delta_p95_APE_mean | delta_p95_APE_median | improvement_probability_p95_APE | RMSE_log_mean | RMSE_log_std | delta_RMSE_log_mean | delta_RMSE_log_median | improvement_probability_RMSE_log | mean_abs_correction_mean |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PP-AMW6 | PP-AMW6_external_gallery_exhibition_diagnostic | PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p001_cap0p05_s0p50 | 전시/갤러리 진단 후보 | huber | 12 | 0.1262 | 0.0022 | -0.0043 | -0.0049 | 1.0000 | 0.2121 | 0.0008 | 0.0011 | 0.0009 | 0.0000 | 0.6473 | 0.0054 | -0.0107 | -0.0125 | 1.0000 | 0.3292 | 0.0008 | 0.0000 | -0.0001 | 0.5833 | 0.0213 |
+| PP-AMW6 | PP-AMW6_meta_core_test_twin | PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p01_cap0p05_s0p50 | PP-AMW5 test 최상위와 동률 후보 | huber | 12 | 0.1266 | 0.0031 | -0.0039 | -0.0052 | 0.8333 | 0.2114 | 0.0009 | 0.0003 | -0.0000 | 0.5000 | 0.6476 | 0.0054 | -0.0105 | -0.0101 | 1.0000 | 0.3292 | 0.0007 | 0.0000 | -0.0000 | 0.5000 | 0.0215 |
+| PP-AMW6 | PP-AMW6_meta_core_validation_mdape | PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p05_s0p50 | PP-AMW5 validation 대표 정확도 선택 후보 | huber | 12 | 0.1267 | 0.0032 | -0.0038 | -0.0053 | 0.8333 | 0.2114 | 0.0009 | 0.0004 | 0.0000 | 0.5000 | 0.6476 | 0.0054 | -0.0104 | -0.0102 | 1.0000 | 0.3293 | 0.0007 | 0.0001 | 0.0000 | 0.3333 | 0.0215 |
+| PP-AMW6 | PP-AMW6_birth_generation_segment_guard | PP-AMW5_segment_artist_birth_generation_bin_min40_cap0p03_s1p00 | 생년 구간 median 보정 후보 | segment | 12 | 0.1276 | 0.0017 | -0.0029 | -0.0031 | 1.0000 | 0.2104 | 0.0001 | -0.0006 | -0.0006 | 1.0000 | 0.6530 | 0.0036 | -0.0050 | -0.0052 | 1.0000 | 0.3283 | 0.0003 | -0.0009 | -0.0010 | 1.0000 | 0.0084 |
+| PP-AMW6 | PP-AMW6_meta_core_p95_guard | PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p08_s0p50 | validation 큰 오차 방어 선택 후보 | huber | 12 | 0.1288 | 0.0024 | -0.0017 | -0.0025 | 0.6667 | 0.2125 | 0.0013 | 0.0014 | 0.0013 | 0.0833 | 0.6473 | 0.0096 | -0.0107 | -0.0070 | 0.9167 | 0.3299 | 0.0010 | 0.0007 | 0.0007 | 0.2500 | 0.0313 |
+
+## 2. test 1회 적용 결과
+
+| candidate | source_candidate | role | kind | MdAPE | MAPE | p95_APE | delta_MdAPE | delta_MAPE | delta_p95_APE | mean_abs_correction |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PP-AMW6_meta_core_test_twin | PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p01_cap0p05_s0p50 | PP-AMW5 test 최상위와 동률 후보 | huber | 0.1368 | 0.2746 | 0.8323 | -0.0037 | -0.0002 | -0.0008 | 0.0213 |
+| PP-AMW6_meta_core_validation_mdape | PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p05_s0p50 | PP-AMW5 validation 대표 정확도 선택 후보 | huber | 0.1368 | 0.2746 | 0.8324 | -0.0037 | -0.0002 | -0.0007 | 0.0212 |
+| PP-AMW6_birth_generation_segment_guard | PP-AMW5_segment_artist_birth_generation_bin_min40_cap0p03_s1p00 | 생년 구간 median 보정 후보 | segment | 0.1381 | 0.2740 | 0.8191 | -0.0023 | -0.0008 | -0.0139 | 0.0066 |
+| PP-AMW6_external_gallery_exhibition_diagnostic | PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p001_cap0p05_s0p50 | 전시/갤러리 진단 후보 | huber | 0.1431 | 0.2769 | 0.8347 | 0.0026 | 0.0021 | 0.0016 | 0.0208 |
+| PP-AMW6_meta_core_p95_guard | PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p08_s0p50 | validation 큰 오차 방어 선택 후보 | huber | 0.1445 | 0.2754 | 0.8324 | 0.0040 | 0.0006 | -0.0007 | 0.0303 |
+
+## 3. test bootstrap 안정성
+
+| sample_type | candidate | mean_delta_MdAPE | improvement_probability_MdAPE | mean_delta_MAPE | improvement_probability_MAPE | mean_delta_p95_APE | improvement_probability_p95_APE |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| artist_bootstrap | PP-AMW6_meta_core_validation_mdape | -0.0008 | 0.5725 | -0.0001 | 0.5200 | -0.0040 | 0.5300 |
+| artist_bootstrap | PP-AMW6_meta_core_test_twin | -0.0008 | 0.5725 | -0.0001 | 0.5175 | -0.0041 | 0.5300 |
+| artist_bootstrap | PP-AMW6_birth_generation_segment_guard | -0.0001 | 0.5400 | -0.0007 | 0.9350 | -0.0051 | 0.8300 |
+| artist_bootstrap | PP-AMW6_meta_core_p95_guard | 0.0021 | 0.3625 | 0.0007 | 0.3525 | -0.0044 | 0.5325 |
+| artist_bootstrap | PP-AMW6_external_gallery_exhibition_diagnostic | 0.0036 | 0.2600 | 0.0022 | 0.0350 | 0.0059 | 0.5075 |
+| row_bootstrap | PP-AMW6_meta_core_test_twin | -0.0017 | 0.6275 | -0.0002 | 0.5900 | -0.0035 | 0.5525 |
+| row_bootstrap | PP-AMW6_meta_core_validation_mdape | -0.0017 | 0.6325 | -0.0002 | 0.5850 | -0.0035 | 0.5525 |
+| row_bootstrap | PP-AMW6_birth_generation_segment_guard | -0.0004 | 0.6100 | -0.0008 | 0.9600 | -0.0050 | 0.7825 |
+| row_bootstrap | PP-AMW6_meta_core_p95_guard | 0.0013 | 0.3975 | 0.0006 | 0.3575 | -0.0037 | 0.5600 |
+| row_bootstrap | PP-AMW6_external_gallery_exhibition_diagnostic | 0.0027 | 0.2900 | 0.0021 | 0.0300 | 0.0050 | 0.5475 |
+
+## 4. 판단
+
+- 반복 validation에서 개선 확률이 높고 test bootstrap에서도 개선 확률이 높으면 후속 운영 후보로 승격.
+- 전시/갤러리 후보는 test p95/MAPE 악화 여부와 커버리지 문제를 함께 본다.
+- 이번 결과가 좋아도 v0.1 운영 기본값에 바로 반영하지 않고, 운영 artifact 형태로 재구현 후 0604 신규 데이터와 추가 holdout에서 별도 확인한다.
+
+## 5. 0604 운영 재검증 연결
+
+- 후속 운영 실험: `OP-V01-CAL-07_warm_amw6_operational_revalidation`.
+- 검증 방식: PP-AMW6 보정식을 기존 Warm validation split으로 학습한 뒤, 0604 신규 라벨은 외부 확인용으로만 사용.
+- service_primary 기준 0604 50달러 미만 제외 baseline: MdAPE `0.2298`, MAPE `0.3359`, p95_APE `0.9273`.
+- service_primary 기준 작가 메타 계수 보정 후보: MdAPE `0.2255`, MAPE `0.3323`, p95_APE `0.9257`.
+- service_primary 기준 생년대 구간 보정 후보: MdAPE `0.2280`, MAPE `0.3332`, p95_APE `0.9228`.
+- 판단: 0604에서도 개선 신호는 확인됐지만 개선 폭이 작으므로 v0.1 기본값 즉시 교체가 아니라 추가 검증 후보로 유지.
+- 결과 문서: `models/track6/price_prediction_v0.1/evidence/operational_experiments/OP-V01-CAL-07_warm_amw6_operational_revalidation/reports/result_report.md`.
+
+## 6. 산출물
+
+- `outputs/repeated_validation_metrics.csv`
+- `outputs/repeated_validation_summary.csv`
+- `outputs/test_once_metrics.csv`
+- `outputs/test_once_predictions.csv`
+- `outputs/bootstrap_summary.csv`
+- `outputs/bootstrap_samples.csv`

@@ -1,0 +1,73 @@
+{
+  "experiment_id": "D2",
+  "title": "Track6 D2 log_area x 지지체 숫자형 교차항 실험 결과",
+  "purpose": "같은 면적이라도 지지체에 따라 가격 증가 방식이 달라지는지 확인",
+  "description": "Group D artwork variable interaction: log_area numeric feature multiplied by NANT support categories",
+  "exp_dir": "experiments/track6/D2_log_area_support_numeric_interaction",
+  "prompt_file": "experiments/track6/D2_log_area_support_numeric_interaction/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "log_area",
+    "nant_support",
+    "log_area_x_nant_support_01",
+    "log_area_x_nant_support_02",
+    "log_area_x_nant_support_03",
+    "log_area_x_nant_support_04",
+    "log_area_x_nant_support_05",
+    "log_area_x_nant_support_06",
+    "log_area_x_nant_support_07",
+    "log_area_x_nant_support_08"
+  ],
+  "numeric_features": [
+    "log_area",
+    "log_area_x_nant_support_01",
+    "log_area_x_nant_support_02",
+    "log_area_x_nant_support_03",
+    "log_area_x_nant_support_04",
+    "log_area_x_nant_support_05",
+    "log_area_x_nant_support_06",
+    "log_area_x_nant_support_07",
+    "log_area_x_nant_support_08"
+  ],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "output_prefix": "log_area_x_nant_support",
+      "top_n": 8
+    }
+  ],
+  "variable_blocks": [
+    {
+      "name": "D2 기준: 면적 + 난트 지지체",
+      "features": ["log_area", "nant_support"],
+      "description": "면적과 지지체의 개별 효과만 사용"
+    },
+    {
+      "name": "D2 교차항: 면적 x 난트 지지체",
+      "features": [
+        "log_area",
+        "nant_support",
+        "log_area_x_nant_support_01",
+        "log_area_x_nant_support_02",
+        "log_area_x_nant_support_03",
+        "log_area_x_nant_support_04",
+        "log_area_x_nant_support_05",
+        "log_area_x_nant_support_06",
+        "log_area_x_nant_support_07",
+        "log_area_x_nant_support_08"
+      ],
+      "description": "면적이 커질 때 캔버스, 종이 등 지지체별 가격 증가 방식이 달라지는지 확인"
+    }
+  ],
+  "comment": {
+    "실험 목적": "큰 캔버스와 큰 종이 작품처럼 면적과 지지체가 함께 작용할 때 가격 예측이 개선되는지 확인한다.",
+    "실험군": "Group D: 작품 변수끼리의 교차항",
+    "기준선": "log_area + nant_support",
+    "학습 피처": "기준선과 log_area x NANT 지지체 교차항",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "구현 방식": "log_area는 숫자형으로 유지하고, 지지체별 표시값과 곱한 숫자형 교차항을 생성한다.",
+    "해석 기준": "교차항 추가 후 MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 지지체별 면적 프리미엄이 있다고 본다."
+  }
+}

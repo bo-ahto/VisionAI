@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>IMG-P3 Cold CLIP 파일럿</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933;line-height:1.55}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left}th{background:#eef2f7}
+code{background:#f3f4f6;padding:2px 4px;border-radius:4px}.note{background:#fff8db;border:1px solid #e5d28a;padding:12px;margin:12px 0}
+</style></head><body>
+<h1>IMG-P3 Cold CLIP 이미지 결합 파일럿</h1>
+<div class="note">600건 샘플 기반 파일럿입니다. 전체 모델 성능 결론이 아니라 이미지 실험을 확장할지 판단하는 중간 결과입니다.</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>train_scope</th>
+      <th>note</th>
+      <th>n_eval</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>IMG-P3</td>
+      <td>full_tabular_catboost_reference</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>full_cold_train</td>
+      <td>전체 Cold train으로 학습한 CatBoost 참고 기준</td>
+      <td>400</td>
+      <td>0.967325</td>
+      <td>0.484124</td>
+      <td>1.685628</td>
+      <td>4.888660</td>
+      <td>0.2975</td>
+      <td>0.5225</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>sample_tabular_lgb_clip_pca32</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>image_sample_train</td>
+      <td>샘플 train에서 정형 피처와 CLIP PCA 결합</td>
+      <td>400</td>
+      <td>0.920020</td>
+      <td>0.488392</td>
+      <td>1.194114</td>
+      <td>3.740650</td>
+      <td>0.3100</td>
+      <td>0.5100</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>sample_tabular_lgb</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>image_sample_train</td>
+      <td>샘플 train만 사용한 정형 피처 기준</td>
+      <td>400</td>
+      <td>1.005642</td>
+      <td>0.503124</td>
+      <td>1.580394</td>
+      <td>6.301805</td>
+      <td>0.3000</td>
+      <td>0.4950</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>sample_tabular_lgb_clip_pca64</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>image_sample_train</td>
+      <td>샘플 train에서 정형 피처와 CLIP PCA 결합</td>
+      <td>400</td>
+      <td>0.935378</td>
+      <td>0.509548</td>
+      <td>1.195421</td>
+      <td>3.798267</td>
+      <td>0.2875</td>
+      <td>0.4900</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>sample_tabular_lgb_clip_pca16</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>image_sample_train</td>
+      <td>샘플 train에서 정형 피처와 CLIP PCA 결합</td>
+      <td>400</td>
+      <td>0.914867</td>
+      <td>0.510029</td>
+      <td>1.184939</td>
+      <td>4.186909</td>
+      <td>0.3100</td>
+      <td>0.4925</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>full_tabular_lgb_reference</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>full_cold_train</td>
+      <td>전체 Cold train으로 학습한 LightGBM 참고 기준</td>
+      <td>400</td>
+      <td>0.990110</td>
+      <td>0.514965</td>
+      <td>1.546697</td>
+      <td>5.022009</td>
+      <td>0.2500</td>
+      <td>0.4825</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>image_pca64_ridge</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>image_sample_train</td>
+      <td>CLIP 이미지만 사용한 Ridge 기준</td>
+      <td>400</td>
+      <td>1.251781</td>
+      <td>0.734055</td>
+      <td>1.488880</td>
+      <td>6.186460</td>
+      <td>0.1775</td>
+      <td>0.3250</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>image_pca16_ridge</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>image_sample_train</td>
+      <td>CLIP 이미지만 사용한 Ridge 기준</td>
+      <td>400</td>
+      <td>1.254849</td>
+      <td>0.752886</td>
+      <td>1.404173</td>
+      <td>5.770148</td>
+      <td>0.1950</td>
+      <td>0.3050</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>image_pca32_ridge</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>image_sample_train</td>
+      <td>CLIP 이미지만 사용한 Ridge 기준</td>
+      <td>400</td>
+      <td>1.234491</td>
+      <td>0.766350</td>
+      <td>1.382655</td>
+      <td>5.801669</td>
+      <td>0.1875</td>
+      <td>0.3200</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>full_tabular_lgb_reference</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>full_cold_train</td>
+      <td>전체 Cold train으로 학습한 LightGBM 참고 기준</td>
+      <td>400</td>
+      <td>0.760594</td>
+      <td>0.416555</td>
+      <td>0.756653</td>
+      <td>1.991835</td>
+      <td>0.3325</td>
+      <td>0.5700</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>sample_tabular_lgb</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>image_sample_train</td>
+      <td>샘플 train만 사용한 정형 피처 기준</td>
+      <td>400</td>
+      <td>0.818543</td>
+      <td>0.457937</td>
+      <td>0.824347</td>
+      <td>2.663792</td>
+      <td>0.3050</td>
+      <td>0.5475</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>full_tabular_catboost_reference</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>full_cold_train</td>
+      <td>전체 Cold train으로 학습한 CatBoost 참고 기준</td>
+      <td>400</td>
+      <td>0.775671</td>
+      <td>0.484379</td>
+      <td>0.761254</td>
+      <td>2.205321</td>
+      <td>0.2775</td>
+      <td>0.5125</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>sample_tabular_lgb_clip_pca32</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>image_sample_train</td>
+      <td>샘플 train에서 정형 피처와 CLIP PCA 결합</td>
+      <td>400</td>
+      <td>0.860031</td>
+      <td>0.501850</td>
+      <td>0.958215</td>
+      <td>3.668772</td>
+      <td>0.2675</td>
+      <td>0.4950</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>sample_tabular_lgb_clip_pca16</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>image_sample_train</td>
+      <td>샘플 train에서 정형 피처와 CLIP PCA 결합</td>
+      <td>400</td>
+      <td>0.843501</td>
+      <td>0.505875</td>
+      <td>0.918932</td>
+      <td>3.572473</td>
+      <td>0.2750</td>
+      <td>0.4900</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>sample_tabular_lgb_clip_pca64</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>image_sample_train</td>
+      <td>샘플 train에서 정형 피처와 CLIP PCA 결합</td>
+      <td>400</td>
+      <td>0.825438</td>
+      <td>0.521441</td>
+      <td>0.851865</td>
+      <td>2.812489</td>
+      <td>0.2850</td>
+      <td>0.4750</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>image_pca32_ridge</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>image_sample_train</td>
+      <td>CLIP 이미지만 사용한 Ridge 기준</td>
+      <td>400</td>
+      <td>1.242177</td>
+      <td>0.693073</td>
+      <td>1.851843</td>
+      <td>8.101675</td>
+      <td>0.2375</td>
+      <td>0.3550</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>image_pca16_ridge</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>image_sample_train</td>
+      <td>CLIP 이미지만 사용한 Ridge 기준</td>
+      <td>400</td>
+      <td>1.238796</td>
+      <td>0.693555</td>
+      <td>1.841954</td>
+      <td>7.529645</td>
+      <td>0.1975</td>
+      <td>0.3450</td>
+    </tr>
+    <tr>
+      <td>IMG-P3</td>
+      <td>image_pca64_ridge</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>image_sample_train</td>
+      <td>CLIP 이미지만 사용한 Ridge 기준</td>
+      <td>400</td>
+      <td>1.256253</td>
+      <td>0.709277</td>
+      <td>1.922631</td>
+      <td>7.988355</td>
+      <td>0.1775</td>
+      <td>0.3400</td>
+    </tr>
+  </tbody>
+</table>
+</body></html>

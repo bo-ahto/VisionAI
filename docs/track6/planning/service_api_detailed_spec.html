@@ -1,0 +1,1392 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track6 가격 예측 모델 서비스 API 상세 명세</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#track6-가격-예측-서비스-api-상세-문서">Track6 가격 예측 서비스 API 상세 문서</a>
+<a class="toc-level-2" href="#1.-api-설계-원칙">1. API 설계 원칙</a>
+<a class="toc-level-2" href="#2.-서비스-화면-데이터-매핑">2. 서비스 화면 데이터 매핑</a>
+<a class="toc-level-2" href="#3.-서비스-버전">3. 서비스 버전</a>
+<a class="toc-level-2" href="#4.-엔드포인트-목록">4. 엔드포인트 목록</a>
+<a class="toc-level-2" href="#5.-단건-예측-api">5. 단건 예측 API</a>
+<a class="toc-level-3" href="#5.1-요청">5.1 요청</a>
+<a class="toc-level-3" href="#5.2-필수-요청-필드">5.2 필수 요청 필드</a>
+<a class="toc-level-3" href="#5.3-선택-요청-필드">5.3 선택 요청 필드</a>
+<a class="toc-level-2" href="#6.-입력-표준화">6. 입력 표준화</a>
+<a class="toc-level-2" href="#7.-warm-cold-라우팅">7. Warm/Cold 라우팅</a>
+<a class="toc-level-2" href="#8.-warm-모델-정책">8. Warm 모델 정책</a>
+<a class="toc-level-3" href="#8.1-적용-후보">8.1 적용 후보</a>
+<a class="toc-level-3" href="#8.2-예측-공식">8.2 예측 공식</a>
+<a class="toc-level-2" href="#9.-cold-모델-정책">9. Cold 모델 정책</a>
+<a class="toc-level-2" href="#10.-비교군-통계">10. 비교군 통계</a>
+<a class="toc-level-3" href="#10.1-목적">10.1 목적</a>
+<a class="toc-level-3" href="#10.2-비교군-fallback-순서">10.2 비교군 fallback 순서</a>
+<a class="toc-level-3" href="#10.3-비교군-통계-응답-스키마">10.3 비교군 통계 응답 스키마</a>
+<a class="toc-level-2" href="#11.-유사-작품-비교-표본-정보">11. 유사 작품 / 비교 표본 정보</a>
+<a class="toc-level-3" href="#11.1-목적">11.1 목적</a>
+<a class="toc-level-3" href="#11.2-응답-스키마">11.2 응답 스키마</a>
+<a class="toc-level-2" href="#12.-가격-범위-산출">12. 가격 범위 산출</a>
+<a class="toc-level-3" href="#12.1-warm">12.1 Warm</a>
+<a class="toc-level-3" href="#12.2-cold">12.2 Cold</a>
+<a class="toc-level-2" href="#13.-신뢰도">13. 신뢰도</a>
+<a class="toc-level-3" href="#13.1-응답-스키마">13.1 응답 스키마</a>
+<a class="toc-level-3" href="#13.2-등급-기준-초안">13.2 등급 기준 초안</a>
+<a class="toc-level-3" href="#13.3-신뢰도-산정-요인">13.3 신뢰도 산정 요인</a>
+<a class="toc-level-2" href="#14.-단건-응답-예시">14. 단건 응답 예시</a>
+<a class="toc-level-3" href="#14.1-warm-응답">14.1 Warm 응답</a>
+<a class="toc-level-3" href="#14.2-cold-응답">14.2 Cold 응답</a>
+<a class="toc-level-2" href="#15.-배치-예측-api">15. 배치 예측 API</a>
+<a class="toc-level-3" href="#15.1-요청">15.1 요청</a>
+<a class="toc-level-3" href="#15.2-제한">15.2 제한</a>
+<a class="toc-level-2" href="#16.-모델-정보-api">16. 모델 정보 API</a>
+<a class="toc-level-2" href="#17.-에러-응답">17. 에러 응답</a>
+<a class="toc-level-2" href="#18.-운영-로그-필드">18. 운영 로그 필드</a>
+<a class="toc-level-2" href="#19.-구현-전-확정-필요">19. 구현 전 확정 필요</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/planning/service_api_detailed_spec.md</code></div>
+      <h1 id="track6-가격-예측-서비스-api-상세-문서">Track6 가격 예측 서비스 API 상세 문서</h1>
+<ul>
+<li>작성일: 2026-06-04</li>
+<li>문서 목적: 실제 서비스에서 사용할 가격 예측 API의 요청값, 응답값, 모델 라우팅, 가격 범위, 신뢰도, 비교군 통계, 유사 작품 정보를 구현자가 바로 검토할 수 있게 정의</li>
+<li>적용 범위: 신규 Track6 서비스 API</li>
+<li>제외 범위: 기존 셀프 테스트용 API와의 호환성</li>
+<li>기준 모델:</li>
+<li>Warm: <code>PP-SVC3 blend_svcnum_ppv8_wsvc_0.70</code></li>
+<li>Warm 검증: <code>PP-SVC4</code> 반복 holdout 안정성</li>
+<li>Cold: <code>PP-Y18 qwidth_bin_oof_min30_cap0.25</code> 참고 예측가 정책</li>
+<li>Cold 보조: <code>PP-Y16</code> 큰 오차 방어 참고</li>
+</ul>
+<h2 id="1.-api-설계-원칙">1. API 설계 원칙</h2>
+<ul>
+<li>기존 테스트 API와 완전히 분리된 신규 계약</li>
+<li>서비스 화면이 필요한 데이터를 한 번에 받을 수 있는 응답 구조</li>
+<li>Warm/Cold 라우팅 결과와 라우팅 이유를 항상 응답</li>
+<li>Warm은 예측 가격 중심, Cold는 참고 예측가와 넓은 가격 범위 중심</li>
+<li>비교군 통계는 모델 결과와 별도 블록으로 제공</li>
+<li>호당가 통계는 기존 Track6 <code>estimated_ho</code> 산출식을 서비스 v1 표준으로 사용</li>
+<li>외부 검색은 실시간 기본값 비활성화, 사전 수집/캐시 기반 사용 권장</li>
+<li>모델명과 내부 실험명은 운영/협업자용 필드에만 포함하고, 사용자 화면 문구와 분리</li>
+</ul>
+<h2 id="2.-서비스-화면-데이터-매핑">2. 서비스 화면 데이터 매핑</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">화면 필요 항목</th>
+<th class="align-left">API 응답 위치</th>
+<th class="align-left">산출 기준</th>
+<th class="align-left">비고</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예측 가격</td>
+<td class="align-left"><code>prediction.price_krw</code></td>
+<td class="align-left">Warm은 PP-SVC3 최종 결합, Cold는 참고 예측가</td>
+<td class="align-left">Cold는 화면 문구를 <code>참고 예측가</code>로 권장</td>
+</tr>
+<tr>
+<td class="align-left">예측 가격 범위</td>
+<td class="align-left"><code>prediction.price_range</code></td>
+<td class="align-left">Warm calibration 또는 Cold q10~q90/비교군 범위</td>
+<td class="align-left">Cold는 넓게 제공</td>
+</tr>
+<tr>
+<td class="align-left">신뢰도</td>
+<td class="align-left"><code>prediction.confidence</code></td>
+<td class="align-left">route, 비교군 N, 가격 범위 폭, 입력 품질</td>
+<td class="align-left">A/B/C/D</td>
+</tr>
+<tr>
+<td class="align-left">호당가 중앙값</td>
+<td class="align-left"><code>comparable_stats.unit_price_per_ho.median_krw</code></td>
+<td class="align-left">비교군 호당가 median</td>
+<td class="align-left">Track6 <code>estimated_ho</code> v1 기준</td>
+</tr>
+<tr>
+<td class="align-left">호당가 범위</td>
+<td class="align-left"><code>comparable_stats.unit_price_per_ho.q25_krw</code>, <code>q75_krw</code></td>
+<td class="align-left">비교군 호당가 분위 범위</td>
+<td class="align-left">필요 시 q10/q90 추가</td>
+</tr>
+<tr>
+<td class="align-left">매체별 호당가 분포</td>
+<td class="align-left"><code>comparable_stats.medium_unit_price_distribution</code></td>
+<td class="align-left">매체별 호당가 median, 표본 수</td>
+<td class="align-left">화면의 매체별 분포 카드</td>
+</tr>
+<tr>
+<td class="align-left">비교 표본 수 N</td>
+<td class="align-left"><code>comparable_stats.sample_count</code></td>
+<td class="align-left">비교군 유효 표본 수</td>
+<td class="align-left">신뢰도 산정에도 사용</td>
+</tr>
+<tr>
+<td class="align-left">유사 작품 정보</td>
+<td class="align-left"><code>similar_artworks</code></td>
+<td class="align-left">비교군에서 대표 표본 추출</td>
+<td class="align-left">공개 가능 필드만 노출</td>
+</tr>
+<tr>
+<td class="align-left">모델/정책 정보</td>
+<td class="align-left"><code>model_info</code></td>
+<td class="align-left">route, model_policy, postprocessing_policy</td>
+<td class="align-left">운영/협업자 확인용</td>
+</tr>
+<tr>
+<td class="align-left">위험 사유</td>
+<td class="align-left"><code>risk_info</code></td>
+<td class="align-left">낮은 신뢰도 원인</td>
+<td class="align-left">화면 문구 또는 내부 로그</td>
+</tr>
+</tbody></table></div>
+<h2 id="3.-서비스-버전">3. 서비스 버전</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">값</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>service_version</code></td>
+<td class="align-left"><code>track6-price-api-v0.3</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>model_version</code></td>
+<td class="align-left"><code>track6-final-candidate-20260604</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>warm_primary_policy</code></td>
+<td class="align-left"><code>warm_pp_svc3_svcnum_ppv8_070</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>warm_postprocessing_policy</code></td>
+<td class="align-left"><code>log_price_weighted_blend_70_30</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>cold_reference_policy</code></td>
+<td class="align-left"><code>cold_lgb_quantile_qwidth_reference</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>comparable_stats_policy</code></td>
+<td class="align-left"><code>fallback_comparable_group_stats_v1</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>external_lookup_policy</code></td>
+<td class="align-left"><code>cache_or_manual_only_by_default</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="4.-엔드포인트-목록">4. 엔드포인트 목록</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">Method</th>
+<th class="align-left">Path</th>
+<th class="align-left">목적</th>
+<th class="align-left">필수 여부</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">GET</td>
+<td class="align-left"><code>/api/track6/health</code></td>
+<td class="align-left">API 상태 확인</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left">GET</td>
+<td class="align-left"><code>/api/track6/model-info</code></td>
+<td class="align-left">모델 버전, 적용 정책, 성능 요약 확인</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left">POST</td>
+<td class="align-left"><code>/api/track6/price-estimate</code></td>
+<td class="align-left">단건 가격 예측</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left">POST</td>
+<td class="align-left"><code>/api/track6/price-estimate/batch</code></td>
+<td class="align-left">다건 가격 예측</td>
+<td class="align-left">선택</td>
+</tr>
+<tr>
+<td class="align-left">GET</td>
+<td class="align-left"><code>/api/track6/predictions/{request_id}</code></td>
+<td class="align-left">예측 결과 재조회</td>
+<td class="align-left">선택</td>
+</tr>
+<tr>
+<td class="align-left">GET</td>
+<td class="align-left"><code>/api/track6/monitor</code></td>
+<td class="align-left">운영 통계 확인</td>
+<td class="align-left">운영 필수</td>
+</tr>
+</tbody></table></div>
+<h2 id="5.-단건-예측-api">5. 단건 예측 API</h2>
+<h3 id="5.1-요청">5.1 요청</h3>
+<p><code>POST /api/track6/price-estimate</code></p>
+<pre><code>{
+  &quot;request_id&quot;: &quot;client_optional_id_001&quot;,
+  &quot;artist&quot;: {
+    &quot;name&quot;: &quot;김OO&quot;,
+    &quot;name_ko&quot;: null,
+    &quot;name_en&quot;: null,
+    &quot;artist_key&quot;: null
+  },
+  &quot;artwork&quot;: {
+    &quot;title&quot;: &quot;Untitled&quot;,
+    &quot;width_cm&quot;: 72.7,
+    &quot;height_cm&quot;: 60.6,
+    &quot;depth_cm&quot;: null,
+    &quot;estimated_ho&quot;: null,
+    &quot;medium&quot;: &quot;oil on canvas&quot;,
+    &quot;support&quot;: &quot;canvas&quot;,
+    &quot;year_made&quot;: 2022,
+    &quot;is_edition&quot;: false
+  },
+  &quot;market_context&quot;: {
+    &quot;target_market&quot;: &quot;gallery&quot;,
+    &quot;currency&quot;: &quot;KRW&quot;,
+    &quot;as_of_date&quot;: &quot;2026-06-04&quot;
+  },
+  &quot;artist_profile&quot;: {
+    &quot;birth_year&quot;: null,
+    &quot;death_year&quot;: null,
+    &quot;nationality&quot;: null,
+    &quot;total_works&quot;: null,
+    &quot;solo_count&quot;: null,
+    &quot;group_count&quot;: null,
+    &quot;gallery_tier&quot;: null,
+    &quot;followers&quot;: null
+  },
+  &quot;options&quot;: {
+    &quot;include_comparable_stats&quot;: true,
+    &quot;include_similar_artworks&quot;: true,
+    &quot;include_explanation&quot;: true,
+    &quot;external_lookup_enabled&quot;: false
+  }
+}</code></pre>
+<h3 id="5.2-필수-요청-필드">5.2 필수 요청 필드</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">조건</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>artist.name</code></td>
+<td class="align-left">string</td>
+<td class="align-left">빈 문자열 불가</td>
+<td class="align-left">작가명</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.width_cm</code></td>
+<td class="align-left">number</td>
+<td class="align-left"><code>&gt; 0</code></td>
+<td class="align-left">작품 가로</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.height_cm</code></td>
+<td class="align-left">number</td>
+<td class="align-left"><code>&gt; 0</code></td>
+<td class="align-left">작품 세로</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.medium</code></td>
+<td class="align-left">string</td>
+<td class="align-left">빈 문자열 불가</td>
+<td class="align-left">작품 매체</td>
+</tr>
+</tbody></table></div>
+<h3 id="5.3-선택-요청-필드">5.3 선택 요청 필드</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">기본값</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>request_id</code></td>
+<td class="align-left">string or null</td>
+<td class="align-left">서버 생성</td>
+<td class="align-left">클라이언트 추적 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist.artist_key</code></td>
+<td class="align-left">string or null</td>
+<td class="align-left">null</td>
+<td class="align-left">내부 작가 식별자, 있으면 작가명 매칭보다 우선</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist.name_ko</code></td>
+<td class="align-left">string or null</td>
+<td class="align-left">null</td>
+<td class="align-left">한글 작가명</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist.name_en</code></td>
+<td class="align-left">string or null</td>
+<td class="align-left">null</td>
+<td class="align-left">영문 작가명</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.title</code></td>
+<td class="align-left">string or null</td>
+<td class="align-left">null</td>
+<td class="align-left">작품명</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.depth_cm</code></td>
+<td class="align-left">number or null</td>
+<td class="align-left">null</td>
+<td class="align-left">깊이/입체 정보</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.estimated_ho</code></td>
+<td class="align-left">number or null</td>
+<td class="align-left">null</td>
+<td class="align-left">호수. 제공되면 검증 후 사용, 없으면 Track6 <code>estimated_ho</code> v1로 계산</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.support</code></td>
+<td class="align-left">string or null</td>
+<td class="align-left"><code>unknown</code></td>
+<td class="align-left">canvas, paper, panel 등 지지체</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.year_made</code></td>
+<td class="align-left">integer or null</td>
+<td class="align-left">null</td>
+<td class="align-left">제작년도</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork.is_edition</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">false</td>
+<td class="align-left">에디션 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>market_context.target_market</code></td>
+<td class="align-left">string</td>
+<td class="align-left"><code>gallery</code></td>
+<td class="align-left">서비스 기준 시장</td>
+</tr>
+<tr>
+<td class="align-left"><code>market_context.currency</code></td>
+<td class="align-left">string</td>
+<td class="align-left"><code>KRW</code></td>
+<td class="align-left">1차 구현은 KRW 우선</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_profile.*</code></td>
+<td class="align-left">object</td>
+<td class="align-left">null</td>
+<td class="align-left">Cold 보조 피처 및 신뢰도 판단</td>
+</tr>
+<tr>
+<td class="align-left"><code>options.include_comparable_stats</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">true</td>
+<td class="align-left">비교군 통계 포함 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>options.include_similar_artworks</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">true</td>
+<td class="align-left">유사 작품 정보 포함 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>options.include_explanation</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">true</td>
+<td class="align-left">설명 블록 포함 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>options.external_lookup_enabled</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">false</td>
+<td class="align-left">실시간 외부 조회 여부</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-입력-표준화">6. 입력 표준화</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">처리</th>
+<th class="align-left">기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가명 정규화</td>
+<td class="align-left">공백, 특수문자, 영문 대소문자, 한글/영문 alias 정규화</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭</td>
+<td class="align-left"><code>artist_key</code> 우선, 없으면 정규화 작가명으로 registry 검색</td>
+</tr>
+<tr>
+<td class="align-left">크기</td>
+<td class="align-left">cm 기준으로 통일</td>
+</tr>
+<tr>
+<td class="align-left">면적</td>
+<td class="align-left"><code>area_cm2 = width_cm * height_cm</code></td>
+</tr>
+<tr>
+<td class="align-left">로그 면적</td>
+<td class="align-left"><code>log_area = log(area_cm2)</code></td>
+</tr>
+<tr>
+<td class="align-left">호수</td>
+<td class="align-left"><code>estimated_ho</code>가 있으면 검증 후 사용, 없으면 <code>area_cm2</code>를 F형 호수 면적표에 근접 매핑해 계산</td>
+</tr>
+<tr>
+<td class="align-left">3D 후보</td>
+<td class="align-left"><code>depth_cm</code> 유효 시 <code>has_depth=true</code>, <code>is_3d_candidate=true</code> 후보</td>
+</tr>
+<tr>
+<td class="align-left">medium/support</td>
+<td class="align-left">내부 표준 category로 매핑, 실패 시 <code>unknown</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="7.-warm-cold-라우팅">7. Warm/Cold 라우팅</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">route</th>
+<th class="align-left">조건</th>
+<th class="align-left">적용 정책</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>warm</code></td>
+<td class="align-left"><code>artist_key</code>가 학습 artist registry에 안정 매칭</td>
+<td class="align-left">Warm PP-SVC3 결합 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>cold</code></td>
+<td class="align-left">학습 artist registry에 없음</td>
+<td class="align-left">Cold 참고 예측가 + 넓은 범위</td>
+</tr>
+<tr>
+<td class="align-left"><code>unknown_artist_match</code></td>
+<td class="align-left">동명이인 또는 매칭 충돌</td>
+<td class="align-left">기본 Cold, 또는 낮은 신뢰도 Warm 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>unsupported</code></td>
+<td class="align-left">필수 피처 부족 또는 지원 범위 밖 조건</td>
+<td class="align-left">예측 불가 응답</td>
+</tr>
+</tbody></table></div>
+<p>라우팅 응답 필수값:</p>
+<ul>
+<li><code>model_info.route</code></li>
+<li><code>model_info.routing_reason</code></li>
+<li><code>model_info.artist_match_status</code></li>
+<li><code>model_info.artist_history_count</code></li>
+</ul>
+<h2 id="8.-warm-모델-정책">8. Warm 모델 정책</h2>
+<h3 id="8.1-적용-후보">8.1 적용 후보</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">값</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>model_policy</code></td>
+<td class="align-left"><code>warm_pp_svc3_svcnum_ppv8_070</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>model_family</code></td>
+<td class="align-left"><code>huber_blend</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>postprocessing_policy</code></td>
+<td class="align-left"><code>log_price_weighted_blend_70_30</code></td>
+</tr>
+<tr>
+<td class="align-left">검증 실험</td>
+<td class="align-left"><code>PP-SVC3</code>, <code>PP-SVC4</code></td>
+</tr>
+<tr>
+<td class="align-left">test MdAPE</td>
+<td class="align-left"><code>0.1405</code></td>
+</tr>
+<tr>
+<td class="align-left">test MAPE</td>
+<td class="align-left"><code>0.2748</code></td>
+</tr>
+<tr>
+<td class="align-left">test p95_APE</td>
+<td class="align-left"><code>0.8331</code></td>
+</tr>
+</tbody></table></div>
+<h3 id="8.2-예측-공식">8.2 예측 공식</h3>
+<pre><code>pred_log_final = 0.70 * pred_log_svc_numeric + 0.30 * pred_log_pp_v8
+price_krw = exp(pred_log_final)</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구성값</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>pred_log_svc_numeric</code></td>
+<td class="align-left">비교군 통계 피처를 포함한 Warm Huber 후보 예측값</td>
+</tr>
+<tr>
+<td class="align-left"><code>pred_log_pp_v8</code></td>
+<td class="align-left">기존 Warm compact blend 후보 예측값</td>
+</tr>
+<tr>
+<td class="align-left"><code>0.70</code></td>
+<td class="align-left">비교군 통계 후보 비중</td>
+</tr>
+<tr>
+<td class="align-left"><code>0.30</code></td>
+<td class="align-left">PP-V8 평균오차/큰 오차 방어 후보 비중</td>
+</tr>
+</tbody></table></div>
+<p>운영 주의:</p>
+<ul>
+<li>API 배포 전 <code>pred_log_svc_numeric</code>과 <code>pred_log_pp_v8</code>을 동일 입력에서 재현해야 함</li>
+<li>실험 성능은 저장 예측값 결합 기준이므로 artifact 재현성 테스트가 필요</li>
+<li>사용자 화면에는 내부 후보명보다 “검증된 예측 가격”과 “비교군 기반 보정” 정도로 표현 권장</li>
+</ul>
+<h2 id="9.-cold-모델-정책">9. Cold 모델 정책</h2>
+<p>Cold는 단일 확정 가격으로 제공하지 않는다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">값</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>model_policy</code></td>
+<td class="align-left"><code>cold_lgb_quantile_qwidth_reference</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>model_family</code></td>
+<td class="align-left"><code>lightgbm_quantile_reference</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>postprocessing_policy</code></td>
+<td class="align-left"><code>qwidth_bin_oof_min30_cap025</code></td>
+</tr>
+<tr>
+<td class="align-left">대표 후보</td>
+<td class="align-left"><code>PP-Y18 qwidth_bin_oof_min30_cap0.25</code></td>
+</tr>
+<tr>
+<td class="align-left">보조 후보</td>
+<td class="align-left"><code>PP-Y16 pred_x_qwidth_oof_min30_cap0.35</code></td>
+</tr>
+<tr>
+<td class="align-left">display_policy</td>
+<td class="align-left"><code>reference_price_with_wide_range</code></td>
+</tr>
+<tr>
+<td class="align-left">기본 confidence</td>
+<td class="align-left"><code>C</code> 또는 <code>D</code></td>
+</tr>
+</tbody></table></div>
+<p>Cold 응답 원칙:</p>
+<ul>
+<li><code>prediction.price_krw</code>는 참고 예측가</li>
+<li><code>prediction.price_range</code>는 Warm보다 넓게 산출</li>
+<li><code>confidence.grade</code>는 예측 신뢰도 차이를 반영하기 위해 보수적으로 산정</li>
+<li><code>risk_info.risk_reasons</code>에 Cold 사유를 반드시 포함</li>
+</ul>
+<h2 id="10.-비교군-통계">10. 비교군 통계</h2>
+<h3 id="10.1-목적">10.1 목적</h3>
+<p>비교군 통계는 모델 설명값이자 서비스 화면 데이터다.</p>
+<ul>
+<li>예측 가격의 주변 시장 기준 제공</li>
+<li>호당가 중앙값/범위 표시</li>
+<li>매체별 분포 표시</li>
+<li>신뢰도 산정</li>
+<li>유사 작품 후보 추출</li>
+</ul>
+<h3 id="10.2-비교군-fallback-순서">10.2 비교군 fallback 순서</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">순서</th>
+<th class="align-left">group_level</th>
+<th class="align-left">의미</th>
+<th class="align-right">최소 표본 기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left"><code>artist_medium_support_size</code></td>
+<td class="align-left">같은 작가 + 같은 재료/지지체 + 유사 크기</td>
+<td class="align-right">5</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left"><code>artist_size</code></td>
+<td class="align-left">같은 작가 + 유사 크기</td>
+<td class="align-right">5</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left"><code>artist</code></td>
+<td class="align-left">같은 작가 전체</td>
+<td class="align-right">5</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left"><code>medium_support_size</code></td>
+<td class="align-left">같은 재료/지지체 + 유사 크기</td>
+<td class="align-right">30</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left"><code>medium_category_support_size</code></td>
+<td class="align-left">같은 재료 + 같은 지지체 + 유사 크기</td>
+<td class="align-right">30</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left"><code>medium_size</code></td>
+<td class="align-left">같은 재료 + 유사 크기</td>
+<td class="align-right">50</td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left"><code>global</code></td>
+<td class="align-left">전체 train 기준</td>
+<td class="align-right">전체</td>
+</tr>
+</tbody></table></div>
+<h3 id="10.3-비교군-통계-응답-스키마">10.3 비교군 통계 응답 스키마</h3>
+<pre><code>{
+  &quot;comparable_stats&quot;: {
+    &quot;available&quot;: true,
+    &quot;group_level&quot;: &quot;artist_medium_support_size&quot;,
+    &quot;group_key&quot;: &quot;artist=a_123|medium=painting|support=canvas|size=medium&quot;,
+    &quot;fallback_used&quot;: false,
+    &quot;sample_count&quot;: 24,
+    &quot;sample_count_label&quot;: &quot;N=24&quot;,
+    &quot;price&quot;: {
+      &quot;median_krw&quot;: 4200000,
+      &quot;q25_krw&quot;: 3000000,
+      &quot;q75_krw&quot;: 5900000,
+      &quot;q10_krw&quot;: 2100000,
+      &quot;q90_krw&quot;: 8500000
+    },
+    &quot;unit_price_per_ho&quot;: {
+      &quot;ho_policy&quot;: &quot;track6_estimated_ho_f_nearest_v1&quot;,
+      &quot;median_krw&quot;: 350000,
+      &quot;q25_krw&quot;: 280000,
+      &quot;q75_krw&quot;: 460000,
+      &quot;q10_krw&quot;: 180000,
+      &quot;q90_krw&quot;: 720000
+    },
+    &quot;unit_price_per_area&quot;: {
+      &quot;median_krw_per_cm2&quot;: 950,
+      &quot;q25_krw_per_cm2&quot;: 680,
+      &quot;q75_krw_per_cm2&quot;: 1300
+    },
+    &quot;medium_unit_price_distribution&quot;: [
+      {
+        &quot;medium_category&quot;: &quot;painting&quot;,
+        &quot;median_unit_price_per_ho_krw&quot;: 330000,
+        &quot;sample_count&quot;: 14
+      },
+      {
+        &quot;medium_category&quot;: &quot;drawing&quot;,
+        &quot;median_unit_price_per_ho_krw&quot;: 280000,
+        &quot;sample_count&quot;: 10
+      }
+    ],
+    &quot;as_of_date&quot;: &quot;2026-06-04&quot;
+  }
+}</code></pre>
+<p>호당가 산출 기준:</p>
+<ul>
+<li>서비스 화면 요구는 호당가 기준</li>
+<li>서비스 v1 기준: 기존 Track6 <code>estimated_ho</code> 산출식을 사용</li>
+<li>산출식: <code>area_cm2 = width_cm * height_cm</code>, <code>estimated_ho = argmin_h |area_cm2 - HO_TABLE_F[h]|</code></li>
+<li><code>HO_TABLE_F</code>: 한국 캔버스 F형 기준 호수별 참조 면적표</li>
+<li>기준 구현: <code>scripts/track6_add_size_ho_features.py</code>의 Track6 split 생성 방식과 동일한 nearest mapping</li>
+<li>참고: 공용 모듈에는 보간 방식 <code>area_to_ho_f</code>도 있으나, 서비스 v1 API 문서는 Track6 실험 split과 맞추기 위해 nearest mapping을 표준으로 둠</li>
+<li>호당가: <code>unit_price_per_ho = price_krw / estimated_ho</code></li>
+<li><code>estimated_ho &lt;= 0</code> 또는 크기 정보 부족 시 호당가 null</li>
+<li>PP-SVC1 비교군 통계 실험 일부 split에서는 <code>estimated_ho</code>가 없어 면적 단가를 대체 검증했지만, 서비스 API는 기존 Track6 호수 산출식을 적용</li>
+</ul>
+<h2 id="11.-유사-작품-비교-표본-정보">11. 유사 작품 / 비교 표본 정보</h2>
+<h3 id="11.1-목적">11.1 목적</h3>
+<ul>
+<li>예측 가격을 설명할 근거 제공</li>
+<li>비교군 통계가 어떤 표본에서 나왔는지 확인</li>
+<li>내부 검수자가 가격 범위와 신뢰도를 판단할 수 있게 지원</li>
+</ul>
+<h3 id="11.2-응답-스키마">11.2 응답 스키마</h3>
+<pre><code>{
+  &quot;similar_artworks&quot;: {
+    &quot;available&quot;: true,
+    &quot;display_limit&quot;: 5,
+    &quot;items&quot;: [
+      {
+        &quot;artwork_id&quot;: &quot;aw_001&quot;,
+        &quot;artist_key&quot;: &quot;a_123&quot;,
+        &quot;artist_name_display&quot;: &quot;김OO&quot;,
+        &quot;title_display&quot;: &quot;Untitled&quot;,
+        &quot;year_made&quot;: 2020,
+        &quot;medium_category&quot;: &quot;painting&quot;,
+        &quot;support_category&quot;: &quot;canvas&quot;,
+        &quot;width_cm&quot;: 72.7,
+        &quot;height_cm&quot;: 60.6,
+        &quot;estimated_ho&quot;: null,
+        &quot;price_krw&quot;: 3900000,
+        &quot;unit_price_per_ho_krw&quot;: null,
+        &quot;unit_price_per_area_krw_per_cm2&quot;: 880,
+        &quot;similarity_reason&quot;: [
+          &quot;same_artist&quot;,
+          &quot;similar_size&quot;,
+          &quot;same_medium_support&quot;
+        ],
+        &quot;data_source&quot;: &quot;internal_price_history&quot;,
+        &quot;display_permission&quot;: &quot;internal_or_public_summary&quot;
+      }
+    ]
+  }
+}</code></pre>
+<p>노출 정책:</p>
+<ul>
+<li>대외 화면에는 저작권/계약 문제가 없는 요약 필드만 노출</li>
+<li>내부 운영 화면에는 <code>artwork_id</code>, 가격, 비교 사유를 더 상세히 제공 가능</li>
+<li>비교 표본이 적으면 <code>similar_artworks.available=false</code>와 사유 반환</li>
+</ul>
+<h2 id="12.-가격-범위-산출">12. 가격 범위 산출</h2>
+<h3 id="12.1-warm">12.1 Warm</h3>
+<p>Warm 범위는 최종 예측 가격과 Warm residual calibration을 중심으로 산출한다.</p>
+<pre><code>range_low_krw = price_krw * warm_lower_factor
+range_high_krw = price_krw * warm_upper_factor</code></pre>
+<p>운영 기준:</p>
+<ul>
+<li>비교군 q25/q75가 존재하면 모델 범위와 비교군 분위 범위를 함께 참고</li>
+<li>비교군 N이 충분하면 범위 신뢰도 상승</li>
+<li>극단 크기, 저이력 작가, 비교군 부족이면 범위 확대</li>
+</ul>
+<h3 id="12.2-cold">12.2 Cold</h3>
+<p>Cold 범위는 Quantile 범위와 비교군 범위를 함께 사용한다.</p>
+<pre><code>model_low_krw = exp(q10_log)
+model_mid_krw = exp(q50_log)
+model_high_krw = exp(q90_log)
+
+range_low_krw = min(model_low_krw, comparable_q25_or_q10)
+range_high_krw = max(model_high_krw, comparable_q75_or_q90)</code></pre>
+<p>운영 기준:</p>
+<ul>
+<li><code>quantile_width</code>가 클수록 범위 확대</li>
+<li>비교군 N이 부족하면 신뢰도 하향</li>
+<li>고위험 Cold는 <code>range_only_recommended</code> 가능</li>
+</ul>
+<h2 id="13.-신뢰도">13. 신뢰도</h2>
+<h3 id="13.1-응답-스키마">13.1 응답 스키마</h3>
+<pre><code>{
+  &quot;confidence&quot;: {
+    &quot;grade&quot;: &quot;B&quot;,
+    &quot;label&quot;: &quot;보통&quot;,
+    &quot;score&quot;: 0.68,
+    &quot;score_version&quot;: &quot;confidence_policy_v1&quot;,
+    &quot;reasons&quot;: [
+      &quot;warm_artist_matched&quot;,
+      &quot;comparable_sample_count_moderate&quot;,
+      &quot;price_range_width_moderate&quot;
+    ]
+  }
+}</code></pre>
+<h3 id="13.2-등급-기준-초안">13.2 등급 기준 초안</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">grade</th>
+<th class="align-left">의미</th>
+<th class="align-left">대표 조건</th>
+<th class="align-left">화면 표시</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">A</td>
+<td class="align-left">높은 신뢰도</td>
+<td class="align-left">Warm, 작가 이력 충분, 비교군 N 충분, 범위 좁음</td>
+<td class="align-left">예측 가격 중심</td>
+</tr>
+<tr>
+<td class="align-left">B</td>
+<td class="align-left">보통 신뢰도</td>
+<td class="align-left">Warm 일반, 일부 조건 부족</td>
+<td class="align-left">예측 가격 + 범위</td>
+</tr>
+<tr>
+<td class="align-left">C</td>
+<td class="align-left">낮은 신뢰도</td>
+<td class="align-left">Cold이지만 비교군/입력 정보 충분</td>
+<td class="align-left">참고 가격 + 넓은 범위</td>
+</tr>
+<tr>
+<td class="align-left">D</td>
+<td class="align-left">매우 낮은 신뢰도</td>
+<td class="align-left">Cold, 비교군 부족, 범위 넓음, 매칭 불확실</td>
+<td class="align-left">참고용 문구 필수</td>
+</tr>
+</tbody></table></div>
+<h3 id="13.3-신뢰도-산정-요인">13.3 신뢰도 산정 요인</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">요인</th>
+<th class="align-left">신뢰도 영향</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm route</td>
+<td class="align-left">상승</td>
+</tr>
+<tr>
+<td class="align-left">artist_history_count 충분</td>
+<td class="align-left">상승</td>
+</tr>
+<tr>
+<td class="align-left">comparable sample_count 충분</td>
+<td class="align-left">상승</td>
+</tr>
+<tr>
+<td class="align-left">price_range 폭 좁음</td>
+<td class="align-left">상승</td>
+</tr>
+<tr>
+<td class="align-left">Cold route</td>
+<td class="align-left">하락</td>
+</tr>
+<tr>
+<td class="align-left">unknown artist match</td>
+<td class="align-left">하락</td>
+</tr>
+<tr>
+<td class="align-left">medium/support 매핑 실패</td>
+<td class="align-left">하락</td>
+</tr>
+<tr>
+<td class="align-left">3D/극단 크기</td>
+<td class="align-left">하락</td>
+</tr>
+<tr>
+<td class="align-left">external signal conflict</td>
+<td class="align-left">하락</td>
+</tr>
+</tbody></table></div>
+<h2 id="14.-단건-응답-예시">14. 단건 응답 예시</h2>
+<h3 id="14.1-warm-응답">14.1 Warm 응답</h3>
+<pre><code>{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;request_id&quot;: &quot;trk6_20260604_000001&quot;,
+  &quot;prediction&quot;: {
+    &quot;price_krw&quot;: 4200000,
+    &quot;price_log&quot;: 15.2506,
+    &quot;price_range&quot;: {
+      &quot;low_krw&quot;: 2900000,
+      &quot;high_krw&quot;: 6100000,
+      &quot;range_policy&quot;: &quot;warm_calibrated_range&quot;
+    },
+    &quot;display_policy&quot;: &quot;point_with_range&quot;,
+    &quot;price_label&quot;: &quot;예측 가격&quot;
+  },
+  &quot;confidence&quot;: {
+    &quot;grade&quot;: &quot;B&quot;,
+    &quot;label&quot;: &quot;보통&quot;,
+    &quot;score&quot;: 0.68,
+    &quot;reasons&quot;: [
+      &quot;warm_artist_matched&quot;,
+      &quot;comparable_sample_count_moderate&quot;
+    ]
+  },
+  &quot;model_info&quot;: {
+    &quot;route&quot;: &quot;warm&quot;,
+    &quot;routing_reason&quot;: &quot;artist_matched_in_training_data&quot;,
+    &quot;artist_match_status&quot;: &quot;matched&quot;,
+    &quot;artist_history_count&quot;: 12,
+    &quot;model_family&quot;: &quot;huber_blend&quot;,
+    &quot;model_policy&quot;: &quot;warm_pp_svc3_svcnum_ppv8_070&quot;,
+    &quot;postprocessing_policy&quot;: &quot;log_price_weighted_blend_70_30&quot;,
+    &quot;formula&quot;: &quot;0.70 * pred_log_svc_numeric + 0.30 * pred_log_pp_v8&quot;
+  },
+  &quot;comparable_stats&quot;: {
+    &quot;available&quot;: true,
+    &quot;group_level&quot;: &quot;artist_medium_support_size&quot;,
+    &quot;sample_count&quot;: 24,
+    &quot;price&quot;: {
+      &quot;median_krw&quot;: 4200000,
+      &quot;q25_krw&quot;: 3000000,
+      &quot;q75_krw&quot;: 5900000
+    },
+    &quot;unit_price_per_ho&quot;: {
+      &quot;ho_policy&quot;: &quot;track6_estimated_ho_f_nearest_v1&quot;,
+      &quot;median_krw&quot;: 350000,
+      &quot;q25_krw&quot;: 280000,
+      &quot;q75_krw&quot;: 460000
+    }
+  },
+  &quot;similar_artworks&quot;: {
+    &quot;available&quot;: true,
+    &quot;display_limit&quot;: 5,
+    &quot;items&quot;: []
+  },
+  &quot;risk_info&quot;: {
+    &quot;risk_level&quot;: &quot;medium&quot;,
+    &quot;risk_reasons&quot;: [
+      &quot;price_range_width_moderate&quot;
+    ]
+  },
+  &quot;processing&quot;: {
+    &quot;total_ms&quot;: 120,
+    &quot;external_lookup_ms&quot;: 0
+  }
+}</code></pre>
+<h3 id="14.2-cold-응답">14.2 Cold 응답</h3>
+<pre><code>{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;request_id&quot;: &quot;trk6_20260604_000002&quot;,
+  &quot;prediction&quot;: {
+    &quot;price_krw&quot;: 2800000,
+    &quot;price_range&quot;: {
+      &quot;low_krw&quot;: 900000,
+      &quot;high_krw&quot;: 7800000,
+      &quot;range_policy&quot;: &quot;cold_quantile_wide_reference_range&quot;
+    },
+    &quot;display_policy&quot;: &quot;reference_price_with_wide_range&quot;,
+    &quot;price_label&quot;: &quot;참고 예측가&quot;
+  },
+  &quot;confidence&quot;: {
+    &quot;grade&quot;: &quot;D&quot;,
+    &quot;label&quot;: &quot;매우 낮음&quot;,
+    &quot;score&quot;: 0.31,
+    &quot;reasons&quot;: [
+      &quot;artist_not_seen_in_training_data&quot;,
+      &quot;cold_price_range_is_wide&quot;
+    ]
+  },
+  &quot;model_info&quot;: {
+    &quot;route&quot;: &quot;cold&quot;,
+    &quot;routing_reason&quot;: &quot;artist_not_matched_in_training_data&quot;,
+    &quot;artist_match_status&quot;: &quot;not_matched&quot;,
+    &quot;artist_history_count&quot;: 0,
+    &quot;model_family&quot;: &quot;lightgbm_quantile_reference&quot;,
+    &quot;model_policy&quot;: &quot;cold_lgb_quantile_qwidth_reference&quot;,
+    &quot;postprocessing_policy&quot;: &quot;qwidth_bin_oof_min30_cap025&quot;
+  },
+  &quot;comparable_stats&quot;: {
+    &quot;available&quot;: true,
+    &quot;group_level&quot;: &quot;medium_support_size&quot;,
+    &quot;sample_count&quot;: 41,
+    &quot;unit_price_per_ho&quot;: {
+      &quot;ho_policy&quot;: &quot;track6_estimated_ho_f_nearest_v1&quot;,
+      &quot;median_krw&quot;: 220000,
+      &quot;q25_krw&quot;: 90000,
+      &quot;q75_krw&quot;: 510000
+    }
+  },
+  &quot;risk_info&quot;: {
+    &quot;risk_level&quot;: &quot;high&quot;,
+    &quot;risk_reasons&quot;: [
+      &quot;cold_start&quot;,
+      &quot;wide_quantile_range&quot;
+    ]
+  }
+}</code></pre>
+<h2 id="15.-배치-예측-api">15. 배치 예측 API</h2>
+<p><code>POST /api/track6/price-estimate/batch</code></p>
+<h3 id="15.1-요청">15.1 요청</h3>
+<pre><code>{
+  &quot;items&quot;: [
+    {
+      &quot;client_item_id&quot;: &quot;item_001&quot;,
+      &quot;artist&quot;: {
+        &quot;name&quot;: &quot;김OO&quot;
+      },
+      &quot;artwork&quot;: {
+        &quot;width_cm&quot;: 72.7,
+        &quot;height_cm&quot;: 60.6,
+        &quot;medium&quot;: &quot;oil on canvas&quot;,
+        &quot;support&quot;: &quot;canvas&quot;
+      }
+    }
+  ],
+  &quot;options&quot;: {
+    &quot;include_comparable_stats&quot;: true,
+    &quot;include_similar_artworks&quot;: false,
+    &quot;external_lookup_enabled&quot;: false
+  }
+}</code></pre>
+<h3 id="15.2-제한">15.2 제한</h3>
+<ul>
+<li>1회 요청 최대 50건</li>
+<li>item별 성공/실패 분리 반환</li>
+<li>외부 실시간 수집 기본 비활성화</li>
+<li>배치 응답은 <code>prediction</code>, <code>confidence</code>, <code>model_info</code>, <code>comparable_stats</code>, <code>error</code>를 item별로 포함</li>
+</ul>
+<h2 id="16.-모델-정보-api">16. 모델 정보 API</h2>
+<p><code>GET /api/track6/model-info</code></p>
+<pre><code>{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;service_version&quot;: &quot;track6-price-api-v0.3&quot;,
+  &quot;model_version&quot;: &quot;track6-final-candidate-20260604&quot;,
+  &quot;policies&quot;: {
+    &quot;warm_primary&quot;: &quot;warm_pp_svc3_svcnum_ppv8_070&quot;,
+    &quot;warm_display_policy&quot;: &quot;point_with_range&quot;,
+    &quot;cold_reference&quot;: &quot;cold_lgb_quantile_qwidth_reference&quot;,
+    &quot;cold_display_policy&quot;: &quot;reference_price_with_wide_range&quot;,
+    &quot;comparable_stats_policy&quot;: &quot;fallback_comparable_group_stats_v1&quot;
+  },
+  &quot;metrics_summary&quot;: {
+    &quot;warm_test_mdape&quot;: 0.1405,
+    &quot;warm_test_mape&quot;: 0.2748,
+    &quot;warm_test_p95_ape&quot;: 0.8331,
+    &quot;cold_reference_mdape&quot;: 0.4247,
+    &quot;cold_reference_mape&quot;: 0.9910,
+    &quot;cold_reference_p95_ape&quot;: 3.3053
+  },
+  &quot;warnings&quot;: [
+    &quot;unit_price_per_ho_formula_must_be_confirmed_before_public_display&quot;,
+    &quot;cold_prediction_should_be_displayed_as_reference_price&quot;
+  ]
+}</code></pre>
+<h2 id="17.-에러-응답">17. 에러 응답</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">error_code</th>
+<th class="align-right">HTTP</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>INVALID_REQUEST</code></td>
+<td class="align-right">400</td>
+<td class="align-left">필수값 누락 또는 타입 오류</td>
+</tr>
+<tr>
+<td class="align-left"><code>ARTIST_MATCH_CONFLICT</code></td>
+<td class="align-right">409</td>
+<td class="align-left">작가 매칭 후보 충돌</td>
+</tr>
+<tr>
+<td class="align-left"><code>UNSUPPORTED_ARTWORK_TYPE</code></td>
+<td class="align-right">422</td>
+<td class="align-left">지원 범위 밖 작품</td>
+</tr>
+<tr>
+<td class="align-left"><code>FEATURE_GENERATION_FAILED</code></td>
+<td class="align-right">500</td>
+<td class="align-left">피처 생성 실패</td>
+</tr>
+<tr>
+<td class="align-left"><code>PREDICTION_UNAVAILABLE</code></td>
+<td class="align-right">503</td>
+<td class="align-left">모델 추론 실패</td>
+</tr>
+<tr>
+<td class="align-left"><code>COMPARABLE_STATS_UNAVAILABLE</code></td>
+<td class="align-right">200 또는 206</td>
+<td class="align-left">예측은 가능하나 비교군 통계 부족</td>
+</tr>
+</tbody></table></div>
+<p>예시:</p>
+<pre><code>{
+  &quot;status&quot;: &quot;error&quot;,
+  &quot;request_id&quot;: &quot;trk6_20260604_000003&quot;,
+  &quot;error&quot;: {
+    &quot;error_code&quot;: &quot;INVALID_REQUEST&quot;,
+    &quot;message&quot;: &quot;artist.name, artwork.width_cm, artwork.height_cm, artwork.medium are required.&quot;,
+    &quot;details&quot;: [
+      {
+        &quot;field&quot;: &quot;artwork.width_cm&quot;,
+        &quot;reason&quot;: &quot;required&quot;
+      }
+    ]
+  }
+}</code></pre>
+<h2 id="18.-운영-로그-필드">18. 운영 로그 필드</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>request_id</code></td>
+<td class="align-left">요청 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>created_at</code></td>
+<td class="align-left">예측 시각</td>
+</tr>
+<tr>
+<td class="align-left"><code>route</code></td>
+<td class="align-left">warm/cold/unknown_artist_match</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_version</code></td>
+<td class="align-left">모델 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_policy</code></td>
+<td class="align-left">적용 모델 정책</td>
+</tr>
+<tr>
+<td class="align-left"><code>postprocessing_policy</code></td>
+<td class="align-left">후처리 정책</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">매칭 작가</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_match_status</code></td>
+<td class="align-left">matched/not_matched/conflict</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_history_count</code></td>
+<td class="align-left">작가 학습 이력 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparable_group_level</code></td>
+<td class="align-left">비교군 level</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparable_sample_count</code></td>
+<td class="align-left">비교군 N</td>
+</tr>
+<tr>
+<td class="align-left"><code>pred_log</code></td>
+<td class="align-left">내부 로그 예측값</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_krw</code></td>
+<td class="align-left">표시 예측값</td>
+</tr>
+<tr>
+<td class="align-left"><code>range_low_krw</code></td>
+<td class="align-left">가격 범위 하한</td>
+</tr>
+<tr>
+<td class="align-left"><code>range_high_krw</code></td>
+<td class="align-left">가격 범위 상한</td>
+</tr>
+<tr>
+<td class="align-left"><code>confidence_grade</code></td>
+<td class="align-left">신뢰도</td>
+</tr>
+<tr>
+<td class="align-left"><code>display_policy</code></td>
+<td class="align-left">화면 표시 정책</td>
+</tr>
+<tr>
+<td class="align-left"><code>risk_reasons_json</code></td>
+<td class="align-left">위험 사유</td>
+</tr>
+<tr>
+<td class="align-left"><code>latency_ms</code></td>
+<td class="align-left">처리 시간</td>
+</tr>
+<tr>
+<td class="align-left"><code>error_code</code></td>
+<td class="align-left">실패 시 에러 코드</td>
+</tr>
+</tbody></table></div>
+<h2 id="19.-구현-전-확정-필요">19. 구현 전 확정 필요</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm artifact 구성</td>
+<td class="align-left"><code>svc_numeric_seed_mean</code>과 PP-V8 예측값 재현 필요</td>
+</tr>
+<tr>
+<td class="align-left">호수 산출 예외 정책</td>
+<td class="align-left">클라이언트 제공 <code>estimated_ho</code>와 자동 계산값이 다를 때의 우선순위, 3D/비표준 작품 표시 기준</td>
+</tr>
+<tr>
+<td class="align-left">비교군 fallback 최소 N</td>
+<td class="align-left">통계 신뢰도와 신뢰도 등급에 직접 영향</td>
+</tr>
+<tr>
+<td class="align-left">가격 범위 calibration</td>
+<td class="align-left">Warm/Cold 범위 폭 결정</td>
+</tr>
+<tr>
+<td class="align-left">Cold 참고가 노출 문구</td>
+<td class="align-left">예측 신뢰도 차이를 화면에 반영</td>
+</tr>
+<tr>
+<td class="align-left">유사 작품 노출 범위</td>
+<td class="align-left">저작권/계약/개인정보 이슈 방지</td>
+</tr>
+<tr>
+<td class="align-left">외부 검색 캐시 정책</td>
+<td class="align-left">latency와 검색 품질 안정성</td>
+</tr>
+<tr>
+<td class="align-left">API prefix</td>
+<td class="align-left">협업자 서비스 라우팅과 맞춤</td>
+</tr>
+</tbody></table></div>
+    </main>
+  </div>
+</body>
+</html>

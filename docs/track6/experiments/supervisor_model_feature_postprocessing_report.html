@@ -1,0 +1,338 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Track6 모델별 피처/후처리 보고서</title><style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:32px;color:#1f2933;line-height:1.62}
+    h1{font-size:28px;margin-bottom:8px}h2{font-size:21px;margin-top:34px;border-bottom:1px solid #d9e2ec;padding-bottom:6px}h3{font-size:16px;margin-top:22px}
+    table{border-collapse:collapse;width:100%;font-size:12.5px;margin:10px 0 24px}th,td{border:1px solid #d9e2ec;padding:7px 8px;vertical-align:top}th{background:#f0f4f8;text-align:left}
+    code,pre{background:#f5f7fa;border:1px solid #d9e2ec;border-radius:4px}code{padding:1px 4px}pre{padding:12px;overflow:auto}
+    ul{padding-left:22px}.empty{color:#5f6c7b}
+    </style></head><body><h1>Track6 모델별 피처 영향도, 조합 근거, 후처리 튜닝 보고서</h1>
+<ul>
+<li>작성일: 2026-05-31</li>
+<li>목적: 상사 보고용으로 Warm Huber, Cold CatBoost, Cold LightGBM이 가격을 예측하는 방식과 피처 영향도 해석, 피처 조합 선정 근거, 후처리 튜닝 계획을 한 문서로 정리한다.</li>
+<li>사용 산출물: 최종 artifact 해석 감사 결과, T6-E005 피처 조합 ablation, T6-E007 test confirmation, T6-E008 risk slice, T6-PP residual calibration.</li>
+</ul>
+<h2>1. 결론 요약</h2>
+<ul>
+<li>Warm Huber는 선형 예측식이므로 피처별 영향이 계수와 실제 contribution으로 직접 설명된다. 최종적으로 <code>size + medium_support + artist_key</code> 조합이 타당하다.</li>
+<li>Cold CatBoost는 대칭 트리 구조이므로 단일 중요도보다 <code>SHAP + interaction + leaf segment</code>를 함께 봐야 한다. 최종적으로 <code>size + depth_3d + medium/shape</code> 조합이 타당하다.</li>
+<li>Cold LightGBM은 leaf-wise 트리 구조이므로 평균 중요도보다 <code>permutation 영향 + tail slice</code>가 중요하다. 최종적으로 <code>area/size + support_size_bucket + pred_log bin</code> 중심의 tail 안정화가 필요하다.</li>
+<li>후처리는 Warm은 즉시 채택 후보가 있고, Cold CatBoost는 단순 보정 보류, Cold LightGBM은 tail 안정화 후보로 보는 것이 맞다.</li>
+</ul>
+<h2>2. 최종 모델과 기준 성능</h2>
+<p>최종 artifact 구성은 아래와 같다.</p>
+<pre><code>
+Warm Huber: base_existing_combo + artist_key
+
+Cold CatBoost: base_medium_shape
+
+Cold LightGBM: base_support_size
+
+</code></pre>
+<h3>최종 artifact test 성능</h3>
+<table><thead><tr><th>split</th><th>rows</th><th>MdAPE</th><th>MAPE</th><th>p90_APE</th><th>p95_APE</th><th>Within_30</th><th>Within_50</th><th>RMSE_log</th></tr></thead><tbody>
+<tr><td>train+validation(final artifact fit data)</td><td>27433.0000</td><td>0.1677</td><td>0.3699</td><td>0.7248</td><td>1.0345</td><td>0.6917</td><td>0.8281</td><td>0.5367</td></tr>
+<tr><td>test_warm</td><td>607.0000</td><td>0.2241</td><td>0.4951</td><td>1.1073</td><td>2.0209</td><td>0.5931</td><td>0.7265</td><td>0.6093</td></tr>
+</tbody></table>
+<table><thead><tr><th>model</th><th>feature_set</th><th>rows</th><th>MdAPE</th><th>MAPE</th><th>p90_APE</th><th>p95_APE</th><th>Within_30</th><th>Within_50</th><th>RMSE_log</th></tr></thead><tbody>
+<tr><td>cold_catboost</td><td>base_medium_shape</td><td>3099.0000</td><td>0.4843</td><td>1.4262</td><td>2.3033</td><td>4.4183</td><td>0.3024</td><td>0.5182</td><td>0.9549</td></tr>
+<tr><td>cold_lightgbm</td><td>base_support_size</td><td>3099.0000</td><td>0.4797</td><td>1.3651</td><td>2.1286</td><td>5.0569</td><td>0.3027</td><td>0.5195</td><td>0.9551</td></tr>
+</tbody></table>
+<h3>validation에서 조합을 고른 근거</h3>
+<table><thead><tr><th>split</th><th>model</th><th>feature_set</th><th>median_ape</th><th>p95_ape</th><th>within_30</th><th>within_50</th><th>rmse_log</th></tr></thead><tbody>
+<tr><td>val_cold</td><td>lightgbm_cold</td><td>base_support_size</td><td>0.3848</td><td>2.0207</td><td>0.3603</td><td>0.5979</td><td>0.6873</td></tr>
+<tr><td>val_cold</td><td>lightgbm_cold</td><td>base_existing_combo</td><td>0.3861</td><td>1.9909</td><td>0.3560</td><td>0.5975</td><td>0.6912</td></tr>
+<tr><td>val_cold</td><td>lightgbm_cold</td><td>all_operational_combos</td><td>0.3910</td><td>2.0164</td><td>0.3454</td><td>0.6055</td><td>0.6925</td></tr>
+<tr><td>val_cold</td><td>lightgbm_cold</td><td>base</td><td>0.3911</td><td>2.0401</td><td>0.3767</td><td>0.5975</td><td>0.6910</td></tr>
+<tr><td>val_cold</td><td>lightgbm_cold</td><td>base_large_flags</td><td>0.3938</td><td>1.9783</td><td>0.3698</td><td>0.5946</td><td>0.6916</td></tr>
+<tr><td>val_cold</td><td>lightgbm_cold</td><td>base_size_shape</td><td>0.3939</td><td>1.9831</td><td>0.3992</td><td>0.5972</td><td>0.6886</td></tr>
+<tr><td>val_cold</td><td>lightgbm_cold</td><td>base_medium_size</td><td>0.3952</td><td>2.0032</td><td>0.3905</td><td>0.6062</td><td>0.6867</td></tr>
+<tr><td>val_cold</td><td>lightgbm_cold</td><td>base_medium_shape</td><td>0.3973</td><td>2.0014</td><td>0.3861</td><td>0.5957</td><td>0.6891</td></tr>
+<tr><td>val_cold</td><td>catboost_cold</td><td>base_medium_shape</td><td>0.4251</td><td>2.4420</td><td>0.3364</td><td>0.5547</td><td>0.7133</td></tr>
+<tr><td>val_cold</td><td>catboost_cold</td><td>base_existing_combo</td><td>0.4266</td><td>2.3177</td><td>0.3444</td><td>0.5561</td><td>0.7100</td></tr>
+<tr><td>val_cold</td><td>catboost_cold</td><td>base_support_size</td><td>0.4282</td><td>2.3586</td><td>0.3385</td><td>0.5601</td><td>0.7099</td></tr>
+<tr><td>val_cold</td><td>catboost_cold</td><td>base_medium_size</td><td>0.4287</td><td>2.2506</td><td>0.3447</td><td>0.5598</td><td>0.7071</td></tr>
+</tbody></table>
+<h3>test 확인 결과</h3>
+<table><thead><tr><th>split</th><th>model</th><th>feature_set</th><th>validation_median_ape</th><th>validation_p95_ape</th><th>median_ape</th><th>p95_ape</th><th>rmse_log</th></tr></thead><tbody>
+<tr><td>test_warm</td><td>huber_warm_artist</td><td>base_existing_combo</td><td>0.2126</td><td>1.3194</td><td>0.2274</td><td>2.0130</td><td>0.6081</td></tr>
+<tr><td>test_cold</td><td>catboost_cold</td><td>base_medium_shape</td><td>0.4251</td><td>2.4420</td><td>0.4839</td><td>4.7974</td><td>0.9642</td></tr>
+<tr><td>test_cold</td><td>lightgbm_cold</td><td>base_support_size</td><td>0.3848</td><td>2.0207</td><td>0.4859</td><td>4.7612</td><td>0.9705</td></tr>
+<tr><td>test_cold</td><td>lightgbm_cold</td><td>base_large_flags</td><td>0.3938</td><td>1.9783</td><td>0.4921</td><td>4.7924</td><td>0.9686</td></tr>
+</tbody></table>
+<h2>3. Warm Huber: 가격 예측 공식과 피처 영향 해석</h2>
+<h3>예측 공식</h3>
+<p>Warm Huber는 로그 가격을 먼저 예측한 뒤 원 가격으로 환산한다.</p>
+<pre><code>
+z_num = StandardScaler(x_num)
+
+z_cat = OneHotEncoder(x_cat)
+
+pred_log_price = intercept + sum_j(beta_j * z_j)
+
+pred_price = exp(pred_log_price)
+
+</code></pre>
+<p>HuberRegressor의 핵심은 학습 손실 함수다. 일반 선형 회귀는 큰 오차를 계속 제곱으로 강하게 따라가지만, Huber는 기준을 넘는 큰 오차를 선형 손실로 바꿔 이상치 영향력을 줄인다.</p>
+<pre><code>
+r_i = y_i - (intercept + x_i * beta)
+
+u_i = r_i / sigma
+
+
+
+loss(u_i) =
+
+  0.5 * u_i^2                         if |u_i| &lt;= epsilon
+
+  epsilon * |u_i| - 0.5 * epsilon^2    if |u_i| &gt; epsilon
+
+
+
+objective = sum_i loss(u_i) + alpha * ||beta||^2
+
+</code></pre>
+<p>따라서 Warm Huber에서 피처 영향은 다음 순서로 해석했다.</p>
+<ul>
+<li>계수 <code>beta_j</code>: 해당 피처가 로그 가격을 올리는지/내리는지 확인</li>
+<li>원 단위 환산 계수: 표준화된 숫자형 피처를 실제 cm, 면적 단위로 바꿔 확인</li>
+<li>실제 contribution: <code>beta_j * z_j</code>가 test 데이터에서 평균적으로 얼마나 예측값을 움직였는지 확인</li>
+<li>범주형 피처: one-hot 원계수 대신 centered contribution으로 해석</li>
+</ul>
+<h3>피처 그룹 영향도</h3>
+<table><thead><tr><th>feature_group</th><th>encoded_feature_count</th><th>mean_abs_centered_contribution_sum</th><th>top_features</th><th>top_up_features</th><th>top_down_features</th><th>rank</th></tr></thead><tbody>
+<tr><td>size</td><td>4</td><td>1.2222</td><td>num__log_area / num__height_cm / num__width_cm / num__area_cm2</td><td>num__log_area / num__height_cm / num__width_cm</td><td>num__area_cm2</td><td>1</td></tr>
+<tr><td>medium_support</td><td>58</td><td>0.5625</td><td>cat__medium_support_bucket_mixed_media__canvas / cat__medium_support_bucket_mixed_media__unknown / cat__medium_support_bucket_acrylic__canvas / cat__medium_support_bucket_oil__linen / cat__medium_support_bucket_oil__canvas</td><td>cat__medium_support_bucket_acrylic__canvas / cat__medium_support_bucket_oil__linen / cat__medium_support_bucket_oil__canvas / cat__medium_support_bucket_mixed_media__paper / cat__medium_support_bucket_acrylic__linen</td><td>cat__medium_support_bucket_mixed_media__canvas / cat__medium_support_bucket_mixed_media__unknown / cat__medium_support_bucket_painting_material__unknown / cat__medium_support_bucket_textile__unknown / cat__medium_support_bucket_painting_material__paper</td><td>2</td></tr>
+<tr><td>support</td><td>9</td><td>0.5121</td><td>cat__support_category_paper / cat__support_category_canvas / cat__support_category_unknown / cat__support_category_linen / cat__support_category_fabric</td><td>cat__support_category_canvas / cat__support_category_unknown / cat__support_category_metal / cat__support_category_glass</td><td>cat__support_category_paper / cat__support_category_linen / cat__support_category_fabric / cat__support_category_panel / cat__support_category_wood</td><td>3</td></tr>
+<tr><td>medium</td><td>18</td><td>0.4920</td><td>cat__medium_category_mixed_media / cat__medium_category_acrylic / cat__medium_category_oil / cat__medium_category_painting_material / cat__medium_category_textile</td><td>cat__medium_category_mixed_media / cat__medium_category_painting_material / cat__medium_category_textile / cat__medium_category_ink / cat__medium_category_charcoal</td><td>cat__medium_category_acrylic / cat__medium_category_oil / cat__medium_category_other / cat__medium_category_print / cat__medium_category_sculpture_material</td><td>4</td></tr>
+<tr><td>artist</td><td>648</td><td>0.4353</td><td>cat__artist_key_infrequent_sklearn / cat__artist_key_sang oktabu kim / cat__artist_key_sheean kim / cat__artist_key_young sung kim / cat__artist_key_ham sup 함섭</td><td>cat__artist_key_sang oktabu kim / cat__artist_key_sheean kim / cat__artist_key_young sung kim / cat__artist_key_ham sup 함섭 / cat__artist_key_yoo suntai</td><td>cat__artist_key_infrequent_sklearn / cat__artist_key_jeremy yong / cat__artist_key_hyungjun suh / cat__artist_key_ro un lee / cat__artist_key_chang beom son</td><td>5</td></tr>
+<tr><td>depth_3d</td><td>5</td><td>0.0320</td><td>cat__is_3d_candidate_True / cat__is_3d_candidate_False / cat__has_depth_False / cat__has_depth_True / num__depth_cm</td><td>cat__is_3d_candidate_True / cat__has_depth_False</td><td>cat__is_3d_candidate_False / cat__has_depth_True / num__depth_cm</td><td>6</td></tr>
+<tr><td>shape</td><td>2</td><td>0.0067</td><td>num__aspect_ratio / cat__is_extreme_aspect_ratio_False</td><td>-</td><td>num__aspect_ratio</td><td>7</td></tr>
+</tbody></table>
+<h3>상위 피처 contribution</h3>
+<table><thead><tr><th>encoded_feature</th><th>raw_feature</th><th>feature_group</th><th>coef</th><th>original_unit_coef</th><th>active_rate</th><th>mean_abs_centered_contribution</th><th>mean_centered_contribution</th><th>centered_direction</th><th>rank_by_centered_abs_contribution</th></tr></thead><tbody>
+<tr><td>num__log_area</td><td>log_area</td><td>size</td><td>0.4787</td><td>0.4029</td><td>0.0318</td><td>0.4096</td><td>0.0152</td><td>예측가격 상승 방향</td><td>1</td></tr>
+<tr><td>num__height_cm</td><td>height_cm</td><td>size</td><td>0.3906</td><td>0.0086</td><td>0.0632</td><td>0.3015</td><td>0.0247</td><td>예측가격 상승 방향</td><td>2</td></tr>
+<tr><td>num__width_cm</td><td>width_cm</td><td>size</td><td>0.3961</td><td>0.0088</td><td>0.0331</td><td>0.2991</td><td>0.0131</td><td>예측가격 상승 방향</td><td>3</td></tr>
+<tr><td>num__area_cm2</td><td>area_cm2</td><td>size</td><td>-0.3882</td><td>-0.0000</td><td>0.0382</td><td>0.2120</td><td>-0.0148</td><td>예측가격 하락 방향</td><td>4</td></tr>
+<tr><td>cat__medium_category_mixed_media</td><td>medium_category</td><td>medium</td><td>0.3387</td><td>-</td><td>0.3970</td><td>0.1719</td><td>0.1719</td><td>예측가격 상승 방향</td><td>5</td></tr>
+<tr><td>cat__support_category_paper</td><td>support_category</td><td>support</td><td>-0.1455</td><td>-</td><td>0.1697</td><td>0.1431</td><td>-0.1431</td><td>예측가격 하락 방향</td><td>6</td></tr>
+<tr><td>cat__medium_category_acrylic</td><td>medium_category</td><td>medium</td><td>-0.6108</td><td>-</td><td>0.2488</td><td>0.1285</td><td>-0.1285</td><td>예측가격 하락 방향</td><td>7</td></tr>
+<tr><td>cat__support_category_canvas</td><td>support_category</td><td>support</td><td>0.9098</td><td>-</td><td>0.5832</td><td>0.1236</td><td>0.1236</td><td>예측가격 상승 방향</td><td>8</td></tr>
+<tr><td>cat__support_category_unknown</td><td>support_category</td><td>support</td><td>1.7725</td><td>-</td><td>0.1104</td><td>0.1186</td><td>0.1186</td><td>예측가격 상승 방향</td><td>9</td></tr>
+<tr><td>cat__medium_support_bucket_mixed_media__canvas</td><td>medium_support_bucket</td><td>medium_support</td><td>-0.4980</td><td>-</td><td>0.1466</td><td>0.1012</td><td>-0.1012</td><td>예측가격 하락 방향</td><td>10</td></tr>
+<tr><td>cat__medium_category_oil</td><td>medium_category</td><td>medium</td><td>-0.5050</td><td>-</td><td>0.2438</td><td>0.1001</td><td>-0.1001</td><td>예측가격 하락 방향</td><td>11</td></tr>
+<tr><td>cat__support_category_linen</td><td>support_category</td><td>support</td><td>-0.7973</td><td>-</td><td>0.0478</td><td>0.0714</td><td>-0.0714</td><td>예측가격 하락 방향</td><td>12</td></tr>
+</tbody></table>
+<h3>Warm 피처 조합을 이렇게 판단한 이유</h3>
+<ul>
+<li><code>size</code> 그룹이 mean_abs_centered_contribution_sum 1위다. 즉, 실제 test 예측값을 가장 많이 움직인 축은 작품 크기다.</li>
+<li><code>medium_support</code>와 <code>support</code>가 그 다음 설명 축이다. 같은 크기라도 재료와 지지체 조합에 따라 가격대가 달라진다는 뜻이다.</li>
+<li>Warm은 기존 작가가 있는 조건이므로 <code>artist_key</code>가 과거 작가 가격대 정보를 반영한다.</li>
+<li>그래서 Warm 조합은 <code>size + medium_support + artist_key</code>가 가장 설명 가능하고, 선형 모델의 특성과도 맞다.</li>
+</ul>
+<h3>Huber 안정성 확인</h3>
+<table><thead><tr><th>split</th><th>rows</th><th>epsilon</th><th>scale</th><th>outlier_threshold_log</th><th>outlier_count</th><th>outlier_rate</th><th>median_abs_residual_log</th><th>p95_abs_residual_log</th></tr></thead><tbody>
+<tr><td>train+validation</td><td>27433.0000</td><td>1.3500</td><td>0.1710</td><td>0.2308</td><td>10858.0000</td><td>0.3958</td><td>0.1684</td><td>1.0984</td></tr>
+<tr><td>test_warm</td><td>607.0000</td><td>1.3500</td><td>0.1710</td><td>0.2308</td><td>297.0000</td><td>0.4893</td><td>0.2214</td><td>1.3645</td></tr>
+</tbody></table>
+<table><thead><tr><th>epsilon</th><th>split</th><th>rows</th><th>MdAPE</th><th>MAPE</th><th>p90_APE</th><th>p95_APE</th><th>Within_30</th><th>Within_50</th><th>RMSE_log</th><th>outlier_rate</th><th>n_iter</th><th>scale</th></tr></thead><tbody>
+<tr><td>1.1000</td><td>val_warm</td><td>519.0000</td><td>0.2079</td><td>0.4090</td><td>0.9165</td><td>1.2920</td><td>0.5934</td><td>0.7437</td><td>0.6497</td><td>0.7803</td><td>3000.0000</td><td>0.0510</td></tr>
+<tr><td>1.1000</td><td>test_warm_locked</td><td>607.0000</td><td>0.2254</td><td>0.4923</td><td>1.1065</td><td>2.0415</td><td>0.5815</td><td>0.7282</td><td>0.6070</td><td>0.8320</td><td>3000.0000</td><td>0.0510</td></tr>
+<tr><td>1.3500</td><td>val_warm</td><td>519.0000</td><td>0.2126</td><td>0.4167</td><td>0.9195</td><td>1.3194</td><td>0.5954</td><td>0.7322</td><td>0.6446</td><td>0.4798</td><td>2512.0000</td><td>0.1740</td></tr>
+<tr><td>1.3500</td><td>test_warm_locked</td><td>607.0000</td><td>0.2274</td><td>0.4952</td><td>1.1021</td><td>2.0130</td><td>0.5898</td><td>0.7232</td><td>0.6081</td><td>0.4827</td><td>2512.0000</td><td>0.1740</td></tr>
+<tr><td>1.5000</td><td>val_warm</td><td>519.0000</td><td>0.2190</td><td>0.4192</td><td>0.9246</td><td>1.3315</td><td>0.5973</td><td>0.7360</td><td>0.6429</td><td>0.3931</td><td>2872.0000</td><td>0.2240</td></tr>
+<tr><td>1.5000</td><td>test_warm_locked</td><td>607.0000</td><td>0.2316</td><td>0.4964</td><td>1.1269</td><td>2.0225</td><td>0.5914</td><td>0.7232</td><td>0.6084</td><td>0.3888</td><td>2872.0000</td><td>0.2240</td></tr>
+<tr><td>1.7500</td><td>val_warm</td><td>519.0000</td><td>0.2261</td><td>0.4221</td><td>0.9063</td><td>1.3511</td><td>0.5857</td><td>0.7322</td><td>0.6402</td><td>0.2543</td><td>2438.0000</td><td>0.2857</td></tr>
+<tr><td>1.7500</td><td>test_warm_locked</td><td>607.0000</td><td>0.2347</td><td>0.4989</td><td>1.1359</td><td>2.0691</td><td>0.5832</td><td>0.7199</td><td>0.6081</td><td>0.2883</td><td>2438.0000</td><td>0.2857</td></tr>
+<tr><td>2.0000</td><td>val_warm</td><td>519.0000</td><td>0.2203</td><td>0.4247</td><td>0.8970</td><td>1.3620</td><td>0.5819</td><td>0.7322</td><td>0.6373</td><td>0.1696</td><td>2129.0000</td><td>0.3294</td></tr>
+<tr><td>2.0000</td><td>test_warm_locked</td><td>607.0000</td><td>0.2396</td><td>0.5029</td><td>1.1220</td><td>2.1153</td><td>0.5799</td><td>0.7117</td><td>0.6081</td><td>0.2224</td><td>2129.0000</td><td>0.3294</td></tr>
+</tbody></table>
+<h3>Warm Huber 피처별 근본 해석</h3>
+<p>아래 표는 “수치가 높다/낮다”를 넘어, 왜 해당 피처가 Warm Huber 구조 안에서 그렇게 작동했는지를 정리한 것이다.</p>
+<table><thead><tr><th>피처/구간</th><th>관측 결과</th><th>모델 특성 기반 원인</th><th>높게 나온 이유</th><th>낮게/반대로 나온 이유</th><th>조합/보정 의미</th></tr></thead><tbody>
+<tr><td>size: log_area, width_cm, height_cm, area_cm2</td><td>Warm Huber에서 contribution 1위 그룹</td><td>Huber는 선형 모델이라 각 크기 피처가 로그가격에 더해지는 독립 항으로 작동한다. 크기는 대부분 작품에서 관측되는 연속형 변수이고 결측/희소성이 낮아, 학습 과정에서 안정적인 공통 가격 축으로 선택되기 쉽다.</td><td>Warm 조건에서도 작가 이력만으로 가격을 설명할 수 없고, 같은 작가라도 작품 크기에 따라 가격대가 달라진다. 따라서 모델은 크기를 &#x27;작가 가격대 안에서 가격을 조정하는 기본 물리량&#x27;으로 크게 사용한다.</td><td>area_cm2는 log_area, width_cm, height_cm과 정보가 겹친다. 선형 모델은 중복 피처가 함께 있을 때 한 피처는 상승 방향, 다른 피처는 과대 상승을 눌러주는 보정 방향으로 배치할 수 있다. 따라서 area_cm2의 음의 계수는 면적이 가격을 낮춘다는 뜻이 아니라 중복 크기 정보 사이의 균형 조정이다.</td><td>개별 크기 피처 하나를 보정 기준으로 쓰기보다 size 그룹 또는 size_bucket 기준으로 반복 편향을 확인해야 한다.</td></tr>
+<tr><td>medium_support_bucket</td><td>Warm Huber에서 contribution 2위 그룹</td><td>one-hot 범주형 피처는 해당 조합에 속하는 작품에만 일정한 로그가격 보정값을 더한다. Huber는 극단 가격 사례의 영향은 줄이지만, 반복적으로 나타나는 재료-지지체 조합의 평균 가격 차이는 계수로 남긴다.</td><td>재료와 지지체는 작품의 물리적 완성도, 시장 분류, 구매자가 기대하는 가격 범위를 동시에 반영한다. 단일 medium 또는 support보다 조합 피처가 더 구체적인 작품 유형을 나타내기 때문에 영향이 크게 나타났다.</td><td>희소 조합은 min_frequency 처리로 infrequent 그룹에 묶이거나 active_rate가 낮아 평균 contribution이 제한된다. 즉, 특정 조합의 계수가 커도 표본이 적으면 전체 영향도는 낮게 보인다.</td><td>보정은 medium 단독보다 medium_support 조합을 우선 보되, 표본 수가 부족하면 support 또는 medium 단위로 fallback해야 한다.</td></tr>
+<tr><td>artist_key</td><td>Warm에서만 사용되는 주요 설명 축</td><td>Warm은 같은 작가가 학습 데이터에 존재하는 조건이다. one-hot artist_key는 해당 작가의 과거 가격대가 선형식의 절편 보정처럼 작동하게 만든다.</td><td>미술품 가격은 작품 물성뿐 아니라 작가의 기존 시장 가격대에 크게 의존한다. Warm에서는 이 정보가 직접 주어지므로 모델이 가격 기준선을 잡는 데 사용한다.</td><td>저빈도 작가는 infrequent 그룹으로 묶이고, Huber 손실은 극단 고가/저가 작가 사례에 과도하게 맞추지 않는다. 그래서 일부 작가 효과는 의도적으로 완화된다.</td><td>low_artist_history 또는 infrequent artist 그룹은 별도 신뢰도 표시와 residual 점검이 필요하다.</td></tr>
+<tr><td>depth_3d / shape</td><td>Warm에서는 size, medium/support보다 낮은 영향</td><td>선형 Huber는 피처 간 복잡한 상호작용을 직접 만들지 않는다. 깊이나 형태가 가격에 영향을 주더라도 재료/크기와 결합되어야 의미가 커지는 경우, 선형 단독 항에서는 낮게 보일 수 있다.</td><td>-</td><td>Warm에서는 이미 artist_key와 medium_support가 많은 가격 차이를 흡수한다. 따라서 depth나 shape가 단독으로 추가 설명하는 잔여 정보가 상대적으로 작다.</td><td>선형 Warm에서는 낮게 보여도 Cold 트리 모델에서는 depth와 size/medium interaction이 크게 나타난다. 즉, 낮은 영향은 피처가 무의미해서가 아니라 Warm Huber 구조 안에서 단독 선형 효과가 작다는 뜻이다.</td></tr>
+</tbody></table>
+<h2>4. Cold CatBoost: 트리 예측 과정과 피처 조합 해석</h2>
+<h3>예측 방식</h3>
+<p>CatBoost는 여러 개의 대칭 트리를 더해 로그 가격을 예측한다.</p>
+<pre><code>
+pred_log_price = base_score + sum_t(leaf_value_t(x))
+
+pred_price = exp(pred_log_price)
+
+</code></pre>
+<p>대칭 트리는 같은 depth의 모든 노드가 동일한 split 조건을 공유한다. 따라서 CatBoost에서는 “피처 하나가 가격을 올린다”보다 “어떤 피처 조합이 같은 경로에서 반복적으로 가격 구간을 나누는가”가 더 중요하다.</p>
+<h3>구조 확인</h3>
+<table><thead><tr><th>model</th><th>tree_count</th><th>mean_leaf_count_per_tree</th><th>median_leaf_count_per_tree</th><th>inferred_depth</th><th>leaf_pattern_50_unique_count</th><th>top_10_leaf_pattern_coverage</th><th>interpretation</th></tr></thead><tbody>
+<tr><td>cold_catboost</td><td>500</td><td>63.3520</td><td>64.0000</td><td>6.0000</td><td>1488</td><td>0.0768</td><td>CatBoost 대칭 트리 구조상 같은 depth에서 동일 split 조건을 반복 적용하므로, 단독 중요도보다 interaction과 leaf segment 잔차를 함께 해석한다.</td></tr>
+</tbody></table>
+<h3>SHAP 기준 상위 피처</h3>
+<table><thead><tr><th>feature</th><th>mean_abs_shap</th><th>mean_shap</th><th>feature_group</th><th>direction</th><th>rank</th></tr></thead><tbody>
+<tr><td>width_cm</td><td>0.2629</td><td>0.0499</td><td>size</td><td>평균적으로 예측가격 상승</td><td>1</td></tr>
+<tr><td>area_cm2</td><td>0.2217</td><td>0.0709</td><td>size</td><td>평균적으로 예측가격 상승</td><td>2</td></tr>
+<tr><td>log_area</td><td>0.1974</td><td>0.0452</td><td>size</td><td>평균적으로 예측가격 상승</td><td>3</td></tr>
+<tr><td>height_cm</td><td>0.1266</td><td>0.0217</td><td>size</td><td>평균적으로 예측가격 상승</td><td>4</td></tr>
+<tr><td>depth_cm</td><td>0.0940</td><td>0.0114</td><td>depth_3d</td><td>평균적으로 예측가격 상승</td><td>5</td></tr>
+<tr><td>support_category</td><td>0.0661</td><td>0.0196</td><td>support</td><td>평균적으로 예측가격 상승</td><td>6</td></tr>
+<tr><td>medium_category</td><td>0.0413</td><td>0.0153</td><td>medium</td><td>평균적으로 예측가격 상승</td><td>7</td></tr>
+<tr><td>aspect_ratio</td><td>0.0353</td><td>-0.0073</td><td>shape</td><td>평균적으로 예측가격 하락</td><td>8</td></tr>
+</tbody></table>
+<h3>interaction 기준 상위 조합</h3>
+<table><thead><tr><th>feature_1</th><th>feature_2</th><th>feature_group_1</th><th>feature_group_2</th><th>interaction_score</th><th>rank</th></tr></thead><tbody>
+<tr><td>width_cm</td><td>depth_cm</td><td>size</td><td>depth_3d</td><td>5.5493</td><td>1</td></tr>
+<tr><td>height_cm</td><td>depth_cm</td><td>size</td><td>depth_3d</td><td>5.2242</td><td>2</td></tr>
+<tr><td>depth_cm</td><td>aspect_ratio</td><td>depth_3d</td><td>shape</td><td>5.1604</td><td>3</td></tr>
+<tr><td>depth_cm</td><td>medium_category</td><td>depth_3d</td><td>medium</td><td>4.8243</td><td>4</td></tr>
+<tr><td>depth_cm</td><td>area_cm2</td><td>depth_3d</td><td>size</td><td>4.6171</td><td>5</td></tr>
+<tr><td>height_cm</td><td>medium_category</td><td>size</td><td>medium</td><td>4.4176</td><td>6</td></tr>
+<tr><td>depth_cm</td><td>log_area</td><td>depth_3d</td><td>size</td><td>4.3858</td><td>7</td></tr>
+<tr><td>depth_cm</td><td>support_category</td><td>depth_3d</td><td>support</td><td>3.7983</td><td>8</td></tr>
+</tbody></table>
+<h3>CatBoost 조합을 이렇게 판단한 이유</h3>
+<ul>
+<li>SHAP 상위가 <code>width_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>height_cm</code>로 모두 size 계열이다. Cold에서는 작가 이력이 없으므로 작품 물리 크기가 가격대를 먼저 나눈다.</li>
+<li>interaction 1위와 2위가 <code>width_cm x depth_cm</code>, <code>height_cm x depth_cm</code>이다. 이는 CatBoost가 size와 depth를 조합 조건으로 사용한다는 뜻이다.</li>
+<li><code>depth_cm x medium_category</code>도 상위권이다. 입체성의 가격 의미가 재료에 따라 달라진다.</li>
+<li>그래서 CatBoost 조합은 <code>size + depth_3d + medium/shape</code>가 모델 구조와 맞다.</li>
+</ul>
+<h3>leaf segment 진단</h3>
+<table><thead><tr><th>rows</th><th>median_residual_log</th><th>MdAPE</th><th>p95_APE</th><th>coverage_rate</th></tr></thead><tbody>
+<tr><td>42</td><td>-2.2712</td><td>8.6912</td><td>8.8514</td><td>0.0136</td></tr>
+<tr><td>31</td><td>-1.1093</td><td>2.0323</td><td>2.7061</td><td>0.0100</td></tr>
+<tr><td>27</td><td>-3.4697</td><td>31.1256</td><td>31.5357</td><td>0.0087</td></tr>
+<tr><td>24</td><td>-0.1173</td><td>0.5429</td><td>0.8672</td><td>0.0077</td></tr>
+<tr><td>22</td><td>0.0114</td><td>0.1812</td><td>0.5262</td><td>0.0071</td></tr>
+<tr><td>20</td><td>-0.4611</td><td>0.6752</td><td>1.7020</td><td>0.0065</td></tr>
+<tr><td>18</td><td>-1.6898</td><td>4.4183</td><td>4.4183</td><td>0.0058</td></tr>
+<tr><td>18</td><td>-0.0056</td><td>0.1456</td><td>1.2850</td><td>0.0058</td></tr>
+<tr><td>18</td><td>-0.1644</td><td>0.3998</td><td>0.8362</td><td>0.0058</td></tr>
+<tr><td>18</td><td>0.2549</td><td>0.2250</td><td>0.7783</td><td>0.0058</td></tr>
+<tr><td>17</td><td>-0.1778</td><td>0.1946</td><td>0.1996</td><td>0.0055</td></tr>
+<tr><td>16</td><td>-3.4506</td><td>30.5207</td><td>31.9465</td><td>0.0052</td></tr>
+</tbody></table>
+<h3>Cold CatBoost 피처별 근본 해석</h3>
+<p>아래 표는 CatBoost의 대칭 트리 구조와 ordered categorical 처리 특성에 맞춰 피처 영향의 원인을 설명한 것이다.</p>
+<table><thead><tr><th>피처/구간</th><th>관측 결과</th><th>모델 특성 기반 원인</th><th>높게 나온 이유</th><th>낮게/반대로 나온 이유</th><th>조합/보정 의미</th></tr></thead><tbody>
+<tr><td>size: width_cm, area_cm2, log_area, height_cm</td><td>CatBoost SHAP 상위 1~4위</td><td>Cold에는 artist_key가 없으므로 모델은 모든 작품에 공통으로 존재하는 물리량을 먼저 사용한다. CatBoost의 대칭 트리는 같은 depth에서 동일 split을 반복 적용하므로, 많은 샘플을 안정적으로 나눌 수 있는 크기 피처가 상단 분기 조건이 되기 쉽다.</td><td>처음 보는 작가의 가격 기준선을 직접 알 수 없기 때문에, 크기가 가격대의 대체 기준선 역할을 한다. 크기 피처는 결측이 적고 연속적이라 트리가 가격 구간을 나누기 좋은 신호다.</td><td>CatBoost는 크기 피처들을 독립 항으로 더하는 것이 아니라 분기 조건으로 사용한다. width_cm이 높다는 것은 단독 가격 프리미엄이 아니라, 특정 크기 구간으로 들어가는 경로가 예측값을 바꾼다는 뜻이다.</td><td>size 구간별 잔차를 보되, CatBoost에서는 size 단독보다 size와 depth/medium 조합 segment를 우선한다.</td></tr>
+<tr><td>depth_cm</td><td>SHAP 5위, interaction 상위 대부분에 포함</td><td>대칭 트리는 한 번 선택한 split 조건을 전체 depth에 반복 적용하기 때문에, depth가 size/medium/shape와 함께 구간을 나누면 여러 트리에서 반복적으로 영향이 커질 수 있다.</td><td>Cold 데이터에서 depth는 단순 치수가 아니라 2D/3D 성격, 오브제성, 설치/조각 가능성을 대신 나타낸다. 작가 정보가 없는 상황에서는 작품 유형을 구분하는 강한 단서가 된다.</td><td>깊이가 크면 항상 비싼 것이 아니라, 어떤 크기와 재료에서 깊이가 있는지가 중요하다. 그래서 interaction은 높지만 단독 방향성은 조합에 따라 달라진다.</td><td>CatBoost 보정은 depth 관련 leaf segment를 확인하고, 표본이 적으면 medium_shape_bucket 또는 size/depth slice로 fallback한다.</td></tr>
+<tr><td>width_cm x depth_cm, height_cm x depth_cm</td><td>interaction 1위, 2위</td><td>CatBoost interaction은 두 피처가 같은 트리 경로에서 예측값 변화를 함께 만든다는 뜻이다. 대칭 트리 구조에서는 반복 split 조합이 강한 segment 효과를 만든다.</td><td>넓거나 높은 작품에 깊이까지 있으면 일반 평면 작품과 다른 시장 분류가 된다. 모델은 이를 단순 대형 작품이 아니라 &#x27;큰 입체/오브제 가능성&#x27;으로 분리한다.</td><td>-</td><td>width나 depth 각각의 값보다 두 조건이 동시에 만족될 때 가격 경로가 달라진다. 따라서 피처 영향도 보고에서 이 조합을 별도 설명해야 한다.</td></tr>
+<tr><td>medium_category / support_category</td><td>SHAP 중위권, depth/size와 interaction</td><td>CatBoost는 범주형 변수를 target statistics와 ordered boosting 방식으로 처리해 범주별 평균 가격 정보를 누수 위험을 줄이며 학습한다. 다만 범주 단독보다 다른 split과 결합될 때 영향이 커진다.</td><td>-</td><td>-</td><td>CatBoost 보정은 medium 단독보다 medium_shape_bucket 또는 depth-medium segment 기준이 더 적합하다.</td></tr>
+</tbody></table>
+<h2>5. Cold LightGBM: 트리 예측 과정과 피처 조합 해석</h2>
+<h3>예측 방식</h3>
+<p>LightGBM도 여러 트리를 더해 로그 가격을 예측한다.</p>
+<pre><code>
+pred_log_price = base_score + learning_rate * sum_t(leaf_value_t(x))
+
+pred_price = exp(pred_log_price)
+
+</code></pre>
+<p>LightGBM은 leaf-wise 방식으로 손실을 크게 줄일 수 있는 leaf를 우선 확장한다. 그래서 평균 성능은 좋아질 수 있지만 일부 좁은 구간에서 오차가 크게 튀는 tail risk가 생길 수 있다.</p>
+<h3>permutation 기준 피처 영향</h3>
+<table><thead><tr><th>feature</th><th>feature_group</th><th>MdAPE_delta</th><th>p95_APE_delta</th><th>RMSE_log_delta</th></tr></thead><tbody>
+<tr><td>area_cm2</td><td>size</td><td>0.2542</td><td>7.5139</td><td>0.4264</td></tr>
+<tr><td>width_cm</td><td>size</td><td>0.0584</td><td>0.7783</td><td>0.0837</td></tr>
+<tr><td>log_area</td><td>size</td><td>0.0237</td><td>0.1799</td><td>0.0146</td></tr>
+<tr><td>support_size_bucket</td><td>size</td><td>0.0216</td><td>-0.1286</td><td>-0.0002</td></tr>
+<tr><td>depth_cm</td><td>depth_3d</td><td>0.0198</td><td>-0.3702</td><td>0.0041</td></tr>
+<tr><td>height_cm</td><td>size</td><td>0.0193</td><td>0.2537</td><td>0.0311</td></tr>
+<tr><td>support_category</td><td>support</td><td>0.0133</td><td>0.1694</td><td>0.0088</td></tr>
+<tr><td>has_depth</td><td>depth_3d</td><td>0.0113</td><td>-0.1717</td><td>0.0245</td></tr>
+</tbody></table>
+<h3>tail 위험 구간</h3>
+<table><thead><tr><th>slice_feature</th><th>slice_value</th><th>rows</th><th>MdAPE</th><th>p95_APE</th><th>mean_APE</th></tr></thead><tbody>
+<tr><td>support_size_bucket</td><td>canvas__q5</td><td>538</td><td>0.4893</td><td>26.4323</td><td>2.4873</td></tr>
+<tr><td>medium_category</td><td>acrylic</td><td>965</td><td>0.4049</td><td>10.5052</td><td>2.2039</td></tr>
+<tr><td>size_bucket</td><td>q3</td><td>593</td><td>0.6105</td><td>10.5052</td><td>2.0602</td></tr>
+<tr><td>support_size_bucket</td><td>canvas__q3</td><td>398</td><td>0.5595</td><td>10.5052</td><td>2.5701</td></tr>
+<tr><td>support_category</td><td>canvas</td><td>1849</td><td>0.4718</td><td>9.1233</td><td>1.6917</td></tr>
+<tr><td>size_bucket</td><td>q5</td><td>837</td><td>0.4681</td><td>7.1108</td><td>1.8589</td></tr>
+<tr><td>is_3d_candidate</td><td>False</td><td>3057</td><td>0.4773</td><td>5.1707</td><td>1.3667</td></tr>
+<tr><td>support_size_bucket</td><td>paper__q2</td><td>158</td><td>0.3823</td><td>4.9249</td><td>1.4659</td></tr>
+</tbody></table>
+<h3>leaf-wise 위험 확인</h3>
+<table><thead><tr><th>tree_idx</th><th>used_leaf_count</th><th>max_leaf_rows</th><th>max_leaf_row_rate</th><th>worst_leaf_MdAPE</th><th>worst_leaf_rows</th></tr></thead><tbody>
+<tr><td>summary</td><td>29.3257</td><td>1838.0000</td><td>0.5931</td><td>5.1568</td><td>3.0000</td></tr>
+<tr><td>70</td><td>29.0000</td><td>598.0000</td><td>0.1930</td><td>45.7743</td><td>1.0000</td></tr>
+<tr><td>69</td><td>28.0000</td><td>1168.0000</td><td>0.3769</td><td>45.7743</td><td>1.0000</td></tr>
+<tr><td>62</td><td>27.0000</td><td>1140.0000</td><td>0.3679</td><td>45.7743</td><td>1.0000</td></tr>
+<tr><td>56</td><td>26.0000</td><td>1142.0000</td><td>0.3685</td><td>45.7743</td><td>1.0000</td></tr>
+<tr><td>119</td><td>30.0000</td><td>947.0000</td><td>0.3056</td><td>45.4669</td><td>2.0000</td></tr>
+<tr><td>164</td><td>31.0000</td><td>1257.0000</td><td>0.4056</td><td>45.4669</td><td>2.0000</td></tr>
+<tr><td>33</td><td>30.0000</td><td>680.0000</td><td>0.2194</td><td>45.4669</td><td>2.0000</td></tr>
+<tr><td>34</td><td>29.0000</td><td>756.0000</td><td>0.2439</td><td>45.4669</td><td>2.0000</td></tr>
+<tr><td>36</td><td>30.0000</td><td>607.0000</td><td>0.1959</td><td>45.4669</td><td>2.0000</td></tr>
+<tr><td>172</td><td>30.0000</td><td>1013.0000</td><td>0.3269</td><td>45.4669</td><td>2.0000</td></tr>
+<tr><td>40</td><td>30.0000</td><td>715.0000</td><td>0.2307</td><td>45.4669</td><td>2.0000</td></tr>
+</tbody></table>
+<h3>LightGBM 조합을 이렇게 판단한 이유</h3>
+<ul>
+<li><code>area_cm2</code>를 섞었을 때 MdAPE_delta가 +0.2542, p95_APE_delta가 +7.5139로 가장 크다. 즉, LightGBM은 면적 의존도가 매우 높다.</li>
+<li><code>support_size_bucket=canvas__q5</code>의 p95_APE가 26.43으로 가장 높다. 대형 캔버스 구간은 점예측보다 위험도 표시와 tail 안정화가 중요하다.</li>
+<li>leaf-wise 구조상 leaf 자체를 운영 보정 기준으로 쓰기에는 복잡하므로, 사람이 이해 가능한 <code>size_bucket</code>, <code>support_size_bucket</code>, <code>pred_log bin</code>으로 내려와 보정하는 것이 맞다.</li>
+</ul>
+<h3>Cold LightGBM 피처별 근본 해석</h3>
+<p>아래 표는 LightGBM의 leaf-wise 성장 방식 때문에 어떤 피처가 크게 작동하고 어떤 구간에서 tail risk가 생기는지를 설명한 것이다.</p>
+<table><thead><tr><th>피처/구간</th><th>관측 결과</th><th>모델 특성 기반 원인</th><th>높게 나온 이유</th><th>낮게/반대로 나온 이유</th><th>조합/보정 의미</th></tr></thead><tbody>
+<tr><td>area_cm2</td><td>permutation 영향 최대</td><td>LightGBM은 leaf-wise 방식으로 손실 감소가 큰 leaf를 우선 확장한다. area_cm2는 연속형이고 가격대 분리에 강하므로, 특정 면적 기준 split이 반복적으로 깊은 leaf를 만들기 쉽다.</td><td>Cold에는 작가 기준선이 없고, 면적은 가격대 구분력이 강하다. permutation에서 area_cm2를 섞으면 기존 leaf 경로가 크게 무너져 MdAPE와 p95가 동시에 악화된다.</td><td>leaf-wise 구조는 강한 피처를 좁은 구간까지 깊게 파고들 수 있다. 따라서 area_cm2 의존도가 높다는 것은 평균 성능에는 유리하지만 큰 작품 구간 tail risk를 키울 수 있다.</td><td>area 단독 보정보다 size_bucket, pred_log bin, support_size_bucket으로 과민 구간을 안정화한다.</td></tr>
+<tr><td>width_cm, height_cm, log_area</td><td>split/permutation 상위권</td><td>LightGBM은 여러 크기 표현 중 손실을 가장 많이 줄이는 split을 선택한다. 서로 비슷한 정보를 가진 크기 피처들이 여러 경로에서 번갈아 사용될 수 있다.</td><td>같은 면적이라도 가로형/세로형/정방형 여부에 따라 가격 분포가 달라질 수 있어, 모델은 면적 외 크기 표현도 활용한다.</td><td>크기 피처끼리 상관이 높기 때문에 하나를 permutation해도 다른 크기 피처가 일부 대체한다. 그래서 area_cm2만 압도적으로 높고 나머지는 중간 수준으로 나타난다.</td><td>크기 피처를 개별 보정하지 말고 크기 bucket과 형태 bucket의 결합으로 tail을 확인한다.</td></tr>
+<tr><td>support_size_bucket: canvas__q5</td><td>tail slice p95_APE 최상위</td><td>LightGBM의 leaf-wise 성장은 특정 구간의 평균 손실을 줄이는 데 집중한다. 하지만 대형 캔버스처럼 가격 분산이 큰 구간은 같은 leaf 안에서도 실제 가격 편차가 커져 p95가 튈 수 있다.</td><td>대형 캔버스는 고가 가능성이 있지만 모든 대형 캔버스가 고가인 것은 아니다. 작가 정보가 없는 Cold 조건에서는 이 분산을 충분히 설명하지 못해 큰 오차가 발생한다.</td><td>해당 구간의 MdAPE는 전체와 비슷해도 p95가 매우 높다. 즉 일반 사례는 맞추지만 일부 고위험 사례에서 크게 틀리는 구조다.</td><td>가격 범위/신뢰도 표시, p95 안정화, 상한/하한 완충 보정의 우선 대상이다.</td></tr>
+<tr><td>medium_category: acrylic</td><td>tail slice p95 상위</td><td>범주형이 ordinal encoding된 뒤 트리에 들어가면, LightGBM은 범주 자체보다 해당 범주가 놓인 split 경로의 손실 감소를 기준으로 사용한다. acrylic은 표본이 많고 내부 가격 분산도 커 tail risk가 나타난다.</td><td>아크릴은 작품 수가 많아 모델이 자주 만나는 범주지만, 같은 아크릴 안에서도 크기/지지체/작가 부재에 따라 가격 편차가 크다. 그래서 단순 medium 정보만으로는 충분하지 않다.</td><td>acrylic 전체를 일괄 보정하면 정상 구간까지 흔들 수 있다. 문제는 acrylic 전체가 아니라 acrylic 중 특정 size/support 조합일 가능성이 높다.</td><td>medium 단독보다 medium x size 또는 support_size_bucket과 함께 tail 보정을 설계한다.</td></tr>
+</tbody></table>
+<h2>6. 지금까지 실험을 통해 조합을 찾은 과정</h2>
+<ul>
+<li>1단계: T6-E005에서 여러 feature_set을 validation 기준으로 비교했다.</li>
+<li>2단계: T6-E006에서 Warm, Cold CatBoost, Cold LightGBM 후보를 선택했다.</li>
+<li>3단계: T6-E007에서 선택 후보를 locked test로 확인했다.</li>
+<li>4단계: 최종 artifact를 만든 뒤, 기존 해석 스크립트와 피처셋이 불일치하는 문제를 확인했다.</li>
+<li>5단계: 최종 artifact 기준으로 Warm 계수/contribution, CatBoost SHAP/interaction, LightGBM permutation/tail slice를 재산출했다.</li>
+<li>6단계: 단순 성능표가 아니라 모델 구조에 맞는 영향도 지표로 조합 이유를 다시 설명했다.</li>
+</ul>
+<h2>7. 후처리 튜닝 결과와 계획</h2>
+<h3>기존 residual calibration 결과</h3>
+<table><thead><tr><th>scope</th><th>baseline_MdAPE</th><th>best_MdAPE_method</th><th>best_MdAPE</th><th>baseline_p95_APE</th><th>best_p95_method</th><th>best_p95_APE</th><th>decision</th></tr></thead><tbody>
+<tr><td>warm</td><td>0.2274</td><td>pred_bin_median_residual</td><td>0.2211</td><td>2.0130</td><td>size_bucket_median_residual</td><td>1.9736</td><td>채택 후보: 전체/예측구간 편향 보정이 MdAPE를 개선한다.</td></tr>
+<tr><td>cold_catboost</td><td>0.4839</td><td>medium_category_median_residual</td><td>0.4880</td><td>4.7974</td><td>overall_median_residual</td><td>3.9490</td><td>보류: 단순 median 보정은 MdAPE를 악화시켜 leaf/segment fallback 재실험이 필요하다.</td></tr>
+<tr><td>cold_lightgbm</td><td>0.4859</td><td>size_bucket_median_residual</td><td>0.4873</td><td>4.7612</td><td>medium_category_median_residual</td><td>4.2199</td><td>조건부 후보: MdAPE 악화 여부를 제한하면서 tail 안정화 위주로 검증한다.</td></tr>
+</tbody></table>
+<h3>모델별 후처리 방향</h3>
+<table><thead><tr><th>모델</th><th>현재 판단</th><th>보정 방식</th><th>이유</th><th>적용 조건</th></tr></thead><tbody>
+<tr><td>Warm Huber</td><td>채택 후보</td><td>overall median residual 또는 pred_bin median residual</td><td>선형 모델이라 전체 편향과 예측값 구간별 편향을 로그 공간에서 더하는 방식이 자연스럽고 MdAPE가 개선됐다.</td><td>validation/CV에서 보정값을 고정한 뒤 test/운영에서 재확인</td></tr>
+<tr><td>Cold CatBoost</td><td>보류 후 재실험</td><td>leaf/segment residual + fallback</td><td>단순 median 보정은 MdAPE를 악화시켰다. CatBoost 구조상 대칭 트리 leaf와 interaction segment를 이용한 보정이 더 적합하다.</td><td>leaf coverage가 낮으면 medium_shape_bucket, shape/medium, overall 순서로 fallback</td></tr>
+<tr><td>Cold LightGBM</td><td>조건부 후보</td><td>pred_log bin + size/support bucket tail 안정화</td><td>평균 예측보다 p95 tail risk가 문제이며, support_size_bucket과 area/size 의존도가 크다.</td><td>MdAPE 악화를 제한하고 p95 개선을 우선 목표로 검증</td></tr>
+</tbody></table>
+<h3>risk slice 근거</h3>
+<table><thead><tr><th>model</th><th>slice</th><th>n</th><th>median_ape</th><th>p95_ape</th><th>within_30</th><th>q80_range_multiplier</th><th>risk_flag</th></tr></thead><tbody>
+<tr><td>catboost_cold__base_medium_shape</td><td>extreme_shape</td><td>50</td><td>0.7044</td><td>3.2608</td><td>0.2400</td><td>3.4540</td><td>True</td></tr>
+<tr><td>catboost_cold__base_medium_shape</td><td>3d</td><td>42</td><td>0.7009</td><td>3.0203</td><td>0.1429</td><td>3.8374</td><td>True</td></tr>
+<tr><td>catboost_cold__base_medium_shape</td><td>unbalanced_shape</td><td>350</td><td>0.5710</td><td>2.4540</td><td>0.2400</td><td>2.6905</td><td>True</td></tr>
+<tr><td>catboost_cold__base_medium_shape</td><td>large_q5</td><td>834</td><td>0.4560</td><td>7.6190</td><td>0.3609</td><td>3.1948</td><td>True</td></tr>
+<tr><td>catboost_cold__base_medium_shape</td><td>all</td><td>3099</td><td>0.4839</td><td>4.7974</td><td>0.2956</td><td>2.8394</td><td>False</td></tr>
+<tr><td>catboost_cold__base_medium_shape</td><td>2d</td><td>3057</td><td>0.4796</td><td>4.7974</td><td>0.2977</td><td>2.8049</td><td>False</td></tr>
+<tr><td>catboost_cold__base_medium_shape</td><td>small_q1</td><td>474</td><td>0.4600</td><td>1.9718</td><td>0.3523</td><td>2.6458</td><td>False</td></tr>
+<tr><td>huber_warm_artist__base_existing_combo</td><td>low_artist_history</td><td>88</td><td>0.4886</td><td>2.0306</td><td>0.3182</td><td>2.5496</td><td>True</td></tr>
+<tr><td>huber_warm_artist__base_existing_combo</td><td>small_q1</td><td>133</td><td>0.3239</td><td>1.7441</td><td>0.4737</td><td>2.4651</td><td>True</td></tr>
+<tr><td>huber_warm_artist__base_existing_combo</td><td>unbalanced_shape</td><td>65</td><td>0.2751</td><td>3.5301</td><td>0.5231</td><td>2.7667</td><td>True</td></tr>
+<tr><td>huber_warm_artist__base_existing_combo</td><td>extreme_shape</td><td>12</td><td>0.6052</td><td>4.4556</td><td>0.2500</td><td>3.8402</td><td>False</td></tr>
+<tr><td>huber_warm_artist__base_existing_combo</td><td>3d</td><td>12</td><td>0.4792</td><td>3.4389</td><td>0.1667</td><td>2.9730</td><td>False</td></tr>
+<tr><td>huber_warm_artist__base_existing_combo</td><td>all</td><td>607</td><td>0.2274</td><td>2.0130</td><td>0.5898</td><td>2.0942</td><td>False</td></tr>
+<tr><td>huber_warm_artist__base_existing_combo</td><td>2d</td><td>595</td><td>0.2250</td><td>1.9551</td><td>0.5983</td><td>2.0763</td><td>False</td></tr>
+</tbody></table>
+<h2>8. 보고서 완성 기준과 추가 검증 계획</h2>
+<ul>
+<li>보고서 작성에 필요한 핵심 근거는 확보했다. 최종 artifact 기준 성능, 피처 영향도, 모델 구조별 해석 지표, 1차 residual calibration 결과가 모두 존재한다.</li>
+<li>Warm Huber: 현재 보정 후보가 이미 개선을 보였으므로 <code>PP-A1-W</code>는 실행 후보로 볼 수 있다. 단, 운영 적용 전 보정값은 validation 또는 cross-validation에서 고정해야 한다.</li>
+<li>Cold CatBoost: 단순 residual 보정은 보류다. 보고 결론은 “CatBoost는 단순 보정 적용이 아니라 leaf/segment fallback 보정으로 별도 실험해야 한다”가 맞다.</li>
+<li>Cold LightGBM: 단순 median 보정보다 tail 안정화 실험이 필요하다. 특히 <code>support_size_bucket</code>, <code>size_bucket</code>, <code>pred_log bin</code> 기준으로 p95 개선과 MdAPE 악화 제한을 같이 봐야 한다.</li>
+<li>공통: 후처리 실험은 test 잔차로 보정값을 만들면 안 된다. 보정값은 validation 또는 OOF에서 만들고 locked test는 최종 확인에만 사용해야 한다.</li>
+</ul>
+<h2>9. 보고용 최종 메시지</h2>
+<ul>
+<li>Warm Huber는 가격을 선형식으로 계산하기 때문에 피처별 계수와 contribution으로 영향도를 직접 설명할 수 있다.</li>
+<li>Cold CatBoost와 Cold LightGBM은 모두 트리형 모델이지만 예측 방식이 다르므로 같은 방식으로 해석하면 안 된다.</li>
+<li>CatBoost는 대칭 트리 구조라 피처 조합과 interaction을 중심으로 설명해야 한다.</li>
+<li>LightGBM은 leaf-wise 구조라 평균 중요도보다 tail 위험 구간을 중심으로 설명해야 한다.</li>
+<li>후처리는 모델 구조에 맞춰 다르게 가야 한다. Warm은 로그 잔차 보정, CatBoost는 segment fallback, LightGBM은 tail 안정화가 맞다.</li>
+</ul></body></html>

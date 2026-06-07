@@ -103,6 +103,7 @@ def render_results(rows: list[dict[str, str]]) -> str:
             f"<td>{inline_md(r.get('Warm 결과 요약', ''))}</td>"
             f"<td>{inline_md(r.get('Cold 결과 요약', ''))}</td>"
             f"<td>{inline_md(r.get('결론', ''))}</td>"
+            f"<td>{inline_md(r.get('상세 기록', ''))}</td>"
             "</tr>"
         )
     return "\n".join(rendered)
@@ -209,7 +210,7 @@ def main() -> None:
     <h2>실험 결과</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>날짜</th><th>실험</th><th>가설</th><th>상태</th><th>모델</th><th>피처</th><th>Warm</th><th>Cold</th><th>결론</th></tr></thead>
+        <thead><tr><th>날짜</th><th>실험</th><th>가설</th><th>상태</th><th>모델</th><th>피처</th><th>Warm</th><th>Cold</th><th>결론</th><th>상세</th></tr></thead>
         <tbody>{render_results(result_rows)}</tbody>
       </table>
     </div>

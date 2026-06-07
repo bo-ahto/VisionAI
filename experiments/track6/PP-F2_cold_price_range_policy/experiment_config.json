@@ -1,0 +1,38 @@
+{
+  "experiment_id": "PP-F2",
+  "title": "Cold 가격 범위 검증",
+  "run_id": "20260602_144650",
+  "seed": 20260602,
+  "feature_columns": {
+    "prediction_sources": {
+      "warm_huber": [
+        "PP-B4_oof_base_residual_source",
+        "baseline",
+        "warm",
+        "warm_huber"
+      ],
+      "warm_best": [
+        "PP-D4_warm_three_model_blend",
+        "weighted_warm_huber_catboost_l8_w_0.25_0.00_0.75",
+        "warm",
+        null
+      ],
+      "cold_lightgbm": [
+        "PP-B4_oof_base_residual_source",
+        "baseline",
+        "cold",
+        "cold_lightgbm"
+      ],
+      "cold_quantile_q50": [
+        "PP-K1_quantile_price_range_auxiliary",
+        "quantile_q50",
+        "cold",
+        null
+      ]
+    }
+  },
+  "model_manifest": {
+    "target": "ln_price_krw",
+    "mode": "display_policy"
+  }
+}

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 I2 작품 기본 피처 + 세대/경력 메타 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 I2 작품 기본 피처 + 세대/경력 메타 실험 결과</h1>
+    <ul>
+      <li>목적: 작품 기본 피처와 세대/경력 메타를 함께 쓰면 Cold 예측력이 개선되는지 확인</li>
+      <li>실험 ID: <code>I2</code></li>
+      <li>Warm 최고: <code>I2 기준: 작품 기본 피처</code> / <code>Huber</code> / MdAPE 0.4962</li>
+      <li>Cold 최고: <code>I2 후보: 작품 기본 피처 + 세대/경력</code> / <code>Quantile-LAD</code> / MdAPE 0.4643</li>
+      <li>생성일: <code>2026-05-27T22:29:32</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/train_features.csv</code><br><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/test_warm_features.csv</code><br><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/test_cold_features.csv</code><br><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>ln_estimated_ho, artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>작품 기본 피처와 세대/경력 메타를 함께 쓰면 Cold 예측력이 개선되는지 확인</td></tr><tr><td>학습 피처</td><td>ln_estimated_ho, nant_material_idx, nant_tool, nant_support / ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>실험군</td><td>Group I: 작가명 없는 Cold 후보 조합</td></tr><tr><td>해석 중심</td><td>Cold 결과 중심으로 판단한다.</td></tr><tr><td>purpose</td><td>작품 기본 피처와 세대/경력 메타를 함께 쓰면 Cold 예측력이 개선되는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 I2 기준: 작품 기본 피처 + Huber(MdAPE 0.4962), Cold 최고는 I2 후보: 작품 기본 피처 + 세대/경력 + Quantile-LAD(MdAPE 0.4643)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>I2 기준: 작품 기본 피처</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support</code> · 호수 + 난트 재료/도구/지지체</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4197</td><td>1.0373</td><td>0.4962</td><td>2.9236</td><td>0.3344</td><td>0.5058</td><td>0.8432</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4486</td><td>1.0111</td><td>0.6013</td><td>4.0972</td><td>0.2652</td><td>0.4399</td><td>1.0069</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4486</td><td>1.0111</td><td>0.6013</td><td>4.0973</td><td>0.2652</td><td>0.4399</td><td>1.0068</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4238</td><td>0.9977</td><td>0.5352</td><td>3.5976</td><td>0.2456</td><td>0.4611</td><td>1.1676</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4181</td><td>1.0026</td><td>0.5128</td><td>3.2103</td><td>0.2588</td><td>0.4873</td><td>1.1479</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4259</td><td>0.9958</td><td>0.5313</td><td>3.8417</td><td>0.2598</td><td>0.4714</td><td>1.5248</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>I2 후보: 작품 기본 피처 + 세대/경력</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count</code> · 작품 기본 피처에 생년/전시 횟수 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4451</td><td>1.0144</td><td>0.5074</td><td>3.0308</td><td>0.3394</td><td>0.4926</td><td>0.8210</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4729</td><td>0.9886</td><td>0.5441</td><td>4.0669</td><td>0.2817</td><td>0.4563</td><td>0.9937</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4731</td><td>0.9885</td><td>0.5447</td><td>4.0683</td><td>0.2817</td><td>0.4580</td><td>0.9929</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4714</td><td>0.9555</td><td>0.4971</td><td>3.7479</td><td>0.2885</td><td>0.5015</td><td>1.2428</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4723</td><td>0.9548</td><td>0.4643</td><td>3.4924</td><td>0.3104</td><td>0.5286</td><td>1.2262</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.3611</td><td>1.0505</td><td>0.4685</td><td>5.3719</td><td>0.3491</td><td>0.5218</td><td>2.4554</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

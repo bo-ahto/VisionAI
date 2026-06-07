@@ -1,0 +1,49 @@
+{
+  "experiment_id": "PP-I7",
+  "title": "모델 구조별 커스텀 보정 후속 검증",
+  "run_at": "2026-06-03T20:28:20",
+  "bootstrap_iterations": 500,
+  "warm_baseline": "warm_v6_fine_blend_mape_guarded",
+  "cold_baseline": "cold_pp_y2_base",
+  "warm_candidates": [
+    {
+      "label": "warm_v6_fine_blend_mape_guarded",
+      "source": "PP-V6",
+      "path": "/Users/bo/VisionAI/experiments/track6/PP-V6_warm_l10_refreshed_fine_blend/outputs/predictions.csv",
+      "candidate": "fine_blend_mape_guarded",
+      "policy": "current_representative",
+      "use_case": "대표 점 예측"
+    },
+    {
+      "label": "warm_v8_compact_blend_mape_guarded",
+      "source": "PP-V8",
+      "path": "/Users/bo/VisionAI/experiments/track6/PP-V8_warm_deployment_simplification/outputs/predictions.csv",
+      "candidate": "compact_blend_mape_guarded",
+      "policy": "deployment_simplification",
+      "use_case": "배포 단순화/평균오차 방어"
+    },
+    {
+      "label": "warm_wmape_catboost_residual_v8",
+      "source": "PP-WMAPE",
+      "path": "/Users/bo/VisionAI/experiments/track6/PP-WMAPE_warm_mape_optimization/outputs/candidate_predictions.csv",
+      "candidate": "wmape_catboost_residual_v8_compact_blend_mape_guarded",
+      "policy": "catboost_residual_after_warm_blend",
+      "use_case": "CatBoost residual 보정"
+    },
+    {
+      "label": "warm_wmape_catboost_residual_h29",
+      "source": "PP-WMAPE",
+      "path": "/Users/bo/VisionAI/experiments/track6/PP-WMAPE_warm_mape_optimization/outputs/candidate_predictions.csv",
+      "candidate": "wmape_catboost_residual_h29_h29_v8_compact_mape_gallery_median_cap0p05",
+      "policy": "search_calibrated_catboost_residual",
+      "use_case": "검색 보정 + CatBoost residual"
+    }
+  ],
+  "cold_source_path": "experiments/track6/PP-H20_H26_search_feature_expansion/outputs/candidate_predictions.csv",
+  "cold_source_candidates": {
+    "gallery_museum_cap0.2": "h23_gallery_museum_median_cap0.2__pred_log",
+    "news_cap0.2": "h23_news_median_cap0.2__pred_log",
+    "exhibition_cap0.2": "h23_exhibition_median_cap0.2__pred_log",
+    "risk_qwidth_action_cap0.2": "h26_risk_qwidth_action_median_cap0.2__pred_log"
+  }
+}

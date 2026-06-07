@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 D4 artwork_age x 재료 숫자형 교차항 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 D4 artwork_age x 재료 숫자형 교차항 실험 결과</h1>
+    <ul>
+      <li>목적: 작품 연한에 따라 재료별 가격 효과가 달라지는지 확인</li>
+      <li>실험 ID: <code>D4</code></li>
+      <li>Warm 최고: <code>D4 교차항: 연한 x 난트 도구명</code> / <code>Huber</code> / MdAPE 0.7311</li>
+      <li>Cold 최고: <code>D4 기준: 연한 + 난트 재료</code> / <code>LightGBM</code> / MdAPE 0.7015</li>
+      <li>생성일: <code>2026-05-27T10:20:02</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/train_features.csv</code><br><code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/test_warm_features.csv</code><br><code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/test_cold_features.csv</code><br><code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/D4_artwork_age_material_numeric_interaction/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/D4_artwork_age_material_numeric_interaction/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>artwork_age, artwork_age_x_nant_material_idx_01, artwork_age_x_nant_material_idx_02, artwork_age_x_nant_material_idx_03, artwork_age_x_nant_material_idx_04, artwork_age_x_nant_material_idx_05, artwork_age_x_nant_material_idx_06, artwork_age_x_nant_material_idx_07, artwork_age_x_nant_material_idx_08, artwork_age_x_nant_material_idx_09, artwork_age_x_nant_material_idx_10, artwork_age_x_nant_material_idx_11, artwork_age_x_nant_material_idx_12, artwork_age_x_nant_tool_01, artwork_age_x_nant_tool_02, artwork_age_x_nant_tool_03, artwork_age_x_nant_tool_04, artwork_age_x_nant_tool_05, artwork_age_x_nant_tool_06, artwork_age_x_nant_tool_07, artwork_age_x_nant_tool_08</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>오래된 유화, 오래된 수묵처럼 작품 연한과 재료가 함께 작용할 때 가격 예측이 개선되는지 확인한다.</td></tr><tr><td>실험군</td><td>Group D: 작품 변수끼리의 교차항</td></tr><tr><td>기준선</td><td>artwork_age + nant_material_idx + nant_tool</td></tr><tr><td>학습 피처</td><td>기준선과 artwork_age x NANT 재료 교차항</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>구현 방식</td><td>artwork_age는 숫자형으로 유지하고, 상위 재료 카테고리별 표시값과 곱한 숫자형 교차항을 생성한다.</td></tr><tr><td>주의</td><td>제작연도 출처와 결측 여부 flag는 사용하지 않는다.</td></tr><tr><td>해석 기준</td><td>교차항 추가 후 MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 재료별 연한 효과가 있다고 본다.</td></tr><tr><td>purpose</td><td>작품 연한에 따라 재료별 가격 효과가 달라지는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 D4 교차항: 연한 x 난트 도구명 + Huber(MdAPE 0.7311), Cold 최고는 D4 기준: 연한 + 난트 재료 + LightGBM(MdAPE 0.7015)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>D4 기준: 연한 + 난트 재료</h2>
+              <p><strong>사용 피처:</strong> <code>artwork_age, nant_material_idx, nant_tool</code> · 작품 연한과 재료의 개별 효과만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.1005</td><td>1.2915</td><td>0.7403</td><td>5.9600</td><td>0.1944</td><td>0.3262</td><td>1.5298</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0900</td><td>1.2990</td><td>0.7539</td><td>6.7692</td><td>0.1878</td><td>0.3245</td><td>1.6764</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0893</td><td>1.2995</td><td>0.7537</td><td>6.7692</td><td>0.1845</td><td>0.3245</td><td>1.6782</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0171</td><td>1.3030</td><td>0.7097</td><td>7.4316</td><td>0.1894</td><td>0.3398</td><td>1.5426</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0101</td><td>1.3076</td><td>0.7019</td><td>7.2662</td><td>0.1907</td><td>0.3498</td><td>1.4732</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0368</td><td>1.3382</td><td>0.7015</td><td>7.2722</td><td>0.1962</td><td>0.3314</td><td>1.9295</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>D4 교차항: 연한 x 난트 재료번호</h2>
+              <p><strong>사용 피처:</strong> <code>artwork_age, nant_material_idx, nant_tool, artwork_age_x_nant_material_idx_01, artwork_age_x_nant_material_idx_02, artwork_age_x_nant_material_idx_03, artwork_age_x_nant_material_idx_04, artwork_age_x_nant_material_idx_05, artwork_age_x_nant_material_idx_06, artwork_age_x_nant_material_idx_07, artwork_age_x_nant_material_idx_08, artwork_age_x_nant_material_idx_09, artwork_age_x_nant_material_idx_10, artwork_age_x_nant_material_idx_11, artwork_age_x_nant_material_idx_12</code> · 작품 연한이 늘어날 때 재료번호별 가격 효과가 달라지는지 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0820</td><td>1.3047</td><td>0.7416</td><td>6.2637</td><td>0.1960</td><td>0.3328</td><td>1.5360</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0770</td><td>1.3083</td><td>0.7511</td><td>7.0864</td><td>0.1960</td><td>0.3278</td><td>1.6750</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0763</td><td>1.3087</td><td>0.7513</td><td>7.0864</td><td>0.1960</td><td>0.3278</td><td>1.6769</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0065</td><td>1.3100</td><td>0.7158</td><td>7.5354</td><td>0.1904</td><td>0.3443</td><td>1.6428</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0138</td><td>1.3233</td><td>0.7037</td><td>7.4437</td><td>0.1959</td><td>0.3466</td><td>1.6820</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0428</td><td>1.3421</td><td>0.7020</td><td>7.5584</td><td>0.1943</td><td>0.3291</td><td>1.9775</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>D4 교차항: 연한 x 난트 도구명</h2>
+              <p><strong>사용 피처:</strong> <code>artwork_age, nant_tool, artwork_age_x_nant_tool_01, artwork_age_x_nant_tool_02, artwork_age_x_nant_tool_03, artwork_age_x_nant_tool_04, artwork_age_x_nant_tool_05, artwork_age_x_nant_tool_06, artwork_age_x_nant_tool_07, artwork_age_x_nant_tool_08</code> · 유화, 수묵 등 읽기 쉬운 재료명 기준으로 오래된 작품 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0606</td><td>1.3198</td><td>0.7311</td><td>6.9381</td><td>0.2125</td><td>0.3311</td><td>1.5915</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0558</td><td>1.3232</td><td>0.7448</td><td>7.3314</td><td>0.1993</td><td>0.3377</td><td>1.7250</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0558</td><td>1.3231</td><td>0.7448</td><td>7.3276</td><td>0.1993</td><td>0.3361</td><td>1.7250</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0141</td><td>1.3050</td><td>0.7250</td><td>7.0881</td><td>0.1959</td><td>0.3314</td><td>1.5434</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0038</td><td>1.3118</td><td>0.7154</td><td>7.0307</td><td>0.1997</td><td>0.3404</td><td>1.5555</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0663</td><td>1.3572</td><td>0.7156</td><td>7.5637</td><td>0.1810</td><td>0.3311</td><td>2.0121</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/data/test_cold_labels.csv</code></li><li><code>interaction_mapping</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/outputs/interaction_mapping.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/D4_artwork_age_material_numeric_interaction/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,11 @@
+experiment_id: AX7
+status: 계획
+group: AX
+label: AX7
+title: 작가 가격대 과적합 점검
+hypothesis: 작가명만으로 좋아진 성능은 작품 정보를 설명한 것이 아니라 가격대를 외운 결과일 수 있다.
+purpose: 작가명 효과의 신뢰성을 검증한다.
+train_features: artist_name_ko only vs artist_name_ko + 작품 기본 피처 묶음
+test_features: Random split / GroupKFold by artist 비교
+models: Warm: Huber/Linear/Ridge
+decision: Random에서만 좋고 GroupKFold에서 무너지면 작가명 과적합 위험으로 기록한다.

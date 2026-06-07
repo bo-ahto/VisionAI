@@ -1,0 +1,118 @@
+{
+  "created_at": "2026-05-22T14:58:17",
+  "experiment_id": "A4",
+  "description": "Artwork year-only comparison using Track6 split with year enrichment",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/A4_artwork_year_only/experiment_config.json",
+  "prompt_file": "experiments/track6/A4_artwork_year_only/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "artwork_year",
+      "artwork_age"
+    ],
+    "numeric_imputation": "median",
+    "categorical_encoding": "one_hot_handle_unknown_ignore"
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "제작연도",
+      "features": [
+        "artwork_year"
+      ],
+      "description": "작품 제작연도 원값"
+    },
+    {
+      "name": "작품 연한",
+      "features": [
+        "artwork_age"
+      ],
+      "description": "2026년 기준 작품이 만들어진 지 몇 년 되었는지"
+    },
+    {
+      "name": "제작연도 + 작품 연한",
+      "features": [
+        "artwork_year",
+        "artwork_age"
+      ],
+      "description": "제작연도 원값과 작품 연한을 함께 사용"
+    }
+  ],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/A4_artwork_year_only/data/train_features.csv",
+    "train_labels": "experiments/track6/A4_artwork_year_only/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/A4_artwork_year_only/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/A4_artwork_year_only/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/A4_artwork_year_only/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/A4_artwork_year_only/data/test_cold_labels.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/A4_artwork_year_only/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/A4_artwork_year_only/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/A4_artwork_year_only/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/A4_artwork_year_only/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/A4_artwork_year_only/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/A4_artwork_year_only/source_data/track6_test_cold_labels.csv"
+  }
+}

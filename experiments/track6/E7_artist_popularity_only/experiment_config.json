@@ -1,0 +1,58 @@
+{
+  "experiment_id": "E7",
+  "title": "Track6 E7 작가 인지도 단독 실험 결과",
+  "purpose": "팔로워 수와 주요 작가 여부가 가격 예측에 도움 되는지 확인",
+  "description": "Group E artist variable experiment: E7",
+  "exp_dir": "experiments/track6/E7_artist_popularity_only",
+  "prompt_file": "experiments/track6/E7_artist_popularity_only/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_followers_is_missing",
+    "artist_meta_is_p1_is_missing"
+  ],
+  "numeric_features": [
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_followers_is_missing",
+    "artist_meta_is_p1_is_missing"
+  ],
+  "variable_blocks": [
+    {
+      "name": "팔로워 수",
+      "features": [
+        "artist_meta_followers"
+      ],
+      "description": "플랫폼 팔로워 수만 사용"
+    },
+    {
+      "name": "주요 작가 여부",
+      "features": [
+        "artist_meta_is_p1"
+      ],
+      "description": "플랫폼이 표시한 주요 작가 여부만 사용"
+    },
+    {
+      "name": "인지도 묶음 + 결측",
+      "features": [
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_followers_is_missing",
+        "artist_meta_is_p1_is_missing"
+      ],
+      "description": "팔로워 수, 주요 작가 여부, 결측 상태를 함께 사용"
+    }
+  ],
+  "comment": {
+    "실험 목적": "팔로워 수와 주요 작가 여부가 가격 예측에 도움 되는지 확인",
+    "학습 피처": "artist_meta_followers / artist_meta_is_p1 / artist_meta_followers, artist_meta_is_p1, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "실험군": "Group E: 작가 변수만",
+    "해석 중심": "플랫폼 인지도 정보가 가격대 예측에 도움 되는지 확인한다.",
+    "주의": "네이버 검색량은 현재 데이터셋에 없으므로 이번 실험에서는 제외한다."
+  }
+}

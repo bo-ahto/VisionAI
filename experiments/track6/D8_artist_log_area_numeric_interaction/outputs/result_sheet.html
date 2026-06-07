@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 D8 artist_name x log_area 숫자형 교차항 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 D8 artist_name x log_area 숫자형 교차항 실험 결과</h1>
+    <ul>
+      <li>목적: 작가별로 대형 작품 프리미엄이 달라지는지 확인</li>
+      <li>실험 ID: <code>D8</code></li>
+      <li>Warm 최고: <code>D8 교차항: 작가명 x 면적</code> / <code>Huber</code> / MdAPE 0.1565</li>
+      <li>Cold 최고: <code>D8 교차항: 작가명 x 면적</code> / <code>Quantile-LAD</code> / MdAPE 0.5071</li>
+      <li>생성일: <code>2026-05-27T11:30:55</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/D8_artist_log_area_numeric_interaction/data/train_features.csv</code><br><code>experiments/track6/D8_artist_log_area_numeric_interaction/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/D8_artist_log_area_numeric_interaction/data/test_warm_features.csv</code><br><code>experiments/track6/D8_artist_log_area_numeric_interaction/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/D8_artist_log_area_numeric_interaction/data/test_cold_features.csv</code><br><code>experiments/track6/D8_artist_log_area_numeric_interaction/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/D8_artist_log_area_numeric_interaction/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/D8_artist_log_area_numeric_interaction/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>log_area</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>같은 면적 증가라도 작가별로 대형작 가격 프리미엄이 달라지는지 확인한다.</td></tr><tr><td>실험군</td><td>Group D: 작가명과 작품 변수의 교차항</td></tr><tr><td>기준선</td><td>artist_name_ko + log_area</td></tr><tr><td>학습 피처</td><td>기준선과 log_area x artist_name_ko 숫자형 교차항</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>구현 방식</td><td>log_area는 숫자형으로 유지하고, 학습 데이터 작품 수 상위 작가별 표시값과 곱한 숫자형 교차항을 생성한다.</td></tr><tr><td>해석 중심</td><td>작가명이 들어간 교차항이므로 Warm 결과를 중심으로 판단한다.</td></tr><tr><td>Cold 해석 주의</td><td>Cold는 신규 작가 상황이라 artist_name_ko 교차항 대부분이 학습된 작가와 맞지 않으므로 참고값으로만 본다.</td></tr><tr><td>해석 기준</td><td>교차항 추가 후 Warm MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 작가별 대형작 프리미엄이 있다고 본다.</td></tr><tr><td>purpose</td><td>작가별로 대형 작품 프리미엄이 달라지는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 D8 교차항: 작가명 x 면적 + Huber(MdAPE 0.1565), Cold 최고는 D8 교차항: 작가명 x 면적 + Quantile-LAD(MdAPE 0.5071)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>D8 기준: 작가명 + 면적</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, log_area</code> · 작가명과 면적의 개별 효과만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.9068</td><td>0.4157</td><td>0.1578</td><td>1.0161</td><td>0.7265</td><td>0.8748</td><td>0.2974</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.9064</td><td>0.4165</td><td>0.1773</td><td>0.9641</td><td>0.6919</td><td>0.8633</td><td>0.2934</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.9050</td><td>0.4197</td><td>0.1795</td><td>0.9346</td><td>0.6787</td><td>0.8583</td><td>0.2982</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4406</td><td>0.9830</td><td>0.5366</td><td>4.0737</td><td>0.2717</td><td>0.4724</td><td>1.3546</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4471</td><td>0.9773</td><td>0.5071</td><td>3.2619</td><td>0.2669</td><td>0.4931</td><td>1.1333</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4570</td><td>0.9684</td><td>0.5113</td><td>3.7948</td><td>0.2485</td><td>0.4882</td><td>1.2626</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>D8 교차항: 작가명 x 면적</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, log_area, log_area_x_artist_name_ko_01, log_area_x_artist_name_ko_02, log_area_x_artist_name_ko_03, log_area_x_artist_name_ko_04, log_area_x_artist_name_ko_05, log_area_x_artist_name_ko_06, log_area_x_artist_name_ko_07, log_area_x_artist_name_ko_08, log_area_x_artist_name_ko_09, log_area_x_artist_name_ko_10, log_area_x_artist_name_ko_11, log_area_x_artist_name_ko_12, log_area_x_artist_name_ko_13, log_area_x_artist_name_ko_14, log_area_x_artist_name_ko_15, log_area_x_artist_name_ko_16, log_area_x_artist_name_ko_17, log_area_x_artist_name_ko_18, log_area_x_artist_name_ko_19, log_area_x_artist_name_ko_20, log_area_x_artist_name_ko_21, log_area_x_artist_name_ko_22, log_area_x_artist_name_ko_23, log_area_x_artist_name_ko_24, log_area_x_artist_name_ko_25, log_area_x_artist_name_ko_26, log_area_x_artist_name_ko_27, log_area_x_artist_name_ko_28, log_area_x_artist_name_ko_29, log_area_x_artist_name_ko_30, log_area_x_artist_name_ko_31, log_area_x_artist_name_ko_32, log_area_x_artist_name_ko_33, log_area_x_artist_name_ko_34, log_area_x_artist_name_ko_35, log_area_x_artist_name_ko_36, log_area_x_artist_name_ko_37, log_area_x_artist_name_ko_38, log_area_x_artist_name_ko_39, log_area_x_artist_name_ko_40, log_area_x_artist_name_ko_41, log_area_x_artist_name_ko_42, log_area_x_artist_name_ko_43, log_area_x_artist_name_ko_44, log_area_x_artist_name_ko_45, log_area_x_artist_name_ko_46, log_area_x_artist_name_ko_47, log_area_x_artist_name_ko_48, log_area_x_artist_name_ko_49, log_area_x_artist_name_ko_50, log_area_x_artist_name_ko_51, log_area_x_artist_name_ko_52, log_area_x_artist_name_ko_53, log_area_x_artist_name_ko_54, log_area_x_artist_name_ko_55, log_area_x_artist_name_ko_56, log_area_x_artist_name_ko_57, log_area_x_artist_name_ko_58, log_area_x_artist_name_ko_59, log_area_x_artist_name_ko_60, log_area_x_artist_name_ko_61, log_area_x_artist_name_ko_62, log_area_x_artist_name_ko_63, log_area_x_artist_name_ko_64, log_area_x_artist_name_ko_65, log_area_x_artist_name_ko_66, log_area_x_artist_name_ko_67, log_area_x_artist_name_ko_68, log_area_x_artist_name_ko_69, log_area_x_artist_name_ko_70, log_area_x_artist_name_ko_71, log_area_x_artist_name_ko_72, log_area_x_artist_name_ko_73, log_area_x_artist_name_ko_74, log_area_x_artist_name_ko_75, log_area_x_artist_name_ko_76, log_area_x_artist_name_ko_77, log_area_x_artist_name_ko_78, log_area_x_artist_name_ko_79, log_area_x_artist_name_ko_80</code> · 작가별로 면적이 커질 때 가격 증가 방식이 달라지는지 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.8979</td><td>0.4352</td><td>0.1565</td><td>1.0765</td><td>0.7282</td><td>0.8666</td><td>0.3023</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.9075</td><td>0.4142</td><td>0.1762</td><td>0.9372</td><td>0.6985</td><td>0.8633</td><td>0.2885</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.9063</td><td>0.4169</td><td>0.1748</td><td>0.9321</td><td>0.6853</td><td>0.8633</td><td>0.2936</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4461</td><td>0.9781</td><td>0.5282</td><td>3.8453</td><td>0.2640</td><td>0.4808</td><td>1.2895</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4471</td><td>0.9773</td><td>0.5071</td><td>3.2619</td><td>0.2669</td><td>0.4931</td><td>1.1333</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4571</td><td>0.9684</td><td>0.5110</td><td>3.7940</td><td>0.2485</td><td>0.4885</td><td>1.2624</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/data/test_cold_labels.csv</code></li><li><code>interaction_mapping</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/outputs/interaction_mapping.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/D8_artist_log_area_numeric_interaction/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

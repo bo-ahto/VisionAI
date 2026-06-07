@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 F4 활동량/인지도 + 정보량 조합 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 F4 활동량/인지도 + 정보량 조합 실험 결과</h1>
+    <ul>
+      <li>목적: 활동량/인지도 정보에 메타 정보량 피처를 더하면 가격 예측과 신뢰도 판단에 도움이 되는지 확인</li>
+      <li>실험 ID: <code>F4</code></li>
+      <li>Warm 최고: <code>활동량 + 인지도 + 정보량</code> / <code>Linear Regression</code> / MdAPE 0.7372</li>
+      <li>Cold 최고: <code>활동량 + 인지도 + 정보량</code> / <code>Quantile-LAD</code> / MdAPE 0.6967</li>
+      <li>생성일: <code>2026-05-27T21:14:52</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/F4_artist_activity_popularity_information_combo/data/train_features.csv</code><br><code>experiments/track6/F4_artist_activity_popularity_information_combo/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/F4_artist_activity_popularity_information_combo/data/test_warm_features.csv</code><br><code>experiments/track6/F4_artist_activity_popularity_information_combo/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/F4_artist_activity_popularity_information_combo/data/test_cold_features.csv</code><br><code>experiments/track6/F4_artist_activity_popularity_information_combo/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/F4_artist_activity_popularity_information_combo/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/F4_artist_activity_popularity_information_combo/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>artist_meta_total_works, artist_meta_for_sale_works, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers, artist_meta_is_p1, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing, artist_meta_available_count, artist_meta_completeness_score</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>활동량/인지도 정보에 메타 정보량 피처를 더하면 가격 예측과 신뢰도 판단에 도움이 되는지 확인</td></tr><tr><td>학습 피처</td><td>artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>통제 기준</td><td>Group G는 작품 기본 피처 묶음(ln_estimated_ho + nant_material_idx + nant_tool + nant_support)을 기준선으로 둔다.</td></tr><tr><td>실험군</td><td>Group F: 작가 메타 변수 조합</td></tr><tr><td>검토 반영</td><td>기존 F2와 중복되지 않도록 F4는 정보량/결측 피처까지 포함한 조합으로 수정했다.</td></tr><tr><td>확인 결과 활용</td><td>정보량 피처가 유효하면 예측 신뢰도 보조 피처로 분리 관리한다.</td></tr><tr><td>purpose</td><td>활동량/인지도 정보에 메타 정보량 피처를 더하면 가격 예측과 신뢰도 판단에 도움이 되는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 활동량 + 인지도 + 정보량 + Linear Regression(MdAPE 0.7372), Cold 최고는 활동량 + 인지도 + 정보량 + Quantile-LAD(MdAPE 0.6967)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>활동량 + 인지도 + 정보량</h2>
+              <p><strong>사용 피처:</strong> <code>artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing</code> · F2 조합에 작가 메타 보유 개수와 완성도 점수를 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0109</td><td>1.3543</td><td>0.7382</td><td>6.4493</td><td>0.1829</td><td>0.3196</td><td>1.5543</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0091</td><td>1.3555</td><td>0.7372</td><td>6.5906</td><td>0.1829</td><td>0.3229</td><td>1.6008</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0091</td><td>1.3555</td><td>0.7373</td><td>6.5908</td><td>0.1829</td><td>0.3229</td><td>1.6008</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0791</td><td>1.2612</td><td>0.7047</td><td>6.2085</td><td>0.1917</td><td>0.3404</td><td>1.3015</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0757</td><td>1.2635</td><td>0.6967</td><td>6.1940</td><td>0.1952</td><td>0.3375</td><td>1.2943</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0103</td><td>1.3210</td><td>0.7336</td><td>6.1366</td><td>0.1746</td><td>0.3095</td><td>1.4317</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/F4_artist_activity_popularity_information_combo/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

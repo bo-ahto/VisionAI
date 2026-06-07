@@ -1,0 +1,3312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track6_Postprocessing_Experiment_Matrix</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#track6-후처리-실험-매트릭스">Track6 후처리 실험 매트릭스</a>
+<a class="toc-level-2" href="#후처리-전-기본-예측-모델-정의">후처리 전 기본 예측 모델 정의</a>
+<a class="toc-level-2" href="#중복-일관성-점검-결과">중복/일관성 점검 결과</a>
+<a class="toc-level-2" href="#공통-채택-중단-기준">공통 채택/중단 기준</a>
+<a class="toc-level-2" href="#pp-l-전용-채택-중단-기준">PP-L 전용 채택/중단 기준</a>
+<a class="toc-level-2" href="#실행-정리">실행 정리</a>
+<a class="toc-level-2" href="#실험군-요약">실험군 요약</a>
+<a class="toc-level-2" href="#상세-실험-목록">상세 실험 목록</a>
+<a class="toc-level-2" href="#실험-실행-순서">실험 실행 순서</a>
+<a class="toc-level-2" href="#gap-감사-후-추가-실행-후보">Gap 감사 후 추가 실행 후보</a>
+<a class="toc-level-3" href="#gap-감사-후보-실행-결과">Gap 감사 후보 실행 결과</a>
+<a class="toc-level-3" href="#보류-실험">보류 실험</a>
+<a class="toc-level-2" href="#결과-기록-양식">결과 기록 양식</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/postprocessing_experiment_matrix.md</code></div>
+      <h1 id="track6-후처리-실험-매트릭스">Track6 후처리 실험 매트릭스</h1>
+<ul>
+<li>목적: 모델 선정 이후 예측 정확도를 높이기 위한 후처리 실험을 기존 A~K 실험 방식처럼 표로 관리한다.</li>
+<li>후처리 전 기본 예측 모델:</li>
+<li>Warm 기본 예측 모델: <code>Huber(base_existing_combo)</code></li>
+<li>Warm 추가 검증 후보: <code>CatBoost(base_existing_combo / artist_key + size 계열)</code></li>
+<li>Cold 기본 예측 모델 1순위: <code>CatBoost(base_medium_shape)</code></li>
+<li>Cold 보조/비교 예측 모델: <code>LightGBM(base_support_size)</code></li>
+<li>기준 데이터:</li>
+<li>Track6 고정 데이터 나누기 기준</li>
+<li>검증 데이터: 보정값, 조건별 모델 선택 기준, 설정값 조정 기준 결정</li>
+<li>최종 테스트 데이터: 확정된 기준을 마지막으로 한 번 확인</li>
+<li>핵심 원칙:</li>
+<li>후처리 전 최종 모델 기준 피처 그룹 제거 실험을 먼저 수행한다.</li>
+<li>최종 테스트 결과를 보고 보정 기준을 다시 만들지 않는다.</li>
+<li>Warm / Cold는 분리해서 판단한다.</li>
+<li>후처리 전 기준 모델 결과와 후처리 후 결과를 반드시 비교한다.</li>
+<li>운영에서 알 수 없는 값은 보정 기준으로 쓰지 않는다.</li>
+<li>실제 가격은 학습 target과 평가 라벨로만 사용한다.</li>
+<li>실험 결과는 <code>MdAPE</code>, <code>RMSE_log</code>, <code>p95_APE</code>, <code>Within_30</code> 기준으로 본다.</li>
+</ul>
+<h2 id="후처리-전-기본-예측-모델-정의">후처리 전 기본 예측 모델 정의</h2>
+<p>이 문서에서 <code>기준 모델</code>은 최종 확정 모델이라는 뜻이 아니라, 각 후처리 실험을 적용하기 전에 먼저 예측값을 생성하는 기본 모델을 의미한다.</p>
+<pre><code>기본 모델 예측값(pred_log)
+-&gt; validation에서 residual_log = actual_log - pred_log 계산
+-&gt; 보정값 또는 조건별 정책 생성
+-&gt; test에 같은 보정 기준 적용</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">후처리 전 기본 예측 모델</th>
+<th class="align-left">기준 피처셋</th>
+<th class="align-left">실제 사용 피처</th>
+<th class="align-left">이 모델을 기준으로 보는 이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm 기본</td>
+<td class="align-left"><code>Huber</code></td>
+<td class="align-left"><code>base_existing_combo</code></td>
+<td class="align-left"><code>artist_key</code>, <code>width_cm</code>, <code>height_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>depth_cm</code>, <code>has_depth</code>, <code>is_3d_candidate</code>, <code>aspect_ratio</code>, <code>is_extreme_aspect_ratio</code>, <code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code></td>
+<td class="align-left">작가 이력이 있는 Warm에서 작가 기준선과 크기 효과를 선형적으로 설명할 수 있음</td>
+</tr>
+<tr>
+<td class="align-left">Warm 추가 검증</td>
+<td class="align-left"><code>CatBoost</code></td>
+<td class="align-left"><code>base_existing_combo</code>, <code>artist_key + size</code>, <code>artist_key + size + material/support</code></td>
+<td class="align-left">Warm Huber 기준 피처를 기본으로 두고, 작가 x 크기 x 재료/지지체 조합을 CatBoost가 더 잘 나누는지 확인</td>
+<td class="align-left">CatBoost 대칭 트리 구조가 작가별 작품 크기 구간을 더 잘 학습할 수 있는지 검증</td>
+</tr>
+<tr>
+<td class="align-left">Cold 기본</td>
+<td class="align-left"><code>CatBoost</code></td>
+<td class="align-left"><code>base_medium_shape</code></td>
+<td class="align-left"><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>has_depth</code>, <code>is_3d_candidate</code>, <code>medium_category</code>, <code>support_category</code>, <code>shape_bucket</code>, <code>medium_shape_bucket</code></td>
+<td class="align-left">Cold는 작가 기준선이 약하므로 작품의 크기, 형태, 재료 조합을 조건별로 나누는 CatBoost가 주 후보</td>
+</tr>
+<tr>
+<td class="align-left">Cold 보조/비교</td>
+<td class="align-left"><code>LightGBM</code></td>
+<td class="align-left"><code>base_support_size</code></td>
+<td class="align-left"><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>has_depth</code>, <code>is_3d_candidate</code>, <code>medium_category</code>, <code>support_category</code>, <code>size_bucket</code>, <code>support_size_bucket</code></td>
+<td class="align-left">LightGBM은 세밀한 구간 분리에 강하므로 Cold tail 위험과 보조 모델 가능성을 확인</td>
+</tr>
+</tbody></table></div>
+<h2 id="중복-일관성-점검-결과">중복/일관성 점검 결과</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">점검 대상</th>
+<th class="align-left">문제</th>
+<th class="align-left">조치</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기존 우선순위</td>
+<td class="align-left">바로 PP-A/PP-B/PP-D/PP-E로 들어가면 후처리 segment의 피처 근거가 부족함</td>
+<td class="align-left"><code>PRE-PP</code> 선행 검증 단계를 추가</td>
+</tr>
+<tr>
+<td class="align-left">CatBoost 추가 가설</td>
+<td class="align-left">Warm/Cold 모두에서 CatBoost 구조가 조건 조합 학습에 유리할 수 있으나 기존 후처리 표에는 별도 검증 단계가 없음</td>
+<td class="align-left"><code>PRE-MODEL</code>을 추가해 Warm/Cold CatBoost 적합성을 먼저 확인</td>
+</tr>
+<tr>
+<td class="align-left">구분 학습 보정</td>
+<td class="align-left">CatBoost를 전체로 한 번 학습할지, 조건별로 나누어 학습할지에 따라 시작 기준값과 leaf 값이 달라짐</td>
+<td class="align-left"><code>PRE-SPLIT-CB</code>를 추가해 구분 학습이 보정값을 줄이는지 확인</td>
+</tr>
+<tr>
+<td class="align-left">보정값 산출 방식</td>
+<td class="align-left">PP-A가 보정 적용 중심이라 모델별/구간별 보정값을 먼저 넓게 뽑아보는 단계가 부족함</td>
+<td class="align-left"><code>PRE-CAL</code>을 추가해 correction map을 먼저 생성</td>
+</tr>
+<tr>
+<td class="align-left">PP-A2 vs PP-C2</td>
+<td class="align-left">가격대별 대표 오차 보정 목적이 거의 동일함</td>
+<td class="align-left">PP-A2를 대표 실험으로 실행하고 PP-C2는 보류</td>
+</tr>
+<tr>
+<td class="align-left">PP-A2 기존 표현</td>
+<td class="align-left"><code>실제 가격 구간</code>은 운영 시 알 수 없어 보정 기준으로 사용할 수 없음</td>
+<td class="align-left"><code>예측 가격 구간</code>만 보정 기준으로 사용하고 실제 가격은 평가 라벨로만 사용</td>
+</tr>
+<tr>
+<td class="align-left">PP-B1~B3</td>
+<td class="align-left">검증 데이터 예측 오차만 학습하면 검증 데이터에 맞춘 보정 모델이 될 위험이 있음</td>
+<td class="align-left">OOF 교차 예측 기반 오차를 먼저 만들고 실행</td>
+</tr>
+<tr>
+<td class="align-left">PP-G1/PP-H4</td>
+<td class="align-left">기존 E/F/G/H/I/J에서 이미 사용한 작가 메타/팔로워와 중복 가능</td>
+<td class="align-left">기존 컬럼 재사용이 아니라 신규 수집 또는 보강 데이터일 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">PP-F1~F4</td>
+<td class="align-left">가격 범위/신뢰도는 단일 예측 정확도 개선 실험이 아님</td>
+<td class="align-left">정확도 개선 후보정과 분리해 서비스 표시 안정화 실험으로 관리</td>
+</tr>
+<tr>
+<td class="align-left">PP-I1~I2</td>
+<td class="align-left">후처리라기보다 모델 설정값 튜닝에 가까움</td>
+<td class="align-left">후순위로 두고 모델 튜닝/민감도 확인 항목으로 표시</td>
+</tr>
+<tr>
+<td class="align-left">모델별 커스텀 보정</td>
+<td class="align-left">Huber, CatBoost, LightGBM의 예측 구조가 달라 같은 보정식을 일괄 적용하면 설명력이 약함</td>
+<td class="align-left"><code>Group PP-J</code>를 추가해 모델 구조별 보정 실험을 분리 관리</td>
+</tr>
+<tr>
+<td class="align-left">추천 보조 조합</td>
+<td class="align-left">Huber/CatBoost/LightGBM 외에 MAPE와 p95_APE를 낮출 수 있는 보조 조합이 있으나 목적이 PP-D/E와 일부 겹칠 수 있음</td>
+<td class="align-left"><code>Group PP-K</code>로 분리하고, OOF 기반 조합/가격 범위/유사 작품 fallback처럼 목적이 명확한 후보만 검증</td>
+</tr>
+<tr>
+<td class="align-left">PRE-CAL-WCB</td>
+<td class="align-left">Warm CatBoost가 기준 후보로 남지 않으면 Warm CatBoost 보정값 산출은 불필요함</td>
+<td class="align-left"><code>PRE-MODEL-WCB</code>에서 Warm CatBoost가 유효할 때만 조건부 실행</td>
+</tr>
+<tr>
+<td class="align-left">PP-J1~PP-J6</td>
+<td class="align-left">PP-A/PRE-CAL과 같은 residual을 쓰므로 바로 실행하면 중복 보정이 될 수 있음</td>
+<td class="align-left">PRE-CAL과 PP-A 결과에서 남은 문제 구간이 확인된 경우에만 모델별 커스텀 보정 실행</td>
+</tr>
+<tr>
+<td class="align-left">PP-K1~PP-K10</td>
+<td class="align-left">추천 조합을 test에서 직접 반복 선택하면 test 맞춤 위험이 있음</td>
+<td class="align-left">validation 또는 OOF에서 조합 기준을 정하고 test는 최종 후보만 확인</td>
+</tr>
+<tr>
+<td class="align-left">PP-K vs PP-L</td>
+<td class="align-left">둘 다 Huber/Quantile/CatBoost 조합을 다루므로 실행자가 중복 실험으로 오해할 수 있음</td>
+<td class="align-left">PP-K는 간단한 추천 보조 조합 탐색, PP-L은 MAPE 최적화를 목표로 한 정식 순차 학습 실험으로 분리</td>
+</tr>
+<tr>
+<td class="align-left">PP-L1~PP-L10</td>
+<td class="align-left">Huber/Quantile/CatBoost 순차 학습은 단계가 많아 validation 과적합 위험이 있음</td>
+<td class="align-left"><code>huber_quantile_catboost_mape_optimization_plan.md</code>를 기준 문서로 두고, Quantile 구간/가중치/residual 보정 기준은 validation 또는 OOF에서만 확정. PP-L7은 L7-0/L7-H/L7-CB/L7-HCB로 나누어 실행</td>
+</tr>
+<tr>
+<td class="align-left">PP-L7 하위 실험</td>
+<td class="align-left">PP-L7을 한 줄로만 두면 Quantile 구간 생성, Huber 학습, CatBoost 학습, 결합 실험 중 일부가 생략될 수 있음</td>
+<td class="align-left">PP-L7-0, PP-L7-H, PP-L7-CB, PP-L7-HCB를 별도 row로 분리해 실행 순서를 명시</td>
+</tr>
+<tr>
+<td class="align-left">PP-L8/PP-L9 residual 학습</td>
+<td class="align-left">Huber 예측값을 같은 학습 데이터 예측으로 만들면 CatBoost residual 모델이 누수될 수 있음</td>
+<td class="align-left">Huber <code>pred_log</code>는 OOF 예측으로 만들고 residual target은 OOF 기반으로만 생성</td>
+</tr>
+<tr>
+<td class="align-left">PP-L8 vs PP-L9 ratio 해석</td>
+<td class="align-left"><code>price_range_ratio</code>와 <code>residual_range_ratio</code>를 혼동하면 Quantile 구간 의미가 달라짐</td>
+<td class="align-left">PP-L8은 가격 예측 범위 ratio, PP-L9는 Huber residual 범위 ratio로 명확히 구분</td>
+</tr>
+<tr>
+<td class="align-left">PP-D 모델 결합</td>
+<td class="align-left">이미 보정된 예측값을 다시 평균하면 보정이 이중 적용될 수 있음</td>
+<td class="align-left">1차 비교는 보정 전 <code>pred_log</code>로 실행하고, 보정 후 결합은 별도 후보로 분리</td>
+</tr>
+<tr>
+<td class="align-left">test 반복 확인</td>
+<td class="align-left">많은 후처리 후보를 test로 반복 비교하면 test에 맞춘 선택이 될 수 있음</td>
+<td class="align-left">validation에서 후보를 고르고 test는 최종 후보만 1회 확인</td>
+</tr>
+</tbody></table></div>
+<h2 id="공통-채택-중단-기준">공통 채택/중단 기준</h2>
+<p>후처리 후보는 아래 기준을 만족할 때만 다음 단계로 넘긴다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">기준</th>
+<th class="align-left">내용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">데이터 기준</td>
+<td class="align-left">보정값, 라우팅 기준, 가중치는 validation에서만 정한다. test는 최종 후보 확인에만 사용한다.</td>
+</tr>
+<tr>
+<td class="align-left">표본 수 기준</td>
+<td class="align-left">segment 보정은 validation rows <code>&gt;= 50</code>을 기본 기준으로 한다. 부족하면 상위 fallback을 사용한다.</td>
+</tr>
+<tr>
+<td class="align-left">성능 기준</td>
+<td class="align-left">MdAPE가 개선되거나, MdAPE가 유지되는 상태에서 p95_APE가 명확히 줄어야 한다.</td>
+</tr>
+<tr>
+<td class="align-left">악화 방지</td>
+<td class="align-left">p95_APE가 악화되면 대표 정확도가 좋아도 운영 후보로 바로 채택하지 않는다.</td>
+</tr>
+<tr>
+<td class="align-left">중복 방지</td>
+<td class="align-left">같은 목적의 실험은 단순한 방식부터 실행한다. 단순 보정이 충분하면 복잡한 보정은 보류한다.</td>
+</tr>
+<tr>
+<td class="align-left">과보정 방지</td>
+<td class="align-left">보정값이 큰 segment는 cap을 적용하고, cap 적용 후에도 불안정하면 낮은 신뢰도 후보로만 사용한다.</td>
+</tr>
+</tbody></table></div>
+<h2 id="pp-l-전용-채택-중단-기준">PP-L 전용 채택/중단 기준</h2>
+<p>PP-L은 MAPE 최적화가 목표이므로 공통 기준에 아래 기준을 추가로 적용한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">기준</th>
+<th class="align-left">내용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">우선순위</td>
+<td class="align-left">MdAPE 유지 또는 개선을 1순위로 두고, 그 범위 안에서 MAPE 감소를 본다.</td>
+</tr>
+<tr>
+<td class="align-left">MAPE 채택</td>
+<td class="align-left">MAPE가 개선되어도 MdAPE 또는 p95_APE가 악화되면 보류한다.</td>
+</tr>
+<tr>
+<td class="align-left">구간 안정성</td>
+<td class="align-left">stable 구간 성능이 악화되면 전체 MAPE가 좋아도 운영 후보로 바로 채택하지 않는다.</td>
+</tr>
+<tr>
+<td class="align-left">ratio 구분</td>
+<td class="align-left">PP-L8은 <code>price_range_ratio</code>, PP-L9는 <code>residual_range_ratio</code> 기준으로 결과를 분리 기록한다.</td>
+</tr>
+<tr>
+<td class="align-left">OOF 필수</td>
+<td class="align-left">Huber/CatBoost residual 학습은 OOF 예측 기반 residual만 사용한다.</td>
+</tr>
+<tr>
+<td class="align-left">복잡도 기준</td>
+<td class="align-left">단순 Huber, CatBoost, PP-K 조합보다 개선이 명확하지 않으면 PP-L 순차 구조는 보류한다.</td>
+</tr>
+<tr>
+<td class="align-left">필수 baseline</td>
+<td class="align-left">PP-L 후보는 Huber 단독, CatBoost 단독, Quantile q50 단독, 전체 median 보정, Huber+CatBoost residual, Huber+Quantile residual, 단순 가중 앙상블과 비교한다.</td>
+</tr>
+<tr>
+<td class="align-left">통계 검증</td>
+<td class="align-left">최종 후보는 paired bootstrap 95% CI, Wilcoxon signed-rank test, seed 반복 평균/표준편차를 기록한다.</td>
+</tr>
+<tr>
+<td class="align-left">민감도 분석</td>
+<td class="align-left">Quantile 구간 기준 33/66, 50/80, 70/90, price_range_ratio 1.5/2.5배를 비교한다.</td>
+</tr>
+<tr>
+<td class="align-left">실패 기록</td>
+<td class="align-left">개선된 후보만 기록하지 않고 보류/실패한 후보와 실패 사유를 함께 남긴다.</td>
+</tr>
+</tbody></table></div>
+<h2 id="실행-정리">실행 정리</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">분류</th>
+<th class="align-left">대상 실험</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">1단계 사전 피처 검증</td>
+<td class="align-left">PRE-PP-CB, PRE-PP-LGB, PRE-PP-W</td>
+<td class="align-left">후처리 기준으로 쓸 피처/구간이 실제 성능에 필요한지 확인</td>
+</tr>
+<tr>
+<td class="align-left">2단계 사전 모델 검증</td>
+<td class="align-left">PRE-MODEL-WCB, PRE-MODEL-CCB</td>
+<td class="align-left">보정 전에 Warm/Cold CatBoost를 기준 모델 후보로 볼 가치가 있는지 확인</td>
+</tr>
+<tr>
+<td class="align-left">3단계 구분 학습 검증</td>
+<td class="align-left">PRE-SPLIT-WCB, PRE-SPLIT-CCB</td>
+<td class="align-left">CatBoost를 조건별로 따로 학습하면 보정값이 줄어드는지 확인</td>
+</tr>
+<tr>
+<td class="align-left">4단계 보정값 산출</td>
+<td class="align-left">PRE-CAL-W, PRE-CAL-WCB, PRE-CAL-CB, PRE-CAL-LGB</td>
+<td class="align-left">후처리 적용 전에 모델별/구간별 반복 오차 지도를 만든다</td>
+</tr>
+<tr>
+<td class="align-left">5단계 기본 residual 보정</td>
+<td class="align-left">PP-A1~PP-A8</td>
+<td class="align-left">PRE-CAL 결과로 보정 segment를 확정한 뒤 실행</td>
+</tr>
+<tr>
+<td class="align-left">6단계 모델별 커스텀 보정</td>
+<td class="align-left">PP-J1~PP-J6</td>
+<td class="align-left">Huber/CatBoost/LightGBM 구조 차이를 반영한 보정 후보를 확인</td>
+</tr>
+<tr>
+<td class="align-left">7단계 남은 오차 모델</td>
+<td class="align-left">PP-B4, PP-B1~PP-B3</td>
+<td class="align-left">학습 내부 교차 예측(OOF)으로 남은 오차를 먼저 만들어야 누수 위험이 낮음</td>
+</tr>
+<tr>
+<td class="align-left">8~13단계 정책/표시/추천 조합 검증</td>
+<td class="align-left">PP-C, PP-D, PP-E, PP-K, PP-L, PP-F</td>
+<td class="align-left">재보정, 모델 결합, 조건별 선택, 추천 보조 조합, MAPE 최적화 순차 학습, 가격 범위/신뢰도를 순서대로 확인</td>
+</tr>
+<tr>
+<td class="align-left">보류</td>
+<td class="align-left">PP-C2</td>
+<td class="align-left">PP-A2와 목적과 방식이 거의 같아 별도 실험으로 두면 중복됨</td>
+</tr>
+<tr>
+<td class="align-left">14단계 조건부 외부 데이터</td>
+<td class="align-left">PP-G1~PP-G5, PP-H1~PP-H6</td>
+<td class="align-left">기존 작가 메타 실험과 중복 가능성이 있어 신규 수집 또는 보강 데이터가 있을 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">15단계 최종 조정/통합</td>
+<td class="align-left">PP-I1~PP-I6</td>
+<td class="align-left">설정값, 보정 강도, 라우팅 기준을 최종 조정하고 최신 후보까지 통합 검증</td>
+</tr>
+</tbody></table></div>
+<h2 id="실험군-요약">실험군 요약</h2>
+<p>아래 요약은 실행 순서가 아니라 실험군 이름 기준으로 정렬한다. 실제 실행 순서는 뒤의 <code>실험 실행 순서</code> 섹션을 따른다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">실험군</th>
+<th class="align-left">피처/보정 구성</th>
+<th class="align-left">목적</th>
+<th class="align-left">핵심 질문</th>
+<th class="align-left">실행 상태</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">PRE-CAL</td>
+<td class="align-left">상세 보정값 산출</td>
+<td class="align-left">모델별/구간별 correction map 생성</td>
+<td class="align-left">어떤 구간에서 얼마나 높게/낮게 예측하는가?</td>
+<td class="align-left">사전 실행</td>
+</tr>
+<tr>
+<td class="align-left">PRE-MODEL</td>
+<td class="align-left">Warm/Cold CatBoost 적합성 검증</td>
+<td class="align-left">보정 전에 기준 모델 후보 재검토</td>
+<td class="align-left">CatBoost가 조건 조합을 더 잘 나누어 기준 성능을 높이는가?</td>
+<td class="align-left">사전 실행</td>
+</tr>
+<tr>
+<td class="align-left">PRE-PP</td>
+<td class="align-left">모델별 group-drop ablation</td>
+<td class="align-left">후처리 전 피처/구간 근거 검증</td>
+<td class="align-left">이 피처 그룹이 실제 성능과 tail 안정성에 필요한가?</td>
+<td class="align-left">선행 실행</td>
+</tr>
+<tr>
+<td class="align-left">PRE-SPLIT-CB</td>
+<td class="align-left">Warm/Cold CatBoost 구분 학습</td>
+<td class="align-left">조건별 CatBoost가 보정값을 줄이는지 검증</td>
+<td class="align-left">전체 모델보다 구간별 모델이 반복 오차를 줄이는가?</td>
+<td class="align-left">사전 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">구간별 예측 치우침 보정</td>
+<td class="align-left">반복적으로 높게/낮게 예측하는 구간을 보정</td>
+<td class="align-left">특정 구간의 예측 치우침을 보정하면 정확도가 개선되는가?</td>
+<td class="align-left">실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-B</td>
+<td class="align-left">남은 예측 오차 보정 모델</td>
+<td class="align-left">1차 모델이 남긴 오차를 2단계 모델로 보정</td>
+<td class="align-left">남은 예측 오차를 별도 모델이 학습할 수 있는가?</td>
+<td class="align-left">조건부 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-C</td>
+<td class="align-left">예측값 재보정</td>
+<td class="align-left">예측값 전체의 기울기/곡선을 다시 맞춤</td>
+<td class="align-left">예측 가격을 다시 맞추면 실제 가격에 더 가까워지는가?</td>
+<td class="align-left">일부 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-D</td>
+<td class="align-left">여러 모델 예측값 결합</td>
+<td class="align-left">여러 모델의 예측값을 평균 또는 가중 평균으로 결합</td>
+<td class="align-left">단일 모델보다 여러 모델을 함께 쓰면 안정적인가?</td>
+<td class="align-left">실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-E</td>
+<td class="align-left">조건별 모델 선택/대체 적용</td>
+<td class="align-left">조건에 따라 모델 또는 보정식을 다르게 선택</td>
+<td class="align-left">모든 작품에 같은 모델을 쓰는 것보다 조건별 처리가 나은가?</td>
+<td class="align-left">실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-F</td>
+<td class="align-left">가격 범위/신뢰도 표시</td>
+<td class="align-left">단일 가격이 위험한 경우 범위와 신뢰도 제공</td>
+<td class="align-left">가격 예측 정확도와 별개로 표시 안정성을 어떻게 확보할 것인가?</td>
+<td class="align-left">정확도 실험과 분리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-G</td>
+<td class="align-left">외부 데이터 고도화</td>
+<td class="align-left">추가 수집 데이터가 정확도 개선으로 이어지는지 검증</td>
+<td class="align-left">새로 수집한 작가 DB가 기존 메타보다 실제로 더 도움이 되는가?</td>
+<td class="align-left">신규 데이터만 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">검색/소셜 인지도</td>
+<td class="align-left">네이버/구글/SNS 기반 관심도 피처 검증</td>
+<td class="align-left">검색/소셜 지표가 기존 팔로워/인지도 피처보다 추가 설명력을 주는가?</td>
+<td class="align-left">PP-H7~PP-H10 파일럿 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-I</td>
+<td class="align-left">설정값 조정/최종 통합</td>
+<td class="align-left">모델 설정과 보정 강도를 조정하고 최종 후보 검증</td>
+<td class="align-left">설정 조정 후 개선폭이 검증/테스트에서 유지되는가?</td>
+<td class="align-left">실행 + 최신 통합 보완</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-J</td>
+<td class="align-left">모델별 커스텀 보정</td>
+<td class="align-left">모델 구조별 약점에 맞춘 보정</td>
+<td class="align-left">Huber/CatBoost/LightGBM별로 다른 보정 기준이 더 적합한가?</td>
+<td class="align-left">추가 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">추천 보조 조합 검증</td>
+<td class="align-left">MAPE/p95_APE와 가격 범위 안정성을 위한 추가 조합</td>
+<td class="align-left">Huber/Quantile/CatBoost/LightGBM 조합이 큰 오차를 줄이거나 운영 fallback으로 쓸 만한가?</td>
+<td class="align-left">조건부 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">Huber/Quantile/CatBoost MAPE 최적화</td>
+<td class="align-left">Quantile 구간/Huber 중심선/CatBoost residual을 순차 활용</td>
+<td class="align-left">MdAPE를 유지하면서 MAPE와 p95_APE를 낮추는 순차 학습 구조가 유효한가?</td>
+<td class="align-left">추가 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-M</td>
+<td class="align-left">Warm 작가 기준선/계층형 모델</td>
+<td class="align-left">작가별 기준 가격과 공통 작품 효과를 분리</td>
+<td class="align-left">Warm에서 작가 기준선을 더 자연스럽게 분리하면 Huber/결합 후보보다 안정적인가?</td>
+<td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-N</td>
+<td class="align-left">Cold 분포/범위 예측 모델</td>
+<td class="align-left">Quantile Regression/LightGBM Quantile/CatBoost Quantile/Conformal 계열로 가격 분포와 범위 추정</td>
+<td class="align-left">Cold에서 점 예측보다 가격 범위와 신뢰도 포함률을 더 잘 맞출 수 있는가?</td>
+<td class="align-left">PP-QR1 추가 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-O</td>
+<td class="align-left">설명 가능한 비선형 모델</td>
+<td class="align-left">EBM/GAM/HistGradient 계열로 비선형 효과를 해석 가능하게 학습</td>
+<td class="align-left">Huber보다 유연하고 트리보다 설명 가능한 모델이 피처 영향도와 정확도를 동시에 개선하는가?</td>
+<td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-P</td>
+<td class="align-left">모델 역할 분리 라우팅 고도화</td>
+<td class="align-left">Warm/Cold, 이력량, quantile width, tail 위험별 모델 선택</td>
+<td class="align-left">단일 최종 후보보다 조건별로 모델 역할을 나누면 정확도와 신뢰도 표시가 함께 개선되는가?</td>
+<td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">서비스 비교군 통계 피처</td>
+<td class="align-left">API 표시용 비교군 중앙값/범위/N을 모델 피처로도 검증</td>
+<td class="align-left">서비스에서 설명 가능한 비교군 통계가 예측 정확도와 표시 근거를 동시에 개선하는가?</td>
+<td class="align-left">PP-SVC1~PP-SVC4 실행 완료</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">모델 조합 + 모델별 커스텀 통합 튜닝</td>
+<td class="align-left">모델 특성에 맞춘 후보를 구간별 선택/가중 결합/범위 정책으로 통합</td>
+<td class="align-left">LightGBM 안정성, CatBoost Quantile의 MAPE/tail 방어, Quantile width 위험 분리를 함께 쓰면 Cold 성능을 더 높일 수 있는가?</td>
+<td class="align-left">PP-QR2~PP-QR3 추가 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-R</td>
+<td class="align-left">후속 모델 조합/단계 보정 고도화</td>
+<td class="align-left">PP-Q 결과를 기반으로 더 촘촘한 가중치, 단계별 residual 보정, 위험 구간 라우팅, 메타 보정을 검증</td>
+<td class="align-left">PP-Q2의 MAPE/p95 개선을 유지하면서 PP-P2의 MdAPE 장점까지 함께 가져올 수 있는가?</td>
+<td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-S</td>
+<td class="align-left">모델 순서 변경 + 목적함수 커스텀 재검증</td>
+<td class="align-left">CatBoost/LightGBM/Huber의 역할 순서를 바꾸고 MAPE/Huber/Quantile 목적함수 후보를 추가</td>
+<td class="align-left">모델 순서와 학습 목적함수를 바꾸면 기존 PP-Q/PP-R보다 더 안정적인 MdAPE/MAPE/p95 균형을 만들 수 있는가?</td>
+<td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-T</td>
+<td class="align-left">Warm 최종 후보 추가 조합/메타 고도화</td>
+<td class="align-left">Warm <code>PP-R5</code> 이후 fine blend, cross-fitted meta stacking, 2차 residual 안정화, 목적별 정책 비교</td>
+<td class="align-left">Warm도 Cold처럼 모델 순서/조합/메타 보정으로 <code>PP-R5</code>보다 더 개선할 여지가 있는가?</td>
+<td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-U</td>
+<td class="align-left">Warm/Cold 피처 교환 재학습</td>
+<td class="align-left">기존 영향도 결과를 바탕으로 피처셋을 축소/확장/교환해 같은 모델로 재학습</td>
+<td class="align-left">모델 특성에 더 맞는 피처 구조를 쓰면 후처리 전 기준 예측 또는 후속 조합 후보가 개선되는가?</td>
+<td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-W</td>
+<td class="align-left">Cold 작가 메타 + 모델 순서 고도화</td>
+<td class="align-left">기존 Cold 작품 피처에 작가 메타 피처를 추가하고 CatBoost/LightGBM Quantile/Huber residual 순서를 재검증</td>
+<td class="align-left">서비스 적용이 어려운 Cold 성능을 작가 메타와 모델 특성 기반 순차 학습으로 개선할 수 있는가?</td>
+<td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-X</td>
+<td class="align-left">갤러리 티어/전시 활동 피처 재검증</td>
+<td class="align-left">현재 Track6 split을 고정하고 원천/정제 데이터의 전시 활동, 갤러리 tier 피처를 추가해 최신 Cold 후보에서 재학습</td>
+<td class="align-left">과거 확장 split에서만 검증됐던 전시 피처와 미실행 상태였던 갤러리 tier가 최신 Cold 후보 성능을 개선하는가?</td>
+<td class="align-left">실행 완료</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">Cold 피처/모델 조합 확장</td>
+<td class="align-left">전시/갤러리, 검색, 작가 메타, 피처 품질 flag를 모델 순서 변경과 함께 재조합</td>
+<td class="align-left">Cold에서 아직 덜 검증한 피처 조합과 LightGBM Quantile/CatBoost Quantile/Huber residual 순서 조합으로 추가 개선이 가능한가?</td>
+<td class="align-left">closure + OOF 재검증 완료</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Z</td>
+<td class="align-left">Warm Cold형 피처/모델 확장</td>
+<td class="align-left">Cold에서 검증한 작가 메타, 전시/갤러리, 검색 피처와 LightGBM Quantile/CatBoost 모델 축을 Warm에 직접 적용</td>
+<td class="align-left">Warm도 Cold처럼 확장 피처와 트리/분위수 모델을 쓰면 기존 Warm 최종 후보보다 좋아지는가?</td>
+<td class="align-left">실행 완료</td>
+</tr>
+</tbody></table></div>
+<h2 id="상세-실험-목록">상세 실험 목록</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">실험군</th>
+<th class="align-left">실험 ID</th>
+<th class="align-left">실험명</th>
+<th class="align-left">후처리 전 기본 예측 모델/비교군</th>
+<th class="align-left">사용 피처와 보정 기준</th>
+<th class="align-left">목적</th>
+<th class="align-left">검증 방법</th>
+<th class="align-left">성공 기준</th>
+<th class="align-left">실행 상태</th>
+<th class="align-left">점검 결과</th>
+<th class="align-left">조치</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">PRE-CAL</td>
+<td class="align-left">PRE-CAL-CB</td>
+<td class="align-left">Cold CatBoost 상세 보정값 산출</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">사용 피처: <code>base_medium_shape</code>. 보정 기준: <code>leaf_segment</code>, <code>medium_shape_bucket</code>, <code>shape_bucket</code>, <code>overall</code>별 <code>median(residual_log)</code></td>
+<td class="align-left">CatBoost 대칭 트리 leaf/segment별 반복 오차 확인</td>
+<td class="align-left">leaf/segment correction map 생성</td>
+<td class="align-left">p95_APE 개선, 표본 부족 fallback 가능</td>
+<td class="align-left">사전 실행</td>
+<td class="align-left">PP-A1-CB보다 세부적</td>
+<td class="align-left">PP-J4/PP-J5 입력값으로 사용</td>
+</tr>
+<tr>
+<td class="align-left">PRE-CAL</td>
+<td class="align-left">PRE-CAL-LGB</td>
+<td class="align-left">Cold LightGBM 상세 보정값 산출</td>
+<td class="align-left">대상: Cold <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">사용 피처: <code>base_support_size</code>. 보정 기준: <code>pred_bin</code>, <code>size_bucket</code>, <code>support_size_bucket</code>, <code>tail_risk_segment</code>별 <code>median(residual_log)</code></td>
+<td class="align-left">LightGBM의 leaf-wise/tail 오차 확인</td>
+<td class="align-left">예측가/크기/지지체 구간별 residual 중앙값 산출</td>
+<td class="align-left">고가/극단 구간 p95_APE 개선 후보 확인</td>
+<td class="align-left">사전 실행</td>
+<td class="align-left">LightGBM은 tail 안정화 검증 필요</td>
+<td class="align-left">PP-J6 입력값으로 사용</td>
+</tr>
+<tr>
+<td class="align-left">PRE-CAL</td>
+<td class="align-left">PRE-CAL-W</td>
+<td class="align-left">Warm Huber 상세 보정값 산출</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code>. 보정 기준: <code>overall</code>, <code>pred_bin</code>, <code>size_bucket</code>, <code>artist_works_bucket</code>별 <code>median(residual_log)</code></td>
+<td class="align-left">Huber의 선형 예측 후 남는 반복 오차 확인</td>
+<td class="align-left">validation residual 중앙값으로 correction map 생성</td>
+<td class="align-left">표본 충분 구간에서 MdAPE/p95 개선 후보 확인</td>
+<td class="align-left">사전 실행</td>
+<td class="align-left">PP-A1-W의 확장</td>
+<td class="align-left">PP-A1/A2/A3/A5 입력값으로 사용</td>
+</tr>
+<tr>
+<td class="align-left">PRE-CAL</td>
+<td class="align-left">PRE-CAL-WCB</td>
+<td class="align-left">Warm CatBoost 상세 보정값 산출</td>
+<td class="align-left">대상: Warm <code>CatBoost</code> 후보</td>
+<td class="align-left">사용 피처: Warm CatBoost 후보 피처. 보정 기준: <code>pred_bin</code>, <code>size_bucket</code>, <code>artist_size_segment</code>, <code>leaf_segment</code>별 <code>median(residual_log)</code></td>
+<td class="align-left">Warm CatBoost가 만든 조건 조합별 반복 오차 확인</td>
+<td class="align-left">leaf/segment별 residual 중앙값 산출</td>
+<td class="align-left">leaf 보정이 전체 보정보다 안정적</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">Warm CatBoost 후보가 있을 때만 필요</td>
+<td class="align-left">PRE-MODEL-WCB에서 후보로 남을 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">PRE-MODEL</td>
+<td class="align-left">PRE-MODEL-CCB</td>
+<td class="align-left">Cold CatBoost 적합성 재검증</td>
+<td class="align-left">비교군: Cold <code>CatBoost(base_medium_shape)</code> vs Cold <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">사용 피처: CatBoost는 <code>base_medium_shape</code>, LightGBM은 <code>base_support_size</code>. 보정은 적용하지 않고 원 예측 성능만 비교</td>
+<td class="align-left">Cold에서 CatBoost가 여전히 1순위인지 확인</td>
+<td class="align-left">같은 split/평가 기준으로 모델 비교</td>
+<td class="align-left">CatBoost의 MdAPE/p95가 우위 또는 보정 가능성이 명확</td>
+<td class="align-left">사전 실행</td>
+<td class="align-left">Cold 기준 모델 검증 필요</td>
+<td class="align-left">PP-A/PP-J 전에 확인</td>
+</tr>
+<tr>
+<td class="align-left">PRE-MODEL</td>
+<td class="align-left">PRE-MODEL-WCB</td>
+<td class="align-left">Warm CatBoost 적합성 검증</td>
+<td class="align-left">비교군: Warm <code>Huber(base_existing_combo)</code> vs Warm <code>CatBoost</code> 후보</td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code>, <code>artist_key + size</code>, <code>artist_key + size + material/support</code>. 보정은 적용하지 않고 원 예측 성능만 비교</td>
+<td class="align-left">Warm에서도 CatBoost가 작가별 크기/재료 조합을 더 잘 나누는지 확인</td>
+<td class="align-left">같은 split/피처 기준으로 Huber와 CatBoost 비교</td>
+<td class="align-left">MdAPE 또는 p95_APE 개선, validation/test 방향 일치</td>
+<td class="align-left">사전 실행</td>
+<td class="align-left">기존 Warm 기준은 Huber이나 CatBoost 가설이 새로 추가됨</td>
+<td class="align-left">후처리 전 Warm 기준 모델 재검토</td>
+</tr>
+<tr>
+<td class="align-left">PRE-PP</td>
+<td class="align-left">PRE-PP-CB</td>
+<td class="align-left">Cold CatBoost group-drop ablation</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">기준 피처: <code>base_medium_shape</code>. 제거 그룹: depth/3D(<code>depth_cm</code>, <code>has_depth</code>, <code>is_3d_candidate</code>), shape(<code>shape_bucket</code>, <code>aspect_ratio</code>), medium-shape(<code>medium_shape_bucket</code>), size(<code>width_cm</code>, <code>height_cm</code>, <code>area_cm2</code>, <code>log_area</code>)</td>
+<td class="align-left">CatBoost segment 보정 기준의 타당성 확인</td>
+<td class="align-left">같은 split/설정에서 그룹 제거 후 재학습 비교</td>
+<td class="align-left">SHAP/interaction 상위 그룹 제거 시 성능 악화 여부 확인</td>
+<td class="align-left">선행 실행</td>
+<td class="align-left">기존 T6-E023 결과 없음</td>
+<td class="align-left">PP-A/PP-E 전에 우선 실행</td>
+</tr>
+<tr>
+<td class="align-left">PRE-PP</td>
+<td class="align-left">PRE-PP-LGB</td>
+<td class="align-left">Cold LightGBM group-drop ablation</td>
+<td class="align-left">대상: Cold <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">기준 피처: <code>base_support_size</code>. 제거 그룹: <code>size_bucket</code>, <code>support_size_bucket</code>, raw size(<code>width_cm</code>, <code>height_cm</code>, <code>area_cm2</code>, <code>log_area</code>), depth/3D(<code>depth_cm</code>, <code>has_depth</code>, <code>is_3d_candidate</code>)</td>
+<td class="align-left">LightGBM tail 안정화 기준의 타당성 확인</td>
+<td class="align-left">같은 split/설정에서 그룹 제거 후 재학습 비교</td>
+<td class="align-left">제거 시 p95_APE 변화 확인</td>
+<td class="align-left">선행 실행</td>
+<td class="align-left">기존 조합 비교는 있으나 최종 기준 제거 실험 부족</td>
+<td class="align-left">PP-A/PP-D 전에 우선 실행</td>
+</tr>
+<tr>
+<td class="align-left">PRE-PP</td>
+<td class="align-left">PRE-PP-W</td>
+<td class="align-left">Warm Huber group-drop ablation</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">기준 피처: <code>base_existing_combo</code>. 제거 그룹: size(<code>width_cm</code>, <code>height_cm</code>, <code>area_cm2</code>, <code>log_area</code>), medium/support(<code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code>), depth/3D(<code>depth_cm</code>, <code>has_depth</code>, <code>is_3d_candidate</code>), shape/aspect(<code>aspect_ratio</code>, <code>is_extreme_aspect_ratio</code>)</td>
+<td class="align-left">Warm 후처리 기준 피처의 성능 기여 확인</td>
+<td class="align-left">같은 split/설정에서 그룹 제거 후 재학습 비교</td>
+<td class="align-left">제거 시 MdAPE/p95 변화가 해석과 일치</td>
+<td class="align-left">선행 실행</td>
+<td class="align-left">기존 T6-E022는 예정 상태</td>
+<td class="align-left">PP-A 전에 핵심 그룹부터 실행</td>
+</tr>
+<tr>
+<td class="align-left">PRE-SPLIT-CB</td>
+<td class="align-left">PRE-SPLIT-CCB</td>
+<td class="align-left">Cold CatBoost 구분 학습</td>
+<td class="align-left">비교군: Cold <code>CatBoost(base_medium_shape)</code> 전체 모델 vs Cold CatBoost 구분 학습 모델</td>
+<td class="align-left">사용 피처: <code>base_medium_shape</code>. 구분 기준: <code>size_bucket</code>, <code>depth_3d_segment</code>, <code>medium_shape_bucket</code>. 보정 기준: 구분 학습 전/후 segment별 <code>median(residual_log)</code> 비교</td>
+<td class="align-left">Cold 작품 조건별 가격 구조를 따로 학습할 가치 확인</td>
+<td class="align-left">구간별 모델 학습 후 보정 전/후 비교</td>
+<td class="align-left">p95_APE 개선 또는 구간별 보정값 안정화</td>
+<td class="align-left">사전 실행</td>
+<td class="align-left">Cold는 작가 기준선이 없어 작품 조건 분리가 중요</td>
+<td class="align-left">효과 있으면 PP-J CatBoost 보정으로 연결</td>
+</tr>
+<tr>
+<td class="align-left">PRE-SPLIT-CB</td>
+<td class="align-left">PRE-SPLIT-WCB</td>
+<td class="align-left">Warm CatBoost 구분 학습</td>
+<td class="align-left">비교군: Warm CatBoost 전체 모델 vs Warm CatBoost 구분 학습 모델</td>
+<td class="align-left">사용 피처: Warm CatBoost 후보 피처. 구분 기준: <code>size_bucket</code>, <code>artist_works_bucket</code>, <code>artist_size_segment</code>. 보정 기준: 구분 학습 전/후 <code>median(residual_log)</code> 비교</td>
+<td class="align-left">조건별 Warm CatBoost가 반복 오차와 보정값을 줄이는지 확인</td>
+<td class="align-left">구간별 모델 학습 후 같은 validation/test로 비교</td>
+<td class="align-left">보정 전 성능 개선 또는 median residual 절대값 감소</td>
+<td class="align-left">사전 실행</td>
+<td class="align-left">CatBoost 시작 기준값/leaf 값이 구간별로 달라질 수 있음</td>
+<td class="align-left">효과 있으면 Warm 모델 선택/보정 정책에 반영</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">PP-A1</td>
+<td class="align-left">전체 예측 오차 보정</td>
+<td class="align-left">Warm: <code>Huber(base_existing_combo)</code> / Cold: <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">보정 기준: validation 전체 <code>median(actual_log - pred_log)</code>. 사용 피처는 각 기본 모델 피처셋 그대로 사용</td>
+<td class="align-left">전체적으로 높게/낮게 치우친 예측을 한 번 보정</td>
+<td class="align-left">검증 데이터에서 대표 오차를 계산해 테스트에 1회 적용</td>
+<td class="align-left">MdAPE 개선, p95_APE 악화 없음</td>
+<td class="align-left">실행</td>
+<td class="align-left">중복 낮음</td>
+<td class="align-left">PP-C1보다 단순한 상수 보정으로 구분</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">PP-A2</td>
+<td class="align-left">예측 가격대별 예측 오차 보정</td>
+<td class="align-left">Warm: <code>Huber(base_existing_combo)</code> / Cold: <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">보정 기준: <code>pred_log</code> 또는 예측 원가격을 저가/중가/고가 bin으로 나눈 뒤 bin별 <code>median(residual_log)</code> 적용. 실제 가격 구간은 보정 기준으로 사용하지 않음</td>
+<td class="align-left">저가/중가/고가에서 반복되는 과대/과소 예측 보정</td>
+<td class="align-left">예측 가격 구간별 대표 오차 적용</td>
+<td class="align-left">가격대별 MdAPE 균형 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">기존 PP-C2와 중복 가능</td>
+<td class="align-left">PP-C2는 보류하고 PP-A2를 가격대별 보정 대표 실험으로 사용</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">PP-A3</td>
+<td class="align-left">호수/크기 구간별 보정</td>
+<td class="align-left">Warm: <code>Huber(base_existing_combo)</code> / Cold: <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">보정 기준: <code>log_area</code>, <code>area_cm2</code>, <code>width_cm</code>, <code>height_cm</code>, 필요 시 <code>size_bucket</code> 기준 구간별 <code>median(residual_log)</code></td>
+<td class="align-left">대형/소형 작품의 반복 오차 보정</td>
+<td class="align-left">크기 구간별 대표 오차 적용</td>
+<td class="align-left">대형 작품 p95_APE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">A그룹 피처 실험과 목적 다름</td>
+<td class="align-left">A그룹은 피처 효과, PP-A3는 예측 후 보정</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">PP-A4</td>
+<td class="align-left">재료/지지체 구간별 보정</td>
+<td class="align-left">Warm: <code>Huber(base_existing_combo)</code> / Cold: <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">보정 기준: <code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code>, Cold는 <code>medium_shape_bucket</code>까지 포함한 구간별 <code>median(residual_log)</code></td>
+<td class="align-left">특정 재료/지지체에서 반복되는 예측 오차 보정</td>
+<td class="align-left">재료/지지체 구간별 대표 오차 적용</td>
+<td class="align-left">해당 구간 MdAPE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">A2/A3/A9와 목적 다름</td>
+<td class="align-left">기존 피처 선택 실험이 아니라 사후 보정으로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">PP-A5</td>
+<td class="align-left">Warm 작가 학습량 구간 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code>. 보정 기준: <code>artist_works_count_train</code> 또는 <code>artist_works_log</code> 구간별 <code>median(residual_log)</code></td>
+<td class="align-left">학습 작품 수가 적은 Warm 작가 보정</td>
+<td class="align-left">작품 수 구간별 대표 오차 적용</td>
+<td class="align-left">저이력 Warm p95_APE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">G2/기존 라우팅과 일부 연결</td>
+<td class="align-left">보정 실험으로 유지하되 라우팅 PP-E1과 결과 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">PP-A6</td>
+<td class="align-left">Cold 메타 정보량 구간 보정</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">사용 피처: <code>base_medium_shape</code>. 보정 기준: <code>artist_meta_completeness_score</code>, 메타 결측 개수, 메타 있음/없음 구간별 <code>median(residual_log)</code></td>
+<td class="align-left">메타 정보가 부족한 Cold 작품 보정</td>
+<td class="align-left">정보량 구간별 대표 오차 적용</td>
+<td class="align-left">메타 부족 구간 MdAPE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">G/I 그룹 정보량 피처와 목적 다름</td>
+<td class="align-left">피처 추가가 아니라 사후 보정으로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">PP-A7</td>
+<td class="align-left">계층형 구간 보정</td>
+<td class="align-left">Warm: <code>Huber(base_existing_combo)</code> / Cold: <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">보정 기준: <code>pred_bin -&gt; size_bucket/log_area -&gt; medium/support 또는 medium_shape</code> 순서. 세부 구간 표본 부족 시 상위 구간 보정값으로 fallback</td>
+<td class="align-left">표본 수 부족 구간의 과보정 방지</td>
+<td class="align-left">세부 구간 표본 부족 시 상위 묶음 보정값 사용</td>
+<td class="align-left">전체 MdAPE 개선, 세부 구간 악화 제한</td>
+<td class="align-left">실행</td>
+<td class="align-left">PP-A2/A3/A4 통합형</td>
+<td class="align-left">A2/A3/A4 개별 결과 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-A</td>
+<td class="align-left">PP-A8</td>
+<td class="align-left">최소 표본 수 기준 보정</td>
+<td class="align-left">Warm: <code>Huber(base_existing_combo)</code> / Cold: <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">보정 기준: segment별 validation rows <code>n&gt;=30</code>, <code>n&gt;=50</code>, <code>n&gt;=100</code> 비교. 기준 미만은 상위 fallback 적용</td>
+<td class="align-left">보정 규칙의 안정성 기준 확인</td>
+<td class="align-left">최소 표본 수 기준별 보정 성능 비교</td>
+<td class="align-left">기준이 높아져도 개선 유지</td>
+<td class="align-left">실행</td>
+<td class="align-left">PP-A7 보조 실험</td>
+<td class="align-left">A7과 함께 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-B</td>
+<td class="align-left">PP-B1</td>
+<td class="align-left">Ridge 남은 예측 오차 보정</td>
+<td class="align-left">1차 예측: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code> 또는 <code>LightGBM(base_support_size)</code> + 2차 Ridge 오차 모델</td>
+<td class="align-left">입력값: OOF <code>pred_log</code>, 1차 모델 residual, 작품 크기 피처, 재료/지지체 피처, 메타 정보량. target: <code>residual_log</code></td>
+<td class="align-left">1차 모델이 남긴 오차를 단순 모델이 보정하는지 확인</td>
+<td class="align-left">학습 내부 교차 예측으로 오차 모델 학습 후 테스트 적용</td>
+<td class="align-left">MdAPE/RMSE_log 개선</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">누수 위험 있음</td>
+<td class="align-left">반드시 OOF 교차 예측 기반으로만 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-B</td>
+<td class="align-left">PP-B2</td>
+<td class="align-left">Huber 남은 예측 오차 보정</td>
+<td class="align-left">1차 예측: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code> 또는 <code>LightGBM(base_support_size)</code> + 2차 Huber 오차 모델</td>
+<td class="align-left">입력값: OOF <code>pred_log</code>, 작품 피처, 작가 이력량, 큰 오차 여부. target: <code>residual_log</code></td>
+<td class="align-left">이상치에 강한 방식으로 남은 오차 보정</td>
+<td class="align-left">OOF 오차 모델과 Ridge 보정 비교</td>
+<td class="align-left">p95_APE 악화 없음</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">PP-B1과 모델만 다름</td>
+<td class="align-left">B1 이후 비교 모델로 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-B</td>
+<td class="align-left">PP-B3</td>
+<td class="align-left">LightGBM 남은 예측 오차 보정</td>
+<td class="align-left">1차 예측: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code> 또는 <code>LightGBM(base_support_size)</code> + 2차 LightGBM 오차 모델</td>
+<td class="align-left">입력값: OOF <code>pred_log</code>, 작품 피처, 메타 피처, 결측 flag, segment 정보. target: <code>residual_log</code></td>
+<td class="align-left">복잡한 오차 패턴을 추가 모델이 학습하는지 확인</td>
+<td class="align-left">검증/테스트 모두에서 오차 보정 효과 확인</td>
+<td class="align-left">검증/테스트 모두 개선</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">과적합 위험 큼</td>
+<td class="align-left">B1/B2가 개선될 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-B</td>
+<td class="align-left">PP-B4</td>
+<td class="align-left">학습 내부 교차 예측 기반 오차 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code>, 필요 시 <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">보정 기준 생성용 입력: train 내부 OOF <code>pred_log</code>와 <code>residual_log</code>. validation residual만 직접 학습하지 않음</td>
+<td class="align-left">검증 데이터에만 맞춘 보정 모델이 되는 문제 방지</td>
+<td class="align-left">OOF 예측을 만들어 보정 모델 학습</td>
+<td class="align-left">최종 테스트 개선 재현</td>
+<td class="align-left">필수 선행</td>
+<td class="align-left">PP-B 전체의 전제 조건</td>
+<td class="align-left">PP-B1~B3 실행 전 먼저 수행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-B</td>
+<td class="align-left">PP-B5</td>
+<td class="align-left">Warm/Cold 분리 오차 보정 모델</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>와 Cold <code>CatBoost(base_medium_shape)</code>/<code>LightGBM(base_support_size)</code>를 분리</td>
+<td class="align-left">입력값: Warm은 <code>base_existing_combo</code> 기반 OOF residual, Cold는 <code>base_medium_shape</code>/<code>base_support_size</code> 기반 OOF residual. target은 각 그룹의 <code>residual_log</code></td>
+<td class="align-left">Warm/Cold 오차 구조 차이 반영</td>
+<td class="align-left">모델별 오차 보정 별도 적용</td>
+<td class="align-left">각 평가 데이터별 MdAPE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">중복 낮음</td>
+<td class="align-left">Warm/Cold 분리 원칙과 일관</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-C</td>
+<td class="align-left">PP-C1</td>
+<td class="align-left">전체 예측값 직선 재보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code>, 필요 시 <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">보정 기준: validation에서 <code>actual_log = a * pred_log + b</code> 직선 보정식 학습 후 test 적용</td>
+<td class="align-left">예측값 전체 기울기와 기준점 보정</td>
+<td class="align-left">검증 데이터에서 만든 직선 보정식 적용</td>
+<td class="align-left">RMSE_log 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">PP-A1과 유사하지만 방식 다름</td>
+<td class="align-left">A1은 상수 보정, C1은 기울기/절편 보정</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-C</td>
+<td class="align-left">PP-C2</td>
+<td class="align-left">가격대별 대표 오차 재보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">보정 기준: <code>pred_log</code> 예측 가격 구간별 <code>median(residual_log)</code></td>
+<td class="align-left">특정 가격대의 과대/과소 보정</td>
+<td class="align-left">예측 가격 구간별 대표 오차 적용</td>
+<td class="align-left">가격대별 MdAPE 개선</td>
+<td class="align-left">보류</td>
+<td class="align-left">PP-A2와 사실상 중복</td>
+<td class="align-left">PP-A2로 통합하고 C2는 실행하지 않음</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-C</td>
+<td class="align-left">PP-C3</td>
+<td class="align-left">예측 순서를 유지하는 비선형 재보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code> + 순서 유지 보정식</td>
+<td class="align-left">보정 기준: <code>pred_log</code>만 사용한 순서 유지 곡선 보정. 작품 피처는 추가하지 않음</td>
+<td class="align-left">가격 순서는 유지하면서 휘어진 예측 패턴 보정</td>
+<td class="align-left">검증 데이터에서 보정식 학습 후 테스트 적용</td>
+<td class="align-left">전체 MdAPE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">중복 낮음</td>
+<td class="align-left">C1보다 유연한 곡선 보정으로 구분</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-C</td>
+<td class="align-left">PP-C4</td>
+<td class="align-left">저가/고가 분리 예측값 재보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">보정 기준: 예측 가격 하위/중간/상위 구간별 별도 상수 또는 직선 보정식</td>
+<td class="align-left">고가 작품 과소/과대 예측 완화</td>
+<td class="align-left">예측 가격 구간별 별도 보정 함수 적용</td>
+<td class="align-left">고가 p95_APE 개선</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">PP-A2와 일부 중복</td>
+<td class="align-left">PP-A2 실행 후 고가/저가 문제가 남을 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-C</td>
+<td class="align-left">PP-C5</td>
+<td class="align-left">보정 강도 줄이기 실험</td>
+<td class="align-left">대상: 채택된 PP-A/PP-C/PP-J 보정 후보</td>
+<td class="align-left">보정 기준: 계산된 보정값에 <code>0.25</code>, <code>0.5</code>, <code>0.75</code>, <code>1.0</code> 비율 적용</td>
+<td class="align-left">과보정 방지</td>
+<td class="align-left">보정 강도별 검증/테스트 비교</td>
+<td class="align-left">최종 테스트에서 안정적인 강도 선택</td>
+<td class="align-left">실행</td>
+<td class="align-left">독립 실험보다 보조 실험</td>
+<td class="align-left">A/C/J 보정 후보와 함께 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-D</td>
+<td class="align-left">PP-D1</td>
+<td class="align-left">두 모델 단순 평균</td>
+<td class="align-left">후보: Warm <code>Huber(base_existing_combo)</code> + Warm CatBoost 후보, 또는 Cold <code>CatBoost(base_medium_shape)</code> + <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">결합 기준: 보정 전 <code>pred_log</code> 단순 평균. 이미 보정된 예측값 결합은 별도 비교로 분리</td>
+<td class="align-left">단일 모델 흔들림 완화</td>
+<td class="align-left">단순 평균과 기본 모델 비교</td>
+<td class="align-left">p95_APE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">중복 낮음</td>
+<td class="align-left">모델 결합 실험으로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-D</td>
+<td class="align-left">PP-D2</td>
+<td class="align-left">두 모델 가중 평균</td>
+<td class="align-left">후보: Warm 상위 2개 모델 또는 Cold <code>CatBoost(base_medium_shape)</code> + <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">결합 기준: validation 성능으로 정한 가중치로 보정 전 <code>pred_log</code> 가중 평균. 보정 후 결합은 별도 후보로 분리</td>
+<td class="align-left">대표 오차 기준 최적 가중치 확인</td>
+<td class="align-left">validation에서 가중치 선택 후 최종 후보만 test 확인</td>
+<td class="align-left">MdAPE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">D1의 확장</td>
+<td class="align-left">D1 이후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-D</td>
+<td class="align-left">PP-D3</td>
+<td class="align-left">큰 오차 방어용 모델 결합</td>
+<td class="align-left">후보: Cold <code>CatBoost(base_medium_shape)</code> + 큰 오차 방어 모델</td>
+<td class="align-left">보정/결합 기준: p95_APE가 줄어드는 방향의 <code>pred_log</code> 가중치. 고위험 구간은 별도 가중치 후보 비교</td>
+<td class="align-left">큰 오차 방어</td>
+<td class="align-left">큰 오차 기준으로 가중치 선택</td>
+<td class="align-left">p95_APE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">Cold 안정성 후보와 연결</td>
+<td class="align-left">Cold 우선 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-D</td>
+<td class="align-left">PP-D4</td>
+<td class="align-left">Warm 모델 3종 예측값 결합</td>
+<td class="align-left">후보: Warm <code>Huber(base_existing_combo)</code> + Warm Ridge/Linear 후보 + Warm CatBoost 후보</td>
+<td class="align-left">사용 피처: 각 Warm 모델의 고정 피처셋. 결합 기준: 모델별 <code>pred_log</code> 평균/가중 평균</td>
+<td class="align-left">Warm 예측 안정성 개선</td>
+<td class="align-left">평균/가중 평균 비교</td>
+<td class="align-left">MdAPE 유지, p95 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">WM1 모델군 비교와 다름</td>
+<td class="align-left">WM1은 모델 선택, PP-D4는 예측값 결합</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-D</td>
+<td class="align-left">PP-D5</td>
+<td class="align-left">Cold 모델 3종 예측값 결합</td>
+<td class="align-left">후보: Cold <code>CatBoost(base_medium_shape)</code> + <code>LightGBM(base_support_size)</code> + Quantile/LAD 계열</td>
+<td class="align-left">사용 피처: 각 Cold 모델의 고정 피처셋. 결합 기준: 모델별 <code>pred_log</code> 2개/3개 평균 또는 가중 평균</td>
+<td class="align-left">Cold 모델별 장점 결합</td>
+<td class="align-left">2개/3개 모델 조합 비교</td>
+<td class="align-left">MdAPE 또는 p95_APE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">CM1 모델군 비교와 다름</td>
+<td class="align-left">CM1은 모델 선택, PP-D5는 예측값 결합</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-E</td>
+<td class="align-left">PP-E1</td>
+<td class="align-left">Warm 저이력 작가 대체 적용</td>
+<td class="align-left">비교군: Warm <code>Huber(base_existing_combo)</code> vs Cold 방식 <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">선택 기준: <code>artist_works_count_train</code> 또는 <code>artist_works_log</code> 구간. 저이력 구간에서 Warm/Cold 예측 중 더 안정적인 쪽 선택</td>
+<td class="align-left">저이력 Warm 작가의 불안정성 완화</td>
+<td class="align-left">작품 수 구간별 모델 선택</td>
+<td class="align-left">저이력 구간 p95_APE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">기존 라우팅 가설과 연결</td>
+<td class="align-left">후처리 정책 실험으로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-E</td>
+<td class="align-left">PP-E2</td>
+<td class="align-left">Cold 메타 충분/부족 조건별 모델 선택</td>
+<td class="align-left">비교군: Cold <code>CatBoost(base_medium_shape)</code> vs <code>LightGBM(base_support_size)</code> 또는 Quantile/LAD 계열</td>
+<td class="align-left">선택 기준: <code>artist_meta_completeness_score</code>, 메타 결측 개수, 메타 있음/없음 구간</td>
+<td class="align-left">메타 부족 작품의 보수적 예측</td>
+<td class="align-left">정보량 구간별 모델 선택</td>
+<td class="align-left">메타 부족 구간 MdAPE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">PP-A6과 목적 다름</td>
+<td class="align-left">A6은 보정값, E2는 모델 선택</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-E</td>
+<td class="align-left">PP-E3</td>
+<td class="align-left">극단 크기 조건별 모델 선택</td>
+<td class="align-left">비교군: 기본 모델(Warm <code>Huber</code>, Cold <code>CatBoost</code>) vs 크기 보정 적용 모델</td>
+<td class="align-left">선택 기준: <code>log_area</code>, <code>area_cm2</code>, <code>width_cm</code>, <code>height_cm</code>, <code>size_bucket</code>의 대형/초대형 구간</td>
+<td class="align-left">극단 크기 오차 방어</td>
+<td class="align-left">극단 크기 구간 별도 보정</td>
+<td class="align-left">대형 p95_APE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">A3/크기 실험과 목적 다름</td>
+<td class="align-left">피처 선택이 아니라 모델 선택/보정 정책</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-E</td>
+<td class="align-left">PP-E4</td>
+<td class="align-left">NANT 분류 실패 조건별 모델 선택</td>
+<td class="align-left">비교군: 기본 모델(Warm <code>Huber</code>, Cold <code>CatBoost</code>) vs 재료/지지체 미분류 fallback 모델</td>
+<td class="align-left">선택 기준: <code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code>, <code>medium_shape_bucket</code> 결측/미분류 여부</td>
+<td class="align-left">분류 실패 작품의 신뢰도 처리</td>
+<td class="align-left">미분류 구간 별도 모델/보정 적용</td>
+<td class="align-left">미분류 구간 악화 방지</td>
+<td class="align-left">실행</td>
+<td class="align-left">중복 낮음</td>
+<td class="align-left">데이터 품질 위험 대응</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-E</td>
+<td class="align-left">PP-E5</td>
+<td class="align-left">예측 가격대 위험 조건별 모델 선택</td>
+<td class="align-left">비교군: 기본 모델(Warm <code>Huber</code>, Cold <code>CatBoost</code>) vs 예측값 재보정 모델</td>
+<td class="align-left">선택 기준: <code>pred_log</code> 예측 가격 상위/하위 구간, PP-A2/PP-C4에서 확인한 위험 구간</td>
+<td class="align-left">저가/고가 오차 방어</td>
+<td class="align-left">예측 가격대별 모델 선택</td>
+<td class="align-left">가격대별 MdAPE 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">PP-A2/C4와 일부 중복</td>
+<td class="align-left">A2/C4 결과 후 모델 선택이 필요한 경우 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-F</td>
+<td class="align-left">PP-F1</td>
+<td class="align-left">Warm 가격 범위 검증</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code>. 표시 기준: validation 로그 오차 분위수로 70/80/90% 가격 범위 계산</td>
+<td class="align-left">Warm 표시 범위 필요 여부 확인</td>
+<td class="align-left">로그 오차 분위수로 범위 생성</td>
+<td class="align-left">80% 포함 범위가 실무적</td>
+<td class="align-left">정확도와 분리</td>
+<td class="align-left">정확도 개선 실험 아님</td>
+<td class="align-left">서비스 표시 안정화 실험으로 별도 관리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-F</td>
+<td class="align-left">PP-F2</td>
+<td class="align-left">Cold 가격 범위 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code>, 필요 시 <code>LightGBM(base_support_size)</code> 비교</td>
+<td class="align-left">사용 피처: 각 Cold 모델 피처셋. 표시 기준: Cold 전체 및 주요 segment별 로그 오차 분위수로 70/80/90% 가격 범위 계산</td>
+<td class="align-left">Cold 단일 가격 위험 보완</td>
+<td class="align-left">Cold 전체/세부 구간별 범위 계산</td>
+<td class="align-left">범위 폭과 실제 가격 포함률 균형</td>
+<td class="align-left">정확도와 분리</td>
+<td class="align-left">정확도 개선 실험 아님</td>
+<td class="align-left">서비스 표시 안정화 실험으로 별도 관리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-F</td>
+<td class="align-left">PP-F3</td>
+<td class="align-left">신뢰도 등급 기준</td>
+<td class="align-left">대상: Warm <code>Huber</code>, Cold <code>CatBoost</code>, Cold <code>LightGBM</code> 후보</td>
+<td class="align-left">등급 기준: segment 표본 수, 보정값 크기, p95_APE, 메타 결측, 극단 크기, 미분류 여부를 조합해 저위험/보통/고위험 구분</td>
+<td class="align-left">가격 표시 문구 기준 설정</td>
+<td class="align-left">등급별 MdAPE/p95 비교</td>
+<td class="align-left">등급별 오차 차이가 명확</td>
+<td class="align-left">실행</td>
+<td class="align-left">중복 낮음</td>
+<td class="align-left">신뢰도 표시 정책으로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-F</td>
+<td class="align-left">PP-F4</td>
+<td class="align-left">신뢰도별 가격 범위 차등 적용</td>
+<td class="align-left">대상: Warm <code>Huber</code>, Cold <code>CatBoost</code>, Cold <code>LightGBM</code> 후보</td>
+<td class="align-left">표시 기준: PP-F3 신뢰도 등급별로 가격 범위 폭을 다르게 적용</td>
+<td class="align-left">모든 작품에 같은 범위를 쓰는 문제 보완</td>
+<td class="align-left">등급별 실제 가격 포함률/범위 폭 비교</td>
+<td class="align-left">저위험 좁은 범위, 고위험 넓은 범위</td>
+<td class="align-left">실행</td>
+<td class="align-left">PP-F1/F2 확장</td>
+<td class="align-left">범위 검증 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-G</td>
+<td class="align-left">PP-G1</td>
+<td class="align-left">전시 이력 신규/보강 데이터 검증</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> 또는 Cold <code>CatBoost(base_medium_shape)</code>에 신규 전시 피처 추가</td>
+<td class="align-left">추가 피처: 개인전 수, 단체전 수, 아트페어 수/등급, 전시 정보 결측 flag. 기존 피처셋에 추가해 비교</td>
+<td class="align-left">작가 경력 데이터의 정확도 기여 확인</td>
+<td class="align-left">기존 수집값 대비 신규 보강값 비교</td>
+<td class="align-left">MdAPE 개선 + 결측률 허용</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">E/F/G 실험과 중복 가능</td>
+<td class="align-left">기존 컬럼 재사용이 아니라 신규/보강 데이터일 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-G</td>
+<td class="align-left">PP-G2</td>
+<td class="align-left">수상/기관 이력 신규 데이터 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code> 중심, 필요 시 Warm Huber 비교</td>
+<td class="align-left">추가 피처: 수상 수, 기관 전시 여부, 기관 등급, 결측 flag</td>
+<td class="align-left">작가 위상 정보 기여 확인</td>
+<td class="align-left">피처 단독/묶음 비교</td>
+<td class="align-left">Cold MdAPE 개선</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">기존 데이터 없음/부분 있음</td>
+<td class="align-left">신규 수집 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-G</td>
+<td class="align-left">PP-G3</td>
+<td class="align-left">갤러리 소속 정보 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code> 중심</td>
+<td class="align-left">추가 피처: 갤러리 소속 여부, 전속 여부, 갤러리 tier, 자동 매칭 신뢰도</td>
+<td class="align-left">시장 신뢰도 피처 효과 확인</td>
+<td class="align-left">운영 DB 자동 매칭 가능성 포함 평가</td>
+<td class="align-left">성능 개선 + 자동 매칭 가능</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">운영 입력 불가 위험</td>
+<td class="align-left">작가 DB 자동 매칭 가능할 때만 피처 후보</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-G</td>
+<td class="align-left">PP-G4</td>
+<td class="align-left">외부 DB 전체 묶음 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code> 및 <code>LightGBM(base_support_size)</code> 비교</td>
+<td class="align-left">추가 피처: 경력/수상/기관/갤러리 전체 묶음과 결측 flag. 기존 Cold 피처셋에 추가</td>
+<td class="align-left">외부 작가 DB 전체 효과 확인</td>
+<td class="align-left">기본 모델 vs 전체 묶음 추가 모델 비교</td>
+<td class="align-left">MdAPE/RMSE_log 개선</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">G1~G3 통합형</td>
+<td class="align-left">개별 효과 확인 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-G</td>
+<td class="align-left">PP-G5</td>
+<td class="align-left">외부 DB + 후보정 결합 검증</td>
+<td class="align-left">대상: 외부 DB 추가 모델 + 채택된 PP-A/PP-C/PP-J 보정 후보</td>
+<td class="align-left">사용 피처: 외부 DB 피처 포함 모델의 <code>pred_log</code>와 채택 보정 기준. 비교 구조: 외부 DB 전/후, 후보정 전/후 2x2</td>
+<td class="align-left">데이터 고도화와 후보정 결합 효과 확인</td>
+<td class="align-left">외부 DB 전후, 후보정 전후 2x2 비교</td>
+<td class="align-left">결합 시 성능 추가 개선</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">선행 실험 필요</td>
+<td class="align-left">G4와 A/C/J 보정 후보 확정 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H1</td>
+<td class="align-left">네이버 검색 결과 수 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code> 중심</td>
+<td class="align-left">추가 피처: 네이버 블로그/뉴스/웹 검색 결과 수, 검색 성공 여부, 동명이인 위험 flag</td>
+<td class="align-left">국내 검색 노출량 효과 확인</td>
+<td class="align-left">수집 성공률/오염률/성능 비교</td>
+<td class="align-left">성능 개선 + 오염률 낮음</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">기존 팔로워 피처와 일부 중복</td>
+<td class="align-left">네이버 신규 수집값일 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H2</td>
+<td class="align-left">구글 검색 결과 수 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code> 및 <code>LightGBM(base_support_size)</code> 비교</td>
+<td class="align-left">추가 피처: 구글 검색 결과 총개수, 검색 성공 여부, 재수집 변동성</td>
+<td class="align-left">글로벌 검색 노출량 효과 확인</td>
+<td class="align-left">재수집 변동성 포함 평가</td>
+<td class="align-left">재수집 변동률 허용</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">검색 결과 수 불안정 위험</td>
+<td class="align-left">수집 방식 고정 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H3</td>
+<td class="align-left">Google Trends 관심도 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code> 중심</td>
+<td class="align-left">추가 피처: 기간별 검색 관심도 점수, 검색 가능 여부, 결측 flag</td>
+<td class="align-left">시간 기반 관심도 효과 확인</td>
+<td class="align-left">기간별 score 생성 후 성능 비교</td>
+<td class="align-left">MdAPE 개선</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">대상 작가 검색량 부족 가능</td>
+<td class="align-left">수집 가능 작가 비율 확인 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H4</td>
+<td class="align-left">SNS/소셜 신규 지표 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code> 중심</td>
+<td class="align-left">추가 피처: 인스타/웹 언급 수 등 신규 소셜 지표, 매칭 성공 여부, 결측 flag</td>
+<td class="align-left">소셜 인지도 효과 확인</td>
+<td class="align-left">수집 가능률/결측률/성능 비교</td>
+<td class="align-left">성능 개선 + 수집 가능</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">기존 followers/is_p1과 중복 가능</td>
+<td class="align-left">기존 컬럼과 다른 신규 지표일 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H5</td>
+<td class="align-left">검색 품질 표시 변수 검증</td>
+<td class="align-left">대상: 검색/소셜 피처를 추가한 Cold 모델</td>
+<td class="align-left">추가 피처: 동명이인 가능성, 검색어 매칭 점수, 수집 품질 등급</td>
+<td class="align-left">검색 지표의 신뢰도 활용 가능성 확인</td>
+<td class="align-left">검색 품질별 세부 구간 성능 비교</td>
+<td class="align-left">고위험 식별 가능</td>
+<td class="align-left">실행</td>
+<td class="align-left">중복 낮음</td>
+<td class="align-left">검색 지표 사용 시 필수 안전장치</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H6</td>
+<td class="align-left">검색/소셜 전체 묶음 검증</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code> 및 <code>LightGBM(base_support_size)</code> 비교</td>
+<td class="align-left">추가 피처: Naver/Google/SNS 검색량과 품질 flag 전체 묶음</td>
+<td class="align-left">검색/소셜 전체 기여도 확인</td>
+<td class="align-left">개별/묶음 성능 비교</td>
+<td class="align-left">전체 묶음이 기본 모델보다 개선</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">H1~H4 통합형</td>
+<td class="align-left">개별 효과 확인 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H7</td>
+<td class="align-left">외부 검색 피처 파일럿 수집</td>
+<td class="align-left">대상: Cold 전체 split의 작가명 상위 120명</td>
+<td class="align-left">추가 피처: DuckDuckGo 상위 검색 결과 6건 기반 <code>search_result_count</code>, <code>search_source_count</code>, <code>search_quality_score</code>, <code>search_quality_grade</code>, 동명이인 위험. 전체 검색 결과 수가 아니라 반환 결과 문맥 피처</td>
+<td class="align-left">검색 기반 피처를 실제로 만들 수 있는지 확인</td>
+<td class="align-left">수집 커버리지/검색 품질/동명이인 오염률 확인</td>
+<td class="align-left">수집 가능 + 품질 피처 생성</td>
+<td class="align-left">실행</td>
+<td class="align-left">품질 <code>low</code>가 대부분</td>
+<td class="align-left">네이버/Google API 기반 정밀 수집 전 파일럿으로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H8</td>
+<td class="align-left">Cold CatBoost 검색 피처 추가 검증</td>
+<td class="align-left">비교군: <code>PP-W2 generated_all_meta_all</code>와 동일한 CatBoost 기준선</td>
+<td class="align-left">사용 피처: 작품조건+작가메타+검색 문맥/품질/상호작용 피처. 보정 없음</td>
+<td class="align-left">CatBoost가 검색 인지도와 작품 조건 조합을 가격 구간으로 나눌 수 있는지 확인</td>
+<td class="align-left">baseline vs 검색 피처 추가 후보 비교</td>
+<td class="align-left">MdAPE 개선 또는 p95 악화 제한</td>
+<td class="align-left">실행</td>
+<td class="align-left">MdAPE/MAPE 악화</td>
+<td class="align-left">현재 검색 품질로는 대표 점 예측 후보로 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H9</td>
+<td class="align-left">Cold LightGBM Quantile 검색 피처 추가 검증</td>
+<td class="align-left">비교군: <code>PP-W4 base_lightgbm_quantile_meta_all</code>와 동일한 중앙값 기준선</td>
+<td class="align-left">사용 피처: LightGBM 기준 피처+작가메타+검색 문맥/품질 피처. 보정 없음</td>
+<td class="align-left">검색 피처가 중앙값 예측과 큰 오차 방어에 도움 되는지 확인</td>
+<td class="align-left">baseline vs 검색 피처 추가 후보 비교</td>
+<td class="align-left">MAPE/RMSE/p95 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left"><code>lightgbm_quantile_search_all</code>에서 MAPE/RMSE/p95 개선</td>
+<td class="align-left">가격 범위/위험 방어 보조 후보로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H10</td>
+<td class="align-left">검색 피처 기반 Huber 잔차 보정</td>
+<td class="align-left">1차 모델: <code>PP-H8 catboost_search_interaction</code></td>
+<td class="align-left">보정 기준: validation residual을 Huber로 학습하고 cap/strength 적용</td>
+<td class="align-left">검색 품질로 생기는 잔차를 완만하게 보정할 수 있는지 확인</td>
+<td class="align-left">cap/strength별 validation/test 비교</td>
+<td class="align-left">MdAPE 또는 p95 개선</td>
+<td class="align-left">실행</td>
+<td class="align-left">전반 악화</td>
+<td class="align-left">현재 검색 피처 품질에서는 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-I</td>
+<td class="align-left">PP-I1</td>
+<td class="align-left">Huber 설정값 조정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">조정 기준: Huber 이상치 허용 정도, 규제 강도, 스케일링 설정. 피처셋은 <code>base_existing_combo</code>로 고정</td>
+<td class="align-left">Warm 최종 모델 미세 조정</td>
+<td class="align-left">검증 데이터에서 설정값 후보 비교</td>
+<td class="align-left">MdAPE 개선</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">후처리보다는 모델 튜닝</td>
+<td class="align-left">후처리와 분리해 모델 튜닝 항목으로 관리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-I</td>
+<td class="align-left">PP-I2</td>
+<td class="align-left">CatBoost 설정값 조정</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code>, 필요 시 Warm CatBoost 후보</td>
+<td class="align-left">조정 기준: 트리 깊이, 학습 속도, 반복 횟수, 규제 강도, categorical 처리. 피처셋은 고정</td>
+<td class="align-left">Cold 1순위 모델 미세 조정</td>
+<td class="align-left">검증 데이터에서 설정값 후보 비교</td>
+<td class="align-left">MdAPE 또는 p95_APE 개선</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">후처리보다는 모델 튜닝</td>
+<td class="align-left">후처리와 분리해 모델 튜닝 항목으로 관리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-I</td>
+<td class="align-left">PP-I3</td>
+<td class="align-left">보정값 강도 조정</td>
+<td class="align-left">대상: 채택된 PP-A/PP-C/PP-J 보정 후보</td>
+<td class="align-left">보정 기준: 채택 보정값에 적용 비율 <code>0.25</code>, <code>0.5</code>, <code>0.75</code>, <code>1.0</code> 비교 및 cap 조정</td>
+<td class="align-left">과보정 방지</td>
+<td class="align-left">보정 강도별 검증/테스트 비교</td>
+<td class="align-left">최종 테스트 안정성 확보</td>
+<td class="align-left">실행</td>
+<td class="align-left">보조 실험</td>
+<td class="align-left">A/C/J 보정 후보 채택 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-I</td>
+<td class="align-left">PP-I4</td>
+<td class="align-left">조건별 모델 선택 기준 조정</td>
+<td class="align-left">대상: 채택된 PP-E 라우팅 후보</td>
+<td class="align-left">선택 기준: 저이력 기준값, 메타 완성도 기준값, 극단 크기 기준값, segment 최소 표본 수 기준</td>
+<td class="align-left">조건별 모델 선택 기준 최적화</td>
+<td class="align-left">기준값별 세부 구간 성능 비교</td>
+<td class="align-left">전체/구간 성능 균형</td>
+<td class="align-left">실행</td>
+<td class="align-left">보조 실험</td>
+<td class="align-left">E그룹 후보 채택 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-I</td>
+<td class="align-left">PP-I5</td>
+<td class="align-left">최종 후보 통합 검증</td>
+<td class="align-left">대상: 최종 기본 모델 + 채택된 후보정/라우팅/가격 범위 정책</td>
+<td class="align-left">사용 피처: 최종 선택 피처셋. 보정 기준: 채택된 PP-A/PP-C/PP-J/PP-E/PP-F 정책 전체</td>
+<td class="align-left">운영 1차 후보 성능 확정</td>
+<td class="align-left">검증 데이터 기준 확정 후 테스트에서 1회 확인</td>
+<td class="align-left">최종 성능표 작성</td>
+<td class="align-left">필수 최종</td>
+<td class="align-left">중복 낮음</td>
+<td class="align-left">마지막 단계로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-I</td>
+<td class="align-left">PP-I6</td>
+<td class="align-left">최신 후보 최종 통합/감사</td>
+<td class="align-left">대상: <code>PP-V6/V8/WMAPE</code>, <code>PP-Y21</code>, <code>PP-H27/H22</code> 등 PP-I5 이후 최신 후보</td>
+<td class="align-left">보정/선택 기준: 최신 후보 지표를 정규화하고 validation 기준 objective별 후보와 서비스 추천 후보를 분리. test는 선택 후 확인용으로만 사용</td>
+<td class="align-left">오래된 PP-I5 통합표 보완</td>
+<td class="align-left">최신 후보별 validation 선택표, 서비스 추천 후보표, 설정/커스텀/통합 축별 감사표 작성</td>
+<td class="align-left">최신 최종 후보와 추가 검증 필요 후보 분리</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">PP-I5 보완</td>
+<td class="align-left">보고서 <code>pp_i6_latest_final_control_integration_summary.md</code> 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-I</td>
+<td class="align-left">PP-I7</td>
+<td class="align-left">모델 구조별 커스텀 보정 후속 검증</td>
+<td class="align-left">대상: Warm <code>PP-V6/V8/WMAPE</code>, Cold <code>PP-H23/H26</code> 검색 보정 후보</td>
+<td class="align-left">보정/선택 기준: Warm은 test row/artist bootstrap으로 residual 보정 안정성 확인. Cold는 <code>recommended_action</code>, <code>qwidth_bin</code> 조건별 검색 보정 제한 적용</td>
+<td class="align-left">모델 구조별 약점 보정이 실제 서비스 후보로 안정적인지 확인</td>
+<td class="align-left">Warm/Cold 후보별 bootstrap 개선 확률, Cold 제한 조건별 성능표 작성</td>
+<td class="align-left">대표 후보/방어 후보/재검증 후보 분리</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">PP-I6 후속</td>
+<td class="align-left">Warm 대표 유지, Cold 검색 제한 보정은 OOF/다른 split 재검증 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-J</td>
+<td class="align-left">PP-J1</td>
+<td class="align-left">Warm Huber 큰 오차 구간 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code>. 보정 기준: Huber 큰 오차 구간, <code>pred_bin</code>, <code>size_bucket</code>별 <code>median(residual_log)</code>와 cap</td>
+<td class="align-left">Huber가 이상치 영향을 줄이며 학습한 뒤에도 남는 큰 오차 구간 보정</td>
+<td class="align-left">PP-A 보정 후에도 p95_APE 문제가 남는 구간에만 적용</td>
+<td class="align-left">p95_APE 개선, MdAPE 악화 제한</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">Huber 특성에 맞춘 보정</td>
+<td class="align-left">PP-A1/PP-A2/PP-A3 이후 tail 문제가 남을 때 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-J</td>
+<td class="align-left">PP-J2</td>
+<td class="align-left">Warm Huber 계수 기여도 구간 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code>. 보정 기준: <code>size</code>, <code>medium/support</code>, <code>artist_key</code> 계수 기여도 구간별 <code>median(residual_log)</code></td>
+<td class="align-left">선형 모델에서 특정 피처 기여가 큰 구간의 반복 오차 확인</td>
+<td class="align-left">피처별 예측 기여도를 구간화해 residual 비교</td>
+<td class="align-left">특정 기여도 구간에서 반복 오차 감소</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">Huber는 계수 기반 해석 가능</td>
+<td class="align-left">PP-A 보정만으로 설명되지 않는 반복 오차가 남을 때 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-J</td>
+<td class="align-left">PP-J3</td>
+<td class="align-left">Warm CatBoost leaf/artist-size 보정</td>
+<td class="align-left">대상: Warm CatBoost 후보</td>
+<td class="align-left">사용 피처: Warm CatBoost 후보 피처. 보정 기준: <code>leaf_segment</code>, <code>artist_size_segment</code>별 <code>median(residual_log)</code>, 표본 부족 시 <code>size_bucket</code> fallback</td>
+<td class="align-left">CatBoost가 나눈 작가 x 크기 조건 조합별 반복 오차 보정</td>
+<td class="align-left">leaf 표본 충분 시 leaf 보정, 부족 시 artist_size fallback</td>
+<td class="align-left">Warm CatBoost 채택 후보에서 보정 안정화</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">Warm CatBoost 후보가 유효할 때만</td>
+<td class="align-left">PRE-MODEL-WCB 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-J</td>
+<td class="align-left">PP-J4</td>
+<td class="align-left">Cold CatBoost leaf coverage 보정</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">사용 피처: <code>base_medium_shape</code>. 보정 기준: <code>leaf_segment</code>, <code>medium_shape_bucket</code>, <code>shape_bucket</code>별 <code>median(residual_log)</code>, leaf rows 기준별 fallback</td>
+<td class="align-left">CatBoost leaf별 표본 수와 반복 오차를 이용해 보정/신뢰도 분리</td>
+<td class="align-left">leaf rows 기준별 보정값 적용 및 fallback 비교</td>
+<td class="align-left">p95_APE 개선, rows 부족 leaf 위험 표시</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">CatBoost 대칭 트리 구조에 맞춘 보정</td>
+<td class="align-left">PRE-CAL-CB 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-J</td>
+<td class="align-left">PP-J5</td>
+<td class="align-left">Cold CatBoost 2D/3D x 크기 보정</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">사용 피처: <code>base_medium_shape</code>. 보정 기준: <code>depth_3d_segment</code>, <code>size_bucket</code>, <code>medium_shape_bucket</code> 조합별 <code>median(residual_log)</code></td>
+<td class="align-left">깊이/입체 후보와 크기 조합에서 생기는 큰 오차 보정</td>
+<td class="align-left">2D/3D x 크기 구간별 residual 중앙값 적용</td>
+<td class="align-left">3D/극단 크기 p95_APE 개선</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">Cold CatBoost의 조건 조합 학습과 연결</td>
+<td class="align-left">PRE-PP-CB 결과 반영</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-J</td>
+<td class="align-left">PP-J6</td>
+<td class="align-left">Cold LightGBM tail 구간 보정</td>
+<td class="align-left">대상: Cold <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">사용 피처: <code>base_support_size</code>. 보정 기준: high <code>pred_bin</code>, small leaf risk, <code>support_size_bucket</code>별 <code>median(residual_log)</code>와 cap</td>
+<td class="align-left">LightGBM이 세밀하게 나눈 작은 구간의 고가/큰 오차 방어</td>
+<td class="align-left">tail 구간별 보정값과 보정 cap 비교</td>
+<td class="align-left">p95_APE 개선, 과보정 없음</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">LightGBM leaf-wise 특성에 맞춘 보정</td>
+<td class="align-left">PRE-CAL-LGB 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K1</td>
+<td class="align-left">Quantile 가격 범위 보조 모델</td>
+<td class="align-left">대상: Warm/Cold 최종 후보 모델 + Quantile Regression 또는 Quantile LightGBM</td>
+<td class="align-left">사용 피처: 각 기준 모델 피처셋. 산출 기준: 중앙 예측값과 하위/상위 분위 예측값을 함께 생성</td>
+<td class="align-left">단일 가격 예측이 흔들리는 구간에서 가격 범위와 tail 위험을 안정화</td>
+<td class="align-left">validation에서 실제 가격 포함률, 범위 폭, p95_APE를 함께 비교</td>
+<td class="align-left">포함률이 안정적이고 범위 폭이 실무적으로 과도하지 않음</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">정확도 개선보다 가격 범위/신뢰도 목적이 강함</td>
+<td class="align-left">PP-F 가격 범위 정책 입력값으로 사용</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K2</td>
+<td class="align-left">Ridge/ElasticNet 선형 기준선 비교</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> 비교 후보, 필요 시 Cold 단순 기준선</td>
+<td class="align-left">사용 피처: Warm은 <code>base_existing_combo</code> 고정. 비교 기준: Huber vs Ridge vs ElasticNet의 보정 전 <code>pred_log</code></td>
+<td class="align-left">Huber가 실제로 더 적합한지, 또는 규제 선형 모델이 더 안정적인지 확인</td>
+<td class="align-left">같은 split/피처/평가 기준으로 원 예측 성능 비교</td>
+<td class="align-left">Huber 유지 근거 확보 또는 더 안정적인 선형 후보 발견</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">Huber 해석 근거 강화용</td>
+<td class="align-left">Warm 기준 모델 재선정 판단에 사용</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K3</td>
+<td class="align-left">유사 작품 fallback 예측</td>
+<td class="align-left">대상: Warm/Cold 최종 후보 모델</td>
+<td class="align-left">사용 피처: 작가, 작품 크기, 재료/지지체, 형태 조건. 산출 기준: 유사 작품 로그 가격 중앙값과 모델 예측값 비교</td>
+<td class="align-left">모델이 불안정한 작품에서 유사 작품 기준 가격을 보조값으로 사용할 수 있는지 확인</td>
+<td class="align-left">유사 작품 수 기준별 fallback 성능과 coverage 비교</td>
+<td class="align-left">유사 작품 충분 구간에서 MdAPE 또는 p95_APE 개선</td>
+<td class="align-left">조건부 실행</td>
+<td class="align-left">운영 fallback/신뢰도 목적</td>
+<td class="align-left">PP-E 조건별 선택 또는 PP-F 신뢰도 정책으로 연결</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K4</td>
+<td class="align-left">Huber 선행 + CatBoost residual 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> + CatBoost residual 모델</td>
+<td class="align-left">사용 피처: 1단계 Huber 예측값, Huber residual, <code>base_existing_combo</code> 주요 구간. residual 모델은 OOF 예측 기반으로 학습</td>
+<td class="align-left">Huber가 만든 안정적인 기준선 위에 CatBoost가 남은 조건 조합 오차를 보정할 수 있는지 확인</td>
+<td class="align-left">OOF Huber 예측으로 residual 학습 후 validation/test 최종 후보 확인</td>
+<td class="align-left">MdAPE 또는 p95_APE 개선, test 재현성 유지</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">선형 기준선 + 트리 조합의 대표 후보</td>
+<td class="align-left">PP-B 남은 오차 모델과 함께 관리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K5</td>
+<td class="align-left">Huber 선행 + CatBoost segment 규칙 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> + CatBoost segment/leaf 분석</td>
+<td class="align-left">사용 피처: Huber 예측값과 CatBoost가 나눈 <code>leaf_segment</code>, <code>artist_size_segment</code>, <code>size_bucket</code>. 보정 기준: segment별 <code>median(residual_log)</code></td>
+<td class="align-left">Huber가 설명하지 못한 작가 x 크기 조합 오차를 CatBoost 구간 규칙으로 보정</td>
+<td class="align-left">CatBoost leaf/segment별 residual 중앙값 적용 전후 비교</td>
+<td class="align-left">p95_APE 개선, 과보정 없음, segment rows 기준 충족</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">모델을 완전히 바꾸지 않고 CatBoost 구조만 보정에 활용</td>
+<td class="align-left">PP-J2/PP-J3 결과와 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K6</td>
+<td class="align-left">OOF stacking 조합</td>
+<td class="align-left">대상: Warm Huber, Warm CatBoost 후보, Cold CatBoost, Cold LightGBM, Quantile/유사 작품 후보</td>
+<td class="align-left">사용 피처: 각 모델의 OOF <code>pred_log</code>, 모델별 신뢰도 구간, 주요 segment. meta 모델은 Ridge/Huber처럼 단순한 모델 우선</td>
+<td class="align-left">여러 모델의 장점을 조합해 MAPE와 tail 오차를 동시에 줄일 수 있는지 확인</td>
+<td class="align-left">OOF 예측값으로 meta 모델 학습, validation에서 조합 선택, test는 최종 후보만 확인</td>
+<td class="align-left">단일 모델보다 MdAPE 또는 p95_APE 개선, 과적합 징후 없음</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">가장 복잡하므로 단순 결합/조건 선택 후 실행</td>
+<td class="align-left">PP-D/PP-E에서 개선 한계가 확인될 때만 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K7</td>
+<td class="align-left">Huber + Quantile 위험 구간 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> + Quantile 모델, 필요 시 Cold 기준 모델에도 동일 구조 적용</td>
+<td class="align-left">사용 피처: 기준 모델 피처셋. Quantile 산출값: <code>q10_log</code>, <code>q50_log</code>, <code>q90_log</code>. 보정 기준: <code>quantile_width = q90_log - q10_log</code>가 큰 구간의 <code>median(residual_log)</code></td>
+<td class="align-left">Huber는 안정적인 중심 가격선을 만들고 Quantile은 예측 불확실성이 큰 구간을 찾는 역할로 분리</td>
+<td class="align-left">Quantile width 상위 구간에만 보정 적용 후 MAPE/p95_APE 비교</td>
+<td class="align-left">MAPE 감소, p95_APE 감소, MdAPE 악화 제한</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">MAPE 직접 감소 목적</td>
+<td class="align-left">PP-K1 가격 범위 결과와 연결</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K8</td>
+<td class="align-left">Huber + Quantile 중앙 예측 가중 평균</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> + Quantile median 모델</td>
+<td class="align-left">사용 피처: 기준 피처셋 고정. 결합식: <code>final_pred_log = w * huber_pred_log + (1 - w) * quantile_q50_log</code>, <code>w</code>는 validation에서 선택</td>
+<td class="align-left">Huber의 안정성과 Quantile 중앙 예측의 중앙 오차 보정 가능성을 단순 결합으로 확인</td>
+<td class="align-left"><code>w=0.2,0.4,0.5,0.6,0.8</code> 후보를 validation에서 비교 후 test는 최종 1회 확인</td>
+<td class="align-left">MAPE 개선 또는 MAPE 유지 상태에서 p95_APE 개선</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">가장 단순한 Huber+Quantile 조합</td>
+<td class="align-left">PP-D 모델 결합과 중복되지 않게 MAPE 목표로 분리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K9</td>
+<td class="align-left">Huber residual Quantile 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> + Quantile residual 모델</td>
+<td class="align-left">사용 피처: Huber 예측값, 주요 피처 구간, residual target. 보정 기준: <code>huber_residual_log = actual_log - huber_pred_log</code>를 Quantile 모델이 학습</td>
+<td class="align-left">평균 residual이 아니라 과소/과대 예측 위험을 분위별로 보정할 수 있는지 확인</td>
+<td class="align-left">OOF Huber residual로 Quantile residual 모델 학습 후 <code>huber_pred_log + residual_q50</code> 적용</td>
+<td class="align-left">MAPE 개선, validation/test 방향 일치, 과보정 없음</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">Huber가 남긴 오차를 Quantile 방식으로 보정</td>
+<td class="align-left">PP-B 오차 모델의 Quantile 버전으로 관리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-K</td>
+<td class="align-left">PP-K10</td>
+<td class="align-left">Huber + Quantile 위험도 기반 CatBoost 라우팅</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> + Quantile 위험도 + CatBoost 보정/대체 후보</td>
+<td class="align-left">사용 피처: Huber 예측값, Quantile width, CatBoost 보정 예측값, 주요 segment. 선택 기준: quantile width와 segment별 validation 성능</td>
+<td class="align-left">안정 구간은 Huber 유지, 위험 구간은 CatBoost 보정 또는 대체 예측을 적용해 MAPE를 낮출 수 있는지 확인</td>
+<td class="align-left">Quantile width 구간별로 Huber 유지/ CatBoost 보정/ CatBoost 대체를 비교</td>
+<td class="align-left">MAPE와 p95_APE 개선, 라우팅 기준이 단순하고 재현 가능</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">가장 복잡하므로 K7~K9 이후 실행</td>
+<td class="align-left">효과 있으면 PP-E 조건별 모델 선택 정책에 연결</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L1</td>
+<td class="align-left">CatBoost MAPE 목적 최적화</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code>, 필요 시 Warm CatBoost 후보</td>
+<td class="align-left">사용 피처: 기준 CatBoost 피처셋. 비교군: A 기존 CatBoost, B 기존 loss + <code>eval_metric=MAPE</code>, C 저가 구간 sample weight, D MAE/Quantile 계열 loss 후보</td>
+<td class="align-left">CatBoost 자체를 MAPE 감소 방향으로 조정할 가치 확인</td>
+<td class="align-left">같은 split/피처로 A~D 비교. sample weight는 validation이 아니라 train 기준 가격대/예측 위험 구간으로만 정의</td>
+<td class="align-left">MdAPE 유지, MAPE 개선, p95_APE 악화 없음</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">CatBoost 단독 개선 가능성 확인</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L2</td>
+<td class="align-left">CatBoost 옵션별 MAPE 민감도</td>
+<td class="align-left">대상: Cold CatBoost, Warm CatBoost 후보</td>
+<td class="align-left">사용 피처: 기준 CatBoost 피처셋. 옵션: <code>depth</code>, <code>learning_rate</code>, <code>l2_leaf_reg</code>, early stopping</td>
+<td class="align-left">CatBoost 학습 옵션이 MAPE와 tail 안정성에 미치는 영향 확인</td>
+<td class="align-left">제한된 grid로 validation 비교</td>
+<td class="align-left">MAPE 개선, 과적합 없음</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">L1 세부 설정 검증</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L3</td>
+<td class="align-left">Huber 선행 + CatBoost residual 보정</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> + CatBoost residual 모델</td>
+<td class="align-left">사용 피처: Huber OOF 예측값, residual target, 주요 segment. 보정 기준: <code>final_pred_log = huber_pred_log + catboost_residual_pred</code></td>
+<td class="align-left">Huber 중심선 위에 CatBoost가 조건 조합 오차를 보정하는지 확인</td>
+<td class="align-left">OOF Huber residual로 CatBoost 학습</td>
+<td class="align-left">MdAPE 유지, MAPE/p95_APE 개선</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">기존 PP-K4보다 MAPE 최적화 관점으로 관리</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L4</td>
+<td class="align-left">Huber + Quantile width 위험 구간 보정</td>
+<td class="align-left">대상: Warm Huber + Quantile 모델</td>
+<td class="align-left">사용 피처: 기준 피처셋. 지표: <code>quantile_width = q90_log - q10_log</code>, <code>price_range_ratio = exp(quantile_width)</code>. 초기 경계: validation <code>quantile_width</code> 33/66%, 해석 경계: <code>price_range_ratio</code> 1.5배/2.5배</td>
+<td class="align-left">Quantile 예측 폭이 큰 구간에만 보정 적용 가능성 확인</td>
+<td class="align-left">validation에서 구간 경계 정의 후 test에는 동일 경계 적용. 33/66은 초기 탐색, 1.5/2.5배는 해석 기준으로 함께 기록</td>
+<td class="align-left">risk 구간 MAPE/p95_APE 개선, stable 구간 악화 없음</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">Quantile 구간 해석 선행</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L5</td>
+<td class="align-left">Huber + Quantile + CatBoost 라우팅</td>
+<td class="align-left">대상: Huber, Quantile, CatBoost 후보</td>
+<td class="align-left">사용 피처: Huber 예측값, Quantile width/ratio, CatBoost 보정/대체 예측값. 선택 기준은 validation에서 확정</td>
+<td class="align-left">안정 구간은 Huber, 위험 구간은 CatBoost로 조건부 선택 가능성 확인</td>
+<td class="align-left">구간별 Huber 유지/CatBoost 보정/CatBoost 대체 비교</td>
+<td class="align-left">MAPE와 p95_APE 개선, 라우팅 단순성 유지</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">L7/L8/L9 결과 후 실행</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L6</td>
+<td class="align-left">Huber/Quantile/CatBoost 가중 앙상블</td>
+<td class="align-left">대상: Huber, Quantile q50, CatBoost</td>
+<td class="align-left">사용 피처: 각 모델 예측값. 결합 기준: validation 가중치 후보 비교</td>
+<td class="align-left">단순 가중 결합이 순차 구조 대비 유효한지 기준선 확보</td>
+<td class="align-left">Huber 중심/CatBoost 중심/Quantile 중심/균등 평균 비교</td>
+<td class="align-left">단일 모델 대비 MAPE 개선, MdAPE 악화 없음</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">복잡한 순차 구조와 비교 기준</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L7-0</td>
+<td class="align-left">Quantile 구간 생성 및 검증</td>
+<td class="align-left">대상: Quantile 모델 + Warm/Cold validation</td>
+<td class="align-left">사용 피처: 기준 피처셋. 산출값: <code>q10_log</code>, <code>q50_log</code>, <code>q90_log</code>, <code>quantile_width</code>, <code>price_range_ratio</code>. 구간 경계: validation 33/66%, 1.5배/2.5배 후보</td>
+<td class="align-left">Quantile width/ratio가 실제 고오차 구간을 구분하는지 확인</td>
+<td class="align-left">구간별 rows, APE, MdAPE, MAPE, p95_APE 산출</td>
+<td class="align-left">width/ratio 큰 구간에서 실제 APE 또는 p95_APE 상승</td>
+<td class="align-left">필수 선행</td>
+<td class="align-left">L7-H/L7-CB/L7-HCB 전에 반드시 실행</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L7-H</td>
+<td class="align-left">Quantile 구간별 Huber 상세 학습</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>, 필요 시 Cold 선형 기준선</td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code>. 구간: PP-L7-0에서 validation으로 확정한 uncertainty 구간. fallback: 표본 부족 시 전체 Huber 또는 residual median</td>
+<td class="align-left">Quantile 구간별 Huber 재학습이 중앙 가격선을 안정화하는지 확인</td>
+<td class="align-left">구간별 Huber 재학습, 계수/outlier 비율/residual 비교</td>
+<td class="align-left">MdAPE 유지 또는 개선, risk 구간 MAPE/p95_APE 개선</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">Huber 개별 상세 학습</td>
+<td class="align-left">PP-L7-0 이후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L7-CB</td>
+<td class="align-left">Quantile 구간별 CatBoost 상세 학습</td>
+<td class="align-left">대상: Cold <code>CatBoost(base_medium_shape)</code>, Warm high-risk CatBoost 후보</td>
+<td class="align-left">사용 피처: 기준 CatBoost 피처셋. 구간: PP-L7-0 확정 구간. 옵션은 제한 grid만 적용. fallback: 표본 부족 시 전체 CatBoost</td>
+<td class="align-left">Quantile 구간별 CatBoost 재학습이 조건 조합 오차를 줄이는지 확인</td>
+<td class="align-left">구간별 CatBoost 재학습, leaf/segment residual 및 rows 확인</td>
+<td class="align-left">risk 구간 MAPE/p95_APE 개선, low 구간 과적합 없음</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">CatBoost 개별 상세 학습</td>
+<td class="align-left">PP-L7-0 이후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L7-HCB</td>
+<td class="align-left">Quantile 구간별 Huber + CatBoost 결합</td>
+<td class="align-left">대상: PP-L7-H Huber + PP-L7-CB CatBoost</td>
+<td class="align-left">사용 피처: 구간별 Huber/CatBoost 예측값. 전략: stable은 Huber, caution은 가중 평균, risk는 CatBoost residual/대체 예측 비교</td>
+<td class="align-left">Quantile 구간별로 Huber와 CatBoost 역할을 나누는 결합이 유효한지 확인</td>
+<td class="align-left">stable/caution/risk별 Huber 유지, 가중 평균, CatBoost 보정/대체 비교</td>
+<td class="align-left">MdAPE 유지, MAPE/p95_APE 개선, 라우팅 단순성 유지</td>
+<td class="align-left">후순위 실행</td>
+<td class="align-left">Huber/CatBoost 결합 상세 학습</td>
+<td class="align-left">PP-L7-H와 PP-L7-CB 이후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L8</td>
+<td class="align-left">Quantile-Huber-CatBoost 순차 학습</td>
+<td class="align-left">대상: Quantile 선행 진단 + Huber 중심선 + CatBoost residual</td>
+<td class="align-left">사용 피처: <code>price_range_ratio</code>로 정의한 stable/caution/risk, Huber OOF 예측값, CatBoost residual. 구조: Quantile → Huber → CatBoost. PP-L8 ratio는 가격 예측 범위 ratio</td>
+<td class="align-left">Quantile로 먼저 위험 구간을 정의하고 이후 Huber/CatBoost를 순차 적용하는 구조 검증</td>
+<td class="align-left">Huber <code>pred_log</code>는 OOF로 생성, CatBoost target은 <code>actual_log - OOF huber_pred_log</code>, stable/caution/risk별 전략 비교</td>
+<td class="align-left">MdAPE 유지, risk 구간 MAPE/p95_APE 개선, stable 구간 악화 없음</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">순차 파이프라인 후보 1</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L9</td>
+<td class="align-left">Huber-Quantile-CatBoost residual 순차 학습</td>
+<td class="align-left">대상: Huber 중심선 + Quantile residual + CatBoost remaining residual</td>
+<td class="align-left">사용 피처: Huber OOF 예측값, <code>residual_q10/q50/q90</code>, <code>residual_range_ratio = exp(residual_q90 - residual_q10)</code>, CatBoost remaining residual. 구조: Huber → Quantile residual → CatBoost</td>
+<td class="align-left">Huber 기준 모델을 유지하며 residual 범위를 Quantile로 추정하고 CatBoost가 남은 residual을 보정하는 구조 검증</td>
+<td class="align-left">Huber OOF residual로 Quantile residual 학습, <code>huber_pred_log + residual_q50</code> 후 남은 residual을 CatBoost가 학습. PP-L8과 ratio 의미를 분리 기록</td>
+<td class="align-left">Warm Huber 유지, MAPE/p95_APE 개선, PP-L8 대비 재현성 확인</td>
+<td class="align-left">추가 실행</td>
+<td class="align-left">순차 파이프라인 후보 2</td>
+<td class="align-left">PP-L 상세 계획 문서 기준</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-L</td>
+<td class="align-left">PP-L10</td>
+<td class="align-left">Warm PP-L8 순차 구조 피처 변형 비교</td>
+<td class="align-left">대상: Warm <code>Quantile -&gt; Huber -&gt; CatBoost residual</code> 구조</td>
+<td class="align-left">피처셋: <code>base_existing_combo</code>, <code>artist_size_only</code>, <code>artist_size_works</code>, <code>full_plus_generated_buckets</code>, <code>warm_base_search_all</code>, <code>warm_base_artist_meta_all</code>, <code>warm_base_meta_external_search_all</code></td>
+<td class="align-left">같은 순차 구조에서 피처셋만 바꾸면 기존 PP-L8보다 개선되는지 확인</td>
+<td class="align-left">각 피처셋별 Huber direct, Quantile q50, L8 sequential을 같은 split에서 비교</td>
+<td class="align-left">PP-L8 base 대비 MdAPE/MAPE/p95 개선 및 PP-V 후보와 비교</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">피처 변형 효과 확인, 최종 후보 교체는 보류</td>
+<td class="align-left">best MdAPE <code>0.1708</code>, best MAPE/p95 균형 <code>full_plus_generated_buckets</code> <code>0.1743/0.3265/0.9818</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-M</td>
+<td class="align-left">PP-M1</td>
+<td class="align-left">Warm 작가 중앙값 기준선 + Huber 잔차 모델</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> 비교</td>
+<td class="align-left">1단계: 작가별 train 로그가격 중앙값으로 작가 기준선 생성. 2단계: 작품 크기/재료 피처로 기준선 대비 잔차를 Huber가 학습</td>
+<td class="align-left">작가별 가격 기준선과 작품 조건 효과를 분리하면 Warm 예측이 더 안정적인지 확인</td>
+<td class="align-left">validation에서 작가 중앙값 기준선 + Huber residual 적용 후 test 동일 적용</td>
+<td class="align-left">MdAPE 또는 MAPE 개선, 저이력 작가 악화 없음</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Warm은 작가 기준선이 핵심이라는 해석을 모델 구조로 검증</td>
+<td class="align-left">PP-D4/PP-E1과 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-M</td>
+<td class="align-left">PP-M2</td>
+<td class="align-left">Warm target-encoded artist prior + Huber</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code> 비교</td>
+<td class="align-left">작가별 OOF target encoding 또는 smoothing artist prior를 만들고 Huber 입력 피처로 추가</td>
+<td class="align-left">one-hot 작가 효과 대신 부드러운 작가 가격 prior가 저이력 작가에 안정적인지 확인</td>
+<td class="align-left">smoothing 강도별 validation 비교, test는 최종 강도 1회 확인</td>
+<td class="align-left">Warm MdAPE 개선 또는 p95 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">계층형 모델의 경량 대체안</td>
+<td class="align-left">PP-M1 후 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-M</td>
+<td class="align-left">PP-M3</td>
+<td class="align-left">Warm 작가 기준선 + CatBoost residual</td>
+<td class="align-left">대상: PP-M1 기준선 + CatBoost residual</td>
+<td class="align-left">작가 중앙값 기준선 이후 남은 잔차를 CatBoost가 크기/재료/형태 조합으로 보정</td>
+<td class="align-left">선형 잔차보다 비선형 잔차 보정이 더 유효한지 확인</td>
+<td class="align-left">residual target은 train 기준으로 학습, validation에서 보정 강도 선택</td>
+<td class="align-left">MAPE/p95 개선, MdAPE 악화 제한</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">PP-L8 개선 원인을 Warm 기준선 관점에서 재검증</td>
+<td class="align-left">PP-M1과 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-N</td>
+<td class="align-left">PP-N1</td>
+<td class="align-left">Cold Quantile LightGBM 범위 보수화</td>
+<td class="align-left">대상: Cold <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">q10/q50/q90과 validation conformal 보정값으로 80% 가격 범위 산출</td>
+<td class="align-left">Cold range 포함률 부족 문제를 보수적으로 개선</td>
+<td class="align-left">validation residual로 범위 보정값 산정 후 test 포함률/범위비 확인</td>
+<td class="align-left">test 포함률 80% 근접, 범위비 과도 악화 없음</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">PP-F2/F4의 Cold 포함률 부족 보완</td>
+<td class="align-left">서비스 표시 정책 후보</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-N</td>
+<td class="align-left">PP-N2</td>
+<td class="align-left">Cold CatBoost Quantile 손실 비교</td>
+<td class="align-left">대상: Cold CatBoost quantile loss</td>
+<td class="align-left">CatBoost <code>Quantile</code> 또는 분위별 모델로 q10/q50/q90 산출</td>
+<td class="align-left">CatBoost 대칭 트리가 Cold 가격 분포 구간을 더 잘 나누는지 확인</td>
+<td class="align-left">LightGBM quantile과 q50 MdAPE, range coverage 비교</td>
+<td class="align-left">q50 또는 coverage 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">CatBoost 장점을 점 예측이 아닌 분포 예측으로 활용</td>
+<td class="align-left">PP-N1과 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-N</td>
+<td class="align-left">PP-N3</td>
+<td class="align-left">Cold Conformal prediction 보정</td>
+<td class="align-left">대상: Cold baseline LightGBM 또는 Quantile q50</td>
+<td class="align-left">validation 절대 로그오차 분위수로 예측 범위를 보수화</td>
+<td class="align-left">모델 종류와 무관하게 목표 포함률을 맞출 수 있는지 확인</td>
+<td class="align-left">70/80/90% conformal 범위의 test coverage와 범위비 비교</td>
+<td class="align-left">목표 포함률 근접</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Cold API 가격 범위 정책과 직접 연결</td>
+<td class="align-left">PP-F 후속</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-N</td>
+<td class="align-left">PP-QR1</td>
+<td class="align-left">Cold Quantile Regression 포함 분위수 종류별 비교</td>
+<td class="align-left">대상: Cold <code>cold_lightgbm</code> final artifact 공통 피처셋. 비교 모델: LightGBM Quantile, CatBoost Quantile, 선형 Quantile Regression</td>
+<td class="align-left">분위수 기준: tree 계열 q05/q10/q25/q40/q50/q60/q75/q90/q95, 선형 Quantile Regression q10/q25/q50/q75/q90. 범위 기준: q10~q90, q05~q95, q25~q75</td>
+<td class="align-left">기존 q10/q50/q90 중심 실험만으로는 어느 분위수가 MdAPE/MAPE/p95에 유리한지 분리하기 어려움</td>
+<td class="align-left">같은 split/피처/평가지표에서 분위수별 점예측 성능과 범위 포함률을 비교</td>
+<td class="align-left">test 기준 CatBoost q50 MdAPE <code>0.4785</code>, CatBoost q40 MAPE <code>1.0066</code>/p95 <code>3.3333</code>, 선형 QR q50 MdAPE <code>0.4890</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Quantile Regression을 선형 기준선으로 추가</td>
+<td class="align-left">MAPE 방어 목적은 q40 근처, 대표 정확도는 q50 중심으로 후속 조합에 투입</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-O</td>
+<td class="align-left">PP-O1</td>
+<td class="align-left">Warm 설명 가능한 비선형 모델</td>
+<td class="align-left">대상: Warm Huber 비교</td>
+<td class="align-left">HistGradient/EBM 대체 모델로 size, medium/support, artist prior의 비선형 효과 학습</td>
+<td class="align-left">Huber보다 유연하면서 피처별 효과 설명이 가능한 후보 확인</td>
+<td class="align-left">같은 피처/split로 Huber와 비교, permutation/효과표 생성</td>
+<td class="align-left">MdAPE 개선 또는 해석 품질 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">임원 보고용 피처 해석 강화</td>
+<td class="align-left">라이브러리 가능 범위에서 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-O</td>
+<td class="align-left">PP-O2</td>
+<td class="align-left">Cold 설명 가능한 비선형 모델</td>
+<td class="align-left">대상: Cold LightGBM 비교</td>
+<td class="align-left">HistGradient/EBM 대체 모델로 size/support/depth 비선형 효과 학습</td>
+<td class="align-left">Cold에서 LightGBM보다 해석 가능한 대체 후보가 있는지 확인</td>
+<td class="align-left">같은 split로 MdAPE/MAPE/p95와 피처 효과 비교</td>
+<td class="align-left">성능 유지 + 설명 가능성 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Cold 모델 설명 강화</td>
+<td class="align-left">PP-O1과 함께 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-P</td>
+<td class="align-left">PP-P1</td>
+<td class="align-left">Warm/Cold 최종 후보 라우팅 통합</td>
+<td class="align-left">대상: Warm PP-D4/PP-E1, Cold LightGBM/보조 위험 정책</td>
+<td class="align-left">route, artist_history_count, quantile_width, risk_level별 최종 후보 선택</td>
+<td class="align-left">모델 역할 분리를 운영 정책으로 만들면 전체 표시 품질이 좋아지는지 확인</td>
+<td class="align-left">validation에서 라우팅 기준 확정 후 test 확인</td>
+<td class="align-left">Warm 개선 유지, Cold p95/range 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">서비스 API 정책과 직접 연결</td>
+<td class="align-left">최종 후보 전 단계</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-P</td>
+<td class="align-left">PP-P2</td>
+<td class="align-left">Quantile width 기반 모델 선택 라우팅</td>
+<td class="align-left">대상: Huber/PP-L8/CatBoost/LightGBM</td>
+<td class="align-left">stable은 단순 모델, risk는 순차/보정 모델로 선택</td>
+<td class="align-left">불확실성이 큰 구간에만 복잡한 모델을 쓰는 것이 유효한지 확인</td>
+<td class="align-left">quantile width 경계별 후보 선택 비교</td>
+<td class="align-left">MAPE/p95 개선, stable 악화 없음</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">PP-L 결과 운영화</td>
+<td class="align-left">PP-P1 보조</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-P</td>
+<td class="align-left">PP-P3</td>
+<td class="align-left">서비스 표시 정책 통합 검증</td>
+<td class="align-left">대상: 최종 후보 + price range + confidence grade</td>
+<td class="align-left">예측 가격, 범위, 신뢰도, route를 한 결과표로 통합</td>
+<td class="align-left">API 응답에 들어갈 정책 조합이 성능/표시 관점에서 일관적인지 확인</td>
+<td class="align-left">route/grade별 MdAPE, MAPE, p95, coverage 산출</td>
+<td class="align-left">등급별 위험 차이가 명확하고 Cold 과신 방지</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">API 문서와 연결</td>
+<td class="align-left">최종 보고서 입력</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC1</td>
+<td class="align-left">서비스 비교군 통계 피처 검증</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code>, Cold <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">사용 피처: 기존 기준 피처셋 + train-only 비교군 로그가격 중앙값/범위/면적단가/N/coverage tier. 현재 split에는 <code>estimated_ho</code>가 없어 호당가 직접값 대신 면적 기준 단가 사용</td>
+<td class="align-left">서비스 API 표시값으로 필요한 비교군 중앙값/범위/N이 모델 피처로도 유효한지 확인</td>
+<td class="align-left">train은 5-fold OOF 비교군 통계, validation/test는 train-only 통계 적용. <code>baseline</code>, <code>svc_numeric</code>, <code>svc_full</code>, 직접 비교군 중앙값 기준선 비교</td>
+<td class="align-left">Warm/Cold에서 MdAPE 또는 MAPE/p95 개선, coverage가 서비스 설명 가능한 수준</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Warm Huber <code>svc_full</code> test MdAPE <code>0.1496</code>, MAPE <code>0.2965</code>, p95 <code>0.9499</code>; Cold LGBM <code>svc_numeric</code>은 MdAPE 소폭 개선 및 MAPE/p95 개선; Cold CatBoost는 MAPE/p95 방어 후보</td>
+<td class="align-left">Warm은 재검증/최종 후보 편입 검토. Cold는 대표 교체보다 방어/표시 근거 피처로 우선 활용</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC2</td>
+<td class="align-left">Warm 비교군 통계 피처 안정성 검증</td>
+<td class="align-left">대상: <code>PP-SVC1-W</code> Warm Huber 비교군 통계 후보, 기존 Warm 후보 <code>PP-V6/PP-V8</code></td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code> + 비교군 통계. train OOF fold seed 10개 반복. 비교 후보: <code>svc_numeric</code>, <code>svc_full</code>, seed 평균, 직접 비교군 중앙값, <code>PP-V6</code>, <code>PP-V8</code></td>
+<td class="align-left"><code>PP-SVC1-W</code> 개선이 fold 우연인지, 기존 Warm 최종 후보보다 안정적으로 좋은지 확인</td>
+<td class="align-left">seed별 재학습, seed 평균, row/artist bootstrap, 비교군 level/tier slice 분석</td>
+<td class="align-left">seed 표준편차 작고 <code>PP-V6</code> 대비 MdAPE 개선확률이 높으면 재검증 후보 유지</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>svc_full</code> seed 평균 test MdAPE <code>0.1533</code>, MAPE <code>0.2956</code>, p95 <code>0.9190</code>; seed MdAPE 평균/표준편차 <code>0.1532/0.0032</code>; PP-V6 대비 MdAPE 개선확률 row <code>0.796</code>, artist <code>0.802</code></td>
+<td class="align-left">Warm 대표 정확도 후보로 추가 검증. 단 MAPE는 PP-V6/PP-V8이 더 좋아 목적별 정책 분리 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC3</td>
+<td class="align-left">Warm 비교군 통계 후보 결합/라우팅</td>
+<td class="align-left">대상: <code>svc_numeric_seed_mean</code>, <code>svc_full_seed_mean</code>, <code>PP-V6</code>, <code>PP-V8</code></td>
+<td class="align-left">사용 피처/정책: 예측값 가중 평균 <code>w * svc + (1-w) * PP-V6/V8</code>, 비교군 level/tier 라우팅, disagreement 라우팅. 선택 기준은 validation-only</td>
+<td class="align-left">비교군 통계 후보의 MdAPE 장점과 PP-V6/PP-V8의 MAPE 장점을 결합할 수 있는지 확인</td>
+<td class="align-left">validation에서 <code>mdape_primary</code>, <code>mape_guarded</code>, <code>p95_guarded</code>, <code>balanced</code> 후보 선택 후 test 확인 및 bootstrap 비교</td>
+<td class="align-left">기존 PP-V6/PP-V8 대비 MdAPE, MAPE, p95 동시 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>blend_svcnum_ppv8_wsvc_0.70</code> test MdAPE <code>0.1405</code>, MAPE <code>0.2748</code>, p95 <code>0.8331</code>; PP-V6 대비 row bootstrap 개선확률 MdAPE <code>0.998</code>, MAPE <code>0.950</code>, p95 <code>0.858</code></td>
+<td class="align-left">Warm 현재 1순위 후보로 승격 가능. 최종 서비스 확정 전 추가 holdout/split 검증 권장</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC4</td>
+<td class="align-left">Warm 결합 후보 holdout 안정성 검증</td>
+<td class="align-left">대상: <code>PP-SVC3 blend_svcnum_ppv8_wsvc_0.70</code> 및 주변 결합 후보</td>
+<td class="align-left">사용 정책: validation을 row/artist 기준 selection/holdout으로 200회 반복 분할. selection에서만 후보 선택, holdout/test는 확인 전용</td>
+<td class="align-left"><code>PP-SVC3</code> 0.70 결합이 validation 우연인지, 분할이 바뀌어도 같은 계열이 선택되는지 확인</td>
+<td class="align-left"><code>mdape_primary</code>, <code>mape_guarded</code>, <code>balanced</code> 기준으로 반복 선택 후 holdout/test 개선확률 산출</td>
+<td class="align-left"><code>mape_guarded</code>에서 <code>svc_numeric + PP-V8</code> 계열 반복 선택, PP-V6/PP-V8 대비 MAPE 방어 유지</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>mape_guarded</code> row holdout에서 <code>wsvc=0.70</code> 109/200회, artist holdout에서 91/200회 선택. test 평균 MdAPE <code>0.1414~0.1416</code>, MAPE <code>0.2755~0.2756</code>, PP-V6/PP-V8 대비 MAPE 개선확률 <code>1.000</code></td>
+<td class="align-left">Warm 서비스 1순위 후보는 <code>blend_svcnum_ppv8_wsvc_0.70</code> 유지. MdAPE만 최적화하면 0.75~0.85 후보가 선택되지만 MAPE 방어가 약해 서비스 기준은 <code>mape_guarded</code> 우선</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC5</td>
+<td class="align-left">Warm 다층 비교군 통계 피처 실험</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code>, 기존 <code>fallback_numeric</code>, <code>PP-V8</code> 방어형 후보</td>
+<td class="align-left">사용 피처/정책: 기존 fallback 비교군 통계, 다층 비교군 통계 default/loose/strict, 정규화 Huber, <code>fallback_numeric + PP-V8</code> 가중 결합</td>
+<td class="align-left">비교군을 더 세밀하게 여러 수준으로 동시에 넣으면 기존 fallback 방식보다 좋아지는지 확인</td>
+<td class="align-left">train은 5-fold OOF 비교군 통계, validation/test는 train-only 통계. 다층 피처 직접 투입과 PP-V8 결합 비율 0.50~0.90 비교</td>
+<td class="align-left">다층 피처 또는 결합 비율 조정이 기존 PP-SVC3보다 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">다층 원시 피처 직접 투입은 Huber 수렴 불안정으로 보류. <code>blend_fallback_numeric_ppv8_wsvc_0.60</code> test MdAPE <code>0.1362</code>, MAPE <code>0.2717</code>, p95 <code>0.8329</code>; 단 validation 선택은 <code>0.75</code></td>
+<td class="align-left">다층 직접 투입보다 기존 fallback 통계가 안정적. test 상위 0.55~0.60 후보는 바로 채택하지 말고 PP-SVC6 반복 holdout 검증 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC6</td>
+<td class="align-left">Warm fallback 비교군 + PP-V8 결합 비율 안정성 검증</td>
+<td class="align-left">대상: <code>fallback_numeric</code>, <code>PP-V8 compact_blend_mape_guarded</code>, 기존 <code>PP-SVC3 blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">사용 정책: 로그 가격 기준 <code>w * fallback_numeric + (1-w) * PP-V8</code>, weight <code>0.40~0.90</code>를 <code>0.025</code> 간격으로 탐색</td>
+<td class="align-left">PP-SVC5 test에서 좋아 보인 <code>0.55~0.60</code> 결합이 validation 반복 holdout에서도 안정적인지 확인</td>
+<td class="align-left">validation을 row/artist 기준 selection/holdout으로 200회 반복. <code>mape_guarded_ppv8</code>, <code>mape_guarded_reference</code>, <code>balanced_reference</code>, <code>mdape_primary</code> 기준으로 선택 후 holdout/test 확인</td>
+<td class="align-left"><code>0.55~0.60</code>이 반복 선택되고 기존 PP-SVC3 대비 test/holdout 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">고정 test 최상위 <code>w=0.575</code> MdAPE <code>0.1348</code>, MAPE <code>0.2711</code>, p95 <code>0.8362</code>; <code>w=0.600</code>은 MdAPE <code>0.1362</code>, MAPE <code>0.2717</code>, p95 <code>0.8329</code>. 그러나 반복 선택 중앙값은 MAPE 방어 기준 <code>0.725</code>, balanced/MdAPE 기준 <code>0.850~0.875</code></td>
+<td class="align-left"><code>0.575~0.600</code>은 test 관찰값으로는 좋지만 반복 선택 안정성이 부족. Warm 서비스 후보는 기존 <code>PP-SVC3 blend_svcnum_ppv8_wsvc_0.70</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-Q1</td>
+<td class="align-left">Cold Quantile width 라우팅 + CatBoost Quantile 추가</td>
+<td class="align-left">대상: Cold baseline LightGBM, Quantile LightGBM, CatBoost Quantile, HGB</td>
+<td class="align-left">구간 기준: Quantile width stable/caution/risk. 후보: <code>baseline_lgb</code>, <code>pp_n1_q50</code>, <code>pp_n2_catboost_quantile</code>, <code>pp_o2_hgb</code>. 선택 기준: validation MdAPE 또는 MAPE guard</td>
+<td class="align-left">PP-P2 라우팅 후보에 CatBoost Quantile을 추가하면 MAPE/tail이 더 개선되는지 확인</td>
+<td class="align-left">validation 구간별 후보 선택 후 test 적용</td>
+<td class="align-left">test MdAPE/MAPE/p95 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">CatBoost Quantile의 장점 반영</td>
+<td class="align-left">PP-P2 후속</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-Q2</td>
+<td class="align-left">Cold 모델 가중 결합 커스텀</td>
+<td class="align-left">대상: Cold 후보 4종 예측값</td>
+<td class="align-left">후보별 <code>pred_log</code>를 validation에서 가중 평균. 목적함수: MdAPE 최소, MAPE 최소 guard 방식 비교</td>
+<td class="align-left">구간 선택보다 연속 가중 결합이 더 안정적인지 확인</td>
+<td class="align-left">validation grid weight 선택 후 test 적용</td>
+<td class="align-left">단일 후보 대비 MdAPE 또는 MAPE 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">앙상블 커스텀</td>
+<td class="align-left">PP-Q1과 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-Q3</td>
+<td class="align-left">Cold 점 예측 + 가격 범위 joint policy</td>
+<td class="align-left">대상: PP-Q1/PP-Q2 점 예측 후보 + N1/N2/N3 범위 후보</td>
+<td class="align-left">점 예측과 가격 범위를 분리해 선택. 점 예측은 성능, 범위는 coverage/width 균형 기준</td>
+<td class="align-left">API 표시 정책에서 참고가와 범위를 동시에 최적화</td>
+<td class="align-left">validation에서 point/range 조합 선택 후 test coverage와 range ratio 확인</td>
+<td class="align-left">coverage 목표 근접, 범위비 과도 악화 없음</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">서비스 정책 직접 연결</td>
+<td class="align-left">API 문서 반영</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-Q4</td>
+<td class="align-left">Probabilistic 모델 후보 검토</td>
+<td class="align-left">대상: NGBoost 등 분포 예측 모델</td>
+<td class="align-left">로컬 환경에 패키지가 있으면 실행, 없으면 미실행 사유 기록</td>
+<td class="align-left">Quantile/Conformal 외 확률분포 예측 모델을 비교 후보로 둘 가치 확인</td>
+<td class="align-left">설치 가능 여부와 기본 성능 확인</td>
+<td class="align-left">실행 가능하고 range/point 개선</td>
+<td class="align-left">조건부 추가</td>
+<td class="align-left">현재 로컬 설치 여부에 따라 결정</td>
+<td class="align-left">패키지 없으면 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-QR2</td>
+<td class="align-left">Cold 최종 후보 + Quantile q40/q50 결합/라우팅 검증</td>
+<td class="align-left">대상: 기존 Cold 기준선 <code>PP-Y2</code>, 대표 개선 후보 <code>PP-Y18 qwidth_bin</code>, Quantile 후보 <code>PP-QR1 CatBoost/LightGBM/Linear q40/q50</code></td>
+<td class="align-left">결합 기준: <code>pred_log</code> 가중 결합, qwidth/pred_gap 위험 구간 조건부 결합, qwidth+pred_gap segment residual 보정. 선택 기준은 validation에서만 산정</td>
+<td class="align-left">PP-QR1에서 나온 q40/q50 신호가 기존 Cold 최종 후보를 실제로 개선하는지 확인</td>
+<td class="align-left">validation 선택 후보와 test 상위 후보를 분리 기록</td>
+<td class="align-left">기존 PP-Y18 qwidth_bin test MdAPE <code>0.4247</code>보다 개선되거나 MAPE/p95 동시 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">test 최저 후보 MdAPE <code>0.4175</code>, MAPE <code>1.0029</code>, p95 <code>3.0018</code>; MAPE 방어 후보 <code>0.4178/0.9640/2.5377</code></td>
+<td class="align-left">Cold 최종 후보에 qwidth+pred_gap 보정축 추가 검토</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-QR3</td>
+<td class="align-left">Cold Quantile q40/q50 보정 후보 OOF/holdout 재검증</td>
+<td class="align-left">대상: <code>PP-Y18 qwidth_bin</code>, <code>PP-QR2 qwidth+pred_gap</code> 후보, Ridge/Huber/QuantileRegressor/HistGradientBoosting meta 후보</td>
+<td class="align-left">validation 내부 row 5-fold와 artist 5-fold에서 후보를 다시 선택. test는 선택 후 확인 전용. 입력은 기존 후보 pred_log, qwidth, q40/q50 gap, price_range_ratio</td>
+<td class="align-left">PP-QR2의 test 개선이 우연인지, validation 내부 holdout에서도 재현되는지 확인</td>
+<td class="align-left">holdout 평균/개선확률로 후보 선택 후 full validation으로 보정값 재계산, test 1회 확인</td>
+<td class="align-left">PP-Y18 대비 holdout 개선이 높고 test에서도 MdAPE 또는 MAPE/p95 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">holdout 1위 Ridge residual은 test MdAPE <code>0.4345</code>로 악화. test 확인 최상위는 segment 후보 MdAPE <code>0.4175</code>, MAPE/p95 방어 후보 <code>0.4178/0.9640/2.5377</code></td>
+<td class="align-left">복잡한 meta 보정은 보류. qwidth+pred_gap guard/segment 보정은 Cold 최종 후보 추가 검증축으로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-R</td>
+<td class="align-left">PP-R1</td>
+<td class="align-left">Cold 목적 제약 fine blend</td>
+<td class="align-left">대상: Cold <code>PP-P2</code>, <code>PP-Q2</code>, <code>PP-N2</code>, <code>PP-A7</code>, baseline LightGBM</td>
+<td class="align-left">기존 0.25 단위 가중치보다 촘촘한 0.10 단위 log 예측 가중 결합. 목적함수: MdAPE 우선, MAPE 우선, p95 우선 후보를 분리</td>
+<td class="align-left">PP-P2의 MdAPE와 PP-Q2의 MAPE/p95 장점을 같은 결합식에서 함께 얻을 수 있는지 확인</td>
+<td class="align-left">validation에서 가중치 선택 후 test 적용</td>
+<td class="align-left">MdAPE 또는 MAPE/p95가 단일 후보 대비 개선되고 다른 지표 악화가 제한적</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">PP-Q2의 50:50 결합을 더 세밀하게 확장</td>
+<td class="align-left">PP-Q2 후속</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-R</td>
+<td class="align-left">PP-R2</td>
+<td class="align-left">Cold 앙상블 후 residual 단계 보정</td>
+<td class="align-left">대상: <code>PP-Q2 weighted_blend_mape_objective</code></td>
+<td class="align-left">1단계: Quantile LightGBM + CatBoost Quantile 앙상블. 2단계: validation residual을 quantile width/pred price 구간별 중앙값으로 보정, cap과 보정 강도 비교</td>
+<td class="align-left">앙상블 이후에도 남는 반복 과소/과대 예측을 작은 규칙 보정으로 줄일 수 있는지 확인</td>
+<td class="align-left">validation에서 segment/cap/strength 선택 후 test 적용</td>
+<td class="align-left">PP-Q2 대비 MAPE 또는 p95_APE 개선, MdAPE 악화 제한</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">순차 보정 구조</td>
+<td class="align-left">PP-R1과 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-R</td>
+<td class="align-left">PP-R3</td>
+<td class="align-left">Cold 위험 구간 라우팅 threshold 탐색</td>
+<td class="align-left">대상: baseline LightGBM, <code>PP-P2</code>, <code>PP-Q2</code>, <code>PP-N2</code>, <code>PP-A7</code></td>
+<td class="align-left">Quantile width 경계를 20/50, 25/75, 33/66, 50/80 등으로 바꾸며 stable/caution/risk별 모델 선택</td>
+<td class="align-left">위험 구간만 CatBoost Quantile/계층형 보정으로 대체하면 p95를 줄이면서 대표 정확도를 유지할 수 있는지 확인</td>
+<td class="align-left">validation에서 threshold와 구간별 모델 선택 후 test 적용</td>
+<td class="align-left">PP-P2 대비 MAPE/p95 개선 또는 PP-Q2 대비 MdAPE 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">라우팅 커스텀</td>
+<td class="align-left">PP-Q1 확장</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-R</td>
+<td class="align-left">PP-R4</td>
+<td class="align-left">Cold validation meta 보정</td>
+<td class="align-left">대상: Cold 후보 예측값과 Quantile width/disagreement 피처</td>
+<td class="align-left">validation에서 단순 선형/Ridge/Huber 메타 모델이 후보 예측값을 다시 조합. 메타 피처는 모델 예측값, 예측 평균, 예측 간 차이, quantile width로 제한</td>
+<td class="align-left">단순 평균보다 데이터 기반 상위 보정 모델이 실제 test에서도 재현되는지 확인</td>
+<td class="align-left">validation meta 학습 후 test 적용. 과적합 여부를 validation/test 방향 차이로 기록</td>
+<td class="align-left">단순 결합보다 test 개선, 과적합 징후 작음</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">스태킹/메타 보정 검증</td>
+<td class="align-left">개선 없으면 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-R</td>
+<td class="align-left">PP-R5</td>
+<td class="align-left">Warm 최종 후보 잔차 안정화</td>
+<td class="align-left">대상: Warm <code>PP-D4</code> 최종 강한 후보</td>
+<td class="align-left"><code>PP-D4</code> 예측값에 대해 pred price/quantile width 구간별 residual 중앙값을 약하게 보정</td>
+<td class="align-left">Warm 최종 후보가 이미 강한 상태에서도 작은 tail 보정 여지가 남아 있는지 확인</td>
+<td class="align-left">validation에서 보정 강도 선택 후 test 적용</td>
+<td class="align-left">PP-D4 대비 MdAPE 또는 p95_APE 개선, MAPE 악화 없음</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Warm은 좁은 보정만 허용</td>
+<td class="align-left">PP-D4 후속</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-S</td>
+<td class="align-left">PP-S1</td>
+<td class="align-left">Cold CatBoost 선행 + Huber residual 안정화</td>
+<td class="align-left">1단계: <code>Cold CatBoost Quantile q50</code>, 2단계: Huber/Ridge residual 보정</td>
+<td class="align-left">CatBoost Quantile은 MAPE가 강하지만 p95가 더 낮아질 여지가 있으므로, Huber가 residual 이상치를 과도하게 따라가지 않는 안정화 역할을 하는지 확인</td>
+<td class="align-left">CatBoost 예측값을 기준선으로 두고 validation residual을 Huber/Ridge가 학습. 입력은 후보 예측값, 예측 간 차이, quantile width로 제한</td>
+<td class="align-left">CatBoost Quantile 대비 p95 또는 MAPE 개선, MdAPE 악화 제한</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">CatBoost 먼저 쓰는 역순 구조</td>
+<td class="align-left">PP-R4와 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-S</td>
+<td class="align-left">PP-S2</td>
+<td class="align-left">Cold Quantile LightGBM 선행 + CatBoost residual</td>
+<td class="align-left">1단계: <code>Quantile LightGBM q50</code>, 2단계: CatBoost residual 보정</td>
+<td class="align-left">LightGBM Quantile은 중앙 예측과 불확실성 구간을 만들고, CatBoost는 예측값 조합의 비선형 residual을 보정할 수 있는지 확인</td>
+<td class="align-left">Quantile LightGBM q50 residual을 CatBoost/Ridge/Huber residual 모델이 학습 후 test 적용</td>
+<td class="align-left">PP-N1/PP-Q2 대비 MAPE 또는 p95 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Quantile -&gt; CatBoost 순서 검증</td>
+<td class="align-left">PP-L8의 Cold 재검증</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-S</td>
+<td class="align-left">PP-S3</td>
+<td class="align-left">Cold LightGBM 목적함수 커스텀</td>
+<td class="align-left">Cold <code>LightGBM(base_support_size)</code>를 <code>regression</code>, <code>regression_l1</code>, <code>huber</code>, <code>mape</code>, <code>quantile</code> objective로 재학습</td>
+<td class="align-left">LightGBM이 공식적으로 지원하는 MAPE/Huber/Quantile 목적함수가 현재 Cold의 MAPE/p95 문제에 직접 도움이 되는지 확인</td>
+<td class="align-left">같은 split/피처셋으로 목적함수만 바꿔 재학습 후 validation/test 비교</td>
+<td class="align-left">기본 LightGBM 대비 MdAPE 유지, MAPE 또는 p95 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">모델 자체 커스텀</td>
+<td class="align-left">PP-Q/PP-R 입력 후보 확장</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-S</td>
+<td class="align-left">PP-S4</td>
+<td class="align-left">Cold cross-fitted meta stacking</td>
+<td class="align-left">Cold 후보 예측값 + disagreement + quantile width</td>
+<td class="align-left">PP-R4는 validation 전체로 meta를 학습했으므로 과적합 위험이 있다. validation 내부 교차검증으로 meta 후보를 먼저 고르고 test에 적용</td>
+<td class="align-left">validation 내부 5-fold로 Ridge/Huber meta의 예측 안정성을 비교한 뒤 전체 validation으로 재학습해 test 적용</td>
+<td class="align-left">PP-R4 대비 비슷한 개선 + CV/test 방향 일치</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">스태킹 정식화</td>
+<td class="align-left">PP-R4 보완</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-S</td>
+<td class="align-left">PP-S5</td>
+<td class="align-left">Cold 목적별 최종 정책 비교</td>
+<td class="align-left">후보: <code>PP-P2</code>, <code>PP-Q2</code>, <code>PP-R4</code>, <code>PP-S1~S4</code></td>
+<td class="align-left">단일 최고 모델을 고르기보다 MdAPE 우선, MAPE 우선, p95 우선 정책을 명확히 분리</td>
+<td class="align-left">validation 선택 원칙과 test 결과를 목적별로 한 표에 정리</td>
+<td class="align-left">목적별 최종 후보와 보류 후보가 명확히 분리됨</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">실험 결과 의사결정</td>
+<td class="align-left">서비스/API 정책 입력</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-T</td>
+<td class="align-left">PP-T1</td>
+<td class="align-left">Warm 후보 fine blend</td>
+<td class="align-left">대상: Warm Huber, PP-L8, PP-L9, PP-D4, PP-R5, PP-E1, PP-K3</td>
+<td class="align-left">기존 Warm 강한 후보들의 <code>pred_log</code>를 0.10 단위 가중 평균으로 결합</td>
+<td class="align-left"><code>PP-R5</code>보다 작은 개선이라도 validation에서 안정적으로 찾을 수 있는지 확인</td>
+<td class="align-left">validation에서 목적별 가중치 선택 후 test 적용</td>
+<td class="align-left"><code>PP-R5</code> 대비 MdAPE/MAPE/p95 중 하나 이상 개선, 다른 지표 악화 제한</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Warm도 조합 최적화 검증</td>
+<td class="align-left">PP-R5 후속</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-T</td>
+<td class="align-left">PP-T2</td>
+<td class="align-left">Warm cross-fitted meta stacking</td>
+<td class="align-left">Warm 후보 예측값 + 후보 간 차이 + quantile width</td>
+<td class="align-left"><code>PP-R5</code> 이후에도 예측 후보 간 disagreement를 Huber/Ridge meta가 안정적으로 활용할 수 있는지 확인</td>
+<td class="align-left">validation 내부 5-fold로 meta 예측을 만들고 test에 적용</td>
+<td class="align-left"><code>PP-R5</code> 대비 개선 또는 validation/test 방향 일치</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">스태킹 정식화</td>
+<td class="align-left">PP-T1과 비교</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-T</td>
+<td class="align-left">PP-T3</td>
+<td class="align-left">Warm PP-R5 2차 residual 안정화</td>
+<td class="align-left">대상: <code>PP-R5</code> 최종 후보</td>
+<td class="align-left"><code>PP-R5</code> 예측값에 대해 pred bin, quantile width bin, disagreement bin별 약한 residual 보정</td>
+<td class="align-left">이미 강한 후보에 과보정 없이 남은 반복 오차를 줄일 수 있는지 확인</td>
+<td class="align-left">validation에서 cap/strength/segment 선택 후 test 적용</td>
+<td class="align-left">MdAPE 또는 p95 개선, MAPE 악화 없음</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Warm 최종 후보 미세 보정</td>
+<td class="align-left">PP-R5 확장</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-T</td>
+<td class="align-left">PP-T4</td>
+<td class="align-left">Warm 목적별 최종 정책 비교</td>
+<td class="align-left">후보: <code>PP-R5</code>, <code>PP-T1~T3</code></td>
+<td class="align-left">Warm 최종 후보를 MdAPE 우선, MAPE 우선, p95 우선으로 분리 비교</td>
+<td class="align-left">단일 Warm 최종 후보를 갱신할지, 목적별 후보를 나눌지 결정</td>
+<td class="align-left">validation 선택 원칙과 test 결과를 함께 기록</td>
+<td class="align-left">목적별 최종 후보와 보류 사유 명확화</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">실험 결과 의사결정</td>
+<td class="align-left">서비스/API 정책 입력</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-U</td>
+<td class="align-left">PP-U1</td>
+<td class="align-left">Warm Huber 피처 교환/축소/확장</td>
+<td class="align-left">대상: Warm <code>Huber</code>. 기준: <code>base_existing_combo</code>. 비교: <code>artist_key + size</code>, <code>artist_key + size + aspect</code>, <code>artist_key + size + depth</code>, <code>artist_key + size + material/support</code>, <code>artist_key + size + artist_works_log</code>, 생성 bucket 추가 후보</td>
+<td class="align-left">Warm group-drop에서 작가와 크기는 필수, 일부 material/aspect/depth는 노이즈 가능성이 있었으므로 피처를 줄이거나 생성 bucket을 더했을 때 Huber가 더 안정적인지 확인</td>
+<td class="align-left">같은 split/Huber 설정으로 피처셋만 바꿔 재학습하고 validation/test 비교</td>
+<td class="align-left">validation MdAPE 개선 또는 MdAPE 유지 상태에서 MAPE/p95 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Warm 선형 모델 피처 구조 재검증</td>
+<td class="align-left">개선 후보는 PP-T 후속 조합 입력으로 사용</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-U</td>
+<td class="align-left">PP-U2</td>
+<td class="align-left">Warm CatBoost 피처 교환/축소/확장</td>
+<td class="align-left">대상: Warm <code>CatBoost</code>. 기준 비교 피처는 PP-U1과 동일</td>
+<td class="align-left">CatBoost가 Warm 작가 x 크기 x bucket 조합을 Huber보다 잘 나누는지, 피처 구조를 바꾸면 Warm CatBoost가 다시 후보가 되는지 확인</td>
+<td class="align-left">같은 split/CatBoost 설정으로 피처셋만 바꿔 재학습하고 Huber 결과와 비교</td>
+<td class="align-left">Warm Huber 기준 또는 기존 Warm CatBoost 대비 MdAPE/MAPE/p95 중 하나 이상 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Warm CatBoost 재검증</td>
+<td class="align-left">개선 없으면 CatBoost는 Warm 보조모델로 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-U</td>
+<td class="align-left">PP-U3</td>
+<td class="align-left">Cold LightGBM 피처 교환/확장</td>
+<td class="align-left">대상: Cold <code>LightGBM</code>. 기준: <code>base_support_size</code>. 비교: CatBoost형 <code>base_medium_shape</code>, <code>support_size + medium_shape</code>, 전체 생성 bucket, raw material, medium-size, depth-shape 후보</td>
+<td class="align-left">LightGBM이 support-size 중심 피처셋 외에 CatBoost형 medium-shape 또는 전체 bucket 확장을 활용할 수 있는지 확인</td>
+<td class="align-left">같은 split/LightGBM 설정으로 피처셋만 바꿔 재학습</td>
+<td class="align-left">기준 LightGBM 대비 validation MdAPE 개선 또는 p95 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Cold LightGBM 피처 구조 재검증</td>
+<td class="align-left">개선 후보는 PP-Q/PP-S Cold 조합 입력으로 사용</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-U</td>
+<td class="align-left">PP-U4</td>
+<td class="align-left">Cold CatBoost 피처 교환/확장</td>
+<td class="align-left">대상: Cold <code>CatBoost</code>. 기준: <code>base_medium_shape</code>. 비교: LightGBM형 <code>base_support_size</code>, <code>support_size + medium_shape</code>, 전체 생성 bucket, raw material, medium-size, depth-shape 후보</td>
+<td class="align-left">CatBoost 대칭 트리가 medium-shape보다 support-size 또는 전체 bucket 조합을 더 잘 나누는지 확인</td>
+<td class="align-left">같은 split/CatBoost 설정으로 피처셋만 바꿔 재학습</td>
+<td class="align-left">기준 CatBoost 대비 validation MdAPE 개선 또는 MAPE/p95 개선</td>
+<td class="align-left">신규 추가</td>
+<td class="align-left">Cold CatBoost 피처 구조 재검증</td>
+<td class="align-left">개선 후보는 CatBoost Quantile/순차 학습 후보로 확장</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-W</td>
+<td class="align-left">PP-W1</td>
+<td class="align-left">Cold LightGBM 작가 메타 피처 확장</td>
+<td class="align-left">대상: Cold <code>LightGBM</code>. 기준: <code>base_support_size</code></td>
+<td class="align-left">사용 피처: 기존 작품 피처 + <code>artist_meta_total_works</code>, <code>artist_meta_for_sale_works</code>, <code>artist_meta_followers</code>, <code>artist_meta_birth_year</code>, <code>artist_meta_career_stage</code>, 국적/소스 피처와 결측 flag</td>
+<td class="align-left">LightGBM이 작품 조건과 작가 메타를 함께 쓰면 Cold 기준선을 높일 수 있는지 확인</td>
+<td class="align-left">같은 split/LightGBM 설정으로 재학습 후 validation/test 비교</td>
+<td class="align-left">기준 Cold 대비 MdAPE 또는 MAPE/p95 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">작가 메타 투입 실험</td>
+<td class="align-left">결과: <code>PP-W_summary_metrics.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-W</td>
+<td class="align-left">PP-W2</td>
+<td class="align-left">Cold CatBoost 작가 메타 피처 확장</td>
+<td class="align-left">대상: Cold <code>CatBoost</code>. 기준: <code>base_medium_shape</code></td>
+<td class="align-left">사용 피처: CatBoost형 작품 조건 bucket + 작가 메타 전체. CatBoost 범주형 처리에 <code>artist_meta_source</code>, <code>artist_meta_nationality</code> 포함</td>
+<td class="align-left">CatBoost의 대칭 트리/범주형 조합 처리로 작가 메타와 작품 조건을 함께 나누는지 확인</td>
+<td class="align-left">같은 split/CatBoost 설정으로 재학습 후 validation/test 비교</td>
+<td class="align-left">기준 Cold 대비 MdAPE 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Cold 대표 정확도 개선 후보</td>
+<td class="align-left">test MdAPE <code>0.4497</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-W</td>
+<td class="align-left">PP-W3</td>
+<td class="align-left">CatBoost Quantile + 작가 메타 + Huber residual</td>
+<td class="align-left">대상: CatBoost Quantile q50 + residual model</td>
+<td class="align-left">구조: 작가 메타 포함 CatBoost Quantile로 1차 중앙 예측을 만들고, validation residual을 Huber/Ridge로 제한 보정</td>
+<td class="align-left">CatBoost Quantile의 중앙 예측과 Huber의 안정적 residual 보정을 결합</td>
+<td class="align-left">validation에서 cap/strength 선택 후 test 적용</td>
+<td class="align-left">MdAPE 또는 MAPE/p95 개선, 과보정 제한</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">모델 순서 변경 후보</td>
+<td class="align-left">PP-W4 대비 약함</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-W</td>
+<td class="align-left">PP-W4</td>
+<td class="align-left">LightGBM Quantile + 작가 메타 + Huber/CatBoost residual</td>
+<td class="align-left">대상: LightGBM Quantile q50 + residual model</td>
+<td class="align-left">구조: 작가 메타 포함 LightGBM Quantile로 1차 중앙 예측을 만들고, Huber/CatBoost residual을 cap/strength로 제한 적용</td>
+<td class="align-left">LightGBM Quantile의 MAPE/p95 장점을 residual 보정으로 더 강화</td>
+<td class="align-left">validation에서 cap/strength 선택 후 test 적용</td>
+<td class="align-left">MAPE 또는 p95 개선, MdAPE 악화 허용 범위 확인</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Cold 평균오차/큰오차 방어 후보</td>
+<td class="align-left">p95 <code>3.0322</code>, MAPE 최저 <code>0.9584</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-W</td>
+<td class="align-left">PP-W5</td>
+<td class="align-left">Cold 작가 메타 후보 목적별 정책 갱신</td>
+<td class="align-left">후보: 기존 <code>PP-S1</code>, <code>PP-Q2</code> + <code>PP-W1~W4</code></td>
+<td class="align-left">목적별로 MdAPE 우선, MAPE 우선, p95 우선 후보를 재정리</td>
+<td class="align-left">작가 메타 후보를 포함했을 때 Cold 운영 정책을 다시 정리</td>
+<td class="align-left">validation 선택 원칙과 test 결과를 함께 기록</td>
+<td class="align-left">목적별 최종 후보와 보류 사유 명확화</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">정책 갱신</td>
+<td class="align-left">대표/범위 후보 분리 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-X</td>
+<td class="align-left">PP-X1</td>
+<td class="align-left">갤러리/전시 피처 커버리지 재검증</td>
+<td class="align-left">대상: 현재 <code>data/track6_split</code> Cold train/validation/test</td>
+<td class="align-left">join 기준: <code>_track6_row_id</code>와 <code>track4_source + track4_source_row_index</code>. 피처: 개인전/단체전/아트페어 수, 갤러리 raw/validated tier</td>
+<td class="align-left">실제 최신 split에서 전시/갤러리 피처를 사용할 수 있는지 확인</td>
+<td class="align-left">split별 non-null coverage 계산</td>
+<td class="align-left">전시 피처 커버리지 충분, 갤러리 tier 품질 한계 확인</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">전시 커버리지 52~69%, 검증 tier 매우 낮음</td>
+<td class="align-left">결과: <code>PP-X_gallery_exhibition_summary_metrics.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-X</td>
+<td class="align-left">PP-X2</td>
+<td class="align-left">Cold CatBoost 전시/갤러리 피처 재검증</td>
+<td class="align-left">비교군: <code>PP-W2 generated_all_meta_all</code></td>
+<td class="align-left">사용 피처: CatBoost 작품/작가 메타 기준선 + 전시, 갤러리, 상호작용 후보</td>
+<td class="align-left">CatBoost 대칭 트리에서 전시/갤러리 조건 조합이 성능을 높이는지 확인</td>
+<td class="align-left">같은 split/CatBoost 설정으로 baseline vs 추가 피처 후보 비교</td>
+<td class="align-left">MdAPE 개선 또는 p95 개선, MAPE 악화 제한</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">갤러리 단독만 소폭 개선</td>
+<td class="align-left">best test MdAPE <code>0.4490</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-X</td>
+<td class="align-left">PP-X3</td>
+<td class="align-left">Cold LightGBM Quantile 전시/갤러리 피처 재검증</td>
+<td class="align-left">비교군: <code>PP-W4 base_lightgbm_quantile_meta_all</code></td>
+<td class="align-left">사용 피처: LightGBM Quantile 작품/작가 메타 기준선 + 전시, 갤러리, 상호작용 후보</td>
+<td class="align-left">LightGBM Quantile이 전시/갤러리 피처로 중앙값 예측을 개선하는지 확인</td>
+<td class="align-left">같은 split/LightGBM Quantile 설정으로 baseline vs 추가 피처 후보 비교</td>
+<td class="align-left">MdAPE 또는 MAPE 개선, p95 악화 여부 기록</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">MdAPE 개선 신호 뚜렷하나 p95 악화</td>
+<td class="align-left">best test MdAPE <code>0.4451</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-X</td>
+<td class="align-left">PP-X4</td>
+<td class="align-left">LightGBM 전시/갤러리 + Huber 잔차 보정</td>
+<td class="align-left">1차 모델: <code>lightgbm_quantile_exhibition_gallery_interaction</code></td>
+<td class="align-left">보정 기준: validation residual을 Huber로 학습하고 cap/strength별 제한 보정</td>
+<td class="align-left">전시/갤러리 피처를 넣은 뒤 남은 반복 오차를 완만하게 줄일 수 있는지 확인</td>
+<td class="align-left">cap <code>0.15~0.50</code>, strength <code>0.5~1.0</code> 비교</td>
+<td class="align-left">MAPE/p95 개선과 MdAPE 악화 여부 동시 확인</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">validation 개선 대비 test MdAPE 악화</td>
+<td class="align-left">OOF residual 방식으로 재검증 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-X</td>
+<td class="align-left">PP-X5</td>
+<td class="align-left">전시/갤러리 목적별 정책 비교</td>
+<td class="align-left">비교군: <code>PP-W2</code>, <code>PP-W4</code>, <code>PP-X2~X4</code> best 후보</td>
+<td class="align-left">목적별로 MdAPE, MAPE, p95 우선 후보를 모아 비교</td>
+<td class="align-left">전시/갤러리 피처를 대표가/범위/위험 방어 중 어디에 쓸지 판단</td>
+<td class="align-left">validation 기준 best 후보와 test 결과 비교</td>
+<td class="align-left">목적별 후보와 보류 사유 명확화</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">대표 정확도 후보는 PP-X3, p95 안정성은 기존 PP-W4 유지</td>
+<td class="align-left">요약 문서: <code>pp_x_gallery_exhibition_revalidation_execution_summary.md</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y1</td>
+<td class="align-left">LightGBM Quantile + 전시/갤러리 + 작가 메타 목적별 재학습</td>
+<td class="align-left">비교군: <code>PP-W4</code>, <code>PP-X3</code></td>
+<td class="align-left">사용 피처: 작품 기본 + 작가 메타 + 전시 활동 + 갤러리 tier/가용 flag. q50/q10/q90 학습</td>
+<td class="align-left"><code>PP-X3</code>의 MdAPE 개선을 유지하면서 p95 악화 구간을 분리</td>
+<td class="align-left">q50 점 예측과 q90-q10 폭을 함께 평가</td>
+<td class="align-left">MdAPE <code>0.445~0.455</code> 유지, p95 악화 완화</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">전시/갤러리 개선 재현</td>
+<td class="align-left">best test MdAPE <code>0.4444</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y2</td>
+<td class="align-left">LightGBM Quantile + 검색 + 전시/갤러리 결합</td>
+<td class="align-left">비교군: <code>PP-H9</code>, <code>PP-X3</code></td>
+<td class="align-left">사용 피처: 작가 메타 + 검색 문맥/품질 + 전시/갤러리 피처</td>
+<td class="align-left">전시/갤러리의 MdAPE 장점과 검색 피처의 p95 장점을 결합</td>
+<td class="align-left">검색만/전시갤러리만/통합 후보 비교</td>
+<td class="align-left">MdAPE <code>0.46</code> 이하, p95 <code>3.2</code> 이하 목표</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">강한 단일 모델 후보</td>
+<td class="align-left">best test MdAPE <code>0.4421</code>, MAPE <code>1.0484</code>, p95 <code>3.3537</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y3</td>
+<td class="align-left">CatBoost Quantile + 갤러리 단독/전시 제외 재검증</td>
+<td class="align-left">비교군: <code>PP-W2</code>, <code>PP-X2</code>, <code>PP-S1</code></td>
+<td class="align-left">CatBoost 작가 메타 기준 + 갤러리 tier/가용 flag. 전시는 제외 또는 별도 후보</td>
+<td class="align-left">CatBoost에는 전시보다 갤러리 피처가 더 맞는지 Quantile 구조로 확인</td>
+<td class="align-left">CatBoost Quantile q50 후 Huber residual cap 적용</td>
+<td class="align-left"><code>PP-W2</code> 대비 MdAPE 개선 또는 <code>PP-S1</code> 대비 MAPE/p95 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">LightGBM 계열보다 약함</td>
+<td class="align-left">best test MdAPE <code>0.4671</code>, 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y4</td>
+<td class="align-left">Cold LightGBM 피처 교환 후보 Quantile/Huber 재투입</td>
+<td class="align-left">비교군: <code>PP-U3</code>, <code>PP-W4</code></td>
+<td class="align-left"><code>medium_size</code>, <code>support_shape</code>, <code>medium_shape</code>, 작가 메타 조합을 LightGBM Quantile/Huber objective로 재학습</td>
+<td class="align-left">PP-U3 피처 교환 신호를 최신 Quantile/Huber 구조에서 재검증</td>
+<td class="align-left">objective별 재학습 후 Huber residual 약하게 적용</td>
+<td class="align-left"><code>PP-W4</code> p95 안정성 유지 + MdAPE 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">기존 PP-Y 상위 후보보다 약함</td>
+<td class="align-left">best test MdAPE <code>0.4460</code>, 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y5</td>
+<td class="align-left">피처 가용성/품질 기반 라우팅</td>
+<td class="align-left">비교군: <code>PP-W2</code>, <code>PP-W4</code>, <code>PP-X3</code>, <code>PP-H9</code></td>
+<td class="align-left">메타 결측 수, 전시 가용 개수, 갤러리 가용 flag, 검색 품질, q-width</td>
+<td class="align-left">정보가 충분한 작품과 부족한 작품에서 다른 모델을 쓰는 것이 나은지 확인</td>
+<td class="align-left">정보량 segment별 최적 후보 비교</td>
+<td class="align-left">전체 MdAPE 악화 없이 p95/MAPE 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">MAPE/p95 보조 정책 후보</td>
+<td class="align-left">best MAPE <code>1.0338</code>, best p95 <code>2.9656</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y6</td>
+<td class="align-left">LightGBM Quantile 선행 + CatBoost residual</td>
+<td class="align-left">1단계 <code>LightGBM Quantile</code>, 2단계 <code>CatBoost residual</code></td>
+<td class="align-left">1단계 피처: 작가 메타+전시/갤러리+검색 품질. 2단계 입력: pred_log, q-width, 작품/외부 피처</td>
+<td class="align-left">LightGBM의 MdAPE 장점에 CatBoost의 범주형 residual 조합을 결합</td>
+<td class="align-left">OOF residual 기반 2단계 학습</td>
+<td class="align-left"><code>PP-X3</code> 대비 p95 완화, <code>PP-W4</code> 대비 MdAPE 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">MdAPE 크게 개선, p95 보완 필요</td>
+<td class="align-left">best test MdAPE <code>0.4327</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y7</td>
+<td class="align-left">CatBoost Quantile 선행 + LightGBM residual</td>
+<td class="align-left">1단계 <code>CatBoost Quantile</code>, 2단계 <code>LightGBM residual</code></td>
+<td class="align-left">1단계 피처: CatBoost bucket+작가메타+갤러리. 2단계: pred_bin/q-width/size-support bucket residual</td>
+<td class="align-left">CatBoost Quantile의 안정적 중앙 예측 뒤 LightGBM이 tail 구간 residual을 보정할 수 있는지 확인</td>
+<td class="align-left">OOF residual 기반 2단계 학습</td>
+<td class="align-left"><code>PP-S1</code> 대비 MdAPE 또는 p95 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">test 재현성 부족</td>
+<td class="align-left">best test MdAPE <code>0.4834</code>, 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y8</td>
+<td class="align-left">CatBoost Quantile + Huber residual + 외부 피처 quality cap</td>
+<td class="align-left">비교군: <code>PP-S1</code></td>
+<td class="align-left">CatBoost Quantile 후 Huber residual. 검색/갤러리/전시 품질이 낮으면 cap을 줄임</td>
+<td class="align-left"><code>PP-S1</code> 구조를 외부 피처 품질 기준으로 안정화</td>
+<td class="align-left">quality별 cap/strength 비교</td>
+<td class="align-left"><code>PP-S1 cap0.2</code> MdAPE와 <code>cap0.5</code> p95 장점 동시 확보</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">residual 효과 약함</td>
+<td class="align-left">best test MdAPE <code>0.4834</code>, 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y9</td>
+<td class="align-left">목적함수 커스텀 확장</td>
+<td class="align-left">대상: LightGBM, CatBoost</td>
+<td class="align-left">RMSE, MAE/L1, Huber, Quantile q50, 지원 가능 시 MAPE objective를 피처셋별 비교</td>
+<td class="align-left">Cold 목표 지표가 RMSE가 아니므로 objective 자체를 목적별로 재검증</td>
+<td class="align-left">같은 split/피처셋으로 objective만 변경</td>
+<td class="align-left">MdAPE/MAPE/p95 목적별 후보 확보</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">MAPE 목적 참고 후보</td>
+<td class="align-left">best MAPE <code>1.0357</code>, MdAPE 균형은 PP-Y15보다 약함</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y10</td>
+<td class="align-left">불확실성 폭 기반 모델 선택</td>
+<td class="align-left">비교군: <code>PP-X3</code>, <code>PP-W4</code>, <code>PP-H9</code>, <code>PP-S1</code></td>
+<td class="align-left">q90-q10 로그 폭, price_range_ratio 기준으로 안정/위험 구간 라우팅</td>
+<td class="align-left">불확실성이 큰 작품은 p95 방어 후보로 보내는 정책 확인</td>
+<td class="align-left">q-width threshold별 라우팅 비교</td>
+<td class="align-left">안정 구간 MdAPE 개선, 위험 구간 p95 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">가장 유망한 정책 후보</td>
+<td class="align-left">MdAPE 후보 <code>0.4302</code>, p95 후보 <code>2.9656</code>; OOF threshold 재검증 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y11</td>
+<td class="align-left">OOF 기반 meta stacking 정식화</td>
+<td class="align-left">입력 후보: <code>PP-W2</code>, <code>PP-W4</code>, <code>PP-X3</code>, <code>PP-H9</code>, <code>PP-S1</code></td>
+<td class="align-left">후보 pred_log, 후보 간 차이, q-width, 정보량/품질 flag를 Ridge/Huber/제한 LightGBM meta에 입력</td>
+<td class="align-left">목적별로 강한 Cold 후보를 과적합 없이 통합</td>
+<td class="align-left">학습 내부 OOF 예측으로 meta train 생성</td>
+<td class="align-left">MdAPE <code>0.445</code> 이하 또는 p95 <code>3.0</code> 근처 + MAPE 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">validation meta 개선 부족</td>
+<td class="align-left">best test MdAPE <code>0.4560</code>, 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y12</td>
+<td class="align-left">전시/갤러리 사용 여부 라우팅</td>
+<td class="align-left">비교군: PP-Y 상위 후보 + 검색 p95 후보</td>
+<td class="align-left">전시 정보 있음/없음, 갤러리 tier 있음/없음, 검증 tier 있음/없음</td>
+<td class="align-left">외부 피처가 있는 샘플에서만 전시/갤러리 모델을 쓰는 것이 나은지 확인</td>
+<td class="align-left">정보 가용 여부별 라우팅 비교</td>
+<td class="align-left">정보 있음 구간 개선 + 전체 성능 유지</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">서비스 라우팅 후보</td>
+<td class="align-left">best test MdAPE <code>0.4344</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y13</td>
+<td class="align-left">검색 품질 기반 fallback</td>
+<td class="align-left">비교군: PP-Y 상위 후보 + <code>PP-H9</code>, <code>PP-W4</code></td>
+<td class="align-left">검색 품질 등급, 동명이인 위험, 검색 source count</td>
+<td class="align-left">검색 품질이 낮은 경우 검색 모델을 피하면 큰 오차가 줄어드는지 확인</td>
+<td class="align-left">검색 품질 threshold별 fallback 비교</td>
+<td class="align-left">p95 개선 또는 MdAPE 악화 방지</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">보조 fallback 후보</td>
+<td class="align-left">best p95 <code>2.9656</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y14</td>
+<td class="align-left">예측 가격대별 모델 선택</td>
+<td class="align-left">비교군: PP-Y 상위 후보</td>
+<td class="align-left">운영 시 알 수 있는 예측 가격 구간만 사용</td>
+<td class="align-left">저가/중가/고가에서 최적 모델이 다른지 확인</td>
+<td class="align-left">예측 가격대별 목적 모델 선택</td>
+<td class="align-left">가격대별 성능 균형 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">서비스 정책 후보</td>
+<td class="align-left">best test MdAPE <code>0.4344</code>, MAPE <code>1.0478</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y15</td>
+<td class="align-left">segment 최소 표본 수/cap 보정</td>
+<td class="align-left">비교군: PP-Y 상위 후보 + 기존 목적별 후보</td>
+<td class="align-left">segment: 예측 가격/bin, q-width, 외부 피처 가용성. 최소 표본 수 <code>30/50/100/150</code>, cap <code>0.10/0.15/0.25/0.35</code></td>
+<td class="align-left">세부 segment 보정이 과보정 없이 Cold 반복 오차를 줄이는지 확인</td>
+<td class="align-left">segment -&gt; 상위 segment -&gt; 전체 fallback 보정</td>
+<td class="align-left">대표 정확도/균형/p95 목적 후보 확보</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">탐색상 최고 후보, PP-Y16에서 검증</td>
+<td class="align-left">best MdAPE <code>0.4245</code>, 균형 <code>0.4337/1.0467/2.9371</code>, best p95 <code>2.8025</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Y</td>
+<td class="align-left">PP-Y16</td>
+<td class="align-left">PP-Y15 OOF 고정 재검증</td>
+<td class="align-left">비교군: <code>PP-Y2</code> 단일 모델, <code>PP-Y15</code> closure 후보</td>
+<td class="align-left">validation 예측값으로 pred/q-width bin 경계를 고정하고, validation 내부 5-fold OOF로 segment/cap 후보를 선택</td>
+<td class="align-left">PP-Y15 test 탐색 후보가 validation OOF 기준으로도 재현되는지 확인</td>
+<td class="align-left">validation OOF 선택 후 full validation correction map을 test에 1회 적용</td>
+<td class="align-left">test 반복 선택 없이 채택 가능한 보정 후보 분리</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">p95 방어 후보로 격하</td>
+<td class="align-left">OOF 선택 test MdAPE <code>0.4438</code>, MAPE <code>1.1083</code>, p95 <code>2.8025</code>; 대표 정확도 개선은 미확정</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Z</td>
+<td class="align-left">PP-Z1</td>
+<td class="align-left">Warm Huber Cold형 확장 피처 재학습</td>
+<td class="align-left">비교군: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code>에 작가 학습량, 작가 메타, 전시/갤러리, 검색 피처 묶음을 후보별로 추가. 보정 없음</td>
+<td class="align-left">Cold에서 사용한 확장 피처가 Warm Huber 중심선을 더 좋게 만드는지 확인</td>
+<td class="align-left">같은 Warm split/Huber 설정으로 피처 묶음별 재학습</td>
+<td class="align-left">Huber baseline 대비 MdAPE 개선 및 기존 Warm 최종 후보와 비교</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">baseline 대비 개선, 최종 후보 미달</td>
+<td class="align-left">best test <code>warm_base_search_all</code> MdAPE <code>0.2195</code>, MAPE <code>0.4854</code>, p95 <code>1.8119</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Z</td>
+<td class="align-left">PP-Z2</td>
+<td class="align-left">Warm LightGBM Quantile Cold형 확장 피처 재학습</td>
+<td class="align-left">비교군: Warm Huber baseline 및 <code>PP-V1/PP-V2</code></td>
+<td class="align-left">사용 피처: PP-Z1과 동일한 피처 묶음. q10/q50/q90을 학습하고 q50을 점 예측으로 평가</td>
+<td class="align-left">Cold에서 강했던 LightGBM Quantile이 Warm에서도 중심 예측과 위험 폭을 잘 잡는지 확인</td>
+<td class="align-left">q50 점 예측과 q90-q10 폭을 함께 산출해 validation/test 비교</td>
+<td class="align-left">Huber baseline 또는 PP-V 후보 대비 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Warm 중심 예측에는 부적합</td>
+<td class="align-left">best test MdAPE <code>0.3229</code>, 최종 후보 대체 불가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Z</td>
+<td class="align-left">PP-Z3</td>
+<td class="align-left">Warm CatBoost Cold형 확장 피처 재학습</td>
+<td class="align-left">비교군: Warm Huber baseline 및 <code>PP-U2</code> Warm CatBoost</td>
+<td class="align-left">사용 피처: PP-Z1과 동일한 피처 묶음. CatBoost RMSE로 재학습</td>
+<td class="align-left">CatBoost의 범주형/조합 처리 장점이 Warm에서도 Huber보다 유리한지 확인</td>
+<td class="align-left">같은 split/CatBoost 설정으로 피처 묶음별 재학습</td>
+<td class="align-left">MdAPE 개선 또는 p95 개선 후보 확보</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">MAPE/p95 일부 개선, MdAPE 악화 큼</td>
+<td class="align-left">best MdAPE 후보 <code>warm_base_artist_meta_all</code> MdAPE <code>0.3186</code>, MAPE <code>0.4663</code>, p95 <code>1.3889</code></td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Z</td>
+<td class="align-left">PP-Z4</td>
+<td class="align-left">Warm LightGBM Quantile q-width 구간 보정</td>
+<td class="align-left">1차 모델: PP-Z2 validation MdAPE best 후보</td>
+<td class="align-left">보정 기준: validation에서 q-width/pred/size segment별 <code>median(residual_log)</code>를 계산하고 cap/min_rows별 test 적용</td>
+<td class="align-left">분위수 예측 폭으로 Warm 위험 구간을 보정하면 큰 오차가 줄어드는지 확인</td>
+<td class="align-left">validation으로 segment/cap 선택 후보 생성 후 test 확인</td>
+<td class="align-left">PP-Z2 대비 MdAPE/p95 개선 및 PP-V 후보와 비교</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">q-width 보정도 최종 후보 미달</td>
+<td class="align-left">best test MdAPE <code>0.3171</code>, MAPE <code>0.5553</code>, p95 <code>1.7701</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="실험-실행-순서">실험 실행 순서</h2>
+<p>실험은 아래 순서로 진행한다. 앞 단계 결과가 다음 단계의 모델, segment, 보정 기준을 결정하므로 순서를 바꾸지 않는다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">실행 단계</th>
+<th class="align-left">실행 실험</th>
+<th class="align-left">대상 모델</th>
+<th class="align-left">이 단계에서 결정할 것</th>
+<th class="align-left">다음 단계로 넘길 산출물</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left"><code>PRE-PP-W</code>, <code>PRE-PP-CB</code>, <code>PRE-PP-LGB</code></td>
+<td class="align-left">Warm <code>Huber(base_existing_combo)</code>, Cold <code>CatBoost(base_medium_shape)</code>, Cold <code>LightGBM(base_support_size)</code></td>
+<td class="align-left">후처리 기준으로 쓸 피처/구간이 실제 성능에 필요한지 확인</td>
+<td class="align-left">모델별 중요 피처 그룹, 제거 시 악화되는 피처 그룹</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left"><code>PRE-MODEL-WCB</code>, <code>PRE-MODEL-CCB</code></td>
+<td class="align-left">Warm Huber vs Warm CatBoost, Cold CatBoost vs Cold LightGBM</td>
+<td class="align-left">후처리 전에 기준 모델 후보를 바꿀 가치가 있는지 확인</td>
+<td class="align-left">Warm/Cold별 후처리 전 기본 예측 모델 후보</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left"><code>PRE-SPLIT-WCB</code>, <code>PRE-SPLIT-CCB</code></td>
+<td class="align-left">Warm CatBoost 후보, Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left">CatBoost 구분 학습이 보정값을 줄이는지 확인</td>
+<td class="align-left">구분 학습 채택/보류 판단, split segment 후보</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left"><code>PRE-CAL-W</code>, <code>PRE-CAL-CB</code>, <code>PRE-CAL-LGB</code>, 조건부 <code>PRE-CAL-WCB</code></td>
+<td class="align-left">Warm Huber, Cold CatBoost, Cold LightGBM, 조건부 Warm CatBoost</td>
+<td class="align-left">모델별/구간별 반복 오차와 보정값을 산출</td>
+<td class="align-left">correction map, segment별 rows, segment별 <code>median_residual_log</code>, fallback 기준</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left"><code>PP-A1~PP-A8</code></td>
+<td class="align-left">Warm Huber, Cold CatBoost 중심</td>
+<td class="align-left">전체/가격대/크기/재료/메타 정보량 보정이 효과가 있는지 확인</td>
+<td class="align-left">채택 가능한 기본 residual 보정 후보</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left"><code>PP-J1~PP-J6</code></td>
+<td class="align-left">Warm Huber, Warm CatBoost 후보, Cold CatBoost, Cold LightGBM</td>
+<td class="align-left">PRE-CAL/PP-A 이후 남은 문제 구간에 대해 모델 구조별 커스텀 보정이 필요한지 확인</td>
+<td class="align-left">Huber 계수 기반 보정, CatBoost leaf 보정, LightGBM tail 보정 후보</td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left"><code>PP-B4</code>, <code>PP-B1</code>, 조건부 <code>PP-B2~PP-B3</code></td>
+<td class="align-left">채택된 기본 모델의 OOF 예측</td>
+<td class="align-left">남은 오차를 2단계 모델이 안정적으로 학습할 수 있는지 확인</td>
+<td class="align-left">OOF 기반 오차 보정 모델 후보</td>
+</tr>
+<tr>
+<td class="align-right">8</td>
+<td class="align-left"><code>PP-C1</code>, <code>PP-C3</code>, <code>PP-C5</code></td>
+<td class="align-left">채택된 기본 모델 및 보정 후보</td>
+<td class="align-left">예측값 전체 기울기/곡선/보정 강도 조정 필요 여부 확인</td>
+<td class="align-left">직선/비선형 재보정 후보, 보정 강도 후보</td>
+</tr>
+<tr>
+<td class="align-right">9</td>
+<td class="align-left"><code>PP-D1~PP-D5</code></td>
+<td class="align-left">Warm/Cold 상위 모델 조합</td>
+<td class="align-left">단일 모델보다 여러 모델 예측값 결합이 안정적인지 확인</td>
+<td class="align-left">모델 평균/가중 평균 후보</td>
+</tr>
+<tr>
+<td class="align-right">10</td>
+<td class="align-left"><code>PP-E1~PP-E5</code></td>
+<td class="align-left">Warm/Cold 기본 모델 및 보정 후보</td>
+<td class="align-left">조건별 모델 선택/대체 적용이 필요한지 확인</td>
+<td class="align-left">저이력, 메타 부족, 극단 크기, 미분류, 가격대 위험 라우팅 후보</td>
+</tr>
+<tr>
+<td class="align-right">11</td>
+<td class="align-left"><code>PP-K1~PP-K10</code></td>
+<td class="align-left">Warm/Cold 최종 후보 + 추천 보조 조합</td>
+<td class="align-left">Quantile, 유사 작품 fallback, Huber+Quantile, Huber+CatBoost, OOF stacking이 추가 개선을 주는지 확인</td>
+<td class="align-left">추천 조합 채택/보류 판단, MAPE 감소 후보, 가격 범위/신뢰도 보조 후보</td>
+</tr>
+<tr>
+<td class="align-right">12</td>
+<td class="align-left"><code>PP-L1~PP-L10</code> 및 <code>PP-L7-*</code></td>
+<td class="align-left">Huber/Quantile/CatBoost 후보</td>
+<td class="align-left">Quantile 구간, Huber 중심선, CatBoost residual을 순차 활용해 MdAPE를 유지하면서 MAPE를 낮출 수 있는지 확인</td>
+<td class="align-left">PP-L 상세 계획 결과표, 순차 학습 채택/보류 판단</td>
+</tr>
+<tr>
+<td class="align-right">13</td>
+<td class="align-left"><code>PP-M1~PP-M3</code></td>
+<td class="align-left">Warm 작가 기준선/계층형 후보</td>
+<td class="align-left">Warm에서 작가 기준선과 작품 조건 효과를 분리하면 추가 개선되는지 확인</td>
+<td class="align-left">Warm 계층형/artist prior 후보</td>
+</tr>
+<tr>
+<td class="align-right">14</td>
+<td class="align-left"><code>PP-N1~PP-N3</code>, <code>PP-QR1</code></td>
+<td class="align-left">Cold Quantile/Conformal 후보</td>
+<td class="align-left">Cold 점 예측 대신 분포/범위 예측을 보수화하고, Quantile Regression까지 포함해 분위수 종류별 성능 차이를 확인</td>
+<td class="align-left">Cold 가격 범위/coverage 후보, q40/q50 후속 조합 후보</td>
+</tr>
+<tr>
+<td class="align-right">15</td>
+<td class="align-left"><code>PP-O1~PP-O2</code></td>
+<td class="align-left">설명 가능한 비선형 후보</td>
+<td class="align-left">Huber보다 유연하고 트리보다 설명 가능한 모델이 대체 후보가 되는지 확인</td>
+<td class="align-left">모델별 피처 효과표, 해석 후보</td>
+</tr>
+<tr>
+<td class="align-right">16</td>
+<td class="align-left"><code>PP-P1~PP-P3</code></td>
+<td class="align-left">모델 역할 분리 라우팅</td>
+<td class="align-left">Warm/Cold/위험구간별 모델 선택 정책을 통합 검증</td>
+<td class="align-left">서비스 API 응답 정책 후보</td>
+</tr>
+<tr>
+<td class="align-right">17</td>
+<td class="align-left"><code>PP-Q1~PP-Q4</code>, <code>PP-QR2~PP-QR3</code></td>
+<td class="align-left">Cold 모델 조합 + 모델별 커스텀</td>
+<td class="align-left">모델 특성별 장점을 조합해 Cold 점 예측과 범위를 동시에 개선할 수 있는지 확인</td>
+<td class="align-left">Cold 통합 튜닝 후보, qwidth+pred_gap 보정 후보, OOF/holdout 재검증 결과</td>
+</tr>
+<tr>
+<td class="align-right">18</td>
+<td class="align-left"><code>PP-R1~PP-R5</code></td>
+<td class="align-left">PP-Q 이후 상위 후보</td>
+<td class="align-left">목적 제약 fine blend, 단계별 residual 보정, threshold 라우팅, validation meta 보정, Warm 최종 후보 안정화가 추가 개선을 주는지 확인</td>
+<td class="align-left">PP-Q 이후 추가 개선 후보와 보류 사유</td>
+</tr>
+<tr>
+<td class="align-right">19</td>
+<td class="align-left"><code>PP-S1~PP-S5</code></td>
+<td class="align-left">Cold 순서 변경/목적함수/스태킹 후보</td>
+<td class="align-left">CatBoost 선행, Quantile 선행, LightGBM objective 커스텀, cross-fitted stacking이 추가 개선을 주는지 확인</td>
+<td class="align-left">목적별 Cold 최종 후보와 보류 사유</td>
+</tr>
+<tr>
+<td class="align-right">20</td>
+<td class="align-left"><code>PP-T1~PP-T4</code>, 추가 <code>PP-V6~PP-V8</code></td>
+<td class="align-left">Warm 최종 후보 추가 개선</td>
+<td class="align-left">Warm PP-R5 이후 fine blend, cross-fitted meta stacking, 2차 residual 안정화가 추가 개선을 주는지 확인하고, <code>PP-L10</code> 신규 후보를 기존 <code>PP-V</code> 조합에 다시 반영</td>
+<td class="align-left">목적별 Warm 최종 후보와 보류 사유, PP-L10 통합 채택/보류 근거</td>
+</tr>
+<tr>
+<td class="align-right">21</td>
+<td class="align-left"><code>PP-U1~PP-U4</code></td>
+<td class="align-left">Warm/Cold 피처 교환 재학습</td>
+<td class="align-left">기존 영향도 결과를 바탕으로 피처셋을 축소/확장/교환하면 기준 예측 또는 후속 조합 후보가 개선되는지 확인</td>
+<td class="align-left">모델별 피처셋 채택/보류 판단, 후속 조합 입력 후보</td>
+</tr>
+<tr>
+<td class="align-right">22</td>
+<td class="align-left"><code>PP-W1~PP-W5</code></td>
+<td class="align-left">Cold 작가 메타 + 모델 순서 고도화</td>
+<td class="align-left">작가 메타 피처와 Quantile/Huber/CatBoost 순차 학습으로 Cold를 추가 개선할 수 있는지 확인</td>
+<td class="align-left">Cold 대표 점 예측 후보, 가격 범위/위험 방어 후보</td>
+</tr>
+<tr>
+<td class="align-right">23</td>
+<td class="align-left"><code>PP-X1~PP-X5</code></td>
+<td class="align-left">Cold 전시/갤러리 피처 재검증</td>
+<td class="align-left">최신 Cold 후보에 전시 활동/갤러리 tier 피처를 추가했을 때 목적별 성능이 개선되는지 확인</td>
+<td class="align-left">전시/갤러리 피처 채택/보류 판단, 후속 조합 입력 후보</td>
+</tr>
+<tr>
+<td class="align-right">24</td>
+<td class="align-left"><code>PP-Y1~PP-Y21</code></td>
+<td class="align-left">Cold 피처/모델 조합 확장</td>
+<td class="align-left">PP-W/PP-X/PP-H/PP-S에서 나온 강한 신호를 피처 조합과 모델 순서 변경으로 재조합하고, <code>PP-Y10/Y16</code>에서 나온 유망 신호를 OOF/다른 split 기준으로 재검증</td>
+<td class="align-left">Cold 추가 개선 후보, 라우팅/fallback 후보, PP-Y15~Y21 OOF/validation/반복 holdout 검증 결과</td>
+</tr>
+<tr>
+<td class="align-right">25</td>
+<td class="align-left"><code>PP-Z1~PP-Z4</code></td>
+<td class="align-left">Warm Cold형 피처/모델 확장</td>
+<td class="align-left">Cold에서 검증한 작가 메타/전시/갤러리/검색 피처와 LightGBM Quantile/CatBoost 축을 Warm에 적용</td>
+<td class="align-left">Warm 최종 후보 유지/교체 판단, Cold형 피처 확장 보류 근거</td>
+</tr>
+<tr>
+<td class="align-right">25</td>
+<td class="align-left"><code>PP-F1~PP-F4</code></td>
+<td class="align-left">최종 후보 모델과 보정 후보</td>
+<td class="align-left">단일 가격 대신 가격 범위/신뢰도 표시가 필요한지 확인</td>
+<td class="align-left">가격 범위 기준, 신뢰도 등급 기준</td>
+</tr>
+<tr>
+<td class="align-right">26</td>
+<td class="align-left">조건부 <code>PP-G1~PP-G5</code>, <code>PP-H1~PP-H6</code> + 실행 <code>PP-H7~PP-H27</code></td>
+<td class="align-left">Cold 모델 중심</td>
+<td class="align-left">외부 작가 DB, 검색/소셜 지표를 추가 수집할 가치가 있는지 확인</td>
+<td class="align-left">검색 파일럿/운영형 수집/provider 일치도 결과, 신규 데이터 수집 필요성, 외부 피처 후보</td>
+</tr>
+<tr>
+<td class="align-right">27</td>
+<td class="align-left"><code>PP-I1~PP-I7</code></td>
+<td class="align-left">최종 후보 모델 + 채택 후처리</td>
+<td class="align-left">설정값, 보정 강도, 라우팅 기준을 최종 조정하고 최신 후보를 다시 통합 감사</td>
+<td class="align-left">최종 통합 후보, 서비스 추천 후보, 추가 split 검증 필요 후보</td>
+</tr>
+</tbody></table></div>
+<h2 id="gap-감사-후-추가-실행-후보">Gap 감사 후 추가 실행 후보</h2>
+<p>상세 감사 문서: <code>docs/track6/experiments/remaining_experiment_gap_audit.md</code></p>
+<p>현재 큰 실험군은 대부분 실행됐으므로, 남은 핵심은 새로운 실험군 추가가 아니라 이미 좋은 신호가 있었던 후보의 통합, 고정 기준 재검증, 재현성 확인이다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">우선순위</th>
+<th class="align-left">추가 ID</th>
+<th class="align-left">대상</th>
+<th class="align-left">실험 의도</th>
+<th class="align-left">실행 기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left"><code>PP-V6</code></td>
+<td class="align-left">Warm</td>
+<td class="align-left"><code>PP-L10</code> 신규 component를 기존 <code>PP-V1</code>류 fine blend에 다시 넣어 최종 Warm 성능 개선 가능성 확인</td>
+<td class="align-left">validation/OOF에서 가중치 결정 후 test 1회 확인</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left"><code>PP-V7</code></td>
+<td class="align-left">Warm</td>
+<td class="align-left"><code>PP-L10</code> 신규 component를 <code>PP-V2</code>류 meta stacking 입력에 반영해 MAPE/p95 개선 가능성 확인</td>
+<td class="align-left">meta 입력은 OOF 예측 기반으로만 생성</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left"><code>PP-Y17</code></td>
+<td class="align-left">Cold</td>
+<td class="align-left"><code>PP-Y10</code> q-width 라우팅이 test 선택 효과가 아닌지 OOF/validation 고정 기준으로 확인</td>
+<td class="align-left">q-width threshold는 validation 또는 validation 내부 OOF에서만 선택</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left"><code>PP-Y18</code></td>
+<td class="align-left">Cold</td>
+<td class="align-left"><code>PP-Y16</code> 결과 CSV의 test 상위 후보가 다른 split/bootstrap에서도 유지되는지 확인</td>
+<td class="align-left">test 상위 후보를 바로 채택하지 않고 split/artist bootstrap으로 안정성 확인</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left"><code>PP-Y19</code></td>
+<td class="align-left">Cold</td>
+<td class="align-left">대표 단일 후보 <code>PP-Y2</code>의 split 안정성과 작가군별 흔들림 확인</td>
+<td class="align-left">artist-group bootstrap 또는 seed 반복으로 PP-Y2 기준 성능 분포 기록</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left"><code>PP-Y20</code></td>
+<td class="align-left">Cold</td>
+<td class="align-left"><code>PP-W4</code>의 MAPE 장점과 <code>PP-Y16</code>의 p95 방어 장점을 목적별 라우팅으로 결합</td>
+<td class="align-left">안정 구간은 PP-Y2, 평균오차 위험 구간은 PP-W4, tail 위험 구간은 PP-Y16 후보 비교</td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left"><code>PP-V8</code></td>
+<td class="align-left">Warm</td>
+<td class="align-left">서비스 배포를 위해 Warm 최종 후보를 더 단순한 모델/피처셋으로 줄여도 성능이 유지되는지 확인</td>
+<td class="align-left">teacher <code>PP-V1/V2</code> 대비 MdAPE/MAPE/p95 악화 허용 범위 기록</td>
+</tr>
+</tbody></table></div>
+<h3 id="gap-감사-후보-실행-결과">Gap 감사 후보 실행 결과</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">실험 ID</th>
+<th class="align-left">실행 상태</th>
+<th class="align-left">대표 결과</th>
+<th class="align-left">현재 판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>PP-V6</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>fine_blend_mape_guarded</code> test MdAPE <code>0.1613</code>, MAPE <code>0.2889</code>, p95 <code>0.9314</code></td>
+<td class="align-left">Warm 대표 후보 교체 검토</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-V7</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>huber_component_range_clipped</code> test MdAPE <code>0.1712</code>, MAPE <code>0.2803</code>, p95 <code>0.8990</code></td>
+<td class="align-left">MAPE/p95 방어 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-V8</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>compact_blend_mape_guarded</code> test MdAPE <code>0.1632</code>, MAPE <code>0.2816</code>, p95 <code>0.9311</code></td>
+<td class="align-left">배포 단순화 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-Y17</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">validation 고정 선택 test MdAPE <code>0.4620~0.4763</code></td>
+<td class="align-left"><code>PP-Y10</code> 라우팅 대표 후보 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-Y18</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>qwidth_bin_oof_min30_cap0.25</code> test MdAPE <code>0.4247</code>, MAPE <code>0.9910</code>, p95 <code>3.3053</code></td>
+<td class="align-left">Cold 유망 후보, 추가 split 검증 필요</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-Y19</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>PP-Y2</code> artist bootstrap MdAPE 95% 구간 <code>0.3751~0.5252</code></td>
+<td class="align-left">Cold 기준선 변동성 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-Y20</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">validation 선택 라우팅 test MdAPE <code>0.4494~0.4603</code>, p95 <code>3.6483~3.8973</code></td>
+<td class="align-left">3-way 라우팅 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-Y21</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>qwidth_bin_oof_min30_cap0.25</code> artist holdout MdAPE 개선확률 <code>0.8625</code>, MAPE <code>0.9875</code>, p95 <code>0.9625</code></td>
+<td class="align-left">Cold 개선 후보로 유지 가능</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-H22</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">provider agreement medium 9명, low 69명</td>
+<td class="align-left">검색 provider agreement는 점 예측 직접 피처보다 수동 검수/신뢰도 하향 기준으로 사용</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-I6</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Warm 대표 <code>PP-V6 fine_blend_mape_guarded</code> test MdAPE <code>0.1613</code>, Cold 대표 개선 <code>PP-Y21 qwidth_bin_oof_min30_cap0.25</code> test MdAPE <code>0.4247</code></td>
+<td class="align-left">PP-I5가 누락한 최신 후보 통합 보완. WMAPE CatBoost residual은 추가 split 검증 후 채택 검토</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-I7</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Warm WMAPE residual은 MAPE/p95 방어 후보, Cold <code>news/gallery qwidth_caution_risk</code> 제한 보정은 test MdAPE <code>0.4179~0.4240</code></td>
+<td class="align-left">Warm 대표는 유지. Cold 검색 제한 보정은 개선 신호가 강하지만 validation 선택과 test 상위 후보가 달라 OOF/다른 split 재검증 필요</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-SVC1</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Warm Huber <code>svc_full</code> test MdAPE <code>0.1496</code>, MAPE <code>0.2965</code>, p95 <code>0.9499</code>; 직접 비교군 중앙값은 Warm test MdAPE <code>0.3100</code></td>
+<td class="align-left">비교군 중앙값 자체가 좋은 예측값인 것은 아니며, Huber와 함께 쓰일 때 작가/조건 가격 prior로 강하게 작동. Cold는 LGBM numeric이 MAPE/p95 방어에 유효</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-SVC2</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Warm <code>svc_full</code> seed 평균 test MdAPE <code>0.1533</code>, <code>svc_numeric</code> seed 평균 <code>0.1520</code>; PP-V6 대비 MdAPE 개선확률 row <code>0.796~0.842</code>, artist <code>0.802~0.842</code></td>
+<td class="align-left">비교군 통계 피처의 Warm MdAPE 개선은 seed 반복에서도 유지. 다만 MAPE는 PP-V6/PP-V8보다 약해 대표 정확도 후보와 평균오차 방어 후보를 분리해야 함</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-SVC3</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>blend_svcnum_ppv8_wsvc_0.70</code> test MdAPE <code>0.1405</code>, MAPE <code>0.2748</code>, p95 <code>0.8331</code></td>
+<td class="align-left">Warm 비교군 통계 후보와 PP-V8을 70:30으로 결합하면 PP-V6/PP-V8 대비 세 지표가 모두 개선. Warm 1순위 후보로 올리되 추가 holdout 검증 권장</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-SVC4</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>mape_guarded</code> 반복 선택 test 평균 MdAPE <code>0.1414~0.1416</code>, MAPE <code>0.2755~0.2756</code>, p95 <code>0.8325~0.8326</code>; <code>wsvc=0.70</code> 선택 빈도 row 109/200, artist 91/200</td>
+<td class="align-left"><code>PP-SVC3</code> 0.70 결합은 MAPE 방어 기준에서 안정적. Warm 서비스 후보는 <code>svc_numeric 70% + PP-V8 30%</code> 유지가 타당</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-SVC5</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">다층 원시 피처 직접 투입은 Huber 수렴 불안정. <code>fallback_numeric + PP-V8</code> 결합에서 test 최상위 <code>wsvc=0.60</code> MdAPE <code>0.1362</code>, MAPE <code>0.2717</code>, p95 <code>0.8329</code></td>
+<td class="align-left">비교군을 무조건 더 많이 쪼개서 Huber에 넣는 방식은 부적합. 다만 기존 fallback 비교군 후보의 결합 비율을 0.55~0.60으로 조정하는 후속 검증 가치는 있음</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-SVC6</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">고정 test에서는 <code>w=0.575~0.600</code>이 PP-SVC3보다 MdAPE/MAPE 소폭 개선. 반복 holdout 선택 중심은 <code>0.725</code> 또는 <code>0.850~0.875</code></td>
+<td class="align-left">test 관찰값만으로 0.575~0.600을 채택하기에는 안정성이 부족. 서비스 1순위는 기존 PP-SVC3 유지</td>
+</tr>
+</tbody></table></div>
+<h3 id="보류-실험">보류 실험</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">실험</th>
+<th class="align-left">보류 이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>PP-C2</code></td>
+<td class="align-left"><code>PP-A2</code>와 목적과 방식이 거의 같으므로 가격대별 보정은 <code>PP-A2</code>로 대표 실행</td>
+</tr>
+</tbody></table></div>
+<h2 id="결과-기록-양식">결과 기록 양식</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">실험 ID</th>
+<th class="align-left">후처리 전 기본 예측 모델</th>
+<th class="align-left">사용 피처셋</th>
+<th class="align-left">보정/선택 기준</th>
+<th class="align-left">Warm MdAPE 전/후</th>
+<th class="align-left">Cold MdAPE 전/후</th>
+<th class="align-left">p95_APE 전/후</th>
+<th class="align-left">결론</th>
+<th class="align-left">다음 작업</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예시</td>
+<td class="align-left">Warm <code>Huber(base_existing_combo)</code> / Cold <code>CatBoost(base_medium_shape)</code></td>
+<td class="align-left"><code>base_existing_combo</code> / <code>base_medium_shape</code></td>
+<td class="align-left">가격대별 <code>median(residual_log)</code> 보정</td>
+<td class="align-left">-</td>
+<td class="align-left">-</td>
+<td class="align-left">-</td>
+<td class="align-left">채택/보류/중단</td>
+<td class="align-left">-</td>
+</tr>
+</tbody></table></div>
+    </main>
+  </div>
+</body>
+</html>

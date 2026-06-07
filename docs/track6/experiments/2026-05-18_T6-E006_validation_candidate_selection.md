@@ -1,6 +1,6 @@
 # T6-E006 validation 기준 후보 선정
 
-- 날짜: `2026-05-18`
+- 날짜: `2026-05-29`
 - 관련 가설: `T6-H6`
 - 상태: 부분 검증
 - 목적: validation 결과만 보고 test에 올릴 Warm/Cold 후보를 고정
@@ -18,16 +18,18 @@
 
 | 구분 | 모델 | 피처셋 | validation median APE | validation p95 APE | 선정 이유 |
 |---|---|---|---:|---:|---|
-| Warm | `catboost_warm_artist` | `base_medium_size` | `0.2665` | `1.1814` | Warm median APE 최저 |
-| Cold 대표 오차 | `hist_quantile_cold` | `base` | `0.3782` | `1.9444` | Cold median APE 최저 |
-| Cold 큰 오차 위험 | `huber_cold` | `base_size_shape` | `0.3888` | `1.3835` | Cold p95 APE 최저 |
+| Warm | `huber_warm_artist` | `base_existing_combo` | `0.2126` | `1.3194` | Warm median APE 최저 |
+| Cold CatBoost | `catboost_cold` | `base_medium_shape` | `0.4251` | `2.4420` | CatBoost 내 median APE 최저 |
+| Cold LightGBM | `lightgbm_cold` | `base_support_size` | `0.3848` | `2.0207` | LightGBM 내 median APE 최저 |
+| Cold 대표 오차 | `lightgbm_cold` | `base_support_size` | `0.3848` | `2.0207` | Cold median APE 최저 |
+| Cold 큰 오차 위험 | `lightgbm_cold` | `base_large_flags` | `0.3938` | `1.9783` | Cold p95 APE 최저 |
 
 ## 3. 해석
 
-- Warm은 작가 식별값을 포함한 CatBoost가 유지 후보
-- Warm 피처는 `medium_category + size_bucket` 조합을 포함할 때 median APE가 가장 낮음
-- Cold는 대표값 기준으로 단순한 구조 피처가 가장 안정적
-- Cold의 큰 오차를 줄이는 목적이면 Huber + `size_bucket/shape_bucket` 후보가 더 적합
+- Warm은 작가 식별값을 포함한 Huber가 유지 후보
+- Warm 피처는 validation 기준으로 가장 안정적인 조합을 고정
+- Cold는 CatBoost와 LightGBM 중 대표 오차 기준 후보를 고정
+- Cold의 큰 오차를 줄이는 목적이면 p95 APE 기준 후보를 별도로 고정
 
 ## 4. 다음 단계
 

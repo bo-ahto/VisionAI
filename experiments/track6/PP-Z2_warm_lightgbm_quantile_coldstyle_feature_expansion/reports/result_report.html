@@ -1,0 +1,434 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-Z2</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:28px;color:#17202a}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #d8dee9;padding:7px;text-align:left}th{background:#eef2f7}h1,h2{margin-top:22px}</style></head>
+<body><h1>PP-Z2 Warm LightGBM Quantile Cold형 확장 피처 재학습</h1>
+<h2>Validation Top 10</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>search_coverage_rate</th>
+      <th>search_covered_n</th>
+      <th>model</th>
+      <th>feature_strategy</th>
+      <th>n_features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_search_context</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.727386</td>
+      <td>0.283761</td>
+      <td>0.555205</td>
+      <td>1.518630</td>
+      <td>0.520231</td>
+      <td>0.672447</td>
+      <td>0.104046</td>
+      <td>54</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 검색 핵심 문맥</td>
+      <td>45</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_meta_external_search_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.724820</td>
+      <td>0.289191</td>
+      <td>0.524550</td>
+      <td>1.562695</td>
+      <td>0.522158</td>
+      <td>0.685934</td>
+      <td>0.104046</td>
+      <td>54</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 메타 + 전시/갤러리 + 검색 전체</td>
+      <td>90</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_external_interaction</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.718788</td>
+      <td>0.291578</td>
+      <td>0.535187</td>
+      <td>1.470330</td>
+      <td>0.512524</td>
+      <td>0.666667</td>
+      <td>0.104046</td>
+      <td>54</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 전시/갤러리 상호작용</td>
+      <td>65</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_artist_meta_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.725104</td>
+      <td>0.299517</td>
+      <td>0.546995</td>
+      <td>1.495665</td>
+      <td>0.500963</td>
+      <td>0.668593</td>
+      <td>0.104046</td>
+      <td>54</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 메타 전체</td>
+      <td>35</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_search_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.728091</td>
+      <td>0.304890</td>
+      <td>0.555521</td>
+      <td>1.578053</td>
+      <td>0.493256</td>
+      <td>0.664740</td>
+      <td>0.104046</td>
+      <td>54</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 검색 전체</td>
+      <td>60</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_exhibition_gallery</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.698042</td>
+      <td>0.305663</td>
+      <td>0.493255</td>
+      <td>1.484198</td>
+      <td>0.495183</td>
+      <td>0.668593</td>
+      <td>0.104046</td>
+      <td>54</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 전시/갤러리</td>
+      <td>39</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_artist_volume</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.728741</td>
+      <td>0.325484</td>
+      <td>0.526068</td>
+      <td>1.547933</td>
+      <td>0.466281</td>
+      <td>0.647399</td>
+      <td>0.104046</td>
+      <td>54</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 학습량</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>baseline_warm_base_existing_combo</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.743661</td>
+      <td>0.348917</td>
+      <td>0.577449</td>
+      <td>1.531258</td>
+      <td>0.452794</td>
+      <td>0.624277</td>
+      <td>0.104046</td>
+      <td>54</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm final artifact 기준 피처셋</td>
+      <td>13</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Test Top 10</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>search_coverage_rate</th>
+      <th>search_covered_n</th>
+      <th>model</th>
+      <th>feature_strategy</th>
+      <th>n_features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_external_interaction</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.716519</td>
+      <td>0.322893</td>
+      <td>0.573241</td>
+      <td>1.953090</td>
+      <td>0.476112</td>
+      <td>0.647446</td>
+      <td>0.113674</td>
+      <td>69</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 전시/갤러리 상호작용</td>
+      <td>65</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_meta_external_search_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.712706</td>
+      <td>0.323029</td>
+      <td>0.589957</td>
+      <td>1.857157</td>
+      <td>0.474465</td>
+      <td>0.642504</td>
+      <td>0.113674</td>
+      <td>69</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 메타 + 전시/갤러리 + 검색 전체</td>
+      <td>90</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_search_context</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.721544</td>
+      <td>0.325073</td>
+      <td>0.584740</td>
+      <td>1.976216</td>
+      <td>0.477759</td>
+      <td>0.629325</td>
+      <td>0.113674</td>
+      <td>69</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 검색 핵심 문맥</td>
+      <td>45</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_exhibition_gallery</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.798221</td>
+      <td>0.328061</td>
+      <td>0.554518</td>
+      <td>1.783683</td>
+      <td>0.461285</td>
+      <td>0.649094</td>
+      <td>0.113674</td>
+      <td>69</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 전시/갤러리</td>
+      <td>39</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_search_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.726716</td>
+      <td>0.333604</td>
+      <td>0.623716</td>
+      <td>1.861985</td>
+      <td>0.469522</td>
+      <td>0.630972</td>
+      <td>0.113674</td>
+      <td>69</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 검색 전체</td>
+      <td>60</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_artist_meta_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.723662</td>
+      <td>0.351429</td>
+      <td>0.593459</td>
+      <td>1.776526</td>
+      <td>0.464580</td>
+      <td>0.609555</td>
+      <td>0.113674</td>
+      <td>69</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 메타 전체</td>
+      <td>35</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_artist_volume</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.834302</td>
+      <td>0.365653</td>
+      <td>0.593916</td>
+      <td>2.042050</td>
+      <td>0.436573</td>
+      <td>0.598023</td>
+      <td>0.113674</td>
+      <td>69</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 학습량</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>baseline_warm_base_existing_combo</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_lightgbm_quantile_coldstyle_feature_expansion</td>
+      <td>0.869291</td>
+      <td>0.406488</td>
+      <td>0.679063</td>
+      <td>2.313360</td>
+      <td>0.398682</td>
+      <td>0.586491</td>
+      <td>0.113674</td>
+      <td>69</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm final artifact 기준 피처셋</td>
+      <td>13</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Policy / Feature Map</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>model</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+      <th>runtime_sec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-Z2</td>
+      <td>baseline_warm_base_existing_combo</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm final artifact 기준 피처셋</td>
+      <td>현재 Warm Huber와 동일한 기준선</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key</td>
+      <td>10.209</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_artist_volume</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 학습량</td>
+      <td>작가 이력이 있는 Warm에서 작가별 표본 수가 안정성 신호가 되는지 확인</td>
+      <td>15</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train</td>
+      <td>9.346</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_artist_meta_all</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 메타 전체</td>
+      <td>Cold PP-W에서 검증한 작가 활동/인지도/국적 피처가 Warm에도 추가 설명력을 주는지 확인</td>
+      <td>35</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko</td>
+      <td>10.054</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_exhibition_gallery</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 전시/갤러리</td>
+      <td>작가 이력이 있어도 전시 활동과 갤러리 tier가 가격 기준선을 보완하는지 확인</td>
+      <td>39</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source</td>
+      <td>9.681</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_external_interaction</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 전시/갤러리 상호작용</td>
+      <td>전시/갤러리 효과가 크기, 팔로워, 작가 경력과 결합될 때 개선되는지 확인</td>
+      <td>65</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source, exhibition_total_x_log_area, exhibition_total_x_followers_log, gallery_validated_x_followers_log, gallery_tier_x_exhibition_total_log, exhibition_size_bucket, gallery_exhibition_bucket</td>
+      <td>10.261</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_search_context</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 검색 핵심 문맥</td>
+      <td>검색 품질/전시 문맥이 이미 학습 이력이 있는 작가에서도 추가 신호인지 확인</td>
+      <td>45</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_art_match_ratio, search_quality_score, search_collected_flag, search_success_flag, search_quality_grade</td>
+      <td>10.430</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_search_all</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 검색 전체</td>
+      <td>검색 노출량, 문맥, 동명이인 위험 전체를 Warm에 넣었을 때 과적합 없이 개선되는지 확인</td>
+      <td>60</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade</td>
+      <td>10.222</td>
+    </tr>
+    <tr>
+      <td>PP-Z2</td>
+      <td>warm_base_meta_external_search_all</td>
+      <td>LightGBM Quantile</td>
+      <td>Warm 기준 + 작가 메타 + 전시/갤러리 + 검색 전체</td>
+      <td>Cold식 확장 피처 전체를 Warm에 이식했을 때 모델별로 감당 가능한지 확인</td>
+      <td>90</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, exhibition_total_x_log_area, exhibition_total_x_followers_log, gallery_validated_x_followers_log, gallery_tier_x_exhibition_total_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source, exhibition_size_bucket, gallery_exhibition_bucket, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade</td>
+      <td>11.792</td>
+    </tr>
+  </tbody>
+</table></body></html>

@@ -1,0 +1,18 @@
+experiment_id: T6-E038
+status: planned
+phase: variable_definition
+title: 작품 변수 선정 실험 일지
+goal: T6-G5 운영 가능 피처 선정
+hypothesis_1: 호수는 작가명 없이도 가격대 구분에 도움이 된다.
+hypothesis_2: 작품 변수는 호수만으로 설명되지 않는 가격 차이를 보완할 수 있다.
+hypothesis_3: Warm과 Cold는 효과적인 작품 변수 조합이 다를 수 있다.
+warm_candidate_models: Huber, Linear Regression, Ridge
+cold_candidate_models: Huber, Quantile/LAD, LightGBM
+base_source: data/track6/track6_feature_candidates_name_corrected.csv
+target_raw: price_krw
+target_transformed: ln_price_krw
+warm_definition: 학습 데이터에 같은 작가가 있는 작품
+cold_definition: 학습 데이터에 한 번도 등장하지 않은 작가의 작품
+primary_metric: median APE
+secondary_metrics: p95 APE, Within-30, Within-50, slice별 오차
+success_criteria: 같은 피처셋 기준으로 변형 데이터가 일반 데이터보다 median APE를 낮추거나 p95 APE를 줄이면 유의미한 개선으로 판단

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>E2-1 같은 작가 학습량 비교 실험</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5efe3;color:#17211d;margin:0;padding:32px;line-height:1.65}
+    .wrap{max-width:1180px;margin:0 auto}
+    section{background:#fffaf0;border:1px solid #d7c39e;border-radius:18px;padding:24px;margin:20px 0}
+    h1{font-size:38px;margin:0 0 10px}
+    h2{border-left:6px solid #1f3b5c;padding-left:12px}
+    table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+    th,td{border:1px solid #cdbb9a;padding:9px;vertical-align:top}
+    th{background:#e4d6bf;text-align:left}
+    code{background:#eee5d5;border-radius:5px;padding:1px 5px}
+  </style>
+</head>
+<body><div class="wrap">
+  <section>
+    <h1>E2-1 같은 작가 학습량 비교 실험</h1>
+    <ul>
+      <li>가설: 같은 작가라도 학습 작품 수가 많아질수록 Warm 예측이 안정적일 수 있다.</li>
+      <li>핵심 통제: 테스트 작가와 테스트 작품은 고정하고, 학습 작품 수만 바꾼다.</li>
+      <li>대상 작가: train에 최소 30개 이상 있고 Warm test에도 있는 작가 48명</li>
+      <li>고정 테스트 작품 수: 147건</li>
+      <li>사용 피처: <code>artist_name_ko, width_cm, height_cm, log_area, aspect_ratio</code></li>
+      <li>제외 피처: <code>artist_works_log</code>는 학습량 효과를 직접 보기 위해 입력에서 제외</li>
+    </ul>
+  </section>
+  <section>
+    <h2>결론</h2>
+    <ul>
+      <li>최고 결과: 학습량 30개/작가, Huber, MdAPE 0.1269</li>
+      <li>이 실험은 작가별 학습량 자체가 예측 안정성에 미치는 영향을 보는 실험이다.</li>
+      <li>학습량이 늘어도 성능이 일관되게 좋아지지 않으면, 작품 수는 예측 피처보다 신뢰도/라우팅 기준으로 쓰는 것이 적절하다.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>전체 결과</h2>
+    <table>
+      <thead><tr><th>작가당 학습 수</th><th>모델</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>RMSE_log</th><th>R2</th></tr></thead>
+      <tbody><tr><td>5</td><td>Huber</td><td>0.1947</td><td>1.1142</td><td>0.6463</td><td>0.3862</td><td>0.8985</td></tr><tr><td>5</td><td>Ridge</td><td>0.1961</td><td>0.8658</td><td>0.6531</td><td>0.3950</td><td>0.8938</td></tr><tr><td>5</td><td>Linear Regression</td><td>0.2033</td><td>0.9262</td><td>0.6871</td><td>0.3816</td><td>0.9009</td></tr><tr><td>10</td><td>Linear Regression</td><td>0.1440</td><td>1.0036</td><td>0.7347</td><td>0.3334</td><td>0.9243</td></tr><tr><td>10</td><td>Huber</td><td>0.1556</td><td>0.8264</td><td>0.7415</td><td>0.3200</td><td>0.9303</td></tr><tr><td>10</td><td>Ridge</td><td>0.1659</td><td>0.8515</td><td>0.7211</td><td>0.3416</td><td>0.9206</td></tr><tr><td>20</td><td>Huber</td><td>0.1310</td><td>0.8190</td><td>0.7755</td><td>0.3020</td><td>0.9379</td></tr><tr><td>20</td><td>Linear Regression</td><td>0.1452</td><td>1.0068</td><td>0.7619</td><td>0.3149</td><td>0.9325</td></tr><tr><td>20</td><td>Ridge</td><td>0.1465</td><td>0.9439</td><td>0.7347</td><td>0.3164</td><td>0.9318</td></tr><tr><td>30</td><td>Huber</td><td>0.1269</td><td>0.7665</td><td>0.7687</td><td>0.3093</td><td>0.9349</td></tr><tr><td>30</td><td>Linear Regression</td><td>0.1386</td><td>0.8646</td><td>0.7415</td><td>0.3140</td><td>0.9329</td></tr><tr><td>30</td><td>Ridge</td><td>0.1426</td><td>0.8076</td><td>0.7415</td><td>0.3153</td><td>0.9323</td></tr></tbody>
+    </table>
+  </section>
+  <section>
+    <h2>작가별 결과 일부</h2>
+    <p>작가별 MdAPE가 큰 순서 일부입니다. 특정 작가에서 학습량 증가가 실제 안정화로 이어지는지 확인할 때 사용합니다.</p>
+    <table>
+      <thead><tr><th>작가</th><th>작가당 학습 수</th><th>모델</th><th>MdAPE</th><th>테스트 수</th></tr></thead>
+      <tbody><tr><td>유선</td><td>10</td><td>Huber</td><td>1.3523</td><td>3</td></tr><tr><td>이종빈</td><td>5</td><td>Linear Regression</td><td>1.2419</td><td>3</td></tr><tr><td>유선</td><td>5</td><td>Huber</td><td>1.1653</td><td>3</td></tr><tr><td>유선</td><td>10</td><td>Linear Regression</td><td>1.1620</td><td>3</td></tr><tr><td>유선</td><td>20</td><td>Huber</td><td>1.1278</td><td>3</td></tr><tr><td>유선</td><td>30</td><td>Linear Regression</td><td>1.1272</td><td>3</td></tr><tr><td>유선</td><td>30</td><td>Ridge</td><td>1.0961</td><td>3</td></tr><tr><td>이종빈</td><td>20</td><td>Linear Regression</td><td>1.0941</td><td>3</td></tr><tr><td>유선</td><td>30</td><td>Huber</td><td>1.0816</td><td>3</td></tr><tr><td>유선</td><td>10</td><td>Ridge</td><td>1.0783</td><td>3</td></tr><tr><td>유선</td><td>20</td><td>Linear Regression</td><td>1.0408</td><td>3</td></tr><tr><td>유선</td><td>20</td><td>Ridge</td><td>1.0030</td><td>3</td></tr><tr><td>이종빈</td><td>20</td><td>Ridge</td><td>0.9606</td><td>3</td></tr><tr><td>이종빈</td><td>10</td><td>Linear Regression</td><td>0.9506</td><td>3</td></tr><tr><td>이종빈</td><td>30</td><td>Linear Regression</td><td>0.8903</td><td>3</td></tr><tr><td>유선</td><td>5</td><td>Linear Regression</td><td>0.8812</td><td>3</td></tr><tr><td>조성연</td><td>5</td><td>Huber</td><td>0.8407</td><td>3</td></tr><tr><td>이종빈</td><td>30</td><td>Ridge</td><td>0.8144</td><td>3</td></tr><tr><td>유선</td><td>5</td><td>Ridge</td><td>0.7925</td><td>3</td></tr><tr><td>이종빈</td><td>20</td><td>Huber</td><td>0.7831</td><td>3</td></tr><tr><td>이종빈</td><td>5</td><td>Ridge</td><td>0.7767</td><td>3</td></tr><tr><td>이종빈</td><td>10</td><td>Ridge</td><td>0.7452</td><td>3</td></tr><tr><td>조성연</td><td>10</td><td>Huber</td><td>0.6744</td><td>3</td></tr><tr><td>조성연</td><td>30</td><td>Huber</td><td>0.6508</td><td>3</td></tr><tr><td>이종빈</td><td>30</td><td>Huber</td><td>0.6460</td><td>3</td></tr><tr><td>용제레미</td><td>5</td><td>Ridge</td><td>0.6322</td><td>3</td></tr><tr><td>이다빈</td><td>5</td><td>Ridge</td><td>0.6088</td><td>3</td></tr><tr><td>이종빈</td><td>5</td><td>Huber</td><td>0.5974</td><td>3</td></tr><tr><td>이관희</td><td>5</td><td>Linear Regression</td><td>0.5862</td><td>3</td></tr><tr><td>레오</td><td>30</td><td>Huber</td><td>0.5711</td><td>3</td></tr></tbody>
+    </table>
+  </section>
+</div></body></html>

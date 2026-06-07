@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 D6 depth x 작품 유형 숫자형 교차항 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 D6 depth x 작품 유형 숫자형 교차항 실험 결과</h1>
+    <ul>
+      <li>목적: 작품 유형에 따라 깊이 정보의 가격 효과가 달라지는지 확인</li>
+      <li>실험 ID: <code>D6</code></li>
+      <li>Warm 최고: <code>D6 교차항: 깊이 x 작품 유형 전체</code> / <code>Huber</code> / MdAPE 0.7463</li>
+      <li>Cold 최고: <code>D6 교차항: 깊이 x 작품 유형 전체</code> / <code>LightGBM</code> / MdAPE 0.6467</li>
+      <li>생성일: <code>2026-05-27T10:22:59</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/train_features.csv</code><br><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/test_warm_features.csv</code><br><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/test_cold_features.csv</code><br><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/D6_depth_artwork_type_numeric_interaction/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>depth_cm, depth_cm_x_artwork_type_final_01, depth_cm_x_artwork_type_final_02, depth_cm_x_artwork_type_final_03, depth_cm_x_artwork_type_final_04, depth_cm_x_artwork_type_final_05, depth_cm_x_artwork_type_final_06, depth_cm_x_artwork_type_final_07, depth_cm_x_artwork_type_final_08, depth_cm_x_artwork_type_final_09, depth_cm_x_artwork_type_final_10, depth_cm_x_artwork_type_final_11, depth_cm_x_artwork_type_major3_01, depth_cm_x_artwork_type_major3_02, depth_cm_x_artwork_type_major3_03, depth_cm_x_artwork_type_major3_04</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>조각이나 입체 후보 작품에서 깊이 정보가 작품 유형에 따라 다르게 작용하는지 확인한다.</td></tr><tr><td>실험군</td><td>Group D: 작품 변수끼리의 교차항</td></tr><tr><td>기준선</td><td>depth_cm + has_depth + is_3d_candidate + artwork_type</td></tr><tr><td>학습 피처</td><td>기준선과 depth_cm x 작품 유형 교차항</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>구현 방식</td><td>depth_cm은 숫자형으로 유지하고, 작품 유형별 표시값과 곱한 숫자형 교차항을 생성한다.</td></tr><tr><td>주의</td><td>depth_cm 결측이 많으므로 전체 성능뿐 아니라 p95 APE와 3D 후보 구간 해석이 중요하다.</td></tr><tr><td>해석 기준</td><td>교차항 추가 후 MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 작품 유형별 깊이 효과가 있다고 본다.</td></tr><tr><td>purpose</td><td>작품 유형에 따라 깊이 정보의 가격 효과가 달라지는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 D6 교차항: 깊이 x 작품 유형 전체 + Huber(MdAPE 0.7463), Cold 최고는 D6 교차항: 깊이 x 작품 유형 전체 + LightGBM(MdAPE 0.6467)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>D6 기준: 깊이 + 작품 유형</h2>
+              <p><strong>사용 피처:</strong> <code>depth_cm, has_depth, is_3d_candidate, artwork_type_final, artwork_type_final_major3</code> · 깊이와 작품 유형의 개별 효과만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0617</td><td>1.3190</td><td>0.7483</td><td>6.1982</td><td>0.1993</td><td>0.3130</td><td>1.5484</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0548</td><td>1.3239</td><td>0.7543</td><td>7.1181</td><td>0.1829</td><td>0.3048</td><td>1.7044</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0548</td><td>1.3239</td><td>0.7524</td><td>7.1184</td><td>0.1845</td><td>0.3048</td><td>1.7044</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0991</td><td>1.2475</td><td>0.6709</td><td>6.5497</td><td>0.2130</td><td>0.3379</td><td>1.3650</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0756</td><td>1.2636</td><td>0.6824</td><td>6.4335</td><td>0.2065</td><td>0.3356</td><td>1.3320</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0505</td><td>1.2807</td><td>0.6476</td><td>6.7487</td><td>0.1878</td><td>0.3585</td><td>1.8467</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>D6 교차항: 깊이 x 작품 유형 전체</h2>
+              <p><strong>사용 피처:</strong> <code>depth_cm, has_depth, is_3d_candidate, artwork_type_final, artwork_type_final_major3, depth_cm_x_artwork_type_final_01, depth_cm_x_artwork_type_final_02, depth_cm_x_artwork_type_final_03, depth_cm_x_artwork_type_final_04, depth_cm_x_artwork_type_final_05, depth_cm_x_artwork_type_final_06, depth_cm_x_artwork_type_final_07, depth_cm_x_artwork_type_final_08, depth_cm_x_artwork_type_final_09, depth_cm_x_artwork_type_final_10, depth_cm_x_artwork_type_final_11</code> · 작품 유형별로 깊이 효과가 달라지는지 전체 유형 기준으로 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0684</td><td>1.3143</td><td>0.7463</td><td>5.9535</td><td>0.2010</td><td>0.3180</td><td>1.5256</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0570</td><td>1.3224</td><td>0.7521</td><td>7.1022</td><td>0.1829</td><td>0.2998</td><td>1.6880</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0567</td><td>1.3225</td><td>0.7509</td><td>7.0906</td><td>0.1829</td><td>0.3015</td><td>1.6894</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0916</td><td>1.2526</td><td>0.6611</td><td>6.6681</td><td>0.2104</td><td>0.3433</td><td>1.4165</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0731</td><td>1.2653</td><td>0.6778</td><td>6.4184</td><td>0.2052</td><td>0.3417</td><td>1.3400</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0487</td><td>1.2819</td><td>0.6467</td><td>6.7021</td><td>0.1884</td><td>0.3650</td><td>1.8560</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>D6 교차항: 깊이 x 작품 유형 3대 구분</h2>
+              <p><strong>사용 피처:</strong> <code>depth_cm, has_depth, is_3d_candidate, artwork_type_final_major3, depth_cm_x_artwork_type_major3_01, depth_cm_x_artwork_type_major3_02, depth_cm_x_artwork_type_major3_03, depth_cm_x_artwork_type_major3_04</code> · 회화/판화/조각/기타 큰 구분에서 깊이 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0185</td><td>1.3491</td><td>0.7491</td><td>6.8322</td><td>0.1895</td><td>0.3147</td><td>1.6071</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0053</td><td>1.3581</td><td>0.7602</td><td>7.7738</td><td>0.1845</td><td>0.3081</td><td>1.7970</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0052</td><td>1.3581</td><td>0.7602</td><td>7.7872</td><td>0.1845</td><td>0.3081</td><td>1.7972</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0453</td><td>1.2842</td><td>0.6923</td><td>6.4443</td><td>0.2110</td><td>0.3375</td><td>1.3549</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0421</td><td>1.2863</td><td>0.6931</td><td>6.4080</td><td>0.2107</td><td>0.3369</td><td>1.3399</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0023</td><td>1.3128</td><td>0.6758</td><td>6.4940</td><td>0.2001</td><td>0.3633</td><td>1.8383</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/data/test_cold_labels.csv</code></li><li><code>interaction_mapping</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/outputs/interaction_mapping.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/D6_depth_artwork_type_numeric_interaction/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

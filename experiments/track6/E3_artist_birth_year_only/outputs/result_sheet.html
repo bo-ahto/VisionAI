@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 E3 작가 생년 단독 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 E3 작가 생년 단독 실험 결과</h1>
+    <ul>
+      <li>목적: 작가의 생년 정보가 가격 차이를 설명할 수 있는지 확인</li>
+      <li>실험 ID: <code>E3</code></li>
+      <li>Warm 최고: <code>생년 원값 + 결측 여부</code> / <code>Ridge</code> / MdAPE 0.7508</li>
+      <li>Cold 최고: <code>생년 원값</code> / <code>Quantile-LAD</code> / MdAPE 0.6985</li>
+      <li>생성일: <code>2026-05-27T20:16:31</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/E3_artist_birth_year_only/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/E3_artist_birth_year_only/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/E3_artist_birth_year_only/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/E3_artist_birth_year_only/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/E3_artist_birth_year_only/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/E3_artist_birth_year_only/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/E3_artist_birth_year_only/data/train_features.csv</code><br><code>experiments/track6/E3_artist_birth_year_only/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/E3_artist_birth_year_only/data/test_warm_features.csv</code><br><code>experiments/track6/E3_artist_birth_year_only/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/E3_artist_birth_year_only/data/test_cold_features.csv</code><br><code>experiments/track6/E3_artist_birth_year_only/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/E3_artist_birth_year_only/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/E3_artist_birth_year_only/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>artist_meta_birth_year, artist_meta_birth_year_is_missing</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>작가의 생년 정보가 가격 차이를 설명할 수 있는지 확인</td></tr><tr><td>학습 피처</td><td>artist_meta_birth_year / artist_meta_birth_year, artist_meta_birth_year_is_missing</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>실험군</td><td>Group E: 작가 변수만</td></tr><tr><td>해석 중심</td><td>생년 또는 세대 정보가 단독으로 가격대 차이를 설명하는지 본다.</td></tr><tr><td>결측 주의</td><td>메타가 있는 작품만 골라 평가하지 않고 결측 flag를 함께 비교한다.</td></tr><tr><td>purpose</td><td>작가의 생년 정보가 가격 차이를 설명할 수 있는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 생년 원값 + 결측 여부 + Ridge(MdAPE 0.7508), Cold 최고는 생년 원값 + Quantile-LAD(MdAPE 0.6985)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>생년 원값</h2>
+              <p><strong>사용 피처:</strong> <code>artist_meta_birth_year</code> · 작가 출생연도 숫자값만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0804</td><td>1.3058</td><td>0.7535</td><td>6.9913</td><td>0.1928</td><td>0.3031</td><td>1.5089</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0809</td><td>1.3055</td><td>0.7689</td><td>7.6163</td><td>0.1895</td><td>0.3031</td><td>1.6299</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0809</td><td>1.3055</td><td>0.7689</td><td>7.6163</td><td>0.1895</td><td>0.3031</td><td>1.6299</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.1276</td><td>1.2276</td><td>0.6989</td><td>7.3141</td><td>0.1926</td><td>0.3140</td><td>1.4620</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.1270</td><td>1.2280</td><td>0.6985</td><td>7.2034</td><td>0.1933</td><td>0.3120</td><td>1.4435</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.1612</td><td>1.2037</td><td>0.7136</td><td>7.6379</td><td>0.1817</td><td>0.3146</td><td>1.6014</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>생년 원값 + 결측 여부</h2>
+              <p><strong>사용 피처:</strong> <code>artist_meta_birth_year, artist_meta_birth_year_is_missing</code> · 생년 값과 값이 없는 상태를 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0796</td><td>1.3064</td><td>0.7570</td><td>6.2006</td><td>0.2043</td><td>0.3262</td><td>1.5266</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0824</td><td>1.3044</td><td>0.7508</td><td>7.0250</td><td>0.2026</td><td>0.3229</td><td>1.6448</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0824</td><td>1.3044</td><td>0.7508</td><td>7.0251</td><td>0.2026</td><td>0.3229</td><td>1.6448</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.1605</td><td>1.2042</td><td>0.7108</td><td>6.9711</td><td>0.1843</td><td>0.3036</td><td>1.4957</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.1599</td><td>1.2046</td><td>0.7146</td><td>6.9828</td><td>0.1884</td><td>0.3030</td><td>1.4747</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.1559</td><td>1.2075</td><td>0.7203</td><td>7.6351</td><td>0.1797</td><td>0.3133</td><td>1.6137</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/E3_artist_birth_year_only/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/E3_artist_birth_year_only/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/E3_artist_birth_year_only/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/E3_artist_birth_year_only/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/E3_artist_birth_year_only/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/E3_artist_birth_year_only/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/E3_artist_birth_year_only/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/E3_artist_birth_year_only/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/E3_artist_birth_year_only/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/E3_artist_birth_year_only/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/E3_artist_birth_year_only/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/E3_artist_birth_year_only/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

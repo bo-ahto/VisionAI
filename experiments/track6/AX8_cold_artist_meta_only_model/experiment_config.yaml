@@ -1,0 +1,11 @@
+experiment_id: AX8
+status: 계획
+group: AX
+label: AX8
+title: 신규 작가 메타만 사용한 Cold 모델 실험
+hypothesis: 작가명 없이도 생년/국적/활동량 같은 운영 가능 작가 메타가 Cold 예측을 개선할 수 있다.
+purpose: Cold에서 작가 DB로 얻을 수 있는 메타만의 가치를 확인한다.
+train_features: 작품 기본 피처 묶음 + 운영 가능 작가 메타
+test_features: Cold test에서 artist_name_ko 제외, 작가 메타만 사용
+models: Cold: Huber/Quantile-LAD/LightGBM
+decision: Cold median APE 또는 p95 APE가 개선되면 작가 DB 연동 가치로 기록한다.

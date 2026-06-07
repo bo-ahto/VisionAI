@@ -46,18 +46,18 @@
         <li>validation에서 후보를 고르고 test는 최종 확인에만 사용</li>
       </ul>
       <div class="pills">
-        <span class="pill">가설 8개</span>
-        <span class="pill">완료 8개</span>
+        <span class="pill">가설 10개</span>
+        <span class="pill">완료 10개</span>
         <span class="pill">예정 0개</span>
-        <span class="pill">생성 2026-05-18</span>
+        <span class="pill">생성 2026-05-19</span>
       </div>
     </div>
     <div class="panel">
       <h2>현재 상태</h2>
       <div class="cards" style="grid-template-columns:1fr 1fr;">
         <div class="card"><span>Split 상태</span><strong>생성 완료</strong></div>
-        <div class="card"><span>최신 실험</span><strong>T6-E009</strong></div>
-        <div class="card"><span>최신 가설</span><strong>T6-H8</strong></div>
+        <div class="card"><span>최신 실험</span><strong>T6-E010</strong></div>
+        <div class="card"><span>최신 가설</span><strong>T6-H10</strong></div>
         <div class="card"><span>다음 작업</span><strong>서비스 추론 연결</strong><span>Track6 artifact를 실제 입력 스키마와 연결</span></div>
       </div>
     </div>
@@ -80,7 +80,9 @@
     <div class="table-wrap">
       <table>
         <thead><tr><th>가설</th><th>목표</th><th>상태</th><th>요약</th><th>연구 방법</th><th>현재 판단</th></tr></thead>
-        <tbody><tr><td>T6-H8</td><td>T6-G8</td><td><span class='status done'>검증 완료</span></td><td>최종 운영 후보는 성능, 운영 가능성, 설명 가능성, 재현 가능성을 모두 만족해야 한다</td><td>최종 모델, 피처, 전처리, manifest 생성</td><td>Warm/Cold artifact <code>3</code>개 생성, manifest ready</td></tr>
+        <tbody><tr><td>T6-H10</td><td>T6-G5</td><td><span class='status done'>검증 완료</span></td><td>호수와 가격을 ln 변환하면 원값을 쓰는 것보다 예측 결과가 개선될 것이다</td><td><code>estimated_ho -&gt; price_krw</code>와 <code>ln_estimated_ho -&gt; ln_price_krw</code>를 같은 split에서 비교</td><td>log 변환이 Warm <code>0.4372 -&gt; 0.1946</code>, Cold 전용 <code>2.4777 -&gt; 0.5083</code>으로 크게 개선</td></tr>
+<tr><td>T6-H9</td><td>T6-G2</td><td><span class='status done'>검증 완료</span></td><td>작가명(한글)과 호수만으로도 가격 예측에서 유의미한 결과를 볼 수 있다</td><td>실험별 폴더에서 <code>artist_name_ko</code>, <code>estimated_ho</code>만 사용한 헤도닉 선형 회귀를 Warm/Cold에 적용</td><td>Warm은 median APE <code>0.4372</code> base, <code>0.1946</code> log로 유의미. Cold는 작가명 사용 불가로 호수 단독 한계 확인</td></tr>
+<tr><td>T6-H8</td><td>T6-G8</td><td><span class='status done'>검증 완료</span></td><td>최종 운영 후보는 성능, 운영 가능성, 설명 가능성, 재현 가능성을 모두 만족해야 한다</td><td>최종 모델, 피처, 전처리, manifest 생성</td><td>Warm/Cold artifact <code>3</code>개 생성, manifest ready</td></tr>
 <tr><td>T6-H7</td><td>T6-G7</td><td><span class='status done'>검증 완료</span></td><td>Cold는 위험 구간을 나누어 신뢰도 경고를 제공해야 실무적으로 해석 가능하다</td><td>3D, 대형, 소형, 비균형 형태, 저이력 구간별 오차 비교</td><td>위험 후보 <code>11</code>개, 대표 위험 <code>huber_cold__base_size_shape / 3d median 1.3504</code></td></tr>
 <tr><td>T6-H6</td><td>T6-G6</td><td><span class='status done'>검증 완료</span></td><td>최종 후보는 validation뿐 아니라 test에서도 같은 방향의 성능을 보여야 한다</td><td>validation에서 고른 후보만 test에 적용</td><td>Warm test <code>0.3407</code> (주의 유지), Cold median test <code>0.3799</code> (주의 유지), Cold tail p95 <code>2.2865</code> (주의 유지)</td></tr>
 <tr><td>T6-H5</td><td>T6-G5</td><td><span class='status done'>검증 완료</span></td><td>크기/재료/지지체 조합 피처는 일부 구간 성능을 개선할 수 있다</td><td>기본 피처에 운영 가능 조합 피처를 하나씩 추가하고 Warm/Cold validation 성능 비교</td><td>Warm best <code>0.2665</code> (<code>base_medium_size</code>), Cold median best <code>0.3782</code> (<code>base</code>), Cold p95 best <code>1.3835</code> (<code>base_size_shape</code>)</td></tr>
@@ -96,18 +98,19 @@
     <h2>실험 결과</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>날짜</th><th>실험</th><th>가설</th><th>상태</th><th>모델</th><th>피처</th><th>Warm</th><th>Cold</th><th>결론</th></tr></thead>
-        <tbody><tr><td>2026-05-18</td><td>T6-E009</td><td>T6-H8</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>최종 후보 피처</td><td>artifact 생성</td><td>artifact 생성</td><td>최종 후보 manifest ready</td></tr>
-<tr><td>2026-05-18</td><td>T6-E008</td><td>T6-H7</td><td><span class='status done'>검증 완료</span></td><td>slice 분석</td><td>risk flags</td><td>위험 구간 분석</td><td>위험 후보 <code>11</code>개</td><td>신뢰도/가격 범위 정책 필요</td></tr>
-<tr><td>2026-05-18</td><td>T6-E007</td><td>T6-H6</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>T6-E006 선정 후보</td><td>test <code>0.3407</code> (<code>base_medium_size</code>)</td><td>median test <code>0.3799</code>, p95 test <code>2.2865</code></td><td>test holdout 확인 완료</td></tr>
-<tr><td>2026-05-18</td><td>T6-E006</td><td>T6-H6</td><td><span class='status partial'>부분 검증</span></td><td>후보 선정 로직</td><td>validation 후보 피처</td><td>Warm 후보 <code>0.2665</code> (<code>base_medium_size</code>)</td><td>Cold 후보 median <code>0.3782</code>, p95 <code>1.3835</code></td><td>test 전 후보 고정</td></tr>
-<tr><td>2026-05-18</td><td>T6-E005</td><td>T6-H5</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>운영 가능 조합 피처</td><td>best <code>0.2665</code> (<code>base_medium_size</code>)</td><td>median best <code>0.3782</code> (<code>base</code>), p95 best <code>1.3835</code> (<code>base_size_shape</code>)</td><td>Warm/Cold별 후보 피처셋 분리 필요</td></tr>
-<tr><td>2026-05-18</td><td>T6-E004</td><td>T6-H4</td><td><span class='status done'>검증 완료</span></td><td>hist_quantile_ordinal / huber_onehot</td><td>Cold 구조 피처</td><td>-</td><td>median best <code>0.3903</code> (<code>hist_quantile_ordinal</code>), p95 best <code>1.4674</code> (<code>huber_onehot</code>)</td><td>Cold 모델 후보 기준 확보</td></tr>
-<tr><td>2026-05-18</td><td>T6-E003</td><td>T6-H3</td><td><span class='status done'>검증 완료</span></td><td>CatBoost</td><td>Warm 작가 피처 ablation</td><td>best <code>0.2737</code> (<code>structure_plus_artist_key</code>), 구조-only 대비 <code>0.2248</code> 개선</td><td>-</td><td>Warm 작가 피처 유지 가치 확인</td></tr>
-<tr><td>2026-05-18</td><td>T6-E002</td><td>T6-H2</td><td><span class='status done'>검증 완료</span></td><td>hist_gbdt_ordinal / lightgbm_basic</td><td>구조-only 피처</td><td>best <code>0.4579</code> (<code>hist_gbdt_ordinal</code>)</td><td>best <code>0.4029</code> (<code>lightgbm_basic</code>)</td><td>구조 피처 baseline 기준 확보</td></tr>
-<tr><td>2026-05-18</td><td>T6-E001C</td><td>T6-H1</td><td><span class='status done'>검증 완료</span></td><td>모델 미사용</td><td>feature/label manifest</td><td>Warm feature 누수 컬럼 0</td><td>Cold feature 누수 컬럼 0</td><td>feature/label 분리 상태 <code>pass</code></td></tr>
-<tr><td>2026-05-18</td><td>T6-E001B</td><td>T6-H1</td><td><span class='status done'>검토 완료</span></td><td>모델 미사용</td><td>column quality metadata</td><td>Warm 1작품 작가 0, train 누락 0</td><td>Cold 이름 겹침 0, artist history 0</td><td>fail 0, review 14. 모델 실험 진행 가능</td></tr>
-<tr><td>2026-05-18</td><td>T6-E001</td><td>T6-H1</td><td><span class='status done'>검증 완료</span></td><td>모델 미사용</td><td>split metadata</td><td>val <code>523</code>건 / test <code>607</code>건</td><td>val <code>2,793</code>건 / test <code>3,240</code>건, 이름 겹침 0</td><td>Track6 name-corrected split 상태 <code>pass</code></td></tr></tbody>
+        <thead><tr><th>날짜</th><th>실험</th><th>가설</th><th>상태</th><th>모델</th><th>피처</th><th>Warm</th><th>Cold</th><th>결론</th><th>상세</th></tr></thead>
+        <tbody><tr><td>2026-05-19</td><td>T6-E010</td><td>T6-H9, T6-H10</td><td><span class='status done'>검증 완료</span></td><td>Ridge hedonic linear regression</td><td>artist_name_ko, estimated_ho, ln_estimated_ho</td><td>log 최고 median APE <code>0.1946</code>, Within-50 <code>0.8519</code></td><td>Cold 전용 log median APE <code>0.5083</code>, Warm모델 Cold적용 log <code>0.4840</code></td><td>ln 변환 채택, Warm은 작가명+ln호수 유효, Cold는 추가 피처 필요</td><td><a href="../experiments/2026-05-19_T6-E010_hedonic_artist_ho_log.md">기록</a>, <a href="../../../experiments/track6/T6-E010_hedonic_artist_ho_log/experiment_log.html">HTML 일지</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E009</td><td>T6-H8</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>최종 후보 피처</td><td>artifact 생성</td><td>artifact 생성</td><td>최종 후보 manifest ready</td><td><a href="../experiments/2026-05-18_T6-E009_final_artifact_manifest.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E008</td><td>T6-H7</td><td><span class='status done'>검증 완료</span></td><td>slice 분석</td><td>risk flags</td><td>위험 구간 분석</td><td>위험 후보 <code>11</code>개</td><td>신뢰도/가격 범위 정책 필요</td><td><a href="../experiments/2026-05-18_T6-E008_risk_policy_analysis.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E007</td><td>T6-H6</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>T6-E006 선정 후보</td><td>test <code>0.3407</code> (<code>base_medium_size</code>)</td><td>median test <code>0.3799</code>, p95 test <code>2.2865</code></td><td>test holdout 확인 완료</td><td><a href="../experiments/2026-05-18_T6-E007_test_confirmation.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E006</td><td>T6-H6</td><td><span class='status partial'>부분 검증</span></td><td>후보 선정 로직</td><td>validation 후보 피처</td><td>Warm 후보 <code>0.2665</code> (<code>base_medium_size</code>)</td><td>Cold 후보 median <code>0.3782</code>, p95 <code>1.3835</code></td><td>test 전 후보 고정</td><td><a href="../experiments/2026-05-18_T6-E006_validation_candidate_selection.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E005</td><td>T6-H5</td><td><span class='status done'>검증 완료</span></td><td>CatBoost / HistQuantile / Huber</td><td>운영 가능 조합 피처</td><td>best <code>0.2665</code> (<code>base_medium_size</code>)</td><td>median best <code>0.3782</code> (<code>base</code>), p95 best <code>1.3835</code> (<code>base_size_shape</code>)</td><td>Warm/Cold별 후보 피처셋 분리 필요</td><td><a href="../experiments/2026-05-18_T6-E005_feature_combo_ablation.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E004</td><td>T6-H4</td><td><span class='status done'>검증 완료</span></td><td>hist_quantile_ordinal / huber_onehot</td><td>Cold 구조 피처</td><td>-</td><td>median best <code>0.3903</code> (<code>hist_quantile_ordinal</code>), p95 best <code>1.4674</code> (<code>huber_onehot</code>)</td><td>Cold 모델 후보 기준 확보</td><td><a href="../experiments/2026-05-18_T6-E004_cold_model_compare.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E003</td><td>T6-H3</td><td><span class='status done'>검증 완료</span></td><td>CatBoost</td><td>Warm 작가 피처 ablation</td><td>best <code>0.2737</code> (<code>structure_plus_artist_key</code>), 구조-only 대비 <code>0.2248</code> 개선</td><td>-</td><td>Warm 작가 피처 유지 가치 확인</td><td><a href="../experiments/2026-05-18_T6-E003_warm_artist_ablation.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E002</td><td>T6-H2</td><td><span class='status done'>검증 완료</span></td><td>hist_gbdt_ordinal / lightgbm_basic</td><td>구조-only 피처</td><td>best <code>0.4579</code> (<code>hist_gbdt_ordinal</code>)</td><td>best <code>0.4029</code> (<code>lightgbm_basic</code>)</td><td>구조 피처 baseline 기준 확보</td><td><a href="../experiments/2026-05-18_T6-E002_structure_only_baseline.md">기록</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E001C</td><td>T6-H1</td><td><span class='status done'>검증 완료</span></td><td>모델 미사용</td><td>feature/label manifest</td><td>Warm feature 누수 컬럼 0</td><td>Cold feature 누수 컬럼 0</td><td>feature/label 분리 상태 <code>pass</code></td><td><a href="../experiments/2026-05-18_T6-E001C_feature_label_pipeline.md">기록</a>, <a href="../dataset/feature_label_pipeline_report.md">보고서</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E001B</td><td>T6-H1</td><td><span class='status done'>검토 완료</span></td><td>모델 미사용</td><td>column quality metadata</td><td>Warm 1작품 작가 0, train 누락 0</td><td>Cold 이름 겹침 0, artist history 0</td><td>fail 0, review 14. 모델 실험 진행 가능</td><td><a href="../experiments/2026-05-18_T6-E001B_column_quality_validation.md">기록</a>, <a href="../dataset/column_quality_report.md">보고서</a></td></tr>
+<tr><td>2026-05-18</td><td>T6-E001</td><td>T6-H1</td><td><span class='status done'>검증 완료</span></td><td>모델 미사용</td><td>split metadata</td><td>val <code>523</code>건 / test <code>607</code>건</td><td>val <code>2,793</code>건 / test <code>3,240</code>건, 이름 겹침 0</td><td>Track6 name-corrected split 상태 <code>pass</code></td><td><a href="../experiments/2026-05-18_T6-E001_strict_split_generation.md">기록</a>, <a href="../dataset/split_report.md">보고서</a></td></tr></tbody>
       </table>
     </div>
   </section>

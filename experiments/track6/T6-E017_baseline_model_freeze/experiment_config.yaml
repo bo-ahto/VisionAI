@@ -1,0 +1,12 @@
+experiment_id: T6-E017
+status: completed
+phase: followup
+title: 기본 피처 기반 Warm/Cold 후보 모델 선정
+goal: T6-G6 모델 안정성 확인
+hypothesis: 같은 후보 모델군을 Warm과 Cold에 모두 적용하면 모델별 강점과 약점을 공정하게 비교할 수 있다.
+model: Linear Regression, Ridge, Huber, Quantile/LAD, LightGBM, XGBoost, CatBoost, HistGradientBoosting
+train_features: Warm 기본 피처셋=artist_name_ko/ln_estimated_ho/nant_material_idx/nant_tool/support_category, Cold 기본 피처셋=ln_estimated_ho/nant_material_idx/nant_tool/support_category
+test_features: 학습 피처와 동일. Cold 후보는 artist_name_ko 제외
+target: ln_price_krw
+compare_against: 같은 기본 피처셋에서 모델별 Warm/Cold median APE, p95 APE, Within-30/50 비교
+success_criteria: 1차 후보 전체를 기본 설정으로 실행한 뒤 Warm 상위 2~3개와 Cold 상위 2~3개를 압축하고, 이후 후보만 세부 검증

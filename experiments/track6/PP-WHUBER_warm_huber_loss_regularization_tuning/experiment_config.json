@@ -1,0 +1,49 @@
+{
+  "experiment_id": "PP-WHUBER",
+  "title": "Warm Huber 손실/규제 특성 튜닝",
+  "run_at": "2026-06-06T16:22:43",
+  "seed": 20260606,
+  "current_candidate": "blend_svcnum_ppv8_wsvc_0.70",
+  "epsilons": [
+    1.05,
+    1.2,
+    1.35,
+    1.6
+  ],
+  "alphas": [
+    0.001,
+    0.01
+  ],
+  "weight_schemes": [
+    "uniform",
+    "svc_reliability"
+  ],
+  "residual_epsilons": [
+    1.05,
+    1.2,
+    1.35,
+    1.6
+  ],
+  "residual_alphas": [
+    0.001,
+    0.01
+  ],
+  "residual_caps": [
+    0.02,
+    0.03,
+    0.05,
+    0.08
+  ],
+  "residual_strengths": [
+    0.15,
+    0.25,
+    0.5
+  ],
+  "bootstrap_iterations": 300,
+  "leakage_control": {
+    "artist_priors": "delegated to PP-WCOEF loader: train OOF, validation/test train-only",
+    "comparable_features": "PP-SVC5 train OOF comparable features",
+    "residual_validation": "validation internal cross-fit",
+    "residual_test": "residual model fitted on full validation and applied to test"
+  }
+}

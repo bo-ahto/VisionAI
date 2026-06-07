@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PR-WARM-B 적용 후 트랙1 모델 (Stage 5 deploy 예상) — 2026-05-10</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1300px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; background: #fafafa; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.6em; margin-bottom: 6px; }
+h2 { background: #ecf0f1; padding: 10px 14px; border-left: 4px solid #2c5aa0; margin-top: 32px; font-size: 1.2em; }
+h3 { font-size: 1.05em; margin-top: 22px; color: #2c3e50; }
+h4 { font-size: 1em; margin-top: 14px; color: #34495e; margin-bottom: 5px; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.commit-tag { font-family: "SF Mono", Menlo, Consolas, monospace; background: #2c3e50; color: #ecf0f1; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+.summary-box { border: 2px solid #28a745; background: #d4edda; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.gray-box { background: #e9ecef; border-left: 4px solid #6c757d; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 1px 2px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.blue { background: #cfe2ff; color: #084298; }
+.pill.gray { background: #e9ecef; color: #495057; }
+.pill.purple { background: #e2d8f3; color: #4a148c; }
+.pill.bigtag { font-size: 1em; padding: 4px 12px; }
+.toc { background: #fff; border: 1px solid #ddd; padding: 12px 18px; border-radius: 4px; margin: 12px 0; }
+.toc a { color: #2c5aa0; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 12px 0; }
+.metric-card { background: #fff; border: 1px solid #ddd; padding: 12px 14px; border-radius: 4px; }
+.metric-card .label { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-card .value { font-size: 1.4em; font-weight: 600; color: #2c3e50; margin: 4px 0; }
+.metric-card .delta { font-size: 12px; color: #666; }
+.diagram { background: #fff; border: 1px solid #ddd; padding: 16px; border-radius: 4px; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; line-height: 1.4; white-space: pre; overflow-x: auto; }
+.changed { background: #fff3cd; }
+.unchanged { background: #f4f8fc; }
+.num { text-align: right; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff-pos { color: #28a745; font-weight: 600; }
+.diff-neg { color: #dc3545; font-weight: 600; }
+.diff-zero { color: #6c757d; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>PR-WARM-B 적용 후 트랙1 모델 정리</h1>
+<p style="color: #666; margin-top: 0;">
+<strong>variant</strong>: <code>v3_filtered_tuned_b_warm</code> &nbsp;|&nbsp;
+<strong>artifact prefix</strong>: <code>integrated_v3_filtered_tuned_b_warm</code> &nbsp;|&nbsp;
+<strong>현 상태</strong>: <span class="pill yellow bigtag">Stage 1+2 완료 / default OFF / Stage 3-5 미진행</span> &nbsp;|&nbsp;
+<strong>작성일</strong>: 2026-05-10
+</p>
+
+<div class="summary-box">
+<h3 style="margin-top: 0;">⚠️ 본 문서 범위 명확화</h3>
+<p>
+  본 문서는 <strong>PR-WARM-B Stage 5 (full migration) 완료 시 운영될 모델</strong>의 정합 정리.<br>
+  <strong>현 시점</strong>: artifact + 코드 등록 완료 (commit <code>d68a794</code> + <code>d4861a3</code>) / <strong>default OFF</strong> / 실제 user traffic은 <strong>여전히 이전 모델 (<code>v3_filtered_tuned</code>) 그대로 받는 중</strong>.<br>
+  실제 활성화 = Stage 3 shadow (1주) → Stage 4 canary (3일) → Stage 5 full migration / 본 commit 시점 ≠ deploy 시점.<br>
+  현 운영 모델 정리는 <a href="track1_current_model_summary_20260510.html"><code>track1_current_model_summary_20260510.html</code></a> 참조.
+</p>
+</div>
+
+<div class="toc">
+<strong>목차</strong> ·
+<a href="#diff">1. 이전 모델과 변경점 (한눈에)</a> ·
+<a href="#arch">2. 아키텍처 (변경 X)</a> ·
+<a href="#features">3. Features (N=32 / 변경 X)</a> ·
+<a href="#params">4. 학습 파라미터 (XGB warm만 변경)</a> ·
+<a href="#perf">5. 예상 성능</a> ·
+<a href="#calib">6. Calibration (carry-forward)</a> ·
+<a href="#deploy">7. 적용 절차 (Stage 3-5)</a>
+</div>
+
+<h2 id="diff">1. 이전 모델과 변경점 (한눈에)</h2>
+
+<table>
+<tr><th>구성 요소</th><th>이전 (v3_filtered_tuned / 현 운영)</th><th>변경 후 (v3_filtered_tuned_b_warm)</th><th>변경 종류</th></tr>
+<tr class="unchanged"><td>아키텍처</td><td>cold→CB / warm→XGB (path-based)</td><td>cold→CB / warm→XGB (동일)</td><td><span class="pill gray">변경 X</span></td></tr>
+<tr class="unchanged"><td>Features</td><td>N=32 (CB_FEATURES_BASE)</td><td>N=32 (동일)</td><td><span class="pill gray">변경 X</span></td></tr>
+<tr class="unchanged"><td>학습 데이터</td><td>28,376 rows / 1,551 artists / 930 warm</td><td>동일</td><td><span class="pill gray">변경 X</span></td></tr>
+<tr class="unchanged"><td>CB cold params</td><td>iter=1000 / lr=0.0953 / depth=8 / l2=1.63</td><td>동일 (artifact COPY)</td><td><span class="pill gray">bit-identical</span></td></tr>
+<tr class="unchanged"><td>CB cold artifact (.cbm)</td><td>SHA256: a8b909735beb...</td><td>SHA256: a8b909735beb... (COPY)</td><td><span class="pill gray">byte-identical</span></td></tr>
+<tr class="changed"><td><strong>XGB warm params</strong></td><td>boost=3000 / depth=7 / lr=0.040 / mcw=1 / α=2.56 / λ=3.10</td><td><strong>boost=947 / depth=9 / lr=0.125 / mcw=11 / α=0.56 / λ=0.89</strong></td><td><span class="pill yellow">변경</span></td></tr>
+<tr class="changed"><td><strong>XGB warm artifact (.json)</strong></td><td>18.2 MB</td><td><strong>11.6 MB (B-retuned)</strong></td><td><span class="pill yellow">신규</span></td></tr>
+<tr class="unchanged"><td>label_maps / warm_artists</td><td>현 shipped 그대로</td><td>동일 (artifact COPY)</td><td><span class="pill gray">byte-identical</span></td></tr>
+<tr class="unchanged"><td>cold_factors (calibration)</td><td>artsy_online 0.94 / saatchi_online 0.96</td><td>동일 (carry-forward)</td><td><span class="pill gray">변경 X</span></td></tr>
+<tr class="changed"><td><strong>warm_factors (calibration)</strong></td><td>~1.0 (no-op-ish)</td><td>~1.0 carry-forward (재추정 deferred)</td><td><span class="pill yellow">carry-forward</span></td></tr>
+</table>
+
+<div class="info-box">
+<strong>핵심</strong>: <strong>XGB warm artifact 1개 파일만 실질 변경</strong>. CB cold / label_maps / warm_artists / cold_factors 모두 byte-identical (COPY). warm_factors carry-forward (no-op-ish 영향 작음 / Stage 5 이후 별도 cycle 재추정 권고).
+</div>
+
+<h2 id="arch">2. 아키텍처 (변경 X)</h2>
+
+<div class="diagram">
+                ┌─────────────────────┐
+                │  predict 요청        │
+                └──────────┬──────────┘
+                           │
+              ┌────────────┴────────────┐
+              │ artist_slug ∈ warm_set? │
+              │ (artist 작품수 ≥ 5)      │
+              └────┬─────────────────┬──┘
+                   │ Yes (warm)      │ No (cold)
+                   ▼                 ▼
+            ┌───────────────┐  ┌───────────┐
+            │ XGBoost       │  │ CatBoost  │
+            │ (warm)        │  │ (cold)    │
+            │ 🆕 B-retuned  │  │ unchanged │
+            └─────┬─────────┘  └─────┬─────┘
+                  │                  │
+                  │           per-source calibration
+                  │           (cold_factors 변경 X)
+                  ▼                  ▼
+            ┌─────────────────────────────┐
+            │  ln_price → exp → KRW       │
+            └─────────────────────────────┘
+</div>
+
+<p>Routing logic 동일 (<code>primary_predictor.py:464-497</code>) — warm artist는 XGB only / cold artist는 CB only. ensemble blend 운영 X.</p>
+
+<h2 id="features">3. Features (N=32 / 변경 X)</h2>
+
+<p>이전 모델과 100% 동일. PR-WARM-B는 feature 변경 cycle이 아니라 <strong>warm path HP retune</strong> cycle.</p>
+
+<div class="metric-grid">
+<div class="metric-card"><div class="label">Total features</div><div class="value">32</div><div class="delta">CB_FEATURES_BASE</div></div>
+<div class="metric-card"><div class="label">Numerical/binary</div><div class="value">26</div><div class="delta">크기 / 작가 / 시장 / 갤러리</div></div>
+<div class="metric-card"><div class="label">Categorical</div><div class="value">6</div><div class="delta">support_type / medium_category / ...</div></div>
+</div>
+
+<p>전체 feature list는 <a href="track1_current_model_summary_20260510.html#features">현 운영 모델 정리 §2 Feature 정의</a> 참조 (동일 set).</p>
+
+<h2 id="params">4. 학습 파라미터 (XGB warm만 변경)</h2>
+
+<h3>4.1 CatBoost cold path — 변경 X (bit-identical COPY)</h3>
+
+<table>
+<tr><th>Parameter</th><th class="num">Value</th><th>변경</th></tr>
+<tr><td>iterations</td><td class="num">1,000</td><td><span class="pill gray">동일</span></td></tr>
+<tr><td>learning_rate</td><td class="num">0.0953</td><td><span class="pill gray">동일</span></td></tr>
+<tr><td>depth</td><td class="num">8</td><td><span class="pill gray">동일</span></td></tr>
+<tr><td>l2_leaf_reg</td><td class="num">1.63</td><td><span class="pill gray">동일</span></td></tr>
+<tr><td>bagging_temperature</td><td class="num">0.18</td><td><span class="pill gray">동일</span></td></tr>
+</table>
+
+<p style="font-size:12px;color:#666;">CB cbm 파일도 byte-identical (shutil.copyfile). 재학습 시 CatBoost 비결정성 (multi-thread / library version) 으로 byte-different 발생 → COPY 결정.</p>
+
+<h3>4.2 XGBoost warm path — <span class="pill yellow">변경</span></h3>
+
+<table>
+<tr><th>Parameter</th><th class="num">이전</th><th class="num">B-retuned</th><th class="num">변경 비율</th><th>해석</th></tr>
+<tr class="changed"><td>num_boost_round</td><td class="num">3,000</td><td class="num"><strong>947</strong></td><td class="num diff-pos">0.32×</td><td>빠른 수렴 / 3배 가벼움</td></tr>
+<tr class="changed"><td>max_depth</td><td class="num">7</td><td class="num"><strong>9</strong></td><td class="num">+2</td><td>더 깊은 tree (높은 representational capacity)</td></tr>
+<tr class="changed"><td>learning_rate (eta)</td><td class="num">0.040</td><td class="num"><strong>0.125</strong></td><td class="num diff-neg">3.1×</td><td>큰 step / 빠른 학습</td></tr>
+<tr class="changed"><td>min_child_weight</td><td class="num">1</td><td class="num"><strong>11</strong></td><td class="num diff-neg">11×</td><td>강한 leaf-level regularization</td></tr>
+<tr class="changed"><td>gamma</td><td class="num">0.0115</td><td class="num"><strong>0.0088</strong></td><td class="num diff-pos">0.77×</td><td>min split loss 약간 감소</td></tr>
+<tr class="changed"><td>reg_alpha (L1)</td><td class="num">2.56</td><td class="num"><strong>0.56</strong></td><td class="num diff-pos">0.22×</td><td>L1 reg 5배 약화</td></tr>
+<tr class="changed"><td>reg_lambda (L2)</td><td class="num">3.10</td><td class="num"><strong>0.89</strong></td><td class="num diff-pos">0.29×</td><td>L2 reg 3배 약화</td></tr>
+<tr class="changed"><td>subsample</td><td class="num">0.870</td><td class="num"><strong>0.727</strong></td><td class="num diff-pos">-0.143</td><td>row sampling 약간 감소</td></tr>
+<tr class="changed"><td>colsample_bytree</td><td class="num">0.922</td><td class="num"><strong>0.857</strong></td><td class="num diff-pos">-0.065</td><td>col sampling 약간 감소</td></tr>
+</table>
+
+<h3>4.3 변경 패턴 해석</h3>
+
+<div class="info-box">
+<strong>HP 변경 시그니처</strong>:<br>
+- ✅ <strong>더 깊은 tree (depth 7→9) + 큰 step (lr 3.1×) + 빠른 종료 (boost 0.32×)</strong>: aggressive learning<br>
+- ✅ <strong>min_child_weight 11×</strong>: leaf 수준에서 강한 sample-size 제약 (overfitting 방지) — depth↑ 보완<br>
+- ✅ <strong>L1/L2 reg 약화</strong>: 모델 capacity 증가 (data가 충분 → reg 적게 필요)<br>
+→ 종합: warm slice (n=27,062 / artist 가격 분포 학습됨)에서 <strong>tree depth + leaf regularization</strong> 위주로 capacity 재조정.
+</div>
+
+<h2 id="perf">5. 예상 성능</h2>
+
+<h3>5.1 5-fold CV (PR-WARM-B Stage 1 학습 결과)</h3>
+
+<div class="metric-grid">
+<div class="metric-card unchanged" style="border-left: 4px solid #6c757d;">
+<div class="label">Cold path (CB)</div>
+<div class="value">39.4%</div>
+<div class="delta">변경 X (bit-identical)</div>
+</div>
+<div class="metric-card changed" style="border-left: 4px solid #28a745;">
+<div class="label">Warm path (XGB only) ⭐</div>
+<div class="value"><strong>8.0%</strong></div>
+<div class="delta diff-pos">vs 9.7% / Δ -1.7pp ↓</div>
+</div>
+<div class="metric-card unchanged" style="border-left: 4px solid #6c757d;">
+<div class="label">Calibrated cold overall</div>
+<div class="value">38.3%</div>
+<div class="delta">변경 X (cold_factors carry-forward)</div>
+</div>
+<div class="metric-card unchanged" style="border-left: 4px solid #6c757d;">
+<div class="label">Baseline</div>
+<div class="value">71.9%</div>
+<div class="delta">artist-level median</div>
+</div>
+</div>
+
+<h3>5.2 Cycle B 검증 vs Stage 1 학습 정합</h3>
+
+<table>
+<tr><th>Source</th><th class="num">XGB warm CV (MdAPE %)</th><th>비고</th></tr>
+<tr><td>Cycle B Optuna search</td><td class="num">8.013716</td><td>50 trials / KFold-5 / random_state=42</td></tr>
+<tr style="background:#d4edda;"><td><strong>Stage 1 retrain (final artifact)</strong></td><td class="num"><strong>8.000000</strong></td><td>본 deploy artifact / KFold-5 / random_state=42</td></tr>
+<tr><td>Δ</td><td class="num diff-pos">−0.014</td><td>본질적으로 정합 (rounding 차이)</td></tr>
+</table>
+
+<p style="font-size:12px;color:#666;">→ B-retuned XGB artifact가 cycle B winner와 정합 확인. KFold seed/split 동일 / 동일 데이터 / 동일 params → 동일 결과.</p>
+
+<h3>5.3 Cycle B Validation (5 fresh seed / strict PASS)</h3>
+
+<table>
+<tr><th>seed</th><th class="num">warm_default</th><th class="num">warm_retuned</th><th class="num">Δ_warm</th><th>verdict</th></tr>
+<tr><td>541</td><td class="num">9.578</td><td class="num">8.143</td><td class="num diff-pos"><strong>−1.435</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr><td>619</td><td class="num">9.749</td><td class="num">8.214</td><td class="num diff-pos"><strong>−1.535</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr><td>743</td><td class="num">9.761</td><td class="num">8.147</td><td class="num diff-pos"><strong>−1.614</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr><td>829</td><td class="num">9.514</td><td class="num">7.774</td><td class="num diff-pos"><strong>−1.741</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr><td>947</td><td class="num">9.860</td><td class="num">8.089</td><td class="num diff-pos"><strong>−1.771</strong></td><td><span class="pill green">PASS</span></td></tr>
+<tr style="background:#d4edda;"><td><strong>평균</strong></td><td class="num">9.692</td><td class="num">8.073</td><td class="num diff-pos"><strong>−1.620</strong></td><td><span class="pill green">5/5 PASS</span></td></tr>
+</table>
+
+<p>표준편차 0.137 / 모든 seed 음수 → <strong>population-level consistent improvement</strong>.</p>
+
+<h3>5.4 운영 환경 예상 성능 (Stage 5 deploy 후)</h3>
+
+<div class="warn-box">
+<strong>caveat</strong>: 본 예상은 <strong>5-fold CV / fresh seed validation 정합</strong>. 운영 환경 (시간순 traffic / 신규 작품 / 데이터 drift) 에서는 다를 수 있음.<br>
+→ Stage 3 shadow (1주) 측정으로 검증. Sign-off 기준:<br>
+&nbsp;&nbsp;✅ 7-day aggregate Δ_warm ≤ -0.8pp<br>
+&nbsp;&nbsp;✅ 5/7 daily medians Δ_warm ≤ -0.5pp<br>
+&nbsp;&nbsp;✅ no day Δ_warm > +0.3pp
+</div>
+
+<table>
+<tr><th>Path</th><th class="num">현 운영 (예전 모델)</th><th class="num">B-retuned (Stage 5 후)</th><th class="num">Δ</th><th>영향 user 비율</th></tr>
+<tr><td>Cold (artist 작품수&lt;5)</td><td class="num">~39.4% (CB)</td><td class="num">~39.4% (CB / unchanged)</td><td class="num diff-zero">0.0pp</td><td>(소수 cold 비율)</td></tr>
+<tr style="background:#d4edda;"><td><strong>Warm (artist 작품수≥5)</strong></td><td class="num">~9.7% (XGB)</td><td class="num"><strong>~8.0% (XGB B-retuned)</strong></td><td class="num diff-pos"><strong>−1.7pp</strong></td><td><strong>대부분 user</strong></td></tr>
+</table>
+
+<p>운영 traffic의 대부분이 warm artist (학습 시 27,062/28,376 = 95% warm) → user 영향 = warm path 개선 기대.</p>
+
+<h2 id="calib">6. Calibration (carry-forward)</h2>
+
+<h3>6.1 Cold factors — 변경 X</h3>
+
+<table>
+<tr><th>Cell</th><th class="num">이전</th><th class="num">B-warm</th><th>변경</th></tr>
+<tr><td>artsy_gallery</td><td class="num">1.0000</td><td class="num">1.0000</td><td><span class="pill gray">동일</span></td></tr>
+<tr><td>artsy_online</td><td class="num">0.9426</td><td class="num">0.9426</td><td><span class="pill gray">동일</span></td></tr>
+<tr><td>saatchi_online</td><td class="num">0.9569</td><td class="num">0.9569</td><td><span class="pill gray">동일</span></td></tr>
+</table>
+
+<p style="font-size:12px;color:#666;">CB cold prediction이 byte-identical → cold_factors 그대로 적용 가능 (재추정 불필요).</p>
+
+<h3>6.2 Warm factors — carry-forward (재추정 deferred)</h3>
+
+<table>
+<tr><th>Cell</th><th class="num">이전</th><th class="num">B-warm (carry-forward)</th><th>비고</th></tr>
+<tr><td>artsy_gallery</td><td class="num">1.0000</td><td class="num">1.0000</td><td>guard fired (no-op)</td></tr>
+<tr><td>artsy_online</td><td class="num">1.0050</td><td class="num">1.0050</td><td>~1.0 / no-op-ish</td></tr>
+<tr><td>saatchi_online</td><td class="num">1.0000</td><td class="num">1.0000</td><td>guard fired (no-op)</td></tr>
+</table>
+
+<div class="info-box">
+<strong>운영 적용 측면</strong>: <code>primary_predictor.py</code> 운영 라우팅에서 warm path는 <strong>warm_factors 미적용</strong> (cold_factors만 적용 / 코드 line 504-509). 따라서 warm_factors carry-forward는 운영 동작에 영향 X.<br>
+→ Stage 5 이후 별도 cycle: B-retuned XGB 위에서 warm_factors 재추정 (선택적 / current 영향 작음).
+</div>
+
+<h2 id="deploy">7. 적용 절차 (Stage 3-5)</h2>
+
+<h3>7.1 현 진행 상태</h3>
+
+<table>
+<tr><th>Stage</th><th>상태</th><th>commit / 비고</th></tr>
+<tr style="background:#d4edda;"><td>Stage 1: artifact 학습</td><td>✅ 완료</td><td>commit <code>d68a794</code> / 7 file artifact bundle / R1+R2 LGTM</td></tr>
+<tr style="background:#d4edda;"><td>Stage 2: variant 등록</td><td>✅ 완료</td><td>commit <code>d68a794</code> + <code>d4861a3</code> / 22 tests passing / R3 LGTM</td></tr>
+<tr><td>Stage 3: shadow logging</td><td><span class="pill yellow">pending</span></td><td>1주 dual-logging activate / 운영 환경 의존</td></tr>
+<tr><td>Stage 4: canary 10%→50%→100%</td><td><span class="pill yellow">pending</span></td><td>3일 / artist_slug hash cohort</td></tr>
+<tr><td>Stage 5: full migration</td><td><span class="pill yellow">pending</span></td><td>1주 / DEFAULT_VARIANT 변경 → user 100% 영향</td></tr>
+</table>
+
+<h3>7.2 활성화 절차 (Stage 3)</h3>
+
+<ol>
+<li><strong>shadow logging activate</strong>: PR2B-prereq.1 dual-logging 인프라 위에 <code>MODEL_VARIANT_SHADOW=v3_filtered_tuned_b_warm</code> 설정 (또는 dual-prediction config flag)</li>
+<li><strong>predict_logs DDL</strong>: <code>variant</code> 컬럼에 b_warm prediction 동시 기록</li>
+<li><strong>일별 metric report</strong>:
+  <ul>
+    <li>per-day median Δ_warm (b_warm − default)</li>
+    <li>per-source Δ_warm (artsy_gallery / artsy_online / saatchi_online)</li>
+    <li>error rate / latency comparison</li>
+  </ul>
+</li>
+<li><strong>7-day sign-off 기준</strong>:
+  <ul>
+    <li>✅ 7-day aggregate Δ_warm ≤ -0.8pp</li>
+    <li>✅ 5/7 daily medians Δ_warm ≤ -0.5pp</li>
+    <li>✅ no day Δ_warm > +0.3pp</li>
+    <li>✅ no latency degradation (>+5%) / no error rate spike</li>
+  </ul>
+</li>
+</ol>
+
+<h3>7.3 Canary (Stage 4)</h3>
+
+<p><strong>Cohort key</strong>: <code>artist_slug</code> hash (artist 단위 일관 split / R1 amendment 정합) / fallback <code>request_id</code>.</p>
+
+<ol>
+  <li>10% canary / 24시간 / metric OK 확인</li>
+  <li>50% canary / 24시간 / metric OK 확인</li>
+  <li>100% canary / 24시간 / metric OK 확인</li>
+</ol>
+
+<p><strong>Sign-off</strong>: canary ≤ control + 0.3pp / latency ≤ +5% / 만족 시 Stage 5 진입.</p>
+
+<h3>7.4 Full migration (Stage 5)</h3>
+
+<ol>
+  <li><code>DEFAULT_VARIANT = "v3_filtered_tuned_b_warm"</code> 변경 → 100% user 영향 시작</li>
+  <li>1주 안정 모니터링</li>
+  <li>fallback artifact 보존 결정 (<code>integrated_v3_filtered_tuned_*</code> / rollback path)</li>
+  <li>(선택) warm_factors 재추정 cycle</li>
+</ol>
+
+<h3>7.5 Rollback path</h3>
+
+<div class="gray-box">
+<strong>모든 단계 reversible</strong>:<br>
+1. <code>MODEL_VARIANT</code> 또는 <code>DEFAULT_VARIANT</code> 을 <code>v3_filtered_tuned</code>로 revert<br>
+2. Process restart / reload — predictor cached model swap 보장<br>
+3. Smoke check: <code>predictor.variant == "v3_filtered_tuned"</code> 확인<br>
+4. artifact retention: 모든 b_warm artifact 파일 삭제 X (rollback 가능 상태 유지)<br>
+5. DB schema (predict_logs.variant 컬럼) 변경 X / metrics schema 변경 X
+</div>
+
+<h2>8. 정리</h2>
+
+<div class="success-box">
+<strong>PR-WARM-B Stage 5 deploy 후 트랙1 모델 = warm path만 retune</strong>.<br>
+- Cold path: <strong>완전히 동일</strong> (CB byte-identical / cold_factors 동일 / 39.4% MdAPE 그대로)<br>
+- Warm path: <strong>XGB params 9개 변경 / boost↓ depth↑ lr↑ mcw↑ reg↓</strong> / 평균 Δ_warm = -1.62pp consistent (5/5 fresh seed PASS)<br>
+- 운영 영향: warm artist (95% user) 가격 추정 정확도 향상 / cold artist 영향 X<br>
+- 안전성: 모든 단계 rollback path 유지 / 환경변수 변경만으로 즉시 복구 가능
+</div>
+
+<div class="info-box">
+<strong>현재 vs 변경 후 비교</strong>:<br>
+- 본 문서 (<code>track1_b_warm_model_summary_20260510.html</code>) = Stage 5 후 운영될 모델<br>
+- 비교 대상 (<a href="track1_current_model_summary_20260510.html"><code>track1_current_model_summary_20260510.html</code></a>) = 현 운영 모델 (= 본 commit 시점에도 user에게 prediction 제공 중)<br>
+- 두 문서 차이 = warm XGB params + warm CV 9.7% → 8.0% (모든 다른 항목 동일)
+</div>
+
+<div class="footer">
+<p>본 문서는 PR-WARM-B Stage 5 deploy 시 운영될 모델의 정합 정리. 본 commit 시점 (<code>d4861a3</code>) Stage 1+2만 완료 / Stage 3-5는 운영 환경 deploy task 별도.</p>
+<p>참고 문서:
+  <code>docs/track1_current_model_summary_20260510.html</code> (현 운영 모델 / 비교 대상) ·
+  <code>docs/pr_warm_b_deployment_prereg_20260510.md</code> (Stage 1-5 plan / R1 LGTM) ·
+  <code>docs/pr_warm_b_deployment_results_20260510.md</code> (Stage 1+2 실행 결과 / R2+R3 LGTM) ·
+  <code>docs/b_warm_only_optimization_results_20260510.md</code> (cycle B 5/5 PASS 검증) ·
+  <code>docs/all_cycles_summary_20260510.html</code> (10 cycle 통합) ·
+  <code>model_test_results/integrated_v3_filtered_tuned_b_warm_manifest.json</code> (artifact provenance / SHA256 + integrity).
+</p>
+<p>Codex 자문 누적: <code>019e0bb1-8ded-7c42-bb17-f18e470cb3a0</code> / 28+ rounds (R1 사전 + R2/R3 사후 LGTM).</p>
+</div>
+
+</body>
+</html>

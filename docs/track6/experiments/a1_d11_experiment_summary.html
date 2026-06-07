@@ -1,0 +1,528 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Track6 A1-D11 실험 종합 정리</title><style>
+:root{--paper:#fffdf7;--ink:#1d251f;--line:#d8cdb8;--head:#eadfcd;--chip:#efe8d8;--good:#dfead9;--warn:#f2dfcf}
+body{margin:0;color:var(--ink);background:#f5efe4;font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.55}
+main{max-width:1480px;margin:0 auto;padding:34px 22px 72px}
+header,section{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:24px;margin-top:18px}
+h1{font-size:42px;margin:0 0 10px;letter-spacing:-.055em} h2{margin:0 0 14px;font-size:24px} h3{margin:22px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top} th{background:var(--head);position:sticky;top:0}
+code,.chip{background:var(--chip);border-radius:6px;padding:2px 5px} a{font-weight:800;color:#174f73;text-decoration:none}.num{text-align:right;white-space:nowrap}.tag{display:inline-block;background:var(--good);border-radius:999px;padding:3px 9px;font-weight:700;font-size:12px}.warn{background:var(--warn)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#fbf7ee;border:1px solid var(--line);border-radius:16px;padding:14px}.big{font-size:24px;font-weight:900}.small{font-size:12px;color:#586055}
+</style></head><body><main>
+<header><h1>Track6 A1-D11 실험 종합 정리</h1><p>A1부터 D11까지의 실험 결과를 같은 지표 기준으로 모아본 페이지입니다.</p><p><a href="metric_interpretation_standard.md">지표 해석 기준 문서</a> · <a href="a1_d11_experiment_summary.md">Markdown 요약</a> · <a href="a1_d11_summary_table.csv">CSV 요약표</a></p></header>
+<section><h2>상단 요약</h2><div class="grid">
+<div class="card"><div class="small">완료 실험</div><div class="big">44개</div><div class="small">A/B/C/D 및 세부 실험 포함</div></div>
+<div class="card"><div class="small">Warm 최저 MdAPE</div><div class="big">0.1565</div><div class="small">D8 · 작가명 x 면적 교차항</div></div>
+<div class="card"><div class="small">Cold 최저 MdAPE</div><div class="big">0.4727</div><div class="small">A12 · 작품 정보 전체 확장</div></div>
+<div class="card"><div class="small">판단 기준</div><div class="big">MdAPE 우선</div><div class="small">p95_APE, Within_30, RMSE_log는 보조 판단</div></div>
+</div></section>
+<section><h2>지표 해석 기준</h2><ul><li><code>MdAPE</code>: 대표 비율 오차, 낮을수록 좋음, 피처 채택 1순위</li><li><code>p95_APE</code>: 큰 오차 위험, 낮을수록 좋음</li><li><code>Within_30</code>: 실제 가격 ±30% 안에 들어온 비율, 높을수록 좋음</li><li><code>R2</code>, <code>RMSE_log</code>: 로그 가격 기준 보조 지표</li><li><code>RMSE_log</code>는 결론을 보조하지만, A1-D11 전체 피처 선택의 1순위 기준으로 쓰지 않음</li></ul></section>
+
+<section>
+  <h2>A1-D11 기준 1차 결론</h2>
+  <h3>Warm 결론</h3>
+  <ul>
+    <li>Warm에서는 <code>작가명 + 크기</code> 계열이 가장 강한 결과를 보였다.</li>
+    <li><code>C1 작가명 + 크기</code>는 Warm <code>MdAPE 0.1569</code>, <code>D8 작가명 x 면적</code>은 Warm <code>MdAPE 0.1565</code>였다.</li>
+    <li><code>D8</code>은 교차항이라 복잡도가 높으므로, 우선 후보는 더 단순한 <code>C1</code>이다.</li>
+    <li><code>C6 작가명 + 작품 기본 피처</code>는 Warm <code>MdAPE 0.1801</code>로 운영 후보로 볼 수 있다.</li>
+  </ul>
+  <h3>Cold 결론</h3>
+  <ul>
+    <li>Cold는 작가명을 직접 사용할 수 없어 Warm보다 오차가 크다.</li>
+    <li><code>A12 작품 정보 전체 확장</code>은 Cold <code>MdAPE 0.4727</code>로 가장 낮았다.</li>
+    <li><code>C9 깊이/3D 포함</code>과 <code>D2 면적 x 지지체</code>도 Cold 보조 후보로 볼 수 있다.</li>
+    <li>Cold는 p95 오차가 여전히 커서 단일 가격만 제시하기보다는 신뢰도/가격 범위 정책이 필요하다.</li>
+  </ul>
+  <h3>추천 방향</h3>
+  <table>
+    <thead><tr><th>구분</th><th>추천 후보</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td>Warm 1차 후보</td><td><code>C1 작가명 + 크기</code></td><td>Warm MdAPE가 가장 낮고 구조가 단순함</td></tr>
+      <tr><td>Warm 운영 후보</td><td><code>C6 작가명 + 작품 기본 피처</code></td><td>작가명과 작품 기본 정보를 함께 쓰는 해석 가능한 후보</td></tr>
+      <tr><td>Cold 1차 후보</td><td><code>A12 작품 정보 전체 확장</code></td><td>Cold MdAPE가 가장 낮음</td></tr>
+      <tr><td>Cold 보조 후보</td><td><code>C9</code>, <code>D2</code></td><td>깊이/3D 또는 면적 x 지지체가 Cold에서 추가 후보 가능성 있음</td></tr>
+      <tr><td>보류</td><td>작가명 교차항 전반</td><td>일부 성능은 좋지만 복잡도와 과적합 위험이 있음</td></tr>
+    </tbody>
+  </table>
+</section>
+
+
+<section>
+  <h2>최적 피처 조합 탐색 결과</h2>
+  <p>A1-D11에서 유망했던 피처를 다시 묶어 Warm용 <code>OPT-W1</code>, Cold용 <code>OPT-C1</code> 실험을 추가 실행했습니다.</p>
+  <p><a href="../../../experiments/track6/OPT-W1_warm_optimal_feature_combo/outputs/result_sheet.html">OPT-W1 결과 보기</a> · <a href="../../../experiments/track6/OPT-C1_cold_optimal_feature_combo/outputs/result_sheet.html">OPT-C1 결과 보기</a> · <a href="optimal_feature_combo_summary_table.csv">CSV 요약표</a></p>
+  <h3>Warm 최적 조합 후보</h3>
+  <table><thead><tr><th>순위</th><th>피처 조합</th><th>모델</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th></tr></thead><tbody><tr><td>1</td><td><code>W1: 작가명 + 전체 크기</code></td><td>Huber</td><td class="num">0.1566</td><td class="num">1.0434</td><td class="num">0.7315</td></tr><tr><td>2</td><td><code>W8: W3 + 작가명 x 면적</code></td><td>Huber</td><td class="num">0.1583</td><td class="num">1.1342</td><td class="num">0.7100</td></tr><tr><td>3</td><td><code>W7: W4 + 깊이/3D + 에디션</code></td><td>Huber</td><td class="num">0.1614</td><td class="num">1.0976</td><td class="num">0.7117</td></tr><tr><td>4</td><td><code>W5: W4 + 깊이/3D</code></td><td>Huber</td><td class="num">0.1615</td><td class="num">1.0525</td><td class="num">0.7100</td></tr><tr><td>5</td><td><code>W4: W3 + 제작연도 + 작품 유형</code></td><td>Huber</td><td class="num">0.1643</td><td class="num">1.0617</td><td class="num">0.7133</td></tr></tbody></table>
+  <ul>
+    <li>Warm 최저 MdAPE는 <code>W1: 작가명 + 전체 크기</code>였습니다.</li>
+    <li>확장 피처를 많이 붙인 조합은 R2/RMSE_log는 일부 좋아졌지만 MdAPE 기준으로는 W1보다 불리했습니다.</li>
+    <li>현재 Warm 최적 후보는 <code>작가명 + 전체 크기</code>입니다.</li>
+  </ul>
+  <h3>Cold 최적 조합 후보</h3>
+  <table><thead><tr><th>순위</th><th>피처 조합</th><th>모델</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th></tr></thead><tbody><tr><td>1</td><td><code>COLD3: C9형 깊이/3D 포함 작품 피처</code></td><td>LightGBM</td><td class="num">0.4671</td><td class="num">6.0962</td><td class="num">0.3130</td></tr><tr><td>2</td><td><code>COLD5: A9-6 단순 Cold 후보</code></td><td>Huber</td><td class="num">0.4795</td><td class="num">4.5028</td><td class="num">0.2953</td></tr><tr><td>3</td><td><code>COLD4: C9형 + 에디션</code></td><td>LightGBM</td><td class="num">0.4796</td><td class="num">5.9967</td><td class="num">0.3001</td></tr><tr><td>4</td><td><code>COLD1: A12 작품 정보 전체 확장</code></td><td>LightGBM</td><td class="num">0.4805</td><td class="num">5.9262</td><td class="num">0.2975</td></tr><tr><td>5</td><td><code>COLD5: A9-6 단순 Cold 후보</code></td><td>Quantile-LAD</td><td class="num">0.4843</td><td class="num">3.3545</td><td class="num">0.2833</td></tr><tr><td>6</td><td><code>COLD2: A12 + 면적 x 지지체</code></td><td>Quantile-LAD</td><td class="num">0.4866</td><td class="num">3.8171</td><td class="num">0.2965</td></tr></tbody></table>
+  <ul>
+    <li>Cold 최저 MdAPE는 <code>COLD3: C9형 깊이/3D 포함 작품 피처</code>와 <code>LightGBM</code> 조합입니다.</li>
+    <li>다만 p95 APE가 높아 큰 오차 위험이 남아 있습니다.</li>
+    <li><code>COLD5: A9-6 단순 Cold 후보</code>는 MdAPE는 조금 나쁘지만 p95 APE가 더 안정적입니다.</li>
+  </ul>
+  <h3>최종 조합 관점 1차 결론</h3>
+  <table>
+    <thead><tr><th>구분</th><th>현재 후보</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td>Warm 최적 후보</td><td><code>W1: 작가명 + 전체 크기</code></td><td>MdAPE 0.1566으로 가장 낮고 구조가 단순함</td></tr>
+      <tr><td>Cold 정확도 후보</td><td><code>COLD3: C9형 깊이/3D 포함 작품 피처</code></td><td>Cold MdAPE 0.4671로 가장 낮음</td></tr>
+      <tr><td>Cold 안정성 후보</td><td><code>COLD5: A9-6 단순 Cold 후보</code></td><td>p95 APE가 더 안정적이라 큰 오차 관리 후보</td></tr>
+      <tr><td>후속 실험</td><td><code>OPT-W2</code>, <code>OPT-C2</code>, <code>OPT-C3</code></td><td>피처 축소, Cold 하이브리드, p95 축소 확인 필요</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section><h2>Group A</h2><table><thead><tr><th>라벨</th><th>실험</th><th>목적</th><th>Warm 최고</th><th>Warm MdAPE</th><th>Warm p95</th><th>Cold 최고</th><th>Cold MdAPE</th><th>Cold p95</th><th>해석</th></tr></thead><tbody>
+<tr>
+<td><b>A1</b></td>
+<td><a href="../../../experiments/track6/A1_ho_size_sample_result_sheet/outputs/result_sheet.html">호수/크기 변수 영향 확인</a></td>
+<td>호수와 실제 크기 계열만으로 가격 예측력이 생기는지 확인</td>
+<td>Huber<br><span class="small">ln Size</span></td>
+<td class="num">0.5052</td><td class="num">2.9646</td>
+<td>Quantile-LAD<br><span class="small">ln Size</span></td>
+<td class="num">0.4980</td><td class="num">3.2862</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A1-1</b></td>
+<td><a href="../../../experiments/track6/A1-1_warm_huber_ho_vs_ln_ho/outputs/result_sheet.html">Warm Huber 호수 vs 로그 호수 비교</a></td>
+<td>같은 Huber 모델에서 원 호수와 로그 호수 중 어떤 표현이 더 안정적인지 확인</td>
+<td>Huber<br><span class="small">ln Ho</span></td>
+<td class="num">0.5244</td><td class="num">3.1835</td>
+<td>-<br><span class="small">-</span></td>
+<td class="num">-</td><td class="num">-</td>
+<td>Warm 단독 효과 제한적</td>
+</tr>
+<tr>
+<td><b>A2</b></td>
+<td><a href="../../../experiments/track6/A2_material_only_collected_vs_nant/outputs/result_sheet.html">재료 정보 추가 실험</a></td>
+<td>수집 재료와 NANT 재료 중 어떤 재료 표현이 더 유리한지 확인</td>
+<td>Huber<br><span class="small">NANT 재료 번호</span></td>
+<td class="num">0.7177</td><td class="num">6.6736</td>
+<td>Huber<br><span class="small">NANT 재료 번호</span></td>
+<td class="num">0.6977</td><td class="num">7.5736</td>
+<td>Warm 단독 효과 제한적 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>A3</b></td>
+<td><a href="../../../experiments/track6/A3_support_only_collected_vs_nant/outputs/result_sheet.html">지지체 정보 추가 실험</a></td>
+<td>수집 지지체와 NANT 지지체 중 어떤 지지체 표현이 더 유리한지 확인</td>
+<td>Huber<br><span class="small">수집 지지체 대분류</span></td>
+<td class="num">0.7317</td><td class="num">6.4245</td>
+<td>LightGBM<br><span class="small">수집 지지체 대분류 + NANT 지지체</span></td>
+<td class="num">0.6843</td><td class="num">7.7774</td>
+<td>Warm 단독 효과 제한적 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>A4</b></td>
+<td><a href="../../../experiments/track6/A4_artwork_year_only/outputs/result_sheet.html">제작연도 단독 실험</a></td>
+<td>제작연도/작품 연한이 단독으로 가격 설명에 도움이 되는지 확인</td>
+<td>Huber<br><span class="small">제작연도 + 작품 연한</span></td>
+<td class="num">0.7491</td><td class="num">6.6137</td>
+<td>LightGBM<br><span class="small">작품 연한</span></td>
+<td class="num">0.7119</td><td class="num">6.9823</td>
+<td>Warm 단독 효과 제한적 / Cold 효과 제한적</td>
+</tr>
+<tr>
+<td><b>A4-1</b></td>
+<td><a href="../../../experiments/track6/A4-1_artwork_year_age_standard_scaled/outputs/result_sheet.html">제작연도 numeric 전처리 검증</a></td>
+<td>제작연도/연한을 숫자형으로 처리했을 때의 효과를 확인</td>
+<td>Huber<br><span class="small">artwork_age 단독</span></td>
+<td class="num">0.7491</td><td class="num">6.6137</td>
+<td>LightGBM<br><span class="small">artwork_age 단독</span></td>
+<td class="num">0.7119</td><td class="num">6.9823</td>
+<td>Warm 단독 효과 제한적 / Cold 효과 제한적</td>
+</tr>
+<tr>
+<td><b>A5</b></td>
+<td><a href="../../../experiments/track6/A5_artwork_type_only/outputs/result_sheet.html">작품 유형 단독 실험</a></td>
+<td>작품 유형 정보가 가격 예측에 도움이 되는지 확인</td>
+<td>Ridge<br><span class="small">유형 보완 전체 구분</span></td>
+<td class="num">0.7396</td><td class="num">7.5137</td>
+<td>LightGBM<br><span class="small">작품 유형 전체 구분</span></td>
+<td class="num">0.6729</td><td class="num">7.9005</td>
+<td>Warm 단독 효과 제한적 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>A6</b></td>
+<td><a href="../../../experiments/track6/A6_depth_has_depth_only/outputs/result_sheet.html">깊이/3D 단독 실험</a></td>
+<td>깊이와 3D 후보 정보가 가격 예측에 도움이 되는지 확인</td>
+<td>Huber<br><span class="small">깊이 수치</span></td>
+<td class="num">0.7458</td><td class="num">6.3565</td>
+<td>LightGBM<br><span class="small">깊이 수치 + 깊이 존재 여부</span></td>
+<td class="num">0.6761</td><td class="num">6.5617</td>
+<td>Warm 단독 효과 제한적 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>A7</b></td>
+<td><a href="../../../experiments/track6/A7_edition_only/outputs/result_sheet.html">에디션 정보 단독 실험</a></td>
+<td>에디션 정보가 가격 예측에 도움이 되는지 확인</td>
+<td>Huber<br><span class="small">에디션 여부</span></td>
+<td class="num">0.7457</td><td class="num">7.0907</td>
+<td>LightGBM<br><span class="small">에디션 여부</span></td>
+<td class="num">0.7009</td><td class="num">7.8684</td>
+<td>Warm 단독 효과 제한적 / Cold 효과 제한적</td>
+</tr>
+<tr>
+<td><b>A8</b></td>
+<td><a href="../../../experiments/track6/A8_size_material_combo/outputs/result_sheet.html">크기 + 재료 조합 실험</a></td>
+<td>크기 정보와 재료 정보를 함께 썼을 때의 효과 확인</td>
+<td>Huber<br><span class="small">로그면적 + NANT 재료 번호</span></td>
+<td class="num">0.4764</td><td class="num">2.8207</td>
+<td>Huber<br><span class="small">로그면적 + 수집 재료 대분류</span></td>
+<td class="num">0.4919</td><td class="num">4.6240</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A8-1</b></td>
+<td><a href="../../../experiments/track6/A8-1_ho_area_combo/outputs/result_sheet.html">호수 + 면적 조합 실험</a></td>
+<td>호수와 면적 계열을 같이 쓰는 것이 유리한지 확인</td>
+<td>Huber<br><span class="small">로그 호수 + 로그 면적 + 가로세로</span></td>
+<td class="num">0.4936</td><td class="num">2.8956</td>
+<td>Quantile-LAD<br><span class="small">로그 호수 + 로그 면적</span></td>
+<td class="num">0.4952</td><td class="num">3.2761</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A8-2</b></td>
+<td><a href="../../../experiments/track6/A8-2_material_representation_size_combo/outputs/result_sheet.html">크기 + 재료 표현 방식 비교</a></td>
+<td>크기에 수집 재료/NANT 재료 표현을 결합했을 때 차이를 확인</td>
+<td>Huber<br><span class="small">A8-1 Warm 크기조합 + 수집 재료 원문 묶음</span></td>
+<td class="num">0.4432</td><td class="num">2.5993</td>
+<td>Huber<br><span class="small">로그면적 + 수집 재료 대분류</span></td>
+<td class="num">0.4919</td><td class="num">4.6240</td>
+<td>Warm 보조 후보 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A9</b></td>
+<td><a href="../../../experiments/track6/A9_size_material_support_combo/outputs/result_sheet.html">크기 + 재료 + 지지체 조합 실험</a></td>
+<td>작품 기본 물성 묶음 후보 확인</td>
+<td>Huber<br><span class="small">A8-2 Warm 최고 크기/재료 조합 + NANT 지지체</span></td>
+<td class="num">0.4277</td><td class="num">2.7593</td>
+<td>Huber<br><span class="small">로그면적 + 수집 재료 대분류 + 수집 지지체 대분류</span></td>
+<td class="num">0.4795</td><td class="num">4.5028</td>
+<td>Warm 보조 후보 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A9-1</b></td>
+<td><a href="../../../experiments/track6/A9-1_basic_artwork_feature_bundle/outputs/result_sheet.html">작품 기본 피처 묶음</a></td>
+<td>호수, 재료, 지지체를 묶은 기본 작품 피처 후보 확인</td>
+<td>Huber<br><span class="small">호수 + 로그면적 + NANT 재료 + NANT 지지체</span></td>
+<td class="num">0.4688</td><td class="num">2.8273</td>
+<td>Quantile-LAD<br><span class="small">호수 + 로그면적 + NANT 재료 + NANT 지지체</span></td>
+<td class="num">0.4929</td><td class="num">3.3348</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A9-2</b></td>
+<td><a href="../../../experiments/track6/A9-2_support_representation_compare/outputs/result_sheet.html">지지체 표현 비교</a></td>
+<td>수집 지지체와 NANT 지지체 표현 차이 확인</td>
+<td>Huber<br><span class="small">로그면적 + NANT 재료 번호 + NANT 지지체</span></td>
+<td class="num">0.4766</td><td class="num">2.8075</td>
+<td>Quantile-LAD<br><span class="small">로그면적 + NANT 재료 번호 + 수집 지지체 + NANT 지지체</span></td>
+<td class="num">0.4890</td><td class="num">3.3219</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A9-3</b></td>
+<td><a href="../../../experiments/track6/A9-3_material_representation_with_support/outputs/result_sheet.html">재료 표현 + 지지체</a></td>
+<td>재료 표현 방식과 지지체를 함께 썼을 때 차이 확인</td>
+<td>Huber<br><span class="small">로그면적 + 수집 원문 재료 묶음 + NANT 지지체</span></td>
+<td class="num">0.4373</td><td class="num">2.8148</td>
+<td>Huber<br><span class="small">로그면적 + 수집 재료 대분류 + NANT 지지체</span></td>
+<td class="num">0.4811</td><td class="num">4.4253</td>
+<td>Warm 보조 후보 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A9-4</b></td>
+<td><a href="../../../experiments/track6/A9-4_size_representation_with_material_support/outputs/result_sheet.html">크기 표현 + 재료/지지체</a></td>
+<td>크기 표현 방식이 작품 기본 피처 조합에 미치는 영향 확인</td>
+<td>Huber<br><span class="small">전체 크기 + NANT 재료 + NANT 지지체</span></td>
+<td class="num">0.4739</td><td class="num">2.6912</td>
+<td>Quantile-LAD<br><span class="small">로그면적 + NANT 재료 + NANT 지지체</span></td>
+<td class="num">0.4934</td><td class="num">3.3363</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A9-5</b></td>
+<td><a href="../../../experiments/track6/A9-5_material_support_combo_bucket/outputs/result_sheet.html">재료+지지체 조합 버킷</a></td>
+<td>재료와 지지체 조합 버킷의 추가 효과 확인</td>
+<td>Huber<br><span class="small">전체 크기 + 재료지지체 조합</span></td>
+<td class="num">0.4740</td><td class="num">2.6923</td>
+<td>Quantile-LAD<br><span class="small">로그면적 + NANT 재료 + NANT 지지체</span></td>
+<td class="num">0.4935</td><td class="num">3.2314</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A9-6</b></td>
+<td><a href="../../../experiments/track6/A9-6_warm_cold_feature_set_split/outputs/result_sheet.html">Warm/Cold 피처셋 분리</a></td>
+<td>Warm과 Cold에 같은 작품 피처를 쓸지 분리할지 확인</td>
+<td>Huber<br><span class="small">Warm 후보: 전체 크기 + 원문 재료 묶음 + NANT 지지체</span></td>
+<td class="num">0.4277</td><td class="num">2.7593</td>
+<td>Huber<br><span class="small">Cold 후보: 로그면적 + 수집 재료 대분류 + 수집 지지체 대분류</span></td>
+<td class="num">0.4795</td><td class="num">4.5028</td>
+<td>Warm 보조 후보 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A10</b></td>
+<td><a href="../../../experiments/track6/A10_basic_artwork_features_plus_year/outputs/result_sheet.html">작품 기본 피처 + 제작연도</a></td>
+<td>작품 기본 피처에 제작연도/연한을 추가했을 때 효과 확인</td>
+<td>Huber<br><span class="small">작품 기본 피처 묶음</span></td>
+<td class="num">0.4962</td><td class="num">2.9236</td>
+<td>LightGBM<br><span class="small">작품 기본 피처 묶음 + 작품 연한</span></td>
+<td class="num">0.4999</td><td class="num">5.5881</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A11</b></td>
+<td><a href="../../../experiments/track6/A11_basic_artwork_features_plus_type/outputs/result_sheet.html">작품 기본 피처 + 작품 유형</a></td>
+<td>작품 기본 피처에 작품 유형을 추가했을 때 효과 확인</td>
+<td>Huber<br><span class="small">A10 기준 피처 묶음 + 작품 유형 전체 구분</span></td>
+<td class="num">0.4804</td><td class="num">2.9658</td>
+<td>LightGBM<br><span class="small">A10 기준 피처 묶음 + 작품 유형 전체 구분</span></td>
+<td class="num">0.4816</td><td class="num">5.5723</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>A12</b></td>
+<td><a href="../../../experiments/track6/A12_full_artwork_features_expanded/outputs/result_sheet.html">작품 정보 전체 확장</a></td>
+<td>작품 변수 확장 묶음이 최종 후보가 될 수 있는지 확인</td>
+<td>Huber<br><span class="small">A11 기준 피처 묶음 + edition</span></td>
+<td class="num">0.4733</td><td class="num">2.9062</td>
+<td>LightGBM<br><span class="small">A11 기준 피처 묶음 + depth/3D</span></td>
+<td class="num">0.4727</td><td class="num">6.0589</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+</tbody></table></section>
+<section><h2>Group B</h2><table><thead><tr><th>라벨</th><th>실험</th><th>목적</th><th>Warm 최고</th><th>Warm MdAPE</th><th>Warm p95</th><th>Cold 최고</th><th>Cold MdAPE</th><th>Cold p95</th><th>해석</th></tr></thead><tbody>
+<tr>
+<td><b>B1</b></td>
+<td><a href="../../../experiments/track6/B1_artist_name_only/outputs/result_sheet.html">작가명 단독 실험</a></td>
+<td>작가명만으로 가격대가 어느 정도 설명되는지 확인</td>
+<td>Huber<br><span class="small">artist_name_ko only</span></td>
+<td class="num">0.4352</td><td class="num">2.8612</td>
+<td>LightGBM<br><span class="small">artist_name_ko only</span></td>
+<td class="num">0.7018</td><td class="num">7.8420</td>
+<td>Warm 보조 후보 / Cold 효과 제한적 / 작품 조건 통제 전 탐색 결과</td>
+</tr>
+<tr>
+<td><b>B2</b></td>
+<td><a href="../../../experiments/track6/B2_artist_name_encoding_compare/outputs/result_sheet.html">작가명 처리 방식 비교</a></td>
+<td>작가명 입력 방식에 따라 성능이 달라지는지 확인</td>
+<td>Huber<br><span class="small">one_hot</span></td>
+<td class="num">0.4352</td><td class="num">2.8612</td>
+<td>LightGBM<br><span class="small">smoothed_target_mean_log</span></td>
+<td class="num">0.7016</td><td class="num">7.8928</td>
+<td>Warm 보조 후보 / Cold 효과 제한적 / 작품 조건 통제 전 탐색 결과</td>
+</tr>
+</tbody></table></section>
+<section><h2>Group C</h2><table><thead><tr><th>라벨</th><th>실험</th><th>목적</th><th>Warm 최고</th><th>Warm MdAPE</th><th>Warm p95</th><th>Cold 최고</th><th>Cold MdAPE</th><th>Cold p95</th><th>해석</th></tr></thead><tbody>
+<tr>
+<td><b>C1</b></td>
+<td><a href="../../../experiments/track6/C1_artist_name_plus_size/outputs/result_sheet.html">작가명 + 크기</a></td>
+<td>작가명을 넣은 뒤에도 크기 정보가 추가 설명력을 가지는지 확인</td>
+<td>Huber<br><span class="small">작가명 + 전체 크기 묶음</span></td>
+<td class="num">0.1569</td><td class="num">1.0464</td>
+<td>LightGBM<br><span class="small">작가명 + 원 호수</span></td>
+<td class="num">0.5062</td><td class="num">3.7913</td>
+<td>Warm 성능 강함 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>C2</b></td>
+<td><a href="../../../experiments/track6/C2_artist_name_plus_material/outputs/result_sheet.html">작가명 + 재료</a></td>
+<td>작가명을 넣은 뒤에도 재료 정보가 추가 설명력을 가지는지 확인</td>
+<td>Huber<br><span class="small">작가명 + NANT 재료 번호 + 도구명</span></td>
+<td class="num">0.4209</td><td class="num">2.9163</td>
+<td>Quantile-LAD<br><span class="small">작가명 + NANT 재료 번호</span></td>
+<td class="num">0.6999</td><td class="num">6.9710</td>
+<td>Warm 보조 후보 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>C3</b></td>
+<td><a href="../../../experiments/track6/C3_artist_name_plus_support/outputs/result_sheet.html">작가명 + 지지체</a></td>
+<td>작가명을 넣은 뒤에도 지지체 정보가 추가 설명력을 가지는지 확인</td>
+<td>Huber<br><span class="small">작가명 + 수집 지지체 대분류</span></td>
+<td class="num">0.4209</td><td class="num">2.7731</td>
+<td>LightGBM<br><span class="small">작가명 + NANT 지지체</span></td>
+<td class="num">0.6891</td><td class="num">7.6769</td>
+<td>Warm 보조 후보 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>C4</b></td>
+<td><a href="../../../experiments/track6/C4_artist_name_plus_year/outputs/result_sheet.html">작가명 + 제작연도</a></td>
+<td>작가명을 넣은 뒤에도 제작연도/연한이 추가 설명력을 가지는지 확인</td>
+<td>Huber<br><span class="small">작가명 + 제작연도</span></td>
+<td class="num">0.4300</td><td class="num">2.8041</td>
+<td>LightGBM<br><span class="small">B1 기준: 작가명 only</span></td>
+<td class="num">0.7018</td><td class="num">7.8420</td>
+<td>Warm 보조 후보 / Cold 효과 제한적</td>
+</tr>
+<tr>
+<td><b>C5</b></td>
+<td><a href="../../../experiments/track6/C5_artist_name_plus_type/outputs/result_sheet.html">작가명 + 작품 유형</a></td>
+<td>작가명을 넣은 뒤에도 작품 유형이 추가 설명력을 가지는지 확인</td>
+<td>Huber<br><span class="small">작가명 + 작품 유형 3대 구분</span></td>
+<td class="num">0.4263</td><td class="num">2.9672</td>
+<td>LightGBM<br><span class="small">작가명 + 작품 유형 전체 + 3대 구분</span></td>
+<td class="num">0.6758</td><td class="num">7.6992</td>
+<td>Warm 보조 후보 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>C6</b></td>
+<td><a href="../../../experiments/track6/C6_artist_name_plus_artwork_basic/outputs/result_sheet.html">작가명 + 작품 기본 피처</a></td>
+<td>작가명과 작품 기본 피처 묶음의 기준 성능 확인</td>
+<td>Huber<br><span class="small">작가명 + 호수</span></td>
+<td class="num">0.1801</td><td class="num">0.9846</td>
+<td>LightGBM<br><span class="small">작가명 + 작품 기본 피처 묶음</span></td>
+<td class="num">0.4956</td><td class="num">3.4348</td>
+<td>Warm 성능 강함 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>C7</b></td>
+<td><a href="../../../experiments/track6/C7_artist_name_plus_artwork_basic_year/outputs/result_sheet.html">C6 + 제작연도</a></td>
+<td>C6에 제작연도/연한을 추가했을 때 효과 확인</td>
+<td>Huber<br><span class="small">C6 + 작품 연한</span></td>
+<td class="num">0.1821</td><td class="num">0.9811</td>
+<td>LightGBM<br><span class="small">C6 기준: 작가명 + 작품 기본 피처 묶음</span></td>
+<td class="num">0.4956</td><td class="num">3.4348</td>
+<td>Warm 성능 강함 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>C8</b></td>
+<td><a href="../../../experiments/track6/C8_artist_name_plus_artwork_basic_year_type/outputs/result_sheet.html">C7 + 작품 유형</a></td>
+<td>C7에 작품 유형을 추가했을 때 효과 확인</td>
+<td>Huber<br><span class="small">C7 기준: C6 + 제작연도 + 작품 연한</span></td>
+<td class="num">0.1828</td><td class="num">0.9782</td>
+<td>LightGBM<br><span class="small">C7 + 작품 유형 전체 구분</span></td>
+<td class="num">0.4813</td><td class="num">4.1564</td>
+<td>Warm 성능 강함 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>C9</b></td>
+<td><a href="../../../experiments/track6/C9_c8_plus_depth/outputs/result_sheet.html">C8 + 깊이/3D</a></td>
+<td>C8에 깊이/입체성 정보를 추가했을 때 효과 확인</td>
+<td>Huber<br><span class="small">C8 + 깊이 존재 여부</span></td>
+<td class="num">0.1852</td><td class="num">0.9797</td>
+<td>LightGBM<br><span class="small">C8 + 깊이 존재 여부</span></td>
+<td class="num">0.4745</td><td class="num">3.9747</td>
+<td>Warm 성능 강함 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>C10</b></td>
+<td><a href="../../../experiments/track6/C10_c8_plus_edition/outputs/result_sheet.html">C8 + 에디션</a></td>
+<td>C8에 에디션 정보를 추가했을 때 효과 확인</td>
+<td>Huber<br><span class="small">C8 + 리미티드 에디션 여부</span></td>
+<td class="num">0.1846</td><td class="num">0.9724</td>
+<td>LightGBM<br><span class="small">C8 + 리미티드 에디션 여부</span></td>
+<td class="num">0.4799</td><td class="num">4.1388</td>
+<td>Warm 성능 강함 / Cold 후보</td>
+</tr>
+</tbody></table></section>
+<section><h2>Group D</h2><table><thead><tr><th>라벨</th><th>실험</th><th>목적</th><th>Warm 최고</th><th>Warm MdAPE</th><th>Warm p95</th><th>Cold 최고</th><th>Cold MdAPE</th><th>Cold p95</th><th>해석</th></tr></thead><tbody>
+<tr>
+<td><b>D1</b></td>
+<td><a href="../../../experiments/track6/D1_log_area_material_numeric_interaction/outputs/result_sheet.html">면적 x 재료 교차항</a></td>
+<td>큰 특정 재료 작품의 프리미엄이 있는지 확인</td>
+<td>Huber<br><span class="small">D1 교차항: 면적 x 난트 재료번호</span></td>
+<td class="num">0.4747</td><td class="num">2.9267</td>
+<td>Quantile-LAD<br><span class="small">D1 기준: 면적 + 난트 재료</span></td>
+<td class="num">0.4979</td><td class="num">3.2768</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>D2</b></td>
+<td><a href="../../../experiments/track6/D2_log_area_support_numeric_interaction/outputs/result_sheet.html">면적 x 지지체 교차항</a></td>
+<td>큰 특정 지지체 작품의 프리미엄이 있는지 확인</td>
+<td>Huber<br><span class="small">D2 기준: 면적 + 난트 지지체</span></td>
+<td class="num">0.4892</td><td class="num">2.8675</td>
+<td>Quantile-LAD<br><span class="small">D2 교차항: 면적 x 난트 지지체</span></td>
+<td class="num">0.4745</td><td class="num">3.3958</td>
+<td>Warm 단독 효과 제한적 / Cold 후보</td>
+</tr>
+<tr>
+<td><b>D3</b></td>
+<td><a href="../../../experiments/track6/D3_material_support_categorical_interaction/outputs/result_sheet.html">재료 x 지지체 교차항</a></td>
+<td>재료와 지지체 조합 효과 확인</td>
+<td>Huber<br><span class="small">D3 조합: 난트 재료번호 x 지지체</span></td>
+<td class="num">0.7177</td><td class="num">6.6721</td>
+<td>Huber<br><span class="small">D3 조합: 난트 재료번호 x 지지체</span></td>
+<td class="num">0.6977</td><td class="num">7.5731</td>
+<td>Warm 단독 효과 제한적 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>D4</b></td>
+<td><a href="../../../experiments/track6/D4_artwork_age_material_numeric_interaction/outputs/result_sheet.html">작품 연한 x 재료 교차항</a></td>
+<td>오래된 특정 재료의 가격 효과 확인</td>
+<td>Huber<br><span class="small">D4 교차항: 연한 x 난트 도구명</span></td>
+<td class="num">0.7311</td><td class="num">6.9381</td>
+<td>LightGBM<br><span class="small">D4 기준: 연한 + 난트 재료</span></td>
+<td class="num">0.7015</td><td class="num">7.2722</td>
+<td>Warm 단독 효과 제한적 / Cold 효과 제한적</td>
+</tr>
+<tr>
+<td><b>D5</b></td>
+<td><a href="../../../experiments/track6/D5_artwork_age_support_numeric_interaction/outputs/result_sheet.html">작품 연한 x 지지체 교차항</a></td>
+<td>오래된 특정 지지체의 가격 효과 확인</td>
+<td>Huber<br><span class="small">D5 교차항: 연한 x 난트 지지체</span></td>
+<td class="num">0.7390</td><td class="num">6.3316</td>
+<td>Quantile-LAD<br><span class="small">D5 기준: 연한 + 난트 지지체</span></td>
+<td class="num">0.7028</td><td class="num">6.8780</td>
+<td>Warm 단독 효과 제한적 / Cold 효과 제한적</td>
+</tr>
+<tr>
+<td><b>D6</b></td>
+<td><a href="../../../experiments/track6/D6_depth_artwork_type_numeric_interaction/outputs/result_sheet.html">깊이 x 작품 유형 교차항</a></td>
+<td>입체성 효과가 작품 유형별로 달라지는지 확인</td>
+<td>Huber<br><span class="small">D6 교차항: 깊이 x 작품 유형 전체</span></td>
+<td class="num">0.7463</td><td class="num">5.9535</td>
+<td>LightGBM<br><span class="small">D6 교차항: 깊이 x 작품 유형 전체</span></td>
+<td class="num">0.6467</td><td class="num">6.7021</td>
+<td>Warm 단독 효과 제한적 / Cold 보류 후보</td>
+</tr>
+<tr>
+<td><b>D8</b></td>
+<td><a href="../../../experiments/track6/D8_artist_log_area_numeric_interaction/outputs/result_sheet.html">작가명 x 면적 교차항</a></td>
+<td>작가별 대형작 프리미엄 확인</td>
+<td>Huber<br><span class="small">D8 교차항: 작가명 x 면적</span></td>
+<td class="num">0.1565</td><td class="num">1.0765</td>
+<td>Quantile-LAD<br><span class="small">D8 교차항: 작가명 x 면적</span></td>
+<td class="num">0.5071</td><td class="num">3.2619</td>
+<td>Warm 성능 강함 / Cold 보류 후보 / 작가명 교차항은 Warm 중심 해석</td>
+</tr>
+<tr>
+<td><b>D9</b></td>
+<td><a href="../../../experiments/track6/D9_artist_material_categorical_interaction/outputs/result_sheet.html">작가명 x 재료 교차항</a></td>
+<td>특정 작가의 특정 재료 프리미엄 확인</td>
+<td>Huber<br><span class="small">D9 기준: 작가명 + 난트 재료</span></td>
+<td class="num">0.4209</td><td class="num">2.9163</td>
+<td>Quantile-LAD<br><span class="small">D9 기준: 작가명 + 난트 재료</span></td>
+<td class="num">0.7025</td><td class="num">6.9333</td>
+<td>Warm 보조 후보 / Cold 효과 제한적 / 작가명 교차항은 Warm 중심 해석</td>
+</tr>
+<tr>
+<td><b>D10</b></td>
+<td><a href="../../../experiments/track6/D10_artist_support_categorical_interaction/outputs/result_sheet.html">작가명 x 지지체 교차항</a></td>
+<td>특정 작가의 특정 지지체 프리미엄 확인</td>
+<td>Huber<br><span class="small">D10 기준: 작가명 + 난트 지지체</span></td>
+<td class="num">0.4250</td><td class="num">2.5868</td>
+<td>LightGBM<br><span class="small">D10 기준: 작가명 + 난트 지지체</span></td>
+<td class="num">0.6891</td><td class="num">7.6769</td>
+<td>Warm 보조 후보 / Cold 보류 후보 / 작가명 교차항은 Warm 중심 해석</td>
+</tr>
+<tr>
+<td><b>D11</b></td>
+<td><a href="../../../experiments/track6/D11_artist_artwork_age_numeric_interaction/outputs/result_sheet.html">작가명 x 작품 연한 교차항</a></td>
+<td>작가별 특정 시기 작품 가치 확인</td>
+<td>Huber<br><span class="small">D11 교차항: 작가명 x 작품 연한</span></td>
+<td class="num">0.4206</td><td class="num">2.8167</td>
+<td>LightGBM<br><span class="small">D11 교차항: 작가명 x 작품 연한</span></td>
+<td class="num">0.7025</td><td class="num">7.4160</td>
+<td>Warm 보조 후보 / Cold 효과 제한적 / 작가명 교차항은 Warm 중심 해석</td>
+</tr>
+</tbody></table></section>
+</main></body></html>

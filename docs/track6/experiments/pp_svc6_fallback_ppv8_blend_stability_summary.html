@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-SVC6_Warm_Fallback_PPV8_Blend_Stability_Summary</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#pp-svc6-warm-fallback-비교군-pp-v8-결합-비율-안정성-검증">PP-SVC6 Warm fallback 비교군 + PP-V8 결합 비율 안정성 검증</a>
+<a class="toc-level-2" href="#1.-고정-후보-test-성능">1. 고정 후보 test 성능</a>
+<a class="toc-level-2" href="#2.-반복-선택-빈도">2. 반복 선택 빈도</a>
+<a class="toc-level-2" href="#3.-내부-holdout-요약">3. 내부 holdout 요약</a>
+<a class="toc-level-2" href="#4.-선택-후-test-요약">4. 선택 후 test 요약</a>
+<a class="toc-level-2" href="#5.-해석">5. 해석</a>
+<a class="toc-level-2" href="#6.-실행-결론">6. 실행 결론</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/pp_svc6_fallback_ppv8_blend_stability_summary.md</code></div>
+      <h1 id="pp-svc6-warm-fallback-비교군-pp-v8-결합-비율-안정성-검증">PP-SVC6 Warm fallback 비교군 + PP-V8 결합 비율 안정성 검증</h1>
+<ul>
+<li>작성일: 2026-06-04 00:59</li>
+<li>목적: <code>fallback_numeric + PP-V8</code> 결합 비율을 반복 holdout으로 재검증</li>
+<li>입력: PP-SVC5 validation/test 예측값</li>
+<li>선택 데이터: validation selection subset</li>
+<li>확인 데이터: validation holdout subset과 test</li>
+<li>반복 횟수: row/artist holdout 각 <code>200</code>회</li>
+<li>weight 후보: <code>0.400</code>부터 <code>0.900</code>까지 <code>0.025</code> 간격</li>
+</ul>
+<h2 id="1.-고정-후보-test-성능">1. 고정 후보 test 성능</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">weight</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95_APE</th>
+<th class="align-right">PP-SVC3 대비 MdAPE 변화</th>
+<th class="align-right">PP-SVC3 대비 MAPE 변화</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.575</code></td>
+<td class="align-right">0.575</td>
+<td class="align-right">0.1348</td>
+<td class="align-right">0.2711</td>
+<td class="align-right">0.8362</td>
+<td class="align-right">0.0057</td>
+<td class="align-right">0.0037</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.600</code></td>
+<td class="align-right">0.600</td>
+<td class="align-right">0.1362</td>
+<td class="align-right">0.2717</td>
+<td class="align-right">0.8329</td>
+<td class="align-right">0.0043</td>
+<td class="align-right">0.0031</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.625</code></td>
+<td class="align-right">0.625</td>
+<td class="align-right">0.1374</td>
+<td class="align-right">0.2725</td>
+<td class="align-right">0.8378</td>
+<td class="align-right">0.0031</td>
+<td class="align-right">0.0023</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.550</code></td>
+<td class="align-right">0.550</td>
+<td class="align-right">0.1376</td>
+<td class="align-right">0.2706</td>
+<td class="align-right">0.8414</td>
+<td class="align-right">0.0028</td>
+<td class="align-right">0.0042</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.650</code></td>
+<td class="align-right">0.650</td>
+<td class="align-right">0.1382</td>
+<td class="align-right">0.2733</td>
+<td class="align-right">0.8432</td>
+<td class="align-right">0.0023</td>
+<td class="align-right">0.0015</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.700</code></td>
+<td class="align-right">0.700</td>
+<td class="align-right">0.1401</td>
+<td class="align-right">0.2751</td>
+<td class="align-right">0.8351</td>
+<td class="align-right">0.0004</td>
+<td class="align-right">-0.0003</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.500</code></td>
+<td class="align-right">0.500</td>
+<td class="align-right">0.1402</td>
+<td class="align-right">0.2699</td>
+<td class="align-right">0.8472</td>
+<td class="align-right">0.0003</td>
+<td class="align-right">0.0049</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-right"></td>
+<td class="align-right">0.1405</td>
+<td class="align-right">0.2748</td>
+<td class="align-right">0.8331</td>
+<td class="align-right">0.0000</td>
+<td class="align-right">0.0000</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.750</code></td>
+<td class="align-right">0.750</td>
+<td class="align-right">0.1430</td>
+<td class="align-right">0.2774</td>
+<td class="align-right">0.8669</td>
+<td class="align-right">-0.0025</td>
+<td class="align-right">-0.0026</td>
+</tr>
+<tr>
+<td class="align-left"><code>fallback_numeric</code></td>
+<td class="align-right"></td>
+<td class="align-right">0.1528</td>
+<td class="align-right">0.2956</td>
+<td class="align-right">0.9694</td>
+<td class="align-right">-0.0123</td>
+<td class="align-right">-0.0208</td>
+</tr>
+<tr>
+<td class="align-left"><code>pp_v8_compact_blend_mape_guarded</code></td>
+<td class="align-right"></td>
+<td class="align-right">0.1632</td>
+<td class="align-right">0.2816</td>
+<td class="align-right">0.9311</td>
+<td class="align-right">-0.0227</td>
+<td class="align-right">-0.0068</td>
+</tr>
+</tbody></table></div>
+<h2 id="2.-반복-선택-빈도">2. 반복 선택 빈도</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">holdout 방식</th>
+<th class="align-left">선택 기준</th>
+<th class="align-left">후보</th>
+<th class="align-right">weight</th>
+<th class="align-right">선택 횟수</th>
+<th class="align-right">선택 비율</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.850</code></td>
+<td class="align-right">0.850</td>
+<td class="align-right">63</td>
+<td class="align-right">0.315</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.875</code></td>
+<td class="align-right">0.875</td>
+<td class="align-right">52</td>
+<td class="align-right">0.260</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.900</code></td>
+<td class="align-right">0.900</td>
+<td class="align-right">47</td>
+<td class="align-right">0.235</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.800</code></td>
+<td class="align-right">0.800</td>
+<td class="align-right">11</td>
+<td class="align-right">0.055</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.775</code></td>
+<td class="align-right">0.775</td>
+<td class="align-right">9</td>
+<td class="align-right">0.045</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.750</code></td>
+<td class="align-right">0.750</td>
+<td class="align-right">7</td>
+<td class="align-right">0.035</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.825</code></td>
+<td class="align-right">0.825</td>
+<td class="align-right">6</td>
+<td class="align-right">0.030</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.725</code></td>
+<td class="align-right">0.725</td>
+<td class="align-right">2</td>
+<td class="align-right">0.010</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.725</code></td>
+<td class="align-right">0.725</td>
+<td class="align-right">49</td>
+<td class="align-right">0.245</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.750</code></td>
+<td class="align-right">0.750</td>
+<td class="align-right">46</td>
+<td class="align-right">0.230</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.700</code></td>
+<td class="align-right">0.700</td>
+<td class="align-right">38</td>
+<td class="align-right">0.190</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.775</code></td>
+<td class="align-right">0.775</td>
+<td class="align-right">28</td>
+<td class="align-right">0.140</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.675</code></td>
+<td class="align-right">0.675</td>
+<td class="align-right">26</td>
+<td class="align-right">0.130</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.650</code></td>
+<td class="align-right">0.650</td>
+<td class="align-right">9</td>
+<td class="align-right">0.045</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.800</code></td>
+<td class="align-right">0.800</td>
+<td class="align-right">3</td>
+<td class="align-right">0.015</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.600</code></td>
+<td class="align-right">0.600</td>
+<td class="align-right">1</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.725</code></td>
+<td class="align-right">0.725</td>
+<td class="align-right">49</td>
+<td class="align-right">0.245</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.750</code></td>
+<td class="align-right">0.750</td>
+<td class="align-right">49</td>
+<td class="align-right">0.245</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.700</code></td>
+<td class="align-right">0.700</td>
+<td class="align-right">46</td>
+<td class="align-right">0.230</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.775</code></td>
+<td class="align-right">0.775</td>
+<td class="align-right">29</td>
+<td class="align-right">0.145</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.675</code></td>
+<td class="align-right">0.675</td>
+<td class="align-right">12</td>
+<td class="align-right">0.060</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.800</code></td>
+<td class="align-right">0.800</td>
+<td class="align-right">6</td>
+<td class="align-right">0.030</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.650</code></td>
+<td class="align-right">0.650</td>
+<td class="align-right">5</td>
+<td class="align-right">0.025</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.825</code></td>
+<td class="align-right">0.825</td>
+<td class="align-right">2</td>
+<td class="align-right">0.010</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.900</code></td>
+<td class="align-right">0.900</td>
+<td class="align-right">85</td>
+<td class="align-right">0.425</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.875</code></td>
+<td class="align-right">0.875</td>
+<td class="align-right">62</td>
+<td class="align-right">0.310</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.850</code></td>
+<td class="align-right">0.850</td>
+<td class="align-right">44</td>
+<td class="align-right">0.220</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.475</code></td>
+<td class="align-right">0.475</td>
+<td class="align-right">2</td>
+<td class="align-right">0.010</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.800</code></td>
+<td class="align-right">0.800</td>
+<td class="align-right">2</td>
+<td class="align-right">0.010</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.500</code></td>
+<td class="align-right">0.500</td>
+<td class="align-right">1</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.725</code></td>
+<td class="align-right">0.725</td>
+<td class="align-right">1</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.750</code></td>
+<td class="align-right">0.750</td>
+<td class="align-right">1</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.850</code></td>
+<td class="align-right">0.850</td>
+<td class="align-right">59</td>
+<td class="align-right">0.295</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.875</code></td>
+<td class="align-right">0.875</td>
+<td class="align-right">53</td>
+<td class="align-right">0.265</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.900</code></td>
+<td class="align-right">0.900</td>
+<td class="align-right">46</td>
+<td class="align-right">0.230</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.800</code></td>
+<td class="align-right">0.800</td>
+<td class="align-right">12</td>
+<td class="align-right">0.060</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.825</code></td>
+<td class="align-right">0.825</td>
+<td class="align-right">12</td>
+<td class="align-right">0.060</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.775</code></td>
+<td class="align-right">0.775</td>
+<td class="align-right">9</td>
+<td class="align-right">0.045</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.750</code></td>
+<td class="align-right">0.750</td>
+<td class="align-right">4</td>
+<td class="align-right">0.020</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.725</code></td>
+<td class="align-right">0.725</td>
+<td class="align-right">2</td>
+<td class="align-right">0.010</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.725</code></td>
+<td class="align-right">0.725</td>
+<td class="align-right">52</td>
+<td class="align-right">0.260</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.750</code></td>
+<td class="align-right">0.750</td>
+<td class="align-right">40</td>
+<td class="align-right">0.200</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.700</code></td>
+<td class="align-right">0.700</td>
+<td class="align-right">39</td>
+<td class="align-right">0.195</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.675</code></td>
+<td class="align-right">0.675</td>
+<td class="align-right">34</td>
+<td class="align-right">0.170</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.775</code></td>
+<td class="align-right">0.775</td>
+<td class="align-right">24</td>
+<td class="align-right">0.120</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.650</code></td>
+<td class="align-right">0.650</td>
+<td class="align-right">6</td>
+<td class="align-right">0.030</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.800</code></td>
+<td class="align-right">0.800</td>
+<td class="align-right">3</td>
+<td class="align-right">0.015</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.600</code></td>
+<td class="align-right">0.600</td>
+<td class="align-right">1</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.725</code></td>
+<td class="align-right">0.725</td>
+<td class="align-right">54</td>
+<td class="align-right">0.270</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.700</code></td>
+<td class="align-right">0.700</td>
+<td class="align-right">48</td>
+<td class="align-right">0.240</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.750</code></td>
+<td class="align-right">0.750</td>
+<td class="align-right">42</td>
+<td class="align-right">0.210</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.775</code></td>
+<td class="align-right">0.775</td>
+<td class="align-right">26</td>
+<td class="align-right">0.130</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.675</code></td>
+<td class="align-right">0.675</td>
+<td class="align-right">20</td>
+<td class="align-right">0.100</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.800</code></td>
+<td class="align-right">0.800</td>
+<td class="align-right">5</td>
+<td class="align-right">0.025</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.650</code></td>
+<td class="align-right">0.650</td>
+<td class="align-right">3</td>
+<td class="align-right">0.015</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.525</code></td>
+<td class="align-right">0.525</td>
+<td class="align-right">1</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.900</code></td>
+<td class="align-right">0.900</td>
+<td class="align-right">88</td>
+<td class="align-right">0.440</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.875</code></td>
+<td class="align-right">0.875</td>
+<td class="align-right">60</td>
+<td class="align-right">0.300</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.850</code></td>
+<td class="align-right">0.850</td>
+<td class="align-right">41</td>
+<td class="align-right">0.205</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.800</code></td>
+<td class="align-right">0.800</td>
+<td class="align-right">6</td>
+<td class="align-right">0.030</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.825</code></td>
+<td class="align-right">0.825</td>
+<td class="align-right">3</td>
+<td class="align-right">0.015</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.450</code></td>
+<td class="align-right">0.450</td>
+<td class="align-right">1</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wfallback_0.500</code></td>
+<td class="align-right">0.500</td>
+<td class="align-right">1</td>
+<td class="align-right">0.005</td>
+</tr>
+</tbody></table></div>
+<h2 id="3.-내부-holdout-요약">3. 내부 holdout 요약</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">holdout 방식</th>
+<th class="align-left">선택 기준</th>
+<th class="align-right">weight 중앙값</th>
+<th class="align-right">MdAPE 평균</th>
+<th class="align-right">MAPE 평균</th>
+<th class="align-right">p95 평균</th>
+<th class="align-right">PP-SVC3 MAPE 개선확률</th>
+<th class="align-right">PP-SVC3 p95 개선확률</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-right">0.850</td>
+<td class="align-right">0.1237</td>
+<td class="align-right">0.2123</td>
+<td class="align-right">0.6431</td>
+<td class="align-right">0.315</td>
+<td class="align-right">0.675</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-right">0.725</td>
+<td class="align-right">0.1281</td>
+<td class="align-right">0.2109</td>
+<td class="align-right">0.6427</td>
+<td class="align-right">0.465</td>
+<td class="align-right">0.760</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-right">0.725</td>
+<td class="align-right">0.1277</td>
+<td class="align-right">0.2107</td>
+<td class="align-right">0.6418</td>
+<td class="align-right">0.480</td>
+<td class="align-right">0.770</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-right">0.875</td>
+<td class="align-right">0.1231</td>
+<td class="align-right">0.2126</td>
+<td class="align-right">0.6431</td>
+<td class="align-right">0.295</td>
+<td class="align-right">0.665</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-right">0.850</td>
+<td class="align-right">0.1241</td>
+<td class="align-right">0.2153</td>
+<td class="align-right">0.6417</td>
+<td class="align-right">0.300</td>
+<td class="align-right">0.695</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-right">0.725</td>
+<td class="align-right">0.1289</td>
+<td class="align-right">0.2140</td>
+<td class="align-right">0.6392</td>
+<td class="align-right">0.415</td>
+<td class="align-right">0.805</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-right">0.725</td>
+<td class="align-right">0.1288</td>
+<td class="align-right">0.2139</td>
+<td class="align-right">0.6391</td>
+<td class="align-right">0.470</td>
+<td class="align-right">0.805</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-right">0.875</td>
+<td class="align-right">0.1233</td>
+<td class="align-right">0.2156</td>
+<td class="align-right">0.6417</td>
+<td class="align-right">0.275</td>
+<td class="align-right">0.680</td>
+</tr>
+</tbody></table></div>
+<h2 id="4.-선택-후-test-요약">4. 선택 후 test 요약</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">holdout 방식</th>
+<th class="align-left">선택 기준</th>
+<th class="align-right">weight 중앙값</th>
+<th class="align-right">MdAPE 평균</th>
+<th class="align-right">MAPE 평균</th>
+<th class="align-right">p95 평균</th>
+<th class="align-right">PP-SVC3 MdAPE 개선확률</th>
+<th class="align-right">PP-SVC3 MAPE 개선확률</th>
+<th class="align-right">PP-SVC3 p95 개선확률</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-right">0.850</td>
+<td class="align-right">0.1441</td>
+<td class="align-right">0.2839</td>
+<td class="align-right">0.9243</td>
+<td class="align-right">0.010</td>
+<td class="align-right">0.015</td>
+<td class="align-right">0.000</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-right">0.725</td>
+<td class="align-right">0.1419</td>
+<td class="align-right">0.2763</td>
+<td class="align-right">0.8543</td>
+<td class="align-right">0.370</td>
+<td class="align-right">0.180</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-right">0.725</td>
+<td class="align-right">0.1421</td>
+<td class="align-right">0.2766</td>
+<td class="align-right">0.8572</td>
+<td class="align-right">0.320</td>
+<td class="align-right">0.090</td>
+<td class="align-right">0.000</td>
+</tr>
+<tr>
+<td class="align-left">artist_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-right">0.875</td>
+<td class="align-right">0.1448</td>
+<td class="align-right">0.2853</td>
+<td class="align-right">0.9323</td>
+<td class="align-right">0.005</td>
+<td class="align-right">0.015</td>
+<td class="align-right">0.000</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">balanced_reference</td>
+<td class="align-right">0.850</td>
+<td class="align-right">0.1442</td>
+<td class="align-right">0.2840</td>
+<td class="align-right">0.9248</td>
+<td class="align-right">0.010</td>
+<td class="align-right">0.015</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_ppv8</td>
+<td class="align-right">0.725</td>
+<td class="align-right">0.1418</td>
+<td class="align-right">0.2761</td>
+<td class="align-right">0.8524</td>
+<td class="align-right">0.405</td>
+<td class="align-right">0.210</td>
+<td class="align-right">0.005</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mape_guarded_reference</td>
+<td class="align-right">0.725</td>
+<td class="align-right">0.1420</td>
+<td class="align-right">0.2763</td>
+<td class="align-right">0.8540</td>
+<td class="align-right">0.365</td>
+<td class="align-right">0.125</td>
+<td class="align-right">0.000</td>
+</tr>
+<tr>
+<td class="align-left">row_holdout</td>
+<td class="align-left">mdape_primary</td>
+<td class="align-right">0.875</td>
+<td class="align-right">0.1449</td>
+<td class="align-right">0.2854</td>
+<td class="align-right">0.9333</td>
+<td class="align-right">0.005</td>
+<td class="align-right">0.010</td>
+<td class="align-right">0.005</td>
+</tr>
+</tbody></table></div>
+<h2 id="5.-해석">5. 해석</h2>
+<ul>
+<li>test 고정 후보만 보면 <code>w=0.55~0.60</code> 구간이 기존 PP-SVC3보다 MdAPE/MAPE를 소폭 개선</li>
+<li>반복 holdout에서 같은 구간이 안정적으로 선택되면 Warm 서비스 후보 갱신 가능</li>
+<li>반복 holdout에서 <code>w=0.70~0.75</code>가 더 자주 선택되면 기존 PP-SVC3 계열 유지가 타당</li>
+<li>row holdout과 artist holdout 선택 weight가 다르면 작가 단위 일반화 관점에서 보수적으로 판단</li>
+</ul>
+<h2 id="6.-실행-결론">6. 실행 결론</h2>
+<ul>
+<li>고정 test 기준 최상위 후보: <code>blend_fallback_numeric_ppv8_wfallback_0.575</code></li>
+<li>해당 후보 test MdAPE <code>0.1348</code>, MAPE <code>0.2711</code>, p95_APE <code>0.8362</code></li>
+<li>기존 PP-SVC3 대비 MdAPE <code>+0.0057</code>, MAPE <code>+0.0037</code> 개선</li>
+<li>단, p95_APE는 기존 PP-SVC3보다 <code>0.0031</code> 악화</li>
+<li><code>w=0.600</code>은 test MdAPE <code>0.1362</code>, MAPE <code>0.2717</code>, p95_APE <code>0.8329</code></li>
+<li><code>w=0.600</code>은 기존 PP-SVC3 대비 MdAPE/MAPE/p95를 모두 소폭 개선</li>
+<li>하지만 반복 holdout 선택 중심은 <code>0.55~0.60</code>이 아님</li>
+<li>MAPE 방어 기준의 반복 선택 중앙값은 row/artist 모두 <code>0.725</code></li>
+<li>balanced 또는 MdAPE 기준은 <code>0.850~0.875</code> 쪽으로 치우침</li>
+<li>선택 후 test 평균은 기존 PP-SVC3 대비 안정 개선으로 보기 어려움</li>
+<li><code>mape_guarded_ppv8</code> 기준 test 평균: MdAPE <code>0.1418~0.1419</code>, MAPE <code>0.2761~0.2763</code>, p95 <code>0.8524~0.8543</code></li>
+<li>기존 PP-SVC3 test: MdAPE <code>0.1405</code>, MAPE <code>0.2748</code>, p95 <code>0.8331</code></li>
+<li>결론: <code>0.575~0.600</code>은 test 관찰값으로는 매력적이나 validation 반복 선택 안정성이 부족</li>
+<li>Warm 서비스 1순위 후보는 기존 <code>PP-SVC3 blend_svcnum_ppv8_wsvc_0.70</code> 유지</li>
+<li>후속으로 진행한다면 <code>0.575~0.600</code> 고정 후보를 별도 split 또는 artist holdout 재현 실험에서만 재검토</li>
+</ul>
+    </main>
+  </div>
+</body>
+</html>

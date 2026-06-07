@@ -1,0 +1,117 @@
+{
+  "experiment_id": "D6",
+  "title": "Track6 D6 depth x 작품 유형 숫자형 교차항 실험 결과",
+  "purpose": "작품 유형에 따라 깊이 정보의 가격 효과가 달라지는지 확인",
+  "description": "Group D artwork variable interaction: depth_cm numeric feature multiplied by artwork type categories",
+  "exp_dir": "experiments/track6/D6_depth_artwork_type_numeric_interaction",
+  "prompt_file": "experiments/track6/D6_depth_artwork_type_numeric_interaction/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "depth_cm",
+    "has_depth",
+    "is_3d_candidate",
+    "artwork_type_final",
+    "artwork_type_final_major3",
+    "depth_cm_x_artwork_type_final_01",
+    "depth_cm_x_artwork_type_final_02",
+    "depth_cm_x_artwork_type_final_03",
+    "depth_cm_x_artwork_type_final_04",
+    "depth_cm_x_artwork_type_final_05",
+    "depth_cm_x_artwork_type_final_06",
+    "depth_cm_x_artwork_type_final_07",
+    "depth_cm_x_artwork_type_final_08",
+    "depth_cm_x_artwork_type_final_09",
+    "depth_cm_x_artwork_type_final_10",
+    "depth_cm_x_artwork_type_final_11",
+    "depth_cm_x_artwork_type_major3_01",
+    "depth_cm_x_artwork_type_major3_02",
+    "depth_cm_x_artwork_type_major3_03",
+    "depth_cm_x_artwork_type_major3_04"
+  ],
+  "numeric_features": [
+    "depth_cm",
+    "depth_cm_x_artwork_type_final_01",
+    "depth_cm_x_artwork_type_final_02",
+    "depth_cm_x_artwork_type_final_03",
+    "depth_cm_x_artwork_type_final_04",
+    "depth_cm_x_artwork_type_final_05",
+    "depth_cm_x_artwork_type_final_06",
+    "depth_cm_x_artwork_type_final_07",
+    "depth_cm_x_artwork_type_final_08",
+    "depth_cm_x_artwork_type_final_09",
+    "depth_cm_x_artwork_type_final_10",
+    "depth_cm_x_artwork_type_final_11",
+    "depth_cm_x_artwork_type_major3_01",
+    "depth_cm_x_artwork_type_major3_02",
+    "depth_cm_x_artwork_type_major3_03",
+    "depth_cm_x_artwork_type_major3_04"
+  ],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "depth_cm",
+      "category_col": "artwork_type_final",
+      "output_prefix": "depth_cm_x_artwork_type_final",
+      "top_n": 11
+    },
+    {
+      "numeric_col": "depth_cm",
+      "category_col": "artwork_type_final_major3",
+      "output_prefix": "depth_cm_x_artwork_type_major3",
+      "top_n": 4
+    }
+  ],
+  "variable_blocks": [
+    {
+      "name": "D6 기준: 깊이 + 작품 유형",
+      "features": ["depth_cm", "has_depth", "is_3d_candidate", "artwork_type_final", "artwork_type_final_major3"],
+      "description": "깊이와 작품 유형의 개별 효과만 사용"
+    },
+    {
+      "name": "D6 교차항: 깊이 x 작품 유형 전체",
+      "features": [
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate",
+        "artwork_type_final",
+        "artwork_type_final_major3",
+        "depth_cm_x_artwork_type_final_01",
+        "depth_cm_x_artwork_type_final_02",
+        "depth_cm_x_artwork_type_final_03",
+        "depth_cm_x_artwork_type_final_04",
+        "depth_cm_x_artwork_type_final_05",
+        "depth_cm_x_artwork_type_final_06",
+        "depth_cm_x_artwork_type_final_07",
+        "depth_cm_x_artwork_type_final_08",
+        "depth_cm_x_artwork_type_final_09",
+        "depth_cm_x_artwork_type_final_10",
+        "depth_cm_x_artwork_type_final_11"
+      ],
+      "description": "작품 유형별로 깊이 효과가 달라지는지 전체 유형 기준으로 확인"
+    },
+    {
+      "name": "D6 교차항: 깊이 x 작품 유형 3대 구분",
+      "features": [
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate",
+        "artwork_type_final_major3",
+        "depth_cm_x_artwork_type_major3_01",
+        "depth_cm_x_artwork_type_major3_02",
+        "depth_cm_x_artwork_type_major3_03",
+        "depth_cm_x_artwork_type_major3_04"
+      ],
+      "description": "회화/판화/조각/기타 큰 구분에서 깊이 효과 확인"
+    }
+  ],
+  "comment": {
+    "실험 목적": "조각이나 입체 후보 작품에서 깊이 정보가 작품 유형에 따라 다르게 작용하는지 확인한다.",
+    "실험군": "Group D: 작품 변수끼리의 교차항",
+    "기준선": "depth_cm + has_depth + is_3d_candidate + artwork_type",
+    "학습 피처": "기준선과 depth_cm x 작품 유형 교차항",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "구현 방식": "depth_cm은 숫자형으로 유지하고, 작품 유형별 표시값과 곱한 숫자형 교차항을 생성한다.",
+    "주의": "depth_cm 결측이 많으므로 전체 성능뿐 아니라 p95 APE와 3D 후보 구간 해석이 중요하다.",
+    "해석 기준": "교차항 추가 후 MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 작품 유형별 깊이 효과가 있다고 본다."
+  }
+}

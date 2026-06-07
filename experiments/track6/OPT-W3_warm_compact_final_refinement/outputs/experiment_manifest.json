@@ -1,0 +1,454 @@
+{
+  "created_at": "2026-05-28T06:45:18",
+  "experiment_id": "OPT-W3",
+  "description": "Warm focused final compact refinement.",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/OPT-W3_warm_compact_final_refinement/experiment_config.json",
+  "prompt_file": "experiments/track6/OPT-W3_warm_compact_final_refinement/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "ln_estimated_ho",
+      "width_cm",
+      "height_cm",
+      "log_area",
+      "aspect_ratio",
+      "artist_works_log",
+      "artist_works_log_is_missing"
+    ],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore",
+    "numeric_categorical_interactions": [
+      {
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "output_prefix": "log_area_x_artist_name_ko",
+        "top_n": 10
+      },
+      {
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "output_prefix": "ln_ho_x_artist_name_ko",
+        "top_n": 10
+      }
+    ],
+    "numeric_categorical_interaction_mappings": [
+      {
+        "output_col": "log_area_x_artist_name_ko_01",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "이혜라"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_02",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "안교범"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_03",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "고병준"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_04",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "서은혜"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_05",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "김현주"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_06",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "김레이시"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_07",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "박한지"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_08",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "황도유"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_09",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "김태"
+      },
+      {
+        "output_col": "log_area_x_artist_name_ko_10",
+        "numeric_col": "log_area",
+        "category_col": "artist_name_ko",
+        "category_value": "장은하"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_01",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "이혜라"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_02",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "안교범"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_03",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "고병준"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_04",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "서은혜"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_05",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "김현주"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_06",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "김레이시"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_07",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "박한지"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_08",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "황도유"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_09",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "김태"
+      },
+      {
+        "output_col": "ln_ho_x_artist_name_ko_10",
+        "numeric_col": "ln_estimated_ho",
+        "category_col": "artist_name_ko",
+        "category_value": "장은하"
+      }
+    ],
+    "numeric_numeric_interactions": [],
+    "numeric_numeric_interaction_mappings": []
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "W3-1: 작가명 + 전체 크기",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "description": "기존 Warm 최고권 기준 조합"
+    },
+    {
+      "name": "W3-2: W3-1 + 작가명 x 면적",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "log_area_x_artist_name_ko_01",
+        "log_area_x_artist_name_ko_02",
+        "log_area_x_artist_name_ko_03",
+        "log_area_x_artist_name_ko_04",
+        "log_area_x_artist_name_ko_05",
+        "log_area_x_artist_name_ko_06",
+        "log_area_x_artist_name_ko_07",
+        "log_area_x_artist_name_ko_08",
+        "log_area_x_artist_name_ko_09",
+        "log_area_x_artist_name_ko_10"
+      ],
+      "feature_prefixes": [
+        "log_area_x_artist_name_ko_"
+      ],
+      "description": "상위 10명 작가 기준 작가별 대형작 프리미엄 확인"
+    },
+    {
+      "name": "W3-3: W3-1 + 작가명 x 호수",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "ln_estimated_ho",
+        "ln_ho_x_artist_name_ko_01",
+        "ln_ho_x_artist_name_ko_02",
+        "ln_ho_x_artist_name_ko_03",
+        "ln_ho_x_artist_name_ko_04",
+        "ln_ho_x_artist_name_ko_05",
+        "ln_ho_x_artist_name_ko_06",
+        "ln_ho_x_artist_name_ko_07",
+        "ln_ho_x_artist_name_ko_08",
+        "ln_ho_x_artist_name_ko_09",
+        "ln_ho_x_artist_name_ko_10"
+      ],
+      "feature_prefixes": [
+        "ln_ho_x_artist_name_ko_"
+      ],
+      "description": "상위 10명 작가 기준 작가별 호수 프리미엄 확인"
+    },
+    {
+      "name": "W3-4: W3-1 + 작가 학습 작품 수",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_log_is_missing"
+      ],
+      "description": "작가별 학습량 정보 추가 효과 확인"
+    }
+  ],
+  "bucket_features": [],
+  "combo_features": [],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "output_prefix": "log_area_x_artist_name_ko",
+      "top_n": 10
+    },
+    {
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "output_prefix": "ln_ho_x_artist_name_ko",
+      "top_n": 10
+    }
+  ],
+  "numeric_categorical_interaction_mappings": [
+    {
+      "output_col": "log_area_x_artist_name_ko_01",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "이혜라"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_02",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "안교범"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_03",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "고병준"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_04",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "서은혜"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_05",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "김현주"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_06",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "김레이시"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_07",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "박한지"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_08",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "황도유"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_09",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "김태"
+    },
+    {
+      "output_col": "log_area_x_artist_name_ko_10",
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "category_value": "장은하"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_01",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "이혜라"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_02",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "안교범"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_03",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "고병준"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_04",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "서은혜"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_05",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "김현주"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_06",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "김레이시"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_07",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "박한지"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_08",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "황도유"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_09",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "김태"
+    },
+    {
+      "output_col": "ln_ho_x_artist_name_ko_10",
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "category_value": "장은하"
+    }
+  ],
+  "numeric_numeric_interactions": [],
+  "numeric_numeric_interaction_mappings": [],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/OPT-W3_warm_compact_final_refinement/data/train_features.csv",
+    "train_labels": "experiments/track6/OPT-W3_warm_compact_final_refinement/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/OPT-W3_warm_compact_final_refinement/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/OPT-W3_warm_compact_final_refinement/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/OPT-W3_warm_compact_final_refinement/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/OPT-W3_warm_compact_final_refinement/data/test_cold_labels.csv",
+    "interaction_mapping": "experiments/track6/OPT-W3_warm_compact_final_refinement/outputs/interaction_mapping.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/OPT-W3_warm_compact_final_refinement/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/OPT-W3_warm_compact_final_refinement/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/OPT-W3_warm_compact_final_refinement/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/OPT-W3_warm_compact_final_refinement/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/OPT-W3_warm_compact_final_refinement/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/OPT-W3_warm_compact_final_refinement/source_data/track6_test_cold_labels.csv"
+  }
+}

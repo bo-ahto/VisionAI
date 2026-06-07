@@ -1,0 +1,51 @@
+{
+  "experiment_id": "A7",
+  "title": "Track6 A7 에디션 정보 실험 결과",
+  "purpose": "에디션/유니크 구분이 작품 가격 예측에 도움이 되는지 확인",
+  "description": "Edition-only comparison using Track6 split with year, type, and edition enrichment",
+  "split_root": "data/track6_split_with_year_type_edition",
+  "exp_dir": "experiments/track6/A7_edition_only",
+  "prompt_file": "experiments/track6/A7_edition_only/prompts/used_prompt.md",
+  "export_feature_columns": [
+    "edition_class",
+    "is_edition",
+    "is_limited_edition",
+    "is_open_edition",
+    "is_unknown_edition",
+    "is_unique_work",
+    "edition_info_available"
+  ],
+  "variable_blocks": [
+    {
+      "name": "에디션 전체 구분",
+      "features": ["edition_class"],
+      "description": "unique, limited_edition, open_edition, unknown_edition, unknown 구분"
+    },
+    {
+      "name": "에디션 여부",
+      "features": ["is_edition"],
+      "description": "Limited/Open/Unknown edition 여부를 하나의 플래그로 사용"
+    },
+    {
+      "name": "에디션 세부 플래그",
+      "features": ["is_limited_edition", "is_open_edition", "is_unknown_edition", "is_unique_work"],
+      "description": "에디션 종류와 유니크 여부를 분리한 플래그"
+    },
+    {
+      "name": "에디션 전체 구분 + 정보 존재 여부",
+      "features": ["edition_class", "edition_info_available"],
+      "description": "에디션 구분과 에디션 정보가 실제로 수집됐는지 여부를 함께 사용"
+    }
+  ],
+  "comment": {
+    "실험 목적": "에디션 작품과 유니크 작품의 가격대 차이가 예측에 도움이 되는지 확인한다.",
+    "데이터 확인": "Artsy의 attribution_class와 Saatchi의 attribution/is_edition 값을 원본에서 복원했다.",
+    "사용 피처": "모델에는 edition_class와 에디션 파생 플래그만 사용한다.",
+    "제외 피처": "edition_source는 출처 정보라 모델 입력에서 제외한다. signed는 구조화 컬럼이 없어 A7에서 제외한다.",
+    "처리 기준": "에디션 관련 피처는 범주형 또는 플래그로 처리한다.",
+    "해석 기준": "같은 고정 모델군에서 MdAPE와 p95 APE가 낮아지면 에디션 정보가 가격 예측에 도움이 된다고 본다.",
+    "표본 수 주의": "전체 학습/테스트 수가 적은 것이 아니라, 에디션 작품 자체가 적다. train 에디션 613건, Warm test 에디션 33건, Cold test 에디션 232건이다.",
+    "결과 해석 방식": "전체 성능과 함께 edition/non-edition 및 edition_class별 slice 성능을 별도 파일로 확인한다.",
+    "주의": "Warm test의 에디션 표본은 33건으로 많지 않아 Warm edition slice 결론은 보조적으로 해석한다."
+  }
+}

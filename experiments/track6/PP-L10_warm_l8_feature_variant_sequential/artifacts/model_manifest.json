@@ -1,0 +1,68 @@
+{
+  "experiment_id": "PP-L10",
+  "title": "Warm PP-L8 순차 구조 피처 변형 비교",
+  "created_at": "2026-06-03T11:00:38",
+  "seed": 20260602,
+  "scope": "warm",
+  "model_order": "CatBoost Quantile -> Huber -> CatBoost residual",
+  "source_reference": "PP-L8",
+  "summary_path": "experiments/track6/PP-L10_warm_l8_feature_variant_summary_metrics.csv",
+  "feature_sets": [
+    {
+      "candidate_feature_set": "base_existing_combo",
+      "feature_strategy": "Warm 기준 피처셋",
+      "hypothesis": "기존 PP-L8과 같은 기준 피처셋으로 재현 기준을 만든다.",
+      "n_features": 13,
+      "features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key",
+      "sequential_features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, q10_log, q50_log, q90_log, quantile_width, price_range_ratio"
+    },
+    {
+      "candidate_feature_set": "artist_size_only",
+      "feature_strategy": "작가+크기 핵심축",
+      "hypothesis": "Warm 핵심축만 남기면 순차 구조에서 노이즈가 줄어드는지 확인한다.",
+      "n_features": 5,
+      "features": "artist_key, width_cm, height_cm, area_cm2, log_area",
+      "sequential_features": "artist_key, width_cm, height_cm, area_cm2, log_area, q10_log, q50_log, q90_log, quantile_width, price_range_ratio"
+    },
+    {
+      "candidate_feature_set": "artist_size_works",
+      "feature_strategy": "작가+크기+작가 학습량",
+      "hypothesis": "작가별 학습량을 Huber 중심선과 CatBoost residual에 함께 제공한다.",
+      "n_features": 7,
+      "features": "artist_key, width_cm, height_cm, area_cm2, log_area, artist_works_log, artist_works_count_train",
+      "sequential_features": "artist_key, width_cm, height_cm, area_cm2, log_area, artist_works_log, artist_works_count_train, q10_log, q50_log, q90_log, quantile_width, price_range_ratio"
+    },
+    {
+      "candidate_feature_set": "full_plus_generated_buckets",
+      "feature_strategy": "기준 피처셋+생성 bucket",
+      "hypothesis": "PP-U1에서 개선 신호가 있던 생성 bucket을 PP-L8 구조에 넣는다.",
+      "n_features": 21,
+      "features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d",
+      "sequential_features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d, q10_log, q50_log, q90_log, quantile_width, price_range_ratio"
+    },
+    {
+      "candidate_feature_set": "warm_base_search_all",
+      "feature_strategy": "기준 피처셋+검색 전체",
+      "hypothesis": "PP-Z1에서 Huber baseline 개선 신호가 있던 검색 피처를 순차 구조에 넣는다.",
+      "n_features": 60,
+      "features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade",
+      "sequential_features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade, q10_log, q50_log, q90_log, quantile_width, price_range_ratio"
+    },
+    {
+      "candidate_feature_set": "warm_base_artist_meta_all",
+      "feature_strategy": "기준 피처셋+작가 메타 전체",
+      "hypothesis": "작가 기준선을 보완하는 메타 피처가 residual 보정까지 유효한지 확인한다.",
+      "n_features": 35,
+      "features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko",
+      "sequential_features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, q10_log, q50_log, q90_log, quantile_width, price_range_ratio"
+    },
+    {
+      "candidate_feature_set": "warm_base_meta_external_search_all",
+      "feature_strategy": "기준 피처셋+작가 메타+전시/갤러리+검색 전체",
+      "hypothesis": "Cold식 확장 피처 전체를 PP-L8 순차 구조에 넣었을 때 개선되는지 확인한다.",
+      "n_features": 90,
+      "features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, exhibition_total_x_log_area, exhibition_total_x_followers_log, gallery_validated_x_followers_log, gallery_tier_x_exhibition_total_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source, exhibition_size_bucket, gallery_exhibition_bucket, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade",
+      "sequential_features": "width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, exhibition_total_x_log_area, exhibition_total_x_followers_log, gallery_validated_x_followers_log, gallery_tier_x_exhibition_total_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source, exhibition_size_bucket, gallery_exhibition_bucket, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade, q10_log, q50_log, q90_log, quantile_width, price_range_ratio"
+    }
+  ]
+}

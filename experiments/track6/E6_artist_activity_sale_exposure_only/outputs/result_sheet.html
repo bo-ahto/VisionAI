@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 E6 작가 활동량/판매 노출량 단독 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 E6 작가 활동량/판매 노출량 단독 실험 결과</h1>
+    <ul>
+      <li>목적: 등록 작품 수와 판매 중 작품 수가 가격 예측에 도움 되는지 확인</li>
+      <li>실험 ID: <code>E6</code></li>
+      <li>Warm 최고: <code>활동량 + 판매 노출량 + 결측</code> / <code>Linear Regression</code> / MdAPE 0.7263</li>
+      <li>Cold 최고: <code>활동량 + 판매 노출량 + 결측</code> / <code>Quantile-LAD</code> / MdAPE 0.6961</li>
+      <li>생성일: <code>2026-05-27T20:18:48</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/E6_artist_activity_sale_exposure_only/data/train_features.csv</code><br><code>experiments/track6/E6_artist_activity_sale_exposure_only/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/E6_artist_activity_sale_exposure_only/data/test_warm_features.csv</code><br><code>experiments/track6/E6_artist_activity_sale_exposure_only/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/E6_artist_activity_sale_exposure_only/data/test_cold_features.csv</code><br><code>experiments/track6/E6_artist_activity_sale_exposure_only/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/E6_artist_activity_sale_exposure_only/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/E6_artist_activity_sale_exposure_only/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>artist_meta_total_works, artist_meta_for_sale_works, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>등록 작품 수와 판매 중 작품 수가 가격 예측에 도움 되는지 확인</td></tr><tr><td>학습 피처</td><td>artist_meta_total_works / artist_meta_for_sale_works / artist_meta_total_works, artist_meta_for_sale_works, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>실험군</td><td>Group E: 작가 변수만</td></tr><tr><td>해석 중심</td><td>작가의 시장 노출량이 가격대 예측에 도움 되는지 확인한다.</td></tr><tr><td>주의</td><td>플랫폼별 수집 시점 차이가 있으므로 성능이 좋아도 운영 재현성을 별도로 확인한다.</td></tr><tr><td>purpose</td><td>등록 작품 수와 판매 중 작품 수가 가격 예측에 도움 되는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 활동량 + 판매 노출량 + 결측 + Linear Regression(MdAPE 0.7263), Cold 최고는 활동량 + 판매 노출량 + 결측 + Quantile-LAD(MdAPE 0.6961)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>등록 작품 수</h2>
+              <p><strong>사용 피처:</strong> <code>artist_meta_total_works</code> · 작가 플랫폼 등록 작품 수만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>-0.0020</td><td>1.3631</td><td>0.7551</td><td>6.1063</td><td>0.1895</td><td>0.3114</td><td>1.4741</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0007</td><td>1.3612</td><td>0.7521</td><td>6.4030</td><td>0.1829</td><td>0.2998</td><td>1.5098</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0007</td><td>1.3612</td><td>0.7521</td><td>6.4030</td><td>0.1829</td><td>0.2998</td><td>1.5098</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0103</td><td>1.3210</td><td>0.7010</td><td>7.1595</td><td>0.2088</td><td>0.3356</td><td>1.3643</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0103</td><td>1.3211</td><td>0.7009</td><td>7.1692</td><td>0.2097</td><td>0.3408</td><td>1.3676</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.1271</td><td>1.3953</td><td>0.6985</td><td>8.5098</td><td>0.1868</td><td>0.3414</td><td>1.6472</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>판매 중 작품 수</h2>
+              <p><strong>사용 피처:</strong> <code>artist_meta_for_sale_works</code> · 작가 판매 중 작품 수만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0126</td><td>1.3531</td><td>0.7573</td><td>6.3236</td><td>0.1944</td><td>0.3064</td><td>1.5246</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0153</td><td>1.3513</td><td>0.7634</td><td>7.0291</td><td>0.1895</td><td>0.3097</td><td>1.6754</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0153</td><td>1.3513</td><td>0.7634</td><td>7.0291</td><td>0.1895</td><td>0.3097</td><td>1.6754</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0570</td><td>1.2763</td><td>0.7017</td><td>6.9540</td><td>0.2059</td><td>0.3391</td><td>1.3746</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0475</td><td>1.2827</td><td>0.6991</td><td>6.9630</td><td>0.2052</td><td>0.3395</td><td>1.3719</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0607</td><td>1.2738</td><td>0.7184</td><td>7.2486</td><td>0.1939</td><td>0.3308</td><td>1.5696</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>활동량 + 판매 노출량 + 결측</h2>
+              <p><strong>사용 피처:</strong> <code>artist_meta_total_works, artist_meta_for_sale_works, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing</code> · 작품 등록량과 판매 노출량, 결측 상태를 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0110</td><td>1.3542</td><td>0.7319</td><td>6.4705</td><td>0.1779</td><td>0.3245</td><td>1.5543</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0082</td><td>1.3561</td><td>0.7263</td><td>6.6752</td><td>0.1779</td><td>0.3180</td><td>1.5935</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0082</td><td>1.3561</td><td>0.7263</td><td>6.6752</td><td>0.1779</td><td>0.3180</td><td>1.5935</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.1091</td><td>1.2405</td><td>0.6967</td><td>5.8775</td><td>0.1910</td><td>0.3379</td><td>1.3084</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0965</td><td>1.2492</td><td>0.6961</td><td>5.9873</td><td>0.1965</td><td>0.3404</td><td>1.3076</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0453</td><td>1.3437</td><td>0.7316</td><td>6.9558</td><td>0.1778</td><td>0.3133</td><td>1.4317</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/E6_artist_activity_sale_exposure_only/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

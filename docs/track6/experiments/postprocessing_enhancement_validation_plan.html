@@ -1,0 +1,1082 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>postprocessing_enhancement_validation_plan</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:1180px;margin:36px auto;color:#1f2933;line-height:1.65;padding:0 24px}h1{font-size:30px}h2{font-size:22px;margin-top:34px;border-bottom:1px solid #d9e2ec;padding-bottom:6px}h3{font-size:18px;margin-top:24px}table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0 24px}th,td{border:1px solid #d9e2ec;padding:8px 10px;vertical-align:top}th{background:#f0f4f8;text-align:left}code,pre{background:#f5f7fa;border:1px solid #d9e2ec;border-radius:4px}code{padding:1px 4px}pre{padding:14px;overflow:auto}blockquote{border-left:5px solid #2f6f73;background:#f4f8f8;margin:12px 0;padding:12px 16px;font-weight:650}li{margin:5px 0}hr{border:0;border-top:1px solid #d9e2ec;margin:28px 0}</style></head><body><h1>Track6 후처리 및 모델 고도화 검증 계획</h1>
+<ul>
+<li>목적: 선정된 Warm / Cold 모델을 실제 가격 예측 서비스에 적용하기 전, 예측 정확도 개선 후보정, 예측값 표시 방식, 신뢰도 기준, 추가 데이터 수집 효과를 검증한다.</li>
+<li>기준 모델:</li>
+<li>Warm: <code>Huber</code></li>
+<li>Cold 1순위: <code>CatBoost</code></li>
+<li>Cold 보조 비교 후보: <code>LightGBM</code>, <code>Quantile-LAD</code>, <code>HistGradientBoosting</code></li>
+<li>기준 문서:</li>
+<li><code>final_model_decision_and_enhancement_plan.md</code></li>
+<li><code>followup_experiment_plan.md</code></li>
+<li>기준 데이터:</li>
+<li>Track6 고정 split</li>
+<li>validation: 보정 기준과 정책 결정용</li>
+<li>test: 최종 확인용</li>
+<li>핵심 원칙:</li>
+<li>모델 후보는 이미 선정된 상태로 본다.</li>
+<li>단, 후처리 기준으로 사용할 피처/구간은 최종 모델 기준 group-drop ablation으로 먼저 검증한다.</li>
+<li>후속 실험의 1차 목적은 단일 예측 정확도 개선이다.</li>
+<li>후속 실험의 2차 목적은 가격 범위와 신뢰도 표시 안정화이다.</li>
+<li>Warm / Cold는 합치지 않고 별도 판단한다.</li>
+<li>test 결과를 보면서 보정 기준을 다시 만들지 않는다.</li>
+</ul>
+<h2>0. 이 문서에서 중점적으로 볼 내용</h2>
+<ul>
+<li>1차 중점:</li>
+<li>예측값 자체를 더 맞추는 후보정</li>
+<li>MdAPE, RMSE_log, p95_APE, Within_30 개선 여부 확인</li>
+<li>실제 서비스에서 “예측 가격”으로 보여줄 단일 가격의 정확도 개선</li>
+</ul>
+<ul>
+<li>2차 중점:</li>
+<li>가격 범위 제공</li>
+<li>신뢰도 문구 제공</li>
+<li>위험 구간 안내</li>
+<li>단일 예측값이 충분히 개선되지 않을 때의 서비스 안전장치</li>
+</ul>
+<ul>
+<li>구분 기준:</li>
+<li><code>PP</code>는 <code>Post Processing</code>의 약자</li>
+<li>기존 Group E/F/G/H/I/J 실험 코드와 충돌하지 않기 위한 별도 라벨</li>
+<li>예측 정확도 개선 후보정:</li>
+<li>예측 가격 숫자 자체를 바꾸는 작업</li>
+<li>예: 구간별 편향 보정, 잔차 보정 모델, 앙상블, 가격대별 캘리브레이션</li>
+<li>표시 안정화 후보정:</li>
+<li>예측 가격 숫자는 그대로 두고 보여주는 방식을 보완하는 작업</li>
+<li>예: 가격 범위, 신뢰도 등급, 주의 문구</li>
+</ul>
+<ul>
+<li>우선 실행:</li>
+<li><code>PRE-PP 모델별 group-drop ablation</code></li>
+<li><code>PP1 구간별 편향 보정</code></li>
+<li><code>PP2 잔차 보정 모델</code></li>
+<li><code>PP3 모델 앙상블/블렌딩</code></li>
+<li><code>PP4 예측값 캘리브레이션</code></li>
+<li><code>PP5 신뢰도 기반 모델 라우팅</code></li>
+</ul>
+<ul>
+<li>후순위 실행:</li>
+<li><code>PP6 Warm 가격 범위 보정</code></li>
+<li><code>PP7 Cold 가격 범위 보정</code></li>
+<li><code>PP8 신뢰도 점수</code></li>
+<li><code>PP9 Warm 저이력 fallback</code></li>
+<li><code>PP10 외부 작가 DB 추가 수집 검증</code></li>
+<li><code>PP11 검색/소셜 인지도 지표 수집 검증</code></li>
+</ul>
+<table><thead><tr><th>구분</th><th>실험</th><th>예측 정확도에 미치는 영향</th><th>핵심 판단 지표</th></tr></thead><tbody>
+<tr><td>선행 검증</td><td>PRE-PP group-drop ablation</td><td>후처리 기준으로 쓸 피처/구간의 필요성 확인</td><td>제거 전후 MdAPE, p95_APE, RMSE_log</td></tr>
+<tr><td>정확도 개선</td><td>PP1 구간별 편향 보정</td><td>예측 가격을 직접 보정</td><td>MdAPE, RMSE_log, p95_APE</td></tr>
+<tr><td>정확도 개선</td><td>PP2 잔차 보정 모델</td><td>남은 오차를 2단계 모델로 보정</td><td>MdAPE, RMSE_log, p95_APE</td></tr>
+<tr><td>정확도 개선</td><td>PP3 모델 앙상블/블렌딩</td><td>여러 모델 예측을 결합해 흔들림 감소</td><td>MdAPE, p95_APE</td></tr>
+<tr><td>정확도 개선</td><td>PP4 예측값 캘리브레이션</td><td>가격대별 과대/과소 예측 보정</td><td>가격대별 MdAPE, RMSE_log</td></tr>
+<tr><td>정확도 개선</td><td>PP5 신뢰도 기반 모델 라우팅</td><td>조건별로 더 적합한 모델 선택</td><td>구간별 MdAPE, 구간별 p95_APE</td></tr>
+<tr><td>표시 안정화</td><td>PP6 Warm 가격 범위</td><td>예측값 주변 범위 제공</td><td>coverage, interval width</td></tr>
+<tr><td>표시 안정화</td><td>PP7 Cold 가격 범위</td><td>Cold 불확실성 안내</td><td>coverage, interval width</td></tr>
+<tr><td>표시 안정화</td><td>PP8 신뢰도 등급</td><td>위험 조건 표시</td><td>구간별 p95_APE, sample 수</td></tr>
+<tr><td>라우팅 보완</td><td>PP9 Warm 저이력 fallback</td><td>저이력 Warm 작가 처리 방식 결정</td><td>저이력 구간 MdAPE, p95_APE</td></tr>
+<tr><td>데이터 고도화</td><td>PP10 외부 작가 DB</td><td>추가 수집 데이터를 모델 피처로 넣었을 때 정확도가 개선되는지 확인</td><td>MdAPE 개선폭, 결측률, 수집 가능률</td></tr>
+<tr><td>데이터 고도화</td><td>PP11 검색/소셜 인지도 지표</td><td>검색량·검색 결과·소셜 언급량을 모델 피처로 넣었을 때 정확도가 개선되는지 확인</td><td>MdAPE 개선폭, 결측률, 동명이인 오염률</td></tr>
+</tbody></table>
+<h2>1. 왜 후처리와 고도화 검증이 필요한가</h2>
+<ul>
+<li>Warm 결과:</li>
+<li>Test MdAPE 약 <code>22.4%</code></li>
+<li>Test p95_APE 약 <code>2.02</code></li>
+<li>단일 가격 예측 서비스 가능성 높음</li>
+<li>단, 작가명 매칭 오류와 저이력 작가 위험 존재</li>
+</ul>
+<ul>
+<li>Cold 결과:</li>
+<li>CatBoost Test MdAPE 약 <code>48.4%</code></li>
+<li>CatBoost Test p95_APE 약 <code>4.42</code></li>
+<li>LightGBM Test MdAPE 약 <code>48.0%</code></li>
+<li>LightGBM Test p95_APE 약 <code>5.06</code></li>
+<li>단일 가격만 제공하기에는 위험</li>
+<li>가격 범위, 신뢰도, 주의 문구 필수</li>
+</ul>
+<ul>
+<li>결론:</li>
+<li>후처리 전: 최종 피처셋 기준의 group-drop ablation으로 보정 segment 타당성을 먼저 확인</li>
+<li>Warm: 단일 예측 정확도 유지 + 저이력 작가 보정 검증</li>
+<li>Cold: 단일 예측 정확도 개선 후보정 우선</li>
+<li>Cold: 가격 범위와 신뢰도 라우팅은 서비스 안전장치로 병행</li>
+<li>가격 범위 보정만으로는 예측 정확도가 올라가지 않음</li>
+<li>예측 정확도 개선은 PP1, PP2, PP3, PP4, PP5에서 먼저 검증</li>
+</ul>
+<h2>2. 예측 정확도를 올리는 후보정 실험 우선순위</h2>
+<ul>
+<li>0순위: 모델별 피처 영향도 선행 검증</li>
+<li>목적: 후처리 기준으로 사용할 피처/구간이 실제 성능에 필요한지 확인</li>
+<li>기대 효과: 후처리 segment 선택의 설명력 확보</li>
+<li>예시: CatBoost <code>depth/3D</code>, <code>medium_shape_bucket</code> 제거 실험, LightGBM <code>size_bucket</code>, <code>support_size_bucket</code> 제거 실험</li>
+</ul>
+<ul>
+<li>1순위: validation 기반 편향 보정</li>
+<li>목적: 반복적으로 높게/낮게 예측하는 구간 보정</li>
+<li>기대 효과: MdAPE, RMSE_log 개선</li>
+<li>예시: Cold 대형 작품 과대예측 보정, 특정 재료 과소예측 보정</li>
+</ul>
+<ul>
+<li>2순위: 잔차 보정 모델</li>
+<li>목적: 1차 모델의 예측 오차를 별도 모델로 보정</li>
+<li>기대 효과: 단일 예측값 자체 개선</li>
+<li>예시: <code>실제 로그가격 - 예측 로그가격</code>을 target으로 학습</li>
+</ul>
+<ul>
+<li>3순위: 모델 앙상블/블렌딩</li>
+<li>목적: 서로 다른 모델의 장점을 평균 또는 가중 평균으로 결합</li>
+<li>기대 효과: p95_APE, RMSE_log 안정화</li>
+<li>예시: Cold CatBoost + LightGBM + Quantile-LAD</li>
+</ul>
+<ul>
+<li>4순위: 저신뢰 구간 라우팅</li>
+<li>목적: 특정 조건에서 더 안정적인 모델 또는 보정식 사용</li>
+<li>기대 효과: 고위험 구간 p95_APE 감소</li>
+<li>예시: 저이력 Warm은 Cold 방식 또는 보수적 보정 사용</li>
+</ul>
+<ul>
+<li>5순위: 추가 데이터 수집 후 재학습</li>
+<li>목적: 모델이 모르는 외부 작가 정보를 추가</li>
+<li>기대 효과: Cold 성능 근본 개선</li>
+<li>예시: 전시 이력, 수상, 기관 전시, 갤러리 소속</li>
+</ul>
+<ul>
+<li>데이터 고도화 실험의 필수 연결:</li>
+<li>추가 데이터를 수집만 하면 채택하지 않음</li>
+<li>반드시 모델 피처로 변환해야 함</li>
+<li>기준 모델 대비 성능 개선을 확인해야 함</li>
+<li>개선이 없으면 수집 우선순위를 낮춤</li>
+<li>개선이 있어도 결측률/동명이인 오염률이 높으면 보류</li>
+</ul>
+<h2>3. 후처리/고도화 실험 방법론</h2>
+<ul>
+<li>진행 순서:</li>
+<li>가설 정의</li>
+<li>검증 데이터 고정</li>
+<li>기준 모델 예측값 생성</li>
+<li>모델별 핵심 피처 group-drop ablation 수행</li>
+<li>후처리 기준 segment 확정</li>
+<li>후처리 기준 적용</li>
+<li>validation 성능 확인</li>
+<li>정책 후보 선정</li>
+<li>test 최종 확인</li>
+<li>운영 문구와 적용 조건 정리</li>
+</ul>
+<ul>
+<li>예측 정확도 개선 후보정의 공통 흐름:</li>
+<li>validation에서 기준 모델 예측값 생성</li>
+<li>최종 모델 기준 피처 그룹 제거 실험으로 보정 기준 후보 검증</li>
+<li>validation에서 오차 패턴 확인</li>
+<li>validation에서만 보정값 또는 보정 모델 학습</li>
+<li>test에는 확정된 보정값만 한 번 적용</li>
+<li>test 결과를 보고 보정 규칙을 다시 바꾸지 않음</li>
+</ul>
+<ul>
+<li>정확도 후보정 전후 비교 방식:</li>
+<li>보정 전 예측값 성능 기록</li>
+<li>보정 후 예측값 성능 기록</li>
+<li>전체 성능과 slice 성능을 함께 비교</li>
+<li>Warm / Cold를 합치지 않음</li>
+<li>개선 폭이 작아도 p95_APE가 줄면 보조 후보로 유지 가능</li>
+</ul>
+<ul>
+<li>평가 기준:</li>
+<li>MdAPE</li>
+<li>p95_APE</li>
+<li>Within_30</li>
+<li>Within_50</li>
+<li>RMSE_log</li>
+<li>가격 범위 coverage</li>
+<li>가격 범위 폭</li>
+<li>slice별 sample 수</li>
+</ul>
+<ul>
+<li>채택 기준:</li>
+<li>MdAPE가 개선됨</li>
+<li>RMSE_log가 개선되거나 유지됨</li>
+<li>p95_APE가 악화되지 않음</li>
+<li>큰 오차 위험이 줄어듦</li>
+<li>운영에서 설명 가능함</li>
+<li>입력 피처를 실제로 만들 수 있음</li>
+<li>반복 검증 시 같은 방향의 결과가 나옴</li>
+</ul>
+<ul>
+<li>보류 기준:</li>
+<li>성능 개선이 작음</li>
+<li>sample 수가 부족함</li>
+<li>특정 출처에 과하게 의존함</li>
+<li>운영에서 자동 생성 불가</li>
+<li>가격 범위가 지나치게 넓음</li>
+<li>test 결과를 보고 보정 기준을 다시 조정해야만 좋아짐</li>
+</ul>
+<h2>4. PP1 구간별 편향 보정 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>단일 예측값 자체의 정확도를 올린다.</li>
+<li>특정 구간에서 반복적으로 높게 또는 낮게 예측하는 문제를 줄인다.</li>
+<li>모델을 교체하지 않고 예측값을 후처리로 보정한다.</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>가격대, 크기 구간, 작가 이력 구간, 재료/지지체 구간별 반복 편향이 존재하면 validation 기준 보정으로 MdAPE와 RMSE_log를 줄일 수 있다.</li>
+</ul>
+<h3>보정 후보</h3>
+<ul>
+<li>가격대별 보정</li>
+<li>크기 구간별 보정</li>
+<li>Warm 작가 학습 작품 수 구간별 보정</li>
+<li>Cold 작가 메타 정보량 구간별 보정</li>
+<li>재료/지지체 구간별 보정</li>
+<li>Cold 활동량/인지도 구간별 보정</li>
+<li>작가명 매칭 신뢰도별 보정</li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>validation 예측값에서 구간별 로그 오차 계산</li>
+<li>반복적으로 높게 예측하는 구간과 낮게 예측하는 구간 탐색</li>
+<li>validation 기준 보정값 생성</li>
+<li>보정 공식 적용</li>
+<li><code>residual_log = 실제 로그가격 - 예측 로그가격</code></li>
+<li><code>구간 보정값 = 해당 구간 residual_log의 median</code></li>
+<li><code>보정 예측 로그가격 = 기존 예측 로그가격 + 구간 보정값</code></li>
+<li><code>보정 예측 가격 = exp(보정 예측 로그가격)</code></li>
+<li>구간 sample 수가 부족하면 상위 구간 보정값 사용</li>
+<li>예: 세부 재료 구간 부족 시 재료 대분류 보정값 사용</li>
+<li>예: 작가 이력 구간 부족 시 전체 Warm 보정값 사용</li>
+<li>test에 보정값을 한 번만 적용</li>
+<li>보정 전후 성능 비교</li>
+</ul>
+<h3>검증해야 하는 보정 단위</h3>
+<ul>
+<li>Warm 우선 보정 단위:</li>
+<li>작가 학습 작품 수 구간</li>
+<li>작가명 계수 안정성 구간</li>
+<li>가격대 구간</li>
+<li>크기 구간</li>
+<li>재료/지지체 구간</li>
+</ul>
+<ul>
+<li>Cold 우선 보정 단위:</li>
+<li>가격대 구간</li>
+<li>호수/크기 구간</li>
+<li>재료/지지체 구간</li>
+<li>작가 메타 정보량 구간</li>
+<li>활동량/인지도 정보 구간</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>보정 전후 MdAPE</li>
+<li>보정 전후 p95_APE</li>
+<li>보정 전후 RMSE_log</li>
+<li>보정 전후 Within_30</li>
+<li>보정 전후 Within_50</li>
+<li>구간별 오차 변화</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>전체 MdAPE가 보정 전보다 낮아져야 함</li>
+<li>RMSE_log가 보정 전보다 낮아지거나 최소한 유지되어야 함</li>
+<li>p95_APE가 악화되면 보류</li>
+<li>특정 구간만 좋아지고 전체가 나빠지면 보류</li>
+<li>보정 규칙이 너무 복잡하면 보류</li>
+<li>sample 수가 부족한 구간 보정은 보류</li>
+<li>보정값이 과도하게 커서 예측 가격을 크게 흔들면 보류</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>Warm 보정 정책</li>
+<li>Cold 보정 정책</li>
+<li>가격대별 편향 보정 여부</li>
+<li>보정 전후 성능표</li>
+<li>운영 적용 가능한 보정 규칙 목록</li>
+</ul>
+<h2>5. PP2 잔차 보정 모델 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>1차 모델이 남긴 오차를 별도 모델로 학습한다.</li>
+<li>단순 구간 보정보다 세밀한 예측값 보정이 가능한지 확인한다.</li>
+<li>Cold 단일 예측 정확도 개선 가능성을 우선 검증한다.</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>기준 모델 예측값과 입력 피처를 함께 사용하면, 남은 오차 패턴을 학습해 단일 예측값의 MdAPE를 낮출 수 있다.</li>
+</ul>
+<h3>잔차 정의</h3>
+<ul>
+<li>기준 예측값:</li>
+<li><code>pred_log</code></li>
+<li>실제 로그가격:</li>
+<li><code>actual_log</code></li>
+<li>잔차:</li>
+<li><code>residual = actual_log - pred_log</code></li>
+<li>보정 후 예측값:</li>
+<li><code>corrected_pred_log = pred_log + residual_model_prediction</code></li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>validation을 내부 학습/검증으로 다시 나눈다.</li>
+<li>기준 모델 예측값을 생성한다.</li>
+<li>잔차를 target으로 둔다.</li>
+<li>잔차 보정 모델 후보를 비교한다.</li>
+<li>Ridge</li>
+<li>Huber</li>
+<li>LightGBM</li>
+<li>CatBoost</li>
+<li>최종 잔차 보정 모델을 test에 한 번 적용한다.</li>
+</ul>
+<h3>잔차 모델 입력 후보</h3>
+<ul>
+<li>기준 모델 예측값</li>
+<li>기준 모델 예측 로그가격</li>
+<li>작품 크기</li>
+<li>재료/지지체</li>
+<li>작가 메타 정보량</li>
+<li>작가 활동량/인지도</li>
+<li>신뢰도 후보 피처</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>보정 전후 MdAPE</li>
+<li>보정 전후 RMSE_log</li>
+<li>보정 전후 p95_APE</li>
+<li>보정 전후 Within_30</li>
+<li>잔차 모델 과적합 여부</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>validation과 test 모두에서 MdAPE 개선</li>
+<li>RMSE_log 악화 없음</li>
+<li>p95_APE 악화 없음</li>
+<li>잔차 모델이 너무 복잡하면 보류</li>
+<li>test에서만 좋아지면 채택하지 않음</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>Cold 예측 정확도 개선 후보</li>
+<li>Warm 저이력 작가 보정 후보</li>
+<li>최종 운영 모델의 2단계 보정 구조 검토</li>
+</ul>
+<h2>6. PP3 모델 앙상블/블렌딩 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>한 모델의 약점을 다른 모델로 보완한다.</li>
+<li>Cold에서 CatBoost 단독보다 안정적인 조합이 있는지 확인한다.</li>
+<li>p95_APE와 RMSE_log 개선 가능성을 확인한다.</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>CatBoost, LightGBM, Quantile-LAD처럼 성격이 다른 모델을 결합하면 큰 오차 위험을 줄일 수 있다.</li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>같은 피처셋으로 여러 모델 예측값 생성</li>
+<li>validation에서 가중치 후보 탐색</li>
+<li>단순 평균</li>
+<li>MdAPE 기준 가중 평균</li>
+<li>RMSE_log 기준 가중 평균</li>
+<li>p95_APE 방어형 가중 평균</li>
+<li>선택한 가중치를 test에 한 번 적용</li>
+</ul>
+<h3>후보 조합</h3>
+<ul>
+<li>Cold:</li>
+<li>CatBoost + LightGBM</li>
+<li>CatBoost + Quantile-LAD</li>
+<li>CatBoost + HistGradientBoosting</li>
+<li>CatBoost + Quantile-LAD + HistGradientBoosting</li>
+</ul>
+<ul>
+<li>Warm:</li>
+<li>Huber + Linear Regression</li>
+<li>Huber + Ridge</li>
+<li>Huber + 작가명 교차항 후보</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>MdAPE</li>
+<li>RMSE_log</li>
+<li>p95_APE</li>
+<li>Within_30</li>
+<li>모델별 예측 분산</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>CatBoost 단독보다 Cold MdAPE 개선</li>
+<li>p95_APE가 악화되지 않음</li>
+<li>가중치가 단순하고 재현 가능함</li>
+<li>특정 모델 하나가 압도적으로 좋으면 앙상블 보류</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>Cold 단일 예측 정확도 개선</li>
+<li>큰 오차 방어용 보조 모델 후보</li>
+</ul>
+<h2>7. PP4 예측값 캘리브레이션 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>예측값의 가격대별 치우침을 줄인다.</li>
+<li>모델이 낮은 가격대와 높은 가격대에서 각각 과대/과소 예측하는지 보정한다.</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>로그가격 구간별로 예측값을 재보정하면 전체 MdAPE와 가격대별 오차 균형이 개선될 수 있다.</li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>validation 예측값을 가격대 구간으로 나눈다.</li>
+<li>100만 원 미만</li>
+<li>100만~300만 원</li>
+<li>300만~1,000만 원</li>
+<li>1,000만 원 이상</li>
+<li>각 구간별 실제 로그가격과 예측 로그가격의 관계를 확인한다.</li>
+<li>보정 함수 후보를 비교한다.</li>
+<li>선형 캘리브레이션</li>
+<li>isotonic regression</li>
+<li>구간별 median residual 보정</li>
+<li>test에서 보정 전후 비교</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>전체 MdAPE</li>
+<li>가격대별 MdAPE</li>
+<li>전체 RMSE_log</li>
+<li>가격대별 RMSE_log</li>
+<li>p95_APE</li>
+<li>과대예측/과소예측 비율</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>전체 MdAPE 개선</li>
+<li>특정 가격대 악화 제한</li>
+<li>p95_APE 악화 없음</li>
+<li>보정 함수가 단순하고 설명 가능함</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>가격대별 예측값 보정</li>
+<li>고가 작품 과대/과소 예측 완화</li>
+<li>서비스 가격대별 신뢰도 문구 개선</li>
+</ul>
+<h2>8. PP5 신뢰도 기반 모델 라우팅 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>모든 작품에 같은 모델을 쓰지 않고 조건별로 더 안정적인 모델을 선택한다.</li>
+<li>특히 Cold 고위험 구간과 Warm 저이력 구간에서 예측 정확도를 개선한다.</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>저위험 구간과 고위험 구간을 나누면, 구간별 최적 모델 또는 보정식을 적용해 전체 MdAPE와 p95_APE를 개선할 수 있다.</li>
+</ul>
+<h3>라우팅 후보</h3>
+<ul>
+<li>Warm:</li>
+<li>고이력 작가: Warm Huber</li>
+<li>저이력 작가: Warm Huber 보정 또는 Cold CatBoost/LightGBM fallback</li>
+</ul>
+<ul>
+<li>Cold:</li>
+<li>메타 충분: Cold CatBoost</li>
+<li>메타 부족: Quantile-LAD 또는 보수적 보정</li>
+<li>극단 크기: 크기 구간 보정 적용</li>
+<li>NANT 분류 불명확: 신뢰도 낮음 처리</li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>validation에서 라우팅 규칙 후보 생성</li>
+<li>규칙별 모델 선택 결과 계산</li>
+<li>단일 모델 대비 성능 비교</li>
+<li>test에서 최종 라우팅 규칙 검증</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>전체 MdAPE</li>
+<li>전체 p95_APE</li>
+<li>구간별 MdAPE</li>
+<li>구간별 p95_APE</li>
+<li>모델 선택 비율</li>
+<li>고위험 구간 sample 수</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>전체 MdAPE 개선</li>
+<li>고위험 구간 p95_APE 개선</li>
+<li>라우팅 규칙이 설명 가능함</li>
+<li>sample 수가 적은 규칙은 보류</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>운영 라우팅 정책</li>
+<li>신뢰도별 모델 선택 기준</li>
+<li>저신뢰 결과 안내 문구</li>
+</ul>
+<h2>9. PP6 Warm 가격 범위 보정 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>Warm 예측값을 단일 가격으로만 보여도 되는지 확인</li>
+<li>Warm에서도 참고 가격 범위를 함께 제공해야 하는지 판단</li>
+<li>예측 가격 주변의 실무적 허용 범위 설정</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>Warm은 예측력이 비교적 높기 때문에, 좁은 가격 범위로도 충분한 coverage를 확보할 수 있다.</li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>Warm validation에 Huber 모델 적용</li>
+<li>예측 가격과 실제 가격의 로그 오차 계산</li>
+<li>coverage 후보별 가격 범위 계산</li>
+<li>70%</li>
+<li>80%</li>
+<li>90%</li>
+<li>각 coverage별 실제 포함률과 범위 폭 확인</li>
+<li>Warm test에서 최종 후보 범위 한 번만 확인</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>coverage:</li>
+<li>예측 가격 범위 안에 실제 가격이 들어온 비율</li>
+<li>interval width:</li>
+<li>가격 범위가 얼마나 넓은지</li>
+<li>MdAPE:</li>
+<li>단일 예측값의 대표 오차</li>
+<li>p95_APE:</li>
+<li>큰 오차 위험</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>80% coverage 범위가 지나치게 넓지 않으면 채택 후보</li>
+<li>90% coverage 범위가 너무 넓으면 보수적 안내용으로만 사용</li>
+<li>Warm 가격 범위가 실무적으로 이해 가능한 수준이면 서비스 화면 반영</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>Warm 표시 방식 결정</li>
+<li>예측가만 표시</li>
+<li>예측가 + 참고 범위 표시</li>
+<li>예측가 + 신뢰도 표시</li>
+</ul>
+<h2>10. PP7 Cold 가격 범위 보정 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>Cold 예측값을 단일 가격으로 제공할 수 있는지 확인</li>
+<li>Cold 가격 범위가 실무적으로 의미 있는지 확인</li>
+<li>Cold를 “정확한 예측”이 아니라 “참고 추정”으로 보여야 하는지 판단</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>Cold는 단일 가격 오차가 크기 때문에, 가격 범위와 신뢰도 문구를 함께 제공해야 한다.</li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>Cold validation에 CatBoost 모델 적용</li>
+<li>예측 가격과 실제 가격의 로그 오차 계산</li>
+<li>coverage 후보별 가격 범위 계산</li>
+<li>70%</li>
+<li>80%</li>
+<li>90%</li>
+<li>Cold 전체와 주요 slice를 별도 계산</li>
+<li>크기 구간</li>
+<li>재료 구간</li>
+<li>지지체 구간</li>
+<li>작가 메타 보유량 구간</li>
+<li>활동량/인지도 정보 있음/없음</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>coverage</li>
+<li>interval width</li>
+<li>MdAPE</li>
+<li>p95_APE</li>
+<li>Within_30</li>
+<li>slice별 coverage</li>
+<li>slice별 sample 수</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>Cold 80% coverage 범위가 지나치게 넓으면 단일 예측 서비스 보류</li>
+<li>특정 slice에서 범위가 크게 넓으면 고위험 조건으로 분리</li>
+<li>저위험 slice에서 범위가 충분히 좁으면 조건부 제공 가능</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>Cold 화면 정책 결정</li>
+<li>예측가 + 넓은 가격 범위</li>
+<li>참고용 추정 문구</li>
+<li>신뢰도 낮음 표시</li>
+<li>고위험 조건 경고</li>
+</ul>
+<h2>11. PP8 신뢰도 점수 및 라우팅 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>예측 결과마다 신뢰도 등급을 붙일 수 있는지 확인</li>
+<li>Cold 전체를 한 가지 방식으로 보여주는 문제 방지</li>
+<li>Warm에서도 저이력 작가를 별도 처리할지 판단</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>작가 학습 작품 수, 작가 메타 정보량, 작품 극단값을 이용하면 예측 신뢰도를 구분할 수 있다.</li>
+</ul>
+<h3>후보 신뢰도 변수</h3>
+<ul>
+<li>Warm:</li>
+<li>작가 학습 작품 수</li>
+<li><code>artist_works_log</code></li>
+<li>작가명 매칭 신뢰도</li>
+<li>작품 크기가 학습 분포 안에 있는지 여부</li>
+</ul>
+<ul>
+<li>Cold:</li>
+<li>작가 메타 정보 보유 개수</li>
+<li>활동량/인지도 정보 존재 여부</li>
+<li>NANT 재료/지지체 분류 성공 여부</li>
+<li>작품 크기 극단값 여부</li>
+<li>작가 외부 정보 출처 수</li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>validation 예측 결과를 신뢰도 후보 기준으로 구간화</li>
+<li>각 구간별 성능 확인</li>
+<li>저위험 / 보통 / 고위험 후보 기준 생성</li>
+<li>test에서 최종 기준 검증</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>구간별 MdAPE</li>
+<li>구간별 p95_APE</li>
+<li>구간별 Within_30</li>
+<li>구간별 coverage</li>
+<li>구간별 sample 수</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>고위험 구간:</li>
+<li>전체보다 p95_APE가 높음</li>
+<li>coverage가 낮음</li>
+<li>sample 수가 충분함</li>
+<li>저위험 구간:</li>
+<li>전체보다 MdAPE가 낮음</li>
+<li>Within_30이 높음</li>
+<li>가격 범위가 좁음</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>서비스 신뢰도 등급 정의</li>
+<li>높음</li>
+<li>보통</li>
+<li>낮음</li>
+<li>신뢰도별 문구 정의</li>
+<li>Warm / Cold 라우팅 기준 보완</li>
+</ul>
+<h2>12. PP9 Warm 저이력 작가 fallback 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>학습 데이터에 작가가 있어도 작품 수가 적으면 Warm 모델이 불안정한지 확인</li>
+<li>Warm / Cold 라우팅 기준을 단순 작가 존재 여부에서 확장할지 판단</li>
+</ul>
+<h3>가설</h3>
+<ul>
+<li>학습 작품 수가 적은 Warm 작가는 Warm 모델보다 Cold 방식 또는 보수적 범위 제공이 더 안정적일 수 있다.</li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>Warm test를 작가 학습 작품 수 기준으로 구간화</li>
+<li>1~4개</li>
+<li>5~9개</li>
+<li>10~29개</li>
+<li>30개 이상</li>
+<li>같은 작품에 대해 Warm 후보와 Cold 후보를 모두 적용</li>
+<li>구간별 성능 비교</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>구간별 MdAPE</li>
+<li>구간별 p95_APE</li>
+<li>구간별 Within_30</li>
+<li>구간별 sample 수</li>
+<li>Warm 대비 Cold 성능 차이</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>저이력 구간에서 Warm p95_APE가 높으면 저신뢰 Warm 처리</li>
+<li>특정 구간에서 Cold가 더 안정적이면 fallback 후보</li>
+<li>sample 수가 부족하면 결론 보류</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>Warm / Cold 라우팅 정책 보완</li>
+<li>저이력 작가 안내 문구 정의</li>
+<li>작가 데이터 추가 수집 필요 기준 설정</li>
+</ul>
+<h2>13. PP10 외부 작가 DB 추가 수집 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>추가 데이터 수집이 실제 성능 개선으로 이어지는지 확인</li>
+<li>작가 DB 구축 우선순위를 정한다.</li>
+<li>운영에서 자동 매칭 가능한 피처를 선별한다.</li>
+</ul>
+<h3>수집 우선순위</h3>
+<table><thead><tr><th>우선순위</th><th>수집 항목</th><th>기대 효과</th><th>사용 가능 조건</th></tr></thead><tbody>
+<tr><td>1</td><td>개인전 수</td><td>작가 경력 반영</td><td>작가 DB 자동 매칭</td></tr>
+<tr><td>2</td><td>단체전 수</td><td>활동 이력 반영</td><td>작가 DB 자동 매칭</td></tr>
+<tr><td>3</td><td>아트페어 참여 수</td><td>시장 노출 반영</td><td>작가 DB 자동 매칭</td></tr>
+<tr><td>4</td><td>주요 기관 전시 여부</td><td>작가 위상 반영</td><td>기관명 표준화 필요</td></tr>
+<tr><td>5</td><td>수상 이력</td><td>외부 인정도 반영</td><td>수상 등급 정리 필요</td></tr>
+<tr><td>6</td><td>레지던시 이력</td><td>경력 단계 반영</td><td>수집 가능률 확인</td></tr>
+<tr><td>7</td><td>언론/비평 기사 수</td><td>인지도 반영</td><td>중복 기사 제거 필요</td></tr>
+<tr><td>8</td><td>검색량</td><td>대중 인지도 반영</td><td>수집 주기 관리 필요</td></tr>
+<tr><td>9</td><td>갤러리 소속/전속 여부</td><td>시장 신뢰도 반영</td><td>운영 입력이 아닌 내부 DB 기준</td></tr>
+</tbody></table>
+<h3>실험 방법</h3>
+<ul>
+<li>기존 Warm / Cold 최종 후보를 기준 모델로 둔다.</li>
+<li>외부 작가 DB 피처를 하나씩 추가한다.</li>
+<li>외부 작가 DB 피처 묶음도 별도로 비교한다.</li>
+<li>경력 묶음</li>
+<li>수상/기관 묶음</li>
+<li>인지도 묶음</li>
+<li>갤러리 관계 묶음</li>
+<li>전체 작가 DB 묶음</li>
+<li>결측이 많은 변수는 원값과 결측 여부를 분리한다.</li>
+<li>메타 정보가 있는 작품만 골라 학습하지 않는다.</li>
+</ul>
+<h3>정확도 개선 연결 방식</h3>
+<ul>
+<li>Step 1: 수집 데이터 표준화</li>
+<li>작가 단위 외부 DB 테이블 생성</li>
+<li>작가명/생년/국적 기준으로 기존 작가 ID와 매칭</li>
+<li>매칭 실패 작가는 별도 리스트업</li>
+</ul>
+<ul>
+<li>Step 2: 피처 생성</li>
+<li>원값 피처 생성</li>
+<li>로그 변환 피처 생성</li>
+<li>결측 여부 flag 생성</li>
+<li>정보 완성도 점수 생성</li>
+</ul>
+<ul>
+<li>Step 3: 기준 모델 재학습</li>
+<li>기존 최종 피처만 사용한 baseline 재학습</li>
+<li>같은 train/validation/test split 사용</li>
+<li>같은 모델군 사용</li>
+</ul>
+<ul>
+<li>Step 4: 고도화 피처 추가 모델 학습</li>
+<li>baseline 피처 + 외부 작가 DB 피처</li>
+<li>baseline 피처 + 외부 작가 DB 묶음 피처</li>
+<li>baseline 피처 + 외부 작가 DB 피처 + PP1/PP2 후보정</li>
+</ul>
+<ul>
+<li>Step 5: 정확도 개선 여부 판정</li>
+<li>baseline 대비 MdAPE 개선폭 확인</li>
+<li>baseline 대비 RMSE_log 개선폭 확인</li>
+<li>baseline 대비 p95_APE 악화 여부 확인</li>
+<li>메타 있음/없음 slice 성능 차이 확인</li>
+</ul>
+<h3>비교 구조</h3>
+<table><thead><tr><th>비교</th><th>입력 피처</th><th>목적</th></tr></thead><tbody>
+<tr><td>Baseline</td><td>최종 후보 피처</td><td>현재 모델 기준선</td></tr>
+<tr><td>Baseline + 단일 외부 피처</td><td>최종 후보 피처 + 개인전 수 등 1개 피처</td><td>개별 피처 기여 확인</td></tr>
+<tr><td>Baseline + 피처 묶음</td><td>최종 후보 피처 + 경력/수상/인지도 묶음</td><td>묶음 단위 기여 확인</td></tr>
+<tr><td>Baseline + 전체 외부 DB</td><td>최종 후보 피처 + 전체 외부 DB 피처</td><td>외부 DB 전체 효과 확인</td></tr>
+<tr><td>Baseline + 전체 외부 DB + 후보정</td><td>외부 DB 반영 모델 + PP1/PP2 후보정</td><td>데이터 고도화와 후보정 결합 효과 확인</td></tr>
+</tbody></table>
+<h3>확인 지표</h3>
+<ul>
+<li>MdAPE</li>
+<li>p95_APE</li>
+<li>Within_30</li>
+<li>RMSE_log</li>
+<li>수집 가능률</li>
+<li>결측률</li>
+<li>메타 있음/없음 slice 성능</li>
+<li>Cold 저위험/고위험 구간 변화</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>baseline 대비 MdAPE가 개선되고 수집 가능률이 높으면 채택 후보</li>
+<li>MdAPE 개선이 작아도 p95_APE가 줄면 보조 후보</li>
+<li>성능 개선은 있으나 결측이 많으면 보류</li>
+<li>성능 개선이 없으면 수집 우선순위 하향</li>
+<li>운영에서 자동 생성 불가하면 모델 입력 제외</li>
+<li>test에서만 좋아지고 validation에서 개선이 없으면 채택하지 않음</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>작가 DB 구축 우선순위 확정</li>
+<li>Cold 고도화 피처 후보 선정</li>
+<li>Warm 작가명 보정 피처 후보 선정</li>
+<li>PP1/PP2 후보정에 넣을 외부 피처 후보 선정</li>
+<li>내부 작가 DB 스키마 설계</li>
+</ul>
+<h2>14. PP11 검색/소셜 인지도 지표 수집 검증</h2>
+<h3>목적</h3>
+<ul>
+<li>네이버/구글 검색 기반 지표가 작가 인지도와 시장 관심도를 설명하는지 확인</li>
+<li>검색/소셜 지표가 Warm 또는 Cold 예측 정확도를 개선하는지 검증</li>
+<li>외부 검색 지표를 실제 운영 피처로 쓸 수 있는지 판단</li>
+</ul>
+<h3>배경 근거</h3>
+<ul>
+<li>검색량은 대중 관심도와 수요 변화를 반영하는 대리 지표로 연구에서 자주 사용됨</li>
+<li>검색 쿼리량은 소비자 행동, 금융 거래량, 경제 지표 예측에 활용된 사례가 있음</li>
+<li>검색/소셜 데이터는 노이즈가 크기 때문에 전처리와 검증이 필수</li>
+<li>구글 검색 결과 수는 공식 문서상 추정값이며 정확하지 않을 수 있음</li>
+<li>Google Trends는 공식 API가 제한적이므로 운영 파이프라인에서는 수집 안정성을 별도 검증해야 함</li>
+</ul>
+<h3>수집 후보</h3>
+<table><thead><tr><th>구분</th><th>후보 지표</th><th>수집 방법</th><th>주의점</th></tr></thead><tbody>
+<tr><td>네이버 블로그</td><td>작가명 검색 결과 수</td><td>Naver Search API</td><td>홍보성 글/동명이인 노이즈</td></tr>
+<tr><td>네이버 뉴스</td><td>작가명 검색 결과 수</td><td>Naver Search API</td><td>전시 기사와 동명이인 기사 구분 필요</td></tr>
+<tr><td>네이버 웹문서</td><td>작가명 검색 결과 수</td><td>Naver Search API</td><td>갤러리/작가 페이지 중복 가능</td></tr>
+<tr><td>구글 웹검색</td><td>작가명 검색 결과 수</td><td>Google Custom Search JSON API</td><td>totalResults는 추정값</td></tr>
+<tr><td>구글 트렌드</td><td>기간별 관심도</td><td>Google Trends/서드파티/수동 수집 후보</td><td>공식 API 안정성 검토 필요</td></tr>
+<tr><td>SNS/소셜</td><td>Instagram/YouTube/X 언급량 또는 팔로워</td><td>공식 API 또는 수동 수집 후보</td><td>플랫폼별 접근 제한과 정책 확인 필요</td></tr>
+</tbody></table>
+<h3>검색어 설계</h3>
+<ul>
+<li>기본 검색어:</li>
+<li><code>작가명</code></li>
+<li><code>작가명 작가</code></li>
+<li><code>작가명 미술</code></li>
+<li><code>작가명 전시</code></li>
+<li><code>작가명 작품</code></li>
+</ul>
+<ul>
+<li>동명이인 방지 검색어:</li>
+<li><code>작가명 화가</code></li>
+<li><code>작가명 contemporary artist</code></li>
+<li><code>작가명 gallery</code></li>
+<li><code>작가명 art</code></li>
+<li><code>작가명 작품 가격</code></li>
+</ul>
+<ul>
+<li>작가 식별 보강 조건:</li>
+<li>작가명 + 출생연도</li>
+<li>작가명 + 국적</li>
+<li>작가명 + 대표 갤러리명</li>
+<li>작가명 + 주요 전시명</li>
+</ul>
+<h3>생성 피처</h3>
+<ul>
+<li>원값 피처:</li>
+<li><code>naver_blog_result_count</code></li>
+<li><code>naver_news_result_count</code></li>
+<li><code>naver_web_result_count</code></li>
+<li><code>google_result_count</code></li>
+<li><code>google_trends_score</code></li>
+<li><code>social_mention_count</code></li>
+<li><code>social_follower_count</code></li>
+</ul>
+<ul>
+<li>로그 변환 피처:</li>
+<li><code>log_naver_blog_result_count</code></li>
+<li><code>log_naver_news_result_count</code></li>
+<li><code>log_google_result_count</code></li>
+<li><code>log_social_mention_count</code></li>
+<li><code>log_social_follower_count</code></li>
+</ul>
+<ul>
+<li>품질 점검 피처:</li>
+<li><code>search_query_count</code></li>
+<li><code>search_source_count</code></li>
+<li><code>search_data_available_count</code></li>
+<li><code>search_data_completeness_score</code></li>
+<li><code>search_name_ambiguity_flag</code></li>
+<li><code>search_result_artist_match_score</code></li>
+</ul>
+<h3>실험 방법</h3>
+<ul>
+<li>1단계: 파일럿 수집</li>
+<li>작가 50~100명 샘플 선정</li>
+<li>고가/중가/저가 작가를 균형 있게 포함</li>
+<li>Warm 작가와 Cold 작가를 모두 포함</li>
+<li>네이버/구글 지표 수집 성공률 확인</li>
+</ul>
+<ul>
+<li>2단계: 수집 품질 검증</li>
+<li>동명이인 오염률 확인</li>
+<li>검색 결과 상위 10건의 작가 일치 여부 확인</li>
+<li>출처별 중복률 확인</li>
+<li>검색 결과 수의 재수집 변동성 확인</li>
+</ul>
+<ul>
+<li>3단계: 피처 생성</li>
+<li>원값과 로그값을 모두 생성</li>
+<li>결측 여부 flag 생성</li>
+<li>검색 출처 개수와 정보 완성도 점수 생성</li>
+<li>동명이인 위험 flag 생성</li>
+</ul>
+<ul>
+<li>4단계: 성능 검증</li>
+<li>기준 모델과 검색/소셜 피처 추가 모델 비교</li>
+<li>Warm / Cold를 별도 평가</li>
+<li>전체 성능과 검색 지표 있음/없음 slice를 별도 평가</li>
+<li>검색 지표 단독 효과와 기존 작가 메타에 추가한 효과를 분리 평가</li>
+</ul>
+<h3>비교 실험</h3>
+<ul>
+<li><code>PP11-1</code>: 검색 지표 단독 효과</li>
+<li>사용 피처: 검색/소셜 지표만</li>
+<li>목적: 검색 지표만으로 가격대 설명력이 있는지 확인</li>
+</ul>
+<ul>
+<li><code>PP11-2</code>: 작품 기본 피처 + 검색 지표</li>
+<li>사용 피처: 작품 기본 피처 묶음 + 검색/소셜 지표</li>
+<li>목적: Cold에서 작가명 없이 검색 지표가 추가 설명력을 주는지 확인</li>
+</ul>
+<ul>
+<li><code>PP11-3</code>: 작가명 + 검색 지표</li>
+<li>사용 피처: 작가명 + 검색/소셜 지표</li>
+<li>목적: Warm에서 작가명만으로 설명되지 않는 인지도 차이를 보완하는지 확인</li>
+</ul>
+<ul>
+<li><code>PP11-4</code>: 전체 작가 메타 + 검색 지표</li>
+<li>사용 피처: 기존 작가 메타 + 검색/소셜 지표</li>
+<li>목적: 기존 메타 대비 검색 지표의 추가 기여도를 확인</li>
+</ul>
+<ul>
+<li><code>PP11-5</code>: 검색 품질 flag 기반 신뢰도 보정</li>
+<li>사용 피처: 검색 결과 수 + 동명이인 위험 flag + 검색 완성도 점수</li>
+<li>목적: 검색 지표가 직접 예측보다 신뢰도/라우팅에 더 적합한지 확인</li>
+</ul>
+<h3>확인 지표</h3>
+<ul>
+<li>모델 성능:</li>
+<li>MdAPE</li>
+<li>RMSE_log</li>
+<li>p95_APE</li>
+<li>Within_30</li>
+<li>Within_50</li>
+</ul>
+<ul>
+<li>수집 품질:</li>
+<li>수집 성공률</li>
+<li>결측률</li>
+<li>동명이인 오염률</li>
+<li>상위 검색 결과 작가 일치율</li>
+<li>재수집 변동률</li>
+</ul>
+<ul>
+<li>운영 가능성:</li>
+<li>작가 1명당 수집 비용</li>
+<li>작가 1명당 수집 시간</li>
+<li>API 제한</li>
+<li>재수집 주기</li>
+<li>수집 실패 시 fallback 가능 여부</li>
+</ul>
+<h3>판단 기준</h3>
+<ul>
+<li>채택 후보:</li>
+<li>MdAPE 또는 RMSE_log가 개선됨</li>
+<li>p95_APE가 악화되지 않음</li>
+<li>수집 성공률이 충분히 높음</li>
+<li>동명이인 오염률이 낮음</li>
+<li>운영에서 자동 수집 또는 주기적 갱신 가능</li>
+</ul>
+<ul>
+<li>보류 후보:</li>
+<li>성능 개선은 있으나 동명이인 오염이 큼</li>
+<li>수집 비용이 큼</li>
+<li>API 안정성이 낮음</li>
+<li>재수집 시 값이 크게 흔들림</li>
+</ul>
+<ul>
+<li>제외 후보:</li>
+<li>성능 개선 없음</li>
+<li>결측률이 높음</li>
+<li>검색 결과가 작가 본인이 아닌 동명이인/브랜드에 과도하게 오염됨</li>
+<li>운영에서 합법적·안정적으로 수집하기 어려움</li>
+</ul>
+<h3>결과 활용</h3>
+<ul>
+<li>작가 인지도 피처 후보 선정</li>
+<li>Cold 모델 추가 피처 후보 선정</li>
+<li>Warm 작가명 보정 피처 후보 선정</li>
+<li>검색 품질 기반 신뢰도 flag 후보 선정</li>
+<li>작가 DB 추가 수집 우선순위 보완</li>
+</ul>
+<h2>15. 실험 실행 순서</h2>
+<table><thead><tr><th>순서</th><th>실험</th><th>먼저 하는 이유</th></tr></thead><tbody>
+<tr><td>1</td><td>PP1 구간별 편향 보정</td><td>예측값 자체 개선 가능성 우선 확인</td></tr>
+<tr><td>2</td><td>PP2 잔차 보정 모델</td><td>단순 보정보다 세밀한 개선 가능성 확인</td></tr>
+<tr><td>3</td><td>PP3 모델 앙상블/블렌딩</td><td>모델 조합으로 큰 오차 방어 가능성 확인</td></tr>
+<tr><td>4</td><td>PP4 예측값 캘리브레이션</td><td>가격대별 치우침 보정 가능성 확인</td></tr>
+<tr><td>5</td><td>PP5 신뢰도 기반 모델 라우팅</td><td>구간별 최적 모델 적용 가능성 확인</td></tr>
+<tr><td>6</td><td>PP6 Warm 가격 범위 보정</td><td>예측값 개선 후 표시 범위 정리</td></tr>
+<tr><td>7</td><td>PP7 Cold 가격 범위 보정</td><td>예측값 개선 후 Cold 범위 정책 정리</td></tr>
+<tr><td>8</td><td>PP8 신뢰도 점수 및 라우팅</td><td>서비스 신뢰도 문구 기준 정리</td></tr>
+<tr><td>9</td><td>PP9 Warm 저이력 fallback</td><td>Warm 라우팅 기준 보완</td></tr>
+<tr><td>10</td><td>PP10 외부 작가 DB 추가 수집 검증</td><td>수집 비용이 있어 우선순위 기반 실행</td></tr>
+<tr><td>11</td><td>PP11 검색/소셜 인지도 지표 수집 검증</td><td>API/검색 노이즈와 성능 기여를 분리 검증</td></tr>
+</tbody></table>
+<h2>16. 실험 산출물 기준</h2>
+<ul>
+<li>각 실험 폴더:</li>
+<li><code>experiment_config.json</code></li>
+<li><code>prompts/used_prompt.md</code></li>
+<li><code>data/</code></li>
+<li><code>outputs/metrics.csv</code></li>
+<li><code>outputs/predictions.csv</code></li>
+<li><code>outputs/slice_metrics.csv</code></li>
+<li><code>outputs/result_sheet.html</code></li>
+<li><code>README.md</code></li>
+</ul>
+<ul>
+<li>종합 문서 반영 항목:</li>
+<li>실험 목적</li>
+<li>사용 모델</li>
+<li>사용 피처</li>
+<li>사용 데이터</li>
+<li>validation 결과</li>
+<li>test 결과</li>
+<li>채택/보류/중단 판단</li>
+<li>서비스 적용 방식</li>
+<li>추가 수집 필요 여부</li>
+</ul>
+<h2>17. 운영 적용 전 최종 체크리스트</h2>
+<ul>
+<li>Warm:</li>
+<li>단일 예측값 보정 전후 성능 확인</li>
+<li>가격 범위 제공 필요 여부 확정</li>
+<li>저이력 작가 기준 확정</li>
+<li>작가명 매칭 실패 시 fallback 기준 확정</li>
+</ul>
+<ul>
+<li>Cold:</li>
+<li>단일 예측값 개선 후보정 적용 여부 확정</li>
+<li>잔차 보정/앙상블/라우팅 중 채택 방식 확정</li>
+<li>단일 가격 제공 가능 여부 확정</li>
+<li>가격 범위 폭 검증</li>
+<li>신뢰도 낮음 문구 확정</li>
+<li>고위험 조건 확정</li>
+</ul>
+<ul>
+<li>공통:</li>
+<li>validation으로 정한 정책을 test에서 한 번만 확인</li>
+<li>운영 입력 불가 피처 제거</li>
+<li>내부 작가 DB 자동 매칭 가능 피처만 유지</li>
+<li>실험 로그와 결과 HTML 보관</li>
+<li>최종 모델 카드와 서비스 문구 작성</li>
+</ul>
+<h2>18. 참고 리서치 및 수집 기준</h2>
+<ul>
+<li>Google Custom Search JSON API:</li>
+<li><code>searchInformation.totalResults</code>로 검색 결과 수 확인 가능</li>
+<li>단, <code>totalResults</code>는 추정값으로 정확하지 않을 수 있음</li>
+</ul>
+<ul>
+<li>Naver Search API:</li>
+<li>블로그/뉴스/웹문서 등 검색 결과를 JSON으로 수집 가능</li>
+<li>API 요청에는 Client ID와 Client Secret 필요</li>
+</ul>
+<ul>
+<li>검색량 기반 예측 연구:</li>
+<li>웹 검색 쿼리량은 소비자 행동과 시장 관심도를 예측하는 대리 지표로 활용된 사례가 있음</li>
+<li>검색 쿼리와 소셜 데이터를 함께 쓰면 일부 예측 문제에서 성능이 개선된 연구가 있음</li>
+</ul>
+<ul>
+<li>Google Trends 사용 주의:</li>
+<li>검색 관심도는 대중 관심도를 보는 데 유용</li>
+<li>낮은 검색량, 샘플링, 결측, 노이즈 문제 존재</li>
+<li>공식 운영 파이프라인 적용 전 재수집 변동성 검증 필요</li>
+</ul></body></html>

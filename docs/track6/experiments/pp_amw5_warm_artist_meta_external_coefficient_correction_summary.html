@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>PP-AMW5 Warm 작가 메타/전시·갤러리 계수형 잔차 보정</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; line-height: 1.55; color: #1f2937; }
+    pre { white-space: pre-wrap; background: #f8fafc; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 6px; }
+    h1, h2 { color: #111827; }
+  </style>
+</head>
+<body>
+<h1>PP-AMW5 Warm 작가 메타/전시·갤러리 계수형 잔차 보정</h1>
+<br>
+<pre>- 작성일: 2026-06-07 11:18</pre>
+<pre>- 기준 후보: `blend_svcnum_ppv8_wsvc_0.70`</pre>
+<pre>- 가설: Warm에서도 생년, 작가 활동량, 판매중 작품 수, 전시 횟수, 갤러리 tier가 남은 오차를 설명하면 현재 후보 위의 작은 보정으로 성능을 높일 수 있다.</pre>
+<pre>- 검증 방식: 현재 후보 예측값은 고정하고, validation 잔차를 작가 단위 교차검증으로 학습해 보정값을 만든다. test는 validation 전체로 만든 보정식을 한 번 적용한다.</pre>
+<pre>- 기준 validation MdAPE/MAPE/p95: `0.1305` / `0.2110` / `0.6580`</pre>
+<pre>- 기준 test MdAPE/MAPE/p95: `0.1405` / `0.2748` / `0.8331`</pre>
+<br>
+<h2>1. 기존 실험 확인</h2>
+<br>
+<pre>- PP-AMW1/PP-AMW4: 작가 생년/작품 수/판매중 작품 수/팔로워 기반 Warm 잔차 보정 실험은 이미 수행됨.</pre>
+<pre>- PP-WCOEF4: 작가 기준선과 작가 메타를 Huber 계수로 직접 넣는 재학습은 수행됐지만 현재 Warm 1순위 후보에는 미달.</pre>
+<pre>- PP-Z1: 전시/갤러리/검색 피처를 Warm Huber에 직접 넣어 재학습한 실험은 수행됐지만 현재 Warm 1순위 후보에는 미달.</pre>
+<pre>- 미검증 영역: 현재 Warm 1순위 후보 위에 작가 메타와 전시/갤러리 피처를 함께 사용한 계수형 잔차 보정.</pre>
+<br>
+<h2>2. 피처 커버리지</h2>
+<br>
+<pre>| experiment_id | split | feature | coverage | non_null_n | n |
+| --- | --- | --- | --- | --- | --- |
+| PP-AMW5 | validation | artist_meta_birth_year | 0.4682 | 243 | 519 |
+| PP-AMW5 | validation | artist_meta_total_works | 0.8651 | 449 | 519 |
+| PP-AMW5 | validation | artist_meta_for_sale_works | 0.4451 | 231 | 519 |
+| PP-AMW5 | validation | artist_meta_followers | 0.8651 | 449 | 519 |
+| PP-AMW5 | validation | artist_meta_for_sale_ratio | 0.4200 | 218 | 519 |
+| PP-AMW5 | validation | artist_exhibition_solo_count | 0.3854 | 200 | 519 |
+| PP-AMW5 | validation | artist_exhibition_group_count | 0.4027 | 209 | 519 |
+| PP-AMW5 | validation | artist_exhibition_fair_count | 0.4200 | 218 | 519 |
+| PP-AMW5 | validation | artist_exhibition_total_count | 0.4200 | 218 | 519 |
+| PP-AMW5 | validation | gallery_tier_raw_numeric | 0.4200 | 218 | 519 |
+| PP-AMW5 | validation | gallery_tier_validated_score | 0.0058 | 3 | 519 |
+| PP-AMW5 | validation | gallery_city_count | 0.4200 | 218 | 519 |
+| PP-AMW5 | test | artist_meta_birth_year | 0.3509 | 213 | 607 |
+| PP-AMW5 | test | artist_meta_total_works | 0.8699 | 528 | 607 |
+| PP-AMW5 | test | artist_meta_for_sale_works | 0.4152 | 252 | 607 |
+| PP-AMW5 | test | artist_meta_followers | 0.8699 | 528 | 607 |
+| PP-AMW5 | test | artist_meta_for_sale_ratio | 0.4547 | 276 | 607 |
+| PP-AMW5 | test | artist_exhibition_solo_count | 0.4448 | 270 | 607 |
+| PP-AMW5 | test | artist_exhibition_group_count | 0.4250 | 258 | 607 |
+| PP-AMW5 | test | artist_exhibition_fair_count | 0.4547 | 276 | 607 |
+| PP-AMW5 | test | artist_exhibition_total_count | 0.4547 | 276 | 607 |
+| PP-AMW5 | test | gallery_tier_raw_numeric | 0.4547 | 276 | 607 |
+| PP-AMW5 | test | gallery_tier_validated_score | 0.0000 | 0 | 607 |
+| PP-AMW5 | test | gallery_city_count | 0.4547 | 276 | 607 |</pre>
+<br>
+<h2>3. Validation 기준 선택 후보</h2>
+<br>
+<pre>| selection_objective | candidate | family | feature_group | validation_MdAPE | validation_MAPE | validation_p95_APE | validation_delta_MdAPE | validation_delta_MAPE | validation_delta_p95_APE | test_MdAPE | test_MAPE | test_p95_APE | test_delta_MdAPE | test_delta_MAPE | test_delta_p95_APE |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 대표 정확도 우선 | PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p05_s0p50 | huber_residual_coefficient_correction | artist_meta_core | 0.1222 | 0.2102 | 0.6444 | -0.0083 | -0.0008 | -0.0136 | 0.1368 | 0.2746 | 0.8324 | -0.0037 | -0.0002 | -0.0007 |
+| 평균 오차 우선 | PP-AMW5_huber_artist_meta_external_interactions_eps1p35_alpha0p01_cap0p05_s0p50 | huber_residual_coefficient_correction | artist_meta_external_interactions | 0.1230 | 0.2097 | 0.6499 | -0.0075 | -0.0013 | -0.0081 | 0.1394 | 0.2765 | 0.8558 | -0.0011 | 0.0017 | 0.0227 |
+| 큰 오차 방어 우선 | PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p08_s0p50 | huber_residual_coefficient_correction | artist_meta_core | 0.1273 | 0.2109 | 0.6326 | -0.0032 | -0.0002 | -0.0255 | 0.1445 | 0.2754 | 0.8324 | 0.0040 | 0.0006 | -0.0007 |</pre>
+<br>
+<h2>4. Test 상위 후보</h2>
+<br>
+<pre>| 순위 | 후보 | 방식 | 피처 그룹 | MdAPE | MAPE | p95_APE | d_MdAPE | d_MAPE | d_p95 | 평균 보정폭 |</pre>
+<pre>|---:|---|---|---|---:|---:|---:|---:|---:|---:|---:|</pre>
+<pre>| 1 | `PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_core | 0.1368 | 0.2746 | 0.8323 | -0.0037 | -0.0002 | -0.0008 | 0.0213 |</pre>
+<pre>| 2 | `PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_core | 0.1368 | 0.2746 | 0.8324 | -0.0037 | -0.0002 | -0.0007 | 0.0212 |</pre>
+<pre>| 3 | `PP-AMW5_huber_artist_meta_core_eps1p20_alpha0p001_cap0p08_s0p25` | huber_residual_coefficient_correction | artist_meta_core | 0.1374 | 0.2750 | 0.8333 | -0.0031 | 0.0002 | 0.0002 | 0.0152 |</pre>
+<pre>| 4 | `PP-AMW5_huber_artist_meta_core_eps1p20_alpha0p01_cap0p08_s0p25` | huber_residual_coefficient_correction | artist_meta_core | 0.1375 | 0.2750 | 0.8333 | -0.0030 | 0.0002 | 0.0002 | 0.0152 |</pre>
+<pre>| 5 | `PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p01_cap0p03_s0p25` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1377 | 0.2751 | 0.8350 | -0.0028 | 0.0003 | 0.0019 | 0.0068 |</pre>
+<pre>| 6 | `PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p01_cap0p08_s0p25` | huber_residual_coefficient_correction | artist_meta_core | 0.1377 | 0.2745 | 0.8332 | -0.0028 | -0.0003 | 0.0001 | 0.0152 |</pre>
+<pre>| 7 | `PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p08_s0p25` | huber_residual_coefficient_correction | artist_meta_core | 0.1377 | 0.2745 | 0.8332 | -0.0028 | -0.0003 | 0.0002 | 0.0151 |</pre>
+<pre>| 8 | `PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p001_cap0p03_s0p25` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1377 | 0.2752 | 0.8349 | -0.0028 | 0.0004 | 0.0019 | 0.0068 |</pre>
+<pre>| 9 | `PP-AMW5_huber_artist_meta_core_eps1p20_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_core | 0.1378 | 0.2753 | 0.8324 | -0.0027 | 0.0005 | -0.0006 | 0.0211 |</pre>
+<pre>| 10 | `PP-AMW5_huber_artist_meta_core_eps1p20_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_core | 0.1378 | 0.2754 | 0.8325 | -0.0027 | 0.0006 | -0.0005 | 0.0211 |</pre>
+<pre>| 11 | `PP-AMW5_segment_artist_birth_generation_bin_min40_cap0p03_s1p00` | segment_median_residual_correction | artist_birth_generation_bin | 0.1381 | 0.2740 | 0.8191 | -0.0023 | -0.0008 | -0.0139 | 0.0066 |</pre>
+<pre>| 12 | `PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p01_cap0p05_s0p25` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1381 | 0.2756 | 0.8344 | -0.0023 | 0.0008 | 0.0014 | 0.0104 |</pre>
+<pre>| 13 | `PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p001_cap0p05_s0p25` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1384 | 0.2756 | 0.8344 | -0.0021 | 0.0008 | 0.0013 | 0.0104 |</pre>
+<pre>| 14 | `PP-AMW5_segment_artist_birth_generation_bin_min20_cap0p03_s1p00` | segment_median_residual_correction | artist_birth_generation_bin | 0.1386 | 0.2756 | 0.8239 | -0.0019 | 0.0008 | -0.0092 | 0.0089 |</pre>
+<pre>| 15 | `PP-AMW5_huber_artist_meta_external_eps1p20_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external | 0.1388 | 0.2747 | 0.8405 | -0.0017 | -0.0001 | 0.0075 | 0.0220 |</pre>
+<pre>| 16 | `PP-AMW5_huber_artist_meta_external_eps1p20_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external | 0.1388 | 0.2747 | 0.8434 | -0.0017 | -0.0001 | 0.0103 | 0.0219 |</pre>
+<pre>| 17 | `PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p01_cap0p05_s0p25` | huber_residual_coefficient_correction | artist_meta_core | 0.1389 | 0.2745 | 0.8332 | -0.0016 | -0.0003 | 0.0001 | 0.0106 |</pre>
+<pre>| 18 | `PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p05_s0p25` | huber_residual_coefficient_correction | artist_meta_core | 0.1389 | 0.2745 | 0.8332 | -0.0016 | -0.0003 | 0.0002 | 0.0106 |</pre>
+<pre>| 19 | `PP-AMW5_huber_artist_meta_core_eps1p20_alpha0p01_cap0p05_s0p25` | huber_residual_coefficient_correction | artist_meta_core | 0.1390 | 0.2749 | 0.8333 | -0.0015 | 0.0001 | 0.0002 | 0.0105 |</pre>
+<pre>| 20 | `PP-AMW5_huber_artist_meta_external_interactions_eps1p35_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external_interactions | 0.1391 | 0.2764 | 0.8558 | -0.0014 | 0.0017 | 0.0227 | 0.0223 |</pre>
+<br>
+<h2>5. Validation 상위 후보</h2>
+<br>
+<pre>| 순위 | 후보 | 방식 | 피처 그룹 | MdAPE | MAPE | p95_APE | d_MdAPE | d_MAPE | d_p95 |</pre>
+<pre>|---:|---|---|---|---:|---:|---:|---:|---:|---:|</pre>
+<pre>| 1 | `PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_core | 0.1222 | 0.2102 | 0.6444 | -0.0083 | -0.0008 | -0.0136 |</pre>
+<pre>| 2 | `PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_core | 0.1222 | 0.2103 | 0.6444 | -0.0083 | -0.0008 | -0.0136 |</pre>
+<pre>| 3 | `PP-AMW5_huber_artist_meta_core_eps1p20_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_core | 0.1227 | 0.2097 | 0.6444 | -0.0078 | -0.0013 | -0.0136 |</pre>
+<pre>| 4 | `PP-AMW5_huber_artist_meta_core_eps1p20_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_core | 0.1228 | 0.2097 | 0.6444 | -0.0077 | -0.0013 | -0.0136 |</pre>
+<pre>| 5 | `PP-AMW5_huber_artist_meta_external_interactions_eps1p35_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external_interactions | 0.1230 | 0.2097 | 0.6499 | -0.0075 | -0.0013 | -0.0081 |</pre>
+<pre>| 6 | `PP-AMW5_huber_artist_meta_external_eps1p35_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external | 0.1230 | 0.2111 | 0.6444 | -0.0075 | 0.0001 | -0.0136 |</pre>
+<pre>| 7 | `PP-AMW5_huber_artist_meta_external_eps1p35_alpha0p01_cap0p08_s0p25` | huber_residual_coefficient_correction | artist_meta_external | 0.1233 | 0.2108 | 0.6527 | -0.0072 | -0.0003 | -0.0054 |</pre>
+<pre>| 8 | `PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1235 | 0.2105 | 0.6360 | -0.0070 | -0.0005 | -0.0221 |</pre>
+<pre>| 9 | `PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1235 | 0.2106 | 0.6360 | -0.0070 | -0.0005 | -0.0221 |</pre>
+<pre>| 10 | `PP-AMW5_huber_external_gallery_exhibition_eps1p35_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1235 | 0.2107 | 0.6451 | -0.0070 | -0.0003 | -0.0129 |</pre>
+<pre>| 11 | `PP-AMW5_huber_external_gallery_exhibition_eps1p35_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1235 | 0.2107 | 0.6451 | -0.0070 | -0.0003 | -0.0129 |</pre>
+<pre>| 12 | `PP-AMW5_huber_artist_meta_external_eps1p35_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external | 0.1235 | 0.2111 | 0.6444 | -0.0070 | 0.0001 | -0.0136 |</pre>
+<pre>| 13 | `PP-AMW5_huber_artist_meta_external_interactions_eps1p35_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external_interactions | 0.1236 | 0.2099 | 0.6483 | -0.0069 | -0.0012 | -0.0098 |</pre>
+<pre>| 14 | `PP-AMW5_huber_artist_meta_external_eps1p20_alpha0p001_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external | 0.1236 | 0.2114 | 0.6444 | -0.0069 | 0.0004 | -0.0136 |</pre>
+<pre>| 15 | `PP-AMW5_huber_external_gallery_exhibition_eps1p35_alpha0p01_cap0p08_s0p25` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1236 | 0.2107 | 0.6481 | -0.0069 | -0.0004 | -0.0099 |</pre>
+<pre>| 16 | `PP-AMW5_huber_external_gallery_exhibition_eps1p35_alpha0p001_cap0p08_s0p25` | huber_residual_coefficient_correction | external_gallery_exhibition | 0.1236 | 0.2107 | 0.6478 | -0.0069 | -0.0003 | -0.0102 |</pre>
+<pre>| 17 | `PP-AMW5_huber_artist_meta_external_eps1p35_alpha0p001_cap0p08_s0p25` | huber_residual_coefficient_correction | artist_meta_external | 0.1236 | 0.2107 | 0.6526 | -0.0069 | -0.0003 | -0.0055 |</pre>
+<pre>| 18 | `PP-AMW5_segment_artist_birth_generation_bin_min40_cap0p05_s1p00` | segment_median_residual_correction | artist_birth_generation_bin | 0.1239 | 0.2105 | 0.6529 | -0.0066 | -0.0005 | -0.0052 |</pre>
+<pre>| 19 | `PP-AMW5_huber_artist_meta_external_eps1p20_alpha0p01_cap0p05_s0p50` | huber_residual_coefficient_correction | artist_meta_external | 0.1241 | 0.2116 | 0.6444 | -0.0064 | 0.0006 | -0.0136 |</pre>
+<pre>| 20 | `PP-AMW5_huber_artist_meta_core_eps1p20_alpha0p001_cap0p08_s0p25` | huber_residual_coefficient_correction | artist_meta_core | 0.1242 | 0.2099 | 0.6468 | -0.0064 | -0.0011 | -0.0112 |</pre>
+<br>
+<h2>6. 해석</h2>
+<br>
+<pre>- 개선이 있으면: 작가 메타/전시·갤러리 정보가 Warm의 남은 오차를 설명하는 보조 신호로 작동한 것.</pre>
+<pre>- 개선이 작으면: 현재 1순위 후보가 작가 기준선과 유사 작품 기반 가격 피처로 이미 대부분의 Warm 신호를 흡수한 것.</pre>
+<pre>- 갤러리 검증 tier는 test 커버리지가 0에 가까워 현재 운영 후보의 핵심 보정축으로 쓰기 어렵고, raw tier/전시 횟수는 커버리지가 있어 보조 검증 대상으로 볼 수 있다.</pre>
+<pre>- validation 선택 후보와 test 최상위 후보가 다르면 즉시 v0.1 기본값에 반영하지 않고 반복 split 검증 대상으로 둔다.</pre>
+<br>
+<h2>7. 산출물</h2>
+<br>
+<pre>- `outputs/all_candidate_metrics.csv`</pre>
+<pre>- `outputs/predictions.csv`</pre>
+<pre>- `outputs/huber_coefficients_top.csv`</pre>
+<pre>- `outputs/selected_candidates.csv`</pre>
+<pre>- `outputs/feature_coverage.csv`</pre>
+<pre>- `reports/result_report.md`</pre>
+<pre>- `reports/result_report.html`</pre>
+</body>
+</html>

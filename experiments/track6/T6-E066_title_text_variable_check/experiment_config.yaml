@@ -1,0 +1,24 @@
+experiment_id: T6-E066
+status: planned
+phase: individual_variable_screening
+title: 작품 제목 문구 변수 영향 확인
+hypothesis: 작품 제목에서 만든 키워드 변수는 에디션, 세트, 포스터 같은 가격 차이를 설명한다.
+source_file: data/track6/track6_feature_candidates_name_corrected.csv
+join_key: _track6_row_id
+variable: title_raw
+warm_models: Huber / Linear Regression / Ridge
+cold_models: Huber / Quantile-LAD / LightGBM
+warm_base_train_features: artist_name_ko + ln_estimated_ho
+warm_candidate_train_features: artist_name_ko + ln_estimated_ho + title_raw keyword flags
+warm_test_features: same_as_train_features
+cold_base_train_features: ln_estimated_ho
+cold_candidate_train_features: ln_estimated_ho + title_raw keyword flags
+cold_test_features: same_as_train_features_without_artist_name_ko
+target: ln_price_krw
+compare_against: 기준 모델과 제목 키워드 추가 모델을 비교한다.
+artist_meta_missing_check: not_required
+artist_meta_decision_rule: not_applicable
+artist_meta_dataset_rule: not_applicable
+artist_meta_missing_flag: not_applicable
+artist_meta_present_slice: not_applicable
+artist_meta_missing_slice: not_applicable

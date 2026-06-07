@@ -1,0 +1,65 @@
+{
+  "experiment_id": "PRE-WARM-08",
+  "title": "Track6 PRE-WARM-08 Warm 최종 후보 validation/OOF 비교",
+  "purpose": "PRE-WARM-07에서 남긴 Warm 후보를 validation, test, train OOF 기준으로 비교하여 후처리 기준 Warm 모델 후보를 확정한다.",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "exp_dir": "experiments/track6/PRE-WARM-08_warm_final_candidate_validation",
+  "prompt_file": "experiments/track6/PRE-WARM-08_warm_final_candidate_validation/prompts/used_prompt.md",
+  "target_scope": "Warm",
+  "run_mode": "train_val_test_plus_5fold_oof",
+  "oof_folds": 5,
+  "numeric_features": [
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "area_cm2",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "is_extreme_aspect_ratio",
+    "ln_estimated_ho",
+    "artist_works_log",
+    "artist_works_log_is_missing"
+  ],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_key",
+      "output_prefix": "ln_ho_x_artist_key",
+      "top_n": 10
+    }
+  ],
+  "feature_sets": [
+    {
+      "name": "PRE-WARM-08A: final artifact base_existing_combo",
+      "candidate_source": "PRE-WARM-01 / GDA-01",
+      "features": ["artist_key", "width_cm", "height_cm", "depth_cm", "area_cm2", "log_area", "aspect_ratio", "has_depth", "is_3d_candidate", "medium_category", "support_category", "medium_support_bucket", "is_extreme_aspect_ratio"],
+      "operability": "current_artifact_compatible"
+    },
+    {
+      "name": "PRE-WARM-08B: compact artist_name size + artist works no aspect",
+      "candidate_source": "GDA-05-DROP-aspect",
+      "features": ["artist_name_ko", "width_cm", "height_cm", "log_area", "artist_works_log", "artist_works_log_is_missing"],
+      "operability": "requires_artist_name_ko_feature_export"
+    },
+    {
+      "name": "PRE-WARM-08C: compact artist_name size + artist works",
+      "candidate_source": "PRE-WARM-05 / GDA-05",
+      "features": ["artist_name_ko", "width_cm", "height_cm", "log_area", "aspect_ratio", "artist_works_log", "artist_works_log_is_missing"],
+      "operability": "requires_artist_name_ko_feature_export"
+    },
+    {
+      "name": "PRE-WARM-08D: compact artist_key size + ho interaction",
+      "candidate_source": "PRE-WARM-06C / GDA-06C",
+      "features": ["artist_key", "width_cm", "height_cm", "log_area", "aspect_ratio", "ln_estimated_ho"],
+      "feature_prefixes": ["ln_ho_x_artist_key_"],
+      "operability": "artist_key_compatible"
+    }
+  ],
+  "comment": {
+    "실험 목적": "test에서만 고른 후보가 아니라 validation과 OOF에서도 유지되는 후보를 Warm 후처리 기준 모델로 확정한다.",
+    "판단 기준": "validation MdAPE를 1순위로 보고, test MdAPE/p95와 OOF MdAPE를 보조로 본다.",
+    "주의": "validation feature 파일에 artist_name_ko가 없어 label metadata에서 보강해 평가한다. 최종 운영 적용 전 feature export 정합성 수정이 필요하다."
+  }
+}

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 A7 에디션 정보 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 A7 에디션 정보 실험 결과</h1>
+    <ul>
+      <li>목적: 에디션/유니크 구분이 작품 가격 예측에 도움이 되는지 확인</li>
+      <li>실험 ID: <code>A7</code></li>
+      <li>Warm 최고: <code>에디션 여부</code> / <code>Huber</code> / MdAPE 0.7457</li>
+      <li>Cold 최고: <code>에디션 여부</code> / <code>LightGBM</code> / MdAPE 0.7009</li>
+      <li>생성일: <code>2026-05-22T15:07:53</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/A7_edition_only/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/A7_edition_only/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/A7_edition_only/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/A7_edition_only/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/A7_edition_only/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/A7_edition_only/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/A7_edition_only/data/train_features.csv</code><br><code>experiments/track6/A7_edition_only/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/A7_edition_only/data/test_warm_features.csv</code><br><code>experiments/track6/A7_edition_only/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/A7_edition_only/data/test_cold_features.csv</code><br><code>experiments/track6/A7_edition_only/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/A7_edition_only/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/A7_edition_only/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>없음</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 그대로 사용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>에디션 작품과 유니크 작품의 가격대 차이가 예측에 도움이 되는지 확인한다.</td></tr><tr><td>데이터 확인</td><td>Artsy의 attribution_class와 Saatchi의 attribution/is_edition 값을 원본에서 복원했다.</td></tr><tr><td>사용 피처</td><td>모델에는 edition_class와 에디션 파생 플래그만 사용한다.</td></tr><tr><td>제외 피처</td><td>edition_source는 출처 정보라 모델 입력에서 제외한다. signed는 구조화 컬럼이 없어 A7에서 제외한다.</td></tr><tr><td>처리 기준</td><td>에디션 관련 피처는 범주형 또는 플래그로 처리한다.</td></tr><tr><td>해석 기준</td><td>같은 고정 모델군에서 MdAPE와 p95 APE가 낮아지면 에디션 정보가 가격 예측에 도움이 된다고 본다.</td></tr><tr><td>표본 수 주의</td><td>전체 학습/테스트 수가 적은 것이 아니라, 에디션 작품 자체가 적다. train 에디션 613건, Warm test 에디션 33건, Cold test 에디션 232건이다.</td></tr><tr><td>결과 해석 방식</td><td>전체 성능과 함께 edition/non-edition 및 edition_class별 slice 성능을 별도 파일로 확인한다.</td></tr><tr><td>주의</td><td>Warm test의 에디션 표본은 33건으로 많지 않아 Warm edition slice 결론은 보조적으로 해석한다.</td></tr><tr><td>purpose</td><td>에디션/유니크 구분이 작품 가격 예측에 도움이 되는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 에디션 여부 + Huber(MdAPE 0.7457), Cold 최고는 에디션 여부 + LightGBM(MdAPE 0.7009)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>에디션 전체 구분</h2>
+              <p><strong>사용 피처:</strong> <code>edition_class</code> · unique, limited_edition, open_edition, unknown_edition, unknown 구분</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>-0.0050</td><td>0.7467</td><td>7.0594</td><td>0.1928</td><td>0.3048</td><td>1.6093</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>-0.0027</td><td>0.7619</td><td>7.8063</td><td>0.1878</td><td>0.3015</td><td>1.7516</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>-0.0027</td><td>0.7619</td><td>7.8041</td><td>0.1878</td><td>0.3015</td><td>1.7514</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0062</td><td>0.7099</td><td>7.0654</td><td>0.2152</td><td>0.3414</td><td>1.4049</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0088</td><td>0.7110</td><td>7.0332</td><td>0.2149</td><td>0.3408</td><td>1.3903</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0030</td><td>0.7024</td><td>7.8233</td><td>0.2104</td><td>0.3388</td><td>1.5242</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>에디션 여부</h2>
+              <p><strong>사용 피처:</strong> <code>is_edition</code> · Limited/Open/Unknown edition 여부를 하나의 플래그로 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>-0.0061</td><td>0.7457</td><td>7.0907</td><td>0.1960</td><td>0.3064</td><td>1.6089</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>-0.0040</td><td>0.7607</td><td>7.7552</td><td>0.1829</td><td>0.3081</td><td>1.7535</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>-0.0040</td><td>0.7607</td><td>7.7547</td><td>0.1829</td><td>0.3081</td><td>1.7535</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0044</td><td>0.7087</td><td>7.0967</td><td>0.2168</td><td>0.3414</td><td>1.4027</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0071</td><td>0.7101</td><td>7.0575</td><td>0.2156</td><td>0.3408</td><td>1.3905</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0042</td><td>0.7009</td><td>7.8684</td><td>0.2107</td><td>0.3414</td><td>1.5240</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>에디션 세부 플래그</h2>
+              <p><strong>사용 피처:</strong> <code>is_limited_edition, is_open_edition, is_unknown_edition, is_unique_work</code> · 에디션 종류와 유니크 여부를 분리한 플래그</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>-0.0050</td><td>0.7467</td><td>7.0592</td><td>0.1928</td><td>0.3048</td><td>1.6092</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>-0.0027</td><td>0.7619</td><td>7.8063</td><td>0.1878</td><td>0.3015</td><td>1.7516</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>-0.0027</td><td>0.7619</td><td>7.8058</td><td>0.1878</td><td>0.3015</td><td>1.7515</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0062</td><td>0.7099</td><td>7.0652</td><td>0.2152</td><td>0.3414</td><td>1.4049</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0088</td><td>0.7110</td><td>7.0332</td><td>0.2149</td><td>0.3408</td><td>1.3903</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0031</td><td>0.7024</td><td>7.8239</td><td>0.2110</td><td>0.3391</td><td>1.5245</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>에디션 전체 구분 + 정보 존재 여부</h2>
+              <p><strong>사용 피처:</strong> <code>edition_class, edition_info_available</code> · 에디션 구분과 에디션 정보가 실제로 수집됐는지 여부를 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>-0.0050</td><td>0.7467</td><td>7.0598</td><td>0.1928</td><td>0.3048</td><td>1.6094</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>-0.0027</td><td>0.7619</td><td>7.8063</td><td>0.1878</td><td>0.3015</td><td>1.7516</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>-0.0027</td><td>0.7619</td><td>7.8039</td><td>0.1878</td><td>0.3015</td><td>1.7514</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0062</td><td>0.7098</td><td>7.0658</td><td>0.2152</td><td>0.3414</td><td>1.4050</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0088</td><td>0.7110</td><td>7.0332</td><td>0.2149</td><td>0.3408</td><td>1.3903</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0030</td><td>0.7024</td><td>7.8233</td><td>0.2104</td><td>0.3388</td><td>1.5242</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/A7_edition_only/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/A7_edition_only/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/A7_edition_only/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/A7_edition_only/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/A7_edition_only/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/A7_edition_only/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/A7_edition_only/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/A7_edition_only/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/A7_edition_only/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/A7_edition_only/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/A7_edition_only/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/A7_edition_only/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-U5 Warm Huber 재료/지지체 중복 분리 검증</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#pp-u5-warm-huber-재료-지지체-중복-분리-검증">PP-U5 Warm Huber 재료/지지체 중복 분리 검증</a>
+<a class="toc-level-2" href="#실험-계획">실험 계획</a>
+<a class="toc-level-2" href="#후보-피처셋">후보 피처셋</a>
+<a class="toc-level-2" href="#validation-결과">Validation 결과</a>
+<a class="toc-level-2" href="#test-확인-결과">Test 확인 결과</a>
+<a class="toc-level-2" href="#코멘터리">코멘터리</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>experiments/track6/PP-U5_warm_huber_material_support_duplicate_validation/reports/result_report.md</code></div>
+      <h1 id="pp-u5-warm-huber-재료-지지체-중복-분리-검증">PP-U5 Warm Huber 재료/지지체 중복 분리 검증</h1>
+<h2 id="실험-계획">실험 계획</h2>
+<ul>
+<li>목적: Warm Huber에서 <code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code>을 함께 쓰는 현재 구조가 필요한지, 아니면 원본 피처와 조합 피처가 중복되는지 확인한다.</li>
+<li>대상: <code>warm</code> 데이터, <code>huber</code> 모델.</li>
+<li>통제 기준: 데이터 split, target(<code>ln_price_krw</code>), Huber 모델 설정, 평가 지표는 고정하고 재료/지지체 관련 피처만 바꾼다.</li>
+<li>선택 기준: validation에서 후보를 고르고 test는 선택된 후보의 재현성 확인으로만 사용한다.</li>
+<li>기대 결과: 재료/지지체 피처를 원본 중심으로 설명할지, 조합 bucket 중심으로 설명할지, 세 피처 동시 사용을 유지할지 판단한다.</li>
+</ul>
+<h2 id="후보-피처셋">후보 피처셋</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">전략</th>
+<th class="align-right">피처 수</th>
+<th class="align-left">가설</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>baseline_all_three</code></td>
+<td class="align-left">현재 기준 구조</td>
+<td class="align-right">13</td>
+<td class="align-left">현재 Warm Huber 기준 피처셋처럼 원본 재료, 원본 지지체, 조합 피처를 모두 사용</td>
+</tr>
+<tr>
+<td class="align-left"><code>raw_medium_support_only</code></td>
+<td class="align-left">원본 재료/지지체만 사용</td>
+<td class="align-right">12</td>
+<td class="align-left">조합 피처 없이 원본 재료와 지지체만으로 충분한지 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>combo_bucket_only</code></td>
+<td class="align-left">조합 피처만 사용</td>
+<td class="align-right">11</td>
+<td class="align-left">재료와 지지체를 각각 쓰지 않고 조합 bucket 하나로 설명 가능한지 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_only</code></td>
+<td class="align-left">재료만 사용</td>
+<td class="align-right">11</td>
+<td class="align-left">재료 대분류만으로 보조 신호가 충분한지 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>support_only</code></td>
+<td class="align-left">지지체만 사용</td>
+<td class="align-right">11</td>
+<td class="align-left">지지체 대분류만으로 보조 신호가 충분한지 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>no_material_support</code></td>
+<td class="align-left">재료/지지체 제거</td>
+<td class="align-right">10</td>
+<td class="align-left">재료/지지체 정보 자체가 Warm Huber에서 필요한지 재확인</td>
+</tr>
+</tbody></table></div>
+<h2 id="validation-결과">Validation 결과</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95_APE</th>
+<th class="align-right">RMSE_log</th>
+<th class="align-right">baseline 대비 MdAPE</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>combo_bucket_only</code></td>
+<td class="align-right">0.2121</td>
+<td class="align-right">0.4350</td>
+<td class="align-right">1.3815</td>
+<td class="align-right">0.6532</td>
+<td class="align-right">-0.0005</td>
+</tr>
+<tr>
+<td class="align-left"><code>baseline_all_three</code></td>
+<td class="align-right">0.2126</td>
+<td class="align-right">0.4167</td>
+<td class="align-right">1.3194</td>
+<td class="align-right">0.6446</td>
+<td class="align-right">+0.0000</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_only</code></td>
+<td class="align-right">0.2147</td>
+<td class="align-right">0.4448</td>
+<td class="align-right">1.3669</td>
+<td class="align-right">0.6584</td>
+<td class="align-right">+0.0021</td>
+</tr>
+<tr>
+<td class="align-left"><code>support_only</code></td>
+<td class="align-right">0.2154</td>
+<td class="align-right">0.4345</td>
+<td class="align-right">1.3015</td>
+<td class="align-right">0.6562</td>
+<td class="align-right">+0.0028</td>
+</tr>
+<tr>
+<td class="align-left"><code>no_material_support</code></td>
+<td class="align-right">0.2170</td>
+<td class="align-right">0.4450</td>
+<td class="align-right">1.3546</td>
+<td class="align-right">0.6651</td>
+<td class="align-right">+0.0044</td>
+</tr>
+<tr>
+<td class="align-left"><code>raw_medium_support_only</code></td>
+<td class="align-right">0.2181</td>
+<td class="align-right">0.4351</td>
+<td class="align-right">1.3357</td>
+<td class="align-right">0.6520</td>
+<td class="align-right">+0.0055</td>
+</tr>
+</tbody></table></div>
+<h2 id="test-확인-결과">Test 확인 결과</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95_APE</th>
+<th class="align-right">RMSE_log</th>
+<th class="align-right">baseline 대비 MdAPE</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>support_only</code></td>
+<td class="align-right">0.2165</td>
+<td class="align-right">0.4944</td>
+<td class="align-right">2.0386</td>
+<td class="align-right">0.6078</td>
+<td class="align-right">-0.0109</td>
+</tr>
+<tr>
+<td class="align-left"><code>raw_medium_support_only</code></td>
+<td class="align-right">0.2165</td>
+<td class="align-right">0.4955</td>
+<td class="align-right">2.0382</td>
+<td class="align-right">0.6097</td>
+<td class="align-right">-0.0109</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_only</code></td>
+<td class="align-right">0.2252</td>
+<td class="align-right">0.4958</td>
+<td class="align-right">1.9790</td>
+<td class="align-right">0.6148</td>
+<td class="align-right">-0.0022</td>
+</tr>
+<tr>
+<td class="align-left"><code>no_material_support</code></td>
+<td class="align-right">0.2253</td>
+<td class="align-right">0.4987</td>
+<td class="align-right">1.9928</td>
+<td class="align-right">0.6148</td>
+<td class="align-right">-0.0021</td>
+</tr>
+<tr>
+<td class="align-left"><code>combo_bucket_only</code></td>
+<td class="align-right">0.2273</td>
+<td class="align-right">0.4931</td>
+<td class="align-right">2.0145</td>
+<td class="align-right">0.6054</td>
+<td class="align-right">-0.0001</td>
+</tr>
+<tr>
+<td class="align-left"><code>baseline_all_three</code></td>
+<td class="align-right">0.2274</td>
+<td class="align-right">0.4952</td>
+<td class="align-right">2.0130</td>
+<td class="align-right">0.6081</td>
+<td class="align-right">+0.0000</td>
+</tr>
+</tbody></table></div>
+<h2 id="코멘터리">코멘터리</h2>
+<ul>
+<li>validation 기준 1위 후보는 <code>combo_bucket_only</code>이고, 기준 후보 <code>baseline_all_three</code> 대비 MdAPE 변화는 <code>-0.0005</code>이다.</li>
+<li>test 기준 1위 후보는 <code>support_only</code>이고, 기준 후보 <code>baseline_all_three</code> 대비 MdAPE 변화는 <code>-0.0109</code>이다.</li>
+<li>validation과 test의 1위가 다르면 즉시 교체하지 않고, 후속 조합/보정 후보로만 둔다.</li>
+<li><code>combo_bucket_only</code>는 validation MdAPE가 가장 낮지만 MAPE, p95_APE, RMSE_log는 현재 기준 구조보다 악화됐다.</li>
+<li><code>support_only</code>와 <code>raw_medium_support_only</code>는 test MdAPE가 가장 낮지만 validation에서는 현재 기준 구조보다 나빠졌다.</li>
+<li><code>no_material_support</code>는 validation MdAPE가 <code>0.2170</code>으로 악화되어 재료/지지체 그룹 자체는 유지할 근거가 있다.</li>
+<li>현재 기준 구조는 validation에서 MdAPE 2위이면서 MAPE, p95_APE, RMSE_log가 가장 안정적이다.</li>
+<li>결론: 세 피처 동시 사용이 압도적으로 우세하다고 보기는 어렵지만, 현재 기준 구조를 바로 단순화할 만큼 일관된 개선도 확인되지 않았다. 따라서 Warm Huber 기준 피처셋은 현 구조를 유지하고, 조합 피처 단독 또는 지지체 단독 구조는 후속 안정성 검증 후보로만 둔다.</li>
+</ul>
+    </main>
+  </div>
+</body>
+</html>

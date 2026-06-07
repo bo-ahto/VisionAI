@@ -1,0 +1,1816 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Warm 검색 피처 기반 잔차 보정 검증</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #1f2937; }
+    h1 { margin-bottom: 8px; }
+    h2 { margin-top: 32px; border-bottom: 1px solid #d8dee9; padding-bottom: 8px; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 12px; }
+    th, td { border: 1px solid #d8dee9; padding: 7px 8px; text-align: left; }
+    th { background: #eef2f7; }
+    .note { background: #f8fafc; border: 1px solid #d8dee9; padding: 14px 16px; border-radius: 6px; }
+    code { background: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Warm 검색 피처 기반 잔차 보정 검증</h1>
+  <div class="note">
+    <p><strong>목적:</strong> Warm 최종 후보 예측값에 외부 검색 피처별 잔차 보정을 얹어 추가 개선 가능성을 검증한다.</p>
+    <p><strong>핵심 원칙:</strong> 보정값은 validation에서만 만들고 test에는 그대로 적용한다.</p>
+  </div>
+  <section><h2>검색 피처 커버리지</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>split</th>
+      <th>row_n</th>
+      <th>unique_artist_n</th>
+      <th>search_covered_row_n</th>
+      <th>search_covered_row_rate</th>
+      <th>search_covered_artist_n</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>test</td>
+      <td>607</td>
+      <td>205</td>
+      <td>607</td>
+      <td>1.000000</td>
+      <td>205</td>
+    </tr>
+    <tr>
+      <td>validation</td>
+      <td>519</td>
+      <td>177</td>
+      <td>489</td>
+      <td>0.942197</td>
+      <td>162</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>기준 후보 test 성능</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>base_candidate</th>
+      <th>feature</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>cap</th>
+      <th>note</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>feature_label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-H29</td>
+      <td>baseline__v8_single_mdape</td>
+      <td>deployment_single_mdape</td>
+      <td>none</td>
+      <td>test</td>
+      <td>baseline_from_pp_v8</td>
+      <td>0.0</td>
+      <td>V8 단일 MdAPE 후보</td>
+      <td>0.421978</td>
+      <td>0.162111</td>
+      <td>0.304424</td>
+      <td>1.033520</td>
+      <td>0.711697</td>
+      <td>0.836903</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>baseline__v8_compact_mape</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>none</td>
+      <td>test</td>
+      <td>baseline_from_pp_v8</td>
+      <td>0.0</td>
+      <td>V8 compact blend MAPE 방어 후보</td>
+      <td>0.402820</td>
+      <td>0.163169</td>
+      <td>0.281619</td>
+      <td>0.931104</td>
+      <td>0.736409</td>
+      <td>0.859967</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>baseline__v8_compact_mdape</td>
+      <td>compact_blend_mdape</td>
+      <td>none</td>
+      <td>test</td>
+      <td>baseline_from_pp_v8</td>
+      <td>0.0</td>
+      <td>V8 compact blend MdAPE 후보</td>
+      <td>0.406662</td>
+      <td>0.163532</td>
+      <td>0.286770</td>
+      <td>0.919044</td>
+      <td>0.706755</td>
+      <td>0.863262</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>validation 상위 후보</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>base_candidate</th>
+      <th>feature</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>cap</th>
+      <th>note</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>feature_label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_homonym_median_cap0p05</td>
+      <td>compact_blend_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.05</td>
+      <td>동명이인 위험 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.373122</td>
+      <td>0.138808</td>
+      <td>0.252295</td>
+      <td>0.724061</td>
+      <td>0.724470</td>
+      <td>0.880539</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_homonym_median_cap0p1</td>
+      <td>compact_blend_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.10</td>
+      <td>동명이인 위험 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.373122</td>
+      <td>0.138808</td>
+      <td>0.252295</td>
+      <td>0.724061</td>
+      <td>0.724470</td>
+      <td>0.880539</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_homonym_median_cap0p15</td>
+      <td>compact_blend_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.15</td>
+      <td>동명이인 위험 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.373122</td>
+      <td>0.138808</td>
+      <td>0.252295</td>
+      <td>0.724061</td>
+      <td>0.724470</td>
+      <td>0.880539</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p05</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.05</td>
+      <td>검색 품질 점수 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.372852</td>
+      <td>0.141216</td>
+      <td>0.252515</td>
+      <td>0.714987</td>
+      <td>0.726397</td>
+      <td>0.878613</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p1</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.10</td>
+      <td>검색 품질 점수 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.372852</td>
+      <td>0.141216</td>
+      <td>0.252515</td>
+      <td>0.714987</td>
+      <td>0.726397</td>
+      <td>0.878613</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p15</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.15</td>
+      <td>검색 품질 점수 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.372852</td>
+      <td>0.141216</td>
+      <td>0.252515</td>
+      <td>0.714987</td>
+      <td>0.726397</td>
+      <td>0.878613</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>baseline__v8_compact_mdape</td>
+      <td>compact_blend_mdape</td>
+      <td>none</td>
+      <td>validation</td>
+      <td>baseline_from_pp_v8</td>
+      <td>0.00</td>
+      <td>V8 compact blend MdAPE 후보</td>
+      <td>0.373915</td>
+      <td>0.142265</td>
+      <td>0.256939</td>
+      <td>0.757757</td>
+      <td>0.718690</td>
+      <td>0.876686</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_social_blog_median_cap0p05</td>
+      <td>compact_blend_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.05</td>
+      <td>블로그/소셜 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.373784</td>
+      <td>0.143195</td>
+      <td>0.254149</td>
+      <td>0.730269</td>
+      <td>0.726397</td>
+      <td>0.880539</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_social_blog_median_cap0p1</td>
+      <td>compact_blend_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.10</td>
+      <td>블로그/소셜 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.373784</td>
+      <td>0.143195</td>
+      <td>0.254149</td>
+      <td>0.730269</td>
+      <td>0.726397</td>
+      <td>0.880539</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mdape_social_blog_median_cap0p15</td>
+      <td>compact_blend_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.15</td>
+      <td>블로그/소셜 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.373784</td>
+      <td>0.143195</td>
+      <td>0.254149</td>
+      <td>0.730269</td>
+      <td>0.726397</td>
+      <td>0.880539</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_social_blog_median_cap0p05</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.05</td>
+      <td>블로그/소셜 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.371406</td>
+      <td>0.148805</td>
+      <td>0.253041</td>
+      <td>0.765287</td>
+      <td>0.728324</td>
+      <td>0.888247</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_social_blog_median_cap0p1</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>validation</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.10</td>
+      <td>블로그/소셜 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.371406</td>
+      <td>0.148805</td>
+      <td>0.253041</td>
+      <td>0.765287</td>
+      <td>0.728324</td>
+      <td>0.888247</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>test 상위 후보</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>base_candidate</th>
+      <th>feature</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>cap</th>
+      <th>note</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>feature_label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_gallery_median_cap0p05</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.05</td>
+      <td>갤러리/미술관 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_gallery_median_cap0p1</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.10</td>
+      <td>갤러리/미술관 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_gallery_median_cap0p15</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.15</td>
+      <td>갤러리/미술관 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_market_median_cap0p05</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_market_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.05</td>
+      <td>시장/경매 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_market_median_cap0p1</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_market_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.10</td>
+      <td>시장/경매 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_market_median_cap0p15</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_market_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.15</td>
+      <td>시장/경매 출처 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_name_match_median_cap0p05</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>search_name_match_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.05</td>
+      <td>작가명 일치 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_name_match_median_cap0p1</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>search_name_match_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.10</td>
+      <td>작가명 일치 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_name_match_median_cap0p15</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>search_name_match_ratio</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.15</td>
+      <td>작가명 일치 비중 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_provider_cov_median_cap0p05</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>provider_coverage_count</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.05</td>
+      <td>검색 제공자 커버리지 수 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_provider_cov_median_cap0p1</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>provider_coverage_count</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.10</td>
+      <td>검색 제공자 커버리지 수 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+    <tr>
+      <td>PP-H29</td>
+      <td>h29_v8_compact_mape_provider_cov_median_cap0p15</td>
+      <td>compact_blend_mape_guarded</td>
+      <td>provider_coverage_count</td>
+      <td>test</td>
+      <td>validation_segment_median_residual_correction</td>
+      <td>0.15</td>
+      <td>검색 제공자 커버리지 수 구간별 Warm validation 잔차 중앙값 보정</td>
+      <td>0.402829</td>
+      <td>0.161699</td>
+      <td>0.280877</td>
+      <td>0.930942</td>
+      <td>0.731466</td>
+      <td>0.863262</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>보정 구간 정보</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>base_candidate</th>
+      <th>feature</th>
+      <th>feature_label</th>
+      <th>valid_validation_rows</th>
+      <th>mode</th>
+      <th>q33</th>
+      <th>q66</th>
+      <th>threshold</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.144</td>
+      <td>0.173</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>deployment_single_mdape</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.000</td>
+      <td>0.020</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>deployment_single_mdape</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.000</td>
+      <td>0.040</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.100</td>
+      <td>0.180</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>deployment_single_mdape</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>deployment_single_mdape</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.144</td>
+      <td>0.173</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mdape</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.000</td>
+      <td>0.020</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mdape</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.000</td>
+      <td>0.040</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.100</td>
+      <td>0.180</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mdape</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mdape</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mape_guarded</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.144</td>
+      <td>0.173</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mape_guarded</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mape_guarded</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.000</td>
+      <td>0.020</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.000</td>
+      <td>0.040</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+      <td>489</td>
+      <td>quantile_33_66</td>
+      <td>0.100</td>
+      <td>0.180</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mape_guarded</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>compact_blend_mape_guarded</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+      <td>489</td>
+      <td>median_binary</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>2.0</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>보정값 샘플</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>search_segment</th>
+      <th>segment_row_count</th>
+      <th>raw_correction</th>
+      <th>correction</th>
+      <th>cap</th>
+      <th>min_segment_rows</th>
+      <th>candidate</th>
+      <th>base_candidate</th>
+      <th>feature</th>
+      <th>feature_label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>high</td>
+      <td>165</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>168</td>
+      <td>0.027111</td>
+      <td>0.027111</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>156</td>
+      <td>-0.047627</td>
+      <td>-0.047627</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>165</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>168</td>
+      <td>0.027111</td>
+      <td>0.027111</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>156</td>
+      <td>-0.047627</td>
+      <td>-0.047627</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>165</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>168</td>
+      <td>0.027111</td>
+      <td>0.027111</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>156</td>
+      <td>-0.047627</td>
+      <td>-0.047627</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_quality_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_name_match_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_name_match_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_name_match_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_name_match_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_name_match_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_name_match_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_name_match_ratio</td>
+      <td>작가명 일치 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>153</td>
+      <td>0.040661</td>
+      <td>0.040661</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>246</td>
+      <td>-0.030626</td>
+      <td>-0.030626</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>90</td>
+      <td>0.032766</td>
+      <td>0.032766</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>153</td>
+      <td>0.040661</td>
+      <td>0.040661</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>246</td>
+      <td>-0.030626</td>
+      <td>-0.030626</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>90</td>
+      <td>0.032766</td>
+      <td>0.032766</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>153</td>
+      <td>0.040661</td>
+      <td>0.040661</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>246</td>
+      <td>-0.030626</td>
+      <td>-0.030626</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>90</td>
+      <td>0.032766</td>
+      <td>0.032766</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_homonym_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>search_homonym_risk_ratio</td>
+      <td>동명이인 위험 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_gallery_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_gallery_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_gallery_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_gallery_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_gallery_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_gallery_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_gallery_museum_ratio</td>
+      <td>갤러리/미술관 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>126</td>
+      <td>0.031905</td>
+      <td>0.031905</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>228</td>
+      <td>0.020371</td>
+      <td>0.020371</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>135</td>
+      <td>-0.040711</td>
+      <td>-0.040711</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>126</td>
+      <td>0.031905</td>
+      <td>0.031905</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>228</td>
+      <td>0.020371</td>
+      <td>0.020371</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>135</td>
+      <td>-0.040711</td>
+      <td>-0.040711</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>126</td>
+      <td>0.031905</td>
+      <td>0.031905</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>228</td>
+      <td>0.020371</td>
+      <td>0.020371</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>135</td>
+      <td>-0.040711</td>
+      <td>-0.040711</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_news_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_news_ratio</td>
+      <td>뉴스 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>147</td>
+      <td>0.035037</td>
+      <td>0.035037</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>213</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>129</td>
+      <td>-0.045817</td>
+      <td>-0.045817</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>147</td>
+      <td>0.035037</td>
+      <td>0.035037</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>213</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>129</td>
+      <td>-0.045817</td>
+      <td>-0.045817</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>147</td>
+      <td>0.035037</td>
+      <td>0.035037</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>213</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>129</td>
+      <td>-0.045817</td>
+      <td>-0.045817</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_social_blog_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_social_blog_ratio</td>
+      <td>블로그/소셜 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_market_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_market_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_market_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_market_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_market_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_market_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>source_group_market_ratio</td>
+      <td>시장/경매 출처 비중</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_provider_cov_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_provider_cov_median_cap0p05</td>
+      <td>deployment_single_mdape</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_provider_cov_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_provider_cov_median_cap0p1</td>
+      <td>deployment_single_mdape</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>489</td>
+      <td>0.007219</td>
+      <td>0.007219</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_provider_cov_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.15</td>
+      <td>18</td>
+      <td>h29_v8_single_mdape_provider_cov_median_cap0p15</td>
+      <td>deployment_single_mdape</td>
+      <td>provider_coverage_count</td>
+      <td>검색 제공자 커버리지 수</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>165</td>
+      <td>-0.014864</td>
+      <td>-0.014864</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p05</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>168</td>
+      <td>0.021646</td>
+      <td>0.021646</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p05</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>156</td>
+      <td>-0.037916</td>
+      <td>-0.037916</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p05</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.05</td>
+      <td>18</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p05</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>high</td>
+      <td>165</td>
+      <td>-0.014864</td>
+      <td>-0.014864</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p1</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>low</td>
+      <td>168</td>
+      <td>0.021646</td>
+      <td>0.021646</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p1</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>mid</td>
+      <td>156</td>
+      <td>-0.037916</td>
+      <td>-0.037916</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p1</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+    <tr>
+      <td>no_search</td>
+      <td>30</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.10</td>
+      <td>18</td>
+      <td>h29_v8_compact_mdape_quality_median_cap0p1</td>
+      <td>compact_blend_mdape</td>
+      <td>search_quality_score</td>
+      <td>검색 품질 점수</td>
+    </tr>
+  </tbody>
+</table></section>
+</body>
+</html>

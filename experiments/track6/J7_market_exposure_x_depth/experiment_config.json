@@ -1,0 +1,114 @@
+{
+  "experiment_id": "J7",
+  "title": "Track6 J7 시장 노출/정보량 x 깊이 교차항 실험 결과",
+  "purpose": "작가의 시장 노출/정보량에 따라 입체성 효과가 다르게 나타나는지 확인",
+  "description": "Track6 Group H/I/J experiment: J7",
+  "exp_dir": "experiments/track6/J7_market_exposure_x_depth",
+  "prompt_file": "experiments/track6/J7_market_exposure_x_depth/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "depth_cm",
+    "artist_meta_total_works",
+    "artist_meta_for_sale_works",
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_available_count",
+    "artist_meta_completeness_score",
+    "artist_meta_total_works_x_depth",
+    "artist_meta_for_sale_works_x_depth",
+    "artist_meta_followers_x_depth",
+    "artist_meta_is_p1_x_depth",
+    "artist_meta_available_count_x_depth",
+    "artist_meta_completeness_score_x_depth"
+  ],
+  "numeric_features": [
+    "depth_cm",
+    "artist_meta_total_works",
+    "artist_meta_for_sale_works",
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_available_count",
+    "artist_meta_completeness_score",
+    "artist_meta_total_works_x_depth",
+    "artist_meta_for_sale_works_x_depth",
+    "artist_meta_followers_x_depth",
+    "artist_meta_is_p1_x_depth",
+    "artist_meta_available_count_x_depth",
+    "artist_meta_completeness_score_x_depth"
+  ],
+  "variable_blocks": [
+    {
+      "name": "J7 기준: 시장 노출/정보량 + 깊이",
+      "features": [
+        "depth_cm",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score"
+      ],
+      "description": "개별 효과만 사용"
+    },
+    {
+      "name": "J7 교차항: 시장 노출/정보량 x 깊이",
+      "features": [
+        "depth_cm",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score",
+        "artist_meta_total_works_x_depth",
+        "artist_meta_for_sale_works_x_depth",
+        "artist_meta_followers_x_depth",
+        "artist_meta_is_p1_x_depth",
+        "artist_meta_available_count_x_depth",
+        "artist_meta_completeness_score_x_depth"
+      ],
+      "description": "시장 노출/정보량별 입체성 프리미엄 추가"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작가의 시장 노출/정보량에 따라 입체성 효과가 다르게 나타나는지 확인",
+    "학습 피처": "depth_cm, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score / depth_cm, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_x_depth, artist_meta_for_sale_works_x_depth, artist_meta_followers_x_depth, artist_meta_is_p1_x_depth, artist_meta_available_count_x_depth, artist_meta_completeness_score_x_depth",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "실험군": "Group J: 작가 메타와 작품 변수 교차항"
+  },
+  "numeric_numeric_interactions": [
+    {
+      "left_col": "artist_meta_total_works",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_total_works_x_depth"
+    },
+    {
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_for_sale_works_x_depth"
+    },
+    {
+      "left_col": "artist_meta_followers",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_followers_x_depth"
+    },
+    {
+      "left_col": "artist_meta_is_p1",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_is_p1_x_depth"
+    },
+    {
+      "left_col": "artist_meta_available_count",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_available_count_x_depth"
+    },
+    {
+      "left_col": "artist_meta_completeness_score",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_completeness_score_x_depth"
+    }
+  ]
+}

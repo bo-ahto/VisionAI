@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 가격 예측 모델 해석 및 후처리 계획</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #5f6c7b;
+      --line: #d9e2ec;
+      --head: #f0f4f8;
+      --accent: #2f6f73;
+      --accent2: #9f5f2d;
+      --bg: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #eef2f5;
+      line-height: 1.45;
+    }
+    .slide {
+      width: 1280px;
+      min-height: 720px;
+      margin: 28px auto;
+      padding: 54px 64px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 28px rgba(31, 41, 51, 0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      page-break-after: always;
+    }
+    .title {
+      justify-content: center;
+      background: linear-gradient(135deg, #ffffff 0%, #f4f7f8 100%);
+    }
+    h1 { font-size: 44px; margin: 0 0 18px; line-height: 1.18; letter-spacing: 0; }
+    h2 { font-size: 34px; margin: 0 0 28px; line-height: 1.2; letter-spacing: 0; }
+    h3 { font-size: 22px; margin: 20px 0 10px; letter-spacing: 0; }
+    p { font-size: 22px; margin: 0 0 14px; }
+    .subtitle { font-size: 24px; color: var(--muted); max-width: 860px; }
+    .meta { margin-top: 36px; color: var(--muted); font-size: 18px; }
+    .message {
+      border-left: 7px solid var(--accent);
+      background: #f4f8f8;
+      padding: 18px 22px;
+      font-size: 24px;
+      font-weight: 650;
+      margin: 18px 0 26px;
+    }
+    ul { margin: 0; padding-left: 26px; }
+    li { font-size: 24px; margin: 13px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 22px;
+      font-size: 20px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 12px 14px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: var(--head); font-weight: 700; }
+    .small table { font-size: 18px; }
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 26px;
+      align-items: start;
+    }
+    .card {
+      border: 1px solid var(--line);
+      padding: 20px;
+      background: #fbfcfd;
+    }
+    .card h3 { margin-top: 0; }
+    code, pre {
+      background: #f5f7fa;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+    }
+    code { padding: 2px 5px; font-size: 0.92em; }
+    pre { padding: 18px; font-size: 23px; overflow: hidden; }
+    .foot { margin-top: auto; color: var(--muted); font-size: 16px; }
+    .accent { color: var(--accent); font-weight: 700; }
+    .warn { color: var(--accent2); font-weight: 700; }
+    @media print {
+      body { background: #fff; }
+      .slide { margin: 0; width: 100%; min-height: 100vh; box-shadow: none; border: 0; }
+    }
+  </style>
+</head>
+<body>
+  <section class="slide title">
+    <h1>Track6 가격 예측 모델 해석 및 후처리 계획</h1>
+    <p class="subtitle">모델별 피처 영향 원인, 조합 선정 근거, 후처리 튜닝 방향</p>
+    <p class="meta">2026-05-31 / 기준: 최종 artifact 해석 리포트 및 후처리 실험 결과</p>
+  </section>
+
+  <section class="slide">
+    <h2>1. 오늘 보고의 핵심</h2>
+    <ul>
+      <li>가격 예측 모델을 단순 성능이 아니라 <span class="accent">왜 그런 예측을 하는지</span>까지 검증했습니다.</li>
+      <li>Warm과 Cold는 데이터 조건이 달라 모델과 해석 방식을 분리했습니다.</li>
+      <li>피처 영향도는 모델 구조에 맞는 방식으로 확인했습니다.</li>
+      <li>후처리도 공통 보정이 아니라 모델별 약점에 맞춰 설계해야 합니다.</li>
+    </ul>
+    <div class="message">현재 모델은 설명 가능한 수준까지 근거를 확보했으며, 후처리는 Warm은 적용 후보, Cold는 큰 오차 위험을 줄이는 방향으로 추가 검증이 필요합니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>2. Warm과 Cold를 나눈 이유</h2>
+    <table>
+      <thead><tr><th>구분</th><th>의미</th><th>모델 방향</th></tr></thead>
+      <tbody>
+        <tr><td>Warm</td><td>학습 데이터에 같은 작가가 존재</td><td>작가 이력 + 작품 특성</td></tr>
+        <tr><td>Cold</td><td>처음 보는 작가 또는 이력 부족</td><td>작품 자체의 크기, 재료, 형태</td></tr>
+      </tbody>
+    </table>
+    <div class="message">Warm은 작가의 과거 가격대를 활용할 수 있고, Cold는 작가 정보가 없기 때문에 작품 자체의 물리 정보가 더 중요합니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>3. 최종 모델 구성</h2>
+    <table>
+      <thead><tr><th>영역</th><th>최종 모델</th><th>선택 피처 조합</th></tr></thead>
+      <tbody>
+        <tr><td>Warm</td><td>HuberRegressor</td><td><code>size + medium_support + artist_key</code></td></tr>
+        <tr><td>Cold</td><td>CatBoost</td><td><code>size + depth_3d + medium/shape</code></td></tr>
+        <tr><td>Cold</td><td>LightGBM</td><td><code>area/size + support_size_bucket</code></td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li>성능뿐 아니라 모델 안에서 실제로 가격을 움직인 피처를 확인했습니다.</li>
+      <li>피처 조합이 모델 구조와 맞는지 확인했습니다.</li>
+      <li>후처리 기준으로 연결 가능한 반복 오차를 확인했습니다.</li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <h2>4. 기준 성능 요약</h2>
+    <p>기준 성능은 최종 artifact를 직접 재해석한 test 기준입니다.</p>
+    <table>
+      <thead><tr><th>모델</th><th>Test MdAPE</th><th>Test p95 APE</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr><td>Warm Huber</td><td>0.2241</td><td>2.0209</td><td>대표 오차가 가장 안정적</td></tr>
+        <tr><td>Cold CatBoost</td><td>0.4843</td><td>4.4183</td><td>Cold 조건에서 비교적 균형적</td></tr>
+        <tr><td>Cold LightGBM</td><td>0.4797</td><td>5.0569</td><td>대표 오차는 유사하나 큰 오차 위험이 큼</td></tr>
+      </tbody>
+    </table>
+    <div class="message">Cold 모델은 작가 기준선이 없기 때문에 Warm보다 어렵고, 특히 p95 큰 오차 관리가 중요합니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>5. Warm Huber: 가격 계산 방식</h2>
+    <pre><code>pred_log_price = intercept + sum(beta_j * feature_j)
+pred_price = exp(pred_log_price)</code></pre>
+    <div class="two">
+      <div class="card">
+        <h3>모델 특성</h3>
+        <ul>
+          <li>선형식으로 로그 가격 예측</li>
+          <li>피처별 계수와 contribution 해석 가능</li>
+          <li>큰 오차 샘플의 영향 완화</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>해석 의미</h3>
+        <ul>
+          <li>어떤 피처가 가격을 올리고 내리는지 직접 설명 가능</li>
+          <li>이상 고가/저가 사례에 과도하게 끌려가지 않음</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>6. Warm Huber: 중요한 피처와 이유</h2>
+    <table>
+      <thead><tr><th>피처</th><th>관측 결과</th><th>근본 원인</th></tr></thead>
+      <tbody>
+        <tr><td>작품 크기</td><td>contribution 1위</td><td>같은 작가라도 크기에 따라 가격대가 달라짐</td></tr>
+        <tr><td>재료/지지체 조합</td><td>contribution 2위</td><td>작품 유형과 시장 가격대 차이를 반영</td></tr>
+        <tr><td>작가 식별값</td><td>Warm 전용 핵심 피처</td><td>기존 작가의 과거 가격대가 기준선 역할</td></tr>
+        <tr><td>깊이/형태</td><td>Warm에서는 낮음</td><td>선형 모델에서는 조합 효과를 직접 만들기 어려움</td></tr>
+      </tbody>
+    </table>
+    <div class="message"><code>area_cm2</code>의 음의 계수는 면적이 가격을 낮춘다는 뜻이 아니라, 중복된 크기 정보 사이에서 과대 상승을 조정하는 역할입니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>7. Cold CatBoost: 가격 계산 방식</h2>
+    <pre><code>pred_log_price = base_score + sum(tree_leaf_value)
+pred_price = exp(pred_log_price)</code></pre>
+    <ul>
+      <li>CatBoost는 여러 대칭 트리의 결과를 더해 가격을 예측합니다.</li>
+      <li>같은 깊이에서 동일한 조건으로 데이터를 나누기 때문에 피처 조합과 분기 경로가 중요합니다.</li>
+      <li>단일 피처 효과보다 interaction과 segment 해석이 핵심입니다.</li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <h2>8. Cold CatBoost: 중요한 피처와 이유</h2>
+    <table>
+      <thead><tr><th>피처/조합</th><th>관측 결과</th><th>근본 원인</th></tr></thead>
+      <tbody>
+        <tr><td>크기 피처</td><td>SHAP 상위 1~4위</td><td>작가 이력이 없으므로 가격 기준선 역할</td></tr>
+        <tr><td>depth_cm</td><td>SHAP 5위, interaction 상위</td><td>2D/3D, 오브제성, 설치 가능성 구분</td></tr>
+        <tr><td>width x depth</td><td>interaction 1위</td><td>큰 평면과 큰 입체 작품을 다른 가격 경로로 분리</td></tr>
+        <tr><td>medium/support</td><td>중위권이나 조합에서 중요</td><td>재료와 지지체가 depth/size 의미를 바꿈</td></tr>
+      </tbody>
+    </table>
+    <div class="message">CatBoost에서 크기 피처는 단독 프리미엄이 아니라 특정 가격 경로로 이동시키는 분기 조건입니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>9. Cold LightGBM: 가격 계산 방식</h2>
+    <pre><code>pred_log_price = base_score + learning_rate * sum(tree_leaf_value)
+pred_price = exp(pred_log_price)</code></pre>
+    <ul>
+      <li>LightGBM은 손실을 크게 줄일 수 있는 leaf를 우선적으로 깊게 확장합니다.</li>
+      <li>평균 성능에는 유리할 수 있습니다.</li>
+      <li>대신 일부 좁은 구간에서 큰 오차가 생길 수 있습니다.</li>
+    </ul>
+    <div class="message">LightGBM은 평균 지표뿐 아니라 tail risk를 반드시 같이 봐야 합니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>10. Cold LightGBM: 중요한 피처와 이유</h2>
+    <table>
+      <thead><tr><th>피처/구간</th><th>관측 결과</th><th>근본 원인</th></tr></thead>
+      <tbody>
+        <tr><td>area_cm2</td><td>permutation 영향 최대</td><td>면적 기준 split이 가격 구간을 강하게 나눔</td></tr>
+        <tr><td>width/height/log_area</td><td>상위권</td><td>면적 외 형태 차이를 보완</td></tr>
+        <tr><td>canvas__q5</td><td>p95 APE 최상위</td><td>대형 캔버스는 가격 분산이 커 큰 오차 발생</td></tr>
+        <tr><td>acrylic</td><td>tail 위험 구간</td><td>표본은 많지만 내부 가격 편차가 큼</td></tr>
+      </tbody>
+    </table>
+    <div class="message">LightGBM의 면적 의존성은 평균 예측에는 도움이 되지만, 대형 작품에서는 큰 오차 위험으로 이어질 수 있습니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>11. 피처 조합 선정 방식</h2>
+    <table>
+      <thead><tr><th>모델</th><th>최종 조합</th><th>조합 이유</th></tr></thead>
+      <tbody>
+        <tr><td>Warm Huber</td><td>size + medium_support + artist_key</td><td>선형 contribution에서 핵심 축</td></tr>
+        <tr><td>CatBoost</td><td>size + depth + medium/shape</td><td>대칭 트리 interaction에서 핵심 조합</td></tr>
+        <tr><td>LightGBM</td><td>area/size + support_size_bucket</td><td>leaf-wise tail risk에서 핵심 구간</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li>validation 비교 → locked test 확인 → 최종 artifact 기준 재해석 순서로 진행했습니다.</li>
+      <li>성능표뿐 아니라 모델 구조에 맞는 영향도 지표로 조합 이유를 확인했습니다.</li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <h2>12. 후처리 방향</h2>
+    <table>
+      <thead><tr><th>모델</th><th>현재 판단</th><th>후처리 방향</th></tr></thead>
+      <tbody>
+        <tr><td>Warm Huber</td><td>채택 후보</td><td>전체/예측구간 로그 잔차 보정</td></tr>
+        <tr><td>Cold CatBoost</td><td>단순 보정 보류</td><td>leaf/segment residual + fallback</td></tr>
+        <tr><td>Cold LightGBM</td><td>조건부 후보</td><td>pred_log bin + size/support bucket tail 안정화</td></tr>
+      </tbody>
+    </table>
+    <div class="message">모든 모델에 같은 보정을 적용하지 않고, 모델 구조와 약점에 맞게 다르게 적용해야 합니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>13. 1차 후처리 실험 결과</h2>
+    <p>아래 표는 1차 residual calibration 실험의 baseline 기준입니다. 최종 artifact 재해석 수치와 소폭 차이가 있어, 보정 전후 방향성을 판단하는 용도로 사용합니다.</p>
+    <table>
+      <thead><tr><th>영역</th><th>Baseline MdAPE</th><th>후보 MdAPE</th><th>Baseline p95</th><th>후보 p95</th><th>판단</th></tr></thead>
+      <tbody>
+        <tr><td>Warm</td><td>0.2274</td><td>0.2211</td><td>2.0130</td><td>1.9736</td><td>채택 후보</td></tr>
+        <tr><td>CatBoost</td><td>0.4839</td><td>0.4880</td><td>4.7974</td><td>3.9490</td><td>MdAPE 악화로 보류</td></tr>
+        <tr><td>LightGBM</td><td>0.4859</td><td>0.4873</td><td>4.7612</td><td>4.2199</td><td>tail 안정화 후보</td></tr>
+      </tbody>
+    </table>
+    <div class="message">Warm은 즉시 후보, CatBoost는 구조 기반 재실험, LightGBM은 큰 오차 완화 중심으로 접근합니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>14. 향후 실행 계획</h2>
+    <table>
+      <thead><tr><th>단계</th><th>작업</th><th>목적</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Warm PP-A1-W 확정 검증</td><td>로그 잔차 보정 적용 가능성 확인</td></tr>
+        <tr><td>2</td><td>CatBoost segment fallback 실험</td><td>대칭 트리 구조에 맞는 보정 검증</td></tr>
+        <tr><td>3</td><td>LightGBM tail 안정화 실험</td><td>p95 큰 오차 완화</td></tr>
+        <tr><td>4</td><td>신뢰도/가격 범위 표시</td><td>위험 구간에서 점예측 한계 보완</td></tr>
+      </tbody>
+    </table>
+    <div class="message">보정값은 test 데이터에서 만들지 않고, validation 또는 OOF에서 만들고 locked test는 최종 확인에만 사용합니다.</div>
+  </section>
+
+  <section class="slide">
+    <h2>15. 최종 의사결정 요청</h2>
+    <ul>
+      <li>Warm Huber 후처리 보정을 적용 후보로 두고 검증을 진행합니다.</li>
+      <li>Cold CatBoost는 단순 보정이 아니라 segment fallback 방식으로 재실험합니다.</li>
+      <li>Cold LightGBM은 tail risk 완화 목적의 보정 실험을 진행합니다.</li>
+      <li>모델 설명 자료는 최종 artifact 기준 해석 리포트로 교체합니다.</li>
+    </ul>
+    <div class="message">정확도 개선뿐 아니라 크게 틀릴 수 있는 구간을 식별하고, 신뢰도/범위 표시까지 포함해 운영 안정성을 높이는 방향으로 진행하겠습니다.</div>
+  </section>
+</body>
+</html>

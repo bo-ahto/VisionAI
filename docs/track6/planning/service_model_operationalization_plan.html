@@ -1,0 +1,1699 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track6 가격 예측 모델 서비스 적용 시스템 기획</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#track6-가격-예측-모델-서비스-적용-시스템-기획-문서">Track6 가격 예측 모델 서비스 적용 시스템 기획 문서</a>
+<a class="toc-level-2" href="#1.-서비스-적용-목표">1. 서비스 적용 목표</a>
+<a class="toc-level-2" href="#2.-현재-모델-적용-판단">2. 현재 모델 적용 판단</a>
+<a class="toc-level-2" href="#3.-전체-시스템-구조">3. 전체 시스템 구조</a>
+<a class="toc-level-2" href="#4.-추론-단계-상세">4. 추론 단계 상세</a>
+<a class="toc-level-2" href="#5.-서비스용-db-구성-방향">5. 서비스용 DB 구성 방향</a>
+<a class="toc-level-3" href="#5.1-핵심-테이블-목록">5.1 핵심 테이블 목록</a>
+<a class="toc-level-2" href="#6.-db-스키마-초안">6. DB 스키마 초안</a>
+<a class="toc-level-3" href="#6.1-artist_registry">6.1 `artist_registry`</a>
+<a class="toc-level-3" href="#6.2-artwork_master">6.2 `artwork_master`</a>
+<a class="toc-level-3" href="#6.3-price_history">6.3 `price_history`</a>
+<a class="toc-level-3" href="#6.4-comparable_group_stats">6.4 `comparable_group_stats`</a>
+<a class="toc-level-3" href="#6.5-comparable_sample_index">6.5 `comparable_sample_index`</a>
+<a class="toc-level-3" href="#6.6-model_artifact_registry">6.6 `model_artifact_registry`</a>
+<a class="toc-level-3" href="#6.7-prediction_log">6.7 `prediction_log`</a>
+<a class="toc-level-2" href="#7.-비교군-통계-관리-방식">7. 비교군 통계 관리 방식</a>
+<a class="toc-level-3" href="#7.1-생성-원칙">7.1 생성 원칙</a>
+<a class="toc-level-3" href="#7.2-통계-항목">7.2 통계 항목</a>
+<a class="toc-level-3" href="#7.3-호당가-관리">7.3 호당가 관리</a>
+<a class="toc-level-2" href="#8.-모델-artifact-운영">8. 모델 artifact 운영</a>
+<a class="toc-level-3" href="#8.1-warm-artifact">8.1 Warm artifact</a>
+<a class="toc-level-3" href="#8.2-cold-artifact">8.2 Cold artifact</a>
+<a class="toc-level-2" href="#9.-데이터-추가-수집과-갱신-흐름">9. 데이터 추가 수집과 갱신 흐름</a>
+<a class="toc-level-3" href="#9.1-수집-데이터">9.1 수집 데이터</a>
+<a class="toc-level-3" href="#9.2-데이터-품질-기준">9.2 데이터 품질 기준</a>
+<a class="toc-level-2" href="#10.-모델-재학습-흐름">10. 모델 재학습 흐름</a>
+<a class="toc-level-3" href="#10.1-재학습-트리거">10.1 재학습 트리거</a>
+<a class="toc-level-3" href="#10.2-재학습-절차">10.2 재학습 절차</a>
+<a class="toc-level-3" href="#10.3-모델-승격-기준">10.3 모델 승격 기준</a>
+<a class="toc-level-2" href="#11.-운영-모니터링">11. 운영 모니터링</a>
+<a class="toc-level-3" href="#11.1-api-모니터링">11.1 API 모니터링</a>
+<a class="toc-level-3" href="#11.2-모델-모니터링">11.2 모델 모니터링</a>
+<a class="toc-level-3" href="#11.3-알림-기준-초안">11.3 알림 기준 초안</a>
+<a class="toc-level-2" href="#12.-배포-전-체크리스트">12. 배포 전 체크리스트</a>
+<a class="toc-level-2" href="#13.-단계별-실행-계획">13. 단계별 실행 계획</a>
+<a class="toc-level-3" href="#13.1-1단계-api-db-계약-고정">13.1 1단계: API/DB 계약 고정</a>
+<a class="toc-level-3" href="#13.2-2단계-추론-파이프라인-구현">13.2 2단계: 추론 파이프라인 구현</a>
+<a class="toc-level-3" href="#13.3-3단계-운영-검증">13.3 3단계: 운영 검증</a>
+<a class="toc-level-3" href="#13.4-4단계-서비스-연동">13.4 4단계: 서비스 연동</a>
+<a class="toc-level-2" href="#14.-상사-보고용-요약">14. 상사 보고용 요약</a>
+<a class="toc-level-2" href="#15.-남은-의사결정">15. 남은 의사결정</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/planning/service_model_operationalization_plan.md</code></div>
+      <h1 id="track6-가격-예측-모델-서비스-적용-시스템-기획-문서">Track6 가격 예측 모델 서비스 적용 시스템 기획 문서</h1>
+<ul>
+<li>작성일: 2026-06-04</li>
+<li>문서 목적: 검증된 가격 예측 모델을 실제 서비스에 적용하기 위한 시스템 구조, DB 구성, 데이터 관리, 모델 재학습, 운영 모니터링 방식을 정의</li>
+<li>관련 API 문서: <code>docs/track6/planning/service_api_detailed_spec.md</code></li>
+<li>기준 모델:</li>
+<li>Warm: <code>PP-SVC3 blend_svcnum_ppv8_wsvc_0.70</code></li>
+<li>Warm 안정성: <code>PP-SVC4</code></li>
+<li>Cold: <code>PP-Y18 qwidth_bin_oof_min30_cap0.25</code> 참고 예측가 정책</li>
+</ul>
+<h2 id="1.-서비스-적용-목표">1. 서비스 적용 목표</h2>
+<p>Track6 모델을 서비스에 적용할 때의 목표:</p>
+<ul>
+<li>작품 단건 입력으로 예측 가격 제공</li>
+<li>예측 가격과 함께 가격 범위, 신뢰도, 비교군 통계 제공</li>
+<li>Warm/Cold를 분리해 예측 신뢰도 차이를 화면에 반영</li>
+<li>서비스 화면에서 필요한 호당가 중앙값, 범위, 매체별 분포, 표본 수 N 제공</li>
+<li>유사 작품/비교 표본 정보를 설명 근거로 제공</li>
+<li>신규 데이터가 들어오면 비교군 통계와 모델을 주기적으로 갱신</li>
+<li>운영 로그를 쌓아 실제 서비스 성능을 추적</li>
+</ul>
+<h2 id="2.-현재-모델-적용-판단">2. 현재 모델 적용 판단</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">영역</th>
+<th class="align-left">적용 판단</th>
+<th class="align-left">근거</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm 점 예측</td>
+<td class="align-left">서비스 1순위 적용 가능</td>
+<td class="align-left"><code>PP-SVC3</code> test MdAPE <code>0.1405</code>, MAPE <code>0.2748</code>, p95_APE <code>0.8331</code></td>
+</tr>
+<tr>
+<td class="align-left">Warm 안정성</td>
+<td class="align-left">반복 검증 통과</td>
+<td class="align-left"><code>PP-SVC4</code> row/artist holdout에서 결합 구조 재선택</td>
+</tr>
+<tr>
+<td class="align-left">Cold 점 예측</td>
+<td class="align-left">확정 가격으로는 부적합</td>
+<td class="align-left">Warm 대비 MdAPE/MAPE/p95 모두 높음</td>
+</tr>
+<tr>
+<td class="align-left">Cold 서비스 표시</td>
+<td class="align-left">참고 예측가 + 넓은 범위 + 낮은 신뢰도</td>
+<td class="align-left"><code>PP-Y18</code> 개선 신호는 있으나 p95 위험 존재</td>
+</tr>
+<tr>
+<td class="align-left">비교군 통계</td>
+<td class="align-left">서비스 필수 DB로 관리</td>
+<td class="align-left">화면 표시와 신뢰도 산정에 필요</td>
+</tr>
+<tr>
+<td class="align-left">호당가</td>
+<td class="align-left">기존 Track6 <code>estimated_ho</code> 산출식으로 서비스 적용 가능</td>
+<td class="align-left">PP-SVC1 일부 split은 면적 단가 대체 검증, 서비스 v1은 호수 기준으로 산출</td>
+</tr>
+<tr>
+<td class="align-left">외부 검색</td>
+<td class="align-left">실시간 기본값 비활성화</td>
+<td class="align-left">품질/동명이인/latency 리스크</td>
+</tr>
+</tbody></table></div>
+<h2 id="3.-전체-시스템-구조">3. 전체 시스템 구조</h2>
+<p>Figure 1. 서비스 추론 흐름:</p>
+<pre><code>서비스 요청
+  |
+  v
+입력 검증
+  |
+  v
+작가명/작품 정보 표준화
+  |
+  +-- artist_registry 조회
+  |       |
+  |       +-- Warm: 학습 작가 매칭
+  |       +-- Cold: 미매칭 또는 매칭 불확실
+  |
+  v
+comparable_group_stats 조회
+  |
+  v
+모델 피처 생성
+  |
+  +-- Warm: PP-SVC3 결합 추론
+  |       - svc_numeric Huber 예측
+  |       - PP-V8 방어 후보 예측
+  |       - 로그 가격 70:30 결합
+  |
+  +-- Cold: LightGBM Quantile 참고 추론
+          - q10/q50/q90
+          - qwidth 기반 보정
+          - 넓은 범위/낮은 신뢰도
+  |
+  v
+가격 범위와 신뢰도 산정
+  |
+  v
+API 응답 생성
+  |
+  v
+prediction_log 저장</code></pre>
+<h2 id="4.-추론-단계-상세">4. 추론 단계 상세</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">순서</th>
+<th class="align-left">단계</th>
+<th class="align-left">처리 내용</th>
+<th class="align-left">주요 산출물</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left">입력 검증</td>
+<td class="align-left">필수 필드, 타입, 지원 범위 확인</td>
+<td class="align-left">validated request</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left">표준화</td>
+<td class="align-left">작가명, 매체, 지지체, 크기, 호수 정규화</td>
+<td class="align-left">normalized input</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left">작가 매칭</td>
+<td class="align-left">내부 작가 registry 조회</td>
+<td class="align-left">route, artist_key, match_status</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left">비교군 통계 조회</td>
+<td class="align-left">fallback 순서로 비교군 선택</td>
+<td class="align-left">comparable_stats</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left">피처 생성</td>
+<td class="align-left">Warm/Cold별 feature vector 생성</td>
+<td class="align-left">model features</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left">모델 추론</td>
+<td class="align-left">Warm PP-SVC3 또는 Cold PP-Y18 정책</td>
+<td class="align-left">pred_log, price_krw</td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left">가격 범위 산출</td>
+<td class="align-left">모델 불확실성 + 비교군 분위 범위 반영</td>
+<td class="align-left">low/high</td>
+</tr>
+<tr>
+<td class="align-right">8</td>
+<td class="align-left">신뢰도 산정</td>
+<td class="align-left">route, N, 범위 폭, 입력 품질 기준</td>
+<td class="align-left">confidence</td>
+</tr>
+<tr>
+<td class="align-right">9</td>
+<td class="align-left">유사 작품 추출</td>
+<td class="align-left">비교군 대표 표본 선택</td>
+<td class="align-left">similar_artworks</td>
+</tr>
+<tr>
+<td class="align-right">10</td>
+<td class="align-left">응답 생성</td>
+<td class="align-left">화면/협업자용 response 생성</td>
+<td class="align-left">API response</td>
+</tr>
+<tr>
+<td class="align-right">11</td>
+<td class="align-left">로그 저장</td>
+<td class="align-left">추론 결과와 latency 저장</td>
+<td class="align-left">prediction_log</td>
+</tr>
+</tbody></table></div>
+<h2 id="5.-서비스용-db-구성-방향">5. 서비스용 DB 구성 방향</h2>
+<h3 id="5.1-핵심-테이블-목록">5.1 핵심 테이블 목록</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">테이블</th>
+<th class="align-left">목적</th>
+<th class="align-left">필수 여부</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>artist_registry</code></td>
+<td class="align-left">작가 식별, Warm/Cold 라우팅</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork_master</code></td>
+<td class="align-left">작품 기본 정보 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_history</code></td>
+<td class="align-left">과거 가격 이력 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparable_group_stats</code></td>
+<td class="align-left">비교군 가격/호당가 통계</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparable_sample_index</code></td>
+<td class="align-left">유사 작품/비교 표본 조회</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_artifact_registry</code></td>
+<td class="align-left">모델 artifact 버전 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>feature_schema_registry</code></td>
+<td class="align-left">피처 스키마 버전 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_log</code></td>
+<td class="align-left">예측 운영 로그</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>external_artist_signal_cache</code></td>
+<td class="align-left">검색/전시/갤러리 외부 신호 캐시</td>
+<td class="align-left">선택</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_training_run</code></td>
+<td class="align-left">재학습 이력 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>data_ingestion_run</code></td>
+<td class="align-left">데이터 수집/정제 이력 관리</td>
+<td class="align-left">필수</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-db-스키마-초안">6. DB 스키마 초안</h2>
+<h3 id="6.1-artist_registry">6.1 <code>artist_registry</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">string</td>
+<td class="align-left">내부 작가 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_name_primary</code></td>
+<td class="align-left">string</td>
+<td class="align-left">대표 작가명</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_name_normalized</code></td>
+<td class="align-left">string</td>
+<td class="align-left">정규화 작가명</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_name_aliases_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">한글/영문/별칭</td>
+</tr>
+<tr>
+<td class="align-left"><code>birth_year</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">출생연도</td>
+</tr>
+<tr>
+<td class="align-left"><code>death_year</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">사망연도</td>
+</tr>
+<tr>
+<td class="align-left"><code>nationality</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">국적</td>
+</tr>
+<tr>
+<td class="align-left"><code>is_warm_artist</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">학습 데이터 내 작가 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>train_artwork_count</code></td>
+<td class="align-left">integer</td>
+<td class="align-left">학습 데이터 내 작품 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_history_count</code></td>
+<td class="align-left">integer</td>
+<td class="align-left">전체 가격 이력 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_match_quality</code></td>
+<td class="align-left">string</td>
+<td class="align-left">high/medium/low/conflict</td>
+</tr>
+<tr>
+<td class="align-left"><code>profile_source</code></td>
+<td class="align-left">string</td>
+<td class="align-left">internal/manual/external</td>
+</tr>
+<tr>
+<td class="align-left"><code>updated_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">갱신 시각</td>
+</tr>
+</tbody></table></div>
+<p>관리 원칙:</p>
+<ul>
+<li>작가명 매칭은 서비스 신뢰도에 직접 영향</li>
+<li>동명이인 가능성이 있으면 <code>artist_match_quality=conflict</code></li>
+<li>conflict 작가는 기본 Cold 또는 낮은 신뢰도 Warm route</li>
+<li>신규 작가 데이터가 누적되면 Warm 전환 후보로 관리</li>
+</ul>
+<h3 id="6.2-artwork_master">6.2 <code>artwork_master</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>artwork_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">작품 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">내부 작가 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>title</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">작품명</td>
+</tr>
+<tr>
+<td class="align-left"><code>year_made</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">제작년도</td>
+</tr>
+<tr>
+<td class="align-left"><code>width_cm</code></td>
+<td class="align-left">number</td>
+<td class="align-left">가로</td>
+</tr>
+<tr>
+<td class="align-left"><code>height_cm</code></td>
+<td class="align-left">number</td>
+<td class="align-left">세로</td>
+</tr>
+<tr>
+<td class="align-left"><code>depth_cm</code></td>
+<td class="align-left">number nullable</td>
+<td class="align-left">깊이</td>
+</tr>
+<tr>
+<td class="align-left"><code>area_cm2</code></td>
+<td class="align-left">number</td>
+<td class="align-left">면적</td>
+</tr>
+<tr>
+<td class="align-left"><code>estimated_ho</code></td>
+<td class="align-left">number nullable</td>
+<td class="align-left">호수</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_raw</code></td>
+<td class="align-left">string</td>
+<td class="align-left">원본 매체</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_category</code></td>
+<td class="align-left">string</td>
+<td class="align-left">표준 매체</td>
+</tr>
+<tr>
+<td class="align-left"><code>support_raw</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">원본 지지체</td>
+</tr>
+<tr>
+<td class="align-left"><code>support_category</code></td>
+<td class="align-left">string</td>
+<td class="align-left">표준 지지체</td>
+</tr>
+<tr>
+<td class="align-left"><code>is_3d_candidate</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">3D 후보 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>source_system</code></td>
+<td class="align-left">string</td>
+<td class="align-left">데이터 출처</td>
+</tr>
+<tr>
+<td class="align-left"><code>created_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">생성 시각</td>
+</tr>
+<tr>
+<td class="align-left"><code>updated_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">갱신 시각</td>
+</tr>
+</tbody></table></div>
+<p>관리 원칙:</p>
+<ul>
+<li>모델 피처 생성의 기준 테이블</li>
+<li>크기 단위는 cm로 통일</li>
+<li><code>estimated_ho</code>가 없으면 기존 Track6 호수 산출식으로 계산 가능. 크기 정보가 부족하면 호당가 산출 불가</li>
+<li>medium/support 표준화 실패는 신뢰도 하락 사유</li>
+</ul>
+<h3 id="6.3-price_history">6.3 <code>price_history</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>price_event_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">가격 이벤트 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">작품 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">작가 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_krw</code></td>
+<td class="align-left">integer</td>
+<td class="align-left">원화 가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_original</code></td>
+<td class="align-left">number nullable</td>
+<td class="align-left">원 통화 가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>currency_original</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">원 통화</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_date</code></td>
+<td class="align-left">date nullable</td>
+<td class="align-left">가격 기준일</td>
+</tr>
+<tr>
+<td class="align-left"><code>market_type</code></td>
+<td class="align-left">string</td>
+<td class="align-left">gallery/auction/private/unknown</td>
+</tr>
+<tr>
+<td class="align-left"><code>source_type</code></td>
+<td class="align-left">string</td>
+<td class="align-left">internal/gallery/cv/manual 등</td>
+</tr>
+<tr>
+<td class="align-left"><code>is_valid_for_training</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">학습 사용 가능 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>is_valid_for_comparable</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">비교군 통계 사용 가능 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>validation_status</code></td>
+<td class="align-left">string</td>
+<td class="align-left">raw/cleaned/verified/excluded</td>
+</tr>
+<tr>
+<td class="align-left"><code>exclusion_reason</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">제외 사유</td>
+</tr>
+<tr>
+<td class="align-left"><code>created_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">생성 시각</td>
+</tr>
+</tbody></table></div>
+<p>관리 원칙:</p>
+<ul>
+<li>학습용 가격과 비교군 통계용 가격을 구분</li>
+<li>이상치, 중복, 통화 오류, 크기 누락은 제외 또는 검수</li>
+<li>가격 기준일을 보관해 향후 시장 시점 보정 가능하게 설계</li>
+</ul>
+<h3 id="6.4-comparable_group_stats">6.4 <code>comparable_group_stats</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>stats_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">통계 row 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>group_key</code></td>
+<td class="align-left">string</td>
+<td class="align-left">비교군 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>group_level</code></td>
+<td class="align-left">string</td>
+<td class="align-left">fallback 수준</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">작가 기준 그룹일 때</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_category</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">매체 기준</td>
+</tr>
+<tr>
+<td class="align-left"><code>support_category</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">지지체 기준</td>
+</tr>
+<tr>
+<td class="align-left"><code>size_bucket</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">크기 구간</td>
+</tr>
+<tr>
+<td class="align-left"><code>sample_count</code></td>
+<td class="align-left">integer</td>
+<td class="align-left">유효 표본 수 N</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_median_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">가격 중앙값</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_q25_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">가격 25 분위</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_q75_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">가격 75 분위</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_q10_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">가격 10 분위</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_q90_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">가격 90 분위</td>
+</tr>
+<tr>
+<td class="align-left"><code>unit_price_per_ho_median_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">호당가 중앙값</td>
+</tr>
+<tr>
+<td class="align-left"><code>unit_price_per_ho_q25_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">호당가 25 분위</td>
+</tr>
+<tr>
+<td class="align-left"><code>unit_price_per_ho_q75_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">호당가 75 분위</td>
+</tr>
+<tr>
+<td class="align-left"><code>unit_price_per_area_median</code></td>
+<td class="align-left">number nullable</td>
+<td class="align-left">면적 단가 중앙값</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_distribution_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">매체별 분포</td>
+</tr>
+<tr>
+<td class="align-left"><code>cutoff_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">통계 산출 기준 시각</td>
+</tr>
+<tr>
+<td class="align-left"><code>stats_version</code></td>
+<td class="align-left">string</td>
+<td class="align-left">통계 산출 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>updated_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">갱신 시각</td>
+</tr>
+</tbody></table></div>
+<p>관리 원칙:</p>
+<ul>
+<li>비교군 통계는 train 기준과 서비스 기준을 분리 관리</li>
+<li>학습/검증에서는 누수 방지를 위해 시점 또는 split 기준 통계 사용</li>
+<li>서비스에서는 최신 유효 가격 이력 기준 통계 사용</li>
+<li><code>unit_price_per_ho_*</code>는 기존 Track6 <code>estimated_ho</code> v1 기준으로 활성화</li>
+<li><code>unit_price_per_area_*</code>는 내부 검증과 호수 산출 불가 케이스의 보조값으로 유지</li>
+</ul>
+<h3 id="6.5-comparable_sample_index">6.5 <code>comparable_sample_index</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>group_key</code></td>
+<td class="align-left">string</td>
+<td class="align-left">비교군 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">비교 표본 작품</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_event_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">가격 이벤트</td>
+</tr>
+<tr>
+<td class="align-left"><code>similarity_tags_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">same_artist, similar_size 등</td>
+</tr>
+<tr>
+<td class="align-left"><code>rank_in_group</code></td>
+<td class="align-left">integer</td>
+<td class="align-left">대표 표본 순위</td>
+</tr>
+<tr>
+<td class="align-left"><code>display_permission</code></td>
+<td class="align-left">string</td>
+<td class="align-left">public_summary/internal_only</td>
+</tr>
+<tr>
+<td class="align-left"><code>created_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">생성 시각</td>
+</tr>
+</tbody></table></div>
+<p>관리 원칙:</p>
+<ul>
+<li>서비스 화면의 유사 작품 리스트에 사용</li>
+<li>외부 노출 가능 필드와 내부 검수 필드 분리</li>
+<li>표본 수가 부족할 때는 빈 배열과 사유 반환</li>
+</ul>
+<h3 id="6.6-model_artifact_registry">6.6 <code>model_artifact_registry</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>model_version</code></td>
+<td class="align-left">string</td>
+<td class="align-left">모델 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_policy</code></td>
+<td class="align-left">string</td>
+<td class="align-left">적용 정책</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_family</code></td>
+<td class="align-left">string</td>
+<td class="align-left">huber_blend/lightgbm_quantile 등</td>
+</tr>
+<tr>
+<td class="align-left"><code>artifact_path</code></td>
+<td class="align-left">string</td>
+<td class="align-left">모델 파일 위치</td>
+</tr>
+<tr>
+<td class="align-left"><code>feature_schema_version</code></td>
+<td class="align-left">string</td>
+<td class="align-left">피처 스키마</td>
+</tr>
+<tr>
+<td class="align-left"><code>postprocessing_policy</code></td>
+<td class="align-left">string</td>
+<td class="align-left">후처리 정책</td>
+</tr>
+<tr>
+<td class="align-left"><code>metric_summary_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">검증 성능</td>
+</tr>
+<tr>
+<td class="align-left"><code>training_data_cutoff_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">학습 데이터 기준일</td>
+</tr>
+<tr>
+<td class="align-left"><code>is_active</code></td>
+<td class="align-left">boolean</td>
+<td class="align-left">운영 적용 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>created_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">생성 시각</td>
+</tr>
+</tbody></table></div>
+<p>관리 원칙:</p>
+<ul>
+<li>Warm PP-SVC3는 <code>svc_numeric</code>과 PP-V8 산출물을 둘 다 재현해야 함</li>
+<li>모델 파일만이 아니라 후처리 정책과 피처 스키마를 함께 버전 관리</li>
+<li>API 응답의 <code>model_version</code>, <code>model_policy</code>와 연결</li>
+</ul>
+<h3 id="6.7-prediction_log">6.7 <code>prediction_log</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>request_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">요청 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>created_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">예측 시각</td>
+</tr>
+<tr>
+<td class="align-left"><code>route</code></td>
+<td class="align-left">string</td>
+<td class="align-left">warm/cold/unknown_artist_match</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_version</code></td>
+<td class="align-left">string</td>
+<td class="align-left">모델 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_policy</code></td>
+<td class="align-left">string</td>
+<td class="align-left">모델 정책</td>
+</tr>
+<tr>
+<td class="align-left"><code>postprocessing_policy</code></td>
+<td class="align-left">string</td>
+<td class="align-left">후처리 정책</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">매칭 작가</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_match_status</code></td>
+<td class="align-left">string</td>
+<td class="align-left">matched/not_matched/conflict</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparable_group_key</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">비교군</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparable_sample_count</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">비교군 N</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">예측 가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>range_low_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">범위 하한</td>
+</tr>
+<tr>
+<td class="align-left"><code>range_high_krw</code></td>
+<td class="align-left">integer nullable</td>
+<td class="align-left">범위 상한</td>
+</tr>
+<tr>
+<td class="align-left"><code>confidence_grade</code></td>
+<td class="align-left">string</td>
+<td class="align-left">A/B/C/D</td>
+</tr>
+<tr>
+<td class="align-left"><code>display_policy</code></td>
+<td class="align-left">string</td>
+<td class="align-left">화면 표시 정책</td>
+</tr>
+<tr>
+<td class="align-left"><code>risk_reasons_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">위험 사유</td>
+</tr>
+<tr>
+<td class="align-left"><code>latency_ms</code></td>
+<td class="align-left">integer</td>
+<td class="align-left">처리 시간</td>
+</tr>
+<tr>
+<td class="align-left"><code>error_code</code></td>
+<td class="align-left">string nullable</td>
+<td class="align-left">에러 코드</td>
+</tr>
+</tbody></table></div>
+<p>관리 원칙:</p>
+<ul>
+<li>운영 품질 모니터링의 핵심 테이블</li>
+<li>Warm/Cold 비율, 신뢰도 분포, 오류율, latency 확인</li>
+<li>실제 판매/피드백 데이터가 들어오면 사후 성능 평가와 연결</li>
+</ul>
+<h2 id="7.-비교군-통계-관리-방식">7. 비교군 통계 관리 방식</h2>
+<h3 id="7.1-생성-원칙">7.1 생성 원칙</h3>
+<p>비교군은 가장 세밀한 조건부터 찾고, 표본 수가 부족하면 더 넓은 조건으로 fallback한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">순서</th>
+<th class="align-left">group_level</th>
+<th class="align-left">의미</th>
+<th class="align-right">최소 N</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left"><code>artist_medium_support_size</code></td>
+<td class="align-left">같은 작가 + 같은 재료/지지체 + 유사 크기</td>
+<td class="align-right">5</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left"><code>artist_size</code></td>
+<td class="align-left">같은 작가 + 유사 크기</td>
+<td class="align-right">5</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left"><code>artist</code></td>
+<td class="align-left">같은 작가 전체</td>
+<td class="align-right">5</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left"><code>medium_support_size</code></td>
+<td class="align-left">같은 재료/지지체 + 유사 크기</td>
+<td class="align-right">30</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left"><code>medium_category_support_size</code></td>
+<td class="align-left">같은 재료 + 같은 지지체 + 유사 크기</td>
+<td class="align-right">30</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left"><code>medium_size</code></td>
+<td class="align-left">같은 재료 + 유사 크기</td>
+<td class="align-right">50</td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left"><code>global</code></td>
+<td class="align-left">전체 기준</td>
+<td class="align-right">전체</td>
+</tr>
+</tbody></table></div>
+<h3 id="7.2-통계-항목">7.2 통계 항목</h3>
+<ul>
+<li>가격 중앙값</li>
+<li>가격 q25/q75</li>
+<li>가격 q10/q90</li>
+<li>호당가 중앙값</li>
+<li>호당가 q25/q75</li>
+<li>면적 단가 중앙값</li>
+<li>매체별 호당가 분포</li>
+<li>표본 수 N</li>
+<li>비교군 수준</li>
+<li>통계 산출 기준일</li>
+</ul>
+<h3 id="7.3-호당가-관리">7.3 호당가 관리</h3>
+<p>호당가 산출은 기존 Track6 <code>estimated_ho</code> 산출식을 서비스 v1 표준으로 사용한다.</p>
+<p>서비스 v1 산출식:</p>
+<pre><code>area_cm2 = width_cm * height_cm
+estimated_ho = argmin_h |area_cm2 - HO_TABLE_F[h]|
+unit_price_per_ho = price_krw / estimated_ho</code></pre>
+<p>기준:</p>
+<ul>
+<li><code>HO_TABLE_F</code>: 한국 캔버스 F형 기준 호수별 참조 면적표</li>
+<li>기준 구현: <code>scripts/track6_add_size_ho_features.py</code>의 Track6 split 생성 방식과 동일한 nearest mapping</li>
+<li>참고: 공용 모듈에는 보간 방식 <code>area_to_ho_f</code>도 있으나, 서비스 v1은 Track6 실험 split과 맞추기 위해 nearest mapping을 표준으로 둠</li>
+<li><code>ln_estimated_ho = log(max(estimated_ho, 0.01))</code></li>
+<li>실험에서 반복 사용한 <code>estimated_ho</code>, <code>ln_estimated_ho</code>와 같은 계열</li>
+</ul>
+<p>남은 결정은 공식 자체가 아니라 서비스 예외 정책:</p>
+<ul>
+<li>클라이언트가 <code>estimated_ho</code>를 직접 제공한 경우 자동 계산값과 다르면 어느 값을 우선할지</li>
+<li>3D/입체 작품에 호당가를 표시할지</li>
+<li>비표준 규격 작품에서 F형 기준 호수 환산을 그대로 쓸지, “추정 호수” 문구를 붙일지</li>
+<li>호수 산출이 불가능한 경우 면적 단가를 보조로 같이 보여줄지</li>
+</ul>
+<p>운영 정책 초안:</p>
+<ul>
+<li><code>estimated_ho</code>가 있는 경우: 검증 후 호당가 계산</li>
+<li><code>estimated_ho</code>가 없는 경우: <code>width_cm * height_cm</code> 기반으로 <code>estimated_ho</code> 자동 계산</li>
+<li>크기 정보가 부족하거나 <code>estimated_ho &lt;= 0</code>인 경우: 호당가 null, 면적 단가 내부 참고</li>
+<li>API는 <code>unit_price_per_ho.ho_policy=track6_estimated_ho_f_nearest_v1</code>을 함께 반환</li>
+</ul>
+<h2 id="8.-모델-artifact-운영">8. 모델 artifact 운영</h2>
+<h3 id="8.1-warm-artifact">8.1 Warm artifact</h3>
+<p>필수 구성:</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구성</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>svc_numeric</code> Huber 모델</td>
+<td class="align-left">비교군 통계 후보 예측</td>
+</tr>
+<tr>
+<td class="align-left">PP-V8 compact blend 재현 정책</td>
+<td class="align-left">방어 후보 예측</td>
+</tr>
+<tr>
+<td class="align-left">PP-SVC3 결합 정책</td>
+<td class="align-left">로그 가격 70:30 결합</td>
+</tr>
+<tr>
+<td class="align-left">feature schema</td>
+<td class="align-left">실험/운영 피처 일치</td>
+</tr>
+<tr>
+<td class="align-left">comparable stats builder</td>
+<td class="align-left">비교군 통계 피처 생성</td>
+</tr>
+<tr>
+<td class="align-left">preprocessing pipeline</td>
+<td class="align-left">매체/지지체/크기 표준화</td>
+</tr>
+<tr>
+<td class="align-left">manifest</td>
+<td class="align-left">버전, 성능, 파일 경로, checksum</td>
+</tr>
+</tbody></table></div>
+<p>Warm 재현성 테스트:</p>
+<pre><code>샘플 입력
+  |
+  +-- svc_numeric pred_log 재현
+  +-- PP-V8 pred_log 재현
+  +-- 0.70/0.30 결합 재현
+  |
+  v
+실험 저장 예측값과 diff 확인</code></pre>
+<p>배포 전 합격 기준:</p>
+<ul>
+<li>동일 샘플의 <code>pred_log_svc_numeric</code> diff 허용 범위 이내</li>
+<li>동일 샘플의 <code>pred_log_pp_v8</code> diff 허용 범위 이내</li>
+<li>최종 <code>price_krw</code> diff 허용 범위 이내</li>
+<li>feature schema mismatch 없음</li>
+</ul>
+<h3 id="8.2-cold-artifact">8.2 Cold artifact</h3>
+<p>필수 구성:</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구성</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">LightGBM Quantile q10</td>
+<td class="align-left">낮은 가격 범위</td>
+</tr>
+<tr>
+<td class="align-left">LightGBM Quantile q50</td>
+<td class="align-left">참고 예측가</td>
+</tr>
+<tr>
+<td class="align-left">LightGBM Quantile q90</td>
+<td class="align-left">높은 가격 범위</td>
+</tr>
+<tr>
+<td class="align-left">qwidth 보정 정책</td>
+<td class="align-left">불확실성 구간별 보정</td>
+</tr>
+<tr>
+<td class="align-left">Cold feature schema</td>
+<td class="align-left">작가 메타/전시/검색/작품 피처</td>
+</tr>
+<tr>
+<td class="align-left">confidence policy</td>
+<td class="align-left">낮은 신뢰도 표시</td>
+</tr>
+</tbody></table></div>
+<p>Cold 운영 주의:</p>
+<ul>
+<li>단일 확정 가격으로 표현 금지</li>
+<li>qwidth가 큰 경우 범위 확대</li>
+<li>작가 매칭 실패와 외부 정보 부족을 risk reason으로 노출</li>
+<li>사전 수집된 외부 신호만 안정적으로 사용</li>
+</ul>
+<h2 id="9.-데이터-추가-수집과-갱신-흐름">9. 데이터 추가 수집과 갱신 흐름</h2>
+<p>Figure 2. 데이터 수집부터 모델 재학습까지:</p>
+<pre><code>신규 데이터 수집
+  |
+  +-- 작가 프로필
+  +-- 작품 기본 정보
+  +-- 가격 이력
+  +-- 전시/갤러리/검색 신호
+  |
+  v
+정제/표준화
+  |
+  +-- 작가명 매칭
+  +-- 매체/지지체 표준화
+  +-- 크기/호수 검증
+  +-- 가격 통화/시점 정리
+  |
+  v
+품질 검수
+  |
+  +-- 중복 제거
+  +-- 이상치 확인
+  +-- 학습 사용 가능 여부 표시
+  |
+  v
+DB 반영
+  |
+  +-- artist_registry
+  +-- artwork_master
+  +-- price_history
+  +-- external_artist_signal_cache
+  |
+  v
+비교군 통계 재계산
+  |
+  v
+모델 재학습 후보 생성
+  |
+  v
+검증/승인
+  |
+  v
+모델 artifact 배포</code></pre>
+<h3 id="9.1-수집-데이터">9.1 수집 데이터</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">데이터</th>
+<th class="align-left">사용 목적</th>
+<th class="align-left">갱신 방식</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">갤러리 판매 데이터</td>
+<td class="align-left">가격 이력, 비교군 통계</td>
+<td class="align-left">수시/배치</td>
+</tr>
+<tr>
+<td class="align-left">작가 DB</td>
+<td class="align-left">Warm/Cold 라우팅, 작가 메타</td>
+<td class="align-left">주기 배치</td>
+</tr>
+<tr>
+<td class="align-left">CV 데이터</td>
+<td class="align-left">작가 활동성 피처</td>
+<td class="align-left">주기 배치</td>
+</tr>
+<tr>
+<td class="align-left">전시/갤러리 정보</td>
+<td class="align-left">Cold 보조 피처, 신뢰도</td>
+<td class="align-left">주기 배치</td>
+</tr>
+<tr>
+<td class="align-left">검색/뉴스 신호</td>
+<td class="align-left">참고 신뢰도, Cold 보조</td>
+<td class="align-left">캐시/검수 후 반영</td>
+</tr>
+<tr>
+<td class="align-left">호수/크기 정보</td>
+<td class="align-left">호당가, 크기 피처</td>
+<td class="align-left">입력 시 검증</td>
+</tr>
+</tbody></table></div>
+<h3 id="9.2-데이터-품질-기준">9.2 데이터 품질 기준</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">검수 항목</th>
+<th class="align-left">기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가명 매칭</td>
+<td class="align-left">alias와 동명이인 검토</td>
+</tr>
+<tr>
+<td class="align-left">가격</td>
+<td class="align-left">통화, 단위, 0/음수, 비정상 고가 검토</td>
+</tr>
+<tr>
+<td class="align-left">크기</td>
+<td class="align-left">cm 단위, width/height 양수</td>
+</tr>
+<tr>
+<td class="align-left">호수</td>
+<td class="align-left">공식 기준에 맞는 값인지 확인</td>
+</tr>
+<tr>
+<td class="align-left">매체/지지체</td>
+<td class="align-left">표준 category 매핑</td>
+</tr>
+<tr>
+<td class="align-left">중복</td>
+<td class="align-left">같은 작품/가격 이벤트 중복 제거</td>
+</tr>
+<tr>
+<td class="align-left">외부 검색</td>
+<td class="align-left">동명이인, 무관 검색 결과 제거</td>
+</tr>
+</tbody></table></div>
+<h2 id="10.-모델-재학습-흐름">10. 모델 재학습 흐름</h2>
+<h3 id="10.1-재학습-트리거">10.1 재학습 트리거</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">트리거</th>
+<th class="align-left">기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">신규 가격 이력 증가</td>
+<td class="align-left">유효 가격 데이터 일정 건수 이상 추가</td>
+</tr>
+<tr>
+<td class="align-left">신규 작가 증가</td>
+<td class="align-left">Cold 작가가 Warm 전환 가능한 수준으로 이력 확보</td>
+</tr>
+<tr>
+<td class="align-left">비교군 통계 변화</td>
+<td class="align-left">주요 작가/매체 비교군 중앙값 큰 변화</td>
+</tr>
+<tr>
+<td class="align-left">운영 오차 증가</td>
+<td class="align-left">실제 피드백 기준 오차 상승</td>
+</tr>
+<tr>
+<td class="align-left">데이터 스키마 변경</td>
+<td class="align-left">호수 산출 정책, 매체 category, 작가 메타 변경</td>
+</tr>
+</tbody></table></div>
+<h3 id="10.2-재학습-절차">10.2 재학습 절차</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">단계</th>
+<th class="align-left">내용</th>
+<th class="align-left">산출물</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left">데이터 snapshot 생성</td>
+<td class="align-left"><code>dataset_snapshot_id</code></td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left">train/validation/test split 생성</td>
+<td class="align-left">split manifest</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left">비교군 통계 생성</td>
+<td class="align-left">comparable stats snapshot</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left">Warm 후보 재학습</td>
+<td class="align-left">Huber, svc_numeric, PP-V8 재현</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left">Cold 후보 재학습</td>
+<td class="align-left">LightGBM Quantile, qwidth 보정</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left">지표 평가</td>
+<td class="align-left">MdAPE, MAPE, p95_APE, RMSE_log</td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left">안정성 검증</td>
+<td class="align-left">seed, holdout, bootstrap</td>
+</tr>
+<tr>
+<td class="align-right">8</td>
+<td class="align-left">리포트 생성</td>
+<td class="align-left">model evaluation report</td>
+</tr>
+<tr>
+<td class="align-right">9</td>
+<td class="align-left">승인</td>
+<td class="align-left">운영 반영 여부 결정</td>
+</tr>
+<tr>
+<td class="align-right">10</td>
+<td class="align-left">artifact 배포</td>
+<td class="align-left">model registry update</td>
+</tr>
+</tbody></table></div>
+<h3 id="10.3-모델-승격-기준">10.3 모델 승격 기준</h3>
+<p>Warm 신규 후보 승격 조건:</p>
+<ul>
+<li>기존 PP-SVC3 대비 MdAPE 개선</li>
+<li>MAPE 또는 p95_APE 악화 없음</li>
+<li>row/artist holdout에서 선택 안정성 확인</li>
+<li>artifact 재현성 테스트 통과</li>
+<li>피처 영향도 해석 가능</li>
+</ul>
+<p>Cold 신규 후보 승격 조건:</p>
+<ul>
+<li>PP-Y18 대비 MdAPE/MAPE/p95 중 최소 2개 개선</li>
+<li>p95_APE 악화 없음</li>
+<li>qwidth 큰 구간의 위험 감소</li>
+<li>display_policy와 신뢰도 정책 유지 가능</li>
+<li>단일 확정 가격처럼 보이지 않는 응답 정책 유지</li>
+</ul>
+<h2 id="11.-운영-모니터링">11. 운영 모니터링</h2>
+<h3 id="11.1-api-모니터링">11.1 API 모니터링</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">지표</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">요청 수</td>
+<td class="align-left">사용량 확인</td>
+</tr>
+<tr>
+<td class="align-left">latency p50/p95</td>
+<td class="align-left">응답 속도</td>
+</tr>
+<tr>
+<td class="align-left">error rate</td>
+<td class="align-left">장애 감지</td>
+</tr>
+<tr>
+<td class="align-left">Warm/Cold 비율</td>
+<td class="align-left">데이터 커버리지 확인</td>
+</tr>
+<tr>
+<td class="align-left">confidence 분포</td>
+<td class="align-left">낮은 신뢰도 비중 추적</td>
+</tr>
+<tr>
+<td class="align-left">comparable_stats available rate</td>
+<td class="align-left">비교군 DB 품질</td>
+</tr>
+<tr>
+<td class="align-left">similar_artworks available rate</td>
+<td class="align-left">화면 근거 제공률</td>
+</tr>
+</tbody></table></div>
+<h3 id="11.2-모델-모니터링">11.2 모델 모니터링</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">지표</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예측 가격 분포</td>
+<td class="align-left">비정상 예측 감지</td>
+</tr>
+<tr>
+<td class="align-left">가격 범위 폭 분포</td>
+<td class="align-left">과도하게 넓은 범위 감지</td>
+</tr>
+<tr>
+<td class="align-left">route별 가격 분포</td>
+<td class="align-left">Warm/Cold 편차 확인</td>
+</tr>
+<tr>
+<td class="align-left">비교군 N 분포</td>
+<td class="align-left">통계 신뢰도 확인</td>
+</tr>
+<tr>
+<td class="align-left">qwidth 분포</td>
+<td class="align-left">Cold 불확실성 변화 확인</td>
+</tr>
+<tr>
+<td class="align-left">사용자/검수 피드백 오차</td>
+<td class="align-left">실제 서비스 품질 확인</td>
+</tr>
+</tbody></table></div>
+<h3 id="11.3-알림-기준-초안">11.3 알림 기준 초안</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">조건</th>
+<th class="align-left">조치</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">error rate 급증</td>
+<td class="align-left">API 장애 점검</td>
+</tr>
+<tr>
+<td class="align-left">Cold 비율 급증</td>
+<td class="align-left">작가 매칭/registry 점검</td>
+</tr>
+<tr>
+<td class="align-left">comparable_stats unavailable 증가</td>
+<td class="align-left">비교군 통계 배치 점검</td>
+</tr>
+<tr>
+<td class="align-left">confidence D 비율 급증</td>
+<td class="align-left">입력 품질 또는 신규 작가 유입 확인</td>
+</tr>
+<tr>
+<td class="align-left">가격 범위 폭 비정상 확대</td>
+<td class="align-left">qwidth/비교군 통계 점검</td>
+</tr>
+</tbody></table></div>
+<h2 id="12.-배포-전-체크리스트">12. 배포 전 체크리스트</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">확인 내용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">API 계약 확정</td>
+<td class="align-left">협업자와 path/request/response 합의</td>
+</tr>
+<tr>
+<td class="align-left">Warm artifact 재현</td>
+<td class="align-left">PP-SVC3 결합 예측 재현</td>
+</tr>
+<tr>
+<td class="align-left">비교군 DB 구축</td>
+<td class="align-left">fallback 순서와 최소 N 적용</td>
+</tr>
+<tr>
+<td class="align-left">호당가 예외 정책</td>
+<td class="align-left">직접 입력 호수/자동 계산 호수 충돌, 3D/비표준 작품 표시 기준</td>
+</tr>
+<tr>
+<td class="align-left">Cold 표시 문구</td>
+<td class="align-left">참고 예측가/낮은 신뢰도 문구 확정</td>
+</tr>
+<tr>
+<td class="align-left">유사 작품 노출</td>
+<td class="align-left">공개 가능 필드와 내부 필드 분리</td>
+</tr>
+<tr>
+<td class="align-left">prediction_log</td>
+<td class="align-left">운영 로그 저장 확인</td>
+</tr>
+<tr>
+<td class="align-left">모니터링</td>
+<td class="align-left">API/모델 지표 대시보드 준비</td>
+</tr>
+<tr>
+<td class="align-left">롤백</td>
+<td class="align-left">이전 artifact 또는 API 비활성화 계획</td>
+</tr>
+</tbody></table></div>
+<h2 id="13.-단계별-실행-계획">13. 단계별 실행 계획</h2>
+<h3 id="13.1-1단계-api-db-계약-고정">13.1 1단계: API/DB 계약 고정</h3>
+<p>결과물:</p>
+<ul>
+<li>API 상세 스펙 확정</li>
+<li>DB 테이블 초안 확정</li>
+<li>기존 Track6 <code>estimated_ho</code> v1 적용 확인</li>
+<li>비교군 fallback 최소 N 결정</li>
+<li>유사 작품 노출 범위 결정</li>
+</ul>
+<h3 id="13.2-2단계-추론-파이프라인-구현">13.2 2단계: 추론 파이프라인 구현</h3>
+<p>결과물:</p>
+<ul>
+<li>입력 표준화 모듈</li>
+<li>작가 매칭 모듈</li>
+<li>비교군 통계 조회 모듈</li>
+<li>Warm PP-SVC3 추론 모듈</li>
+<li>Cold PP-Y18 참고 추론 모듈</li>
+<li>가격 범위/신뢰도 산정 모듈</li>
+</ul>
+<h3 id="13.3-3단계-운영-검증">13.3 3단계: 운영 검증</h3>
+<p>결과물:</p>
+<ul>
+<li>샘플 100건 dry-run</li>
+<li>Warm artifact diff 리포트</li>
+<li>Cold qwidth 범위 sanity check</li>
+<li>비교군 통계 coverage 리포트</li>
+<li>latency/error 리포트</li>
+</ul>
+<h3 id="13.4-4단계-서비스-연동">13.4 4단계: 서비스 연동</h3>
+<p>결과물:</p>
+<ul>
+<li>단건 예측 API</li>
+<li>배치 예측 API</li>
+<li>모델 정보 API</li>
+<li>prediction log 저장</li>
+<li>모니터링 API 또는 대시보드</li>
+</ul>
+<h2 id="14.-상사-보고용-요약">14. 상사 보고용 요약</h2>
+<ul>
+<li>Warm은 <code>PP-SVC3</code> 결합 후보가 최종 서비스 1순위</li>
+<li>Warm은 예측 가격과 가격 범위를 제공 가능</li>
+<li>Cold는 아직 확정 가격으로 제공하기 어렵고 참고 예측가와 넓은 범위가 적합</li>
+<li>서비스 화면에 필요한 호당가/비교군/유사 작품 정보는 별도 DB로 관리 필요</li>
+<li>호당가 예외 정책, 비교군 fallback, 유사 작품 노출 범위는 서비스 적용 전 결정 필요</li>
+<li>모델 배포 전 가장 중요한 검증은 Warm PP-SVC3 artifact 재현성</li>
+<li>데이터가 추가되면 가격 이력과 비교군 통계를 먼저 갱신하고, 일정 기준 충족 시 모델 재학습</li>
+</ul>
+<h2 id="15.-남은-의사결정">15. 남은 의사결정</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결정 필요 이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">호당가 예외 정책</td>
+<td class="align-left">직접 입력 호수/자동 계산 호수 충돌, 3D/비표준 작품 표시 기준</td>
+</tr>
+<tr>
+<td class="align-left">API prefix</td>
+<td class="align-left">협업자 시스템 라우팅</td>
+</tr>
+<tr>
+<td class="align-left">비교군 fallback 최소 N</td>
+<td class="align-left">신뢰도와 화면 문구</td>
+</tr>
+<tr>
+<td class="align-left">가격 범위 calibration</td>
+<td class="align-left">화면 범위 폭</td>
+</tr>
+<tr>
+<td class="align-left">Cold 참고가 노출 문구</td>
+<td class="align-left">예측 신뢰도 차이를 화면에 반영</td>
+</tr>
+<tr>
+<td class="align-left">유사 작품 공개 범위</td>
+<td class="align-left">권리/계약 이슈 방지</td>
+</tr>
+<tr>
+<td class="align-left">외부 검색 반영 방식</td>
+<td class="align-left">latency와 검색 품질 안정성</td>
+</tr>
+<tr>
+<td class="align-left">재학습 주기</td>
+<td class="align-left">신규 데이터 반영 속도</td>
+</tr>
+</tbody></table></div>
+    </main>
+  </div>
+</body>
+</html>

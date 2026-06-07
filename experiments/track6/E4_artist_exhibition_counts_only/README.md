@@ -1,0 +1,33 @@
+# Track6 E4 작가 전시/아트페어 횟수 단독 실험 결과
+
+- 실험 목적: 개인전, 그룹전, 아트페어 횟수가 가격 차이를 설명할 수 있는지 확인
+- 학습 데이터 건수: `26,914`건
+- Warm 테스트 건수: `607`건
+- Cold 테스트 건수: `3,099`건
+- Warm 최고: `아트페어 횟수` / `Huber` / MdAPE `0.7452`
+- Cold 최고: `아트페어 횟수` / `Huber` / MdAPE `0.7061`
+- 사용 코드: `scripts/track6/fixed_variable_experiment_runner.py`
+- 사용 설정: `experiments/track6/E4_artist_exhibition_counts_only/experiment_config.json`
+- 사용 프롬프트: `experiments/track6/E4_artist_exhibition_counts_only/prompts/used_prompt.md`
+- 복사한 원본 데이터 폴더: `source_data/`
+
+## 코멘트
+
+- 실험 목적: 개인전, 그룹전, 아트페어 횟수가 가격 차이를 설명할 수 있는지 확인
+- 학습 피처: artist_exhibition_solo_count / artist_exhibition_group_count / artist_exhibition_fair_count / artist_exhibition_total_count / artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_available_count, artist_exhibition_solo_count_is_missing, artist_exhibition_group_count_is_missing, artist_exhibition_fair_count_is_missing
+- 테스트 피처: 학습 피처와 동일
+- 사용 모델: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+- 데이터 기준: 작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.
+- 평가 지표: R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE
+- 실험군: Group E: 작가 변수만
+- 표준화: 원본 saatchi 전시 횟수에서 200 초과 값은 연도 오입력으로 보고 결측 처리했다.
+- 해석 중심: 경력 횟수 자체가 가격대 차이를 설명하는지 확인한다.
+- purpose: 개인전, 그룹전, 아트페어 횟수가 가격 차이를 설명할 수 있는지 확인
+- summary: Warm 최고는 아트페어 횟수 + Huber(MdAPE 0.7452), Cold 최고는 아트페어 횟수 + Huber(MdAPE 0.7061)이다.
+
+## 결과 파일
+
+- `outputs/result_sheet.html`
+- `outputs/result_sheet.csv`
+- `outputs/metrics_long.csv`
+- `outputs/experiment_manifest.json`

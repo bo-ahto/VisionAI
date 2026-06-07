@@ -1,0 +1,14 @@
+experiment_id: T6-E043
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H5
+title: 깊이/3D 정보 추가 실험
+hypothesis: 깊이/3D 정보는 2D와 3D 작품을 구분해 예측하는 데 도움이 된다.
+features_under_test: depth_cm, has_depth, is_3d_candidate
+model: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+train_features: Warm: artist_name_ko + ln_estimated_ho + depth/3D group, Cold: ln_estimated_ho + depth/3D group
+depth_3d_features: depth_cm, has_depth, is_3d_candidate
+test_features: 학습 피처와 동일
+target: ln_price_krw
+compare: 깊이/3D 피처 추가 전후와 2D/3D slice별 오차 비교
+success_criteria: 3D slice의 median APE 또는 p95 APE가 개선되면 후보 유지

@@ -1,0 +1,249 @@
+{
+  "created_at": "2026-05-22T15:29:47",
+  "experiment_id": "A8-2",
+  "description": "Material representation comparison on fixed size feature sets",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/A8-2_material_representation_size_combo/experiment_config.json",
+  "prompt_file": "experiments/track6/A8-2_material_representation_size_combo/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "ln_estimated_ho",
+      "log_area",
+      "width_cm",
+      "height_cm"
+    ],
+    "numeric_imputation": "median",
+    "categorical_encoding": "one_hot_handle_unknown_ignore"
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "ln호 + 수집 재료 대분류",
+      "features": [
+        "ln_estimated_ho",
+        "medium_category"
+      ],
+      "description": "로그 호수와 기존 수집 재료 대분류 조합"
+    },
+    {
+      "name": "로그면적 + 수집 재료 대분류",
+      "features": [
+        "log_area",
+        "medium_category"
+      ],
+      "description": "로그 면적과 기존 수집 재료 대분류 조합"
+    },
+    {
+      "name": "로그면적 + 수집 재료 원문 묶음",
+      "features": [
+        "log_area",
+        "collected_material_raw_bucket"
+      ],
+      "description": "로그 면적과 수집 원문 재료명 빈도 묶음 조합. collected_material_raw_bucket은 학습 데이터에서 자주 나온 상위 80개 원문 재료명은 그대로 두고, 나머지는 other_raw_material로 합친 범주형 변수다."
+    },
+    {
+      "name": "로그면적 + NANT 재료 번호",
+      "features": [
+        "log_area",
+        "nant_material_idx"
+      ],
+      "description": "로그 면적과 NANT 재료 번호 조합"
+    },
+    {
+      "name": "로그면적 + NANT 도구명",
+      "features": [
+        "log_area",
+        "nant_tool"
+      ],
+      "description": "로그 면적과 NANT 도구명 조합"
+    },
+    {
+      "name": "로그면적 + NANT 재료 번호 + 도구명",
+      "features": [
+        "log_area",
+        "nant_material_idx",
+        "nant_tool"
+      ],
+      "description": "로그 면적과 NANT 재료 번호, 도구명 조합"
+    },
+    {
+      "name": "A8-1 Warm 크기조합 + 수집 재료 대분류",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "width_cm",
+        "height_cm",
+        "medium_category"
+      ],
+      "description": "A8-1 Warm 최고 크기 조합과 기존 수집 재료 대분류 조합"
+    },
+    {
+      "name": "A8-1 Warm 크기조합 + 수집 재료 원문 묶음",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "width_cm",
+        "height_cm",
+        "collected_material_raw_bucket"
+      ],
+      "description": "A8-1 Warm 최고 크기 조합과 수집 원문 재료명 빈도 묶음 조합. collected_material_raw_bucket은 학습 데이터에서 자주 나온 상위 80개 원문 재료명은 그대로 두고, 나머지는 other_raw_material로 합친 범주형 변수다."
+    },
+    {
+      "name": "A8-1 Warm 크기조합 + NANT 재료 번호",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "width_cm",
+        "height_cm",
+        "nant_material_idx"
+      ],
+      "description": "A8-1 Warm 최고 크기 조합과 NANT 재료 번호 조합"
+    },
+    {
+      "name": "A8-1 Warm 크기조합 + NANT 도구명",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "width_cm",
+        "height_cm",
+        "nant_tool"
+      ],
+      "description": "A8-1 Warm 최고 크기 조합과 NANT 도구명 조합"
+    },
+    {
+      "name": "A8-1 Warm 크기조합 + NANT 재료 번호 + 도구명",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "width_cm",
+        "height_cm",
+        "nant_material_idx",
+        "nant_tool"
+      ],
+      "description": "A8-1 Warm 최고 크기 조합과 NANT 재료 번호, 도구명 조합"
+    },
+    {
+      "name": "A8-1 Cold 크기조합 + 수집 재료 대분류",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "medium_category"
+      ],
+      "description": "A8-1 Cold 최고 크기 조합과 기존 수집 재료 대분류 조합"
+    },
+    {
+      "name": "A8-1 Cold 크기조합 + 수집 재료 원문 묶음",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "collected_material_raw_bucket"
+      ],
+      "description": "A8-1 Cold 최고 크기 조합과 수집 원문 재료명 빈도 묶음 조합. collected_material_raw_bucket은 학습 데이터에서 자주 나온 상위 80개 원문 재료명은 그대로 두고, 나머지는 other_raw_material로 합친 범주형 변수다."
+    },
+    {
+      "name": "A8-1 Cold 크기조합 + NANT 재료 번호",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_material_idx"
+      ],
+      "description": "A8-1 Cold 최고 크기 조합과 NANT 재료 번호 조합"
+    },
+    {
+      "name": "A8-1 Cold 크기조합 + NANT 도구명",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_tool"
+      ],
+      "description": "A8-1 Cold 최고 크기 조합과 NANT 도구명 조합"
+    },
+    {
+      "name": "A8-1 Cold 크기조합 + NANT 재료 번호 + 도구명",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_material_idx",
+        "nant_tool"
+      ],
+      "description": "A8-1 Cold 최고 크기 조합과 NANT 재료 번호, 도구명 조합"
+    }
+  ],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/A8-2_material_representation_size_combo/data/train_features.csv",
+    "train_labels": "experiments/track6/A8-2_material_representation_size_combo/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/A8-2_material_representation_size_combo/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/A8-2_material_representation_size_combo/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/A8-2_material_representation_size_combo/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/A8-2_material_representation_size_combo/data/test_cold_labels.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/A8-2_material_representation_size_combo/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/A8-2_material_representation_size_combo/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/A8-2_material_representation_size_combo/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/A8-2_material_representation_size_combo/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/A8-2_material_representation_size_combo/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/A8-2_material_representation_size_combo/source_data/track6_test_cold_labels.csv"
+  }
+}

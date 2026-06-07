@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T6-E035 실험 일지</title>
+  <style>
+    :root { --bg:#f5efe4; --paper:#fffdf7; --ink:#1d251f; --line:#d8cdb8; --muted:#687268; --green:#27684a; --amber:#9b6124; }
+    body { margin:0; color:var(--ink); background:linear-gradient(135deg,#efe7d7,#f8f5ec 48%,#e9f0e7); font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.62; }
+    main { max-width:1120px; margin:0 auto; padding:32px 22px 72px; }
+    header, section { background:rgba(255,253,247,.96); border:1px solid var(--line); border-radius:24px; padding:26px; margin-top:18px; box-shadow:0 12px 34px rgba(42,34,22,.08); }
+    h1 { margin:0; font-size:42px; letter-spacing:-.055em; }
+    h2 { margin:0 0 12px; font-size:22px; letter-spacing:-.03em; }
+    ul { margin:8px 0 0; padding-left:21px; }
+    code { background:#eee5d4; border-radius:7px; padding:2px 6px; overflow-wrap:anywhere; }
+    table { width:100%; border-collapse:collapse; background:var(--paper); }
+    th,td { padding:11px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; font-size:14px; }
+    th { background:#eadfcd; }
+    .badge { display:inline-flex; padding:5px 9px; border-radius:999px; font-size:12px; font-weight:800; margin-right:6px; }
+    .planned { background:rgba(155,97,36,.14); color:var(--amber); }
+    .goal { background:rgba(39,104,74,.14); color:var(--green); }
+    .note { color:var(--muted); }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:16px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="badge planned">예정 실험</span>
+    <span class="badge phase">후속 실험</span>
+    <span class="badge goal">T6-G8 최종 운영 후보 확정</span>
+    <h1>T6-E035 Cold 최종 후보 모델 비교</h1>
+    <p class="note">이 문서는 실행 전 실험 일지 템플릿입니다. 실행 후 결과 지표와 해석을 같은 파일에 갱신합니다.</p>
+    <p><strong>실험 단계:</strong> 후속 실험</p>
+    <p><strong>단계 설명:</strong> 이 실험은 기본 피처 정의 이후의 모델/피처 조합/운영 정책 검증입니다.</p>
+  </header>
+
+  <section>
+    <h2>1. 가설</h2>
+    <ul><li>최종 Cold 피처셋에서는 robust 선형 또는 단순 트리 모델이 가장 안정적일 수 있다.</li></ul>
+  </section>
+
+  <section>
+    <h2>2. 이 실험이 기본 피처 정의에 필요한 이유</h2>
+    <ul>
+      <li>이 실험은 기본 피처 정의 이후의 모델/피처 조합/운영 정책 검증입니다.</li>
+      <li>이 단계에서는 최고 성능 모델을 찾기보다, 어떤 피처를 기본 입력값으로 유지할지 판단합니다.</li>
+      <li>판단 결과는 이후 <code>기본 피처로 후보 모델 비교</code> 단계의 입력 피처셋으로 넘어갑니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 실험 방법</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>항목</th><th>내용</th></tr>
+        <tr><td>테스트 모델</td><td>Ridge / Huber / Quantile / CatBoost / LightGBM</td></tr>
+        <tr><td>학습에 사용된 피처</td><td><code>T6-E033 선정 Cold 피처셋</code></td></tr>
+        <tr><td>테스트에 사용된 피처</td><td><code>동일 피처셋</code></td></tr>
+        <tr><td>학습 정답값</td><td><code>ln_price_krw</code></td></tr>
+        <tr><td>비교 기준</td><td>최종 Cold 모델 후보 전체</td></tr>
+        <tr><td>유의미함 기준</td><td>Cold 최종 모델 확정</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 사용 모델 상세</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>항목</th><th>내용</th></tr>
+        <tr><td>실험 모델군</td><td>Ridge / Huber / Quantile / CatBoost / LightGBM</td></tr>
+        <tr><td>모델 역할</td><td>피처 효과를 검증하기 위한 기본 비교 모델군</td></tr>
+        <tr><td>기본 입력 처리</td><td>범주형 피처는 인코딩, 수치형 피처는 필요 시 스케일링 또는 로그 변환</td></tr>
+        <tr><td>목표값 처리</td><td><code>ln_price_krw</code>를 학습 정답값으로 사용</td></tr>
+        <tr><td>비교 방식</td><td>최종 Cold 모델 후보 전체</td></tr>
+        <tr><td>모델 선택 기준</td><td>median APE, p95 APE, Within-30/50, Warm/Cold 분리 성능, 운영 가능성</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. 생성할 데이터 파일</h2>
+    <ul>
+      <li><code>data/train_features.csv</code>: 학습에 사용된 피처</li>
+      <li><code>data/train_labels.csv</code>: 학습 정답값</li>
+      <li><code>data/test_warm_features.csv</code>: Warm 테스트 입력 피처</li>
+      <li><code>data/test_warm_labels.csv</code>: Warm 테스트 정답값</li>
+      <li><code>data/test_cold_features.csv</code>: Cold 테스트 입력 피처</li>
+      <li><code>data/test_cold_labels.csv</code>: Cold 테스트 정답값</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>6. 결과 기록 위치</h2>
+    <ul>
+      <li><code>outputs/metrics.csv</code>: 전체 지표</li>
+      <li><code>outputs/predictions.csv</code>: 예측값과 실제값 비교</li>
+      <li><code>outputs/slice_metrics.csv</code>: 구간별 오차</li>
+      <li><code>outputs/summary.md</code>: 결과 해석 요약</li>
+      <li><code>logs/run.log</code>: 실행 로그</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>7. 실행 후 채워야 할 결론</h2>
+    <ul>
+      <li>Warm median APE / p95 APE</li>
+      <li>Cold median APE / p95 APE</li>
+      <li>Within-30 / Within-50</li>
+      <li>baseline 대비 개선 여부</li>
+      <li>채택 / 보류 / 중단 판단</li>
+      <li>다음 실험으로 넘길 피처 또는 모델 후보</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

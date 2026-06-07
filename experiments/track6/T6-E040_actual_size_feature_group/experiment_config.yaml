@@ -1,0 +1,14 @@
+experiment_id: T6-E040
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H2
+title: 실제 크기 정보 추가 실험
+hypothesis: 실제 크기 정보는 호수만 사용할 때보다 가격 예측을 개선한다.
+features_under_test: width_cm, height_cm, log_area, aspect_ratio
+model: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+train_features: Warm: artist_name_ko + ln_estimated_ho + size group, Cold: ln_estimated_ho + size group
+test_features: 학습 피처와 동일
+target: ln_price_krw
+size_features: width_cm, height_cm, log_area, aspect_ratio
+compare: 기준 모델에 width_cm + height_cm + log_area + aspect_ratio 추가해 비교
+success_criteria: Warm/Cold 중 하나 이상에서 median APE가 낮아지면 후보 유지

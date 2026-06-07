@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 B2 작가명 처리 방식 비교 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <h1>Track6 B2 작가명 처리 방식 비교 실험 결과</h1>
+    <ul>
+      <li>실험 ID: <code>B2</code></li>
+      <li>목적: 같은 작가명 변수를 모델에 넣는 방식에 따라 Warm 가격 예측 성능이 달라지는지 확인</li>
+      <li>Warm 최고: <code>one_hot</code> / <code>Huber</code> / MdAPE 0.4352 / RMSE(log) 0.8483</li>
+      <li>Cold 최고: <code>smoothed_target_mean_log</code> / <code>LightGBM</code> / MdAPE 0.7016 / RMSE(log) 1.3166</li>
+      <li>생성일: <code>2026-05-26T14:48:02</code></li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>실험 코멘트</h2>
+    <table><tr><th>항목</th><th>내용</th></tr><tr><td>실험 목적</td><td>작가명 한글을 그대로 범주형으로 넣는 방식과 숫자형으로 요약해 넣는 방식을 비교한다.</td></tr><tr><td>실험군</td><td>Group B: 작가 변수만</td></tr><tr><td>비교 기준</td><td>B1 one-hot 결과를 기준으로 frequency, target mean, smoothed target mean을 비교한다.</td></tr><tr><td>학습 피처</td><td>artist_name_ko 또는 작가명에서 train 내부 기준으로 만든 encoding 값 1개</td></tr><tr><td>테스트 피처</td><td>학습 피처와 같은 encoding 방식으로 만든 값 1개</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>누수 방지</td><td>target mean 계열 encoding은 train label만으로 계산하고, warm/cold test label은 성능 계산에만 사용한다.</td></tr><tr><td>해석 주의</td><td>Cold는 신규 작가명이므로 artist_name 기반 encoding이 대부분 전체 평균 또는 미학습값 처리로 들어가며, 최종 Cold 모델 판단에는 쓰지 않는다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE를 확인한다.</td></tr><tr><td>결론 기준</td><td>Warm에서 B1 one-hot보다 MdAPE 또는 RMSE(log)가 개선되면 해당 encoding 방식을 후속 Warm 후보로 둔다.</td></tr></table>
+  </section>
+  <section class="card">
+    <h2>encoding 비교 구성</h2>
+    <table><tr><th>encoding</th><th>사용 피처</th><th>숫자형 피처</th><th>설명</th></tr><tr><td>one_hot</td><td><code>artist_name_ko</code></td><td><code>없음</code></td><td>B1과 동일한 작가명 범주형 one-hot 기준</td></tr><tr><td>frequency_log</td><td><code>artist_frequency_log</code></td><td><code>artist_frequency_log</code></td><td>train 안에서 작가명이 등장한 횟수의 로그값</td></tr><tr><td>target_mean_log</td><td><code>artist_target_mean_log</code></td><td><code>artist_target_mean_log</code></td><td>train 안에서 계산한 작가별 평균 로그가격</td></tr><tr><td>smoothed_target_mean_log</td><td><code>artist_smoothed_target_mean_log</code></td><td><code>artist_smoothed_target_mean_log</code></td><td>작품 수가 적은 작가를 전체 평균 쪽으로 보정한 작가별 평균 로그가격</td></tr></table>
+  </section>
+  <section class="card">
+    <h2>실행 결과</h2>
+    <table>
+      <thead><tr><th>encoding</th><th>분류</th><th>모델 코드</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+      <tbody><tr><td>frequency_log</td><td>Cold</td><td>D</td><td>Huber</td><td>-0.0068</td><td>1.3187</td><td>0.7090</td><td>7.6278</td><td>0.2088</td><td>0.3372</td><td>1.4720</td></tr><tr><td>frequency_log</td><td>Cold</td><td>E</td><td>Quantile-LAD</td><td>-0.0040</td><td>1.3169</td><td>0.7018</td><td>7.8432</td><td>0.2065</td><td>0.3417</td><td>1.5076</td></tr><tr><td>frequency_log</td><td>Cold</td><td>F</td><td>LightGBM</td><td>-0.2212</td><td>1.4524</td><td>0.9486</td><td>16.8391</td><td>0.1533</td><td>0.2591</td><td>3.2138</td></tr><tr><td>one_hot</td><td>Cold</td><td>D</td><td>Huber</td><td>-0.0002</td><td>1.3144</td><td>0.7298</td><td>8.7851</td><td>0.2020</td><td>0.3346</td><td>1.6681</td></tr><tr><td>one_hot</td><td>Cold</td><td>E</td><td>Quantile-LAD</td><td>-0.0181</td><td>1.3261</td><td>0.7101</td><td>7.0575</td><td>0.2110</td><td>0.3379</td><td>1.3791</td></tr><tr><td>one_hot</td><td>Cold</td><td>F</td><td>LightGBM</td><td>-0.0041</td><td>1.3169</td><td>0.7018</td><td>7.8420</td><td>0.2065</td><td>0.3417</td><td>1.5074</td></tr><tr><td>smoothed_target_mean_log</td><td>Cold</td><td>D</td><td>Huber</td><td>-0.0075</td><td>1.3192</td><td>0.7105</td><td>7.5812</td><td>0.2078</td><td>0.3417</td><td>1.4643</td></tr><tr><td>smoothed_target_mean_log</td><td>Cold</td><td>E</td><td>Quantile-LAD</td><td>-0.0113</td><td>1.3217</td><td>0.7097</td><td>7.3598</td><td>0.2072</td><td>0.3430</td><td>1.4279</td></tr><tr><td>smoothed_target_mean_log</td><td>Cold</td><td>F</td><td>LightGBM</td><td>-0.0035</td><td>1.3166</td><td>0.7016</td><td>7.8928</td><td>0.2072</td><td>0.3417</td><td>1.5158</td></tr><tr><td>target_mean_log</td><td>Cold</td><td>D</td><td>Huber</td><td>-0.0062</td><td>1.3184</td><td>0.7077</td><td>7.6675</td><td>0.2088</td><td>0.3375</td><td>1.4785</td></tr><tr><td>target_mean_log</td><td>Cold</td><td>E</td><td>Quantile-LAD</td><td>-0.0059</td><td>1.3182</td><td>0.7069</td><td>7.6908</td><td>0.2049</td><td>0.3375</td><td>1.4824</td></tr><tr><td>target_mean_log</td><td>Cold</td><td>F</td><td>LightGBM</td><td>-0.0030</td><td>1.3162</td><td>0.7082</td><td>7.9480</td><td>0.2068</td><td>0.3395</td><td>1.5250</td></tr><tr><td>frequency_log</td><td>Warm</td><td>A</td><td>Huber</td><td>-0.0020</td><td>1.3631</td><td>0.7387</td><td>6.7184</td><td>0.1829</td><td>0.2998</td><td>1.6116</td></tr><tr><td>frequency_log</td><td>Warm</td><td>B</td><td>Linear Regression</td><td>0.0025</td><td>1.3600</td><td>0.7641</td><td>7.0872</td><td>0.1845</td><td>0.2982</td><td>1.6625</td></tr><tr><td>frequency_log</td><td>Warm</td><td>C</td><td>Ridge</td><td>0.0025</td><td>1.3600</td><td>0.7641</td><td>7.0872</td><td>0.1845</td><td>0.2982</td><td>1.6625</td></tr><tr><td>one_hot</td><td>Warm</td><td>A</td><td>Huber</td><td>0.6119</td><td>0.8483</td><td>0.4352</td><td>2.8612</td><td>0.3707</td><td>0.5667</td><td>0.8487</td></tr><tr><td>one_hot</td><td>Warm</td><td>B</td><td>Linear Regression</td><td>0.6356</td><td>0.8220</td><td>0.4397</td><td>2.5593</td><td>0.3427</td><td>0.5387</td><td>0.8012</td></tr><tr><td>one_hot</td><td>Warm</td><td>C</td><td>Ridge</td><td>0.6357</td><td>0.8219</td><td>0.4579</td><td>2.4806</td><td>0.3213</td><td>0.5338</td><td>0.8104</td></tr><tr><td>smoothed_target_mean_log</td><td>Warm</td><td>A</td><td>Huber</td><td>0.5574</td><td>0.9060</td><td>0.5535</td><td>3.0311</td><td>0.2586</td><td>0.4415</td><td>0.9082</td></tr><tr><td>smoothed_target_mean_log</td><td>Warm</td><td>B</td><td>Linear Regression</td><td>0.5604</td><td>0.9029</td><td>0.5527</td><td>3.1419</td><td>0.2685</td><td>0.4399</td><td>0.9481</td></tr><tr><td>smoothed_target_mean_log</td><td>Warm</td><td>C</td><td>Ridge</td><td>0.5604</td><td>0.9029</td><td>0.5528</td><td>3.1421</td><td>0.2685</td><td>0.4399</td><td>0.9481</td></tr><tr><td>target_mean_log</td><td>Warm</td><td>A</td><td>Huber</td><td>0.6336</td><td>0.8242</td><td>0.4428</td><td>2.5093</td><td>0.3361</td><td>0.5535</td><td>0.7820</td></tr><tr><td>target_mean_log</td><td>Warm</td><td>B</td><td>Linear Regression</td><td>0.6356</td><td>0.8220</td><td>0.4397</td><td>2.5593</td><td>0.3427</td><td>0.5387</td><td>0.8012</td></tr><tr><td>target_mean_log</td><td>Warm</td><td>C</td><td>Ridge</td><td>0.6356</td><td>0.8220</td><td>0.4396</td><td>2.5592</td><td>0.3427</td><td>0.5387</td><td>0.8012</td></tr></tbody>
+    </table>
+  </section>
+  <section class="card">
+    <h2>생성 데이터</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/B2_artist_name_encoding_compare/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/B2_artist_name_encoding_compare/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/B2_artist_name_encoding_compare/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/B2_artist_name_encoding_compare/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/B2_artist_name_encoding_compare/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/B2_artist_name_encoding_compare/data/test_cold_labels.csv</code></li></ul>
+  </section>
+  <section class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/B2_artist_name_encoding_compare/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/B2_artist_name_encoding_compare/source_data/track6_train_labels.csv</code></li><li><code>warm_features</code>: <code>experiments/track6/B2_artist_name_encoding_compare/source_data/track6_test_warm_warm_features.csv</code></li><li><code>warm_labels</code>: <code>experiments/track6/B2_artist_name_encoding_compare/source_data/track6_test_warm_labels.csv</code></li><li><code>cold_features</code>: <code>experiments/track6/B2_artist_name_encoding_compare/source_data/track6_test_cold_cold_features.csv</code></li><li><code>cold_labels</code>: <code>experiments/track6/B2_artist_name_encoding_compare/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </section>
+</body>
+</html>

@@ -1,0 +1,12 @@
+experiment_id: T6-E024
+status: planned
+phase: followup
+title: 재료 x 호수 조합 피처 실험
+goal: T6-G5 약점 구간 보완
+hypothesis: 같은 호수라도 재료에 따라 가격 증가 패턴이 다를 수 있다.
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+train_features: baseline + nant_material_idx_x_ho_bucket
+test_features: 동일 피처셋
+target: ln_price_krw
+compare_against: 단독 피처 vs 조합 피처
+success_criteria: 재료-크기 조합 피처 유지 여부 결정

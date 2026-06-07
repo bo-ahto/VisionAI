@@ -1,0 +1,292 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-W2</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933;line-height:1.55}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left;vertical-align:top}th{background:#eef2f7}code{background:#f3f4f6;padding:2px 4px;border-radius:4px}</style></head>
+<body><h1>PP-W2 Cold CatBoost 작가 메타 피처 확장</h1><h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>model</th>
+      <th>feature_strategy</th>
+      <th>n_features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-W2</td>
+      <td>baseline_medium_shape</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.710174</td>
+      <td>0.421870</td>
+      <td>0.745107</td>
+      <td>2.441542</td>
+      <td>0.366509</td>
+      <td>0.555757</td>
+      <td>catboost</td>
+      <td>CatBoost 기존 medium-shape 기준</td>
+      <td>12</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>baseline_medium_shape</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.959521</td>
+      <td>0.485771</td>
+      <td>1.426516</td>
+      <td>4.828595</td>
+      <td>0.299451</td>
+      <td>0.511133</td>
+      <td>catboost</td>
+      <td>CatBoost 기존 medium-shape 기준</td>
+      <td>12</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_shape_meta_numeric</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.674534</td>
+      <td>0.401291</td>
+      <td>0.583106</td>
+      <td>1.538633</td>
+      <td>0.384308</td>
+      <td>0.595351</td>
+      <td>catboost</td>
+      <td>medium-shape + 작가 메타 숫자</td>
+      <td>29</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_shape_meta_numeric</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.886945</td>
+      <td>0.461410</td>
+      <td>1.140035</td>
+      <td>4.259591</td>
+      <td>0.319781</td>
+      <td>0.544692</td>
+      <td>catboost</td>
+      <td>medium-shape + 작가 메타 숫자</td>
+      <td>29</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_shape_meta_all</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.667746</td>
+      <td>0.388570</td>
+      <td>0.570716</td>
+      <td>1.526371</td>
+      <td>0.395932</td>
+      <td>0.638576</td>
+      <td>catboost</td>
+      <td>medium-shape + 작가 메타 전체</td>
+      <td>32</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_shape_meta_all</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.883851</td>
+      <td>0.453568</td>
+      <td>1.143374</td>
+      <td>4.189736</td>
+      <td>0.327848</td>
+      <td>0.556954</td>
+      <td>catboost</td>
+      <td>medium-shape + 작가 메타 전체</td>
+      <td>32</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_size_meta_all</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.673355</td>
+      <td>0.390502</td>
+      <td>0.586310</td>
+      <td>1.585704</td>
+      <td>0.363603</td>
+      <td>0.617145</td>
+      <td>catboost</td>
+      <td>medium-size + 작가 메타 전체</td>
+      <td>35</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_size_meta_all</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.878297</td>
+      <td>0.464130</td>
+      <td>1.110710</td>
+      <td>4.035779</td>
+      <td>0.320103</td>
+      <td>0.536302</td>
+      <td>catboost</td>
+      <td>medium-size + 작가 메타 전체</td>
+      <td>35</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>support_shape_meta_all</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.685768</td>
+      <td>0.423221</td>
+      <td>0.599556</td>
+      <td>1.550983</td>
+      <td>0.367599</td>
+      <td>0.607337</td>
+      <td>catboost</td>
+      <td>support-shape + 작가 메타 전체</td>
+      <td>36</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>support_shape_meta_all</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.882908</td>
+      <td>0.458087</td>
+      <td>1.118187</td>
+      <td>3.857584</td>
+      <td>0.318490</td>
+      <td>0.539206</td>
+      <td>catboost</td>
+      <td>support-shape + 작가 메타 전체</td>
+      <td>36</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>generated_all_meta_all</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.675516</td>
+      <td>0.401848</td>
+      <td>0.587289</td>
+      <td>1.621600</td>
+      <td>0.388667</td>
+      <td>0.625499</td>
+      <td>catboost</td>
+      <td>전체 생성 bucket + 작가 메타 전체</td>
+      <td>39</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>generated_all_meta_all</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_artist_meta_catboost</td>
+      <td>0.881732</td>
+      <td>0.449693</td>
+      <td>1.111100</td>
+      <td>4.158738</td>
+      <td>0.313650</td>
+      <td>0.545337</td>
+      <td>catboost</td>
+      <td>전체 생성 bucket + 작가 메타 전체</td>
+      <td>39</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Policy / Map</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>model</th>
+      <th>loss_or_objective</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-W2</td>
+      <td>baseline_medium_shape</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost 기존 medium-shape 기준</td>
+      <td>기존 Cold CatBoost 기준 피처셋</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_shape_meta_numeric</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>medium-shape + 작가 메타 숫자</td>
+      <td>대칭 트리에서 작가 숫자 피처와 medium-shape 조합 확인</td>
+      <td>29</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_shape_meta_all</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>medium-shape + 작가 메타 전체</td>
+      <td>CatBoost의 범주형 처리 장점을 국적/소스 피처까지 확장</td>
+      <td>32</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>medium_size_meta_all</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>medium-size + 작가 메타 전체</td>
+      <td>CatBoost에서 재료+크기+작가 메타 조건 조합 확인</td>
+      <td>35</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, medium_size_bucket, medium_shape_bucket, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>support_shape_meta_all</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>support-shape + 작가 메타 전체</td>
+      <td>support/shape bucket과 작가 메타 조건 조합 확인</td>
+      <td>36</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko</td>
+    </tr>
+    <tr>
+      <td>PP-W2</td>
+      <td>generated_all_meta_all</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>전체 생성 bucket + 작가 메타 전체</td>
+      <td>CatBoost가 많은 범주 조합 중 유효 split만 찾는지 확인</td>
+      <td>39</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko</td>
+    </tr>
+  </tbody>
+</table></body></html>

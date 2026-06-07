@@ -1,0 +1,76 @@
+{
+  "experiment_id": "PP-WHUBER7",
+  "title": "Warm residual Huber 보정 방식 세분화 실험",
+  "run_at": "2026-06-06T16:39:54",
+  "seed": 20260606,
+  "current_candidate": "blend_svcnum_ppv8_wsvc_0.70",
+  "epsilons": [
+    1.05,
+    1.2,
+    1.35,
+    1.6
+  ],
+  "alphas": [
+    0.001,
+    0.01
+  ],
+  "global_caps": [
+    0.04,
+    0.06,
+    0.08
+  ],
+  "global_strengths": [
+    0.2,
+    0.25,
+    0.3
+  ],
+  "reliability_policies": {
+    "soft_rel": {
+      "high": 1.0,
+      "mid": 0.8,
+      "low": 0.55,
+      "missing": 0.35
+    },
+    "strict_rel": {
+      "high": 1.0,
+      "mid": 0.7,
+      "low": 0.4,
+      "missing": 0.2
+    }
+  },
+  "pred_bin_cap_policies": {
+    "mid_open_tail_guard": {
+      "low": 0.7,
+      "mid_low": 1.0,
+      "mid_high": 1.0,
+      "high": 0.75,
+      "missing": 0.6
+    },
+    "tail_open_mid_guard": {
+      "low": 1.0,
+      "mid_low": 0.8,
+      "mid_high": 0.8,
+      "high": 1.0,
+      "missing": 0.6
+    }
+  },
+  "directional_policies": {
+    "under_guard": {
+      "positive": 0.2,
+      "negative": 0.3
+    },
+    "over_guard": {
+      "positive": 0.3,
+      "negative": 0.2
+    },
+    "balanced_direction": {
+      "positive": 0.25,
+      "negative": 0.25
+    }
+  },
+  "leakage_control": {
+    "validation": "internal cross-fitted residual Huber correction",
+    "test": "residual model fitted on full validation and applied once to test",
+    "base_prediction": "fixed current Warm candidate prediction"
+  }
+}

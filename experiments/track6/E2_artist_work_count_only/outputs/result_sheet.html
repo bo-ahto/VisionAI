@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 E2 작가별 학습 작품 수 단독 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 E2 작가별 학습 작품 수 단독 실험 결과</h1>
+    <ul>
+      <li>목적: 학습 데이터 안에 작품 수가 많은 작가일수록 예측이 안정적인지 확인</li>
+      <li>실험 ID: <code>E2</code></li>
+      <li>Warm 최고: <code>작가별 학습 작품 수 로그</code> / <code>Huber</code> / MdAPE 0.7374</li>
+      <li>Cold 최고: <code>작가별 학습 작품 수 로그</code> / <code>Huber</code> / MdAPE 0.7028</li>
+      <li>생성일: <code>2026-05-27T20:16:05</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/E2_artist_work_count_only/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/E2_artist_work_count_only/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/E2_artist_work_count_only/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/E2_artist_work_count_only/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/E2_artist_work_count_only/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/E2_artist_work_count_only/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/E2_artist_work_count_only/data/train_features.csv</code><br><code>experiments/track6/E2_artist_work_count_only/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/E2_artist_work_count_only/data/test_warm_features.csv</code><br><code>experiments/track6/E2_artist_work_count_only/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/E2_artist_work_count_only/data/test_cold_features.csv</code><br><code>experiments/track6/E2_artist_work_count_only/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/E2_artist_work_count_only/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/E2_artist_work_count_only/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>artist_works_log</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>학습 데이터 안에 작품 수가 많은 작가일수록 예측이 안정적인지 확인</td></tr><tr><td>학습 피처</td><td>artist_works_log</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>실험군</td><td>Group E: 작가 변수만</td></tr><tr><td>변수 성격</td><td>수집값이 아니라 split의 train 기준 작가별 작품 수로 만든 생성 변수</td></tr><tr><td>해석 중심</td><td>Warm에서 작가별 학습량이 성능 안정성에 영향을 주는지 본다.</td></tr><tr><td>Cold 해석 주의</td><td>Cold 신규 작가는 학습 작품 수가 0이므로 Cold 결과는 참고값으로만 본다.</td></tr><tr><td>purpose</td><td>학습 데이터 안에 작품 수가 많은 작가일수록 예측이 안정적인지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 작가별 학습 작품 수 로그 + Huber(MdAPE 0.7374), Cold 최고는 작가별 학습 작품 수 로그 + Huber(MdAPE 0.7028)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>작가별 학습 작품 수 로그</h2>
+              <p><strong>사용 피처:</strong> <code>artist_works_log</code> · train 기준 작가별 작품 수를 log1p 변환한 생성 변수</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>-0.0021</td><td>1.3631</td><td>0.7374</td><td>6.7947</td><td>0.1812</td><td>0.3031</td><td>1.6220</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0019</td><td>1.3604</td><td>0.7538</td><td>7.0872</td><td>0.1779</td><td>0.2965</td><td>1.6701</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0019</td><td>1.3604</td><td>0.7538</td><td>7.0872</td><td>0.1779</td><td>0.2965</td><td>1.6701</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0044</td><td>1.3172</td><td>0.7028</td><td>7.8134</td><td>0.2059</td><td>0.3417</td><td>1.5027</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0018</td><td>1.3155</td><td>0.7137</td><td>8.0937</td><td>0.2120</td><td>0.3382</td><td>1.5495</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.2114</td><td>1.4466</td><td>0.9407</td><td>16.5936</td><td>0.1604</td><td>0.2607</td><td>3.1642</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/E2_artist_work_count_only/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/E2_artist_work_count_only/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/E2_artist_work_count_only/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/E2_artist_work_count_only/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/E2_artist_work_count_only/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/E2_artist_work_count_only/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/E2_artist_work_count_only/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/E2_artist_work_count_only/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/E2_artist_work_count_only/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/E2_artist_work_count_only/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/E2_artist_work_count_only/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/E2_artist_work_count_only/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+experiment_id: T6-E050
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H12
+title: 극단 가로세로 비율 플래그 실험
+hypothesis: 극단적인 가로세로 비율 작품은 일반 작품과 가격 예측 오차 패턴이 다를 수 있다.
+features_under_test: aspect_ratio, is_extreme_aspect_ratio
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+base_features: Warm 기준: artist_name_ko + ln_estimated_ho + aspect_ratio / Cold 기준: ln_estimated_ho + aspect_ratio
+additional_features: Warm/Cold 추가: is_extreme_aspect_ratio
+target: ln_price_krw
+compare: 비율 원값 모델과 극단 비율 flag 추가 모델 비교
+success_criteria: 극단 비율 slice의 p95 APE가 감소하면 후보 유지

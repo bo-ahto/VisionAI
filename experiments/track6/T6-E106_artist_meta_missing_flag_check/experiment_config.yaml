@@ -1,0 +1,11 @@
+experiment_id: T6-E106
+status: 계획
+group: Group B
+label: B8
+title: 작가 메타 결측 여부 변수 영향 확인
+hypothesis: 작가 메타 정보가 비어 있는 상태 자체가 예측 오차와 관련 있을 수 있다.
+purpose: 메타 값의 효과와 메타 결측 위험을 분리해서 본다.
+train_features: artist_meta_missing_flags + artist_meta_available_count + artist_meta_completeness_score
+test_features: 학습 피처와 동일
+models: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+decision: 결측 flag가 성능을 개선하거나 큰 오차 구간을 설명하면 신뢰도 피처 후보로 둔다.

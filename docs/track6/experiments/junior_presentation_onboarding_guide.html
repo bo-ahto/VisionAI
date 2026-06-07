@@ -1,0 +1,639 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>후임 발표 인수인계 가이드</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:1180px;margin:36px auto;color:#1f2933;line-height:1.65;padding:0 24px}h1{font-size:30px}h2{font-size:22px;margin-top:34px;border-bottom:1px solid #d9e2ec;padding-bottom:6px}h3{font-size:18px;margin-top:24px}table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0 24px}th,td{border:1px solid #d9e2ec;padding:8px 10px;vertical-align:top}th{background:#f0f4f8;text-align:left}code,pre{background:#f5f7fa;border:1px solid #d9e2ec;border-radius:4px}code{padding:1px 4px}pre{padding:14px;overflow:auto}blockquote{border-left:5px solid #2f6f73;background:#f4f8f8;margin:12px 0;padding:12px 16px;font-weight:650}li{margin:5px 0}hr{border:0;border-top:1px solid #d9e2ec;margin:28px 0}</style></head><body><h1>Track6 가격 예측 모델 발표를 위한 후임 인수인계 가이드</h1>
+<ul>
+<li>작성일: 2026-06-01</li>
+<li>대상: Track6 가격 예측 모델 내용을 처음 접하는 후임</li>
+<li>목적: 후임이 발표자료를 이해하고, 상사/임원 앞에서 직접 발표할 수 있도록 배경지식과 발표 흐름을 정리한다.</li>
+<li>같이 볼 자료:</li>
+<li><code>executive_model_interpretation_deep_dive_presentation.md</code></li>
+<li><code>executive_model_interpretation_deep_dive_script.md</code></li>
+<li><code>supervisor_model_feature_postprocessing_report.md</code></li>
+</ul>
+<hr>
+<h2>1. 먼저 이해해야 할 전체 그림</h2>
+<p>이번 발표의 주제는 “미술품 가격 예측 모델을 어떻게 만들었고, 왜 그 모델과 피처 조합이 타당하며, 앞으로 어떻게 후처리해서 정확도를 높일 것인가”이다.</p>
+<p>발표에서 말해야 하는 핵심은 네 가지다.</p>
+<ol>
+<li>가격 예측은 원 가격이 아니라 <code>log(price)</code>를 먼저 예측한 뒤 <code>exp</code>로 원 가격을 복원한다.</li>
+<li>Warm과 Cold는 데이터 조건이 다르므로 모델과 해석 방식이 다르다.</li>
+<li>피처 영향도는 모델 구조에 맞게 계산해야 한다.</li>
+<li>후처리도 모든 모델에 같은 방식을 쓰면 안 되고, 모델별 약점에 맞게 다르게 해야 한다.</li>
+</ol>
+<p>발표의 최종 메시지는 다음 문장으로 정리할 수 있다.</p>
+<blockquote>
+“Warm은 Huber 선형 모델이라 피처별 기여도를 직접 설명할 수 있고, Cold는 CatBoost와 LightGBM의 트리 구조 차이에 맞춰 피처 조합과 위험 구간을 다르게 해석해야 합니다. 후처리도 Warm은 로그 잔차 보정, CatBoost는 segment fallback, LightGBM은 tail 안정화 방향으로 가는 것이 맞습니다.”<br>
+</blockquote>
+<hr>
+<h2>2. 발표자료 파일 구분</h2>
+<table><thead><tr><th>파일</th><th>용도</th></tr></thead><tbody>
+<tr><td><code>executive_model_interpretation_presentation.md</code></td><td>12~15분 요약 발표용</td></tr>
+<tr><td><code>executive_model_interpretation_presentation_script.md</code></td><td>요약 발표 스크립트</td></tr>
+<tr><td><code>executive_model_interpretation_deep_dive_presentation.md</code></td><td>25~30분 상세 발표용</td></tr>
+<tr><td><code>executive_model_interpretation_deep_dive_script.md</code></td><td>상세 발표 스크립트</td></tr>
+<tr><td><code>executive_model_interpretation_deep_dive_presentation.html</code></td><td>브라우저에서 넘길 수 있는 상세 발표자료</td></tr>
+<tr><td><code>supervisor_model_feature_postprocessing_report.md</code></td><td>발표 근거가 되는 상세 보고서</td></tr>
+</tbody></table>
+<p>발표 시간이 충분하면 <code>deep_dive</code> 버전을 사용한다.</p>
+<p>시간이 짧으면 기존 <code>presentation</code> 요약 버전을 사용한다.</p>
+<hr>
+<h2>3. 발표 전에 반드시 알아야 할 용어</h2>
+<table><thead><tr><th>용어</th><th>뜻</th><th>발표에서 쉽게 말하는 법</th></tr></thead><tbody>
+<tr><td>price</td><td>실제 가격</td><td>원래 가격</td></tr>
+<tr><td>log(price)</td><td>가격에 로그를 씌운 값</td><td>가격 범위를 줄여 안정적으로 학습하기 위한 값</td></tr>
+<tr><td>exp</td><td>로그 가격을 다시 원 가격으로 되돌리는 함수</td><td>예측한 로그 가격을 실제 가격 단위로 복원</td></tr>
+<tr><td>Warm</td><td>같은 작가가 과거 데이터에 있는 경우</td><td>작가 이력을 활용할 수 있는 경우</td></tr>
+<tr><td>Cold</td><td>처음 보는 작가 또는 작가 이력이 부족한 경우</td><td>작가 이력 없이 작품 정보만 보고 예측하는 경우</td></tr>
+<tr><td>feature</td><td>모델 입력값</td><td>가격 판단에 쓰는 정보</td></tr>
+<tr><td>residual</td><td>실제값과 예측값의 차이</td><td>모델이 얼마나 높게/낮게 예측했는지</td></tr>
+<tr><td>calibration</td><td>보정</td><td>반복적으로 높거나 낮게 예측한 부분을 후처리로 조정</td></tr>
+<tr><td>MdAPE</td><td>중앙값 기준 절대 비율 오차</td><td>일반적인 예측 오차</td></tr>
+<tr><td>p95 APE</td><td>상위 5% 큰 오차</td><td>크게 틀리는 위험 구간</td></tr>
+<tr><td>SHAP</td><td>트리 모델에서 피처별 기여도</td><td>각 피처가 예측값을 얼마나 움직였는지</td></tr>
+<tr><td>permutation</td><td>피처 값을 섞어서 중요도를 보는 방법</td><td>이 피처가 없어지면 성능이 얼마나 나빠지는지 보는 방법</td></tr>
+<tr><td>tail risk</td><td>일부 구간에서 크게 틀리는 위험</td><td>평균은 괜찮지만 특정 케이스에서 크게 틀릴 위험</td></tr>
+</tbody></table>
+<hr>
+<h2>4. 발표 전체 흐름</h2>
+<p>발표는 아래 순서로 진행하면 된다.</p>
+<ol>
+<li>오늘 보고의 목적</li>
+<li>전체 가격 예측 흐름</li>
+<li>Warm과 Cold를 분리한 이유</li>
+<li>최종 모델과 피처 조합</li>
+<li>성능 지표 읽는 법</li>
+<li>기준 성능 요약</li>
+<li>Warm Huber 가격 계산 방식</li>
+<li>Huber 손실 함수와 피처 영향도 계산 방식</li>
+<li>Warm 피처 영향 결과와 조합 판단</li>
+<li>CatBoost 가격 계산 방식과 모델 특성</li>
+<li>CatBoost 피처 영향도 계산 방식</li>
+<li>CatBoost 피처 영향 결과와 조합 판단</li>
+<li>LightGBM 가격 계산 방식과 모델 특성</li>
+<li>LightGBM 피처 영향도 계산 방식</li>
+<li>LightGBM 피처 영향 결과와 조합 판단</li>
+<li>모델별 영향도 계산 방식 비교</li>
+<li>피처 조합을 찾은 과정</li>
+<li>후처리 실험 결과</li>
+<li>후처리 보정식</li>
+<li>향후 실행 계획과 의사결정 요청</li>
+</ol>
+<p>중간에 시간이 부족하면 7~21번 모델별 상세 설명을 줄이고, 22번 비교표부터 다시 이어가면 된다.</p>
+<hr>
+<h2>5. 가격 예측 로직 설명법</h2>
+<p>가격 예측의 핵심 로직은 모든 모델에서 비슷하다.</p>
+<pre><code>작품 정보 입력
+→ log(price) 예측
+→ exp 변환으로 원 가격 복원
+→ 후처리 보정
+→ 최종 가격/신뢰도 제시</code></pre>
+<p>쉽게 말하면 모델은 처음부터 원 가격을 바로 맞히는 것이 아니라, 가격을 한 번 압축한 숫자인 <code>log(price)</code>를 맞힌다.</p>
+<p>미술품 가격은 몇십만 원대부터 수천만 원, 수억 원까지 차이가 크기 때문에 원 가격을 그대로 쓰면 비싼 작품 몇 개가 학습을 크게 흔들 수 있다.</p>
+<p><code>log(price)</code>는 큰 가격 차이를 작게 눌러서 모델이 더 안정적으로 학습하게 만드는 변환이다.</p>
+<p>예시:</p>
+<pre><code>실제 가격이 1,000,000원인 작품과 100,000,000원인 작품은 원 가격 기준으로 100배 차이다.
+하지만 log(price)로 바꾸면 차이가 압축되어 모델이 덜 흔들린다.
+모델은 압축된 가격을 예측하고, 마지막에 exp로 다시 원 가격 단위로 되돌린다.</code></pre>
+<p>발표할 때는 이렇게 말하면 된다.</p>
+<blockquote>
+“가격을 바로 예측하지 않고 로그 가격을 먼저 예측합니다. 미술품 가격은 낮은 가격부터 매우 높은 가격까지 범위가 넓기 때문에, 원 가격을 그대로 쓰면 고가 작품이 모델을 과하게 흔들 수 있습니다. 로그 가격으로 예측한 뒤 마지막에 exp 변환으로 실제 가격 단위로 되돌립니다.”<br>
+</blockquote>
+<p>주의할 점:</p>
+<ul>
+<li><code>log(price)</code>는 가격을 안정적으로 학습하기 위한 변환이다.</li>
+<li>최종 사용자에게 보여줄 가격은 다시 <code>exp</code>로 복원한 원 가격이다.</li>
+<li>보정도 대부분 로그 가격 공간에서 한다.</li>
+</ul>
+<hr>
+<h2>6. Warm과 Cold 설명법</h2>
+<p>Warm과 Cold는 반드시 초반에 확실히 설명해야 한다. 이걸 이해하지 못하면 뒤의 모델 차이를 이해하기 어렵다.</p>
+<h3>Warm</h3>
+<p>Warm은 같은 작가가 과거 데이터에 있는 경우다.</p>
+<p>모델은 “이 작가는 과거에 보통 어느 가격대였는가”를 참고할 수 있다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“Warm은 작가의 과거 가격대가 기준선 역할을 합니다. 그래서 작품 크기나 재료뿐 아니라 작가 식별값도 중요한 피처로 사용됩니다.”<br>
+</blockquote>
+<h3>Cold</h3>
+<p>Cold는 처음 보는 작가이거나 작가 이력이 부족한 경우다.</p>
+<p>작가 기준선을 모르기 때문에 작품 자체 정보가 중요하다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“Cold는 작가 이력이 없기 때문에 작품 자체의 크기, 재료, 지지체, 형태 같은 정보가 가격 기준선 역할을 합니다.”<br>
+</blockquote>
+<hr>
+<h2>7. 성능 지표 설명법</h2>
+<p>발표에서는 MdAPE와 p95 APE를 중심으로 설명하면 된다.</p>
+<h3>MdAPE</h3>
+<p>MdAPE는 일반적인 예측 오차를 보여준다.</p>
+<p>중앙값 기준이라 극단값에 덜 흔들린다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“MdAPE는 일반적인 예측 오차 수준입니다. 평균보다 중앙값을 보는 이유는 미술품 가격에 극단적인 사례가 있기 때문입니다.”<br>
+</blockquote>
+<h3>p95 APE</h3>
+<p>p95 APE는 크게 틀리는 위험 구간이다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“p95는 크게 틀리는 상위 위험 구간입니다. 평균 성능이 비슷해도 p95가 높으면 운영에서는 더 위험합니다.”<br>
+</blockquote>
+<h3>기준 성능</h3>
+<table><thead><tr><th>모델</th><th>Test MdAPE</th><th>Test p95 APE</th><th>설명</th></tr></thead><tbody>
+<tr><td>Warm Huber</td><td>0.2241</td><td>2.0209</td><td>가장 안정적</td></tr>
+<tr><td>Cold CatBoost</td><td>0.4843</td><td>4.4183</td><td>Cold에서 비교적 균형적</td></tr>
+<tr><td>Cold LightGBM</td><td>0.4797</td><td>5.0569</td><td>대표 오차는 비슷하지만 큰 오차 위험이 큼</td></tr>
+</tbody></table>
+<p>주의할 점:</p>
+<ul>
+<li>“Cold가 Warm보다 나쁘다”가 아니라 “Cold는 문제 난이도가 더 높다”고 설명해야 한다.</li>
+<li>LightGBM은 MdAPE는 괜찮지만 p95가 높아서 tail risk 관리가 필요하다고 말해야 한다.</li>
+</ul>
+<hr>
+<h2>8. Warm Huber 설명법</h2>
+<h3>8.1 Warm Huber 가격 계산 공식</h3>
+<pre><code>pred_log_price = intercept + Σ(beta_j × z_j)
+pred_price = exp(pred_log_price)</code></pre>
+<p>여기서 <code>beta_j</code>는 피처의 계수이고, <code>z_j</code>는 전처리된 피처값이다.</p>
+<p>이 공식은 어렵게 보이지만 구조는 단순하다.</p>
+<p><code>intercept</code>는 모든 작품에 공통으로 들어가는 기본 가격대이고, <code>beta_j × z_j</code>는 각 피처가 그 기본 가격대에서 가격을 얼마나 올리거나 내리는지 계산한 값이다.</p>
+<p>즉 Huber는 작품을 보고 “기본 가격대 + 작가 효과 + 크기 효과 + 재료 효과 + 형태 효과”를 모두 더해 로그 가격을 만든다.</p>
+<p>쉽게 풀면 다음과 같다.</p>
+<pre><code>예측 로그 가격
+= 기본값
++ 작가 피처가 더한 값
++ 크기 피처가 더한 값
++ 재료/지지체 피처가 더한 값
++ 형태 피처가 더한 값
++ 기타 피처가 더한 값</code></pre>
+<p>각 피처의 영향은 다음처럼 계산된다.</p>
+<pre><code>피처 영향 = 해당 피처의 계수 × 해당 작품의 피처값</code></pre>
+<p>예를 들어 특정 피처의 계수가 양수면 그 피처는 로그 가격을 올리는 방향으로 작동하고, 음수면 낮추는 방향으로 작동한다.</p>
+<p>다만 여러 크기 피처처럼 서로 정보가 겹치는 경우에는 음수 계수가 “그 피처 자체가 나쁘다”는 뜻이 아니라, 다른 피처와 함께 들어갔을 때 과하게 올라간 예측을 조정하는 역할일 수 있다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“Huber는 선형 모델이기 때문에 각 피처에 가중치를 곱해서 더하는 구조입니다. 그래서 피처별로 가격을 얼마나 올리거나 내렸는지 직접 계산할 수 있습니다.”<br>
+</blockquote>
+<h3>8.2 Huber 손실 함수의 의미</h3>
+<p>Huber는 큰 오차를 완화한다.</p>
+<pre><code>작은 오차: 제곱 손실
+큰 오차: 선형 손실</code></pre>
+<p>일반적인 제곱 손실은 오차가 커질수록 벌점이 매우 빠르게 커진다.</p>
+<p>그래서 특이하게 비싼 작품 하나를 크게 틀리면 모델이 그 작품을 맞히려고 전체 기준선을 많이 움직일 수 있다.</p>
+<p>Huber 손실은 작은 오차에서는 제곱 손실처럼 정교하게 맞추고, 일정 기준보다 큰 오차에서는 벌점 증가 속도를 줄인다.</p>
+<p>쉽게 말하면 Huber는 다음과 같은 태도다.</p>
+<pre><code>일반적인 오차: 더 정확히 맞히도록 강하게 학습
+너무 특이한 오차: 참고는 하되 전체 모델을 흔들 만큼 과하게 반영하지 않음</code></pre>
+<p>발표 문장:</p>
+<blockquote>
+“미술품 가격에는 특이하게 비싸거나 싼 사례가 있습니다. Huber는 그런 사례에 모델 전체가 과하게 끌려가지 않도록 큰 오차의 영향력을 완화합니다.”<br>
+</blockquote>
+<h3>8.3 Huber 피처 영향도 계산 방법</h3>
+<table><thead><tr><th>계산 항목</th><th>의미</th></tr></thead><tbody>
+<tr><td>계수 beta</td><td>피처가 로그 가격을 올리는지 내리는지</td></tr>
+<tr><td>원 단위 환산 계수</td><td>cm, 면적 단위로 환산한 영향</td></tr>
+<tr><td>샘플별 기여도</td><td>특정 작품에서 해당 피처가 예측값을 얼마나 움직였는지</td></tr>
+<tr><td>평균 절대 기여도</td><td>전체 test에서 피처 영향이 얼마나 컸는지</td></tr>
+<tr><td>centered contribution</td><td>범주형 one-hot 계수의 왜곡을 줄인 해석값</td></tr>
+</tbody></table>
+<p>발표 문장:</p>
+<blockquote>
+“계수만 보면 오해가 생길 수 있어서, 실제 test 데이터에서 beta 곱하기 피처값으로 contribution을 계산했습니다. 이 값이 실제 예측값을 얼마나 움직였는지를 보여줍니다.”<br>
+</blockquote>
+<h3>8.4 Warm에서 중요한 피처</h3>
+<table><thead><tr><th>피처</th><th>왜 중요한가</th></tr></thead><tbody>
+<tr><td>size</td><td>같은 작가라도 작품 크기에 따라 가격대가 달라짐</td></tr>
+<tr><td>medium_support</td><td>같은 크기라도 재료/지지체 조합에 따라 시장 가격대가 달라짐</td></tr>
+<tr><td>artist_key</td><td>기존 작가의 과거 가격대가 기준선 역할</td></tr>
+<tr><td>depth/shape</td><td>선형 모델에서는 조합 효과를 직접 표현하기 어려워 낮게 보임</td></tr>
+</tbody></table>
+<p>특히 <code>area_cm2</code> 해석을 조심해야 한다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“area_cm2가 음수 방향으로 보인 것은 면적이 가격을 낮춘다는 뜻이 아닙니다. log_area, width, height와 정보가 겹치기 때문에 선형 모델 안에서 과대 상승을 조정하는 역할로 봐야 합니다.”<br>
+</blockquote>
+<hr>
+<h2>9. CatBoost 설명법</h2>
+<h3>9.1 CatBoost 가격 계산 방식</h3>
+<pre><code>pred_log_price = base_score + Σ leaf_value_t(x)
+pred_price = exp(pred_log_price)</code></pre>
+<p>CatBoost는 Huber처럼 피처에 계수를 곱해서 한 번에 더하는 방식이 아니다.</p>
+<p>여러 개의 작은 판단 규칙 묶음, 즉 트리를 만들고 작품이 각 트리의 어느 마지막 칸인 <code>leaf</code>에 도착하는지를 본다.</p>
+<p>각 leaf에는 “이 조건에 해당하는 작품은 로그 가격을 이만큼 올리거나 내린다”는 값이 들어 있고, 모든 트리의 leaf 값을 더해 최종 로그 가격을 만든다.</p>
+<p>쉽게 풀면 다음과 같다.</p>
+<pre><code>기본 로그 가격
++ 1번 트리에서 도착한 leaf의 점수
++ 2번 트리에서 도착한 leaf의 점수
++ 3번 트리에서 도착한 leaf의 점수
++ ...
+= 최종 예측 로그 가격</code></pre>
+<p>여기서 중요한 점은 leaf 값이 하나의 피처만 보고 정해지는 것이 아니라는 점이다.</p>
+<p>예를 들어 <code>width_cm</code>, <code>depth_cm</code>, <code>medium_category</code> 같은 조건을 순서대로 통과한 결과가 하나의 leaf를 결정한다.</p>
+<p>그래서 CatBoost는 “피처 하나가 얼마를 더했다”보다 “어떤 피처 조합 경로를 지나서 가격이 바뀌었는가”가 중요하다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“CatBoost는 여러 개의 트리를 통과한 결과를 더해서 로그 가격을 예측합니다. 각 트리에서 작품 조건에 맞는 leaf로 이동하고, 그 leaf 값들이 더해집니다.”<br>
+</blockquote>
+<h3>9.2 CatBoost 모델 특성</h3>
+<p>CatBoost는 대칭 트리 구조다.</p>
+<p>대칭 트리는 같은 depth에서 같은 split 조건을 사용한다.</p>
+<p>그래서 단일 피처보다 피처 조합과 경로가 중요하다.</p>
+<p>대칭 트리는 트리의 각 층에서 모든 가지가 같은 질문을 받는 구조다.</p>
+<p>예를 들어 첫 번째 층에서 <code>depth_cm</code>을 기준으로 나누기로 했다면, 그 층의 모든 샘플은 같은 <code>depth_cm</code> 질문을 받는다.</p>
+<p>두 번째 층에서 <code>width_cm</code>을 기준으로 나누기로 했다면, 첫 번째 질문의 결과와 상관없이 두 번째 층에서는 같은 <code>width_cm</code> 질문을 받는다.</p>
+<p>간단한 예시는 다음과 같다.</p>
+<pre><code>1층 질문: depth_cm이 일정 기준보다 큰가?
+2층 질문: width_cm이 일정 기준보다 큰가?
+3층 질문: medium_category가 특정 재료인가?
+
+이 세 질문의 답 조합에 따라 leaf가 결정된다.</code></pre>
+<p>이 구조의 장점은 트리 경로가 비교적 규칙적이어서 피처 조합을 해석하기 좋다는 점이다.</p>
+<p>반대로 단점은 “특정 피처 하나가 독립적으로 가격을 결정한다”고 말하기 어렵다는 점이다.</p>
+<p>CatBoost에서 중요한 것은 <code>width_cm</code> 자체가 아니라, <code>depth_cm</code>과 <code>width_cm</code>과 <code>medium_category</code>가 함께 어떤 경로를 만들었는지다.</p>
+<p>조금 더 쉽게 풀면, CatBoost의 대칭 트리는 모든 작품에게 같은 순서의 질문지를 주는 것과 비슷하다.</p>
+<p>예를 들어 모든 작품에게 먼저 “깊이가 큰가?”, 그다음 “가로가 큰가?”, 그다음 “특정 재료인가?”를 묻는다.</p>
+<p>질문 순서가 일정하기 때문에 어떤 작품이 어떤 판단 경로를 거쳐 특정 leaf에 도착했는지 추적하기 쉽다.</p>
+<p>이 점이 “피처 조합을 해석하기 좋다”는 의미다.</p>
+<p>반면 가격 변화의 원인을 하나의 피처로만 자르기는 어렵다.</p>
+<p>예를 들어 <code>width_cm</code>이 큰 작품이라도 <code>depth_cm</code>이 작은 평면 작품인지, <code>depth_cm</code>이 큰 입체 작품인지에 따라 도착하는 leaf가 달라질 수 있다.</p>
+<p>또 같은 <code>width_cm</code>이라도 재료가 캔버스인지, 오브제성 재료인지에 따라 leaf 값이 다르게 붙을 수 있다.</p>
+<p>따라서 “가로가 커서 가격이 올랐다”라고 단정하기보다 “깊이, 가로, 재료 조건이 함께 만족되어 더 높은 가격 leaf로 이동했다”고 설명해야 한다.</p>
+<p>즉 CatBoost 해석은 다음처럼 해야 한다.</p>
+<pre><code>부적절한 해석: width_cm이 크면 가격이 오른다.
+적절한 해석: width_cm은 depth_cm, medium_category와 함께 특정 트리 경로를 만들고,
+             그 경로가 높은 leaf 값으로 연결될 때 예측 가격을 올린다.</code></pre>
+<p>따라서 CatBoost 후처리는 전체 평균 보정보다 다음과 같은 방식이 더 맞다.</p>
+<pre><code>같은 leaf 또는 비슷한 segment에 반복 오차가 있는지 확인
+→ 해당 segment의 residual을 보정
+→ 표본이 적은 segment는 상위 segment 또는 전체 보정값으로 fallback</code></pre>
+<p>발표 문장:</p>
+<blockquote>
+“CatBoost에서는 가로가 길면 무조건 비싸다는 식으로 해석하면 안 됩니다. 특정 크기와 깊이 조건이 함께 만족될 때 다른 트리 경로로 이동하고, 그 경로가 가격을 바꾼다고 이해해야 합니다.”<br>
+</blockquote>
+<h3>9.3 CatBoost 영향도 계산 방법</h3>
+<p>CatBoost에서는 Huber처럼 <code>계수 × 피처값</code>으로 단일 피처 기여도를 바로 계산하기 어렵다.</p>
+<p>이유는 예측값이 하나의 피처에서 바로 나오는 것이 아니라, 여러 트리의 leaf 값 합으로 나오기 때문이다.</p>
+<p>그리고 각 leaf는 <code>depth_cm</code>, <code>width_cm</code>, <code>medium_category</code> 같은 여러 질문을 통과한 결과다.</p>
+<p>그래서 CatBoost 해석은 한 가지 지표만 보는 것이 아니라 다음 순서로 진행한다.</p>
+<pre><code>1. PredictionValuesChange로 전체적으로 자주 예측값을 바꾼 피처를 찾는다.
+2. SHAP으로 각 샘플에서 어떤 피처가 예측값을 올리거나 내렸는지 본다.
+3. mean_abs_shap으로 test 전체에서 영향이 큰 피처를 정렬한다.
+4. interaction score로 피처 두 개가 함께 경로를 바꾸는 조합을 찾는다.
+5. leaf residual로 특정 경로/segment에 반복 오차가 남는지 확인한다.
+6. 반복 오차가 있는 조합을 후처리 segment 후보로 연결한다.</code></pre>
+<p>각 단계의 역할은 다르다.</p>
+<table><thead><tr><th>계산 항목</th><th>의미</th></tr></thead><tbody>
+<tr><td>PredictionValuesChange</td><td>피처 split이 예측값을 얼마나 바꿨는지</td></tr>
+<tr><td>SHAP</td><td>각 샘플에서 피처가 예측값을 얼마나 올리거나 내렸는지</td></tr>
+<tr><td>mean_abs_shap</td><td>test 전체에서 피처 영향의 평균 크기</td></tr>
+<tr><td>interaction score</td><td>두 피처가 함께 예측 경로를 바꾼 정도</td></tr>
+<tr><td>leaf residual</td><td>특정 leaf/segment에서 반복 오차가 있는지</td></tr>
+</tbody></table>
+<p>쉽게 말하면 다음과 같다.</p>
+<pre><code>PredictionValuesChange: 어떤 피처가 모델 안에서 자주 판단 기준이 됐는가?
+SHAP: 특정 작품에서 어떤 피처가 예측 가격을 움직였는가?
+mean_abs_shap: 전체적으로 많이 움직인 피처는 무엇인가?
+interaction score: 어떤 피처 두 개가 같이 있을 때 경로가 달라지는가?
+leaf residual: 그렇게 나뉜 경로에서 계속 높게/낮게 예측하는 문제가 남았는가?</code></pre>
+<p>이 절차를 거치면 단일 피처만 보는 것이 아니라 “피처 후보 → 샘플별 영향 → 전체 영향 크기 → 피처 조합 → 반복 오차 구간”으로 이어지는 해석이 가능하다.</p>
+<p>즉 CatBoost에서 피처 조합을 찾는 작업은 단순히 중요도 순위를 보는 것이 아니라, 중요 피처가 실제로 어떤 조합 경로를 만들고 그 경로에서 오차가 남는지 확인하는 과정이다.</p>
+<p>예를 들어 <code>width_cm</code>의 SHAP이 높고 <code>width_cm × depth_cm</code> interaction도 높다면, “width가 중요하다”가 아니라 “작품의 가로 크기와 깊이 조합이 2D/3D 성격을 나누며 가격 경로를 바꾼다”고 해석해야 한다.</p>
+<p>그 경로에서 residual이 반복적으로 남으면 <code>width/depth/medium</code> segment 보정 후보가 된다.</p>
+<p>추가로, <code>a+b+c</code> 피처 조합으로 학습한 결과와 <code>a+b</code> 피처 조합으로 학습한 결과를 비교하면 <code>c</code> 피처의 영향도도 볼 수 있다.</p>
+<p>이 방식은 일반적으로 ablation, 즉 제거 실험이라고 부른다.</p>
+<pre><code>c 피처의 성능 기여도
+= a+b+c 모델 성능 - a+b 모델 성능</code></pre>
+<p>다만 이 값은 “c 하나의 순수한 독립 효과”라고 말하기 어렵다.</p>
+<p>이유는 CatBoost가 피처 조합 경로를 학습하기 때문이다.</p>
+<p><code>c</code>를 빼고 다시 학습하면 모델은 기존의 <code>a+b+c</code> 경로를 그대로 유지하는 것이 아니라, <code>a</code>와 <code>b</code>를 사용해 새로운 트리 구조를 다시 만든다.</p>
+<p>따라서 성능 차이는 <code>c</code> 자체의 효과뿐 아니라, <code>c</code>가 빠지면서 <code>a</code>, <code>b</code>의 split 구조와 interaction이 함께 바뀐 결과다.</p>
+<p>그래서 ablation은 다음 질문에 답할 때 적합하다.</p>
+<pre><code>이 피처를 포함한 조합이 실제 성능 개선에 도움이 되는가?
+이 피처를 빼도 성능이 유지되는가?
+이 피처가 후처리 후보 조합에 남을 만큼 실험적으로 필요한가?</code></pre>
+<p>반대로 SHAP, interaction, leaf residual은 다음 질문에 답할 때 적합하다.</p>
+<pre><code>이미 학습된 CatBoost 모델 안에서 어떤 피처가 예측값을 움직였는가?
+어떤 피처 조합이 트리 경로를 바꿨는가?
+어떤 leaf/segment에서 반복 오차가 남는가?</code></pre>
+<p>정리하면, ablation은 피처 조합을 선택하기 위한 실험이고 SHAP/interaction/leaf residual은 선택된 모델을 설명하고 후처리 구간을 찾기 위한 해석이다.</p>
+<p>따라서 <code>c</code>의 성능 기여도를 명확히 보고 싶다면 <code>a+b+c</code>와 <code>a+b</code>를 같은 데이터 split, 같은 모델 설정, 같은 평가 기준으로 다시 비교 실험해야 한다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“CatBoost는 SHAP만 보는 것이 아니라 interaction까지 같이 봐야 합니다. 대칭 트리 구조에서는 피처 조합이 가격 경로를 나누는 핵심이기 때문입니다.”<br>
+</blockquote>
+<h3>9.4 CatBoost에서 중요한 피처</h3>
+<table><thead><tr><th>피처/조합</th><th>왜 중요한가</th></tr></thead><tbody>
+<tr><td>size</td><td>Cold에서는 작가 기준선이 없어서 크기가 가격 기준선 역할</td></tr>
+<tr><td>depth_cm</td><td>2D/3D, 오브제성, 설치 가능성을 구분</td></tr>
+<tr><td>width × depth</td><td>큰 평면과 큰 입체 작품을 다른 경로로 분리</td></tr>
+<tr><td>depth × medium</td><td>입체성의 가격 의미가 재료에 따라 달라짐</td></tr>
+</tbody></table>
+<p>발표 문장:</p>
+<blockquote>
+“CatBoost의 최종 조합은 size, depth, medium/shape입니다. size가 기본 가격대를 잡고, depth가 작품 유형을 나누며, medium과 shape가 그 의미를 조정합니다.”<br>
+</blockquote>
+<hr>
+<h2>10. LightGBM 설명법</h2>
+<h3>10.1 LightGBM 가격 계산 방식</h3>
+<pre><code>pred_log_price = base_score + learning_rate × Σ leaf_value_t(x)
+pred_price = exp(pred_log_price)</code></pre>
+<p>LightGBM도 여러 트리의 leaf 값을 더해 로그 가격을 예측한다.</p>
+<p>기본 구조만 보면 CatBoost와 비슷하지만, 트리를 키우는 방식이 다르다.</p>
+<p><code>learning_rate</code>는 각 트리의 보정값을 한 번에 너무 크게 반영하지 않도록 줄여서 더하는 비율이다.</p>
+<p>쉽게 풀면 다음과 같다.</p>
+<pre><code>기본 로그 가격
++ learning_rate × 1번 트리 leaf 점수
++ learning_rate × 2번 트리 leaf 점수
++ learning_rate × 3번 트리 leaf 점수
++ ...
+= 최종 예측 로그 가격</code></pre>
+<p>LightGBM은 매 트리마다 “지금 남아 있는 오차를 가장 많이 줄일 수 있는 방향”을 찾는다.</p>
+<p>그래서 평균적인 예측 성능을 빠르게 높일 수 있지만, 일부 좁은 구간을 너무 깊게 학습하면 그 구간에서 큰 오차가 생길 수 있다.</p>
+<p>발표 문장:</p>
+<blockquote>
+“LightGBM도 트리 결과를 더해 로그 가격을 예측합니다. CatBoost와 비슷해 보이지만, 트리가 자라는 방식이 다릅니다.”<br>
+</blockquote>
+<h3>10.2 LightGBM 모델 특성</h3>
+<p>LightGBM은 leaf-wise 방식으로 성장한다.</p>
+<p>손실을 가장 많이 줄일 수 있는 leaf를 우선 깊게 파고든다.</p>
+<p>평균 성능에는 도움이 되지만, 특정 좁은 구간에서 큰 오차가 생길 수 있다.</p>
+<p>CatBoost의 대칭 트리가 층마다 같은 질문을 던지는 구조라면, LightGBM은 가장 개선 여지가 큰 leaf를 골라 그 부분만 더 깊게 나눈다.</p>
+<p>즉 전체 트리를 균형 있게 키우기보다, 오차를 가장 많이 줄일 수 있는 쪽을 집중적으로 파고든다.</p>
+<p>간단한 예시는 다음과 같다.</p>
+<pre><code>처음에는 전체 작품을 크게 나눈다.
+그중 대형 캔버스 구간에서 오차가 크면 그 구간을 더 자세히 나눈다.
+다시 그 안에서 특정 재료 구간의 오차가 크면 그 부분을 더 깊게 나눈다.</code></pre>
+<p>이 방식은 성능 개선에는 유리하지만, 표본이 적거나 가격 편차가 큰 구간에서는 위험하다.</p>
+<p>예를 들어 대형 캔버스 작품은 가격 분산이 큰데, LightGBM이 이 구간을 깊게 나누면 validation에서는 좋아 보여도 test에서는 큰 오차가 생길 수 있다.</p>
+<p>그래서 LightGBM 해석에서는 단순 split 횟수보다 “이 피처가 없어졌을 때 성능이 얼마나 나빠지는지”와 “큰 오차가 어느 leaf나 구간에 몰리는지”를 함께 봐야 한다.</p>
+<p>따라서 LightGBM 후처리는 다음 방향이 더 맞다.</p>
+<pre><code>예측 로그 가격 구간별로 오차 확인
+→ size/support/material 구간에서 p95 오차 확인
+→ 큰 오차가 반복되는 tail 구간만 제한적으로 안정화</code></pre>
+<p>발표 문장:</p>
+<blockquote>
+“LightGBM은 평균 성능을 높이는 데 강점이 있지만, 일부 구간을 깊게 파고들기 때문에 큰 오차가 생기는 tail risk를 반드시 확인해야 합니다.”<br>
+</blockquote>
+<h3>10.3 LightGBM 영향도 계산 방법</h3>
+<table><thead><tr><th>계산 항목</th><th>의미</th></tr></thead><tbody>
+<tr><td>split importance</td><td>트리에서 해당 피처가 얼마나 자주 split에 사용됐는지</td></tr>
+<tr><td>permutation delta</td><td>피처 값을 섞었을 때 성능이 얼마나 나빠지는지</td></tr>
+<tr><td>MdAPE_delta</td><td>대표 오차가 얼마나 악화되는지</td></tr>
+<tr><td>p95_APE_delta</td><td>큰 오차 위험이 얼마나 악화되는지</td></tr>
+<tr><td>tail slice</td><td>특정 구간의 오차가 얼마나 큰지</td></tr>
+<tr><td>leaf-wise 진단</td><td>좁은 leaf에서 큰 오차가 몰리는지</td></tr>
+</tbody></table>
+<p>발표 문장:</p>
+<blockquote>
+“LightGBM은 split importance만 보면 부족합니다. 자주 쓰인 피처와 실제로 성능을 좌우하는 피처가 다를 수 있기 때문에 permutation과 tail slice를 함께 봤습니다.”<br>
+</blockquote>
+<h3>10.4 LightGBM에서 중요한 피처</h3>
+<table><thead><tr><th>피처/구간</th><th>왜 중요한가</th></tr></thead><tbody>
+<tr><td>area_cm2</td><td>면적 기준 split이 가격 구간을 강하게 나눔</td></tr>
+<tr><td>width/height/log_area</td><td>면적 외 형태 정보를 보완</td></tr>
+<tr><td>canvas__q5</td><td>대형 캔버스 구간의 가격 분산이 큼</td></tr>
+<tr><td>acrylic</td><td>표본은 많지만 내부 가격 편차가 큼</td></tr>
+</tbody></table>
+<p>발표 문장:</p>
+<blockquote>
+“LightGBM은 area_cm2에 강하게 의존합니다. 이 점은 평균 예측에는 도움이 되지만, 대형 작품처럼 가격 편차가 큰 구간에서는 큰 오차 위험으로 이어질 수 있습니다.”<br>
+</blockquote>
+<hr>
+<h2>11. 모델별 차이를 한 문장으로 정리</h2>
+<p>발표 중간에 이 표를 기준으로 정리하면 좋다.</p>
+<table><thead><tr><th>모델</th><th>가격 계산 방식</th><th>영향도 계산 방식</th><th>핵심 해석</th></tr></thead><tbody>
+<tr><td>Huber</td><td>선형식</td><td>계수, contribution</td><td>피처별 직접 기여도</td></tr>
+<tr><td>CatBoost</td><td>대칭 트리 합산</td><td>SHAP, interaction, leaf residual</td><td>피처 조합과 경로</td></tr>
+<tr><td>LightGBM</td><td>leaf-wise 트리 합산</td><td>permutation, tail slice, leaf 진단</td><td>의존도와 위험 구간</td></tr>
+</tbody></table>
+<p>발표 문장:</p>
+<blockquote>
+“세 모델은 모두 가격을 예측하지만, 영향도를 계산하고 해석하는 방식은 다릅니다. 같은 크기 피처라도 Huber에서는 선형 기여도, CatBoost에서는 분기 경로, LightGBM에서는 leaf 분화와 tail risk로 해석해야 합니다.”<br>
+</blockquote>
+<hr>
+<h2>12. 피처 조합을 찾은 과정 설명법</h2>
+<p>피처 조합은 다음 순서로 찾았다.</p>
+<ol>
+<li>여러 feature set을 validation에서 비교했다.</li>
+<li>후보 조합을 locked test에서 확인했다.</li>
+<li>최종 artifact 기준으로 해석 산출물을 다시 만들었다.</li>
+<li>모델별 특성에 맞는 영향도 지표를 사용했다.</li>
+<li>반복 오차가 있는 구간을 후처리 후보로 연결했다.</li>
+</ol>
+<p>발표 문장:</p>
+<blockquote>
+“피처 조합은 성능만 보고 고른 것이 아닙니다. 모델 안에서 실제로 예측값을 움직이는지, 그리고 후처리 기준으로 쓸 수 있는지까지 확인했습니다.”<br>
+</blockquote>
+<hr>
+<h2>13. 후처리 설명법</h2>
+<p>후처리는 모델이 반복적으로 높게 또는 낮게 예측하는 부분을 보정하는 것이다.</p>
+<p>공통 보정식은 다음과 같다.</p>
+<pre><code>residual_log = actual_log_price - pred_log_price
+correction = representative_value(residual_log)
+corrected_pred_log = pred_log_price + correction
+corrected_price = exp(corrected_pred_log)</code></pre>
+<p>발표 문장:</p>
+<blockquote>
+“보정은 원 가격이 아니라 로그 가격 공간에서 합니다. 실제 로그 가격과 예측 로그 가격의 차이를 residual로 보고, 반복적으로 높거나 낮게 예측하는 구간에 median residual을 더합니다.”<br>
+</blockquote>
+<p>주의할 점:</p>
+<ul>
+<li>평균보다 median을 우선한다.</li>
+<li>가격 데이터에는 이상치가 있기 때문에 median이 더 안정적이다.</li>
+<li>test 데이터로 보정값을 만들면 안 된다.</li>
+<li>보정값은 validation 또는 OOF에서 만들고 test는 최종 확인에만 사용해야 한다.</li>
+</ul>
+<hr>
+<h2>14. 모델별 후처리 방향</h2>
+<table><thead><tr><th>모델</th><th>후처리 방향</th><th>이유</th></tr></thead><tbody>
+<tr><td>Warm Huber</td><td>overall/pred_bin median residual</td><td>선형 로그가격 모델이라 편향 보정이 자연스러움</td></tr>
+<tr><td>CatBoost</td><td>leaf/segment residual + fallback</td><td>대칭 트리 경로와 interaction segment가 중요</td></tr>
+<tr><td>LightGBM</td><td>pred_log bin + size/support bucket</td><td>leaf-wise tail risk를 줄이는 것이 중요</td></tr>
+</tbody></table>
+<p>발표 문장:</p>
+<blockquote>
+“모든 모델에 같은 보정을 적용하면 안 됩니다. Warm은 선형 편향 보정, CatBoost는 segment 기반 보정, LightGBM은 tail 안정화가 맞습니다.”<br>
+</blockquote>
+<hr>
+<h2>15. 1차 후처리 결과 해석</h2>
+<table><thead><tr><th>영역</th><th>Baseline MdAPE</th><th>후보 MdAPE</th><th>Baseline p95</th><th>후보 p95</th><th>판단</th></tr></thead><tbody>
+<tr><td>Warm</td><td>0.2274</td><td>0.2211</td><td>2.0130</td><td>1.9736</td><td>채택 후보</td></tr>
+<tr><td>CatBoost</td><td>0.4839</td><td>0.4880</td><td>4.7974</td><td>3.9490</td><td>MdAPE 악화로 보류</td></tr>
+<tr><td>LightGBM</td><td>0.4859</td><td>0.4873</td><td>4.7612</td><td>4.2199</td><td>tail 안정화 후보</td></tr>
+</tbody></table>
+<p>발표 문장:</p>
+<blockquote>
+“Warm은 대표 오차와 큰 오차가 모두 개선되어 채택 후보입니다. CatBoost는 p95는 줄었지만 MdAPE가 나빠져 단순 보정은 보류입니다. LightGBM은 MdAPE는 소폭 나빠졌지만 p95가 개선되어 tail 안정화 후보로 봅니다.”<br>
+</blockquote>
+<p>주의할 점:</p>
+<ul>
+<li>이 표는 1차 residual calibration 실험 기준이다.</li>
+<li>앞의 최종 artifact 재해석 성능과 소폭 차이가 있을 수 있다.</li>
+<li>이 표는 절대 성능 순위보다 보정 전후 방향성을 보는 용도다.</li>
+</ul>
+<hr>
+<h2>16. 예상 질문과 답변</h2>
+<p>아래 질문들은 상사/임원이 할 수 있는 질문이기도 하지만, 후임이 발표자료를 읽으면서 스스로 헷갈릴 수 있는 질문이기도 하다.</p>
+<h3>Q1. 왜 가격을 바로 예측하지 않고 log(price)를 예측하나요?</h3>
+<p>미술품 가격은 범위가 매우 넓습니다. 원 가격을 그대로 쓰면 고가 작품 몇 개가 모델을 과하게 흔들 수 있습니다. 로그 가격으로 바꾸면 가격 차이를 비율 관점으로 안정적으로 학습할 수 있습니다.</p>
+<h3>Q2. Warm과 Cold를 왜 나눠야 하나요?</h3>
+<p>Warm은 같은 작가의 과거 가격대 정보를 쓸 수 있고, Cold는 그 정보가 없습니다. 사용할 수 있는 정보가 다르기 때문에 모델과 피처 해석도 달라져야 합니다.</p>
+<h3>Q3. Cold 성능이 Warm보다 낮은 이유는 무엇인가요?</h3>
+<p>Cold는 작가 기준선이 없기 때문에 문제 자체가 더 어렵습니다. 작품 크기와 재료, 형태만으로 가격을 추정해야 하므로 Warm보다 오차가 커지는 것이 자연스럽습니다.</p>
+<h3>Q4. CatBoost와 LightGBM은 둘 다 트리 모델인데 왜 다르게 보정하나요?</h3>
+<p>CatBoost는 대칭 트리라 피처 조합과 경로가 중요합니다. LightGBM은 leaf-wise라 일부 구간을 깊게 파고들어 tail risk가 생길 수 있습니다. 따라서 CatBoost는 segment fallback, LightGBM은 tail 안정화가 맞습니다.</p>
+<h3>Q5. Huber에서 area_cm2가 음수면 면적이 클수록 가격이 낮다는 뜻인가요?</h3>
+<p>아닙니다. area_cm2는 log_area, width, height와 정보가 겹칩니다. 선형 모델에서는 중복 피처 사이에서 한 피처가 과대 상승을 조정하는 역할을 할 수 있습니다.</p>
+<h3>Q6. 후처리 보정값을 test 데이터로 만들면 안 되는 이유는 무엇인가요?</h3>
+<p>test 데이터는 최종 검증용입니다. test에서 보정값을 만들면 평가 데이터의 정답을 보고 보정하는 셈이 되어 실제 운영 성능을 과대평가할 수 있습니다.</p>
+<h3>Q7. LightGBM의 p95가 높은 것은 어떤 의미인가요?</h3>
+<p>일반적인 예측은 CatBoost와 비슷하지만, 일부 구간에서 크게 틀릴 위험이 더 크다는 뜻입니다. 특히 대형 캔버스 같은 가격 분산이 큰 구간에서 위험이 나타납니다.</p>
+<h3>Q8. 최종적으로 어떤 의사결정이 필요한가요?</h3>
+<p>Warm 보정은 적용 후보로 검증하고, CatBoost는 segment fallback 방식으로 재실험하며, LightGBM은 tail risk 완화 실험을 진행하는 의사결정이 필요합니다.</p>
+<hr>
+<h2>17. 후임이 추가로 궁금해할 수 있는 질문과 답변</h2>
+<h3>Q1. Huber는 선형 모델인데, 왜 복잡한 미술품 가격 예측에 쓰나요?</h3>
+<p>Huber가 모든 복잡한 패턴을 다 잡는 모델이라서 쓰는 것은 아니다. Warm 조건에서는 같은 작가의 과거 가격대가 있고, 이때는 작가 기준선과 작품 크기/재료 조합을 안정적으로 더하는 선형 구조가 오히려 설명하기 좋다. 또한 Huber는 큰 오차 샘플의 영향력을 줄이기 때문에, 특이하게 비싸거나 싼 작품이 있는 미술품 데이터에 적합하다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“Warm에서는 작가 이력이라는 강한 기준선이 있기 때문에, 복잡한 비선형 모델보다 Huber처럼 안정적이고 설명 가능한 선형 모델이 유리합니다. 특히 Huber는 고가/저가 이상 사례에 과하게 끌려가지 않는 장점이 있습니다.”<br>
+</blockquote>
+<h3>Q2. Warm에서 artist_key를 쓰면 과적합 아닌가요?</h3>
+<p>과적합 위험이 없다는 뜻은 아니다. 다만 Warm의 정의 자체가 “학습 데이터에 같은 작가가 있는 경우”이므로, artist_key를 쓰는 것이 문제 조건과 맞다. 대신 저빈도 작가는 infrequent 그룹으로 묶이고, Huber 손실은 극단 작가 사례의 영향력을 완화한다. 또한 Cold 모델에서는 artist_key를 쓰지 않는다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“artist_key는 Warm 조건에서만 사용합니다. Warm은 기존 작가 가격대를 활용하는 문제이기 때문에 artist_key가 기준선 역할을 합니다. Cold에서는 작가 이력이 없으므로 artist_key를 사용하지 않습니다.”<br>
+</blockquote>
+<h3>Q3. Cold에서는 왜 artist_key를 쓰지 않나요?</h3>
+<p>Cold는 처음 보는 작가이거나 작가 이력이 부족한 경우다. 이때 artist_key를 쓰면 학습 때 보지 못한 작가에 대해 의미 있는 값을 만들 수 없다. 그래서 Cold에서는 작품 자체 정보인 크기, 재료, 지지체, 형태를 중심으로 예측한다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“Cold는 처음 보는 작가를 다루는 조건이라 artist_key가 가격 기준선으로 작동할 수 없습니다. 그래서 작품 자체 피처를 중심으로 모델을 구성했습니다.”<br>
+</blockquote>
+<h3>Q4. Huber에서 area_cm2가 음수면 정말 면적이 클수록 가격이 내려가나요?</h3>
+<p>아니다. 이 질문은 반드시 조심해야 한다. <code>area_cm2</code>, <code>log_area</code>, <code>width_cm</code>, <code>height_cm</code>은 모두 크기 정보를 담고 있어 서로 중복된다. 선형 모델에서는 중복 피처가 함께 들어가면 어떤 피처는 상승 방향, 어떤 피처는 과대 상승을 조정하는 방향으로 계수가 잡힐 수 있다. 따라서 area_cm2 음수는 “면적이 가격을 낮춘다”가 아니라 “다른 크기 피처를 함께 통제했을 때의 보정 역할”이다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“area_cm2의 음수 계수는 면적 자체가 가격을 낮춘다는 뜻이 아닙니다. 크기 관련 피처가 여러 개 함께 들어가 있기 때문에, 선형 모델 안에서 중복 정보를 조정하는 역할로 봐야 합니다.”<br>
+</blockquote>
+<h3>Q5. CatBoost와 LightGBM은 둘 다 트리 모델인데 왜 두 개를 같이 보나요?</h3>
+<p>둘 다 트리 기반이지만 학습 구조가 다르다. CatBoost는 대칭 트리 구조와 범주형 처리에 강점이 있고, LightGBM은 leaf-wise 방식으로 손실을 크게 줄이는 구간을 깊게 파고드는 데 강점이 있다. 따라서 CatBoost는 피처 조합과 경로 해석이 중요하고, LightGBM은 tail risk 확인이 중요하다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“두 모델은 모두 트리형이지만 작동 방식이 다릅니다. CatBoost는 피처 조합 경로를 안정적으로 보는 데 강점이 있고, LightGBM은 특정 구간을 깊게 학습하는 대신 tail risk가 생길 수 있어 함께 비교했습니다.”<br>
+</blockquote>
+<h3>Q6. CatBoost에서 SHAP이 높다는 것은 무슨 뜻인가요?</h3>
+<p>SHAP이 높다는 것은 해당 피처가 각 샘플의 예측값을 많이 움직였다는 뜻이다. 단, CatBoost에서는 피처가 단독으로 가격을 올린다고 해석하면 안 된다. 트리 경로에서 다른 피처와 함께 작동하기 때문에, SHAP 상위 피처와 interaction 상위 조합을 함께 봐야 한다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“SHAP은 해당 피처가 예측 로그 가격을 얼마나 움직였는지를 보여줍니다. 다만 CatBoost는 트리 경로 기반 모델이므로 SHAP과 interaction을 같이 봐야 합니다.”<br>
+</blockquote>
+<h3>Q7. interaction score가 높다는 것은 무엇인가요?</h3>
+<p>두 피처가 함께 있을 때 예측 경로와 예측값이 크게 달라진다는 뜻이다. 예를 들어 <code>width_cm × depth_cm</code> interaction이 높다는 것은 가로와 깊이가 따로따로 중요한 것이 아니라, 넓고 깊은 작품이라는 조건 조합이 가격 판단 경로를 바꾼다는 의미다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“interaction이 높다는 것은 두 피처가 함께 가격 판단 경로를 바꾼다는 뜻입니다. 그래서 CatBoost에서는 단일 피처보다 size-depth 같은 조합을 중요하게 봅니다.”<br>
+</blockquote>
+<h3>Q8. LightGBM에서 permutation이 왜 필요한가요?</h3>
+<p>split importance는 피처가 트리에서 얼마나 자주 쓰였는지를 보여준다. 하지만 자주 쓰였다고 실제 예측 성능을 크게 좌우한다는 뜻은 아니다. permutation은 특정 피처 값을 섞어 모델이 그 피처를 못 쓰게 만들고, 성능이 얼마나 나빠지는지 확인한다. 그래서 실제 의존도를 보기에 더 적합하다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“LightGBM은 split importance만으로는 부족합니다. permutation을 통해 해당 피처가 없어졌을 때 오차가 얼마나 커지는지 확인해야 실제 의존도를 알 수 있습니다.”<br>
+</blockquote>
+<h3>Q9. LightGBM에서 area_cm2가 가장 중요하면 area_cm2만 쓰면 되나요?</h3>
+<p>아니다. area_cm2가 중요하다는 것은 면적이 강한 가격 기준선이라는 뜻이지, 다른 피처가 필요 없다는 뜻은 아니다. width, height, log_area는 형태 차이를 보완하고, support_size_bucket은 대형 캔버스 같은 위험 구간을 구분한다. 또한 area_cm2에 너무 의존하면 tail risk가 커질 수 있다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“area_cm2가 중요하지만 단독으로 충분하다는 뜻은 아닙니다. 면적은 가격 기준선을 만들고, 다른 크기/지지체 피처가 위험 구간을 보완합니다.”<br>
+</blockquote>
+<h3>Q10. p95가 높다는 것을 임원에게 어떻게 쉽게 설명하나요?</h3>
+<p>p95는 크게 틀리는 상위 5%의 위험이다. 일반적인 예측은 괜찮아도, 일부 작품에서 가격이 크게 빗나갈 수 있다는 뜻이다. 임원에게는 “평균은 괜찮지만 사고가 날 수 있는 구간”이라고 설명하면 된다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“p95는 크게 틀리는 위험 구간입니다. 평균적으로 괜찮아 보여도 p95가 높으면 일부 케이스에서 가격 예측이 크게 빗나갈 수 있습니다.”<br>
+</blockquote>
+<h3>Q11. 후처리는 모델을 다시 학습하는 것인가요?</h3>
+<p>아니다. 후처리는 모델이 낸 예측값에 대해 반복적으로 높거나 낮게 예측하는 경향을 보정하는 단계다. 예측 모델 자체를 바꾸는 것이 아니라, 예측 후 로그 잔차를 기준으로 조정값을 더한다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“후처리는 모델 재학습이 아니라 예측값 보정입니다. 모델이 반복적으로 높거나 낮게 예측하는 구간에 대해 로그 잔차 기반 보정값을 더하는 방식입니다.”<br>
+</blockquote>
+<h3>Q12. 왜 보정을 원 가격이 아니라 로그 가격에서 하나요?</h3>
+<p>모델이 로그 가격을 예측하기 때문이다. residual도 로그 가격 기준으로 계산해야 모델 예측 공간과 맞다. 로그 공간에서 보정하면 가격 차이를 비율 관점으로 다룰 수 있어 고가 작품에 덜 휘둘린다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“모델이 로그 가격을 예측하므로 보정도 같은 공간에서 해야 합니다. 로그 공간 보정은 가격 차이를 비율 관점으로 다루기 때문에 더 안정적입니다.”<br>
+</blockquote>
+<h3>Q13. representative_value는 표준 함수인가요?</h3>
+<p>특정 라이브러리에 고정된 표준 함수명은 아니다. 여기서는 residual 그룹의 대표 보정값을 뜻하는 일반 표현이다. 평균, 중앙값, 분위수 등을 쓸 수 있는데, 이번 가격 데이터는 이상치가 있으므로 median residual을 우선 사용한다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“representative_value는 특정 함수명이 아니라 그룹별 잔차 대표값을 의미합니다. 가격 데이터는 이상치가 있어 평균보다 median residual을 우선 사용했습니다.”<br>
+</blockquote>
+<h3>Q14. 왜 test 데이터로 보정값을 만들면 안 되나요?</h3>
+<p>test 데이터는 최종 검증용이다. test의 정답을 보고 보정값을 만들면 평가 데이터에 맞춘 것이 되어 실제 운영 성능을 과대평가하게 된다. 보정값은 validation 또는 OOF에서 만들고 test는 최종 확인에만 사용해야 한다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“test는 최종 확인용이기 때문에 test 정답으로 보정값을 만들면 안 됩니다. 보정값은 validation 또는 OOF에서 만들고, test는 검증에만 사용해야 합니다.”<br>
+</blockquote>
+<h3>Q15. CatBoost는 p95가 좋아졌는데 왜 보류인가요?</h3>
+<p>1차 단순 median 보정에서 CatBoost는 p95는 줄었지만 MdAPE가 악화됐다. 즉 큰 오차 일부는 줄였지만 일반적인 예측 정확도가 나빠졌다. 그래서 단순 보정은 보류하고, CatBoost 구조에 맞는 leaf/segment fallback 방식으로 다시 실험해야 한다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“CatBoost는 단순 보정으로 p95는 줄었지만 MdAPE가 악화됐습니다. 그래서 바로 적용하지 않고, 모델 구조에 맞는 segment fallback 방식으로 재실험하는 것이 맞습니다.”<br>
+</blockquote>
+<h3>Q16. LightGBM은 MdAPE가 악화됐는데 왜 후보인가요?</h3>
+<p>LightGBM은 대표 오차인 MdAPE가 소폭 악화됐지만 p95가 개선됐다. LightGBM의 주요 문제는 tail risk이므로, MdAPE 악화를 제한하면서 p95를 줄이는 방향의 조건부 후보로 보는 것이 맞다.</p>
+<p>발표 답변:</p>
+<blockquote>
+“LightGBM은 평균적인 오차보다 큰 오차 위험이 문제입니다. 그래서 MdAPE 악화를 제한하는 조건에서 p95를 줄이는 tail 안정화 후보로 봅니다.”<br>
+</blockquote>
+<h3>Q17. 발표 중 숫자를 다 외워야 하나요?</h3>
+<p>모든 숫자를 외울 필요는 없다. 반드시 기억해야 할 숫자는 네 가지다.</p>
+<table><thead><tr><th>숫자</th><th>의미</th></tr></thead><tbody>
+<tr><td>Warm MdAPE 0.2241</td><td>Warm 대표 오차</td></tr>
+<tr><td>CatBoost MdAPE 0.4843</td><td>Cold CatBoost 대표 오차</td></tr>
+<tr><td>LightGBM MdAPE 0.4797</td><td>Cold LightGBM 대표 오차</td></tr>
+<tr><td>LightGBM p95 5.0569</td><td>LightGBM의 큰 오차 위험</td></tr>
+</tbody></table>
+<p>후처리 숫자는 방향성만 기억하면 된다.</p>
+<ul>
+<li>Warm은 MdAPE와 p95 모두 개선</li>
+<li>CatBoost는 p95 개선, MdAPE 악화</li>
+<li>LightGBM은 p95 개선, MdAPE 소폭 악화</li>
+</ul>
+<h3>Q18. 발표 중 모르는 질문이 나오면 어떻게 답하나요?</h3>
+<p>억지로 답하지 말고, 검증이 필요한 부분과 현재 결론을 분리해서 말하면 된다.</p>
+<p>답변 예시:</p>
+<blockquote>
+“그 부분은 현재 리포트에서는 최종 artifact 기준 해석까지 확인했고, 실제 운영 적용 전에는 validation 또는 OOF 기준으로 추가 검증이 필요합니다. 확인 후 별도 공유드리겠습니다.”<br>
+</blockquote>
+<hr>
+<h2>18. 발표할 때 피해야 할 표현</h2>
+<table><thead><tr><th>피해야 할 표현</th><th>이유</th><th>대체 표현</th></tr></thead><tbody>
+<tr><td>“Cold 모델이 Warm보다 안 좋습니다.”</td><td>문제 난이도 차이를 무시한 표현</td><td>“Cold는 작가 이력이 없어 더 어려운 조건입니다.”</td></tr>
+<tr><td>“area_cm2가 가격을 낮춥니다.”</td><td>계수 해석 오류</td><td>“중복 크기 정보 사이에서 조정 역할을 합니다.”</td></tr>
+<tr><td>“CatBoost는 width가 중요합니다.”</td><td>단일 피처처럼 오해 가능</td><td>“CatBoost는 size와 depth 조합 경로가 중요합니다.”</td></tr>
+<tr><td>“LightGBM이 더 나쁩니다.”</td><td>대표 오차와 tail 위험을 구분하지 않음</td><td>“LightGBM은 MdAPE는 유사하지만 p95 tail risk가 큽니다.”</td></tr>
+<tr><td>“후처리하면 좋아집니다.”</td><td>모델별 결과가 다름</td><td>“Warm은 채택 후보, CatBoost는 보류, LightGBM은 tail 안정화 후보입니다.”</td></tr>
+<tr><td>“SHAP이 높으니 인과적으로 중요합니다.”</td><td>SHAP은 모델 예측 기여도이지 인과효과가 아님</td><td>“모델 예측값을 많이 움직인 피처입니다.”</td></tr>
+<tr><td>“test에서 보정하겠습니다.”</td><td>평가 누수 위험</td><td>“validation 또는 OOF에서 보정값을 만들고 test는 확인용으로 쓰겠습니다.”</td></tr>
+</tbody></table>
+<hr>
+<h2>19. 발표 리허설 체크리스트</h2>
+<p>발표 전에 아래를 확인한다.</p>
+<ul>
+<li>Warm과 Cold 차이를 30초 안에 설명할 수 있는가?</li>
+<li>log(price)를 왜 쓰는지 설명할 수 있는가?</li>
+<li>MdAPE와 p95 APE 차이를 설명할 수 있는가?</li>
+<li>Huber의 피처 영향도 계산식을 설명할 수 있는가?</li>
+<li>CatBoost에서 interaction이 왜 중요한지 설명할 수 있는가?</li>
+<li>LightGBM에서 permutation과 tail slice가 왜 필요한지 설명할 수 있는가?</li>
+<li>area_cm2 음수 계수 질문에 답할 수 있는가?</li>
+<li>후처리 보정식을 설명할 수 있는가?</li>
+<li>test 데이터로 보정값을 만들면 안 되는 이유를 설명할 수 있는가?</li>
+<li>최종 의사결정 요청 네 가지를 말할 수 있는가?</li>
+</ul>
+<hr>
+<h2>20. 발표 마지막에 말할 최종 요약</h2>
+<p>마지막에는 아래 문장을 그대로 사용해도 된다.</p>
+<blockquote>
+“이번 모델은 단순히 성능만 확인한 것이 아니라, 모델별 가격 계산 로직과 피처 영향도 산출 방식까지 확인했습니다. Warm은 선형 Huber 구조라 피처별 기여도를 직접 설명할 수 있고, Cold는 CatBoost와 LightGBM의 트리 구조 차이에 따라 다르게 해석해야 합니다. 후처리도 공통 보정이 아니라 Warm은 로그 잔차 보정, CatBoost는 segment fallback, LightGBM은 tail 안정화로 나누어 진행하는 것이 맞습니다. 최종 목표는 평균 정확도 개선뿐 아니라 크게 틀릴 수 있는 구간을 식별하고 신뢰도와 가격 범위까지 제공해 운영 안정성을 높이는 것입니다.”<br>
+</blockquote></body></html>

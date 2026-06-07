@@ -1,0 +1,13 @@
+experiment_id: T6-E051
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H13
+title: 깊이 구간화 피처 실험
+hypothesis: 0에 가까운 깊이와 실제 3D에 가까운 깊이는 가격 차이를 다르게 설명할 수 있다.
+features_under_test: depth_cm, has_depth, is_3d_candidate, depth_bucket
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+base_features: Warm 기준: artist_name_ko + ln_estimated_ho + has_depth + is_3d_candidate / Cold 기준: ln_estimated_ho + has_depth + is_3d_candidate
+additional_features: Warm/Cold 추가: depth_cm 기반 depth_bucket
+target: ln_price_krw
+compare: has_depth만 사용한 모델과 depth 구간화 모델 비교
+success_criteria: 3D/depth slice 오차가 개선되면 후보 유지

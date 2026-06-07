@@ -1,0 +1,166 @@
+{
+  "created_at": "2026-05-22T18:10:01",
+  "experiment_id": "A9-5",
+  "description": "Compare generated material-support combo buckets.",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/A9-5_material_support_combo_bucket/experiment_config.json",
+  "prompt_file": "experiments/track6/A9-5_material_support_combo_bucket/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "ln_estimated_ho",
+      "log_area",
+      "width_cm",
+      "height_cm"
+    ],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore"
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "로그면적 + NANT 재료 + NANT 지지체",
+      "features": [
+        "log_area",
+        "nant_material_idx",
+        "nant_support"
+      ],
+      "description": "조합 변수 비교를 위한 분리 피처 기준"
+    },
+    {
+      "name": "로그면적 + 재료지지체 조합",
+      "features": [
+        "log_area",
+        "nant_material_support_bucket"
+      ],
+      "description": "NANT 재료 번호와 지지체를 하나의 조합 변수로 사용"
+    },
+    {
+      "name": "호수 + 재료지지체 조합",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_support_bucket"
+      ],
+      "description": "호수와 재료지지체 조합 변수 사용"
+    },
+    {
+      "name": "전체 크기 + 재료지지체 조합",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "width_cm",
+        "height_cm",
+        "nant_material_support_bucket"
+      ],
+      "description": "전체 크기 표현과 재료지지체 조합 변수 사용"
+    },
+    {
+      "name": "로그면적 + 지지체도구 조합",
+      "features": [
+        "log_area",
+        "nant_support_nant_tool_bucket"
+      ],
+      "description": "NANT 지지체와 도구명을 하나의 조합 변수로 사용"
+    }
+  ],
+  "bucket_features": [],
+  "combo_features": [
+    {
+      "source_cols": [
+        "nant_material_idx",
+        "nant_support"
+      ],
+      "combo_col": "nant_material_support_bucket",
+      "top_n": 120,
+      "other_value": "other_material_support",
+      "description": "NANT 재료 번호와 NANT 지지체를 결합한 조합 변수"
+    },
+    {
+      "source_cols": [
+        "nant_support",
+        "nant_tool"
+      ],
+      "combo_col": "nant_support_nant_tool_bucket",
+      "top_n": 120,
+      "other_value": "other_support_tool",
+      "description": "NANT 지지체와 NANT 도구명을 결합한 조합 변수"
+    }
+  ],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/A9-5_material_support_combo_bucket/data/train_features.csv",
+    "train_labels": "experiments/track6/A9-5_material_support_combo_bucket/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/A9-5_material_support_combo_bucket/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/A9-5_material_support_combo_bucket/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/A9-5_material_support_combo_bucket/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/A9-5_material_support_combo_bucket/data/test_cold_labels.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/A9-5_material_support_combo_bucket/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/A9-5_material_support_combo_bucket/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/A9-5_material_support_combo_bucket/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/A9-5_material_support_combo_bucket/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/A9-5_material_support_combo_bucket/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/A9-5_material_support_combo_bucket/source_data/track6_test_cold_labels.csv"
+  }
+}

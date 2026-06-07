@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 A11 작품 기본 피처 묶음 + 제작연도 + 작품 유형 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 A11 작품 기본 피처 묶음 + 제작연도 + 작품 유형 실험 결과</h1>
+    <ul>
+      <li>목적: 작품 기본 피처 묶음과 제작연도 계열 변수에 작품 유형을 추가했을 때 가격 예측 성능이 개선되는지 확인</li>
+      <li>실험 ID: <code>A11</code></li>
+      <li>Warm 최고: <code>A10 기준 피처 묶음 + 작품 유형 전체 구분</code> / <code>Huber</code> / MdAPE 0.4804</li>
+      <li>Cold 최고: <code>A10 기준 피처 묶음 + 작품 유형 전체 구분</code> / <code>LightGBM</code> / MdAPE 0.4816</li>
+      <li>생성일: <code>2026-05-26T12:18:06</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/A11_basic_artwork_features_plus_type/data/train_features.csv</code><br><code>experiments/track6/A11_basic_artwork_features_plus_type/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/A11_basic_artwork_features_plus_type/data/test_warm_features.csv</code><br><code>experiments/track6/A11_basic_artwork_features_plus_type/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/A11_basic_artwork_features_plus_type/data/test_cold_features.csv</code><br><code>experiments/track6/A11_basic_artwork_features_plus_type/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/A11_basic_artwork_features_plus_type/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/A11_basic_artwork_features_plus_type/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>ln_estimated_ho, artwork_year, artwork_age</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>A10 기준 작품 정보에 작품 유형을 추가했을 때 예측 성능이 개선되는지 확인한다.</td></tr><tr><td>실험 위치</td><td>Group A의 작품 변수만 실험 중 A11에 해당하며, 작가명 없이 작품 자체 정보만 사용한다.</td></tr><tr><td>기준 피처</td><td>A10 기준 피처는 ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artwork_year, artwork_age로 둔다.</td></tr><tr><td>추가 피처</td><td>작품 유형은 artwork_type_final과 artwork_type_final_major3를 비교한다.</td></tr><tr><td>제외 피처</td><td>artwork_type_source, artwork_type_match_method, artwork_type_raw, artwork_type_confidence는 출처/처리 과정 정보이므로 모델 입력에서 제외한다.</td></tr><tr><td>숫자형 처리</td><td>ln_estimated_ho, artwork_year, artwork_age는 numeric_features에 명시하고 중앙값 결측 보정 후 StandardScaler를 적용한다.</td></tr><tr><td>범주형 처리</td><td>nant_material_idx, nant_tool, nant_support, artwork_type_final, artwork_type_final_major3는 범주형으로 처리한다.</td></tr><tr><td>공통 실행 코드</td><td>모든 조합은 scripts/track6/fixed_variable_experiment_runner.py로 실행하며, 실험별 차이는 experiment_config.json의 변수 조합만 바꾼다.</td></tr><tr><td>판단 기준</td><td>A10 기준 피처 대비 MdAPE와 p95 APE가 낮아지면 작품 유형의 추가 효과가 있다고 본다.</td></tr><tr><td>재현성 기준</td><td>이번 A11은 요청에 따라 1회 실행 결과만 기록한다.</td></tr><tr><td>purpose</td><td>작품 기본 피처 묶음과 제작연도 계열 변수에 작품 유형을 추가했을 때 가격 예측 성능이 개선되는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 A10 기준 피처 묶음 + 작품 유형 전체 구분 + Huber(MdAPE 0.4804), Cold 최고는 A10 기준 피처 묶음 + 작품 유형 전체 구분 + LightGBM(MdAPE 0.4816)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>A10 기준 피처 묶음</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artwork_year, artwork_age</code> · 호수, NANT 재료, NANT 지지체, 제작연도, 작품 연한을 사용한 A10 기준 피처</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4387</td><td>0.4979</td><td>2.9082</td><td>0.3213</td><td>0.5041</td><td>0.8313</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4691</td><td>0.6035</td><td>3.7826</td><td>0.2619</td><td>0.4152</td><td>0.9943</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4691</td><td>0.6042</td><td>3.7826</td><td>0.2619</td><td>0.4152</td><td>0.9940</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4175</td><td>0.5388</td><td>3.9250</td><td>0.2439</td><td>0.4598</td><td>1.1935</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4135</td><td>0.5228</td><td>3.8152</td><td>0.2504</td><td>0.4798</td><td>1.1573</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4169</td><td>0.5042</td><td>5.4732</td><td>0.2736</td><td>0.4966</td><td>1.6306</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>A10 기준 피처 묶음 + 작품 유형 전체 구분</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artwork_year, artwork_age, artwork_type_final</code> · A10 기준 피처에 작품 유형 전체 구분을 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4716</td><td>0.4804</td><td>2.9658</td><td>0.3213</td><td>0.5140</td><td>0.7722</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.5039</td><td>0.5618</td><td>3.5603</td><td>0.2784</td><td>0.4514</td><td>0.9308</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.5038</td><td>0.5633</td><td>3.5593</td><td>0.2784</td><td>0.4498</td><td>0.9309</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4543</td><td>0.5181</td><td>4.2648</td><td>0.2730</td><td>0.4821</td><td>1.1728</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4322</td><td>0.5027</td><td>3.8156</td><td>0.2665</td><td>0.4973</td><td>1.1371</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4343</td><td>0.4816</td><td>5.5723</td><td>0.3175</td><td>0.5186</td><td>1.6210</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>A10 기준 피처 묶음 + 작품 유형 대분류</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artwork_year, artwork_age, artwork_type_final_major3</code> · A10 기준 피처에 회화/판화/조각/기타 대분류를 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4415</td><td>0.4973</td><td>3.1476</td><td>0.3114</td><td>0.5008</td><td>0.8338</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4686</td><td>0.5914</td><td>3.7511</td><td>0.2586</td><td>0.4217</td><td>1.0132</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4686</td><td>0.5916</td><td>3.7510</td><td>0.2586</td><td>0.4217</td><td>1.0130</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4289</td><td>0.5184</td><td>4.0079</td><td>0.2462</td><td>0.4814</td><td>1.1861</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4200</td><td>0.5105</td><td>3.7938</td><td>0.2520</td><td>0.4882</td><td>1.1562</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4238</td><td>0.4998</td><td>5.6473</td><td>0.2901</td><td>0.5031</td><td>1.6289</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/A11_basic_artwork_features_plus_type/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

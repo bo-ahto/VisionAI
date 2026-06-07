@@ -1,0 +1,31 @@
+# WM1 Warm 상위 피처 조합별 모델군 비교 프롬프트
+
+- 목적: Warm 상위 피처 조합에서 Huber가 정말 최적 모델인지 검증한다.
+- 데이터: `data/track6_split_with_year_type_edition_size_artist_name` 고정 split 전체 사용.
+- 평가 대상: Warm test.
+- 학습/평가 연결 키: `_track6_row_id`.
+- 라벨 사용: `track6_train_labels.csv`는 학습 target, `track6_test_warm_labels.csv`는 평가 지표 계산에만 사용한다.
+- 누수 방지: 가격 컬럼은 모델 입력 피처에 넣지 않는다.
+- 통제 조건: 피처 조합은 고정하고 모델만 변경한다.
+- 숫자형 처리: 숫자형 피처는 중앙값 결측 보정 후 `StandardScaler` 적용.
+- 범주형 처리: 범주형 피처는 `OneHotEncoder(handle_unknown="ignore")` 적용.
+- 비교 모델:
+  - Linear Regression
+  - Ridge
+  - Huber
+  - LightGBM
+  - XGBoost
+  - CatBoost
+  - HistGradientBoosting
+- 주요 지표:
+  - MdAPE
+  - p95_APE
+  - Within_30
+  - Within_50
+  - RMSE_log
+  - R2
+  - MAPE
+- 판단 기준:
+  - 같은 피처 조합에서 Huber가 MdAPE 기준 1위인지 확인한다.
+  - Huber가 1위여도 p95_APE가 더 나쁜 경우 운영 후보는 별도 판단한다.
+  - 트리 모델이 특정 피처 조합에서 Huber를 넘는지 확인한다.

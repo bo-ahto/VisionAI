@@ -1,0 +1,35 @@
+# A5 작품 유형만 실험 지시 기록
+
+- 목표: 회화·판화·조각 등 작품 유형 구분이 가격 예측에 도움이 되는지 확인한다.
+- 기준 원천 파일: `data/track6/track6_feature_candidates_name_corrected_with_year_type.csv`
+- split 기준: `data/track6_split_with_year_type`
+- 학습 입력과 정답 가격은 분리해서 사용한다.
+- 정답 가격은 `train_labels.csv`, `test_warm_labels.csv`, `test_cold_labels.csv`에만 둔다.
+- 모델 입력에는 출처, 유형 원문, 매칭 방법을 넣지 않는다.
+- 비교 변수:
+  - `artwork_type`
+  - `artwork_type_final`
+- 유형 보완 규칙:
+  - 원본 유형이 있으면 원본 유형을 사용한다.
+  - 원본 유형이 없으면 재료, 지지체, NANT 도구 값을 보고 유형을 유추한다.
+  - 출처, 원문값, 매칭 방법은 모델 입력에 넣지 않는다.
+  - 보완 전 유형과 보완 후 유형을 같은 모델군으로 비교한다.
+- Warm 모델군:
+  - Huber
+  - Linear Regression
+  - Ridge
+- Cold 모델군:
+  - Huber
+  - Quantile-LAD
+  - LightGBM
+- 평가 지표:
+  - R2
+  - median APE
+  - p95 APE
+  - Within-30
+  - Within-50
+- 판단 기준:
+  - Warm과 Cold의 median APE를 각각 확인한다.
+  - p95 APE가 줄어드는지 확인해 큰 오차가 줄었는지 본다.
+  - 보완 후 유형의 성능이 보완 전보다 좋아지는지 확인한다.
+  - 작품 유형만으로 충분하지 않으면 이후 작품 기본 피처 묶음에 보조 피처로 넣을지 판단한다.

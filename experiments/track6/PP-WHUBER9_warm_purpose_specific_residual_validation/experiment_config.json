@@ -1,0 +1,108 @@
+{
+  "experiment_id": "PP-WHUBER9",
+  "title": "Warm residual Huber 목적별 추가 검증",
+  "run_at": "2026-06-06T23:52:37",
+  "seed": 20260606,
+  "current_candidate": "blend_svcnum_ppv8_wsvc_0.70",
+  "n_artist_splits": 5,
+  "n_artist_repeats": 12,
+  "bootstrap_iterations": 400,
+  "purpose_specs": [
+    {
+      "purpose": "대표 정확도 후보",
+      "candidate": "PP-WHUBER7_balanced_all_metric_predbin_mid_open_tail_guard",
+      "description": "test에서 MdAPE/MAPE/p95가 모두 개선된 균형 후보",
+      "primary_metrics": [
+        "MdAPE",
+        "MAPE",
+        "p95_APE"
+      ],
+      "decision_focus": "중앙 정확도 개선을 우선하되 p95 악화가 없어야 함"
+    },
+    {
+      "purpose": "보수형 안정성 후보",
+      "candidate": "PP-WHUBER7_validation_balanced_predbin_mid_open_tail_guard",
+      "description": "반복 OOF에서 가장 안정적으로 개선된 후보",
+      "primary_metrics": [
+        "MdAPE",
+        "MAPE",
+        "p95_APE"
+      ],
+      "decision_focus": "작가 단위 holdout에서도 세 지표 개선 확률이 높아야 함"
+    },
+    {
+      "purpose": "큰 오차 방어 후보",
+      "candidate": "PP-WHUBER7_tail_guard_directional_under",
+      "description": "test에서 p95_APE와 MAPE 방어가 가장 명확한 후보",
+      "primary_metrics": [
+        "MAPE",
+        "p95_APE"
+      ],
+      "decision_focus": "MdAPE 개선폭보다 MAPE와 p95_APE 감소를 우선함"
+    },
+    {
+      "purpose": "MdAPE 연구 후보",
+      "candidate": "PP-WHUBER7_mdape_best_predbin_mid_open_tail_guard",
+      "description": "test MdAPE는 가장 낮지만 p95_APE가 악화된 후보",
+      "primary_metrics": [
+        "MdAPE"
+      ],
+      "decision_focus": "운영 기본 후보가 아니라 중앙값 정확도 개선 원인 분석용"
+    }
+  ],
+  "candidate_specs": [
+    {
+      "candidate": "PP-WHUBER7_mdape_best_predbin_mid_open_tail_guard",
+      "source_candidate": "PP-WHUBER7_pred_size_material_svc_artist_eps1.60_alpha0p001_predbin_mid_open_tail_guard_cap0p06_s0p35",
+      "role": "MdAPE 우선 후보",
+      "feature_set": "pred_size_material_svc_artist",
+      "epsilon": 1.6,
+      "alpha": 0.001,
+      "method": "pred_bin_cap",
+      "cap": 0.06,
+      "strength": 0.35,
+      "policy": "mid_open_tail_guard"
+    },
+    {
+      "candidate": "PP-WHUBER7_balanced_all_metric_predbin_mid_open_tail_guard",
+      "source_candidate": "PP-WHUBER7_pred_size_material_svc_artist_eps1.35_alpha0p01_predbin_mid_open_tail_guard_cap0p08_s0p25",
+      "role": "세 지표 균형 후보",
+      "feature_set": "pred_size_material_svc_artist",
+      "epsilon": 1.35,
+      "alpha": 0.01,
+      "method": "pred_bin_cap",
+      "cap": 0.08,
+      "strength": 0.25,
+      "policy": "mid_open_tail_guard"
+    },
+    {
+      "candidate": "PP-WHUBER7_tail_guard_directional_under",
+      "source_candidate": "PP-WHUBER7_pred_size_svc_eps1.05_alpha0p001_dir_under_guard_cap0p08",
+      "role": "큰 오차 방어 후보",
+      "feature_set": "pred_size_svc",
+      "epsilon": 1.05,
+      "alpha": 0.001,
+      "method": "directional_strength",
+      "cap": 0.08,
+      "strength": NaN,
+      "policy": "under_guard"
+    },
+    {
+      "candidate": "PP-WHUBER7_validation_balanced_predbin_mid_open_tail_guard",
+      "source_candidate": "PP-WHUBER7_pred_size_svc_eps1.20_alpha0p01_predbin_mid_open_tail_guard_cap0p08_s0p35",
+      "role": "validation 균형 선택 후보",
+      "feature_set": "pred_size_svc",
+      "epsilon": 1.2,
+      "alpha": 0.01,
+      "method": "pred_bin_cap",
+      "cap": 0.08,
+      "strength": 0.35,
+      "policy": "mid_open_tail_guard"
+    }
+  ],
+  "leakage_control": {
+    "artist_holdout": "validation artists are split by artist_key; holdout rows are predicted by residual models fitted on other validation artists",
+    "test_once": "residual model is fitted on full validation and applied once to test",
+    "test_bootstrap": "bootstrap evaluates already fixed test predictions only"
+  }
+}

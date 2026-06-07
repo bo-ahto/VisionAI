@@ -1,0 +1,13 @@
+experiment_id: T6-E052
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H14
+title: 난트 재료 분류 그룹화 실험
+hypothesis: 난트 재료 분류 번호가 너무 세분화되어 있으면 그룹화했을 때 더 안정적인 가격 예측이 가능할 수 있다.
+features_under_test: nant_material_idx, nant_tool, nant_material_group
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+base_features: Warm 기준: artist_name_ko + ln_estimated_ho + nant_material_idx + nant_tool / Cold 기준: ln_estimated_ho + nant_material_idx + nant_tool
+additional_features: Warm/Cold 비교: nant_material_idx 원본 vs nant_material_group
+target: ln_price_krw
+compare: 원본 idx 모델과 상위 그룹화 모델 비교
+success_criteria: Cold p95 APE 감소 또는 성능 유지 시 그룹화 후보 유지

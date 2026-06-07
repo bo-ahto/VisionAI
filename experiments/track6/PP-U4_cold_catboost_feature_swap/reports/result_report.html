@@ -1,0 +1,406 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-U4</title><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933;line-height:1.55}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0 24px}
+th,td{border:1px solid #d8dee4;padding:7px;text-align:left;vertical-align:top}
+th{background:#eef2f7}
+code{background:#f3f4f6;padding:2px 4px;border-radius:4px}
+.note{background:#f8fafc;border:1px solid #d8dee4;padding:12px;margin:12px 0}
+</style></head>
+<body>
+<h1>PP-U4 Cold CatBoost 피처 교환/확장 비교</h1>
+<div class="note">
+<p><b>목적</b>: 모델 설정은 고정하고 피처셋만 바꿔 Warm/Cold 모델별 입력 피처 구조의 적합성을 비교한다.</p>
+<p><b>선택 기준</b>: validation 기준으로 후보를 고르고 test는 재현성 확인으로만 사용한다.</p>
+</div>
+<h2>후보 피처셋</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-U4</td>
+      <td>baseline_base_medium_shape</td>
+      <td>CatBoost 기준 medium-shape 피처셋</td>
+      <td>현재 Cold CatBoost final artifact와 같은 피처셋</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>lightgbm_swap_support_size</td>
+      <td>LightGBM 기준 support-size 피처셋 교환</td>
+      <td>CatBoost에도 LightGBM형 support-size 구간을 넣으면 개선되는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>support_shape_combo</td>
+      <td>support-size + medium-shape 결합</td>
+      <td>CatBoost 대칭 트리가 두 bucket 조합을 함께 나눌 수 있는지 확인</td>
+      <td>14</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>generated_all_combo</td>
+      <td>전체 생성 bucket 확장</td>
+      <td>생성 bucket을 모두 넣었을 때 CatBoost가 유효한 조합만 고르는지 확인</td>
+      <td>19</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>raw_material_no_bucket</td>
+      <td>원본 크기+재료 중심</td>
+      <td>명시 bucket 없이 CatBoost split만으로 조합을 찾는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>medium_size_combo</td>
+      <td>medium-size 조합</td>
+      <td>재료와 크기 조합이 medium-shape보다 나은지 확인</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, medium_size_bucket, medium_shape_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>depth_shape_combo</td>
+      <td>depth-shape 조합</td>
+      <td>CatBoost에서 depth/shape interaction만 강조했을 때 tail이 줄어드는지 확인</td>
+      <td>11</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, shape_bucket, is_large_2d, is_large_3d</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>model</th>
+      <th>split</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>delta_MdAPE_vs_baseline</th>
+      <th>delta_MAPE_vs_baseline</th>
+      <th>delta_p95_APE_vs_baseline</th>
+      <th>delta_RMSE_log_vs_baseline</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-U4</td>
+      <td>lightgbm_swap_support_size</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>LightGBM 기준 support-size 피처셋 교환</td>
+      <td>CatBoost에도 LightGBM형 support-size 구간을 넣으면 개선되는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket</td>
+      <td>0.963960</td>
+      <td>0.483488</td>
+      <td>1.465651</td>
+      <td>4.443884</td>
+      <td>0.292030</td>
+      <td>0.517586</td>
+      <td>-0.003209</td>
+      <td>-0.014636</td>
+      <td>-0.188990</td>
+      <td>-0.004105</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>support_shape_combo</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>support-size + medium-shape 결합</td>
+      <td>CatBoost 대칭 트리가 두 bucket 조합을 함께 나눌 수 있는지 확인</td>
+      <td>14</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+      <td>0.980782</td>
+      <td>0.484780</td>
+      <td>1.560648</td>
+      <td>4.435409</td>
+      <td>0.282672</td>
+      <td>0.517264</td>
+      <td>-0.001917</td>
+      <td>0.080361</td>
+      <td>-0.197465</td>
+      <td>0.012716</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>baseline_base_medium_shape</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>CatBoost 기준 medium-shape 피처셋</td>
+      <td>현재 Cold CatBoost final artifact와 같은 피처셋</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket</td>
+      <td>0.968065</td>
+      <td>0.486697</td>
+      <td>1.480287</td>
+      <td>4.632874</td>
+      <td>0.286221</td>
+      <td>0.519200</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>medium_size_combo</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>medium-size 조합</td>
+      <td>재료와 크기 조합이 medium-shape보다 나은지 확인</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, medium_size_bucket, medium_shape_bucket</td>
+      <td>0.965925</td>
+      <td>0.489382</td>
+      <td>1.473063</td>
+      <td>4.576801</td>
+      <td>0.294934</td>
+      <td>0.511133</td>
+      <td>0.002685</td>
+      <td>-0.007223</td>
+      <td>-0.056073</td>
+      <td>-0.002140</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>generated_all_combo</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>전체 생성 bucket 확장</td>
+      <td>생성 bucket을 모두 넣었을 때 CatBoost가 유효한 조합만 고르는지 확인</td>
+      <td>19</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.976971</td>
+      <td>0.492279</td>
+      <td>1.510780</td>
+      <td>4.527970</td>
+      <td>0.289126</td>
+      <td>0.507260</td>
+      <td>0.005582</td>
+      <td>0.030494</td>
+      <td>-0.104904</td>
+      <td>0.008906</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>raw_material_no_bucket</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>원본 크기+재료 중심</td>
+      <td>명시 bucket 없이 CatBoost split만으로 조합을 찾는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio</td>
+      <td>0.974279</td>
+      <td>0.493553</td>
+      <td>1.492978</td>
+      <td>4.301391</td>
+      <td>0.274282</td>
+      <td>0.507906</td>
+      <td>0.006857</td>
+      <td>0.012691</td>
+      <td>-0.331483</td>
+      <td>0.006214</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>depth_shape_combo</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>depth-shape 조합</td>
+      <td>CatBoost에서 depth/shape interaction만 강조했을 때 tail이 줄어드는지 확인</td>
+      <td>11</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.968791</td>
+      <td>0.498438</td>
+      <td>1.439227</td>
+      <td>4.549513</td>
+      <td>0.280736</td>
+      <td>0.501775</td>
+      <td>0.011741</td>
+      <td>-0.041059</td>
+      <td>-0.083362</td>
+      <td>0.000726</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>baseline_base_medium_shape</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>CatBoost 기준 medium-shape 피처셋</td>
+      <td>현재 Cold CatBoost final artifact와 같은 피처셋</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket</td>
+      <td>0.703741</td>
+      <td>0.419365</td>
+      <td>0.733240</td>
+      <td>2.205321</td>
+      <td>0.365420</td>
+      <td>0.557574</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>raw_material_no_bucket</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>원본 크기+재료 중심</td>
+      <td>명시 bucket 없이 CatBoost split만으로 조합을 찾는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio</td>
+      <td>0.704601</td>
+      <td>0.422157</td>
+      <td>0.733124</td>
+      <td>2.351366</td>
+      <td>0.355249</td>
+      <td>0.558663</td>
+      <td>0.002792</td>
+      <td>-0.000116</td>
+      <td>0.146045</td>
+      <td>0.000860</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>support_shape_combo</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>support-size + medium-shape 결합</td>
+      <td>CatBoost 대칭 트리가 두 bucket 조합을 함께 나눌 수 있는지 확인</td>
+      <td>14</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+      <td>0.707213</td>
+      <td>0.423010</td>
+      <td>0.734863</td>
+      <td>2.243670</td>
+      <td>0.366146</td>
+      <td>0.556847</td>
+      <td>0.003646</td>
+      <td>0.001624</td>
+      <td>0.038350</td>
+      <td>0.003471</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>medium_size_combo</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>medium-size 조합</td>
+      <td>재료와 크기 조합이 medium-shape보다 나은지 확인</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, medium_size_bucket, medium_shape_bucket</td>
+      <td>0.713054</td>
+      <td>0.425340</td>
+      <td>0.749615</td>
+      <td>2.385191</td>
+      <td>0.357428</td>
+      <td>0.556484</td>
+      <td>0.005975</td>
+      <td>0.016375</td>
+      <td>0.179870</td>
+      <td>0.009313</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>lightgbm_swap_support_size</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>LightGBM 기준 support-size 피처셋 교환</td>
+      <td>CatBoost에도 LightGBM형 support-size 구간을 넣으면 개선되는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket</td>
+      <td>0.713917</td>
+      <td>0.426007</td>
+      <td>0.750685</td>
+      <td>2.355483</td>
+      <td>0.369052</td>
+      <td>0.552851</td>
+      <td>0.006642</td>
+      <td>0.017445</td>
+      <td>0.150162</td>
+      <td>0.010176</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>generated_all_combo</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>전체 생성 bucket 확장</td>
+      <td>생성 bucket을 모두 넣었을 때 CatBoost가 유효한 조합만 고르는지 확인</td>
+      <td>19</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.708445</td>
+      <td>0.429164</td>
+      <td>0.738467</td>
+      <td>2.176217</td>
+      <td>0.339993</td>
+      <td>0.563749</td>
+      <td>0.009799</td>
+      <td>0.005228</td>
+      <td>-0.029104</td>
+      <td>0.004704</td>
+    </tr>
+    <tr>
+      <td>PP-U4</td>
+      <td>depth_shape_combo</td>
+      <td>cold</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>depth-shape 조합</td>
+      <td>CatBoost에서 depth/shape interaction만 강조했을 때 tail이 줄어드는지 확인</td>
+      <td>11</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.722073</td>
+      <td>0.446046</td>
+      <td>0.766545</td>
+      <td>2.593383</td>
+      <td>0.353796</td>
+      <td>0.541228</td>
+      <td>0.026681</td>
+      <td>0.033305</td>
+      <td>0.388063</td>
+      <td>0.018332</td>
+    </tr>
+  </tbody>
+</table>
+</body></html>

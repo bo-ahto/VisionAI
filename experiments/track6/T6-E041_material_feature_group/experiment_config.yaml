@@ -1,0 +1,14 @@
+experiment_id: T6-E041
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H3
+title: 재료 정보 추가 실험
+hypothesis: 재료 정보는 기준 모델보다 가격 예측을 개선한다.
+features_under_test: nant_material_idx, nant_tool
+model: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+train_features: Warm: artist_name_ko + ln_estimated_ho + material group, Cold: ln_estimated_ho + material group
+test_features: 학습 피처와 동일
+target: ln_price_krw
+material_features: nant_material_idx, nant_tool
+compare: 기준 모델에 nant_material_idx + nant_tool 추가해 비교
+success_criteria: median APE 또는 p95 APE 개선 시 후보 유지

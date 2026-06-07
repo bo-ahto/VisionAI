@@ -1,0 +1,134 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-Y1</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933;line-height:1.55}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left;vertical-align:top}th{background:#eef2f7}code{background:#f3f4f6;padding:2px 4px;border-radius:4px}</style></head>
+<body><h1>PP-Y1 Cold LightGBM Quantile 전시/갤러리 목적별 재학습</h1><h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>model</th>
+      <th>feature_strategy</th>
+      <th>n_features</th>
+      <th>quantile_width_median</th>
+      <th>price_range_ratio_median</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-Y1</td>
+      <td>lgbq_meta_external_core</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_lgbq_external_objective_refit</td>
+      <td>0.692781</td>
+      <td>0.420587</td>
+      <td>0.652333</td>
+      <td>1.990710</td>
+      <td>0.375227</td>
+      <td>0.587722</td>
+      <td>lightgbm</td>
+      <td>LightGBM Quantile + 작가 메타 + 전시/갤러리 core</td>
+      <td>56</td>
+      <td>1.242184</td>
+      <td>3.463167</td>
+    </tr>
+    <tr>
+      <td>PP-Y1</td>
+      <td>lgbq_meta_external_core</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_lgbq_external_objective_refit</td>
+      <td>0.892502</td>
+      <td>0.444391</td>
+      <td>1.129475</td>
+      <td>3.849633</td>
+      <td>0.303969</td>
+      <td>0.550823</td>
+      <td>lightgbm</td>
+      <td>LightGBM Quantile + 작가 메타 + 전시/갤러리 core</td>
+      <td>56</td>
+      <td>1.499145</td>
+      <td>4.477858</td>
+    </tr>
+    <tr>
+      <td>PP-Y1</td>
+      <td>lgbq_meta_external_interaction</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_lgbq_external_objective_refit</td>
+      <td>0.658657</td>
+      <td>0.399679</td>
+      <td>0.584589</td>
+      <td>1.648322</td>
+      <td>0.377770</td>
+      <td>0.617871</td>
+      <td>lightgbm</td>
+      <td>LightGBM Quantile + 작가 메타 + 전시/갤러리 상호작용</td>
+      <td>62</td>
+      <td>1.071525</td>
+      <td>2.919829</td>
+    </tr>
+    <tr>
+      <td>PP-Y1</td>
+      <td>lgbq_meta_external_interaction</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_lgbq_external_objective_refit</td>
+      <td>0.882999</td>
+      <td>0.448150</td>
+      <td>1.080733</td>
+      <td>3.669993</td>
+      <td>0.314618</td>
+      <td>0.548241</td>
+      <td>lightgbm</td>
+      <td>LightGBM Quantile + 작가 메타 + 전시/갤러리 상호작용</td>
+      <td>62</td>
+      <td>1.464894</td>
+      <td>4.327083</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Map</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>model</th>
+      <th>loss_or_objective</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-Y1</td>
+      <td>lgbq_meta_external_core</td>
+      <td>lightgbm</td>
+      <td>quantile_q10_q50_q90</td>
+      <td>LightGBM Quantile + 작가 메타 + 전시/갤러리 core</td>
+      <td>PP-X3의 전시/갤러리 MdAPE 개선 신호를 q10/q50/q90 구조로 재검증</td>
+      <td>56</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source</td>
+    </tr>
+    <tr>
+      <td>PP-Y1</td>
+      <td>lgbq_meta_external_interaction</td>
+      <td>lightgbm</td>
+      <td>quantile_q10_q50_q90</td>
+      <td>LightGBM Quantile + 작가 메타 + 전시/갤러리 상호작용</td>
+      <td>전시/갤러리 효과가 작품 크기/인지도와 결합될 때의 중앙 예측과 범위 폭 확인</td>
+      <td>62</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source, exhibition_total_x_log_area, exhibition_total_x_followers_log, gallery_validated_x_followers_log, gallery_tier_x_exhibition_total_log, exhibition_size_bucket, gallery_exhibition_bucket</td>
+    </tr>
+  </tbody>
+</table></body></html>

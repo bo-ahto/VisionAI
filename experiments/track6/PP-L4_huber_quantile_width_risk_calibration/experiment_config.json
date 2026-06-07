@@ -1,0 +1,54 @@
+{
+  "run_id": "20260602_135105",
+  "seed": 20260602,
+  "split_root": "data/track6_split",
+  "feature_columns": {
+    "warm": [
+      "width_cm",
+      "height_cm",
+      "depth_cm",
+      "area_cm2",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate",
+      "medium_category",
+      "support_category",
+      "medium_support_bucket",
+      "is_extreme_aspect_ratio",
+      "artist_key"
+    ],
+    "cold": [
+      "width_cm",
+      "height_cm",
+      "depth_cm",
+      "area_cm2",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate",
+      "medium_category",
+      "support_category",
+      "shape_bucket",
+      "medium_shape_bucket"
+    ]
+  },
+  "model_manifest": {
+    "seed": 20260602,
+    "target": "ln_price_krw",
+    "source_artifact_manifest": "data/track6/artifacts/track6_artifact_manifest.json"
+  },
+  "metric_policy": {
+    "primary": "MdAPE",
+    "secondary": [
+      "MAPE",
+      "p95_APE",
+      "RMSE_log",
+      "Within_30",
+      "Within_50"
+    ],
+    "adoption_rule": "MdAPE must not worsen materially even when MAPE improves"
+  },
+  "experiment_id": "PP-L4",
+  "title": "Huber + Quantile width 위험 구간 보정"
+}

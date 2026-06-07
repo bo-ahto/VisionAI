@@ -1,0 +1,103 @@
+{
+  "experiment_id": "A9-5",
+  "title": "Track6 A9-5 재료+지지체 조합 변수 실험 결과",
+  "purpose": "재료와 지지체를 따로 쓰는 것보다 조합 변수로 묶었을 때 가격 예측력이 개선되는지 확인한다.",
+  "description": "Compare generated material-support combo buckets.",
+  "split_root": "data/track6_split_with_year_type_edition_size",
+  "exp_dir": "experiments/track6/A9-5_material_support_combo_bucket",
+  "prompt_file": "experiments/track6/A9-5_material_support_combo_bucket/prompts/used_prompt.md",
+  "export_feature_columns": [
+    "height_cm",
+    "ln_estimated_ho",
+    "log_area",
+    "nant_material_idx",
+    "nant_material_support_bucket",
+    "nant_support",
+    "nant_support_nant_tool_bucket",
+    "nant_tool",
+    "width_cm"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "log_area",
+    "width_cm",
+    "height_cm"
+  ],
+  "variable_blocks": [
+    {
+      "name": "로그면적 + NANT 재료 + NANT 지지체",
+      "features": [
+        "log_area",
+        "nant_material_idx",
+        "nant_support"
+      ],
+      "description": "조합 변수 비교를 위한 분리 피처 기준"
+    },
+    {
+      "name": "로그면적 + 재료지지체 조합",
+      "features": [
+        "log_area",
+        "nant_material_support_bucket"
+      ],
+      "description": "NANT 재료 번호와 지지체를 하나의 조합 변수로 사용"
+    },
+    {
+      "name": "호수 + 재료지지체 조합",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_support_bucket"
+      ],
+      "description": "호수와 재료지지체 조합 변수 사용"
+    },
+    {
+      "name": "전체 크기 + 재료지지체 조합",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "width_cm",
+        "height_cm",
+        "nant_material_support_bucket"
+      ],
+      "description": "전체 크기 표현과 재료지지체 조합 변수 사용"
+    },
+    {
+      "name": "로그면적 + 지지체도구 조합",
+      "features": [
+        "log_area",
+        "nant_support_nant_tool_bucket"
+      ],
+      "description": "NANT 지지체와 도구명을 하나의 조합 변수로 사용"
+    }
+  ],
+  "comment": {
+    "실험 목적": "재료와 지지체를 따로 쓰는 것보다 조합 변수로 묶었을 때 가격 예측력이 개선되는지 확인한다.",
+    "실험 위치": "Group A의 A9 세부 실험 중 A9-5에 해당한다.",
+    "공통 실행 코드": "scripts/track6/fixed_variable_experiment_runner.py",
+    "숫자형 처리": "숫자형 피처는 중앙값 결측 보정 후 StandardScaler를 적용한다.",
+    "범주형 처리": "범주형 피처는 one-hot encoding으로 처리한다.",
+    "판단 기준": "Warm/Cold를 분리해 MdAPE, p95 APE, R2를 비교한다.",
+    "재현성 확인": "동일 설정으로 재실행해 주요 지표가 같은지 비교한다."
+  },
+  "combo_features": [
+    {
+      "source_cols": [
+        "nant_material_idx",
+        "nant_support"
+      ],
+      "combo_col": "nant_material_support_bucket",
+      "top_n": 120,
+      "other_value": "other_material_support",
+      "description": "NANT 재료 번호와 NANT 지지체를 결합한 조합 변수"
+    },
+    {
+      "source_cols": [
+        "nant_support",
+        "nant_tool"
+      ],
+      "combo_col": "nant_support_nant_tool_bucket",
+      "top_n": 120,
+      "other_value": "other_support_tool",
+      "description": "NANT 지지체와 NANT 도구명을 결합한 조합 변수"
+    }
+  ]
+}

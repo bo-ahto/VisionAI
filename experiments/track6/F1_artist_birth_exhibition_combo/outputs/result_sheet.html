@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 F1 작가 생년 + 전시 경력 조합 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 F1 작가 생년 + 전시 경력 조합 실험 결과</h1>
+    <ul>
+      <li>목적: 작가 생년과 전시 경력 횟수를 함께 쓰면 세대/경력 가격대 차이를 더 잘 설명하는지 확인</li>
+      <li>실험 ID: <code>F1</code></li>
+      <li>Warm 최고: <code>생년 + 전시 경력 + 결측</code> / <code>Ridge</code> / MdAPE 0.7482</li>
+      <li>Cold 최고: <code>생년 + 전시 경력</code> / <code>Quantile-LAD</code> / MdAPE 0.7015</li>
+      <li>생성일: <code>2026-05-27T21:13:16</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/F1_artist_birth_exhibition_combo/data/train_features.csv</code><br><code>experiments/track6/F1_artist_birth_exhibition_combo/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/F1_artist_birth_exhibition_combo/data/test_warm_features.csv</code><br><code>experiments/track6/F1_artist_birth_exhibition_combo/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/F1_artist_birth_exhibition_combo/data/test_cold_features.csv</code><br><code>experiments/track6/F1_artist_birth_exhibition_combo/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/F1_artist_birth_exhibition_combo/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/F1_artist_birth_exhibition_combo/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>artist_meta_birth_year, artist_meta_birth_year_is_missing, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_available_count, artist_exhibition_solo_count_is_missing, artist_exhibition_group_count_is_missing, artist_exhibition_fair_count_is_missing</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>작가 생년과 전시 경력 횟수를 함께 쓰면 세대/경력 가격대 차이를 더 잘 설명하는지 확인</td></tr><tr><td>학습 피처</td><td>artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count / artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_available_count, artist_meta_birth_year_is_missing, artist_exhibition_solo_count_is_missing, artist_exhibition_group_count_is_missing, artist_exhibition_fair_count_is_missing</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>통제 기준</td><td>Group G는 작품 기본 피처 묶음(ln_estimated_ho + nant_material_idx + nant_tool + nant_support)을 기준선으로 둔다.</td></tr><tr><td>실험군</td><td>Group F: 작가 메타 변수 조합</td></tr><tr><td>확인 결과 활용</td><td>세대와 경력 정보가 함께 유효하면 작가명 없이도 기본 작가 프로필 피처 후보로 둔다.</td></tr><tr><td>purpose</td><td>작가 생년과 전시 경력 횟수를 함께 쓰면 세대/경력 가격대 차이를 더 잘 설명하는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 생년 + 전시 경력 + 결측 + Ridge(MdAPE 0.7482), Cold 최고는 생년 + 전시 경력 + Quantile-LAD(MdAPE 0.7015)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>생년 + 전시 경력</h2>
+              <p><strong>사용 피처:</strong> <code>artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count</code> · 생년과 개인전/그룹전/아트페어 횟수 조합</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0802</td><td>1.3060</td><td>0.7500</td><td>6.6944</td><td>0.1944</td><td>0.2982</td><td>1.5155</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0803</td><td>1.3059</td><td>0.7626</td><td>7.3314</td><td>0.1911</td><td>0.3097</td><td>1.6422</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0803</td><td>1.3059</td><td>0.7626</td><td>7.3314</td><td>0.1911</td><td>0.3097</td><td>1.6422</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.1284</td><td>1.2270</td><td>0.7025</td><td>7.4200</td><td>0.1875</td><td>0.3169</td><td>1.4696</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.1293</td><td>1.2264</td><td>0.7015</td><td>7.2887</td><td>0.1904</td><td>0.3185</td><td>1.4547</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0630</td><td>1.2722</td><td>0.7223</td><td>11.4400</td><td>0.1655</td><td>0.3085</td><td>1.9910</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>생년 + 전시 경력 + 결측</h2>
+              <p><strong>사용 피처:</strong> <code>artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_available_count, artist_meta_birth_year_is_missing, artist_exhibition_solo_count_is_missing, artist_exhibition_group_count_is_missing, artist_exhibition_fair_count_is_missing</code> · 생년/전시 횟수 조합에 결측 상태를 함께 반영</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0727</td><td>1.3113</td><td>0.7588</td><td>6.3473</td><td>0.1960</td><td>0.3229</td><td>1.5398</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0783</td><td>1.3073</td><td>0.7482</td><td>6.9013</td><td>0.2043</td><td>0.3130</td><td>1.6632</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0783</td><td>1.3073</td><td>0.7482</td><td>6.9013</td><td>0.2043</td><td>0.3130</td><td>1.6632</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.1619</td><td>1.2032</td><td>0.7179</td><td>6.9436</td><td>0.1859</td><td>0.3036</td><td>1.4936</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.1626</td><td>1.2027</td><td>0.7148</td><td>6.9071</td><td>0.1881</td><td>0.3069</td><td>1.4668</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0651</td><td>1.2708</td><td>0.7299</td><td>11.2697</td><td>0.1630</td><td>0.3046</td><td>1.9686</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/F1_artist_birth_exhibition_combo/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

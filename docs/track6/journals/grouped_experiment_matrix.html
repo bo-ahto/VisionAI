@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track6 그룹형 실험 설계표</title>
+  <style>
+    :root{--paper:#fffdf7;--ink:#1d251f;--line:#d8cdb8;--head:#eadfcd;--chip:#efe8d8}
+    body{margin:0;color:var(--ink);background:#f5efe4;font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.55}
+    main{max-width:1320px;margin:0 auto;padding:34px 22px 72px}
+    header,section{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:24px;margin-top:18px}
+    h1{font-size:42px;margin:0 0 10px;letter-spacing:-.055em}
+    h2{margin:0 0 14px;font-size:24px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{background:var(--head)}
+    code{background:var(--chip);border-radius:6px;padding:2px 5px}
+    .tag{display:inline-block;background:#e5eadc;border-radius:999px;padding:3px 9px;font-weight:700;font-size:12px}
+    .hold{background:#f1dfcf}
+    a{font-weight:800;color:#174f73}
+    ul{margin:8px 0 0 20px;padding:0}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Track6 그룹형 실험 설계표</h1>
+    <p>상사 피드백 기준으로 실험군을 먼저 나누고, 기존 Track6 일지를 각 그룹에 매핑한 표입니다.</p>
+    <p><a href="../planning/grouped_experiment_matrix.md">Markdown 문서 보기</a></p>
+  </header>
+
+  <section>
+    <h2>실험 평가 방식</h2>
+    <table>
+      <thead><tr><th>평가 방식</th><th>의미</th><th>확인하려는 것</th></tr></thead>
+      <tbody>
+        <tr><td><code>Random Split</code></td><td>작품 단위로 train/test를 나눔</td><td>전체 평균 성능과 일반적인 예측 가능성</td></tr>
+        <tr><td><code>GroupKFold by artist</code></td><td>같은 작가가 train/test에 동시에 들어가지 않게 나눔</td><td>작가명으로 성능이 좋아 보이는 문제 방지, 신규 작가 상황에 가까운 검증</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>모델군 통제 기준</h2>
+    <ul>
+      <li>피처 효과를 확인하는 실험은 모델군을 고정합니다.</li>
+      <li>기본 Warm 모델군: <code>Huber</code>, <code>Linear Regression</code>, <code>Ridge</code></li>
+      <li>기본 Cold 모델군: <code>Huber</code>, <code>Quantile-LAD</code>, <code>LightGBM</code></li>
+      <li>적용 대상: 피처 추가, 피처 제거, 피처 조합, 단일 변수 확인 실험</li>
+      <li>예외: 모델 자체를 비교하는 <code><a href='../../../experiments/track6/T6-E014_linear_model_family_compare/experiment_log.html'>T6-E014</a></code>, <code><a href='../../../experiments/track6/T6-E015_warm_nonlinear_model_compare/experiment_log.html'>T6-E015</a></code>, <code><a href='../../../experiments/track6/T6-E016_cold_basic_model_compare/experiment_log.html'>T6-E016</a></code>, <code><a href='../../../experiments/track6/T6-E017_baseline_model_freeze/experiment_log.html'>T6-E017</a></code>, <code><a href='../../../experiments/track6/T6-E034_warm_final_model_compare/experiment_log.html'>T6-E034</a></code>, <code><a href='../../../experiments/track6/T6-E035_cold_final_model_compare/experiment_log.html'>T6-E035</a></code></li>
+      <li>가격 범위, 라우팅, 최종 정책 실험은 선정된 최종 후보 모델을 사용합니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>실험군 요약</h2>
+    <table>
+      <thead><tr><th>실험군</th><th>피처 구성</th><th>목적</th><th>핵심 질문</th></tr></thead>
+      <tbody>
+        <tr><td>Group A</td><td>작품 변수만</td><td>작품 자체 정보의 설명력 확인</td><td>작가명을 모르는 상태에서도 작품 정보만으로 가격을 어느 정도 설명할 수 있는가?</td></tr>
+        <tr><td>Group B</td><td>작가 변수만</td><td>작가 변수의 단독 설명력 탐색</td><td>작품 조건을 통제하지 않은 상태에서도 작가 변수만으로 가격대가 어느 정도 구분되는가?</td></tr>
+        <tr><td>Group C</td><td>작품 기본 피처 묶음 + 작가 변수</td><td>작품 조건을 통제한 뒤 작가 변수의 추가 설명력 확인</td><td>호수·재료·지지체 등 작품 조건을 넣은 뒤에도 작가 변수가 성능을 개선하는가?</td></tr>
+        <tr><td>Group D</td><td>작품 기본 피처 묶음 + 작가명 x 작품 변수 교차항</td><td>작가명에 따라 작품 변수 효과가 달라지는지 확인</td><td>같은 크기·재료·지지체라도 작가명에 따라 가격 프리미엄이 달라지는가?</td></tr>
+        <tr><td>Group E</td><td>작가 메타 묶음/정보량</td><td>작가명 없이 작가 메타 묶음의 설명력 확인</td><td>단일 작가 메타 실험을 반복하지 않고, 생년·경력·국적·활동량·인지도 묶음 또는 결측 정보가 가격 예측에 도움 되는가?</td></tr>
+        <tr><td>Group F</td><td>작품 변수 + 작가 메타 묶음</td><td>작가명을 쓰지 않는 운영 가능 변수 조합 확인</td><td>작품 정보와 작가 메타 묶음을 함께 쓰면 Warm/Cold 예측 성능을 개선할 수 있는가?</td></tr>
+        <tr><td>Group G</td><td>작품 기본 피처 묶음 + 작가 메타 묶음 x 작품 변수 교차항</td><td>작가 메타 조건에 따라 작품 변수 효과가 달라지는지 확인</td><td>같은 크기·재료·지지체의 작품이라도 작가의 경력, 활동량, 인지도에 따라 가격 효과가 달라지는가?</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+
+
+  <section>
+    <h2>작가 중심 신규 실험 가설 리스트</h2>
+    <p>상사 예시를 참고해 새로 만드는 Track6 작가 중심 실험 설계안입니다. 작품 변수만 보는 <code>A</code> 그룹은 참조 정의로 상단에 두고, 작가 중심 검증을 <code>B1</code>부터 시작합니다. <code>C</code>와 <code>D</code>의 피처 구성은 <code>C1 = B1 + A1</code>, <code>D3 = B1 x A8</code>처럼 실험 번호를 조합해 표기합니다. 작가명 한글화와 동명이인 처리는 이미 정제 단계에서 반영된 전제 조건으로 두고 신규 실험 번호에서는 제외합니다. <code>only</code> 단일 변수 실험은 <code>Group B</code>에서만 관리하고, <code>Group E/F</code>는 단일 변수를 반복하지 않고 묶음과 결합 효과만 확인합니다. <code>Group G</code>는 <code>Group D</code>와 겹치지 않도록 작가명 자체가 아니라 작가 메타 묶음과 작품 변수의 교차항만 다룹니다.</p>
+
+
+    <h3>A 그룹 참조 정의</h3>
+    <table>
+      <thead><tr><th>참조 라벨</th><th>제목</th><th>사용 피처</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td>A1</td><td>호수 변수 영향 확인</td><td><code>ln_estimated_ho</code></td><td>호수 단독 영향 확인</td></tr>
+        <tr><td>A2</td><td>실제 크기 정보 추가 실험</td><td><code>width_cm</code>, <code>height_cm</code>, <code>log_area</code>, <code>aspect_ratio</code></td><td>호수 외 실제 크기 효과 확인</td></tr>
+        <tr><td>A3</td><td>크기 대표값 vs 전체 크기 피처 실험</td><td><code>ln_estimated_ho vs width/height/log_area/aspect_ratio</code></td><td>대표 크기와 전체 크기 비교</td></tr>
+        <tr><td>A4</td><td>긴 변/짧은 변 크기 피처 실험</td><td><code>max_side_cm</code>, <code>min_side_cm</code></td><td>면적 대비 긴 변/짧은 변 효과 확인</td></tr>
+        <tr><td>A5</td><td>가로/세로 변수 영향 확인</td><td><code>width_cm</code>, <code>height_cm</code></td><td>가로/세로 단독 추가 효과 확인</td></tr>
+        <tr><td>A6</td><td>면적/로그면적 변수 영향 확인</td><td><code>area_cm2</code>, <code>log_area</code></td><td>면적 표현 방식 효과 확인</td></tr>
+        <tr><td>A7</td><td>가로세로 비율 변수 영향 확인</td><td><code>aspect_ratio</code></td><td>형태 비율 효과 확인</td></tr>
+        <tr><td>A8</td><td>재료 정보 추가 실험</td><td><code>nant_material_idx</code>, <code>nant_tool</code></td><td>재료 효과 확인</td></tr>
+        <tr><td>A9</td><td>난트 재료 분류 그룹화 실험</td><td><code>nant_material_idx</code>, <code>nant_material_group</code></td><td>난트 세분화/그룹화 비교</td></tr>
+        <tr><td>A10</td><td>재료 대분류 변수 영향 확인</td><td><code>medium_category</code></td><td>난트 재료 변수와 중복되어 제외</td></tr>
+        <tr><td>A11</td><td>난트 재료 번호 변수 영향 확인</td><td><code>nant_material_idx</code></td><td>난트 재료 번호 추가 효과 확인</td></tr>
+        <tr><td>A12</td><td>원본 재료 문구 변수 영향 확인</td><td><code>collected_material_raw keyword flags</code></td><td>원본 재료 문구 키워드 효과 확인</td></tr>
+        <tr><td>A13</td><td>지지체 정보 후보 비교 실험</td><td><code>support_category</code>, <code>nant_support</code></td><td>기본 지지체와 난트 지지체 중 최종 후보 확인</td></tr>
+        <tr><td>A14</td><td>지지체 대분류 변수 영향 확인</td><td><code>support_category</code></td><td>난트 지지체와 중복되므로 기준선에서는 제외하고 참고용으로만 확인</td></tr>
+        <tr><td>A15</td><td>난트 지지체 변수 영향 확인</td><td><code>nant_support</code></td><td>난트 지지체 추가 효과 확인</td></tr>
+        <tr><td>A16</td><td>작품 제목 키워드 피처 실험</td><td><code>title_raw keyword flags</code></td><td>작품 유형/에디션 키워드 효과 확인</td></tr>
+        <tr><td>A17</td><td>깊이/3D 정보 추가 실험</td><td><code>depth_cm</code>, <code>has_depth</code>, <code>is_3d_candidate</code></td><td>입체성 정보 효과 확인</td></tr>
+        <tr><td>A18</td><td>깊이 구간화 피처 실험</td><td><code>depth_bucket</code></td><td>깊이 구간화 효과 확인</td></tr>
+        <tr><td>A19</td><td>깊이 변수 영향 확인</td><td><code>depth_cm</code></td><td>깊이 단독 효과 확인</td></tr>
+        <tr><td>A20</td><td>3D 후보 플래그 변수 영향 확인</td><td><code>has_depth</code>, <code>is_3d_candidate</code></td><td>3D 여부 플래그 효과 확인</td></tr>
+        <tr><td>A21</td><td>재료 x 호수 조합 피처 실험</td><td><code>nant_material_idx_x_ho_bucket</code></td><td>같은 호수 내 재료 차이 확인</td></tr>
+        <tr><td>A22</td><td>단계적 피처 선택 절차 실험</td><td><code>size, material, support, depth 계열 후보</code></td><td>작품 변수 후보 축소 절차 확인</td></tr>
+        <tr><td>A23</td><td>Warm/Cold 작품 피처 분리 실험</td><td><code>Warm/Cold feature sets</code></td><td>작품 피처셋 분리 필요성 확인</td></tr>
+        <tr><td>A24</td><td>지지체 x 재료 조합 실험</td><td><code>nant_material_support_bucket</code>, <code>nant_support_nant_tool_bucket</code></td><td>재료와 지지체 조합 효과 확인</td></tr>
+        <tr><td>A25</td><td>재료+지지체 조합 변수 영향 확인</td><td><code>nant_material_support_bucket</code></td><td>재료+지지체 조합 단독 효과 확인</td></tr>
+      </tbody>
+    </table>
+
+    <h3>작가 실험 전제 조건</h3>
+    <table>
+      <thead><tr><th>항목</th><th>현재 처리</th><th>실험 번호 부여 여부</th></tr></thead>
+      <tbody>
+        <tr><td>작가명 한글화</td><td><code>artist_name_ko</code> 기준으로 정제 완료</td><td>별도 실험 번호 제외</td></tr>
+        <tr><td>동명이인 처리</td><td>작가 식별 안정화를 위해 정제 단계에서 반영</td><td>별도 실험 번호 제외</td></tr>
+        <tr><td>작가 ID</td><td>운영 입력값이 아니므로 최종 피처 후보에서 제외</td><td>별도 실험 번호 제외</td></tr>
+        <tr><td>작가명 encoding 방식</td><td>작가명 한글을 모델 입력으로 바꾸는 방식 비교 항목</td><td>B2에서 관리</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group B: 작가 변수만</h3>
+    <p>목적: 작가 변수만으로 가격대가 어느 정도 구분되는지 보는 탐색 실험입니다. 작품 조건을 통제하지 않으므로 <code>B</code> 결과만으로 작가 효과를 확정하지 않고, 본 판단은 <code>Group C</code>에서 합니다.</p>
+    <table>
+      <thead><tr><th>신규 라벨</th><th>피처 구성</th><th>실험 가설</th><th>목적</th><th>기존 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td><code>artist_name_ko only</code></td><td>작가명만으로도 작품 가격대의 일부를 설명할 수 있다</td><td>작가명 단독 설명력 탐색</td><td><a href='../../../experiments/track6/B1_artist_name_only/outputs/result_sheet.html'>B1</a>, T6-E012, T6-E054</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>B2</td><td><code>artist_name_ko encoding 방식</code></td><td>같은 작가명이라도 one-hot, frequency, target mean 처리 방식에 따라 성능이 달라질 수 있다</td><td>작가명 처리 방식 비교</td><td><a href='../../../experiments/track6/B2_artist_name_encoding_compare/outputs/result_sheet.html'>B2</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>B3</td><td><code>artist_meta_birth_year</code></td><td>작가의 생년 또는 세대 정보가 가격 차이를 설명할 수 있다</td><td>세대별 가격대 차이 탐색</td><td>T6-E073</td><td><span class="tag">기존 일지 있음</span></td></tr>
+        <tr><td>B4</td><td><code>artist_meta_career_stage</code></td><td>작가의 경력 단계가 가격 차이를 설명할 수 있다</td><td>경력 단계 단독 효과 탐색</td><td>T6-E075</td><td><span class="tag">기존 일지 있음</span></td></tr>
+        <tr><td>B5</td><td><code>artist_meta_nationality</code></td><td>작가 국적 정보가 가격 차이를 설명할 수 있다</td><td>국적별 가격대 차이 탐색</td><td>T6-E076</td><td><span class="tag">기존 일지 있음</span></td></tr>
+        <tr><td>B6</td><td><code>artist_meta_total_works</code> / <code>for_sale_works</code></td><td>작가의 활동량과 판매 노출량이 가격 예측에 도움 될 수 있다</td><td>활동량 단독 효과 탐색</td><td>T6-E078, T6-E079</td><td><span class="tag">기존 일지 있음</span></td></tr>
+        <tr><td>B7</td><td><code>artist_meta_followers</code> / <code>is_p1</code></td><td>작가의 플랫폼 인지도 정보가 가격 예측에 도움 될 수 있다</td><td>인지도 단독 효과 탐색</td><td>T6-E081, T6-E082</td><td><span class="tag">기존 일지 있음</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group C: 작품 기본 피처 묶음 + 작가 변수</h3>
+    <p>기본 비교 방식은 <code>작품 기본 피처 묶음</code>과 <code>작품 기본 피처 묶음 + 작가 변수</code>입니다.</p>
+    <p>작품 기본 피처 묶음은 <code>ln_estimated_ho + nant_material_idx + nant_tool + nant_support</code>입니다. <code>support_category</code>는 <code>nant_support</code>와 중복되므로 기준선에서 제외하고 참고용 하위 실험에서만 봅니다.</p>
+    <table>
+      <thead><tr><th>신규 라벨</th><th>피처 구성</th><th>실험 가설</th><th>목적</th><th>기존 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>C1</td><td><code>artist_name_ko + size</code></td><td>작가명을 넣은 뒤에도 크기 정보가 가격 예측력을 높일 수 있다</td><td>작가명 통제 후 크기 효과 확인</td><td><a href='../../../experiments/track6/C1_artist_name_plus_size/outputs/result_sheet.html'>C1</a>, T6-E010, T6-E017</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C2</td><td><code>artist_name_ko + material</code></td><td>작가명을 넣은 뒤에도 재료 정보가 가격 예측력을 높일 수 있다</td><td>작가명 통제 후 재료 효과 확인</td><td><a href='../../../experiments/track6/C2_artist_name_plus_material/outputs/result_sheet.html'>C2</a>, T6-E041, T6-E052, T6-E063, T6-E065</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C3</td><td><code>artist_name_ko + support</code></td><td>작가명을 넣은 뒤에도 지지체 정보가 가격 예측력을 높일 수 있다</td><td>작가명 통제 후 지지체 효과 확인</td><td><a href='../../../experiments/track6/C3_artist_name_plus_support/outputs/result_sheet.html'>C3</a>, T6-E042, T6-E059, T6-E064</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C4</td><td><code>artist_name_ko + artwork_year/artwork_age</code></td><td>작가명을 넣은 뒤에도 제작연도 정보가 가격 예측력을 높일 수 있다</td><td>작가명 통제 후 제작 시기 효과 확인</td><td><a href='../../../experiments/track6/C4_artist_name_plus_year/outputs/result_sheet.html'>C4</a>, A4, A4-1</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C5</td><td><code>artist_name_ko + artwork_type</code></td><td>작가명을 넣은 뒤에도 작품 유형 정보가 가격 예측력을 높일 수 있다</td><td>작가명 통제 후 작품 유형 효과 확인</td><td><a href='../../../experiments/track6/C5_artist_name_plus_type/outputs/result_sheet.html'>C5</a>, T6-E049, T6-E066</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C6</td><td><code>artist_name_ko + 작품 기본 피처 묶음</code></td><td>작가명을 넣은 뒤에도 호수, NANT 재료, NANT 지지체 묶음이 가격 예측력을 높일 수 있다</td><td>작가명 통제 후 작품 기본 피처 묶음 효과 확인</td><td><a href='../../../experiments/track6/C6_artist_name_plus_artwork_basic/outputs/result_sheet.html'>C6</a>, T6-E046, T6-E032</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C7</td><td><code>C6 + artwork_year/artwork_age</code></td><td>작가명과 작품 기본 피처를 넣은 뒤에도 제작연도 정보가 가격 예측력을 높일 수 있다</td><td>C6 기준 후 제작 시기 추가 효과 확인</td><td><a href='../../../experiments/track6/C7_artist_name_plus_artwork_basic_year/outputs/result_sheet.html'>C7</a>, C4, A4, A4-1</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C8</td><td><code>C7 + artwork_type</code></td><td>작가명, 작품 기본 피처, 제작연도를 넣은 뒤에도 작품 유형 정보가 가격 예측력을 높일 수 있다</td><td>C7 기준 후 작품 유형 추가 효과 확인</td><td><a href='../../../experiments/track6/C8_artist_name_plus_artwork_basic_year_type/outputs/result_sheet.html'>C8</a>, C5, T6-E049, T6-E066</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C9</td><td><code>C8 + depth/has_depth</code></td><td>작가명과 주요 작품 정보를 넣은 뒤에도 깊이/입체성 정보가 가격 예측력을 높일 수 있다</td><td>C8 기준 후 입체성 추가 효과 확인</td><td><a href='../../../experiments/track6/C9_c8_plus_depth/outputs/result_sheet.html'>C9</a>, T6-E043, T6-E051, T6-E061, T6-E062</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C10</td><td><code>C8 + edition</code></td><td>작가명과 주요 작품 정보를 넣은 뒤에도 에디션 정보가 가격 예측력을 높일 수 있다</td><td>C8 기준 후 에디션 추가 효과 확인</td><td><a href='../../../experiments/track6/C10_c8_plus_edition/outputs/result_sheet.html'>C10</a>, A7</td><td><span class="tag">실행 완료</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group D: 작품 기본 피처 묶음 + 작가명 x 작품 변수 교차항</h3>
+    <p>기본 비교 방식은 <code>작품 기본 피처 묶음 + B1</code>과 <code>작품 기본 피처 묶음 + B1 + 교차항</code>입니다. 작가 메타와 작품 변수의 교차항은 <code>Group G</code>에서 관리합니다.</p>
+    <table>
+      <thead><tr><th>신규 라벨</th><th>교차항</th><th>실험 가설</th><th>목적</th><th>기존 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>D1</td><td>B1 x A1</td><td>같은 호수라도 작가명에 따라 가격대가 다를 수 있다</td><td>작가별 호수 프리미엄 확인</td><td>T6-E025</td><td><span class="tag">기존 일지 있음</span></td></tr>
+        <tr><td>D2</td><td>B1 x A6</td><td>같은 면적이라도 작가명에 따라 가격대가 다를 수 있다</td><td>작가별 면적 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E102_artist_log_area_interaction/experiment_log.html'>T6-E102</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D3</td><td>B1 x A8</td><td>같은 재료라도 작가명에 따라 가격 프리미엄이 다를 수 있다</td><td>작가별 재료 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E103_artist_material_interaction/experiment_log.html'>T6-E103</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D4</td><td>B1 x A15</td><td>같은 난트 지지체라도 작가명에 따라 가격 프리미엄이 다를 수 있다</td><td>작가별 난트 지지체 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E104_artist_support_interaction/experiment_log.html'>T6-E104</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D5</td><td>B1 x A17</td><td>같은 3D/깊이 조건이라도 작가명에 따라 가격 효과가 다를 수 있다</td><td>작가별 입체성 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E105_artist_depth_interaction/experiment_log.html'>T6-E105</a></td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group E: 작가 메타 조합별 묶음</h3>
+    <table>
+      <thead><tr><th>신규 라벨</th><th>피처 구성</th><th>실험 가설</th><th>목적</th><th>기존/신규 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>E1</td><td>B3 + B4</td><td>작가 생년과 경력 단계를 함께 쓰면 세대/경력 가격대 차이를 더 잘 설명할 수 있다</td><td>세대+경력 조합 효과 확인</td><td><a href='../../../experiments/track6/T6-E083_artist_meta_generation_career_bundle/experiment_log.html'>T6-E083</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>E2</td><td>B6 + B7</td><td>작가 활동량과 인지도 정보를 함께 쓰면 시장 노출 효과를 더 잘 설명할 수 있다</td><td>활동량+인지도 조합 효과 확인</td><td><a href='../../../experiments/track6/T6-E084_artist_meta_activity_popularity_bundle/experiment_log.html'>T6-E084</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>E3</td><td>B3 + B4 + B5</td><td>작가 생년, 경력, 국적을 함께 쓰면 기본 작가 프로필 효과를 설명할 수 있다</td><td>기본 작가 프로필 조합 확인</td><td><a href='../../../experiments/track6/T6-E089_artist_meta_basic_profile_bundle/experiment_log.html'>T6-E089</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>E4</td><td>B6 + B7 + <code>artist_meta_missing_flags</code> + <code>artist_meta_completeness_score</code></td><td>활동량/인지도 정보와 정보량 피처를 함께 쓰면 신뢰도 판단에 도움이 될 수 있다</td><td>시장 노출+정보량 조합 확인</td><td><a href='../../../experiments/track6/T6-E090_artist_meta_market_info_bundle/experiment_log.html'>T6-E090</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>E5</td><td>B3 + B4 + B5 + B6 + B7</td><td>작가명 없이 전체 작가 메타 묶음만으로 가격 예측력이 생길 수 있다</td><td>작가명 대체 가능성 최종 확인</td><td><a href='../../../experiments/track6/T6-E091_artist_meta_full_bundle/experiment_log.html'>T6-E091</a></td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group F: 작품 변수 + 작가 메타 조합</h3>
+    <table>
+      <thead><tr><th>신규 라벨</th><th>피처 구성</th><th>실험 가설</th><th>목적</th><th>기존/신규 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>F1</td><td>A1 + E1</td><td>호수와 세대/경력 메타를 함께 쓰면 작가명 없이도 가격 예측력이 높아질 수 있다</td><td>최소 크기+기본 메타 조합 확인</td><td><a href='../../../experiments/track6/T6-E085_ho_generation_career_meta_combo/experiment_log.html'>T6-E085</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>F2</td><td>작품 기본 피처 묶음 + E1</td><td>호수, 난트 재료, 난트 지지체, 세대/경력 메타를 함께 쓰면 Cold 예측력이 개선될 수 있다</td><td>작품 기본 변수+기본 메타 조합 확인</td><td><a href='../../../experiments/track6/T6-E086_artwork_basic_generation_career_meta_combo/experiment_log.html'>T6-E086</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>F3</td><td>작품 기본 피처 묶음 + E2</td><td>작품 기본 변수와 활동량/인지도 메타를 함께 쓰면 시장 노출 효과를 반영할 수 있다</td><td>작품 기본 변수+시장 노출 메타 조합 확인</td><td><a href='../../../experiments/track6/T6-E087_artwork_basic_activity_popularity_meta_combo/experiment_log.html'>T6-E087</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>F4</td><td>작품 기본 피처 묶음 + E3</td><td>작품 기본 변수와 기본 작가 프로필을 함께 쓰면 운영 가능한 Cold 후보가 될 수 있다</td><td>운영 가능 기본 프로필 조합 확인</td><td><a href='../../../experiments/track6/T6-E088_artwork_basic_profile_meta_combo/experiment_log.html'>T6-E088</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>F5</td><td>작품 기본 피처 묶음 + E4</td><td>작품 기본 변수에 시장 노출/정보량 피처를 더하면 큰 오차 구간을 줄일 수 있다</td><td>신뢰도/결측 보정 후보 확인</td><td><a href='../../../experiments/track6/T6-E092_artwork_basic_market_info_combo/experiment_log.html'>T6-E092</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>F6</td><td>A2 + A5 + A6 + A7 + E5</td><td>실제 크기 정보와 전체 작가 메타 묶음을 함께 쓰면 호수 중심 모델보다 안정적일 수 있다</td><td>크기 확장+전체 메타 효과 확인</td><td><a href='../../../experiments/track6/T6-E093_full_size_full_artist_meta_combo/experiment_log.html'>T6-E093</a></td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group G: 작품 기본 피처 묶음 + 작가 메타 묶음 x 작품 변수 교차항</h3>
+    <p>기본 비교 방식은 <code>작품 기본 피처 묶음 + E묶음</code>과 <code>작품 기본 피처 묶음 + E묶음 + 교차항</code>입니다. 작가명 자체를 쓰지 않고 작가 메타와 작품 변수의 조합 효과만 봅니다.</p>
+    <table>
+      <thead><tr><th>신규 라벨</th><th>교차항</th><th>실험 가설</th><th>목적</th><th>기존/신규 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>G1</td><td>E1 x A1</td><td>작가의 세대/경력 단계에 따라 호수 효과가 다르게 나타날 수 있다</td><td>세대/경력별 호수 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E094_generation_career_x_ho_interaction/experiment_log.html'>T6-E094</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>G2</td><td>E1 x A8</td><td>작가의 세대/경력 단계에 따라 재료 효과가 다르게 나타날 수 있다</td><td>세대/경력별 재료 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E095_generation_career_x_material_interaction/experiment_log.html'>T6-E095</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>G3</td><td>E1 x A15</td><td>작가의 세대/경력 단계에 따라 난트 지지체 효과가 다르게 나타날 수 있다</td><td>세대/경력별 난트 지지체 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E096_generation_career_x_support_interaction/experiment_log.html'>T6-E096</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>G4</td><td>E2 x A1</td><td>작가의 활동량/인지도에 따라 호수 효과가 다르게 나타날 수 있다</td><td>활동량/인지도별 호수 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E097_activity_popularity_x_ho_interaction/experiment_log.html'>T6-E097</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>G5</td><td>E2 x A6</td><td>작가의 활동량/인지도에 따라 면적 효과가 다르게 나타날 수 있다</td><td>활동량/인지도별 대형작 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E098_activity_popularity_x_area_interaction/experiment_log.html'>T6-E098</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>G6</td><td>E3 x A8</td><td>작가 기본 프로필에 따라 재료 효과가 다르게 나타날 수 있다</td><td>기본 프로필별 재료 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E099_profile_meta_x_material_interaction/experiment_log.html'>T6-E099</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>G7</td><td>E4 x A17</td><td>작가의 시장 노출/정보량에 따라 입체성 효과가 다르게 나타날 수 있다</td><td>정보량별 3D/깊이 효과 확인</td><td><a href='../../../experiments/track6/T6-E100_market_info_x_depth_interaction/experiment_log.html'>T6-E100</a></td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>상사 예시 기준 기존 일지 참고 매핑표</h2>
+    <p><code>A1</code>, <code>B1</code>, <code>C1</code>, <code>D1</code>은 상사가 작성한 예시 기준을 참고한 매핑이고, <code>T6-E###</code>는 실제 Track6 실험 일지 번호입니다. 정확히 맞지 않는 실험은 부분 매칭 또는 기타 실험으로 분리했습니다.</p>
+
+    <h3>Group A: 작품 변수만</h3>
+    <table>
+      <thead><tr><th>상사 라벨</th><th>피처 구성</th><th>목적</th><th>매칭된 Track6 일지</th><th>매칭 판단</th></tr></thead>
+      <tbody>
+        <tr><td>A1</td><td>크기만</td><td>작품 크기 효과 확인</td><td>T6-E039, T6-E040, T6-E047, T6-E053, T6-E055, T6-E056, T6-E057</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>A2</td><td>재료만</td><td>재료 효과 확인</td><td>T6-E041, T6-E052, T6-E063, T6-E065</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>A3</td><td>지지체만</td><td>지지체 효과 확인</td><td>T6-E042, T6-E059, T6-E064</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>A4</td><td>제작연도만</td><td>제작 시기 효과 확인</td><td><a href='../../../experiments/track6/BLOCK-A4_artwork_year_column_required/experiment_log.html'>BLOCK-A4</a></td><td><span class="tag hold">보류 일지 있음</span></td></tr>
+        <tr><td>A5</td><td>작품 유형만</td><td>회화/판화/조각 차이 확인</td><td>T6-E049, T6-E066</td><td><span class="tag hold">부분 매칭</span></td></tr>
+        <tr><td>A6</td><td>depth / has_depth</td><td>입체성 정보 효과 확인</td><td>T6-E043, T6-E051, T6-E061, T6-E062</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>A7</td><td>edition / signed</td><td>에디션·서명 효과 확인</td><td>T6-E049, T6-E066</td><td><span class="tag hold">부분 매칭</span></td></tr>
+        <tr><td>A8</td><td>크기 + 재료</td><td>물리 크기와 재료 결합 효과 확인</td><td>T6-E044, T6-E024</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>A9</td><td>작품 기본 피처 묶음</td><td>호수 + 난트 재료 + 난트 지지체 기준의 기본 작품 물성 모델</td><td>T6-E045, T6-E046, T6-E026, T6-E060</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>A10</td><td>작품 기본 피처 묶음 + 제작연도</td><td>제작 시기 반영</td><td><a href='../../../experiments/track6/A10_basic_artwork_features_plus_year/outputs/result_sheet.html'>A10</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>A11</td><td>작품 기본 피처 묶음 + 제작연도 + 작품 유형</td><td>작품 자체 정보 전체 모델</td><td><a href='../../../experiments/track6/A11_basic_artwork_features_plus_type/outputs/result_sheet.html'>A11</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>A12</td><td>작품 기본 피처 묶음 + 제작연도 + 작품 유형 + depth/has_depth + edition</td><td>작품 정보 전체 모델 확장</td><td><a href='../../../experiments/track6/A12_full_artwork_features_expanded/outputs/result_sheet.html'>A12</a></td><td><span class="tag">실행 완료</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group B: 작가 변수만</h3>
+    <table>
+      <thead><tr><th>상사 라벨</th><th>피처 구성</th><th>목적</th><th>매칭된 Track6 일지</th><th>매칭 판단</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td>artist_name only</td><td>작가명 하나로 가격이 얼마나 설명되는지 확인</td><td><a href='../../../experiments/track6/B1_artist_name_only/outputs/result_sheet.html'>B1</a>, T6-E012, T6-E054</td><td><span class="tag">매칭, 실행 완료</span></td></tr>
+        <tr><td>B2</td><td>artist_name encoding 방식 비교</td><td>작가명을 어떤 방식으로 모델 입력화할지 확인</td><td><a href='../../../experiments/track6/B2_artist_name_encoding_compare/outputs/result_sheet.html'>B2</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>B3</td><td>artist_meta_birth_year</td><td>작가 생년/세대 효과 확인</td><td>T6-E073</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>B4</td><td>artist_meta_career_stage</td><td>작가 경력 단계 효과 확인</td><td>T6-E075</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>B5</td><td>artist_meta_nationality</td><td>국적 정보 효과 확인</td><td>T6-E076</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>B6</td><td>total_works / for_sale_works</td><td>작가 활동량·시장 노출 효과 확인</td><td>T6-E078, T6-E079</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>B7</td><td>followers / is_p1</td><td>작가 인지도/플랫폼 주요 작가 효과 확인</td><td>T6-E081, T6-E082</td><td><span class="tag">매칭</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group C: 작품 기본 피처 묶음 + 작가 변수</h3>
+    <table>
+      <thead><tr><th>상사 라벨</th><th>피처 구성</th><th>목적</th><th>매칭된 Track6 일지</th><th>매칭 판단</th></tr></thead>
+      <tbody>
+        <tr><td>C1</td><td>작가명 + 크기</td><td>작가 통제 후 크기 효과 확인</td><td><a href='../../../experiments/track6/C1_artist_name_plus_size/outputs/result_sheet.html'>C1</a>, T6-E010, T6-E017, T6-E040, T6-E047, T6-E055, T6-E056, T6-E057</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C2</td><td>작가명 + 재료</td><td>작가 통제 후 재료 효과 확인</td><td><a href='../../../experiments/track6/C2_artist_name_plus_material/outputs/result_sheet.html'>C2</a>, T6-E041, T6-E052, T6-E063, T6-E065</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C3</td><td>작가명 + 지지체</td><td>작가 통제 후 지지체 효과 확인</td><td><a href='../../../experiments/track6/C3_artist_name_plus_support/outputs/result_sheet.html'>C3</a>, T6-E042, T6-E059, T6-E064</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C4</td><td>작가명 + 제작연도</td><td>작가 통제 후 제작연도 효과 확인</td><td><a href='../../../experiments/track6/C4_artist_name_plus_year/outputs/result_sheet.html'>C4</a>, A4, A4-1</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C5</td><td>작가명 + 작품 유형</td><td>작가 통제 후 작품 유형 효과 확인</td><td><a href='../../../experiments/track6/C5_artist_name_plus_type/outputs/result_sheet.html'>C5</a>, T6-E049, T6-E066</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C6</td><td>작가명 + 작품 기본 피처 묶음</td><td>작가 통제 후 기본 물성 효과 확인</td><td>T6-E046, T6-E032</td><td><span class="tag">매칭</span></td></tr>
+        <tr><td>C7</td><td>C6 + 제작연도</td><td>제작 시기 추가 효과 확인</td><td><a href='../../../experiments/track6/BLOCK-A4_artwork_year_column_required/experiment_log.html'>BLOCK-A4</a></td><td><span class="tag hold">보류 일지 있음</span></td></tr>
+        <tr><td>C8</td><td>C7 + 작품 유형</td><td>작품 정보 전체 모델</td><td>없음</td><td><span class="tag hold">구조화 필요</span></td></tr>
+        <tr><td>C9</td><td>C8 + depth/has_depth</td><td>입체성 추가 효과 확인</td><td><a href='../../../experiments/track6/C9_c8_plus_depth/outputs/result_sheet.html'>C9</a>, T6-E043, T6-E051, T6-E061, T6-E062</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C10</td><td>C8 + edition</td><td>에디션 추가 효과 확인. 서명 변수는 수집 컬럼이 없어 제외</td><td><a href='../../../experiments/track6/C10_c8_plus_edition/outputs/result_sheet.html'>C10</a>, A7</td><td><span class="tag">실행 완료</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group D: 교차항</h3>
+    <table>
+      <thead><tr><th>상사 라벨</th><th>교차항</th><th>목적</th><th>매칭된 Track6 일지</th><th>매칭 판단</th></tr></thead>
+      <tbody>
+        <tr><td>D1</td><td>log_area x material</td><td>큰 유화, 큰 아크릴 등의 프리미엄 확인</td><td><a href='../../../experiments/track6/D1_log_area_material_numeric_interaction/outputs/result_sheet.html'>D1</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D2</td><td>log_area x support</td><td>큰 캔버스, 큰 종이 작품 차이 확인</td><td><a href='../../../experiments/track6/D2_log_area_support_numeric_interaction/outputs/result_sheet.html'>D2</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D3</td><td>material x support</td><td>oil on canvas, ink on paper 조합 효과 확인</td><td><a href='../../../experiments/track6/D3_material_support_categorical_interaction/outputs/result_sheet.html'>D3</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D4</td><td>artwork_age x material</td><td>오래된 특정 재료의 가치 확인</td><td><a href='../../../experiments/track6/D4_artwork_age_material_numeric_interaction/outputs/result_sheet.html'>D4</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D5</td><td>artwork_age x support</td><td>오래된 종이/캔버스의 차이 확인</td><td><a href='../../../experiments/track6/D5_artwork_age_support_numeric_interaction/outputs/result_sheet.html'>D5</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D6</td><td>depth x artwork_type</td><td>조각/입체작에서 depth 효과 확인</td><td><a href='../../../experiments/track6/D6_depth_artwork_type_numeric_interaction/outputs/result_sheet.html'>D6</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D7</td><td>비워둠</td><td>상사 표 기준 미정 항목</td><td>없음</td><td><span class="tag hold">보류</span></td></tr>
+        <tr><td>D8</td><td>artist_name x log_area</td><td>작가별 대형작 프리미엄 확인</td><td><a href='../../../experiments/track6/D8_artist_log_area_numeric_interaction/outputs/result_sheet.html'>D8</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D9</td><td>artist_name x material</td><td>특정 작가의 특정 재료 프리미엄 확인</td><td><a href='../../../experiments/track6/D9_artist_material_categorical_interaction/outputs/result_sheet.html'>D9</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D10</td><td>artist_name x support</td><td>특정 작가의 특정 지지체 프리미엄 확인</td><td><a href='../../../experiments/track6/D10_artist_support_categorical_interaction/outputs/result_sheet.html'>D10</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D11</td><td>artist_name x artwork_age</td><td>작가별 특정 시기 작품 가치 확인</td><td><a href='../../../experiments/track6/D11_artist_artwork_age_numeric_interaction/outputs/result_sheet.html'>D11</a></td><td><span class="tag">실행 완료</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>기타 실험</h3>
+    <table>
+      <thead><tr><th>구분</th><th>Track6 일지</th><th>기타로 분리한 이유</th></tr></thead>
+      <tbody>
+        <tr><td>모델 비교</td><td>T6-E014, T6-E015, T6-E016, T6-E017, T6-E034, T6-E035</td><td>상사 라벨은 피처 실험 중심이고, 해당 일지는 모델군 비교/선정 목적</td></tr>
+        <tr><td>Cold 전용 모델</td><td>T6-E029, T6-E033, T6-E035</td><td>작가명 없이 신규 작가를 예측하는 Cold 전용 실험이라 A/B/C/D 피처표와 목적이 다름</td></tr>
+        <tr><td>라우팅/정책</td><td>T6-E030, T6-E031, T6-E036, T6-E037</td><td>피처 효과보다 Warm/Cold 분기, 위험 구간, 가격 범위 정책 확인 목적</td></tr>
+        <tr><td>데이터 품질/운영 리스크</td><td>AX1~AX8</td><td>작가명 정제, 동명이인, 작가 DB 커버리지 등 실험 운영 품질 검증 목적</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Group A: 작품 변수만</h2>
+    <table>
+      <thead><tr><th>실험</th><th>사용 피처</th><th>목적</th><th>기존 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>A1</td><td>호수, 가로, 세로, 면적, 로그면적, 비율, 긴 변/짧은 변</td><td>작품 크기 효과 확인</td><td><a href='../../../experiments/track6/T6-E039_ho_signal_baseline/experiment_log.html'>T6-E039</a>, <a href='../../../experiments/track6/T6-E040_actual_size_feature_group/experiment_log.html'>E040</a>, <a href='../../../experiments/track6/T6-E047_size_representative_vs_full/experiment_log.html'>E047</a>, <a href='../../../experiments/track6/T6-E053_max_min_side_size_feature/experiment_log.html'>E053</a>, <a href='../../../experiments/track6/T6-E055_width_height_variable_check/experiment_log.html'>E055</a>, <a href='../../../experiments/track6/T6-E056_area_log_area_variable_check/experiment_log.html'>E056</a>, <a href='../../../experiments/track6/T6-E057_aspect_ratio_variable_check/experiment_log.html'>E057</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>A2</td><td>재료, 난트 재료 번호, 난트 도구, 원본 재료 문구</td><td>재료 효과 확인</td><td><a href='../../../experiments/track6/T6-E041_material_feature_group/experiment_log.html'>T6-E041</a>, <a href='../../../experiments/track6/T6-E052_nant_material_grouping/experiment_log.html'>E052</a>, <a href='../../../experiments/track6/T6-E058_medium_category_variable_check/experiment_log.html'>E058</a>, <a href='../../../experiments/track6/T6-E063_nant_material_idx_variable_check/experiment_log.html'>E063</a>, <a href='../../../experiments/track6/T6-E065_raw_material_text_variable_check/experiment_log.html'>E065</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>A3</td><td>지지체, 난트 지지체</td><td>지지체 효과 확인</td><td><a href='../../../experiments/track6/T6-E042_support_feature_group/experiment_log.html'>T6-E042</a>, <a href='../../../experiments/track6/T6-E059_support_category_variable_check/experiment_log.html'>E059</a>, <a href='../../../experiments/track6/T6-E064_nant_support_tool_variable_check/experiment_log.html'>E064</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>A4</td><td>제작연도</td><td>제작 시기 효과 확인</td><td><a href='../../../experiments/track6/BLOCK-A4_artwork_year_column_required/experiment_log.html'>BLOCK-A4</a></td><td><span class="tag hold">보류 일지 있음</span></td></tr>
+        <tr><td>A5</td><td>작품 유형, 제목 기반 유형 키워드</td><td>회화/판화/조각/에디션 등 유형 차이 확인</td><td><a href='../../../experiments/track6/T6-E049_title_keyword_feature/experiment_log.html'>T6-E049</a>, <a href='../../../experiments/track6/T6-E066_title_text_variable_check/experiment_log.html'>E066</a></td><td><span class="tag hold">파생 필요</span></td></tr>
+        <tr><td>A6</td><td>깊이, 깊이 존재 여부, 3D 후보 여부</td><td>입체성 정보 효과 확인</td><td><a href='../../../experiments/track6/T6-E043_depth_3d_feature_group/experiment_log.html'>T6-E043</a>, <a href='../../../experiments/track6/T6-E051_depth_bucket_feature/experiment_log.html'>E051</a>, <a href='../../../experiments/track6/T6-E061_depth_variable_check/experiment_log.html'>E061</a>, <a href='../../../experiments/track6/T6-E062_three_d_flag_variable_check/experiment_log.html'>E062</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>A7</td><td>edition, signed</td><td>에디션/서명 효과 확인</td><td><a href='../../../experiments/track6/T6-E049_title_keyword_feature/experiment_log.html'>T6-E049</a>, <a href='../../../experiments/track6/T6-E066_title_text_variable_check/experiment_log.html'>E066</a></td><td><span class="tag hold">파생 필요</span></td></tr>
+        <tr><td>A8</td><td>크기 + 재료</td><td>물리 크기와 재료 결합 효과 확인</td><td><a href='../../../experiments/track6/T6-E044_material_size_interaction/experiment_log.html'>T6-E044</a>, <a href='../../../experiments/track6/T6-E024_material_ho_interaction/experiment_log.html'>E024</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>A9</td><td>작품 기본 피처 묶음</td><td>호수 + 난트 재료 + 난트 지지체 기준의 기본 작품 물성 모델 확인</td><td><a href='../../../experiments/track6/T6-E045_staged_feature_selection/experiment_log.html'>T6-E045</a>, <a href='../../../experiments/track6/T6-E046_warm_cold_feature_split/experiment_log.html'>E046</a>, <a href='../../../experiments/track6/T6-E026_support_material_interaction/experiment_log.html'>E026</a>, <a href='../../../experiments/track6/T6-E060_medium_support_bucket_variable_check/experiment_log.html'>E060</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>A10</td><td>작품 기본 피처 묶음 + 제작연도</td><td>제작 시기 반영</td><td><a href='../../../experiments/track6/A10_basic_artwork_features_plus_year/outputs/result_sheet.html'>A10</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>A11</td><td>작품 기본 피처 묶음 + 제작연도 + 작품 유형</td><td>작품 자체 정보 전체 모델</td><td><a href='../../../experiments/track6/A11_basic_artwork_features_plus_type/outputs/result_sheet.html'>A11</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>A12</td><td>작품 기본 피처 묶음 + 제작연도 + 작품 유형 + depth/has_depth + edition</td><td>작품 정보 전체 모델 확장</td><td><a href='../../../experiments/track6/A12_full_artwork_features_expanded/outputs/result_sheet.html'>A12</a></td><td><span class="tag">실행 완료</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Group B: 작가 변수만</h2>
+    <table>
+      <thead><tr><th>실험</th><th>사용 피처</th><th>목적</th><th>기존 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td>작가명 한글</td><td>작가명 자체 효과 확인</td><td><a href='../../../experiments/track6/T6-E012_artist_only_warm_baseline/experiment_log.html'>T6-E012</a>, <a href='../../../experiments/track6/T6-E054_artist_name_variable_check/experiment_log.html'>E054</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B2</td><td>작가명 처리 방식</td><td>one-hot / frequency / target mean / smoothed target mean 비교</td><td><a href='../../../experiments/track6/B2_artist_name_encoding_compare/outputs/result_sheet.html'>B2</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>B3</td><td>작가 생년</td><td>작가 세대/연령 효과 확인</td><td><a href='../../../experiments/track6/T6-E073_artist_birth_year_variable_check/experiment_log.html'>T6-E073</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B4</td><td>작가 국적</td><td>국적 효과 확인</td><td><a href='../../../experiments/track6/T6-E076_artist_nationality_variable_check/experiment_log.html'>T6-E076</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B5</td><td>작가 경력 단계</td><td>경력 단계 효과 확인</td><td><a href='../../../experiments/track6/T6-E075_artist_career_stage_variable_check/experiment_log.html'>T6-E075</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B6</td><td>등록 작품 수, 판매 중 작품 수, 팔로워 수, 주요 작가 여부</td><td>활동량/인지도 효과 확인</td><td><a href='../../../experiments/track6/T6-E078_artist_total_works_variable_check/experiment_log.html'>T6-E078</a>, <a href='../../../experiments/track6/T6-E079_artist_for_sale_works_variable_check/experiment_log.html'>E079</a>, <a href='../../../experiments/track6/T6-E081_artist_followers_variable_check/experiment_log.html'>E081</a>, <a href='../../../experiments/track6/T6-E082_artist_p1_flag_variable_check/experiment_log.html'>E082</a></td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Group C: 작품 기본 피처 묶음 + 작가 변수</h2>
+    <table>
+      <thead><tr><th>실험</th><th>사용 피처</th><th>목적</th><th>기존 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>C1</td><td>작가명 + 크기</td><td>Warm에서 작가명 통제 후 크기 효과 확인</td><td><a href='../../../experiments/track6/C1_artist_name_plus_size/outputs/result_sheet.html'>C1</a>, <a href='../../../experiments/track6/T6-E010_hedonic_artist_ho_log/experiment_log.html'>T6-E010</a>, <a href='../../../experiments/track6/T6-E014_linear_model_family_compare/experiment_log.html'>E014</a>, <a href='../../../experiments/track6/T6-E015_warm_nonlinear_model_compare/experiment_log.html'>E015</a>, <a href='../../../experiments/track6/T6-E017_baseline_model_freeze/experiment_log.html'>E017</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C2</td><td>작품 기본 피처 묶음 + 작가명 + 크기 묶음</td><td>작품 조건 통제 후 크기 효과 확인</td><td><a href='../../../experiments/track6/T6-E040_actual_size_feature_group/experiment_log.html'>T6-E040</a>, <a href='../../../experiments/track6/T6-E047_size_representative_vs_full/experiment_log.html'>E047</a>, <a href='../../../experiments/track6/T6-E055_width_height_variable_check/experiment_log.html'>E055</a>, <a href='../../../experiments/track6/T6-E056_area_log_area_variable_check/experiment_log.html'>E056</a>, <a href='../../../experiments/track6/T6-E057_aspect_ratio_variable_check/experiment_log.html'>E057</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>C3</td><td>작품 기본 피처 묶음 + 작가명 + 난트 재료/지지체</td><td>작품 조건 통제 후 작품 물성 효과 확인</td><td><a href='../../../experiments/track6/T6-E041_material_feature_group/experiment_log.html'>T6-E041</a>, <a href='../../../experiments/track6/T6-E042_support_feature_group/experiment_log.html'>E042</a>, <a href='../../../experiments/track6/T6-E046_warm_cold_feature_split/experiment_log.html'>E046</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>C4</td><td>작가명 + 작품 변수 + 작가 메타</td><td>작가 메타가 Warm 성능을 추가 개선하는지 확인</td><td><a href='../../../experiments/track6/T6-E027_artist_meta_basic_features/experiment_log.html'>T6-E027</a>, <a href='../../../experiments/track6/T6-E028_artist_activity_features/experiment_log.html'>E028</a>, <a href='../../../experiments/track6/T6-E032_warm_candidate_feature_set_compare/experiment_log.html'>E032</a>, <a href='../../../experiments/track6/T6-E073_artist_birth_year_variable_check/experiment_log.html'>E073</a>~<a href='../../../experiments/track6/T6-E082_artist_p1_flag_variable_check/experiment_log.html'>E082</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>C5</td><td>Cold용 작품 변수 모델</td><td>작가명 없이 신규 작가 예측 후보 확인</td><td><a href='../../../experiments/track6/T6-E016_cold_basic_model_compare/experiment_log.html'>T6-E016</a>, <a href='../../../experiments/track6/T6-E029_cold_material_size_model/experiment_log.html'>E029</a>, <a href='../../../experiments/track6/T6-E033_cold_candidate_feature_set_compare/experiment_log.html'>E033</a>, <a href='../../../experiments/track6/T6-E035_cold_final_model_compare/experiment_log.html'>E035</a></td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>작가 관련 실험 순서표</h2>
+    <p>작품 변수 표와 같은 방식으로, 작가 관련 실험을 <code>작가 변수 단독 탐색</code> → <code>작품 기본 피처 묶음 + 작가 변수</code> → <code>작가명/작가 메타와 작품 변수의 교차항</code> 순서로 정리한 표입니다.</p>
+
+    <h3>작가 실험 평가 방식</h3>
+    <table>
+      <thead><tr><th>평가 방식</th><th>목적</th><th>주의점</th></tr></thead>
+      <tbody>
+        <tr><td><code>Random Split</code></td><td>전체 평균 성능과 작가 정보의 단기 설명력 확인</td><td>같은 작가가 train/test에 섞이면 작가명 효과가 과대평가될 수 있음</td></tr>
+        <tr><td><code>GroupKFold by artist</code></td><td>작가명이 섞였을 때 생기는 착시 성능 방지</td><td>신규 작가 상황에 가까우므로 Warm 성능과 따로 해석</td></tr>
+        <tr><td><code>Warm Test</code></td><td>학습 데이터에 같은 작가가 있는 작품 예측</td><td>작가명, 작가별 학습 이력 수, 작가별 과거 패턴 사용 가능</td></tr>
+        <tr><td><code>Cold Test</code></td><td>학습 데이터에 없는 작가 작품 예측</td><td>작가명 자체는 사용하지 않고, 운영에서 확보 가능한 작가 메타만 별도 검토</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group B: 작가 변수만</h3>
+    <table>
+      <thead><tr><th>실험</th><th>사용 피처</th><th>목적</th><th>기존 일지</th><th>적용 범위</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td>작가명 한글 only</td><td>작가명 하나만으로 가격대가 얼마나 설명되는지 확인</td><td><a href='../../../experiments/track6/T6-E012_artist_only_warm_baseline/experiment_log.html'>T6-E012</a>, <a href='../../../experiments/track6/T6-E054_artist_name_variable_check/experiment_log.html'>T6-E054</a></td><td>Warm 전용</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B2</td><td><code>artist_name_ko encoding 방식</code></td><td>작가명 입력 방식을 바꾸면 Warm 예측 성능이 달라지는지 확인</td><td><a href='../../../experiments/track6/B2_artist_name_encoding_compare/outputs/result_sheet.html'>B2</a></td><td>Warm 중심, Cold 참고</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>B3</td><td><code>artist_meta_birth_year</code></td><td>작가 생년/세대가 가격 설명에 도움 되는지 확인</td><td><a href='../../../experiments/track6/T6-E073_artist_birth_year_variable_check/experiment_log.html'>T6-E073</a></td><td>Warm / Cold 모두 가능, 메타 필요</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B4</td><td><code>career_stage</code></td><td>작가 경력 단계가 가격 설명에 도움 되는지 확인</td><td><a href='../../../experiments/track6/T6-E075_artist_career_stage_variable_check/experiment_log.html'>T6-E075</a></td><td>Warm / Cold 모두 가능, 메타 필요</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B5</td><td><code>artist_meta_nationality</code></td><td>국적 정보가 가격 차이를 설명하는지 확인</td><td><a href='../../../experiments/track6/T6-E076_artist_nationality_variable_check/experiment_log.html'>T6-E076</a></td><td>Warm / Cold 모두 가능, 메타 필요</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B6</td><td>등록 작품 수, 판매 중 작품 수</td><td>활동량/시장 노출 효과 확인</td><td><a href='../../../experiments/track6/T6-E078_artist_total_works_variable_check/experiment_log.html'>T6-E078</a>, <a href='../../../experiments/track6/T6-E079_artist_for_sale_works_variable_check/experiment_log.html'>T6-E079</a></td><td>Warm / Cold 모두 가능, 외부 수집값 필요</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B7</td><td>팔로워 수, 주요 작가 여부</td><td>인지도/플랫폼 주요 작가 효과 확인</td><td><a href='../../../experiments/track6/T6-E081_artist_followers_variable_check/experiment_log.html'>T6-E081</a>, <a href='../../../experiments/track6/T6-E082_artist_p1_flag_variable_check/experiment_log.html'>T6-E082</a></td><td>Warm / Cold 모두 가능, 외부 수집값 필요</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>B8</td><td>작가 메타 결측 여부 flag</td><td>메타 정보가 없는 작가 자체가 오차 증가와 관련 있는지 확인</td><td><a href='../../../experiments/track6/T6-E106_artist_meta_missing_flag_check/experiment_log.html'>T6-E106</a></td><td>Warm / Cold 모두 가능</td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group C: 작품 기본 피처 묶음 + 작가 변수</h3>
+    <table>
+      <thead><tr><th>실험</th><th>사용 피처</th><th>목적</th><th>기존 일지</th><th>적용 범위</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>C1</td><td>작가명 + 크기</td><td>작가명과 크기 조합의 추가 효과 확인</td><td><a href='../../../experiments/track6/C1_artist_name_plus_size/outputs/result_sheet.html'>C1</a>, <a href='../../../experiments/track6/T6-E010_hedonic_artist_ho_log/experiment_log.html'>T6-E010</a>, <a href='../../../experiments/track6/T6-E014_linear_model_family_compare/experiment_log.html'>T6-E014</a>, <a href='../../../experiments/track6/T6-E015_warm_nonlinear_model_compare/experiment_log.html'>T6-E015</a>, <a href='../../../experiments/track6/T6-E017_baseline_model_freeze/experiment_log.html'>T6-E017</a></td><td>Warm 중심</td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>C2</td><td>작품 기본 피처 묶음 + 작가명 + 크기 묶음</td><td>작품 조건을 통제한 뒤 실제 크기 표현의 효과 확인</td><td><a href='../../../experiments/track6/T6-E040_actual_size_feature_group/experiment_log.html'>T6-E040</a>, <a href='../../../experiments/track6/T6-E047_size_representative_vs_full/experiment_log.html'>T6-E047</a>, <a href='../../../experiments/track6/T6-E055_width_height_variable_check/experiment_log.html'>T6-E055</a>~<a href='../../../experiments/track6/T6-E057_aspect_ratio_variable_check/experiment_log.html'>T6-E057</a></td><td>Warm 중심</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>C3</td><td>작가명 + 난트 재료</td><td>특정 작가의 특정 재료가 가격 설명에 도움 되는지 확인</td><td><a href='../../../experiments/track6/T6-E041_material_feature_group/experiment_log.html'>T6-E041</a>, <a href='../../../experiments/track6/T6-E052_nant_material_grouping/experiment_log.html'>T6-E052</a>, <a href='../../../experiments/track6/T6-E063_nant_material_idx_variable_check/experiment_log.html'>T6-E063</a></td><td>Warm 중심</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>C4</td><td>작가명 + 지지체</td><td>특정 작가의 지지체 사용 차이가 가격 설명에 도움 되는지 확인</td><td><a href='../../../experiments/track6/T6-E042_support_feature_group/experiment_log.html'>T6-E042</a>, <a href='../../../experiments/track6/T6-E059_support_category_variable_check/experiment_log.html'>T6-E059</a>, <a href='../../../experiments/track6/T6-E064_nant_support_tool_variable_check/experiment_log.html'>T6-E064</a></td><td>Warm 중심</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>C5</td><td>작가명 + 제작연도</td><td>작가별 특정 시기 작품 가치 차이 확인</td><td><a href='../../../experiments/track6/BLOCK-A4_artwork_year_column_required/experiment_log.html'>BLOCK-A4</a></td><td>Warm 중심, 제작연도 필요</td><td><span class="tag hold">보류 일지 있음</span></td></tr>
+        <tr><td>C6</td><td>작가명 + 작품 유형</td><td>작가별 회화/판화/조각 등 유형 차이 확인</td><td><a href='../../../experiments/track6/T6-E049_title_keyword_feature/experiment_log.html'>T6-E049</a>, <a href='../../../experiments/track6/T6-E066_title_text_variable_check/experiment_log.html'>T6-E066</a> 일부</td><td>Warm 중심, 유형 파생 필요</td><td><span class="tag hold">부분 준비</span></td></tr>
+        <tr><td>C7</td><td>작가명 + 작품 기본 피처 묶음</td><td>작가를 통제한 기본 작품 물성 모델 확인</td><td><a href='../../../experiments/track6/T6-E046_warm_cold_feature_split/experiment_log.html'>T6-E046</a>, <a href='../../../experiments/track6/T6-E032_warm_candidate_feature_set_compare/experiment_log.html'>T6-E032</a></td><td>Warm 중심</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>C8</td><td>C7 + 작가 메타</td><td>작품 정보에 작가 메타를 추가했을 때 성능이 더 좋아지는지 확인</td><td><a href='../../../experiments/track6/T6-E027_artist_meta_basic_features/experiment_log.html'>T6-E027</a>, <a href='../../../experiments/track6/T6-E028_artist_activity_features/experiment_log.html'>T6-E028</a>, <a href='../../../experiments/track6/T6-E073_artist_birth_year_variable_check/experiment_log.html'>T6-E073</a>~<a href='../../../experiments/track6/T6-E082_artist_p1_flag_variable_check/experiment_log.html'>T6-E082</a></td><td>Warm / Cold 메타 비교</td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Group D: 작품 기본 피처 묶음 + 작가명 x 작품 변수 교차항</h3>
+    <table>
+      <thead><tr><th>실험</th><th>교차항</th><th>목적</th><th>기존 일지</th><th>적용 범위</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>D1</td><td><code>artist_name x ho_bucket</code></td><td>작가별 크기 가격대 차이 확인</td><td><a href='../../../experiments/track6/T6-E025_artist_ho_interaction/experiment_log.html'>T6-E025</a></td><td>Warm 전용</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D2</td><td><code>artist_name x log_area</code></td><td>작가별 대형작 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E102_artist_log_area_interaction/experiment_log.html'>T6-E102</a></td><td>Warm 전용</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D3</td><td><code>artist_name x nant_material_idx</code></td><td>특정 작가의 특정 재료 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E103_artist_material_interaction/experiment_log.html'>T6-E103</a></td><td>Warm 전용</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D4</td><td><code>artist_name x nant_support</code></td><td>특정 작가의 특정 지지체 프리미엄 확인</td><td><a href='../../../experiments/track6/T6-E104_artist_support_interaction/experiment_log.html'>T6-E104</a></td><td>Warm 전용</td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D5</td><td><code>artist_name x artwork_age</code></td><td>작가별 특정 시기 작품 가치 확인</td><td><a href='../../../experiments/track6/BLOCK-A4_artwork_year_column_required/experiment_log.html'>BLOCK-A4</a></td><td>Warm 전용, 제작연도 필요</td><td><span class="tag hold">보류 일지 있음</span></td></tr>
+        <tr><td>D6</td><td><code>career_stage x size</code></td><td>작가 메타 x 작품 변수 교차항이므로 Group G로 이동</td><td>T6-E094~E100 후보</td><td>Warm / Cold 메타 가능</td><td><span class="tag hold">G로 이동</span></td></tr>
+        <tr><td>D7</td><td><code>career_stage x material</code></td><td>작가 메타 x 작품 변수 교차항이므로 Group G로 이동</td><td>T6-E094~E100 후보</td><td>Warm / Cold 메타 가능</td><td><span class="tag hold">G로 이동</span></td></tr>
+        <tr><td>D8</td><td><code>artist_activity x size</code></td><td>작가 메타 x 작품 변수 교차항이므로 Group G로 이동</td><td>T6-E094~E100 후보</td><td>Warm / Cold 메타 가능</td><td><span class="tag hold">G로 이동</span></td></tr>
+        <tr><td>D9</td><td><code>artist_activity x material</code></td><td>작가 메타 x 작품 변수 교차항이므로 Group G로 이동</td><td>T6-E094~E100 후보</td><td>Warm / Cold 메타 가능</td><td><span class="tag hold">G로 이동</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>기존 실험과 겹치지 않는 추가 작가 실험</h3>
+    <table>
+      <thead><tr><th>실험</th><th>확인 대상</th><th>목적</th><th>기존 실험과 다른 점</th><th>적용 범위</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>AX1</td><td>작가명 한글화 전/후 비교</td><td>영문/한글 표기 정리가 Warm 성능과 작가 매칭 안정성을 개선하는지 확인</td><td>작가명 자체 효과가 아니라 이름 정제 품질을 검증</td><td>Warm 중심</td><td><a href='../../../experiments/track6/AX1_artist_name_normalization_before_after/experiment_log.html'>일지 있음</a></td></tr>
+        <tr><td>AX2</td><td>동명이인 분리 전/후 비교</td><td>같은 이름의 다른 작가가 섞일 때 성능이 왜곡되는지 확인</td><td>작가명 피처 성능이 실제 작가 효과인지 데이터 혼합 효과인지 분리</td><td>Warm 중심</td><td><a href='../../../experiments/track6/AX2_homonym_split_before_after/experiment_log.html'>일지 있음</a></td></tr>
+        <tr><td>AX3</td><td>작가 DB 매칭 성공/실패 구간 비교</td><td>작가 메타를 확보할 수 있는 작가와 없는 작가의 오차 차이 확인</td><td>메타 변수 효과가 아니라 DB 커버리지 리스크 확인</td><td>Warm / Cold</td><td><a href='../../../experiments/track6/AX3_artist_db_match_success_slice/experiment_log.html'>일지 있음</a></td></tr>
+        <tr><td>AX4</td><td>작가별 학습 작품 수 기준 변경</td><td>1개 이상, 3개 이상, 5개 이상 등 Warm 기준에 따라 성능과 안정성이 어떻게 변하는지 확인</td><td><code>artist_works_log</code> 값을 피처로 쓰는 실험이 아니라 Warm 판단 기준을 검증</td><td>Warm 라우팅</td><td><a href='../../../experiments/track6/AX4_warm_artist_count_threshold/experiment_log.html'>일지 있음</a></td></tr>
+        <tr><td>AX5</td><td>저이력 작가 전용 fallback</td><td>학습 작품 수가 적은 작가를 Warm 모델로 볼지 Cold 모델로 볼지 비교</td><td>Warm/Cold 모델 선택 정책 검증</td><td>Warm / Cold 경계</td><td><a href='../../../experiments/track6/AX5_low_history_artist_fallback/experiment_log.html'>일지 있음</a></td></tr>
+        <tr><td>AX6</td><td>작가 메타 결측 패턴별 성능</td><td>생년/국적/활동량 정보가 비어 있는 작가군에서 오차가 커지는지 확인</td><td>메타 값을 넣는 실험이 아니라 결측 자체의 위험도 확인</td><td>Warm / Cold</td><td><a href='../../../experiments/track6/AX6_artist_meta_missing_pattern_slice/experiment_log.html'>일지 있음</a></td></tr>
+        <tr><td>AX7</td><td>작가 가격대 과적합 점검</td><td>작가명만으로 좋아진 성능이 실제 작품 정보 없이 가격대만 외운 결과인지 확인</td><td>작가명 효과의 신뢰성 검증</td><td>Warm 중심, GroupKFold 필수</td><td><a href='../../../experiments/track6/AX7_artist_price_memorization_check/experiment_log.html'>일지 있음</a></td></tr>
+        <tr><td>AX8</td><td>신규 작가 메타만 사용한 Cold 모델</td><td>작가명 없이 생년/국적/활동량 같은 운영 가능 메타만으로 Cold 개선이 되는지 확인</td><td>Cold에서 작가명은 쓰지 않고 작가 DB에서 얻을 수 있는 메타만 검증</td><td>Cold 중심</td><td><a href='../../../experiments/track6/AX8_cold_artist_meta_only_model/experiment_log.html'>일지 있음</a></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Group D: 교차항/조합 효과</h2>
+    <table>
+      <thead><tr><th>실험</th><th>사용 피처</th><th>목적</th><th>기존 일지</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>D1</td><td>log_area x 난트 재료</td><td>같은 면적이라도 재료에 따라 가격 증가 패턴이 다른지 확인</td><td><a href='../../../experiments/track6/D1_log_area_material_numeric_interaction/outputs/result_sheet.html'>D1</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D2</td><td>log_area x 난트 지지체</td><td>같은 면적이라도 지지체에 따라 가격 증가 패턴이 다른지 확인</td><td><a href='../../../experiments/track6/D2_log_area_support_numeric_interaction/outputs/result_sheet.html'>D2</a></td><td><span class="tag">실행 완료</span></td></tr>
+        <tr><td>D3</td><td>작가명 x 호수</td><td>작가별 크기 가격대 차이 확인</td><td><a href='../../../experiments/track6/T6-E025_artist_ho_interaction/experiment_log.html'>T6-E025</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D4</td><td>Warm/Cold 전용 피처 조합</td><td>Warm과 Cold가 서로 다른 피처셋을 써야 하는지 확인</td><td><a href='../../../experiments/track6/T6-E046_warm_cold_feature_split/experiment_log.html'>T6-E046</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D5</td><td>단계적 피처 선택</td><td>단일 변수, 그룹 변수, 제거 실험 순서로 후보 축소</td><td><a href='../../../experiments/track6/T6-E045_staged_feature_selection/experiment_log.html'>T6-E045</a></td><td><span class="tag">일지 있음</span></td></tr>
+        <tr><td>D6</td><td>Cold 2D/3D 분기, 위험 구간 분석</td><td>약점 구간 보완과 신뢰도 정책 확인</td><td><a href='../../../experiments/track6/T6-E030_cold_2d_3d_branch/experiment_log.html'>T6-E030</a>, <a href='../../../experiments/track6/T6-E031_cold_risk_slice_analysis/experiment_log.html'>E031</a>, <a href='../../../experiments/track6/T6-E036_warm_cold_routing_policy/experiment_log.html'>E036</a>, <a href='../../../experiments/track6/T6-E037_price_interval_confidence_policy/experiment_log.html'>E037</a></td><td><span class="tag">일지 있음</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>일지 단위 상세 매핑표</h2>
+    <p>실험 일지 하나를 표 한 행으로 분리한 실행 관리용 표입니다.</p>
+    <table>
+      <thead><tr><th>그룹</th><th>상세 실험</th><th>일지 ID</th><th>제목</th><th>사용 피처</th><th>비교 모델군</th><th>목적</th><th>관계</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>Group A</td><td>A1</td><td><a href='../../../experiments/track6/T6-E039_ho_signal_baseline/experiment_log.html'>T6-E039</a></td><td>호수 변수 영향 확인</td><td><code>ln_estimated_ho</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>호수 단독 영향 확인</td><td><span class='tag'>기준 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A1</td><td><a href='../../../experiments/track6/T6-E040_actual_size_feature_group/experiment_log.html'>T6-E040</a></td><td>실제 크기 정보 추가 실험</td><td><code>width_cm, height_cm, log_area, aspect_ratio</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>호수 외 실제 크기 효과 확인</td><td><span class='tag'>상위 묶음</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A1</td><td><a href='../../../experiments/track6/T6-E047_size_representative_vs_full/experiment_log.html'>T6-E047</a></td><td>크기 대표값 vs 전체 크기 피처 실험</td><td><code>ln_estimated_ho vs width/height/log_area/aspect_ratio</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>대표 크기와 전체 크기 비교</td><td><span class='tag'>비교 실험</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A1</td><td><a href='../../../experiments/track6/T6-E053_max_min_side_size_feature/experiment_log.html'>T6-E053</a></td><td>긴 변/짧은 변 크기 피처 실험</td><td><code>max_side_cm, min_side_cm</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>면적 대비 긴 변/짧은 변 효과 확인</td><td><span class='tag'>하위 표현</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A1</td><td><a href='../../../experiments/track6/T6-E055_width_height_variable_check/experiment_log.html'>T6-E055</a></td><td>가로/세로 변수 영향 확인</td><td><code>width_cm, height_cm</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>가로/세로 단독 추가 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A1</td><td><a href='../../../experiments/track6/T6-E056_area_log_area_variable_check/experiment_log.html'>T6-E056</a></td><td>면적/로그면적 변수 영향 확인</td><td><code>area_cm2, log_area</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>면적 표현 방식 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A1</td><td><a href='../../../experiments/track6/T6-E057_aspect_ratio_variable_check/experiment_log.html'>T6-E057</a></td><td>가로세로 비율 변수 영향 확인</td><td><code>aspect_ratio</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>형태 비율 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A2</td><td><a href='../../../experiments/track6/T6-E041_material_feature_group/experiment_log.html'>T6-E041</a></td><td>재료 정보 추가 실험</td><td><code>nant_material_idx, nant_tool</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>재료 효과 확인</td><td><span class='tag'>상위 묶음</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A2</td><td><a href='../../../experiments/track6/T6-E052_nant_material_grouping/experiment_log.html'>T6-E052</a></td><td>난트 재료 분류 그룹화 실험</td><td><code>nant_material_idx, nant_material_group</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>난트 세분화/그룹화 비교</td><td><span class='tag'>표현 비교</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A2</td><td><a href='../../../experiments/track6/T6-E058_medium_category_variable_check/experiment_log.html'>T6-E058</a></td><td>재료 대분류 변수 영향 확인 (중단)</td><td><code>medium_category</code></td><td><code>실행 안 함</code></td><td>난트 재료 변수와 중복되어 제외</td><td><span class='tag hold'>중단</span></td><td><span class='tag hold'>중단</span></td></tr>
+        <tr><td>Group A</td><td>A2</td><td><a href='../../../experiments/track6/T6-E063_nant_material_idx_variable_check/experiment_log.html'>T6-E063</a></td><td>난트 재료 번호 변수 영향 확인</td><td><code>nant_material_idx</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>난트 재료 번호 추가 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A2</td><td><a href='../../../experiments/track6/T6-E065_raw_material_text_variable_check/experiment_log.html'>T6-E065</a></td><td>원본 재료 문구 변수 영향 확인</td><td><code>collected_material_raw keyword flags</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>원본 재료 문구 키워드 효과 확인</td><td><span class='tag'>보완 피처</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A3</td><td><a href='../../../experiments/track6/T6-E042_support_feature_group/experiment_log.html'>T6-E042</a></td><td>지지체 정보 추가 실험</td><td><code>support_category, nant_support</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>지지체 효과 확인</td><td><span class='tag'>상위 묶음</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A3</td><td><a href='../../../experiments/track6/T6-E059_support_category_variable_check/experiment_log.html'>T6-E059</a></td><td>지지체 대분류 변수 영향 확인</td><td><code>support_category</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>지지체 대분류 단독 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A3</td><td><a href='../../../experiments/track6/T6-E064_nant_support_tool_variable_check/experiment_log.html'>T6-E064</a></td><td>난트 지지체 변수 영향 확인</td><td><code>nant_support</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>난트 지지체 추가 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A5</td><td><a href='../../../experiments/track6/T6-E049_title_keyword_feature/experiment_log.html'>T6-E049</a></td><td>작품 제목 키워드 피처 실험</td><td><code>title_raw keyword flags</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작품 유형/에디션 키워드 효과 확인</td><td><span class='tag'>상위 파생</span></td><td><span class='tag hold'>부분 일지</span></td></tr>
+        <tr><td>Group A</td><td>A5</td><td><a href='../../../experiments/track6/T6-E066_title_text_variable_check/experiment_log.html'>T6-E066</a></td><td>작품 제목 문구 변수 영향 확인</td><td><code>title_raw keyword flags</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>T6-E049의 하위 개별 변수 확인</td><td><span class='tag hold'>하위/중복</span></td><td><span class='tag hold'>하위 일지</span></td></tr>
+        <tr><td>Group A</td><td>A6</td><td><a href='../../../experiments/track6/T6-E043_depth_3d_feature_group/experiment_log.html'>T6-E043</a></td><td>깊이/3D 정보 추가 실험</td><td><code>depth_cm, has_depth, is_3d_candidate</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>입체성 정보 효과 확인</td><td><span class='tag'>상위 묶음</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A6</td><td><a href='../../../experiments/track6/T6-E051_depth_bucket_feature/experiment_log.html'>T6-E051</a></td><td>깊이 구간화 피처 실험</td><td><code>depth_bucket</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>깊이 구간화 효과 확인</td><td><span class='tag'>하위 파생</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A6</td><td><a href='../../../experiments/track6/T6-E061_depth_variable_check/experiment_log.html'>T6-E061</a></td><td>깊이 변수 영향 확인</td><td><code>depth_cm</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>깊이 단독 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A6</td><td><a href='../../../experiments/track6/T6-E062_three_d_flag_variable_check/experiment_log.html'>T6-E062</a></td><td>3D 후보 플래그 변수 영향 확인</td><td><code>has_depth, is_3d_candidate</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>3D 여부 플래그 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A8</td><td><a href='../../../experiments/track6/T6-E044_material_size_interaction/experiment_log.html'>T6-E044</a></td><td>재료 x 크기 조합 피처 실험</td><td><code>nant_material_idx_x_ho_bucket</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>크기와 재료 조합 효과 확인</td><td><span class='tag'>상위 조합</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A8</td><td><a href='../../../experiments/track6/T6-E024_material_ho_interaction/experiment_log.html'>T6-E024</a></td><td>재료 x 호수 조합 피처 실험</td><td><code>nant_material_idx_x_ho_bucket</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>같은 호수 내 재료 차이 확인</td><td><span class='tag hold'>통합 검토</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A9</td><td><a href='../../../experiments/track6/A9_size_material_support_combo/outputs/result_sheet.html'>A9</a></td><td>크기 + 재료 + 지지체 조합 실험</td><td><code>log_area, medium_category, collected_material_raw_bucket, nant_material_idx, nant_tool, support_category, nant_support</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작품 기본 피처 묶음에 지지체를 추가할 가치 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A9</td><td><a href='../../../experiments/track6/T6-E045_staged_feature_selection/experiment_log.html'>T6-E045</a></td><td>단계적 피처 선택 절차 실험</td><td><code>size, material, support, depth 계열 후보</code></td><td><code>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</code></td><td>작품 변수 후보 축소 절차 확인</td><td><span class='tag'>선택 절차</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A9</td><td><a href='../../../experiments/track6/T6-E046_warm_cold_feature_split/experiment_log.html'>T6-E046</a></td><td>Warm/Cold 작품 피처 분리 실험</td><td><code>Warm/Cold feature sets</code></td><td><code>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</code></td><td>작품 피처셋 분리 필요성 확인</td><td><span class='tag'>분리 검증</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A9</td><td><a href='../../../experiments/track6/T6-E026_support_material_interaction/experiment_log.html'>T6-E026</a></td><td>지지체 x 재료 조합 실험</td><td><code>nant_material_support_bucket, nant_support_nant_tool_bucket</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>재료와 지지체 조합 효과 확인</td><td><span class='tag'>상위 조합</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group A</td><td>A9</td><td><a href='../../../experiments/track6/T6-E060_nant_material_support_bucket_variable_check/experiment_log.html'>T6-E060</a></td><td>재료+지지체 조합 변수 영향 확인</td><td><code>nant_material_support_bucket</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>재료+지지체 조합 단독 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B1</td><td><a href='../../../experiments/track6/T6-E012_artist_only_warm_baseline/experiment_log.html'>T6-E012</a></td><td>작가명 only Warm 기준 실험</td><td><code>artist_name_ko</code></td><td><code>Hedonic Ridge</code></td><td>작가명 자체 효과 확인</td><td><span class='tag hold'>초기 기준</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B1</td><td><a href='../../../experiments/track6/B1_artist_name_only/outputs/result_sheet.html'>B1</a></td><td>작가명 단독 최신 split 실행</td><td><code>artist_name_ko</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가명 자체 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group B</td><td>B1</td><td><a href='../../../experiments/track6/T6-E054_artist_name_variable_check/experiment_log.html'>T6-E054</a></td><td>작가명 변수 영향 확인</td><td><code>artist_name_ko</code></td><td><code>Warm: Huber/Linear/Ridge, Cold 제외</code></td><td>작가명 추가 효과 확인</td><td><span class='tag'>이전 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B2</td><td><a href='../../../experiments/track6/B2_artist_name_encoding_compare/outputs/result_sheet.html'>B2</a></td><td>작가명 처리 방식 비교</td><td><code>artist_name_ko / artist_frequency_log / artist_target_mean_log / artist_smoothed_target_mean_log</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가명 encoding 방식 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group B</td><td>B3</td><td><a href='../../../experiments/track6/T6-E073_artist_birth_year_variable_check/experiment_log.html'>T6-E073</a></td><td>작가 생년 변수 영향 확인</td><td><code>artist_meta_birth_year</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가 세대 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B4</td><td><a href='../../../experiments/track6/T6-E076_artist_nationality_variable_check/experiment_log.html'>T6-E076</a></td><td>작가 국적 변수 영향 확인</td><td><code>artist_meta_nationality</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가 국적 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B5</td><td><a href='../../../experiments/track6/T6-E075_artist_career_stage_variable_check/experiment_log.html'>T6-E075</a></td><td>작가 경력 단계 변수 영향 확인</td><td><code>artist_meta_career_stage</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가 경력 단계 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B6</td><td><a href='../../../experiments/track6/T6-E078_artist_total_works_variable_check/experiment_log.html'>T6-E078</a></td><td>작가 등록 작품 수 변수 영향 확인</td><td><code>artist_meta_total_works</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가 활동량 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B6</td><td><a href='../../../experiments/track6/T6-E079_artist_for_sale_works_variable_check/experiment_log.html'>T6-E079</a></td><td>작가 판매 중 작품 수 변수 영향 확인</td><td><code>artist_meta_for_sale_works</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가 판매 활동량 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B6</td><td><a href='../../../experiments/track6/T6-E081_artist_followers_variable_check/experiment_log.html'>T6-E081</a></td><td>작가 팔로워 수 변수 영향 확인</td><td><code>artist_meta_followers</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가 인지도 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group B</td><td>B6</td><td><a href='../../../experiments/track6/T6-E082_artist_p1_flag_variable_check/experiment_log.html'>T6-E082</a></td><td>플랫폼 주요 작가 여부 변수 영향 확인</td><td><code>artist_meta_is_p1</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>주요 작가 여부 효과 확인</td><td><span class='tag'>하위 단일</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C1</td><td><a href='../../../experiments/track6/C1_artist_name_plus_size/outputs/result_sheet.html'>C1</a></td><td>작가명 + 크기 최신 split 실행</td><td><code>artist_name_ko + estimated_ho / ln_estimated_ho / log_area / width_cm+height_cm+log_area+aspect_ratio</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가명 통제 후 크기 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C2</td><td><a href='../../../experiments/track6/C2_artist_name_plus_material/outputs/result_sheet.html'>C2</a></td><td>작가명 + 재료 최신 split 실행</td><td><code>artist_name_ko + medium_category / collected_material_raw_bucket / nant_material_idx / nant_tool</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가명 통제 후 재료 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C3</td><td><a href='../../../experiments/track6/C3_artist_name_plus_support/outputs/result_sheet.html'>C3</a></td><td>작가명 + 지지체 최신 split 실행</td><td><code>artist_name_ko + support_category / nant_support</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가명 통제 후 지지체 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C4</td><td><a href='../../../experiments/track6/C4_artist_name_plus_year/outputs/result_sheet.html'>C4</a></td><td>작가명 + 제작연도 최신 split 실행</td><td><code>artist_name_ko + artwork_year / artwork_age</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가명 통제 후 제작 시기 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C5</td><td><a href='../../../experiments/track6/C5_artist_name_plus_type/outputs/result_sheet.html'>C5</a></td><td>작가명 + 작품 유형 최신 split 실행</td><td><code>artist_name_ko + artwork_type_final / artwork_type_final_major3</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가명 통제 후 작품 유형 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C6</td><td><a href='../../../experiments/track6/C6_artist_name_plus_artwork_basic/outputs/result_sheet.html'>C6</a></td><td>작가명 + 작품 기본 피처 묶음 최신 split 실행</td><td><code>artist_name_ko + ln_estimated_ho + nant_material_idx + nant_tool + nant_support</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>작가명 통제 후 작품 기본 피처 묶음 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C7</td><td><a href='../../../experiments/track6/C7_artist_name_plus_artwork_basic_year/outputs/result_sheet.html'>C7</a></td><td>C6 + 제작연도 최신 split 실행</td><td><code>artist_name_ko + ln_estimated_ho + nant_material_idx + nant_tool + nant_support + artwork_year + artwork_age</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>C6 기준 후 제작 시기 추가 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C8</td><td><a href='../../../experiments/track6/C8_artist_name_plus_artwork_basic_year_type/outputs/result_sheet.html'>C8</a></td><td>C7 + 작품 유형 최신 split 실행</td><td><code>artist_name_ko + ln_estimated_ho + nant_material_idx + nant_tool + nant_support + artwork_year + artwork_age + artwork_type_final + artwork_type_final_major3</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>C7 기준 후 작품 유형 추가 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C9</td><td><a href='../../../experiments/track6/C9_c8_plus_depth/outputs/result_sheet.html'>C9</a></td><td>C8 + 깊이/입체성 최신 split 실행</td><td><code>C8 features + depth_cm + has_depth + is_3d_candidate</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>C8 기준 후 깊이/입체성 추가 효과 확인</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C10</td><td><a href='../../../experiments/track6/C10_c8_plus_edition/outputs/result_sheet.html'>C10</a></td><td>C8 + 에디션 최신 split 실행</td><td><code>C8 features + edition_class + is_edition + is_limited_edition + is_unique_work + edition_info_available</code></td><td><code>Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM</code></td><td>C8 기준 후 에디션 추가 효과 확인. 서명 제외</td><td><span class='tag'>현행 실행</span></td><td><span class='tag '>실행 완료</span></td></tr>
+        <tr><td>Group C</td><td>C1</td><td><a href='../../../experiments/track6/T6-E010_hedonic_artist_ho_log/experiment_log.html'>T6-E010</a></td><td>작가명 + 호수 / ln 변환 초기 실험</td><td><code>artist_name_ko, estimated_ho, ln_estimated_ho</code></td><td><code>Hedonic Linear Regression / log transform 비교</code></td><td>작가명+호수 기본 효과 확인</td><td><span class='tag hold'>초기 기준</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C1</td><td><a href='../../../experiments/track6/T6-E014_linear_model_family_compare/experiment_log.html'>T6-E014</a></td><td>헤도닉 선형 모델군 비교</td><td><code>artist_name_ko, ln_estimated_ho</code></td><td><code>선형/강건 선형: Linear/Ridge/Lasso/ElasticNet/Huber/Quantile</code></td><td>선형 계열 모델 비교</td><td><span class='tag'>모델 비교</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C1</td><td><a href='../../../experiments/track6/T6-E015_warm_nonlinear_model_compare/experiment_log.html'>T6-E015</a></td><td>Warm 비선형 모델 비교</td><td><code>artist_name_ko, ln_estimated_ho</code></td><td><code>비선형/트리: LightGBM/CatBoost/XGBoost/HistGradientBoosting</code></td><td>Warm 비선형 모델 효과 확인</td><td><span class='tag'>모델 비교</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C1</td><td><a href='../../../experiments/track6/T6-E017_baseline_model_freeze/experiment_log.html'>T6-E017</a></td><td>기본 피처 기반 후보 모델 선정</td><td><code>artist_name_ko, ln_estimated_ho, material 계열, support 계열</code></td><td><code>Linear/Ridge/Huber/Quantile-LAD + LightGBM/XGBoost/CatBoost/HistGradientBoosting</code></td><td>기준 모델 선정</td><td><span class='tag'>모델 선정</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C4</td><td><a href='../../../experiments/track6/T6-E027_artist_meta_basic_features/experiment_log.html'>T6-E027</a></td><td>작가 기본 메타 피처 추가 실험</td><td><code>artist metadata basic</code></td><td><code>Warm/Cold</code></td><td>작가 메타 추가 효과 확인</td><td><span class='tag'>상위 묶음</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C4</td><td><a href='../../../experiments/track6/T6-E028_artist_activity_features/experiment_log.html'>T6-E028</a></td><td>작가 활동량 피처 실험</td><td><code>artist activity metadata</code></td><td><code>Warm/Cold</code></td><td>작가 활동량 추가 효과 확인</td><td><span class='tag'>상위 묶음</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C4</td><td><a href='../../../experiments/track6/T6-E032_warm_candidate_feature_set_compare/experiment_log.html'>T6-E032</a></td><td>Warm 후보 피처 조합 비교</td><td><code>Warm candidate feature sets</code></td><td><code>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</code></td><td>Warm 최종 후보 피처셋 비교</td><td><span class='tag'>후보 조합</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C5</td><td><a href='../../../experiments/track6/T6-E016_cold_basic_model_compare/experiment_log.html'>T6-E016</a></td><td>Cold 기본 모델 비교</td><td><code>ln_estimated_ho</code></td><td><code>Ridge/Huber/Quantile/LightGBM/CatBoost</code></td><td>Cold 기본 모델 후보 비교</td><td><span class='tag'>모델 비교</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C5</td><td><a href='../../../experiments/track6/T6-E029_cold_material_size_model/experiment_log.html'>T6-E029</a></td><td>Cold 재료 + 크기 모델 실험</td><td><code>Cold material/size features</code></td><td><code>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</code></td><td>Cold 작품 변수 모델 확인</td><td><span class='tag'>상위 묶음</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C5</td><td><a href='../../../experiments/track6/T6-E033_cold_candidate_feature_set_compare/experiment_log.html'>T6-E033</a></td><td>Cold 후보 피처 조합 비교</td><td><code>Cold candidate feature sets</code></td><td><code>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</code></td><td>Cold 최종 후보 피처셋 비교</td><td><span class='tag'>후보 조합</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group C</td><td>C5</td><td><a href='../../../experiments/track6/T6-E035_cold_final_model_compare/experiment_log.html'>T6-E035</a></td><td>Cold 최종 후보 모델 비교</td><td><code>selected Cold feature set</code></td><td><code>Ridge/Huber/Quantile/CatBoost/LightGBM</code></td><td>Cold 최종 후보 모델 비교</td><td><span class='tag'>최종 모델</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group D</td><td>D3</td><td><a href='../../../experiments/track6/T6-E025_artist_ho_interaction/experiment_log.html'>T6-E025</a></td><td>작가명 x 호수 조합 실험</td><td><code>artist_ho_bucket</code></td><td><code>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</code></td><td>작가별 크기 가격대 차이 확인</td><td><span class='tag'>교차항</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group D</td><td>D6</td><td><a href='../../../experiments/track6/T6-E030_cold_2d_3d_branch/experiment_log.html'>T6-E030</a></td><td>Cold 2D/3D 분기 실험</td><td><code>Cold 2D/3D branch</code></td><td><code>Cold 전체 모델 / 2D 모델 / 3D 모델</code></td><td>Cold 3D 약점 구간 보완</td><td><span class='tag'>분기/정책</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group D</td><td>D6</td><td><a href='../../../experiments/track6/T6-E031_cold_risk_slice_analysis/experiment_log.html'>T6-E031</a></td><td>Cold 위험 구간 분석</td><td><code>Cold risk slices</code></td><td><code>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</code></td><td>Cold 큰 오차 조건 분석</td><td><span class='tag'>위험 분석</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group D</td><td>D6</td><td><a href='../../../experiments/track6/T6-E036_warm_cold_routing_policy/experiment_log.html'>T6-E036</a></td><td>Warm/Cold 라우팅 기준 실험</td><td><code>routing policy</code></td><td><code>Warm/Cold routing 후보</code></td><td>Warm/Cold 모델 선택 기준 확인</td><td><span class='tag'>정책</span></td><td><span class='tag '>일지 있음</span></td></tr>
+        <tr><td>Group D</td><td>D6</td><td><a href='../../../experiments/track6/T6-E037_price_interval_confidence_policy/experiment_log.html'>T6-E037</a></td><td>가격 범위/신뢰도 정책 실험</td><td><code>interval/confidence policy</code></td><td><code>가격 범위/신뢰도 정책 후보</code></td><td>가격 범위와 신뢰도 표시 기준 확인</td><td><span class='tag'>정책</span></td><td><span class='tag '>일지 있음</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>보완 필요</h2>
+    <ul>
+      <li><code>제작연도</code>는 현재 기준 데이터에 명시 컬럼이 없어 수집 또는 파생 규칙이 필요합니다.</li>
+      <li><code>작품 유형</code>, <code>edition</code>, <code>signed</code>는 제목/원본 문구에서 파생해야 합니다.</li>
+      <li>주요 그룹 실험은 <code>Random Split</code>과 <code>GroupKFold by artist</code>를 함께 기록해야 합니다.</li>
+      <li>난트 변수는 최종 후보에서 우선하되 재료 대분류는 제외하고 NANT 재료 변수 기준으로 확정합니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>중복 후보 검토표</h2>
+    <table>
+      <thead><tr><th>구분</th><th>중복 후보</th><th>판단</th><th>정리 기준</th></tr></thead>
+      <tbody>
+        <tr><td>완전 중복 후보</td><td><a href='../../../experiments/track6/T6-E049_title_keyword_feature/experiment_log.html'>T6-E049</a> 작품 제목 키워드 피처 실험<br><a href='../../../experiments/track6/T6-E066_title_text_variable_check/experiment_log.html'>T6-E066</a> 작품 제목 문구 변수 영향 확인</td><td><span class="tag hold">중복 가능성 높음</span></td><td>T6-E049를 상위 실험으로 두고, T6-E066은 T6-E049의 하위 개별 변수 확인 일지로 표시</td></tr>
+        <tr><td>부분 중복 후보</td><td><a href='../../../experiments/track6/T6-E041_material_feature_group/experiment_log.html'>T6-E041</a> 재료 정보 추가<br><a href='../../../experiments/track6/T6-E058_medium_category_variable_check/experiment_log.html'>T6-E058</a> 재료 대분류<br><a href='../../../experiments/track6/T6-E063_nant_material_idx_variable_check/experiment_log.html'>T6-E063</a> 난트 재료 번호<br><a href='../../../experiments/track6/T6-E065_raw_material_text_variable_check/experiment_log.html'>T6-E065</a> 원본 재료 문구</td><td><span class="tag hold"><a href='../../../experiments/track6/T6-E058_medium_category_variable_check/experiment_log.html'>T6-E058</a> 중단</span></td><td>T6-E041은 난트 재료 묶음 실험, T6-E058은 medium_category 중복으로 중단, T6-E063/E065는 난트 재료 후보와 원본 문구를 확인하는 하위 실험</td></tr>
+        <tr><td>부분 중복 후보</td><td><a href='../../../experiments/track6/T6-E042_support_feature_group/experiment_log.html'>T6-E042</a> 지지체 정보 추가<br><a href='../../../experiments/track6/T6-E059_support_category_variable_check/experiment_log.html'>T6-E059</a> 지지체 대분류<br><a href='../../../experiments/track6/T6-E064_nant_support_tool_variable_check/experiment_log.html'>T6-E064</a> 난트 지지체</td><td><span class="tag">중복 아님</span></td><td>T6-E042는 지지체 묶음 실험, T6-E059/E064는 지지체 후보 변수를 하나씩 확인하는 하위 실험</td></tr>
+        <tr><td>부분 중복 후보</td><td><a href='../../../experiments/track6/T6-E040_actual_size_feature_group/experiment_log.html'>T6-E040</a> 실제 크기 정보 추가<br><a href='../../../experiments/track6/T6-E055_width_height_variable_check/experiment_log.html'>T6-E055</a> 가로·세로<br><a href='../../../experiments/track6/T6-E056_area_log_area_variable_check/experiment_log.html'>T6-E056</a> 면적·로그면적<br><a href='../../../experiments/track6/T6-E057_aspect_ratio_variable_check/experiment_log.html'>T6-E057</a> 비율<br><a href='../../../experiments/track6/T6-E053_max_min_side_size_feature/experiment_log.html'>T6-E053</a> 긴 변·짧은 변</td><td><span class="tag">중복 아님</span></td><td>T6-E040은 크기 묶음 실험, 나머지는 크기 표현 방식별 하위 실험</td></tr>
+
+        <tr><td>통합 검토 후보</td><td><a href='../../../experiments/track6/T6-E044_material_size_interaction/experiment_log.html'>T6-E044</a> 재료 x 크기 조합<br><a href='../../../experiments/track6/T6-E024_material_ho_interaction/experiment_log.html'>T6-E024</a> 재료 x 호수 조합</td><td><span class="tag hold">통합 검토</span></td><td>현재 둘 다 <code>nant_material_idx_x_ho_bucket</code> 중심이라 같은 실험으로 보일 수 있음. T6-E044를 상위 조합 실험으로 두고 T6-E024는 호수 구간 하위 확인으로 둘지 통합할지 결정 필요</td></tr>
+        <tr><td>초기/현행 구분</td><td><a href='../../../experiments/track6/T6-E012_artist_only_warm_baseline/experiment_log.html'>T6-E012</a> 작가명 only 초기 기준<br><a href='../../../experiments/track6/T6-E054_artist_name_variable_check/experiment_log.html'>T6-E054</a> 작가명 변수 영향 확인</td><td><span class="tag">중복 아님</span></td><td>T6-E012는 초기 기준 실험, T6-E054는 현행 기본 모델군 기준의 단일 변수 확인 실험으로 구분</td></tr>
+        <tr><td>상위/하위 구분</td><td><a href='../../../experiments/track6/T6-E027_artist_meta_basic_features/experiment_log.html'>T6-E027</a> 작가 기본 메타 묶음<br><a href='../../../experiments/track6/T6-E073_artist_birth_year_variable_check/experiment_log.html'>T6-E073</a>, <a href='../../../experiments/track6/T6-E076_artist_nationality_variable_check/experiment_log.html'>T6-E076</a>, <a href='../../../experiments/track6/T6-E075_artist_career_stage_variable_check/experiment_log.html'>T6-E075</a> 단일 변수</td><td><span class="tag">중복 아님</span></td><td>묶음 실험과 단일 변수 확인은 목적이 다르므로 상위/하위 관계로 유지</td></tr>
+        <tr><td>같은 피처, 다른 모델군</td><td><a href='../../../experiments/track6/T6-E014_linear_model_family_compare/experiment_log.html'>T6-E014</a> 헤도닉 선형 모델군<br><a href='../../../experiments/track6/T6-E015_warm_nonlinear_model_compare/experiment_log.html'>T6-E015</a> Warm 비선형 모델</td><td><span class="tag">중복 아님</span></td><td>같은 피처로 선형 모델군과 비선형 모델군을 비교하는 모델 실험</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li>같은 <code>사용 피처</code>, 같은 <code>비교 모델군</code>, 같은 <code>목적</code>이면 하나의 상위 실험으로 통합합니다.</li>
+      <li>상위 묶음 실험과 단일 변수 확인 실험은 상위/하위 관계로 표시합니다.</li>
+      <li>같은 피처를 쓰더라도 비교 모델군이 다르면 모델 비교 실험으로 유지합니다.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

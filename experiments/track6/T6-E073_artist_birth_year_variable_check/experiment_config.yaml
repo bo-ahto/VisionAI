@@ -1,0 +1,24 @@
+experiment_id: T6-E073
+status: planned
+phase: individual_variable_screening
+title: 작가 생년 변수 영향 확인
+hypothesis: 작가 생년 변수는 가격 예측에 영향을 미친다.
+source_file: data/track6/track6_feature_candidates_name_corrected.csv
+join_key: _track6_row_id
+variable: artist_meta_birth_year
+warm_models: Huber / Linear Regression / Ridge
+cold_models: Huber / Quantile-LAD / LightGBM
+warm_base_train_features: artist_name_ko + ln_estimated_ho
+warm_candidate_train_features: artist_name_ko + ln_estimated_ho + artist_meta_birth_year
+warm_test_features: same_as_train_features
+cold_base_train_features: ln_estimated_ho
+cold_candidate_train_features: ln_estimated_ho + artist_meta_birth_year
+cold_test_features: same_as_train_features_without_artist_name_ko
+target: ln_price_krw
+compare_against: 기준 모델과 작가 생년 변수 추가 모델을 Warm/Cold에서 각각 비교한다.
+artist_meta_missing_check: required
+artist_meta_decision_rule: measure_effect_first_then_decide_missing_imputation_or_collection
+artist_meta_dataset_rule: keep_original_split_add_raw_missing_flags_and_completeness_score
+artist_meta_missing_flag: artist_meta_birth_year_is_missing
+artist_meta_present_slice: artist_meta_birth_year 값이 있는 작품
+artist_meta_missing_slice: artist_meta_birth_year 값이 비어 있는 작품

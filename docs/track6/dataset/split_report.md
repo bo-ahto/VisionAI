@@ -14,11 +14,11 @@
 
 | split | rows | 작가 수 | 한글명 수 | 가격 중앙값 | 가격 p90 | 작가당 rows 중앙값 | 1작품 작가 수 | 파일 |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
-| `train` | `26,560` | `1,787` | `1,729` | `3,172,310` | `19,736,760` | `6.0` | `256` | `data/track6_split/track6_train.csv` |
-| `val_warm` | `523` | `178` | `178` | `2,967,000` | `19,101,960` | `3.0` | `0` | `data/track6_split/track6_val_warm.csv` |
-| `test_warm` | `607` | `207` | `207` | `3,670,800` | `20,700,000` | `3.0` | `0` | `data/track6_split/track6_test_warm.csv` |
-| `val_cold` | `2,793` | `160` | `153` | `1,794,000` | `10,881,576` | `5.0` | `24` | `data/track6_split/track6_val_cold.csv` |
-| `test_cold` | `3,240` | `200` | `192` | `3,172,620` | `15,500,000` | `6.0` | `27` | `data/track6_split/track6_test_cold.csv` |
+| `train` | `26,914` | `1,773` | `1,713` | `3,008,400` | `19,039,500` | `5.0` | `245` | `data/track6_split/track6_train.csv` |
+| `val_warm` | `519` | `178` | `178` | `3,036,000` | `19,798,920` | `3.0` | `0` | `data/track6_split/track6_val_warm.csv` |
+| `test_warm` | `607` | `207` | `205` | `2,829,000` | `18,802,180` | `3.0` | `0` | `data/track6_split/track6_test_warm.csv` |
+| `val_cold` | `2,753` | `172` | `168` | `2,622,000` | `12,249,312` | `5.0` | `28` | `data/track6_split/track6_val_cold.csv` |
+| `test_cold` | `3,099` | `200` | `189` | `3,450,000` | `20,087,280` | `6.0` | `33` | `data/track6_split/track6_test_cold.csv` |
 
 ## 2. 핵심 검증
 

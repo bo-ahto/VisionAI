@@ -1,0 +1,20 @@
+experiment_id: T6-E045
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H7
+title: 단계적 피처 선택 절차 실험
+hypothesis: 단계적 피처 선택 방식은 전체 조합 탐색 없이도 기준 모델보다 좋은 피처 조합을 찾을 수 있다.
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+base_features:
+  warm: artist_name_ko, ln_estimated_ho
+  cold: ln_estimated_ho
+single_add_features: width_cm, height_cm, log_area, aspect_ratio, nant_material_idx, nant_tool, support_category, nant_support, depth_cm, has_depth, is_3d_candidate
+group_features:
+  size_group: width_cm, height_cm, log_area, aspect_ratio
+  material_group: nant_material_idx, nant_tool
+  support_group: support_category, nant_support
+  depth_3d_group: depth_cm, has_depth, is_3d_candidate
+removal_test: 2단계 채택 조합에서 피처를 하나씩 제거
+target: ln_price_krw
+compare: 단일 추가, 그룹 추가, 제거 실험 순서로 후보 축소
+success_criteria: 최종 선택 조합이 기준 모델보다 성능 개선되면 절차 채택

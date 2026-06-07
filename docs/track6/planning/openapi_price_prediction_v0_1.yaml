@@ -1,0 +1,868 @@
+openapi: 3.0.3
+info:
+  title: VisionAI Price Prediction API
+  version: 0.1.0
+  description: |
+    price_prediction_v0.1 기준 가격 예측 API 명세.
+
+    1차 MVP 범위:
+    - 현재 모델 버전 조회
+    - 작가 매핑
+    - 단일 작품 가격 예측
+
+    batch 예측과 feedback 저장은 2차 후보로만 관리한다.
+servers:
+  - url: https://api.example.com/api/v1
+    description: Production placeholder
+  - url: http://localhost:8000/api/v1
+    description: Local development
+tags:
+  - name: Model
+    description: 모델 버전과 기준 정보
+  - name: Artists
+    description: 작가 매핑
+  - name: PriceEstimates
+    description: 작품 가격 예측
+
+paths:
+  /price-models/current:
+    get:
+      tags:
+        - Model
+      summary: 현재 가격 예측 모델 조회
+      operationId: getCurrentPriceModel
+      responses:
+        "200":
+          description: 현재 모델 정보
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentModelResponse"
+              examples:
+                success:
+                  value:
+                    request_id: req_20260604_000001
+                    status: success
+                    created_at: "2026-06-04T18:30:00+09:00"
+                    model_version: price_prediction_v0.1
+                    model_status: active
+                    display_policy:
+                      warm: price_with_range
+                      cold: reference_range_only
+                    exchange_rates:
+                      base_currency: KRW
+                      USD: 1380
+                      EUR: 1530
+                      GBP: 1780
+                      HKD: 178
+                      JPY: 9.5
+
+  /artists:resolve:
+    post:
+      tags:
+        - Artists
+      summary: 작가명 또는 작가키를 모델 artist_key로 매핑
+      operationId: resolveArtist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveArtistRequest"
+            examples:
+              byName:
+                value:
+                  artist:
+                    artist_key: null
+                    name_ko: 박서보
+                    name_en: Park Seo-Bo
+                  options:
+                    max_candidates: 5
+      responses:
+        "200":
+          description: 작가 매핑 결과
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResolveArtistResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /artworks/price-estimate:
+    post:
+      tags:
+        - PriceEstimates
+      summary: 단일 작품 가격 예측
+      operationId: estimateArtworkPrice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriceEstimateRequest"
+            examples:
+              warmArtwork:
+                value:
+                  artwork:
+                    external_artwork_id: artwork_12345
+                    title: Untitled
+                    artist:
+                      artist_key: park-seobo
+                      name_ko: 박서보
+                      name_en: Park Seo-Bo
+                    year: 2010
+                    dimensions:
+                      width_cm: 130
+                      height_cm: 162
+                      depth_cm: null
+                    medium:
+                      medium_category: mixed
+                      support_category: paper
+                  options:
+                    currency: KRW
+                    include_comparable_samples: true
+                    max_comparable_samples: 10
+      responses:
+        "200":
+          description: 가격 예측 결과
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceEstimateResponse"
+              examples:
+                warmSuccess:
+                  value:
+                    request_id: req_20260604_000003
+                    status: success
+                    created_at: "2026-06-04T18:32:00+09:00"
+                    model_version: price_prediction_v0.1
+                    route: warm
+                    display_policy: price_with_range
+                    prediction:
+                      price_krw: 19854740
+                      price_display: 1,985만원
+                      range_krw:
+                        low: 11868000
+                        mid: 19854740
+                        high: 32640000
+                      range_display: 1,187만 - 3,264만원
+                      confidence:
+                        level: medium
+                        reason_codes:
+                          - WARM_ARTIST_MATCHED
+                          - LOW_SIMILAR_SAMPLE_COUNT
+                    routing:
+                      artist_matched: true
+                      matched_artist_key: park-seobo
+                      valid_training_label_count: 24
+                      route_policy: warm_min_label_count
+                      route_reason: 작가키가 확정됐고 v0.1 Warm route 정책의 유효 표본 기준을 만족해 Warm route 적용
+                    basis:
+                      similar_group_level: artist_size
+                      similar_sample_count: 8
+                      similar_coverage_tier: low_n
+                      similar_price_median_krw: 19854740
+                      similar_price_q25_krw: 11868000
+                      similar_price_q75_krw: 32640000
+                    market_price_card:
+                      title: 1차 시장 가격
+                      metric_label: 호당가 중앙값
+                      median_krw_per_ho: 350000
+                      median_display: 35만원/호
+                      range_krw_per_ho:
+                        low: 280000
+                        high: 460000
+                      range_display: 28만 - 46만원/호
+                      medium_distribution:
+                        - label: 회화
+                          medium_group: painting
+                          median_krw_per_ho: 330000
+                          display: 33만
+                          sample_count: 16
+                        - label: 드로잉
+                          medium_group: drawing
+                          median_krw_per_ho: 280000
+                          display: 28만
+                          sample_count: 8
+                      sample_count: 24
+                      sample_count_display: 표본 수 N=24건
+                    comparable_samples:
+                      - artwork_id: sample_001
+                        title: Ecriture No.040412
+                        artist_name: Park Seo-Bo
+                        sale_price_krw: 165600000
+                        width_cm: 45.5
+                        height_cm: 52.7
+                        medium_category: other
+                        support_category: paper
+                        similarity_reason: same_artist_same_support
+                    warnings:
+                      - code: LOW_SIMILAR_SAMPLE_COUNT
+                        severity: warning
+                        message: 유사 작품 표본 수가 적어 가격 범위를 넓게 해석해야 합니다.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            request_id: req_20260604_error_001
+            status: failed
+            created_at: "2026-06-04T18:35:00+09:00"
+            error:
+              code: INVALID_REQUEST
+              message: 요청 형식이 올바르지 않습니다.
+              field: null
+    UnprocessableEntity:
+      description: 입력값 검증 실패
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            request_id: req_20260604_error_002
+            status: failed
+            created_at: "2026-06-04T18:35:00+09:00"
+            error:
+              code: INVALID_DIMENSIONS
+              message: width_cm 또는 height_cm 값이 비정상입니다.
+              field: artwork.dimensions.width_cm
+    InternalError:
+      description: 모델 추론 실패
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            request_id: req_20260604_error_003
+            status: failed
+            created_at: "2026-06-04T18:35:00+09:00"
+            error:
+              code: MODEL_INFERENCE_FAILED
+              message: 모델 추론 중 오류가 발생했습니다.
+              field: null
+
+  schemas:
+    BaseResponse:
+      type: object
+      required:
+        - request_id
+        - status
+        - created_at
+      properties:
+        request_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - success
+            - partial_success
+            - failed
+        created_at:
+          type: string
+          format: date-time
+
+    CurrentModelResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          required:
+            - model_version
+            - model_status
+            - display_policy
+            - exchange_rates
+          properties:
+            model_version:
+              type: string
+              example: price_prediction_v0.1
+            model_status:
+              type: string
+              enum:
+                - candidate
+                - active
+                - archived
+              example: active
+            display_policy:
+              type: object
+              required:
+                - warm
+                - cold
+              properties:
+                warm:
+                  type: string
+                  example: price_with_range
+                cold:
+                  type: string
+                  example: reference_range_only
+            exchange_rates:
+              $ref: "#/components/schemas/ExchangeRates"
+
+    ExchangeRates:
+      type: object
+      required:
+        - base_currency
+        - USD
+      properties:
+        base_currency:
+          type: string
+          example: KRW
+        USD:
+          type: number
+          example: 1380
+        EUR:
+          type: number
+          example: 1530
+        GBP:
+          type: number
+          example: 1780
+        HKD:
+          type: number
+          example: 178
+        JPY:
+          type: number
+          example: 9.5
+
+    ResolveArtistRequest:
+      type: object
+      required:
+        - artist
+      properties:
+        artist:
+          $ref: "#/components/schemas/ArtistInput"
+        options:
+          type: object
+          properties:
+            max_candidates:
+              type: integer
+              minimum: 1
+              maximum: 20
+              default: 5
+
+    ResolveArtistResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          required:
+            - model_version
+            - resolved
+            - requires_selection
+            - candidates
+            - warnings
+          properties:
+            model_version:
+              type: string
+              example: price_prediction_v0.1
+            resolved:
+              type: boolean
+              description: 단일 작가 후보를 자동 확정할 수 있는지 여부.
+            requires_selection:
+              type: boolean
+              description: 동명이인/유사 표기 후보가 있어 프론트에서 후보 선택 창을 띄워야 하는지 여부.
+            selected_artist:
+              nullable: true
+              allOf:
+                - $ref: "#/components/schemas/ResolvedArtist"
+            candidates:
+              type: array
+              items:
+                $ref: "#/components/schemas/ResolvedArtist"
+            warnings:
+              type: array
+              items:
+                $ref: "#/components/schemas/Warning"
+
+    PriceEstimateRequest:
+      type: object
+      required:
+        - artwork
+      properties:
+        artwork:
+          $ref: "#/components/schemas/ArtworkInput"
+        options:
+          $ref: "#/components/schemas/PriceEstimateOptions"
+
+    PriceEstimateResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          required:
+            - model_version
+            - route
+            - display_policy
+            - prediction
+            - routing
+            - basis
+            - market_price_card
+            - warnings
+          properties:
+            model_version:
+              type: string
+              example: price_prediction_v0.1
+            route:
+              type: string
+              enum:
+                - warm
+                - cold
+            display_policy:
+              type: string
+              enum:
+                - price_with_range
+                - reference_range_only
+            prediction:
+              $ref: "#/components/schemas/Prediction"
+            routing:
+              $ref: "#/components/schemas/Routing"
+            basis:
+              $ref: "#/components/schemas/PredictionBasis"
+            market_price_card:
+              $ref: "#/components/schemas/MarketPriceCard"
+            comparable_samples:
+              type: array
+              items:
+                $ref: "#/components/schemas/ComparableSample"
+            warnings:
+              type: array
+              items:
+                $ref: "#/components/schemas/Warning"
+
+    ArtistInput:
+      type: object
+      properties:
+        artist_key:
+          type: string
+          nullable: true
+          example: park-seobo
+        name_ko:
+          type: string
+          nullable: true
+          example: 박서보
+        name_en:
+          type: string
+          nullable: true
+          example: Park Seo-Bo
+
+    ResolvedArtist:
+      type: object
+      required:
+        - artist_key
+        - match_status
+        - warm_available
+      properties:
+        artist_key:
+          type: string
+          example: park-seobo
+        name_ko:
+          type: string
+          nullable: true
+          example: 박서보
+        name_en:
+          type: string
+          nullable: true
+          example: Park Seo-Bo
+        birth_year:
+          type: integer
+          nullable: true
+          description: 동명이인 후보 구분용 출생연도.
+          example: 1931
+        nationality:
+          type: string
+          nullable: true
+          description: 동명이인 후보 구분용 국적.
+          example: Korea
+        entity_suffix:
+          type: string
+          nullable: true
+          description: 동일명 작가 구분용 suffix.
+          example: 1931-kr
+        match_status:
+          type: string
+          enum:
+            - exact
+            - alias
+            - fuzzy
+            - ambiguous
+            - not_found
+        matched_alias:
+          type: string
+          nullable: true
+          description: 실제로 매칭된 작가명 표기값.
+          example: 박서보
+        match_basis:
+          type: string
+          nullable: true
+          description: "작가 후보가 선택된 근거. 예: verified_ko_name, verified_en_alias, romanized_alias, fuzzy_name."
+          example: verified_ko_name
+        review_required:
+          type: boolean
+          nullable: true
+          description: 동명이인, 미검수 alias, 낮은 매칭 확신도 등으로 사용자 또는 운영자 확인이 필요한지 여부.
+        warm_available:
+          type: boolean
+          description: v0.1 route 정책상 Warm 적용 가능 여부. 단순 작가 존재 여부가 아니라 최소 유효 표본 기준을 함께 반영한다.
+        valid_training_label_count:
+          type: integer
+          nullable: true
+          description: v0.1 학습 스냅샷에서 같은 작가의 유효 가격 라벨 수.
+        route_recommendation:
+          type: string
+          nullable: true
+          enum:
+            - warm
+            - cold
+            - review_required
+          description: 작가 매핑과 유효 표본 수 기준의 권장 route.
+
+    ArtworkInput:
+      type: object
+      required:
+        - artist
+        - dimensions
+        - medium
+      properties:
+        external_artwork_id:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        artist:
+          $ref: "#/components/schemas/ArtistInput"
+        year:
+          type: integer
+          nullable: true
+        dimensions:
+          $ref: "#/components/schemas/Dimensions"
+        medium:
+          $ref: "#/components/schemas/Medium"
+
+    Dimensions:
+      type: object
+      required:
+        - width_cm
+        - height_cm
+      properties:
+        width_cm:
+          type: number
+          nullable: true
+          minimum: 0
+        height_cm:
+          type: number
+          nullable: true
+          minimum: 0
+        depth_cm:
+          type: number
+          nullable: true
+          minimum: 0
+
+    Medium:
+      type: object
+      required:
+        - medium_category
+        - support_category
+      properties:
+        medium_category:
+          type: string
+          example: mixed
+        support_category:
+          type: string
+          example: paper
+
+    PriceEstimateOptions:
+      type: object
+      properties:
+        currency:
+          type: string
+          default: KRW
+          enum:
+            - KRW
+            - USD
+            - EUR
+            - GBP
+            - HKD
+            - JPY
+        include_comparable_samples:
+          type: boolean
+          default: false
+        max_comparable_samples:
+          type: integer
+          default: 10
+          minimum: 0
+          maximum: 50
+
+    Prediction:
+      type: object
+      required:
+        - price_krw
+        - range_krw
+        - confidence
+      properties:
+        price_krw:
+          type: integer
+          nullable: true
+          description: 대표 예측 가격. Cold는 참고값으로만 사용한다.
+        price_display:
+          type: string
+        range_krw:
+          $ref: "#/components/schemas/PriceRange"
+        range_display:
+          type: string
+        confidence:
+          $ref: "#/components/schemas/Confidence"
+
+    PriceRange:
+      type: object
+      required:
+        - low
+        - mid
+        - high
+      properties:
+        low:
+          type: integer
+        mid:
+          type: integer
+        high:
+          type: integer
+
+    Confidence:
+      type: object
+      required:
+        - level
+        - reason_codes
+      properties:
+        level:
+          type: string
+          enum:
+            - high
+            - medium
+            - low
+        reason_codes:
+          type: array
+          items:
+            type: string
+
+    Routing:
+      type: object
+      required:
+        - artist_matched
+        - route_reason
+      properties:
+        artist_matched:
+          type: boolean
+        matched_artist_key:
+          type: string
+          nullable: true
+        valid_training_label_count:
+          type: integer
+          nullable: true
+          description: v0.1 학습 스냅샷에서 같은 작가의 유효 가격 라벨 수.
+        route_policy:
+          type: string
+          nullable: true
+          description: route 결정에 사용한 정책명 또는 정책 키.
+        route_reason:
+          type: string
+
+    PredictionBasis:
+      type: object
+      properties:
+        similar_group_level:
+          type: string
+          nullable: true
+        similar_sample_count:
+          type: integer
+          nullable: true
+        similar_coverage_tier:
+          type: string
+          nullable: true
+        similar_price_median_krw:
+          type: integer
+          nullable: true
+        similar_price_q25_krw:
+          type: integer
+          nullable: true
+        similar_price_q75_krw:
+          type: integer
+          nullable: true
+
+    MarketPriceCard:
+      type: object
+      required:
+        - title
+        - metric_label
+        - median_display
+        - range_display
+        - medium_distribution
+        - sample_count
+        - sample_count_display
+      properties:
+        title:
+          type: string
+          example: 1차 시장 가격
+        metric_label:
+          type: string
+          example: 호당가 중앙값
+        median_krw_per_ho:
+          type: integer
+          nullable: true
+        median_display:
+          type: string
+          example: 35만원/호
+        range_krw_per_ho:
+          type: object
+          required:
+            - low
+            - high
+          properties:
+            low:
+              type: integer
+              nullable: true
+            high:
+              type: integer
+              nullable: true
+        range_display:
+          type: string
+          example: 28만 - 46만원/호
+        medium_distribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/MediumDistribution"
+        sample_count:
+          type: integer
+        sample_count_display:
+          type: string
+          example: 표본 수 N=24건
+
+    MediumDistribution:
+      type: object
+      required:
+        - label
+        - display
+        - sample_count
+      properties:
+        label:
+          type: string
+          example: 회화
+        medium_group:
+          type: string
+          example: painting
+        median_krw_per_ho:
+          type: integer
+          nullable: true
+        display:
+          type: string
+          example: 33만
+        sample_count:
+          type: integer
+
+    ComparableSample:
+      type: object
+      properties:
+        artwork_id:
+          type: string
+        title:
+          type: string
+        artist_name:
+          type: string
+        sale_price_krw:
+          type: integer
+          nullable: true
+        width_cm:
+          type: number
+          nullable: true
+        height_cm:
+          type: number
+          nullable: true
+        medium_category:
+          type: string
+          nullable: true
+        support_category:
+          type: string
+          nullable: true
+        similarity_reason:
+          type: string
+          nullable: true
+
+    Warning:
+      type: object
+      required:
+        - code
+        - severity
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - WARM_ARTIST_MATCHED
+            - COLD_ARTIST
+            - ARTIST_NOT_RESOLVED
+            - ARTIST_AMBIGUOUS
+            - ARTIST_REVIEW_REQUIRED
+            - LOW_WARM_TRAINING_LABEL_COUNT
+            - LOW_SIMILAR_SAMPLE_COUNT
+            - GLOBAL_FALLBACK_USED
+            - SEARCH_QUALITY_LOW
+            - SEARCH_HOMONYM_RISK
+            - SEARCH_SNAPSHOT_STALE
+            - MISSING_DIMENSIONS
+            - WIDE_PRICE_RANGE
+            - HIGH_PRICE_TAIL_RISK
+            - LOW_PRICE_OVER_PREDICTION_RISK
+        severity:
+          type: string
+          enum:
+            - info
+            - warning
+            - critical
+        message:
+          type: string
+
+    ErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          required:
+            - error
+          properties:
+            error:
+              $ref: "#/components/schemas/ErrorBody"
+
+    ErrorBody:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - INVALID_REQUEST
+            - MISSING_REQUIRED_FIELD
+            - ARTIST_NOT_FOUND
+            - UNSUPPORTED_MEDIUM
+            - INVALID_DIMENSIONS
+            - MODEL_INFERENCE_FAILED
+            - MODEL_UNAVAILABLE
+        message:
+          type: string
+        field:
+          type: string
+          nullable: true
+
+security:
+  - bearerAuth: []

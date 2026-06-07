@@ -1,0 +1,33 @@
+{
+  "experiment_id": "A5",
+  "title": "Track6 A5 작품 유형만 실험 결과",
+  "purpose": "회화·판화·조각 등 작품 유형 정보만으로 가격 예측에 도움이 되는지 확인",
+  "description": "Artwork type-only comparison using Track6 split with year and type enrichment",
+  "split_root": "data/track6_split_with_year_type",
+  "exp_dir": "experiments/track6/A5_artwork_type_only",
+  "prompt_file": "experiments/track6/A5_artwork_type_only/prompts/used_prompt.md",
+  "export_feature_columns": [
+    "artwork_type",
+    "artwork_type_final"
+  ],
+  "variable_blocks": [
+    {
+      "name": "작품 유형 전체 구분",
+      "features": ["artwork_type"],
+      "description": "회화, 판화, 조각, 사진, 드로잉, 혼합매체 등 정규화된 작품 유형"
+    },
+    {
+      "name": "유형 보완 전체 구분",
+      "features": ["artwork_type_final"],
+      "description": "원본 유형이 없으면 재료/지지체로 유추한 작품 유형"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작품 유형만으로 회화·판화·조각 차이가 가격 예측에 의미가 있는지 확인한다.",
+    "데이터 확인": "최신 Track6 피처에는 직접 유형 컬럼이 없어 원본 Artsy/Saatchi 유형값과 URL 패턴으로 artwork_type을 복원했다.",
+    "운영 기준": "모델 입력에는 artwork_type 계열 최종 구분값만 사용하고, 출처/매칭방법/원문값은 학습 피처에서 제외한다.",
+    "유형 보완": "원본 유형이 unknown인 경우 재료, 지지체, NANT 도구 값을 사용해 artwork_type_final을 만든 뒤 원본 unknown 유지 실험과 비교한다.",
+    "해석 기준": "같은 고정 모델군에서 MdAPE와 p95 APE가 낮아지면 작품 유형 정보가 가격대 구분에 도움이 된다고 본다.",
+    "주의": "Warm test의 판화/조각 표본은 작아서 세부 유형별 결론은 보조적으로만 해석한다."
+  }
+}

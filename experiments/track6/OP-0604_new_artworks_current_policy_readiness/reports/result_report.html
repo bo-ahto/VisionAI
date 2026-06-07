@@ -1,0 +1,567 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>OP-0604</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933;line-height:1.55}
+h1,h2{margin-top:28px} table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0 24px}
+th,td{border:1px solid #d8dee4;padding:7px;text-align:left;vertical-align:top} th{background:#eef2f7}
+code{background:#f3f4f6;padding:2px 4px;border-radius:4px} .note{background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:12px;margin:12px 0}
+</style></head><body>
+<h1>OP-0604 신규 테스트 데이터 현재 정책 적용 전 점검</h1>
+<div class="note">중간 리포트의 현재 후보와 저장된 legacy artifact가 다르므로, 기존 artifact 결과를 현재 후보 결과로 해석하면 안 됩니다.</div>
+<h2>Route Summary</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>metric</th>
+      <th>value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>total_rows</td>
+      <td>6873.0</td>
+    </tr>
+    <tr>
+      <td>label_parsed_rows</td>
+      <td>837.0</td>
+    </tr>
+    <tr>
+      <td>warm_route_rows</td>
+      <td>6873.0</td>
+    </tr>
+    <tr>
+      <td>cold_route_rows</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>matched_train_artist_nonempty_rows</td>
+      <td>6873.0</td>
+    </tr>
+    <tr>
+      <td>matched_artist_in_train_key_rows</td>
+      <td>6873.0</td>
+    </tr>
+    <tr>
+      <td>median_label_price_krw</td>
+      <td>2760000.0</td>
+    </tr>
+    <tr>
+      <td>p10_label_price_krw</td>
+      <td>600000.0</td>
+    </tr>
+    <tr>
+      <td>p90_label_price_krw</td>
+      <td>23676000.0</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Detail Distribution</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>group_type</th>
+      <th>price_currency</th>
+      <th>rows</th>
+      <th>route_by_current_match</th>
+      <th>price_label_status</th>
+      <th>matched_train_artist</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>currency</td>
+      <td>EUR</td>
+      <td>108</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>currency</td>
+      <td>GBP</td>
+      <td>8</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>currency</td>
+      <td>HKD</td>
+      <td>42</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>currency</td>
+      <td>JPY</td>
+      <td>3</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>currency</td>
+      <td>KRW</td>
+      <td>2090</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>currency</td>
+      <td>USD</td>
+      <td>4622</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>route</td>
+      <td>NaN</td>
+      <td>6873</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>price_label_status</td>
+      <td>NaN</td>
+      <td>837</td>
+      <td>NaN</td>
+      <td>explicit_price</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>price_label_status</td>
+      <td>NaN</td>
+      <td>9</td>
+      <td>NaN</td>
+      <td>inquire_no_price</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>price_label_status</td>
+      <td>NaN</td>
+      <td>683</td>
+      <td>NaN</td>
+      <td>missing_sale_message</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>price_label_status</td>
+      <td>NaN</td>
+      <td>42</td>
+      <td>NaN</td>
+      <td>on_hold_no_price</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>price_label_status</td>
+      <td>NaN</td>
+      <td>7</td>
+      <td>NaN</td>
+      <td>on_loan_no_price</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>price_label_status</td>
+      <td>NaN</td>
+      <td>2076</td>
+      <td>NaN</td>
+      <td>price_on_request</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>price_label_status</td>
+      <td>NaN</td>
+      <td>3219</td>
+      <td>NaN</td>
+      <td>sold_no_price</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>269</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>qwaya</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>226</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>cha young seok</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>189</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>hye eun kang</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>131</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>seongbin gam</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>127</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>hyunsoo kim</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>125</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>sooyoung chung</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>122</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>hyunsik kim</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>121</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>kwon kisoo</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>108</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>junyoung kang</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>85</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>yeji seo</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>82</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>kang yehsine</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>81</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>eunju kim</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>75</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>zikseong jeong</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>74</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>jieun lee</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>73</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>hur boree</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>72</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>seong joon hong</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>69</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>seontae hwang</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>taehoon park</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>65</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>jihoon ha</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>63</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>jae ho jung</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>60</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>inhye jeong</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>59</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>wongi sul</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>58</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>hanna kim</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>53</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>gyomyung shin</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>52</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>han unsung</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>52</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>jaeyeon yoo</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>50</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>junseok kang</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>48</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>inhee jang</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>46</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>beom jun</td>
+    </tr>
+    <tr>
+      <td>top_artist</td>
+      <td>NaN</td>
+      <td>44</td>
+      <td>warm</td>
+      <td>NaN</td>
+      <td>gyul e kim</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Model Policy Readiness</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>policy_area</th>
+      <th>candidate</th>
+      <th>midterm_role</th>
+      <th>intended_use</th>
+      <th>direct_runnable_status</th>
+      <th>reason</th>
+      <th>action_for_0604_test</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Warm current primary</td>
+      <td>PP-SVC3 blend_svcnum_ppv8_wsvc_0.70</td>
+      <td>현재 Warm 1순위</td>
+      <td>Warm route의 주 예측가</td>
+      <td>not_directly_runnable</td>
+      <td>svc_numeric_seed_mean과 pp_v8_compact_blend_mape_guarded 예측값을 70:30으로 결합한 정책이다. 현재 저장소에는 기존 validation/test 예측 CSV는 있으나 신규 데이터에 바로 적용할 단일 추론 artifact가 없다.</td>
+      <td>정확한 현재 후보 평가 전 PP-SVC3 추론 artifact 재현/고정 필요</td>
+    </tr>
+    <tr>
+      <td>Warm comparable-price component</td>
+      <td>svc_numeric_seed_mean</td>
+      <td>PP-SVC3의 70% 축</td>
+      <td>유사 작품 기반 가격 피처를 Huber에 넣은 Warm 예측</td>
+      <td>runnable_by_refit_not_frozen</td>
+      <td>학습 split에서 재학습하면 만들 수 있지만, 배포용으로 고정 저장된 artifact는 아직 없다.</td>
+      <td>운영 실험에서는 artifact화 후 사용하거나 refit 결과임을 명시</td>
+    </tr>
+    <tr>
+      <td>Warm error-stabilization component</td>
+      <td>pp_v8_compact_blend_mape_guarded</td>
+      <td>PP-SVC3의 30% 축</td>
+      <td>평균오차를 방어하는 Warm 보조 예측</td>
+      <td>not_directly_runnable</td>
+      <td>여러 이전 Warm 후보 예측 파일의 compact blend 결과이며 신규 데이터용 개별 component artifact가 없다.</td>
+      <td>PP-V8 component chain을 재현 가능한 추론 모듈로 고정 필요</td>
+    </tr>
+    <tr>
+      <td>Cold current reference</td>
+      <td>PP-Y18 qwidth_bin_oof_min30_cap0.25</td>
+      <td>Cold 참고 예측 정책</td>
+      <td>Cold route의 참고 예측가와 넓은 가격 범위</td>
+      <td>not_directly_runnable_as_single_artifact</td>
+      <td>LightGBM Quantile 예측과 qwidth 구간 보정 결과가 실험 예측 파일 중심으로 남아 있어 단일 신규 추론 artifact는 없다.</td>
+      <td>Cold 신규 샘플 평가 전 LightGBM Quantile + qwidth 보정 artifact 필요</td>
+    </tr>
+    <tr>
+      <td>Legacy warm artifact</td>
+      <td>data/track6/artifacts/track6_warm_huber.joblib</td>
+      <td>이전 baseline</td>
+      <td>데이터 파이프라인 smoke test 또는 비교 기준</td>
+      <td>runnable_baseline</td>
+      <td>저장된 joblib artifact는 있으나 중간 리포트의 Warm 1순위 후보가 아니다.</td>
+      <td>필요 시 baseline으로만 별도 표기</td>
+    </tr>
+    <tr>
+      <td>Legacy cold artifacts</td>
+      <td>track6_cold_lightgbm.joblib / track6_cold_catboost.cbm</td>
+      <td>이전 baseline</td>
+      <td>Cold baseline 비교</td>
+      <td>runnable_baseline</td>
+      <td>저장된 artifact는 있으나 중간 리포트의 Cold reference 정책과는 다르다.</td>
+      <td>필요 시 baseline으로만 별도 표기</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Artifact Status</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>artifact</th>
+      <th>exists</th>
+      <th>role</th>
+      <th>model</th>
+      <th>feature_set</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>data/track6/artifacts/track6_artifact_manifest.json</td>
+      <td>True</td>
+      <td>legacy artifact manifest</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>True</td>
+      <td>warm_price_model</td>
+      <td>HuberRegressor</td>
+      <td>base_existing_combo</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>True</td>
+      <td>cold_catboost_price_model</td>
+      <td>CatBoostRegressor</td>
+      <td>base_medium_shape</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>True</td>
+      <td>cold_lightgbm_price_model</td>
+      <td>LGBMRegressor</td>
+      <td>base_support_size</td>
+    </tr>
+    <tr>
+      <td>experiments/track6/PP-SVC3_warm_svc_blend_routing/outputs/selected_candidate_metrics.csv</td>
+      <td>True</td>
+      <td>experiment prediction/metric source</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>experiments/track6/PP-SVC2_warm_comparable_stats_stability/outputs/predictions.csv</td>
+      <td>True</td>
+      <td>experiment prediction/metric source</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>experiments/track6/PP-V8_warm_deployment_simplification/outputs/predictions.csv</td>
+      <td>True</td>
+      <td>experiment prediction/metric source</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>experiments/track6/PP-Y18_cold_y16_top_candidate_stability/outputs/metrics.csv</td>
+      <td>True</td>
+      <td>experiment prediction/metric source</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>experiments/track6/PP-Y18_cold_y16_top_candidate_stability/outputs/predictions.csv</td>
+      <td>True</td>
+      <td>experiment prediction/metric source</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+</body></html>

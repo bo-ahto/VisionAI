@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 A6 깊이/has_depth 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 A6 깊이/has_depth 실험 결과</h1>
+    <ul>
+      <li>목적: 깊이 정보와 깊이 존재 여부가 작품 가격 예측에 도움이 되는지 확인</li>
+      <li>실험 ID: <code>A6</code></li>
+      <li>Warm 최고: <code>깊이 수치</code> / <code>Huber</code> / MdAPE 0.7458</li>
+      <li>Cold 최고: <code>깊이 수치 + 깊이 존재 여부</code> / <code>LightGBM</code> / MdAPE 0.6761</li>
+      <li>생성일: <code>2026-05-22T10:07:43</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/A6_depth_has_depth_only/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/A6_depth_has_depth_only/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/A6_depth_has_depth_only/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/A6_depth_has_depth_only/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/A6_depth_has_depth_only/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/A6_depth_has_depth_only/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/A6_depth_has_depth_only/data/train_features.csv</code><br><code>experiments/track6/A6_depth_has_depth_only/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/A6_depth_has_depth_only/data/test_warm_features.csv</code><br><code>experiments/track6/A6_depth_has_depth_only/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/A6_depth_has_depth_only/data/test_cold_features.csv</code><br><code>experiments/track6/A6_depth_has_depth_only/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/A6_depth_has_depth_only/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/A6_depth_has_depth_only/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>depth_cm</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 그대로 사용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>입체성 정보가 가격대 구분에 도움이 되는지 확인한다.</td></tr><tr><td>사용 피처</td><td>A6 기준에 맞춰 depth_cm과 has_depth만 사용한다.</td></tr><tr><td>제외 피처</td><td>is_3d_candidate는 3D 후보 플래그라 별도 실험에서 다루고, 이번 A6에는 넣지 않는다.</td></tr><tr><td>처리 기준</td><td>depth_cm은 숫자형으로 처리하고 결측은 학습 데이터 중앙값으로 보정한다. has_depth는 범주형 플래그로 처리한다.</td></tr><tr><td>해석 기준</td><td>같은 고정 모델군에서 MdAPE와 p95 APE가 낮아지면 깊이 정보가 가격 예측에 도움이 된다고 본다.</td></tr><tr><td>주의</td><td>깊이 값이 있는 작품이 반드시 조각/입체 작품이라는 뜻은 아니므로, A6는 깊이 변수 자체의 영향만 확인한다.</td></tr><tr><td>purpose</td><td>깊이 정보와 깊이 존재 여부가 작품 가격 예측에 도움이 되는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 깊이 수치 + Huber(MdAPE 0.7458), Cold 최고는 깊이 수치 + 깊이 존재 여부 + LightGBM(MdAPE 0.6761)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>깊이 수치</h2>
+              <p><strong>사용 피처:</strong> <code>depth_cm</code> · 작품 깊이 cm 값만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0106</td><td>0.7458</td><td>6.3565</td><td>0.1944</td><td>0.3114</td><td>1.5522</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0024</td><td>0.7604</td><td>7.1595</td><td>0.1730</td><td>0.3048</td><td>1.7296</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0024</td><td>0.7604</td><td>7.1595</td><td>0.1730</td><td>0.3048</td><td>1.7296</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0046</td><td>0.7032</td><td>7.0653</td><td>0.2130</td><td>0.3385</td><td>1.3711</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0050</td><td>0.7030</td><td>7.0080</td><td>0.2130</td><td>0.3385</td><td>1.3653</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0151</td><td>0.6866</td><td>6.4150</td><td>0.2030</td><td>0.3656</td><td>1.8543</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>깊이 존재 여부</h2>
+              <p><strong>사용 피처:</strong> <code>has_depth</code> · 깊이 값이 있는지 여부만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0001</td><td>0.7512</td><td>7.0668</td><td>0.1895</td><td>0.3097</td><td>1.6479</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>-0.0012</td><td>0.7644</td><td>7.6523</td><td>0.1812</td><td>0.2998</td><td>1.7942</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>-0.0012</td><td>0.7644</td><td>7.6522</td><td>0.1812</td><td>0.2998</td><td>1.7941</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0324</td><td>0.7088</td><td>6.6734</td><td>0.2097</td><td>0.3433</td><td>1.3668</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0284</td><td>0.7093</td><td>6.6275</td><td>0.2081</td><td>0.3479</td><td>1.3611</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0395</td><td>0.7030</td><td>7.3779</td><td>0.2146</td><td>0.3495</td><td>1.4853</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>깊이 수치 + 깊이 존재 여부</h2>
+              <p><strong>사용 피처:</strong> <code>depth_cm, has_depth</code> · 깊이 cm 값과 깊이 존재 여부를 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0140</td><td>0.7465</td><td>7.0645</td><td>0.1895</td><td>0.3163</td><td>1.6180</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0024</td><td>0.7572</td><td>7.6132</td><td>0.1812</td><td>0.3031</td><td>1.7857</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0024</td><td>0.7572</td><td>7.6131</td><td>0.1812</td><td>0.3031</td><td>1.7857</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0483</td><td>0.6938</td><td>6.4480</td><td>0.2136</td><td>0.3379</td><td>1.3415</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0448</td><td>0.6948</td><td>6.4316</td><td>0.2107</td><td>0.3404</td><td>1.3336</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0053</td><td>0.6761</td><td>6.5617</td><td>0.2049</td><td>0.3595</td><td>1.8631</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/A6_depth_has_depth_only/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/A6_depth_has_depth_only/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/A6_depth_has_depth_only/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/A6_depth_has_depth_only/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/A6_depth_has_depth_only/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/A6_depth_has_depth_only/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/A6_depth_has_depth_only/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/A6_depth_has_depth_only/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/A6_depth_has_depth_only/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/A6_depth_has_depth_only/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/A6_depth_has_depth_only/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/A6_depth_has_depth_only/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

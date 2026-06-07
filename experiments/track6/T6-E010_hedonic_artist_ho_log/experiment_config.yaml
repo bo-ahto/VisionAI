@@ -1,0 +1,38 @@
+experiment_id: T6-E010
+experiment_name: hedonic_artist_ho_log
+source_data: data/track6/track6_feature_candidates_name_corrected.csv
+seed: 20260519
+model:
+  type: hedonic_linear_regression
+  implementation: sklearn Ridge(alpha=1.0)
+split_policy:
+  warm_definition: train에 같은 작가가 존재하는 평가 row
+  stable_warm_min_train_works: 5
+  stable_warm_min_test_works_per_artist: 2
+  cold_definition: train에 한 번도 등장하지 않는 작가의 평가 row
+  cold_target_rows: 3000
+features:
+  warm_base:
+    - artist_name_ko
+    - estimated_ho
+  warm_log:
+    - artist_name_ko
+    - ln_estimated_ho
+  cold_base:
+    - estimated_ho
+  cold_log:
+    - ln_estimated_ho
+targets:
+  base: price_krw
+  log: ln_price_krw
+metrics:
+  - median_ape
+  - p95_ape
+  - mape
+  - within_30
+  - within_50
+  - rmse_log
+notes:
+  - price_krw와 ln_price_krw는 학습 정답 또는 평가 라벨로만 사용
+  - Cold 모델은 artist_name_ko를 피처로 사용하지 않음
+  - estimated_ho는 area_cm2를 F형 호수 면적표에 매칭해 생성

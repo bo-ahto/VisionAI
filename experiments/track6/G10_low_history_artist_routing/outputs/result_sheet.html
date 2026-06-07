@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 G10 저이력 작가 라우팅 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <h1>Track6 G10 저이력 작가 라우팅 실험 결과</h1>
+    <ul>
+      <li>목적: 작가별 학습 작품 수가 적은 Warm 작품에서 Warm 작가 모델과 Cold 방식 모델 중 어느 쪽이 안정적인지 확인</li>
+      <li>Warm 전략 피처: <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_name_ko, artist_works_log</code></li>
+      <li>Cold 방식 피처: <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support</code></li>
+      <li>비교 모델: Warm 전략은 Huber, Cold 방식은 Quantile-LAD</li>
+      <li>주의: 공식 Track6 Warm test는 Stable Warm 기준이라 학습 작품 수 5개 미만 구간은 거의 없거나 없을 수 있음</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>전체 성능</h2>
+    <table><thead><tr><th>case</th><th>scope</th><th>n</th><th>R2</th><th>RMSE_log</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>Within_50</th><th>MAPE</th></tr></thead><tbody><tr><td>warm_artist_model_on_warm_test</td><td>Warm</td><td>607</td><td>0.8248</td><td>0.5699</td><td>0.1846</td><td>0.9845</td><td>0.6853</td><td>0.8451</td><td>0.4620</td></tr><tr><td>cold_style_model_on_warm_test</td><td>Warm</td><td>607</td><td>0.3944</td><td>1.0597</td><td>0.5055</td><td>2.9971</td><td>0.3229</td><td>0.4959</td><td>0.7991</td></tr><tr><td>cold_style_model_on_cold_test</td><td>Cold</td><td>3099</td><td>0.4181</td><td>1.0026</td><td>0.5128</td><td>3.2103</td><td>0.2588</td><td>0.4873</td><td>1.1479</td></tr></tbody></table>
+  </section>
+  <section class="card">
+    <h2>작가별 학습 작품 수 구간별 Warm test 성능</h2>
+    <table><thead><tr><th>artist_count_bin</th><th>case</th><th>n</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>Within_50</th></tr></thead><tbody><tr><td>5_to_9</td><td>warm_artist_model</td><td>244</td><td>0.1808</td><td>1.2916</td><td>0.6516</td><td>0.8197</td></tr><tr><td>5_to_9</td><td>cold_style_model</td><td>244</td><td>0.5616</td><td>3.4121</td><td>0.2746</td><td>0.4262</td></tr><tr><td>50_plus</td><td>warm_artist_model</td><td>72</td><td>0.1570</td><td>0.4461</td><td>0.8194</td><td>0.9722</td></tr><tr><td>50_plus</td><td>cold_style_model</td><td>72</td><td>0.5015</td><td>1.7435</td><td>0.3333</td><td>0.5000</td></tr><tr><td>10_to_19</td><td>warm_artist_model</td><td>150</td><td>0.1898</td><td>1.5450</td><td>0.6933</td><td>0.8267</td></tr><tr><td>10_to_19</td><td>cold_style_model</td><td>150</td><td>0.4435</td><td>2.4252</td><td>0.3600</td><td>0.5267</td></tr><tr><td>20_to_49</td><td>warm_artist_model</td><td>141</td><td>0.1945</td><td>0.8145</td><td>0.6667</td><td>0.8440</td></tr><tr><td>20_to_49</td><td>cold_style_model</td><td>141</td><td>0.4170</td><td>2.0000</td><td>0.3617</td><td>0.5816</td></tr></tbody></table>
+  </section>
+  <section class="card">
+    <h2>생성 데이터</h2>
+    <ul><li><code>train_warm_strategy_features</code>: <code>experiments/track6/G10_low_history_artist_routing/data/train_warm_strategy_features.csv</code></li><li><code>train_cold_style_features</code>: <code>experiments/track6/G10_low_history_artist_routing/data/train_cold_style_features.csv</code></li><li><code>test_warm_warm_strategy_features</code>: <code>experiments/track6/G10_low_history_artist_routing/data/test_warm_warm_strategy_features.csv</code></li><li><code>test_warm_cold_style_features</code>: <code>experiments/track6/G10_low_history_artist_routing/data/test_warm_cold_style_features.csv</code></li><li><code>test_cold_cold_style_features</code>: <code>experiments/track6/G10_low_history_artist_routing/data/test_cold_cold_style_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/G10_low_history_artist_routing/data/train_labels.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/G10_low_history_artist_routing/data/test_warm_labels.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/G10_low_history_artist_routing/data/test_cold_labels.csv</code></li></ul>
+  </section>
+  <section class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/G10_low_history_artist_routing/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/G10_low_history_artist_routing/source_data/track6_train_labels.csv</code></li><li><code>warm_features</code>: <code>experiments/track6/G10_low_history_artist_routing/source_data/track6_test_warm_warm_features.csv</code></li><li><code>warm_labels</code>: <code>experiments/track6/G10_low_history_artist_routing/source_data/track6_test_warm_labels.csv</code></li><li><code>cold_features</code>: <code>experiments/track6/G10_low_history_artist_routing/source_data/track6_test_cold_cold_features.csv</code></li><li><code>cold_labels</code>: <code>experiments/track6/G10_low_history_artist_routing/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </section>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 H1 작가명 x 호수 교차항 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 H1 작가명 x 호수 교차항 실험 결과</h1>
+    <ul>
+      <li>목적: 같은 호수라도 작가명에 따라 가격대가 다른지 확인</li>
+      <li>실험 ID: <code>H1</code></li>
+      <li>Warm 최고: <code>H1 교차항: 작가명 x 호수</code> / <code>Huber</code> / MdAPE 0.1762</li>
+      <li>Cold 최고: <code>H1 기준: 작가명 + 호수</code> / <code>LightGBM</code> / MdAPE 0.5062</li>
+      <li>생성일: <code>2026-05-27T22:24:09</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/H1_artist_name_x_ln_ho/data/train_features.csv</code><br><code>experiments/track6/H1_artist_name_x_ln_ho/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/H1_artist_name_x_ln_ho/data/test_warm_features.csv</code><br><code>experiments/track6/H1_artist_name_x_ln_ho/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/H1_artist_name_x_ln_ho/data/test_cold_features.csv</code><br><code>experiments/track6/H1_artist_name_x_ln_ho/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/H1_artist_name_x_ln_ho/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/H1_artist_name_x_ln_ho/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>ln_estimated_ho, ln_ho_x_artist_name_ko_01, ln_ho_x_artist_name_ko_02, ln_ho_x_artist_name_ko_03, ln_ho_x_artist_name_ko_04, ln_ho_x_artist_name_ko_05, ln_ho_x_artist_name_ko_06, ln_ho_x_artist_name_ko_07, ln_ho_x_artist_name_ko_08, ln_ho_x_artist_name_ko_09, ln_ho_x_artist_name_ko_10, ln_ho_x_artist_name_ko_11, ln_ho_x_artist_name_ko_12, ln_ho_x_artist_name_ko_13, ln_ho_x_artist_name_ko_14, ln_ho_x_artist_name_ko_15, ln_ho_x_artist_name_ko_16, ln_ho_x_artist_name_ko_17, ln_ho_x_artist_name_ko_18, ln_ho_x_artist_name_ko_19, ln_ho_x_artist_name_ko_20, ln_ho_x_artist_name_ko_21, ln_ho_x_artist_name_ko_22, ln_ho_x_artist_name_ko_23, ln_ho_x_artist_name_ko_24, ln_ho_x_artist_name_ko_25, ln_ho_x_artist_name_ko_26, ln_ho_x_artist_name_ko_27, ln_ho_x_artist_name_ko_28, ln_ho_x_artist_name_ko_29, ln_ho_x_artist_name_ko_30, ln_ho_x_artist_name_ko_31, ln_ho_x_artist_name_ko_32, ln_ho_x_artist_name_ko_33, ln_ho_x_artist_name_ko_34, ln_ho_x_artist_name_ko_35, ln_ho_x_artist_name_ko_36, ln_ho_x_artist_name_ko_37, ln_ho_x_artist_name_ko_38, ln_ho_x_artist_name_ko_39, ln_ho_x_artist_name_ko_40, ln_ho_x_artist_name_ko_41, ln_ho_x_artist_name_ko_42, ln_ho_x_artist_name_ko_43, ln_ho_x_artist_name_ko_44, ln_ho_x_artist_name_ko_45, ln_ho_x_artist_name_ko_46, ln_ho_x_artist_name_ko_47, ln_ho_x_artist_name_ko_48, ln_ho_x_artist_name_ko_49, ln_ho_x_artist_name_ko_50, ln_ho_x_artist_name_ko_51, ln_ho_x_artist_name_ko_52, ln_ho_x_artist_name_ko_53, ln_ho_x_artist_name_ko_54, ln_ho_x_artist_name_ko_55, ln_ho_x_artist_name_ko_56, ln_ho_x_artist_name_ko_57, ln_ho_x_artist_name_ko_58, ln_ho_x_artist_name_ko_59, ln_ho_x_artist_name_ko_60, ln_ho_x_artist_name_ko_61, ln_ho_x_artist_name_ko_62, ln_ho_x_artist_name_ko_63, ln_ho_x_artist_name_ko_64, ln_ho_x_artist_name_ko_65, ln_ho_x_artist_name_ko_66, ln_ho_x_artist_name_ko_67, ln_ho_x_artist_name_ko_68, ln_ho_x_artist_name_ko_69, ln_ho_x_artist_name_ko_70, ln_ho_x_artist_name_ko_71, ln_ho_x_artist_name_ko_72, ln_ho_x_artist_name_ko_73, ln_ho_x_artist_name_ko_74, ln_ho_x_artist_name_ko_75, ln_ho_x_artist_name_ko_76, ln_ho_x_artist_name_ko_77, ln_ho_x_artist_name_ko_78, ln_ho_x_artist_name_ko_79, ln_ho_x_artist_name_ko_80</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>같은 호수라도 작가명에 따라 가격대가 다른지 확인</td></tr><tr><td>학습 피처</td><td>artist_name_ko, ln_estimated_ho / artist_name_ko, ln_estimated_ho</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>실험군</td><td>Group H: 작가명과 작품 변수 교차항</td></tr><tr><td>해석 중심</td><td>작가명이 포함되므로 Warm 결과를 중심으로 판단한다.</td></tr><tr><td>중복 검토</td><td>H2/H3/H4는 기존 D8/D9/D10과 중복되어 신규 실행하지 않고 결과 매핑한다.</td></tr><tr><td>purpose</td><td>같은 호수라도 작가명에 따라 가격대가 다른지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 H1 교차항: 작가명 x 호수 + Huber(MdAPE 0.1762), Cold 최고는 H1 기준: 작가명 + 호수 + LightGBM(MdAPE 0.5062)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>H1 기준: 작가명 + 호수</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, ln_estimated_ho</code> · 작가명과 호수의 개별 효과만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.8224</td><td>0.5738</td><td>0.1801</td><td>0.9846</td><td>0.7051</td><td>0.8550</td><td>0.4677</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.8547</td><td>0.5190</td><td>0.2468</td><td>1.1608</td><td>0.6013</td><td>0.8023</td><td>0.3833</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.8566</td><td>0.5157</td><td>0.2499</td><td>1.1397</td><td>0.5799</td><td>0.7941</td><td>0.3812</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3679</td><td>1.0449</td><td>0.5767</td><td>4.4100</td><td>0.2740</td><td>0.4472</td><td>1.3970</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.3727</td><td>1.0410</td><td>0.5240</td><td>3.3434</td><td>0.2494</td><td>0.4718</td><td>1.1200</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4525</td><td>0.9725</td><td>0.5062</td><td>3.7913</td><td>0.2646</td><td>0.4953</td><td>1.2786</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>H1 교차항: 작가명 x 호수</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, ln_estimated_ho, ln_ho_x_artist_name_ko_01, ln_ho_x_artist_name_ko_02, ln_ho_x_artist_name_ko_03, ln_ho_x_artist_name_ko_04, ln_ho_x_artist_name_ko_05, ln_ho_x_artist_name_ko_06, ln_ho_x_artist_name_ko_07, ln_ho_x_artist_name_ko_08, ln_ho_x_artist_name_ko_09, ln_ho_x_artist_name_ko_10, ln_ho_x_artist_name_ko_11, ln_ho_x_artist_name_ko_12, ln_ho_x_artist_name_ko_13, ln_ho_x_artist_name_ko_14, ln_ho_x_artist_name_ko_15, ln_ho_x_artist_name_ko_16, ln_ho_x_artist_name_ko_17, ln_ho_x_artist_name_ko_18, ln_ho_x_artist_name_ko_19, ln_ho_x_artist_name_ko_20, ln_ho_x_artist_name_ko_21, ln_ho_x_artist_name_ko_22, ln_ho_x_artist_name_ko_23, ln_ho_x_artist_name_ko_24, ln_ho_x_artist_name_ko_25, ln_ho_x_artist_name_ko_26, ln_ho_x_artist_name_ko_27, ln_ho_x_artist_name_ko_28, ln_ho_x_artist_name_ko_29, ln_ho_x_artist_name_ko_30, ln_ho_x_artist_name_ko_31, ln_ho_x_artist_name_ko_32, ln_ho_x_artist_name_ko_33, ln_ho_x_artist_name_ko_34, ln_ho_x_artist_name_ko_35, ln_ho_x_artist_name_ko_36, ln_ho_x_artist_name_ko_37, ln_ho_x_artist_name_ko_38, ln_ho_x_artist_name_ko_39, ln_ho_x_artist_name_ko_40, ln_ho_x_artist_name_ko_41, ln_ho_x_artist_name_ko_42, ln_ho_x_artist_name_ko_43, ln_ho_x_artist_name_ko_44, ln_ho_x_artist_name_ko_45, ln_ho_x_artist_name_ko_46, ln_ho_x_artist_name_ko_47, ln_ho_x_artist_name_ko_48, ln_ho_x_artist_name_ko_49, ln_ho_x_artist_name_ko_50, ln_ho_x_artist_name_ko_51, ln_ho_x_artist_name_ko_52, ln_ho_x_artist_name_ko_53, ln_ho_x_artist_name_ko_54, ln_ho_x_artist_name_ko_55, ln_ho_x_artist_name_ko_56, ln_ho_x_artist_name_ko_57, ln_ho_x_artist_name_ko_58, ln_ho_x_artist_name_ko_59, ln_ho_x_artist_name_ko_60, ln_ho_x_artist_name_ko_61, ln_ho_x_artist_name_ko_62, ln_ho_x_artist_name_ko_63, ln_ho_x_artist_name_ko_64, ln_ho_x_artist_name_ko_65, ln_ho_x_artist_name_ko_66, ln_ho_x_artist_name_ko_67, ln_ho_x_artist_name_ko_68, ln_ho_x_artist_name_ko_69, ln_ho_x_artist_name_ko_70, ln_ho_x_artist_name_ko_71, ln_ho_x_artist_name_ko_72, ln_ho_x_artist_name_ko_73, ln_ho_x_artist_name_ko_74, ln_ho_x_artist_name_ko_75, ln_ho_x_artist_name_ko_76, ln_ho_x_artist_name_ko_77, ln_ho_x_artist_name_ko_78, ln_ho_x_artist_name_ko_79, ln_ho_x_artist_name_ko_80</code> · 작가별 호수 프리미엄 교차항 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.8174</td><td>0.5818</td><td>0.1762</td><td>1.0038</td><td>0.6903</td><td>0.8567</td><td>0.4788</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.8551</td><td>0.5183</td><td>0.2259</td><td>1.1462</td><td>0.6129</td><td>0.8040</td><td>0.3762</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.8566</td><td>0.5156</td><td>0.2396</td><td>1.0844</td><td>0.5914</td><td>0.7974</td><td>0.3737</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3683</td><td>1.0445</td><td>0.5692</td><td>4.3384</td><td>0.2756</td><td>0.4495</td><td>1.3852</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.3680</td><td>1.0448</td><td>0.5250</td><td>3.4610</td><td>0.2530</td><td>0.4840</td><td>1.1362</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4527</td><td>0.9723</td><td>0.5076</td><td>3.7926</td><td>0.2662</td><td>0.4956</td><td>1.2795</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/data/test_cold_labels.csv</code></li><li><code>interaction_mapping</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/outputs/interaction_mapping.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/H1_artist_name_x_ln_ho/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

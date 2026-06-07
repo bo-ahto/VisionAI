@@ -1,0 +1,318 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Track6 A~J 최적 피처/모델 분석</title><style>
+body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f4ecdc; color:#17211d; line-height:1.65; }
+main { max-width: 1840px; margin:0 auto; padding:28px 18px 72px; }
+section { background:#fffaf0; border:1px solid #d8c49f; border-radius:18px; padding:24px; margin:22px 0; box-shadow:0 8px 24px rgba(72,49,22,.08); overflow-x:auto; }
+h1 { font-size:40px; margin:0 0 18px; letter-spacing:-.04em; }
+h2 { font-size:27px; margin:10px 0 18px; border-left:6px solid #1f3c61; padding-left:12px; }
+h3 { font-size:21px; margin:24px 0 10px; }
+p { margin:10px 0; }
+ul { margin:10px 0 16px 22px; padding:0; }
+li { margin:6px 0; }
+.table-wrap { width:100%; overflow-x:auto; }
+table { width:100%; border-collapse:collapse; margin:16px 0 26px; font-size:13px; }
+th, td { border:1px solid #d3bd96; padding:9px 10px; vertical-align:top; text-align:left; }
+th { background:#e5d7bd; font-weight:800; white-space:nowrap; }
+td { background:#fffdf6; }
+code { background:#eee4d2; padding:2px 6px; border-radius:6px; font-family:"SFMono-Regular",Consolas,monospace; font-size:.92em; }
+@media (max-width:900px){main{padding:18px 10px;} h1{font-size:32px;} section{padding:16px;} table{font-size:12px;}}
+</style></head><body><main><section><h1>Track6 A~J + OPT 피처/모델 종합 분석</h1>
+<ul>
+<li>생성일: <code>2026-05-28T06:48:48</code></li>
+<li>목적: A~J 실험 전체와 추가 최적화 실험을 종합해 Warm/Cold별 최고 피처 조합과 모델 후보를 선정한다.</li>
+<li>전체 지표 원본: <code>docs/track6/experiments/a_to_j_plus_opt_all_metrics.csv</code></li>
+</ul>
+</section>
+<section><h2>지표 해석 우선순위</h2>
+<ul>
+<li>1순위: <code>MdAPE</code>를 본다. 작품별 비율 오차의 중앙값이므로 대표적인 예측 오차를 가장 안정적으로 보여준다. 낮을수록 좋다.</li>
+<li>2순위: <code>p95_APE</code>를 본다. 오차가 큰 상위 5% 구간이 얼마나 위험한지 보여준다. 낮을수록 좋다.</li>
+<li>3순위: <code>Within_30</code>을 본다. 실제 가격 대비 30% 이내로 맞춘 비율이다. 높을수록 좋다.</li>
+<li>4순위: <code>RMSE_log</code>와 <code>R2</code>를 본다. 로그 가격 공간에서 모델이 안정적인지 확인하는 보조 지표다. <code>RMSE_log</code>는 낮을수록, <code>R2</code>는 높을수록 좋다.</li>
+<li><code>MAPE</code>는 평균 비율 오차라 고가/이상치 영향을 크게 받으므로 최종 결론에서는 보조로만 사용한다.</li>
+</ul>
+</section>
+<section><h2>지표 계산 공식</h2>
+<ul>
+<li>실제 가격: <code>y</code></li>
+<li>예측 가격: <code>ŷ</code></li>
+<li>실제 로그가격: <code>log_y = ln(y)</code></li>
+<li>예측 로그가격: <code>log_ŷ = ln(ŷ)</code></li>
+<li>작품 수: <code>n</code></li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr><th>지표</th><th>공식</th><th>해석</th><th>좋은 방향</th></tr></thead>
+<tbody>
+<tr><td><code>APE</code></td><td><code>APE_i = abs(ŷ_i - y_i) / y_i</code></td><td>작품 1건이 실제 가격 대비 몇 % 틀렸는지 보는 값</td><td>낮을수록 좋음</td></tr>
+<tr><td><code>MdAPE</code></td><td><code>median(APE_i)</code></td><td>작품별 비율 오차의 중앙값</td><td>낮을수록 좋음</td></tr>
+<tr><td><code>MAPE</code></td><td><code>(1/n) * sum(APE_i)</code></td><td>작품별 비율 오차의 평균값</td><td>낮을수록 좋음</td></tr>
+<tr><td><code>p95_APE</code></td><td><code>percentile_95(APE_i)</code></td><td>오차가 큰 상위 5% 구간의 위험도</td><td>낮을수록 좋음</td></tr>
+<tr><td><code>Within_30</code></td><td><code>count(APE_i &lt;= 0.30) / n</code></td><td>실제 가격 대비 30% 이내로 맞춘 비율</td><td>높을수록 좋음</td></tr>
+<tr><td><code>Within_50</code></td><td><code>count(APE_i &lt;= 0.50) / n</code></td><td>실제 가격 대비 50% 이내로 맞춘 비율</td><td>높을수록 좋음</td></tr>
+<tr><td><code>RMSE_log</code></td><td><code>sqrt((1/n) * sum((log_ŷ_i - log_y_i)^2))</code></td><td>로그 가격 기준 평균 오차</td><td>낮을수록 좋음</td></tr>
+<tr><td><code>R2</code></td><td><code>1 - sum((log_y_i - log_ŷ_i)^2) / sum((log_y_i - mean(log_y))^2)</code></td><td>로그 가격 변동을 모델이 얼마나 설명하는지</td><td>높을수록 좋음</td></tr>
+</tbody></table></div>
+<ul>
+<li>이 문서의 <code>MdAPE</code>, <code>p95_APE</code>, <code>Within_30</code>, <code>Within_50</code>은 가격 원 단위로 복원한 뒤 계산한다.</li>
+<li><code>RMSE_log</code>, <code>R2</code>는 로그 가격 기준으로 계산한다.</li>
+<li>가격 예측 서비스 관점에서는 <code>MdAPE</code>와 <code>Within_30</code>이 사용자 체감에 가깝다.</li>
+<li>모델 안정성 관점에서는 <code>p95_APE</code>와 <code>RMSE_log</code>를 함께 본다.</li>
+<li><code>R2</code>는 설명력 확인용 보조 지표이며, <code>MdAPE</code>가 나쁜 모델을 <code>R2</code>만 보고 채택하지 않는다.</li>
+</ul>
+</section>
+<section><h2>종합 점수 환산 방식</h2>
+<ul>
+<li>누락 사유:</li>
+<li>이 문서는 처음에 A~J 전체 실험의 원 지표를 사람이 직접 해석하는 요약 문서로 작성했다.</li>
+<li>종합 점수 환산 방식은 별도 모델 비교 리포트인 <code>WM1</code>, <code>CM1</code> 결과표에 먼저 적용했다.</li>
+<li>따라서 이 문서에는 지표 우선순위만 있고, 점수 환산 방식 설명이 빠져 있었다.</li>
+<li>종합 점수의 역할:</li>
+<li>여러 지표가 서로 다르게 나올 때 후보를 정렬하기 위한 보조 기준이다.</li>
+<li>모델 학습 결과를 바꾸는 값은 아니다.</li>
+<li>최종 결론은 종합 점수만 보지 않고 원 지표인 <code>MdAPE</code>, <code>p95_APE</code>, <code>Within_30</code>, <code>RMSE_log</code>, <code>R2</code>를 함께 확인한다.</li>
+<li>계산 방식:</li>
+<li>같은 비교표 안에서 각 지표를 <code>0~100점</code>으로 바꾼다.</li>
+<li>낮을수록 좋은 지표는 값이 낮을수록 높은 점수를 준다.</li>
+<li>높을수록 좋은 지표는 값이 높을수록 높은 점수를 준다.</li>
+<li>각 지표 점수에 비중을 곱한 뒤 더해서 종합 점수를 만든다.</li>
+<li>점수 공식:</li>
+<li>낮을수록 좋은 지표 점수: <code>score = 100 * (max_value - value) / (max_value - min_value)</code></li>
+<li>높을수록 좋은 지표 점수: <code>score = 100 * (value - min_value) / (max_value - min_value)</code></li>
+<li>종합점수: <code>total_score = sum(metric_score * metric_weight)</code></li>
+<li><code>max_value</code>와 <code>min_value</code>는 같은 비교표 안의 후보들에서 계산한다.</li>
+<li>같은 비교표 안에서만 상대 순위를 보기 위한 점수다.</li>
+<li>다른 표의 점수와 절대값으로 직접 비교하지 않는다.</li>
+<li>낮을수록 좋은 지표:</li>
+<li><code>MdAPE</code></li>
+<li><code>p95_APE</code></li>
+<li><code>RMSE_log</code></li>
+<li>높을수록 좋은 지표:</li>
+<li><code>Within_30</code></li>
+<li><code>R2</code></li>
+<li>Warm 가중치:</li>
+<li><code>MdAPE</code>: 45%</li>
+<li><code>Within_30</code>: 20%</li>
+<li><code>p95_APE</code>: 20%</li>
+<li><code>RMSE_log</code>: 10%</li>
+<li><code>R2</code>: 5%</li>
+<li>Cold 가중치:</li>
+<li><code>MdAPE</code>: 35%</li>
+<li><code>p95_APE</code>: 30%</li>
+<li><code>Within_30</code>: 20%</li>
+<li><code>RMSE_log</code>: 10%</li>
+<li><code>R2</code>: 5%</li>
+<li>Warm과 Cold 가중치가 다른 이유:</li>
+<li>Warm은 이미 학습 데이터에 있는 작가를 예측하므로 대표 오차인 <code>MdAPE</code>를 가장 중요하게 본다.</li>
+<li>Cold는 처음 보는 작가를 예측하므로 큰 오차 위험이 더 크다.</li>
+<li>그래서 Cold는 <code>p95_APE</code> 비중을 Warm보다 높게 둔다.</li>
+<li>해석 원칙:</li>
+<li>종합 점수가 높을수록 여러 지표를 함께 봤을 때 더 좋은 후보로 본다.</li>
+<li>단, 특정 실험 안의 후보끼리 비교하는 상대 점수이므로 다른 실험군의 점수와 절대값으로 직접 비교하지 않는다.</li>
+<li>종합 점수 1위라도 <code>p95_APE</code>가 과하게 나쁘면 운영 후보로 바로 확정하지 않고 안정성 검증을 추가한다.</li>
+</ul>
+</section>
+<section><h2>모델군 비교 종합 점수 요약</h2>
+<ul>
+<li><code>WM1</code>, <code>CM1</code>은 상위 피처 조합을 대상으로 여러 모델을 다시 비교한 실험이다.</li>
+<li>아래 결과는 실제 모델 후보 확정에 더 직접적으로 사용한 점수표다.</li>
+<li><code>피처 조합</code>은 실험 코드를 제거하고 사람이 바로 이해할 수 있는 피처 묶음 이름으로 표기했다.</li>
+<li><code>실제 사용 피처</code>는 모델 입력에 들어간 원본 피처명을 함께 적었다.</li>
+<li>표 정렬 기준은 <code>종합순위</code> 오름차순이다.</li>
+</ul>
+</section>
+<section><h2>실험군별 세부 순위표</h2>
+<ul>
+<li>목적: 각 실험 안의 세부 변수/피처 블록별로 Warm과 Cold 모델 1~3위를 따로 확인한다.</li>
+<li>사용 기준: <code>MdAPE</code> 낮은 순 -> <code>p95_APE</code> 낮은 순 -> <code>Within_30</code> 높은 순 -> <code>RMSE_log</code> 낮은 순 -> <code>R2</code> 높은 순.</li>
+<li>활용 방식: A2처럼 한 실험 안에 여러 변수 표현 방식이 있을 때, 각 방식마다 어떤 모델이 1위인지 비교한다.</li>
+<li>HTML 문서: <code>docs/track6/experiments/experiment_group_top3_ranking_summary.html</code></li>
+<li>Markdown 문서: <code>docs/track6/experiments/experiment_group_top3_ranking_summary.md</code></li>
+<li>CSV 상세표: <code>docs/track6/experiments/experiment_group_top3_ranking_summary.csv</code></li>
+<li>CSV 실험별 최고 요약: <code>docs/track6/experiments/experiment_group_top3_overview.csv</code></li>
+</ul>
+</section>
+<section>
+<h3>Warm 모델군 비교 상위 결과</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>종합순위</th><th>종합점수</th><th>피처 조합</th><th>실제 사용 피처</th><th>모델</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>RMSE_log</th><th>R2</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>98.2730</td><td>작가명 + 전체 크기 + 작가 학습 작품 수</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;작가 학습 작품 수 (artist_works_log)&lt;br&gt;작가 학습 작품 수 결측 여부 (artist_works_log_is_missing)</td><td>Huber</td><td>0.1562</td><td>1.0548</td><td>0.7364</td><td>0.4128</td><td>0.9081</td></tr>
+<tr><td>2</td><td>98.2335</td><td>작가명 + 전체 크기 + 작가명 x 호수</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;로그 호수 (ln_estimated_ho)&lt;br&gt;작가명 x 로그 호수(상위 10명)</td><td>Huber</td><td>0.1545</td><td>1.0041</td><td>0.7183</td><td>0.4108</td><td>0.9090</td></tr>
+<tr><td>3</td><td>98.1964</td><td>작가명 + 전체 크기 + 작가명 x 면적</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;작가명 x 로그 면적(상위 10명)</td><td>Huber</td><td>0.1545</td><td>1.0181</td><td>0.7232</td><td>0.4152</td><td>0.9070</td></tr>
+<tr><td>4</td><td>98.1018</td><td>작가명 + 전체 크기</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)</td><td>Huber</td><td>0.1566</td><td>1.0434</td><td>0.7315</td><td>0.4131</td><td>0.9080</td></tr>
+<tr><td>5</td><td>97.9368</td><td>작가명 + 면적</td><td>작가명 (artist_name_ko)&lt;br&gt;로그 면적 (log_area)</td><td>Huber</td><td>0.1578</td><td>1.0161</td><td>0.7265</td><td>0.4157</td><td>0.9068</td></tr>
+<tr><td>6</td><td>94.7420</td><td>작가명 + 전체 크기 + 작가명 x 호수</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;로그 호수 (ln_estimated_ho)&lt;br&gt;작가명 x 로그 호수(상위 10명)</td><td>Linear Regression</td><td>0.1762</td><td>1.0465</td><td>0.7133</td><td>0.4117</td><td>0.9086</td></tr>
+<tr><td>7</td><td>94.3962</td><td>작가명 + 전체 크기 + 작가명 x 면적</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;작가명 x 로그 면적(상위 10명)</td><td>Linear Regression</td><td>0.1771</td><td>1.0145</td><td>0.7035</td><td>0.4154</td><td>0.9069</td></tr>
+<tr><td>8</td><td>94.3370</td><td>작가명 + 전체 크기</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)</td><td>Linear Regression</td><td>0.1776</td><td>0.9777</td><td>0.6952</td><td>0.4153</td><td>0.9070</td></tr>
+</tbody></table></div>
+<h3>Cold 모델군 비교 상위 결과</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>종합순위</th><th>종합점수</th><th>피처 조합</th><th>실제 사용 피처</th><th>모델</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>RMSE_log</th><th>R2</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>94.0240</td><td>작품 기본 피처 + 활동량/인지도</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)</td><td>CatBoost</td><td>0.4488</td><td>2.9885</td><td>0.3304</td><td>0.8797</td><td>0.5519</td></tr>
+<tr><td>2</td><td>92.5817</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (total_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (followers_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (for_sale_works_x_ln_ho)</td><td>HistGradientBoosting</td><td>0.4666</td><td>2.9012</td><td>0.3314</td><td>0.8676</td><td>0.5643</td></tr>
+<tr><td>3</td><td>89.9601</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 면적</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (total_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (followers_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (for_sale_works_x_log_area)</td><td>LightGBM</td><td>0.4580</td><td>2.9412</td><td>0.3082</td><td>0.8697</td><td>0.5622</td></tr>
+<tr><td>4</td><td>88.6962</td><td>작품 기본 피처 + 활동량/인지도</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)</td><td>HistGradientBoosting</td><td>0.4601</td><td>3.2319</td><td>0.3437</td><td>0.8699</td><td>0.5619</td></tr>
+<tr><td>5</td><td>88.0576</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (total_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (followers_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (for_sale_works_x_ln_ho)</td><td>LightGBM</td><td>0.4612</td><td>2.9737</td><td>0.3075</td><td>0.8724</td><td>0.5594</td></tr>
+<tr><td>6</td><td>86.2834</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (total_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (followers_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (for_sale_works_x_ln_ho)</td><td>XGBoost</td><td>0.4594</td><td>2.9500</td><td>0.2965</td><td>0.8836</td><td>0.5480</td></tr>
+<tr><td>7</td><td>86.1530</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 면적</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (total_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (followers_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (for_sale_works_x_log_area)</td><td>HistGradientBoosting</td><td>0.4721</td><td>2.9366</td><td>0.3066</td><td>0.8697</td><td>0.5621</td></tr>
+<tr><td>8</td><td>86.0630</td><td>작품 기본 피처 + 활동량/인지도 + 정보량</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)</td><td>HistGradientBoosting</td><td>0.4741</td><td>3.0820</td><td>0.3246</td><td>0.8615</td><td>0.5703</td></tr>
+</tbody></table></div>
+</section>
+<section><h2>선택 모델 특성 및 적합성</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>구분</th><th>선택 모델</th><th>모델 특성</th><th>Track6에 적합한 이유</th><th>주의점</th></tr></thead>
+<tbody>
+<tr><td>Warm 1순위</td><td><code>Huber</code></td><td>선형 회귀 계열이며, 큰 오차 작품의 영향력을 줄여 학습함</td><td>Warm은 작가명과 크기 정보가 강하게 작동하고, Huber가 이상치 가격에 덜 흔들리면서 MdAPE와 종합점수 모두 상위권을 유지함</td><td>계수 해석은 가능하지만, 작가명 one-hot 계수는 학습 작품 수가 적은 작가에서 과신하면 안 됨</td></tr>
+<tr><td>Warm 보조</td><td><code>Linear Regression</code></td><td>가장 단순한 선형 회귀이며, 모든 오차를 동일한 방식으로 반영함</td><td>Huber 결과를 설명할 때 비교 기준으로 유용하고, 피처 방향성 확인에 좋음</td><td>고가 작품과 이상치에 민감해 MdAPE가 Huber보다 낮게 나오지 않았음</td></tr>
+<tr><td>Warm 보조</td><td><code>Ridge</code></td><td>선형 회귀에 규제를 넣어 계수 과대화를 줄임</td><td>피처가 많아질 때 계수 폭주를 막는 안정성 비교 후보로 적합함</td><td>이번 상위 결과에서는 Huber보다 대표 오차 개선 근거가 약함</td></tr>
+<tr><td>Cold 1순위</td><td><code>CatBoost</code></td><td>범주형 피처와 비선형 관계를 잘 다루는 트리 부스팅 모델</td><td>Cold는 작가명을 쓸 수 없고 재료, 지지체, 활동량/인지도처럼 범주형과 숫자형이 섞여 있어 CatBoost가 구조적으로 적합함</td><td>p95_APE가 여전히 커서 단일 가격만 제공하기에는 위험함</td></tr>
+<tr><td>Cold 보조</td><td><code>LightGBM</code></td><td>빠른 트리 부스팅 모델이며, 다양한 피처 조합과 상호작용을 잘 탐색함</td><td>A~J/OPT 탐색에서 활동량/인지도 x 면적, 활동량/인지도 x 호수 같은 조합에서 상위권을 반복적으로 보임</td><td>최종 모델군 비교에서는 CatBoost보다 MdAPE가 낮지 않아 보조 후보로 둠</td></tr>
+<tr><td>Cold 보조</td><td><code>Quantile-LAD</code></td><td>평균보다 중앙값 방향의 예측을 중시하는 강건 회귀 계열</td><td>큰 오차 방어와 가격 범위 비교용 기준 모델로 의미가 있음</td><td>최종 정확도 1순위는 아니므로 단독 운영 후보보다는 안정성 비교 후보로 사용함</td></tr>
+</tbody></table></div>
+<ul>
+<li>Warm에서 <code>Huber</code>가 적합한 이유:</li>
+<li>미술품 가격은 고가 작품과 특이 케이스가 있어 일반 선형 회귀가 이상치에 끌릴 수 있음.</li>
+<li>Huber는 작은 오차는 일반 회귀처럼 학습하고, 큰 오차는 영향력을 줄여 학습함.</li>
+<li>Warm 상위 결과에서 Huber가 <code>MdAPE</code>와 종합점수 기준 모두 가장 안정적으로 상위권을 차지함.</li>
+<li>작가명과 크기 피처의 방향성을 계수로 점검할 수 있어 설명 가능성도 유지됨.</li>
+<li>Cold에서 <code>CatBoost</code>가 적합한 이유:</li>
+<li>Cold는 작가명을 사용할 수 없어 작품 조건과 작가 메타의 비선형 조합을 더 많이 활용해야 함.</li>
+<li>CatBoost는 난트 재료 번호, 난트 지지체, 주요 작가 여부 같은 범주형 성격의 피처를 다루는 데 유리함.</li>
+<li>CM1 모델군 비교에서 <code>작품 기본 피처 + 활동량/인지도</code> 조합의 CatBoost가 <code>MdAPE 0.4488</code>로 Cold 1순위였음.</li>
+<li>LightGBM 상위 후보보다 최종 모델군 비교 기준에서 대표 오차가 낮아 1차 운영 후보로 둠.</li>
+<li>Cold에서 <code>LightGBM</code>을 보조 후보로 두는 이유:</li>
+<li>여러 A~J/OPT 탐색 실험에서 상위권을 반복적으로 기록함.</li>
+<li>활동량/인지도와 면적/호수의 상호작용처럼 복합 피처를 빠르게 실험하기 좋음.</li>
+<li>CatBoost보다 최종 대표 오차가 낮지는 않았으므로 1순위가 아니라 fallback, 가격 범위, 후처리 비교 후보로 둠.</li>
+</ul>
+</section>
+<section><h2>Warm 결론</h2>
+<ul>
+<li>Warm 모델군 비교 종합점수 1위: <code>작가명 + 전체 크기 + 작가 학습 작품 수 + Huber</code>.</li>
+<li>Warm 모델군 비교 MdAPE 최저 후보: <code>작가명 + 전체 크기 + 작가명 x 면적 + Huber</code>.</li>
+<li>Warm A~J/OPT 탐색 종합점수 1위: <code>작가명 + 전체 크기 + 작가 학습 작품 수 + Huber</code>.</li>
+<li>Warm A~J/OPT 탐색 MdAPE 최저 후보: <code>작가명 + 전체 크기 + 작가명 x 면적 + Huber</code>.</li>
+<li>핵심 피처 축: <code>작가명 + 전체 크기</code>.</li>
+<li>전체 크기 구성: <code>width_cm</code>, <code>height_cm</code>, <code>log_area</code>, <code>aspect_ratio</code>.</li>
+<li>해석: 학습 데이터에 있는 작가라면 작가명으로 기본 가격대를 잡고, 실제 크기 정보로 작품별 가격 차이를 보정하는 조합이 가장 안정적이다.</li>
+<li>추가 피처 해석: <code>작가 학습 작품 수</code>는 종합점수 기준에서 강하고, <code>작가명 x 면적</code>은 MdAPE 최저 후보에서 강하다.</li>
+<li>운영 후보: 안정성과 단순성을 중시하면 <code>작가명 + 전체 크기 + Huber</code>.</li>
+<li>정확도 우선 후보: MdAPE를 더 낮추는 목적이면 <code>작가명 + 전체 크기 + 작가명 x 면적 + Huber</code>.</li>
+</ul>
+</section>
+<section><h2>Cold 결론</h2>
+<ul>
+<li>Cold 모델군 비교 종합점수 1위: <code>작품 기본 피처 + 활동량/인지도 + CatBoost</code>.</li>
+<li>Cold 모델군 비교 MdAPE 최저 후보: <code>작품 기본 피처 + 활동량/인지도 + CatBoost</code>.</li>
+<li>Cold A~J/OPT 탐색 종합점수 1위: <code>작품 기본 피처 + 활동량/인지도 + 정보량 + 기본 작가 프로필/전시 + LightGBM</code>.</li>
+<li>Cold A~J/OPT 탐색 LightGBM MdAPE 최저 후보: <code>면적 + 활동량/인지도 + 활동량/인지도 x 면적 + LightGBM</code>.</li>
+<li>Cold 안정성 후보: <code>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 호수 + LightGBM</code>.</li>
+<li>1차 운영 후보: <code>작품 기본 피처 + 활동량/인지도 + CatBoost</code>.</li>
+<li>보조 후보: <code>활동량/인지도 x 면적</code> 또는 <code>활동량/인지도 x 호수</code> 기반 <code>LightGBM</code>.</li>
+<li>해석: Cold는 작가명을 사용할 수 없으므로 <code>호수 + 난트 재료 + 난트 지지체</code>로 작품 조건을 잡고, 작가 활동량/인지도 메타로 시장 노출 차이를 보완하는 방식이 가장 유리하다.</li>
+<li>주의: Cold는 MdAPE가 약 <code>0.45</code> 수준이라 Warm보다 오차가 크다. 단일 가격만 제공하기보다 가격 범위와 신뢰도 경고가 필요하다.</li>
+</ul>
+</section>
+<section><h2>최종 추천안</h2>
+<ul>
+<li>Warm 운영 후보: <code>작가명 + 전체 크기</code> 기반 <code>Huber</code>.</li>
+<li>Warm 정확도 우선 후보: <code>작가명 + 전체 크기 + 작가명 x 면적</code> 기반 <code>Huber</code>.</li>
+<li>Cold 운영 1순위 후보: <code>작품 기본 피처 + 활동량/인지도</code> 기반 <code>CatBoost</code>.</li>
+<li>Cold 보조 후보: <code>활동량/인지도 x 면적</code> 또는 <code>활동량/인지도 x 호수</code> 기반 <code>LightGBM</code>.</li>
+<li>Cold 운영 방식: 단일 가격 + 가격 범위 + 신뢰도 경고를 함께 제공하는 방향이 필요하다.</li>
+</ul>
+</section>
+<section><h2>실제 예측력 해석</h2>
+<ul>
+<li>Warm 최고 후보는 MdAPE 약 <code>0.1548</code> 수준이다. 대표 작품 기준 예측 가격이 실제 가격에서 약 15~16% 정도 벗어나는 수준으로 해석할 수 있다.</li>
+<li>Warm p95_APE는 약 <code>1.0537</code> 수준이다. 오차가 큰 상위 5% 작품은 실제 가격 대비 100% 이상 벗어날 수 있어 예외 케이스 관리는 필요하다.</li>
+<li>Cold 1순위 후보는 MdAPE <code>0.4488</code> 수준이다. 처음 보는 작가의 경우 대표 오차가 약 45%라 Warm보다 훨씬 어렵다.</li>
+<li>Cold p95_APE는 <code>2.9885</code> 수준이다. Cold의 큰 오차 구간은 매우 크므로 운영에서는 가격 범위/주의 문구/추가 입력값 수집이 필요하다.</li>
+</ul>
+</section>
+<section><h2>Warm 상위 결과</h2>
+<ul>
+<li>아래 표는 A~J/OPT 후속 실험 안에서 나온 Warm 상위 결과다.</li>
+<li>표 정렬 기준은 <code>종합순위</code> 오름차순이다.</li>
+<li>MdAPE만 가장 낮은 후보와 종합점수 1위가 다를 수 있으므로 결론에서는 둘을 분리해 해석한다.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr><th>종합순위</th><th>종합점수</th><th>피처 조합</th><th>실제 사용 피처</th><th>모델</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>RMSE_log</th><th>R2</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>99.3713</td><td>작가명 + 전체 크기 + 작가 학습 작품 수</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;작가 학습 작품 수 (artist_works_log)&lt;br&gt;작가 학습 작품 수 결측 여부 (artist_works_log_is_missing)</td><td>Huber</td><td>0.1562</td><td>1.0548</td><td>0.7364</td><td>0.4128</td><td>0.9081</td></tr>
+<tr><td>2</td><td>99.3465</td><td>작가명 + 전체 크기</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)</td><td>Huber</td><td>0.1569</td><td>1.0464</td><td>0.7364</td><td>0.4129</td><td>0.9081</td></tr>
+<tr><td>3</td><td>99.2030</td><td>작가명 + 전체 크기</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)</td><td>Huber</td><td>0.1566</td><td>1.0434</td><td>0.7315</td><td>0.4131</td><td>0.9080</td></tr>
+<tr><td>4</td><td>99.2030</td><td>작가명 + 전체 크기</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)</td><td>Huber</td><td>0.1566</td><td>1.0434</td><td>0.7315</td><td>0.4131</td><td>0.9080</td></tr>
+<tr><td>5</td><td>98.9950</td><td>작가명 + 면적</td><td>작가명 (artist_name_ko)&lt;br&gt;로그 면적 (log_area)</td><td>Huber</td><td>0.1578</td><td>1.0161</td><td>0.7265</td><td>0.4157</td><td>0.9068</td></tr>
+<tr><td>6</td><td>98.9950</td><td>작가명 + 면적</td><td>작가명 (artist_name_ko)&lt;br&gt;로그 면적 (log_area)</td><td>Huber</td><td>0.1578</td><td>1.0161</td><td>0.7265</td><td>0.4157</td><td>0.9068</td></tr>
+<tr><td>7</td><td>98.9128</td><td>작가명 + 전체 크기 + 작가명 x 면적</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;작가명 x 로그 면적(상위 10명)</td><td>Huber</td><td>0.1548</td><td>1.0537</td><td>0.7232</td><td>0.4215</td><td>0.9042</td></tr>
+<tr><td>8</td><td>98.7199</td><td>작가명 + 면적 + 작가명 x 면적</td><td>작가명 (artist_name_ko)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;작가명 x 로그 면적(상위 10명)</td><td>Huber</td><td>0.1565</td><td>1.0765</td><td>0.7282</td><td>0.4352</td><td>0.8979</td></tr>
+<tr><td>9</td><td>98.7014</td><td>작가명 + 전체 크기 + 작가명 x 호수</td><td>작가명 (artist_name_ko)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;로그 호수 (ln_estimated_ho)&lt;br&gt;작가명 x 로그 호수(상위 10명)</td><td>Huber</td><td>0.1583</td><td>0.9960</td><td>0.7166</td><td>0.4139</td><td>0.9076</td></tr>
+<tr><td>10</td><td>98.2507</td><td>작가명 + 전체 크기 + 작품 기본 피처 + 제작연도/작품 유형 + 에디션</td><td>작가명 (artist_name_ko)&lt;br&gt;로그 호수 (ln_estimated_ho)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;제작연도 (artwork_year)&lt;br&gt;작품 연한 (artwork_age)&lt;br&gt;작품 유형 (artwork_type_final)&lt;br&gt;작품 유형 대분류 (artwork_type_final_major3)&lt;br&gt;에디션 구분 (edition_class)&lt;br&gt;에디션 여부 (is_edition)&lt;br&gt;리미티드 에디션 여부 (is_limited_edition)&lt;br&gt;오픈 에디션 여부 (is_open_edition)&lt;br&gt;에디션 미상 여부 (is_unknown_edition)&lt;br&gt;에디션 정보 보유 여부 (edition_info_available)</td><td>Huber</td><td>0.1648</td><td>1.0607</td><td>0.7199</td><td>0.4071</td><td>0.9106</td></tr>
+<tr><td>11</td><td>98.1821</td><td>작가명 + 전체 크기 + 작품 기본 피처 + 제작연도/작품 유형 + 깊이/3D</td><td>작가명 (artist_name_ko)&lt;br&gt;로그 호수 (ln_estimated_ho)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;제작연도 (artwork_year)&lt;br&gt;작품 연한 (artwork_age)&lt;br&gt;작품 유형 (artwork_type_final)&lt;br&gt;작품 유형 대분류 (artwork_type_final_major3)&lt;br&gt;깊이 (depth_cm)&lt;br&gt;깊이값 있음 (has_depth)&lt;br&gt;3D 후보 (is_3d_candidate)</td><td>Huber</td><td>0.1615</td><td>1.0525</td><td>0.7100</td><td>0.4060</td><td>0.9111</td></tr>
+<tr><td>12</td><td>98.1650</td><td>작가명 + 전체 크기 + 작품 기본 피처</td><td>작가명 (artist_name_ko)&lt;br&gt;로그 호수 (ln_estimated_ho)&lt;br&gt;가로 (width_cm)&lt;br&gt;세로 (height_cm)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;가로세로 비율 (aspect_ratio)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)</td><td>Huber</td><td>0.1649</td><td>1.1073</td><td>0.7232</td><td>0.4114</td><td>0.9087</td></tr>
+</tbody></table></div>
+</section>
+<section><h2>Cold 상위 결과</h2>
+<ul>
+<li>아래 표는 A~J/OPT 후속 실험 안에서 나온 Cold 상위 결과다.</li>
+<li>표 정렬 기준은 <code>종합순위</code> 오름차순이다.</li>
+<li>이 표만 보면 <code>LightGBM</code>이 상위권에 많지만, 별도 모델군 비교 실험인 <code>CM1</code>에서는 <code>CatBoost</code>가 MdAPE <code>0.4488</code>로 1순위였다.</li>
+<li>따라서 최종 운영 1순위는 <code>CatBoost</code>, LightGBM은 보조 후보로 해석한다.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr><th>종합순위</th><th>종합점수</th><th>피처 조합</th><th>실제 사용 피처</th><th>모델</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>RMSE_log</th><th>R2</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>96.8491</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 기본 작가 프로필/전시</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 생년 (artist_meta_birth_year)&lt;br&gt;개인전 수 (artist_exhibition_solo_count)&lt;br&gt;단체전 수 (artist_exhibition_group_count)&lt;br&gt;아트페어 수 (artist_exhibition_fair_count)&lt;br&gt;작가 국적 (artist_meta_nationality)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;artist_exhibition_available_count&lt;br&gt;작가 생년 결측 여부 (artist_meta_birth_year_is_missing)&lt;br&gt;개인전 수 결측 여부 (artist_exhibition_solo_count_is_missing)&lt;br&gt;단체전 수 결측 여부 (artist_exhibition_group_count_is_missing)&lt;br&gt;아트페어 수 결측 여부 (artist_exhibition_fair_count_is_missing)&lt;br&gt;작가 국적 결측 여부 (artist_meta_nationality_is_missing)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)</td><td>LightGBM</td><td>0.4684</td><td>3.5812</td><td>0.3462</td><td>0.8495</td><td>0.5822</td></tr>
+<tr><td>2</td><td>96.3096</td><td>작품 기본 피처 + 활동량/인지도 + 정보량</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)</td><td>LightGBM</td><td>0.4577</td><td>2.9056</td><td>0.3246</td><td>0.8742</td><td>0.5576</td></tr>
+<tr><td>3</td><td>95.7308</td><td>작품 기본 피처 + 활동량/인지도</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)</td><td>LightGBM</td><td>0.4580</td><td>3.0833</td><td>0.3243</td><td>0.8804</td><td>0.5512</td></tr>
+<tr><td>4</td><td>95.5192</td><td>면적 + 활동량/인지도</td><td>로그 면적 (log_area)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)</td><td>LightGBM</td><td>0.4608</td><td>3.0955</td><td>0.3266</td><td>0.8898</td><td>0.5416</td></tr>
+<tr><td>5</td><td>95.2554</td><td>호수 + 활동량/인지도 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (artist_meta_total_works_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (artist_meta_for_sale_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (artist_meta_followers_x_ln_ho)&lt;br&gt;주요 작가 여부 x 로그 호수 (artist_meta_is_p1_x_ln_ho)</td><td>LightGBM</td><td>0.4544</td><td>3.1807</td><td>0.3211</td><td>0.8888</td><td>0.5427</td></tr>
+<tr><td>6</td><td>95.1156</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (total_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (followers_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (for_sale_works_x_ln_ho)</td><td>LightGBM</td><td>0.4579</td><td>2.7983</td><td>0.3085</td><td>0.8645</td><td>0.5673</td></tr>
+<tr><td>7</td><td>95.0072</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 면적</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (total_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (followers_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (for_sale_works_x_log_area)</td><td>LightGBM</td><td>0.4604</td><td>2.9683</td><td>0.3136</td><td>0.8685</td><td>0.5634</td></tr>
+<tr><td>8</td><td>94.9232</td><td>면적 + 활동량/인지도 + 활동량/인지도 x 면적</td><td>로그 면적 (log_area)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (artist_meta_total_works_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (artist_meta_for_sale_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (artist_meta_followers_x_log_area)&lt;br&gt;주요 작가 여부 x 로그 면적 (artist_meta_is_p1_x_log_area)</td><td>LightGBM</td><td>0.4516</td><td>3.1609</td><td>0.3153</td><td>0.8883</td><td>0.5431</td></tr>
+<tr><td>9</td><td>94.3959</td><td>작품 기본 피처 + 활동량/인지도</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)</td><td>LightGBM</td><td>0.4720</td><td>2.9687</td><td>0.3191</td><td>0.8836</td><td>0.5480</td></tr>
+<tr><td>10</td><td>94.2628</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 기본 작가 프로필/전시 + 활동량/인지도 x 면적 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 생년 (artist_meta_birth_year)&lt;br&gt;작가 경력 단계 (artist_meta_career_stage)&lt;br&gt;작가 국적 (artist_meta_nationality)&lt;br&gt;개인전 수 (artist_exhibition_solo_count)&lt;br&gt;단체전 수 (artist_exhibition_group_count)&lt;br&gt;아트페어 수 (artist_exhibition_fair_count)&lt;br&gt;전시/아트페어 총수 (artist_exhibition_total_count)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 생년 결측 여부 (artist_meta_birth_year_is_missing)&lt;br&gt;작가 경력 단계 결측 여부 (artist_meta_career_stage_is_missing)&lt;br&gt;작가 국적 결측 여부 (artist_meta_nationality_is_missing)&lt;br&gt;개인전 수 결측 여부 (artist_exhibition_solo_count_is_missing)&lt;br&gt;단체전 수 결측 여부 (artist_exhibition_group_count_is_missing)&lt;br&gt;아트페어 수 결측 여부 (artist_exhibition_fair_count_is_missing)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (total_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (followers_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (for_sale_works_x_log_area)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (total_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (followers_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (for_sale_works_x_ln_ho)</td><td>Quantile-LAD</td><td>0.4584</td><td>3.7071</td><td>0.3214</td><td>0.8724</td><td>0.5594</td></tr>
+<tr><td>11</td><td>93.6918</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 면적 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (total_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (followers_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (for_sale_works_x_log_area)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (total_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (followers_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (for_sale_works_x_ln_ho)</td><td>LightGBM</td><td>0.4645</td><td>2.8631</td><td>0.3030</td><td>0.8763</td><td>0.5554</td></tr>
+<tr><td>12</td><td>93.5471</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 기본 작가 프로필/전시</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 생년 (artist_meta_birth_year)&lt;br&gt;개인전 수 (artist_exhibition_solo_count)&lt;br&gt;단체전 수 (artist_exhibition_group_count)&lt;br&gt;아트페어 수 (artist_exhibition_fair_count)&lt;br&gt;작가 국적 (artist_meta_nationality)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;artist_exhibition_available_count&lt;br&gt;작가 생년 결측 여부 (artist_meta_birth_year_is_missing)&lt;br&gt;개인전 수 결측 여부 (artist_exhibition_solo_count_is_missing)&lt;br&gt;단체전 수 결측 여부 (artist_exhibition_group_count_is_missing)&lt;br&gt;아트페어 수 결측 여부 (artist_exhibition_fair_count_is_missing)&lt;br&gt;작가 국적 결측 여부 (artist_meta_nationality_is_missing)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)</td><td>Quantile-LAD</td><td>0.4746</td><td>3.5073</td><td>0.3285</td><td>0.9036</td><td>0.5273</td></tr>
+</tbody></table></div>
+</section>
+<section><h2>Cold 안정성 후보</h2>
+<ul>
+<li>아래 표는 Cold 후보 중 큰 오차를 줄이는 데 유리한 후보를 보기 위한 표다.</li>
+<li>정렬 기준은 <code>p95_APE</code> 낮은 순이다.</li>
+<li>이 표는 최종 1순위 표가 아니라 가격 범위, fallback, 앙상블 후처리 비교용 후보표다.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr><th>안정성순위</th><th>종합점수</th><th>피처 조합</th><th>실제 사용 피처</th><th>모델</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>RMSE_log</th><th>R2</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>95.1156</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (total_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (followers_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (for_sale_works_x_ln_ho)</td><td>LightGBM</td><td>0.4579</td><td>2.7983</td><td>0.3085</td><td>0.8645</td><td>0.5673</td></tr>
+<tr><td>2</td><td>93.6918</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 면적 + 활동량/인지도 x 호수</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (total_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (followers_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (for_sale_works_x_log_area)&lt;br&gt;작가 전체 작품 수 x 로그 호수 (total_works_x_ln_ho)&lt;br&gt;팔로워 수 x 로그 호수 (followers_x_ln_ho)&lt;br&gt;판매 중 작품 수 x 로그 호수 (for_sale_works_x_ln_ho)</td><td>LightGBM</td><td>0.4645</td><td>2.8631</td><td>0.3030</td><td>0.8763</td><td>0.5554</td></tr>
+<tr><td>3</td><td>96.3096</td><td>작품 기본 피처 + 활동량/인지도 + 정보량</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)</td><td>LightGBM</td><td>0.4577</td><td>2.9056</td><td>0.3246</td><td>0.8742</td><td>0.5576</td></tr>
+<tr><td>4</td><td>95.0072</td><td>작품 기본 피처 + 활동량/인지도 + 정보량 + 활동량/인지도 x 면적</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;로그 면적 (log_area)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (total_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (followers_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (for_sale_works_x_log_area)</td><td>LightGBM</td><td>0.4604</td><td>2.9683</td><td>0.3136</td><td>0.8685</td><td>0.5634</td></tr>
+<tr><td>5</td><td>94.3959</td><td>작품 기본 피처 + 활동량/인지도</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)</td><td>LightGBM</td><td>0.4720</td><td>2.9687</td><td>0.3191</td><td>0.8836</td><td>0.5480</td></tr>
+<tr><td>6</td><td>90.9306</td><td>작품 기본 피처 + 활동량/인지도 + 정보량</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)</td><td>LightGBM</td><td>0.4754</td><td>2.9884</td><td>0.2869</td><td>0.8807</td><td>0.5510</td></tr>
+<tr><td>7</td><td>93.2107</td><td>작품 기본 피처 + 활동량/인지도 + 정보량</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 전체 작품 수 결측 여부 (artist_meta_total_works_is_missing)&lt;br&gt;판매 중 작품 수 결측 여부 (artist_meta_for_sale_works_is_missing)&lt;br&gt;팔로워 수 결측 여부 (artist_meta_followers_is_missing)&lt;br&gt;주요 작가 여부 결측 여부 (artist_meta_is_p1_is_missing)</td><td>LightGBM</td><td>0.4756</td><td>2.9964</td><td>0.3091</td><td>0.8776</td><td>0.5542</td></tr>
+<tr><td>8</td><td>92.9167</td><td>작품 기본 피처 + 활동량/인지도 + 정보량</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 메타 보유 개수 (artist_meta_available_count)&lt;br&gt;작가 메타 완성도 (artist_meta_completeness_score)</td><td>LightGBM</td><td>0.4598</td><td>3.0662</td><td>0.2988</td><td>0.8872</td><td>0.5443</td></tr>
+<tr><td>9</td><td>95.7308</td><td>작품 기본 피처 + 활동량/인지도</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;난트 재료 번호 (nant_material_idx)&lt;br&gt;난트 도구 (nant_tool)&lt;br&gt;난트 지지체 (nant_support)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)</td><td>LightGBM</td><td>0.4580</td><td>3.0833</td><td>0.3243</td><td>0.8804</td><td>0.5512</td></tr>
+<tr><td>10</td><td>95.5192</td><td>면적 + 활동량/인지도</td><td>로그 면적 (log_area)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)</td><td>LightGBM</td><td>0.4608</td><td>3.0955</td><td>0.3266</td><td>0.8898</td><td>0.5416</td></tr>
+<tr><td>11</td><td>93.1964</td><td>호수 + 활동량/인지도</td><td>로그 호수 (ln_estimated_ho)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)</td><td>LightGBM</td><td>0.4673</td><td>3.1003</td><td>0.3088</td><td>0.8927</td><td>0.5386</td></tr>
+<tr><td>12</td><td>94.9232</td><td>면적 + 활동량/인지도 + 활동량/인지도 x 면적</td><td>로그 면적 (log_area)&lt;br&gt;작가 전체 작품 수 (artist_meta_total_works)&lt;br&gt;판매 중 작품 수 (artist_meta_for_sale_works)&lt;br&gt;팔로워 수 (artist_meta_followers)&lt;br&gt;주요 작가 여부 (artist_meta_is_p1)&lt;br&gt;작가 전체 작품 수 x 로그 면적 (artist_meta_total_works_x_log_area)&lt;br&gt;판매 중 작품 수 x 로그 면적 (artist_meta_for_sale_works_x_log_area)&lt;br&gt;팔로워 수 x 로그 면적 (artist_meta_followers_x_log_area)&lt;br&gt;주요 작가 여부 x 로그 면적 (artist_meta_is_p1_x_log_area)</td><td>LightGBM</td><td>0.4516</td><td>3.1609</td><td>0.3153</td><td>0.8883</td><td>0.5431</td></tr>
+</tbody></table></div>
+</section>
+<section><h2>추가로 해볼 실험</h2>
+<ul>
+<li>Warm 후속 1: <code>작가명 + 전체 크기 + 작가명 x 면적</code>을 상위 10명, 20명, 40명으로 바꿔 계산 비용과 p95 변화를 비교한다.</li>
+<li>Warm 후속 2: Huber 수렴 경고가 반복되므로 <code>Ridge</code>와 <code>Linear Regression</code> 기준에서 p95 안정성을 우선하는 운영 후보를 따로 비교한다.</li>
+<li>Cold 후속 1: <code>작품 기본 피처 + 활동량/인지도 + CatBoost</code>를 1순위 기준으로 두고, <code>활동량/인지도 x 면적</code>와 <code>활동량/인지도 x 호수 안정성 후보</code> LightGBM 후보를 가격 범위/신뢰도 경고 비교 대상으로 둔다. Cold는 단일 가격만 보여주기에는 p95가 크다.</li>
+<li>Cold 후속 2: <code>활동량/인지도 x 면적</code>과 <code>활동량/인지도 x 호수</code>를 둘 다 넣으면 MdAPE가 오히려 나빠졌으므로, 상호작용은 하나씩 선택하는 방향이 더 적절하다.</li>
+<li>Cold 후속 3: Cold 저위험/고위험 구간을 나누어 CatBoost, LightGBM, Quantile-LAD 후보를 라우팅하는 실험을 추가한다.</li>
+</ul>
+</section>
+<section><h2>실행 메모</h2>
+<ul>
+<li><code>OPT-C2</code>는 정상 완료했다.</li>
+<li><code>OPT-W2</code>, <code>OPT-W2L</code>은 작가 상호작용 차원이 커 Huber 반복 학습 시간이 과도해 중단하고, 핵심 조합만 남긴 <code>OPT-W3</code>로 재실행했다.</li>
+<li>중단된 실험은 최종 성능 비교에는 포함하지 않았다.</li>
+</ul>
+</section></main></body></html>

@@ -1,0 +1,517 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-L Summary</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left}th{background:#eef2f7}code{background:#f3f4f6;padding:2px 4px;border-radius:4px}</style></head><body><h1>PP-L Huber / Quantile / CatBoost 후처리 실험 종합 요약</h1><p>Validation 기준 scope별 best와 기준 모델 대비 delta를 정리했다.</p><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>n</th>
+      <th>notes</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>MdAPE_delta_vs_baseline</th>
+      <th>MAPE_delta_vs_baseline</th>
+      <th>p95_delta_vs_baseline</th>
+      <th>title</th>
+      <th>folder</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-L4</td>
+      <td>PP-L4_cold_Huber_quantile_width_segment_median</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>Huber corrected by validation median residual per quantile-width segment</td>
+      <td>0.728214</td>
+      <td>0.402619</td>
+      <td>0.606325</td>
+      <td>1.860747</td>
+      <td>0.346894</td>
+      <td>0.592808</td>
+      <td>-0.034373</td>
+      <td>-0.154324</td>
+      <td>-0.653248</td>
+      <td>Huber + Quantile width 위험 구간 보정</td>
+      <td>experiments/track6/PP-L4_huber_quantile_width_risk_calibration</td>
+    </tr>
+    <tr>
+      <td>PP-L2</td>
+      <td>PP-L2_depth8_lr0.05_cold</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>limited CatBoost option grid</td>
+      <td>0.706238</td>
+      <td>0.412092</td>
+      <td>0.739843</td>
+      <td>2.323349</td>
+      <td>0.337087</td>
+      <td>0.557210</td>
+      <td>-0.024900</td>
+      <td>-0.020806</td>
+      <td>-0.190646</td>
+      <td>CatBoost 옵션별 MAPE 민감도</td>
+      <td>experiments/track6/PP-L2_catboost_mape_sensitivity</td>
+    </tr>
+    <tr>
+      <td>PP-L1</td>
+      <td>PP-L1_D_MAE_loss_cold</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>CatBoost objective/weight variant</td>
+      <td>0.713108</td>
+      <td>0.416215</td>
+      <td>0.703816</td>
+      <td>2.387345</td>
+      <td>0.307664</td>
+      <td>0.593171</td>
+      <td>-0.020777</td>
+      <td>-0.056833</td>
+      <td>-0.126650</td>
+      <td>CatBoost MAPE 목적 최적화</td>
+      <td>experiments/track6/PP-L1_catboost_mape_objective</td>
+    </tr>
+    <tr>
+      <td>PP-L6</td>
+      <td>B2_cold_Quantile_q50</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>CatBoost Quantile q50 standalone</td>
+      <td>0.719331</td>
+      <td>0.418768</td>
+      <td>0.716366</td>
+      <td>2.482773</td>
+      <td>0.310934</td>
+      <td>0.598620</td>
+      <td>-0.018224</td>
+      <td>-0.044283</td>
+      <td>-0.031222</td>
+      <td>Huber / Quantile / CatBoost 가중 앙상블</td>
+      <td>experiments/track6/PP-L6_huber_quantile_catboost_weighted_ensemble</td>
+    </tr>
+    <tr>
+      <td>PP-L7-0</td>
+      <td>PP-L7_0_cold_quantile_q50_segment_view</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>Quantile q50 evaluated by quantile-width segment</td>
+      <td>0.719331</td>
+      <td>0.418768</td>
+      <td>0.716366</td>
+      <td>2.482773</td>
+      <td>0.310934</td>
+      <td>0.598620</td>
+      <td>-0.018224</td>
+      <td>-0.044283</td>
+      <td>-0.031222</td>
+      <td>Quantile 구간 생성 및 검증</td>
+      <td>experiments/track6/PP-L7_0_quantile_segment_validation</td>
+    </tr>
+    <tr>
+      <td>PP-L7-CB</td>
+      <td>PP-L7-CB_cold_segment_catboost_refit</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>separate model by quantile-width segment</td>
+      <td>0.713641</td>
+      <td>0.426312</td>
+      <td>0.748527</td>
+      <td>2.374806</td>
+      <td>0.365783</td>
+      <td>0.574283</td>
+      <td>-0.010680</td>
+      <td>-0.012122</td>
+      <td>-0.139189</td>
+      <td>Quantile 구간별 CatBoost 상세 학습</td>
+      <td>experiments/track6/PP-L7_CB_quantile_segment_catboost_refit</td>
+    </tr>
+    <tr>
+      <td>PP-L8</td>
+      <td>PP-L8_cold_quantile_features_huber_catboost_residual</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>Quantile price range features feed Huber, then CatBoost residual</td>
+      <td>0.729175</td>
+      <td>0.427698</td>
+      <td>0.748541</td>
+      <td>2.312352</td>
+      <td>0.325100</td>
+      <td>0.563022</td>
+      <td>-0.009294</td>
+      <td>-0.012108</td>
+      <td>-0.201643</td>
+      <td>Quantile-Huber-CatBoost 순차 학습</td>
+      <td>experiments/track6/PP-L8_quantile_huber_catboost_sequential</td>
+    </tr>
+    <tr>
+      <td>PP-L3</td>
+      <td>B1_Cold_CatBoost</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>final artifact baseline</td>
+      <td>0.715317</td>
+      <td>0.436992</td>
+      <td>0.760649</td>
+      <td>2.513995</td>
+      <td>0.363240</td>
+      <td>0.546313</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Huber 선행 + CatBoost residual 보정</td>
+      <td>experiments/track6/PP-L3_huber_catboost_residual</td>
+    </tr>
+    <tr>
+      <td>PP-L5</td>
+      <td>B1_Cold_CatBoost</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>final artifact baseline</td>
+      <td>0.715317</td>
+      <td>0.436992</td>
+      <td>0.760649</td>
+      <td>2.513995</td>
+      <td>0.363240</td>
+      <td>0.546313</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Huber + Quantile + CatBoost 라우팅</td>
+      <td>experiments/track6/PP-L5_huber_quantile_catboost_routing</td>
+    </tr>
+    <tr>
+      <td>PP-L7-H</td>
+      <td>B1_Cold_CatBoost</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>final artifact baseline</td>
+      <td>0.715317</td>
+      <td>0.436992</td>
+      <td>0.760649</td>
+      <td>2.513995</td>
+      <td>0.363240</td>
+      <td>0.546313</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Quantile 구간별 Huber 상세 학습</td>
+      <td>experiments/track6/PP-L7_H_quantile_segment_huber_refit</td>
+    </tr>
+    <tr>
+      <td>PP-L7-HCB</td>
+      <td>B1_Cold_CatBoost</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>final artifact baseline</td>
+      <td>0.715317</td>
+      <td>0.436992</td>
+      <td>0.760649</td>
+      <td>2.513995</td>
+      <td>0.363240</td>
+      <td>0.546313</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Quantile 구간별 Huber + CatBoost 결합</td>
+      <td>experiments/track6/PP-L7_HCB_quantile_segment_huber_catboost_combo</td>
+    </tr>
+    <tr>
+      <td>PP-L9</td>
+      <td>B1_Cold_CatBoost</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>final artifact baseline</td>
+      <td>0.715317</td>
+      <td>0.436992</td>
+      <td>0.760649</td>
+      <td>2.513995</td>
+      <td>0.363240</td>
+      <td>0.546313</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Huber-Quantile-CatBoost residual 순차 학습</td>
+      <td>experiments/track6/PP-L9_huber_quantile_catboost_residual_sequential</td>
+    </tr>
+    <tr>
+      <td>PP-L8</td>
+      <td>PP-L8_warm_quantile_features_huber_catboost_residual</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>Quantile price range features feed Huber, then CatBoost residual</td>
+      <td>0.428464</td>
+      <td>0.180769</td>
+      <td>0.315217</td>
+      <td>0.934108</td>
+      <td>0.695568</td>
+      <td>0.847784</td>
+      <td>-0.031814</td>
+      <td>-0.101463</td>
+      <td>-0.385247</td>
+      <td>Quantile-Huber-CatBoost 순차 학습</td>
+      <td>experiments/track6/PP-L8_quantile_huber_catboost_sequential</td>
+    </tr>
+    <tr>
+      <td>PP-L9</td>
+      <td>PP-L9_warm_huber_quantile_residual_catboost_remaining</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>Huber residual range is modeled by Quantile, remaining residual by CatBoost</td>
+      <td>0.486323</td>
+      <td>0.182351</td>
+      <td>0.329441</td>
+      <td>1.161371</td>
+      <td>0.668593</td>
+      <td>0.811175</td>
+      <td>-0.030232</td>
+      <td>-0.087239</td>
+      <td>-0.157985</td>
+      <td>Huber-Quantile-CatBoost residual 순차 학습</td>
+      <td>experiments/track6/PP-L9_huber_quantile_catboost_residual_sequential</td>
+    </tr>
+    <tr>
+      <td>PP-L6</td>
+      <td>PP-L6_warm_validation_weighted_ensemble</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>weights selected on validation</td>
+      <td>0.520870</td>
+      <td>0.192978</td>
+      <td>0.356344</td>
+      <td>1.130449</td>
+      <td>0.624277</td>
+      <td>0.786127</td>
+      <td>-0.019606</td>
+      <td>-0.060337</td>
+      <td>-0.188906</td>
+      <td>Huber / Quantile / CatBoost 가중 앙상블</td>
+      <td>experiments/track6/PP-L6_huber_quantile_catboost_weighted_ensemble</td>
+    </tr>
+    <tr>
+      <td>PP-L1</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>CatBoost MAPE 목적 최적화</td>
+      <td>experiments/track6/PP-L1_catboost_mape_objective</td>
+    </tr>
+    <tr>
+      <td>PP-L2</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>CatBoost 옵션별 MAPE 민감도</td>
+      <td>experiments/track6/PP-L2_catboost_mape_sensitivity</td>
+    </tr>
+    <tr>
+      <td>PP-L3</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Huber 선행 + CatBoost residual 보정</td>
+      <td>experiments/track6/PP-L3_huber_catboost_residual</td>
+    </tr>
+    <tr>
+      <td>PP-L4</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Huber + Quantile width 위험 구간 보정</td>
+      <td>experiments/track6/PP-L4_huber_quantile_width_risk_calibration</td>
+    </tr>
+    <tr>
+      <td>PP-L5</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Huber + Quantile + CatBoost 라우팅</td>
+      <td>experiments/track6/PP-L5_huber_quantile_catboost_routing</td>
+    </tr>
+    <tr>
+      <td>PP-L7-0</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Quantile 구간 생성 및 검증</td>
+      <td>experiments/track6/PP-L7_0_quantile_segment_validation</td>
+    </tr>
+    <tr>
+      <td>PP-L7-H</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Quantile 구간별 Huber 상세 학습</td>
+      <td>experiments/track6/PP-L7_H_quantile_segment_huber_refit</td>
+    </tr>
+    <tr>
+      <td>PP-L7-CB</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Quantile 구간별 CatBoost 상세 학습</td>
+      <td>experiments/track6/PP-L7_CB_quantile_segment_catboost_refit</td>
+    </tr>
+    <tr>
+      <td>PP-L7-HCB</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Quantile 구간별 Huber + CatBoost 결합</td>
+      <td>experiments/track6/PP-L7_HCB_quantile_segment_huber_catboost_combo</td>
+    </tr>
+  </tbody>
+</table>
+<h2>결과 해석 코멘터리</h2>
+<h3>전체 해석</h3>
+<ul>
+<li>Warm과 Cold는 같은 후처리 구조에 다르게 반응했다. Warm은 순차 모델 결합이 유효했고, Cold는 구간별 보정과 CatBoost 목적 함수 조정이 더 안정적으로 보였다.</li>
+<li>Warm은 작가 기준선이 포함된 Huber가 중심 가격선을 잡고, Quantile이 불확실성을 알려주며, CatBoost가 잔여 오차를 보정하는 역할 분담이 잘 맞았다.</li>
+<li>Cold는 작가 식별 정보 없이 작품 조건만으로 예측해야 하므로, 복잡한 순차 구조보다 특정 불확실성 구간의 median residual 보정이 더 효과적이었다.</li>
+</ul>
+<h3>Warm 분석</h3>
+<ul>
+<li>Warm 기준 Huber는 validation MdAPE 0.2126, MAPE 0.4167, p95_APE 1.3194였다.</li>
+<li>PP-L8은 validation에서 MdAPE 0.1808, MAPE 0.3152, p95_APE 0.9341로 모두 개선됐고, test에서도 MdAPE 0.1777, MAPE 0.3383, p95_APE 1.1047로 기준보다 좋아졌다.</li>
+<li>따라서 Warm 최우선 후보는 PP-L8이며, PP-L9는 보조 후보로 볼 수 있다.</li>
+<li>PP-L6은 MAPE/p95는 좋아졌지만 test MdAPE가 기준보다 소폭 악화되어 우선순위가 낮다.</li>
+</ul>
+<h3>Cold 분석</h3>
+<ul>
+<li>Cold 기준 CatBoost는 validation MdAPE 0.4370, MAPE 0.7606, p95_APE 2.5140였다.</li>
+<li>PP-L4는 validation에서 MdAPE 0.4026, MAPE 0.6063, p95_APE 1.8607로 가장 크게 개선됐고, test에서도 기준 대비 같은 방향으로 개선됐다.</li>
+<li>PP-L4의 segment bootstrap에서는 high 구간과 low 구간이 개선됐지만 mid 구간은 악화됐다. 따라서 전체 적용보다 high/low 선택 적용으로 고도화해야 한다.</li>
+<li>PP-L1 MAE/Quantile CatBoost는 Cold에서 outlier 영향을 줄여 기준보다 좋아졌고, PP-L9는 Cold에서 validation/test 모두 악화되어 중단 후보로 본다.</li>
+</ul>
+<h3>채택/보류 판단</h3>
+<ul>
+<li>Warm 1순위: PP-L8 Quantile -> Huber -> CatBoost residual.</li>
+<li>Warm 2순위: PP-L9 Huber -> Quantile residual -> CatBoost remaining residual.</li>
+<li>Cold 1순위: PP-L4 Quantile width segment median 보정. 단 mid 구간 제외 또는 완화 조건 필요.</li>
+<li>Cold 2순위: PP-L1 MAE 또는 Quantile CatBoost.</li>
+<li>Cold 중단 후보: PP-L9 residual 순차 구조.</li>
+</ul>
+<h3>후속 작업</h3>
+<ul>
+<li>Warm PP-L8은 Huber 수렴 경고를 해소한 뒤 seed 반복과 test 재현성을 재확인한다.</li>
+<li>Cold PP-L4는 high/low 구간만 보정하고 mid 구간은 기존 CatBoost를 유지하는 선택형 segment 보정으로 재실험한다.</li>
+<li>Cold PP-L1의 MAE/Quantile loss를 PP-L4 선택형 보정 전후에 각각 결합해 비교한다.</li>
+</ul>
+<h2>1차 판단</h2><ul><li>Warm에서는 PP-L8과 PP-L9가 기준 대비 대표오차와 평균오차를 함께 낮춘 후보로 나타났다.</li><li>Cold에서는 PP-L1, PP-L6 계열이 MAPE 완화 후보이며 PP-L9는 보류 후보로 기록한다.</li><li>Huber 수렴 경고가 있어 Warm 최종 확정 전 수렴 재확인이 필요하다.</li></ul></body></html>

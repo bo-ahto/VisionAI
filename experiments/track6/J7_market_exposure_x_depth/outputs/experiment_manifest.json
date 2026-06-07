@@ -1,0 +1,275 @@
+{
+  "created_at": "2026-05-27T22:34:44",
+  "experiment_id": "J7",
+  "description": "Track6 Group H/I/J experiment: J7",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/J7_market_exposure_x_depth/experiment_config.json",
+  "prompt_file": "experiments/track6/J7_market_exposure_x_depth/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "depth_cm",
+      "artist_meta_total_works",
+      "artist_meta_for_sale_works",
+      "artist_meta_followers",
+      "artist_meta_is_p1",
+      "artist_meta_available_count",
+      "artist_meta_completeness_score",
+      "artist_meta_total_works_x_depth",
+      "artist_meta_for_sale_works_x_depth",
+      "artist_meta_followers_x_depth",
+      "artist_meta_is_p1_x_depth",
+      "artist_meta_available_count_x_depth",
+      "artist_meta_completeness_score_x_depth"
+    ],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore",
+    "numeric_categorical_interactions": [],
+    "numeric_categorical_interaction_mappings": [],
+    "numeric_numeric_interactions": [
+      {
+        "left_col": "artist_meta_total_works",
+        "right_col": "depth_cm",
+        "output_col": "artist_meta_total_works_x_depth"
+      },
+      {
+        "left_col": "artist_meta_for_sale_works",
+        "right_col": "depth_cm",
+        "output_col": "artist_meta_for_sale_works_x_depth"
+      },
+      {
+        "left_col": "artist_meta_followers",
+        "right_col": "depth_cm",
+        "output_col": "artist_meta_followers_x_depth"
+      },
+      {
+        "left_col": "artist_meta_is_p1",
+        "right_col": "depth_cm",
+        "output_col": "artist_meta_is_p1_x_depth"
+      },
+      {
+        "left_col": "artist_meta_available_count",
+        "right_col": "depth_cm",
+        "output_col": "artist_meta_available_count_x_depth"
+      },
+      {
+        "left_col": "artist_meta_completeness_score",
+        "right_col": "depth_cm",
+        "output_col": "artist_meta_completeness_score_x_depth"
+      }
+    ],
+    "numeric_numeric_interaction_mappings": [
+      {
+        "output_col": "artist_meta_total_works_x_depth",
+        "left_col": "artist_meta_total_works",
+        "right_col": "depth_cm"
+      },
+      {
+        "output_col": "artist_meta_for_sale_works_x_depth",
+        "left_col": "artist_meta_for_sale_works",
+        "right_col": "depth_cm"
+      },
+      {
+        "output_col": "artist_meta_followers_x_depth",
+        "left_col": "artist_meta_followers",
+        "right_col": "depth_cm"
+      },
+      {
+        "output_col": "artist_meta_is_p1_x_depth",
+        "left_col": "artist_meta_is_p1",
+        "right_col": "depth_cm"
+      },
+      {
+        "output_col": "artist_meta_available_count_x_depth",
+        "left_col": "artist_meta_available_count",
+        "right_col": "depth_cm"
+      },
+      {
+        "output_col": "artist_meta_completeness_score_x_depth",
+        "left_col": "artist_meta_completeness_score",
+        "right_col": "depth_cm"
+      }
+    ]
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "J7 기준: 시장 노출/정보량 + 깊이",
+      "features": [
+        "depth_cm",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score"
+      ],
+      "description": "개별 효과만 사용"
+    },
+    {
+      "name": "J7 교차항: 시장 노출/정보량 x 깊이",
+      "features": [
+        "depth_cm",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score",
+        "artist_meta_total_works_x_depth",
+        "artist_meta_for_sale_works_x_depth",
+        "artist_meta_followers_x_depth",
+        "artist_meta_is_p1_x_depth",
+        "artist_meta_available_count_x_depth",
+        "artist_meta_completeness_score_x_depth"
+      ],
+      "description": "시장 노출/정보량별 입체성 프리미엄 추가"
+    }
+  ],
+  "bucket_features": [],
+  "combo_features": [],
+  "numeric_categorical_interactions": [],
+  "numeric_categorical_interaction_mappings": [],
+  "numeric_numeric_interactions": [
+    {
+      "left_col": "artist_meta_total_works",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_total_works_x_depth"
+    },
+    {
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_for_sale_works_x_depth"
+    },
+    {
+      "left_col": "artist_meta_followers",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_followers_x_depth"
+    },
+    {
+      "left_col": "artist_meta_is_p1",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_is_p1_x_depth"
+    },
+    {
+      "left_col": "artist_meta_available_count",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_available_count_x_depth"
+    },
+    {
+      "left_col": "artist_meta_completeness_score",
+      "right_col": "depth_cm",
+      "output_col": "artist_meta_completeness_score_x_depth"
+    }
+  ],
+  "numeric_numeric_interaction_mappings": [
+    {
+      "output_col": "artist_meta_total_works_x_depth",
+      "left_col": "artist_meta_total_works",
+      "right_col": "depth_cm"
+    },
+    {
+      "output_col": "artist_meta_for_sale_works_x_depth",
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "depth_cm"
+    },
+    {
+      "output_col": "artist_meta_followers_x_depth",
+      "left_col": "artist_meta_followers",
+      "right_col": "depth_cm"
+    },
+    {
+      "output_col": "artist_meta_is_p1_x_depth",
+      "left_col": "artist_meta_is_p1",
+      "right_col": "depth_cm"
+    },
+    {
+      "output_col": "artist_meta_available_count_x_depth",
+      "left_col": "artist_meta_available_count",
+      "right_col": "depth_cm"
+    },
+    {
+      "output_col": "artist_meta_completeness_score_x_depth",
+      "left_col": "artist_meta_completeness_score",
+      "right_col": "depth_cm"
+    }
+  ],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/J7_market_exposure_x_depth/data/train_features.csv",
+    "train_labels": "experiments/track6/J7_market_exposure_x_depth/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/J7_market_exposure_x_depth/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/J7_market_exposure_x_depth/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/J7_market_exposure_x_depth/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/J7_market_exposure_x_depth/data/test_cold_labels.csv",
+    "numeric_numeric_interaction_mapping": "experiments/track6/J7_market_exposure_x_depth/outputs/numeric_numeric_interaction_mapping.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/J7_market_exposure_x_depth/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/J7_market_exposure_x_depth/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_cold_labels.csv"
+  }
+}

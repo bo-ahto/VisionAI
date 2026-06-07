@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 D5 artwork_age x 지지체 숫자형 교차항 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 D5 artwork_age x 지지체 숫자형 교차항 실험 결과</h1>
+    <ul>
+      <li>목적: 작품 연한에 따라 지지체별 가격 효과가 달라지는지 확인</li>
+      <li>실험 ID: <code>D5</code></li>
+      <li>Warm 최고: <code>D5 교차항: 연한 x 난트 지지체</code> / <code>Huber</code> / MdAPE 0.7390</li>
+      <li>Cold 최고: <code>D5 기준: 연한 + 난트 지지체</code> / <code>Quantile-LAD</code> / MdAPE 0.7028</li>
+      <li>생성일: <code>2026-05-27T10:21:15</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/train_features.csv</code><br><code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/test_warm_features.csv</code><br><code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/test_cold_features.csv</code><br><code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/D5_artwork_age_support_numeric_interaction/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/D5_artwork_age_support_numeric_interaction/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>artwork_age, artwork_age_x_nant_support_01, artwork_age_x_nant_support_02, artwork_age_x_nant_support_03, artwork_age_x_nant_support_04, artwork_age_x_nant_support_05, artwork_age_x_nant_support_06, artwork_age_x_nant_support_07, artwork_age_x_nant_support_08</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>오래된 종이, 오래된 캔버스처럼 작품 연한과 지지체가 함께 작용할 때 가격 예측이 개선되는지 확인한다.</td></tr><tr><td>실험군</td><td>Group D: 작품 변수끼리의 교차항</td></tr><tr><td>기준선</td><td>artwork_age + nant_support</td></tr><tr><td>학습 피처</td><td>기준선과 artwork_age x NANT 지지체 교차항</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>구현 방식</td><td>artwork_age는 숫자형으로 유지하고, 지지체별 표시값과 곱한 숫자형 교차항을 생성한다.</td></tr><tr><td>주의</td><td>제작연도 출처와 결측 여부 flag는 사용하지 않는다.</td></tr><tr><td>해석 기준</td><td>교차항 추가 후 MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 지지체별 연한 효과가 있다고 본다.</td></tr><tr><td>purpose</td><td>작품 연한에 따라 지지체별 가격 효과가 달라지는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 D5 교차항: 연한 x 난트 지지체 + Huber(MdAPE 0.7390), Cold 최고는 D5 기준: 연한 + 난트 지지체 + Quantile-LAD(MdAPE 0.7028)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>D5 기준: 연한 + 난트 지지체</h2>
+              <p><strong>사용 피처:</strong> <code>artwork_age, nant_support</code> · 작품 연한과 지지체의 개별 효과만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0347</td><td>1.3379</td><td>0.7432</td><td>6.1125</td><td>0.1878</td><td>0.3196</td><td>1.5319</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0325</td><td>1.3394</td><td>0.7589</td><td>6.9394</td><td>0.1713</td><td>0.3130</td><td>1.6908</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0325</td><td>1.3394</td><td>0.7589</td><td>6.9393</td><td>0.1730</td><td>0.3130</td><td>1.6908</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0082</td><td>1.3197</td><td>0.7108</td><td>6.9506</td><td>0.1820</td><td>0.3404</td><td>1.4197</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0140</td><td>1.3235</td><td>0.7028</td><td>6.8780</td><td>0.1855</td><td>0.3388</td><td>1.4043</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0353</td><td>1.3373</td><td>0.7199</td><td>6.7845</td><td>0.1981</td><td>0.3366</td><td>1.6601</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>D5 교차항: 연한 x 난트 지지체</h2>
+              <p><strong>사용 피처:</strong> <code>artwork_age, nant_support, artwork_age_x_nant_support_01, artwork_age_x_nant_support_02, artwork_age_x_nant_support_03, artwork_age_x_nant_support_04, artwork_age_x_nant_support_05, artwork_age_x_nant_support_06, artwork_age_x_nant_support_07, artwork_age_x_nant_support_08</code> · 작품 연한이 늘어날 때 지지체별 가격 효과가 달라지는지 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0361</td><td>1.3369</td><td>0.7390</td><td>6.3316</td><td>0.1862</td><td>0.3213</td><td>1.5519</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0330</td><td>1.3390</td><td>0.7498</td><td>7.0766</td><td>0.1730</td><td>0.3180</td><td>1.7064</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0330</td><td>1.3390</td><td>0.7501</td><td>7.0752</td><td>0.1730</td><td>0.3180</td><td>1.7063</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0117</td><td>1.3219</td><td>0.7152</td><td>7.0592</td><td>0.1878</td><td>0.3382</td><td>1.4498</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0178</td><td>1.3259</td><td>0.7131</td><td>6.9592</td><td>0.1888</td><td>0.3375</td><td>1.4282</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0268</td><td>1.3318</td><td>0.7195</td><td>6.7696</td><td>0.1910</td><td>0.3353</td><td>1.6632</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/data/test_cold_labels.csv</code></li><li><code>interaction_mapping</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/outputs/interaction_mapping.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/D5_artwork_age_support_numeric_interaction/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

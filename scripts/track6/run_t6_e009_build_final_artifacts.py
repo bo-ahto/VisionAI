@@ -16,9 +16,10 @@ from run_t6_e005_feature_combo_ablation import (
     FEATURE_SETS,
     REPO,
     add_generated_features,
+    cat_ready,
     cat_feature_indices,
-    cold_median_model,
-    cold_tail_model,
+    cold_catboost_model,
+    cold_lightgbm_model,
     merge_xy,
     read_pair,
     warm_model,
@@ -33,9 +34,10 @@ RESULT_DIR = REPO / "data" / "track6" / "results"
 EXP_DOC = REPO / "docs" / "track6" / "experiments" / "2026-05-18_T6-E009_final_artifact_manifest.md"
 RESULT_JSON = RESULT_DIR / "t6_e009_final_artifact_manifest.json"
 MANIFEST_JSON = ARTIFACT_DIR / "track6_artifact_manifest.json"
-WARM_MODEL = ARTIFACT_DIR / "track6_warm_catboost_base_medium_size.cbm"
-COLD_MEDIAN_MODEL = ARTIFACT_DIR / "track6_cold_hist_quantile_base.joblib"
-COLD_TAIL_MODEL = ARTIFACT_DIR / "track6_cold_huber_base_size_shape.joblib"
+E005_METRICS = RESULT_DIR / "t6_e005_feature_combo_ablation_metrics.csv"
+WARM_MODEL = ARTIFACT_DIR / "track6_warm_huber.joblib"
+COLD_CATBOOST_MODEL = ARTIFACT_DIR / "track6_cold_catboost.cbm"
+COLD_LIGHTGBM_MODEL = ARTIFACT_DIR / "track6_cold_lightgbm.joblib"
 
 
 def combine_features(path_a: Path, path_b: Path) -> pd.DataFrame:
@@ -46,46 +48,60 @@ def combine_labels(path_a: Path, path_b: Path) -> pd.DataFrame:
     return pd.concat([pd.read_csv(path_a), pd.read_csv(path_b)], ignore_index=True, sort=False)
 
 
+def selected_feature_set(split: str, model: str, default: str) -> str:
+    if not E005_METRICS.exists():
+        return default
+    metrics = pd.read_csv(E005_METRICS)
+    rows = metrics.loc[metrics["split"].eq(split) & metrics["model"].eq(model)]
+    if rows.empty:
+        return default
+    return str(rows.sort_values(["median_ape", "p95_ape"]).iloc[0]["feature_set"])
+
+
 def fit_warm(feature: pd.DataFrame, label: pd.DataFrame) -> dict[str, Any]:
-    columns = FEATURE_SETS["base_medium_size"] + ARTIST_FEATURES
+    feature_set = selected_feature_set("val_warm", "huber_warm_artist", "base_medium_size")
+    columns = FEATURE_SETS[feature_set] + ARTIST_FEATURES
     x_train, y_train, _price, _merged = merge_xy(feature, label, columns)
-    model = warm_model()
-    model.fit(x_train, y_train, cat_features=cat_feature_indices(columns))
-    model.save_model(WARM_MODEL)
+    model = warm_model(columns)
+    model.fit(x_train, y_train)
+    joblib.dump(model, WARM_MODEL)
     return {
         "artifact": str(WARM_MODEL.relative_to(REPO)),
-        "model": "CatBoostRegressor",
-        "feature_set": "base_medium_size",
-        "features": columns,
-        "training_rows": int(len(x_train)),
-    }
-
-
-def fit_cold_median(feature: pd.DataFrame, label: pd.DataFrame) -> dict[str, Any]:
-    columns = FEATURE_SETS["base"]
-    x_train, y_train, _price, _merged = merge_xy(feature, label, columns)
-    model = cold_median_model(columns)
-    model.fit(x_train, y_train)
-    joblib.dump(model, COLD_MEDIAN_MODEL)
-    return {
-        "artifact": str(COLD_MEDIAN_MODEL.relative_to(REPO)),
-        "model": "HistGradientBoostingRegressor(loss=quantile)",
-        "feature_set": "base",
-        "features": columns,
-        "training_rows": int(len(x_train)),
-    }
-
-
-def fit_cold_tail(feature: pd.DataFrame, label: pd.DataFrame) -> dict[str, Any]:
-    columns = FEATURE_SETS["base_size_shape"]
-    x_train, y_train, _price, _merged = merge_xy(feature, label, columns)
-    model = cold_tail_model(columns)
-    model.fit(x_train, y_train)
-    joblib.dump(model, COLD_TAIL_MODEL)
-    return {
-        "artifact": str(COLD_TAIL_MODEL.relative_to(REPO)),
         "model": "HuberRegressor",
-        "feature_set": "base_size_shape",
+        "feature_set": feature_set,
+        "features": columns,
+        "training_rows": int(len(x_train)),
+    }
+
+
+def fit_cold_catboost(feature: pd.DataFrame, label: pd.DataFrame) -> dict[str, Any]:
+    feature_set = selected_feature_set("val_cold", "catboost_cold", "base")
+    columns = FEATURE_SETS[feature_set]
+    x_train, y_train, _price, _merged = merge_xy(feature, label, columns)
+    model = cold_catboost_model()
+    x_train_cat = cat_ready(x_train, columns)
+    model.fit(x_train_cat, y_train, cat_features=cat_feature_indices(columns))
+    model.save_model(COLD_CATBOOST_MODEL)
+    return {
+        "artifact": str(COLD_CATBOOST_MODEL.relative_to(REPO)),
+        "model": "CatBoostRegressor",
+        "feature_set": feature_set,
+        "features": columns,
+        "training_rows": int(len(x_train)),
+    }
+
+
+def fit_cold_lightgbm(feature: pd.DataFrame, label: pd.DataFrame) -> dict[str, Any]:
+    feature_set = selected_feature_set("val_cold", "lightgbm_cold", "base")
+    columns = FEATURE_SETS[feature_set]
+    x_train, y_train, _price, _merged = merge_xy(feature, label, columns)
+    model = cold_lightgbm_model(columns)
+    model.fit(x_train, y_train)
+    joblib.dump(model, COLD_LIGHTGBM_MODEL)
+    return {
+        "artifact": str(COLD_LIGHTGBM_MODEL.relative_to(REPO)),
+        "model": "LGBMRegressor",
+        "feature_set": feature_set,
         "features": columns,
         "training_rows": int(len(x_train)),
     }
@@ -126,7 +142,7 @@ def render(result: dict[str, Any]) -> str:
         "- test 데이터는 artifact 학습에 사용하지 않음",
         "- artifact 학습에는 `train + validation`만 사용",
         "- Warm/Cold 모델은 분리 관리",
-        "- Cold는 대표 오차용 후보와 큰 오차 관찰용 후보를 함께 남김",
+        "- Cold는 CatBoost와 LightGBM 후보를 함께 남김",
         "- 운영 입력에서 만들 수 없는 피처는 사용하지 않음",
         "",
         "## 2. artifact 목록",
@@ -181,7 +197,7 @@ def update_docs(result: dict[str, Any]) -> None:
     results = REPO / "docs" / "track6" / "tables" / "experiment_results_table.md"
     row = (
         f"| {result['created_at']} | T6-E009 | T6-H8 | 검증 완료 | Track6 train+validation | "
-        "CatBoost / HistQuantile / Huber | 최종 후보 피처 | artifact 생성 | artifact 생성 | "
+        "Huber / CatBoost / LightGBM | 최종 후보 피처 | artifact 생성 | artifact 생성 | "
         "최종 후보 manifest ready | [기록](../experiments/2026-05-18_T6-E009_final_artifact_manifest.md) |"
     )
     replace_row(results, "| 2026-05-18 | T6-E009 |", row)
@@ -210,8 +226,8 @@ def main() -> None:
 
     artifacts = [
         {"key": "warm_price_model", **fit_warm(warm_feature, warm_label)},
-        {"key": "cold_median_price_model", **fit_cold_median(cold_feature, cold_label)},
-        {"key": "cold_tail_reference_model", **fit_cold_tail(cold_feature, cold_label)},
+        {"key": "cold_catboost_price_model", **fit_cold_catboost(cold_feature, cold_label)},
+        {"key": "cold_lightgbm_price_model", **fit_cold_lightgbm(cold_feature, cold_label)},
     ]
     manifest = {
         "created_at": date.today().isoformat(),

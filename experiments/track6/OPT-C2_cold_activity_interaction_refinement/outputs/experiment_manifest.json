@@ -1,0 +1,425 @@
+{
+  "created_at": "2026-05-28T06:06:10",
+  "experiment_id": "OPT-C2",
+  "description": "Cold best activity/popularity interaction refinement after A-J experiments.",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/experiment_config.json",
+  "prompt_file": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "ln_estimated_ho",
+      "width_cm",
+      "height_cm",
+      "log_area",
+      "aspect_ratio",
+      "artwork_year",
+      "artwork_age",
+      "depth_cm",
+      "has_depth",
+      "is_3d_candidate",
+      "is_edition",
+      "is_limited_edition",
+      "is_open_edition",
+      "is_unknown_edition",
+      "edition_info_available",
+      "artist_meta_birth_year",
+      "artist_meta_total_works",
+      "artist_meta_for_sale_works",
+      "artist_meta_followers",
+      "artist_meta_is_p1",
+      "artist_meta_available_count",
+      "artist_meta_completeness_score",
+      "artist_exhibition_solo_count",
+      "artist_exhibition_group_count",
+      "artist_exhibition_fair_count",
+      "artist_exhibition_total_count",
+      "artist_meta_birth_year_is_missing",
+      "artist_meta_career_stage_is_missing",
+      "artist_meta_total_works_is_missing",
+      "artist_meta_for_sale_works_is_missing",
+      "artist_meta_followers_is_missing",
+      "artist_meta_is_p1_is_missing",
+      "artist_meta_nationality_is_missing",
+      "artist_exhibition_solo_count_is_missing",
+      "artist_exhibition_group_count_is_missing",
+      "artist_exhibition_fair_count_is_missing",
+      "total_works_x_log_area",
+      "followers_x_log_area",
+      "for_sale_works_x_log_area",
+      "for_sale_works_x_ln_ho",
+      "followers_x_ln_ho",
+      "total_works_x_ln_ho"
+    ],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore",
+    "numeric_categorical_interactions": [],
+    "numeric_categorical_interaction_mappings": [],
+    "numeric_numeric_interactions": [
+      {
+        "left_col": "artist_meta_total_works",
+        "right_col": "log_area",
+        "output_col": "total_works_x_log_area"
+      },
+      {
+        "left_col": "artist_meta_followers",
+        "right_col": "log_area",
+        "output_col": "followers_x_log_area"
+      },
+      {
+        "left_col": "artist_meta_total_works",
+        "right_col": "ln_estimated_ho",
+        "output_col": "total_works_x_ln_ho"
+      },
+      {
+        "left_col": "artist_meta_followers",
+        "right_col": "ln_estimated_ho",
+        "output_col": "followers_x_ln_ho"
+      },
+      {
+        "left_col": "artist_meta_for_sale_works",
+        "right_col": "log_area",
+        "output_col": "for_sale_works_x_log_area"
+      },
+      {
+        "left_col": "artist_meta_for_sale_works",
+        "right_col": "ln_estimated_ho",
+        "output_col": "for_sale_works_x_ln_ho"
+      }
+    ],
+    "numeric_numeric_interaction_mappings": [
+      {
+        "output_col": "total_works_x_log_area",
+        "left_col": "artist_meta_total_works",
+        "right_col": "log_area"
+      },
+      {
+        "output_col": "followers_x_log_area",
+        "left_col": "artist_meta_followers",
+        "right_col": "log_area"
+      },
+      {
+        "output_col": "total_works_x_ln_ho",
+        "left_col": "artist_meta_total_works",
+        "right_col": "ln_estimated_ho"
+      },
+      {
+        "output_col": "followers_x_ln_ho",
+        "left_col": "artist_meta_followers",
+        "right_col": "ln_estimated_ho"
+      },
+      {
+        "output_col": "for_sale_works_x_log_area",
+        "left_col": "artist_meta_for_sale_works",
+        "right_col": "log_area"
+      },
+      {
+        "output_col": "for_sale_works_x_ln_ho",
+        "left_col": "artist_meta_for_sale_works",
+        "right_col": "ln_estimated_ho"
+      }
+    ]
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "C2-1: 작품 기본 피처 + 활동량 + 결측",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_total_works_is_missing",
+        "artist_meta_for_sale_works_is_missing",
+        "artist_meta_followers_is_missing",
+        "artist_meta_is_p1_is_missing"
+      ],
+      "description": "G6/J 계열에서 강했던 활동량/인지도 조합을 재확인한다."
+    },
+    {
+      "name": "C2-2: C2-1 + 정보량",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score",
+        "artist_meta_total_works_is_missing",
+        "artist_meta_for_sale_works_is_missing",
+        "artist_meta_followers_is_missing",
+        "artist_meta_is_p1_is_missing"
+      ],
+      "description": "시장 노출 정보에 메타 정보량을 더하면 Cold 오차가 줄어드는지 확인한다."
+    },
+    {
+      "name": "C2-3: C2-2 + 활동량/인지도 x 면적",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score",
+        "artist_meta_total_works_is_missing",
+        "artist_meta_for_sale_works_is_missing",
+        "artist_meta_followers_is_missing",
+        "artist_meta_is_p1_is_missing",
+        "total_works_x_log_area",
+        "followers_x_log_area",
+        "for_sale_works_x_log_area"
+      ],
+      "description": "J5에서 강했던 활동량/인지도와 면적 상호작용을 작품 기본 피처에 결합한다."
+    },
+    {
+      "name": "C2-4: C2-2 + 활동량/인지도 x 호수",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score",
+        "artist_meta_total_works_is_missing",
+        "artist_meta_for_sale_works_is_missing",
+        "artist_meta_followers_is_missing",
+        "artist_meta_is_p1_is_missing",
+        "total_works_x_ln_ho",
+        "followers_x_ln_ho",
+        "for_sale_works_x_ln_ho"
+      ],
+      "description": "J4에서 강했던 활동량/인지도와 호수 상호작용을 작품 기본 피처에 결합한다."
+    },
+    {
+      "name": "C2-5: C2-2 + 면적/호수 상호작용 전체",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score",
+        "artist_meta_total_works_is_missing",
+        "artist_meta_for_sale_works_is_missing",
+        "artist_meta_followers_is_missing",
+        "artist_meta_is_p1_is_missing",
+        "total_works_x_log_area",
+        "followers_x_log_area",
+        "for_sale_works_x_log_area",
+        "total_works_x_ln_ho",
+        "followers_x_ln_ho",
+        "for_sale_works_x_ln_ho"
+      ],
+      "description": "활동량/인지도와 크기 상호작용을 모두 넣었을 때 대표 오차와 큰 오차가 개선되는지 확인한다."
+    },
+    {
+      "name": "C2-6: C2-5 + 기본 작가 프로필/전시",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_birth_year",
+        "artist_meta_career_stage",
+        "artist_meta_nationality",
+        "artist_exhibition_solo_count",
+        "artist_exhibition_group_count",
+        "artist_exhibition_fair_count",
+        "artist_exhibition_total_count",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score",
+        "artist_meta_birth_year_is_missing",
+        "artist_meta_career_stage_is_missing",
+        "artist_meta_nationality_is_missing",
+        "artist_exhibition_solo_count_is_missing",
+        "artist_exhibition_group_count_is_missing",
+        "artist_exhibition_fair_count_is_missing",
+        "artist_meta_total_works_is_missing",
+        "artist_meta_for_sale_works_is_missing",
+        "artist_meta_followers_is_missing",
+        "artist_meta_is_p1_is_missing",
+        "total_works_x_log_area",
+        "followers_x_log_area",
+        "for_sale_works_x_log_area",
+        "total_works_x_ln_ho",
+        "followers_x_ln_ho",
+        "for_sale_works_x_ln_ho"
+      ],
+      "description": "Cold에서 전체 작가 메타까지 붙였을 때 개선인지 과적합인지 확인한다."
+    }
+  ],
+  "bucket_features": [],
+  "combo_features": [],
+  "numeric_categorical_interactions": [],
+  "numeric_categorical_interaction_mappings": [],
+  "numeric_numeric_interactions": [
+    {
+      "left_col": "artist_meta_total_works",
+      "right_col": "log_area",
+      "output_col": "total_works_x_log_area"
+    },
+    {
+      "left_col": "artist_meta_followers",
+      "right_col": "log_area",
+      "output_col": "followers_x_log_area"
+    },
+    {
+      "left_col": "artist_meta_total_works",
+      "right_col": "ln_estimated_ho",
+      "output_col": "total_works_x_ln_ho"
+    },
+    {
+      "left_col": "artist_meta_followers",
+      "right_col": "ln_estimated_ho",
+      "output_col": "followers_x_ln_ho"
+    },
+    {
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "log_area",
+      "output_col": "for_sale_works_x_log_area"
+    },
+    {
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "ln_estimated_ho",
+      "output_col": "for_sale_works_x_ln_ho"
+    }
+  ],
+  "numeric_numeric_interaction_mappings": [
+    {
+      "output_col": "total_works_x_log_area",
+      "left_col": "artist_meta_total_works",
+      "right_col": "log_area"
+    },
+    {
+      "output_col": "followers_x_log_area",
+      "left_col": "artist_meta_followers",
+      "right_col": "log_area"
+    },
+    {
+      "output_col": "total_works_x_ln_ho",
+      "left_col": "artist_meta_total_works",
+      "right_col": "ln_estimated_ho"
+    },
+    {
+      "output_col": "followers_x_ln_ho",
+      "left_col": "artist_meta_followers",
+      "right_col": "ln_estimated_ho"
+    },
+    {
+      "output_col": "for_sale_works_x_log_area",
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "log_area"
+    },
+    {
+      "output_col": "for_sale_works_x_ln_ho",
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "ln_estimated_ho"
+    }
+  ],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/train_features.csv",
+    "train_labels": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_cold_labels.csv",
+    "numeric_numeric_interaction_mapping": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/outputs/numeric_numeric_interaction_mapping.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_cold_labels.csv"
+  }
+}

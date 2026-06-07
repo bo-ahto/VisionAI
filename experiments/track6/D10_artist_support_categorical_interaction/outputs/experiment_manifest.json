@@ -1,0 +1,127 @@
+{
+  "created_at": "2026-05-27T11:55:17",
+  "experiment_id": "D10",
+  "description": "Group D artist and artwork variable interaction: artist_name_ko combined with NANT support",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/D10_artist_support_categorical_interaction/experiment_config.json",
+  "prompt_file": "experiments/track6/D10_artist_support_categorical_interaction/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore",
+    "numeric_categorical_interactions": [],
+    "numeric_categorical_interaction_mappings": []
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "D10 기준: 작가명 + 난트 지지체",
+      "features": [
+        "artist_name_ko",
+        "nant_support"
+      ],
+      "description": "작가명과 지지체의 개별 효과만 사용"
+    },
+    {
+      "name": "D10 조합: 작가명 x 난트 지지체",
+      "features": [
+        "artist_name_ko",
+        "nant_support",
+        "artist_support_combo"
+      ],
+      "description": "작가별 특정 지지체 프리미엄 확인"
+    }
+  ],
+  "bucket_features": [],
+  "combo_features": [
+    {
+      "source_cols": [
+        "artist_name_ko",
+        "nant_support"
+      ],
+      "combo_col": "artist_support_combo",
+      "top_n": 160,
+      "other_value": "other_artist_support"
+    }
+  ],
+  "numeric_categorical_interactions": [],
+  "numeric_categorical_interaction_mappings": [],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/D10_artist_support_categorical_interaction/data/train_features.csv",
+    "train_labels": "experiments/track6/D10_artist_support_categorical_interaction/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/D10_artist_support_categorical_interaction/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/D10_artist_support_categorical_interaction/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/D10_artist_support_categorical_interaction/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/D10_artist_support_categorical_interaction/data/test_cold_labels.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_cold_labels.csv"
+  }
+}

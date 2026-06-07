@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>OP-V01-CAL-05 범위 정책 반복 검증</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; line-height: 1.55; color: #1f2933; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0 24px; font-size: 14px; }
+th, td { border: 1px solid #d8dee9; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f3f6fa; }
+</style>
+</head>
+<body>
+<h1>OP-V01-CAL-05 범위 정책 반복 검증 결과</h1>
+<h2>1. 실행 요약</h2>
+<li>기준 정책: `baseline`</li>
+<li>후보 정책: `fixed_125`</li>
+<li>점가격: 변경 없음</li>
+<li>검증 대상: 기존 Warm validation/test split</li>
+<li>반복 검증: test row bootstrap 100회, test artist bootstrap 100회</li>
+<h2>2. validation/test 전체 지표</h2>
+<table>
+<tr><th>sample</th><th>n</th><th>baseline_coverage</th><th>fixed_125_coverage</th><th>delta_coverage</th><th>baseline_p90_range_ratio</th><th>fixed_125_p90_range_ratio</th><th>width_penalty</th><th>baseline_top5_coverage</th><th>fixed_125_top5_coverage</th><th>baseline_severe_coverage</th><th>fixed_125_severe_coverage</th></tr>
+<tr><td>validation</td><td>519</td><td>0.9480</td><td>0.9595</td><td>0.0116</td><td>9.8223</td><td>17.3889</td><td>1.7704</td><td>0.8846</td><td>0.8846</td><td>0.3333</td><td>0.3333</td></tr>
+<tr><td>test</td><td>607</td><td>0.9226</td><td>0.9588</td><td>0.0362</td><td>8.6048</td><td>14.7375</td><td>1.7127</td><td>0.8710</td><td>0.9032</td><td>0.3571</td><td>0.6429</td></tr>
+</table>
+<h2>3. bootstrap 요약</h2>
+<table>
+<tr><th>mode</th><th>runs</th><th>delta_coverage_mean</th><th>delta_coverage_std</th><th>delta_coverage_min</th><th>delta_coverage_p05</th><th>delta_coverage_median</th><th>delta_coverage_max</th><th>positive_delta_rate</th><th>width_penalty_median</th><th>width_penalty_p95</th></tr>
+<tr><td>artist_bootstrap</td><td>100</td><td>0.0359</td><td>0.0075</td><td>0.0214</td><td>0.0262</td><td>0.0354</td><td>0.0564</td><td>1.0000</td><td>1.7160</td><td>1.7517</td></tr>
+<tr><td>row_bootstrap</td><td>100</td><td>0.0363</td><td>0.0072</td><td>0.0148</td><td>0.0246</td><td>0.0362</td><td>0.0527</td><td>1.0000</td><td>1.7122</td><td>1.7385</td></tr>
+</table>
+<h2>4. 판단</h2>
+<li>test 범위 포함률 변화: 0.0362</li>
+<li>row bootstrap 양수 개선 비율: 1.0000</li>
+<li>artist bootstrap 양수 개선 비율: 1.0000</li>
+<li>판단: 범위/신뢰도 보정 후보 유지</li>
+<h2>5. 해석</h2>
+<li>`fixed_125`는 점가격을 바꾸지 않고 표시 범위만 25% 넓히는 정책이다.</li>
+<li>row bootstrap과 artist bootstrap 모두에서 포함률 개선이 반복되면, 특정 샘플에만 맞춘 결과일 가능성이 낮다.</li>
+<li>이 검증은 모델 재학습 검증이 아니라 범위 표시 정책 검증이다.</li>
+<li>이 결과는 운영 반영 승인이 아니라 범위/신뢰도 보정 후보 유지 판단이다.</li>
+<li>운영 반영 전에는 별도 후보 출력 필드로 API/프론트 테스트를 진행해야 한다.</li>
+<h2>6. 산출물</h2>
+<li>`outputs/overall_metrics.csv`</li>
+<li>`outputs/bootstrap_metrics.csv`</li>
+<li>`outputs/bootstrap_summary.csv`</li>
+<li>`outputs/test_predictions_with_ranges.csv`</li>
+<li>`reports/result_report.md`</li>
+<li>`reports/result_report.html`</li>
+</body>
+</html>

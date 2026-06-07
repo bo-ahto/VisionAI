@@ -1,0 +1,596 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-L10</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:28px;color:#17202a}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #d8dee9;padding:7px;text-align:left}th{background:#eef2f7}h1,h2{margin-top:22px}</style></head>
+<body><h1>PP-L10 Warm PP-L8 순차 구조 피처 변형 비교</h1>
+<h2>Validation Top 15</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>model_stage</th>
+      <th>feature_strategy</th>
+      <th>n_features</th>
+      <th>notes</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__warm_base_search_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>quantile_huber_catboost</td>
+      <td>기준 피처셋+검색 전체</td>
+      <td>60</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.413894</td>
+      <td>0.160424</td>
+      <td>0.293055</td>
+      <td>0.879498</td>
+      <td>0.695568</td>
+      <td>0.851638</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__warm_base_artist_meta_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>quantile_huber_catboost</td>
+      <td>기준 피처셋+작가 메타 전체</td>
+      <td>35</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.422776</td>
+      <td>0.166659</td>
+      <td>0.309631</td>
+      <td>0.910353</td>
+      <td>0.697495</td>
+      <td>0.838150</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__full_plus_generated_buckets</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>quantile_huber_catboost</td>
+      <td>기준 피처셋+생성 bucket</td>
+      <td>21</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.411248</td>
+      <td>0.168531</td>
+      <td>0.298084</td>
+      <td>0.876910</td>
+      <td>0.687861</td>
+      <td>0.828516</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__artist_size_only</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>quantile_huber_catboost</td>
+      <td>작가+크기 핵심축</td>
+      <td>5</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.445155</td>
+      <td>0.170325</td>
+      <td>0.319465</td>
+      <td>0.955147</td>
+      <td>0.672447</td>
+      <td>0.836224</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__warm_base_meta_external_search_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>quantile_huber_catboost</td>
+      <td>기준 피처셋+작가 메타+전시/갤러리+검색 전체</td>
+      <td>90</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.405019</td>
+      <td>0.173846</td>
+      <td>0.291959</td>
+      <td>0.914324</td>
+      <td>0.701349</td>
+      <td>0.849711</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__artist_size_works</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>quantile_huber_catboost</td>
+      <td>작가+크기+작가 학습량</td>
+      <td>7</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.457721</td>
+      <td>0.178113</td>
+      <td>0.333767</td>
+      <td>0.979786</td>
+      <td>0.657033</td>
+      <td>0.836224</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__base_existing_combo</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>quantile_huber_catboost</td>
+      <td>Warm 기준 피처셋</td>
+      <td>13</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.433036</td>
+      <td>0.178361</td>
+      <td>0.321929</td>
+      <td>0.925440</td>
+      <td>0.699422</td>
+      <td>0.842004</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__base_existing_combo</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>direct_huber</td>
+      <td>Warm 기준 피처셋</td>
+      <td>13</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__warm_base_meta_external_search_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>direct_huber</td>
+      <td>기준 피처셋+작가 메타+전시/갤러리+검색 전체</td>
+      <td>90</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.638396</td>
+      <td>0.212830</td>
+      <td>0.413108</td>
+      <td>1.334337</td>
+      <td>0.591522</td>
+      <td>0.745665</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__artist_size_only</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>direct_huber</td>
+      <td>작가+크기 핵심축</td>
+      <td>5</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.669202</td>
+      <td>0.215529</td>
+      <td>0.454943</td>
+      <td>1.447768</td>
+      <td>0.583815</td>
+      <td>0.726397</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__full_plus_generated_buckets</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>direct_huber</td>
+      <td>기준 피처셋+생성 bucket</td>
+      <td>21</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.649280</td>
+      <td>0.217902</td>
+      <td>0.412967</td>
+      <td>1.239432</td>
+      <td>0.601156</td>
+      <td>0.745665</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__artist_size_works</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>direct_huber</td>
+      <td>작가+크기+작가 학습량</td>
+      <td>7</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.672398</td>
+      <td>0.221003</td>
+      <td>0.443649</td>
+      <td>1.392795</td>
+      <td>0.585742</td>
+      <td>0.732177</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__warm_base_artist_meta_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>direct_huber</td>
+      <td>기준 피처셋+작가 메타 전체</td>
+      <td>35</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.642037</td>
+      <td>0.222402</td>
+      <td>0.413706</td>
+      <td>1.294860</td>
+      <td>0.599229</td>
+      <td>0.737958</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__warm_base_search_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>direct_huber</td>
+      <td>기준 피처셋+검색 전체</td>
+      <td>60</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.641182</td>
+      <td>0.224588</td>
+      <td>0.412592</td>
+      <td>1.353115</td>
+      <td>0.593449</td>
+      <td>0.745665</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>quantile_q50__warm_base_meta_external_search_all</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>quantile_q50</td>
+      <td>기준 피처셋+작가 메타+전시/갤러리+검색 전체</td>
+      <td>90</td>
+      <td>CatBoost Quantile q50 단독 기준</td>
+      <td>0.599317</td>
+      <td>0.282211</td>
+      <td>0.416722</td>
+      <td>1.213236</td>
+      <td>0.514451</td>
+      <td>0.741811</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Test Top 15</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>model_stage</th>
+      <th>feature_strategy</th>
+      <th>n_features</th>
+      <th>notes</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__warm_base_meta_external_search_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>quantile_huber_catboost</td>
+      <td>기준 피처셋+작가 메타+전시/갤러리+검색 전체</td>
+      <td>90</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.450738</td>
+      <td>0.170780</td>
+      <td>0.336317</td>
+      <td>1.143168</td>
+      <td>0.662273</td>
+      <td>0.823723</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__base_existing_combo</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>quantile_huber_catboost</td>
+      <td>Warm 기준 피처셋</td>
+      <td>13</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.445906</td>
+      <td>0.174205</td>
+      <td>0.338570</td>
+      <td>1.088803</td>
+      <td>0.678748</td>
+      <td>0.817133</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__full_plus_generated_buckets</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>quantile_huber_catboost</td>
+      <td>기준 피처셋+생성 bucket</td>
+      <td>21</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.439641</td>
+      <td>0.174322</td>
+      <td>0.326521</td>
+      <td>0.981835</td>
+      <td>0.667216</td>
+      <td>0.828666</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__warm_base_search_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>quantile_huber_catboost</td>
+      <td>기준 피처셋+검색 전체</td>
+      <td>60</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.456406</td>
+      <td>0.177704</td>
+      <td>0.339895</td>
+      <td>1.082192</td>
+      <td>0.654036</td>
+      <td>0.825371</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__warm_base_artist_meta_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>quantile_huber_catboost</td>
+      <td>기준 피처셋+작가 메타 전체</td>
+      <td>35</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.460324</td>
+      <td>0.182488</td>
+      <td>0.342971</td>
+      <td>1.055670</td>
+      <td>0.662273</td>
+      <td>0.813839</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__artist_size_only</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>quantile_huber_catboost</td>
+      <td>작가+크기 핵심축</td>
+      <td>5</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.459616</td>
+      <td>0.187494</td>
+      <td>0.352409</td>
+      <td>1.039180</td>
+      <td>0.660626</td>
+      <td>0.822076</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>l8_seq__artist_size_works</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>quantile_huber_catboost</td>
+      <td>작가+크기+작가 학습량</td>
+      <td>7</td>
+      <td>Quantile -&gt; Huber -&gt; CatBoost residual 순차 구조</td>
+      <td>0.466468</td>
+      <td>0.195028</td>
+      <td>0.370447</td>
+      <td>1.195708</td>
+      <td>0.649094</td>
+      <td>0.831960</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__full_plus_generated_buckets</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>direct_huber</td>
+      <td>기준 피처셋+생성 bucket</td>
+      <td>21</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.607435</td>
+      <td>0.213191</td>
+      <td>0.481857</td>
+      <td>1.853150</td>
+      <td>0.616145</td>
+      <td>0.738056</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__warm_base_search_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>direct_huber</td>
+      <td>기준 피처셋+검색 전체</td>
+      <td>60</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.613074</td>
+      <td>0.219477</td>
+      <td>0.485420</td>
+      <td>1.811900</td>
+      <td>0.588138</td>
+      <td>0.734761</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__artist_size_works</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>direct_huber</td>
+      <td>작가+크기+작가 학습량</td>
+      <td>7</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.623299</td>
+      <td>0.222179</td>
+      <td>0.489078</td>
+      <td>1.913638</td>
+      <td>0.609555</td>
+      <td>0.721582</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__artist_size_only</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>direct_huber</td>
+      <td>작가+크기 핵심축</td>
+      <td>5</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.623401</td>
+      <td>0.224735</td>
+      <td>0.505007</td>
+      <td>1.972832</td>
+      <td>0.606260</td>
+      <td>0.719934</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__warm_base_artist_meta_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>direct_huber</td>
+      <td>기준 피처셋+작가 메타 전체</td>
+      <td>35</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.615333</td>
+      <td>0.226592</td>
+      <td>0.488172</td>
+      <td>1.894532</td>
+      <td>0.588138</td>
+      <td>0.723229</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__base_existing_combo</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>direct_huber</td>
+      <td>Warm 기준 피처셋</td>
+      <td>13</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.608054</td>
+      <td>0.227425</td>
+      <td>0.495201</td>
+      <td>2.013041</td>
+      <td>0.589786</td>
+      <td>0.723229</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>huber_direct__warm_base_meta_external_search_all</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>direct_huber</td>
+      <td>기준 피처셋+작가 메타+전시/갤러리+검색 전체</td>
+      <td>90</td>
+      <td>피처셋만 바꾼 Huber 단독 기준</td>
+      <td>0.611962</td>
+      <td>0.229459</td>
+      <td>0.481860</td>
+      <td>1.769773</td>
+      <td>0.588138</td>
+      <td>0.731466</td>
+    </tr>
+    <tr>
+      <td>PP-L10</td>
+      <td>quantile_q50__base_existing_combo</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>quantile_q50</td>
+      <td>Warm 기준 피처셋</td>
+      <td>13</td>
+      <td>CatBoost Quantile q50 단독 기준</td>
+      <td>0.667683</td>
+      <td>0.354568</td>
+      <td>0.524417</td>
+      <td>1.442970</td>
+      <td>0.428336</td>
+      <td>0.645799</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Feature Sets</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>candidate_feature_set</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+      <th>sequential_features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>base_existing_combo</td>
+      <td>Warm 기준 피처셋</td>
+      <td>기존 PP-L8과 같은 기준 피처셋으로 재현 기준을 만든다.</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, q10_log, q50_log, q90_log, quantile_width, price_range_ratio</td>
+    </tr>
+    <tr>
+      <td>artist_size_only</td>
+      <td>작가+크기 핵심축</td>
+      <td>Warm 핵심축만 남기면 순차 구조에서 노이즈가 줄어드는지 확인한다.</td>
+      <td>5</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, q10_log, q50_log, q90_log, quantile_width, price_range_ratio</td>
+    </tr>
+    <tr>
+      <td>artist_size_works</td>
+      <td>작가+크기+작가 학습량</td>
+      <td>작가별 학습량을 Huber 중심선과 CatBoost residual에 함께 제공한다.</td>
+      <td>7</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, artist_works_log, artist_works_count_train</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, artist_works_log, artist_works_count_train, q10_log, q50_log, q90_log, quantile_width, price_range_ratio</td>
+    </tr>
+    <tr>
+      <td>full_plus_generated_buckets</td>
+      <td>기준 피처셋+생성 bucket</td>
+      <td>PP-U1에서 개선 신호가 있던 생성 bucket을 PP-L8 구조에 넣는다.</td>
+      <td>21</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d, q10_log, q50_log, q90_log, quantile_width, price_range_ratio</td>
+    </tr>
+    <tr>
+      <td>warm_base_search_all</td>
+      <td>기준 피처셋+검색 전체</td>
+      <td>PP-Z1에서 Huber baseline 개선 신호가 있던 검색 피처를 순차 구조에 넣는다.</td>
+      <td>60</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade, q10_log, q50_log, q90_log, quantile_width, price_range_ratio</td>
+    </tr>
+    <tr>
+      <td>warm_base_artist_meta_all</td>
+      <td>기준 피처셋+작가 메타 전체</td>
+      <td>작가 기준선을 보완하는 메타 피처가 residual 보정까지 유효한지 확인한다.</td>
+      <td>35</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, q10_log, q50_log, q90_log, quantile_width, price_range_ratio</td>
+    </tr>
+    <tr>
+      <td>warm_base_meta_external_search_all</td>
+      <td>기준 피처셋+작가 메타+전시/갤러리+검색 전체</td>
+      <td>Cold식 확장 피처 전체를 PP-L8 순차 구조에 넣었을 때 개선되는지 확인한다.</td>
+      <td>90</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, exhibition_total_x_log_area, exhibition_total_x_followers_log, gallery_validated_x_followers_log, gallery_tier_x_exhibition_total_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source, exhibition_size_bucket, gallery_exhibition_bucket, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, artist_works_count_train, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_exhibition_available_count, artist_exhibition_solo_count_missing, artist_exhibition_group_count_missing, artist_exhibition_fair_count_missing, artist_exhibition_solo_count_log, artist_exhibition_group_count_log, artist_exhibition_fair_count_log, artist_exhibition_total_count_log, gallery_tier_raw_numeric, gallery_tier_raw_available_flag, gallery_tier_validated_score, gallery_tier_validated_available_flag, gallery_tier_any_available_flag, gallery_city_count, gallery_city_count_log, exhibition_total_x_log_area, exhibition_total_x_followers_log, gallery_validated_x_followers_log, gallery_tier_x_exhibition_total_log, gallery_tier_raw_bucket, gallery_tier_validated, gallery_ref_type, gallery_audit_status, gallery_feature_source, exhibition_size_bucket, gallery_exhibition_bucket, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade, q10_log, q50_log, q90_log, quantile_width, price_range_ratio</td>
+    </tr>
+  </tbody>
+</table></body></html>

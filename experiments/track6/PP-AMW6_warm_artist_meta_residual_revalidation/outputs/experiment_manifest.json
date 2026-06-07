@@ -1,0 +1,66 @@
+{
+  "experiment_id": "PP-AMW6",
+  "title": "Warm 작가 메타 잔차 보정 반복 재검증",
+  "created_at": "2026-06-07T12:25:31",
+  "baseline_candidate": "blend_svcnum_ppv8_wsvc_0.70",
+  "source_experiment": "PP-AMW5",
+  "n_repeats": 12,
+  "n_splits": 5,
+  "bootstrap_iterations": 400,
+  "candidate_specs": [
+    {
+      "candidate": "PP-AMW6_meta_core_validation_mdape",
+      "source_candidate": "PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p05_s0p50",
+      "role": "PP-AMW5 validation 대표 정확도 선택 후보",
+      "kind": "huber",
+      "feature_group": "artist_meta_core",
+      "epsilon": 1.35,
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.5
+    },
+    {
+      "candidate": "PP-AMW6_meta_core_test_twin",
+      "source_candidate": "PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p01_cap0p05_s0p50",
+      "role": "PP-AMW5 test 최상위와 동률 후보",
+      "kind": "huber",
+      "feature_group": "artist_meta_core",
+      "epsilon": 1.35,
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5
+    },
+    {
+      "candidate": "PP-AMW6_meta_core_p95_guard",
+      "source_candidate": "PP-AMW5_huber_artist_meta_core_eps1p35_alpha0p001_cap0p08_s0p50",
+      "role": "validation 큰 오차 방어 선택 후보",
+      "kind": "huber",
+      "feature_group": "artist_meta_core",
+      "epsilon": 1.35,
+      "alpha": 0.001,
+      "cap": 0.08,
+      "strength": 0.5
+    },
+    {
+      "candidate": "PP-AMW6_birth_generation_segment_guard",
+      "source_candidate": "PP-AMW5_segment_artist_birth_generation_bin_min40_cap0p03_s1p00",
+      "role": "생년 구간 median 보정 후보",
+      "kind": "segment",
+      "segment": "artist_birth_generation_bin",
+      "min_n": 40,
+      "cap": 0.03,
+      "strength": 1.0
+    },
+    {
+      "candidate": "PP-AMW6_external_gallery_exhibition_diagnostic",
+      "source_candidate": "PP-AMW5_huber_external_gallery_exhibition_eps1p20_alpha0p001_cap0p05_s0p50",
+      "role": "전시/갤러리 진단 후보",
+      "kind": "huber",
+      "feature_group": "external_gallery_exhibition",
+      "epsilon": 1.2,
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.5
+    }
+  ]
+}

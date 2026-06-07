@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-05-26T17:28:36",
+  "experiment_id": "C3",
+  "description": "Group C artist_name_ko plus support feature comparison",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/C3_artist_name_plus_support/experiment_config.json",
+  "prompt_file": "experiments/track6/C3_artist_name_plus_support/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore"
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "B1 기준: 작가명 only",
+      "features": [
+        "artist_name_ko"
+      ],
+      "description": "작가명만 사용한 기준선"
+    },
+    {
+      "name": "작가명 + 수집 지지체 대분류",
+      "features": [
+        "artist_name_ko",
+        "support_category"
+      ],
+      "description": "작가명을 통제한 뒤 수집 지지체 대분류 추가 효과 확인"
+    },
+    {
+      "name": "작가명 + NANT 지지체",
+      "features": [
+        "artist_name_ko",
+        "nant_support"
+      ],
+      "description": "작가명을 통제한 뒤 NANT 지지체 추가 효과 확인"
+    },
+    {
+      "name": "작가명 + 수집 지지체 + NANT 지지체",
+      "features": [
+        "artist_name_ko",
+        "support_category",
+        "nant_support"
+      ],
+      "description": "작가명을 통제한 뒤 수집 지지체와 NANT 지지체 묶음 추가 효과 확인"
+    }
+  ],
+  "bucket_features": [],
+  "combo_features": [],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/C3_artist_name_plus_support/data/train_features.csv",
+    "train_labels": "experiments/track6/C3_artist_name_plus_support/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/C3_artist_name_plus_support/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/C3_artist_name_plus_support/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/C3_artist_name_plus_support/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/C3_artist_name_plus_support/data/test_cold_labels.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/C3_artist_name_plus_support/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/C3_artist_name_plus_support/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/C3_artist_name_plus_support/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/C3_artist_name_plus_support/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/C3_artist_name_plus_support/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/C3_artist_name_plus_support/source_data/track6_test_cold_labels.csv"
+  }
+}

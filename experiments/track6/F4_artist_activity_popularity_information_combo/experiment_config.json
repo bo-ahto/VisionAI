@@ -1,0 +1,63 @@
+{
+  "experiment_id": "F4",
+  "title": "Track6 F4 활동량/인지도 + 정보량 조합 실험 결과",
+  "purpose": "활동량/인지도 정보에 메타 정보량 피처를 더하면 가격 예측과 신뢰도 판단에 도움이 되는지 확인",
+  "description": "Group F/G artist meta experiment: F4",
+  "exp_dir": "experiments/track6/F4_artist_activity_popularity_information_combo",
+  "prompt_file": "experiments/track6/F4_artist_activity_popularity_information_combo/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "artist_meta_total_works",
+    "artist_meta_for_sale_works",
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_available_count",
+    "artist_meta_completeness_score",
+    "artist_meta_total_works_is_missing",
+    "artist_meta_for_sale_works_is_missing",
+    "artist_meta_followers_is_missing",
+    "artist_meta_is_p1_is_missing"
+  ],
+  "numeric_features": [
+    "artist_meta_total_works",
+    "artist_meta_for_sale_works",
+    "artist_meta_total_works_is_missing",
+    "artist_meta_for_sale_works_is_missing",
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_followers_is_missing",
+    "artist_meta_is_p1_is_missing",
+    "artist_meta_available_count",
+    "artist_meta_completeness_score"
+  ],
+  "variable_blocks": [
+    {
+      "name": "활동량 + 인지도 + 정보량",
+      "features": [
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_available_count",
+        "artist_meta_completeness_score",
+        "artist_meta_total_works_is_missing",
+        "artist_meta_for_sale_works_is_missing",
+        "artist_meta_followers_is_missing",
+        "artist_meta_is_p1_is_missing"
+      ],
+      "description": "F2 조합에 작가 메타 보유 개수와 완성도 점수를 추가"
+    }
+  ],
+  "comment": {
+    "실험 목적": "활동량/인지도 정보에 메타 정보량 피처를 더하면 가격 예측과 신뢰도 판단에 도움이 되는지 확인",
+    "학습 피처": "artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "통제 기준": "Group G는 작품 기본 피처 묶음(ln_estimated_ho + nant_material_idx + nant_tool + nant_support)을 기준선으로 둔다.",
+    "실험군": "Group F: 작가 메타 변수 조합",
+    "검토 반영": "기존 F2와 중복되지 않도록 F4는 정보량/결측 피처까지 포함한 조합으로 수정했다.",
+    "확인 결과 활용": "정보량 피처가 유효하면 예측 신뢰도 보조 피처로 분리 관리한다."
+  }
+}

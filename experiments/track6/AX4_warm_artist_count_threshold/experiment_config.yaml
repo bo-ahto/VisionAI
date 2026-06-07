@@ -1,0 +1,11 @@
+experiment_id: AX4
+status: 계획
+group: AX
+label: AX4
+title: 작가별 학습 작품 수 기준 변경 실험
+hypothesis: Warm으로 볼 작가의 최소 학습 작품 수 기준에 따라 성능 안정성이 달라질 수 있다.
+purpose: 1개, 3개, 5개 이상 기준 중 어떤 Warm 기준이 안정적인지 확인한다.
+train_features: 작품 기본 피처 묶음 + artist_name_ko
+test_features: Warm test를 학습 작품 수 기준별로 재구성
+models: Warm: Huber/Linear/Ridge, fallback Cold 모델
+decision: 전체 median APE와 p95 APE가 동시에 안정적인 기준을 채택한다.

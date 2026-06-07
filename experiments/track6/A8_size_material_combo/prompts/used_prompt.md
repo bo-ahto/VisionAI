@@ -1,0 +1,40 @@
+# A8 크기 + 재료 조합 실험 지시 기록
+
+- 목표: 크기 정보와 재료 정보를 함께 썼을 때 가격 예측력이 개선되는지 확인한다.
+- 기준 원천 파일: `data/track6/track6_feature_candidates_name_corrected_with_year_type_edition_size.csv`
+- split 기준: `data/track6_split_with_year_type_edition_size`
+- 호수 파생 기준: `area_cm2`를 A1과 같은 F형 호수 면적표에 가장 가까운 값으로 매칭해 `estimated_ho`, `ln_estimated_ho`를 생성한다.
+- 학습 입력과 정답 가격은 분리해서 사용한다.
+- 정답 가격은 `train_labels.csv`, `test_warm_labels.csv`, `test_cold_labels.csv`에만 둔다.
+- 비교 변수:
+  - `ln_estimated_ho + medium_category`
+  - `ln_estimated_ho + nant_material_idx`
+  - `ln_estimated_ho + nant_tool`
+  - `ln_estimated_ho + nant_material_idx + nant_tool`
+  - `log_area + medium_category`
+  - `log_area + nant_material_idx`
+  - `width_cm + height_cm + medium_category`
+  - `width_cm + height_cm + nant_material_idx`
+- 피처 처리:
+  - `ln_estimated_ho`, `log_area`, `width_cm`, `height_cm`은 숫자형으로 처리한다.
+  - `medium_category`, `nant_material_idx`, `nant_tool`은 범주형으로 처리한다.
+  - 지지체 변수는 A9에서 별도 검증하므로 제외한다.
+- Warm 모델군:
+  - Huber
+  - Linear Regression
+  - Ridge
+- Cold 모델군:
+  - Huber
+  - Quantile-LAD
+  - LightGBM
+- 평가 지표:
+  - R2
+  - median APE
+  - p95 APE
+  - Within-30
+  - Within-50
+- 판단 기준:
+  - Warm과 Cold의 median APE를 각각 확인한다.
+  - p95 APE가 줄어드는지 확인해 큰 오차가 줄었는지 본다.
+  - 같은 크기 표현 안에서 기존 재료와 NANT 재료 중 어느 쪽이 더 안정적인지 확인한다.
+  - 같은 재료 표현 안에서 ln호, 로그면적, 가로/세로 중 어떤 크기 표현이 더 안정적인지 확인한다.

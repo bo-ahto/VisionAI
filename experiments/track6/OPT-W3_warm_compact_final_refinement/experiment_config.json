@@ -1,0 +1,104 @@
+{
+  "experiment_id": "OPT-W3",
+  "title": "Track6 OPT-W3 Warm 핵심 후보 피처/모델 최종 축소 실험",
+  "purpose": "A~J 및 OPT-W1 결과에서 Warm 최고권이었던 작가명+전체 크기 조합을 기준으로 계산 가능한 핵심 추가 조합만 비교한다.",
+  "description": "Warm focused final compact refinement.",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "exp_dir": "experiments/track6/OPT-W3_warm_compact_final_refinement",
+  "prompt_file": "experiments/track6/OPT-W3_warm_compact_final_refinement/prompts/used_prompt.md",
+  "export_feature_columns": [
+    "artist_name_ko",
+    "ln_estimated_ho",
+    "width_cm",
+    "height_cm",
+    "log_area",
+    "aspect_ratio",
+    "artist_works_log",
+    "artist_works_log_is_missing"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "width_cm",
+    "height_cm",
+    "log_area",
+    "aspect_ratio",
+    "artist_works_log",
+    "artist_works_log_is_missing"
+  ],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "output_prefix": "log_area_x_artist_name_ko",
+      "top_n": 10
+    },
+    {
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "output_prefix": "ln_ho_x_artist_name_ko",
+      "top_n": 10
+    }
+  ],
+  "variable_blocks": [
+    {
+      "name": "W3-1: 작가명 + 전체 크기",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "description": "기존 Warm 최고권 기준 조합"
+    },
+    {
+      "name": "W3-2: W3-1 + 작가명 x 면적",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "feature_prefixes": [
+        "log_area_x_artist_name_ko_"
+      ],
+      "description": "상위 10명 작가 기준 작가별 대형작 프리미엄 확인"
+    },
+    {
+      "name": "W3-3: W3-1 + 작가명 x 호수",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "ln_estimated_ho"
+      ],
+      "feature_prefixes": [
+        "ln_ho_x_artist_name_ko_"
+      ],
+      "description": "상위 10명 작가 기준 작가별 호수 프리미엄 확인"
+    },
+    {
+      "name": "W3-4: W3-1 + 작가 학습 작품 수",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_log_is_missing"
+      ],
+      "description": "작가별 학습량 정보 추가 효과 확인"
+    }
+  ],
+  "comment": {
+    "실험 목적": "Warm 최고 피처/모델 후보를 계산 가능한 범위에서 최종 축소 비교한다.",
+    "해석 중심": "Warm MdAPE 1순위, p95 APE와 RMSE_log 보조 확인.",
+    "비교 기준": "기존 최고권인 작가명 + 전체 크기 조합을 기준으로 핵심 추가 피처의 개선 여부를 판단한다.",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "공통 실행 코드": "scripts/track6/fixed_variable_experiment_runner.py"
+  }
+}

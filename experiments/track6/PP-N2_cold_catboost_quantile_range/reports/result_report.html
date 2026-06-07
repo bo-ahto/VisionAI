@@ -1,0 +1,106 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-N2</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left}th{background:#eef2f7}</style></head>
+<body><h1>PP-N2 Cold CatBoost Quantile 손실 비교</h1><h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>notes</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>range_coverage</th>
+      <th>median_range_ratio</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-N2</td>
+      <td>baseline_cold_catboost</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>baseline</td>
+      <td></td>
+      <td>0.703741</td>
+      <td>0.419365</td>
+      <td>0.733240</td>
+      <td>2.205321</td>
+      <td>0.365420</td>
+      <td>0.557574</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>PP-N2</td>
+      <td>catboost_quantile_q50</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>catboost_quantile_q50</td>
+      <td></td>
+      <td>0.689262</td>
+      <td>0.408670</td>
+      <td>0.659099</td>
+      <td>2.018899</td>
+      <td>0.326553</td>
+      <td>0.598620</td>
+      <td>0.819470</td>
+      <td>5.175973</td>
+    </tr>
+    <tr>
+      <td>PP-N2</td>
+      <td>baseline_cold_catboost</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>baseline</td>
+      <td></td>
+      <td>0.968065</td>
+      <td>0.486697</td>
+      <td>1.480287</td>
+      <td>4.632874</td>
+      <td>0.286221</td>
+      <td>0.519200</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>PP-N2</td>
+      <td>catboost_quantile_q50</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>catboost_quantile_q50</td>
+      <td></td>
+      <td>0.916104</td>
+      <td>0.483048</td>
+      <td>1.151430</td>
+      <td>4.265923</td>
+      <td>0.311391</td>
+      <td>0.522749</td>
+      <td>0.717328</td>
+      <td>5.791625</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Policy Map</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>scope</th>
+      <th>range_model</th>
+      <th>features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-N2</td>
+      <td>cold</td>
+      <td>CatBoost Quantile q10/q50/q90</td>
+      <td>[width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket]</td>
+    </tr>
+  </tbody>
+</table></body></html>

@@ -1,0 +1,119 @@
+{
+  "experiment_id": "CM1",
+  "title": "Track6 CM1 Cold 상위 피처 조합별 모델군 비교",
+  "purpose": "Cold 상위 피처 조합을 고정한 뒤 모델만 바꿔 신규 작가 예측에 가장 적합한 모델군을 검증한다.",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "exp_dir": "experiments/track6/CM1_cold_top_feature_model_family_compare",
+  "prompt_file": "experiments/track6/CM1_cold_top_feature_model_family_compare/prompts/used_prompt.md",
+  "run_mode": "full_split_no_sampling",
+  "target_scope": "Cold",
+  "models": [
+    "Linear Regression",
+    "Ridge",
+    "Huber",
+    "Quantile-LAD",
+    "LightGBM",
+    "XGBoost",
+    "CatBoost",
+    "HistGradientBoosting"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "log_area",
+    "width_cm",
+    "height_cm",
+    "aspect_ratio",
+    "nant_material_idx",
+    "artwork_year",
+    "artwork_age",
+    "depth_cm",
+    "has_depth",
+    "is_3d_candidate",
+    "is_edition",
+    "is_limited_edition",
+    "is_open_edition",
+    "is_unknown_edition",
+    "edition_info_available",
+    "artist_meta_total_works",
+    "artist_meta_for_sale_works",
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_available_count",
+    "artist_meta_completeness_score",
+    "artist_meta_total_works_is_missing",
+    "artist_meta_for_sale_works_is_missing",
+    "artist_meta_followers_is_missing",
+    "artist_meta_is_p1_is_missing",
+    "total_works_x_log_area",
+    "followers_x_log_area",
+    "for_sale_works_x_log_area",
+    "total_works_x_ln_ho",
+    "followers_x_ln_ho",
+    "for_sale_works_x_ln_ho"
+  ],
+  "numeric_numeric_interactions": [
+    {
+      "left_col": "artist_meta_total_works",
+      "right_col": "log_area",
+      "output_col": "total_works_x_log_area"
+    },
+    {
+      "left_col": "artist_meta_followers",
+      "right_col": "log_area",
+      "output_col": "followers_x_log_area"
+    },
+    {
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "log_area",
+      "output_col": "for_sale_works_x_log_area"
+    },
+    {
+      "left_col": "artist_meta_total_works",
+      "right_col": "ln_estimated_ho",
+      "output_col": "total_works_x_ln_ho"
+    },
+    {
+      "left_col": "artist_meta_followers",
+      "right_col": "ln_estimated_ho",
+      "output_col": "followers_x_ln_ho"
+    },
+    {
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "ln_estimated_ho",
+      "output_col": "for_sale_works_x_ln_ho"
+    }
+  ],
+  "feature_sets": [
+    {
+      "name": "CM1-F1: 작품 기본 피처",
+      "features": ["ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support"],
+      "description": "Cold 최소 운영 가능 기준 피처"
+    },
+    {
+      "name": "CM1-F2: 작품 기본 피처 + 활동량/인지도",
+      "features": ["ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support", "artist_meta_total_works", "artist_meta_for_sale_works", "artist_meta_followers", "artist_meta_is_p1"],
+      "description": "작가명 없이 시장 노출 정보를 더한 후보"
+    },
+    {
+      "name": "CM1-F3: F2 + 정보량/결측",
+      "features": ["ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support", "artist_meta_total_works", "artist_meta_for_sale_works", "artist_meta_followers", "artist_meta_is_p1", "artist_meta_available_count", "artist_meta_completeness_score", "artist_meta_total_works_is_missing", "artist_meta_for_sale_works_is_missing", "artist_meta_followers_is_missing", "artist_meta_is_p1_is_missing"],
+      "description": "메타 정보가 얼마나 채워져 있는지까지 반영한 후보"
+    },
+    {
+      "name": "CM1-F4: F3 + 활동량/인지도 x 면적",
+      "features": ["ln_estimated_ho", "log_area", "nant_material_idx", "nant_tool", "nant_support", "artist_meta_total_works", "artist_meta_for_sale_works", "artist_meta_followers", "artist_meta_is_p1", "artist_meta_available_count", "artist_meta_completeness_score", "artist_meta_total_works_is_missing", "artist_meta_for_sale_works_is_missing", "artist_meta_followers_is_missing", "artist_meta_is_p1_is_missing", "total_works_x_log_area", "followers_x_log_area", "for_sale_works_x_log_area"],
+      "description": "기존 J5/OPT-C2에서 강했던 활동량/인지도와 면적 교차항 후보"
+    },
+    {
+      "name": "CM1-F5: F3 + 활동량/인지도 x 호수",
+      "features": ["ln_estimated_ho", "log_area", "nant_material_idx", "nant_tool", "nant_support", "artist_meta_total_works", "artist_meta_for_sale_works", "artist_meta_followers", "artist_meta_is_p1", "artist_meta_available_count", "artist_meta_completeness_score", "artist_meta_total_works_is_missing", "artist_meta_for_sale_works_is_missing", "artist_meta_followers_is_missing", "artist_meta_is_p1_is_missing", "total_works_x_ln_ho", "followers_x_ln_ho", "for_sale_works_x_ln_ho"],
+      "description": "기존 J4/OPT-C2에서 p95 안정성이 좋았던 활동량/인지도와 호수 교차항 후보"
+    }
+  ],
+  "comment": {
+    "실험 목적": "Cold 상위 피처 조합에서 모델만 바꿔 신규 작가 예측의 최적 모델군을 확인한다.",
+    "통제 조건": "split, 학습 데이터, 테스트 데이터, 피처 조합을 고정하고 모델만 변경한다.",
+    "Cold 원칙": "작가명 artist_name_ko는 사용하지 않는다.",
+    "판단 기준": "MdAPE 1순위, p95_APE와 Within-30/RMSE_log/R2를 보조로 본다."
+  }
+}

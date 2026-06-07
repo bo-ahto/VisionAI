@@ -1,0 +1,56 @@
+{
+  "version": "v0.1",
+  "name": "price_prediction_v0.1",
+  "status": "midterm_test_policy_freeze",
+  "created_at": "2026-06-04T16:27:37",
+  "purpose": "중간 리포트 기준 후보를 신규 테스트/서비스 API 검증의 기준 버전으로 고정",
+  "target": "ln_price_krw",
+  "price_unit": "KRW",
+  "routing_policy": {
+    "warm": "matched_train_artist 또는 artist_key가 v0.1 학습 artist registry에 존재",
+    "cold": "학습 artist registry에 없는 신규 작가"
+  },
+  "warm_policy": {
+    "name": "Warm v0.1 current primary",
+    "candidate": "PP-SVC3 blend_svcnum_ppv8_wsvc_0.70",
+    "formula": "pred_log = 0.70 * svc_numeric_seed_mean + 0.30 * pp_v8_compact_blend_mape_guarded",
+    "metrics_test": {
+      "MdAPE": 0.1405,
+      "MAPE": 0.2748,
+      "p95_APE": 0.8331,
+      "RMSE_log": 0.3996
+    },
+    "component_1": {
+      "name": "svc_numeric_seed_mean",
+      "description": "유사 작품 기반 가격 피처를 Warm Huber 입력에 추가한 후보의 seed 평균",
+      "weight": 0.7
+    },
+    "component_2": {
+      "name": "pp_v8_compact_blend_mape_guarded",
+      "description": "여러 Warm 후보 중 평균오차 안정성이 좋은 compact blend 후보",
+      "weight": 0.3
+    },
+    "operational_note": "현재 v0.1은 정책과 근거를 고정한다. 신규 데이터 직접 추론을 위해서는 PP-SVC3 component chain artifact화가 필요하다."
+  },
+  "cold_policy": {
+    "name": "Cold reference v0.1",
+    "candidate": "PP-Y18 qwidth_bin_oof_min30_cap0.25",
+    "model_family": "LightGBM Quantile + qwidth 구간 보정",
+    "metrics_test": {
+      "MdAPE": 0.4247,
+      "MAPE": 0.991,
+      "p95_APE": 3.3053
+    },
+    "display_policy": "확정 가격이 아니라 참고 예측가와 넓은 가격 범위로 표시",
+    "operational_note": "Cold는 Warm보다 오차 위험이 커서 v0.1에서도 낮은 신뢰도/범위 중심으로만 사용한다."
+  },
+  "legacy_artifacts": {
+    "role": "smoke test / baseline only",
+    "warning": "legacy artifact를 v0.1 current policy 결과로 해석하지 않는다."
+  },
+  "new_test_0604": {
+    "source": "data/test_new_artworks_test_0604.csv",
+    "route_result": "6873 rows warm, 0 rows cold by matched_train_artist"
+  },
+  "missing_sources": []
+}

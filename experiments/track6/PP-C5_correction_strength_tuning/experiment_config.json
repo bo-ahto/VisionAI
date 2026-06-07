@@ -1,0 +1,68 @@
+{
+  "experiment_id": "PP-C5",
+  "title": "보정 강도 줄이기 실험",
+  "run_id": "20260602_142738",
+  "seed": 20260602,
+  "feature_columns": {
+    "source_candidates": [
+      {
+        "label": "warm_huber_ppj1_tail",
+        "folder": "PP-J1_warm_huber_tail_segment_calibration",
+        "scope": "warm",
+        "candidate": "corrected_pred_bin_size_tail_cap",
+        "base_candidate": "baseline"
+      },
+      {
+        "label": "cold_catboost_ppj4_leaf",
+        "folder": "PP-J4_cold_catboost_leaf_coverage_calibration",
+        "scope": "cold",
+        "candidate": "corrected_leaf_segment_min_rows_20",
+        "base_candidate": "baseline"
+      },
+      {
+        "label": "cold_lightgbm_ppj6_tail",
+        "folder": "PP-J6_cold_lightgbm_tail_calibration",
+        "scope": "cold",
+        "candidate": "corrected_lgb_tail_support_size_cap_0.25",
+        "base_candidate": "baseline"
+      },
+      {
+        "label": "cold_catboost_ppa7_hierarchical",
+        "folder": "PP-A7_hierarchical_segment_residual_calibration",
+        "scope": "cold",
+        "candidate": "corrected_hierarchical",
+        "base_candidate": "baseline"
+      }
+    ]
+  },
+  "model_manifest": {
+    "base_sources": {
+      "warm_huber": {
+        "scope": "warm",
+        "model": "huber",
+        "feature_key": "warm",
+        "label": "Warm Huber(base_existing_combo)"
+      },
+      "cold_catboost": {
+        "scope": "cold",
+        "model": "catboost",
+        "feature_key": "cold_catboost",
+        "label": "Cold CatBoost(base_medium_shape)"
+      },
+      "cold_lightgbm": {
+        "scope": "cold",
+        "model": "lightgbm",
+        "feature_key": "cold_lightgbm",
+        "label": "Cold LightGBM(base_support_size)"
+      }
+    },
+    "source_artifact_manifest": "data/track6/artifacts/track6_artifact_manifest.json",
+    "target": "ln_price_krw",
+    "strengths": [
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ]
+  }
+}

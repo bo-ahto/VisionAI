@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 A2 재료만 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 A2 재료만 실험 결과</h1>
+    <ul>
+      <li>목적: 재료 정보만으로 가격 예측에 도움이 되는지 확인</li>
+      <li>실험 ID: <code>A2</code></li>
+      <li>Warm 최고: <code>NANT 재료 번호</code> / <code>Huber</code> / MdAPE 0.7177</li>
+      <li>Cold 최고: <code>NANT 재료 번호</code> / <code>Huber</code> / MdAPE 0.6977</li>
+      <li>생성일: <code>2026-05-21T17:59:02</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/A2_material_only_collected_vs_nant/data/train_features.csv</code><br><code>experiments/track6/A2_material_only_collected_vs_nant/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/A2_material_only_collected_vs_nant/data/test_warm_features.csv</code><br><code>experiments/track6/A2_material_only_collected_vs_nant/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/A2_material_only_collected_vs_nant/data/test_cold_features.csv</code><br><code>experiments/track6/A2_material_only_collected_vs_nant/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/A2_material_only_collected_vs_nant/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/A2_material_only_collected_vs_nant/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>재료 정보만으로 가격 예측에 도움이 되는지, 수집 재료 표현과 NANT 재료 표현 중 어느 쪽이 더 안정적인지 확인했다.</td></tr><tr><td>결과 요약</td><td>Warm/Cold 각각에서 MdAPE가 가장 낮은 재료 표현과 모델을 확인한다.</td></tr><tr><td>해석</td><td>재료만 사용한 경우 단독 예측력은 약한지, NANT 재료 번호가 수집 재료 대분류보다 안정적인지 비교한다.</td></tr><tr><td>결론</td><td>재료 단독 피처로 최종 모델을 만들기는 어렵지만, 재료 표현 후보를 고르는 기준으로 사용한다.</td></tr><tr><td>다음 실험</td><td>크기 + NANT 재료, 작가명 + NANT 재료 조합에서 재료가 추가 설명력을 갖는지 확인한다.</td></tr><tr><td>purpose</td><td>재료 정보만으로 가격 예측에 도움이 되는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 NANT 재료 번호 + Huber(MdAPE 0.7177), Cold 최고는 NANT 재료 번호 + Huber(MdAPE 0.6977)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>수집 재료 대분류</h2>
+              <p><strong>사용 피처:</strong> <code>medium_category</code> · 수집 재료를 정제한 대분류 값</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>-0.0002</td><td>0.7430</td><td>6.8105</td><td>0.1878</td><td>0.3031</td><td>1.5764</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0001</td><td>0.7432</td><td>7.5587</td><td>0.1779</td><td>0.2998</td><td>1.7352</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0000</td><td>0.7432</td><td>7.5587</td><td>0.1779</td><td>0.2998</td><td>1.7351</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0169</td><td>0.7039</td><td>7.7594</td><td>0.2004</td><td>0.3420</td><td>1.4392</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0243</td><td>0.7084</td><td>7.2528</td><td>0.2110</td><td>0.3404</td><td>1.3885</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0017</td><td>0.7082</td><td>8.3365</td><td>0.1949</td><td>0.3362</td><td>1.5429</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>수집 재료 원문 묶음</h2>
+              <p><strong>사용 피처:</strong> <code>collected_material_raw_bucket</code> · 수집 원문 재료 상위 80개와 other 묶음</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0397</td><td>0.7351</td><td>6.3705</td><td>0.1713</td><td>0.3147</td><td>1.5829</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0355</td><td>0.7639</td><td>6.9322</td><td>0.1796</td><td>0.3163</td><td>1.7042</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0354</td><td>0.7639</td><td>6.9321</td><td>0.1763</td><td>0.3163</td><td>1.7041</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0062</td><td>0.7143</td><td>7.6176</td><td>0.1914</td><td>0.3266</td><td>1.5713</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0348</td><td>0.7236</td><td>7.3638</td><td>0.1981</td><td>0.3269</td><td>1.5304</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0048</td><td>0.7224</td><td>8.2996</td><td>0.2017</td><td>0.3266</td><td>1.6916</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>NANT 재료 번호</h2>
+              <p><strong>사용 피처:</strong> <code>nant_material_idx</code> · NANT 95개 기준에 가까운 재료 번호</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0523</td><td>0.7177</td><td>6.6736</td><td>0.1928</td><td>0.3443</td><td>1.5789</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0479</td><td>0.7469</td><td>7.7527</td><td>0.1796</td><td>0.3229</td><td>1.7246</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0469</td><td>0.7471</td><td>7.7412</td><td>0.1796</td><td>0.3245</td><td>1.7270</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0135</td><td>0.6977</td><td>7.5736</td><td>0.2010</td><td>0.3388</td><td>1.4778</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0062</td><td>0.6999</td><td>7.3000</td><td>0.2075</td><td>0.3427</td><td>1.3971</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0159</td><td>0.7069</td><td>8.3742</td><td>0.1997</td><td>0.3388</td><td>1.6405</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>NANT 재료 도구명</h2>
+              <p><strong>사용 피처:</strong> <code>nant_tool</code> · NANT 기준 한글 재료/도구명</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0221</td><td>0.7388</td><td>7.0075</td><td>0.1911</td><td>0.3278</td><td>1.6146</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0193</td><td>0.7460</td><td>7.4618</td><td>0.1779</td><td>0.3031</td><td>1.7595</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0193</td><td>0.7460</td><td>7.4620</td><td>0.1779</td><td>0.3031</td><td>1.7595</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0105</td><td>0.7198</td><td>7.5797</td><td>0.2007</td><td>0.3359</td><td>1.4489</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0011</td><td>0.7164</td><td>7.2272</td><td>0.1994</td><td>0.3379</td><td>1.4251</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0094</td><td>0.7122</td><td>8.6152</td><td>0.1991</td><td>0.3366</td><td>1.6128</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>NANT 재료 번호 + 도구명</h2>
+              <p><strong>사용 피처:</strong> <code>nant_material_idx, nant_tool</code> · NANT 재료 번호와 한글 재료/도구명을 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0523</td><td>0.7177</td><td>6.6727</td><td>0.1928</td><td>0.3443</td><td>1.5787</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0479</td><td>0.7469</td><td>7.7527</td><td>0.1796</td><td>0.3229</td><td>1.7246</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0471</td><td>0.7471</td><td>7.7485</td><td>0.1796</td><td>0.3245</td><td>1.7267</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0133</td><td>0.6977</td><td>7.5726</td><td>0.2010</td><td>0.3388</td><td>1.4776</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0041</td><td>0.7000</td><td>7.3000</td><td>0.2065</td><td>0.3414</td><td>1.4061</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0144</td><td>0.7077</td><td>8.4564</td><td>0.1991</td><td>0.3385</td><td>1.6479</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/A2_material_only_collected_vs_nant/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

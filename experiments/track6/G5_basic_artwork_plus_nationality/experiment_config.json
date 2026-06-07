@@ -1,0 +1,66 @@
+{
+  "experiment_id": "G5",
+  "title": "Track6 G5 작품 기본 피처 + 작가 국적 실험 결과",
+  "purpose": "작품 조건을 통제한 후 작가 국적 정보가 가격 예측력을 높이는지 확인",
+  "description": "Group F/G artist meta experiment: G5",
+  "exp_dir": "experiments/track6/G5_basic_artwork_plus_nationality",
+  "prompt_file": "experiments/track6/G5_basic_artwork_plus_nationality/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "ln_estimated_ho",
+    "nant_material_idx",
+    "nant_tool",
+    "nant_support",
+    "artist_meta_nationality",
+    "artist_meta_nationality_is_missing"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "artist_meta_nationality_is_missing"
+  ],
+  "variable_blocks": [
+    {
+      "name": "작품 기본 피처",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support"
+      ],
+      "description": "호수, 난트 재료, 난트 도구, 난트 지지체"
+    },
+    {
+      "name": "작품 기본 피처 + 국적",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_nationality"
+      ],
+      "description": "작품 조건 통제 후 국적 추가"
+    },
+    {
+      "name": "작품 기본 피처 + 국적 + 결측",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_nationality",
+        "artist_meta_nationality_is_missing"
+      ],
+      "description": "국적 값과 결측 상태 추가"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작품 조건을 통제한 후 작가 국적 정보가 가격 예측력을 높이는지 확인",
+    "학습 피처": "ln_estimated_ho, nant_material_idx, nant_tool, nant_support / ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_meta_nationality / ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_meta_nationality, artist_meta_nationality_is_missing",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "통제 기준": "Group G는 작품 기본 피처 묶음(ln_estimated_ho + nant_material_idx + nant_tool + nant_support)을 기준선으로 둔다.",
+    "실험군": "Group G: 작가 메타/작가명 + 작품 변수"
+  }
+}

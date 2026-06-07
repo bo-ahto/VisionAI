@@ -1,0 +1,24 @@
+# CM1 Cold 상위 피처 조합별 모델군 비교 프롬프트
+
+- 목적: Cold 상위 피처 조합을 고정한 뒤 모델만 바꿔 신규 작가 예측에 가장 적합한 모델군을 검증한다.
+- 비교 대상: `Huber`, `Quantile-LAD`, `LightGBM`을 핵심 후보로 보고, `Linear Regression`, `Ridge`, `XGBoost`, `CatBoost`, `HistGradientBoosting`을 보조 비교한다.
+- 데이터 정책:
+  - 학습 split은 `track6_train_warm_features.csv`와 `track6_train_labels.csv`를 사용한다.
+  - Cold 테스트 split은 `track6_test_cold_cold_features.csv`와 `track6_test_cold_labels.csv`를 사용한다.
+  - 입력 피처와 정답 라벨은 `_track6_row_id`로 연결한다.
+  - 라벨은 학습 target과 평가 지표 계산에만 사용한다.
+  - sampling 없이 전체 split을 사용한다.
+- 피처 정책:
+  - Cold 모델은 `artist_name_ko`를 사용하지 않는다.
+  - 운영에서 신규 작가에도 확보 가능한 작품 피처와 작가 메타 피처만 사용한다.
+  - 상호작용 피처는 설정 파일에 정의된 계산식으로 학습/테스트에 동일하게 생성한다.
+- 평가 지표:
+  - `MdAPE`: 대표 오차, 낮을수록 좋음
+  - `p95_APE`: 큰 오차 위험, 낮을수록 좋음
+  - `Within_30`: 실제 가격 30% 이내 예측 비율, 높을수록 좋음
+  - `RMSE_log`: 로그 가격 기준 오차, 낮을수록 좋음
+  - `R2`: 로그 가격 설명력, 높을수록 좋음
+- 결론 방식:
+  - MdAPE가 가장 낮은 조합을 정확도 후보로 둔다.
+  - p95_APE가 낮은 조합을 안정성 후보로 둔다.
+  - 두 후보가 다르면 Cold 운영에서는 가격 범위와 신뢰도 경고를 함께 검토한다.

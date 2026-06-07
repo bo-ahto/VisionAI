@@ -1,0 +1,406 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-U3</title><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933;line-height:1.55}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0 24px}
+th,td{border:1px solid #d8dee4;padding:7px;text-align:left;vertical-align:top}
+th{background:#eef2f7}
+code{background:#f3f4f6;padding:2px 4px;border-radius:4px}
+.note{background:#f8fafc;border:1px solid #d8dee4;padding:12px;margin:12px 0}
+</style></head>
+<body>
+<h1>PP-U3 Cold LightGBM 피처 교환/확장 비교</h1>
+<div class="note">
+<p><b>목적</b>: 모델 설정은 고정하고 피처셋만 바꿔 Warm/Cold 모델별 입력 피처 구조의 적합성을 비교한다.</p>
+<p><b>선택 기준</b>: validation 기준으로 후보를 고르고 test는 재현성 확인으로만 사용한다.</p>
+</div>
+<h2>후보 피처셋</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-U3</td>
+      <td>baseline_base_support_size</td>
+      <td>LightGBM 기준 support-size 피처셋</td>
+      <td>현재 Cold LightGBM final artifact와 같은 피처셋</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>catboost_swap_medium_shape</td>
+      <td>CatBoost 기준 medium-shape 피처셋 교환</td>
+      <td>LightGBM에도 CatBoost형 재료+형태 조합을 넣으면 개선되는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>support_shape_combo</td>
+      <td>support-size + medium-shape 결합</td>
+      <td>두 Cold 모델의 강한 bucket을 함께 쓰면 상호 보완되는지 확인</td>
+      <td>14</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>generated_all_combo</td>
+      <td>전체 생성 bucket 확장</td>
+      <td>size/shape/material/support 관련 생성 bucket을 모두 넣었을 때 과적합 없이 개선되는지 확인</td>
+      <td>19</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>raw_material_no_bucket</td>
+      <td>원본 크기+재료 중심</td>
+      <td>bucket 없이 원본 피처만으로 모델이 충분히 구간을 학습하는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>medium_size_combo</td>
+      <td>medium-size 조합</td>
+      <td>재료와 크기 조합이 Cold 가격대를 더 잘 나누는지 확인</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, medium_size_bucket, medium_shape_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>depth_shape_combo</td>
+      <td>depth-shape 조합</td>
+      <td>크기+깊이+형태 조합만으로 2D/3D 및 형태 효과가 설명되는지 확인</td>
+      <td>11</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, shape_bucket, is_large_2d, is_large_3d</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>model</th>
+      <th>split</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>delta_MdAPE_vs_baseline</th>
+      <th>delta_MAPE_vs_baseline</th>
+      <th>delta_p95_APE_vs_baseline</th>
+      <th>delta_RMSE_log_vs_baseline</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-U3</td>
+      <td>medium_size_combo</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>test</td>
+      <td>medium-size 조합</td>
+      <td>재료와 크기 조합이 Cold 가격대를 더 잘 나누는지 확인</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, medium_size_bucket, medium_shape_bucket</td>
+      <td>0.959229</td>
+      <td>0.480261</td>
+      <td>1.372170</td>
+      <td>4.620478</td>
+      <td>0.301388</td>
+      <td>0.519845</td>
+      <td>-0.010595</td>
+      <td>-0.040922</td>
+      <td>-0.200697</td>
+      <td>-0.009464</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>raw_material_no_bucket</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>test</td>
+      <td>원본 크기+재료 중심</td>
+      <td>bucket 없이 원본 피처만으로 모델이 충분히 구간을 학습하는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio</td>
+      <td>0.965650</td>
+      <td>0.482292</td>
+      <td>1.400453</td>
+      <td>4.721981</td>
+      <td>0.293643</td>
+      <td>0.513714</td>
+      <td>-0.008565</td>
+      <td>-0.012639</td>
+      <td>-0.099194</td>
+      <td>-0.003042</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>catboost_swap_medium_shape</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>test</td>
+      <td>CatBoost 기준 medium-shape 피처셋 교환</td>
+      <td>LightGBM에도 CatBoost형 재료+형태 조합을 넣으면 개선되는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket</td>
+      <td>0.964163</td>
+      <td>0.485152</td>
+      <td>1.396232</td>
+      <td>4.638412</td>
+      <td>0.296225</td>
+      <td>0.518554</td>
+      <td>-0.005705</td>
+      <td>-0.016861</td>
+      <td>-0.182763</td>
+      <td>-0.004530</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>support_shape_combo</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>test</td>
+      <td>support-size + medium-shape 결합</td>
+      <td>두 Cold 모델의 강한 bucket을 함께 쓰면 상호 보완되는지 확인</td>
+      <td>14</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+      <td>0.954903</td>
+      <td>0.487093</td>
+      <td>1.361779</td>
+      <td>4.494890</td>
+      <td>0.306551</td>
+      <td>0.513069</td>
+      <td>-0.003764</td>
+      <td>-0.051313</td>
+      <td>-0.326284</td>
+      <td>-0.013790</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>generated_all_combo</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>test</td>
+      <td>전체 생성 bucket 확장</td>
+      <td>size/shape/material/support 관련 생성 bucket을 모두 넣었을 때 과적합 없이 개선되는지 확인</td>
+      <td>19</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.971818</td>
+      <td>0.488137</td>
+      <td>1.430407</td>
+      <td>4.847391</td>
+      <td>0.289771</td>
+      <td>0.515650</td>
+      <td>-0.002720</td>
+      <td>0.017314</td>
+      <td>0.026216</td>
+      <td>0.003126</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>baseline_base_support_size</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>test</td>
+      <td>LightGBM 기준 support-size 피처셋</td>
+      <td>현재 Cold LightGBM final artifact와 같은 피처셋</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket</td>
+      <td>0.968693</td>
+      <td>0.490857</td>
+      <td>1.413092</td>
+      <td>4.821175</td>
+      <td>0.301710</td>
+      <td>0.513069</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>depth_shape_combo</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>test</td>
+      <td>depth-shape 조합</td>
+      <td>크기+깊이+형태 조합만으로 2D/3D 및 형태 효과가 설명되는지 확인</td>
+      <td>11</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.974641</td>
+      <td>0.495309</td>
+      <td>1.401030</td>
+      <td>4.861446</td>
+      <td>0.275573</td>
+      <td>0.511455</td>
+      <td>0.004452</td>
+      <td>-0.012063</td>
+      <td>0.040272</td>
+      <td>0.005949</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>support_shape_combo</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>validation</td>
+      <td>support-size + medium-shape 결합</td>
+      <td>두 Cold 모델의 강한 bucket을 함께 쓰면 상호 보완되는지 확인</td>
+      <td>14</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+      <td>0.690321</td>
+      <td>0.383379</td>
+      <td>0.707596</td>
+      <td>1.947243</td>
+      <td>0.358881</td>
+      <td>0.603705</td>
+      <td>-0.001734</td>
+      <td>-0.009301</td>
+      <td>-0.077788</td>
+      <td>0.000271</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>baseline_base_support_size</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>validation</td>
+      <td>LightGBM 기준 support-size 피처셋</td>
+      <td>현재 Cold LightGBM final artifact와 같은 피처셋</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket</td>
+      <td>0.690051</td>
+      <td>0.385113</td>
+      <td>0.716897</td>
+      <td>2.025032</td>
+      <td>0.390120</td>
+      <td>0.598256</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>raw_material_no_bucket</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>validation</td>
+      <td>원본 크기+재료 중심</td>
+      <td>bucket 없이 원본 피처만으로 모델이 충분히 구간을 학습하는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio</td>
+      <td>0.693212</td>
+      <td>0.388682</td>
+      <td>0.710708</td>
+      <td>1.981120</td>
+      <td>0.356702</td>
+      <td>0.599346</td>
+      <td>0.003569</td>
+      <td>-0.006189</td>
+      <td>-0.043912</td>
+      <td>0.003162</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>medium_size_combo</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>validation</td>
+      <td>medium-size 조합</td>
+      <td>재료와 크기 조합이 Cold 가격대를 더 잘 나누는지 확인</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, medium_size_bucket, medium_shape_bucket</td>
+      <td>0.687265</td>
+      <td>0.389814</td>
+      <td>0.702734</td>
+      <td>2.029116</td>
+      <td>0.382492</td>
+      <td>0.604068</td>
+      <td>0.004700</td>
+      <td>-0.014163</td>
+      <td>0.004084</td>
+      <td>-0.002786</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>generated_all_combo</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>validation</td>
+      <td>전체 생성 bucket 확장</td>
+      <td>size/shape/material/support 관련 생성 bucket을 모두 넣었을 때 과적합 없이 개선되는지 확인</td>
+      <td>19</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.692483</td>
+      <td>0.391229</td>
+      <td>0.707381</td>
+      <td>1.994764</td>
+      <td>0.354886</td>
+      <td>0.603342</td>
+      <td>0.006116</td>
+      <td>-0.009516</td>
+      <td>-0.030268</td>
+      <td>0.002432</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>catboost_swap_medium_shape</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>validation</td>
+      <td>CatBoost 기준 medium-shape 피처셋 교환</td>
+      <td>LightGBM에도 CatBoost형 재료+형태 조합을 넣으면 개선되는지 확인</td>
+      <td>12</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, shape_bucket, medium_shape_bucket</td>
+      <td>0.688665</td>
+      <td>0.397314</td>
+      <td>0.706544</td>
+      <td>1.957724</td>
+      <td>0.389030</td>
+      <td>0.601526</td>
+      <td>0.012201</td>
+      <td>-0.010353</td>
+      <td>-0.067307</td>
+      <td>-0.001386</td>
+    </tr>
+    <tr>
+      <td>PP-U3</td>
+      <td>depth_shape_combo</td>
+      <td>cold</td>
+      <td>lightgbm</td>
+      <td>validation</td>
+      <td>depth-shape 조합</td>
+      <td>크기+깊이+형태 조합만으로 2D/3D 및 형태 효과가 설명되는지 확인</td>
+      <td>11</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.706767</td>
+      <td>0.424361</td>
+      <td>0.740523</td>
+      <td>2.076813</td>
+      <td>0.362877</td>
+      <td>0.568471</td>
+      <td>0.039248</td>
+      <td>0.023626</td>
+      <td>0.051782</td>
+      <td>0.016716</td>
+    </tr>
+  </tbody>
+</table>
+</body></html>

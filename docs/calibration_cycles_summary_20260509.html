@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Per-source Calibration 검증 사이클 요약 (2026-05-09)</title>
+<style>
+body { font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; max-width: 1200px; margin: 30px auto; padding: 20px; line-height: 1.6; color: #222; word-break: keep-all; background: #fafafa; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; font-size: 1.6em; margin-bottom: 6px; }
+h2 { background: #ecf0f1; padding: 10px 14px; border-left: 4px solid #2c5aa0; margin-top: 32px; font-size: 1.2em; }
+h3 { font-size: 1.05em; margin-top: 22px; color: #2c3e50; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.summary-box { border: 2px solid #2c5aa0; background: #f4f8fc; padding: 15px 18px; margin: 15px 0; border-radius: 4px; }
+.warn-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 10px 0; }
+.info-box { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 10px 15px; margin: 10px 0; }
+.success-box { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 10px 0; }
+.danger-box { background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 10px 0; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 1px 2px; font-weight: 600; }
+.pill.green { background: #d4edda; color: #155724; }
+.pill.red { background: #f8d7da; color: #721c24; }
+.pill.yellow { background: #fff3cd; color: #856404; }
+.pill.blue { background: #cfe2ff; color: #084298; }
+.pill.gray { background: #e9ecef; color: #495057; }
+.commit-tag { font-family: "SF Mono", Menlo, Consolas, monospace; background: #2c3e50; color: #ecf0f1; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+.timeline { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 16px; align-items: start; margin: 12px 0; }
+.timeline-step { background: #fff; padding: 10px 14px; border-left: 4px solid #2c5aa0; border-radius: 3px; }
+.timeline-step.passed { border-left-color: #28a745; }
+.timeline-step.partial { border-left-color: #ffc107; }
+.timeline-step.failed { border-left-color: #dc3545; }
+.timeline-step.context { border-left-color: #6c757d; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 12px 0; }
+.metric-card { background: #fff; border: 1px solid #ddd; padding: 12px 14px; border-radius: 4px; }
+.metric-card .label { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-card .value { font-size: 1.4em; font-weight: 600; color: #2c3e50; margin: 4px 0; }
+.metric-card .delta { font-size: 12px; color: #666; }
+.delta.up { color: #dc3545; }
+.delta.down { color: #28a745; }
+.codex-rounds { display: flex; flex-wrap: wrap; gap: 6px; }
+.codex-round { background: #fff; border: 1px solid #ddd; padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+.codex-round.lgtm { background: #d4edda; color: #155724; border-color: #28a745; }
+.codex-round.fix { background: #fff3cd; color: #856404; border-color: #ffc107; }
+.codex-round.align { background: #cfe2ff; color: #084298; border-color: #0d6efd; }
+.footer { margin-top: 35px; padding-top: 18px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+.toc { background: #fff; border: 1px solid #ddd; padding: 12px 18px; border-radius: 4px; margin: 12px 0; }
+.toc a { color: #2c5aa0; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+.num { text-align: right; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.bigtag { font-size: 1em; padding: 4px 12px; }
+</style>
+</head>
+<body>
+
+<h1>Per-source Calibration 검증 사이클 요약</h1>
+<p style="color: #666; margin-top: 0;">
+<strong>기간</strong>: 2026-05-09 (단일일 / 3 사이클 연속) &nbsp;|&nbsp;
+<strong>분기</strong>: <code>exp/track1-feature-optimization-cycle</code> &nbsp;|&nbsp;
+<strong>commit 범위</strong>: <span class="commit-tag">e3367ed</span> → <span class="commit-tag">d0f8b88</span> → <span class="commit-tag">08a6b80</span>
+</p>
+
+<div class="summary-box">
+<h3 style="margin-top: 0;">한 줄 요약</h3>
+<p>e3367ed에서 산출된 per-source calibration factor의 운영 채택 가능성을 두 번의 검증 사이클로 평가. <strong>현재 결정 = 전 채택 보류 (default OFF 유지)</strong>.
+하지만 <strong>shipped factor가 진짜 OOS에서 효과가 있다는 강한 시그널 확보</strong> — 후속 narrow canary cycle (artsy_online) + multi-seed 확대 cycle (artsy_gallery) 권고.</p>
+</div>
+
+<div class="toc">
+<strong>목차</strong> ·
+<a href="#tldr">TL;DR</a> ·
+<a href="#timeline">타임라인</a> ·
+<a href="#cycle1">Cycle 1: 칼리브레이션 fit</a> ·
+<a href="#cycle2">Cycle 2: Reprod (in-sample)</a> ·
+<a href="#cycle3">Cycle 3: OOS (true OOS)</a> ·
+<a href="#comparison">Reprod vs OOS 비교</a> ·
+<a href="#decision">현재 결정 + 후속 cycle</a>
+</div>
+
+<h2 id="tldr">1. TL;DR (3 사이클 결과)</h2>
+
+<table>
+<tr>
+<th width="14%">Cycle</th>
+<th width="22%">Method</th>
+<th width="14%">Verdict</th>
+<th>핵심 발견</th>
+</tr>
+<tr>
+<td><span class="commit-tag">e3367ed</span><br><strong>Calibration fit</strong></td>
+<td>Per-source artifact + cross-fit 5-fold OOF + per-cell guard</td>
+<td><span class="pill green bigtag">FITTED</span></td>
+<td>PR1 no-op (factor=1.0) → fitted. Artsy cold: <code>artsy_gallery=0.9152</code> / <code>artsy_online=0.9757</code>. 그 외 모두 guard fallback (1.0).</td>
+</tr>
+<tr>
+<td><span class="commit-tag">d0f8b88</span><br><strong>Reprod (in-sample)</strong></td>
+<td>PR1 artifact 그대로 / 80% holdout 평가 / 단일 seed</td>
+<td><span class="pill red bigtag">FAIL</span><br>(채택 보류)</td>
+<td>load_bearing 2 cell 모두 FAIL. 단 <strong>holdout baseline이 in-sample (3.21 / 7.17)</strong> &lt;&lt; e3367ed OOF baseline (~33). FAIL이 method artifact 가능성 (R4 caveat).</td>
+</tr>
+<tr>
+<td><span class="commit-tag">08a6b80</span><br><strong>OOS (true OOS)</strong></td>
+<td>80% pool로 base artifact 재학습 / multi-seed (3) / dual-endpoint</td>
+<td><span class="pill yellow bigtag">NEEDS_MORE_DATA</span><br>(전 채택 보류)</td>
+<td>R4 caveat 해소 강하게 입증. <code>artsy_online</code> = ADOPT_with_caveat (3/3 SHIPPED_PASS). <code>artsy_gallery</code> = NEEDS_MORE_DATA (split-driven variance).</td>
+</tr>
+</table>
+
+<div class="info-box">
+<strong>가장 중요한 발견</strong>: 같은 seed=31337 / artsy_gallery cold cell에서 —<br>
+<code>Reprod (in-sample)</code>: baseline=3.21 / Δ_shipped = <span style="color: #dc3545; font-weight: 600;">+5.46pp</span> → FAIL<br>
+<code>OOS (true OOS)</code>: baseline=19.80 / Δ_shipped = <span style="color: #28a745; font-weight: 600;">−3.86pp</span> → PASS<br>
+→ <strong>부호 반전</strong>. e3367ed의 calibration factor는 진짜 OOS 데이터에서 baseline 대비 개선 효과가 있음. Reprod cycle의 FAIL은 method artifact (in-sample bias)였음.
+</div>
+
+<h2 id="timeline">2. 타임라인 + 코덱스 자문 누적</h2>
+
+<div class="timeline">
+
+<div class="timeline-step context">
+<strong>e3367ed</strong> · Phase 2 calibration fit
+<div style="font-size: 12px; color: #666;">PR1 cycle 후속 / R1×NEEDS FIX → R2 / R3 LGTM (별도 자문)</div>
+</div>
+<div></div>
+<div><span class="pill green">FITTED</span></div>
+
+<div class="timeline-step failed">
+<strong>d0f8b88</strong> · Reprod cycle (재현성 검증)
+<div class="codex-rounds" style="margin-top: 6px;">
+  <span class="codex-round fix">R1 NEEDS FIX</span>
+  <span class="codex-round fix">R2 NEEDS FIX</span>
+  <span class="codex-round lgtm">R3 LGTM</span>
+  <span class="codex-round align">R4 LGTM-with-caveat</span>
+</div>
+</div>
+<div></div>
+<div><span class="pill red">FAIL</span></div>
+
+<div class="timeline-step partial">
+<strong>08a6b80</strong> · OOS verification cycle (R4 follow-up)
+<div class="codex-rounds" style="margin-top: 6px;">
+  <span class="codex-round fix">R1 NEEDS FIX</span>
+  <span class="codex-round fix">R2 NEEDS FIX</span>
+  <span class="codex-round fix">R3 NEEDS FIX</span>
+  <span class="codex-round lgtm">R4 LGTM</span>
+  <span class="codex-round align">R5 NEEDS DECISION ALIGNMENT</span>
+</div>
+</div>
+<div></div>
+<div><span class="pill yellow">NEEDS_MORE_DATA</span></div>
+
+</div>
+
+<p style="font-size: 12px; color: #666;">
+※ Codex session <code>019e0bb1-...</code> 는 Reprod cycle에서 시작되어 OOS cycle까지 9 round 누적 자문 (총 ~2M tokens / R4 in-sample bias caveat가 OOS cycle motivation).
+</p>
+
+<h2 id="cycle1">3. Cycle 1 — Calibration fit <span class="commit-tag" style="font-size: 0.7em;">e3367ed</span></h2>
+
+<p>본 세션 시작 직전 commit. PR1 (commit <code>f74f73b</code>) 시점 per-source calibration = no-op (모든 cell=1.0 / Phase 2 deferred). 본 cycle = per-source 별도 fit.</p>
+
+<h3>3.1 산출 cell factor (본 세션 검증 대상)</h3>
+<table>
+<tr><th>Source</th><th>Path</th><th>Cell</th><th>n (full data)</th><th>Factor</th><th>분류 (검증용)</th></tr>
+<tr><td rowspan="4">Artsy<br>(7,289 rows)</td><td rowspan="2">cold</td><td><code>artsy_gallery</code></td><td class="num">868</td><td class="num">0.9152</td><td><span class="pill blue">load_bearing</span></td></tr>
+<tr><td><code>artsy_online</code></td><td class="num">6,421</td><td class="num">0.9757</td><td><span class="pill blue">load_bearing</span></td></tr>
+<tr><td rowspan="2">warm</td><td><code>artsy_gallery</code></td><td class="num">~140</td><td class="num">1.0 (guard)</td><td><span class="pill gray">consistency_only</span></td></tr>
+<tr><td><code>artsy_online</code></td><td class="num">~270</td><td class="num">1.0 (guard)</td><td><span class="pill gray">consistency_only</span></td></tr>
+<tr><td rowspan="2">Saatchi<br>(21,087 rows)</td><td>cold</td><td><code>saatchi_online</code></td><td class="num">21,087</td><td class="num">1.0 (guard)</td><td><span class="pill gray">consistency_only</span></td></tr>
+<tr><td>warm</td><td><code>saatchi_online</code></td><td class="num">~520</td><td class="num">1.0 (guard)</td><td><span class="pill gray">consistency_only</span></td></tr>
+</table>
+
+<p style="font-size: 12px; color: #666;">
+※ guard fallback = cross-fit unguarded MdAPE &gt; baseline → factor=1.0 (regression 방지). load_bearing 2 cell만 운영 채택 결정 근거.
+</p>
+
+<h2 id="cycle2">4. Cycle 2 — Reprod cycle <span class="commit-tag" style="font-size: 0.7em;">d0f8b88</span></h2>
+
+<div class="warn-box">
+<strong>목표</strong>: e3367ed의 cell factor가 cross-fit OOF에 들어가지 않은 fresh 20% holdout에서 baseline 대비 개선되는지 확인.
+</div>
+
+<h3>4.1 Method 핵심</h3>
+<ul>
+<li><strong>Holdout split</strong>: cold = <code>GroupShuffleSplit(0.20, seed=31337, groups=artist_slug)</code> / warm = <code>train_test_split(0.20, seed=31337, shuffle)</code></li>
+<li><strong>Refit</strong>: 80% pool 위에서 e3367ed 동일 절차로 cross-fit OOF + per-cell guard → refit factor</li>
+<li><strong>Holdout 평가 (Dual-track)</strong>: PR1 artifact 그대로 holdout prediction × original (e3367ed) factor → primary endpoint / refit factor → secondary</li>
+<li><strong>Paired bootstrap</strong> (small cell n_holdout &lt; 500): 1000-iter / 90% CI</li>
+<li><strong>핵심 가정 (R1 합의)</strong>: PR1 artifact 재학습 X (artifact variance를 confound 시키지 않기 위함)</li>
+</ul>
+
+<h3>4.2 결과 (load_bearing / 1 seed)</h3>
+<table>
+<tr><th>Cell</th><th>n_holdout</th><th>baseline</th><th>cal_orig</th><th>Δ_orig</th><th>refit factor</th><th>CI90 (Δ_orig)</th><th>Decision</th></tr>
+<tr>
+<td><code>artsy_gallery</code></td>
+<td class="num">366</td>
+<td class="num">3.21</td>
+<td class="num">8.67</td>
+<td class="num" style="color: #dc3545; font-weight: 600;">+5.46pp</td>
+<td class="num">0.872 (drift 0.05)</td>
+<td class="num">[+4.84, +6.40]</td>
+<td><span class="pill red">FAIL</span></td>
+</tr>
+<tr>
+<td><code>artsy_online</code></td>
+<td class="num">1,313</td>
+<td class="num">7.17</td>
+<td class="num">7.48</td>
+<td class="num" style="color: #dc3545; font-weight: 600;">+0.31pp</td>
+<td class="num">0.961 (drift 0.02)</td>
+<td class="num">N/A (large)</td>
+<td><span class="pill red">FAIL</span></td>
+</tr>
+</table>
+
+<p>consistency_only 4 cell 모두 GUARD_OK (saatchi cold만 sample boundary effect로 refit factor 0.923 — implementation 정합 / GUARD_OK 유지).</p>
+
+<h3>4.3 Verdict + R4 caveat</h3>
+<div class="danger-box">
+<strong>per prereg §3.3</strong>: 전 load_bearing FAIL → <strong>채택 보류</strong>.
+</div>
+<div class="warn-box">
+<strong>R4 사후 검수 verdict (LGTM-with-caveat / View B)</strong>:
+<ul style="margin: 6px 0;">
+<li>Implementation prereg-faithful / 결정 logic 정합.</li>
+<li>BUT 본 cycle = "deployment value의 clean test가 아님". holdout prediction = artifact 기준 in-sample (PR1이 holdout 행 학습 시 본 데이터). In-sample baseline (3.21/7.17) &lt;&lt; OOF baseline (~33) → OOF로 학습된 factor가 in-sample에 over-correction → FAIL이 구조적으로 강제됨.</li>
+<li>FAIL = "이 cycle 한정 운영 binding"이지 "calibration deployment value 없음" 강한 증거 X.</li>
+<li>후속 cycle 권고: retrained-artifact + multi-seed (= OOS cycle).</li>
+</ul>
+</div>
+
+<h2 id="cycle3">5. Cycle 3 — OOS verification cycle <span class="commit-tag" style="font-size: 0.7em;">08a6b80</span></h2>
+
+<div class="info-box">
+<strong>목표</strong>: R4 caveat 해소를 위해 base artifact 자체를 80% pool로 재학습하여 truly OOS holdout 평가. + multi-seed sensitivity. + dual-endpoint (refit + shipped factor).
+</div>
+
+<h3>5.1 Method 핵심 변화</h3>
+<table>
+<tr><th>항목</th><th>Reprod cycle</th><th>OOS cycle (변경)</th></tr>
+<tr><td>Base artifact</td><td>PR1 그대로 (frozen)</td><td><strong>80% pool로 재학습</strong> (per (source, seed))</td></tr>
+<tr><td>Multi-seed</td><td>1 seed (31337)</td><td><strong>3 seeds</strong> (31337, 7, 13)</td></tr>
+<tr><td>Endpoint</td><td>refit factor 단일</td><td><strong>Dual</strong>: Primary refit + Secondary shipped (e3367ed)</td></tr>
+<tr><td>Per-seed verdict</td><td>3-tier (PASS/INCONCLUSIVE/FAIL)</td><td><strong>4-tier primary</strong> (+ GUARD_FIRED) + 3-tier secondary</td></tr>
+<tr><td>Cell aggregate</td><td>Cell 단위 PASS/FAIL</td><td>Multi-seed aggregate + ADOPT 매트릭스 (5-state)</td></tr>
+</table>
+
+<h3>5.2 Per-cell × Per-seed 결과 (load_bearing)</h3>
+
+<h4 style="margin-bottom: 4px;">artsy_gallery (n_holdout 144-366 / small cell)</h4>
+<table>
+<tr><th>Seed</th><th class="num">baseline</th><th class="num">refit factor</th><th class="num">Δ_refit</th><th class="num">Δ_shipped</th><th class="num">CI90 (shipped)</th><th>Primary</th><th>Secondary</th></tr>
+<tr><td>31337</td><td class="num">19.80</td><td class="num">0.872</td><td class="num" style="color:#28a745;">−5.82</td><td class="num" style="color:#28a745;">−3.86</td><td class="num">[−7.69, −1.86]</td><td><span class="pill green">PASS</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr><td>7</td><td class="num">37.20</td><td class="num">1.0 (guard)</td><td class="num">0</td><td class="num" style="color:#dc3545;">+0.58</td><td class="num">[−5.84, +2.85]</td><td><span class="pill yellow">GUARD_FIRED</span></td><td><span class="pill red">SHIPPED_FAIL</span></td></tr>
+<tr><td>13</td><td class="num">68.66</td><td class="num">1.0 (guard)</td><td class="num">0</td><td class="num" style="color:#28a745;">−11.60</td><td class="num">[−14.11, −2.76]</td><td><span class="pill yellow">GUARD_FIRED</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr style="background: #fff8e1;"><td colspan="6"><strong>Aggregate</strong></td><td><strong>PROCEDURE_NULL_likely</strong></td><td><strong>SECONDARY_INCONCLUSIVE</strong></td></tr>
+<tr style="background: #fff3cd;"><td colspan="8" style="text-align: center;"><strong>Cell adoption: <span class="pill yellow bigtag">NEEDS_MORE_DATA</span></strong> — split-driven variance 큼 (baseline 19.80 / 37.20 / 68.66) / multi-seed N 확대 필요</td></tr>
+</table>
+
+<h4 style="margin-bottom: 4px;">artsy_online (n_holdout 1145-1313 / large cell / no bootstrap)</h4>
+<table>
+<tr><th>Seed</th><th class="num">baseline</th><th class="num">refit factor</th><th class="num">Δ_refit</th><th class="num">Δ_shipped</th><th>Primary</th><th>Secondary</th></tr>
+<tr><td>31337</td><td class="num">27.04</td><td class="num">0.961</td><td class="num" style="color:#28a745;">−0.69</td><td class="num" style="color:#28a745;">−0.81</td><td><span class="pill green">PASS</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr><td>7</td><td class="num">41.79</td><td class="num">1.0 (guard)</td><td class="num">0</td><td class="num" style="color:#28a745;">−1.23</td><td><span class="pill yellow">GUARD_FIRED</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr><td>13</td><td class="num">33.44</td><td class="num">0.972</td><td class="num" style="color:#28a745;">−0.14</td><td class="num" style="color:#28a745;">−0.42</td><td><span class="pill green">PASS</span></td><td><span class="pill green">SHIPPED_PASS</span></td></tr>
+<tr style="background: #d4edda;"><td colspan="5"><strong>Aggregate</strong></td><td><strong>PRIMARY_PASS_with_caveat</strong></td><td><strong>SECONDARY_PASS</strong></td></tr>
+<tr style="background: #d4edda;"><td colspan="7" style="text-align: center;"><strong>Cell adoption: <span class="pill green bigtag">ADOPT_with_caveat</span></strong> — shipped factor 0.9757 OOS 효과 3/3 일관 / large cell 안정</td></tr>
+</table>
+
+<h3>5.3 Per-source + Overall verdict</h3>
+<table>
+<tr><th>Source</th><th>load_bearing 결과</th><th>Per-source verdict</th></tr>
+<tr><td><code>artsy</code></td><td>1 cell ADOPT_with_caveat + 1 cell NEEDS_MORE_DATA</td><td><span class="pill yellow">NEEDS_MORE_DATA</span></td></tr>
+<tr><td><code>saatchi</code></td><td>전 cell consistency_only (shipped=1.0)</td><td><span class="pill gray">N/A_no_load_bearing</span></td></tr>
+<tr style="background: #fff3cd;"><td colspan="2"><strong>Overall verdict</strong></td><td><strong><span class="pill yellow bigtag">NEEDS_MORE_DATA</span></strong></td></tr>
+</table>
+
+<h3>5.4 R5 사후 검수 합의 (Strategy A)</h3>
+<div class="info-box">
+Codex R5: <strong>NEEDS DECISION ALIGNMENT → Strategy A 채택</strong>
+<ul style="margin: 6px 0;">
+<li>Implementation prereg-faithful / 결정 logic mechanically correct.</li>
+<li><strong>R4 caveat 해소 확인</strong>: Reprod Δ_shipped=+5.46 → OOS Δ_shipped=−3.86 / 같은 seed=31337 / baseline 3.21 → 19.80. In-sample bias가 Reprod FAIL의 원인이었음 강하게 입증.</li>
+<li><strong>Strategy A</strong>: 본 cycle NEEDS_MORE_DATA 그대로 commit + 전 채택 OFF / artsy_online standalone partial adoption은 별도 narrow canary cycle scope.</li>
+<li>artsy_gallery variance 합당 (small cell + 16-22 holdout artists per seed) / multi-seed N 확대 우선 (N=5 또는 7) / stratification 추가 X (estimand 변경).</li>
+<li>Saatchi adoption은 Phase 3 (per-source HP tuning) 결과 후만 가능.</li>
+</ul>
+</div>
+
+<h2 id="comparison">6. Reprod vs OOS 비교 (R4 caveat 해소 입증)</h2>
+
+<p>같은 seed=31337 / 같은 split / 다른 evaluation method:</p>
+
+<table>
+<tr>
+<th width="20%">Metric</th>
+<th width="35%">Reprod cycle (in-sample)<br><span style="color: #999; font-size: 11px;">PR1 artifact frozen</span></th>
+<th width="35%">OOS cycle (true OOS)<br><span style="color: #999; font-size: 11px;">80% pool retrained artifact</span></th>
+<th width="10%">의미</th>
+</tr>
+<tr>
+<td><code>artsy_gallery</code> baseline_mdape</td>
+<td class="num">3.21 (in-sample)</td>
+<td class="num">19.80 (true OOS)</td>
+<td><span class="pill blue">~6×</span></td>
+</tr>
+<tr>
+<td><code>artsy_online</code> baseline_mdape</td>
+<td class="num">7.17 (in-sample)</td>
+<td class="num">27.04 (true OOS)</td>
+<td><span class="pill blue">~4×</span></td>
+</tr>
+<tr style="background: #f8d7da;">
+<td><code>artsy_gallery</code> Δ_shipped</td>
+<td class="num" style="color: #dc3545; font-weight: 600;">+5.46pp (FAIL)</td>
+<td class="num" style="color: #28a745; font-weight: 600;">−3.86pp (PASS)</td>
+<td><span class="pill red">부호 반전</span></td>
+</tr>
+<tr style="background: #f8d7da;">
+<td><code>artsy_online</code> Δ_shipped</td>
+<td class="num" style="color: #dc3545; font-weight: 600;">+0.31pp (FAIL)</td>
+<td class="num" style="color: #28a745; font-weight: 600;">−0.81pp (PASS)</td>
+<td><span class="pill red">부호 반전</span></td>
+</tr>
+<tr>
+<td>Overall verdict</td>
+<td><span class="pill red">FAIL (채택 보류)</span></td>
+<td><span class="pill yellow">NEEDS_MORE_DATA</span></td>
+<td>—</td>
+</tr>
+</table>
+
+<div class="success-box">
+<strong>해석</strong>: 두 sample이 완전히 동일 (seed=31337의 holdout indices가 두 cycle 사이 같은 artist set). 차이는 <strong>holdout prediction 방법뿐</strong>:
+<ul style="margin: 6px 0;">
+<li>Reprod cycle: PR1 artifact (full data 학습 / holdout 행 포함) → in-sample 예측 → baseline MdAPE 매우 낮음 → OOF로 학습된 factor가 in-sample에 over-correction → 거의 항상 FAIL.</li>
+<li>OOS cycle: 80% pool 재학습 artifact (holdout 행 미학습) → true OOS 예측 → baseline MdAPE 정상 OOF 수준 → factor가 baseline 대비 개선 효과 발현.</li>
+</ul>
+→ R4 in-sample bias 가설 강하게 지지. Reprod FAIL은 method artifact였음.
+</div>
+
+<h2 id="decision">7. 현재 결정 + 후속 cycle 후보</h2>
+
+<h3>7.1 본 commit (08a6b80) 결정</h3>
+<table>
+<tr><th>영역</th><th>결정</th></tr>
+<tr><td>본 cycle 단독 채택</td><td><span class="pill red">전 채택 보류</span> (Overall NEEDS_MORE_DATA / Strategy A)</td></tr>
+<tr><td>운영 unified bundle 변경</td><td><span class="pill gray">X</span> (out-of-scope)</td></tr>
+<tr><td>운영 default OFF</td><td><span class="pill green">유지</span></td></tr>
+<tr><td>artifact (.cbm/.json) 변경</td><td><span class="pill gray">X</span> (PR1 그대로)</td></tr>
+</table>
+
+<h3>7.2 후속 cycle 후보 (R5 우선순위)</h3>
+<div class="metric-grid">
+<div class="metric-card" style="border-left: 4px solid #2c5aa0;">
+<div class="label">우선순위 1</div>
+<div class="value" style="font-size: 1em;">Multi-seed N 확대 cycle</div>
+<div class="delta">artsy_gallery NEEDS_MORE_DATA 해소 목표.<br>seeds ∈ {31337, 7, 13, 23, 47} (N=5).<br>본 script 그대로 활용 / +15-25분 컴퓨트.</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #28a745;">
+<div class="label">우선순위 2</div>
+<div class="value" style="font-size: 1em;">artsy_online narrow canary</div>
+<div class="delta">본 cycle ADOPT_with_caveat 결과 기반.<br>mode=canary 활성화 / 2주 shadow logging 비교 (PR2B-prereq.1 인프라).<br>별도 PR / decision-binding for online cell only.</div>
+</div>
+<div class="metric-card" style="border-left: 4px solid #6c757d;">
+<div class="label">우선순위 3</div>
+<div class="value" style="font-size: 1em;">Saatchi Phase 3 HP tuning</div>
+<div class="delta">per-source HP가 saatchi에서 non-1.0 factor 산출하는지.<br>산출 시 OOS verification 적용.<br>본 cycle scope 완전 외.</div>
+</div>
+</div>
+
+<h3>7.3 산출 commit 요약</h3>
+<table>
+<tr><th>Commit</th><th>내용</th><th>변경 파일</th></tr>
+<tr>
+<td><span class="commit-tag">e3367ed</span></td>
+<td>Phase 2 calibration fit (no-op → fitted)</td>
+<td>3 files (prereg + script + tests)</td>
+</tr>
+<tr>
+<td><span class="commit-tag">d0f8b88</span></td>
+<td>Reprod cycle (in-sample / FAIL with caveat)</td>
+<td>5 files (prereg + results md + script + 2 holdout indices)</td>
+</tr>
+<tr>
+<td><span class="commit-tag">08a6b80</span></td>
+<td>OOS cycle (true OOS / NEEDS_MORE_DATA / Strategy A)</td>
+<td>9 files (prereg + results md + script + 6 holdout indices)</td>
+</tr>
+</table>
+
+<div class="footer">
+<p>본 문서는 2026-05-09 단일일 검증 사이클 (3 commit) 의 종합 정리. 코덱스 자문 9 round 누적 (Reprod R1-R4 + OOS R1-R5 / 동일 세션 <code>019e0bb1-...</code>).</p>
+<p>참고 문서:
+  <code>docs/calibration_per_source_prereg_20260509.md</code> (e3367ed prereg) ·
+  <code>docs/calibration_per_source_reproducibility_prereg_20260509.md</code> + <code>_results_*.md</code> (Reprod) ·
+  <code>docs/calibration_per_source_oos_verification_prereg_20260509.md</code> + <code>_results_*.md</code> (OOS).
+</p>
+</div>
+
+</body>
+</html>

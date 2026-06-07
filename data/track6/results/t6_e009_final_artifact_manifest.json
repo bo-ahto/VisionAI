@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-05-18",
+  "created_at": "2026-05-29",
   "experiment_id": "T6-E009",
   "hypothesis_id": "T6-H8",
   "manifest_json": "data/track6/artifacts/track6_artifact_manifest.json",
@@ -7,9 +7,9 @@
   "artifacts": [
     {
       "key": "warm_price_model",
-      "artifact": "data/track6/artifacts/track6_warm_catboost_base_medium_size.cbm",
-      "model": "CatBoostRegressor",
-      "feature_set": "base_medium_size",
+      "artifact": "data/track6/artifacts/track6_warm_huber.joblib",
+      "model": "HuberRegressor",
+      "feature_set": "base_existing_combo",
       "features": [
         "width_cm",
         "height_cm",
@@ -21,17 +21,17 @@
         "is_3d_candidate",
         "medium_category",
         "support_category",
-        "size_bucket",
-        "medium_size_bucket",
+        "medium_support_bucket",
+        "is_extreme_aspect_ratio",
         "artist_key"
       ],
-      "training_rows": 27083
+      "training_rows": 27433
     },
     {
-      "key": "cold_median_price_model",
-      "artifact": "data/track6/artifacts/track6_cold_hist_quantile_base.joblib",
-      "model": "HistGradientBoostingRegressor(loss=quantile)",
-      "feature_set": "base",
+      "key": "cold_catboost_price_model",
+      "artifact": "data/track6/artifacts/track6_cold_catboost.cbm",
+      "model": "CatBoostRegressor",
+      "feature_set": "base_medium_shape",
       "features": [
         "width_cm",
         "height_cm",
@@ -42,15 +42,17 @@
         "has_depth",
         "is_3d_candidate",
         "medium_category",
-        "support_category"
+        "support_category",
+        "shape_bucket",
+        "medium_shape_bucket"
       ],
-      "training_rows": 29353
+      "training_rows": 29667
     },
     {
-      "key": "cold_tail_reference_model",
-      "artifact": "data/track6/artifacts/track6_cold_huber_base_size_shape.joblib",
-      "model": "HuberRegressor",
-      "feature_set": "base_size_shape",
+      "key": "cold_lightgbm_price_model",
+      "artifact": "data/track6/artifacts/track6_cold_lightgbm.joblib",
+      "model": "LGBMRegressor",
+      "feature_set": "base_support_size",
       "features": [
         "width_cm",
         "height_cm",
@@ -63,9 +65,9 @@
         "medium_category",
         "support_category",
         "size_bucket",
-        "shape_bucket"
+        "support_size_bucket"
       ],
-      "training_rows": 29353
+      "training_rows": 29667
     }
   ]
 }

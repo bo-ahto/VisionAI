@@ -22,6 +22,8 @@ def read_metrics(path: Path) -> pd.DataFrame:
 
 def render(result: dict[str, Any]) -> str:
     warm = result["selected"]["warm"]
+    cold_catboost = result["selected"]["cold_catboost"]
+    cold_lightgbm = result["selected"]["cold_lightgbm"]
     cold_median = result["selected"]["cold_median"]
     cold_tail = result["selected"]["cold_tail"]
     lines = [
@@ -46,15 +48,17 @@ def render(result: dict[str, Any]) -> str:
         "| 구분 | 모델 | 피처셋 | validation median APE | validation p95 APE | 선정 이유 |",
         "|---|---|---|---:|---:|---|",
         f"| Warm | `{warm['model']}` | `{warm['feature_set']}` | `{warm['median_ape']:.4f}` | `{warm['p95_ape']:.4f}` | Warm median APE 최저 |",
+        f"| Cold CatBoost | `{cold_catboost['model']}` | `{cold_catboost['feature_set']}` | `{cold_catboost['median_ape']:.4f}` | `{cold_catboost['p95_ape']:.4f}` | CatBoost 내 median APE 최저 |",
+        f"| Cold LightGBM | `{cold_lightgbm['model']}` | `{cold_lightgbm['feature_set']}` | `{cold_lightgbm['median_ape']:.4f}` | `{cold_lightgbm['p95_ape']:.4f}` | LightGBM 내 median APE 최저 |",
         f"| Cold 대표 오차 | `{cold_median['model']}` | `{cold_median['feature_set']}` | `{cold_median['median_ape']:.4f}` | `{cold_median['p95_ape']:.4f}` | Cold median APE 최저 |",
         f"| Cold 큰 오차 위험 | `{cold_tail['model']}` | `{cold_tail['feature_set']}` | `{cold_tail['median_ape']:.4f}` | `{cold_tail['p95_ape']:.4f}` | Cold p95 APE 최저 |",
         "",
         "## 3. 해석",
         "",
-        "- Warm은 작가 식별값을 포함한 CatBoost가 유지 후보",
-        "- Warm 피처는 `medium_category + size_bucket` 조합을 포함할 때 median APE가 가장 낮음",
-        "- Cold는 대표값 기준으로 단순한 구조 피처가 가장 안정적",
-        "- Cold의 큰 오차를 줄이는 목적이면 Huber + `size_bucket/shape_bucket` 후보가 더 적합",
+        "- Warm은 작가 식별값을 포함한 Huber가 유지 후보",
+        "- Warm 피처는 validation 기준으로 가장 안정적인 조합을 고정",
+        "- Cold는 CatBoost와 LightGBM 중 대표 오차 기준 후보를 고정",
+        "- Cold의 큰 오차를 줄이는 목적이면 p95 APE 기준 후보를 별도로 고정",
         "",
         "## 4. 다음 단계",
         "",
@@ -80,6 +84,8 @@ def replace_row(path: Path, prefix: str, row: str) -> None:
 
 def update_docs(result: dict[str, Any]) -> None:
     warm = result["selected"]["warm"]
+    cold_catboost = result["selected"]["cold_catboost"]
+    cold_lightgbm = result["selected"]["cold_lightgbm"]
     cold_median = result["selected"]["cold_median"]
     cold_tail = result["selected"]["cold_tail"]
 
@@ -88,6 +94,7 @@ def update_docs(result: dict[str, Any]) -> None:
         "| T6-H6 | T6-G6 | 최종 후보는 validation뿐 아니라 test에서도 같은 방향의 성능을 보여야 한다 | "
         "validation에서 고른 후보만 test에 적용 | Track6 name-corrected split | 최종 후보 피처 | validation 성능 | test 성능 급락 없음 | "
         f"부분 검증 | validation 후보 선정 완료 | Warm `{warm['feature_set']}` `{warm['median_ape']:.4f}`, "
+        f"Cold CatBoost `{cold_catboost['feature_set']}` `{cold_catboost['median_ape']:.4f}`, Cold LightGBM `{cold_lightgbm['feature_set']}` `{cold_lightgbm['median_ape']:.4f}`, "
         f"Cold median `{cold_median['feature_set']}` `{cold_median['median_ape']:.4f}`, Cold p95 `{cold_tail['feature_set']}` `{cold_tail['p95_ape']:.4f}` | T6-E006 | T6-E007 test 확인 필요 |"
     )
     replace_row(hypo, "| T6-H6 |", row)
@@ -97,7 +104,7 @@ def update_docs(result: dict[str, Any]) -> None:
         f"| {result['created_at']} | T6-E006 | T6-H6 | 부분 검증 | Track6 name-corrected split | "
         "후보 선정 로직 | validation 후보 피처 | "
         f"Warm 후보 `{warm['median_ape']:.4f}` (`{warm['feature_set']}`) | "
-        f"Cold 후보 median `{cold_median['median_ape']:.4f}`, p95 `{cold_tail['p95_ape']:.4f}` | "
+        f"Cold CatBoost `{cold_catboost['median_ape']:.4f}`, LightGBM `{cold_lightgbm['median_ape']:.4f}`, p95 `{cold_tail['p95_ape']:.4f}` | "
         "test 전 후보 고정 | [기록](../experiments/2026-05-18_T6-E006_validation_candidate_selection.md) |"
     )
     replace_row(results, "| 2026-05-18 | T6-E006 |", row)
@@ -110,8 +117,11 @@ def update_docs(result: dict[str, Any]) -> None:
 def main() -> None:
     combo = read_metrics(RESULT_DIR / "t6_e005_feature_combo_ablation_metrics.csv")
     warm = combo.loc[combo["split"].eq("val_warm")].sort_values(["median_ape", "p95_ape"]).iloc[0].to_dict()
-    cold_median = combo.loc[combo["split"].eq("val_cold")].sort_values(["median_ape", "p95_ape"]).iloc[0].to_dict()
-    cold_tail = combo.loc[combo["split"].eq("val_cold")].sort_values(["p95_ape", "median_ape"]).iloc[0].to_dict()
+    cold = combo.loc[combo["split"].eq("val_cold")]
+    cold_catboost = cold.loc[cold["model"].eq("catboost_cold")].sort_values(["median_ape", "p95_ape"]).iloc[0].to_dict()
+    cold_lightgbm = cold.loc[cold["model"].eq("lightgbm_cold")].sort_values(["median_ape", "p95_ape"]).iloc[0].to_dict()
+    cold_median = cold.sort_values(["median_ape", "p95_ape"]).iloc[0].to_dict()
+    cold_tail = cold.sort_values(["p95_ape", "median_ape"]).iloc[0].to_dict()
     result = {
         "created_at": date.today().isoformat(),
         "experiment_id": "T6-E006",
@@ -119,6 +129,8 @@ def main() -> None:
         "result_json": str(RESULT_JSON.relative_to(REPO)),
         "selected": {
             "warm": warm,
+            "cold_catboost": cold_catboost,
+            "cold_lightgbm": cold_lightgbm,
             "cold_median": cold_median,
             "cold_tail": cold_tail,
         },

@@ -18,10 +18,12 @@
 - feature/label 분리 보고서: `docs/track6/dataset/feature_label_pipeline_report.md`
 - 데이터 검증/누수 방지 프로세스: `docs/track6/dataset/leakage_prevention_validation_process.md`
 - 학습/평가 라벨 사용 흐름: `docs/track6/dataset/train_eval_label_flow.md`
+- 모델/평가 지표 이해 가이드: `docs/track6/model_metric_learning_guide.md`
 - 실험 인덱스: `docs/track6/experiments/INDEX.md`
 - 가설 상태표: `docs/track6/tables/hypothesis_table.md`
 - 실험 결과표: `docs/track6/tables/experiment_results_table.md`
 - 대시보드: `docs/track6/dashboard/experiment_dashboard.html`
+- 실험 일지 모음: `docs/track6/journals/index.html`
 
 ## 2. 주요 데이터 위치
 
@@ -55,3 +57,5 @@
 
 - 대시보드 재생성:
   - `python3 scripts/track6/generate_experiment_dashboard.py`
+- 예정 실험 일지/모음 페이지 재생성:
+  - `python3 scripts/track6/scaffold_experiment_journals.py`

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 A9-1 작품 기본 피처 묶음 정의 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 A9-1 작품 기본 피처 묶음 정의 실험 결과</h1>
+    <ul>
+      <li>목적: 호수, NANT 재료, NANT 지지체를 기준으로 작품 기본 피처 묶음을 정의한다.</li>
+      <li>실험 ID: <code>A9-1</code></li>
+      <li>Warm 최고: <code>호수 + 로그면적 + NANT 재료 + NANT 지지체</code> / <code>Huber</code> / MdAPE 0.4688</li>
+      <li>Cold 최고: <code>호수 + 로그면적 + NANT 재료 + NANT 지지체</code> / <code>Quantile-LAD</code> / MdAPE 0.4929</li>
+      <li>생성일: <code>2026-05-22T17:57:39</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/train_features.csv</code><br><code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/test_warm_features.csv</code><br><code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/test_cold_features.csv</code><br><code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/A9-1_basic_artwork_feature_bundle/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/A9-1_basic_artwork_feature_bundle/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>ln_estimated_ho, log_area, width_cm, height_cm</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>호수, NANT 재료, NANT 지지체를 기준으로 작품 기본 피처 묶음을 정의한다.</td></tr><tr><td>실험 위치</td><td>Group A의 A9 세부 실험 중 A9-1에 해당한다.</td></tr><tr><td>공통 실행 코드</td><td>scripts/track6/fixed_variable_experiment_runner.py</td></tr><tr><td>숫자형 처리</td><td>숫자형 피처는 중앙값 결측 보정 후 StandardScaler를 적용한다.</td></tr><tr><td>범주형 처리</td><td>범주형 피처는 one-hot encoding으로 처리한다.</td></tr><tr><td>판단 기준</td><td>Warm/Cold를 분리해 MdAPE, p95 APE, R2를 비교한다.</td></tr><tr><td>재현성 확인</td><td>동일 설정으로 재실행해 주요 지표가 같은지 비교한다.</td></tr><tr><td>purpose</td><td>호수, NANT 재료, NANT 지지체를 기준으로 작품 기본 피처 묶음을 정의한다.</td></tr><tr><td>summary</td><td>Warm 최고는 호수 + 로그면적 + NANT 재료 + NANT 지지체 + Huber(MdAPE 0.4688), Cold 최고는 호수 + 로그면적 + NANT 재료 + NANT 지지체 + Quantile-LAD(MdAPE 0.4929)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>호수 + NANT 재료 + NANT 지지체</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support</code> · 작품 기본 피처 묶음 후보</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4197</td><td>0.4962</td><td>2.9236</td><td>0.3344</td><td>0.5058</td><td>0.8432</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4486</td><td>0.6013</td><td>4.0972</td><td>0.2652</td><td>0.4399</td><td>1.0069</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4486</td><td>0.6013</td><td>4.0973</td><td>0.2652</td><td>0.4399</td><td>1.0068</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4238</td><td>0.5352</td><td>3.5976</td><td>0.2456</td><td>0.4611</td><td>1.1676</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4181</td><td>0.5128</td><td>3.2103</td><td>0.2588</td><td>0.4873</td><td>1.1479</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4259</td><td>0.5313</td><td>3.8417</td><td>0.2598</td><td>0.4714</td><td>1.5248</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>호수 + 로그면적 + NANT 재료 + NANT 지지체</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, log_area, nant_material_idx, nant_tool, nant_support</code> · 기본 묶음에 로그 면적 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.5373</td><td>0.4688</td><td>2.8273</td><td>0.3690</td><td>0.5206</td><td>0.7860</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.5277</td><td>0.5279</td><td>3.2054</td><td>0.3114</td><td>0.4679</td><td>0.9034</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.5277</td><td>0.5281</td><td>3.2053</td><td>0.3130</td><td>0.4679</td><td>0.9034</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4893</td><td>0.5076</td><td>3.2858</td><td>0.2523</td><td>0.4892</td><td>1.1958</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4880</td><td>0.4929</td><td>3.3348</td><td>0.2649</td><td>0.5060</td><td>1.1755</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4458</td><td>0.5250</td><td>4.4360</td><td>0.2598</td><td>0.4834</td><td>1.4560</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>전체 크기 + NANT 재료 + NANT 지지체</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, log_area, width_cm, height_cm, nant_material_idx, nant_tool, nant_support</code> · A8-1 확장 크기 묶음에 NANT 재료와 지지체 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.5376</td><td>0.4739</td><td>2.6912</td><td>0.3806</td><td>0.5272</td><td>0.7848</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.5276</td><td>0.5328</td><td>3.1562</td><td>0.3048</td><td>0.4629</td><td>0.9020</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.5276</td><td>0.5328</td><td>3.1566</td><td>0.3031</td><td>0.4629</td><td>0.9021</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4919</td><td>0.5087</td><td>3.1900</td><td>0.2533</td><td>0.4921</td><td>1.1952</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4902</td><td>0.4940</td><td>3.2591</td><td>0.2711</td><td>0.5037</td><td>1.1750</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4514</td><td>0.5276</td><td>4.3695</td><td>0.2614</td><td>0.4779</td><td>1.4039</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/A9-1_basic_artwork_feature_bundle/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,272 @@
+{
+  "experiment_id": "PP-SVC1",
+  "title": "서비스 비교군 통계 피처 검증",
+  "run_id": "20260603_205031",
+  "seed": 20260603,
+  "source_split_root": "data/track6_split",
+  "unit_price_definition": "ln_price_krw - log(area_cm2); estimated_ho is not present in current split",
+  "leakage_control": {
+    "train_features": "5-fold cross-fitted comparable stats",
+    "validation_test_features": "train-only comparable stats",
+    "target_usage": "price is used only to create train-derived comparable tables and evaluation labels"
+  },
+  "group_definitions": [
+    {
+      "level": "artist_medium_support_size",
+      "keys": [
+        "artist_key",
+        "medium_support_bucket",
+        "size_bucket"
+      ],
+      "min_n": 5,
+      "service_label": "작가+재료/지지체+크기"
+    },
+    {
+      "level": "artist_size",
+      "keys": [
+        "artist_key",
+        "size_bucket"
+      ],
+      "min_n": 5,
+      "service_label": "작가+크기"
+    },
+    {
+      "level": "artist",
+      "keys": [
+        "artist_key"
+      ],
+      "min_n": 5,
+      "service_label": "작가 전체"
+    },
+    {
+      "level": "medium_support_size",
+      "keys": [
+        "medium_support_bucket",
+        "size_bucket"
+      ],
+      "min_n": 30,
+      "service_label": "재료/지지체+크기"
+    },
+    {
+      "level": "medium_category_support_size",
+      "keys": [
+        "medium_category",
+        "support_category",
+        "size_bucket"
+      ],
+      "min_n": 30,
+      "service_label": "재료+지지체+크기"
+    },
+    {
+      "level": "medium_size",
+      "keys": [
+        "medium_category",
+        "size_bucket"
+      ],
+      "min_n": 50,
+      "service_label": "재료+크기"
+    }
+  ],
+  "service_numeric_features": [
+    "svc_group_log_price_median",
+    "svc_group_log_price_q25",
+    "svc_group_log_price_q75",
+    "svc_group_log_price_iqr",
+    "svc_group_log_unit_area_median",
+    "svc_group_log_unit_area_iqr",
+    "svc_group_n_log"
+  ],
+  "service_categorical_features": [
+    "svc_group_level",
+    "svc_coverage_tier",
+    "svc_has_artist_level"
+  ],
+  "feature_manifest": {
+    "PP-SVC1-W": {
+      "baseline": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "medium_support_bucket",
+        "is_extreme_aspect_ratio",
+        "artist_key"
+      ],
+      "svc_numeric": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "medium_support_bucket",
+        "is_extreme_aspect_ratio",
+        "artist_key",
+        "svc_group_log_price_median",
+        "svc_group_log_price_q25",
+        "svc_group_log_price_q75",
+        "svc_group_log_price_iqr",
+        "svc_group_log_unit_area_median",
+        "svc_group_log_unit_area_iqr",
+        "svc_group_n_log"
+      ],
+      "svc_full": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "medium_support_bucket",
+        "is_extreme_aspect_ratio",
+        "artist_key",
+        "svc_group_log_price_median",
+        "svc_group_log_price_q25",
+        "svc_group_log_price_q75",
+        "svc_group_log_price_iqr",
+        "svc_group_log_unit_area_median",
+        "svc_group_log_unit_area_iqr",
+        "svc_group_n_log",
+        "svc_group_level",
+        "svc_coverage_tier",
+        "svc_has_artist_level"
+      ]
+    },
+    "PP-SVC1-CB": {
+      "baseline": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "shape_bucket",
+        "medium_shape_bucket"
+      ],
+      "svc_numeric": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "shape_bucket",
+        "medium_shape_bucket",
+        "svc_group_log_price_median",
+        "svc_group_log_price_q25",
+        "svc_group_log_price_q75",
+        "svc_group_log_price_iqr",
+        "svc_group_log_unit_area_median",
+        "svc_group_log_unit_area_iqr",
+        "svc_group_n_log"
+      ],
+      "svc_full": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "shape_bucket",
+        "medium_shape_bucket",
+        "svc_group_log_price_median",
+        "svc_group_log_price_q25",
+        "svc_group_log_price_q75",
+        "svc_group_log_price_iqr",
+        "svc_group_log_unit_area_median",
+        "svc_group_log_unit_area_iqr",
+        "svc_group_n_log",
+        "svc_group_level",
+        "svc_coverage_tier",
+        "svc_has_artist_level"
+      ]
+    },
+    "PP-SVC1-LGBM": {
+      "baseline": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "size_bucket",
+        "support_size_bucket"
+      ],
+      "svc_numeric": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "size_bucket",
+        "support_size_bucket",
+        "svc_group_log_price_median",
+        "svc_group_log_price_q25",
+        "svc_group_log_price_q75",
+        "svc_group_log_price_iqr",
+        "svc_group_log_unit_area_median",
+        "svc_group_log_unit_area_iqr",
+        "svc_group_n_log"
+      ],
+      "svc_full": [
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "size_bucket",
+        "support_size_bucket",
+        "svc_group_log_price_median",
+        "svc_group_log_price_q25",
+        "svc_group_log_price_q75",
+        "svc_group_log_price_iqr",
+        "svc_group_log_unit_area_median",
+        "svc_group_log_unit_area_iqr",
+        "svc_group_n_log",
+        "svc_group_level",
+        "svc_coverage_tier",
+        "svc_has_artist_level"
+      ]
+    }
+  }
+}

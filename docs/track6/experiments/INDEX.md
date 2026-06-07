@@ -2,10 +2,78 @@
 
 - 목적: Track6 개별 실험 기록을 한눈에 관리
 - 정렬 기준: 최신 실험이 위로 오도록 관리
-- 상태: T6-E001C feature/label 분리 완료
+- 상태: T6-E010 헤도닉 작가명 + 호수 / ln 변환 실험 완료
+
+## 종합 문서
+
+- [A~J + OPT 피처/모델 종합 분석 HTML](a_to_j_optimal_feature_model_analysis.html)
+- [A~J + OPT 피처/모델 종합 분석 Markdown](a_to_j_optimal_feature_model_analysis.md)
+- [A~J 피처별 영향도 분석 HTML](feature_influence_analysis.html)
+- [A~J 피처별 영향도 분석 Markdown](feature_influence_analysis.md)
+- [A~J 피처별 영향도 분석 CSV](feature_influence_analysis.csv)
+- [A~J 피처별 영향도 요약 CSV](feature_influence_summary.csv)
+- [Track6 중간 실험 결과 요약 및 후처리 계획 HTML](midterm_result_postprocessing_report.html)
+- [Track6 중간 실험 결과 요약 및 후처리 계획 Markdown](midterm_result_postprocessing_report.md)
+- [Track6 실험 결과 통합 CSV 안내](track6_unified_metrics_readme.md)
+- [Track6 전체 실험 모델 지표 long CSV](track6_all_experiment_model_metrics_long.csv)
+- [Track6 피처 조합별 모델 1~3위 CSV](track6_best_model_by_feature_block.csv)
+- [Track6 Warm/Cold 피처-모델 요약 CSV](track6_feature_model_pivot_summary.csv)
+- [Track6 실험 내부 피처 차이 CSV](track6_feature_influence_delta.csv)
+- [Cold CatBoost 테스트 근거 정리 HTML](cold_catboost_performance_summary.html)
+- [Cold CatBoost 테스트 근거 정리 Markdown](cold_catboost_performance_summary.md)
+- [Cold CatBoost 테스트 근거 CSV](cold_catboost_performance_summary.csv)
+- [Cold CatBoost vs 기존 후보 비교 HTML](cold_catboost_vs_previous_candidates.html)
+- [Cold CatBoost vs 기존 후보 비교 Markdown](cold_catboost_vs_previous_candidates.md)
+- [A~J + OPT 전체 지표 CSV](a_to_j_plus_opt_all_metrics.csv)
+- [A1-D11 실험 종합 HTML](a1_d11_experiment_summary.html)
+- [A1-D11 실험 종합 Markdown](a1_d11_experiment_summary.md)
+- [A1-D11 실험 종합 CSV](a1_d11_summary_table.csv)
+- [최적 피처 조합 요약 CSV](optimal_feature_combo_summary_table.csv)
+- [실험 결과 지표 해석 기준](metric_interpretation_standard.md)
+- [모델 후보 종합 점수 기준](composite_score_method.md)
+- [Warm / Cold 모델 후보 확정 근거와 고도화 계획 HTML](final_model_decision_and_enhancement_plan.html)
+- [Warm / Cold 모델 후보 확정 근거와 고도화 계획 Markdown](final_model_decision_and_enhancement_plan.md)
+- [Warm Huber 계수 / Cold CatBoost SHAP 해석 리포트](../../../experiments/track6/FINAL_model_interpretability/outputs/interpretability_report.html)
+- [후속 실험 계획 HTML](followup_experiment_plan.html)
+- [후속 실험 계획 Markdown](followup_experiment_plan.md)
+- [3일 후처리/튜닝 실행 계획 HTML](three_day_model_postprocessing_tuning_plan.html)
+- [3일 후처리/튜닝 실행 계획 Markdown](three_day_model_postprocessing_tuning_plan.md)
+- [후처리 및 모델 고도화 검증 계획 HTML](postprocessing_enhancement_validation_plan.html)
+- [후처리 및 모델 고도화 검증 계획 Markdown](postprocessing_enhancement_validation_plan.md)
+- [후처리 실험 매트릭스 HTML](postprocessing_experiment_matrix.html)
+- [후처리 실험 매트릭스 Markdown](postprocessing_experiment_matrix.md)
+- [후처리 실험 매트릭스 CSV](postprocessing_experiment_matrix.csv)
+- [Claude Code용 가격 예측 실험 인수인계](claude_code_experiment_handoff.md)
+- [PP-AMW5 Warm 작가 메타/전시·갤러리 잔차 보정 요약](pp_amw5_warm_artist_meta_external_coefficient_correction_summary.md)
+- [PP-AMW6 Warm 작가 메타 잔차 보정 반복 재검증 요약](pp_amw6_warm_artist_meta_residual_revalidation_summary.md)
+- [후속 실험 참여용 후임 온보딩 문서](track6_junior_project_onboarding.md)
+- [피처별 영향도 해석 및 실험 결과](track6_feature_influence_with_results.md)
+- [Group E 작가 변수 실행 가능성 검토](group_e_artist_variable_execution_review.md)
+- [Group F/G 작가 메타 조합 실행 전 검토](group_f_g_execution_review.md)
+- [Group F/G 실행 결과 종합 HTML](group_f_g_execution_summary.html)
+- [Group F/G 실행 결과 종합 Markdown](group_f_g_execution_summary.md)
+- [Group F/G 실행 결과 종합 CSV](group_f_g_summary_table.csv)
+- [Group H/I/J 중복 매핑](group_h_i_j_duplicate_mapping.md)
+- [Group H/I/J 실행 결과 종합 HTML](group_h_i_j_execution_summary.html)
+- [Group H/I/J 실행 결과 종합 Markdown](group_h_i_j_execution_summary.md)
+- [Group H/I/J 실행 결과 종합 CSV](group_h_i_j_summary_table.csv)
+- [작가 메타 feature 보강 보고서](../dataset/artist_meta_feature_augmentation_report.md)
 
 | 날짜 | 실험 ID | 연결 가설 | 상태 | 요약 | 기록 |
 |---|---|---|---|---|---|
+| 2026-06-07 | PP-AMW6 | Warm 작가 메타 잔차 보정 반복 재검증 | 실행 완료 | PP-AMW5 상위 후보를 validation 작가 단위 12회 x 5fold와 test bootstrap 400회로 재검증. 작가 메타 Huber 후보는 test `0.1368/0.2746/0.8323`, 생년 구간 median 후보는 test `0.1381/0.2740/0.8191`로 목적별 후보 분리 | [요약](pp_amw6_warm_artist_meta_residual_revalidation_summary.md), [실험 보고서](../../../experiments/track6/PP-AMW6_warm_artist_meta_residual_revalidation/reports/result_report.md), [산출물](../../../experiments/track6/PP-AMW6_warm_artist_meta_residual_revalidation/outputs/repeated_validation_summary.csv) |
+| 2026-06-07 | PP-AMW5 | Warm 작가 메타/전시·갤러리 잔차 보정 | 실행 완료 | 현재 Warm 1순위 후보 위에 작가 생년/활동량/판매중 작품 수/전시·갤러리 피처로 Huber 잔차 보정을 적용. 작가 메타 핵심 후보 test MdAPE/MAPE/p95 `0.1368/0.2746/0.8323`으로 기준 `0.1405/0.2748/0.8331` 대비 소폭 개선 | [요약](pp_amw5_warm_artist_meta_external_coefficient_correction_summary.md), [실험 보고서](../../../experiments/track6/PP-AMW5_warm_artist_meta_external_coefficient_correction/reports/result_report.md), [산출물](../../../experiments/track6/PP-AMW5_warm_artist_meta_external_coefficient_correction/outputs/all_candidate_metrics.csv) |
+| 2026-05-29 | E5-2 | Group E5 보완 | 실행 완료 | 정규화된 국적값 기준으로 국적별 가격대와 오차 차이를 분석. Cold MdAPE 0.5128 → 0.5000, Warm MdAPE 0.4962 → 0.4969 | [결과 HTML](../../../experiments/track6/E5-2_nationality_group_effect/outputs/result_sheet.html), [README](../../../experiments/track6/E5-2_nationality_group_effect/README.md), [국적별 CSV](../../../experiments/track6/E5-2_nationality_group_effect/outputs/nationality_group_summary.csv) |
+| 2026-05-29 | E5-1 | Group E5 보완 | 실행 완료 | 호수/난트 재료/난트 도구/난트 지지체를 통제한 뒤 국적 추가 효과를 재검증. Warm Huber MdAPE 0.4962 → 0.4899, Cold Quantile-LAD MdAPE 0.5128 → 0.4888 | [결과 HTML](../../../experiments/track6/E5-1_controlled_nationality_effect/outputs/result_sheet.html), [README](../../../experiments/track6/E5-1_controlled_nationality_effect/README.md), [조건 묶음 CSV](../../../experiments/track6/E5-1_controlled_nationality_effect/outputs/controlled_condition_summary.csv) |
+| 2026-05-29 | E2-1 | Group E2 보완 | 실행 완료 | 같은 작가/같은 테스트셋에서 작가당 학습 작품 수를 5/10/20/30개로 제한해 Warm 안정성 비교. Huber MdAPE가 0.1947 → 0.1269로 개선 | [결과 HTML](../../../experiments/track6/E2-1_same_artist_learning_volume/outputs/result_sheet.html), [README](../../../experiments/track6/E2-1_same_artist_learning_volume/README.md) |
+| 2026-05-28 | CM1 | Cold 모델군 검증 | 실행 완료 | Cold 상위 피처 5개 조합에서 모델만 변경해 비교, 종합 점수 기준 `작품 기본 피처 + 활동량/인지도` + CatBoost 1위 | [실험 HTML](../../../experiments/track6/CM1_cold_top_feature_model_family_compare/outputs/result_sheet.html), [README](../../../experiments/track6/CM1_cold_top_feature_model_family_compare/README.md), [점수 기준](composite_score_method.md) |
+| 2026-05-28 | WM1 | Warm 모델군 검증 | 실행 완료 | Warm 상위 피처 5개 조합에서 모델만 변경해 비교, 종합 점수 기준 `작가명 + 전체 크기 + 작가 학습 작품 수` + Huber 1위 | [실험 HTML](../../../experiments/track6/WM1_warm_top_feature_model_family_compare/outputs/result_sheet.html), [README](../../../experiments/track6/WM1_warm_top_feature_model_family_compare/README.md), [점수 기준](composite_score_method.md) |
+| 2026-05-28 | A-J-OPT-Analysis | A~J + OPT | 분석 완료 | Warm/Cold별 최고 피처 조합과 모델 후보 선정, OPT-C2/OPT-W3 추가 실행 포함 | [HTML](a_to_j_optimal_feature_model_analysis.html), [Markdown](a_to_j_optimal_feature_model_analysis.md) |
+| 2026-05-27 | Group-HIJ-Run | Group H/I/J | 실행 완료 | H1/H5, I1/I2/I3/I5/I6, J1-J7 실행 및 H2/H3/H4/I4 중복 매핑 완료 | [HTML](group_h_i_j_execution_summary.html), [Markdown](group_h_i_j_execution_summary.md) |
+| 2026-05-27 | Group-FG-Run | Group F/G | 실행 완료 | F1-F5, G1-G10 작가 메타/작품 조건 통제 실험 완료 | [HTML](group_f_g_execution_summary.html), [Markdown](group_f_g_execution_summary.md) |
+| 2026-05-27 | Group-FG-Review | Group F/G | 검토 완료 | 작가 메타 조합/작품 조건 통제 실험 실행 전 중복·가능성 검토 | [기록](group_f_g_execution_review.md) |
+| 2026-05-27 | Group-E-Prep | Group E | 준비 완료 | 작가 메타/전시 횟수 split 보강 및 실행 가능성 검토 | [기록](group_e_artist_variable_execution_review.md) |
+| 2026-05-19 | T6-E010 | T6-H9, T6-H10 | 검증 완료 | 작가명+호수와 ln 변환 효과 확인 | [기록](2026-05-19_T6-E010_hedonic_artist_ho_log.md) |
 | 2026-05-18 | T6-E009 | T6-H8 | 검증 완료 | 최종 artifact manifest 생성 | [기록](2026-05-18_T6-E009_final_artifact_manifest.md) |
 | 2026-05-18 | T6-E008 | T6-H7 | 검증 완료 | 신뢰도/위험 구간 분석 완료 | [기록](2026-05-18_T6-E008_risk_policy_analysis.md) |
 | 2026-05-18 | T6-E007 | T6-H6 | 검증 완료 | test 최종 확인 완료 | [기록](2026-05-18_T6-E007_test_confirmation.md) |

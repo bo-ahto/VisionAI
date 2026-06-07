@@ -1,0 +1,178 @@
+{
+  "created_at": "2026-05-26T13:15:22",
+  "experiment_id": "A12",
+  "description": "A11 feature set plus depth / 3D / edition comparison using fixed Track6 runner",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/A12_full_artwork_features_expanded/experiment_config.json",
+  "prompt_file": "experiments/track6/A12_full_artwork_features_expanded/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "ln_estimated_ho",
+      "artwork_year",
+      "artwork_age",
+      "depth_cm",
+      "has_depth",
+      "is_3d_candidate",
+      "is_edition",
+      "is_limited_edition",
+      "is_open_edition",
+      "is_unknown_edition",
+      "edition_info_available"
+    ],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore"
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "A11 기준 피처 묶음",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final"
+      ],
+      "description": "호수, NANT 재료, NANT 지지체, 제작연도, 작품 연한, 작품 유형 전체 구분을 사용한 A11 기준 피처"
+    },
+    {
+      "name": "A11 기준 피처 묶음 + depth/3D",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final",
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "description": "A11 기준 피처에 깊이와 3D 후보 여부를 추가"
+    },
+    {
+      "name": "A11 기준 피처 묶음 + edition",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final",
+        "edition_class",
+        "is_edition",
+        "is_limited_edition",
+        "is_open_edition",
+        "is_unknown_edition",
+        "edition_info_available"
+      ],
+      "description": "A11 기준 피처에 에디션 구분과 에디션 파생 플래그를 추가"
+    },
+    {
+      "name": "A11 기준 피처 묶음 + depth/3D + edition",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final",
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate",
+        "edition_class",
+        "is_edition",
+        "is_limited_edition",
+        "is_open_edition",
+        "is_unknown_edition",
+        "edition_info_available"
+      ],
+      "description": "A11 기준 피처에 깊이/3D와 에디션 정보를 모두 추가"
+    }
+  ],
+  "bucket_features": [],
+  "combo_features": [],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/A12_full_artwork_features_expanded/data/train_features.csv",
+    "train_labels": "experiments/track6/A12_full_artwork_features_expanded/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/A12_full_artwork_features_expanded/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/A12_full_artwork_features_expanded/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/A12_full_artwork_features_expanded/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/A12_full_artwork_features_expanded/data/test_cold_labels.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/A12_full_artwork_features_expanded/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/A12_full_artwork_features_expanded/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/A12_full_artwork_features_expanded/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/A12_full_artwork_features_expanded/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/A12_full_artwork_features_expanded/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/A12_full_artwork_features_expanded/source_data/track6_test_cold_labels.csv"
+  }
+}

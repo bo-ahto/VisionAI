@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>가격 예측 v0.1 테스트</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --panel-soft: #f1f5f9;
+      --text: #17202a;
+      --muted: #657184;
+      --border: #d8dee8;
+      --accent: #1565c0;
+      --accent-dark: #0d47a1;
+      --ok: #116b4f;
+      --warn: #a05a00;
+      --danger: #b3261e;
+      --shadow: 0 10px 30px rgba(18, 32, 55, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 4;
+    }
+
+    .topbar {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .model-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 32px;
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      background: #fff;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex: 0 0 auto;
+    }
+
+    .dot.ok { background: var(--ok); }
+    .dot.warn { background: var(--warn); }
+
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
+      gap: 20px;
+    }
+
+    section,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .form-panel,
+    .result-panel {
+      padding: 20px;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .help {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    input:focus,
+    select:focus {
+      outline: 2px solid rgba(21, 101, 192, 0.16);
+      border-color: var(--accent);
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .debug-options {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .debug-options summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .debug-options .debug-body {
+      margin-top: 12px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      min-height: 40px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--accent);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .candidate-list,
+    .warning-list,
+    .sample-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .candidate {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel-soft);
+      cursor: pointer;
+    }
+
+    .candidate:hover { border-color: var(--accent); }
+
+    .candidate strong,
+    .sample strong { display: block; }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      min-height: 116px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .metric .value {
+      font-size: 26px;
+      font-weight: 800;
+      word-break: keep-all;
+    }
+
+    .metric .sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .bands {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .band {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .band h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--panel-soft);
+    }
+
+    .warning {
+      padding: 10px;
+      border: 1px solid #f1c36d;
+      border-radius: 6px;
+      background: #fff7e6;
+      color: #5c3900;
+    }
+
+    .empty {
+      padding: 28px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    details {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      font-weight: 700;
+    }
+
+    pre {
+      margin: 0;
+      padding: 14px;
+      overflow: auto;
+      max-height: 360px;
+      border-top: 1px solid var(--border);
+      background: #0f172a;
+      color: #dbeafe;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 920px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+
+      .result-grid,
+      .bands,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <h1>가격 예측 v0.1 테스트</h1>
+      <div class="model-chip" id="modelChip"><span class="dot"></span><span>모델 확인 중</span></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="form-panel">
+      <h2 class="section-title">입력</h2>
+      <form id="estimateForm">
+        <div class="grid-2">
+          <div class="field">
+            <label for="nameKo">한글 작가명</label>
+            <input id="nameKo" name="nameKo" value="문성은">
+          </div>
+          <div class="field">
+            <label for="nameEn">영문 작가명</label>
+            <input id="nameEn" name="nameEn" value="Seongeun Moon">
+          </div>
+        </div>
+        <div class="field">
+          <label for="title">작품명</label>
+          <input id="title" name="title" value="After The Flight">
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="widthCm">가로 cm</label>
+            <input id="widthCm" name="widthCm" type="number" min="0" step="0.1" value="24">
+          </div>
+          <div class="field">
+            <label for="heightCm">세로 cm</label>
+            <input id="heightCm" name="heightCm" type="number" min="0" step="0.1" value="41">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="depthCm">깊이 cm</label>
+            <input id="depthCm" name="depthCm" type="number" min="0" step="0.1" value="1.8">
+          </div>
+          <div class="field">
+            <label for="year">제작연도</label>
+            <input id="year" name="year" type="number" min="1800" max="2030" value="2026">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="mediumCategory">재료</label>
+            <select id="mediumCategory" name="mediumCategory">
+              <option value="acrylic" selected>acrylic</option>
+              <option value="oil">oil</option>
+              <option value="mixed_media">mixed_media</option>
+              <option value="ink">ink</option>
+              <option value="watercolor">watercolor</option>
+              <option value="other">other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="supportCategory">지지체</label>
+            <select id="supportCategory" name="supportCategory">
+              <option value="canvas" selected>canvas</option>
+              <option value="paper">paper</option>
+              <option value="panel">panel</option>
+              <option value="linen">linen</option>
+              <option value="other">other</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="category">작품 유형</label>
+            <select id="category" name="category">
+              <option value="Painting" selected>Painting</option>
+              <option value="Drawing">Drawing</option>
+              <option value="Sculpture">Sculpture</option>
+              <option value="Installation">Installation</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="artworkUrl">작품 URL</label>
+          <input id="artworkUrl" name="artworkUrl" value="https://example.com/artwork/smoke_001">
+        </div>
+        <details class="debug-options">
+          <summary>내부 테스트 옵션</summary>
+          <div class="debug-body grid-2">
+            <div class="field">
+              <label for="artistKey">아티스트키</label>
+              <input id="artistKey" name="artistKey" value="">
+              <div class="help">일반 사용자는 입력하지 않습니다. 작가 확인 결과에서 자동으로 채워지는 모델 내부 식별자입니다.</div>
+            </div>
+            <div class="field">
+              <label for="samples">유사 표본 표시 수</label>
+              <input id="samples" name="samples" type="number" min="0" max="50" value="5">
+              <div class="help">일반 사용자가 정하는 값이 아니라 테스트 화면에서 결과 노출 개수만 확인하는 옵션입니다.</div>
+            </div>
+          </div>
+        </details>
+        <div class="actions">
+          <button type="button" class="secondary" id="resolveButton">작가 확인</button>
+          <button type="submit" id="predictButton">가격 예측</button>
+        </div>
+      </form>
+
+      <div id="candidateBox" class="candidate-list"></div>
+      <div class="footer-row">
+        <span id="statusText">대기 중</span>
+        <span>v0.1 operational</span>
+      </div>
+    </section>
+
+    <section class="result-panel">
+      <h2 class="section-title">결과</h2>
+      <div id="resultRoot" class="empty">예측 결과가 여기에 표시됩니다.</div>
+    </section>
+  </main>
+
+  <script>
+    const modelChip = document.querySelector("#modelChip");
+    const form = document.querySelector("#estimateForm");
+    const resolveButton = document.querySelector("#resolveButton");
+    const predictButton = document.querySelector("#predictButton");
+    const resultRoot = document.querySelector("#resultRoot");
+    const candidateBox = document.querySelector("#candidateBox");
+    const statusText = document.querySelector("#statusText");
+
+    const state = { lastArtist: null, lastResult: null };
+
+    function value(id) {
+      return document.querySelector(`#${id}`).value.trim();
+    }
+
+    function numberValue(id) {
+      const raw = value(id);
+      return raw === "" ? null : Number(raw);
+    }
+
+    function setBusy(isBusy) {
+      resolveButton.disabled = isBusy;
+      predictButton.disabled = isBusy;
+      statusText.textContent = isBusy ? "요청 중" : "대기 중";
+    }
+
+    function setModelChip(ok, text) {
+      modelChip.innerHTML = `<span class="dot ${ok ? "ok" : "warn"}"></span><span>${escapeHtml(text)}</span>`;
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error?.message || `HTTP ${res.status}`);
+      }
+      return data;
+    }
+
+    function artistPayload() {
+      return {
+        artist_key: value("artistKey") || null,
+        name_ko: value("nameKo") || null,
+        name_en: value("nameEn") || null
+      };
+    }
+
+    function estimatePayload() {
+      return {
+        artwork: {
+          external_artwork_id: value("title") || "test_artwork",
+          title: value("title") || null,
+          artist: artistPayload(),
+          year: numberValue("year"),
+          dimensions: {
+            width_cm: numberValue("widthCm"),
+            height_cm: numberValue("heightCm"),
+            depth_cm: numberValue("depthCm")
+          },
+          medium: {
+            medium_category: value("mediumCategory"),
+            support_category: value("supportCategory")
+          },
+          category: value("category"),
+          artwork_url: value("artworkUrl") || null
+        },
+        options: {
+          currency: "KRW",
+          include_comparable_samples: true,
+          max_comparable_samples: Number(value("samples") || 5)
+        }
+      };
+    }
+
+    async function loadModel() {
+      try {
+        const data = await api("/api/v1/price-models/current");
+        setModelChip(true, `${data.model_version} · ${data.service_primary_candidate}`);
+      } catch (err) {
+        setModelChip(false, "모델 확인 실패");
+      }
+    }
+
+    async function resolveArtist() {
+      setBusy(true);
+      candidateBox.innerHTML = "";
+      try {
+        const data = await api("/api/v1/artists:resolve", {
+          method: "POST",
+          body: JSON.stringify({ artist: artistPayload(), options: { max_candidates: 5 } })
+        });
+        state.lastArtist = data;
+        renderCandidates(data);
+        statusText.textContent = data.resolved ? "작가 확인 완료" : "작가 선택 필요";
+      } catch (err) {
+        statusText.textContent = err.message;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function predictPrice(event) {
+      event.preventDefault();
+      setBusy(true);
+      try {
+        const data = await api("/api/v1/artworks/price-estimate", {
+          method: "POST",
+          body: JSON.stringify(estimatePayload())
+        });
+        state.lastResult = data;
+        history.replaceState(null, "", "/test/v0.1/result");
+        renderResult(data);
+        statusText.textContent = data.status === "success" ? "예측 완료" : "부분 성공";
+      } catch (err) {
+        statusText.textContent = err.message;
+        resultRoot.className = "empty";
+        resultRoot.textContent = err.message;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function renderCandidates(data) {
+      if (!data.candidates?.length) {
+        candidateBox.innerHTML = `<div class="warning">작가 후보가 없습니다.</div>`;
+        return;
+      }
+      candidateBox.innerHTML = data.candidates.map((candidate) => `
+        <div class="candidate" data-key="${escapeAttr(candidate.artist_key)}">
+          <strong>${escapeHtml(candidate.name_ko || candidate.name_en || candidate.artist_key)}</strong>
+          <span class="muted">${escapeHtml(candidate.artist_key)} · ${candidate.valid_training_label_count || 0}건 · ${escapeHtml(candidate.match_status)}</span>
+        </div>
+      `).join("");
+      candidateBox.querySelectorAll(".candidate").forEach((el) => {
+        el.addEventListener("click", () => {
+          const key = el.getAttribute("data-key");
+          const selected = data.candidates.find((item) => item.artist_key === key);
+          if (!selected) return;
+          document.querySelector("#artistKey").value = selected.artist_key;
+          document.querySelector("#nameKo").value = selected.name_ko || "";
+          document.querySelector("#nameEn").value = selected.name_en || "";
+          statusText.textContent = "작가 선택 완료";
+        });
+      });
+    }
+
+    function renderResult(data) {
+      const prediction = data.prediction || {};
+      const basis = data.basis || {};
+      const market = data.market_price_card || {};
+      const samples = data.comparable_samples || [];
+      const warnings = data.warnings || [];
+      resultRoot.className = "";
+      resultRoot.innerHTML = `
+        <div class="result-grid">
+          <div class="metric">
+            <div class="label">예측 가격</div>
+            <div class="value">${escapeHtml(prediction.price_display || "-")}</div>
+            <div class="sub">${formatNumber(prediction.price_krw)}원</div>
+          </div>
+          <div class="metric">
+            <div class="label">가격 범위</div>
+            <div class="value">${escapeHtml(prediction.range_display || "-")}</div>
+            <div class="sub">q10 - q90 기준</div>
+          </div>
+          <div class="metric">
+            <div class="label">신뢰도</div>
+            <div class="value">${escapeHtml(prediction.confidence?.level || "low")}</div>
+            <div class="sub">${escapeHtml((prediction.confidence?.reason_codes || []).join(", "))}</div>
+          </div>
+        </div>
+
+        <div class="bands">
+          <div class="band">
+            <h3>유사 작품 기준</h3>
+            <table>
+              <tbody>
+                <tr><th>묶음</th><td>${escapeHtml(basis.similar_group_level || "-")}</td></tr>
+                <tr><th>표본 수</th><td>${basis.similar_sample_count ?? 0}건</td></tr>
+                <tr><th>coverage</th><td>${escapeHtml(basis.similar_coverage_tier || "-")}</td></tr>
+                <tr><th>중앙값</th><td>${formatNumber(basis.similar_price_median_krw)}원</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="band">
+            <h3>1차 시장 가격</h3>
+            <table>
+              <tbody>
+                <tr><th>호당가 중앙값</th><td>${escapeHtml(market.median_display || "-")}</td></tr>
+                <tr><th>호당가 범위</th><td>${escapeHtml(market.range_display || "-")}</td></tr>
+                <tr><th>표본 수</th><td>${escapeHtml(market.sample_count_display || "-")}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        ${renderMediumDistribution(market.medium_distribution || [])}
+        ${renderWarnings(warnings)}
+        ${renderSamples(samples)}
+
+        <details>
+          <summary>원본 JSON</summary>
+          <pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>
+        </details>
+      `;
+    }
+
+    function renderMediumDistribution(items) {
+      if (!items.length) return "";
+      return `
+        <div class="band">
+          <h3>매체별 호당가</h3>
+          <table>
+            <thead><tr><th>매체</th><th>중앙값</th><th>표본</th></tr></thead>
+            <tbody>
+              ${items.map((item) => `
+                <tr>
+                  <td>${escapeHtml(item.label || "-")}</td>
+                  <td>${escapeHtml(item.display || "-")}</td>
+                  <td>${item.sample_count ?? 0}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderWarnings(warnings) {
+      if (!warnings.length) return "";
+      return `
+        <div class="warning-list">
+          ${warnings.map((warning) => `
+            <div class="warning">
+              <strong>${escapeHtml(warning.code)}</strong>
+              <div>${escapeHtml(warning.message)}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderSamples(samples) {
+      if (!samples.length) return "";
+      return `
+        <div class="band">
+          <h3>유사 표본</h3>
+          <table>
+            <thead><tr><th>작품</th><th>가격</th><th>크기</th><th>재료/지지체</th></tr></thead>
+            <tbody>
+              ${samples.map((sample) => `
+                <tr>
+                  <td>${escapeHtml(sample.title || sample.artwork_id || "-")}</td>
+                  <td>${formatNumber(sample.sale_price_krw)}원</td>
+                  <td>${sample.width_cm ?? "-"} × ${sample.height_cm ?? "-"}</td>
+                  <td>${escapeHtml(sample.medium_category || "-")} / ${escapeHtml(sample.support_category || "-")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function formatNumber(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+      return Number(value).toLocaleString("ko-KR");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replaceAll("`", "&#096;");
+    }
+
+    resolveButton.addEventListener("click", resolveArtist);
+    form.addEventListener("submit", predictPrice);
+    loadModel();
+  </script>
+</body>
+</html>

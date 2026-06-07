@@ -1,0 +1,126 @@
+{
+  "experiment_id": "PRE-WARM-07",
+  "title": "Track6 PRE-WARM-07 Warm 기준 후보 group-drop ablation",
+  "purpose": "Warm 기준 모델 후보 3개에서 피처 그룹을 제거했을 때 성능이 어떻게 변하는지 확인하여 후처리 기준 모델과 보정 구간의 근거를 만든다.",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "exp_dir": "experiments/track6/PRE-WARM-07_warm_group_drop_ablation",
+  "prompt_file": "experiments/track6/PRE-WARM-07_warm_group_drop_ablation/prompts/used_prompt.md",
+  "run_mode": "full_split_no_sampling",
+  "target_scope": "Warm",
+  "models": [
+    "Huber"
+  ],
+  "numeric_features": [
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "area_cm2",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "is_extreme_aspect_ratio",
+    "ln_estimated_ho",
+    "artist_works_log",
+    "artist_works_log_is_missing"
+  ],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_key",
+      "output_prefix": "ln_ho_x_artist_key",
+      "top_n": 10
+    }
+  ],
+  "feature_sets": [
+    {
+      "name": "GDA-01-BASE: final artifact base_existing_combo",
+      "features": ["artist_key", "width_cm", "height_cm", "depth_cm", "area_cm2", "log_area", "aspect_ratio", "has_depth", "is_3d_candidate", "medium_category", "support_category", "medium_support_bucket", "is_extreme_aspect_ratio"],
+      "description": "PRE-WARM-01 baseline"
+    },
+    {
+      "name": "GDA-01-DROP-artist",
+      "features": ["width_cm", "height_cm", "depth_cm", "area_cm2", "log_area", "aspect_ratio", "has_depth", "is_3d_candidate", "medium_category", "support_category", "medium_support_bucket", "is_extreme_aspect_ratio"],
+      "description": "final artifact 후보에서 artist_key 제거"
+    },
+    {
+      "name": "GDA-01-DROP-size",
+      "features": ["artist_key", "depth_cm", "aspect_ratio", "has_depth", "is_3d_candidate", "medium_category", "support_category", "medium_support_bucket", "is_extreme_aspect_ratio"],
+      "description": "final artifact 후보에서 width/height/area/log_area 제거"
+    },
+    {
+      "name": "GDA-01-DROP-depth3d",
+      "features": ["artist_key", "width_cm", "height_cm", "area_cm2", "log_area", "aspect_ratio", "medium_category", "support_category", "medium_support_bucket", "is_extreme_aspect_ratio"],
+      "description": "final artifact 후보에서 depth/3D 그룹 제거"
+    },
+    {
+      "name": "GDA-01-DROP-medium_support",
+      "features": ["artist_key", "width_cm", "height_cm", "depth_cm", "area_cm2", "log_area", "aspect_ratio", "has_depth", "is_3d_candidate", "is_extreme_aspect_ratio"],
+      "description": "final artifact 후보에서 medium/support 그룹 제거"
+    },
+    {
+      "name": "GDA-01-DROP-aspect",
+      "features": ["artist_key", "width_cm", "height_cm", "depth_cm", "area_cm2", "log_area", "has_depth", "is_3d_candidate", "medium_category", "support_category", "medium_support_bucket"],
+      "description": "final artifact 후보에서 aspect_ratio/is_extreme_aspect_ratio 제거"
+    },
+    {
+      "name": "GDA-05-BASE: compact artist_name size + artist works",
+      "features": ["artist_name_ko", "width_cm", "height_cm", "log_area", "aspect_ratio", "artist_works_log", "artist_works_log_is_missing"],
+      "description": "PRE-WARM-05 baseline"
+    },
+    {
+      "name": "GDA-05-DROP-artist_name",
+      "features": ["width_cm", "height_cm", "log_area", "aspect_ratio", "artist_works_log", "artist_works_log_is_missing"],
+      "description": "PRE-WARM-05 후보에서 artist_name_ko 제거"
+    },
+    {
+      "name": "GDA-05-DROP-size",
+      "features": ["artist_name_ko", "aspect_ratio", "artist_works_log", "artist_works_log_is_missing"],
+      "description": "PRE-WARM-05 후보에서 width/height/log_area 제거"
+    },
+    {
+      "name": "GDA-05-DROP-artist_works",
+      "features": ["artist_name_ko", "width_cm", "height_cm", "log_area", "aspect_ratio"],
+      "description": "PRE-WARM-05 후보에서 artist_works_log 그룹 제거"
+    },
+    {
+      "name": "GDA-05-DROP-aspect",
+      "features": ["artist_name_ko", "width_cm", "height_cm", "log_area", "artist_works_log", "artist_works_log_is_missing"],
+      "description": "PRE-WARM-05 후보에서 aspect_ratio 제거"
+    },
+    {
+      "name": "GDA-06C-BASE: compact artist_key size + ho interaction",
+      "features": ["artist_key", "width_cm", "height_cm", "log_area", "aspect_ratio", "ln_estimated_ho"],
+      "feature_prefixes": ["ln_ho_x_artist_key_"],
+      "description": "PRE-WARM-06C baseline"
+    },
+    {
+      "name": "GDA-06C-DROP-artist_key",
+      "features": ["width_cm", "height_cm", "log_area", "aspect_ratio", "ln_estimated_ho"],
+      "description": "PRE-WARM-06C 후보에서 artist_key 및 artist_key 교차항 제거"
+    },
+    {
+      "name": "GDA-06C-DROP-size",
+      "features": ["artist_key", "aspect_ratio", "ln_estimated_ho"],
+      "feature_prefixes": ["ln_ho_x_artist_key_"],
+      "description": "PRE-WARM-06C 후보에서 width/height/log_area 제거"
+    },
+    {
+      "name": "GDA-06C-DROP-ho_interaction",
+      "features": ["artist_key", "width_cm", "height_cm", "log_area", "aspect_ratio"],
+      "description": "PRE-WARM-06C 후보에서 ln_estimated_ho 및 artist_key x ho 교차항 제거"
+    },
+    {
+      "name": "GDA-06C-DROP-aspect",
+      "features": ["artist_key", "width_cm", "height_cm", "log_area", "ln_estimated_ho"],
+      "feature_prefixes": ["ln_ho_x_artist_key_"],
+      "description": "PRE-WARM-06C 후보에서 aspect_ratio 제거"
+    }
+  ],
+  "comment": {
+    "실험 목적": "Warm 후보별 피처 그룹의 성능 기여를 제거 실험으로 확인한다.",
+    "통제 조건": "split, target, 평가 지표, 운영 기준 Huber 전처리와 설정을 고정한다.",
+    "해석 기준": "drop 후 MdAPE가 악화되면 일반 정확도 기여, p95_APE가 악화되면 큰 오차 방어 기여로 본다.",
+    "주의": "drop 실험은 피처 하나의 순수 독립 효과가 아니라 해당 피처 그룹을 포함한 조합 효과로 해석한다."
+  }
+}

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T6-E010 실험 일지</title>
+  <style>
+    :root {
+      --bg:#f4efe5;
+      --paper:#fffdf7;
+      --ink:#1c241f;
+      --muted:#667167;
+      --line:#d8cdb8;
+      --green:#27684a;
+      --blue:#234f73;
+      --amber:#9b6124;
+      --red:#9c3d2f;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      background:linear-gradient(135deg,#efe7d7,#f8f5ec 45%,#e9f0e7);
+      color:var(--ink);
+      font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+      line-height:1.62;
+    }
+    main { max-width:1180px; margin:0 auto; padding:34px 22px 80px; }
+    header {
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:34px;
+      box-shadow:0 18px 50px rgba(42,34,22,.12);
+    }
+    h1 { margin:0; font-size:46px; letter-spacing:-.055em; }
+    h2 { margin:0 0 14px; font-size:24px; letter-spacing:-.035em; }
+    h3 { margin:22px 0 8px; font-size:18px; }
+    section {
+      background:rgba(255,253,247,.94);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:26px;
+      margin-top:18px;
+      box-shadow:0 12px 34px rgba(42,34,22,.08);
+    }
+    ul { margin:10px 0 0; padding-left:21px; }
+    li { margin:5px 0; }
+    code {
+      display:inline-block;
+      max-width:100%;
+      overflow-wrap:anywhere;
+      background:#eee5d4;
+      color:#22362d;
+      border-radius:7px;
+      padding:2px 6px;
+      font-family:"SFMono-Regular",Consolas,monospace;
+      font-size:.92em;
+    }
+    .meta {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin-top:24px;
+    }
+    .card, .file-grid article {
+      background:#f8f1e5;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px;
+    }
+    .card span { color:var(--muted); font-size:13px; font-weight:700; }
+    .card strong { display:block; margin-top:5px; font-size:24px; letter-spacing:-.03em; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .file-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .file-grid strong { display:block; margin-bottom:6px; }
+    .badge {
+      display:inline-flex;
+      padding:5px 9px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      margin-right:6px;
+    }
+    .ok { background:rgba(39,104,74,.14); color:var(--green); }
+    .warn { background:rgba(155,97,36,.14); color:var(--amber); }
+    .risk { background:rgba(156,61,47,.14); color:var(--red); }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:16px; }
+    table { width:100%; border-collapse:collapse; min-width:820px; background:var(--paper); }
+    th, td { padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13px; }
+    th { background:#eadfcd; text-align:left; position:sticky; top:0; }
+    .note { color:var(--muted); font-size:14px; }
+    .markdown {
+      white-space:pre-wrap;
+      background:#fbf7ef;
+      border:1px dashed var(--line);
+      border-radius:18px;
+      padding:18px;
+      max-height:360px;
+      overflow:auto;
+    }
+    @media(max-width:860px) {
+      .meta, .grid-2, .file-grid { grid-template-columns:1fr; }
+      h1 { font-size:34px; }
+      main { padding:18px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="badge ok">실험 일지 샘플</span>
+    <span class="badge ok">검증 완료</span>
+    <span class="badge warn">ln 변환 효과 확인</span>
+    <h1>T6-E010 작가명 + 호수 헤도닉 실험</h1>
+    <p>개별 실험 폴더에서 데이터 생성, 모델 실행, 결과 해석, 재현 방법을 한 번에 확인하기 위한 첫 번째 HTML 일지입니다.</p>
+    <div class="meta">
+      <div class="card"><span>생성일</span><strong>2026-05-19</strong></div>
+      <div class="card"><span>Train</span><strong>28,204건</strong></div>
+      <div class="card"><span>Warm Test</span><strong>2,445건</strong></div>
+      <div class="card"><span>Cold Test</span><strong>3,005건</strong></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>1. 실험 목적과 가설</h2>
+    <ul>
+      <li>가설 1: 작가명(한글)과 사이즈(호)만으로도 가격 예측에서 유의미한 결과를 볼 수 있다.</li>
+      <li>가설 2: 호수와 가격을 ln 변환하면 원값을 쓰는 것보다 예측 결과가 개선될 것이다.</li>
+      <li>1차 목적: ln 변환이 예측 정확도를 개선하는지 확인한다.</li>
+      <li>2차 목적: Warm과 Cold에서 같은 방식의 모델을 써도 되는지 확인한다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. 유의미함 기준</h2>
+    <ul>
+      <li><strong>median APE</strong>: 대표 오차. 낮을수록 좋다.</li>
+      <li><strong>p95 APE</strong>: 큰 오차 위험. 낮을수록 좋다.</li>
+      <li><strong>Within-30</strong>: 실제 가격의 30% 이내로 맞춘 비율. 높을수록 좋다.</li>
+      <li><strong>Within-50</strong>: 실제 가격의 50% 이내로 맞춘 비율. 높을수록 좋다.</li>
+      <li><strong>Warm / Cold 분리 판단</strong>: Cold 전용 모델이 Cold test에서 더 안정적이면 모델을 분리한다.</li>
+      <li><strong>운영 가능 여부</strong>: 사용자가 입력 가능한 값으로 재현 가능한 피처만 최종 후보로 본다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 데이터 생성 방식</h2>
+    <div class="grid-2">
+      <div>
+        <h3>원본 데이터</h3>
+        <ul>
+          <li><code>data/track6/track6_feature_candidates_name_corrected.csv</code></li>
+          <li><code>is_training_candidate = true</code>인 row만 사용</li>
+          <li>가격, 작가명, 작가 key, 면적이 없는 row 제외</li>
+          <li>호수는 원본 컬럼이 아니라 <code>area_cm2</code>를 F형 호수표에 매칭해 생성</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Split 검증</h3>
+        <ul>
+          <li>Cold/train 작가 겹침: <strong>0</strong></li>
+          <li>Warm test 작가별 train 최소 작품 수: <strong>5</strong></li>
+          <li>Warm test 작가별 평가 최소 작품 수: <strong>2</strong></li>
+          <li>Seed: <code>20260519</code></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 실험 케이스</h2>
+    <p class="note">아래 표는 이번 실험에서 학습에 사용된 피처와 테스트에 사용된 피처를 케이스별로 명확히 구분한 것입니다.</p>
+    <div class="table-wrap"><table><thead><tr><th>케이스</th><th>학습에 사용된 피처</th><th>학습 정답값</th><th>테스트에 사용된 피처</th><th>테스트 정답값</th><th>테스트 대상</th><th>예측 후 처리</th><th>확인하려는 내용</th></tr></thead><tbody><tr><td>Warm 일반</td><td>artist_name_ko, estimated_ho</td><td>price_krw</td><td>artist_name_ko, estimated_ho</td><td>price_krw</td><td>Warm test / Cold test</td><td>원화 가격 그대로 평가</td><td>작가명과 원 호수만으로 가격을 예측할 수 있는지 확인</td></tr><tr><td>Warm ln 변형</td><td>artist_name_ko, ln_estimated_ho</td><td>ln_price_krw</td><td>artist_name_ko, ln_estimated_ho</td><td>price_krw</td><td>Warm test / Cold test</td><td>예측한 ln가격을 원화 가격으로 되돌려 평가</td><td>ln 변환이 Warm 예측을 개선하는지 확인</td></tr><tr><td>Cold 일반</td><td>estimated_ho</td><td>price_krw</td><td>estimated_ho</td><td>price_krw</td><td>Cold test / Warm test</td><td>원화 가격 그대로 평가</td><td>신규 작가 상황에서 호수만으로 예측 가능한지 확인</td></tr><tr><td>Cold ln 변형</td><td>ln_estimated_ho</td><td>ln_price_krw</td><td>ln_estimated_ho</td><td>price_krw</td><td>Cold test / Warm test</td><td>예측한 ln가격을 원화 가격으로 되돌려 평가</td><td>ln 변환이 Cold 예측을 개선하는지 확인</td></tr></tbody></table></div>
+    <h3>케이스 설명</h3>
+    <ul>
+      <li>Warm 일반: <code>artist_name_ko + estimated_ho -> price_krw</code></li>
+      <li>Warm 변형: <code>artist_name_ko + ln_estimated_ho -> ln_price_krw</code></li>
+      <li>Cold 일반: <code>estimated_ho -> price_krw</code></li>
+      <li>Cold 변형: <code>ln_estimated_ho -> ln_price_krw</code></li>
+      <li>Warm 모델을 Cold test에 적용해 단일 모델 가능성도 함께 확인</li>
+      <li>Cold 모델을 Warm test에 적용해 작가명 없이 어느 정도 예측 가능한지도 확인</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5. 사용 모델</h2>
+    <p class="note">이번 실험에서 실제로 학습에 사용한 모델과 전처리 방식입니다.</p>
+    <div class="table-wrap"><table><thead><tr><th>항목</th><th>내용</th><th>설명</th></tr></thead><tbody><tr><td>사용 모델</td><td>Ridge 기반 Hedonic Linear Regression</td><td>가격을 작품 속성의 합으로 설명하는 선형 회귀 baseline</td></tr><tr><td>구현</td><td>sklearn Ridge(alpha=1.0)</td><td>작가 one-hot 피처가 많아질 수 있어 일반 Linear Regression보다 안정적인 Ridge를 사용</td></tr><tr><td>범주형 처리</td><td>artist_name_ko -&gt; OneHotEncoder(handle_unknown=&#x27;ignore&#x27;)</td><td>학습에 없는 작가가 테스트에 나오면 해당 작가 피처는 0으로 처리</td></tr><tr><td>수치형 처리</td><td>estimated_ho / ln_estimated_ho -&gt; StandardScaler</td><td>호수 값의 스케일 영향을 줄이기 위해 표준화 후 학습</td></tr><tr><td>base 모델 목표값</td><td>price_krw</td><td>원화 가격을 직접 예측</td></tr><tr><td>log 모델 목표값</td><td>ln_price_krw</td><td>로그 가격을 예측한 뒤 exp 변환으로 원화 가격 복원</td></tr><tr><td>이번 실험에서 제외한 모델</td><td>LightGBM, CatBoost, XGBoost, Huber, Quantile</td><td>이번 실험은 모델 튜닝이 아니라 작가명/호수/ln 변환 신호 확인이 목적이므로 후속 실험에서 비교</td></tr></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>6. 생성 데이터 파일</h2>
+    <p class="note">가격 컬럼은 feature 파일에 넣지 않고 label 파일에 분리했습니다. 모델 학습 때는 train label을 쓰고, 평가는 예측 완료 후 test label과 비교합니다.</p>
+    <div class="table-wrap"><table><thead><tr><th>파일</th><th>역할</th><th>컬럼</th><th>경로</th></tr></thead><tbody><tr><td>warm_train_base_features</td><td>Warm 일반 학습 입력</td><td>_experiment_row_id, artist_name_ko, estimated_ho</td><td>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_train_base_features.csv</td></tr><tr><td>warm_train_base_labels</td><td>Warm 일반 학습 정답</td><td>_experiment_row_id, price_krw, ln_price_krw</td><td>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_train_base_labels.csv</td></tr><tr><td>warm_train_log_features</td><td>Warm ln 학습 입력</td><td>_experiment_row_id, artist_name_ko, estimated_ho, ln_estimated_ho</td><td>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_train_log_features.csv</td></tr><tr><td>warm_train_log_labels</td><td>Warm ln 학습 정답</td><td>_experiment_row_id, price_krw, ln_price_krw</td><td>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_train_log_labels.csv</td></tr><tr><td>warm_test_*</td><td>Warm 평가 입력/정답</td><td>feature 파일은 입력값, labels 파일은 평가용 가격</td><td>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_test_base_features.csv</td></tr><tr><td>cold_train_base_features</td><td>Cold 일반 학습 입력</td><td>_experiment_row_id, estimated_ho</td><td>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_train_base_features.csv</td></tr><tr><td>cold_train_log_features</td><td>Cold ln 학습 입력</td><td>_experiment_row_id, estimated_ho, ln_estimated_ho</td><td>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_train_log_features.csv</td></tr><tr><td>cold_test_*</td><td>Cold 평가 입력/정답</td><td>feature 파일은 입력값, labels 파일은 평가용 가격</td><td>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_test_base_features.csv</td></tr></tbody></table></div>
+    <h3>전체 생성 파일</h3>
+    <div class="file-grid">
+      <article><strong>warm_train_base_features</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_train_base_features.csv</code></article>
+<article><strong>warm_train_base_labels</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_train_base_labels.csv</code></article>
+<article><strong>warm_train_log_features</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_train_log_features.csv</code></article>
+<article><strong>warm_train_log_labels</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_train_log_labels.csv</code></article>
+<article><strong>warm_test_base_features</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_test_base_features.csv</code></article>
+<article><strong>warm_test_log_features</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_test_log_features.csv</code></article>
+<article><strong>warm_test_labels</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_test_labels.csv</code></article>
+<article><strong>warm_test_metadata</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/warm_test_metadata.csv</code></article>
+<article><strong>cold_train_base_features</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_train_base_features.csv</code></article>
+<article><strong>cold_train_base_labels</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_train_base_labels.csv</code></article>
+<article><strong>cold_train_log_features</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_train_log_features.csv</code></article>
+<article><strong>cold_train_log_labels</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_train_log_labels.csv</code></article>
+<article><strong>cold_test_base_features</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_test_base_features.csv</code></article>
+<article><strong>cold_test_log_features</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_test_log_features.csv</code></article>
+<article><strong>cold_test_labels</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_test_labels.csv</code></article>
+<article><strong>cold_test_metadata</strong><code>experiments/track6/T6-E010_hedonic_artist_ho_log/data/cold_test_metadata.csv</code></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>7. 학습과 평가 흐름</h2>
+    <p class="note">모델이 정답 가격을 보는 시점과 보지 않는 시점을 분리해 기록했습니다.</p>
+    <div class="table-wrap"><table><thead><tr><th>순서</th><th>단계</th><th>사용 파일</th><th>설명</th></tr></thead><tbody><tr><td>1</td><td>원본 후보 데이터 로드</td><td>data/track6/track6_feature_candidates_name_corrected.csv</td><td>Track6 정제 후보 데이터에서 실험용 row를 다시 선별</td></tr><tr><td>2</td><td>학습 후보 필터링</td><td>원본 후보 데이터</td><td>is_training_candidate=true, 가격/작가/면적이 있는 row만 사용</td></tr><tr><td>3</td><td>피처 생성</td><td>필터링 데이터</td><td>area_cm2를 F형 호수표에 매칭해 estimated_ho 생성, ln_estimated_ho와 ln_price_krw 생성</td></tr><tr><td>4</td><td>Warm / Cold 분리</td><td>생성 피처 포함 데이터</td><td>Warm은 train에 같은 작가가 있는 평가 row, Cold는 train에 없는 작가 row</td></tr><tr><td>5</td><td>실험별 feature/label 파일 생성</td><td>data/*.csv</td><td>입력 feature와 정답 label을 분리 저장해 가격 누수 가능성을 줄임</td></tr><tr><td>6</td><td>모델 학습</td><td>train_features + train_labels</td><td>Ridge 기반 헤도닉 선형 회귀 학습. 작가명은 one-hot, 수치 피처는 표준화</td></tr><tr><td>7</td><td>예측</td><td>test_features</td><td>평가 feature만 모델에 넣어 예측값 생성. 이 단계에서는 정답 가격을 모델에 넣지 않음</td></tr><tr><td>8</td><td>결과 평가</td><td>predictions + test_labels</td><td>예측값과 정답 가격을 합쳐 median APE, p95 APE, Within-30/50 계산</td></tr></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>8. 전체 결과</h2>
+    <div class="table-wrap"><table><thead><tr><th>experiment_case</th><th>n</th><th>median_ape</th><th>p95_ape</th><th>mape</th><th>within_30</th><th>within_50</th><th>rmse_log</th></tr></thead><tbody><tr><td>cold_model_cold_test_base</td><td>3005</td><td>2.4777</td><td>13.7330</td><td>4.1035</td><td>0.0855</td><td>0.1381</td><td>1.5241</td></tr><tr><td>cold_model_cold_test_log</td><td>3005</td><td>0.5083</td><td>2.8076</td><td>0.9455</td><td>0.2722</td><td>0.4902</td><td>0.8191</td></tr><tr><td>cold_model_warm_test_base</td><td>2445</td><td>2.0209</td><td>11.5371</td><td>3.4465</td><td>0.1018</td><td>0.1575</td><td>1.4277</td></tr><tr><td>cold_model_warm_test_log</td><td>2445</td><td>0.5431</td><td>2.6801</td><td>0.8577</td><td>0.3076</td><td>0.4695</td><td>0.8938</td></tr><tr><td>warm_model_cold_test_base</td><td>3005</td><td>2.5484</td><td>15.4060</td><td>4.3351</td><td>0.0942</td><td>0.1521</td><td>1.6076</td></tr><tr><td>warm_model_cold_test_log</td><td>3005</td><td>0.4840</td><td>2.7899</td><td>0.8906</td><td>0.3098</td><td>0.5288</td><td>0.7964</td></tr><tr><td>warm_model_warm_test_base</td><td>2445</td><td>0.4372</td><td>2.2297</td><td>0.8496</td><td>0.3836</td><td>0.5403</td><td>2.5057</td></tr><tr><td>warm_model_warm_test_log</td><td>2445</td><td>0.1946</td><td>0.8654</td><td>0.3249</td><td>0.6777</td><td>0.8519</td><td>0.4174</td></tr></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>9. 핵심 해석</h2>
+    <div class="grid-2">
+      <div class="card">
+        <span>Warm ln 개선폭</span>
+        <strong>0.4372 → 0.1946</strong>
+        <p class="note">median APE 기준 0.2426 개선. 작가명 + ln호수 조합은 Warm에서 강한 baseline으로 볼 수 있음.</p>
+      </div>
+      <div class="card">
+        <span>Cold ln 개선폭</span>
+        <strong>2.4777 → 0.5083</strong>
+        <p class="note">median APE 기준 1.9694 개선. Cold에서도 원값보다 ln 변환이 훨씬 안정적임.</p>
+      </div>
+    </div>
+    <ul>
+      <li>Warm 최고 결과: <code>warm_model_warm_test_log</code>, median APE <strong>0.1946</strong></li>
+      <li>Cold 전용 log 결과: <code>cold_model_cold_test_log</code>, median APE <strong>0.5083</strong></li>
+      <li>Warm 모델을 Cold에 적용한 log 결과는 median APE <strong>0.4840</strong>로 낮지만, 신규 작가명은 미등록 처리되므로 운영 기준 Cold 전용 baseline을 별도로 유지하는 것이 안전함</li>
+      <li>Cold는 호수 단독으로는 한계가 크므로 재료, 지지체, 크기 구간, 작가 메타 피처 추가 실험이 필요함</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>10. Slice별 오차</h2>
+    <p class="note">대표 케이스인 Warm log와 Cold log의 호수 구간/가격 구간별 오차입니다.</p>
+    <h3>warm_model_warm_test_log</h3><table><thead><tr><th>slice_type</th><th>slice_value</th><th>n</th><th>median_ape</th><th>p95_ape</th><th>within_30</th><th>within_50</th></tr></thead><tbody><tr><td>ho_bucket</td><td>20-50</td><td>678</td><td>0.1688</td><td>0.9917</td><td>0.7345</td><td>0.8776</td></tr><tr><td>ho_bucket</td><td>5-20</td><td>930</td><td>0.1975</td><td>0.8517</td><td>0.6753</td><td>0.8430</td></tr><tr><td>ho_bucket</td><td>0-5</td><td>416</td><td>0.2035</td><td>0.8350</td><td>0.6250</td><td>0.8245</td></tr><tr><td>ho_bucket</td><td>50-100</td><td>322</td><td>0.2056</td><td>0.6245</td><td>0.6832</td><td>0.9006</td></tr><tr><td>ho_bucket</td><td>100+</td><td>99</td><td>0.2734</td><td>1.5999</td><td>0.5152</td><td>0.7172</td></tr><tr><td>price_bucket</td><td>3m_10m</td><td>829</td><td>0.1524</td><td>0.6900</td><td>0.7612</td><td>0.9144</td></tr><tr><td>price_bucket</td><td>1m_3m</td><td>752</td><td>0.1997</td><td>0.9234</td><td>0.6928</td><td>0.8444</td></tr><tr><td>price_bucket</td><td>10m_plus</td><td>459</td><td>0.2304</td><td>0.6840</td><td>0.6209</td><td>0.8453</td></tr><tr><td>price_bucket</td><td>under_1m</td><td>405</td><td>0.2741</td><td>1.2326</td><td>0.5432</td><td>0.7457</td></tr></tbody></table>
+<h3>cold_model_cold_test_log</h3><table><thead><tr><th>slice_type</th><th>slice_value</th><th>n</th><th>median_ape</th><th>p95_ape</th><th>within_30</th><th>within_50</th></tr></thead><tbody><tr><td>ho_bucket</td><td>0-5</td><td>649</td><td>0.3562</td><td>1.8491</td><td>0.3544</td><td>0.6071</td></tr><tr><td>ho_bucket</td><td>50-100</td><td>400</td><td>0.5049</td><td>2.2813</td><td>0.2800</td><td>0.4975</td></tr><tr><td>ho_bucket</td><td>20-50</td><td>674</td><td>0.5223</td><td>5.5098</td><td>0.2923</td><td>0.4763</td></tr><tr><td>ho_bucket</td><td>5-20</td><td>1141</td><td>0.5248</td><td>2.6727</td><td>0.2279</td><td>0.4601</td></tr><tr><td>ho_bucket</td><td>100+</td><td>141</td><td>0.7667</td><td>14.6133</td><td>0.1348</td><td>0.2411</td></tr><tr><td>price_bucket</td><td>3m_10m</td><td>989</td><td>0.4512</td><td>1.2973</td><td>0.3276</td><td>0.5763</td></tr><tr><td>price_bucket</td><td>10m_plus</td><td>427</td><td>0.5223</td><td>0.9250</td><td>0.2412</td><td>0.4684</td></tr><tr><td>price_bucket</td><td>1m_3m</td><td>933</td><td>0.5282</td><td>3.1286</td><td>0.2454</td><td>0.4684</td></tr><tr><td>price_bucket</td><td>under_1m</td><td>656</td><td>0.7122</td><td>7.9826</td><td>0.2470</td><td>0.4055</td></tr></tbody></table>
+  </section>
+
+  <section>
+    <h2>11. 결론</h2>
+    <ul>
+      <li><span class="badge ok">T6-H9 부분 채택</span> Warm에서는 작가명과 호수만으로 유의미한 예측 신호가 있음.</li>
+      <li><span class="badge ok">T6-H10 채택</span> ln 변환은 Warm/Cold 모두에서 원값보다 성능을 크게 개선함.</li>
+      <li><span class="badge warn">Cold 후속 필요</span> Cold는 호수 단독보다 추가 피처를 붙이는 실험이 필요함.</li>
+      <li><span class="badge warn">운영 주의</span> 가격은 입력값이 아니라 학습 정답/평가 라벨로만 사용해야 함.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>12. 재현 방법</h2>
+    <ul>
+      <li>실행 명령: <code>python3 experiments/track6/T6-E010_hedonic_artist_ho_log/scripts/run_experiment.py</code></li>
+      <li>실행 로그: <code>experiments/track6/T6-E010_hedonic_artist_ho_log/logs/run.log</code></li>
+      <li>결과 요약: <code>experiments/track6/T6-E010_hedonic_artist_ho_log/outputs/summary.md</code></li>
+      <li>전체 예측 결과: <code>experiments/track6/T6-E010_hedonic_artist_ho_log/outputs</code> 하위 <code>predictions_*.csv</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>부록. Markdown 일지 원문</h2>
+    <div class="markdown"># T6-E010 실험 일지
+
+- 실험명: 작가명 + 추정 호수 기반 헤도닉 선형 회귀
+- 목적: 작품 가격 예측에서 `작가명(한글)`과 `호수`만으로 유의미한 예측 신호가 있는지 확인
+- 추가 목적: `호수`와 `가격`을 ln 변환했을 때 예측 성능이 개선되는지 확인
+- 실행 스크립트: `experiments/track6/T6-E010_hedonic_artist_ho_log/scripts/run_experiment.py`
+- 원본 데이터: `data/track6/track6_feature_candidates_name_corrected.csv`
+- 생성 데이터 위치: `experiments/track6/T6-E010_hedonic_artist_ho_log/data/`
+- 결과 위치: `experiments/track6/T6-E010_hedonic_artist_ho_log/outputs/`
+- 로그 위치: `experiments/track6/T6-E010_hedonic_artist_ho_log/logs/`
+- HTML 일지: `experiments/track6/T6-E010_hedonic_artist_ho_log/experiment_log.html`
+
+## 1. 가설
+
+- T6-H9: 작가명(한글)과 호수만으로도 가격 예측에서 유의미한 결과를 볼 수 있다.
+- T6-H10: 호수와 가격을 ln 변환하면 원값을 쓰는 것보다 예측 결과가 개선될 것이다.
+
+## 2. 유의미함 기준
+
+- 1순위: `median APE`가 기준 모델보다 낮아지는지 확인
+- 2순위: `p95 APE`가 과도하게 커지지 않는지 확인
+- 3순위: `Within-30`, `Within-50` 비율이 높아지는지 확인
+- 4순위: Warm / Cold에서 같은 방향으로 개선되는지 분리 확인
+- 운영 판단: 사용자가 입력 가능한 값으로 재현 가능한지 확인
+
+## 3. 데이터 생성 기준
+
+- 전체 정제 후보 파일에서 `is_training_candidate = true`인 row만 사용
+- 가격, 작가명, 작가 key, 면적이 없는 row는 제외
+- 원본에 호수 컬럼이 없으므로 `area_cm2`를 F형 호수 면적표와 비교해 가장 가까운 호수로 변환
+- `ln_estimated_ho = ln(estimated_ho)`로 생성
+- `ln_price_krw = ln(price_krw)`로 생성
+
+## 4. Warm / Cold 기준
+
+- Warm test:
+  - 학습 데이터에 같은 작가가 남아 있는 작품
+  - 평가 대상 작가는 학습 데이터에 최소 5개 작품이 남도록 구성
+  - 1작가 1작품 평가 문제가 반복되지 않도록 작가당 최소 2개, 최대 3개 평가 row를 분리
+- Cold test:
+  - 학습 데이터에 한 번도 등장하지 않는 작가의 작품
+  - Cold 모델은 작가명을 입력 피처로 사용하지 않음
+
+## 5. 실험 방법
+
+- Warm 일반 실험:
+  - 학습 입력: `artist_name_ko`, `estimated_ho`
+  - 학습 정답: `price_krw`
+  - 평가: Warm test / Cold test 모두에 적용
+- Warm ln 변환 실험:
+  - 학습 입력: `artist_name_ko`, `ln_estimated_ho`
+  - 학습 정답: `ln_price_krw`
+  - 예측값은 다시 원화 가격으로 변환해 평가
+- Cold 일반 실험:
+  - 학습 입력: `estimated_ho`
+  - 학습 정답: `price_krw`
+  - 평가: Cold test / Warm test 모두에 적용
+- Cold ln 변환 실험:
+  - 학습 입력: `ln_estimated_ho`
+  - 학습 정답: `ln_price_krw`
+  - 예측값은 다시 원화 가격으로 변환해 평가
+
+## 6. 모델
+
+- 기본 모델: Ridge 기반 헤도닉 선형 회귀
+- 작가명은 one-hot encoding으로 처리
+- 수치형 피처는 표준화 후 학습
+- 이번 실험은 모델 성능 최적화가 아니라 `작가명 + 호수`, `ln 변환`의 기본 신호 확인이 목적
+
+## 7. 생성 파일
+
+- `warm_train_base_features.csv`
+- `warm_train_base_labels.csv`
+- `warm_train_log_features.csv`
+- `warm_train_log_labels.csv`
+- `warm_test_base_features.csv`
+- `warm_test_log_features.csv`
+- `warm_test_labels.csv`
+- `cold_train_base_features.csv`
+- `cold_train_base_labels.csv`
+- `cold_train_log_features.csv`
+- `cold_train_log_labels.csv`
+- `cold_test_base_features.csv`
+- `cold_test_log_features.csv`
+- `cold_test_labels.csv`
+
+## 8. 재현 방법
+
+```bash
+python3 experiments/track6/T6-E010_hedonic_artist_ho_log/scripts/run_experiment.py
+python3 scripts/track6/generate_experiment_log_html.py experiments/track6/T6-E010_hedonic_artist_ho_log
+```
+</div>
+  </section>
+</main>
+</body>
+</html>

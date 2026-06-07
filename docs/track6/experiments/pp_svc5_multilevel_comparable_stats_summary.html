@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-SVC5_Warm_Multilevel_Comparable_Stats_Summary</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#pp-svc5-warm-다층-비교군-통계-피처-실험">PP-SVC5 Warm 다층 비교군 통계 피처 실험</a>
+<a class="toc-level-2" href="#1.-실험-구성">1. 실험 구성</a>
+<a class="toc-level-2" href="#2.-test-결과-상위-후보">2. Test 결과 상위 후보</a>
+<a class="toc-level-2" href="#3.-validation-mape-기준-상위-후보">3. Validation MAPE 기준 상위 후보</a>
+<a class="toc-level-2" href="#4.-선택-후보">4. 선택 후보</a>
+<a class="toc-level-2" href="#5.-coverage-요약">5. Coverage 요약</a>
+<a class="toc-level-2" href="#6.-해석">6. 해석</a>
+<a class="toc-level-2" href="#7.-실행-결론">7. 실행 결론</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/pp_svc5_multilevel_comparable_stats_summary.md</code></div>
+      <h1 id="pp-svc5-warm-다층-비교군-통계-피처-실험">PP-SVC5 Warm 다층 비교군 통계 피처 실험</h1>
+<ul>
+<li>작성일: 2026-06-04 00:48</li>
+<li>목적: 비교군 통계를 하나만 고르는 기존 fallback 방식보다 여러 비교군 수준을 동시에 넣는 방식이 더 좋은지 확인</li>
+<li>대상: Warm Huber</li>
+<li>데이터 통제: train/validation/test split 고정</li>
+<li>누수 통제: train 비교군 통계는 5-fold 교차검증 방식, validation/test는 train-only 방식</li>
+</ul>
+<h2 id="1.-실험-구성">1. 실험 구성</h2>
+<ul>
+<li><code>baseline_huber</code>: 기존 Warm Huber 기준 피처만 사용</li>
+<li><code>fallback_numeric</code>: 기존 PP-SVC1 방식의 선택된 비교군 통계 사용</li>
+<li><code>multi_*_alpha001</code>: 다층 비교군 피처를 강한 정규화 Huber로 학습</li>
+<li><code>multi_default_median_n_alpha001</code>: 여러 비교군 수준의 중앙값/면적단가/표본 수를 동시에 사용</li>
+<li><code>multi_default_full_numeric_alpha001</code>: 여러 비교군 수준의 중앙값/분위값/범위/면적단가/표본 수를 동시에 사용</li>
+<li><code>multi_loose_median_n_alpha001</code>: 최소 표본 기준 완화</li>
+<li><code>multi_strict_median_n_alpha001</code>: 최소 표본 기준 강화</li>
+<li><code>multi_plus_fallback_alpha001</code>: 기존 fallback 통계와 다층 통계를 함께 사용</li>
+<li><code>blend_*_ppv8_*</code>: 새 비교군 후보와 기존 PP-V8 방어형 후보를 로그 가격 기준으로 결합</li>
+</ul>
+<h2 id="2.-test-결과-상위-후보">2. Test 결과 상위 후보</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">방식</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95_APE</th>
+<th class="align-right">RMSE_log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.60</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1362</td>
+<td class="align-right">0.2717</td>
+<td class="align-right">0.8329</td>
+<td class="align-right">0.4003</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.55</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1376</td>
+<td class="align-right">0.2706</td>
+<td class="align-right">0.8414</td>
+<td class="align-right">0.3987</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.65</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1382</td>
+<td class="align-right">0.2733</td>
+<td class="align-right">0.8432</td>
+<td class="align-right">0.4024</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.70</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1401</td>
+<td class="align-right">0.2751</td>
+<td class="align-right">0.8351</td>
+<td class="align-right">0.4047</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.50</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1402</td>
+<td class="align-right">0.2699</td>
+<td class="align-right">0.8472</td>
+<td class="align-right">0.3973</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">reference</td>
+<td class="align-right">0.1405</td>
+<td class="align-right">0.2748</td>
+<td class="align-right">0.8331</td>
+<td class="align-right">0.3996</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.85</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1425</td>
+<td class="align-right">0.2835</td>
+<td class="align-right">0.9259</td>
+<td class="align-right">0.4137</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.75</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1430</td>
+<td class="align-right">0.2774</td>
+<td class="align-right">0.8669</td>
+<td class="align-right">0.4074</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.80</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1430</td>
+<td class="align-right">0.2802</td>
+<td class="align-right">0.9075</td>
+<td class="align-right">0.4104</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.90</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1465</td>
+<td class="align-right">0.2872</td>
+<td class="align-right">0.9411</td>
+<td class="align-right">0.4174</td>
+</tr>
+<tr>
+<td class="align-left"><code>fallback_numeric</code></td>
+<td class="align-left">warm_huber</td>
+<td class="align-right">0.1528</td>
+<td class="align-right">0.2956</td>
+<td class="align-right">0.9694</td>
+<td class="align-right">0.4255</td>
+</tr>
+<tr>
+<td class="align-left"><code>pp_v8_compact_blend_mape_guarded</code></td>
+<td class="align-left">reference</td>
+<td class="align-right">0.1632</td>
+<td class="align-right">0.2816</td>
+<td class="align-right">0.9311</td>
+<td class="align-right">0.4028</td>
+</tr>
+<tr>
+<td class="align-left"><code>baseline_huber</code></td>
+<td class="align-left">warm_huber</td>
+<td class="align-right">0.2274</td>
+<td class="align-right">0.4952</td>
+<td class="align-right">2.0130</td>
+<td class="align-right">0.6081</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><code>multi_*</code> 직접 투입 후보는 수렴 불안정으로 비정상 예측값 발생</li>
+<li>세부 수치는 <code>outputs/metrics.csv</code>에 보존</li>
+<li>보고/의사결정 후보에서는 제외</li>
+</ul>
+<h2 id="3.-validation-mape-기준-상위-후보">3. Validation MAPE 기준 상위 후보</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">방식</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95_APE</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.75</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1273</td>
+<td class="align-right">0.2107</td>
+<td class="align-right">0.6234</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.70</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1285</td>
+<td class="align-right">0.2107</td>
+<td class="align-right">0.6541</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">reference</td>
+<td class="align-right">0.1305</td>
+<td class="align-right">0.2110</td>
+<td class="align-right">0.6580</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.80</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1249</td>
+<td class="align-right">0.2112</td>
+<td class="align-right">0.6252</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.65</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1367</td>
+<td class="align-right">0.2113</td>
+<td class="align-right">0.6445</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.85</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1200</td>
+<td class="align-right">0.2123</td>
+<td class="align-right">0.6419</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.60</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1362</td>
+<td class="align-right">0.2125</td>
+<td class="align-right">0.6613</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.90</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1200</td>
+<td class="align-right">0.2136</td>
+<td class="align-right">0.6424</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.55</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1372</td>
+<td class="align-right">0.2140</td>
+<td class="align-right">0.6760</td>
+</tr>
+<tr>
+<td class="align-left"><code>blend_fallback_numeric_ppv8_wsvc_0.50</code></td>
+<td class="align-left">weighted_blend_with_ppv8</td>
+<td class="align-right">0.1325</td>
+<td class="align-right">0.2159</td>
+<td class="align-right">0.6895</td>
+</tr>
+<tr>
+<td class="align-left"><code>fallback_numeric</code></td>
+<td class="align-left">warm_huber</td>
+<td class="align-right">0.1212</td>
+<td class="align-right">0.2170</td>
+<td class="align-right">0.6502</td>
+</tr>
+<tr>
+<td class="align-left"><code>pp_v8_compact_blend_mape_guarded</code></td>
+<td class="align-left">reference</td>
+<td class="align-right">0.1544</td>
+<td class="align-right">0.2544</td>
+<td class="align-right">0.8084</td>
+</tr>
+</tbody></table></div>
+<h2 id="4.-선택-후보">4. 선택 후보</h2>
+<ul>
+<li>선택 기준: validation MAPE with PP-V8 MdAPE guard</li>
+<li>선택 후보: <code>blend_fallback_numeric_ppv8_wsvc_0.75</code></li>
+<li>test MdAPE: <code>0.1430</code></li>
+<li>test MAPE: <code>0.2774</code></li>
+<li>test p95_APE: <code>0.8669</code></li>
+</ul>
+<h2 id="5.-coverage-요약">5. Coverage 요약</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">정책</th>
+<th class="align-left">비교군 수준</th>
+<th class="align-right">covered share</th>
+<th class="align-right">covered rows</th>
+<th class="align-right">median N</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">default</td>
+<td class="align-left"><code>artist_medium_support_size</code></td>
+<td class="align-right">0.407</td>
+<td class="align-right">247</td>
+<td class="align-right">8.0</td>
+</tr>
+<tr>
+<td class="align-left">default</td>
+<td class="align-left"><code>artist_size</code></td>
+<td class="align-right">0.514</td>
+<td class="align-right">312</td>
+<td class="align-right">9.0</td>
+</tr>
+<tr>
+<td class="align-left">default</td>
+<td class="align-left"><code>artist</code></td>
+<td class="align-right">1.000</td>
+<td class="align-right">607</td>
+<td class="align-right">13.0</td>
+</tr>
+<tr>
+<td class="align-left">default</td>
+<td class="align-left"><code>medium_support_size</code></td>
+<td class="align-right">0.909</td>
+<td class="align-right">552</td>
+<td class="align-right">983.0</td>
+</tr>
+<tr>
+<td class="align-left">default</td>
+<td class="align-left"><code>medium_category_support_size</code></td>
+<td class="align-right">0.909</td>
+<td class="align-right">552</td>
+<td class="align-right">983.0</td>
+</tr>
+<tr>
+<td class="align-left">default</td>
+<td class="align-left"><code>medium_size</code></td>
+<td class="align-right">0.970</td>
+<td class="align-right">589</td>
+<td class="align-right">1606.0</td>
+</tr>
+<tr>
+<td class="align-left">loose</td>
+<td class="align-left"><code>artist_medium_support_size</code></td>
+<td class="align-right">0.583</td>
+<td class="align-right">354</td>
+<td class="align-right">7.0</td>
+</tr>
+<tr>
+<td class="align-left">loose</td>
+<td class="align-left"><code>artist_size</code></td>
+<td class="align-right">0.713</td>
+<td class="align-right">433</td>
+<td class="align-right">7.0</td>
+</tr>
+<tr>
+<td class="align-left">loose</td>
+<td class="align-left"><code>artist</code></td>
+<td class="align-right">1.000</td>
+<td class="align-right">607</td>
+<td class="align-right">13.0</td>
+</tr>
+<tr>
+<td class="align-left">loose</td>
+<td class="align-left"><code>medium_support_size</code></td>
+<td class="align-right">0.949</td>
+<td class="align-right">576</td>
+<td class="align-right">937.4</td>
+</tr>
+<tr>
+<td class="align-left">loose</td>
+<td class="align-left"><code>medium_category_support_size</code></td>
+<td class="align-right">0.949</td>
+<td class="align-right">576</td>
+<td class="align-right">937.4</td>
+</tr>
+<tr>
+<td class="align-left">loose</td>
+<td class="align-left"><code>medium_size</code></td>
+<td class="align-right">0.977</td>
+<td class="align-right">593</td>
+<td class="align-right">1606.0</td>
+</tr>
+<tr>
+<td class="align-left">strict</td>
+<td class="align-left"><code>artist_medium_support_size</code></td>
+<td class="align-right">0.186</td>
+<td class="align-right">113</td>
+<td class="align-right">17.0</td>
+</tr>
+<tr>
+<td class="align-left">strict</td>
+<td class="align-left"><code>artist_size</code></td>
+<td class="align-right">0.250</td>
+<td class="align-right">152</td>
+<td class="align-right">17.0</td>
+</tr>
+<tr>
+<td class="align-left">strict</td>
+<td class="align-left"><code>artist</code></td>
+<td class="align-right">0.598</td>
+<td class="align-right">363</td>
+<td class="align-right">21.0</td>
+</tr>
+<tr>
+<td class="align-left">strict</td>
+<td class="align-left"><code>medium_support_size</code></td>
+<td class="align-right">0.871</td>
+<td class="align-right">529</td>
+<td class="align-right">1059.0</td>
+</tr>
+<tr>
+<td class="align-left">strict</td>
+<td class="align-left"><code>medium_category_support_size</code></td>
+<td class="align-right">0.871</td>
+<td class="align-right">529</td>
+<td class="align-right">1059.0</td>
+</tr>
+<tr>
+<td class="align-left">strict</td>
+<td class="align-left"><code>medium_size</code></td>
+<td class="align-right">0.957</td>
+<td class="align-right">581</td>
+<td class="align-right">1606.0</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-해석">6. 해석</h2>
+<ul>
+<li>다층 비교군 후보가 기존 <code>fallback_numeric</code>보다 좋아지면 Huber가 여러 비교군 기준을 조합해 가격 기준선을 더 잘 잡는다는 의미</li>
+<li>다층 비교군 후보가 약하면 현재 데이터에서는 가장 신뢰 가능한 비교군 하나를 고르는 fallback 방식이 더 안정적이라는 의미</li>
+<li>결합 후보가 기존 <code>PP-SVC3</code>보다 좋아지면 Warm 서비스 후보를 <code>PP-SVC6</code> 반복 holdout 검증으로 승격</li>
+<li>결합 후보가 기존 <code>PP-SVC3</code>보다 약하면 기존 <code>svc_numeric 70% + PP-V8 30%</code> 정책 유지</li>
+</ul>
+<h2 id="7.-실행-결론">7. 실행 결론</h2>
+<ul>
+<li>다층 비교군 원시 피처 직접 투입 방식은 보류</li>
+<li>이유: Huber가 비교군별 중앙값/분위값/표본 수의 강한 중복 구조에서 수렴 불안정</li>
+<li>정규화 강화 후에도 <code>multi_*</code> 후보의 test 오차가 비정상적으로 커짐</li>
+<li>해석: 비교군을 무조건 더 많이 쪼개서 넣는 방식은 현재 Warm Huber 구조와 맞지 않음</li>
+<li>안정 후보: 기존 fallback 비교군 통계 <code>fallback_numeric</code></li>
+<li>추가로 확인된 가능성: <code>fallback_numeric + PP-V8</code> 결합 비율 재조정</li>
+<li>test 기준 최상위 후보: <code>blend_fallback_numeric_ppv8_wsvc_0.60</code></li>
+<li>test MdAPE: <code>0.1362</code></li>
+<li>test MAPE: <code>0.2717</code></li>
+<li>test p95_APE: <code>0.8329</code></li>
+<li>기존 PP-SVC3 reference <code>blend_svcnum_ppv8_wsvc_0.70</code> 대비 test MdAPE/MAPE 소폭 개선</li>
+<li>단, validation 선택 후보는 <code>blend_fallback_numeric_ppv8_wsvc_0.75</code></li>
+<li>따라서 test 상위 후보를 바로 채택하지 않고 <code>PP-SVC6</code> 반복 holdout 검증 필요</li>
+</ul>
+    </main>
+  </div>
+</body>
+</html>

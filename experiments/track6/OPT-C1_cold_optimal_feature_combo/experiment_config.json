@@ -1,0 +1,115 @@
+{
+  "experiment_id": "OPT-C1",
+  "title": "Track6 OPT-C1 Cold 최적 피처 조합 후보 실험",
+  "purpose": "A1-D11 결과에서 Cold 성능이 좋았던 작품 변수 확장, 깊이/3D, 면적 x 지지체 교차항을 같은 기준으로 다시 비교한다.",
+  "description": "Cold-oriented optimal feature combination search after A1-D11 summary.",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "exp_dir": "experiments/track6/OPT-C1_cold_optimal_feature_combo",
+  "prompt_file": "experiments/track6/OPT-C1_cold_optimal_feature_combo/prompts/used_prompt.md",
+  "export_feature_columns": [
+    "ln_estimated_ho",
+    "width_cm",
+    "height_cm",
+    "log_area",
+    "aspect_ratio",
+    "medium_category",
+    "support_category",
+    "nant_material_idx",
+    "nant_tool",
+    "nant_support",
+    "artwork_year",
+    "artwork_age",
+    "artwork_type_final",
+    "artwork_type_final_major3",
+    "depth_cm",
+    "has_depth",
+    "is_3d_candidate",
+    "edition_class",
+    "is_edition",
+    "is_limited_edition",
+    "is_open_edition",
+    "is_unknown_edition",
+    "edition_info_available",
+    "collected_material_raw",
+    "collected_material_raw_bucket"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "width_cm",
+    "height_cm",
+    "log_area",
+    "aspect_ratio",
+    "artwork_year",
+    "artwork_age",
+    "depth_cm",
+    "has_depth",
+    "is_3d_candidate",
+    "is_edition",
+    "is_limited_edition",
+    "is_open_edition",
+    "is_unknown_edition",
+    "edition_info_available"
+  ],
+  "bucket_features": [
+    {
+      "source_col": "collected_material_raw",
+      "bucket_col": "collected_material_raw_bucket",
+      "top_n": 80,
+      "other_value": "other_raw_material",
+      "description": "수집 원문 재료명을 학습 데이터 빈도 기준으로 묶은 변수"
+    }
+  ],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "output_prefix": "log_area_x_nant_support",
+      "top_n": 8
+    }
+  ],
+  "variable_blocks": [
+    {
+      "name": "COLD1: A12 작품 정보 전체 확장",
+      "features": ["ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support", "artwork_year", "artwork_age", "artwork_type_final", "depth_cm", "has_depth", "is_3d_candidate", "edition_class", "is_edition", "is_limited_edition", "is_open_edition", "is_unknown_edition", "edition_info_available"],
+      "description": "A12 Cold 최고 후보를 재확인한다."
+    },
+    {
+      "name": "COLD2: A12 + 면적 x 지지체",
+      "features": ["ln_estimated_ho", "log_area", "nant_material_idx", "nant_tool", "nant_support", "artwork_year", "artwork_age", "artwork_type_final", "depth_cm", "has_depth", "is_3d_candidate", "edition_class", "is_edition", "is_limited_edition", "is_open_edition", "is_unknown_edition", "edition_info_available"],
+      "feature_prefixes": ["log_area_x_nant_support_"],
+      "description": "A12 후보에 D2에서 좋았던 면적 x 지지체 교차항을 추가한다."
+    },
+    {
+      "name": "COLD3: C9형 깊이/3D 포함 작품 피처",
+      "features": ["ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support", "artwork_year", "artwork_age", "artwork_type_final", "artwork_type_final_major3", "depth_cm", "has_depth", "is_3d_candidate"],
+      "description": "C9 Cold 후보에서 작가명을 제외한 작품 피처 조합이다."
+    },
+    {
+      "name": "COLD4: C9형 + 에디션",
+      "features": ["ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support", "artwork_year", "artwork_age", "artwork_type_final", "artwork_type_final_major3", "depth_cm", "has_depth", "is_3d_candidate", "edition_class", "is_edition", "is_limited_edition", "is_open_edition", "is_unknown_edition", "edition_info_available"],
+      "description": "C9형 피처에 에디션 정보를 추가한다."
+    },
+    {
+      "name": "COLD5: A9-6 단순 Cold 후보",
+      "features": ["log_area", "medium_category", "support_category"],
+      "description": "A9-6에서 Cold 후보였던 단순 작품 피처 조합이다."
+    },
+    {
+      "name": "COLD6: 원문 재료 묶음 + 크기 + 지지체",
+      "features": ["log_area", "width_cm", "height_cm", "collected_material_raw_bucket", "nant_support"],
+      "description": "A8-2/A9 계열에서 좋았던 원문 재료 묶음과 크기/지지체 조합을 Cold에서도 확인한다."
+    },
+    {
+      "name": "COLD7: A12 + 원문 재료 묶음",
+      "features": ["ln_estimated_ho", "log_area", "nant_material_idx", "nant_tool", "nant_support", "collected_material_raw_bucket", "artwork_year", "artwork_age", "artwork_type_final", "depth_cm", "has_depth", "is_3d_candidate", "edition_class", "is_edition", "is_limited_edition", "is_open_edition", "is_unknown_edition", "edition_info_available"],
+      "description": "A12 후보에 수집 원문 재료 묶음을 추가한다."
+    }
+  ],
+  "comment": {
+    "실험 목적": "A1-D11을 종합한 뒤 Cold 예측 정확도를 높일 수 있는 최적 피처 조합을 찾는다.",
+    "해석 중심": "Cold 결과를 중심으로 해석한다. 작가명은 사용하지 않는다.",
+    "판단 기준": "Cold MdAPE를 1순위로 보고, p95 APE와 Within-30이 악화되지 않는 조합을 우선한다.",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "공통 실행 코드": "scripts/track6/fixed_variable_experiment_runner.py"
+  }
+}

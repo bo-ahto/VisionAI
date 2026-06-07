@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T6-E013 결과 일지</title>
+  <style>
+    :root { --paper:#fffdf7; --ink:#1d251f; --line:#d8cdb8; --green:#27684a; --blue:#174f73; }
+    body { margin:0; color:var(--ink); background:linear-gradient(135deg,#efe7d7,#f8f5ec 48%,#e9f0e7); font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.62; }
+    main { max-width:1180px; margin:0 auto; padding:32px 22px 72px; }
+    header, section { background:rgba(255,253,247,.96); border:1px solid var(--line); border-radius:24px; padding:26px; margin-top:18px; box-shadow:0 12px 34px rgba(42,34,22,.08); }
+    h1 { margin:0; font-size:42px; letter-spacing:-.055em; }
+    h2 { margin:0 0 12px; font-size:22px; letter-spacing:-.03em; }
+    ul { margin:8px 0 0; padding-left:21px; }
+    code { background:#eee5d4; border-radius:7px; padding:2px 6px; overflow-wrap:anywhere; }
+    table { width:100%; border-collapse:collapse; background:var(--paper); min-width:980px; }
+    th,td { padding:11px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; font-size:13px; }
+    th { background:#eadfcd; }
+    .badge { display:inline-flex; padding:5px 9px; border-radius:999px; font-size:12px; font-weight:800; margin-right:6px; background:rgba(39,104,74,.14); color:var(--green); }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:16px; }
+    a { color:var(--blue); font-weight:800; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="badge">실행 완료</span>
+    <span class="badge">기본 피처 정의 상세 실험</span>
+    <h1>T6-E013 호수 표현 방식 비교</h1>
+    <p><strong>가설:</strong> 호수는 원값보다 로그값, 구간값, 대형 플래그 등으로 표현할 때 더 안정적일 수 있다.</p>
+    <p><strong>기본 피처 정의에 필요한 이유:</strong> 최종 기본 크기 피처를 어떤 표현으로 둘지 결정한다.</p>
+  </header>
+  <section>
+    <h2>1. 데이터와 split 검증</h2>
+    <ul>
+      <li>원본 데이터: <code>data/track6/track6_feature_candidates_name_corrected.csv</code></li>
+      <li>train: 28,204건 / 1,987명</li>
+      <li>warm_test: 2,445건 / 943명</li>
+      <li>cold_test: 3,005건 / 156명</li>
+      <li>Cold/train 작가 겹침: 0</li>
+      <li>Warm test 작가별 train 최소 작품 수: 5</li>
+      <li>Warm test 작가별 평가 최소 작품 수: 2</li>
+    </ul>
+  </section>
+  <section>
+    <h2>2. 사용 모델</h2>
+    <ul>
+      <li>모델: <code>Ridge 기반 Hedonic Linear Regression</code></li>
+      <li>구현: <code>sklearn Ridge(alpha=1.0)</code></li>
+      <li>목표값: <code>ln_price_krw</code></li>
+      <li>예측 후 처리: 예측한 로그 가격을 원화 가격으로 되돌린 뒤 실제 가격과 비교</li>
+      <li>이 단계에서는 모델을 고정하고 피처 차이만 비교함</li>
+    </ul>
+  </section>
+  <section>
+    <h2>3. 학습/테스트 피처와 결과</h2>
+    <div class="table-wrap"><table><thead><tr><th>variant</th><th>test_name</th><th>n</th><th>cat_features</th><th>num_features</th><th>median_ape</th><th>p95_ape</th><th>within_30</th><th>within_50</th><th>rmse_log</th></tr></thead><tbody><tr><td>ho_log</td><td>cold_test</td><td>3005</td><td>-</td><td>ln_estimated_ho</td><td>0.5083</td><td>2.8076</td><td>0.2722</td><td>0.4902</td><td>0.8191</td></tr><tr><td>ho_log_bucket_flags</td><td>cold_test</td><td>3005</td><td>ho_bucket</td><td>ln_estimated_ho, is_large_ho, is_extra_large_ho</td><td>0.5259</td><td>2.7463</td><td>0.2689</td><td>0.4839</td><td>0.8215</td></tr><tr><td>ho_bucket</td><td>cold_test</td><td>3005</td><td>ho_bucket</td><td>-</td><td>0.5414</td><td>2.7574</td><td>0.2629</td><td>0.4346</td><td>0.8706</td></tr><tr><td>ho_raw</td><td>cold_test</td><td>3005</td><td>-</td><td>estimated_ho</td><td>0.5670</td><td>4.9249</td><td>0.2905</td><td>0.4489</td><td>1.0209</td></tr><tr><td>large_flags</td><td>cold_test</td><td>3005</td><td>-</td><td>is_large_ho, is_extra_large_ho</td><td>0.5877</td><td>5.8279</td><td>0.2413</td><td>0.4359</td><td>0.9909</td></tr><tr><td>ho_log_bucket_flags</td><td>warm_test</td><td>2445</td><td>ho_bucket</td><td>ln_estimated_ho, is_large_ho, is_extra_large_ho</td><td>0.5306</td><td>2.6877</td><td>0.3055</td><td>0.4765</td><td>0.8875</td></tr><tr><td>ho_bucket</td><td>warm_test</td><td>2445</td><td>ho_bucket</td><td>-</td><td>0.5378</td><td>2.9153</td><td>0.2879</td><td>0.4630</td><td>0.9079</td></tr><tr><td>ho_raw</td><td>warm_test</td><td>2445</td><td>-</td><td>estimated_ho</td><td>0.5423</td><td>4.1302</td><td>0.2875</td><td>0.4597</td><td>1.0355</td></tr><tr><td>ho_log</td><td>warm_test</td><td>2445</td><td>-</td><td>ln_estimated_ho</td><td>0.5431</td><td>2.6801</td><td>0.3076</td><td>0.4695</td><td>0.8938</td></tr><tr><td>large_flags</td><td>warm_test</td><td>2445</td><td>-</td><td>is_large_ho, is_extra_large_ho</td><td>0.5936</td><td>4.1726</td><td>0.2524</td><td>0.4258</td><td>1.0306</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <h2>4. 결론</h2>
+    <ul>
+      <li>호수 표현은 Warm `ho_log_bucket_flags`, Cold `ho_log`가 가장 안정적임.</li>
+      <li>낮을수록 좋은 지표: median APE, p95 APE, RMSE(log)</li>
+      <li>높을수록 좋은 지표: Within-30, Within-50</li>
+      <li>상세 결과 파일: <code>experiments/track6/T6-E013_ho_representation_compare/outputs/metrics.csv</code></li>
+    </ul>
+  </section>
+  <section>
+    <h2>5. 재현 방법</h2>
+    <ul>
+      <li><code>python3 scripts/track6/run_basic_feature_definition_experiments.py</code></li>
+      <li>실험 폴더: <code>experiments/track6/T6-E013_ho_representation_compare</code></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

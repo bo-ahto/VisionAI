@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T6-E038 작품 변수 선정 실험 일지</title>
+  <style>
+    :root { --paper:#fffdf7; --ink:#1d251f; --line:#d8cdb8; --muted:#687268; --green:#27684a; --amber:#9b6124; --blue:#174f73; }
+    body { margin:0; color:var(--ink); background:linear-gradient(135deg,#efe7d7,#f8f5ec 48%,#e9f0e7); font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.62; }
+    main { max-width:1120px; margin:0 auto; padding:32px 22px 72px; }
+    header, section { background:rgba(255,253,247,.96); border:1px solid var(--line); border-radius:24px; padding:26px; margin-top:18px; box-shadow:0 12px 34px rgba(42,34,22,.08); }
+    h1 { margin:0; font-size:42px; letter-spacing:-.055em; }
+    h2 { margin:0 0 12px; font-size:22px; letter-spacing:-.03em; }
+    h3 { margin:18px 0 8px; font-size:17px; }
+    ul { margin:8px 0 0; padding-left:21px; }
+    code { background:#eee5d4; border-radius:7px; padding:2px 6px; overflow-wrap:anywhere; }
+    table { width:100%; border-collapse:collapse; background:var(--paper); }
+    th,td { padding:11px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; font-size:14px; }
+    th { background:#eadfcd; }
+    .badge { display:inline-flex; padding:5px 9px; border-radius:999px; font-size:12px; font-weight:800; margin-right:6px; }
+    .planned { background:rgba(155,97,36,.14); color:var(--amber); }
+    .goal { background:rgba(39,104,74,.14); color:var(--green); }
+    .note { color:var(--muted); }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:16px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="badge planned">예정</span>
+    <span class="badge goal">작품 변수 선정</span>
+    <span class="badge goal">T6-G5 운영 가능 피처 선정</span>
+    <h1>T6-E038 작품 변수 선정 실험 일지</h1>
+    <ul>
+      <li>목적: 작품 관련 피처가 가격 예측에 유의미한지 검증</li>
+      <li>형식: 실험별 폴더 기준 일지</li>
+      <li>상태: 실험 계획 작성 완료, 실행 전</li>
+    </ul>
+  </header>
+
+  <section>
+    <h2>1. 실험 목적과 판단 기준</h2>
+    <ul>
+      <li>목적 1: 작품 변수 후보가 가격 예측에 도움이 되는지 확인</li>
+      <li>목적 2: 원값과 <code>ln</code> 변환값 중 어떤 표현이 더 안정적인지 확인</li>
+      <li>목적 3: Warm / Cold에서 사용할 작품 피처 조합을 따로 정해야 하는지 확인</li>
+      <li>유의미함 기준 1: 같은 피처셋 안에서 <code>median APE</code>가 낮아짐</li>
+      <li>유의미함 기준 2: 같은 피처셋 안에서 <code>p95 APE</code>가 낮아짐</li>
+      <li>유의미함 기준 3: <code>Within-30</code>, <code>Within-50</code>이 높아짐</li>
+      <li>가설 관리는 아래 <code>작품 변수 선정 가설 목록</code> 표에서 통합 관리</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>1-1. 작품 변수 선정 가설 목록</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>가설 ID</th>
+            <th>가설</th>
+            <th>확인할 변수</th>
+            <th>실험 방법</th>
+            <th>판단 기준</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>H1</td>
+            <td>호수는 작가명 없이도 가격대 구분에 도움이 된다.</td>
+            <td><code>ln_estimated_ho</code></td>
+            <td>중앙값 기준 모델과 호수 only 모델 비교</td>
+            <td>호수 only 모델의 <code>median APE</code>가 더 낮으면 유지</td>
+          </tr>
+          <tr>
+            <td>H2</td>
+            <td>실제 크기 정보는 호수만 사용할 때보다 가격 예측을 개선한다.</td>
+            <td><code>width_cm</code>, <code>height_cm</code>, <code>log_area</code>, <code>aspect_ratio</code></td>
+            <td>기준 모델에 실제 크기 묶음 추가</td>
+            <td>Warm / Cold 중 하나 이상에서 <code>median APE</code> 하락</td>
+          </tr>
+          <tr>
+            <td>H3</td>
+            <td>재료 정보는 기준 모델보다 가격 예측을 개선한다.</td>
+            <td><code>nant_material_idx</code>, <code>nant_tool</code></td>
+            <td>기준 모델에 재료 묶음 추가</td>
+            <td><code>median APE</code> 또는 <code>p95 APE</code> 개선</td>
+          </tr>
+          <tr>
+            <td>H4</td>
+            <td>지지체 정보는 기준 모델 + 재료 피처보다 가격 예측을 개선한다.</td>
+            <td><code>support_category</code>, <code>nant_support</code></td>
+            <td>기준 모델 + 재료 피처에 지지체 묶음 추가</td>
+            <td>성능 개선 시 유지</td>
+          </tr>
+          <tr>
+            <td>H5</td>
+            <td>깊이/3D 정보는 2D와 3D 작품을 구분해 예측하는 데 도움이 된다.</td>
+            <td><code>depth_cm</code>, <code>has_depth</code>, <code>is_3d_candidate</code></td>
+            <td>깊이/3D 피처 추가 전후를 비교하고 2D/3D slice별 오차 확인</td>
+            <td>3D slice의 <code>median APE</code> 또는 <code>p95 APE</code> 개선</td>
+          </tr>
+          <tr>
+            <td>H6</td>
+            <td>재료와 크기 조합 피처는 재료와 크기를 따로 넣는 것보다 가격 예측을 개선한다.</td>
+            <td><code>nant_material_support_bucket</code>, <code>nant_material_idx_x_ho_bucket</code>, 재료 x 호수 구간</td>
+            <td>단독 피처 모델과 조합 피처 모델 비교</td>
+            <td>조합 피처 모델의 성능이 더 좋으면 유지</td>
+          </tr>
+          <tr>
+            <td>H7</td>
+            <td>단계적 피처 선택 방식은 전체 조합 탐색 없이도 기준 모델보다 좋은 피처 조합을 찾을 수 있다.</td>
+            <td>전체 작품 피처 후보</td>
+            <td>단일 추가 → 그룹 추가 → 제거 실험으로 후보 축소</td>
+            <td>최종 선택 조합이 기준 모델보다 성능 개선</td>
+          </tr>
+          <tr>
+            <td>H8</td>
+            <td>Warm과 Cold는 동일한 작품 피처 조합보다 각각 다른 피처 조합을 사용할 때 성능이 좋아질 수 있다.</td>
+            <td>Warm / Cold 후보 피처 조합</td>
+            <td>같은 피처 조합 모델과 Warm / Cold 분리 피처 모델 비교</td>
+            <td>분리 피처 모델의 각 성능이 더 좋으면 채택</td>
+          </tr>
+          <tr>
+            <td>H9</td>
+            <td>크기 대표값 중심 피처는 전체 크기 피처를 모두 쓰는 방식보다 예측 오차를 줄일 수 있다.</td>
+            <td><code>ln_estimated_ho</code> vs <code>width_cm</code>, <code>height_cm</code>, <code>log_area</code>, <code>aspect_ratio</code></td>
+            <td>대표 크기 피처 모델과 전체 크기 피처 모델 비교</td>
+            <td>대표값 모델이 성능 유지 또는 <code>p95 APE</code> 개선</td>
+          </tr>
+          <tr>
+            <td>H10</td>
+            <td>원본 재료 문구에는 표준 재료 분류가 담지 못한 가격 차이 설명 정보가 있을 수 있다.</td>
+            <td><code>collected_material_raw</code>, <code>nant_material_idx</code>, <code>nant_tool</code></td>
+            <td>표준 재료 피처 모델과 원본 재료 키워드 추가 모델 비교</td>
+            <td>원본 키워드 추가 시 <code>median APE</code> 또는 특정 재료 slice 오차 개선</td>
+          </tr>
+          <tr>
+            <td>H11</td>
+            <td>작품 제목에는 에디션, 세트, 포스터 등 가격 차이를 설명하는 정보가 있을 수 있다.</td>
+            <td><code>title_raw</code></td>
+            <td>제목 키워드 flag 생성 후 비교</td>
+            <td>전체 성능 또는 해당 키워드 slice 오차 개선</td>
+          </tr>
+          <tr>
+            <td>H12</td>
+            <td>극단적인 가로세로 비율 작품은 일반 작품과 가격 예측 오차 패턴이 다를 수 있다.</td>
+            <td><code>aspect_ratio</code>, <code>is_extreme_aspect_ratio</code></td>
+            <td>비율 원값 모델과 극단 비율 flag 추가 모델 비교</td>
+            <td>극단 비율 slice의 <code>p95 APE</code> 감소</td>
+          </tr>
+          <tr>
+            <td>H13</td>
+            <td>0에 가까운 깊이와 실제 3D에 가까운 깊이는 가격 차이를 다르게 설명할 수 있다.</td>
+            <td><code>depth_cm</code>, <code>has_depth</code>, <code>is_3d_candidate</code>, <code>depth_bucket</code></td>
+            <td><code>has_depth</code>만 사용한 모델과 depth 구간화 모델 비교</td>
+            <td>3D/depth slice 오차 개선</td>
+          </tr>
+          <tr>
+            <td>H14</td>
+            <td>난트 재료 분류 번호가 너무 세분화되어 있으면 그룹화했을 때 더 안정적인 가격 예측이 가능할 수 있다.</td>
+            <td><code>nant_material_idx</code>, <code>nant_support</code>, <code>nant_tool</code>, <code>nant_material_group</code></td>
+            <td>원본 idx 모델과 상위 그룹화 모델 비교</td>
+            <td>Cold <code>p95 APE</code> 감소 또는 성능 유지</td>
+          </tr>
+          <tr>
+            <td>H15</td>
+            <td>가격 예측에는 면적보다 긴 변 또는 짧은 변 정보가 더 도움이 될 수 있다.</td>
+            <td><code>width_cm</code>, <code>height_cm</code>, <code>log_area</code>, <code>max_side_cm</code>, <code>min_side_cm</code></td>
+            <td>면적 중심 모델과 긴 변/짧은 변 모델 비교</td>
+            <td>전체 또는 대형 작품 slice 오차 개선</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>1-2. 가설별 실험 일지</h2>
+    <ul>
+      <li>가설별 상세 일지는 별도 폴더로 분리해 관리한다.</li>
+      <li>목록 페이지: <code>docs/track6/journals/artwork_feature_selection.html</code></li>
+      <li><code>T6-E039</code>: H1 호수 기준 신호 확인</li>
+      <li><code>T6-E040</code>: H2 실제 크기 정보 추가 실험</li>
+      <li><code>T6-E041</code>: H3 재료 정보 추가 실험</li>
+      <li><code>T6-E042</code>: H4 지지체 정보 추가 실험</li>
+      <li><code>T6-E043</code>: H5 깊이/3D 정보 추가 실험</li>
+      <li><code>T6-E044</code>: H6 재료 x 크기 조합 피처 실험</li>
+      <li><code>T6-E045</code>: H7 단계적 피처 선택 절차 실험</li>
+      <li><code>T6-E046</code>: H8 Warm/Cold 작품 피처 분리 실험</li>
+      <li><code>T6-E047</code>: H9 크기 대표값 vs 전체 크기 피처 실험</li>
+      <li><code>T6-E048</code>: H10 원본 재료 문구 키워드 추가 실험</li>
+      <li><code>T6-E049</code>: H11 작품 제목 키워드 피처 실험</li>
+      <li><code>T6-E050</code>: H12 극단 가로세로 비율 플래그 실험</li>
+      <li><code>T6-E051</code>: H13 깊이 구간화 피처 실험</li>
+      <li><code>T6-E052</code>: H14 난트 재료 분류 그룹화 실험</li>
+      <li><code>T6-E053</code>: H15 긴 변/짧은 변 크기 피처 실험</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>1-3. 정제 데이터 기준 변수 목록</h2>
+    <ul>
+      <li>기준 파일: <code>data/track6/track6_feature_candidates_name_corrected.csv</code></li>
+      <li>전체 컬럼: 48개</li>
+      <li>작가 관련 후보 변수: 11개</li>
+      <li>그림 관련 후보 변수: 15개</li>
+      <li>가격 정답/출처/관리 컬럼은 학습 입력에서 제외</li>
+      <li>상세 목록 파일: <code>outputs/variable_inventory.csv</code></li>
+    </ul>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>우선 후보</th>
+            <th>보류/검증용</th>
+            <th>학습 제외</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>작가 관련 변수</td>
+            <td><code>artist_name_ko</code>, <code>artist_name_standardized</code>, <code>artist_works_log</code>, <code>artist_meta_nationality</code>, <code>artist_meta_birth_year</code>, <code>artist_meta_total_works</code>, <code>artist_meta_for_sale_works</code>, <code>artist_meta_followers</code>, <code>artist_meta_career_stage</code>, <code>artist_meta_is_p1</code>, <code>artist_meta_has_international</code></td>
+            <td><code>artist_key</code>, <code>artist_name_ko_orig</code>, <code>is_homonym</code>, <code>artist_entity_suffix</code>, <code>artist_meta_nationality_ko</code>, <code>artist_meta_for_sale_ratio</code>, <code>artist_meta_career_age</code></td>
+            <td><code>artist_meta_source</code></td>
+          </tr>
+          <tr>
+            <td>작품 관련 변수</td>
+            <td><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>has_depth</code>, <code>is_3d_candidate</code>, <code>nant_material_idx</code>, <code>nant_tool</code>, <code>support_category</code>, <code>nant_material_support_bucket</code>, <code>is_extreme_aspect_ratio</code>, <code>nant_support</code>, <code>nant_tool</code>, <code>nant_material_idx</code></td>
+            <td><code>title_raw</code>, <code>collected_material_raw</code>, <code>nant_material_note</code></td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>가격/누수 위험 변수</td>
+            <td>-</td>
+            <td>-</td>
+            <td><code>price_krw</code>, <code>ln_price_krw</code>, <code>is_high_price_candidate</code></td>
+          </tr>
+          <tr>
+            <td>출처/관리 변수</td>
+            <td>-</td>
+            <td><code>is_training_candidate</code>, <code>cleaning_exclude_reasons</code>, <code>nant_material_match_method</code></td>
+            <td><code>track4_source</code>, <code>track4_source_row_index</code>, <code>source_artwork_id</code>, <code>artwork_url</code>, <code>image_url</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. 실험 방법</h2>
+    <ul>
+      <li>기준 모델은 T6-E017의 같은 피처셋 기준 결과를 바탕으로 압축한다.</li>
+      <li>Warm 기준 모델: <code>Huber</code>, <code>Linear Regression</code>, <code>Ridge</code></li>
+      <li>Cold 기준 모델: <code>Huber</code>, <code>Quantile / LAD</code>, <code>LightGBM</code></li>
+      <li>Warm과 Cold는 난이도와 사용 가능한 피처가 다르므로 후보 모델군을 분리한다.</li>
+      <li>각 모델은 같은 데이터와 같은 피처셋 기준으로 반복 적용한다.</li>
+      <li>Warm 기준 모델은 <code>artist_name_ko + ln_estimated_ho</code>를 고정 조건으로 둔다.</li>
+      <li>Cold 기준 모델은 <code>ln_estimated_ho</code>를 고정 조건으로 둔다.</li>
+      <li><code>artist_name_ko</code>는 작품 피처 실험 대상이 아니라 Warm 기준 조건이다.</li>
+      <li>재료, 지지체, 크기 파생값, 3D 피처는 가설별 실험 일지에서 하나씩 검증한다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 가설별 실행 공통 규칙</h2>
+    <ul>
+      <li>기준 원천 파일: <code>data/track6/track6_feature_candidates_name_corrected.csv</code></li>
+      <li>학습 입력과 가격 라벨은 분리해서 저장한다.</li>
+      <li>가격 라벨은 학습과 평가 단계에서만 결합한다.</li>
+      <li>Warm 평가와 Cold 평가는 합치지 않고 따로 기록한다.</li>
+      <li>Warm의 <code>artist_name_ko</code>는 기준 조건이며, 작품 피처 채택 판단 대상은 아니다.</li>
+      <li>Cold에서는 작가명 없이 작품 피처의 효과를 확인한다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4. 결과에 기록할 내용</h2>
+    <ul>
+      <li>기록 지표: <code>median APE</code></li>
+      <li>기록 지표: <code>p95 APE</code></li>
+      <li>기록 지표: <code>Within-30</code></li>
+      <li>기록 지표: <code>Within-50</code></li>
+      <li>기록 지표: slice별 오차</li>
+      <li>기록 지표: Warm / Cold 각각의 성능</li>
+      <li>기록 지표: 기준 모델 대비 개선 여부</li>
+      <li>기록 지표: 운영 입력 가능 여부</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5. 다음 단계</h2>
+    <ul>
+      <li>1단계: 실험별 데이터 파일 생성</li>
+      <li>2단계: 같은 피처셋 안에서 모델 후보 반복 실행</li>
+      <li>3단계: <code>outputs/metrics.csv</code> 저장</li>
+      <li>4단계: <code>outputs/predictions.csv</code> 저장</li>
+      <li>5단계: <code>outputs/slice_metrics.csv</code> 저장</li>
+      <li>6단계: HTML 일지에 실제 결과 업데이트</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

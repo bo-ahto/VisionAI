@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 OPT-C2 Cold 활동량/인지도 상호작용 최적화 실험</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 OPT-C2 Cold 활동량/인지도 상호작용 최적화 실험</h1>
+    <ul>
+      <li>목적: A~J 실험에서 Cold 성능이 좋았던 작품 기본 피처, 활동량/인지도, 면적/호수 상호작용을 결합해 신규 작가 예측 성능의 최대치를 확인한다.</li>
+      <li>실험 ID: <code>OPT-C2</code></li>
+      <li>Warm 최고: <code>C2-6: C2-5 + 기본 작가 프로필/전시</code> / <code>Huber</code> / MdAPE 0.3096</li>
+      <li>Cold 최고: <code>C2-4: C2-2 + 활동량/인지도 x 호수</code> / <code>LightGBM</code> / MdAPE 0.4579</li>
+      <li>생성일: <code>2026-05-28T06:06:10</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/train_features.csv</code><br><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_warm_features.csv</code><br><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_cold_features.csv</code><br><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>ln_estimated_ho, width_cm, height_cm, log_area, aspect_ratio, artwork_year, artwork_age, depth_cm, has_depth, is_3d_candidate, is_edition, is_limited_edition, is_open_edition, is_unknown_edition, edition_info_available, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_meta_birth_year_is_missing, artist_meta_career_stage_is_missing, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing, artist_meta_nationality_is_missing, artist_exhibition_solo_count_is_missing, artist_exhibition_group_count_is_missing, artist_exhibition_fair_count_is_missing, total_works_x_log_area, followers_x_log_area, for_sale_works_x_log_area, for_sale_works_x_ln_ho, followers_x_ln_ho, total_works_x_ln_ho</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>A~J 결과 기반 Cold 최고 피처/모델 후보를 좁힌다.</td></tr><tr><td>해석 중심</td><td>Cold MdAPE를 1순위로 보되 p95 APE가 크게 커지면 운영 후보에서 제외한다.</td></tr><tr><td>비교 기준</td><td>기존 최고권인 G6/J4/J5 계열을 결합해 추가 개선 가능성을 확인한다.</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>공통 실행 코드</td><td>scripts/track6/fixed_variable_experiment_runner.py</td></tr><tr><td>purpose</td><td>A~J 실험에서 Cold 성능이 좋았던 작품 기본 피처, 활동량/인지도, 면적/호수 상호작용을 결합해 신규 작가 예측 성능의 최대치를 확인한다.</td></tr><tr><td>summary</td><td>Warm 최고는 C2-6: C2-5 + 기본 작가 프로필/전시 + Huber(MdAPE 0.3096), Cold 최고는 C2-4: C2-2 + 활동량/인지도 x 호수 + LightGBM(MdAPE 0.4579)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>C2-1: 작품 기본 피처 + 활동량 + 결측</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing</code> · G6/J 계열에서 강했던 활동량/인지도 조합을 재확인한다.</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4273</td><td>1.0305</td><td>0.4818</td><td>2.9173</td><td>0.3460</td><td>0.5107</td><td>0.8027</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4484</td><td>1.0113</td><td>0.5449</td><td>3.1927</td><td>0.2949</td><td>0.4580</td><td>0.8730</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4483</td><td>1.0114</td><td>0.5446</td><td>3.1928</td><td>0.2965</td><td>0.4580</td><td>0.8732</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4602</td><td>0.9656</td><td>0.5169</td><td>3.1963</td><td>0.2630</td><td>0.4860</td><td>1.1092</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4639</td><td>0.9623</td><td>0.4941</td><td>2.9681</td><td>0.2891</td><td>0.5053</td><td>1.0769</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.5542</td><td>0.8776</td><td>0.4756</td><td>2.9964</td><td>0.3091</td><td>0.5402</td><td>1.1869</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>C2-2: C2-1 + 정보량</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing</code> · 시장 노출 정보에 메타 정보량을 더하면 Cold 오차가 줄어드는지 확인한다.</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4188</td><td>1.0381</td><td>0.4836</td><td>2.9293</td><td>0.3229</td><td>0.5074</td><td>0.8155</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4366</td><td>1.0221</td><td>0.5421</td><td>3.2784</td><td>0.2982</td><td>0.4646</td><td>0.9042</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4366</td><td>1.0221</td><td>0.5413</td><td>3.2727</td><td>0.2998</td><td>0.4646</td><td>0.9042</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4592</td><td>0.9665</td><td>0.5117</td><td>3.1862</td><td>0.2720</td><td>0.4866</td><td>1.1028</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4614</td><td>0.9645</td><td>0.4930</td><td>2.9941</td><td>0.2891</td><td>0.5121</td><td>1.0723</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.5510</td><td>0.8807</td><td>0.4754</td><td>2.9884</td><td>0.2869</td><td>0.5302</td><td>1.1971</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>C2-3: C2-2 + 활동량/인지도 x 면적</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, log_area, nant_material_idx, nant_tool, nant_support, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing, total_works_x_log_area, followers_x_log_area, for_sale_works_x_log_area</code> · J5에서 강했던 활동량/인지도와 면적 상호작용을 작품 기본 피처에 결합한다.</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.5357</td><td>0.9279</td><td>0.4732</td><td>2.6698</td><td>0.3773</td><td>0.5255</td><td>0.7673</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.5270</td><td>0.9365</td><td>0.5040</td><td>2.6429</td><td>0.3278</td><td>0.4959</td><td>0.8021</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.5270</td><td>0.9366</td><td>0.5041</td><td>2.6430</td><td>0.3295</td><td>0.4959</td><td>0.8021</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.5128</td><td>0.9174</td><td>0.5001</td><td>3.3269</td><td>0.2853</td><td>0.4998</td><td>1.1397</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.5198</td><td>0.9107</td><td>0.4797</td><td>3.1057</td><td>0.3082</td><td>0.5208</td><td>1.1085</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.5634</td><td>0.8685</td><td>0.4604</td><td>2.9683</td><td>0.3136</td><td>0.5357</td><td>1.1721</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>C2-4: C2-2 + 활동량/인지도 x 호수</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, log_area, nant_material_idx, nant_tool, nant_support, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing, total_works_x_ln_ho, followers_x_ln_ho, for_sale_works_x_ln_ho</code> · J4에서 강했던 활동량/인지도와 호수 상호작용을 작품 기본 피처에 결합한다.</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.5362</td><td>0.9273</td><td>0.4715</td><td>2.6886</td><td>0.3740</td><td>0.5222</td><td>0.7686</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.5253</td><td>0.9382</td><td>0.5023</td><td>2.7105</td><td>0.3328</td><td>0.4992</td><td>0.8054</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.5252</td><td>0.9383</td><td>0.5012</td><td>2.7065</td><td>0.3311</td><td>0.4992</td><td>0.8055</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.5151</td><td>0.9152</td><td>0.4915</td><td>3.2743</td><td>0.2801</td><td>0.5050</td><td>1.1382</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.5184</td><td>0.9121</td><td>0.4809</td><td>3.1114</td><td>0.2998</td><td>0.5195</td><td>1.1113</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.5673</td><td>0.8645</td><td>0.4579</td><td>2.7983</td><td>0.3085</td><td>0.5347</td><td>1.1697</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>C2-5: C2-2 + 면적/호수 상호작용 전체</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, log_area, nant_material_idx, nant_tool, nant_support, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing, total_works_x_log_area, followers_x_log_area, for_sale_works_x_log_area, total_works_x_ln_ho, followers_x_ln_ho, for_sale_works_x_ln_ho</code> · 활동량/인지도와 크기 상호작용을 모두 넣었을 때 대표 오차와 큰 오차가 개선되는지 확인한다.</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.5390</td><td>0.9246</td><td>0.4750</td><td>2.6999</td><td>0.3674</td><td>0.5272</td><td>0.7609</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.5309</td><td>0.9327</td><td>0.5065</td><td>2.6168</td><td>0.3245</td><td>0.4975</td><td>0.7994</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.5305</td><td>0.9330</td><td>0.5019</td><td>2.6229</td><td>0.3245</td><td>0.4975</td><td>0.7995</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.5118</td><td>0.9183</td><td>0.5010</td><td>3.3164</td><td>0.2914</td><td>0.4989</td><td>1.1429</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.5185</td><td>0.9120</td><td>0.4822</td><td>3.1187</td><td>0.2998</td><td>0.5198</td><td>1.1105</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.5554</td><td>0.8763</td><td>0.4645</td><td>2.8631</td><td>0.3030</td><td>0.5418</td><td>1.2105</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>C2-6: C2-5 + 기본 작가 프로필/전시</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, log_area, nant_material_idx, nant_tool, nant_support, artist_meta_birth_year, artist_meta_career_stage, artist_meta_nationality, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_exhibition_total_count, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_birth_year_is_missing, artist_meta_career_stage_is_missing, artist_meta_nationality_is_missing, artist_exhibition_solo_count_is_missing, artist_exhibition_group_count_is_missing, artist_exhibition_fair_count_is_missing, artist_meta_total_works_is_missing, artist_meta_for_sale_works_is_missing, artist_meta_followers_is_missing, artist_meta_is_p1_is_missing, total_works_x_log_area, followers_x_log_area, for_sale_works_x_log_area, total_works_x_ln_ho, followers_x_ln_ho, for_sale_works_x_ln_ho</code> · Cold에서 전체 작가 메타까지 붙였을 때 개선인지 과적합인지 확인한다.</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.7091</td><td>0.7345</td><td>0.3096</td><td>1.8892</td><td>0.4811</td><td>0.6606</td><td>0.6059</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.7249</td><td>0.7142</td><td>0.3505</td><td>1.7519</td><td>0.4415</td><td>0.6376</td><td>0.5823</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.7205</td><td>0.7199</td><td>0.3528</td><td>1.7530</td><td>0.4382</td><td>0.6310</td><td>0.5910</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3104</td><td>1.0914</td><td>0.5768</td><td>8.6778</td><td>0.2694</td><td>0.4414</td><td>2.0442</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.5594</td><td>0.8724</td><td>0.4584</td><td>3.7071</td><td>0.3214</td><td>0.5369</td><td>1.4321</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.5544</td><td>0.8773</td><td>0.4870</td><td>4.3048</td><td>0.3114</td><td>0.5102</td><td>1.4146</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/data/test_cold_labels.csv</code></li><li><code>numeric_numeric_interaction_mapping</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/outputs/numeric_numeric_interaction_mapping.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/OPT-C2_cold_activity_interaction_refinement/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track6 Warm / Cold 모델 후보 확정 근거와 고도화 계획</title>
+  <style>
+    :root {
+      --bg: #f5efe3;
+      --panel: #fffdf7;
+      --ink: #17231c;
+      --muted: #677065;
+      --line: #d5c4aa;
+      --warm: #2f6f55;
+      --cold: #234d78;
+      --risk: #9b4b2f;
+      --chip: #efe6d4;
+      --warn: #f6eadc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(47, 111, 85, 0.14), transparent 32rem),
+        radial-gradient(circle at top right, rgba(35, 77, 120, 0.12), transparent 30rem),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      line-height: 1.65;
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 34px 24px 64px; }
+    h1 { margin: 0 0 14px; font-size: 42px; line-height: 1.15; letter-spacing: -0.04em; }
+    h2 { margin: 0 0 18px; font-size: 24px; letter-spacing: -0.03em; }
+    h3 { margin: 24px 0 10px; font-size: 18px; }
+    p { margin: 0 0 10px; }
+    ul { margin: 6px 0 0; padding-left: 20px; }
+    li { margin: 3px 0; }
+    code {
+      background: var(--chip);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+    .hero, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 12px 36px rgba(68, 50, 28, 0.06);
+    }
+    .hero { padding: 30px; margin-bottom: 22px; }
+    .card { padding: 24px; margin-bottom: 22px; }
+    .meta { color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background: var(--chip);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .warm { border-top: 7px solid var(--warm); }
+    .cold { border-top: 7px solid var(--cold); }
+    .metric-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+    .metric {
+      background: #f8f2e7;
+      border-radius: 16px;
+      padding: 12px;
+      min-height: 86px;
+    }
+    .metric b { display: block; font-size: 22px; margin-top: 4px; }
+    .metric span { color: var(--muted); font-size: 13px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; background: var(--panel); overflow: hidden; border-radius: 14px; margin-top: 10px; }
+    th, td { border: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; }
+    th { background: #e6d8c2; font-weight: 800; }
+    td ul { margin-top: 0; }
+    .callout {
+      border-radius: 18px;
+      padding: 16px 18px;
+      background: var(--warn);
+      border: 1px solid #e1c39f;
+      margin-top: 14px;
+    }
+    .process { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .step {
+      background: #f8f2e7;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .step strong { display: block; margin-bottom: 6px; }
+    .badge-warm { color: var(--warm); }
+    .badge-cold { color: var(--cold); }
+    .risk { color: var(--risk); font-weight: 800; }
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    @media (max-width: 900px) {
+      h1 { font-size: 32px; }
+      .metric-grid, .process, .two-col { grid-template-columns: 1fr; }
+      main { padding: 22px 14px 44px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <h1>Track6 Warm / Cold 모델 후보 확정 근거와 고도화 계획</h1>
+    <ul>
+      <li>목적: Track6 모델 후보, 선택 근거, 해석 방법, 후처리 계획 정리</li>
+      <li>용도: 보고 및 후속 실험 기준 문서</li>
+    </ul>
+    <div class="meta">
+      <span class="chip">기준 데이터: Track6 고정 split</span>
+      <span class="chip">판단 지표: MdAPE / p95_APE / Within_30 / RMSE_log / R2 / composite_score</span>
+      <span class="chip">결론 성격: 운영 1차 후보</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Warm / Cold 적용 기준</h2>
+    <table>
+      <thead>
+        <tr><th>구분</th><th>적용 조건</th><th>사용 모델</th><th>운영 주의점</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Warm</td>
+          <td><ul><li>입력 작가명이 학습 작가 목록에 있음</li><li>작가명 기반 가격대 학습 가능</li></ul></td>
+          <td><code>Huber</code></td>
+          <td><ul><li>작가명 매칭 오류 주의</li><li>동명이인 가능 시 저신뢰 처리</li></ul></td>
+        </tr>
+        <tr>
+          <td>Cold</td>
+          <td><ul><li>입력 작가명이 학습 작가 목록에 없음</li><li>작가명 효과를 직접 사용할 수 없음</li></ul></td>
+          <td><code>CatBoost</code></td>
+          <td><ul><li>단일 가격만 제시하기 어려움</li><li>가격 범위와 신뢰도 문구 필요</li></ul></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card warm">
+    <h2><span class="badge-warm">Warm</span> 모델 후보</h2>
+    <ul>
+      <li>모델: <code>Huber</code></li>
+      <li>피처: <code>artist_name_ko</code>, <code>width_cm</code>, <code>height_cm</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>artist_works_log</code></li>
+      <li>실험 근거: <code>WM1-F3: F1 + 작가 학습 작품 수</code></li>
+    </ul>
+    <div class="metric-grid">
+      <div class="metric"><span>종합 점수</span><b>98.2730</b></div>
+      <div class="metric"><span>MdAPE</span><b>0.1562</b></div>
+      <div class="metric"><span>Within_30</span><b>0.7364</b></div>
+      <div class="metric"><span>p95_APE</span><b>1.0548</b></div>
+      <div class="metric"><span>RMSE_log</span><b>0.4128</b></div>
+      <div class="metric"><span>R2</span><b>0.9081</b></div>
+    </div>
+
+    <h3>Warm 선택 근거</h3>
+    <table>
+      <thead>
+        <tr><th>확인 단계</th><th>실험 결과</th><th>판단</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>작품 크기 단독 확인</td>
+          <td><ul><li>A1 크기 단독 Warm MdAPE: <strong>0.5052</strong></li><li>최종 Warm MdAPE: <strong>0.1562</strong></li><li>크기 단독은 최종 후보보다 대표 오차가 약 3.2배 큼</li></ul></td>
+          <td><ul><li>크기는 필요함</li><li>단독으로는 부족함</li></ul></td>
+        </tr>
+        <tr>
+          <td>작가명 효과 확인</td>
+          <td><ul><li>WM1 상위 조합은 모두 <code>artist_name_ko</code> 포함</li><li>작가명 + 전체 크기 Huber MdAPE: <strong>0.1566</strong></li><li>R2: <strong>0.9080</strong></li></ul></td>
+          <td><ul><li>Warm에는 작가명 유지</li><li>작가별 기본 가격대 반영 가능</li></ul></td>
+        </tr>
+        <tr>
+          <td>작가명 + 실제 크기 확인</td>
+          <td><ul><li>피처: <code>artist_name_ko</code> + <code>width_cm</code> + <code>height_cm</code> + <code>log_area</code> + <code>aspect_ratio</code></li><li>MdAPE: <strong>0.1566</strong></li><li>Within_30: <strong>0.7315</strong></li></ul></td>
+          <td><ul><li>작가명만보다 크기 결합이 안정적</li><li>실제 크기 묶음 유지</li></ul></td>
+        </tr>
+        <tr>
+          <td>작가 학습 작품 수 확인</td>
+          <td><ul><li><code>artist_works_log</code> 추가 후 MdAPE: <strong>0.1562</strong></li><li>Within_30: <strong>0.7364</strong></li><li>WM1 종합 점수 1위</li></ul></td>
+          <td><ul><li>직접 가격 영향은 작음</li><li>신뢰도/안정성 보조 피처로 유지</li></ul></td>
+        </tr>
+        <tr>
+          <td>모델군 비교</td>
+          <td><ul><li>WM1 종합 점수 1~5위 모두 Huber</li><li>Linear/Ridge보다 MdAPE와 Within_30 균형 우수</li></ul></td>
+          <td><ul><li>Warm 1차 모델은 Huber</li></ul></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Warm Huber가 피처를 쓰는 방식</h3>
+    <ul>
+      <li>Huber는 선형 회귀 계열 모델</li>
+      <li>예측 구조: 기준값 + 피처별 계수의 합</li>
+      <li>일반 선형 회귀보다 큰 이상치에 덜 흔들리도록 학습</li>
+      <li>미술품처럼 가격 이상치가 많은 데이터에 적합</li>
+    </ul>
+
+    <h3>Warm Huber 계수 해석</h3>
+    <table>
+      <thead>
+        <tr><th>피처</th><th>계수</th><th>해석</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>log_area</code></td><td><strong>+0.7385</strong></td><td><ul><li>가격 상승 방향</li><li>숫자형 피처 중 영향 가장 큼</li><li>면적이 클수록 예측 로그가격 상승</li></ul></td></tr>
+        <tr><td><code>width_cm</code></td><td><strong>+0.1119</strong></td><td><ul><li>가격 상승 방향</li><li>가로 크기 증가 효과 반영</li></ul></td></tr>
+        <tr><td><code>height_cm</code></td><td><strong>+0.0808</strong></td><td><ul><li>가격 상승 방향</li><li>세로 크기 증가 효과 반영</li></ul></td></tr>
+        <tr><td><code>aspect_ratio</code></td><td><strong>+0.0260</strong></td><td><ul><li>가격 상승 방향</li><li>면적보다 영향 작음</li><li>형태 비율 보조 피처</li></ul></td></tr>
+        <tr><td><code>artist_works_log</code></td><td><strong>+0.0003</strong></td><td><ul><li>계수 기준 직접 영향 거의 없음</li><li>주요 계수 해석 대상 아님</li><li>성능 비교와 신뢰도 판단용으로만 유지</li></ul></td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <ul>
+        <li><code>coef</code>가 0에 가까운 피처: 가격 직접 영향 근거로 미사용</li>
+        <li>작가명 계수: 작가별 가격대 차이 확인용</li>
+        <li>학습 작품 수가 적은 작가: 과적합 가능성 주의</li>
+        <li>이번 Huber 계수 산출: 수렴 경고 존재</li>
+        <li>계수 활용 범위: 방향성 점검용</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card cold">
+    <h2><span class="badge-cold">Cold</span> 모델 후보</h2>
+    <ul>
+      <li>모델: <code>CatBoost</code></li>
+      <li>피처: <code>ln_estimated_ho</code>, <code>nant_material_idx</code>, <code>nant_tool</code>, <code>nant_support</code>, <code>artist_meta_total_works</code>, <code>artist_meta_for_sale_works</code>, <code>artist_meta_followers</code>, <code>artist_meta_is_p1</code></li>
+      <li>실험 근거: <code>CM1-F2: 작품 기본 피처 + 활동량/인지도</code></li>
+    </ul>
+    <div class="metric-grid">
+      <div class="metric"><span>종합 점수</span><b>94.0240</b></div>
+      <div class="metric"><span>MdAPE</span><b>0.4488</b></div>
+      <div class="metric"><span>Within_30</span><b>0.3304</b></div>
+      <div class="metric"><span>p95_APE</span><b>2.9885</b></div>
+      <div class="metric"><span>RMSE_log</span><b>0.8797</b></div>
+      <div class="metric"><span>R2</span><b>0.5519</b></div>
+    </div>
+
+    <h3>Cold 선택 근거</h3>
+    <table>
+      <thead>
+        <tr><th>확인 단계</th><th>실험 결과</th><th>판단</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>작품 기본 피처 확인</td>
+          <td><ul><li>CM1-F1 최고 후보: Quantile-LAD</li><li>MdAPE: <strong>0.5097</strong></li><li>Within_30: <strong>0.2633</strong></li><li>R2: <strong>0.4213</strong></li></ul></td>
+          <td><ul><li>작가명 없이도 기본 신호 존재</li><li>오차가 커서 단독 후보로는 부족</li></ul></td>
+        </tr>
+        <tr>
+          <td>작가 활동량/인지도 추가</td>
+          <td><ul><li>CM1-F2 CatBoost MdAPE: <strong>0.4488</strong></li><li>Within_30: <strong>0.3304</strong></li><li>R2: <strong>0.5519</strong></li><li>CM1-F1보다 개선</li></ul></td>
+          <td><ul><li>활동량/인지도 피처 유지</li><li>Cold 핵심 개선 요인</li></ul></td>
+        </tr>
+        <tr>
+          <td>정보량/결측 피처 확인</td>
+          <td><ul><li>CM1-F3 MdAPE: <strong>0.4741</strong> 이상</li><li>R2와 RMSE_log는 일부 개선</li><li>대표 오차는 CM1-F2보다 불리</li></ul></td>
+          <td><ul><li>최종 입력 피처보다는 신뢰도 판단 후보</li></ul></td>
+        </tr>
+        <tr>
+          <td>상호작용 피처 확인</td>
+          <td><ul><li>CM1-F5 p95_APE: <strong>2.9012</strong></li><li>CM1-F2 p95_APE: <strong>2.9885</strong></li><li>p95는 개선됐지만 MdAPE는 <strong>0.4666</strong>으로 악화</li></ul></td>
+          <td><ul><li>큰 오차 방어 후보</li><li>1차 모델에는 미포함</li></ul></td>
+        </tr>
+        <tr>
+          <td>모델군 비교</td>
+          <td><ul><li>CatBoost MdAPE: <strong>0.4488</strong></li><li>LightGBM MdAPE: <strong>0.4621</strong></li><li>XGBoost MdAPE: <strong>0.4661</strong></li><li>Quantile-LAD MdAPE: <strong>0.4920</strong></li></ul></td>
+          <td><ul><li>Cold 1차 모델은 CatBoost</li></ul></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Cold CatBoost가 피처를 쓰는 방식</h3>
+    <ul>
+      <li>CatBoost는 트리 부스팅 계열 모델</li>
+      <li>여러 개의 작은 의사결정 트리를 쌓아 오차를 줄임</li>
+      <li>범주형 피처와 비선형 관계 처리에 강점</li>
+      <li>Cold처럼 작가명 없이 작품 정보와 작가 메타를 함께 써야 하는 상황에 적합</li>
+    </ul>
+
+    <h3>Cold CatBoost 피처 중요도</h3>
+    <table>
+      <thead>
+        <tr><th>순위</th><th>피처</th><th>중요도</th><th>해석</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><code>artist_meta_total_works</code></td><td><strong>39.7632</strong></td><td><ul><li>전체 예측에서 가장 많이 사용</li><li>작가 활동량/노출량 신호</li></ul></td></tr>
+        <tr><td>2</td><td><code>ln_estimated_ho</code></td><td><strong>35.7919</strong></td><td><ul><li>작품 크기 대표값</li><li>Cold 기본 가격대 판단 핵심</li></ul></td></tr>
+        <tr><td>3</td><td><code>artist_meta_followers</code></td><td><strong>11.8141</strong></td><td><ul><li>플랫폼 인지도 신호</li></ul></td></tr>
+        <tr><td>4</td><td><code>artist_meta_for_sale_works</code></td><td><strong>4.3076</strong></td><td><ul><li>판매 노출량 신호</li></ul></td></tr>
+        <tr><td>5</td><td><code>nant_material_idx</code></td><td><strong>3.2902</strong></td><td><ul><li>재료별 가격 차이 보조 설명</li></ul></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Cold CatBoost SHAP 해석</h3>
+    <table>
+      <thead>
+        <tr><th>피처</th><th>평균 절대 SHAP</th><th>평균 방향</th><th>해석</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>ln_estimated_ho</code></td><td><strong>0.7776</strong></td><td>상승</td><td><ul><li>개별 예측에서도 가장 큰 가격 변동 요인</li></ul></td></tr>
+        <tr><td><code>artist_meta_for_sale_works</code></td><td><strong>0.1552</strong></td><td>상승</td><td><ul><li>판매 중 작품 수가 가격을 올리는 방향으로 작동</li></ul></td></tr>
+        <tr><td><code>artist_meta_total_works</code></td><td><strong>0.0985</strong></td><td>하락</td><td><ul><li>중요도는 높음</li><li>방향은 구간별로 다름</li><li>단순히 많을수록 비싸다는 뜻은 아님</li></ul></td></tr>
+        <tr><td><code>artist_meta_followers</code></td><td><strong>0.0764</strong></td><td>하락</td><td><ul><li>중요 피처</li><li>작품 조건에 따라 방향 달라짐</li></ul></td></tr>
+        <tr><td><code>nant_material_idx</code></td><td><strong>0.0422</strong></td><td>상승</td><td><ul><li>재료 번호의 보조 설명력 확인</li></ul></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Cold 개별 예측 설명 예시</h3>
+    <table>
+      <thead>
+        <tr><th>작품 ID</th><th>예측/실제</th><th>APE</th><th>가격 상승 요인</th><th>가격 하락 요인</th><th>해석</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>114</code></td>
+          <td><ul><li>예측: 약 443만</li><li>실제: 약 491만</li></ul></td>
+          <td><strong>0.099</strong></td>
+          <td><ul><li><code>ln_estimated_ho</code></li><li><code>nant_tool_아크릴</code></li><li><code>nant_support_종이</code></li></ul></td>
+          <td><ul><li><code>artist_meta_for_sale_works</code></li><li><code>nant_material_idx</code></li><li><code>artist_meta_total_works</code></li></ul></td>
+          <td><ul><li>비교적 잘 맞은 사례</li><li>크기와 재료/지지체가 가격 상승 요인</li><li>일부 메타 피처가 낮추는 방향으로 보정</li></ul></td>
+        </tr>
+        <tr>
+          <td><code>465</code></td>
+          <td><ul><li>예측: 약 1,351만</li><li>실제: 약 37만</li></ul></td>
+          <td><strong>35.527</strong></td>
+          <td><ul><li><code>ln_estimated_ho</code></li><li><code>artist_meta_followers</code></li><li><code>artist_meta_total_works</code></li></ul></td>
+          <td><ul><li><code>artist_meta_for_sale_works</code></li><li><code>nant_tool_아크릴</code></li><li><code>nant_material_idx</code></li></ul></td>
+          <td><ul><li>큰 오차 사례</li><li>크기와 메타 피처가 가격을 과하게 올림</li><li>Cold 신뢰도 경고 필요</li></ul></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <ul>
+        <li>해석 리포트: <code>../../../experiments/track6/FINAL_model_interpretability/outputs/interpretability_report.html</code></li>
+        <li>Warm 계수: <code>warm_huber_coefficients.csv</code></li>
+        <li>Cold 중요도: <code>cold_catboost_feature_importance.csv</code></li>
+        <li>Cold SHAP: <code>cold_catboost_shap_summary.csv</code></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Warm / Cold 결론 비교</h2>
+    <table>
+      <thead>
+        <tr><th>구분</th><th>1차 후보</th><th>핵심 피처</th><th>대표 성능</th><th>운영 해석</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Warm</td>
+          <td><code>Huber</code></td>
+          <td><ul><li>작가명</li><li>실제 크기</li><li>작가 학습 작품 수</li></ul></td>
+          <td><ul><li>MdAPE 약 <strong>15.6%</strong></li><li>Within_30 약 <strong>73.6%</strong></li></ul></td>
+          <td><ul><li>서비스 적용 가능성 높음</li><li>작가명 매칭 품질 관리 필요</li></ul></td>
+        </tr>
+        <tr>
+          <td>Cold</td>
+          <td><code>CatBoost</code></td>
+          <td><ul><li>작품 기본 피처</li><li>작가 활동량</li><li>판매 노출량</li><li>플랫폼 인지도</li></ul></td>
+          <td><ul><li>MdAPE 약 <strong>44.9%</strong></li><li>Within_30 약 <strong>33.0%</strong></li></ul></td>
+          <td><ul><li>단일 가격만 제공하기에는 위험</li><li>가격 범위와 신뢰도 문구 필수</li></ul></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>후처리 고도화 계획</h2>
+    <div class="process">
+      <div class="step">
+        <strong>1. 가격 범위 제공</strong>
+        <ul><li>validation 오차 분포 사용</li><li>Warm / Cold 별도 범위 계산</li></ul>
+      </div>
+      <div class="step">
+        <strong>2. 신뢰도 점수</strong>
+        <ul><li>작가 학습 작품 수 반영</li><li>메타 정보 보유량 반영</li><li>극단 크기 여부 반영</li></ul>
+      </div>
+      <div class="step">
+        <strong>3. 위험 구간 경고</strong>
+        <ul><li>학습 작품 수 부족</li><li>메타 결측</li><li>대형 작품</li><li>NANT 분류 불명확</li></ul>
+      </div>
+      <div class="step">
+        <strong>4. 예측값 보정</strong>
+        <ul><li>가격대별 반복 편향 확인</li><li>작가 이력 구간별 보정</li><li>test에는 마지막에만 적용</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="two-col">
+    <article class="card">
+      <h2>추가 수집 우선순위</h2>
+      <h3>작가 경력 정보</h3>
+      <ul>
+        <li>개인전 수</li>
+        <li>단체전 수</li>
+        <li>아트페어 참여 수</li>
+        <li>주요 기관 전시 여부</li>
+        <li>수상 / 레지던시 이력</li>
+      </ul>
+      <h3>시장 노출 정보</h3>
+      <ul>
+        <li>플랫폼 등록 작품 수</li>
+        <li>판매 중 작품 수</li>
+        <li>팔로워 수</li>
+        <li>검색량</li>
+        <li>언론/비평 기사 수</li>
+        <li>갤러리 소속 여부</li>
+      </ul>
+      <ul class="risk">
+        <li>사용자 직접 입력 불가 정보: 모델 입력 신중 검토</li>
+        <li>내부 작가 DB 자동 매칭 가능 정보: 피처 후보로 검토</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <h2>후속 실험</h2>
+      <ul>
+        <li>Warm 가격 범위 보정 실험</li>
+        <li>Cold 가격 범위 보정 실험</li>
+        <li>Cold 저위험/고위험 라우팅 실험</li>
+        <li>외부 작가 DB 추가 후 Cold 재검증</li>
+        <li>Warm 저이력 작가 fallback 실험</li>
+      </ul>
+      <div class="callout">
+        <ul>
+          <li>다음 단계는 모델을 계속 바꾸는 작업이 아님</li>
+          <li>선택된 후보 모델의 예측값을 어떻게 보여줄지 정하는 작업</li>
+          <li>신뢰도를 낮춰야 하는 조건을 정의하는 작업</li>
+        </ul>
+      </div>
+    </article>
+  </section>
+</main>
+</body>
+</html>

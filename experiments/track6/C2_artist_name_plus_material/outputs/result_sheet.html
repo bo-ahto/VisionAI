@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 C2 작가명 + 재료 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 C2 작가명 + 재료 실험 결과</h1>
+    <ul>
+      <li>목적: 작가명을 넣은 뒤에도 재료 정보가 가격 예측 성능을 추가로 개선하는지 확인</li>
+      <li>실험 ID: <code>C2</code></li>
+      <li>Warm 최고: <code>작가명 + NANT 재료 번호 + 도구명</code> / <code>Huber</code> / MdAPE 0.4209</li>
+      <li>Cold 최고: <code>작가명 + NANT 재료 번호</code> / <code>Quantile-LAD</code> / MdAPE 0.6999</li>
+      <li>생성일: <code>2026-05-26T16:26:06</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/C2_artist_name_plus_material/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/C2_artist_name_plus_material/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/C2_artist_name_plus_material/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/C2_artist_name_plus_material/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/C2_artist_name_plus_material/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/C2_artist_name_plus_material/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/C2_artist_name_plus_material/data/train_features.csv</code><br><code>experiments/track6/C2_artist_name_plus_material/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/C2_artist_name_plus_material/data/test_warm_features.csv</code><br><code>experiments/track6/C2_artist_name_plus_material/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/C2_artist_name_plus_material/data/test_cold_features.csv</code><br><code>experiments/track6/C2_artist_name_plus_material/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/C2_artist_name_plus_material/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/C2_artist_name_plus_material/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>없음</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>작가명만으로 설명되는 가격 효과를 기준으로 두고, 재료 정보가 추가 예측력을 주는지 확인한다.</td></tr><tr><td>실험군</td><td>Group C: 작가명 + 작품 변수</td></tr><tr><td>기준선</td><td>B1 기준: artist_name_ko only</td></tr><tr><td>학습 피처</td><td>artist_name_ko에 재료 변수 medium_category, collected_material_raw_bucket, nant_material_idx, nant_tool을 하나씩 또는 묶음으로 추가</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>해석 중심</td><td>C2는 작가명이 학습에 있는 Warm 상황에서 의미가 크므로 Warm 결과를 중심으로 판단한다.</td></tr><tr><td>Cold 해석 주의</td><td>Cold는 신규 작가명이라 artist_name_ko가 학습에 없는 카테고리로 처리되므로 참고값으로만 본다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE를 확인한다.</td></tr><tr><td>결론 기준</td><td>B1 기준선보다 Warm MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 재료 정보의 추가 설명력이 있다고 판단한다.</td></tr><tr><td>purpose</td><td>작가명을 넣은 뒤에도 재료 정보가 가격 예측 성능을 추가로 개선하는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 작가명 + NANT 재료 번호 + 도구명 + Huber(MdAPE 0.4209), Cold 최고는 작가명 + NANT 재료 번호 + Quantile-LAD(MdAPE 0.6999)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>B1 기준: 작가명 only</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko</code> · 작가명만 사용한 기준선</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.6119</td><td>0.8483</td><td>0.4352</td><td>2.8612</td><td>0.3707</td><td>0.5667</td><td>0.8487</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6356</td><td>0.8220</td><td>0.4397</td><td>2.5593</td><td>0.3427</td><td>0.5387</td><td>0.8012</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6357</td><td>0.8219</td><td>0.4579</td><td>2.4806</td><td>0.3213</td><td>0.5338</td><td>0.8104</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0002</td><td>1.3144</td><td>0.7298</td><td>8.7851</td><td>0.2020</td><td>0.3346</td><td>1.6681</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0181</td><td>1.3261</td><td>0.7101</td><td>7.0575</td><td>0.2110</td><td>0.3379</td><td>1.3791</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0041</td><td>1.3169</td><td>0.7018</td><td>7.8420</td><td>0.2065</td><td>0.3417</td><td>1.5074</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + 수집 재료 대분류</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, medium_category</code> · 작가명을 통제한 뒤 수집 재료 대분류 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.6120</td><td>0.8482</td><td>0.4321</td><td>2.8930</td><td>0.3641</td><td>0.5733</td><td>0.8471</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6384</td><td>0.8188</td><td>0.4397</td><td>2.5594</td><td>0.3542</td><td>0.5387</td><td>0.7969</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6380</td><td>0.8193</td><td>0.4638</td><td>2.4833</td><td>0.3262</td><td>0.5338</td><td>0.8058</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0257</td><td>1.3310</td><td>0.7342</td><td>8.9429</td><td>0.1836</td><td>0.3366</td><td>1.6843</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0152</td><td>1.3243</td><td>0.7117</td><td>6.7736</td><td>0.2062</td><td>0.3411</td><td>1.3547</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0013</td><td>1.3151</td><td>0.7131</td><td>7.5654</td><td>0.2081</td><td>0.3369</td><td>1.4740</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + 수집 재료 원문 묶음</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, collected_material_raw_bucket</code> · 작가명을 통제한 뒤 원문 재료 상위 묶음 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.5989</td><td>0.8624</td><td>0.4264</td><td>2.9646</td><td>0.3591</td><td>0.5700</td><td>0.8834</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6270</td><td>0.8316</td><td>0.4453</td><td>2.4566</td><td>0.3427</td><td>0.5354</td><td>0.8209</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6316</td><td>0.8265</td><td>0.4535</td><td>2.4744</td><td>0.3147</td><td>0.5420</td><td>0.8222</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0297</td><td>1.3337</td><td>0.7265</td><td>8.6679</td><td>0.1930</td><td>0.3324</td><td>1.6454</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0203</td><td>1.3009</td><td>0.7077</td><td>6.5708</td><td>0.2020</td><td>0.3272</td><td>1.3390</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0530</td><td>1.2790</td><td>0.7025</td><td>7.3959</td><td>0.2133</td><td>0.3375</td><td>1.4089</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + NANT 재료 번호</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, nant_material_idx</code> · 작가명을 통제한 뒤 NANT 재료 번호 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.6094</td><td>0.8511</td><td>0.4209</td><td>2.9166</td><td>0.3756</td><td>0.5684</td><td>0.8452</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6380</td><td>0.8193</td><td>0.4351</td><td>2.4721</td><td>0.3509</td><td>0.5486</td><td>0.7968</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6389</td><td>0.8183</td><td>0.4546</td><td>2.4988</td><td>0.3328</td><td>0.5272</td><td>0.8021</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0916</td><td>1.3731</td><td>0.7584</td><td>9.7156</td><td>0.1691</td><td>0.3030</td><td>1.8104</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0202</td><td>1.3009</td><td>0.6999</td><td>6.9710</td><td>0.2033</td><td>0.3508</td><td>1.3542</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0321</td><td>1.2930</td><td>0.7010</td><td>7.9387</td><td>0.2010</td><td>0.3366</td><td>1.4942</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + NANT 재료 도구명</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, nant_tool</code> · 작가명을 통제한 뒤 NANT 재료 도구명 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.6114</td><td>0.8488</td><td>0.4282</td><td>2.9130</td><td>0.3591</td><td>0.5601</td><td>0.8446</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6349</td><td>0.8228</td><td>0.4525</td><td>2.4731</td><td>0.3493</td><td>0.5305</td><td>0.8002</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6369</td><td>0.8205</td><td>0.4785</td><td>2.4908</td><td>0.3196</td><td>0.5206</td><td>0.8060</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0313</td><td>1.3347</td><td>0.7488</td><td>9.4287</td><td>0.1846</td><td>0.3391</td><td>1.7453</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0094</td><td>1.3081</td><td>0.7125</td><td>6.9755</td><td>0.2023</td><td>0.3301</td><td>1.3666</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0227</td><td>1.2993</td><td>0.7153</td><td>7.7111</td><td>0.1914</td><td>0.3366</td><td>1.4821</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + NANT 재료 번호 + 도구명</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, nant_material_idx, nant_tool</code> · 작가명을 통제한 뒤 NANT 재료 표현 묶음 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.6093</td><td>0.8511</td><td>0.4209</td><td>2.9163</td><td>0.3756</td><td>0.5667</td><td>0.8452</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6380</td><td>0.8193</td><td>0.4351</td><td>2.4721</td><td>0.3509</td><td>0.5486</td><td>0.7968</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6389</td><td>0.8183</td><td>0.4546</td><td>2.4992</td><td>0.3328</td><td>0.5272</td><td>0.8021</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0917</td><td>1.3732</td><td>0.7586</td><td>9.7217</td><td>0.1691</td><td>0.3030</td><td>1.8115</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0192</td><td>1.3016</td><td>0.7025</td><td>6.9333</td><td>0.2001</td><td>0.3424</td><td>1.3525</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0366</td><td>1.2900</td><td>0.7038</td><td>7.7106</td><td>0.1997</td><td>0.3349</td><td>1.4804</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/C2_artist_name_plus_material/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/C2_artist_name_plus_material/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/C2_artist_name_plus_material/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/C2_artist_name_plus_material/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/C2_artist_name_plus_material/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/C2_artist_name_plus_material/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/C2_artist_name_plus_material/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/C2_artist_name_plus_material/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/C2_artist_name_plus_material/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/C2_artist_name_plus_material/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/C2_artist_name_plus_material/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/C2_artist_name_plus_material/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

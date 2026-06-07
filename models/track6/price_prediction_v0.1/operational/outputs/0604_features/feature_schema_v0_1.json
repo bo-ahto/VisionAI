@@ -1,0 +1,123 @@
+{
+  "created_at": "2026-06-05T11:51:08",
+  "input_path": "/Users/bo/VisionAI/data/test_new_artworks_test_noprice_0604.csv",
+  "model_root": "/Users/bo/VisionAI/models/track6/price_prediction_v0.1",
+  "output_dir": "/Users/bo/VisionAI/models/track6/price_prediction_v0.1/operational/outputs/0604_features",
+  "rows": 6873,
+  "warm_rows": 6873,
+  "cold_rows": 0,
+  "warm_base_features": [
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "area_cm2",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "medium_category",
+    "support_category",
+    "medium_support_bucket",
+    "is_extreme_aspect_ratio",
+    "artist_key"
+  ],
+  "cold_base_features": [
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "area_cm2",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "medium_category",
+    "support_category",
+    "medium_support_bucket",
+    "is_extreme_aspect_ratio"
+  ],
+  "generated_bucket_features": [
+    "size_bucket",
+    "shape_bucket",
+    "medium_size_bucket",
+    "support_size_bucket",
+    "medium_shape_bucket",
+    "is_large_2d",
+    "is_large_3d"
+  ],
+  "svc_numeric_features": [
+    "svc_group_log_price_median",
+    "svc_group_log_price_q25",
+    "svc_group_log_price_q75",
+    "svc_group_log_price_iqr",
+    "svc_group_log_unit_area_median",
+    "svc_group_log_unit_area_iqr",
+    "svc_group_n_log"
+  ],
+  "svc_categorical_features": [
+    "svc_group_level",
+    "svc_coverage_tier",
+    "svc_has_artist_level"
+  ],
+  "group_definitions": [
+    {
+      "level": "artist_medium_support_size",
+      "keys": [
+        "artist_key",
+        "medium_support_bucket",
+        "size_bucket"
+      ],
+      "min_n": 5,
+      "service_label": "작가+재료/지지체+크기"
+    },
+    {
+      "level": "artist_size",
+      "keys": [
+        "artist_key",
+        "size_bucket"
+      ],
+      "min_n": 5,
+      "service_label": "작가+크기"
+    },
+    {
+      "level": "artist",
+      "keys": [
+        "artist_key"
+      ],
+      "min_n": 5,
+      "service_label": "작가 전체"
+    },
+    {
+      "level": "medium_support_size",
+      "keys": [
+        "medium_support_bucket",
+        "size_bucket"
+      ],
+      "min_n": 30,
+      "service_label": "재료/지지체+크기"
+    },
+    {
+      "level": "medium_category_support_size",
+      "keys": [
+        "medium_category",
+        "support_category",
+        "size_bucket"
+      ],
+      "min_n": 30,
+      "service_label": "재료+지지체+크기"
+    },
+    {
+      "level": "medium_size",
+      "keys": [
+        "medium_category",
+        "size_bucket"
+      ],
+      "min_n": 50,
+      "service_label": "재료+크기"
+    }
+  ],
+  "notes": [
+    "Warm/Cold route is based on the v0.1 training artist registry.",
+    "SVC features are computed from the v0.1 training snapshot only.",
+    "Cold v0.1 reference still requires external/search/qwidth inference artifacts for exact final prediction."
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "experiment_id": "E2",
+  "title": "Track6 E2 작가별 학습 작품 수 단독 실험 결과",
+  "purpose": "학습 데이터 안에 작품 수가 많은 작가일수록 예측이 안정적인지 확인",
+  "description": "Group E artist variable experiment: E2",
+  "exp_dir": "experiments/track6/E2_artist_work_count_only",
+  "prompt_file": "experiments/track6/E2_artist_work_count_only/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "artist_works_log"
+  ],
+  "numeric_features": [
+    "artist_works_log"
+  ],
+  "variable_blocks": [
+    {
+      "name": "작가별 학습 작품 수 로그",
+      "features": [
+        "artist_works_log"
+      ],
+      "description": "train 기준 작가별 작품 수를 log1p 변환한 생성 변수"
+    }
+  ],
+  "comment": {
+    "실험 목적": "학습 데이터 안에 작품 수가 많은 작가일수록 예측이 안정적인지 확인",
+    "학습 피처": "artist_works_log",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "실험군": "Group E: 작가 변수만",
+    "변수 성격": "수집값이 아니라 split의 train 기준 작가별 작품 수로 만든 생성 변수",
+    "해석 중심": "Warm에서 작가별 학습량이 성능 안정성에 영향을 주는지 본다.",
+    "Cold 해석 주의": "Cold 신규 작가는 학습 작품 수가 0이므로 Cold 결과는 참고값으로만 본다."
+  }
+}

@@ -60,6 +60,13 @@ MODEL_EXCLUDE_COLUMNS = [
     "artist_entity_suffix",
     "title_raw",
 ]
+MODEL_EXCLUDE_PREFIXES = [
+    "artist_meta_",
+    "nant_",
+]
+MODEL_EXCLUDE_EXTRA_COLUMNS = [
+    "collected_material_raw",
+]
 COLD_FORBIDDEN_COLUMNS = [
     "artist_key",
     "artist_works_log",
@@ -97,6 +104,8 @@ def base_removed_columns(df: pd.DataFrame) -> list[str]:
             if col in TARGET_COLUMNS
             or col in TRACKING_ONLY_COLUMNS
             or col in MODEL_EXCLUDE_COLUMNS
+            or col in MODEL_EXCLUDE_EXTRA_COLUMNS
+            or any(col.startswith(prefix) for prefix in MODEL_EXCLUDE_PREFIXES)
             or is_price_like(col)
         }
     )
@@ -118,6 +127,12 @@ def validate_feature_file(feature: pd.DataFrame, task: str) -> list[str]:
     leaks = [col for col in feature.columns if is_price_like(col) or col in TARGET_COLUMNS]
     leaks += [col for col in TRACKING_ONLY_COLUMNS if col in feature.columns]
     leaks += [col for col in MODEL_EXCLUDE_COLUMNS if col in feature.columns]
+    leaks += [col for col in MODEL_EXCLUDE_EXTRA_COLUMNS if col in feature.columns]
+    leaks += [
+        col
+        for col in feature.columns
+        if any(col.startswith(prefix) for prefix in MODEL_EXCLUDE_PREFIXES)
+    ]
     if task == "cold":
         leaks += [col for col in COLD_FORBIDDEN_COLUMNS if col in feature.columns]
     return sorted(set(leaks))

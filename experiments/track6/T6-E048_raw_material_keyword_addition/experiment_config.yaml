@@ -1,0 +1,13 @@
+experiment_id: T6-E048
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H10
+title: 원본 재료 문구 키워드 추가 실험
+hypothesis: 원본 재료 문구에는 표준 재료 분류가 담지 못한 가격 차이 설명 정보가 있을 수 있다.
+features_under_test: collected_material_raw, nant_material_idx, nant_tool
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+base_features: Warm 기준: artist_name_ko + ln_estimated_ho + nant_material_idx + nant_tool / Cold 기준: ln_estimated_ho + nant_material_idx + nant_tool
+additional_features: Warm 추가: collected_material_raw에서 생성한 keyword flags / Cold 추가: collected_material_raw에서 생성한 keyword flags
+target: ln_price_krw
+compare: 표준 재료 피처 모델과 원본 재료 키워드 추가 모델 비교
+success_criteria: 원본 키워드 추가 시 median APE 또는 특정 재료 slice 오차가 개선되면 후보 유지

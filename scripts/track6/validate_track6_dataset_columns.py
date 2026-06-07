@@ -72,6 +72,10 @@ def load_splits() -> dict[str, pd.DataFrame]:
     return {name: pd.read_csv(SPLIT_DIR / f"track6_{name}.csv", low_memory=False) for name in SPLITS}
 
 
+def load_full_cleaned() -> pd.DataFrame:
+    return pd.read_csv(REPO / "data" / "track6" / "track6_feature_candidates_name_corrected.csv", low_memory=False)
+
+
 def bool_bad_count(series: pd.Series) -> int:
     values = series.dropna().astype(str).str.lower().str.strip()
     return int((~values.isin(["true", "false"])).sum())
@@ -270,6 +274,29 @@ def validate_cross_split(splits: dict[str, pd.DataFrame]) -> tuple[dict[str, Any
     return checks, issues
 
 
+def training_candidate_audit(df: pd.DataFrame) -> dict[str, Any]:
+    candidate = df["is_training_candidate"].astype(str).str.lower().str.strip().isin(["true", "1"])
+    reasons = df["cleaning_exclude_reasons"].fillna("").astype(str).str.strip()
+    reason_empty = reasons.eq("")
+    mismatch = candidate.ne(reason_empty)
+    false_reasons = reasons.loc[~candidate]
+    reason_counts: dict[str, int] = {}
+    for value in false_reasons:
+        for reason in str(value).split(";"):
+            reason = reason.strip()
+            if reason:
+                reason_counts[reason] = reason_counts.get(reason, 0) + 1
+    return {
+        "total_rows": int(len(df)),
+        "training_candidate_true": int(candidate.sum()),
+        "training_candidate_false": int((~candidate).sum()),
+        "false_reason_blank_rows": int((~candidate & reason_empty).sum()),
+        "true_reason_nonblank_rows": int((candidate & ~reason_empty).sum()),
+        "candidate_reason_mismatch_rows": int(mismatch.sum()),
+        "reason_counts": dict(sorted(reason_counts.items(), key=lambda item: (-item[1], item[0]))),
+    }
+
+
 def render_markdown(report: dict[str, Any], issues: list[dict[str, Any]]) -> str:
     fail_count = sum(1 for item in issues if item["severity"] == "fail")
     review_count = sum(1 for item in issues if item["severity"] == "review")
@@ -317,7 +344,26 @@ def render_markdown(report: dict[str, Any], issues: list[dict[str, Any]]) -> str
         f"- val_cold artist history nonzero rows: `{report['cross_split_checks']['val_cold_nonzero_artist_history']}`",
         f"- test_cold artist history nonzero rows: `{report['cross_split_checks']['test_cold_nonzero_artist_history']}`",
         "",
-        "## 4. 검토 필요 항목",
+        "## 4. 학습 후보 제외 사유 점검",
+        "",
+        f"- 전체 정제 rows: `{report['training_candidate_audit']['total_rows']:,}`",
+        f"- `is_training_candidate=true`: `{report['training_candidate_audit']['training_candidate_true']:,}`",
+        f"- `is_training_candidate=false`: `{report['training_candidate_audit']['training_candidate_false']:,}`",
+        f"- false인데 제외 사유가 빈 rows: `{report['training_candidate_audit']['false_reason_blank_rows']}`",
+        f"- true인데 제외 사유가 있는 rows: `{report['training_candidate_audit']['true_reason_nonblank_rows']}`",
+        f"- 후보 플래그와 제외 사유 불일치 rows: `{report['training_candidate_audit']['candidate_reason_mismatch_rows']}`",
+        "",
+        "제외 사유별 rows:",
+        "",
+        "| reason | rows |",
+        "|---|---:|",
+    ]
+    for reason, count in report["training_candidate_audit"]["reason_counts"].items():
+        lines.append(f"| `{reason}` | `{count:,}` |")
+
+    lines += [
+        "",
+        "## 5. 검토 필요 항목",
         "",
     ]
     visible_issues = [item for item in issues if item["severity"] in {"fail", "review"}]
@@ -336,9 +382,10 @@ def render_markdown(report: dict[str, Any], issues: list[dict[str, Any]]) -> str
 
     lines += [
         "",
-        "## 5. 해석",
+        "## 6. 해석",
         "",
         "- 모델 실험을 막는 fail 이슈가 없으면 T6-E002 baseline으로 진행 가능",
+        "- `is_training_candidate=false`는 `cleaning_exclude_reasons`가 있는 row와 일치해야 함",
         "- `support_category=unknown`은 일부 남아 있으므로 모델 입력 시 unknown 카테고리로 유지하고 slice 성능을 따로 확인",
         "- `track4_source`, URL, image URL, source artwork ID는 품질 감사용이며 모델 피처로 사용하지 않음",
     ]
@@ -353,6 +400,7 @@ def main() -> None:
         "status": "pass",
         "splits": {},
         "cross_split_checks": {},
+        "training_candidate_audit": {},
         "tracking_only_columns": TRACKING_ONLY_COLUMNS,
     }
     all_issues: list[dict[str, Any]] = []
@@ -363,6 +411,18 @@ def main() -> None:
     cross_checks, cross_issues = validate_cross_split(splits)
     report["cross_split_checks"] = cross_checks
     all_issues.extend(cross_issues)
+    report["training_candidate_audit"] = training_candidate_audit(load_full_cleaned())
+    if report["training_candidate_audit"]["candidate_reason_mismatch_rows"]:
+        all_issues.append(
+            issue(
+                "full_cleaned",
+                "is_training_candidate",
+                "candidate_reason_mismatch",
+                report["training_candidate_audit"]["candidate_reason_mismatch_rows"],
+                "fail",
+                "is_training_candidate=true iff cleaning_exclude_reasons is blank",
+            )
+        )
 
     if any(item["severity"] == "fail" for item in all_issues):
         report["status"] = "fail"

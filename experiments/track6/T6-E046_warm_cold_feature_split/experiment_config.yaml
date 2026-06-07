@@ -1,0 +1,13 @@
+experiment_id: T6-E046
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H8
+title: Warm/Cold 작품 피처 분리 실험
+hypothesis: Warm과 Cold는 동일한 작품 피처 조합보다 각각 다른 피처 조합을 사용할 때 성능이 좋아질 수 있다.
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+common_features: ln_estimated_ho, nant_material_idx, nant_tool, nant_support, width_cm, height_cm, log_area, aspect_ratio
+warm_features: artist_name_ko, ln_estimated_ho, nant_material_idx, nant_tool, nant_support, width_cm, height_cm, log_area, aspect_ratio
+cold_features: ln_estimated_ho, nant_material_idx, nant_tool, nant_support, depth_cm, has_depth, is_3d_candidate
+target: ln_price_krw
+compare: 공통 피처 모델과 Warm/Cold 분리 피처 모델 비교
+success_criteria: 분리 피처 모델의 각 성능이 더 좋으면 채택

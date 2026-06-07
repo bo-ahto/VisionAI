@@ -1,0 +1,203 @@
+# 0604 Warm 가격 튐 구간 분석
+
+## 1. 분석 대상
+
+- 입력 파일: `models/track6/price_prediction_v0.1/data/predictions_all_price_0604.csv`
+- 전체 행 수: `6,873`
+- Warm route 행 수: `6,873`
+- 숫자 정답 가격 행 수: `837`
+- 숫자 정답 가격 제외 행 수: `6,036`
+- 환산 기준: `1 USD = 1,380 KRW`, `1 EUR = 1,530 KRW`
+
+## 2. 주의할 점
+
+- 이 파일은 Warm 데이터만 포함
+- `sale_message`가 `Sold`, `Price on request`, 결측인 행은 실제 가격을 알 수 없어 오차 계산에서 제외
+- `svc_group_median_pred_price_krw`: 유사 작품 기반 가격 피처의 중앙값 예측
+- `legacy_warm_huber_pred_price_krw`: 기존 Warm Huber baseline 예측
+- 정확한 v0.1 70:30 결합 후보는 이 파일에서 직접 계산된 컬럼이 아니므로 별도 artifact화가 필요
+
+## 3. 핵심 요약
+- 전체 6,873건은 모두 Warm route로 분류됨
+- 숫자 가격으로 파싱 가능한 정답은 837건이며, 나머지는 Sold, Price on request, 결측 등으로 정량 평가에서 제외
+- 예측 파일의 외화 환산은 1 USD = 1,380 KRW 기준과 일치
+- 현재 파일에는 정확한 PP-SVC3 70:30 v0.1 주 후보가 아니라 유사 작품 기반 가격 피처와 legacy Warm Huber baseline이 포함됨
+- 큰 오차의 상당수는 US$1, US$10, US$20 같은 극저가 라벨에서 발생하므로 보정 학습 전에 라벨 품질 필터가 필요
+- 유사 작품 기반 가격 피처는 중앙 구간에서는 Huber보다 안정적이지만, 고가 작품 상방 꼬리와 극저가/소형 작품 하방 꼬리에서 튀는 구간이 생김
+
+## 4. 전체 성능
+
+| scope | candidate | n | MdAPE | MAPE | p95_APE | median_ratio | over_3x_n | under_1_3x_n |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| numeric_actual_all | svc_group_median | 837 | 0.3750 | 3.1595 | 4.5873 | 1.0000 | 77 | 104 |
+| numeric_actual_all | legacy_warm_huber | 837 | 0.5532 | 94.7422 | 2.3912 | 0.9526 | 56 | 120 |
+| numeric_actual_excluding_under_50_usd | svc_group_median | 829 | 0.3714 | 0.8681 | 3.6706 | 1.0000 | 69 | 104 |
+| numeric_actual_excluding_under_50_usd | legacy_warm_huber | 829 | 0.5480 | 0.7173 | 2.1025 | 0.9444 | 48 | 120 |
+
+## 5. 정답 가격 상태
+
+### 통화별 숫자 라벨
+
+| currency | n |
+| --- | --- |
+| USD | 735 |
+| KRW | 99 |
+| EUR | 3 |
+
+### 라벨 품질 플래그
+
+| actual_label_quality | n |
+| --- | --- |
+| not_numeric_actual | 6036 |
+| numeric_actual | 821 |
+| review_very_low_price_under_50_usd | 8 |
+| review_high_tail_over_100k_usd | 8 |
+
+## 6. 가격 튐 원인 후보
+
+| svc_error_cause | n |
+| --- | --- |
+| 유사 작품 표본 수 부족 | 431 |
+| 정상 범위 또는 세부 잔차 | 285 |
+| 고가 구간 과소 예측 | 47 |
+| 저가 구간 과대 예측 | 22 |
+| 소형/저가 작품에 작가 기준값 과대 적용 | 15 |
+| 크기 결측으로 fallback 의존 | 13 |
+| 유사 작품 묶음 실패로 global fallback 사용 | 12 |
+| 정답 가격 표기 점검 필요: 50달러 이하 극저가 | 8 |
+| 고가 작품 상방 꼬리 미반영 | 4 |
+
+## 7. 주요 segment별 오차
+
+| segment_type | segment | n | MdAPE | MAPE | p95_APE | median_ratio | over_3x_n | under_1_3x_n | actual_median_krw | pred_median_krw |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| actual_price_band | <50usd_review | 8 | 235.4952 | 240.6090 | 426.7875 | 236.4952 | 8 | 0 | 1,380.0000 | 541,724.0038 |
+| actual_price_band | 100_500usd | 104 | 0.3750 | 2.4381 | 13.8148 | 1.3189 | 25 | 0 | 531,300.0000 | 662,400.0000 |
+| actual_price_band | 50_100usd | 4 | 1.6000 | 1.9500 | 3.7300 | 2.6000 | 2 | 0 | 138,000.0000 | 358,800.0000 |
+| actual_price_band | 500_1k_usd | 168 | 0.3301 | 0.8846 | 4.4881 | 1.0000 | 26 | 11 | 959,100.0000 | 1,104,000.0000 |
+| actual_price_band | 100k_plus_usd | 8 | 0.9661 | 0.8571 | 0.9995 | 0.0339 | 0 | 7 | 917,700,000.0000 | 15,861,371.2533 |
+| actual_price_band | 1k_5k_usd | 285 | 0.3684 | 0.6542 | 2.2455 | 1.0000 | 16 | 21 | 2,811,060.0000 | 2,760,000.0000 |
+| actual_price_band | 20k_100k_usd | 65 | 0.6667 | 0.5967 | 1.2000 | 0.3800 | 0 | 28 | 45,540,000.0000 | 20,700,000.0000 |
+| actual_price_band | 5k_20k_usd | 195 | 0.3529 | 0.3977 | 0.9462 | 1.0000 | 0 | 37 | 13,662,000.0000 | 11,868,000.0000 |
+| area_band | extreme_large | 10 | 0.2589 | 27.6732 | 151.1806 | 0.9286 | 1 | 1 | 21,390,000.0000 | 21,914,378.8413 |
+| area_band | missing | 16 | 0.7035 | 25.6554 | 135.2500 | 1.0450 | 5 | 3 | 6,520,500.0000 | 3,008,400.0000 |
+| area_band | area_missing_or_tiny | 81 | 0.4000 | 7.3164 | 5.8182 | 1.3333 | 22 | 5 | 828,000.0000 | 966,000.0000 |
+| area_band | small | 165 | 0.3333 | 4.5045 | 10.3377 | 1.0900 | 23 | 2 | 800,400.0000 | 1,104,000.0000 |
+| area_band | large | 211 | 0.3529 | 1.7197 | 0.9144 | 0.9775 | 2 | 35 | 8,280,000.0000 | 5,854,844.1482 |
+| area_band | medium | 253 | 0.3684 | 0.8111 | 4.1166 | 1.0000 | 24 | 20 | 2,400,000.0000 | 2,649,600.0000 |
+| area_band | very_large | 101 | 0.6250 | 0.5279 | 0.9996 | 0.5881 | 0 | 38 | 27,600,000.0000 | 13,800,000.0000 |
+| svc_coverage_tier | fallback_global | 21 | 0.5963 | 19.4758 | 108.0000 | 1.0900 | 4 | 6 | 2,760,000.0000 | 3,008,400.0000 |
+| svc_coverage_tier | high_n | 88 | 0.5220 | 6.3146 | 1.1176 | 0.7688 | 1 | 15 | 4,900,000.0000 | 3,169,170.0000 |
+| svc_coverage_tier | low_n | 573 | 0.3333 | 2.6393 | 4.2632 | 1.0000 | 46 | 70 | 2,400,000.0000 | 2,000,000.0000 |
+| svc_coverage_tier | medium_n | 155 | 0.5000 | 1.0806 | 4.8000 | 1.1765 | 26 | 13 | 6,210,000.0000 | 8,000,000.0000 |
+| svc_error_cause | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | 8 | 235.4952 | 240.6090 | 426.7875 | 236.4952 | 8 | 0 | 1,380.0000 | 541,724.0038 |
+| svc_error_cause | 저가 구간 과대 예측 | 22 | 5.0714 | 7.6640 | 19.5681 | 6.0714 | 22 | 0 | 934,950.0000 | 6,708,203.9325 |
+| svc_error_cause | 소형/저가 작품에 작가 기준값 과대 적용 | 15 | 3.7843 | 4.0500 | 5.8182 | 4.7843 | 15 | 0 | 703,800.0000 | 3,367,200.0000 |
+| svc_error_cause | 크기 결측으로 fallback 의존 | 13 | 0.6770 | 1.0630 | 3.5050 | 1.0000 | 2 | 3 | 9,315,000.0000 | 3,008,400.0000 |
+| svc_error_cause | 고가 작품 상방 꼬리 미반영 | 4 | 0.9534 | 0.9583 | 0.9938 | 0.0466 | 0 | 4 | 821,100,000.0000 | 10,905,450.0000 |
+| svc_error_cause | 고가 구간 과소 예측 | 47 | 0.7969 | 0.8119 | 0.9675 | 0.2031 | 0 | 47 | 27,600,000.0000 | 4,002,000.0000 |
+| svc_error_cause | 유사 작품 표본 수 부족 | 431 | 0.3229 | 0.7143 | 2.3054 | 1.0000 | 30 | 47 | 2,070,000.0000 | 1,656,000.0000 |
+| svc_error_cause | 정상 범위 또는 세부 잔차 | 285 | 0.3358 | 0.4289 | 1.2500 | 1.0000 | 0 | 0 | 4,416,000.0000 | 4,692,000.0000 |
+| svc_error_cause | 유사 작품 묶음 실패로 global fallback 사용 | 12 | 0.2519 | 0.3626 | 0.8607 | 1.0900 | 0 | 3 | 2,760,000.0000 | 3,008,400.0000 |
+| svc_group_level | medium_size | 19 | 0.7778 | 27.3878 | 51.9275 | 0.5717 | 1 | 8 | 5,520,000.0000 | 1,585,620.0000 |
+| svc_group_level | global | 21 | 0.5963 | 19.4758 | 108.0000 | 1.0900 | 4 | 6 | 2,760,000.0000 | 3,008,400.0000 |
+| svc_group_level | artist | 414 | 0.5952 | 2.6731 | 5.7089 | 1.0000 | 68 | 67 | 2,484,000.0000 | 2,694,106.3938 |
+| svc_group_level | artist_size | 226 | 0.2000 | 2.4461 | 1.0221 | 1.0000 | 4 | 15 | 2,939,400.0000 | 2,565,464.1685 |
+| svc_group_level | medium_support_size | 66 | 0.4495 | 0.4911 | 1.0665 | 0.7832 | 0 | 7 | 2,760,000.0000 | 2,902,140.0000 |
+| svc_group_level | artist_medium_support_size | 91 | 0.1667 | 0.2550 | 0.7188 | 1.0000 | 0 | 1 | 4,830,000.0000 | 5,520,000.0000 |
+| svc_group_n_band | n_1000_plus | 84 | 0.4914 | 11.2908 | 4.9630 | 0.8015 | 5 | 12 | 3,613,000.0000 | 3,008,400.0000 |
+| svc_group_n_band | n_6_10 | 359 | 0.2841 | 3.5175 | 2.4054 | 1.0000 | 21 | 38 | 2,070,000.0000 | 1,794,000.0000 |
+| svc_group_n_band | n_31_100 | 59 | 0.5709 | 1.3323 | 5.4286 | 1.3529 | 15 | 8 | 18,000,000.0000 | 13,110,000.0000 |
+| svc_group_n_band | n_11_30 | 192 | 0.4650 | 1.2809 | 5.5143 | 1.0000 | 20 | 25 | 4,800,000.0000 | 4,608,000.0000 |
+| svc_group_n_band | n_le_5 | 128 | 0.4545 | 0.7868 | 3.1077 | 1.0000 | 16 | 16 | 2,392,000.0000 | 1,656,000.0000 |
+| svc_group_n_band | n_101_1000 | 15 | 0.4255 | 0.5354 | 0.7872 | 0.7324 | 0 | 5 | 1,500,000.0000 | 790,740.0000 |
+
+## 8. 큰 오차 사례 상위
+
+| _v01_row_id | title | artist_name | sale_message | svc_group_median_ratio | svc_group_median_ape | svc_error_cause | svc_group_level | svc_group_n | area_cm2 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 4077 | hot wind | Jeongyoon Park | US$1.00 | 510.0000 | 509.0000 | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | medium_size | 1,408.0000 | 820.7500 |
+| 6263 | Temporal wall | Jae Youl Jeoung | US$1.00 | 275.1073 | 274.1073 | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | artist | 10.0000 | 62,100.0000 |
+| 6262 | A star written in Braille | Jae Youl Jeoung | US$1.00 | 275.1073 | 274.1073 | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | artist | 10.0000 | 6,900.0000 |
+| 6265 | A star written in Braille: Notes of the Star | Jae Youl Jeoung | US$1.00 | 236.4952 | 235.4952 | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | artist_size | 8.0000 | 273.0000 |
+| 6264 | small talk | Jae Youl Jeoung | US$1.00 | 236.4952 | 235.4952 | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | artist_size | 8.0000 | 375.0000 |
+| 115 | Happy Virus | HWAYEON | US$10.00 | 218.0000 | 217.0000 | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | global | 26,914.0000 |  |
+| 113 | 治葬 | HWAYEON | US$20.00 | 109.0000 | 108.0000 | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | global | 26,914.0000 |  |
+| 114 | Tin Head | HWAYEON | US$30.00 | 72.6667 | 71.6667 | 정답 가격 표기 점검 필요: 50달러 이하 극저가 | global | 26,914.0000 |  |
+| 24 | Glass | Dahee Yang | US$110.00 | 23.6364 | 22.6364 | 유사 작품 표본 수 부족 | artist | 9.0000 | 358.6600 |
+| 928 | Archisculpture 032 | Beomsik Won | US$500.00 | 22.0000 | 21.0000 | 저가 구간 과대 예측 | artist | 13.0000 | 1,150.0000 |
+| 36 | Hojokdo | Eunjung Lee | US$235.00 | 20.6852 | 19.6852 | 저가 구간 과대 예측 | artist | 12.0000 | 588.0600 |
+| 37 | Hojokdo | Eunjung Lee | US$265.00 | 18.3435 | 17.3435 | 저가 구간 과대 예측 | artist | 12.0000 | 634.6000 |
+| 38 | A Cat Flying in the Sky | Eunjung Lee | US$265.00 | 18.3435 | 17.3435 | 저가 구간 과대 예측 | artist | 12.0000 | 701.4000 |
+| 54 | My Small Step in the Forest | Junho JUNG | US$135.00 | 14.8148 | 13.8148 | 유사 작품 표본 수 부족 | artist | 6.0000 | 618.7500 |
+| 60 | My Small Step in the Forest | Junho JUNG | US$135.00 | 14.8148 | 13.8148 | 유사 작품 표본 수 부족 | artist | 6.0000 | 745.2900 |
+| 5655 | RNB(Small De Bao) | Shin Changyong | US$1,200.00 | 12.5000 | 11.5000 | 저가 구간 과대 예측 | artist | 15.0000 | 1,225.0000 |
+| 61 | My Little Step in the Forest | Junho JUNG | US$170.00 | 11.7647 | 10.7647 | 유사 작품 표본 수 부족 | artist | 6.0000 | 675.0000 |
+| 6144 | Rosetta Stone | Nam June Paik | US$5,000.00 | 11.4018 | 10.4018 | 저가 구간 과대 예측 | artist_size | 12.0000 | 2,491.0000 |
+| 6143 | Etching on Etching | Nam June Paik | US$5,000.00 | 11.4018 | 10.4018 | 저가 구간 과대 예측 | artist_size | 12.0000 | 2,491.0000 |
+| 25 | Red, blue, white, dark. | Dahee Yang | US$270.00 | 9.6296 | 8.6296 | 유사 작품 표본 수 부족 | artist | 9.0000 | 808.2800 |
+| 34 | There is No Choice | Eunjung Lee | US$530.00 | 9.1717 | 8.1717 | 저가 구간 과대 예측 | artist | 12.0000 | 1,820.1600 |
+| 59 | My Small Step in the Forest | Junho JUNG | US$240.00 | 8.3333 | 7.3333 | 유사 작품 표본 수 부족 | artist | 6.0000 | 2,757.3000 |
+| 4999 | Twilight | Moon Eunchae | US$800.00 | 7.5000 | 6.5000 | 유사 작품 표본 수 부족 | artist | 5.0000 | 1,631.2500 |
+| 152 | - [Lucky Symbol '#'] "You, Like #, a Symbol Always Connecting by My Side." | Mi Young Um | US$270.00 | 7.4074 | 6.4074 | 유사 작품 표본 수 부족 | artist | 7.0000 | 900.0000 |
+| 58 | My Little Step in the Forest | Junho JUNG | US$270.00 | 7.4074 | 6.4074 | 유사 작품 표본 수 부족 | artist | 6.0000 | 2,385.0000 |
+| 35 | Untitled | Eunjung Lee | US$665.00 | 7.3098 | 6.3098 | 저가 구간 과대 예측 | artist | 12.0000 | 2,411.5000 |
+| 4539 | Unfolded Triangle | Sejin Hong | KRW ₩1,680,000 | 7.1429 | 6.1429 | 저가 구간 과대 예측 | artist | 19.0000 | 3,068.3000 |
+| 63 | Wheel1 | Gabby Chu | US$110.00 | 6.8182 | 5.8182 | 소형/저가 작품에 작가 기준값 과대 적용 | artist | 10.0000 | 48.0000 |
+| 62 | Wheel2 | Gabby Chu | US$110.00 | 6.8182 | 5.8182 | 소형/저가 작품에 작가 기준값 과대 적용 | artist | 10.0000 | 56.0000 |
+| 85 | The Forest Where Stars Awaken | Sanghee Jung | US$400.00 | 6.6500 | 5.6500 | 유사 작품 표본 수 부족 | artist | 7.0000 | 1,683.5000 |
+| 99 | Lack of affection | HWAYEON | US$330.00 | 6.6061 | 5.6061 | 크기 결측으로 fallback 의존 | global | 26,914.0000 |  |
+| 6258 | Beings on the Boundary #10 | Jimin Han | KRW ₩600,000 | 6.5550 | 5.5550 | 유사 작품 표본 수 부족 | artist | 5.0000 | 100.0000 |
+| 6259 | Beings on the Boundary #9 | Jimin Han | KRW ₩600,000 | 6.5550 | 5.5550 | 유사 작품 표본 수 부족 | artist | 5.0000 | 100.0000 |
+| 2358 | parktaeria (untitled- gold green) | Taehoon Park | KRW ₩700,000 | 6.4286 | 5.4286 | 소형/저가 작품에 작가 기준값 과대 적용 | artist | 34.0000 | 400.0000 |
+| 3178 | Blooming_012 | Inhee Jang | US$1,120.00 | 6.4286 | 5.4286 | 저가 구간 과대 예측 | artist | 34.0000 | 900.0000 |
+| 2367 | parktaeria (untitled- light green) | Taehoon Park | KRW ₩700,000 | 6.4286 | 5.4286 | 소형/저가 작품에 작가 기준값 과대 적용 | artist | 34.0000 | 400.0000 |
+| 2363 | parktaeria (untitled- green) | Taehoon Park | KRW ₩700,000 | 6.4286 | 5.4286 | 소형/저가 작품에 작가 기준값 과대 적용 | artist | 34.0000 | 400.0000 |
+| 2362 | parktaeria (untitled- orange) | Taehoon Park | KRW ₩700,000 | 6.4286 | 5.4286 | 소형/저가 작품에 작가 기준값 과대 적용 | artist | 34.0000 | 400.0000 |
+| 3656 | I'm Out of Town, Series 3 | Hong Il Park | US$300.00 | 6.0000 | 5.0000 | 소형/저가 작품에 작가 기준값 과대 적용 | artist | 18.0000 | 461.8200 |
+| 48 | Collect Happiness | Lim Hong | US$540.00 | 5.7407 | 4.7407 | 유사 작품 표본 수 부족 | artist | 9.0000 | 1,519.7000 |
+
+## 9. 직접 계산 가능한 후보 비교
+
+- 이 비교는 최종 v0.1 주 후보가 아니라 현재 파일에 들어 있는 컬럼만 사용한 사전 점검
+- `excluding_under_50_usd`는 `US$1`, `US$10`처럼 검수 필요한 극저가 라벨을 제외한 기준
+
+| scope | candidate | n | MdAPE | MAPE | p95_APE | median_ratio | over_3x_n | under_1_3x_n |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| excluding_under_50_usd | log_blend_svc0.8_huber0.2 | 829 | 0.3548 | 0.6788 | 2.3697 | 0.9588 | 51 | 91 |
+| excluding_under_50_usd | log_blend_svc0.9_huber0.1 | 829 | 0.3641 | 0.7598 | 3.0147 | 0.9792 | 57 | 94 |
+| excluding_under_50_usd | log_blend_svc0.7_huber0.3 | 829 | 0.3656 | 0.6222 | 1.9915 | 0.9486 | 42 | 90 |
+| excluding_under_50_usd | svc_median | 829 | 0.3714 | 0.8681 | 3.6706 | 1.0000 | 69 | 104 |
+| excluding_under_50_usd | log_blend_svc1.0_huber0.0 | 829 | 0.3714 | 0.8681 | 3.6706 | 1.0000 | 69 | 102 |
+| numeric_actual_all | log_blend_svc0.8_huber0.2 | 837 | 0.3638 | 3.9701 | 2.7685 | 0.9658 | 59 | 91 |
+| numeric_actual_all | log_blend_svc0.7_huber0.3 | 837 | 0.3694 | 4.9031 | 2.1343 | 0.9514 | 50 | 90 |
+| numeric_actual_all | log_blend_svc0.9_huber0.1 | 837 | 0.3742 | 3.4364 | 3.6191 | 0.9866 | 65 | 94 |
+| numeric_actual_all | svc_median | 837 | 0.3750 | 3.1595 | 4.5873 | 1.0000 | 77 | 104 |
+| numeric_actual_all | log_blend_svc1.0_huber0.0 | 837 | 0.3750 | 3.1595 | 4.5873 | 1.0000 | 77 | 102 |
+
+해석:
+
+- 극저가 라벨을 제외하면 `svc_median` 단독보다 `svc_median`과 `legacy Huber`를 로그 공간에서 섞는 방식이 MdAPE를 낮출 가능성이 있음
+- MAPE 기준으로는 Huber 비중을 더 높인 로그 결합이나 `svc_q25`가 유리하지만, `svc_q25`는 과소 예측 수가 크게 늘어 단독 적용은 위험
+- 따라서 다음 보정 실험은 전체 일괄 결합보다 `svc_group_level`, `svc_group_n`, `area_band`, `pred_log bin`별로 결합 가중치를 다르게 주는 방식이 적합
+
+
+## 10. 보정 방향
+
+- 1차 보정 전 라벨 필터: `actual_price_usd_equiv < 50` 라벨은 실제 가격인지 검수 후 보정 학습에서 제외
+- 유사 작품 표본 수 기반 보정: `svc_group_n < 10`, `low_n`, `global fallback`은 예측 신뢰도를 낮게 표시하고 보정 강도를 별도로 둠
+- 소형/저가 과대 예측 방지: 작은 면적, 낮은 예측가, 낮은 표본 수 구간은 `q25` 또는 낮은 분위값 쪽으로 shrink하는 실험 필요
+- 고가 작품 과소 예측 방지: 실제 고가 tail에서 Huber가 더 가까운 사례가 있어, 대형/고가 신호가 있는 경우 `max(svc, huber)` 또는 Huber 가중치 상향 실험 필요
+- segment residual 보정: 실제 가격이 아니라 예측 시점에 사용 가능한 `pred_log bin`, `svc_group_level`, `svc_group_n_band`, `area_band`, `medium_support_bucket` 기준으로 median residual 보정값을 학습
+- 서비스 표시 보정: 크기 결측, global fallback, low_n은 단일 가격보다 범위와 낮은 신뢰도를 함께 표시
+
+## 11. 생성 파일
+
+- `experiments/track6/OP-0604_warm_price_spike_error_analysis/outputs/artist_error_summary.csv`
+- `experiments/track6/OP-0604_warm_price_spike_error_analysis/outputs/direct_candidate_comparison.csv`
+- `experiments/track6/OP-0604_warm_price_spike_error_analysis/outputs/overall_metrics.csv`
+- `experiments/track6/OP-0604_warm_price_spike_error_analysis/outputs/predictions_with_parsed_actual_and_errors.csv`
+- `experiments/track6/OP-0604_warm_price_spike_error_analysis/outputs/segment_error_summary.csv`
+- `experiments/track6/OP-0604_warm_price_spike_error_analysis/outputs/top_over_prediction_cases.csv`
+- `experiments/track6/OP-0604_warm_price_spike_error_analysis/outputs/top_price_spike_cases.csv`
+- `experiments/track6/OP-0604_warm_price_spike_error_analysis/outputs/top_under_prediction_cases.csv`

@@ -1,0 +1,11 @@
+experiment_id: T6-E101
+status: 계획
+group: Group C
+label: C10
+title: 작가별 학습 작품 수 구간별 라우팅 실험
+hypothesis: 학습 작품 수가 적은 작가는 Warm 모델보다 Cold 방식 또는 보수적 fallback이 더 안정적일 수 있다.
+purpose: 저이력 작가를 Warm으로 볼지 Cold로 볼지 결정하는 기준을 검증한다.
+train_features: 작품 기본 피처 묶음 + artist_works_log 구간
+test_features: Warm test를 작가별 학습 작품 수 구간으로 나누어 평가
+models: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+decision: 저이력 구간에서 Cold fallback이 Warm보다 안정적이면 라우팅 정책 후보로 둔다.

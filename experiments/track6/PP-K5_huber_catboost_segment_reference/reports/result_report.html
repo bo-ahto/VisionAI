@@ -1,0 +1,106 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-K5</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left}th{background:#eef2f7}</style></head>
+<body><h1>PP-K5 Huber 선행 + CatBoost segment 규칙 보정</h1><h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>segment_rule</th>
+      <th>status</th>
+      <th>notes</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>policy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-K5</td>
+      <td>baseline</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>none</td>
+      <td>ok</td>
+      <td>대체 실행: PP-J3_warm_catboost_leaf_artist_size_calibration 결과를 PP-K 목적에 맞춰 참조</td>
+      <td>0.552979</td>
+      <td>0.291196</td>
+      <td>0.406299</td>
+      <td>1.250786</td>
+      <td>0.506744</td>
+      <td>0.743738</td>
+      <td>reference_to_PP-J3</td>
+    </tr>
+    <tr>
+      <td>PP-K5</td>
+      <td>baseline</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>none</td>
+      <td>ok</td>
+      <td>대체 실행: PP-J3_warm_catboost_leaf_artist_size_calibration 결과를 PP-K 목적에 맞춰 참조</td>
+      <td>0.635848</td>
+      <td>0.325896</td>
+      <td>0.497490</td>
+      <td>1.608604</td>
+      <td>0.462932</td>
+      <td>0.673806</td>
+      <td>reference_to_PP-J3</td>
+    </tr>
+    <tr>
+      <td>PP-K5</td>
+      <td>corrected_warm_catboost_leaf_artist_size</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>warm_catboost_leaf_artist_size</td>
+      <td>ok</td>
+      <td>대체 실행: PP-J3_warm_catboost_leaf_artist_size_calibration 결과를 PP-K 목적에 맞춰 참조</td>
+      <td>0.552979</td>
+      <td>0.291196</td>
+      <td>0.406299</td>
+      <td>1.250786</td>
+      <td>0.506744</td>
+      <td>0.743738</td>
+      <td>reference_to_PP-J3</td>
+    </tr>
+    <tr>
+      <td>PP-K5</td>
+      <td>corrected_warm_catboost_leaf_artist_size</td>
+      <td>warm</td>
+      <td>test</td>
+      <td>warm_catboost_leaf_artist_size</td>
+      <td>ok</td>
+      <td>대체 실행: PP-J3_warm_catboost_leaf_artist_size_calibration 결과를 PP-K 목적에 맞춰 참조</td>
+      <td>0.635848</td>
+      <td>0.325896</td>
+      <td>0.497490</td>
+      <td>1.608604</td>
+      <td>0.462932</td>
+      <td>0.673806</td>
+      <td>reference_to_PP-J3</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Policy Map</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>reference_experiment</th>
+      <th>reference_folder</th>
+      <th>reason</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-K5</td>
+      <td>PP-J3</td>
+      <td>PP-J3_warm_catboost_leaf_artist_size_calibration</td>
+      <td>이미 더 구체적인 선행/순차 실험으로 실행되어 중복 재학습 대신 결과를 참조</td>
+    </tr>
+  </tbody>
+</table></body></html>

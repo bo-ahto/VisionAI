@@ -1,0 +1,16 @@
+experiment_id: T6-E047
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H9
+title: 크기 대표값 vs 전체 크기 피처 실험
+hypothesis: 크기 대표값 중심 피처는 전체 크기 피처를 모두 쓰는 방식보다 예측 오차를 줄일 수 있다.
+model: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+representative_size_features:
+  warm: artist_name_ko, ln_estimated_ho
+  cold: ln_estimated_ho
+full_size_features:
+  warm: artist_name_ko, ln_estimated_ho, width_cm, height_cm, log_area, aspect_ratio
+  cold: ln_estimated_ho, width_cm, height_cm, log_area, aspect_ratio
+target: ln_price_krw
+compare: 대표 크기 피처 모델과 전체 크기 피처 모델 비교
+success_criteria: 대표값 모델이 성능 유지 또는 p95 APE 개선 시 채택

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>OP-V01-CAL-02 저가/소형 과대 예측 방어</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; line-height: 1.55; color: #1f2933; }
+h1, h2, h3 { color: #101828; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0 24px; font-size: 14px; }
+th, td { border: 1px solid #d8dee9; padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: #f3f6fa; }
+</style>
+</head>
+<body>
+<h1>OP-V01-CAL-02 저가/소형 작품 과대 예측 방어 결과</h1>
+<h2>1. 실행 요약</h2>
+<li>기준 후보: `PP-V8 compact_blend_mape_guarded`</li>
+<li>보정값 학습: 기존 Warm validation split</li>
+<li>최종 평가: 기존 Warm test split</li>
+<li>0604 신규 라벨은 보정값 학습에 사용하지 않음</li>
+<li>목적: 과대 예측 방어 후보가 MAPE와 over 3x 건수를 줄이는지 확인</li>
+<h2>2. test 기준 후보별 지표</h2>
+<table>
+<tr><th>split</th><th>candidate</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>median_ratio</th><th>over_3x_n</th><th>under_1_3x_n</th><th>within_30</th><th>within_50</th></tr>
+<tr><td>test</td><td>baseline</td><td>607</td><td>0.1632</td><td>0.2816</td><td>0.9311</td><td>0.4028</td><td>0.9966</td><td>6</td><td>7</td><td>0.7364</td><td>0.8600</td></tr>
+<tr><td>test</td><td>global_negative_cap20</td><td>607</td><td>0.1618</td><td>0.2803</td><td>0.9281</td><td>0.4028</td><td>0.9916</td><td>6</td><td>7</td><td>0.7315</td><td>0.8633</td></tr>
+<tr><td>test</td><td>pred_bin_negative_cap20</td><td>607</td><td>0.1632</td><td>0.2816</td><td>0.9311</td><td>0.4028</td><td>0.9966</td><td>6</td><td>7</td><td>0.7364</td><td>0.8600</td></tr>
+<tr><td>test</td><td>area_bin_negative_cap20</td><td>607</td><td>0.1632</td><td>0.2816</td><td>0.9311</td><td>0.4028</td><td>0.9966</td><td>6</td><td>7</td><td>0.7364</td><td>0.8600</td></tr>
+<tr><td>test</td><td>pred_area_negative_min20_cap20</td><td>607</td><td>0.1682</td><td>0.2815</td><td>0.9311</td><td>0.4064</td><td>0.9842</td><td>6</td><td>7</td><td>0.7298</td><td>0.8583</td></tr>
+<tr><td>test</td><td>pred_area_sample_negative_min15_cap15</td><td>607</td><td>0.1638</td><td>0.2822</td><td>0.9312</td><td>0.4059</td><td>0.9866</td><td>6</td><td>7</td><td>0.7298</td><td>0.8616</td></tr>
+</table>
+<h2>3. validation 구간별 오차 요약</h2>
+<table>
+<tr><th>pred_bin</th><th>keys</th><th>n</th><th>median_residual_log</th><th>MdAPE</th><th>MAPE</th><th>over_3x_n</th><th>under_1_3x_n</th><th>median_area</th><th>median_pred_price</th><th>median_actual_price</th><th>area_bin</th><th>sample_bin</th></tr>
+<tr><td></td><td>area_bin</td><td>33</td><td>0.0106691011791646</td><td>0.1607</td><td>0.5099</td><td>3</td><td>0</td><td>310.8</td><td>584039.1296341928</td><td>603224.9999999999</td><td>tiny_lt500</td><td></td></tr>
+<tr><td></td><td>sample_bin</td><td>135</td><td>-0.0018653918726609</td><td>0.2126</td><td>0.3056</td><td>2</td><td>2</td><td>3672.36</td><td>2663831.437735564</td><td>2759999.9999999963</td><td></td><td>sample_lt8</td></tr>
+<tr><td>pred_q2</td><td>pred_bin</td><td>104</td><td>-0.02095501043108775</td><td>0.1132</td><td>0.2492</td><td>2</td><td>0</td><td>2411.5</td><td>1574347.5145995654</td><td>1462800.0000000019</td><td></td><td></td></tr>
+<tr><td>pred_q4</td><td>pred_bin+area_bin</td><td>1</td><td>-1.550295728304496</td><td>3.7129</td><td>3.7129</td><td>1</td><td>0</td><td>400.0</td><td>7069295.555581785</td><td>1500000.000000001</td><td>tiny_lt500</td><td></td></tr>
+<tr><td>pred_q2</td><td>pred_bin+area_bin</td><td>2</td><td>-0.7906969632149838</td><td>1.9622</td><td>1.9622</td><td>1</td><td>0</td><td>324.39</td><td>1426550.574838361</td><td>747700.0000000002</td><td>tiny_lt500</td><td></td></tr>
+<tr><td>pred_q2</td><td>pred_bin+area_bin</td><td>11</td><td>-0.0269628517625122</td><td>0.1461</td><td>0.3249</td><td>1</td><td>0</td><td>6615.7</td><td>1764655.3495386417</td><td>1794000.0000000042</td><td>large_gte5000</td><td></td></tr>
+<tr><td>pred_q1</td><td>pred_bin+area_bin</td><td>27</td><td>0.0652575197510252</td><td>0.1282</td><td>0.2904</td><td>1</td><td>0</td><td>310.8</td><td>487480.1407953264</td><td>499999.9999999997</td><td>tiny_lt500</td><td></td></tr>
+<tr><td>pred_q4</td><td>pred_bin</td><td>104</td><td>0.0106804373979869</td><td>0.1548</td><td>0.2771</td><td>1</td><td>3</td><td>6608.43</td><td>5816330.733736872</td><td>6008400.000000002</td><td></td><td></td></tr>
+<tr><td>pred_q1</td><td>pred_bin</td><td>104</td><td>-0.01546505655932855</td><td>0.1547</td><td>0.2733</td><td>1</td><td>0</td><td>900.0</td><td>652906.7098509235</td><td>654599.9999999987</td><td></td><td></td></tr>
+<tr><td></td><td>sample_bin</td><td>201</td><td>-0.0110866579581099</td><td>0.1482</td><td>0.2630</td><td>1</td><td>2</td><td>3185.0</td><td>2887955.6658499986</td><td>2759999.9999999963</td><td></td><td>sample_8_19</td></tr>
+<tr><td></td><td>area_bin</td><td>213</td><td>0.0205303423618516</td><td>0.1410</td><td>0.2199</td><td>1</td><td>2</td><td>10410.42</td><td>8016276.976231857</td><td>7999999.999999998</td><td>large_gte5000</td><td></td></tr>
+<tr><td></td><td>sample_bin</td><td>171</td><td>0.0110962604687383</td><td>0.1135</td><td>0.2054</td><td>1</td><td>0</td><td>5508.540000000001</td><td>3806789.879639756</td><td>4030980.000000002</td><td></td><td>sample_20_99</td></tr>
+<tr><td>pred_q4</td><td>pred_bin+area_bin</td><td>10</td><td>0.528891360299311</td><td>0.6134</td><td>0.5811</td><td>0</td><td>2</td><td>1075.0</td><td>5188784.412993564</td><td>8885999.999999993</td><td>small_500_1500</td><td></td></tr>
+<tr><td>pred_q5</td><td>pred_bin+area_bin</td><td>2</td><td>0.7265798272566109</td><td>0.5156</td><td>0.5156</td><td>0</td><td>0</td><td>1050.0</td><td>15309274.492130402</td><td>31605199.99999997</td><td>small_500_1500</td><td></td></tr>
+<tr><td>pred_q3</td><td>pred_bin+area_bin</td><td>3</td><td>-0.3748735859635133</td><td>0.4548</td><td>0.4497</td><td>0</td><td>0</td><td>256.65</td><td>3273316.8635378024</td><td>2250000.0000000037</td><td>tiny_lt500</td><td></td></tr>
+<tr><td>pred_q2</td><td>pred_bin+area_bin</td><td>22</td><td>-0.0997990295655633</td><td>0.2132</td><td>0.3698</td><td>0</td><td>0</td><td>900.0</td><td>1499423.2756909817</td><td>1359300.0000000014</td><td>small_500_1500</td><td></td></tr>
+<tr><td>pred_q3</td><td>pred_bin+area_bin</td><td>7</td><td>-0.2082066807942766</td><td>0.2315</td><td>0.3372</td><td>0</td><td>0</td><td>930.25</td><td>2981313.2177684205</td><td>2759999.9999999963</td><td>small_500_1500</td><td></td></tr>
+<tr><td></td><td>area_bin</td><td>100</td><td>-0.0571452430243404</td><td>0.2575</td><td>0.3291</td><td>0</td><td>2</td><td>950.04</td><td>866503.3267670122</td><td>908039.9999999992</td><td>small_500_1500</td><td></td></tr>
+<tr><td>pred_q5</td><td>pred_bin+area_bin</td><td>12</td><td>0.025169987655058196</td><td>0.2770</td><td>0.2876</td><td>0</td><td>0</td><td>4395.9349999999995</td><td>19767487.023209825</td><td>23917400.000000007</td><td>mid_1500_5000</td><td></td></tr>
+<tr><td>pred_q1</td><td>pred_bin+area_bin</td><td>17</td><td>-0.0018653918726609</td><td>0.1424</td><td>0.2801</td><td>0</td><td>0</td><td>2411.5</td><td>873299.5661081548</td><td>731400.0000000003</td><td>mid_1500_5000</td><td></td></tr>
+<tr><td>pred_q1</td><td>pred_bin+area_bin</td><td>59</td><td>-0.0353019305264616</td><td>0.2404</td><td>0.2640</td><td>0</td><td>0</td><td>950.04</td><td>687572.6519127185</td><td>654599.9999999987</td><td>small_500_1500</td><td></td></tr>
+<tr><td>pred_q5</td><td>pred_bin</td><td>104</td><td>0.01430472201400505</td><td>0.1928</td><td>0.2568</td><td>0</td><td>0</td><td>14281.0</td><td>16474362.126364816</td><td>17752643.999999993</td><td></td><td></td></tr>
+<tr><td>pred_q5</td><td>pred_bin+area_bin</td><td>90</td><td>0.00734024302097495</td><td>0.1786</td><td>0.2469</td><td>0</td><td>0</td><td>16303.275</td><td>16302012.604681572</td><td>16560000.000000028</td><td>large_gte5000</td><td></td></tr>
+<tr><td>pred_q1</td><td>pred_bin+area_bin</td><td>1</td><td>-0.2167112009326874</td><td>0.2420</td><td>0.2420</td><td>0</td><td>0</td><td>6608.43</td><td>546473.5610943801</td><td>439999.9999999997</td><td>large_gte5000</td><td></td></tr>
+<tr><td>pred_q3</td><td>pred_bin+area_bin</td><td>48</td><td>-0.0150930252493681</td><td>0.1730</td><td>0.2395</td><td>0</td><td>0</td><td>3558.0</td><td>2838767.3607429042</td><td>2980799.9999999953</td><td>mid_1500_5000</td><td></td></tr>
+<tr><td></td><td>sample_bin</td><td>12</td><td>-0.1284901101361306</td><td>0.1843</td><td>0.2330</td><td>0</td><td>0</td><td>2502.2799999999997</td><td>2121689.683479344</td><td>2257680.000000003</td><td></td><td>sample_100_plus</td></tr>
+<tr><td>pred_q3</td><td>pred_bin</td><td>103</td><td>-0.0028872518611571</td><td>0.1488</td><td>0.2152</td><td>0</td><td>1</td><td>4405.62</td><td>2920544.9884524774</td><td>3035999.999999993</td><td></td><td></td></tr>
+<tr><td>pred_q4</td><td>pred_bin+area_bin</td><td>66</td><td>0.015584867770614</td><td>0.1271</td><td>0.2096</td><td>0</td><td>1</td><td>9394.02</td><td>6199057.076062463</td><td>6665399.999999996</td><td>large_gte5000</td><td></td></tr>
+<tr><td></td><td>area_bin</td><td>173</td><td>-0.0155550306015772</td><td>0.1331</td><td>0.2049</td><td>0</td><td>0</td><td>2970.5</td><td>2296951.456513813</td><td>2208000.0000000033</td><td>mid_1500_5000</td><td></td></tr>
+<tr><td>pred_q4</td><td>pred_bin+area_bin</td><td>27</td><td>-0.0317171448046291</td><td>0.1171</td><td>0.2022</td><td>0</td><td>0</td><td>4225.0</td><td>5228435.050893208</td><td>5000000.000000011</td><td>mid_1500_5000</td><td></td></tr>
+<tr><td>pred_q3</td><td>pred_bin+area_bin</td><td>45</td><td>0.0633758739111112</td><td>0.1006</td><td>0.1547</td><td>0</td><td>1</td><td>6401.600100000001</td><td>3240618.0953240055</td><td>3312000.0000000023</td><td>large_gte5000</td><td></td></tr>
+<tr><td>pred_q2</td><td>pred_bin+area_bin</td><td>69</td><td>-0.0108515858697693</td><td>0.0947</td><td>0.1490</td><td>0</td><td>0</td><td>2679.0</td><td>1657214.518436347</td><td>1614600.0000000002</td><td>mid_1500_5000</td><td></td></tr>
+</table>
+<h2>4. 현재 최선 후보 판단</h2>
+<li>최선 후보: `global_negative_cap20`</li>
+<li>기준선 MAPE: 0.2816</li>
+<li>최선 후보 MAPE: 0.2803</li>
+<li>MAPE 변화: -0.0013</li>
+<li>MdAPE 변화: -0.0014</li>
+<li>p95_APE 변화: -0.0030</li>
+<li>over 3x 변화: 0</li>
+<li>판단: 미세 개선 후보, over 3x가 줄지 않아 기본 보정 채택 보류</li>
+<h2>5. 해석</h2>
+<li>과대 예측 방어는 validation에서 만든 음수 보정값만 test에 적용했다.</li>
+<li>예측 가격 구간, 면적 구간, 작가 학습 표본 수를 조합해도 점가격 성능이 크게 개선되는 후보는 제한적이다.</li>
+<li>저가/소형 과대 예측은 일부 줄일 수 있지만, 전체 MdAPE나 p95_APE가 악화되면 운영 점가격 보정으로 쓰기 어렵다.</li>
+<li>CAL-01 결과와 함께 보면, 0604의 초저가 라벨은 보정 학습보다 라벨 검수가 먼저다.</li>
+<li>다음 단계는 고가 과소 예측 방어와 가격 범위/신뢰도 보정으로 나누어 진행하는 것이 적절하다.</li>
+<h2>6. 최선 후보 기준 test 큰 오차 샘플</h2>
+<table>
+<tr><th>_track6_row_id</th><th>artist_name_ko</th><th>title_raw</th><th>actual_price</th><th>pred_price</th><th>corrected_pred_price</th><th>ape</th><th>ape_after</th><th>ratio_after</th><th>area_cm2</th><th>area_bin</th><th>pred_bin</th><th>sample_bin</th><th>artist_works_count_train</th><th>medium_support_bucket</th></tr>
+<tr><td>17485</td><td>김군선</td><td>the song of chungsan 7</td><td>5865000.0</td><td>30033615.232780743</td><td>29882301.79006067</td><td>4.120821011556819</td><td>4.095021618083663</td><td>5.095021618083663</td><td>9357.513400000002</td><td>large_gte5000</td><td>pred_q5</td><td>sample_8_19</td><td>11</td><td>acrylic__canvas</td></tr>
+<tr><td>17486</td><td>김군선</td><td>the song of chungsan 12</td><td>6527400.0</td><td>29884044.96443932</td><td>29733485.07709564</td><td>3.578246310083543</td><td>3.5551804818297716</td><td>4.555180481829772</td><td>8469.097600000001</td><td>large_gte5000</td><td>pred_q5</td><td>sample_8_19</td><td>11</td><td>acrylic__canvas</td></tr>
+<tr><td>20381</td><td>박상샘</td><td>good morning yellow rock 20200202</td><td>510600.0</td><td>2224495.7419272424</td><td>2213288.429506866</td><td>3.3566309085923276</td><td>3.334681608904949</td><td>4.334681608904949</td><td>100.0</td><td>tiny_lt500</td><td>pred_q2</td><td>sample_8_19</td><td>11</td><td>acrylic__canvas</td></tr>
+<tr><td>21261</td><td>강달예</td><td>the adventures of seals</td><td>1407600.0</td><td>5515227.117504969</td><td>5487440.652370341</td><td>2.918177832839563</td><td>2.8984375194446845</td><td>3.898437519444685</td><td>10744.2</td><td>large_gte5000</td><td>pred_q4</td><td>sample_8_19</td><td>11</td><td>acrylic__canvas</td></tr>
+<tr><td>24417</td><td>원범식</td><td>Archisculpture 055c</td><td>7000000.0</td><td>27328531.349541884</td><td>27190846.4877318</td><td>2.904075907077412</td><td>2.884406641104537</td><td>3.8844066411045373</td><td>14200.0</td><td>large_gte5000</td><td>pred_q5</td><td>sample_8_19</td><td>13</td><td>mixed_media__unknown</td></tr>
+<tr><td>24336</td><td>원범식</td><td>Archisculpture 042c</td><td>7000000.0</td><td>27328531.349541884</td><td>27190846.4877318</td><td>2.904075907077412</td><td>2.884406641104537</td><td>3.8844066411045373</td><td>14200.0</td><td>large_gte5000</td><td>pred_q5</td><td>sample_8_19</td><td>13</td><td>mixed_media__unknown</td></tr>
+<tr><td>28919</td><td>신에르</td><td>Spiritual Water</td><td>552000.0</td><td>1640191.2001627788</td><td>1631927.6935788293</td><td>1.9713608698601064</td><td>1.9563907492370112</td><td>2.9563907492370114</td><td>400.0</td><td>tiny_lt500</td><td>pred_q2</td><td>sample_8_19</td><td>13</td><td>mixed_media__unknown</td></tr>
+<tr><td>35090</td><td>김귤에</td><td>Equation-like Forms</td><td>3864000.0</td><td>11278341.025734344</td><td>11221519.208062783</td><td>1.9188253172190333</td><td>1.9041198778630453</td><td>2.9041198778630455</td><td>18402.3</td><td>large_gte5000</td><td>pred_q5</td><td>sample_20_99</td><td>36</td><td>mixed_media__canvas</td></tr>
+<tr><td>24357</td><td>원범식</td><td>Archisculpture 032</td><td>690000.0</td><td>1987268.149480992</td><td>1977256.021970691</td><td>1.8800987673637568</td><td>1.8655884376386815</td><td>2.8655884376386815</td><td>1150.0</td><td>small_500_1500</td><td>pred_q2</td><td>sample_8_19</td><td>13</td><td>mixed_media__unknown</td></tr>
+<tr><td>17271</td><td>손창범</td><td>explosion</td><td>1159200.0</td><td>3316553.3341589617</td><td>3299844.086901622</td><td>1.8610708541743977</td><td>1.8466563896666868</td><td>2.8466563896666868</td><td>21060.0</td><td>large_gte5000</td><td>pred_q3</td><td>sample_8_19</td><td>15</td><td>oil__canvas</td></tr>
+<tr><td>21794</td><td>송연</td><td>T11- W04</td><td>552000.0</td><td>1483328.1658148118</td><td>1475854.9565553379</td><td>1.6871887061862534</td><td>1.6736502836147442</td><td>2.6736502836147444</td><td>795.6600000000001</td><td>small_500_1500</td><td>pred_q2</td><td>sample_lt8</td><td>5</td><td>sculpture_material__metal</td></tr>
+<tr><td>22225</td><td>함도하</td><td>Surprise Tom</td><td>3174000.0</td><td>8320326.248791363</td><td>8278407.312309645</td><td>1.6214008345278397</td><td>1.60819386021098</td><td>2.60819386021098</td><td>1410.0</td><td>small_500_1500</td><td>pred_q4</td><td>sample_8_19</td><td>10</td><td>sculpture_material__unknown</td></tr>
+<tr><td>11782</td><td>고에즈</td><td>watercolor l#1</td><td>262200.0</td><td>668751.3681290405</td><td>665382.1076836685</td><td>1.550539161437988</td><td>1.5376891978782175</td><td>2.5376891978782177</td><td>645.16</td><td>small_500_1500</td><td>pred_q1</td><td>sample_8_19</td><td>12</td><td>painting_material__paper</td></tr>
+<tr><td>14260</td><td>디기탈드</td><td>dream</td><td>6582600.0</td><td>16720393.51631192</td><td>16636153.89723915</td><td>1.5400895567575</td><td>1.5272922397288553</td><td>2.527292239728855</td><td>10628.8</td><td>large_gte5000</td><td>pred_q5</td><td>sample_lt8</td><td>6</td><td>acrylic__canvas</td></tr>
+<tr><td>6365</td><td>디기탈드</td><td>forest of imagination: 3 balloons</td><td>2573700.0</td><td>6535048.065018954</td><td>6502123.603098703</td><td>1.5391646520647138</td><td>1.5263719948318404</td><td>2.52637199483184</td><td>521.1</td><td>small_500_1500</td><td>pred_q4</td><td>sample_lt8</td><td>6</td><td>acrylic__canvas</td></tr>
+<tr><td>19853</td><td>이예현</td><td>landing on the ground</td><td>1904400.0</td><td>4467207.419922273</td><td>4444701.020715457</td><td>1.3457295840801684</td><td>1.333911479056637</td><td>2.333911479056637</td><td>5285.29</td><td>large_gte5000</td><td>pred_q4</td><td>sample_lt8</td><td>6</td><td>mixed_media__canvas</td></tr>
+<tr><td>18367</td><td>오후이은</td><td>le grand blue mandala</td><td>869400.0</td><td>2006731.8673146567</td><td>1996621.6789438592</td><td>1.308180201650169</td><td>1.2965512755277866</td><td>2.296551275527787</td><td>6548.374</td><td>large_gte5000</td><td>pred_q2</td><td>sample_lt8</td><td>6</td><td>mixed_media__canvas</td></tr>
+<tr><td>42982</td><td>김정연</td><td>No Tears Left 5cm 2</td><td>4374600.0</td><td>9849451.907812312</td><td>9799829.028064882</td><td>1.2515091454789724</td><td>1.2401657358535378</td><td>2.240165735853538</td><td>38190.86</td><td>large_gte5000</td><td>pred_q5</td><td>sample_lt8</td><td>5</td><td>acrylic__canvas</td></tr>
+<tr><td>19160</td><td>이관희</td><td>from the hill</td><td>317400.0</td><td>700445.5663897675</td><td>696916.6262582866</td><td>1.206822830465556</td><td>1.195704556579353</td><td>2.195704556579353</td><td>2159.8381999999997</td><td>mid_1500_5000</td><td>pred_q1</td><td>sample_20_99</td><td>34</td><td>acrylic__paper</td></tr>
+<tr><td>53424</td><td>조문희</td><td>Scenes</td><td>2400000.0</td><td>5201590.55982445</td><td>5175384.238370083</td><td>1.167329399926854</td><td>1.1564100993208684</td><td>2.1564100993208686</td><td>10609.0</td><td>large_gte5000</td><td>pred_q4</td><td>sample_8_19</td><td>8</td><td>mixed_media__unknown</td></tr>
+<tr><td>27660</td><td>전미선</td><td>KOI 520G</td><td>3312000.0</td><td>7155234.672140002</td><td>7119185.62565259</td><td>1.1603969420712568</td><td>1.149512568131819</td><td>2.149512568131819</td><td>1011.24</td><td>small_500_1500</td><td>pred_q4</td><td>sample_lt8</td><td>6</td><td>mixed_media__unknown</td></tr>
+<tr><td>8326</td><td>김보민</td><td>three doors</td><td>1076400.0</td><td>2296048.4882234572</td><td>2284480.683325094</td><td>1.1330810927382546</td><td>1.122334339766901</td><td>2.122334339766901</td><td>3853.1</td><td>mid_1500_5000</td><td>pred_q3</td><td>sample_lt8</td><td>7</td><td>mixed_media__canvas</td></tr>
+<tr><td>21698</td><td>원희수</td><td>another planet</td><td>276000.0</td><td>586158.121039481</td><td>583204.9766182912</td><td>1.1237613081140616</td><td>1.1130615094865637</td><td>2.1130615094865637</td><td>1125.0</td><td>small_500_1500</td><td>pred_q1</td><td>sample_8_19</td><td>9</td><td>acrylic__panel</td></tr>
+<tr><td>21696</td><td>원희수</td><td>new year</td><td>276000.0</td><td>586158.121039481</td><td>583204.9766182912</td><td>1.1237613081140616</td><td>1.1130615094865637</td><td>2.1130615094865637</td><td>1125.0</td><td>small_500_1500</td><td>pred_q1</td><td>sample_8_19</td><td>9</td><td>acrylic__panel</td></tr>
+<tr><td>5939</td><td>유선</td><td>moly</td><td>2133480.0</td><td>4449565.549225232</td><td>4427148.03216498</td><td>1.0855904668547312</td><td>1.075082978122588</td><td>2.075082978122588</td><td>3869.0</td><td>mid_1500_5000</td><td>pred_q4</td><td>sample_20_99</td><td>31</td><td>acrylic__canvas</td></tr>
+<tr><td>3550</td><td>유선</td><td>blue abyss</td><td>1945800.0</td><td>4038487.819700708</td><td>4018141.3682114105</td><td>1.075489680183322</td><td>1.0650330805896855</td><td>2.0650330805896853</td><td>3445.0</td><td>mid_1500_5000</td><td>pred_q4</td><td>sample_20_99</td><td>31</td><td>oil__canvas</td></tr>
+<tr><td>22531</td><td>이재윤</td><td>Sakyamuni Buddha at Birth</td><td>4140000.0</td><td>8499243.095321625</td><td>8456422.751406975</td><td>1.052957269401359</td><td>1.0426141911611093</td><td>2.042614191161109</td><td>528.0</td><td>small_500_1500</td><td>pred_q4</td><td>sample_lt8</td><td>5</td><td>sculpture_material__unknown</td></tr>
+<tr><td>22201</td><td>이재윤</td><td>Sakyamuni Buddha</td><td>6900000.0</td><td>13853207.333828606</td><td>13783412.989120191</td><td>1.0077112078012471</td><td>0.9975960853797387</td><td>1.9975960853797385</td><td>2225.04</td><td>mid_1500_5000</td><td>pred_q5</td><td>sample_lt8</td><td>5</td><td>sculpture_material__unknown</td></tr>
+<tr><td>19854</td><td>이예현</td><td>father stands on the railing</td><td>1876800.0</td><td>3737728.31310279</td><td>3718897.1289571472</td><td>0.99154321883141</td><td>0.9815095529396577</td><td>1.9815095529396576</td><td>4405.62</td><td>mid_1500_5000</td><td>pred_q3</td><td>sample_lt8</td><td>6</td><td>mixed_media__canvas</td></tr>
+<tr><td>27224</td><td>박서보_A</td><td>Ecriture No.040412</td><td>165600000.0</td><td>10988111.056201072</td><td>10932751.4566318</td><td>0.9336466723659356</td><td>0.9339809694647837</td><td>0.06601903053521624</td><td>2397.85</td><td>mid_1500_5000</td><td>pred_q5</td><td>sample_20_99</td><td>21</td><td>other__canvas</td></tr>
+<tr><td>18373</td><td>오후이은</td><td>mandala_nature</td><td>400200.0</td><td>775952.7995991601</td><td>772043.4437462064</td><td>0.938912542726537</td><td>0.9291440373468416</td><td>1.9291440373468416</td><td>2090.3184</td><td>mid_1500_5000</td><td>pred_q1</td><td>sample_lt8</td><td>6</td><td>acrylic__canvas</td></tr>
+<tr><td>28769</td><td>박서보_A</td><td>Ecriture No. 040710</td><td>524400000.0</td><td>39239431.94727981</td><td>39041738.3465493</td><td>0.9251727079571324</td><td>0.9255496980424309</td><td>0.07445030195756913</td><td>21060.0</td><td>large_gte5000</td><td>pred_q5</td><td>sample_20_99</td><td>21</td><td>mixed_media__paper</td></tr>
+<tr><td>19849</td><td>이예현</td><td>neck</td><td>3408600.0</td><td>6483894.199308017</td><td>6451227.457527988</td><td>0.9022162175990194</td><td>0.8926325933016465</td><td>1.8926325933016463</td><td>10628.8</td><td>large_gte5000</td><td>pred_q4</td><td>sample_lt8</td><td>6</td><td>mixed_media__canvas</td></tr>
+<tr><td>48916</td><td>백혜림</td><td>Mom&#x27;s Sunflower</td><td>34914000.0</td><td>5891229.20824003</td><td>5861548.393378335</td><td>0.8312645583937667</td><td>0.8321146705224743</td><td>0.1678853294775256</td><td>19200.0</td><td>large_gte5000</td><td>pred_q4</td><td>sample_lt8</td><td>5</td><td>mixed_media__paper</td></tr>
+<tr><td>43230</td><td>정상희</td><td>The Forest Where Stars Awaken</td><td>552000.0</td><td>1015003.963052194</td><td>1009890.2348901471</td><td>0.8387752953844092</td><td>0.8295112950908474</td><td>1.8295112950908474</td><td>1683.5</td><td>mid_1500_5000</td><td>pred_q1</td><td>sample_lt8</td><td>7</td><td>acrylic__canvas</td></tr>
+<tr><td>43103</td><td>김정연</td><td>Composition No19</td><td>43732200.0</td><td>7888885.420242438</td><td>7849140.141397079</td><td>0.8196092256908539</td><td>0.8205180589726319</td><td>0.17948194102736814</td><td>21134.66</td><td>large_gte5000</td><td>pred_q4</td><td>sample_lt8</td><td>5</td><td>acrylic__canvas</td></tr>
+<tr><td>29396</td><td>윤정희</td><td>7 Square Loops (Blue)</td><td>44160000.0</td><td>8751603.86197836</td><td>8707512.090161528</td><td>0.801820564719693</td><td>0.8028190196974289</td><td>0.19718098030257103</td><td>2585.0</td><td>mid_1500_5000</td><td>pred_q4</td><td>sample_8_19</td><td>13</td><td>textile__unknown</td></tr>
+<tr><td>19795</td><td>장경기</td><td>dna in cosmic egg- mother language in my mind-12</td><td>2221800.0</td><td>3986313.8513731863</td><td>3966230.2594399834</td><td>0.7941821277222011</td><td>0.7851427938788295</td><td>1.7851427938788296</td><td>5828.0</td><td>large_gte5000</td><td>pred_q3</td><td>sample_8_19</td><td>18</td><td>oil__canvas</td></tr>
+<tr><td>21688</td><td>원희수</td><td>hey bunny!</td><td>772800.0</td><td>1375913.3343391847</td><td>1368981.295625574</td><td>0.7804261572712017</td><td>0.7714561278798829</td><td>1.771456127879883</td><td>3450.2999999999997</td><td>mid_1500_5000</td><td>pred_q2</td><td>sample_8_19</td><td>9</td><td>mixed_media__canvas</td></tr>
+<tr><td>53145</td><td>정은주</td><td>Brush stroke</td><td>2000000.0</td><td>3540165.563640626</td><td>3522329.727525604</td><td>0.7700827818203131</td><td>0.7611648637627996</td><td>1.7611648637627995</td><td>1024.0</td><td>small_500_1500</td><td>pred_q3</td><td>sample_lt8</td><td>5</td><td>acrylic__canvas</td></tr>
+<tr><td>53151</td><td>정은주</td><td>Brush stroke</td><td>2000000.0</td><td>3540165.563640626</td><td>3522329.727525604</td><td>0.7700827818203131</td><td>0.7611648637627996</td><td>1.7611648637627995</td><td>1024.0</td><td>small_500_1500</td><td>pred_q3</td><td>sample_lt8</td><td>5</td><td>acrylic__canvas</td></tr>
+<tr><td>43444</td><td>주주원</td><td>The Next</td><td>138000.0</td><td>243777.239594444</td><td>242549.0566702794</td><td>0.7665017361916231</td><td>0.7576018599295652</td><td>1.7576018599295653</td><td>320.40999999999997</td><td>tiny_lt500</td><td>pred_q1</td><td>sample_lt8</td><td>5</td><td>acrylic__canvas</td></tr>
+<tr><td>28923</td><td>윤정희</td><td>7 Square Loops (Blue)</td><td>33120000.0</td><td>8751603.86197836</td><td>8707512.090161528</td><td>0.7357607529595906</td><td>0.7370920262632389</td><td>0.2629079737367611</td><td>2585.0</td><td>mid_1500_5000</td><td>pred_q4</td><td>sample_8_19</td><td>13</td><td>textile__unknown</td></tr>
+<tr><td>28125</td><td>전미선</td><td>KOI 558</td><td>2898000.0</td><td>4983364.284957538</td><td>4958257.417188181</td><td>0.7195873999163348</td><td>0.7109238844679732</td><td>1.710923884467973</td><td>1011.24</td><td>small_500_1500</td><td>pred_q4</td><td>sample_lt8</td><td>6</td><td>mixed_media__canvas</td></tr>
+<tr><td>24600</td><td>조성연</td><td>A Complete Coinsidence_Red Ball, a Block of Wood, Triangle, Strange Encounter of Plants</td><td>4968000.0</td><td>8450555.270680564</td><td>8407980.222655464</td><td>0.7009974377376336</td><td>0.6924275810498116</td><td>1.6924275810498115</td><td>13520.0</td><td>large_gte5000</td><td>pred_q4</td><td>sample_20_99</td><td>41</td><td>mixed_media__unknown</td></tr>
+<tr><td>43221</td><td>정상희</td><td>The Place Where a Small Light Lingered</td><td>731400.0</td><td>1239316.564824575</td><td>1233072.719233887</td><td>0.6944443052017707</td><td>0.685907464087895</td><td>1.685907464087895</td><td>1800.0</td><td>mid_1500_5000</td><td>pred_q2</td><td>sample_lt8</td><td>7</td><td>acrylic__canvas</td></tr>
+<tr><td>53552</td><td>왈치라차이삭우르</td><td>The Capital</td><td>6378600.0</td><td>10782260.772952003</td><td>10727938.27513695</td><td>0.6903804554215667</td><td>0.6818640885361901</td><td>1.68186408853619</td><td>16900.0</td><td>large_gte5000</td><td>pred_q5</td><td>sample_8_19</td><td>9</td><td>acrylic__canvas</td></tr>
+<tr><td>29178</td><td>하승</td><td>Moon #3</td><td>8418000.0</td><td>2716657.836618091</td><td>2702970.9445551443</td><td>0.6772798958638522</td><td>0.678905803687913</td><td>0.321094196312087</td><td>10000.0</td><td>large_gte5000</td><td>pred_q3</td><td>sample_lt8</td><td>5</td><td>other__linen</td></tr>
+<tr><td>20895</td><td>최예원</td><td>untitled</td><td>1167204.0</td><td>1949516.6271654735</td><td>1939694.6969645945</td><td>0.6702449847374355</td><td>0.6618300630948751</td><td>1.6618300630948752</td><td>2438.0</td><td>mid_1500_5000</td><td>pred_q2</td><td>sample_lt8</td><td>5</td><td>other__canvas</td></tr>
+<tr><td>858</td><td>제야흐렌</td><td>lingering surface iii</td><td>2028600.0</td><td>3363573.943723198</td><td>3346627.8002328603</td><td>0.65807647822301</td><td>0.649722863173056</td><td>1.649722863173056</td><td>6608.43</td><td>large_gte5000</td><td>pred_q3</td><td>sample_lt8</td><td>5</td><td>oil__panel</td></tr>
+</table>
+<h2>7. 산출물</h2>
+<li>`outputs/candidate_metrics.csv`</li>
+<li>`outputs/validation_segment_error_summary.csv`</li>
+<li>`outputs/test_predictions_with_corrections.csv`</li>
+<li>`outputs/best_candidate_large_errors.csv`</li>
+<li>`artifacts/*_correction_table.csv`</li>
+<li>`reports/result_report.md`</li>
+<li>`reports/result_report.html`</li>
+</body>
+</html>

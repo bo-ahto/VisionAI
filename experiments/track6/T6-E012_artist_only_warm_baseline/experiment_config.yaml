@@ -1,0 +1,12 @@
+experiment_id: T6-E012
+status: planned
+phase: basic_feature_definition
+title: 작가명 only Warm 기준 실험
+goal: T6-G3 Warm 성능 개선
+hypothesis: Warm에서는 작가명만으로도 작가별 기본 가격대를 상당 부분 설명할 수 있다.
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+train_features: artist_name_ko
+test_features: artist_name_ko
+target: ln_price_krw
+compare_against: artist_name_ko only vs artist_name_ko + ln_estimated_ho
+success_criteria: 작가명 효과와 크기 효과를 분리 설명

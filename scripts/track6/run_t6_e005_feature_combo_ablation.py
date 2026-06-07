@@ -10,8 +10,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor
+from lightgbm import LGBMRegressor
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import HuberRegressor
 from sklearn.pipeline import Pipeline
@@ -146,7 +146,24 @@ def onehot_preprocessor(columns: list[str]) -> ColumnTransformer:
     ])
 
 
-def warm_model() -> CatBoostRegressor:
+def cat_ready(x: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    numeric, categorical = split_feature_types(columns)
+    out = x.copy()
+    for col in numeric:
+        out[col] = pd.to_numeric(out[col], errors="coerce").fillna(0.0)
+    for col in categorical:
+        out[col] = out[col].fillna("__MISSING__").astype(str)
+    return out
+
+
+def warm_model(columns: list[str]) -> Pipeline:
+    return Pipeline([
+        ("prep", onehot_preprocessor(columns)),
+        ("model", HuberRegressor(alpha=0.0001, epsilon=1.35, max_iter=3000)),
+    ])
+
+
+def cold_catboost_model() -> CatBoostRegressor:
     return CatBoostRegressor(
         loss_function="RMSE",
         iterations=500,
@@ -159,25 +176,21 @@ def warm_model() -> CatBoostRegressor:
     )
 
 
-def cold_median_model(columns: list[str]) -> Pipeline:
+def cold_lightgbm_model(columns: list[str]) -> Pipeline:
     return Pipeline([
         ("prep", ordinal_preprocessor(columns)),
-        ("model", HistGradientBoostingRegressor(
-            loss="quantile",
-            quantile=0.5,
-            learning_rate=0.05,
-            max_iter=250,
-            max_leaf_nodes=31,
-            l2_regularization=0.05,
+        ("model", LGBMRegressor(
+            objective="regression",
+            n_estimators=350,
+            learning_rate=0.04,
+            num_leaves=31,
+            min_child_samples=40,
+            subsample=0.9,
+            colsample_bytree=0.9,
+            reg_lambda=1.0,
             random_state=20260518,
+            verbosity=-1,
         )),
-    ])
-
-
-def cold_tail_model(columns: list[str]) -> Pipeline:
-    return Pipeline([
-        ("prep", onehot_preprocessor(columns)),
-        ("model", HuberRegressor(alpha=0.001, epsilon=1.35, max_iter=1000)),
     ])
 
 
@@ -220,18 +233,18 @@ def run_warm(train_f: pd.DataFrame, train_l: pd.DataFrame, val_f: pd.DataFrame, 
         warm_columns = columns + ARTIST_FEATURES
         x_train, y_train, _price_train, _merged_train = merge_xy(train_f, train_l, warm_columns)
         x_val, _y_val, y_price, merged_val = merge_xy(val_f, val_l, warm_columns)
-        model = warm_model()
-        model.fit(x_train, y_train, cat_features=cat_feature_indices(warm_columns))
+        model = warm_model(warm_columns)
+        model.fit(x_train, y_train)
         pred_log = np.asarray(model.predict(x_val), dtype=float)
         row = {
             "split": "val_warm",
-            "model": "catboost_warm_artist",
+            "model": "huber_warm_artist",
             "feature_set": feature_set,
             "features": warm_columns,
         }
         row.update(metrics(y_price, pred_log))
         rows.append(row)
-        preds.append(prediction_frame("val_warm", f"catboost_warm_artist__{feature_set}", merged_val, pred_log))
+        preds.append(prediction_frame("val_warm", f"huber_warm_artist__{feature_set}", merged_val, pred_log))
     return rows, preds
 
 
@@ -241,17 +254,23 @@ def run_cold(train_f: pd.DataFrame, train_l: pd.DataFrame, val_f: pd.DataFrame, 
     for feature_set, columns in FEATURE_SETS.items():
         x_train, y_train, _price_train, _merged_train = merge_xy(train_f, train_l, columns)
         x_val, _y_val, y_price, merged_val = merge_xy(val_f, val_l, columns)
-        for model_name, build in [
-            ("hist_quantile_cold", cold_median_model),
-            ("huber_cold", cold_tail_model),
-        ]:
-            model = build(columns)
-            model.fit(x_train, y_train)
-            pred_log = np.asarray(model.predict(x_val), dtype=float)
-            row = {"split": "val_cold", "model": model_name, "feature_set": feature_set, "features": columns}
-            row.update(metrics(y_price, pred_log))
-            rows.append(row)
-            preds.append(prediction_frame("val_cold", f"{model_name}__{feature_set}", merged_val, pred_log))
+        cat = cold_catboost_model()
+        x_train_cat = cat_ready(x_train, columns)
+        x_val_cat = cat_ready(x_val, columns)
+        cat.fit(x_train_cat, y_train, cat_features=cat_feature_indices(columns))
+        pred_log = np.asarray(cat.predict(x_val_cat), dtype=float)
+        row = {"split": "val_cold", "model": "catboost_cold", "feature_set": feature_set, "features": columns}
+        row.update(metrics(y_price, pred_log))
+        rows.append(row)
+        preds.append(prediction_frame("val_cold", f"catboost_cold__{feature_set}", merged_val, pred_log))
+
+        lgbm = cold_lightgbm_model(columns)
+        lgbm.fit(x_train, y_train)
+        pred_log = np.asarray(lgbm.predict(x_val), dtype=float)
+        row = {"split": "val_cold", "model": "lightgbm_cold", "feature_set": feature_set, "features": columns}
+        row.update(metrics(y_price, pred_log))
+        rows.append(row)
+        preds.append(prediction_frame("val_cold", f"lightgbm_cold__{feature_set}", merged_val, pred_log))
     return rows, preds
 
 
@@ -273,8 +292,8 @@ def render_experiment(result: dict[str, Any]) -> str:
         "",
         "## 1. 실험 방법",
         "",
-        "- Warm: T6-E003에서 검증된 `CatBoost + artist_key` 구조를 고정하고 피처 조합만 변경",
-        "- Cold: T6-E004에서 확인한 `hist_quantile`과 `huber`를 사용해 대표 오차와 큰 오차를 같이 확인",
+        "- Warm: `Huber + artist_key one-hot` 구조를 고정하고 피처 조합만 변경",
+        "- Cold: `CatBoost`와 `LightGBM`을 사용해 대표 오차와 큰 오차를 같이 확인",
         "- size bucket은 train 기준 `log_area` 분위수로 만들고 validation에는 같은 기준을 적용",
         "- 정답 가격은 feature 생성에 사용하지 않고 평가 단계에서만 label 파일을 결합",
         "",
@@ -337,7 +356,7 @@ def update_docs(result: dict[str, Any]) -> None:
     results = REPO / "docs" / "track6" / "tables" / "experiment_results_table.md"
     row = (
         f"| {result['created_at']} | T6-E005 | T6-H5 | 검증 완료 | Track6 name-corrected split | "
-        "CatBoost / HistQuantile / Huber | 운영 가능 조합 피처 | "
+        "Huber / CatBoost / LightGBM | 운영 가능 조합 피처 | "
         f"best `{warm_best['median_ape']:.4f}` (`{warm_best['feature_set']}`) | "
         f"median best `{cold_best['median_ape']:.4f}` (`{cold_best['feature_set']}`), p95 best `{cold_tail_best['p95_ape']:.4f}` (`{cold_tail_best['feature_set']}`) | "
         "Warm/Cold별 후보 피처셋 분리 필요 | [기록](../experiments/2026-05-18_T6-E005_feature_combo_ablation.md) |"

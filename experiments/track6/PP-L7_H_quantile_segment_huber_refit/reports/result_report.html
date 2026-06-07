@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>PP-L7-H Quantile 구간별 Huber 상세 학습</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;margin:28px;color:#1f2933}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left}th{background:#eef2f7}code{background:#f3f4f6;padding:2px 4px;border-radius:4px}</style></head>
+<body><h1>PP-L7-H Quantile 구간별 Huber 상세 학습</h1>
+<p>기준 split과 final artifact 피처셋을 고정하고 validation 기준으로 보정값을 산정했다.</p>
+<h2>Validation 결과</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>n</th>
+      <th>notes</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-L7-H</td>
+      <td>B0_Warm_Huber</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>final artifact baseline</td>
+      <td>0.644612</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+    </tr>
+    <tr>
+      <td>PP-L7-H</td>
+      <td>PP-L7-H_warm_segment_huber_refit</td>
+      <td>warm</td>
+      <td>validation</td>
+      <td>519</td>
+      <td>separate model by quantile-width segment</td>
+      <td>0.660940</td>
+      <td>0.243002</td>
+      <td>0.481171</td>
+      <td>1.464316</td>
+      <td>0.554913</td>
+      <td>0.722543</td>
+    </tr>
+    <tr>
+      <td>PP-L7-H</td>
+      <td>B1_Cold_CatBoost</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>final artifact baseline</td>
+      <td>0.715317</td>
+      <td>0.436992</td>
+      <td>0.760649</td>
+      <td>2.513995</td>
+      <td>0.363240</td>
+      <td>0.546313</td>
+    </tr>
+    <tr>
+      <td>PP-L7-H</td>
+      <td>PP-L7-H_cold_segment_huber_refit</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>2753</td>
+      <td>separate model by quantile-width segment</td>
+      <td>0.759072</td>
+      <td>0.438100</td>
+      <td>0.815089</td>
+      <td>3.219997</td>
+      <td>0.343262</td>
+      <td>0.578641</td>
+    </tr>
+  </tbody>
+</table>
+<h2>통계 검증</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>test_type</th>
+      <th>scope</th>
+      <th>candidate</th>
+      <th>baseline</th>
+      <th>mean_ape_delta</th>
+      <th>ci_low</th>
+      <th>ci_high</th>
+      <th>wilcoxon_p</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-L7-H</td>
+      <td>paired_bootstrap_wilcoxon</td>
+      <td>cold</td>
+      <td>PP-L7-H_cold_segment_huber_refit</td>
+      <td>B1_Cold_CatBoost</td>
+      <td>0.054441</td>
+      <td>0.022429</td>
+      <td>0.087181</td>
+      <td>0.000972</td>
+    </tr>
+    <tr>
+      <td>PP-L7-H</td>
+      <td>paired_bootstrap_wilcoxon</td>
+      <td>warm</td>
+      <td>PP-L7-H_warm_segment_huber_refit</td>
+      <td>B0_Warm_Huber</td>
+      <td>0.064491</td>
+      <td>0.020262</td>
+      <td>0.118990</td>
+      <td>0.565374</td>
+    </tr>
+  </tbody>
+</table>
+<h2>구간 기준</h2><p>구간 기준 없음</p>
+</body></html>

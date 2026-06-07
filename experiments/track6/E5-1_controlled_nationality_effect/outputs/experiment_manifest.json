@@ -1,0 +1,148 @@
+{
+  "created_at": "2026-05-29T10:36:02",
+  "experiment_id": "E5-1",
+  "description": "Group E controlled artist nationality experiment",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/E5-1_controlled_nationality_effect/experiment_config.json",
+  "prompt_file": "experiments/track6/E5-1_controlled_nationality_effect/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "estimated_ho",
+      "ln_estimated_ho",
+      "artist_meta_nationality_is_missing"
+    ],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore",
+    "numeric_categorical_interactions": [],
+    "numeric_categorical_interaction_mappings": [],
+    "numeric_numeric_interactions": [],
+    "numeric_numeric_interaction_mappings": []
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "통제 기준: 작품 기본 피처",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support"
+      ],
+      "description": "국적을 제외하고 호수, 난트 재료, 난트 도구, 난트 지지체만 사용"
+    },
+    {
+      "name": "통제 기준 + 국적",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_nationality"
+      ],
+      "description": "작품 기본 조건을 유지한 상태에서 작가 국적만 추가"
+    },
+    {
+      "name": "통제 기준 + 국적 + 국적 결측 여부",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_nationality",
+        "artist_meta_nationality_is_missing"
+      ],
+      "description": "작품 기본 조건에 국적 값과 국적 정보가 비어 있는 상태를 함께 추가"
+    }
+  ],
+  "bucket_features": [
+    {
+      "source_col": "estimated_ho",
+      "bucket_col": "ho_control_bucket",
+      "top_n": 40,
+      "other_value": "other_ho"
+    }
+  ],
+  "combo_features": [],
+  "numeric_categorical_interactions": [],
+  "numeric_categorical_interaction_mappings": [],
+  "numeric_numeric_interactions": [],
+  "numeric_numeric_interaction_mappings": [],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/E5-1_controlled_nationality_effect/data/train_features.csv",
+    "train_labels": "experiments/track6/E5-1_controlled_nationality_effect/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/E5-1_controlled_nationality_effect/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/E5-1_controlled_nationality_effect/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/E5-1_controlled_nationality_effect/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/E5-1_controlled_nationality_effect/data/test_cold_labels.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/E5-1_controlled_nationality_effect/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/E5-1_controlled_nationality_effect/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/E5-1_controlled_nationality_effect/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/E5-1_controlled_nationality_effect/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/E5-1_controlled_nationality_effect/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/E5-1_controlled_nationality_effect/source_data/track6_test_cold_labels.csv"
+  }
+}

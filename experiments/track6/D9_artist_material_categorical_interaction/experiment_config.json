@@ -1,0 +1,54 @@
+{
+  "experiment_id": "D9",
+  "title": "Track6 D9 artist_name x 재료 범주형 조합 실험 결과",
+  "purpose": "특정 작가가 특정 재료에서 가격 프리미엄을 갖는지 확인",
+  "description": "Group D artist and artwork variable interaction: artist_name_ko combined with NANT material",
+  "exp_dir": "experiments/track6/D9_artist_material_categorical_interaction",
+  "prompt_file": "experiments/track6/D9_artist_material_categorical_interaction/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": ["artist_name_ko", "nant_material_idx", "nant_tool"],
+  "combo_features": [
+    {
+      "source_cols": ["artist_name_ko", "nant_material_idx"],
+      "combo_col": "artist_material_idx_combo",
+      "top_n": 160,
+      "other_value": "other_artist_material_idx"
+    },
+    {
+      "source_cols": ["artist_name_ko", "nant_tool"],
+      "combo_col": "artist_tool_combo",
+      "top_n": 120,
+      "other_value": "other_artist_tool"
+    }
+  ],
+  "numeric_features": [],
+  "variable_blocks": [
+    {
+      "name": "D9 기준: 작가명 + 난트 재료",
+      "features": ["artist_name_ko", "nant_material_idx", "nant_tool"],
+      "description": "작가명과 재료의 개별 효과만 사용"
+    },
+    {
+      "name": "D9 조합: 작가명 x 난트 재료번호",
+      "features": ["artist_name_ko", "nant_material_idx", "nant_tool", "artist_material_idx_combo"],
+      "description": "작가별 특정 재료번호 프리미엄 확인"
+    },
+    {
+      "name": "D9 조합: 작가명 x 난트 도구명",
+      "features": ["artist_name_ko", "nant_tool", "artist_tool_combo"],
+      "description": "작가별 유화/아크릴 등 재료명 프리미엄 확인"
+    }
+  ],
+  "comment": {
+    "실험 목적": "특정 작가가 특정 재료를 사용할 때 가격 프리미엄이 생기는지 확인한다.",
+    "실험군": "Group D: 작가명과 작품 변수의 교차항",
+    "기준선": "artist_name_ko + nant_material_idx + nant_tool",
+    "학습 피처": "기준선과 artist_name_ko x NANT 재료 조합 피처",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "구현 방식": "범주형 변수끼리의 조합이므로 상위 조합만 유지하고 나머지는 other로 묶는다.",
+    "해석 중심": "작가명이 들어간 조합 피처이므로 Warm 결과를 중심으로 판단한다.",
+    "Cold 해석 주의": "Cold는 신규 작가 상황이라 조합 피처 대부분이 other로 처리될 수 있어 참고값으로만 본다.",
+    "해석 기준": "조합 피처 추가 후 Warm MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 작가별 재료 프리미엄이 있다고 본다."
+  }
+}

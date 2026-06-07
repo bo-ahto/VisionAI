@@ -1,0 +1,49 @@
+{
+  "experiment_id": "B2",
+  "title": "Track6 B2 작가명 처리 방식 비교 실험 결과",
+  "purpose": "같은 작가명 변수를 모델에 넣는 방식에 따라 Warm 가격 예측 성능이 달라지는지 확인",
+  "description": "Compare artist_name_ko one-hot, frequency, target mean, and smoothed target mean encodings",
+  "exp_dir": "experiments/track6/B2_artist_name_encoding_compare",
+  "prompt_file": "experiments/track6/B2_artist_name_encoding_compare/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "source_b1": "experiments/track6/B1_artist_name_only/outputs/metrics_long.csv",
+  "target_encoding_smoothing_m": 10,
+  "encoding_blocks": [
+    {
+      "name": "one_hot",
+      "features": ["artist_name_ko"],
+      "numeric_features": [],
+      "description": "B1과 동일한 작가명 범주형 one-hot 기준"
+    },
+    {
+      "name": "frequency_log",
+      "features": ["artist_frequency_log"],
+      "numeric_features": ["artist_frequency_log"],
+      "description": "train 안에서 작가명이 등장한 횟수의 로그값"
+    },
+    {
+      "name": "target_mean_log",
+      "features": ["artist_target_mean_log"],
+      "numeric_features": ["artist_target_mean_log"],
+      "description": "train 안에서 계산한 작가별 평균 로그가격"
+    },
+    {
+      "name": "smoothed_target_mean_log",
+      "features": ["artist_smoothed_target_mean_log"],
+      "numeric_features": ["artist_smoothed_target_mean_log"],
+      "description": "작품 수가 적은 작가를 전체 평균 쪽으로 보정한 작가별 평균 로그가격"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작가명 한글을 그대로 범주형으로 넣는 방식과 숫자형으로 요약해 넣는 방식을 비교한다.",
+    "실험군": "Group B: 작가 변수만",
+    "비교 기준": "B1 one-hot 결과를 기준으로 frequency, target mean, smoothed target mean을 비교한다.",
+    "학습 피처": "artist_name_ko 또는 작가명에서 train 내부 기준으로 만든 encoding 값 1개",
+    "테스트 피처": "학습 피처와 같은 encoding 방식으로 만든 값 1개",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "누수 방지": "target mean 계열 encoding은 train label만으로 계산하고, warm/cold test label은 성능 계산에만 사용한다.",
+    "해석 주의": "Cold는 신규 작가명이므로 artist_name 기반 encoding이 대부분 전체 평균 또는 미학습값 처리로 들어가며, 최종 Cold 모델 판단에는 쓰지 않는다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE를 확인한다.",
+    "결론 기준": "Warm에서 B1 one-hot보다 MdAPE 또는 RMSE(log)가 개선되면 해당 encoding 방식을 후속 Warm 후보로 둔다."
+  }
+}

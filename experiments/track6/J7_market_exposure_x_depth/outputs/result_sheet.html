@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 J7 시장 노출/정보량 x 깊이 교차항 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 J7 시장 노출/정보량 x 깊이 교차항 실험 결과</h1>
+    <ul>
+      <li>목적: 작가의 시장 노출/정보량에 따라 입체성 효과가 다르게 나타나는지 확인</li>
+      <li>실험 ID: <code>J7</code></li>
+      <li>Warm 최고: <code>J7 교차항: 시장 노출/정보량 x 깊이</code> / <code>Huber</code> / MdAPE 0.7582</li>
+      <li>Cold 최고: <code>J7 기준: 시장 노출/정보량 + 깊이</code> / <code>LightGBM</code> / MdAPE 0.6793</li>
+      <li>생성일: <code>2026-05-27T22:34:44</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/J7_market_exposure_x_depth/data/train_features.csv</code><br><code>experiments/track6/J7_market_exposure_x_depth/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/J7_market_exposure_x_depth/data/test_warm_features.csv</code><br><code>experiments/track6/J7_market_exposure_x_depth/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/J7_market_exposure_x_depth/data/test_cold_features.csv</code><br><code>experiments/track6/J7_market_exposure_x_depth/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/J7_market_exposure_x_depth/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/J7_market_exposure_x_depth/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>depth_cm, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_x_depth, artist_meta_for_sale_works_x_depth, artist_meta_followers_x_depth, artist_meta_is_p1_x_depth, artist_meta_available_count_x_depth, artist_meta_completeness_score_x_depth</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>작가의 시장 노출/정보량에 따라 입체성 효과가 다르게 나타나는지 확인</td></tr><tr><td>학습 피처</td><td>depth_cm, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score / depth_cm, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_x_depth, artist_meta_for_sale_works_x_depth, artist_meta_followers_x_depth, artist_meta_is_p1_x_depth, artist_meta_available_count_x_depth, artist_meta_completeness_score_x_depth</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>실험군</td><td>Group J: 작가 메타와 작품 변수 교차항</td></tr><tr><td>purpose</td><td>작가의 시장 노출/정보량에 따라 입체성 효과가 다르게 나타나는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 J7 교차항: 시장 노출/정보량 x 깊이 + Huber(MdAPE 0.7582), Cold 최고는 J7 기준: 시장 노출/정보량 + 깊이 + LightGBM(MdAPE 0.6793)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>J7 기준: 시장 노출/정보량 + 깊이</h2>
+              <p><strong>사용 피처:</strong> <code>depth_cm, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score</code> · 개별 효과만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0211</td><td>1.3472</td><td>0.7660</td><td>6.0162</td><td>0.1993</td><td>0.3147</td><td>1.4341</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0142</td><td>1.3520</td><td>0.7684</td><td>6.2307</td><td>0.2010</td><td>0.3180</td><td>1.4963</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0142</td><td>1.3520</td><td>0.7684</td><td>6.2308</td><td>0.2010</td><td>0.3180</td><td>1.4963</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0546</td><td>1.2779</td><td>0.7005</td><td>6.8551</td><td>0.2130</td><td>0.3320</td><td>1.3219</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0530</td><td>1.2790</td><td>0.7058</td><td>6.8463</td><td>0.2197</td><td>0.3362</td><td>1.3306</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.1299</td><td>1.2260</td><td>0.6793</td><td>4.7550</td><td>0.1991</td><td>0.3540</td><td>1.2302</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>J7 교차항: 시장 노출/정보량 x 깊이</h2>
+              <p><strong>사용 피처:</strong> <code>depth_cm, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_available_count, artist_meta_completeness_score, artist_meta_total_works_x_depth, artist_meta_for_sale_works_x_depth, artist_meta_followers_x_depth, artist_meta_is_p1_x_depth, artist_meta_available_count_x_depth, artist_meta_completeness_score_x_depth</code> · 시장 노출/정보량별 입체성 프리미엄 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.0247</td><td>1.3448</td><td>0.7582</td><td>5.8385</td><td>0.1993</td><td>0.3081</td><td>1.4376</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.0201</td><td>1.3480</td><td>0.7661</td><td>6.2344</td><td>0.1960</td><td>0.3163</td><td>1.4882</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.0201</td><td>1.3480</td><td>0.7661</td><td>6.2355</td><td>0.1960</td><td>0.3163</td><td>1.4882</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.0518</td><td>1.2798</td><td>0.7043</td><td>6.8994</td><td>0.2136</td><td>0.3311</td><td>1.3659</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0510</td><td>1.2804</td><td>0.7095</td><td>6.9398</td><td>0.2207</td><td>0.3369</td><td>1.3317</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.1364</td><td>1.2214</td><td>0.6801</td><td>4.8879</td><td>0.2085</td><td>0.3537</td><td>1.2275</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/J7_market_exposure_x_depth/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/J7_market_exposure_x_depth/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/J7_market_exposure_x_depth/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/J7_market_exposure_x_depth/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/J7_market_exposure_x_depth/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/J7_market_exposure_x_depth/data/test_cold_labels.csv</code></li><li><code>numeric_numeric_interaction_mapping</code>: <code>experiments/track6/J7_market_exposure_x_depth/outputs/numeric_numeric_interaction_mapping.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/J7_market_exposure_x_depth/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

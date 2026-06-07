@@ -1,0 +1,102 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-K6</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left}th{background:#eef2f7}</style></head>
+<body><h1>PP-K6 OOF stacking 조합</h1><h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>notes</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-K6</td>
+      <td>baseline_cold_lightgbm</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>baseline</td>
+      <td></td>
+      <td>0.690051</td>
+      <td>0.385113</td>
+      <td>0.716897</td>
+      <td>2.025032</td>
+      <td>0.390120</td>
+      <td>0.598256</td>
+    </tr>
+    <tr>
+      <td>PP-K6</td>
+      <td>ridge_oof_stack_cold_catboost_lightgbm</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>oof_stacking</td>
+      <td></td>
+      <td>0.697706</td>
+      <td>0.388015</td>
+      <td>0.741717</td>
+      <td>2.085775</td>
+      <td>0.391210</td>
+      <td>0.617508</td>
+    </tr>
+    <tr>
+      <td>PP-K6</td>
+      <td>baseline_cold_lightgbm</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>baseline</td>
+      <td></td>
+      <td>0.968693</td>
+      <td>0.490857</td>
+      <td>1.413092</td>
+      <td>4.821175</td>
+      <td>0.301710</td>
+      <td>0.513069</td>
+    </tr>
+    <tr>
+      <td>PP-K6</td>
+      <td>ridge_oof_stack_cold_catboost_lightgbm</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>oof_stacking</td>
+      <td></td>
+      <td>0.977363</td>
+      <td>0.494555</td>
+      <td>1.437425</td>
+      <td>4.764165</td>
+      <td>0.290416</td>
+      <td>0.504356</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Policy Map</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>scope</th>
+      <th>model</th>
+      <th>features</th>
+      <th>coef_catboost</th>
+      <th>coef_lightgbm</th>
+      <th>intercept</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-K6</td>
+      <td>cold</td>
+      <td>Ridge</td>
+      <td>[cold_catboost_pred_log, cold_lightgbm_pred_log]</td>
+      <td>-0.201975</td>
+      <td>1.221684</td>
+      <td>-0.297107</td>
+    </tr>
+  </tbody>
+</table></body></html>

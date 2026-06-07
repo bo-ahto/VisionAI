@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 J5 활동량/인지도 x 면적 교차항 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 J5 활동량/인지도 x 면적 교차항 실험 결과</h1>
+    <ul>
+      <li>목적: 작가의 활동량/인지도에 따라 면적 효과가 다르게 나타나는지 확인</li>
+      <li>실험 ID: <code>J5</code></li>
+      <li>Warm 최고: <code>J5 교차항: 활동량/인지도 x 면적</code> / <code>Huber</code> / MdAPE 0.4754</li>
+      <li>Cold 최고: <code>J5 교차항: 활동량/인지도 x 면적</code> / <code>LightGBM</code> / MdAPE 0.4516</li>
+      <li>생성일: <code>2026-05-27T22:33:59</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/J5_activity_popularity_x_log_area/data/train_features.csv</code><br><code>experiments/track6/J5_activity_popularity_x_log_area/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/J5_activity_popularity_x_log_area/data/test_warm_features.csv</code><br><code>experiments/track6/J5_activity_popularity_x_log_area/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/J5_activity_popularity_x_log_area/data/test_cold_features.csv</code><br><code>experiments/track6/J5_activity_popularity_x_log_area/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/J5_activity_popularity_x_log_area/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/J5_activity_popularity_x_log_area/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>log_area, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_total_works_x_log_area, artist_meta_for_sale_works_x_log_area, artist_meta_followers_x_log_area, artist_meta_is_p1_x_log_area</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>작가의 활동량/인지도에 따라 면적 효과가 다르게 나타나는지 확인</td></tr><tr><td>학습 피처</td><td>log_area, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1 / log_area, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_total_works_x_log_area, artist_meta_for_sale_works_x_log_area, artist_meta_followers_x_log_area, artist_meta_is_p1_x_log_area</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>데이터 기준</td><td>작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE</td></tr><tr><td>실험군</td><td>Group J: 작가 메타와 작품 변수 교차항</td></tr><tr><td>purpose</td><td>작가의 활동량/인지도에 따라 면적 효과가 다르게 나타나는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 J5 교차항: 활동량/인지도 x 면적 + Huber(MdAPE 0.4754), Cold 최고는 J5 교차항: 활동량/인지도 x 면적 + LightGBM(MdAPE 0.4516)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>J5 기준: 활동량/인지도 + 면적</h2>
+              <p><strong>사용 피처:</strong> <code>log_area, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1</code> · 개별 효과만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.5125</td><td>0.9508</td><td>0.4793</td><td>2.6213</td><td>0.3377</td><td>0.5074</td><td>0.7379</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.5010</td><td>0.9619</td><td>0.5034</td><td>3.0609</td><td>0.3311</td><td>0.4959</td><td>0.7871</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.5010</td><td>0.9619</td><td>0.5034</td><td>3.0609</td><td>0.3311</td><td>0.4959</td><td>0.7871</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4797</td><td>0.9480</td><td>0.4866</td><td>3.2472</td><td>0.2885</td><td>0.5131</td><td>1.1464</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4845</td><td>0.9436</td><td>0.4831</td><td>3.1591</td><td>0.2898</td><td>0.5163</td><td>1.1132</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.5416</td><td>0.8898</td><td>0.4608</td><td>3.0955</td><td>0.3266</td><td>0.5379</td><td>1.1736</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>J5 교차항: 활동량/인지도 x 면적</h2>
+              <p><strong>사용 피처:</strong> <code>log_area, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_total_works_x_log_area, artist_meta_for_sale_works_x_log_area, artist_meta_followers_x_log_area, artist_meta_is_p1_x_log_area</code> · 시장 노출 수준별 대형작 프리미엄 추가</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.5034</td><td>0.9596</td><td>0.4754</td><td>2.5575</td><td>0.3311</td><td>0.5189</td><td>0.7390</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4990</td><td>0.9638</td><td>0.5009</td><td>2.7369</td><td>0.3163</td><td>0.4992</td><td>0.7863</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4990</td><td>0.9638</td><td>0.5006</td><td>2.7391</td><td>0.3180</td><td>0.4975</td><td>0.7862</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4718</td><td>0.9552</td><td>0.4873</td><td>3.2466</td><td>0.2688</td><td>0.5105</td><td>1.1552</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4736</td><td>0.9535</td><td>0.4904</td><td>3.0895</td><td>0.2691</td><td>0.5092</td><td>1.1201</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.5431</td><td>0.8883</td><td>0.4516</td><td>3.1609</td><td>0.3153</td><td>0.5411</td><td>1.1803</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/data/test_cold_labels.csv</code></li><li><code>numeric_numeric_interaction_mapping</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/outputs/numeric_numeric_interaction_mapping.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/J5_activity_popularity_x_log_area/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

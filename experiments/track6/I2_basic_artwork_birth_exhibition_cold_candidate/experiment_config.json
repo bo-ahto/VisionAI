@@ -1,0 +1,62 @@
+{
+  "experiment_id": "I2",
+  "title": "Track6 I2 작품 기본 피처 + 세대/경력 메타 실험 결과",
+  "purpose": "작품 기본 피처와 세대/경력 메타를 함께 쓰면 Cold 예측력이 개선되는지 확인",
+  "description": "Track6 Group H/I/J experiment: I2",
+  "exp_dir": "experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate",
+  "prompt_file": "experiments/track6/I2_basic_artwork_birth_exhibition_cold_candidate/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "ln_estimated_ho",
+    "nant_material_idx",
+    "nant_tool",
+    "nant_support",
+    "artist_meta_birth_year",
+    "artist_exhibition_solo_count",
+    "artist_exhibition_group_count",
+    "artist_exhibition_fair_count"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "artist_meta_birth_year",
+    "artist_exhibition_solo_count",
+    "artist_exhibition_group_count",
+    "artist_exhibition_fair_count"
+  ],
+  "variable_blocks": [
+    {
+      "name": "I2 기준: 작품 기본 피처",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support"
+      ],
+      "description": "호수 + 난트 재료/도구/지지체"
+    },
+    {
+      "name": "I2 후보: 작품 기본 피처 + 세대/경력",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artist_meta_birth_year",
+        "artist_exhibition_solo_count",
+        "artist_exhibition_group_count",
+        "artist_exhibition_fair_count"
+      ],
+      "description": "작품 기본 피처에 생년/전시 횟수 추가"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작품 기본 피처와 세대/경력 메타를 함께 쓰면 Cold 예측력이 개선되는지 확인",
+    "학습 피처": "ln_estimated_ho, nant_material_idx, nant_tool, nant_support / ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "실험군": "Group I: 작가명 없는 Cold 후보 조합",
+    "해석 중심": "Cold 결과 중심으로 판단한다."
+  }
+}

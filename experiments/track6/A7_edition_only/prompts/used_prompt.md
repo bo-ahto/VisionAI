@@ -1,0 +1,39 @@
+# A7 에디션 정보 실험 지시 기록
+
+- 목표: 에디션/유니크 구분이 가격 예측에 도움이 되는지 확인한다.
+- 기준 원천 파일: `data/track6/track6_feature_candidates_name_corrected_with_year_type_edition.csv`
+- split 기준: `data/track6_split_with_year_type_edition`
+- 학습 입력과 정답 가격은 분리해서 사용한다.
+- 정답 가격은 `train_labels.csv`, `test_warm_labels.csv`, `test_cold_labels.csv`에만 둔다.
+- 비교 변수:
+  - `edition_class`
+  - `is_edition`
+  - `is_limited_edition + is_open_edition + is_unknown_edition + is_unique_work`
+  - `edition_class + edition_info_available`
+- 데이터 보강 기준:
+  - Artsy는 `attribution_class`를 사용한다.
+  - Saatchi는 `attribution_class`와 `is_edition`을 사용한다.
+  - Artue/Gallery는 명시 에디션 정보가 없어 `unknown`으로 둔다.
+  - `edition_source`는 모델 피처로 사용하지 않는다.
+  - `signed`는 구조화 컬럼이 없어 이번 실험에서 제외한다.
+- Warm 모델군:
+  - Huber
+  - Linear Regression
+  - Ridge
+- Cold 모델군:
+  - Huber
+  - Quantile-LAD
+  - LightGBM
+- 평가 지표:
+  - R2
+  - median APE
+  - p95 APE
+  - Within-30
+  - Within-50
+- 판단 기준:
+  - Warm과 Cold의 median APE를 각각 확인한다.
+  - p95 APE가 줄어드는지 확인해 큰 오차가 줄었는지 본다.
+  - 에디션 전체 구분과 단순 에디션 여부 중 어떤 표현이 더 안정적인지 확인한다.
+  - 전체 성능과 별도로 edition / non-edition / edition_class별 slice 성능을 확인한다.
+  - Warm test의 edition 표본은 33건이므로 Warm edition slice는 참고용으로 해석한다.
+  - Cold test의 edition 표본은 232건이므로 Warm보다 해석 여지가 있지만, 최종 결론은 추가 데이터 확보 후 확정한다.

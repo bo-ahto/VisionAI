@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Warm 작품별 오차 원인 기반 보정 실험</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 32px; color: #1f2937; line-height: 1.55; }
+    h1 { font-size: 28px; margin-bottom: 12px; }
+    h2 { margin-top: 32px; border-bottom: 1px solid #d8dee9; padding-bottom: 8px; }
+    h3 { margin-top: 24px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0 24px; font-size: 13px; }
+    th, td { border: 1px solid #d8dee9; padding: 7px 9px; vertical-align: top; }
+    th { background: #f3f4f6; text-align: left; }
+    code { background: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
+    .bullet { margin: 3px 0; }
+  </style>
+</head>
+<body>
+<h1>PP-WHUBER10 Warm 작품별 오차 원인 기반 보정 실험</h1>
+
+<p class='bullet'>- 작성일: 2026-06-07 00:19</p>
+<p class='bullet'>- 기준 Warm 후보: `blend_svcnum_ppv8_wsvc_0.70`</p>
+<p class='bullet'>- 기존 확인: PP-WHUBER9에는 구간별 진단은 있었지만, 작품별 원인 라벨을 만들고 그 원인별 보정값을 검증한 실험은 별도로 확인되지 않았음</p>
+<p class='bullet'>- 이번 실험: 작품별 오차 원인을 먼저 정리하고, 같은 원인군에서 반복되는 로그 오차 중앙값을 작은 보정값으로 적용</p>
+<p class='bullet'>- 누수 방지: test 오차는 분석표 작성에만 사용. 보정값 선택은 validation 작가 단위 holdout에서만 진행</p>
+
+<h2>1. 실행 결론</h2>
+
+<p class='bullet'>- 기준 후보 test MdAPE/MAPE/p95: `0.1405` / `0.2748` / `0.8331`</p>
+<p class='bullet'>- 원인 기반 보정 test 최상위 MdAPE/MAPE/p95: `0.1374` / `0.2774` / `0.8292`</p>
+<p class='bullet'>- 작품별 상세 비교 적용 후보: `PP-WHUBER10_cause_risk_pred_min20_cap0p05_s0p25_smooth20`</p>
+<p class='bullet'>- 상세 비교 후보 test MdAPE/MAPE/p95: `0.1405` / `0.2756` / `0.8312`</p>
+<p class='bullet'>- 주의: test 최상위 후보는 사후 확인값이며, 운영 후보 판단은 validation 작가 holdout 선택 순서를 우선함</p>
+<p class='bullet'>- 판단: 원인 기반 보정은 MdAPE 또는 p95_APE를 일부 낮추는 후보가 있으나 MAPE가 동반 악화되어 현재 v0.1 기본 모델 대체 후보로는 부족함</p>
+<p class='bullet'>- 활용 방향: 큰 오차 방어, 특정 원인군 진단, 후속 보정 설계의 근거로 사용</p>
+<p class='bullet'>- 해석: Huber Warm은 큰 오차를 완전히 따라가지 않도록 눌러 학습하므로, 반복적으로 남는 원인군에 작은 로그 보정을 더하면 특정 구간의 오차를 낮출 수 있음</p>
+<p class='bullet'>- 단, 작품별 원인을 보고 만든 보정은 과적합 위험이 커서 validation 작가 holdout과 test 악화 작품 수를 함께 봐야 함</p>
+
+<h2>2. 실험 방법</h2>
+
+<p class='bullet'>- 1단계: 현재 Warm 최고 조합의 test 예측값과 실제값을 작품별로 비교</p>
+<p class='bullet'>- 2단계: 오차 방향을 과소예측/과대예측으로 나누고, 유사 작품 표본 부족, 작가 이력 부족, 고가·대형 꼬리 구간, 재료/지지체 불확실, 비교군 가격 분산 큼 등으로 원인 라벨 부여</p>
+<p class='bullet'>- 3단계: validation에서 같은 원인군의 `실제 로그가격 - 예측 로그가격` 중앙값을 보정값으로 계산</p>
+<p class='bullet'>- 4단계: 보정값은 최대 보정폭과 적용 강도를 제한해 Huber의 안정성을 유지</p>
+<p class='bullet'>- 5단계: 작가 단위 holdout으로 보정 규칙을 고르고, test에는 한 번만 적용</p>
+
+<h2>3. 선택된 원인 기반 보정 후보</h2>
+
+<table><tr><th>candidate</th><th>hierarchy</th><th>min_rows</th><th>cap</th><th>strength</th><th>smooth_rows</th></tr>
+<tr><td>PP-WHUBER10_cause_risk_pred_min20_cap0p05_s0p25_smooth20</td><td>risk_cause+pred_log_bin &gt; risk_cause &gt; pred_log_bin &gt; global</td><td>20</td><td>0.05</td><td>0.25</td><td>20</td></tr>
+<tr><td>PP-WHUBER10_cause_risk_pred_min20_cap0p08_s0p25_smooth20</td><td>risk_cause+pred_log_bin &gt; risk_cause &gt; pred_log_bin &gt; global</td><td>20</td><td>0.08</td><td>0.25</td><td>20</td></tr>
+<tr><td>PP-WHUBER10_cause_works_pred_min8_cap0p05_s0p5_smooth20</td><td>artist_works_bin+pred_log_bin &gt; artist_works_bin &gt; pred_log_bin &gt; global</td><td>8</td><td>0.05</td><td>0.5</td><td>20</td></tr>
+<tr><td>PP-WHUBER10_cause_works_pred_min8_cap0p08_s0p5_smooth20</td><td>artist_works_bin+pred_log_bin &gt; artist_works_bin &gt; pred_log_bin &gt; global</td><td>8</td><td>0.08</td><td>0.5</td><td>20</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_size_min20_cap0p05_s0p5_smooth20</td><td>pred_log_bin+size_bin &gt; pred_log_bin &gt; size_bin &gt; global</td><td>20</td><td>0.05</td><td>0.5</td><td>20</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min20_cap0p05_s0p5_smooth20</td><td>pred_log_bin+svc_reliability_bin &gt; pred_log_bin &gt; svc_reliability_bin &gt; global</td><td>20</td><td>0.05</td><td>0.5</td><td>20</td></tr></table>
+
+<h2>4. Validation 작가 holdout 상위 후보</h2>
+
+<table><tr><th>candidate</th><th>hierarchy_name</th><th>min_rows</th><th>cap</th><th>strength</th><th>smooth_rows</th><th>mean_delta_MdAPE</th><th>mean_delta_MAPE</th><th>mean_delta_p95_APE</th><th>improvement_probability_MdAPE</th><th>improvement_probability_MAPE</th><th>improvement_probability_p95_APE</th><th>balanced_score</th></tr>
+<tr><td>PP-WHUBER10_cause_works_pred_min8_cap0p05_s0p5_smooth20</td><td>works_pred</td><td>8</td><td>0.05</td><td>0.5</td><td>20</td><td>-0.003776</td><td>0.00054086</td><td>0.00040419</td><td>1</td><td>0</td><td>0.5</td><td>-0.0034045</td></tr>
+<tr><td>PP-WHUBER10_cause_works_pred_min8_cap0p08_s0p5_smooth20</td><td>works_pred</td><td>8</td><td>0.08</td><td>0.5</td><td>20</td><td>-0.0036206</td><td>0.0006873</td><td>0.00040419</td><td>1</td><td>0</td><td>0.5</td><td>-0.0031759</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min20_cap0p05_s0p5_smooth20</td><td>pred_svc</td><td>20</td><td>0.05</td><td>0.5</td><td>20</td><td>-0.0016655</td><td>0.00036961</td><td>-0.00011624</td><td>1</td><td>0.125</td><td>0.25</td><td>-0.0015097</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min8_cap0p05_s0p5_smooth20</td><td>pred_svc</td><td>8</td><td>0.05</td><td>0.5</td><td>20</td><td>-0.0016655</td><td>0.00036961</td><td>-0.00011624</td><td>1</td><td>0.125</td><td>0.25</td><td>-0.0015097</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min20_cap0p08_s0p5_smooth20</td><td>pred_svc</td><td>20</td><td>0.08</td><td>0.5</td><td>20</td><td>-0.001711</td><td>0.00050946</td><td>-0.00011624</td><td>1</td><td>0.125</td><td>0.25</td><td>-0.0014853</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min8_cap0p08_s0p5_smooth20</td><td>pred_svc</td><td>8</td><td>0.08</td><td>0.5</td><td>20</td><td>-0.001711</td><td>0.00050946</td><td>-0.00011624</td><td>1</td><td>0.125</td><td>0.25</td><td>-0.0014853</td></tr>
+<tr><td>PP-WHUBER10_cause_risk_pred_min8_cap0p08_s0p25_smooth20</td><td>risk_pred</td><td>8</td><td>0.08</td><td>0.25</td><td>20</td><td>-0.00071166</td><td>1.9127e-05</td><td>-0.0005908</td><td>0.875</td><td>0.5</td><td>0.875</td><td>-0.00084979</td></tr>
+<tr><td>PP-WHUBER10_cause_risk_pred_min20_cap0p08_s0p25_smooth20</td><td>risk_pred</td><td>20</td><td>0.08</td><td>0.25</td><td>20</td><td>-0.00044916</td><td>-0.00022525</td><td>-0.00097958</td><td>0.625</td><td>0.875</td><td>0.875</td><td>-0.00080668</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min20_cap0p08_s0p25_smooth20</td><td>pred_svc</td><td>20</td><td>0.08</td><td>0.25</td><td>20</td><td>-0.00082955</td><td>0.00011556</td><td>-6.7752e-05</td><td>0.875</td><td>0.125</td><td>0.75</td><td>-0.00078871</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min8_cap0p08_s0p25_smooth20</td><td>pred_svc</td><td>8</td><td>0.08</td><td>0.25</td><td>20</td><td>-0.00082955</td><td>0.00011556</td><td>-6.7752e-05</td><td>0.875</td><td>0.125</td><td>0.75</td><td>-0.00078871</td></tr>
+<tr><td>PP-WHUBER10_cause_works_pred_min20_cap0p05_s0p5_smooth20</td><td>works_pred</td><td>20</td><td>0.05</td><td>0.5</td><td>20</td><td>-0.0014086</td><td>0.0011397</td><td>0.00040419</td><td>0.875</td><td>0</td><td>0.5</td><td>-0.00073772</td></tr>
+<tr><td>PP-WHUBER10_cause_risk_pred_min20_cap0p05_s0p25_smooth20</td><td>risk_pred</td><td>20</td><td>0.05</td><td>0.25</td><td>20</td><td>-0.00030726</td><td>-0.00023274</td><td>-0.00097958</td><td>0.625</td><td>0.875</td><td>0.875</td><td>-0.00066853</td></tr>
+<tr><td>PP-WHUBER10_cause_risk_pred_min20_cap0p05_s0p5_smooth20</td><td>risk_pred</td><td>20</td><td>0.05</td><td>0.5</td><td>20</td><td>-0.00047101</td><td>-0.00021855</td><td>-0.00028395</td><td>0.875</td><td>0.75</td><td>0.625</td><td>-0.00065127</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min20_cap0p05_s0p25_smooth20</td><td>pred_svc</td><td>20</td><td>0.05</td><td>0.25</td><td>20</td><td>-0.00063755</td><td>7.9121e-05</td><td>-6.7752e-05</td><td>0.875</td><td>0.125</td><td>0.75</td><td>-0.00061493</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min8_cap0p05_s0p25_smooth20</td><td>pred_svc</td><td>8</td><td>0.05</td><td>0.25</td><td>20</td><td>-0.00063755</td><td>7.9121e-05</td><td>-6.7752e-05</td><td>0.875</td><td>0.125</td><td>0.75</td><td>-0.00061493</td></tr></table>
+
+<h2>5. Test 성능 비교</h2>
+
+<table><tr><th>candidate</th><th>role</th><th>hierarchy_name</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_MdAPE</th><th>delta_MAPE</th><th>delta_p95_APE</th><th>mean_abs_correction</th><th>p95_abs_correction</th></tr>
+<tr><td>blend_svcnum_ppv8_wsvc_0.70</td><td>현재 Warm 기준 조합</td><td>reference</td><td>0.14048</td><td>0.2748</td><td>0.83307</td><td>0.39961</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>PP-WHUBER10_cause_risk_pred_min20_cap0p05_s0p25_smooth20</td><td>원인 기반 보정 후보</td><td>risk_pred</td><td>0.14052</td><td>0.27563</td><td>0.83119</td><td>0.39938</td><td>3.5074e-05</td><td>0.00082992</td><td>-0.0018833</td><td>0.0049303</td><td>0.0125</td></tr>
+<tr><td>PP-WHUBER10_cause_risk_pred_min20_cap0p08_s0p25_smooth20</td><td>원인 기반 보정 후보</td><td>risk_pred</td><td>0.14052</td><td>0.27565</td><td>0.83119</td><td>0.39934</td><td>3.5074e-05</td><td>0.00085322</td><td>-0.0018833</td><td>0.0051986</td><td>0.014794</td></tr>
+<tr><td>PP-WHUBER10_cause_works_pred_min8_cap0p05_s0p5_smooth20</td><td>원인 기반 보정 후보</td><td>works_pred</td><td>0.14199</td><td>0.27558</td><td>0.82905</td><td>0.39956</td><td>0.0015015</td><td>0.00077968</td><td>-0.004023</td><td>0.0077426</td><td>0.018574</td></tr>
+<tr><td>PP-WHUBER10_cause_works_pred_min8_cap0p08_s0p5_smooth20</td><td>원인 기반 보정 후보</td><td>works_pred</td><td>0.14333</td><td>0.27554</td><td>0.82905</td><td>0.39955</td><td>0.0028489</td><td>0.00074144</td><td>-0.004023</td><td>0.008067</td><td>0.018574</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_size_min20_cap0p05_s0p5_smooth20</td><td>원인 기반 보정 후보</td><td>pred_size</td><td>0.14002</td><td>0.2752</td><td>0.82606</td><td>0.39959</td><td>-0.00046697</td><td>0.00040377</td><td>-0.0070112</td><td>0.0080811</td><td>0.023392</td></tr>
+<tr><td>PP-WHUBER10_cause_pred_svc_min20_cap0p05_s0p5_smooth20</td><td>원인 기반 보정 후보</td><td>pred_svc</td><td>0.13736</td><td>0.27737</td><td>0.82915</td><td>0.39971</td><td>-0.0031205</td><td>0.0025675</td><td>-0.0039203</td><td>0.010068</td><td>0.025</td></tr></table>
+
+<h2>6. 작품별 원인 요약</h2>
+
+<table><tr><th>risk_cause</th><th>error_direction</th><th>error_severity</th><th>n</th><th>current_MdAPE</th><th>current_MAPE</th><th>current_p95_APE</th><th>median_residual_log</th><th>adjusted_MdAPE</th><th>adjusted_MAPE</th><th>adjusted_p95_APE</th><th>delta_MdAPE_after_adjustment</th><th>improved_row_rate</th><th>worsened_row_rate</th></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과대예측</td><td>극단오차</td><td>14</td><td>1.733</td><td>2.1691</td><td>4.3127</td><td>-1.0044</td><td>1.7645</td><td>2.1905</td><td>4.374</td><td>0.031552</td><td>0</td><td>0.57143</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과대예측</td><td>극단오차</td><td>6</td><td>2.7577</td><td>2.6224</td><td>3.4958</td><td>-1.3238</td><td>2.7444</td><td>2.5957</td><td>3.4471</td><td>-0.013302</td><td>0.83333</td><td>0</td></tr>
+<tr><td>유사작품_표본_부족</td><td>과대예측</td><td>극단오차</td><td>3</td><td>1.559</td><td>1.8721</td><td>2.4327</td><td>-0.93961</td><td>1.5647</td><td>1.879</td><td>2.4419</td><td>0.0056959</td><td>0</td><td>0</td></tr>
+<tr><td>비교군_가격분산_큼</td><td>과대예측</td><td>극단오차</td><td>1</td><td>1.6488</td><td>1.6488</td><td>1.6488</td><td>-0.97409</td><td>1.6454</td><td>1.6454</td><td>1.6454</td><td>-0.0033311</td><td>0</td><td>0</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과대예측</td><td>큰오차</td><td>2</td><td>0.81979</td><td>0.81979</td><td>0.95363</td><td>-0.59537</td><td>0.80253</td><td>0.80253</td><td>0.93272</td><td>-0.017266</td><td>1</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과소예측</td><td>큰오차</td><td>13</td><td>0.59515</td><td>0.66114</td><td>0.93384</td><td>0.90424</td><td>0.5954</td><td>0.66005</td><td>0.93307</td><td>0.00024979</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과대예측</td><td>큰오차</td><td>27</td><td>0.63831</td><td>0.67493</td><td>0.91218</td><td>-0.49366</td><td>0.65891</td><td>0.68313</td><td>0.92732</td><td>0.020607</td><td>0</td><td>0.44444</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과소예측</td><td>큰오차</td><td>2</td><td>0.7621</td><td>0.7621</td><td>0.79269</td><td>1.4462</td><td>0.76294</td><td>0.76294</td><td>0.79342</td><td>0.00084213</td><td>0</td><td>0</td></tr>
+<tr><td>재료지지체_불확실</td><td>과대예측</td><td>큰오차</td><td>1</td><td>0.77602</td><td>0.77602</td><td>0.77602</td><td>-0.57437</td><td>0.77266</td><td>0.77266</td><td>0.77266</td><td>-0.0033591</td><td>0</td><td>0</td></tr>
+<tr><td>비교군_가격분산_큼</td><td>과대예측</td><td>큰오차</td><td>1</td><td>0.65954</td><td>0.65954</td><td>0.65954</td><td>-0.50654</td><td>0.6564</td><td>0.6564</td><td>0.6564</td><td>-0.0031388</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_표본_부족</td><td>과소예측</td><td>큰오차</td><td>1</td><td>0.64995</td><td>0.64995</td><td>0.64995</td><td>1.0497</td><td>0.649</td><td>0.649</td><td>0.649</td><td>-0.00094564</td><td>0</td><td>0</td></tr>
+<tr><td>고가대형_꼬리구간</td><td>과소예측</td><td>큰오차</td><td>1</td><td>0.55868</td><td>0.55868</td><td>0.55868</td><td>0.81799</td><td>0.55725</td><td>0.55725</td><td>0.55725</td><td>-0.0014307</td><td>0</td><td>0</td></tr>
+<tr><td>중간_안정구간</td><td>과대예측</td><td>큰오차</td><td>1</td><td>0.53696</td><td>0.53696</td><td>0.53696</td><td>-0.4298</td><td>0.53703</td><td>0.53703</td><td>0.53703</td><td>7.2089e-05</td><td>0</td><td>0</td></tr>
+<tr><td>저가소형_꼬리구간</td><td>과대예측</td><td>큰오차</td><td>1</td><td>0.51043</td><td>0.51043</td><td>0.51043</td><td>-0.4124</td><td>0.50853</td><td>0.50853</td><td>0.50853</td><td>-0.0018995</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과대예측</td><td>중간오차</td><td>22</td><td>0.36346</td><td>0.37968</td><td>0.48456</td><td>-0.31002</td><td>0.37187</td><td>0.3889</td><td>0.48307</td><td>0.0084061</td><td>0</td><td>0.59091</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과대예측</td><td>중간오차</td><td>4</td><td>0.39272</td><td>0.40841</td><td>0.48237</td><td>-0.33109</td><td>0.38865</td><td>0.40222</td><td>0.47183</td><td>-0.0040777</td><td>0.25</td><td>0</td></tr>
+<tr><td>중간_안정구간</td><td>과소예측</td><td>중간오차</td><td>2</td><td>0.39358</td><td>0.39358</td><td>0.47587</td><td>0.51169</td><td>0.39355</td><td>0.39355</td><td>0.47585</td><td>-2.8443e-05</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과소예측</td><td>중간오차</td><td>27</td><td>0.35019</td><td>0.36871</td><td>0.46721</td><td>0.43108</td><td>0.34944</td><td>0.36521</td><td>0.46528</td><td>-0.00075078</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_표본_부족</td><td>과소예측</td><td>중간오차</td><td>3</td><td>0.45839</td><td>0.4289</td><td>0.46076</td><td>0.6132</td><td>0.45692</td><td>0.42744</td><td>0.45953</td><td>-0.0014631</td><td>0</td><td>0</td></tr>
+<tr><td>고가대형_꼬리구간</td><td>과대예측</td><td>중간오차</td><td>2</td><td>0.41322</td><td>0.41322</td><td>0.44612</td><td>-0.34554</td><td>0.4178</td><td>0.4178</td><td>0.4508</td><td>0.0045816</td><td>0</td><td>0</td></tr>
+<tr><td>고가_예측구간</td><td>과대예측</td><td>중간오차</td><td>1</td><td>0.42224</td><td>0.42224</td><td>0.42224</td><td>-0.35223</td><td>0.42268</td><td>0.42268</td><td>0.42268</td><td>0.00044057</td><td>0</td><td>0</td></tr>
+<tr><td>저가소형_꼬리구간</td><td>과소예측</td><td>중간오차</td><td>1</td><td>0.41379</td><td>0.41379</td><td>0.41379</td><td>0.53408</td><td>0.41453</td><td>0.41453</td><td>0.41453</td><td>0.00073721</td><td>0</td><td>0</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과소예측</td><td>중간오차</td><td>1</td><td>0.4117</td><td>0.4117</td><td>0.4117</td><td>0.53051</td><td>0.41635</td><td>0.41635</td><td>0.41635</td><td>0.0046537</td><td>0</td><td>0</td></tr>
+<tr><td>비교군_가격분산_큼</td><td>과소예측</td><td>중간오차</td><td>3</td><td>0.3654</td><td>0.35776</td><td>0.37664</td><td>0.45477</td><td>0.3666</td><td>0.35884</td><td>0.37782</td><td>0.0012002</td><td>0</td><td>0</td></tr>
+<tr><td>중간_안정구간</td><td>과대예측</td><td>중간오차</td><td>3</td><td>0.30792</td><td>0.31933</td><td>0.33874</td><td>-0.26843</td><td>0.30798</td><td>0.31939</td><td>0.3388</td><td>6.1346e-05</td><td>0</td><td>0</td></tr>
+<tr><td>고가대형_꼬리구간</td><td>과소예측</td><td>중간오차</td><td>1</td><td>0.32461</td><td>0.32461</td><td>0.32461</td><td>0.39247</td><td>0.32242</td><td>0.32242</td><td>0.32242</td><td>-0.0021896</td><td>0</td><td>0</td></tr>
+<tr><td>중간_안정구간</td><td>정상범위</td><td>정상</td><td>24</td><td>0.10723</td><td>0.1351</td><td>0.2786</td><td>0.038592</td><td>0.10719</td><td>0.1351</td><td>0.27865</td><td>-4.1874e-05</td><td>0</td><td>0</td></tr>
+<tr><td>저가소형_꼬리구간</td><td>정상범위</td><td>정상</td><td>15</td><td>0.13695</td><td>0.14347</td><td>0.27406</td><td>0.0045919</td><td>0.13552</td><td>0.14337</td><td>0.27246</td><td>-0.0014298</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>정상범위</td><td>정상</td><td>229</td><td>0.10082</td><td>0.11759</td><td>0.27013</td><td>0.0078848</td><td>0.09986</td><td>0.11757</td><td>0.2706</td><td>-0.0009592</td><td>0.17031</td><td>0.20087</td></tr>
+<tr><td>유사작품_표본_부족</td><td>정상범위</td><td>정상</td><td>62</td><td>0.081597</td><td>0.10003</td><td>0.26218</td><td>-0.026051</td><td>0.082066</td><td>0.1008</td><td>0.26052</td><td>0.0004691</td><td>0</td><td>0</td></tr></table>
+
+<h2>7. 오차 큰 작품 예시</h2>
+
+<table><tr><th>_track6_row_id</th><th>title_raw</th><th>artist_name_ko</th><th>actual_price</th><th>pred_price</th><th>ape</th><th>error_direction</th><th>error_severity</th><th>risk_cause</th><th>diagnosis</th><th>adjusted_pred_price</th><th>adjusted_ape</th><th>delta_ape_after_adjustment</th><th>adjustment_result</th></tr>
+<tr><td>17485</td><td>the song of chungsan 7</td><td>김군선</td><td>5.865e+06</td><td>3.4454e+07</td><td>4.8746</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>3.4852e+07</td><td>4.9424</td><td>0.067823</td><td>악화</td></tr>
+<tr><td>17486</td><td>the song of chungsan 12</td><td>김군선</td><td>6.5274e+06</td><td>3.2703e+07</td><td>4.0101</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>3.308e+07</td><td>4.0679</td><td>0.057842</td><td>악화</td></tr>
+<tr><td>21794</td><td>T11- W04</td><td>송연</td><td>5.52e+05</td><td>2.6193e+06</td><td>3.7451</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>2.6166e+06</td><td>3.7402</td><td>-0.0048752</td><td>유지</td></tr>
+<tr><td>24357</td><td>Archisculpture 032</td><td>원범식</td><td>6.9e+05</td><td>3.1206e+06</td><td>3.5226</td><td>과대예측</td><td>극단오차</td><td>작가이력_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>3.0868e+06</td><td>3.4737</td><td>-0.048968</td><td>개선</td></tr>
+<tr><td>21261</td><td>the adventures of seals</td><td>강달예</td><td>1.4076e+06</td><td>6.2148e+06</td><td>3.4151</td><td>과대예측</td><td>극단오차</td><td>작가이력_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>6.1475e+06</td><td>3.3673</td><td>-0.047804</td><td>개선</td></tr>
+<tr><td>24336</td><td>Archisculpture 042c</td><td>원범식</td><td>7e+06</td><td>2.6304e+07</td><td>2.7577</td><td>과대예측</td><td>극단오차</td><td>작가이력_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>2.6211e+07</td><td>2.7444</td><td>-0.013302</td><td>개선</td></tr>
+<tr><td>24417</td><td>Archisculpture 055c</td><td>원범식</td><td>7e+06</td><td>2.6304e+07</td><td>2.7577</td><td>과대예측</td><td>극단오차</td><td>작가이력_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>2.6211e+07</td><td>2.7444</td><td>-0.013302</td><td>개선</td></tr>
+<tr><td>35090</td><td>Equation-like Forms</td><td>김귤에</td><td>3.864e+06</td><td>1.3639e+07</td><td>2.5298</td><td>과대예측</td><td>극단오차</td><td>유사작품_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>1.3676e+07</td><td>2.5394</td><td>0.0095355</td><td>유지</td></tr>
+<tr><td>20381</td><td>good morning yellow rock 20200202</td><td>박상샘</td><td>5.106e+05</td><td>1.682e+06</td><td>2.2941</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>1.6802e+06</td><td>2.2907</td><td>-0.0033844</td><td>유지</td></tr>
+<tr><td>14260</td><td>dream</td><td>디기탈드</td><td>6.5826e+06</td><td>2.1452e+07</td><td>2.2589</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>2.17e+07</td><td>2.2965</td><td>0.037624</td><td>악화</td></tr>
+<tr><td>22201</td><td>Sakyamuni Buddha</td><td>이재윤</td><td>6.9e+06</td><td>2.1519e+07</td><td>2.1188</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>2.1768e+07</td><td>2.1548</td><td>0.036007</td><td>악화</td></tr>
+<tr><td>17271</td><td>explosion</td><td>손창범</td><td>1.1592e+06</td><td>3.3637e+06</td><td>1.9017</td><td>과대예측</td><td>극단오차</td><td>작가이력_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>3.3273e+06</td><td>1.8703</td><td>-0.031418</td><td>개선</td></tr>
+<tr><td>42982</td><td>No Tears Left 5cm 2</td><td>김정연</td><td>4.3746e+06</td><td>1.2484e+07</td><td>1.8538</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>1.2628e+07</td><td>1.8868</td><td>0.032948</td><td>악화</td></tr>
+<tr><td>19160</td><td>from the hill</td><td>이관희</td><td>3.174e+05</td><td>8.4071e+05</td><td>1.6488</td><td>과대예측</td><td>극단오차</td><td>비교군_가격분산_큼</td><td>과대예측. 같은 비교군 안에서도 가격 분산이 커 대표값 보정이 어려움</td><td>8.3966e+05</td><td>1.6454</td><td>-0.0033311</td><td>유지</td></tr>
+<tr><td>22225</td><td>Surprise Tom</td><td>함도하</td><td>3.174e+06</td><td>8.2908e+06</td><td>1.6121</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>8.3865e+06</td><td>1.6423</td><td>0.030157</td><td>악화</td></tr>
+<tr><td>5939</td><td>moly</td><td>유선</td><td>2.1335e+06</td><td>5.4595e+06</td><td>1.559</td><td>과대예측</td><td>극단오차</td><td>유사작품_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>5.4717e+06</td><td>1.5647</td><td>0.0056959</td><td>유지</td></tr>
+<tr><td>3550</td><td>blue abyss</td><td>유선</td><td>1.9458e+06</td><td>4.9179e+06</td><td>1.5274</td><td>과대예측</td><td>극단오차</td><td>유사작품_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>4.9288e+06</td><td>1.5331</td><td>0.0056257</td><td>유지</td></tr>
+<tr><td>11782</td><td>watercolor l#1</td><td>고에즈</td><td>2.622e+05</td><td>6.488e+05</td><td>1.4745</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>6.484e+05</td><td>1.4729</td><td>-0.0015267</td><td>유지</td></tr>
+<tr><td>28919</td><td>Spiritual Water</td><td>신에르</td><td>5.52e+05</td><td>1.3134e+06</td><td>1.3794</td><td>과대예측</td><td>극단오차</td><td>작가이력_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>1.3104e+06</td><td>1.3739</td><td>-0.0055635</td><td>유지</td></tr>
+<tr><td>22531</td><td>Sakyamuni Buddha at Birth</td><td>이재윤</td><td>4.14e+06</td><td>9.6541e+06</td><td>1.3319</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>9.7656e+06</td><td>1.3588</td><td>0.026922</td><td>악화</td></tr>
+<tr><td>42707</td><td>Moonlit Glow</td><td>아지혜</td><td>3.5e+06</td><td>7.9656e+06</td><td>1.2759</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>8.0575e+06</td><td>1.3021</td><td>0.026275</td><td>악화</td></tr>
+<tr><td>526</td><td>where time flows and stands still</td><td>양지혜</td><td>2.7048e+05</td><td>6.0669e+05</td><td>1.243</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>6.0631e+05</td><td>1.2416</td><td>-0.0013839</td><td>유지</td></tr>
+<tr><td>8326</td><td>three doors</td><td>김보민</td><td>1.0764e+06</td><td>2.3826e+06</td><td>1.2135</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>2.3801e+06</td><td>1.2112</td><td>-0.0022741</td><td>유지</td></tr>
+<tr><td>20895</td><td>untitled</td><td>최예원</td><td>1.1672e+06</td><td>2.4059e+06</td><td>1.0613</td><td>과대예측</td><td>극단오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>2.4035e+06</td><td>1.0592</td><td>-0.0021178</td><td>유지</td></tr>
+<tr><td>16809</td><td>cell butterfly</td><td>김세희</td><td>2.4288e+06</td><td>4.7811e+06</td><td>0.9685</td><td>과대예측</td><td>큰오차</td><td>작가이력_표본_부족</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>4.7293e+06</td><td>0.94718</td><td>-0.021313</td><td>개선</td></tr>
+<tr><td>1327</td><td>blurring boundaries</td><td>김수희</td><td>2.7973e+06</td><td>5.4817e+06</td><td>0.95968</td><td>과대예측</td><td>큰오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>5.5507e+06</td><td>0.98433</td><td>0.02465</td><td>악화</td></tr>
+<tr><td>21901</td><td>Reminiscences of Childhood</td><td>송유정</td><td>4.14e+06</td><td>8.0445e+06</td><td>0.94311</td><td>과대예측</td><td>큰오차</td><td>유사작품_적음+작가이력_적음</td><td>과대예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>8.1374e+06</td><td>0.96555</td><td>0.022434</td><td>악화</td></tr>
+<tr><td>27224</td><td>Ecriture No.040412</td><td>박서보_A</td><td>1.656e+08</td><td>1.021e+07</td><td>0.93834</td><td>과소예측</td><td>큰오차</td><td>유사작품_적음+작가이력_적음</td><td>과소예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>1.0328e+07</td><td>0.93763</td><td>-0.00071184</td><td>유지</td></tr>
+<tr><td>28769</td><td>Ecriture No. 040710</td><td>박서보_A</td><td>5.244e+08</td><td>3.627e+07</td><td>0.93084</td><td>과소예측</td><td>큰오차</td><td>유사작품_적음+작가이력_적음</td><td>과소예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>3.6689e+07</td><td>0.93004</td><td>-0.00079851</td><td>유지</td></tr>
+<tr><td>48916</td><td>Mom&#x27;s Sunflower</td><td>백혜림</td><td>3.4914e+07</td><td>5.5358e+06</td><td>0.84144</td><td>과소예측</td><td>큰오차</td><td>유사작품_적음+작가이력_적음</td><td>과소예측. 같은 작가/유사 작품 표본이 적어 작가 가격 기준선이 약함</td><td>5.6055e+06</td><td>0.83945</td><td>-0.0019944</td><td>유지</td></tr></table>
+
+<h2>8. 산출물</h2>
+
+<p class='bullet'>- `outputs/validation_artist_holdout_summary.csv`: validation 기준 후보별 안정성</p>
+<p class='bullet'>- `outputs/test_once_metrics.csv`: test 기준 성능 비교</p>
+<p class='bullet'>- `outputs/test_artwork_error_diagnostics.csv`: 작품별 실제값/예측값/오차 원인/보정 후 변화</p>
+<p class='bullet'>- `outputs/test_cause_summary.csv`: 원인군별 개선·악화 요약</p>
+<p class='bullet'>- `outputs/test_top_error_examples.csv`: 오차 상위 작품 예시</p>
+</body>
+</html>

@@ -1,0 +1,90 @@
+{
+  "experiment_id": "J4",
+  "title": "Track6 J4 활동량/인지도 x 호수 교차항 실험 결과",
+  "purpose": "작가의 활동량/인지도에 따라 호수 효과가 다르게 나타나는지 확인",
+  "description": "Track6 Group H/I/J experiment: J4",
+  "exp_dir": "experiments/track6/J4_activity_popularity_x_ln_ho",
+  "prompt_file": "experiments/track6/J4_activity_popularity_x_ln_ho/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "ln_estimated_ho",
+    "artist_meta_total_works",
+    "artist_meta_for_sale_works",
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_total_works_x_ln_ho",
+    "artist_meta_for_sale_works_x_ln_ho",
+    "artist_meta_followers_x_ln_ho",
+    "artist_meta_is_p1_x_ln_ho"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "artist_meta_total_works",
+    "artist_meta_for_sale_works",
+    "artist_meta_followers",
+    "artist_meta_is_p1",
+    "artist_meta_total_works_x_ln_ho",
+    "artist_meta_for_sale_works_x_ln_ho",
+    "artist_meta_followers_x_ln_ho",
+    "artist_meta_is_p1_x_ln_ho"
+  ],
+  "variable_blocks": [
+    {
+      "name": "J4 기준: 활동량/인지도 + 호수",
+      "features": [
+        "ln_estimated_ho",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1"
+      ],
+      "description": "개별 효과만 사용"
+    },
+    {
+      "name": "J4 교차항: 활동량/인지도 x 호수",
+      "features": [
+        "ln_estimated_ho",
+        "artist_meta_total_works",
+        "artist_meta_for_sale_works",
+        "artist_meta_followers",
+        "artist_meta_is_p1",
+        "artist_meta_total_works_x_ln_ho",
+        "artist_meta_for_sale_works_x_ln_ho",
+        "artist_meta_followers_x_ln_ho",
+        "artist_meta_is_p1_x_ln_ho"
+      ],
+      "description": "시장 노출 수준별 호수 프리미엄 추가"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작가의 활동량/인지도에 따라 호수 효과가 다르게 나타나는지 확인",
+    "학습 피처": "ln_estimated_ho, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1 / ln_estimated_ho, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1, artist_meta_total_works_x_ln_ho, artist_meta_for_sale_works_x_ln_ho, artist_meta_followers_x_ln_ho, artist_meta_is_p1_x_ln_ho",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "실험군": "Group J: 작가 메타와 작품 변수 교차항"
+  },
+  "numeric_numeric_interactions": [
+    {
+      "left_col": "artist_meta_total_works",
+      "right_col": "ln_estimated_ho",
+      "output_col": "artist_meta_total_works_x_ln_ho"
+    },
+    {
+      "left_col": "artist_meta_for_sale_works",
+      "right_col": "ln_estimated_ho",
+      "output_col": "artist_meta_for_sale_works_x_ln_ho"
+    },
+    {
+      "left_col": "artist_meta_followers",
+      "right_col": "ln_estimated_ho",
+      "output_col": "artist_meta_followers_x_ln_ho"
+    },
+    {
+      "left_col": "artist_meta_is_p1",
+      "right_col": "ln_estimated_ho",
+      "output_col": "artist_meta_is_p1_x_ln_ho"
+    }
+  ]
+}

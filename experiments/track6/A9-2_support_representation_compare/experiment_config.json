@@ -1,0 +1,60 @@
+{
+  "experiment_id": "A9-2",
+  "title": "Track6 A9-2 지지체 표현 비교 실험 결과",
+  "purpose": "수집 지지체 대분류와 NANT 지지체 중 어떤 표현이 더 안정적인지 확인한다.",
+  "description": "Compare collected support category and NANT support in size/material context.",
+  "split_root": "data/track6_split_with_year_type_edition_size",
+  "exp_dir": "experiments/track6/A9-2_support_representation_compare",
+  "prompt_file": "experiments/track6/A9-2_support_representation_compare/prompts/used_prompt.md",
+  "export_feature_columns": [
+    "log_area",
+    "nant_material_idx",
+    "nant_support",
+    "support_category"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "log_area",
+    "width_cm",
+    "height_cm"
+  ],
+  "variable_blocks": [
+    {
+      "name": "로그면적 + NANT 재료 번호 + 수집 지지체 대분류",
+      "features": [
+        "log_area",
+        "nant_material_idx",
+        "support_category"
+      ],
+      "description": "수집 지지체 대분류 사용"
+    },
+    {
+      "name": "로그면적 + NANT 재료 번호 + NANT 지지체",
+      "features": [
+        "log_area",
+        "nant_material_idx",
+        "nant_support"
+      ],
+      "description": "NANT 지지체 사용"
+    },
+    {
+      "name": "로그면적 + NANT 재료 번호 + 수집 지지체 + NANT 지지체",
+      "features": [
+        "log_area",
+        "nant_material_idx",
+        "support_category",
+        "nant_support"
+      ],
+      "description": "두 지지체 표현을 함께 사용해 중복 효과 확인"
+    }
+  ],
+  "comment": {
+    "실험 목적": "수집 지지체 대분류와 NANT 지지체 중 어떤 표현이 더 안정적인지 확인한다.",
+    "실험 위치": "Group A의 A9 세부 실험 중 A9-2에 해당한다.",
+    "공통 실행 코드": "scripts/track6/fixed_variable_experiment_runner.py",
+    "숫자형 처리": "숫자형 피처는 중앙값 결측 보정 후 StandardScaler를 적용한다.",
+    "범주형 처리": "범주형 피처는 one-hot encoding으로 처리한다.",
+    "판단 기준": "Warm/Cold를 분리해 MdAPE, p95 APE, R2를 비교한다.",
+    "재현성 확인": "동일 설정으로 재실행해 주요 지표가 같은지 비교한다."
+  }
+}

@@ -1,0 +1,377 @@
+{
+  "created_at": "2026-05-27T18:19:59",
+  "experiment_id": "OPT-C1",
+  "description": "Cold-oriented optimal feature combination search after A1-D11 summary.",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/OPT-C1_cold_optimal_feature_combo/experiment_config.json",
+  "prompt_file": "experiments/track6/OPT-C1_cold_optimal_feature_combo/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "ln_estimated_ho",
+      "width_cm",
+      "height_cm",
+      "log_area",
+      "aspect_ratio",
+      "artwork_year",
+      "artwork_age",
+      "depth_cm",
+      "has_depth",
+      "is_3d_candidate",
+      "is_edition",
+      "is_limited_edition",
+      "is_open_edition",
+      "is_unknown_edition",
+      "edition_info_available"
+    ],
+    "numeric_imputation": "median",
+    "numeric_scaler": "StandardScaler",
+    "categorical_encoding": "one_hot_handle_unknown_ignore",
+    "numeric_categorical_interactions": [
+      {
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "output_prefix": "log_area_x_nant_support",
+        "top_n": 8
+      }
+    ],
+    "numeric_categorical_interaction_mappings": [
+      {
+        "output_col": "log_area_x_nant_support_01",
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "category_value": "캔버스"
+      },
+      {
+        "output_col": "log_area_x_nant_support_02",
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "category_value": "종이"
+      },
+      {
+        "output_col": "log_area_x_nant_support_03",
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "category_value": "기타"
+      },
+      {
+        "output_col": "log_area_x_nant_support_04",
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "category_value": "목재"
+      },
+      {
+        "output_col": "log_area_x_nant_support_05",
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "category_value": "없음"
+      },
+      {
+        "output_col": "log_area_x_nant_support_06",
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "category_value": "금속"
+      },
+      {
+        "output_col": "log_area_x_nant_support_07",
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "category_value": "섬유"
+      },
+      {
+        "output_col": "log_area_x_nant_support_08",
+        "numeric_col": "log_area",
+        "category_col": "nant_support",
+        "category_value": "비단"
+      }
+    ]
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "COLD1: A12 작품 정보 전체 확장",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final",
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate",
+        "edition_class",
+        "is_edition",
+        "is_limited_edition",
+        "is_open_edition",
+        "is_unknown_edition",
+        "edition_info_available"
+      ],
+      "description": "A12 Cold 최고 후보를 재확인한다."
+    },
+    {
+      "name": "COLD2: A12 + 면적 x 지지체",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final",
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate",
+        "edition_class",
+        "is_edition",
+        "is_limited_edition",
+        "is_open_edition",
+        "is_unknown_edition",
+        "edition_info_available",
+        "log_area_x_nant_support_01",
+        "log_area_x_nant_support_02",
+        "log_area_x_nant_support_03",
+        "log_area_x_nant_support_04",
+        "log_area_x_nant_support_05",
+        "log_area_x_nant_support_06",
+        "log_area_x_nant_support_07",
+        "log_area_x_nant_support_08"
+      ],
+      "feature_prefixes": [
+        "log_area_x_nant_support_"
+      ],
+      "description": "A12 후보에 D2에서 좋았던 면적 x 지지체 교차항을 추가한다."
+    },
+    {
+      "name": "COLD3: C9형 깊이/3D 포함 작품 피처",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final",
+        "artwork_type_final_major3",
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate"
+      ],
+      "description": "C9 Cold 후보에서 작가명을 제외한 작품 피처 조합이다."
+    },
+    {
+      "name": "COLD4: C9형 + 에디션",
+      "features": [
+        "ln_estimated_ho",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final",
+        "artwork_type_final_major3",
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate",
+        "edition_class",
+        "is_edition",
+        "is_limited_edition",
+        "is_open_edition",
+        "is_unknown_edition",
+        "edition_info_available"
+      ],
+      "description": "C9형 피처에 에디션 정보를 추가한다."
+    },
+    {
+      "name": "COLD5: A9-6 단순 Cold 후보",
+      "features": [
+        "log_area",
+        "medium_category",
+        "support_category"
+      ],
+      "description": "A9-6에서 Cold 후보였던 단순 작품 피처 조합이다."
+    },
+    {
+      "name": "COLD6: 원문 재료 묶음 + 크기 + 지지체",
+      "features": [
+        "log_area",
+        "width_cm",
+        "height_cm",
+        "collected_material_raw_bucket",
+        "nant_support"
+      ],
+      "description": "A8-2/A9 계열에서 좋았던 원문 재료 묶음과 크기/지지체 조합을 Cold에서도 확인한다."
+    },
+    {
+      "name": "COLD7: A12 + 원문 재료 묶음",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "nant_material_idx",
+        "nant_tool",
+        "nant_support",
+        "collected_material_raw_bucket",
+        "artwork_year",
+        "artwork_age",
+        "artwork_type_final",
+        "depth_cm",
+        "has_depth",
+        "is_3d_candidate",
+        "edition_class",
+        "is_edition",
+        "is_limited_edition",
+        "is_open_edition",
+        "is_unknown_edition",
+        "edition_info_available"
+      ],
+      "description": "A12 후보에 수집 원문 재료 묶음을 추가한다."
+    }
+  ],
+  "bucket_features": [
+    {
+      "source_col": "collected_material_raw",
+      "bucket_col": "collected_material_raw_bucket",
+      "top_n": 80,
+      "other_value": "other_raw_material",
+      "description": "수집 원문 재료명을 학습 데이터 빈도 기준으로 묶은 변수"
+    }
+  ],
+  "combo_features": [],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "output_prefix": "log_area_x_nant_support",
+      "top_n": 8
+    }
+  ],
+  "numeric_categorical_interaction_mappings": [
+    {
+      "output_col": "log_area_x_nant_support_01",
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "category_value": "캔버스"
+    },
+    {
+      "output_col": "log_area_x_nant_support_02",
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "category_value": "종이"
+    },
+    {
+      "output_col": "log_area_x_nant_support_03",
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "category_value": "기타"
+    },
+    {
+      "output_col": "log_area_x_nant_support_04",
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "category_value": "목재"
+    },
+    {
+      "output_col": "log_area_x_nant_support_05",
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "category_value": "없음"
+    },
+    {
+      "output_col": "log_area_x_nant_support_06",
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "category_value": "금속"
+    },
+    {
+      "output_col": "log_area_x_nant_support_07",
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "category_value": "섬유"
+    },
+    {
+      "output_col": "log_area_x_nant_support_08",
+      "numeric_col": "log_area",
+      "category_col": "nant_support",
+      "category_value": "비단"
+    }
+  ],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/OPT-C1_cold_optimal_feature_combo/data/train_features.csv",
+    "train_labels": "experiments/track6/OPT-C1_cold_optimal_feature_combo/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/OPT-C1_cold_optimal_feature_combo/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/OPT-C1_cold_optimal_feature_combo/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/OPT-C1_cold_optimal_feature_combo/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/OPT-C1_cold_optimal_feature_combo/data/test_cold_labels.csv",
+    "interaction_mapping": "experiments/track6/OPT-C1_cold_optimal_feature_combo/outputs/interaction_mapping.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/OPT-C1_cold_optimal_feature_combo/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/OPT-C1_cold_optimal_feature_combo/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/OPT-C1_cold_optimal_feature_combo/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/OPT-C1_cold_optimal_feature_combo/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/OPT-C1_cold_optimal_feature_combo/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/OPT-C1_cold_optimal_feature_combo/source_data/track6_test_cold_labels.csv"
+  }
+}

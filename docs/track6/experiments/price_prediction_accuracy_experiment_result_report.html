@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track6 가격 예측 정확도 실험 결과 종합 보고서</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#track6-가격-예측-정확도-실험-결과-종합-보고서">Track6 가격 예측 정확도 실험 결과 종합 보고서</a>
+<a class="toc-level-2" href="#1.-결론-요약">1. 결론 요약</a>
+<a class="toc-level-3" href="#1.1-최종-판단">1.1 최종 판단</a>
+<a class="toc-level-3" href="#1.2-정확도-개선폭">1.2 정확도 개선폭</a>
+<a class="toc-level-2" href="#2.-평가-지표-해석">2. 평가 지표 해석</a>
+<a class="toc-level-2" href="#3.-warm-모델-결과와-원인-분석">3. Warm 모델 결과와 원인 분석</a>
+<a class="toc-level-3" href="#3.1-warm-기준-모델의-특성">3.1 Warm 기준 모델의 특성</a>
+<a class="toc-level-3" href="#3.2-warm-피처-근거">3.2 Warm 피처 근거</a>
+<a class="toc-level-3" href="#3.3-warm-후처리와-모델-조합-결과">3.3 Warm 후처리와 모델 조합 결과</a>
+<a class="toc-level-3" href="#3.4-warm-개선이-크게-나온-이유">3.4 Warm 개선이 크게 나온 이유</a>
+<a class="toc-level-2" href="#4.-cold-모델-결과와-원인-분석">4. Cold 모델 결과와 원인 분석</a>
+<a class="toc-level-3" href="#4.1-cold-기준-모델의-특성">4.1 Cold 기준 모델의 특성</a>
+<a class="toc-level-3" href="#4.2-cold-피처-근거">4.2 Cold 피처 근거</a>
+<a class="toc-level-3" href="#4.3-cold-주요-후보-결과">4.3 Cold 주요 후보 결과</a>
+<a class="toc-level-3" href="#4.4-cold-개선이-제한적인-이유">4.4 Cold 개선이 제한적인 이유</a>
+<a class="toc-level-3" href="#4.5-cold에서-모델-조합이-효과-있었던-이유">4.5 Cold에서 모델 조합이 효과 있었던 이유</a>
+<a class="toc-level-2" href="#5.-피처-교환-실험의-의미">5. 피처 교환 실험의 의미</a>
+<a class="toc-level-2" href="#6.-실패-또는-보류된-방향">6. 실패 또는 보류된 방향</a>
+<a class="toc-level-2" href="#7.-최종-운영-관점-제안">7. 최종 운영 관점 제안</a>
+<a class="toc-level-3" href="#7.1-warm-운영-제안">7.1 Warm 운영 제안</a>
+<a class="toc-level-3" href="#7.2-cold-운영-제안">7.2 Cold 운영 제안</a>
+<a class="toc-level-2" href="#8.-최종-결론">8. 최종 결론</a>
+<a class="toc-level-3" href="#8.1-가격-예측-정확도-관점-결론">8.1 가격 예측 정확도 관점 결론</a>
+<a class="toc-level-3" href="#8.2-모델-특성-관점-결론">8.2 모델 특성 관점 결론</a>
+<a class="toc-level-3" href="#8.3-피처-특성-관점-결론">8.3 피처 특성 관점 결론</a>
+<a class="toc-level-3" href="#8.4-다음-실행-제안">8.4 다음 실행 제안</a>
+<a class="toc-level-2" href="#9.-주요-수치-출처">9. 주요 수치 출처</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/price_prediction_accuracy_experiment_result_report.md</code></div>
+      <h1 id="track6-가격-예측-정확도-실험-결과-종합-보고서">Track6 가격 예측 정확도 실험 결과 종합 보고서</h1>
+<ul>
+<li>작성일: 2026-06-02</li>
+<li>대상: Track6 Warm / Cold 가격 예측 모델 및 후처리 실험</li>
+<li>기준 문서:</li>
+<li><code>experiments/track6/postprocessing_execution_progress.md</code></li>
+<li><code>docs/track6/experiments/postprocessing_experiment_matrix.md</code></li>
+<li><code>docs/track6/experiments/track6_feature_influence_with_results.md</code></li>
+<li><code>docs/track6/experiments/model_structure_based_interpretation_report.md</code></li>
+<li><code>docs/track6/experiments/pp_u_feature_swap_execution_summary.md</code></li>
+<li>핵심 기준: 가격 예측 정확도를 <code>MdAPE</code>, <code>MAPE</code>, <code>p95_APE</code>, <code>RMSE_log</code>, <code>Within_30</code>, <code>Within_50</code>로 평가한다.</li>
+</ul>
+<h2 id="1.-결론-요약">1. 결론 요약</h2>
+<h3 id="1.1-최종-판단">1.1 최종 판단</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">권장 후보</th>
+<th class="align-right">test MdAPE</th>
+<th class="align-right">test MAPE</th>
+<th class="align-right">test p95_APE</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm 대표 점 예측</td>
+<td class="align-left"><code>PP-T1 fine_blend_mape_guarded</code></td>
+<td class="align-right"><code>0.1621</code></td>
+<td class="align-right"><code>0.3044</code></td>
+<td class="align-right"><code>1.0335</code></td>
+<td class="align-left">대표 정확도와 평균 오차 균형이 가장 좋음</td>
+</tr>
+<tr>
+<td class="align-left">Warm 큰 오차 방어</td>
+<td class="align-left"><code>PP-T1 fine_blend_mdape</code> 또는 <code>PP-T2 huber_crossfit_component_range_clipped</code></td>
+<td class="align-right"><code>0.1668</code> / <code>0.1705</code></td>
+<td class="align-right"><code>0.3067</code> / <code>0.2916</code></td>
+<td class="align-right"><code>0.9580</code> / <code>0.9582</code></td>
+<td class="align-left">p95와 MAPE 방어가 강함</td>
+</tr>
+<tr>
+<td class="align-left">Cold 대표 점 예측</td>
+<td class="align-left"><code>PP-S1 n2_catboost_quantile_huber_cap0.2_s1</code></td>
+<td class="align-right"><code>0.4744</code></td>
+<td class="align-right"><code>1.2095</code></td>
+<td class="align-right"><code>3.4731</code></td>
+<td class="align-left">Cold MdAPE 최저 후보</td>
+</tr>
+<tr>
+<td class="align-left">Cold 큰 오차 방어</td>
+<td class="align-left"><code>PP-S1 n2_catboost_quantile_huber_cap0.5_s1</code> 또는 <code>PP-S4 huber_crossfit_component_range_clipped</code></td>
+<td class="align-right"><code>0.4765</code> / <code>0.4765</code></td>
+<td class="align-right"><code>1.2067</code> / <code>1.2079</code></td>
+<td class="align-right"><code>3.2824</code> / <code>3.2827</code></td>
+<td class="align-left">p95 방어와 안정성 균형이 가장 좋음</td>
+</tr>
+<tr>
+<td class="align-left">Cold MAPE 최적화</td>
+<td class="align-left"><code>PP-Q2 weighted_blend_mape_objective</code></td>
+<td class="align-right"><code>0.4811</code></td>
+<td class="align-right"><code>1.1797</code></td>
+<td class="align-right"><code>3.7925</code></td>
+<td class="align-left">평균 오차 감소 목적에는 가장 강함</td>
+</tr>
+<tr>
+<td class="align-left">Cold 가격 범위/신뢰도</td>
+<td class="align-left"><code>PP-N3 90% conformal range</code></td>
+<td class="align-right">점 예측 후보 아님</td>
+<td class="align-right">점 예측 후보 아님</td>
+<td class="align-right">범위 정책</td>
+<td class="align-left">test coverage <code>0.8061</code>, 범위비 중앙값 <code>8.38배</code></td>
+</tr>
+</tbody></table></div>
+<h3 id="1.2-정확도-개선폭">1.2 정확도 개선폭</h3>
+<p>Warm 기준 모델은 <code>Warm Huber(base_existing_combo)</code>이고, Cold 기준 모델은 현재 test 기준으로 가장 안정적인 <code>Cold LightGBM(base_support_size)</code>를 사용했다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">기준 후보</th>
+<th class="align-left">최종 후보</th>
+<th class="align-right">MdAPE 개선</th>
+<th class="align-right">MAPE 개선</th>
+<th class="align-right">p95_APE 개선</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm 대표 점 예측</td>
+<td class="align-left">Warm Huber <code>0.2274 / 0.4952 / 2.0130</code></td>
+<td class="align-left">PP-T1 mape <code>0.1621 / 0.3044 / 1.0335</code></td>
+<td class="align-right"><code>28.7%</code></td>
+<td class="align-right"><code>38.5%</code></td>
+<td class="align-right"><code>48.7%</code></td>
+</tr>
+<tr>
+<td class="align-left">Warm p95 방어</td>
+<td class="align-left">Warm Huber <code>0.2274 / 0.4952 / 2.0130</code></td>
+<td class="align-left">PP-T1 mdape <code>0.1668 / 0.3067 / 0.9580</code></td>
+<td class="align-right"><code>26.7%</code></td>
+<td class="align-right"><code>38.1%</code></td>
+<td class="align-right"><code>52.4%</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold 대표 점 예측</td>
+<td class="align-left">Cold LightGBM <code>0.4909 / 1.4131 / 4.8212</code></td>
+<td class="align-left">PP-S1 cap0.2 <code>0.4744 / 1.2095 / 3.4731</code></td>
+<td class="align-right"><code>3.4%</code></td>
+<td class="align-right"><code>14.4%</code></td>
+<td class="align-right"><code>28.0%</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold p95 방어</td>
+<td class="align-left">Cold LightGBM <code>0.4909 / 1.4131 / 4.8212</code></td>
+<td class="align-left">PP-S1 cap0.5 <code>0.4765 / 1.2067 / 3.2824</code></td>
+<td class="align-right"><code>2.9%</code></td>
+<td class="align-right"><code>14.6%</code></td>
+<td class="align-right"><code>31.9%</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold MAPE 최적화</td>
+<td class="align-left">Cold LightGBM <code>0.4909 / 1.4131 / 4.8212</code></td>
+<td class="align-left">PP-Q2 MAPE blend <code>0.4811 / 1.1797 / 3.7925</code></td>
+<td class="align-right"><code>2.0%</code></td>
+<td class="align-right"><code>16.5%</code></td>
+<td class="align-right"><code>21.3%</code></td>
+</tr>
+</tbody></table></div>
+<p>결론적으로 Warm은 모델 조합과 후처리로 대표 정확도와 큰 오차가 모두 크게 개선됐다. Cold는 개선폭이 Warm보다 작지만, CatBoost Quantile, Huber residual, meta stacking을 조합하면 p95와 MAPE는 뚜렷하게 줄일 수 있다.</p>
+<h2 id="2.-평가-지표-해석">2. 평가 지표 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">지표</th>
+<th class="align-left">의미</th>
+<th class="align-left">이번 보고서에서의 사용 방식</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>MdAPE</code></td>
+<td class="align-left">예측 오차율의 중앙값</td>
+<td class="align-left">일반적인 대표 정확도 판단 기준</td>
+</tr>
+<tr>
+<td class="align-left"><code>MAPE</code></td>
+<td class="align-left">예측 오차율의 평균</td>
+<td class="align-left">큰 오차까지 포함한 평균 체감 오차</td>
+</tr>
+<tr>
+<td class="align-left"><code>p95_APE</code></td>
+<td class="align-left">오차 상위 5% 지점</td>
+<td class="align-left">크게 틀리는 위험, 서비스 신뢰도 판단 기준</td>
+</tr>
+<tr>
+<td class="align-left"><code>RMSE_log</code></td>
+<td class="align-left">로그 가격 기준 평균 제곱 오차</td>
+<td class="align-left">전체 로그 가격 적합도</td>
+</tr>
+<tr>
+<td class="align-left"><code>Within_30</code></td>
+<td class="align-left">실제 가격 대비 30% 이내 예측 비율</td>
+<td class="align-left">실무적으로 “가까운 예측” 비율</td>
+</tr>
+<tr>
+<td class="align-left"><code>Within_50</code></td>
+<td class="align-left">실제 가격 대비 50% 이내 예측 비율</td>
+<td class="align-left">넓은 허용 범위 내 예측 비율</td>
+</tr>
+</tbody></table></div>
+<p>이 프로젝트에서는 <code>MdAPE</code>만 낮추는 후보를 바로 채택하지 않았다. 가격 예측 서비스에서는 대표 정확도도 중요하지만, p95처럼 크게 틀리는 위험이 사용자 신뢰도에 직접 영향을 주기 때문이다. 따라서 최종 후보는 <code>MdAPE</code>, <code>MAPE</code>, <code>p95_APE</code>의 균형으로 판단했다.</p>
+<h2 id="3.-warm-모델-결과와-원인-분석">3. Warm 모델 결과와 원인 분석</h2>
+<h3 id="3.1-warm-기준-모델의-특성">3.1 Warm 기준 모델의 특성</h3>
+<p>Warm은 학습 데이터 안에 같은 작가의 작품 이력이 있는 경우다. 따라서 가격 예측에서 가장 중요한 축은 “작가 기준 가격대”와 “작품 크기”다.</p>
+<p>Warm Huber의 기본 예측 구조는 다음과 같다.</p>
+<pre><code>pred_log_price
+= intercept
++ 작가 기준선 효과
++ 크기 효과
++ 깊이/입체 효과
++ 형태 효과
++ 재료/지지체 효과
+
+pred_price = exp(pred_log_price)</code></pre>
+<p>Huber는 선형 모델이지만, 큰 오차 샘플의 학습 영향력을 낮추는 손실 함수를 사용한다. 그래서 Warm처럼 작가 이력이 있고 일부 고가/저가 이상치가 섞인 데이터에서 기준선 모델로 안정적이다.</p>
+<h3 id="3.2-warm-피처-근거">3.2 Warm 피처 근거</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처 축</th>
+<th class="align-left">실험 근거</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가 정보</td>
+<td class="align-left">Warm group-drop에서 작가 제거 시 MdAPE가 약 <code>0.48~0.49</code>로 악화</td>
+<td class="align-left">Warm 가격 예측은 작가 기준선이 없으면 급격히 약해짐</td>
+</tr>
+<tr>
+<td class="align-left">크기 정보</td>
+<td class="align-left"><code>PRE-PP-W</code>에서 size 제거 시 MdAPE <code>0.2126 -&gt; 0.5671</code></td>
+<td class="align-left">작품 크기는 작가 기준선 다음으로 핵심 가격 축</td>
+</tr>
+<tr>
+<td class="align-left">재료/지지체</td>
+<td class="align-left">일부 Warm 후보에서 제거해도 성능 유지 또는 소폭 개선</td>
+<td class="align-left">Warm에서는 재료/지지체가 핵심축이라기보다 보조 또는 노이즈 가능성</td>
+</tr>
+<tr>
+<td class="align-left">depth/aspect</td>
+<td class="align-left">제거 영향이 작거나 test에서 후보별 방향이 다름</td>
+<td class="align-left">단독 핵심 피처가 아니라 크기/작가와 함께 볼 때만 의미</td>
+</tr>
+<tr>
+<td class="align-left">생성 bucket</td>
+<td class="align-left"><code>PP-U1</code>에서 <code>full_plus_generated_buckets</code> test MdAPE <code>0.2274 -&gt; 0.2131</code></td>
+<td class="align-left">선형 Huber가 직접 표현하지 못한 구간 효과를 보완할 가능성</td>
+</tr>
+</tbody></table></div>
+<p>Warm에서 가장 중요한 결론은 “작가와 크기는 반드시 유지하되, 나머지 피처는 후처리/조합 후보로 검증해야 한다”는 점이다. 피처를 무조건 많이 넣는 것보다, 선형 모델이 안정적으로 설명할 수 있는 축과 구간형 보조 정보를 분리해서 쓰는 편이 더 안전하다.</p>
+<h3 id="3.3-warm-후처리와-모델-조합-결과">3.3 Warm 후처리와 모델 조합 결과</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">단계</th>
+<th class="align-left">후보</th>
+<th class="align-right">test MdAPE</th>
+<th class="align-right">test MAPE</th>
+<th class="align-right">test p95_APE</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기준</td>
+<td class="align-left">Warm Huber baseline</td>
+<td class="align-right"><code>0.2274</code></td>
+<td class="align-right"><code>0.4952</code></td>
+<td class="align-right"><code>2.0130</code></td>
+<td class="align-left">작가+크기 기준선은 안정적이나 큰 오차가 남음</td>
+</tr>
+<tr>
+<td class="align-left">단순 tail 보정</td>
+<td class="align-left">PP-C5 Warm tail strength <code>0.50</code></td>
+<td class="align-right"><code>0.2211</code></td>
+<td class="align-right">확인 필요</td>
+<td class="align-right"><code>1.9055</code></td>
+<td class="align-left">단순 보정만으로는 개선폭 제한</td>
+</tr>
+<tr>
+<td class="align-left">순차/조합</td>
+<td class="align-left">PP-D4 Warm integrated</td>
+<td class="align-right"><code>0.1760</code></td>
+<td class="align-right"><code>0.3293</code></td>
+<td class="align-right"><code>1.1248</code></td>
+<td class="align-left">Huber + PP-L8 중심 결합이 큰 개선</td>
+</tr>
+<tr>
+<td class="align-left">잔차 안정화</td>
+<td class="align-left">PP-R5 p95 guarded</td>
+<td class="align-right"><code>0.1707</code></td>
+<td class="align-right"><code>0.3278</code></td>
+<td class="align-right"><code>1.1107</code></td>
+<td class="align-left">강한 후보에 약한 residual 안정화 적용</td>
+</tr>
+<tr>
+<td class="align-left">최종 fine blend</td>
+<td class="align-left">PP-T1 mape guarded</td>
+<td class="align-right"><code>0.1621</code></td>
+<td class="align-right"><code>0.3044</code></td>
+<td class="align-right"><code>1.0335</code></td>
+<td class="align-left">대표 정확도와 평균 오차 균형 최선</td>
+</tr>
+<tr>
+<td class="align-left">p95 목적</td>
+<td class="align-left">PP-T1 mdape</td>
+<td class="align-right"><code>0.1668</code></td>
+<td class="align-right"><code>0.3067</code></td>
+<td class="align-right"><code>0.9580</code></td>
+<td class="align-left">큰 오차 방어 최선권</td>
+</tr>
+<tr>
+<td class="align-left">meta stacking</td>
+<td class="align-left">PP-T2 Huber meta clipped</td>
+<td class="align-right"><code>0.1705</code></td>
+<td class="align-right"><code>0.2916</code></td>
+<td class="align-right"><code>0.9582</code></td>
+<td class="align-left">MAPE/p95 방어 최강권</td>
+</tr>
+</tbody></table></div>
+<h3 id="3.4-warm-개선이-크게-나온-이유">3.4 Warm 개선이 크게 나온 이유</h3>
+<p>Warm에서 개선폭이 큰 이유는 모델과 피처 역할이 서로 잘 분리됐기 때문이다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구성 요소</th>
+<th class="align-left">역할</th>
+<th class="align-left">개선에 기여한 이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Huber</td>
+<td class="align-left">작가+크기 기반 중심 가격선</td>
+<td class="align-left">이상치 영향을 줄이면서 Warm의 기본 가격대를 안정적으로 잡음</td>
+</tr>
+<tr>
+<td class="align-left">Quantile 계열</td>
+<td class="align-left">예측 불확실성 또는 중앙 예측 보조</td>
+<td class="align-left">불확실한 구간을 찾아 조합/라우팅에 활용 가능</td>
+</tr>
+<tr>
+<td class="align-left">CatBoost residual</td>
+<td class="align-left">Huber가 놓친 비선형 조건 조합 보정</td>
+<td class="align-left">작가 x 크기 x 재료/구간의 잔차 패턴을 일부 학습</td>
+</tr>
+<tr>
+<td class="align-left">fine blend</td>
+<td class="align-left">여러 후보의 예측값을 목적별로 가중 결합</td>
+<td class="align-left">단일 모델의 약점을 서로 보완</td>
+</tr>
+<tr>
+<td class="align-left">Huber meta</td>
+<td class="align-left">후보 예측값 간 차이를 다시 안정적으로 조합</td>
+<td class="align-left">큰 오차를 무리하게 따라가지 않고 평균/p95를 낮춤</td>
+</tr>
+</tbody></table></div>
+<p>즉 Warm 최종 개선은 “Huber를 버리고 다른 모델로 대체해서” 나온 결과가 아니다. Huber가 만든 안정적인 중심선 위에 Quantile과 CatBoost가 각각 불확실성, 잔차 조합을 보완했기 때문에 성능이 좋아졌다.</p>
+<h2 id="4.-cold-모델-결과와-원인-분석">4. Cold 모델 결과와 원인 분석</h2>
+<h3 id="4.1-cold-기준-모델의-특성">4.1 Cold 기준 모델의 특성</h3>
+<p>Cold는 같은 작가의 학습 이력이 없거나 약한 경우다. Warm과 달리 작가 기준 가격선을 직접 쓸 수 없으므로, 작품 자체 피처로 가격대를 추정해야 한다.</p>
+<p>Cold에서는 모델별 역할이 다음처럼 달랐다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">모델</th>
+<th class="align-left">구조적 특성</th>
+<th class="align-left">잘하는 부분</th>
+<th class="align-left">약한 부분</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">LightGBM</td>
+<td class="align-left">leaf-wise 트리</td>
+<td class="align-left">크기/지지체 구간을 세밀하게 나눔</td>
+<td class="align-left">일부 leaf에서 tail risk가 커질 수 있음</td>
+</tr>
+<tr>
+<td class="align-left">CatBoost</td>
+<td class="align-left">대칭 트리</td>
+<td class="align-left">범주형 조합과 반복 split 해석이 좋음</td>
+<td class="align-left">원 RMSE 모델은 대표 정확도와 MAPE가 제한적</td>
+</tr>
+<tr>
+<td class="align-left">CatBoost Quantile</td>
+<td class="align-left">분위 손실 기반 트리</td>
+<td class="align-left">MAPE와 tail 방어에 강함</td>
+<td class="align-left">단독으로는 p95가 아직 남음</td>
+</tr>
+<tr>
+<td class="align-left">Huber residual</td>
+<td class="align-left">잔차 안정화 선형 모델</td>
+<td class="align-left">큰 residual을 과도하게 따라가지 않음</td>
+<td class="align-left">단독 모델보다 보정/메타 역할이 적합</td>
+</tr>
+</tbody></table></div>
+<h3 id="4.2-cold-피처-근거">4.2 Cold 피처 근거</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처 축</th>
+<th class="align-left">실험 근거</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">크기</td>
+<td class="align-left"><code>PRE-PP-CB</code>, <code>PRE-PP-LGB</code>에서 size/depth 제거 시 악화</td>
+<td class="align-left">Cold에서는 작가 기준선이 없으므로 크기가 가장 중요한 가격 신호</td>
+</tr>
+<tr>
+<td class="align-left">depth/3D</td>
+<td class="align-left">CatBoost group-drop에서 제거 시 악화</td>
+<td class="align-left">입체/깊이 조건이 크기와 함께 가격 구간을 나눔</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_shape_bucket</code></td>
+<td class="align-left">Cold CatBoost 기준 피처셋, PRE-SPLIT-CCB에서 <code>medium_shape_bucket</code> 구분 학습 MdAPE <code>0.3784</code></td>
+<td class="align-left">CatBoost 대칭 트리가 재료+형태 조합을 조건 구간으로 잘 활용</td>
+</tr>
+<tr>
+<td class="align-left"><code>support_size_bucket</code></td>
+<td class="align-left">PRE-CAL-LGB에서 support_size 보정 validation MdAPE <code>0.3614</code></td>
+<td class="align-left">LightGBM은 지지체+크기 구간에서 반복 오차 보정 여지가 큼</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_size_combo</code></td>
+<td class="align-left">PP-U3 test MdAPE <code>0.4909 -&gt; 0.4803</code></td>
+<td class="align-left">LightGBM도 medium-size 조합을 추가 후보로 볼 가치가 있음</td>
+</tr>
+</tbody></table></div>
+<p>Cold는 Warm보다 “특정 한 피처가 가격을 정한다”고 설명하기 어렵다. 크기, 깊이, 재료, 지지체가 조합되어 가격 구간을 나누기 때문이다. 따라서 Cold 후처리도 전체 상수 보정보다 segment, quantile width, residual 안정화, meta 조합이 더 적합했다.</p>
+<h3 id="4.3-cold-주요-후보-결과">4.3 Cold 주요 후보 결과</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">단계</th>
+<th class="align-left">후보</th>
+<th class="align-right">test MdAPE</th>
+<th class="align-right">test MAPE</th>
+<th class="align-right">test p95_APE</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기준</td>
+<td class="align-left">Cold LightGBM baseline</td>
+<td class="align-right"><code>0.4909</code></td>
+<td class="align-right"><code>1.4131</code></td>
+<td class="align-right"><code>4.8212</code></td>
+<td class="align-left">대표 정확도는 기준이 되지만 tail risk 큼</td>
+</tr>
+<tr>
+<td class="align-left">기준 비교</td>
+<td class="align-left">Cold CatBoost baseline</td>
+<td class="align-right"><code>0.4867</code></td>
+<td class="align-right"><code>1.4803</code></td>
+<td class="align-right"><code>4.6329</code></td>
+<td class="align-left">MdAPE는 유사하나 MAPE가 더 큼</td>
+</tr>
+<tr>
+<td class="align-left">Quantile q50</td>
+<td class="align-left">CatBoost Quantile q50</td>
+<td class="align-right"><code>0.4830</code></td>
+<td class="align-right"><code>1.1514</code></td>
+<td class="align-right"><code>4.2659</code></td>
+<td class="align-left">MAPE를 크게 낮춤</td>
+</tr>
+<tr>
+<td class="align-left">가중 결합</td>
+<td class="align-left">PP-Q2 Quantile LGBM + CatBoost Quantile</td>
+<td class="align-right"><code>0.4811</code></td>
+<td class="align-right"><code>1.1797</code></td>
+<td class="align-right"><code>3.7925</code></td>
+<td class="align-left">MAPE 최적화 후보</td>
+</tr>
+<tr>
+<td class="align-left">meta 보정</td>
+<td class="align-left">PP-R4 Huber meta clipped</td>
+<td class="align-right"><code>0.4796</code></td>
+<td class="align-right"><code>1.2148</code></td>
+<td class="align-right"><code>3.4131</code></td>
+<td class="align-left">p95 방어가 강함</td>
+</tr>
+<tr>
+<td class="align-left">순서 변경</td>
+<td class="align-left">PP-S1 CatBoost Quantile -&gt; Huber residual cap0.2</td>
+<td class="align-right"><code>0.4744</code></td>
+<td class="align-right"><code>1.2095</code></td>
+<td class="align-right"><code>3.4731</code></td>
+<td class="align-left">Cold MdAPE 최저</td>
+</tr>
+<tr>
+<td class="align-left">p95 목적</td>
+<td class="align-left">PP-S1 CatBoost Quantile -&gt; Huber residual cap0.5</td>
+<td class="align-right"><code>0.4765</code></td>
+<td class="align-right"><code>1.2067</code></td>
+<td class="align-right"><code>3.2824</code></td>
+<td class="align-left">p95 최저권</td>
+</tr>
+<tr>
+<td class="align-left">crossfit meta</td>
+<td class="align-left">PP-S4 Huber crossfit clipped</td>
+<td class="align-right"><code>0.4765</code></td>
+<td class="align-right"><code>1.2079</code></td>
+<td class="align-right"><code>3.2827</code></td>
+<td class="align-left">p95와 재현성 균형</td>
+</tr>
+</tbody></table></div>
+<h3 id="4.4-cold-개선이-제한적인-이유">4.4 Cold 개선이 제한적인 이유</h3>
+<p>Cold는 Warm보다 성능 개선폭이 작다. 이유는 데이터 구조 때문이다.</p>
+<ul>
+<li>Warm은 <code>artist_key</code>가 작가 기준 가격대를 직접 제공한다.</li>
+<li>Cold는 작가 기준선 없이 작품 크기, 재료, 지지체, 형태로만 가격대를 추정한다.</li>
+<li>같은 크기와 재료라도 작가의 시장 지위가 다르면 가격 차이가 크게 날 수 있다.</li>
+<li>현재 외부 작가 DB, 검색/소셜 지표는 로컬 split에 없어 PP-G/PP-H는 성능 실험으로 진행하지 못했다.</li>
+<li>따라서 Cold는 단일 점 예측만으로는 안정적인 가격을 제공하기 어렵고, 가격 범위와 신뢰도 정책이 필요하다.</li>
+</ul>
+<h3 id="4.5-cold에서-모델-조합이-효과-있었던-이유">4.5 Cold에서 모델 조합이 효과 있었던 이유</h3>
+<p>Cold에서 단순 모델 교체보다 “모델 순서와 역할 분리”가 더 효과적이었다.</p>
+<pre><code>CatBoost Quantile
+-&gt; 중앙 가격과 tail에 강한 기준 예측 생성
+
+Huber residual
+-&gt; CatBoost가 남긴 residual을 과도하게 따라가지 않고 안정적으로 보정
+
+component range clipping / meta stacking
+-&gt; 여러 후보 예측 범위 밖으로 튀지 않게 제한</code></pre>
+<p>이 구조가 효과적이었던 이유는 다음과 같다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구성</th>
+<th class="align-left">데이터 근거</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">CatBoost Quantile</td>
+<td class="align-left">q50 test MAPE <code>1.4803 -&gt; 1.1514</code></td>
+<td class="align-left">RMSE CatBoost보다 평균 오차와 tail에 강함</td>
+</tr>
+<tr>
+<td class="align-left">Huber residual</td>
+<td class="align-left">PP-S1 cap0.2 MdAPE <code>0.4744</code>, cap0.5 p95 <code>3.2824</code></td>
+<td class="align-left">Quantile 예측의 residual을 안정적으로 조정</td>
+</tr>
+<tr>
+<td class="align-left">LightGBM Quantile + CatBoost Quantile 결합</td>
+<td class="align-left">PP-Q2 MAPE <code>1.1797</code></td>
+<td class="align-left">서로 다른 트리 구조의 중앙 예측을 섞어 MAPE 감소</td>
+</tr>
+<tr>
+<td class="align-left">Huber meta clipped</td>
+<td class="align-left">PP-R4 p95 <code>3.4131</code>, PP-S4 p95 <code>3.2827</code></td>
+<td class="align-left">후보 조합이 과하게 튀는 것을 제한해 큰 오차 방어</td>
+</tr>
+</tbody></table></div>
+<p>Cold에서는 “정확도 1위 모델 하나”보다 목적별 후보를 나누는 것이 맞다. MdAPE는 PP-S1 cap0.2, p95는 PP-S1 cap0.5 또는 PP-S4, MAPE는 PP-Q2가 각각 강하다.</p>
+<h2 id="5.-피처-교환-실험의-의미">5. 피처 교환 실험의 의미</h2>
+<p>PP-U는 모델 설정을 고정하고 피처셋만 바꿔 성능을 비교한 실험이다. 이 실험은 최종 모델을 바로 바꾸기보다, 다음 조합 실험에 넣을 피처 후보를 찾기 위한 목적이다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">실험</th>
+<th class="align-left">validation 1위</th>
+<th class="align-left">test 1위</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">PP-U1 Warm Huber</td>
+<td class="align-left"><code>artist_size_depth</code> MdAPE <code>0.2093</code></td>
+<td class="align-left"><code>full_plus_generated_buckets</code> MdAPE <code>0.2131</code></td>
+<td class="align-left">생성 bucket 확장은 가능성이 있으나 validation/test 1위가 달라 즉시 교체 보류</td>
+</tr>
+<tr>
+<td class="align-left">PP-U2 Warm CatBoost</td>
+<td class="align-left"><code>artist_size_only</code> MdAPE <code>0.2778</code></td>
+<td class="align-left"><code>artist_size_generated_buckets</code> MdAPE <code>0.3125</code></td>
+<td class="align-left">CatBoost 내부 개선은 있으나 Warm 주모델로는 약함</td>
+</tr>
+<tr>
+<td class="align-left">PP-U3 Cold LightGBM</td>
+<td class="align-left"><code>support_shape_combo</code> MdAPE <code>0.3834</code></td>
+<td class="align-left"><code>medium_size_combo</code> MdAPE <code>0.4803</code></td>
+<td class="align-left">LightGBM은 medium-size/support-shape 후보를 추가 검토할 가치</td>
+</tr>
+<tr>
+<td class="align-left">PP-U4 Cold CatBoost</td>
+<td class="align-left"><code>baseline_base_medium_shape</code> MdAPE <code>0.4194</code></td>
+<td class="align-left"><code>lightgbm_swap_support_size</code> MdAPE <code>0.4835</code></td>
+<td class="align-left">CatBoost 기준 피처셋은 유지, support-size 교환은 보조 후보</td>
+</tr>
+</tbody></table></div>
+<p>핵심은 “피처를 바꾸면 성능이 좋아질 수 있다”가 아니라, “validation과 test 방향이 일치하는지 확인해야 한다”는 점이다. PP-U 결과는 즉시 기준 모델 교체 근거라기보다 후속 앙상블, meta stacking, CatBoost Quantile 재학습 후보로 보는 것이 적절하다.</p>
+<h2 id="6.-실패-또는-보류된-방향">6. 실패 또는 보류된 방향</h2>
+<p>성과가 있었던 후보뿐 아니라 보류된 실험도 의사결정에 중요하다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">방향</th>
+<th class="align-left">결과</th>
+<th class="align-left">보류 이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm 전체 residual 보정</td>
+<td class="align-left">PP-A1 Warm은 MdAPE 악화</td>
+<td class="align-left">Warm Huber는 이미 중심선이 안정적이라 전체 상수 보정이 과보정될 수 있음</td>
+</tr>
+<tr>
+<td class="align-left">Warm CatBoost 단독</td>
+<td class="align-left">PP-J3, PP-U2에서 Huber/PP-T보다 약함</td>
+<td class="align-left">Warm은 작가 기준선이 강해 선형 Huber 중심 구조가 더 적합</td>
+</tr>
+<tr>
+<td class="align-left">단순 평균 앙상블</td>
+<td class="align-left">PP-D1에서 MdAPE 악화</td>
+<td class="align-left">모델별 역할 분리 없이 평균하면 중심 정확도가 흐려짐</td>
+</tr>
+<tr>
+<td class="align-left">PP-B residual 모델</td>
+<td class="align-left">validation 개선이 test로 재현되지 않음</td>
+<td class="align-left">residual 학습이 과적합되기 쉬움</td>
+</tr>
+<tr>
+<td class="align-left">PP-C 직선/비선형 재보정</td>
+<td class="align-left">validation 개선 대비 test 재현성 약함</td>
+<td class="align-left">예측값 재보정이 validation에 맞춰질 위험</td>
+</tr>
+<tr>
+<td class="align-left">Cold segment 보정 단독 채택</td>
+<td class="align-left">PP-A7/J4는 validation과 p95는 좋지만 test MdAPE 약함</td>
+<td class="align-left">점 예측보다 위험/신뢰도 보조 정책으로 적합</td>
+</tr>
+<tr>
+<td class="align-left">외부/검색 데이터 실험</td>
+<td class="align-left">PP-G/PP-H 성능 실험 보류</td>
+<td class="align-left">신규 데이터 컬럼이 없어 재학습 불가</td>
+</tr>
+</tbody></table></div>
+<p>이 보류 결과를 보면, 이번 실험의 핵심 방향은 단순 보정이 아니라 모델별 장점을 나누어 조합하는 것이다.</p>
+<h2 id="7.-최종-운영-관점-제안">7. 최종 운영 관점 제안</h2>
+<h3 id="7.1-warm-운영-제안">7.1 Warm 운영 제안</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">목적</th>
+<th class="align-left">추천 후보</th>
+<th class="align-left">이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">대표 가격 점 예측</td>
+<td class="align-left"><code>PP-T1 fine_blend_mape_guarded</code></td>
+<td class="align-left">MdAPE <code>0.1621</code>, MAPE <code>0.3044</code>로 균형 최상</td>
+</tr>
+<tr>
+<td class="align-left">큰 오차 방어</td>
+<td class="align-left"><code>PP-T1 fine_blend_mdape</code> 또는 <code>PP-T2 huber_crossfit_component_range_clipped</code></td>
+<td class="align-left">p95가 약 <code>0.958</code>까지 낮아짐</td>
+</tr>
+<tr>
+<td class="align-left">후속 피처 후보</td>
+<td class="align-left">PP-U1 <code>full_plus_generated_buckets</code></td>
+<td class="align-left">test 개선 확인, 단 validation 불일치로 바로 교체는 보류</td>
+</tr>
+<tr>
+<td class="align-left">설명 기준</td>
+<td class="align-left">Huber 중심선 + Quantile/CatBoost 보조</td>
+<td class="align-left">작가+크기 기준선과 잔차 조합 구조가 설명 가능</td>
+</tr>
+</tbody></table></div>
+<p>Warm은 단일 가격 예측을 제공할 수 있는 수준으로 개선됐다. 다만 p95 방어 목적 후보와 대표 정확도 후보가 완전히 같지는 않으므로, 서비스 정책에서는 <code>대표 가격</code>과 <code>보수적 신뢰도/범위</code>를 분리해 관리하는 것이 좋다.</p>
+<h3 id="7.2-cold-운영-제안">7.2 Cold 운영 제안</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">목적</th>
+<th class="align-left">추천 후보</th>
+<th class="align-left">이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">대표 점 예측</td>
+<td class="align-left"><code>PP-S1 CatBoost Quantile -&gt; Huber residual cap0.2</code></td>
+<td class="align-left">Cold MdAPE 최저 <code>0.4744</code></td>
+</tr>
+<tr>
+<td class="align-left">큰 오차 방어</td>
+<td class="align-left"><code>PP-S1 cap0.5</code> 또는 <code>PP-S4 Huber crossfit clipped</code></td>
+<td class="align-left">p95 약 <code>3.282</code>로 최저권</td>
+</tr>
+<tr>
+<td class="align-left">평균 오차 감소</td>
+<td class="align-left"><code>PP-Q2 Quantile LGBM + CatBoost Quantile</code></td>
+<td class="align-left">MAPE <code>1.1797</code>로 최저권</td>
+</tr>
+<tr>
+<td class="align-left">가격 범위 표시</td>
+<td class="align-left"><code>PP-N3 90% conformal range</code></td>
+<td class="align-left">test coverage <code>0.8061</code>, 보수 범위 제공 가능</td>
+</tr>
+<tr>
+<td class="align-left">후속 피처 후보</td>
+<td class="align-left">PP-U3 <code>medium_size_combo</code>, <code>support_shape_combo</code></td>
+<td class="align-left">LightGBM 피처 구조 개선 가능성 확인</td>
+</tr>
+</tbody></table></div>
+<p>Cold는 Warm처럼 단일 후보 하나로 끝내기 어렵다. 점 예측 후보와 가격 범위 후보를 분리하고, 낮은 신뢰도 구간에서는 보수적인 범위 표시를 함께 제공하는 방향이 타당하다.</p>
+<h2 id="8.-최종-결론">8. 최종 결론</h2>
+<h3 id="8.1-가격-예측-정확도-관점-결론">8.1 가격 예측 정확도 관점 결론</h3>
+<ul>
+<li>Warm은 <code>Huber 중심선 + Quantile/CatBoost 보조 + fine blend/meta</code> 구조가 가장 효과적이었다.</li>
+<li>Warm 최종 대표 후보는 <code>PP-T1 fine_blend_mape_guarded</code>이며, 기준 Huber 대비 MdAPE <code>28.7%</code>, MAPE <code>38.5%</code>, p95 <code>48.7%</code> 개선됐다.</li>
+<li>Cold는 모델 하나를 교체하는 방식보다 <code>CatBoost Quantile -&gt; Huber residual</code> 순서가 가장 효과적이었다.</li>
+<li>Cold 최종 대표 후보는 <code>PP-S1 cap0.2</code>이며, 기준 LightGBM 대비 MdAPE <code>3.4%</code>, MAPE <code>14.4%</code>, p95 <code>28.0%</code> 개선됐다.</li>
+<li>Cold p95 방어는 <code>PP-S1 cap0.5</code> 또는 <code>PP-S4</code>가 더 적합하며, p95 개선폭은 약 <code>31.9%</code>다.</li>
+</ul>
+<h3 id="8.2-모델-특성-관점-결론">8.2 모델 특성 관점 결론</h3>
+<ul>
+<li>Huber는 Warm에서 작가+크기 중심 가격선을 안정적으로 만든다.</li>
+<li>CatBoost는 Cold에서 재료/형태/깊이/크기 조합을 나누는 데 유리하지만, RMSE 단독보다 Quantile 또는 residual 조합으로 쓸 때 효과가 컸다.</li>
+<li>LightGBM은 Cold 기준선과 quantile/범위 생성에 유용하지만, leaf-wise 구조상 tail risk를 별도 관리해야 한다.</li>
+<li>Huber residual과 meta clipping은 후보 예측이 과하게 튀는 것을 줄여 큰 오차 방어에 기여했다.</li>
+</ul>
+<h3 id="8.3-피처-특성-관점-결론">8.3 피처 특성 관점 결론</h3>
+<ul>
+<li>Warm 핵심 피처는 <code>artist_key</code>와 크기 계열이다.</li>
+<li>Cold 핵심 피처는 크기, depth/3D, material/shape/support 조합이다.</li>
+<li>Warm 생성 bucket, Cold medium-size/support-shape 피처는 후속 조합 후보로 가치가 있다.</li>
+<li>다만 피처 교환 후보는 validation/test 선택이 일치하지 않는 경우가 있어 즉시 기준 피처셋을 교체하지 않는다.</li>
+</ul>
+<h3 id="8.4-다음-실행-제안">8.4 다음 실행 제안</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">우선순위</th>
+<th class="align-left">작업</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left">Warm <code>PP-T1</code>과 <code>PP-T2</code>를 목적별 정책으로 정리</td>
+<td class="align-left">대표 가격과 큰 오차 방어 후보 분리</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left">Cold <code>PP-S1 cap0.2</code>, <code>PP-S1 cap0.5</code>, <code>PP-S4</code>, <code>PP-Q2</code>를 목적별로 비교 확정</td>
+<td class="align-left">MdAPE, MAPE, p95 목적별 후보 고정</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left">PP-U 피처 후보를 PP-T/PP-S 후속 조합에 추가</td>
+<td class="align-left">피처 교환으로 확인된 개선 가능성 재검증</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left">Cold 가격 범위 API 정책에 PP-N3 conformal range 반영</td>
+<td class="align-left">Cold 단일 가격의 위험을 보수적으로 표시</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left">외부 작가 DB/검색/소셜 데이터 수집 여부 결정</td>
+<td class="align-left">Cold의 근본적인 작가 기준선 부족 보완</td>
+</tr>
+</tbody></table></div>
+<h2 id="9.-주요-수치-출처">9. 주요 수치 출처</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">내용</th>
+<th class="align-left">출처 파일</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm baseline, Warm 피처 교환</td>
+<td class="align-left"><code>experiments/track6/PP-U_summary_metrics.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">Warm PP-D4, PP-R5</td>
+<td class="align-left"><code>experiments/track6/PP-R_summary_metrics.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">Warm PP-T1, PP-T2, PP-T3</td>
+<td class="align-left"><code>experiments/track6/PP-T_summary_metrics.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold baseline, Cold 피처 교환</td>
+<td class="align-left"><code>experiments/track6/PP-U_summary_metrics.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold PP-Q2 test 참조 후보</td>
+<td class="align-left"><code>experiments/track6/PP-R_summary_metrics.csv</code>의 <code>component_q2_mape_blend</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold PP-R4 meta</td>
+<td class="align-left"><code>experiments/track6/PP-R_summary_metrics.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold PP-S1, PP-S4</td>
+<td class="align-left"><code>experiments/track6/PP-S_summary_metrics.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">피처 영향도 및 group-drop 근거</td>
+<td class="align-left"><code>experiments/track6/PRE-PP_summary_metrics.csv</code>, <code>docs/track6/experiments/track6_feature_influence_with_results.md</code></td>
+</tr>
+<tr>
+<td class="align-left">모델 구조별 해석 근거</td>
+<td class="align-left"><code>docs/track6/experiments/model_structure_based_interpretation_report.md</code></td>
+</tr>
+</tbody></table></div>
+    </main>
+  </div>
+</body>
+</html>

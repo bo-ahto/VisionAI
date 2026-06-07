@@ -1,0 +1,173 @@
+{
+  "experiment_id": "PRE-WARM",
+  "title": "Track6 PRE-WARM Warm 기준 모델 재선정 실험",
+  "purpose": "후처리 전에 Warm Huber 기준 모델을 재선정하기 위해 현재 final artifact 피처셋과 기존 고성능 compact 후보를 같은 split과 평가 방식으로 비교한다.",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "exp_dir": "experiments/track6/PRE-WARM_warm_baseline_reselection",
+  "prompt_file": "experiments/track6/PRE-WARM_warm_baseline_reselection/prompts/used_prompt.md",
+  "run_mode": "full_split_no_sampling",
+  "target_scope": "Warm",
+  "models": [
+    "Huber"
+  ],
+  "numeric_features": [
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "area_cm2",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "is_extreme_aspect_ratio",
+    "ln_estimated_ho",
+    "artist_works_log",
+    "artist_works_log_is_missing"
+  ],
+  "numeric_categorical_interactions": [
+    {
+      "numeric_col": "log_area",
+      "category_col": "artist_name_ko",
+      "output_prefix": "log_area_x_artist_name_ko",
+      "top_n": 10
+    },
+    {
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_name_ko",
+      "output_prefix": "ln_ho_x_artist_name_ko",
+      "top_n": 10
+    },
+    {
+      "numeric_col": "log_area",
+      "category_col": "artist_key",
+      "output_prefix": "log_area_x_artist_key",
+      "top_n": 10
+    },
+    {
+      "numeric_col": "ln_estimated_ho",
+      "category_col": "artist_key",
+      "output_prefix": "ln_ho_x_artist_key",
+      "top_n": 10
+    }
+  ],
+  "feature_sets": [
+    {
+      "name": "PRE-WARM-01: final artifact base_existing_combo",
+      "features": [
+        "artist_key",
+        "width_cm",
+        "height_cm",
+        "depth_cm",
+        "area_cm2",
+        "log_area",
+        "aspect_ratio",
+        "has_depth",
+        "is_3d_candidate",
+        "medium_category",
+        "support_category",
+        "medium_support_bucket",
+        "is_extreme_aspect_ratio"
+      ],
+      "description": "현재 final artifact Warm Huber 기준 피처셋 재현"
+    },
+    {
+      "name": "PRE-WARM-02: compact artist_name size",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "description": "WM1-F1/OPT-W1 W1 기존 최고권 compact 후보 재현"
+    },
+    {
+      "name": "PRE-WARM-03: compact artist_name size + area interaction",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "feature_prefixes": [
+        "log_area_x_artist_name_ko_"
+      ],
+      "description": "WM1-F2/OPT-W3 W3-2 작가명 x 면적 후보 재현"
+    },
+    {
+      "name": "PRE-WARM-04: compact artist_name size + ho interaction",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "ln_estimated_ho"
+      ],
+      "feature_prefixes": [
+        "ln_ho_x_artist_name_ko_"
+      ],
+      "description": "WM1-F5 작가명 x 호수 후보 재현"
+    },
+    {
+      "name": "PRE-WARM-05: compact artist_name size + artist works",
+      "features": [
+        "artist_name_ko",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "artist_works_log",
+        "artist_works_log_is_missing"
+      ],
+      "description": "WM1-F3/OPT-W3 W3-4 작가 학습량 추가 후보 재현"
+    },
+    {
+      "name": "PRE-WARM-06A: compact artist_key size",
+      "features": [
+        "artist_key",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "description": "PRE-WARM-02를 운영용 artist_key로 변환한 정합성 후보"
+    },
+    {
+      "name": "PRE-WARM-06B: compact artist_key size + area interaction",
+      "features": [
+        "artist_key",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio"
+      ],
+      "feature_prefixes": [
+        "log_area_x_artist_key_"
+      ],
+      "description": "PRE-WARM-03을 운영용 artist_key 교차항으로 변환한 정합성 후보"
+    },
+    {
+      "name": "PRE-WARM-06C: compact artist_key size + ho interaction",
+      "features": [
+        "artist_key",
+        "width_cm",
+        "height_cm",
+        "log_area",
+        "aspect_ratio",
+        "ln_estimated_ho"
+      ],
+      "feature_prefixes": [
+        "ln_ho_x_artist_key_"
+      ],
+      "description": "PRE-WARM-04를 운영용 artist_key 교차항으로 변환한 정합성 후보"
+    }
+  ],
+  "comment": {
+    "실험 목적": "후처리 기준으로 사용할 Warm Huber 피처셋을 final artifact 기준으로 둘지, 기존 compact 고성능 후보로 변경할지 결정한다.",
+    "통제 조건": "split, target, 평가 지표, Huber 설정을 고정하고 피처셋만 바꾼다.",
+    "판단 기준": "MdAPE 1순위, p95_APE와 RMSE_log를 보조로 본다. 운영 적용성 때문에 artist_key 버전의 성능 유지 여부를 반드시 확인한다.",
+    "주의": "test 결과는 기존 후보 재현 및 정합성 확인 목적이다. 최종 후처리 보정값은 validation/OOF 기준으로 다시 만들어야 한다."
+  }
+}

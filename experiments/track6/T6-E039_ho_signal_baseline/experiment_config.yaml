@@ -1,0 +1,18 @@
+experiment_id: T6-E039
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H1
+title: 호수 변수 영향 확인
+hypothesis: 호수 변수가 가격 예측에 영향을 미친다.
+features_under_test: ln_estimated_ho
+model: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+join_key: _track6_row_id
+warm_first_train_features: artist_name_ko + ln_estimated_ho
+warm_first_test_features: artist_name_ko + ln_estimated_ho
+warm_second_train_features: ln_estimated_ho
+warm_second_test_features: ln_estimated_ho
+cold_train_features: ln_estimated_ho
+cold_test_features: ln_estimated_ho
+target: ln_price_krw
+compare: 가격 중앙값 기준 모델, 작가명+호수 모델, 호수 only 모델 비교
+success_criteria: 같은 split과 같은 모델에서 median APE 또는 p95 APE가 낮아지면 유지

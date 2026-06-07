@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T6-E017 기본 피처 기반 후보 모델 선정</title>
+  <style>
+    :root { --paper:#fffdf7; --ink:#1d251f; --line:#d8cdb8; --muted:#687268; --green:#27684a; --amber:#9b6124; --blue:#174f73; }
+    body { margin:0; color:var(--ink); background:linear-gradient(135deg,#efe7d7,#f8f5ec 48%,#e9f0e7); font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.62; }
+    main { max-width:1120px; margin:0 auto; padding:32px 22px 72px; }
+    header, section { background:rgba(255,253,247,.96); border:1px solid var(--line); border-radius:24px; padding:26px; margin-top:18px; box-shadow:0 12px 34px rgba(42,34,22,.08); }
+    h1 { margin:0; font-size:42px; letter-spacing:-.055em; }
+    h2 { margin:0 0 12px; font-size:22px; letter-spacing:-.03em; }
+    ul { margin:8px 0 0; padding-left:21px; }
+    code { background:#eee5d4; border-radius:7px; padding:2px 6px; overflow-wrap:anywhere; }
+    table { width:100%; border-collapse:collapse; background:var(--paper); }
+    th,td { padding:11px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; font-size:14px; }
+    th { background:#eadfcd; }
+    .badge { display:inline-flex; padding:5px 9px; border-radius:999px; font-size:12px; font-weight:800; margin-right:6px; }
+    .planned { background:rgba(155,97,36,.14); color:var(--amber); }
+    .goal { background:rgba(39,104,74,.14); color:var(--green); }
+    .note { color:var(--muted); }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:16px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="badge goal">실행 완료</span>
+    <span class="badge goal">기본 피처로 후보 모델 비교</span>
+    <span class="badge goal">T6-G6 모델 안정성 확인</span>
+    <h1>T6-E017 기본 피처 기반 후보 모델 1차 비교</h1>
+    <p class="note">이 일지는 순서도 기준으로 <code>기본 피처 정의</code> 다음 단계인 <code>기본 피처로 후보 모델 비교</code>에 해당합니다.</p>
+    <p><strong>실행 결과:</strong> 중복 후보를 제거한 뒤 후보 모델 8개를 재실행했습니다. Warm/Cold 모두 <code>Huber</code>가 가장 안정적인 1차 후보로 확인되었습니다.</p>
+  </header>
+
+  <section>
+    <h2>0. 같은 피처셋 기준 모델 순위</h2>
+    <p class="note">피처셋이 다르면 모델 성능 차이인지 피처 차이인지 분리하기 어렵기 때문에, 우선 같은 피처셋 안에서 모델 순위를 봅니다.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>피처셋</th>
+            <th>사용 피처</th>
+            <th>1위</th>
+            <th>2위</th>
+            <th>3위</th>
+            <th>해석</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Warm 최소 피처</td>
+            <td><code>artist_name_ko</code>, <code>ln_estimated_ho</code></td>
+            <td><code>Huber</code><br>median APE 0.1646<br>p95 0.8356</td>
+            <td><code>Linear Regression</code><br>median APE 0.1878<br>p95 0.8595</td>
+            <td><code>Ridge</code><br>median APE 0.1946<br>p95 0.8654</td>
+            <td>같은 최소 피처 기준에서는 Huber가 가장 좋습니다.</td>
+          </tr>
+          <tr>
+            <td>Warm 기본 피처</td>
+            <td><code>artist_name_ko</code>, <code>ln_estimated_ho</code>, <code>nant_material_idx</code>, <code>nant_tool</code>, <code>nant_support</code></td>
+            <td><code>Huber</code><br>median APE 0.1663<br>p95 0.8032</td>
+            <td><code>Linear Regression</code><br>median APE 0.1888<br>p95 0.8164</td>
+            <td><code>Ridge</code><br>median APE 0.1956<br>p95 0.8151</td>
+            <td>기본 피처에서도 Huber가 1위이며, 최소 피처 대비 p95와 Within 지표가 좋아집니다.</td>
+          </tr>
+          <tr>
+            <td>Cold 최소 피처</td>
+            <td><code>ln_estimated_ho</code></td>
+            <td><code>Quantile / LAD</code><br>median APE 0.4483<br>p95 2.3257</td>
+            <td><code>Huber</code><br>median APE 0.4510<br>p95 2.3846</td>
+            <td><code>Linear Regression</code><br>median APE 0.5083<br>p95 2.8077</td>
+            <td>호수만 쓰면 Quantile / LAD가 근소하게 앞섭니다.</td>
+          </tr>
+          <tr>
+            <td>Cold 기본 피처</td>
+            <td><code>ln_estimated_ho</code>, <code>nant_material_idx</code>, <code>nant_tool</code>, <code>nant_support</code></td>
+            <td><code>Huber</code><br>median APE 0.4276<br>p95 1.8852</td>
+            <td><code>Quantile / LAD</code><br>median APE 0.4450<br>p95 2.4723</td>
+            <td><code>LightGBM</code><br>median APE 0.4903<br>p95 2.6663</td>
+            <td>Cold 기본 피처에서는 Huber가 median APE와 p95 모두 가장 안정적입니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li>생성 데이터: <code>data/train_features.csv</code>, <code>data/train_labels.csv</code>, <code>data/test_warm_features.csv</code>, <code>data/test_warm_labels.csv</code>, <code>data/test_cold_features.csv</code>, <code>data/test_cold_labels.csv</code></li>
+      <li>결과 파일: <code>outputs/metrics.csv</code>, <code>outputs/predictions.csv</code>, <code>outputs/selected_models.json</code>, <code>outputs/summary.md</code></li>
+      <li>중복 제거: <code>Hedonic Ridge</code>/<code>Ridge</code>, <code>Hedonic Huber</code>/<code>Huber</code>, <code>Hedonic Quantile</code>/<code>Quantile</code>처럼 같은 구현은 하나만 실행</li>
+      <li>데이터 규모: train 28,204건 / warm test 2,445건 / cold test 3,005건</li>
+      <li>Cold와 train 작가 겹침: 0명</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>1. 실험 목적</h2>
+    <ul>
+      <li>기본 피처를 먼저 고정한 상태에서 가능한 후보 모델을 넓게 비교합니다.</li>
+      <li>모든 후보 모델은 기본 설정으로 1차 실행합니다.</li>
+      <li>1차 결과를 보고 Warm 상위 2~3개, Cold 상위 2~3개 모델로 압축합니다.</li>
+      <li>압축된 후보만 다음 단계에서 반복 실행, 세부 설정값 조정, slice별 안정성 검증을 진행합니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. 가설</h2>
+    <ul>
+      <li>같은 후보 모델군을 Warm과 Cold에 모두 적용하면 모델별 강점과 약점을 공정하게 비교할 수 있다.</li>
+      <li>Warm과 Cold의 차이는 먼저 피처셋과 평가 데이터에서 발생하게 두고, 모델 후보군은 동일하게 유지한다.</li>
+      <li>처음부터 모든 모델을 튜닝하지 않고, 1차 비교로 가능성이 낮은 모델을 제외한다.</li>
+      <li>비교 결과를 본 뒤 Warm 상위 후보와 Cold 상위 후보를 따로 선정한다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 기본 피처 정의</h2>
+    <ul>
+      <li>기본 피처는 “성능이 좋아 보이는 피처를 모두 넣는 것”이 아니라, 운영에서 안정적으로 입력 가능하고 누수 위험이 낮은 최소 피처부터 시작합니다.</li>
+      <li>Warm과 Cold를 공정하게 비교하기 위해 작품 자체 피처는 최대한 공통으로 두고, Warm에서만 작가명 피처를 추가합니다.</li>
+      <li>크기 피처는 중복이 많기 때문에 1차 기본 피처에서는 <code>ln_estimated_ho</code>를 대표 크기값으로 사용합니다.</li>
+      <li><code>width_cm</code>, <code>height_cm</code>, <code>log_area</code>, <code>aspect_ratio</code>는 바로 기본 피처에 넣지 않고 후속 크기 파생 실험에서 추가 효과를 확인합니다.</li>
+      <li>재료와 지지체는 운영 입력 가능성이 높고 작품 자체 정보라 기본 후보에 포함합니다.</li>
+      <li>3D/depth 피처는 모든 작품에 항상 있는 정보가 아니므로 기본 피처가 아니라 약점 구간 보완 후보로 둡니다.</li>
+    </ul>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>학습/테스트 피처</th>
+            <th>선정 이유</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Warm 최소 피처</td>
+            <td><code>artist_name_ko</code>, <code>ln_estimated_ho</code></td>
+            <td>작가명과 호수 로그값만으로 Warm 기준 성능을 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>Warm 기본 피처</td>
+            <td><code>artist_name_ko</code>, <code>ln_estimated_ho</code>, <code>nant_material_idx</code>, <code>nant_tool</code>, <code>nant_support</code></td>
+            <td>Warm에서만 작가명을 추가하고, 작품 자체 정보는 Cold와 최대한 같은 기준으로 둡니다.</td>
+          </tr>
+          <tr>
+            <td>Cold 최소 피처</td>
+            <td><code>ln_estimated_ho</code></td>
+            <td>신규 작가 상황에서 작가명 없이 호수만으로 가능한 최소 기준 성능을 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>Cold 기본 피처</td>
+            <td><code>ln_estimated_ho</code>, <code>nant_material_idx</code>, <code>nant_tool</code>, <code>nant_support</code></td>
+            <td>신규 작가 상황에서 운영 입력 가능한 작품 자체 정보만 사용합니다.</td>
+          </tr>
+          <tr>
+            <td>후속 추가 후보</td>
+            <td><code>width_cm</code>, <code>height_cm</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>nant_material_idx</code>, <code>nant_tool</code>, <code>depth_cm</code>, <code>has_depth</code>, <code>is_3d_candidate</code></td>
+            <td>기본 피처에 바로 포함하지 않고, 피처 추가/제거 실험에서 실제 개선 여부를 확인합니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 실험 방법</h2>
+    <ul>
+      <li>같은 데이터 split을 사용합니다.</li>
+      <li>같은 피처셋 안에서 모델만 바꿔 비교합니다.</li>
+      <li>Warm 모델은 Warm test 성능을 기준으로 우선 판단합니다.</li>
+      <li>Cold 모델은 Cold test 성능을 기준으로 우선 판단합니다.</li>
+      <li>Warm과 Cold 성능을 합쳐 한 숫자로 판단하지 않습니다.</li>
+      <li>후보 모델은 성능뿐 아니라 재현 가능성, 해석 가능성, 운영 가능성도 같이 봅니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5. 비교할 후보 모델군</h2>
+    <ul>
+      <li><code>Hedonic</code>은 별도 알고리즘 이름이 아니라, 작가명/호수/재료 같은 설명 변수로 가격을 설명하는 회귀 실험 방식입니다.</li>
+      <li>같은 estimator, 같은 전처리, 같은 피처를 쓰는 중복 후보는 제거했습니다.</li>
+      <li>따라서 실제 실행 후보는 아래 8개 모델입니다.</li>
+    </ul>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>계열</th>
+            <th>후보 모델</th>
+            <th>간단한 설명</th>
+            <th>확인하려는 점</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>선형 계열</td>
+            <td>Linear Regression</td>
+            <td>작가명, 호수, 재료 같은 설명 변수로 가격을 설명하는 가장 기본 선형 모델입니다.</td>
+            <td>가장 단순한 기준선으로 쓸 수 있는지 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>선형 계열</td>
+            <td>Ridge</td>
+            <td>기본 선형 회귀에 규제를 넣어 과적합을 줄인 모델입니다.</td>
+            <td>가장 단순하고 안정적인 기준 모델로 쓸 수 있는지 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>선형/강건 계열</td>
+            <td>Huber</td>
+            <td>큰 오차값의 영향을 줄여 이상치에 더 강한 선형 모델입니다.</td>
+            <td>고가 작품이나 특이 작품 때문에 모델이 흔들리는지 줄일 수 있는지 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>선형/강건 계열</td>
+            <td>Quantile / LAD 계열</td>
+            <td>제곱오차보다 절대오차 또는 분위값 기준으로 학습해 큰 오차에 덜 흔들리는 모델입니다.</td>
+            <td>Cold처럼 불확실성이 큰 상황에서 평균 예측보다 안정적인지 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>트리 계열</td>
+            <td>LightGBM</td>
+            <td>여러 개의 작은 트리를 조합해 비선형 관계를 잘 잡는 모델입니다.</td>
+            <td>작가명, 크기, 재료 조합처럼 단순 선형으로 설명하기 어려운 패턴을 잡는지 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>트리 계열</td>
+            <td>CatBoost</td>
+            <td>범주형 피처 처리에 강한 트리 기반 모델입니다.</td>
+            <td>작가명, 재료, 지지체처럼 문자형 피처가 많은 상황에서 강점이 있는지 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>트리 계열</td>
+            <td>XGBoost</td>
+            <td>성능이 강한 트리 기반 모델로 복잡한 피처 조합을 잘 학습할 수 있습니다.</td>
+            <td>LightGBM/CatBoost와 비교해 성능 개선이 있는지 확인합니다.</td>
+          </tr>
+          <tr>
+            <td>트리 계열</td>
+            <td>HistGradientBoosting</td>
+            <td>scikit-learn 기반 트리 모델로 빠르게 비선형 기준 성능을 확인하기 좋은 모델입니다.</td>
+            <td>외부 라이브러리 의존도가 낮은 트리 기준 모델로 쓸 수 있는지 확인합니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li>위 후보 모델은 Warm과 Cold에 모두 적용합니다.</li>
+      <li>Warm에서는 Warm 기본 피처셋을 사용하고, Cold에서는 Cold 기본 피처셋을 사용합니다.</li>
+      <li>모델 후보를 미리 Warm용/Cold용으로 나누지 않고, 결과를 본 뒤 각각 상위 2~3개를 고릅니다.</li>
+      <li>1차 비교에서는 모든 후보 모델을 기본 설정으로만 실행합니다.</li>
+      <li>튜닝은 상위 후보가 압축된 뒤 별도 실험에서 진행합니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>6. 실험 케이스</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>케이스</th>
+            <th>학습 데이터</th>
+            <th>평가 데이터</th>
+            <th>피처</th>
+            <th>목표</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Warm 최소 피처 모델 비교</td>
+            <td><code>train_features + train_labels</code></td>
+            <td><code>test_warm_features + test_warm_labels</code></td>
+            <td><code>artist_name_ko</code>, <code>ln_estimated_ho</code></td>
+            <td>작가명+호수만으로 Warm 후보 모델 1차 비교</td>
+          </tr>
+          <tr>
+            <td>Warm 기본 피처 모델 비교</td>
+            <td><code>train_features + train_labels</code></td>
+            <td><code>test_warm_features + test_warm_labels</code></td>
+            <td>Warm 기본 피처셋</td>
+            <td>기본 피처 확장 후 Warm 후보 모델 2개 선정</td>
+          </tr>
+          <tr>
+            <td>Cold 최소 피처 모델 비교</td>
+            <td><code>train_features + train_labels</code></td>
+            <td><code>test_cold_features + test_cold_labels</code></td>
+            <td><code>ln_estimated_ho</code></td>
+            <td>호수만으로 Cold 최소 기준 모델 비교</td>
+          </tr>
+          <tr>
+            <td>Cold 기본 피처 모델 비교</td>
+            <td><code>train_features + train_labels</code></td>
+            <td><code>test_cold_features + test_cold_labels</code></td>
+            <td>Cold 기본 피처셋</td>
+            <td>작품 구조 피처 기반 Cold 후보 모델 2개 선정</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>7. 실행 전략</h2>
+    <ul>
+      <li>1차 비교: 모든 후보 모델을 기본 설정으로 1회 실행합니다.</li>
+      <li>1차 목적: 가능성이 낮은 모델을 빠르게 제외합니다.</li>
+      <li>2차 압축: Warm 상위 2~3개, Cold 상위 2~3개를 선정합니다.</li>
+      <li>3차 검증: 압축된 후보만 반복 실행, 세부 설정값 조정, slice별 안정성 확인을 진행합니다.</li>
+      <li>주의: 처음부터 모든 후보 모델을 튜닝하지 않습니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>8. 유의미함 기준</h2>
+    <ul>
+      <li>1순위: median APE가 낮은 모델을 우선합니다.</li>
+      <li>2순위: p95 APE가 과도하게 높지 않은 모델을 우선합니다.</li>
+      <li>3순위: Within-30과 Within-50이 높은 모델을 우선합니다.</li>
+      <li>4순위: 같은 성능이면 단순하고 재현 가능한 모델을 우선합니다.</li>
+      <li>5순위: Warm에서 좋은 모델이 Cold에서 나빠지면 Warm/Cold 모델을 분리합니다.</li>
+      <li>6순위: 실행 시간이 과도하게 길면 1차 후보에서는 보류할 수 있습니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>9. 결과 기록 방식</h2>
+    <ul>
+      <li><code>outputs/metrics.csv</code>: 모델별 Warm/Cold 지표 기록</li>
+      <li><code>outputs/predictions.csv</code>: 예측값과 실제값 비교</li>
+      <li><code>outputs/slice_metrics.csv</code>: 크기/재료/3D 구간별 오차 기록</li>
+      <li><code>outputs/selected_models.json</code>: Warm 상위 후보 2~3개, Cold 상위 후보 2~3개 기록</li>
+      <li><code>outputs/summary.md</code>: 후보 선정 이유와 다음 실험 연결 기록</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>10. 결론</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>1순위 후보</th>
+            <th>2순위 후보</th>
+            <th>선정 이유</th>
+            <th>다음 단계</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Warm</td>
+            <td>Huber</td>
+            <td>Linear Regression</td>
+            <td>중복 후보 제거 후 Warm 최소 피처에서 Huber의 median APE가 가장 낮습니다. Warm 기본 피처의 Huber는 median APE가 약간 높지만 p95와 Within 지표가 더 좋아 후속 후보로 같이 유지합니다.</td>
+            <td>T6-E022, T6-E032, T6-E034로 연결</td>
+          </tr>
+          <tr>
+            <td>Cold</td>
+            <td>Huber</td>
+            <td>Quantile / LAD</td>
+            <td>Cold 기본 피처에서 Huber의 median APE와 p95가 가장 안정적입니다. Quantile / LAD는 median APE는 근접하지만 p95가 높아 보조 후보로 둡니다.</td>
+            <td>T6-E023, T6-E029, T6-E033, T6-E035로 연결</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

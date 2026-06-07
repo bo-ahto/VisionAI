@@ -1,0 +1,456 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-U2</title><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933;line-height:1.55}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0 24px}
+th,td{border:1px solid #d8dee4;padding:7px;text-align:left;vertical-align:top}
+th{background:#eef2f7}
+code{background:#f3f4f6;padding:2px 4px;border-radius:4px}
+.note{background:#f8fafc;border:1px solid #d8dee4;padding:12px;margin:12px 0}
+</style></head>
+<body>
+<h1>PP-U2 Warm CatBoost 피처 교환/축소/확장 비교</h1>
+<div class="note">
+<p><b>목적</b>: 모델 설정은 고정하고 피처셋만 바꿔 Warm/Cold 모델별 입력 피처 구조의 적합성을 비교한다.</p>
+<p><b>선택 기준</b>: validation 기준으로 후보를 고르고 test는 재현성 확인으로만 사용한다.</p>
+</div>
+<h2>후보 피처셋</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-U2</td>
+      <td>baseline_base_existing_combo</td>
+      <td>기준 피처셋</td>
+      <td>현재 Warm Huber final artifact와 같은 피처셋</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_only</td>
+      <td>작가+크기 핵심축만 유지</td>
+      <td>기존 group-drop에서 핵심으로 확인된 작가와 크기만 남겼을 때 노이즈가 줄어드는지 확인</td>
+      <td>5</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_aspect</td>
+      <td>작가+크기+형태</td>
+      <td>형태/aspect가 Warm에서 약한 보조 신호인지 재확인</td>
+      <td>7</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, aspect_ratio, is_extreme_aspect_ratio</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_depth</td>
+      <td>작가+크기+깊이/입체</td>
+      <td>depth/3D가 Warm에서는 독립 설명력이 약했는지 재확인</td>
+      <td>8</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, depth_cm, has_depth, is_3d_candidate</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_material</td>
+      <td>작가+크기+재료/지지체</td>
+      <td>재료/지지체 조합이 Warm에서 노이즈인지 보조 신호인지 확인</td>
+      <td>8</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, medium_category, support_category, medium_support_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_works</td>
+      <td>작가+크기+작가 학습량</td>
+      <td>artist_works_log가 p95 안정성 보조 피처로 작동하는지 확인</td>
+      <td>6</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, artist_works_log</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_generated_buckets</td>
+      <td>작가+크기+생성 bucket</td>
+      <td>size/shape/support bucket을 쓰면 선형 Huber가 구간 효과를 더 잘 반영하는지 확인</td>
+      <td>9</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>full_plus_generated_buckets</td>
+      <td>기준 피처셋+생성 bucket</td>
+      <td>기준 피처셋에 생성 bucket을 추가해 구간 정보를 더 넣는 것이 도움이 되는지 확인</td>
+      <td>20</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>model</th>
+      <th>split</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>delta_MdAPE_vs_baseline</th>
+      <th>delta_MAPE_vs_baseline</th>
+      <th>delta_p95_APE_vs_baseline</th>
+      <th>delta_RMSE_log_vs_baseline</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_generated_buckets</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>작가+크기+생성 bucket</td>
+      <td>size/shape/support bucket을 쓰면 선형 Huber가 구간 효과를 더 잘 반영하는지 확인</td>
+      <td>9</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+      <td>0.637307</td>
+      <td>0.312540</td>
+      <td>0.495178</td>
+      <td>1.562377</td>
+      <td>0.466227</td>
+      <td>0.688633</td>
+      <td>-0.013356</td>
+      <td>-0.002312</td>
+      <td>-0.046227</td>
+      <td>0.001459</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>baseline_base_existing_combo</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>기준 피처셋</td>
+      <td>현재 Warm Huber final artifact와 같은 피처셋</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key</td>
+      <td>0.635848</td>
+      <td>0.325896</td>
+      <td>0.497490</td>
+      <td>1.608604</td>
+      <td>0.462932</td>
+      <td>0.673806</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>full_plus_generated_buckets</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>기준 피처셋+생성 bucket</td>
+      <td>기준 피처셋에 생성 bucket을 추가해 구간 정보를 더 넣는 것이 도움이 되는지 확인</td>
+      <td>20</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.624784</td>
+      <td>0.332799</td>
+      <td>0.477219</td>
+      <td>1.479296</td>
+      <td>0.446458</td>
+      <td>0.675453</td>
+      <td>0.006903</td>
+      <td>-0.020272</td>
+      <td>-0.129308</td>
+      <td>-0.011065</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_depth</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>작가+크기+깊이/입체</td>
+      <td>depth/3D가 Warm에서는 독립 설명력이 약했는지 재확인</td>
+      <td>8</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, depth_cm, has_depth, is_3d_candidate</td>
+      <td>0.636019</td>
+      <td>0.337235</td>
+      <td>0.492020</td>
+      <td>1.556500</td>
+      <td>0.448105</td>
+      <td>0.680395</td>
+      <td>0.011340</td>
+      <td>-0.005470</td>
+      <td>-0.052104</td>
+      <td>0.000171</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_material</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>작가+크기+재료/지지체</td>
+      <td>재료/지지체 조합이 Warm에서 노이즈인지 보조 신호인지 확인</td>
+      <td>8</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, medium_category, support_category, medium_support_bucket</td>
+      <td>0.643458</td>
+      <td>0.337332</td>
+      <td>0.512331</td>
+      <td>1.728968</td>
+      <td>0.453048</td>
+      <td>0.683690</td>
+      <td>0.011436</td>
+      <td>0.014841</td>
+      <td>0.120364</td>
+      <td>0.007610</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_only</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>작가+크기 핵심축만 유지</td>
+      <td>기존 group-drop에서 핵심으로 확인된 작가와 크기만 남겼을 때 노이즈가 줄어드는지 확인</td>
+      <td>5</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area</td>
+      <td>0.638988</td>
+      <td>0.346698</td>
+      <td>0.508745</td>
+      <td>1.630989</td>
+      <td>0.436573</td>
+      <td>0.672158</td>
+      <td>0.020802</td>
+      <td>0.011254</td>
+      <td>0.022384</td>
+      <td>0.003140</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_works</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>작가+크기+작가 학습량</td>
+      <td>artist_works_log가 p95 안정성 보조 피처로 작동하는지 확인</td>
+      <td>6</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, artist_works_log</td>
+      <td>0.625443</td>
+      <td>0.352298</td>
+      <td>0.490416</td>
+      <td>1.461552</td>
+      <td>0.421746</td>
+      <td>0.668863</td>
+      <td>0.026403</td>
+      <td>-0.007074</td>
+      <td>-0.147053</td>
+      <td>-0.010405</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_aspect</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>test</td>
+      <td>작가+크기+형태</td>
+      <td>형태/aspect가 Warm에서 약한 보조 신호인지 재확인</td>
+      <td>7</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, aspect_ratio, is_extreme_aspect_ratio</td>
+      <td>0.640933</td>
+      <td>0.359850</td>
+      <td>0.500066</td>
+      <td>1.586137</td>
+      <td>0.462932</td>
+      <td>0.688633</td>
+      <td>0.033954</td>
+      <td>0.002575</td>
+      <td>-0.022467</td>
+      <td>0.005085</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_only</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>작가+크기 핵심축만 유지</td>
+      <td>기존 group-drop에서 핵심으로 확인된 작가와 크기만 남겼을 때 노이즈가 줄어드는지 확인</td>
+      <td>5</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area</td>
+      <td>0.553985</td>
+      <td>0.277779</td>
+      <td>0.410912</td>
+      <td>1.336633</td>
+      <td>0.527938</td>
+      <td>0.747592</td>
+      <td>-0.013417</td>
+      <td>0.004612</td>
+      <td>0.085847</td>
+      <td>0.001006</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_works</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>작가+크기+작가 학습량</td>
+      <td>artist_works_log가 p95 안정성 보조 피처로 작동하는지 확인</td>
+      <td>6</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, artist_works_log</td>
+      <td>0.559203</td>
+      <td>0.278195</td>
+      <td>0.405281</td>
+      <td>1.245656</td>
+      <td>0.529865</td>
+      <td>0.737958</td>
+      <td>-0.013001</td>
+      <td>-0.001019</td>
+      <td>-0.005130</td>
+      <td>0.006224</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_aspect</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>작가+크기+형태</td>
+      <td>형태/aspect가 Warm에서 약한 보조 신호인지 재확인</td>
+      <td>7</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, aspect_ratio, is_extreme_aspect_ratio</td>
+      <td>0.553190</td>
+      <td>0.279798</td>
+      <td>0.406234</td>
+      <td>1.263545</td>
+      <td>0.535645</td>
+      <td>0.736031</td>
+      <td>-0.011398</td>
+      <td>-0.000066</td>
+      <td>0.012759</td>
+      <td>0.000210</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_depth</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>작가+크기+깊이/입체</td>
+      <td>depth/3D가 Warm에서는 독립 설명력이 약했는지 재확인</td>
+      <td>8</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, depth_cm, has_depth, is_3d_candidate</td>
+      <td>0.551484</td>
+      <td>0.281291</td>
+      <td>0.400274</td>
+      <td>1.240746</td>
+      <td>0.529865</td>
+      <td>0.743738</td>
+      <td>-0.009905</td>
+      <td>-0.006025</td>
+      <td>-0.010040</td>
+      <td>-0.001496</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>baseline_base_existing_combo</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>기준 피처셋</td>
+      <td>현재 Warm Huber final artifact와 같은 피처셋</td>
+      <td>13</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key</td>
+      <td>0.552979</td>
+      <td>0.291196</td>
+      <td>0.406299</td>
+      <td>1.250786</td>
+      <td>0.506744</td>
+      <td>0.743738</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_generated_buckets</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>작가+크기+생성 bucket</td>
+      <td>size/shape/support bucket을 쓰면 선형 Huber가 구간 효과를 더 잘 반영하는지 확인</td>
+      <td>9</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket</td>
+      <td>0.547763</td>
+      <td>0.294225</td>
+      <td>0.409701</td>
+      <td>1.195460</td>
+      <td>0.508671</td>
+      <td>0.732177</td>
+      <td>0.003029</td>
+      <td>0.003402</td>
+      <td>-0.055326</td>
+      <td>-0.005216</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>full_plus_generated_buckets</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>기준 피처셋+생성 bucket</td>
+      <td>기준 피처셋에 생성 bucket을 추가해 구간 정보를 더 넣는 것이 도움이 되는지 확인</td>
+      <td>20</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, artist_key, artist_works_log, size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d</td>
+      <td>0.546441</td>
+      <td>0.297972</td>
+      <td>0.398160</td>
+      <td>1.065680</td>
+      <td>0.502890</td>
+      <td>0.737958</td>
+      <td>0.006775</td>
+      <td>-0.008139</td>
+      <td>-0.185106</td>
+      <td>-0.006539</td>
+    </tr>
+    <tr>
+      <td>PP-U2</td>
+      <td>artist_size_material</td>
+      <td>warm</td>
+      <td>catboost</td>
+      <td>validation</td>
+      <td>작가+크기+재료/지지체</td>
+      <td>재료/지지체 조합이 Warm에서 노이즈인지 보조 신호인지 확인</td>
+      <td>8</td>
+      <td>artist_key, width_cm, height_cm, area_cm2, log_area, medium_category, support_category, medium_support_bucket</td>
+      <td>0.563401</td>
+      <td>0.309313</td>
+      <td>0.426257</td>
+      <td>1.284961</td>
+      <td>0.483622</td>
+      <td>0.732177</td>
+      <td>0.018117</td>
+      <td>0.019958</td>
+      <td>0.034175</td>
+      <td>0.010421</td>
+    </tr>
+  </tbody>
+</table>
+</body></html>

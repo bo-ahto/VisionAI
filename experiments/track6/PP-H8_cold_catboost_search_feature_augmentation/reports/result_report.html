@@ -1,0 +1,289 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-H8</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;margin:28px;color:#1f2933;line-height:1.55}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #d8dee4;padding:7px;text-align:left;vertical-align:top}th{background:#eef2f7}code{background:#f3f4f6;padding:2px 4px;border-radius:4px}</style></head>
+<body><h1>PP-H8 Cold CatBoost 검색 피처 추가 검증</h1><h2>Metrics</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>scope</th>
+      <th>split</th>
+      <th>policy</th>
+      <th>RMSE_log</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>covered_RMSE_log</th>
+      <th>covered_MdAPE</th>
+      <th>covered_MAPE</th>
+      <th>covered_p95_APE</th>
+      <th>covered_Within_30</th>
+      <th>covered_Within_50</th>
+      <th>covered_n</th>
+      <th>coverage_rate</th>
+      <th>model</th>
+      <th>loss_or_objective</th>
+      <th>feature_strategy</th>
+      <th>n_features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-H8</td>
+      <td>baseline_catboost_ppw2_like</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_catboost_search_feature_augmentation</td>
+      <td>0.675516</td>
+      <td>0.401848</td>
+      <td>0.587289</td>
+      <td>1.621600</td>
+      <td>0.388667</td>
+      <td>0.625499</td>
+      <td>0.527466</td>
+      <td>0.359102</td>
+      <td>0.407891</td>
+      <td>1.037362</td>
+      <td>0.429752</td>
+      <td>0.719644</td>
+      <td>1573</td>
+      <td>0.571377</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>PP-W2와 같은 CatBoost 작품조건+작가메타 기준</td>
+      <td>39</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>baseline_catboost_ppw2_like</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_catboost_search_feature_augmentation</td>
+      <td>0.881732</td>
+      <td>0.449693</td>
+      <td>1.111100</td>
+      <td>4.158738</td>
+      <td>0.313650</td>
+      <td>0.545337</td>
+      <td>0.915482</td>
+      <td>0.387807</td>
+      <td>1.431190</td>
+      <td>5.582083</td>
+      <td>0.360939</td>
+      <td>0.617667</td>
+      <td>1449</td>
+      <td>0.467570</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>PP-W2와 같은 CatBoost 작품조건+작가메타 기준</td>
+      <td>39</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_context</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_catboost_search_feature_augmentation</td>
+      <td>0.678468</td>
+      <td>0.413245</td>
+      <td>0.592759</td>
+      <td>1.574488</td>
+      <td>0.383945</td>
+      <td>0.581911</td>
+      <td>0.535710</td>
+      <td>0.369298</td>
+      <td>0.417865</td>
+      <td>1.017022</td>
+      <td>0.414495</td>
+      <td>0.642085</td>
+      <td>1573</td>
+      <td>0.571377</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 문맥 핵심 피처</td>
+      <td>49</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_context</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_catboost_search_feature_augmentation</td>
+      <td>0.883452</td>
+      <td>0.472755</td>
+      <td>1.160176</td>
+      <td>4.016667</td>
+      <td>0.320103</td>
+      <td>0.528880</td>
+      <td>0.919848</td>
+      <td>0.408260</td>
+      <td>1.551735</td>
+      <td>6.074538</td>
+      <td>0.368530</td>
+      <td>0.596963</td>
+      <td>1449</td>
+      <td>0.467570</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 문맥 핵심 피처</td>
+      <td>49</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_all</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_catboost_search_feature_augmentation</td>
+      <td>0.689439</td>
+      <td>0.432195</td>
+      <td>0.612258</td>
+      <td>1.608808</td>
+      <td>0.343625</td>
+      <td>0.575009</td>
+      <td>0.559619</td>
+      <td>0.394441</td>
+      <td>0.452068</td>
+      <td>1.124042</td>
+      <td>0.352193</td>
+      <td>0.630006</td>
+      <td>1573</td>
+      <td>0.571377</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 전체 피처</td>
+      <td>64</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_all</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_catboost_search_feature_augmentation</td>
+      <td>0.880456</td>
+      <td>0.482922</td>
+      <td>1.159770</td>
+      <td>4.070324</td>
+      <td>0.312682</td>
+      <td>0.522749</td>
+      <td>0.913868</td>
+      <td>0.436029</td>
+      <td>1.543843</td>
+      <td>5.648280</td>
+      <td>0.349206</td>
+      <td>0.590062</td>
+      <td>1449</td>
+      <td>0.467570</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 전체 피처</td>
+      <td>64</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_interaction</td>
+      <td>cold</td>
+      <td>validation</td>
+      <td>cold_catboost_search_feature_augmentation</td>
+      <td>0.689884</td>
+      <td>0.438440</td>
+      <td>0.612545</td>
+      <td>1.575095</td>
+      <td>0.377406</td>
+      <td>0.559027</td>
+      <td>0.563560</td>
+      <td>0.407661</td>
+      <td>0.452567</td>
+      <td>1.210955</td>
+      <td>0.396694</td>
+      <td>0.603942</td>
+      <td>1573</td>
+      <td>0.571377</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 상호작용 피처</td>
+      <td>53</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_interaction</td>
+      <td>cold</td>
+      <td>test</td>
+      <td>cold_catboost_search_feature_augmentation</td>
+      <td>0.888696</td>
+      <td>0.468642</td>
+      <td>1.223288</td>
+      <td>3.976197</td>
+      <td>0.323653</td>
+      <td>0.540497</td>
+      <td>0.936853</td>
+      <td>0.399422</td>
+      <td>1.690682</td>
+      <td>6.680259</td>
+      <td>0.378882</td>
+      <td>0.614217</td>
+      <td>1449</td>
+      <td>0.467570</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 상호작용 피처</td>
+      <td>53</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Map</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>experiment_id</th>
+      <th>candidate</th>
+      <th>model</th>
+      <th>loss_or_objective</th>
+      <th>feature_strategy</th>
+      <th>hypothesis</th>
+      <th>n_features</th>
+      <th>features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PP-H8</td>
+      <td>baseline_catboost_ppw2_like</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>PP-W2와 같은 CatBoost 작품조건+작가메타 기준</td>
+      <td>검색 피처를 넣지 않은 동일 스크립트 기준선</td>
+      <td>39</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_context</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 문맥 핵심 피처</td>
+      <td>대칭 트리에서 작품조건, 작가메타, 검색 품질 조합이 가격 구간을 더 잘 나누는지 확인</td>
+      <td>49</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_art_match_ratio, search_quality_score, search_collected_flag, search_success_flag, search_quality_grade</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_all</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 전체 피처</td>
+      <td>검색 노출량, 전시/기관/갤러리 문맥, 동명이인 위험까지 모두 반영</td>
+      <td>64</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_result_count, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_social_context_count, search_market_context_count, search_homonym_context_count, search_art_match_ratio, search_exhibition_ratio, search_source_ratio, search_quality_score, search_result_count_log, search_art_context_count_log, search_exhibition_context_count_log, search_source_count_log, search_collected_flag, search_success_flag, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_quality_grade, search_size_quality_bucket, search_homonym_risk_grade</td>
+    </tr>
+    <tr>
+      <td>PP-H8</td>
+      <td>catboost_search_interaction</td>
+      <td>catboost</td>
+      <td>RMSE</td>
+      <td>CatBoost + 검색 상호작용 피처</td>
+      <td>검색 인지도 효과가 작품 크기, 작가 팔로워, 경력 단계에 따라 달라지는지 확인</td>
+      <td>53</td>
+      <td>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, medium_support_bucket, is_extreme_aspect_ratio, size_bucket, shape_bucket, medium_size_bucket, support_size_bucket, medium_shape_bucket, is_large_2d, is_large_3d, artist_meta_birth_year, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_for_sale_ratio, artist_meta_career_stage, artist_meta_total_works_log, artist_meta_for_sale_works_log, artist_meta_followers_log, artist_meta_birth_year_missing, artist_meta_total_works_missing, artist_meta_for_sale_works_missing, artist_meta_followers_missing, artist_meta_career_stage_missing, artist_meta_is_p1_flag, artist_meta_has_international_flag, is_high_price_candidate_flag, artist_meta_source, artist_meta_nationality, artist_meta_nationality_ko, search_source_count, search_art_context_count, search_exhibition_context_count, search_gallery_context_count, search_award_institution_context_count, search_art_match_ratio, search_quality_score, search_collected_flag, search_success_flag, search_quality_grade, search_quality_x_log_area, search_art_match_x_followers_log, search_exhibition_x_career_stage, search_size_quality_bucket</td>
+    </tr>
+  </tbody>
+</table></body></html>

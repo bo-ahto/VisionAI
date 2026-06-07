@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 A8-1 호수 + 면적 조합 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 A8-1 호수 + 면적 조합 실험 결과</h1>
+    <ul>
+      <li>목적: 호수와 면적을 함께 사용할 때 단일 크기 표현보다 가격 예측력이 개선되는지 확인</li>
+      <li>실험 ID: <code>A8-1</code></li>
+      <li>Warm 최고: <code>로그 호수 + 로그 면적 + 가로세로</code> / <code>Huber</code> / MdAPE 0.4936</li>
+      <li>Cold 최고: <code>로그 호수 + 로그 면적</code> / <code>Quantile-LAD</code> / MdAPE 0.4952</li>
+      <li>생성일: <code>2026-05-22T11:51:07</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/A8-1_ho_area_combo/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/A8-1_ho_area_combo/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/A8-1_ho_area_combo/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/A8-1_ho_area_combo/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/A8-1_ho_area_combo/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/A8-1_ho_area_combo/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/A8-1_ho_area_combo/data/train_features.csv</code><br><code>experiments/track6/A8-1_ho_area_combo/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/A8-1_ho_area_combo/data/test_warm_features.csv</code><br><code>experiments/track6/A8-1_ho_area_combo/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/A8-1_ho_area_combo/data/test_cold_features.csv</code><br><code>experiments/track6/A8-1_ho_area_combo/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/A8-1_ho_area_combo/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/A8-1_ho_area_combo/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>estimated_ho, ln_estimated_ho, area_cm2, log_area, width_cm, height_cm</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 그대로 사용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>호수와 면적이 같은 크기 계열 변수이지만 서로 보완되는지 확인한다.</td></tr><tr><td>비교 기준</td><td>호수만, 면적만, 호수+면적, 호수+가로세로 조합을 같은 고정 모델군에서 비교한다.</td></tr><tr><td>처리 기준</td><td>모든 크기 피처는 숫자형으로 처리한다.</td></tr><tr><td>해석 기준</td><td>조합 피처가 단독 피처보다 MdAPE와 p95 APE를 낮추면 크기 표현 조합을 유지 후보로 본다.</td></tr><tr><td>주의</td><td>이 실험은 재료나 지지체를 포함하지 않고 크기 표현 내부의 중복/보완성만 확인한다.</td></tr><tr><td>purpose</td><td>호수와 면적을 함께 사용할 때 단일 크기 표현보다 가격 예측력이 개선되는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 로그 호수 + 로그 면적 + 가로세로 + Huber(MdAPE 0.4936), Cold 최고는 로그 호수 + 로그 면적 + Quantile-LAD(MdAPE 0.4952)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>호수 원값</h2>
+              <p><strong>사용 피처:</strong> <code>estimated_ho</code> · 면적을 F형 표준 호수로 환산한 값만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.3665</td><td>0.5265</td><td>4.1812</td><td>0.3081</td><td>0.4679</td><td>1.5441</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.3625</td><td>0.6033</td><td>4.9024</td><td>0.2949</td><td>0.4399</td><td>1.2082</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.3625</td><td>0.6033</td><td>4.9024</td><td>0.2949</td><td>0.4399</td><td>1.2082</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3468</td><td>0.5417</td><td>5.0589</td><td>0.2420</td><td>0.4553</td><td>6.7054</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.3401</td><td>0.5455</td><td>5.0534</td><td>0.2430</td><td>0.4527</td><td>8.2185</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4246</td><td>0.5070</td><td>4.3584</td><td>0.2869</td><td>0.4963</td><td>1.4446</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>로그 호수</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho</code> · 표준 호수에 로그 변환을 적용한 값만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.3728</td><td>0.5244</td><td>3.1835</td><td>0.3130</td><td>0.4794</td><td>0.8097</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4119</td><td>0.6124</td><td>3.9731</td><td>0.2586</td><td>0.4036</td><td>1.0169</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4119</td><td>0.6124</td><td>3.9731</td><td>0.2586</td><td>0.4036</td><td>1.0169</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3760</td><td>0.5232</td><td>3.4851</td><td>0.2598</td><td>0.4669</td><td>1.1575</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.3694</td><td>0.5228</td><td>3.4387</td><td>0.2559</td><td>0.4805</td><td>1.1340</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4246</td><td>0.5070</td><td>4.3584</td><td>0.2869</td><td>0.4963</td><td>1.4446</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>면적 원값</h2>
+              <p><strong>사용 피처:</strong> <code>area_cm2</code> · 가로 x 세로로 계산한 실제 면적만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.3515</td><td>0.5575</td><td>4.5094</td><td>0.2834</td><td>0.4580</td><td>1.5096</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.2919</td><td>0.6421</td><td>5.4901</td><td>0.2570</td><td>0.4250</td><td>1.2885</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.2919</td><td>0.6421</td><td>5.4901</td><td>0.2570</td><td>0.4250</td><td>1.2885</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3474</td><td>0.5478</td><td>5.3688</td><td>0.2391</td><td>0.4534</td><td>4.5453</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.3370</td><td>0.5451</td><td>5.3951</td><td>0.2388</td><td>0.4550</td><td>6.0291</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4141</td><td>0.5181</td><td>5.1424</td><td>0.2649</td><td>0.4853</td><td>1.4635</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>로그 면적</h2>
+              <p><strong>사용 피처:</strong> <code>log_area</code> · 실제 면적에 로그 변환을 적용한 값만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4930</td><td>0.5052</td><td>2.9646</td><td>0.3278</td><td>0.4942</td><td>0.7776</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4955</td><td>0.5928</td><td>3.6032</td><td>0.2850</td><td>0.4366</td><td>0.9269</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4955</td><td>0.5928</td><td>3.6032</td><td>0.2850</td><td>0.4366</td><td>0.9269</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4482</td><td>0.5009</td><td>3.4162</td><td>0.2665</td><td>0.4992</td><td>1.1805</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4465</td><td>0.4989</td><td>3.2845</td><td>0.2659</td><td>0.5027</td><td>1.1481</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4141</td><td>0.5181</td><td>5.1424</td><td>0.2649</td><td>0.4853</td><td>1.4635</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>로그 호수 + 로그 면적</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, log_area</code> · 표준화된 크기와 실측 면적의 로그 표현을 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4970</td><td>0.5166</td><td>2.8968</td><td>0.3427</td><td>0.4860</td><td>0.7724</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4987</td><td>0.5845</td><td>3.5266</td><td>0.2784</td><td>0.4399</td><td>0.9227</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4987</td><td>0.5845</td><td>3.5267</td><td>0.2784</td><td>0.4399</td><td>0.9227</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4534</td><td>0.4976</td><td>3.3962</td><td>0.2714</td><td>0.5024</td><td>1.1842</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4502</td><td>0.4952</td><td>3.2761</td><td>0.2688</td><td>0.5015</td><td>1.1529</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4135</td><td>0.5248</td><td>5.1118</td><td>0.2636</td><td>0.4824</td><td>1.4673</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>호수 원값 + 면적 원값</h2>
+              <p><strong>사용 피처:</strong> <code>estimated_ho, area_cm2</code> · 표준 호수와 실제 면적 원값을 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.3747</td><td>0.5224</td><td>4.2189</td><td>0.3163</td><td>0.4827</td><td>1.4911</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.3686</td><td>0.5946</td><td>4.9551</td><td>0.3064</td><td>0.4382</td><td>1.2120</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.3686</td><td>0.5946</td><td>4.9551</td><td>0.3064</td><td>0.4382</td><td>1.2120</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3430</td><td>0.5530</td><td>4.8954</td><td>0.2540</td><td>0.4534</td><td>8.6539</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.3389</td><td>0.5527</td><td>4.9222</td><td>0.2536</td><td>0.4582</td><td>9.9309</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4135</td><td>0.5248</td><td>5.1118</td><td>0.2636</td><td>0.4824</td><td>1.4673</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>로그 호수 + 가로세로</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, width_cm, height_cm</code> · 표준 호수와 실제 가로/세로를 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4864</td><td>0.4985</td><td>3.1382</td><td>0.3427</td><td>0.5025</td><td>0.8148</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4832</td><td>0.5665</td><td>3.8515</td><td>0.2900</td><td>0.4563</td><td>0.9429</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4832</td><td>0.5665</td><td>3.8515</td><td>0.2900</td><td>0.4563</td><td>0.9429</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4590</td><td>0.5194</td><td>3.8421</td><td>0.2527</td><td>0.4747</td><td>1.2466</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4589</td><td>0.5165</td><td>3.8577</td><td>0.2543</td><td>0.4808</td><td>1.2454</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4140</td><td>0.5142</td><td>5.5087</td><td>0.2565</td><td>0.4931</td><td>1.4396</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>로그 호수 + 로그 면적 + 가로세로</h2>
+              <p><strong>사용 피처:</strong> <code>ln_estimated_ho, log_area, width_cm, height_cm</code> · 표준 호수, 면적, 가로/세로를 모두 함께 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.4993</td><td>0.4936</td><td>2.8956</td><td>0.3427</td><td>0.5025</td><td>0.7691</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.4989</td><td>0.5758</td><td>3.5920</td><td>0.2784</td><td>0.4415</td><td>0.9198</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.4989</td><td>0.5757</td><td>3.5918</td><td>0.2784</td><td>0.4415</td><td>0.9198</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4568</td><td>0.4952</td><td>3.3952</td><td>0.2698</td><td>0.5047</td><td>1.1867</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4535</td><td>0.4999</td><td>3.2737</td><td>0.2656</td><td>0.5005</td><td>1.1521</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4107</td><td>0.5121</td><td>5.1811</td><td>0.2501</td><td>0.4837</td><td>1.4627</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/A8-1_ho_area_combo/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/A8-1_ho_area_combo/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/A8-1_ho_area_combo/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/A8-1_ho_area_combo/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/A8-1_ho_area_combo/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/A8-1_ho_area_combo/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/A8-1_ho_area_combo/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/A8-1_ho_area_combo/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/A8-1_ho_area_combo/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/A8-1_ho_area_combo/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/A8-1_ho_area_combo/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/A8-1_ho_area_combo/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

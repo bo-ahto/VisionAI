@@ -1,0 +1,28 @@
+{
+  "experiment_id": "PP-QR3",
+  "title": "Cold Quantile q40/q50 보정 후보 OOF/holdout 재검증",
+  "run_id": "20260604_110011",
+  "scope": "cold",
+  "validation_revalidation": [
+    "row_5fold",
+    "artist_5fold"
+  ],
+  "baseline_candidate": "component_pp_y18_qwidth_bin",
+  "model_manifest": {
+    "type": "prediction_level_oof_holdout_revalidation",
+    "target": "ln_price_krw",
+    "candidate_sources": [
+      "PP-Y18",
+      "PP-QR1",
+      "PP-QR2 candidate logic"
+    ],
+    "new_methods": [
+      "Ridge direct meta",
+      "Ridge residual meta",
+      "Huber residual meta",
+      "QuantileRegressor residual meta",
+      "HistGradientBoosting residual meta"
+    ],
+    "selection_rule": "row and artist validation holdout only; test is confirmation"
+  }
+}

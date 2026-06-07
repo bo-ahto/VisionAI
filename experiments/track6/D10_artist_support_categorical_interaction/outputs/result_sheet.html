@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 D10 artist_name x 지지체 범주형 조합 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 D10 artist_name x 지지체 범주형 조합 실험 결과</h1>
+    <ul>
+      <li>목적: 특정 작가가 특정 지지체에서 가격 프리미엄을 갖는지 확인</li>
+      <li>실험 ID: <code>D10</code></li>
+      <li>Warm 최고: <code>D10 기준: 작가명 + 난트 지지체</code> / <code>Huber</code> / MdAPE 0.4250</li>
+      <li>Cold 최고: <code>D10 기준: 작가명 + 난트 지지체</code> / <code>LightGBM</code> / MdAPE 0.6891</li>
+      <li>생성일: <code>2026-05-27T11:55:17</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/D10_artist_support_categorical_interaction/data/train_features.csv</code><br><code>experiments/track6/D10_artist_support_categorical_interaction/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/D10_artist_support_categorical_interaction/data/test_warm_features.csv</code><br><code>experiments/track6/D10_artist_support_categorical_interaction/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/D10_artist_support_categorical_interaction/data/test_cold_features.csv</code><br><code>experiments/track6/D10_artist_support_categorical_interaction/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/D10_artist_support_categorical_interaction/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/D10_artist_support_categorical_interaction/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>없음</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>특정 작가가 캔버스, 종이, 목재 등 특정 지지체에서 가격 프리미엄을 갖는지 확인한다.</td></tr><tr><td>실험군</td><td>Group D: 작가명과 작품 변수의 교차항</td></tr><tr><td>기준선</td><td>artist_name_ko + nant_support</td></tr><tr><td>학습 피처</td><td>기준선과 artist_name_ko x NANT 지지체 조합 피처</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>구현 방식</td><td>범주형 변수끼리의 조합이므로 상위 조합만 유지하고 나머지는 other로 묶는다.</td></tr><tr><td>해석 중심</td><td>작가명이 들어간 조합 피처이므로 Warm 결과를 중심으로 판단한다.</td></tr><tr><td>Cold 해석 주의</td><td>Cold는 신규 작가 상황이라 조합 피처 대부분이 other로 처리될 수 있어 참고값으로만 본다.</td></tr><tr><td>해석 기준</td><td>조합 피처 추가 후 Warm MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 작가별 지지체 프리미엄이 있다고 본다.</td></tr><tr><td>purpose</td><td>특정 작가가 특정 지지체에서 가격 프리미엄을 갖는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 D10 기준: 작가명 + 난트 지지체 + Huber(MdAPE 0.4250), Cold 최고는 D10 기준: 작가명 + 난트 지지체 + LightGBM(MdAPE 0.6891)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>D10 기준: 작가명 + 난트 지지체</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, nant_support</code> · 작가명과 지지체의 개별 효과만 사용</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.6159</td><td>0.8440</td><td>0.4250</td><td>2.5868</td><td>0.3789</td><td>0.5815</td><td>0.8392</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6411</td><td>0.8158</td><td>0.4327</td><td>2.4705</td><td>0.3575</td><td>0.5387</td><td>0.7885</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6403</td><td>0.8166</td><td>0.4600</td><td>2.4903</td><td>0.3262</td><td>0.5338</td><td>0.8005</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0665</td><td>1.3573</td><td>0.7436</td><td>8.8146</td><td>0.1707</td><td>0.3224</td><td>1.7751</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0075</td><td>1.3192</td><td>0.6933</td><td>6.9314</td><td>0.2049</td><td>0.3456</td><td>1.3521</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0109</td><td>1.3071</td><td>0.6891</td><td>7.6769</td><td>0.2017</td><td>0.3382</td><td>1.4782</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>D10 조합: 작가명 x 난트 지지체</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, nant_support, artist_support_combo</code> · 작가별 특정 지지체 프리미엄 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.6175</td><td>0.8422</td><td>0.4256</td><td>2.7159</td><td>0.3789</td><td>0.5733</td><td>0.8385</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6423</td><td>0.8144</td><td>0.4356</td><td>2.3798</td><td>0.3608</td><td>0.5338</td><td>0.7873</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6407</td><td>0.8162</td><td>0.4579</td><td>2.5278</td><td>0.3245</td><td>0.5272</td><td>0.8000</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0419</td><td>1.3416</td><td>0.7386</td><td>8.7652</td><td>0.1817</td><td>0.3269</td><td>1.7367</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.0059</td><td>1.3104</td><td>0.6908</td><td>7.4803</td><td>0.1965</td><td>0.3524</td><td>1.4638</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.0135</td><td>1.3054</td><td>0.6994</td><td>8.0833</td><td>0.2062</td><td>0.3372</td><td>1.5434</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/D10_artist_support_categorical_interaction/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "experiment_id": "A3",
+  "title": "Track6 A3 지지체만 실험 결과",
+  "purpose": "지지체 정보만으로 가격 예측에 도움이 되는지 확인",
+  "description": "Support-only collected support vs NANT support comparison",
+  "exp_dir": "experiments/track6/A3_support_only_collected_vs_nant",
+  "prompt_file": "experiments/track6/A3_support_only_collected_vs_nant/prompts/used_prompt.md",
+  "export_feature_columns": [
+    "support_category",
+    "nant_support"
+  ],
+  "variable_blocks": [
+    {
+      "name": "수집 지지체 대분류",
+      "features": ["support_category"],
+      "description": "수집/정제된 지지체 대분류 값"
+    },
+    {
+      "name": "NANT 지지체",
+      "features": ["nant_support"],
+      "description": "NANT 기준으로 정리한 지지체 값"
+    },
+    {
+      "name": "수집 지지체 대분류 + NANT 지지체",
+      "features": ["support_category", "nant_support"],
+      "description": "기존 지지체 대분류와 NANT 지지체 값을 함께 사용"
+    }
+  ],
+  "comment": {
+    "실험 목적": "지지체 정보만으로 가격 예측에 도움이 되는지, 수집 지지체 표현과 NANT 지지체 표현 중 어느 쪽이 더 안정적인지 확인했다.",
+    "결과 요약": "Warm/Cold 각각에서 MdAPE가 가장 낮은 지지체 표현과 모델을 확인한다.",
+    "해석": "지지체만 사용한 경우 단독 예측력이 있는지, NANT 지지체가 수집 지지체 대분류보다 안정적인지 비교한다.",
+    "결론": "지지체 단독 피처로 최종 모델을 만들 수 있는지보다, 이후 크기/재료/작가명 조합에 넣을 지지체 표현 후보를 고르는 데 사용한다.",
+    "다음 실험": "크기 + NANT 지지체, 작가명 + NANT 지지체 조합에서 지지체가 추가 설명력을 갖는지 확인한다."
+  }
+}

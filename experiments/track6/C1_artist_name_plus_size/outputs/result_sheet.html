@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 C1 작가명 + 크기 실험 결과</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 32px; background: #fbf7ed; color: #18231d; }
+    .card { background: #fffdf6; border: 1px solid #d6c7ad; border-radius: 18px; padding: 22px; margin-bottom: 22px; }
+    h1 { margin-top: 0; font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: #fffdf8; }
+    th, td { border: 1px solid #d6c7ad; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8dcc8; }
+    code { background: #eee6d6; padding: 2px 5px; border-radius: 5px; }
+    ul { line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Track6 C1 작가명 + 크기 실험 결과</h1>
+    <ul>
+      <li>목적: 작가명을 넣은 뒤에도 크기 정보가 가격 예측 성능을 추가로 개선하는지 확인</li>
+      <li>실험 ID: <code>C1</code></li>
+      <li>Warm 최고: <code>작가명 + 전체 크기 묶음</code> / <code>Huber</code> / MdAPE 0.1569</li>
+      <li>Cold 최고: <code>작가명 + 원 호수</code> / <code>LightGBM</code> / MdAPE 0.5062</li>
+      <li>생성일: <code>2026-05-26T15:58:45</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>실험 입력 정보</h2>
+    <table>
+      <tr><th>항목</th><th>구분</th><th>내용</th></tr>
+      <tr><td>복사한 사용 데이터</td><td>학습 원본 복사본</td><td><code>experiments/track6/C1_artist_name_plus_size/source_data/track6_train_warm_features.csv</code><br><code>experiments/track6/C1_artist_name_plus_size/source_data/track6_train_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Warm 테스트 원본 복사본</td><td><code>experiments/track6/C1_artist_name_plus_size/source_data/track6_test_warm_warm_features.csv</code><br><code>experiments/track6/C1_artist_name_plus_size/source_data/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>복사한 사용 데이터</td><td>Cold 테스트 원본 복사본</td><td><code>experiments/track6/C1_artist_name_plus_size/source_data/track6_test_cold_cold_features.csv</code><br><code>experiments/track6/C1_artist_name_plus_size/source_data/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>학습용 생성 파일</td><td><code>experiments/track6/C1_artist_name_plus_size/data/train_features.csv</code><br><code>experiments/track6/C1_artist_name_plus_size/data/train_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Warm 테스트 생성 파일</td><td><code>experiments/track6/C1_artist_name_plus_size/data/test_warm_features.csv</code><br><code>experiments/track6/C1_artist_name_plus_size/data/test_warm_labels.csv</code></td></tr>
+      <tr><td>생성 데이터</td><td>Cold 테스트 생성 파일</td><td><code>experiments/track6/C1_artist_name_plus_size/data/test_cold_features.csv</code><br><code>experiments/track6/C1_artist_name_plus_size/data/test_cold_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>학습 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_train_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_train_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Warm 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/warm/track6_test_warm_warm_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_warm_labels.csv</code></td></tr>
+      <tr><td>원본 위치 참고</td><td>Cold 테스트 원본 위치</td><td><code>data/track6_split_with_year_type_edition_size_artist_name/features/cold/track6_test_cold_cold_features.csv</code><br><code>data/track6_split_with_year_type_edition_size_artist_name/labels/track6_test_cold_labels.csv</code></td></tr>
+      <tr><td>사용 코드</td><td>공통 실행기</td><td><code>scripts/track6/fixed_variable_experiment_runner.py</code></td></tr>
+      <tr><td>사용 설정</td><td>실험 설정 파일</td><td><code>experiments/track6/C1_artist_name_plus_size/experiment_config.json</code></td></tr>
+      <tr><td>사용 프롬프트</td><td>지시 기록</td><td><code>experiments/track6/C1_artist_name_plus_size/prompts/used_prompt.md</code></td></tr>
+      <tr><td>데이터 기준</td><td>샘플링 여부</td><td><code>full_split_no_sampling</code></td></tr>
+      <tr><td>피처 처리</td><td>숫자형 피처</td><td><code>estimated_ho, ln_estimated_ho, log_area, width_cm, height_cm, aspect_ratio</code><br>숫자형은 one-hot 변환하지 않고 중앙값 결측 보정 후 <code>StandardScaler</code> 적용</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>모델 종류</h2>
+    <table>
+      <tr><th>분류</th><th>모델 코드</th><th>모델</th></tr>
+      <tr><td>Warm</td><td>A</td><td>Huber</td></tr><tr><td>Warm</td><td>B</td><td>Linear Regression</td></tr><tr><td>Warm</td><td>C</td><td>Ridge</td></tr><tr><td>Cold</td><td>D</td><td>Huber</td></tr><tr><td>Cold</td><td>E</td><td>Quantile-LAD</td></tr><tr><td>Cold</td><td>F</td><td>LightGBM</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>코멘트</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>실험 목적</td><td>작가명만으로 설명되는 가격 효과를 기준으로 두고, 크기 정보가 추가 예측력을 주는지 확인한다.</td></tr><tr><td>실험군</td><td>Group C: 작가명 + 작품 변수</td></tr><tr><td>기준선</td><td>B1 기준: artist_name_ko only</td></tr><tr><td>학습 피처</td><td>artist_name_ko에 크기 변수 estimated_ho, ln_estimated_ho, log_area, width_cm, height_cm, aspect_ratio를 하나씩 또는 묶음으로 추가</td></tr><tr><td>테스트 피처</td><td>학습 피처와 동일</td></tr><tr><td>사용 모델</td><td>Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM</td></tr><tr><td>해석 중심</td><td>C1은 작가명이 학습에 있는 Warm 상황에서 의미가 크므로 Warm 결과를 중심으로 판단한다.</td></tr><tr><td>Cold 해석 주의</td><td>Cold는 신규 작가명이라 artist_name_ko가 학습에 없는 카테고리로 처리되므로 참고값으로만 본다.</td></tr><tr><td>평가 지표</td><td>R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE를 확인한다.</td></tr><tr><td>결론 기준</td><td>B1 기준선보다 Warm MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 크기 정보의 추가 설명력이 있다고 판단한다.</td></tr><tr><td>purpose</td><td>작가명을 넣은 뒤에도 크기 정보가 가격 예측 성능을 추가로 개선하는지 확인</td></tr><tr><td>summary</td><td>Warm 최고는 작가명 + 전체 크기 묶음 + Huber(MdAPE 0.1569), Cold 최고는 작가명 + 원 호수 + LightGBM(MdAPE 0.5062)이다.</td></tr>
+    </table>
+  </div>
+  
+            <section class="card">
+              <h2>B1 기준: 작가명 only</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko</code> · 작가명만 사용한 기준선</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.6119</td><td>0.8483</td><td>0.4352</td><td>2.8612</td><td>0.3707</td><td>0.5667</td><td>0.8487</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.6356</td><td>0.8220</td><td>0.4397</td><td>2.5593</td><td>0.3427</td><td>0.5387</td><td>0.8012</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.6357</td><td>0.8219</td><td>0.4579</td><td>2.4806</td><td>0.3213</td><td>0.5338</td><td>0.8104</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>-0.0002</td><td>1.3144</td><td>0.7298</td><td>8.7851</td><td>0.2020</td><td>0.3346</td><td>1.6681</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>-0.0181</td><td>1.3261</td><td>0.7101</td><td>7.0575</td><td>0.2110</td><td>0.3379</td><td>1.3791</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>-0.0041</td><td>1.3169</td><td>0.7018</td><td>7.8420</td><td>0.2065</td><td>0.3417</td><td>1.5074</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + 원 호수</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, estimated_ho</code> · 작가명을 통제한 뒤 원 호수값 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.8199</td><td>0.5779</td><td>0.2455</td><td>1.7945</td><td>0.5865</td><td>0.7710</td><td>0.6196</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.8205</td><td>0.5769</td><td>0.2790</td><td>1.6038</td><td>0.5437</td><td>0.7216</td><td>0.5027</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.8189</td><td>0.5795</td><td>0.2965</td><td>1.6436</td><td>0.5058</td><td>0.7282</td><td>0.5106</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3668</td><td>1.0458</td><td>0.5565</td><td>5.9509</td><td>0.2404</td><td>0.4347</td><td>3.1589</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.3460</td><td>1.0629</td><td>0.5426</td><td>5.0406</td><td>0.2420</td><td>0.4553</td><td>6.8641</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4525</td><td>0.9725</td><td>0.5062</td><td>3.7913</td><td>0.2646</td><td>0.4953</td><td>1.2786</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + 로그 호수</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, ln_estimated_ho</code> · 작가명을 통제한 뒤 로그 호수값 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.8224</td><td>0.5738</td><td>0.1801</td><td>0.9846</td><td>0.7051</td><td>0.8550</td><td>0.4677</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.8547</td><td>0.5190</td><td>0.2468</td><td>1.1608</td><td>0.6013</td><td>0.8023</td><td>0.3833</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.8566</td><td>0.5157</td><td>0.2499</td><td>1.1397</td><td>0.5799</td><td>0.7941</td><td>0.3812</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.3679</td><td>1.0449</td><td>0.5767</td><td>4.4100</td><td>0.2740</td><td>0.4472</td><td>1.3970</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.3727</td><td>1.0410</td><td>0.5240</td><td>3.3434</td><td>0.2494</td><td>0.4718</td><td>1.1200</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4525</td><td>0.9725</td><td>0.5062</td><td>3.7913</td><td>0.2646</td><td>0.4953</td><td>1.2786</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + 로그 면적</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, log_area</code> · 작가명을 통제한 뒤 실제 면적 기반 크기 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.9068</td><td>0.4157</td><td>0.1578</td><td>1.0161</td><td>0.7265</td><td>0.8748</td><td>0.2974</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.9064</td><td>0.4165</td><td>0.1773</td><td>0.9641</td><td>0.6919</td><td>0.8633</td><td>0.2934</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.9050</td><td>0.4197</td><td>0.1795</td><td>0.9346</td><td>0.6787</td><td>0.8583</td><td>0.2982</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4406</td><td>0.9830</td><td>0.5366</td><td>4.0737</td><td>0.2717</td><td>0.4724</td><td>1.3546</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4471</td><td>0.9773</td><td>0.5071</td><td>3.2619</td><td>0.2669</td><td>0.4931</td><td>1.1333</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4570</td><td>0.9684</td><td>0.5113</td><td>3.7948</td><td>0.2485</td><td>0.4882</td><td>1.2626</td></tr></tbody>
+              </table>
+            </section>
+            
+            <section class="card">
+              <h2>작가명 + 전체 크기 묶음</h2>
+              <p><strong>사용 피처:</strong> <code>artist_name_ko, width_cm, height_cm, log_area, aspect_ratio</code> · 작가명을 통제한 뒤 가로/세로/면적/비율 전체 크기 정보 추가 효과 확인</p>
+              <table>
+                <thead><tr><th>모델 코드</th><th>분류</th><th>모델</th><th>R2</th><th>RMSE(log)</th><th>MdAPE</th><th>p95 APE</th><th>Within-30</th><th>Within-50</th><th>MAPE</th></tr></thead>
+                <tbody><tr><td>A</td><td>Warm</td><td>Huber</td><td>0.9081</td><td>0.4129</td><td>0.1569</td><td>1.0464</td><td>0.7364</td><td>0.8715</td><td>0.3005</td></tr><tr><td>B</td><td>Warm</td><td>Linear Regression</td><td>0.9070</td><td>0.4153</td><td>0.1776</td><td>0.9777</td><td>0.6952</td><td>0.8550</td><td>0.2930</td></tr><tr><td>C</td><td>Warm</td><td>Ridge</td><td>0.9055</td><td>0.4185</td><td>0.1930</td><td>0.9226</td><td>0.6903</td><td>0.8534</td><td>0.2975</td></tr><tr><td>D</td><td>Cold</td><td>Huber</td><td>0.4528</td><td>0.9723</td><td>0.5328</td><td>4.0521</td><td>0.2733</td><td>0.4743</td><td>1.3457</td></tr><tr><td>E</td><td>Cold</td><td>Quantile-LAD</td><td>0.4576</td><td>0.9679</td><td>0.5152</td><td>3.5509</td><td>0.2607</td><td>0.4847</td><td>1.1374</td></tr><tr><td>F</td><td>Cold</td><td>LightGBM</td><td>0.4565</td><td>0.9689</td><td>0.5095</td><td>3.4859</td><td>0.2556</td><td>0.4889</td><td>1.2474</td></tr></tbody>
+              </table>
+            </section>
+            
+  <div class="card">
+    <h2>생성 파일</h2>
+    <ul><li><code>train_features</code>: <code>experiments/track6/C1_artist_name_plus_size/data/train_features.csv</code></li><li><code>train_labels</code>: <code>experiments/track6/C1_artist_name_plus_size/data/train_labels.csv</code></li><li><code>test_warm_features</code>: <code>experiments/track6/C1_artist_name_plus_size/data/test_warm_features.csv</code></li><li><code>test_warm_labels</code>: <code>experiments/track6/C1_artist_name_plus_size/data/test_warm_labels.csv</code></li><li><code>test_cold_features</code>: <code>experiments/track6/C1_artist_name_plus_size/data/test_cold_features.csv</code></li><li><code>test_cold_labels</code>: <code>experiments/track6/C1_artist_name_plus_size/data/test_cold_labels.csv</code></li></ul>
+  </div>
+  <div class="card">
+    <h2>복사한 원본 데이터</h2>
+    <ul><li><code>train_features_source</code>: <code>experiments/track6/C1_artist_name_plus_size/source_data/track6_train_warm_features.csv</code></li><li><code>train_labels_source</code>: <code>experiments/track6/C1_artist_name_plus_size/source_data/track6_train_labels.csv</code></li><li><code>test_warm_features_source</code>: <code>experiments/track6/C1_artist_name_plus_size/source_data/track6_test_warm_warm_features.csv</code></li><li><code>test_warm_labels_source</code>: <code>experiments/track6/C1_artist_name_plus_size/source_data/track6_test_warm_labels.csv</code></li><li><code>test_cold_features_source</code>: <code>experiments/track6/C1_artist_name_plus_size/source_data/track6_test_cold_cold_features.csv</code></li><li><code>test_cold_labels_source</code>: <code>experiments/track6/C1_artist_name_plus_size/source_data/track6_test_cold_labels.csv</code></li></ul>
+  </div>
+</body>
+</html>

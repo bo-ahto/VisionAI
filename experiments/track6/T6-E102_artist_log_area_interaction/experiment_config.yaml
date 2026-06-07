@@ -1,0 +1,11 @@
+experiment_id: T6-E102
+status: 계획
+group: Group D
+label: D2
+title: 작가명 x 면적 교차항 실험
+hypothesis: 같은 면적이라도 작가명에 따라 대형작 가격 프리미엄이 다를 수 있다.
+purpose: 작가별 대형작 프리미엄이 존재하는지 확인한다.
+train_features: 작품 기본 피처 묶음 + artist_name_ko + artist_name_ko x log_area
+test_features: 학습 피처와 동일. Cold에서는 artist_name_ko 교차항 제외
+models: Warm: Huber/Linear/Ridge
+decision: Warm median APE 또는 p95 APE가 줄면 작가별 대형작 효과 후보로 둔다.

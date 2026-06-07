@@ -1,0 +1,33 @@
+# A6 깊이/has_depth 실험 지시 기록
+
+- 목표: 깊이 수치와 깊이 존재 여부가 가격 예측에 도움이 되는지 확인한다.
+- 기준 원천 파일: `data/track6/track6_feature_candidates_name_corrected_with_year_type.csv`
+- split 기준: `data/track6_split_with_year_type`
+- 학습 입력과 정답 가격은 분리해서 사용한다.
+- 정답 가격은 `train_labels.csv`, `test_warm_labels.csv`, `test_cold_labels.csv`에만 둔다.
+- 비교 변수:
+  - `depth_cm`
+  - `has_depth`
+  - `depth_cm + has_depth`
+- 피처 처리:
+  - `depth_cm`은 숫자형 피처로 처리한다.
+  - `has_depth`는 범주형 플래그로 처리한다.
+  - `is_3d_candidate`는 이번 실험에서 제외한다.
+- Warm 모델군:
+  - Huber
+  - Linear Regression
+  - Ridge
+- Cold 모델군:
+  - Huber
+  - Quantile-LAD
+  - LightGBM
+- 평가 지표:
+  - R2
+  - median APE
+  - p95 APE
+  - Within-30
+  - Within-50
+- 판단 기준:
+  - Warm과 Cold의 median APE를 각각 확인한다.
+  - p95 APE가 줄어드는지 확인해 큰 오차가 줄었는지 본다.
+  - 깊이 수치와 깊이 존재 여부 중 어떤 표현이 더 안정적인지 확인한다.

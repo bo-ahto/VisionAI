@@ -1,0 +1,91 @@
+{
+  "experiment_id": "J1",
+  "title": "Track6 J1 세대/경력 x 호수 교차항 실험 결과",
+  "purpose": "작가의 세대/경력 단계에 따라 호수 효과가 다르게 나타나는지 확인",
+  "description": "Track6 Group H/I/J experiment: J1",
+  "exp_dir": "experiments/track6/J1_profile_x_ln_ho",
+  "prompt_file": "experiments/track6/J1_profile_x_ln_ho/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "ln_estimated_ho",
+    "artist_meta_birth_year",
+    "artist_exhibition_solo_count",
+    "artist_exhibition_group_count",
+    "artist_exhibition_fair_count",
+    "birth_year_x_ln_ho",
+    "artist_exhibition_solo_count_x_ln_ho",
+    "artist_exhibition_group_count_x_ln_ho",
+    "artist_exhibition_fair_count_x_ln_ho"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "artist_meta_birth_year",
+    "artist_exhibition_solo_count",
+    "artist_exhibition_group_count",
+    "artist_exhibition_fair_count",
+    "birth_year_x_ln_ho",
+    "artist_exhibition_solo_count_x_ln_ho",
+    "artist_exhibition_group_count_x_ln_ho",
+    "artist_exhibition_fair_count_x_ln_ho"
+  ],
+  "variable_blocks": [
+    {
+      "name": "J1 기준: 호수 + 세대/경력",
+      "features": [
+        "ln_estimated_ho",
+        "artist_meta_birth_year",
+        "artist_exhibition_solo_count",
+        "artist_exhibition_group_count",
+        "artist_exhibition_fair_count"
+      ],
+      "description": "개별 효과만 사용"
+    },
+    {
+      "name": "J1 교차항: 세대/경력 x 호수",
+      "features": [
+        "ln_estimated_ho",
+        "artist_meta_birth_year",
+        "artist_exhibition_solo_count",
+        "artist_exhibition_group_count",
+        "artist_exhibition_fair_count",
+        "birth_year_x_ln_ho",
+        "artist_exhibition_solo_count_x_ln_ho",
+        "artist_exhibition_group_count_x_ln_ho",
+        "artist_exhibition_fair_count_x_ln_ho"
+      ],
+      "description": "세대/경력별 호수 프리미엄 추가"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작가의 세대/경력 단계에 따라 호수 효과가 다르게 나타나는지 확인",
+    "학습 피처": "ln_estimated_ho, artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count / ln_estimated_ho, artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, birth_year_x_ln_ho, artist_exhibition_solo_count_x_ln_ho, artist_exhibition_group_count_x_ln_ho, artist_exhibition_fair_count_x_ln_ho",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "실험군": "Group J: 작가 메타와 작품 변수 교차항",
+    "해석 중심": "Cold 후보 가능성 중심으로 판단한다."
+  },
+  "numeric_numeric_interactions": [
+    {
+      "left_col": "artist_meta_birth_year",
+      "right_col": "ln_estimated_ho",
+      "output_col": "birth_year_x_ln_ho"
+    },
+    {
+      "left_col": "artist_exhibition_solo_count",
+      "right_col": "ln_estimated_ho",
+      "output_col": "artist_exhibition_solo_count_x_ln_ho"
+    },
+    {
+      "left_col": "artist_exhibition_group_count",
+      "right_col": "ln_estimated_ho",
+      "output_col": "artist_exhibition_group_count_x_ln_ho"
+    },
+    {
+      "left_col": "artist_exhibition_fair_count",
+      "right_col": "ln_estimated_ho",
+      "output_col": "artist_exhibition_fair_count_x_ln_ho"
+    }
+  ]
+}

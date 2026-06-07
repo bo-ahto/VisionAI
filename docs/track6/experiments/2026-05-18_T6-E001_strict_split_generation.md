@@ -14,11 +14,11 @@
 
 ## 핵심 결과
 
-- train rows: `26,560`
-- val_warm rows/artists: `523` / `178`
+- train rows: `26,914`
+- val_warm rows/artists: `519` / `178`
 - test_warm rows/artists: `607` / `207`
-- val_cold rows/artists: `2,793` / `160`
-- test_cold rows/artists: `3,240` / `200`
+- val_cold rows/artists: `2,753` / `172`
+- test_cold rows/artists: `3,099` / `200`
 - Cold train 이름 중복: val `0`, test `0`
 - Stable Warm 평가 작가 최소 train 작품 수: val `5`, test `5`
 - 주의: `5작품` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준

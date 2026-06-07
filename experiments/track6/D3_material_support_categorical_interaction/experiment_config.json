@@ -1,0 +1,58 @@
+{
+  "experiment_id": "D3",
+  "title": "Track6 D3 재료 x 지지체 범주형 조합 실험 결과",
+  "purpose": "재료와 지지체 조합이 단독 재료/지지체보다 가격 차이를 더 잘 설명하는지 확인",
+  "description": "Group D artwork variable interaction: NANT material category combined with NANT support category",
+  "exp_dir": "experiments/track6/D3_material_support_categorical_interaction",
+  "prompt_file": "experiments/track6/D3_material_support_categorical_interaction/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "nant_material_idx",
+    "nant_tool",
+    "nant_support",
+    "nant_material_support_combo",
+    "nant_tool_support_combo"
+  ],
+  "combo_features": [
+    {
+      "source_cols": ["nant_material_idx", "nant_support"],
+      "combo_col": "nant_material_support_combo",
+      "top_n": 120,
+      "other_value": "other_material_support"
+    },
+    {
+      "source_cols": ["nant_tool", "nant_support"],
+      "combo_col": "nant_tool_support_combo",
+      "top_n": 80,
+      "other_value": "other_tool_support"
+    }
+  ],
+  "numeric_features": [],
+  "variable_blocks": [
+    {
+      "name": "D3 기준: 난트 재료 + 난트 지지체",
+      "features": ["nant_material_idx", "nant_tool", "nant_support"],
+      "description": "재료와 지지체의 개별 효과만 사용"
+    },
+    {
+      "name": "D3 조합: 난트 재료번호 x 지지체",
+      "features": ["nant_material_idx", "nant_tool", "nant_support", "nant_material_support_combo"],
+      "description": "재료번호와 지지체 조합 효과 확인"
+    },
+    {
+      "name": "D3 조합: 난트 도구명 x 지지체",
+      "features": ["nant_tool", "nant_support", "nant_tool_support_combo"],
+      "description": "유화/아크릴 등 읽기 쉬운 재료명과 지지체 조합 효과 확인"
+    }
+  ],
+  "comment": {
+    "실험 목적": "유화+캔버스, 수묵+종이처럼 재료와 지지체 조합이 가격 예측에 추가 설명력을 주는지 확인한다.",
+    "실험군": "Group D: 작품 변수끼리의 교차항",
+    "기준선": "nant_material_idx + nant_tool + nant_support",
+    "학습 피처": "기준선과 NANT 재료 x NANT 지지체 조합 피처",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "구현 방식": "범주형 변수끼리의 조합이므로 상위 조합만 유지하고 나머지는 other로 묶는다.",
+    "해석 기준": "조합 피처 추가 후 MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 재료-지지체 조합 효과가 있다고 본다."
+  }
+}

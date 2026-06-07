@@ -1,0 +1,75 @@
+{
+  "experiment_id": "PP-C1",
+  "title": "전체 예측값 직선 재보정",
+  "run_id": "20260602_142738",
+  "seed": 20260602,
+  "feature_columns": {
+    "warm_huber": [
+      "width_cm",
+      "height_cm",
+      "depth_cm",
+      "area_cm2",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate",
+      "medium_category",
+      "support_category",
+      "medium_support_bucket",
+      "is_extreme_aspect_ratio",
+      "artist_key"
+    ],
+    "cold_catboost": [
+      "width_cm",
+      "height_cm",
+      "depth_cm",
+      "area_cm2",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate",
+      "medium_category",
+      "support_category",
+      "shape_bucket",
+      "medium_shape_bucket"
+    ],
+    "cold_lightgbm": [
+      "width_cm",
+      "height_cm",
+      "depth_cm",
+      "area_cm2",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate",
+      "medium_category",
+      "support_category",
+      "size_bucket",
+      "support_size_bucket"
+    ]
+  },
+  "model_manifest": {
+    "base_sources": {
+      "warm_huber": {
+        "scope": "warm",
+        "model": "huber",
+        "feature_key": "warm",
+        "label": "Warm Huber(base_existing_combo)"
+      },
+      "cold_catboost": {
+        "scope": "cold",
+        "model": "catboost",
+        "feature_key": "cold_catboost",
+        "label": "Cold CatBoost(base_medium_shape)"
+      },
+      "cold_lightgbm": {
+        "scope": "cold",
+        "model": "lightgbm",
+        "feature_key": "cold_lightgbm",
+        "label": "Cold LightGBM(base_support_size)"
+      }
+    },
+    "source_artifact_manifest": "data/track6/artifacts/track6_artifact_manifest.json",
+    "target": "ln_price_krw"
+  }
+}

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T6-E062 3D 후보 플래그 변수 영향 확인</title>
+  <style>
+:root{--paper:#fffdf7;--ink:#1d251f;--line:#d8cdb8;--muted:#687268;--green:#27684a;--amber:#9b6124}
+body{margin:0;color:var(--ink);background:linear-gradient(135deg,#efe7d7,#f8f5ec 48%,#e9f0e7);font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.62}
+main{max-width:1120px;margin:0 auto;padding:32px 22px 72px}
+header,section{background:rgba(255,253,247,.96);border:1px solid var(--line);border-radius:24px;padding:26px;margin-top:18px;box-shadow:0 12px 34px rgba(42,34,22,.08)}
+h1{margin:0;font-size:40px;letter-spacing:-.055em}h2{margin:0 0 12px;font-size:22px;letter-spacing:-.03em}
+ul{margin:8px 0 0;padding-left:21px}code{background:#eee5d4;border-radius:7px;padding:2px 6px;overflow-wrap:anywhere}
+table{width:100%;border-collapse:collapse;background:var(--paper)}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:14px}th{background:#eadfcd}
+.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;margin-right:6px}.planned{background:rgba(155,97,36,.14);color:var(--amber)}.goal{background:rgba(39,104,74,.14);color:var(--green)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:16px}
+a{color:#174f73;font-weight:800}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="badge planned">예정</span>
+    <span class="badge goal">개별 변수 확인</span>
+    <h1>T6-E062 3D 후보 플래그 변수 영향 확인</h1>
+    <ul>
+      <li>상위 흐름: 기본 피처 정의 단계</li>
+      <li>목적: 변수 하나 또는 변수 묶음 하나가 가격 예측에 영향을 미치는지 독립적으로 확인</li>
+      <li>상태: 실험 일지 생성 완료, 실행 전</li>
+    </ul>
+  </header>
+
+  <section>
+    <h2>1. 실험 일지</h2>
+    <ul>
+      <li>가설: 3D 후보 플래그 변수는 2D 작품과 3D 작품의 가격 예측 차이를 설명한다.</li>
+      <li>확인 변수: <code>has_depth + is_3d_candidate</code></li>
+      <li>유의미함 기준: 같은 모델과 같은 split에서 <code>median APE</code> 또는 <code>p95 APE</code>가 낮아지면 가격 예측에 영향을 주는 후보로 본다.</li>
+      
+      <li>테스트 모델: Warm <code>Huber / Linear Regression / Ridge</code>, Cold <code>Huber / Quantile-LAD / LightGBM</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. 초기 실험 데이터</h2>
+    <ul>
+      <li>기준 원천 파일: <code>data/track6/track6_feature_candidates_name_corrected.csv</code></li>
+      <li>학습 입력과 정답 가격은 분리해서 생성한다.</li>
+      <li>정답 가격은 <code>train_labels.csv</code>, <code>test_warm_labels.csv</code>, <code>test_cold_labels.csv</code>에만 둔다.</li>
+      <li>입력 피처와 정답 라벨은 <code>_track6_row_id</code>로 연결한다.</li>
+      <li>Warm 학습 피처에는 <code>artist_name_ko</code>를 둘 수 있지만, 이 실험의 판단 대상은 <code>has_depth + is_3d_candidate</code>다.</li>
+      <li>Cold 테스트에는 작가명을 사용하지 않는다.</li>
+      <li>has_depth와 is_3d_candidate는 수집값이 아니라 생성 변수다.</li>
+    </ul>
+    <div class="table-wrap">
+      <table>
+        <tr><th>구분</th><th>파일/피처</th></tr>
+        <tr><td>생성 파일</td><td><code>data/train_features.csv</code>, <code>data/train_labels.csv</code>, <code>data/test_warm_features.csv</code>, <code>data/test_warm_labels.csv</code>, <code>data/test_cold_features.csv</code>, <code>data/test_cold_labels.csv</code></td></tr>
+        <tr><td>Warm 기준 모델 학습 피처</td><td><code>artist_name_ko + ln_estimated_ho</code></td></tr>
+        <tr><td>Warm 변수 추가 모델 학습 피처</td><td><code>artist_name_ko + ln_estimated_ho + has_depth + is_3d_candidate</code></td></tr>
+        <tr><td>Warm 테스트 피처</td><td>각 모델의 학습 피처와 같은 컬럼을 사용한다.</td></tr>
+        <tr><td>Cold 기준 모델 학습 피처</td><td><code>ln_estimated_ho</code></td></tr><tr><td>Cold 변수 추가 모델 학습 피처</td><td><code>ln_estimated_ho + has_depth + is_3d_candidate</code></td></tr><tr><td>Cold 테스트 피처</td><td>각 모델의 학습 피처와 같은 컬럼을 사용하되, <code>artist_name_ko</code>는 제외한다.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  
+
+  <section>
+    <h2>3. 초기 실험 테스트: Warm</h2>
+    <ul>
+      <li>Warm 정의: 학습 데이터에 같은 작가가 있는 작품을 예측하는 상황</li>
+      <li>Warm 학습 X Warm Test: 학습 데이터에 등장한 작가의 미사용 작품으로 평가한다.</li>
+      <li>Warm 학습 X Cold Test: Warm 방식 모델을 신규 작가 작품에 적용했을 때 성능이 무너지는지 확인한다.</li>
+      <li>주의: Warm과 Cold는 같은 평가 지표를 쓰지만 결과는 합치지 않는다.</li>
+      <li>Warm 학습 데이터: <code>data/train_features.csv</code> + <code>data/train_labels.csv</code></li>
+      <li>Warm 테스트 데이터: <code>data/test_warm_features.csv</code> + <code>data/test_warm_labels.csv</code></li>
+      <li>작품 연결 키: <code>_track6_row_id</code></li>
+      <li>기준 모델 학습 피처: <code>artist_name_ko + ln_estimated_ho</code></li>
+      <li>변수 추가 모델 학습 피처: <code>artist_name_ko + ln_estimated_ho + has_depth + is_3d_candidate</code></li>
+      <li>테스트 피처: 학습 피처와 같은 컬럼을 <code>data/test_warm_features.csv</code>에서 사용한다.</li>
+      <li>비교 방식: <code>artist_name_ko + ln_estimated_ho</code> 모델과 <code>artist_name_ko + ln_estimated_ho + has_depth + is_3d_candidate</code> 모델을 비교한다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4. 초기 실험 테스트: Cold</h2>
+    <ul>
+      <li>Cold 정의: 학습 데이터에 한 번도 등장하지 않은 작가의 작품을 예측하는 상황</li>
+      <li>Cold 학습 X Cold Test: 학습 데이터에 없는 작가들의 작품만 평가한다.</li>
+      <li>Cold 학습 X Warm Test: Cold 방식 모델을 기존 작가 작품에 적용해 Warm 모델과 비교한다.</li>
+      <li>Cold 모델은 작가명을 쓰지 않는다.</li>
+      <li>Cold 모델은 호수, 로그 호수, 이후 추가될 작품 자체 변수만 사용한다.</li>
+      <li>Cold 학습 데이터: <code>data/train_features.csv</code> + <code>data/train_labels.csv</code></li>
+      <li>Cold 테스트 데이터: <code>data/test_cold_features.csv</code> + <code>data/test_cold_labels.csv</code></li>
+      <li>작품 연결 키: <code>_track6_row_id</code></li>
+      <li>제외 피처: <code>artist_name_ko</code></li>
+      <li>기준 모델 학습 피처: <code>ln_estimated_ho</code></li>
+      <li>변수 추가 모델 학습 피처: <code>ln_estimated_ho + has_depth + is_3d_candidate</code></li>
+      <li>테스트 피처: 학습 피처와 같은 컬럼을 <code>data/test_cold_features.csv</code>에서 사용한다.</li>
+      <li>비교 방식: <code>ln_estimated_ho</code> 모델과 <code>ln_estimated_ho + has_depth + is_3d_candidate</code> 모델을 비교한다.</li>
+    </ul>
+  </section>
+
+  
+
+  <section>
+    <h2>5. 결과 기록</h2>
+    <ul>
+      <li>결과 파일: <code>outputs/metrics.csv</code></li>
+      <li>예측 비교 파일: <code>outputs/predictions.csv</code></li>
+      <li>구간별 오차 파일: <code>outputs/slice_metrics.csv</code></li>
+      <li>요약 파일: <code>outputs/summary.md</code></li>
+      <li>실행 로그: <code>logs/run.log</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>6. 판단 기준</h2>
+    <ul>
+      <li>Warm과 Cold의 <code>median APE</code>를 각각 확인한다.</li>
+      <li><code>p95 APE</code>가 줄어드는지 확인해 큰 오차가 줄었는지 본다.</li>
+      <li>Warm에서만 개선되면 Warm 전용 후보로 둔다.</li><li>Cold에서만 개선되면 Cold 전용 후보로 둔다.</li>
+      
+      <li>운영에서 입력하기 어렵거나 재현하기 어려운 변수는 성능이 좋아도 보류한다.</li>
+      <li>결론 표기: 채택 / 보류 / 중단</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

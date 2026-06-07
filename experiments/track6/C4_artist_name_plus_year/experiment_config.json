@@ -1,0 +1,54 @@
+{
+  "experiment_id": "C4",
+  "title": "Track6 C4 작가명 + 제작연도 실험 결과",
+  "purpose": "작가명을 넣은 뒤에도 제작연도 또는 작품 연한이 가격 예측 성능을 추가로 개선하는지 확인",
+  "description": "Group C artist_name_ko plus artwork year feature comparison",
+  "exp_dir": "experiments/track6/C4_artist_name_plus_year",
+  "prompt_file": "experiments/track6/C4_artist_name_plus_year/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "artist_name_ko",
+    "artwork_year",
+    "artwork_age"
+  ],
+  "numeric_features": [
+    "artwork_year",
+    "artwork_age"
+  ],
+  "variable_blocks": [
+    {
+      "name": "B1 기준: 작가명 only",
+      "features": ["artist_name_ko"],
+      "description": "작가명만 사용한 기준선"
+    },
+    {
+      "name": "작가명 + 제작연도",
+      "features": ["artist_name_ko", "artwork_year"],
+      "description": "작가명을 통제한 뒤 제작연도 원값 추가 효과 확인"
+    },
+    {
+      "name": "작가명 + 작품 연한",
+      "features": ["artist_name_ko", "artwork_age"],
+      "description": "작가명을 통제한 뒤 2026년 기준 작품 연한 추가 효과 확인"
+    },
+    {
+      "name": "작가명 + 제작연도 + 작품 연한",
+      "features": ["artist_name_ko", "artwork_year", "artwork_age"],
+      "description": "작가명을 통제한 뒤 제작연도 계열 묶음 추가 효과 확인"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작가명만으로 설명되는 가격 효과를 기준으로 두고, 제작연도 관련 정보가 추가 예측력을 주는지 확인한다.",
+    "실험군": "Group C: 작가명 + 작품 변수",
+    "기준선": "B1 기준: artist_name_ko only",
+    "학습 피처": "artist_name_ko에 artwork_year, artwork_age를 하나씩 또는 묶음으로 추가",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "숫자형 처리": "artwork_year와 artwork_age는 숫자형으로 처리하고 StandardScaler를 적용한다.",
+    "제외 피처": "제작연도 출처, 결측 플래그, 보강 source 컬럼은 운영 입력값이 아니므로 사용하지 않는다.",
+    "해석 중심": "C4는 작가명이 학습에 있는 Warm 상황에서 의미가 크므로 Warm 결과를 중심으로 판단한다.",
+    "Cold 해석 주의": "Cold는 신규 작가명이라 artist_name_ko가 학습에 없는 카테고리로 처리되므로 참고값으로만 본다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE를 확인한다.",
+    "결론 기준": "B1 기준선보다 Warm MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 제작연도 정보의 추가 설명력이 있다고 판단한다."
+  }
+}

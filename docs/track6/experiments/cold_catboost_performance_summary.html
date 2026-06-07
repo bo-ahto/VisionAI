@@ -1,0 +1,40 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Track6 Cold CatBoost 테스트 근거 정리</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5efe3;color:#17201b;margin:0;padding:28px;line-height:1.55} .wrap{max-width:1500px;margin:0 auto;background:#fffaf1;border:1px solid #d4c3a5;border-radius:18px;padding:28px} h1{font-size:36px;margin:0 0 20px} h2{border-left:6px solid #1d3d63;padding-left:12px;margin-top:34px} table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px} th,td{border:1px solid #cdbb9d;padding:10px;vertical-align:top} th{background:#e6d8c0;text-align:left} code{background:#eee5d6;border-radius:5px;padding:2px 5px} ul{padding-left:22px}</style>
+</head><body><div class="wrap">
+<h1>Track6 Cold CatBoost 테스트 근거 정리</h1>
+<h2>결론</h2>
+<ul>
+<li>Cold에서 CatBoost는 실제로 테스트된 기록이 있다.</li>
+<li>재현 가능한 성능 지표가 남아 있는 핵심 실험은 <code>T6-E017</code>과 <code>CM1</code>이다.</li>
+<li><code>CM1</code>에서는 CatBoost가 Cold 모델군 비교에서 <code>MdAPE 0.4488</code>, <code>종합점수 94.0240</code>, <code>종합순위 1위</code>를 기록했다.</li>
+<li>따라서 Cold 운영 후보는 <code>CatBoost 1순위</code>, <code>LightGBM 보조 후보</code>로 정리하는 것이 현재 결과와 맞다.</li>
+<li>단, A~J 고정 실험 대부분은 CatBoost를 포함하지 않았으므로 A~J의 LightGBM 우세 결과만으로 CatBoost를 제외하면 안 된다.</li>
+</ul>
+<h2>언제 테스트했는가</h2>
+<table><thead><tr><th>실험</th><th>상태</th><th>내용</th><th>비고</th></tr></thead><tbody>
+<tr><td>T6-E017</td><td>실행 완료</td><td>기준 모델 선정 단계에서 CatBoost를 Cold 후보로 테스트</td><td><code>outputs/metrics.csv</code>에 결과 있음</td></tr>
+<tr><td>CM1</td><td>실행 완료</td><td>Cold 상위 피처 조합에서 CatBoost/LightGBM/기타 모델군 비교</td><td><code>outputs/result_sheet_scored.csv</code>에 결과 있음</td></tr>
+<tr><td>T6-E016</td><td>후보로 등록, 결과 CSV 없음</td><td>Cold 기본 모델 비교 후보에 CatBoost 포함</td><td>현재 폴더에는 README/HTML 일지만 있고 outputs 지표 파일 없음</td></tr>
+<tr><td>T6-E035</td><td>후보로 등록, 결과 CSV 없음</td><td>Cold 최종 후보 모델 비교 후보에 CatBoost 포함</td><td>현재 폴더에는 README/HTML 일지만 있고 outputs 지표 파일 없음</td></tr>
+</tbody></table>
+<h2>핵심 성능</h2>
+<table><thead><tr><th>실험</th><th>비교대상</th><th>사용 피처</th><th>MdAPE</th><th>p95_APE</th><th>Within_30</th><th>RMSE_log</th><th>R2</th><th>종합점수</th><th>종합순위</th></tr></thead><tbody>
+<tr><td>CM1</td><td>CM1-F2: 작품 기본 피처 + 활동량/인지도</td><td>ln_estimated_ho, nant_material_idx, nant_tool, nant_support, artist_meta_total_works, artist_meta_for_sale_works, artist_meta_followers, artist_meta_is_p1</td><td>0.4488</td><td>2.9885</td><td>0.3304</td><td>0.8797</td><td>0.5519</td><td>94.0240</td><td>1</td></tr>
+<tr><td>T6-E017</td><td>cold_basic</td><td>medium_category, support_category, ln_estimated_ho</td><td>0.5136</td><td>2.4750</td><td>0.2938</td><td>0.8117</td><td></td><td></td><td></td></tr>
+</tbody></table>
+<h2>해석</h2>
+<ul>
+<li><code>T6-E017</code>은 초기 기준 모델 단계의 CatBoost 실행 근거다.</li>
+<li><code>CM1</code>은 Cold 상위 피처 조합을 대상으로 한 모델군 비교이므로 최종 후보 판단에 더 직접적인 근거다.</li>
+<li><code>CM1-F2</code>의 CatBoost는 <code>작품 기본 피처 + 활동량/인지도</code> 조합에서 가장 낮은 MdAPE를 기록했다.</li>
+<li>CatBoost는 범주형 피처와 비선형 관계를 함께 다루는 모델이라 <code>난트 재료</code>, <code>난트 지지체</code>, <code>작가 활동량/인지도</code> 조합에서 장점이 있다.</li>
+<li>LightGBM은 A~J 실험에서 반복적으로 상위권에 나왔으므로 fallback, 보조 후보, 후처리 비교 후보로 유지한다.</li>
+</ul>
+<h2>남은 확인</h2>
+<ul>
+<li>A~J 고정 실험 상위 피처 조합에도 CatBoost를 동일 조건으로 다시 적용하면 더 엄밀한 최종 비교가 가능하다.</li>
+<li>현재 결론에는 <code>CM1</code> 결과를 근거로 Cold 1순위 후보를 CatBoost로 명시한다.</li>
+<li>CatBoost가 기존 A~J/OPT 결과를 뒤집는지에 대한 직접 비교는 <code>cold_catboost_vs_previous_candidates.md/html</code>에서 확인한다.</li>
+</ul>
+</div></body></html>

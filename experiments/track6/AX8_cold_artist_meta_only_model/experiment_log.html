@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AX8 신규 작가 메타만 사용한 Cold 모델 실험</title>
+  <style>
+:root{--paper:#fffdf7;--ink:#1d251f;--line:#d8cdb8;--muted:#687268;--green:#27684a;--amber:#9b6124}
+body{margin:0;color:var(--ink);background:linear-gradient(135deg,#efe7d7,#f8f5ec 48%,#e9f0e7);font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.62}
+main{max-width:1120px;margin:0 auto;padding:32px 22px 72px}
+header,section{background:rgba(255,253,247,.96);border:1px solid var(--line);border-radius:24px;padding:26px;margin-top:18px;box-shadow:0 12px 34px rgba(42,34,22,.08)}
+h1{margin:0;font-size:40px;letter-spacing:-.055em}h2{margin:0 0 12px;font-size:22px;letter-spacing:-.03em}
+ul{margin:8px 0 0;padding-left:21px}code{background:#eee5d4;border-radius:7px;padding:2px 6px;overflow-wrap:anywhere}
+table{width:100%;border-collapse:collapse;background:var(--paper)}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:14px}th{background:#eadfcd}
+.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;margin-right:6px}.planned{background:rgba(155,97,36,.14);color:var(--amber)}.goal{background:rgba(39,104,74,.14);color:var(--green)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:16px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="badge planned">계획</span><span class="badge goal">AX AX8</span>
+    <h1>AX8 신규 작가 메타만 사용한 Cold 모델 실험</h1>
+    <ul>
+      <li>실험군: AX</li>
+      <li>상사 기준 라벨: AX8</li>
+      <li>생성일: 2026-05-20</li>
+    </ul>
+  </header>
+  <section>
+    <h2>1. 실험 일지</h2>
+    <ul>
+      <li>가설: 작가명 없이도 생년/국적/활동량 같은 운영 가능 작가 메타가 Cold 예측을 개선할 수 있다.</li>
+      <li>목적: Cold에서 작가 DB로 얻을 수 있는 메타만의 가치를 확인한다.</li>
+      <li>테스트 모델: Cold: Huber/Quantile-LAD/LightGBM</li>
+      <li>유의미함 기준: 같은 split과 같은 모델군에서 median APE 또는 p95 APE가 낮아지고, Within-30/Within-50이 높아지는지 확인한다.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>2. 초기 실험 데이터</h2>
+    <ul>
+      <li>기준 원천 파일: <code>data/track6/track6_feature_candidates_name_corrected.csv</code></li>
+      <li>학습 입력과 정답 가격은 분리해서 생성한다.</li>
+      <li>정답 가격은 <code>train_labels.csv</code>, <code>test_warm_labels.csv</code>, <code>test_cold_labels.csv</code>에만 둔다.</li>
+      <li>입력 피처와 정답 라벨은 <code>_track6_row_id</code>로 연결한다.</li>
+    </ul>
+    <div class="table-wrap"><table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>학습 피처</td><td><code>작품 기본 피처 묶음 + 운영 가능 작가 메타</code></td></tr>
+      <tr><td>테스트 피처</td><td><code>Cold test에서 artist_name_ko 제외, 작가 메타만 사용</code></td></tr>
+      <tr><td>비교 모델군</td><td>Cold: Huber/Quantile-LAD/LightGBM</td></tr>
+    </table></div>
+  </section>
+  <section>
+    <h2>3. 초기 실험 테스트: Warm</h2>
+    <ul>
+      <li>Warm 정의: 학습 데이터에 같은 작가가 있는 작품을 예측하는 상황</li>
+      <li>Warm 학습 데이터: <code>data/train_features.csv</code> + <code>data/train_labels.csv</code></li>
+      <li>Warm 테스트 데이터: <code>data/test_warm_features.csv</code> + <code>data/test_warm_labels.csv</code></li>
+      <li>Warm에는 참고로 적용하되 최종 판단은 Cold를 우선한다.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>4. 초기 실험 테스트: Cold</h2>
+    <ul>
+      <li>Cold 정의: 학습 데이터에 한 번도 등장하지 않은 작가의 작품을 예측하는 상황</li>
+      <li>Cold 학습 데이터: <code>data/train_features.csv</code> + <code>data/train_labels.csv</code></li>
+      <li>Cold 테스트 데이터: <code>data/test_cold_features.csv</code> + <code>data/test_cold_labels.csv</code></li>
+      <li>작품 기본 피처 묶음만 쓴 Cold 모델과 작가 메타 추가 Cold 모델을 비교한다.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>5. 결과 기록</h2>
+    <ul>
+      <li>주요 지표: median APE, p95 APE, Within-30, Within-50</li>
+      <li>결과 파일: <code>outputs/metrics.csv</code></li>
+      <li>예측 비교 파일: <code>outputs/predictions.csv</code></li>
+      <li>구간별 오차 파일: <code>outputs/slice_metrics.csv</code></li>
+      <li>요약 파일: <code>outputs/summary.md</code></li>
+      <li>실행 로그: <code>logs/run.log</code></li>
+    </ul>
+  </section>
+  <section>
+    <h2>6. 판단 기준</h2>
+    <ul>
+      <li>Cold median APE 또는 p95 APE가 개선되면 작가 DB 연동 가치로 기록한다.</li>
+      <li>성능이 좋아도 운영에서 만들 수 없는 피처는 최종 후보에서 제외하거나 보류한다.</li>
+      <li>Warm과 Cold 결과는 합치지 않고 따로 판단한다.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

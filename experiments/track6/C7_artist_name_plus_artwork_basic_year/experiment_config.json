@@ -1,0 +1,58 @@
+{
+  "experiment_id": "C7",
+  "title": "Track6 C7 작가명 + 작품 기본 피처 묶음 + 제작연도 실험 결과",
+  "purpose": "작가명과 작품 기본 피처 묶음을 넣은 뒤에도 제작연도 정보가 가격 예측 성능을 추가로 개선하는지 확인",
+  "description": "Group C artist_name_ko plus artwork basic feature bundle and artwork year comparison",
+  "exp_dir": "experiments/track6/C7_artist_name_plus_artwork_basic_year",
+  "prompt_file": "experiments/track6/C7_artist_name_plus_artwork_basic_year/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "artist_name_ko",
+    "ln_estimated_ho",
+    "nant_material_idx",
+    "nant_tool",
+    "nant_support",
+    "artwork_year",
+    "artwork_age"
+  ],
+  "numeric_features": [
+    "ln_estimated_ho",
+    "artwork_year",
+    "artwork_age"
+  ],
+  "variable_blocks": [
+    {
+      "name": "C6 기준: 작가명 + 작품 기본 피처 묶음",
+      "features": ["artist_name_ko", "ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support"],
+      "description": "C6에서 정의한 작가명 + 작품 기본 피처 묶음 기준선"
+    },
+    {
+      "name": "C6 + 제작연도",
+      "features": ["artist_name_ko", "ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support", "artwork_year"],
+      "description": "작품 기본 피처 묶음에 제작연도 원값 추가"
+    },
+    {
+      "name": "C6 + 작품 연한",
+      "features": ["artist_name_ko", "ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support", "artwork_age"],
+      "description": "작품 기본 피처 묶음에 기준연도 2026 기준 작품 연한 추가"
+    },
+    {
+      "name": "C6 + 제작연도 + 작품 연한",
+      "features": ["artist_name_ko", "ln_estimated_ho", "nant_material_idx", "nant_tool", "nant_support", "artwork_year", "artwork_age"],
+      "description": "작품 기본 피처 묶음에 제작연도와 작품 연한을 함께 추가"
+    }
+  ],
+  "comment": {
+    "실험 목적": "작가명과 작품 기본 피처 묶음을 넣은 상태에서 제작 시기 정보가 추가 예측력을 주는지 확인한다.",
+    "실험군": "Group C: 작가명 + 작품 변수 누적",
+    "기준선": "C6 기준: artist_name_ko + ln_estimated_ho + nant_material_idx + nant_tool + nant_support",
+    "학습 피처": "C6 기준 피처에 artwork_year, artwork_age를 하나씩 또는 묶음으로 추가",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "운영 제한": "제작연도 출처, 보강 출처, 결측 flag는 사용하지 않는다.",
+    "해석 중심": "C7은 작가명이 학습에 있는 Warm 상황에서 의미가 크므로 Warm 결과를 중심으로 판단한다.",
+    "Cold 해석 주의": "Cold는 신규 작가명이라 artist_name_ko가 학습에 없는 카테고리로 처리되므로 참고값으로만 본다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE를 확인한다.",
+    "결론 기준": "C6 기준선보다 Warm MdAPE 또는 RMSE(log)가 낮아지고 p95 APE가 악화되지 않으면 제작연도 정보의 추가 설명력이 있다고 판단한다."
+  }
+}

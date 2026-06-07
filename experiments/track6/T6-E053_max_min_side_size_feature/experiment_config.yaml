@@ -1,0 +1,13 @@
+experiment_id: T6-E053
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H15
+title: 긴 변/짧은 변 크기 피처 실험
+hypothesis: 가격 예측에는 면적보다 긴 변 또는 짧은 변 정보가 더 도움이 될 수 있다.
+features_under_test: width_cm, height_cm, log_area, max_side_cm, min_side_cm
+model: Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM
+base_features: Warm 기준: artist_name_ko + ln_estimated_ho + log_area / Cold 기준: ln_estimated_ho + log_area
+additional_features: Warm/Cold 추가: max_side_cm + min_side_cm
+target: ln_price_krw
+compare: 면적 중심 모델과 긴 변/짧은 변 모델 비교
+success_criteria: 전체 또는 대형 작품 slice 오차가 개선되면 후보 유지

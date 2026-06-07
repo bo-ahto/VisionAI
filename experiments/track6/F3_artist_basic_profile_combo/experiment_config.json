@@ -1,0 +1,72 @@
+{
+  "experiment_id": "F3",
+  "title": "Track6 F3 작가 기본 프로필 조합 실험 결과",
+  "purpose": "생년, 전시 경력, 국적을 함께 쓰면 작가 기본 프로필 효과를 설명하는지 확인",
+  "description": "Group F/G artist meta experiment: F3",
+  "exp_dir": "experiments/track6/F3_artist_basic_profile_combo",
+  "prompt_file": "experiments/track6/F3_artist_basic_profile_combo/prompts/used_prompt.md",
+  "split_root": "data/track6_split_with_year_type_edition_size_artist_name",
+  "export_feature_columns": [
+    "artist_meta_birth_year",
+    "artist_exhibition_solo_count",
+    "artist_exhibition_group_count",
+    "artist_exhibition_fair_count",
+    "artist_meta_nationality",
+    "artist_meta_birth_year_is_missing",
+    "artist_exhibition_solo_count_is_missing",
+    "artist_exhibition_group_count_is_missing",
+    "artist_exhibition_fair_count_is_missing",
+    "artist_meta_nationality_is_missing"
+  ],
+  "numeric_features": [
+    "artist_meta_birth_year",
+    "artist_meta_birth_year_is_missing",
+    "artist_exhibition_solo_count",
+    "artist_exhibition_group_count",
+    "artist_exhibition_fair_count",
+    "artist_exhibition_solo_count_is_missing",
+    "artist_exhibition_group_count_is_missing",
+    "artist_exhibition_fair_count_is_missing",
+    "artist_meta_nationality_is_missing"
+  ],
+  "variable_blocks": [
+    {
+      "name": "기본 작가 프로필",
+      "features": [
+        "artist_meta_birth_year",
+        "artist_exhibition_solo_count",
+        "artist_exhibition_group_count",
+        "artist_exhibition_fair_count",
+        "artist_meta_nationality"
+      ],
+      "description": "생년, 전시 경력 횟수, 국적 조합"
+    },
+    {
+      "name": "기본 작가 프로필 + 결측",
+      "features": [
+        "artist_meta_birth_year",
+        "artist_exhibition_solo_count",
+        "artist_exhibition_group_count",
+        "artist_exhibition_fair_count",
+        "artist_meta_nationality",
+        "artist_meta_birth_year_is_missing",
+        "artist_exhibition_solo_count_is_missing",
+        "artist_exhibition_group_count_is_missing",
+        "artist_exhibition_fair_count_is_missing",
+        "artist_meta_nationality_is_missing"
+      ],
+      "description": "기본 프로필 조합에 결측 상태를 함께 반영"
+    }
+  ],
+  "comment": {
+    "실험 목적": "생년, 전시 경력, 국적을 함께 쓰면 작가 기본 프로필 효과를 설명하는지 확인",
+    "학습 피처": "artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_meta_nationality / artist_meta_birth_year, artist_exhibition_solo_count, artist_exhibition_group_count, artist_exhibition_fair_count, artist_meta_nationality, artist_meta_birth_year_is_missing, artist_exhibition_solo_count_is_missing, artist_exhibition_group_count_is_missing, artist_exhibition_fair_count_is_missing, artist_meta_nationality_is_missing",
+    "테스트 피처": "학습 피처와 동일",
+    "사용 모델": "Warm: Huber / Linear Regression / Ridge, Cold: Huber / Quantile-LAD / LightGBM",
+    "데이터 기준": "작가 메타가 보강된 최신 Track6 split. label은 _track6_row_id로만 결합한다.",
+    "평가 지표": "R2, RMSE(log), MdAPE, p95 APE, Within-30, Within-50, MAPE",
+    "통제 기준": "Group G는 작품 기본 피처 묶음(ln_estimated_ho + nant_material_idx + nant_tool + nant_support)을 기준선으로 둔다.",
+    "실험군": "Group F: 작가 메타 변수 조합",
+    "확인 결과 활용": "작가 기본 프로필 묶음이 유효하면 작가 DB 우선 수집 항목을 정할 근거로 사용한다."
+  }
+}

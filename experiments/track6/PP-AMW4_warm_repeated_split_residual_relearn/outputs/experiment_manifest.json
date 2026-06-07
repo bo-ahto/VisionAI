@@ -1,0 +1,75 @@
+{
+  "experiment_id": "PP-AMW4",
+  "created_at": "2026-06-06T01:05:18",
+  "iterations": 20,
+  "baseline": "Warm Huber retrained per repeated split",
+  "base_features": [
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "area_cm2",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "medium_category",
+    "support_category",
+    "medium_support_bucket",
+    "is_extreme_aspect_ratio",
+    "artist_key"
+  ],
+  "policies": [
+    {
+      "candidate": "artist_meta_only_for_sale_conservative",
+      "artist_weight": 1.0,
+      "search_weight": 0.0,
+      "total_cap": 0.03,
+      "artist_min_rows": 30,
+      "artist_cap": 0.03,
+      "artist_shrink_k": 50.0,
+      "search_cap": 0.05,
+      "note": "작가 판매중 작품 수 구간 보정만 적용"
+    },
+    {
+      "candidate": "search_only_gallery_conservative",
+      "artist_weight": 0.0,
+      "search_weight": 1.0,
+      "total_cap": 0.03,
+      "artist_min_rows": 30,
+      "artist_cap": 0.03,
+      "artist_shrink_k": 50.0,
+      "search_cap": 0.05,
+      "note": "갤러리/미술관 검색 출처 비중 보정만 적용"
+    },
+    {
+      "candidate": "stack_conservative_half_half",
+      "artist_weight": 0.5,
+      "search_weight": 0.5,
+      "total_cap": 0.03,
+      "artist_min_rows": 30,
+      "artist_cap": 0.03,
+      "artist_shrink_k": 50.0,
+      "search_cap": 0.05,
+      "note": "PP-AMW2 보수 후보: 작가 메타 50% + 검색 50%, 전체 보정 ±0.03"
+    },
+    {
+      "candidate": "stack_exploratory_full",
+      "artist_weight": 1.0,
+      "search_weight": 1.0,
+      "total_cap": 0.05,
+      "artist_min_rows": 30,
+      "artist_cap": 0.03,
+      "artist_shrink_k": 20.0,
+      "search_cap": 0.05,
+      "note": "PP-AMW2 탐색 후보: 작가 메타 100% + 검색 100%, 전체 보정 ±0.05"
+    }
+  ],
+  "pool_files": [
+    "data/track6_split/track6_train.csv",
+    "data/track6_split/track6_val_warm.csv",
+    "data/track6_split/track6_test_warm.csv"
+  ],
+  "search_snapshot_path": "data/track6/external_search/operational/track6_artist_search_operational_snapshot_latest.csv",
+  "search_standardized_path": "data/track6/external_search/operational/track6_artist_search_operational_standardized_latest.csv",
+  "limitation": "Not exact PP-V8 source-decomposed repeated retraining."
+}

@@ -1,0 +1,2022 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>Warm Huber 해석 감사 보고서</title><style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:32px;color:#1f2933;line-height:1.55}
+    h1{font-size:26px;margin-bottom:8px} h2{font-size:20px;margin-top:32px;border-bottom:1px solid #d9e2ec;padding-bottom:6px}
+    .note{background:#f5f7fa;border-left:4px solid #486581;padding:12px 14px;margin:16px 0}
+    table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0 24px}
+    th,td{border:1px solid #d9e2ec;padding:7px 8px;vertical-align:top} th{background:#f0f4f8;text-align:left}
+    code{background:#f0f4f8;padding:2px 4px;border-radius:4px}
+    </style></head>
+<body>
+<h1>Warm Huber 해석 감사 보고서</h1>
+<p>작성일: <code>2026-05-31</code></p>
+<div class="note">
+현재 결론: 최종 Warm artifact는 <code>base_existing_combo + artist_key</code> 13개 피처로 학습되어 있으나,
+기존 FINAL 해석 보고서는 7개 피처와 다른 split 경로를 사용했다. 따라서 기존 Warm 해석 HTML은 최종 Warm Huber의 전체 피처 해석으로 쓰기 어렵고,
+아래 산출물이 최종 artifact 기준의 보정된 해석이다.
+성능 관점에서는 최종 artifact의 test MdAPE가 기존 test 확인 결과와 유사하므로 즉시 모델을 갈아엎을 근거는 약하다.
+다만 Huber outlier 비율과 epsilon 민감도는 후속 안정성 실험 후보로 남긴다.
+</div>
+<h2>1. 피처셋 일치성 감사</h2>
+<table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>feature</th>
+      <th>final_artifact_feature</th>
+      <th>old_interpretability_feature</th>
+      <th>status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>area_cm2</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>artist_key</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>artist_name_ko</td>
+      <td>False</td>
+      <td>True</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>artist_works_log</td>
+      <td>False</td>
+      <td>True</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>artist_works_log_is_missing</td>
+      <td>False</td>
+      <td>True</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>aspect_ratio</td>
+      <td>True</td>
+      <td>True</td>
+      <td>일치</td>
+    </tr>
+    <tr>
+      <td>depth_cm</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>has_depth</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>height_cm</td>
+      <td>True</td>
+      <td>True</td>
+      <td>일치</td>
+    </tr>
+    <tr>
+      <td>is_3d_candidate</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>is_extreme_aspect_ratio</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>log_area</td>
+      <td>True</td>
+      <td>True</td>
+      <td>일치</td>
+    </tr>
+    <tr>
+      <td>medium_category</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>medium_support_bucket</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>support_category</td>
+      <td>True</td>
+      <td>False</td>
+      <td>불일치</td>
+    </tr>
+    <tr>
+      <td>width_cm</td>
+      <td>True</td>
+      <td>True</td>
+      <td>일치</td>
+    </tr>
+  </tbody>
+</table>
+<h2>2. 최종 artifact 성능 재확인</h2>
+<table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>split</th>
+      <th>rows</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p90_APE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>RMSE_log</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>train+validation(final artifact fit data)</td>
+      <td>27433.0</td>
+      <td>0.167748</td>
+      <td>0.369870</td>
+      <td>0.724760</td>
+      <td>1.034529</td>
+      <td>0.691685</td>
+      <td>0.828054</td>
+      <td>0.536718</td>
+    </tr>
+    <tr>
+      <td>test_warm</td>
+      <td>607.0</td>
+      <td>0.224072</td>
+      <td>0.495073</td>
+      <td>1.107263</td>
+      <td>2.020918</td>
+      <td>0.593081</td>
+      <td>0.726524</td>
+      <td>0.609270</td>
+    </tr>
+  </tbody>
+</table>
+<h2>3. Huber outlier 진단</h2>
+<table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>split</th>
+      <th>rows</th>
+      <th>epsilon</th>
+      <th>scale</th>
+      <th>outlier_threshold_log</th>
+      <th>outlier_count</th>
+      <th>outlier_rate</th>
+      <th>median_abs_residual_log</th>
+      <th>p95_abs_residual_log</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>train+validation</td>
+      <td>27433.0</td>
+      <td>1.35</td>
+      <td>0.170999</td>
+      <td>0.230848</td>
+      <td>10858.0</td>
+      <td>0.395801</td>
+      <td>0.168412</td>
+      <td>1.098378</td>
+    </tr>
+    <tr>
+      <td>test_warm</td>
+      <td>607.0</td>
+      <td>1.35</td>
+      <td>0.170999</td>
+      <td>0.230848</td>
+      <td>297.0</td>
+      <td>0.489292</td>
+      <td>0.221419</td>
+      <td>1.364455</td>
+    </tr>
+  </tbody>
+</table>
+<h2>4. Huber epsilon 민감도 추가 진단</h2>
+<table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>epsilon</th>
+      <th>split</th>
+      <th>rows</th>
+      <th>MdAPE</th>
+      <th>MAPE</th>
+      <th>p90_APE</th>
+      <th>p95_APE</th>
+      <th>Within_30</th>
+      <th>Within_50</th>
+      <th>RMSE_log</th>
+      <th>outlier_rate</th>
+      <th>n_iter</th>
+      <th>scale</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1.10</td>
+      <td>val_warm</td>
+      <td>519.0</td>
+      <td>0.207855</td>
+      <td>0.409035</td>
+      <td>0.916492</td>
+      <td>1.292000</td>
+      <td>0.593449</td>
+      <td>0.743738</td>
+      <td>0.649733</td>
+      <td>0.780347</td>
+      <td>3000.0</td>
+      <td>0.051011</td>
+    </tr>
+    <tr>
+      <td>1.10</td>
+      <td>test_warm_locked</td>
+      <td>607.0</td>
+      <td>0.225431</td>
+      <td>0.492333</td>
+      <td>1.106536</td>
+      <td>2.041547</td>
+      <td>0.581549</td>
+      <td>0.728171</td>
+      <td>0.606968</td>
+      <td>0.831960</td>
+      <td>3000.0</td>
+      <td>0.051011</td>
+    </tr>
+    <tr>
+      <td>1.35</td>
+      <td>val_warm</td>
+      <td>519.0</td>
+      <td>0.212583</td>
+      <td>0.416680</td>
+      <td>0.919498</td>
+      <td>1.319356</td>
+      <td>0.595376</td>
+      <td>0.732177</td>
+      <td>0.644612</td>
+      <td>0.479769</td>
+      <td>2512.0</td>
+      <td>0.173951</td>
+    </tr>
+    <tr>
+      <td>1.35</td>
+      <td>test_warm_locked</td>
+      <td>607.0</td>
+      <td>0.227425</td>
+      <td>0.495201</td>
+      <td>1.102148</td>
+      <td>2.013041</td>
+      <td>0.589786</td>
+      <td>0.723229</td>
+      <td>0.608054</td>
+      <td>0.482702</td>
+      <td>2512.0</td>
+      <td>0.173951</td>
+    </tr>
+    <tr>
+      <td>1.50</td>
+      <td>val_warm</td>
+      <td>519.0</td>
+      <td>0.219030</td>
+      <td>0.419185</td>
+      <td>0.924615</td>
+      <td>1.331526</td>
+      <td>0.597303</td>
+      <td>0.736031</td>
+      <td>0.642874</td>
+      <td>0.393064</td>
+      <td>2872.0</td>
+      <td>0.223968</td>
+    </tr>
+    <tr>
+      <td>1.50</td>
+      <td>test_warm_locked</td>
+      <td>607.0</td>
+      <td>0.231553</td>
+      <td>0.496428</td>
+      <td>1.126946</td>
+      <td>2.022509</td>
+      <td>0.591433</td>
+      <td>0.723229</td>
+      <td>0.608372</td>
+      <td>0.388797</td>
+      <td>2872.0</td>
+      <td>0.223968</td>
+    </tr>
+    <tr>
+      <td>1.75</td>
+      <td>val_warm</td>
+      <td>519.0</td>
+      <td>0.226088</td>
+      <td>0.422145</td>
+      <td>0.906341</td>
+      <td>1.351083</td>
+      <td>0.585742</td>
+      <td>0.732177</td>
+      <td>0.640230</td>
+      <td>0.254335</td>
+      <td>2438.0</td>
+      <td>0.285655</td>
+    </tr>
+    <tr>
+      <td>1.75</td>
+      <td>test_warm_locked</td>
+      <td>607.0</td>
+      <td>0.234718</td>
+      <td>0.498946</td>
+      <td>1.135909</td>
+      <td>2.069066</td>
+      <td>0.583196</td>
+      <td>0.719934</td>
+      <td>0.608053</td>
+      <td>0.288303</td>
+      <td>2438.0</td>
+      <td>0.285655</td>
+    </tr>
+    <tr>
+      <td>2.00</td>
+      <td>val_warm</td>
+      <td>519.0</td>
+      <td>0.220280</td>
+      <td>0.424712</td>
+      <td>0.897043</td>
+      <td>1.361986</td>
+      <td>0.581888</td>
+      <td>0.732177</td>
+      <td>0.637250</td>
+      <td>0.169557</td>
+      <td>2129.0</td>
+      <td>0.329435</td>
+    </tr>
+    <tr>
+      <td>2.00</td>
+      <td>test_warm_locked</td>
+      <td>607.0</td>
+      <td>0.239602</td>
+      <td>0.502880</td>
+      <td>1.121963</td>
+      <td>2.115261</td>
+      <td>0.579901</td>
+      <td>0.711697</td>
+      <td>0.608097</td>
+      <td>0.222405</td>
+      <td>2129.0</td>
+      <td>0.329435</td>
+    </tr>
+  </tbody>
+</table>
+<h2>5. 피처 그룹별 실제 기여도</h2>
+<table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>feature_group</th>
+      <th>encoded_feature_count</th>
+      <th>mean_abs_centered_contribution_sum</th>
+      <th>top_features</th>
+      <th>top_up_features</th>
+      <th>top_down_features</th>
+      <th>rank</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>size</td>
+      <td>4</td>
+      <td>1.222207</td>
+      <td>num__log_area / num__height_cm / num__width_cm / num__area_cm2</td>
+      <td>num__log_area / num__height_cm / num__width_cm</td>
+      <td>num__area_cm2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>medium_support</td>
+      <td>58</td>
+      <td>0.562494</td>
+      <td>cat__medium_support_bucket_mixed_media__canvas / cat__medium_support_bucket_mixed_media__unknown / cat__medium_support_bucket_acrylic__canvas / cat__medium_support_bucket_oil__linen / cat__medium_support_bucket_oil__canvas</td>
+      <td>cat__medium_support_bucket_acrylic__canvas / cat__medium_support_bucket_oil__linen / cat__medium_support_bucket_oil__canvas / cat__medium_support_bucket_mixed_media__paper / cat__medium_support_bucket_acrylic__linen</td>
+      <td>cat__medium_support_bucket_mixed_media__canvas / cat__medium_support_bucket_mixed_media__unknown / cat__medium_support_bucket_painting_material__unknown / cat__medium_support_bucket_textile__unknown / cat__medium_support_bucket_painting_material__paper</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>support</td>
+      <td>9</td>
+      <td>0.512101</td>
+      <td>cat__support_category_paper / cat__support_category_canvas / cat__support_category_unknown / cat__support_category_linen / cat__support_category_fabric</td>
+      <td>cat__support_category_canvas / cat__support_category_unknown / cat__support_category_metal / cat__support_category_glass</td>
+      <td>cat__support_category_paper / cat__support_category_linen / cat__support_category_fabric / cat__support_category_panel / cat__support_category_wood</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>medium</td>
+      <td>18</td>
+      <td>0.492027</td>
+      <td>cat__medium_category_mixed_media / cat__medium_category_acrylic / cat__medium_category_oil / cat__medium_category_painting_material / cat__medium_category_textile</td>
+      <td>cat__medium_category_mixed_media / cat__medium_category_painting_material / cat__medium_category_textile / cat__medium_category_ink / cat__medium_category_charcoal</td>
+      <td>cat__medium_category_acrylic / cat__medium_category_oil / cat__medium_category_other / cat__medium_category_print / cat__medium_category_sculpture_material</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <td>artist</td>
+      <td>648</td>
+      <td>0.435310</td>
+      <td>cat__artist_key_infrequent_sklearn / cat__artist_key_sang oktabu kim / cat__artist_key_sheean kim / cat__artist_key_young sung kim / cat__artist_key_ham sup 함섭</td>
+      <td>cat__artist_key_sang oktabu kim / cat__artist_key_sheean kim / cat__artist_key_young sung kim / cat__artist_key_ham sup 함섭 / cat__artist_key_yoo suntai</td>
+      <td>cat__artist_key_infrequent_sklearn / cat__artist_key_jeremy yong / cat__artist_key_hyungjun suh / cat__artist_key_ro un lee / cat__artist_key_chang beom son</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <td>depth_3d</td>
+      <td>5</td>
+      <td>0.032033</td>
+      <td>cat__is_3d_candidate_True / cat__is_3d_candidate_False / cat__has_depth_False / cat__has_depth_True / num__depth_cm</td>
+      <td>cat__is_3d_candidate_True / cat__has_depth_False</td>
+      <td>cat__is_3d_candidate_False / cat__has_depth_True / num__depth_cm</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <td>shape</td>
+      <td>2</td>
+      <td>0.006654</td>
+      <td>num__aspect_ratio / cat__is_extreme_aspect_ratio_False</td>
+      <td></td>
+      <td>num__aspect_ratio</td>
+      <td>7</td>
+    </tr>
+  </tbody>
+</table>
+<div class="note">
+범주형 피처는 one-hot 기준 원계수를 그대로 비교하지 않고, 같은 원본 피처 안의 평균 범주 효과를 뺀
+<code>centered_coef</code>와 <code>mean_abs_centered_contribution</code>을 해석 우선 기준으로 사용한다.
+이는 최종 artifact의 예측식을 바꾸는 것이 아니라, 더미 변수 공선성으로 인한 계수 해석 왜곡을 줄이기 위한 보고 방식이다.
+</div>
+<h2>6. 개별 계수/기여도 상위 80개</h2>
+<table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>encoded_feature</th>
+      <th>raw_feature</th>
+      <th>feature_group</th>
+      <th>coef</th>
+      <th>centered_coef</th>
+      <th>original_unit_coef</th>
+      <th>active_rate</th>
+      <th>mean_abs_centered_contribution</th>
+      <th>mean_centered_contribution</th>
+      <th>coef_direction</th>
+      <th>centered_direction</th>
+      <th>rank_by_centered_abs_contribution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>num__log_area</td>
+      <td>log_area</td>
+      <td>size</td>
+      <td>0.478722</td>
+      <td>0.478722</td>
+      <td>0.402900</td>
+      <td>0.031799</td>
+      <td>0.409571</td>
+      <td>0.015223</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>num__height_cm</td>
+      <td>height_cm</td>
+      <td>size</td>
+      <td>0.390577</td>
+      <td>0.390577</td>
+      <td>0.008599</td>
+      <td>0.063175</td>
+      <td>0.301470</td>
+      <td>0.024675</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>num__width_cm</td>
+      <td>width_cm</td>
+      <td>size</td>
+      <td>0.396147</td>
+      <td>0.396147</td>
+      <td>0.008833</td>
+      <td>0.033109</td>
+      <td>0.299148</td>
+      <td>0.013116</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>num__area_cm2</td>
+      <td>area_cm2</td>
+      <td>size</td>
+      <td>-0.388190</td>
+      <td>-0.388190</td>
+      <td>-0.000038</td>
+      <td>0.038228</td>
+      <td>0.212018</td>
+      <td>-0.014840</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <td>cat__medium_category_mixed_media</td>
+      <td>medium_category</td>
+      <td>medium</td>
+      <td>0.338681</td>
+      <td>0.433021</td>
+      <td>NaN</td>
+      <td>0.397035</td>
+      <td>0.171924</td>
+      <td>0.171924</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <td>cat__support_category_paper</td>
+      <td>support_category</td>
+      <td>support</td>
+      <td>-0.145475</td>
+      <td>-0.843315</td>
+      <td>NaN</td>
+      <td>0.169687</td>
+      <td>0.143100</td>
+      <td>-0.143100</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <td>cat__medium_category_acrylic</td>
+      <td>medium_category</td>
+      <td>medium</td>
+      <td>-0.610797</td>
+      <td>-0.516456</td>
+      <td>NaN</td>
+      <td>0.248764</td>
+      <td>0.128476</td>
+      <td>-0.128476</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>7</td>
+    </tr>
+    <tr>
+      <td>cat__support_category_canvas</td>
+      <td>support_category</td>
+      <td>support</td>
+      <td>0.909770</td>
+      <td>0.211930</td>
+      <td>NaN</td>
+      <td>0.583196</td>
+      <td>0.123597</td>
+      <td>0.123597</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>8</td>
+    </tr>
+    <tr>
+      <td>cat__support_category_unknown</td>
+      <td>support_category</td>
+      <td>support</td>
+      <td>1.772476</td>
+      <td>1.074636</td>
+      <td>NaN</td>
+      <td>0.110379</td>
+      <td>0.118617</td>
+      <td>0.118617</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>9</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_mixed_media__canvas</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-0.497996</td>
+      <td>-0.690225</td>
+      <td>NaN</td>
+      <td>0.146623</td>
+      <td>0.101203</td>
+      <td>-0.101203</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <td>cat__medium_category_oil</td>
+      <td>medium_category</td>
+      <td>medium</td>
+      <td>-0.504975</td>
+      <td>-0.410634</td>
+      <td>NaN</td>
+      <td>0.243822</td>
+      <td>0.100122</td>
+      <td>-0.100122</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>11</td>
+    </tr>
+    <tr>
+      <td>cat__support_category_linen</td>
+      <td>support_category</td>
+      <td>support</td>
+      <td>-0.797257</td>
+      <td>-1.495097</td>
+      <td>NaN</td>
+      <td>0.047776</td>
+      <td>0.071430</td>
+      <td>-0.071430</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>12</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_mixed_media__unknown</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-1.111697</td>
+      <td>-1.303926</td>
+      <td>NaN</td>
+      <td>0.051071</td>
+      <td>0.066593</td>
+      <td>-0.066593</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>13</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_acrylic__canvas</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>0.470853</td>
+      <td>0.278624</td>
+      <td>NaN</td>
+      <td>0.217463</td>
+      <td>0.060590</td>
+      <td>0.060590</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>14</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_infrequent_sklearn</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-0.147938</td>
+      <td>-0.148997</td>
+      <td>NaN</td>
+      <td>0.401977</td>
+      <td>0.059893</td>
+      <td>-0.059893</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_oil__linen</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>2.187377</td>
+      <td>1.995148</td>
+      <td>NaN</td>
+      <td>0.026359</td>
+      <td>0.052590</td>
+      <td>0.052590</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>16</td>
+    </tr>
+    <tr>
+      <td>cat__medium_category_painting_material</td>
+      <td>medium_category</td>
+      <td>medium</td>
+      <td>1.584614</td>
+      <td>1.678955</td>
+      <td>NaN</td>
+      <td>0.029654</td>
+      <td>0.049788</td>
+      <td>0.049788</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>17</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_oil__canvas</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>0.413236</td>
+      <td>0.221007</td>
+      <td>NaN</td>
+      <td>0.200988</td>
+      <td>0.044420</td>
+      <td>0.044420</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>18</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_painting_material__unknown</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-2.421228</td>
+      <td>-2.613457</td>
+      <td>NaN</td>
+      <td>0.014827</td>
+      <td>0.038750</td>
+      <td>-0.038750</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>19</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_mixed_media__paper</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>0.482082</td>
+      <td>0.289853</td>
+      <td>NaN</td>
+      <td>0.125206</td>
+      <td>0.036291</td>
+      <td>0.036291</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <td>cat__support_category_fabric</td>
+      <td>support_category</td>
+      <td>support</td>
+      <td>-0.324424</td>
+      <td>-1.022264</td>
+      <td>NaN</td>
+      <td>0.023064</td>
+      <td>0.023578</td>
+      <td>-0.023578</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>21</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_textile__unknown</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-4.326468</td>
+      <td>-4.518697</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.022333</td>
+      <td>-0.022333</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>22</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_sang oktabu kim</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>3.918114</td>
+      <td>3.917055</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.019359</td>
+      <td>0.019359</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>23</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_sheean kim</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>3.847116</td>
+      <td>3.846056</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.019009</td>
+      <td>0.019009</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>24</td>
+    </tr>
+    <tr>
+      <td>cat__support_category_panel</td>
+      <td>support_category</td>
+      <td>support</td>
+      <td>0.263956</td>
+      <td>-0.433884</td>
+      <td>NaN</td>
+      <td>0.041186</td>
+      <td>0.017870</td>
+      <td>-0.017870</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>25</td>
+    </tr>
+    <tr>
+      <td>cat__medium_category_textile</td>
+      <td>medium_category</td>
+      <td>medium</td>
+      <td>3.468944</td>
+      <td>3.563284</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.017611</td>
+      <td>0.017611</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>26</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_acrylic__linen</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>2.252301</td>
+      <td>2.060072</td>
+      <td>NaN</td>
+      <td>0.008237</td>
+      <td>0.016969</td>
+      <td>0.016969</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>27</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_acrylic__paper</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>1.409938</td>
+      <td>1.217709</td>
+      <td>NaN</td>
+      <td>0.011532</td>
+      <td>0.014043</td>
+      <td>0.014043</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>28</td>
+    </tr>
+    <tr>
+      <td>cat__support_category_metal</td>
+      <td>support_category</td>
+      <td>support</td>
+      <td>1.746442</td>
+      <td>1.048602</td>
+      <td>NaN</td>
+      <td>0.013180</td>
+      <td>0.013820</td>
+      <td>0.013820</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>29</td>
+    </tr>
+    <tr>
+      <td>cat__is_3d_candidate_True</td>
+      <td>is_3d_candidate</td>
+      <td>depth_3d</td>
+      <td>2.714576</td>
+      <td>0.603610</td>
+      <td>NaN</td>
+      <td>0.019769</td>
+      <td>0.011933</td>
+      <td>0.011933</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>30</td>
+    </tr>
+    <tr>
+      <td>cat__is_3d_candidate_False</td>
+      <td>is_3d_candidate</td>
+      <td>depth_3d</td>
+      <td>2.098792</td>
+      <td>-0.012174</td>
+      <td>NaN</td>
+      <td>0.980231</td>
+      <td>0.011933</td>
+      <td>-0.011933</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>31</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_young sung kim</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>2.330023</td>
+      <td>2.328964</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.011511</td>
+      <td>0.011511</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>32</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_painting_material__paper</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-0.801045</td>
+      <td>-0.993274</td>
+      <td>NaN</td>
+      <td>0.011532</td>
+      <td>0.011455</td>
+      <td>-0.011455</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>33</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_oil__paper</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>1.415253</td>
+      <td>1.223024</td>
+      <td>NaN</td>
+      <td>0.008237</td>
+      <td>0.010074</td>
+      <td>0.010074</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>34</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_ham sup 함섭</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.954014</td>
+      <td>1.952955</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.009652</td>
+      <td>0.009652</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>35</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_mixed_media__fabric</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>0.608221</td>
+      <td>0.415992</td>
+      <td>NaN</td>
+      <td>0.023064</td>
+      <td>0.009595</td>
+      <td>0.009595</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>36</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_jeremy yong</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.925256</td>
+      <td>-1.926315</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.009521</td>
+      <td>-0.009521</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>37</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_ink__unknown</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-1.649734</td>
+      <td>-1.841963</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.009104</td>
+      <td>-0.009104</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>38</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_hyungjun suh</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.707849</td>
+      <td>-1.708908</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.008446</td>
+      <td>-0.008446</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>39</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_yoo suntai</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.590458</td>
+      <td>1.589399</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.007855</td>
+      <td>0.007855</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_ro un lee</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.561957</td>
+      <td>-1.563017</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.007725</td>
+      <td>-0.007725</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>41</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_gunsun kim</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.531681</td>
+      <td>1.530622</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.007565</td>
+      <td>0.007565</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>42</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_sang sam park</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.503911</td>
+      <td>1.502852</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.007428</td>
+      <td>0.007428</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>43</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_lee kiyoung</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.490305</td>
+      <td>1.489245</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.007360</td>
+      <td>0.007360</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>44</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_park seo bo</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.472711</td>
+      <td>1.471651</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.007273</td>
+      <td>0.007273</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>45</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_chang beom son</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.432569</td>
+      <td>-1.433628</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.007085</td>
+      <td>-0.007085</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>46</td>
+    </tr>
+    <tr>
+      <td>cat__medium_category_other</td>
+      <td>medium_category</td>
+      <td>medium</td>
+      <td>-0.397913</td>
+      <td>-0.303573</td>
+      <td>NaN</td>
+      <td>0.023064</td>
+      <td>0.007002</td>
+      <td>-0.007002</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>47</td>
+    </tr>
+    <tr>
+      <td>num__aspect_ratio</td>
+      <td>aspect_ratio</td>
+      <td>shape</td>
+      <td>-0.012579</td>
+      <td>-0.012579</td>
+      <td>-0.029388</td>
+      <td>0.001609</td>
+      <td>0.006654</td>
+      <td>-0.000020</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>48</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_aeri lee 이애리</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.266628</td>
+      <td>1.265569</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.006255</td>
+      <td>0.006255</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>49</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_lee pearl</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.256252</td>
+      <td>-1.257311</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.006214</td>
+      <td>-0.006214</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_mixed_media__linen</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>1.433621</td>
+      <td>1.241392</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.006135</td>
+      <td>0.006135</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>51</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_painting_material__canvas</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-1.640684</td>
+      <td>-1.832913</td>
+      <td>NaN</td>
+      <td>0.003295</td>
+      <td>0.006039</td>
+      <td>-0.006039</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>52</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_barn miryung</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.218687</td>
+      <td>1.217627</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.006018</td>
+      <td>0.006018</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>53</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_wichuda khuntijit</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.203807</td>
+      <td>-1.204867</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005955</td>
+      <td>-0.005955</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>54</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_mixed_media__metal</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-0.710632</td>
+      <td>-0.902861</td>
+      <td>NaN</td>
+      <td>0.006590</td>
+      <td>0.005950</td>
+      <td>-0.005950</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>55</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_changmin lim</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.201483</td>
+      <td>1.200423</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005933</td>
+      <td>0.005933</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>56</td>
+    </tr>
+    <tr>
+      <td>cat__medium_category_print</td>
+      <td>medium_category</td>
+      <td>medium</td>
+      <td>-0.811299</td>
+      <td>-0.716958</td>
+      <td>NaN</td>
+      <td>0.008237</td>
+      <td>0.005906</td>
+      <td>-0.005906</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>57</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_zikseong jeong</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.176418</td>
+      <td>1.175358</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005809</td>
+      <td>0.005809</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>58</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_ouchul hwang</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.155987</td>
+      <td>1.154928</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005708</td>
+      <td>0.005708</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>59</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_hannaz</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.148181</td>
+      <td>-1.149240</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005680</td>
+      <td>-0.005680</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>60</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_injung kwon</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.139007</td>
+      <td>-1.140066</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005635</td>
+      <td>-0.005635</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>61</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_leo</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.140938</td>
+      <td>1.139878</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005634</td>
+      <td>0.005634</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>62</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_heesung yang</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-1.114618</td>
+      <td>-1.115677</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005514</td>
+      <td>-0.005514</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>63</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_park young hak</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.101085</td>
+      <td>1.100026</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005437</td>
+      <td>0.005437</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>64</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_seontae hwang</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.099612</td>
+      <td>1.098552</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005429</td>
+      <td>0.005429</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>65</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_acrylic__panel</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>1.251229</td>
+      <td>1.058999</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005234</td>
+      <td>0.005234</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>66</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_jung jungyeob</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>1.016302</td>
+      <td>1.015243</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.005018</td>
+      <td>0.005018</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>67</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_mixed_media__panel</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>0.336079</td>
+      <td>0.143850</td>
+      <td>NaN</td>
+      <td>0.032949</td>
+      <td>0.004740</td>
+      <td>0.004740</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>68</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_jang jun seok</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>0.931860</td>
+      <td>0.930801</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.004600</td>
+      <td>0.004600</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>69</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_other__unknown</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-0.713034</td>
+      <td>-0.905263</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.004474</td>
+      <td>-0.004474</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>70</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_hyeokeon kweon</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-0.894294</td>
+      <td>-0.895353</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.004425</td>
+      <td>-0.004425</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>71</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_other__linen</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>0.827892</td>
+      <td>0.635663</td>
+      <td>NaN</td>
+      <td>0.006590</td>
+      <td>0.004189</td>
+      <td>0.004189</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>72</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_hyesoo han</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>0.833955</td>
+      <td>0.832896</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.004116</td>
+      <td>0.004116</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>73</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_sungmin kwon</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>0.812689</td>
+      <td>0.811629</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.004011</td>
+      <td>0.004011</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>74</td>
+    </tr>
+    <tr>
+      <td>cat__has_depth_False</td>
+      <td>has_depth</td>
+      <td>depth_3d</td>
+      <td>2.415258</td>
+      <td>0.010820</td>
+      <td>NaN</td>
+      <td>0.369028</td>
+      <td>0.003993</td>
+      <td>0.003993</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 상승 방향</td>
+      <td>75</td>
+    </tr>
+    <tr>
+      <td>cat__has_depth_True</td>
+      <td>has_depth</td>
+      <td>depth_3d</td>
+      <td>2.398110</td>
+      <td>-0.006328</td>
+      <td>NaN</td>
+      <td>0.630972</td>
+      <td>0.003993</td>
+      <td>-0.003993</td>
+      <td>예측가격 상승 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>76</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_gwanhee lee</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-0.786261</td>
+      <td>-0.787320</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.003891</td>
+      <td>-0.003891</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>77</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_seonggwang yun</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-0.767518</td>
+      <td>-0.768578</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.003799</td>
+      <td>-0.003799</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>78</td>
+    </tr>
+    <tr>
+      <td>cat__artist_key_dabin lee</td>
+      <td>artist_key</td>
+      <td>artist</td>
+      <td>-0.731075</td>
+      <td>-0.732134</td>
+      <td>NaN</td>
+      <td>0.004942</td>
+      <td>0.003618</td>
+      <td>-0.003618</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>79</td>
+    </tr>
+    <tr>
+      <td>cat__medium_support_bucket_acrylic__unknown</td>
+      <td>medium_support_bucket</td>
+      <td>medium_support</td>
+      <td>-0.345018</td>
+      <td>-0.537247</td>
+      <td>NaN</td>
+      <td>0.006590</td>
+      <td>0.003540</td>
+      <td>-0.003540</td>
+      <td>예측가격 하락 방향</td>
+      <td>예측가격 하락 방향</td>
+      <td>80</td>
+    </tr>
+  </tbody>
+</table>
+<h2>7. 샘플별 예측 설명</h2>
+<table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>_track6_row_id</th>
+      <th>actual_price</th>
+      <th>pred_price</th>
+      <th>APE</th>
+      <th>top_up_features</th>
+      <th>top_down_features</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>24351</td>
+      <td>455400.0</td>
+      <td>3.050339e+06</td>
+      <td>5.698152</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__paper(0.4821) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__artist_key_infrequent_sklearn(-0.1479) / cat__support_category_paper(-0.1455) / num__height_cm(-0.0849) / num__aspect_ratio(-0.0024) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>24292</td>
+      <td>455400.0</td>
+      <td>3.050339e+06</td>
+      <td>5.698152</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__paper(0.4821) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__artist_key_infrequent_sklearn(-0.1479) / cat__support_category_paper(-0.1455) / num__height_cm(-0.0849) / num__aspect_ratio(-0.0024) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>24290</td>
+      <td>455400.0</td>
+      <td>3.050339e+06</td>
+      <td>5.698152</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__paper(0.4821) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__artist_key_infrequent_sklearn(-0.1479) / cat__support_category_paper(-0.1455) / num__height_cm(-0.0849) / num__aspect_ratio(-0.0024) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>21794</td>
+      <td>552000.0</td>
+      <td>3.674150e+06</td>
+      <td>5.656069</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__is_3d_candidate_True(2.7146) / cat__has_depth_True(2.3981) / cat__support_category_metal(1.7464) / num__area_cm2(0.2110)</td>
+      <td>num__log_area(-0.5773) / num__height_cm(-0.4426) / cat__medium_category_sculpture_material(-0.2348) / num__width_cm(-0.2195) / cat__artist_key_infrequent_sklearn(-0.1479)</td>
+    </tr>
+    <tr>
+      <td>24255</td>
+      <td>469200.0</td>
+      <td>3.053608e+06</td>
+      <td>5.508117</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_unknown(1.7725) / num__width_cm(0.1188)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / cat__medium_support_bucket_acrylic__unknown(-0.3450) / num__height_cm(-0.1657) / cat__artist_key_infrequent_sklearn(-0.1479) / num__aspect_ratio(-0.0096)</td>
+    </tr>
+    <tr>
+      <td>24253</td>
+      <td>938400.0</td>
+      <td>5.506314e+06</td>
+      <td>4.867768</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_unknown(1.7725) / num__width_cm(0.4165)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / cat__medium_support_bucket_acrylic__unknown(-0.3450) / cat__artist_key_infrequent_sklearn(-0.1479) / num__area_cm2(-0.0692) / num__aspect_ratio(-0.0098)</td>
+    </tr>
+    <tr>
+      <td>17485</td>
+      <td>5865000.0</td>
+      <td>3.071273e+07</td>
+      <td>4.236611</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__artist_key_gunsun kim(1.5317) / cat__support_category_canvas(0.9098)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / num__area_cm2(-0.1144) / num__aspect_ratio(-0.0035) / num__depth_cm(-0.0001) / cat__artist_key_jung boram(-0.0000)</td>
+    </tr>
+    <tr>
+      <td>35090</td>
+      <td>3864000.0</td>
+      <td>1.816852e+07</td>
+      <td>3.701998</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / num__height_cm(2.6806) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098)</td>
+      <td>cat__artist_key_gyul e kim(-0.6975) / cat__medium_support_bucket_mixed_media__canvas(-0.4980) / num__area_cm2(-0.4581) / num__aspect_ratio(-0.1926) / num__width_cm(-0.1877)</td>
+    </tr>
+    <tr>
+      <td>21261</td>
+      <td>1407600.0</td>
+      <td>6.573905e+06</td>
+      <td>3.670293</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / num__log_area(0.4714)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / num__area_cm2(-0.1671) / cat__artist_key_dallrye kang(-0.1129) / num__depth_cm(-0.0002) / cat__artist_key_mori ju(-0.0000)</td>
+    </tr>
+    <tr>
+      <td>18367</td>
+      <td>869400.0</td>
+      <td>4.018418e+06</td>
+      <td>3.622058</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__medium_support_bucket_mixed_media__canvas(-0.4980) / cat__artist_key_infrequent_sklearn(-0.1479) / num__area_cm2(-0.0076) / num__depth_cm(-0.0001) / cat__artist_key_mooa 무아(0.0000)</td>
+    </tr>
+    <tr>
+      <td>24357</td>
+      <td>690000.0</td>
+      <td>3.124623e+06</td>
+      <td>3.528439</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_unknown(1.7725) / cat__artist_key_beomsik won(0.6424)</td>
+      <td>cat__medium_support_bucket_mixed_media__unknown(-1.1117) / num__log_area(-0.4289) / num__height_cm(-0.3807) / num__width_cm(-0.2081) / num__aspect_ratio(-0.0149)</td>
+    </tr>
+    <tr>
+      <td>42982</td>
+      <td>4374600.0</td>
+      <td>1.961959e+07</td>
+      <td>3.484888</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / num__width_cm(1.4252) / num__log_area(0.9824)</td>
+      <td>num__area_cm2(-1.2102) / cat__medium_category_acrylic(-0.6108) / cat__artist_key_infrequent_sklearn(-0.1479) / num__aspect_ratio(-0.0018) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>21696</td>
+      <td>276000.0</td>
+      <td>1.236368e+06</td>
+      <td>3.479596</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_acrylic__panel(1.2512) / cat__support_category_panel(0.2640)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / num__log_area(-0.4378) / num__width_cm(-0.3494) / num__height_cm(-0.2732) / cat__artist_key_infrequent_sklearn(-0.1479)</td>
+    </tr>
+    <tr>
+      <td>21698</td>
+      <td>276000.0</td>
+      <td>1.236368e+06</td>
+      <td>3.479596</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_acrylic__panel(1.2512) / cat__support_category_panel(0.2640)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / num__log_area(-0.4378) / num__width_cm(-0.3494) / num__height_cm(-0.2732) / cat__artist_key_infrequent_sklearn(-0.1479)</td>
+    </tr>
+    <tr>
+      <td>17486</td>
+      <td>6527400.0</td>
+      <td>2.845277e+07</td>
+      <td>3.358974</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__artist_key_gunsun kim(1.5317) / cat__support_category_canvas(0.9098)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / num__area_cm2(-0.0806) / num__aspect_ratio(-0.0080) / num__depth_cm(-0.0001) / cat__artist_key_jung boram(-0.0000)</td>
+    </tr>
+    <tr>
+      <td>11782</td>
+      <td>262200.0</td>
+      <td>6.440513e+05</td>
+      <td>1.456336</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__medium_category_painting_material(1.5846) / num__area_cm2(0.2168)</td>
+      <td>cat__medium_support_bucket_painting_material__paper(-0.8010) / num__log_area(-0.6618) / num__width_cm(-0.3900) / num__height_cm(-0.3773) / cat__artist_key_ej koh(-0.1906)</td>
+    </tr>
+    <tr>
+      <td>27224</td>
+      <td>165600000.0</td>
+      <td>9.831856e+06</td>
+      <td>0.940629</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__artist_key_park seo bo(1.4727) / cat__support_category_canvas(0.9098)</td>
+      <td>cat__medium_category_other(-0.3979) / num__height_cm(-0.2044) / num__width_cm(-0.1489) / num__log_area(-0.1329) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>17614</td>
+      <td>1007400.0</td>
+      <td>1.880934e+06</td>
+      <td>0.867117</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__paper(0.4821) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__artist_key_infrequent_sklearn(-0.1479) / num__width_cm(-0.1462) / cat__support_category_paper(-0.1455) / num__height_cm(-0.1399) / num__log_area(-0.0691)</td>
+    </tr>
+    <tr>
+      <td>27448</td>
+      <td>993600.0</td>
+      <td>1.834138e+06</td>
+      <td>0.845952</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__medium_support_bucket_mixed_media__canvas(-0.4980) / num__width_cm(-0.2125) / cat__artist_key_infrequent_sklearn(-0.1479) / num__height_cm(-0.1399) / num__log_area(-0.1306)</td>
+    </tr>
+    <tr>
+      <td>54594</td>
+      <td>3000000.0</td>
+      <td>8.935782e+05</td>
+      <td>0.702141</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__medium_category_mixed_media(0.3387) / cat__medium_support_bucket_mixed_media__panel(0.3361)</td>
+      <td>num__log_area(-0.6804) / num__width_cm(-0.4201) / num__height_cm(-0.3549) / cat__artist_key_infrequent_sklearn(-0.1479) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>49423</td>
+      <td>1035000.0</td>
+      <td>1.702434e+06</td>
+      <td>0.644864</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / num__area_cm2(0.1506)</td>
+      <td>num__width_cm(-0.2169) / cat__medium_category_gouache(-0.1973) / cat__artist_key_infrequent_sklearn(-0.1479) / num__height_cm(-0.1399) / num__log_area(-0.1350)</td>
+    </tr>
+    <tr>
+      <td>36030</td>
+      <td>2800000.0</td>
+      <td>1.277861e+06</td>
+      <td>0.543621</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__medium_support_bucket_oil__linen(2.1874) / cat__is_3d_candidate_False(2.0988) / cat__artist_key_lee sujin b 1983(0.2768)</td>
+      <td>cat__support_category_linen(-0.7973) / num__log_area(-0.6906) / cat__medium_category_oil(-0.5050) / num__height_cm(-0.4065) / num__width_cm(-0.3732)</td>
+    </tr>
+    <tr>
+      <td>24766</td>
+      <td>1104000.0</td>
+      <td>1.701790e+06</td>
+      <td>0.541477</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__paper(0.4821) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>num__width_cm(-0.2611) / cat__artist_key_infrequent_sklearn(-0.1479) / cat__support_category_paper(-0.1455) / num__log_area(-0.1325) / num__height_cm(-0.0797)</td>
+    </tr>
+    <tr>
+      <td>53155</td>
+      <td>2000000.0</td>
+      <td>9.573694e+05</td>
+      <td>0.521315</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_acrylic__canvas(0.4709)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / num__log_area(-0.5277) / num__width_cm(-0.3494) / num__height_cm(-0.3377) / cat__artist_key_infrequent_sklearn(-0.1479)</td>
+    </tr>
+    <tr>
+      <td>53652</td>
+      <td>28000000.0</td>
+      <td>1.612447e+07</td>
+      <td>0.424126</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / num__height_cm(1.1242) / num__log_area(0.9111)</td>
+      <td>num__area_cm2(-0.9749) / cat__medium_support_bucket_mixed_media__canvas(-0.4980) / cat__artist_key_infrequent_sklearn(-0.1479) / cat__artist_key_mooa 무아(0.0000) / cat__artist_key_mori ju(-0.0000)</td>
+    </tr>
+    <tr>
+      <td>43716</td>
+      <td>2960100.0</td>
+      <td>4.204971e+06</td>
+      <td>0.420550</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_acrylic__canvas(0.4709)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / cat__artist_key_infrequent_sklearn(-0.1479) / num__area_cm2(-0.0099) / num__depth_cm(-0.0001) / cat__artist_key_mooa 무아(0.0000)</td>
+    </tr>
+    <tr>
+      <td>21671</td>
+      <td>10908900.0</td>
+      <td>1.434948e+07</td>
+      <td>0.315392</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_unknown(1.7725) / num__log_area(0.4663)</td>
+      <td>cat__medium_category_sculpture_material(-0.2348) / num__area_cm2(-0.1619) / cat__artist_key_infrequent_sklearn(-0.1479) / num__depth_cm(-0.0001) / cat__artist_key_nedo yoo(-0.0000)</td>
+    </tr>
+    <tr>
+      <td>20271</td>
+      <td>6357660.0</td>
+      <td>4.366992e+06</td>
+      <td>0.313113</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__artist_key_ouchul hwang(1.1560) / cat__support_category_canvas(0.9098)</td>
+      <td>cat__medium_category_oil(-0.5050) / num__log_area(-0.4120) / num__height_cm(-0.3377) / num__width_cm(-0.2612) / num__depth_cm(-0.0002)</td>
+    </tr>
+    <tr>
+      <td>10610</td>
+      <td>3877800.0</td>
+      <td>4.950734e+06</td>
+      <td>0.276686</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / num__width_cm(0.5339)</td>
+      <td>cat__medium_category_oil(-0.5050) / cat__artist_key_yunjung choi(-0.4558) / num__area_cm2(-0.1540) / num__aspect_ratio(-0.0086) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>35970</td>
+      <td>41400000.0</td>
+      <td>3.264263e+07</td>
+      <td>0.211531</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__artist_key_jung jungyeob(1.0163) / cat__support_category_canvas(0.9098)</td>
+      <td>cat__medium_category_oil(-0.5050) / num__area_cm2(-0.4010) / num__depth_cm(-0.0001) / cat__artist_key_jung boram(-0.0000) / cat__artist_key_mori ju(-0.0000)</td>
+    </tr>
+    <tr>
+      <td>828</td>
+      <td>4512600.0</td>
+      <td>3.611023e+06</td>
+      <td>0.199791</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__artist_key_kyong seob lee(0.4883)</td>
+      <td>cat__medium_category_oil(-0.5050) / num__height_cm(-0.2087) / num__width_cm(-0.1480) / num__log_area(-0.1365) / num__depth_cm(-0.0002)</td>
+    </tr>
+    <tr>
+      <td>25267</td>
+      <td>4830000.0</td>
+      <td>3.944307e+06</td>
+      <td>0.183373</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_unknown(1.7725) / cat__artist_key_kim tschang yeul(0.3091)</td>
+      <td>cat__medium_support_bucket_other__unknown(-0.7130) / cat__medium_category_other(-0.3979) / num__height_cm(-0.1313) / num__aspect_ratio(-0.0011) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>36174</td>
+      <td>4002000.0</td>
+      <td>4.731592e+06</td>
+      <td>0.182307</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__medium_support_bucket_oil__linen(2.1874) / cat__is_3d_candidate_False(2.0988) / cat__artist_key_byung kwan kim(0.3140)</td>
+      <td>cat__support_category_linen(-0.7973) / cat__medium_category_oil(-0.5050) / num__height_cm(-0.1399) / num__aspect_ratio(-0.0011) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>10175</td>
+      <td>855600.0</td>
+      <td>7.497358e+05</td>
+      <td>0.123731</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__artist_key_hyesoo han(0.8340) / cat__medium_support_bucket_other__linen(0.8279)</td>
+      <td>cat__support_category_linen(-0.7973) / num__log_area(-0.5705) / num__width_cm(-0.3997) / cat__medium_category_other(-0.3979) / num__height_cm(-0.3093)</td>
+    </tr>
+    <tr>
+      <td>20489</td>
+      <td>2097600.0</td>
+      <td>1.842811e+06</td>
+      <td>0.121467</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_oil__canvas(0.4132)</td>
+      <td>cat__medium_category_oil(-0.5050) / num__width_cm(-0.2532) / num__log_area(-0.1749) / num__height_cm(-0.1414) / cat__artist_key_dallrye kang(-0.1129)</td>
+    </tr>
+    <tr>
+      <td>200</td>
+      <td>284280.0</td>
+      <td>2.515421e+05</td>
+      <td>0.115161</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__artist_key_ro un lee(-1.5620) / cat__medium_support_bucket_mixed_media__canvas(-0.4980) / num__log_area(-0.4558) / num__width_cm(-0.3247) / num__height_cm(-0.3136)</td>
+    </tr>
+    <tr>
+      <td>164</td>
+      <td>3760500.0</td>
+      <td>4.158791e+06</td>
+      <td>0.105914</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__medium_support_bucket_acrylic__linen(2.2523) / cat__is_3d_candidate_False(2.0988) / num__log_area(0.2756)</td>
+      <td>cat__support_category_linen(-0.7973) / cat__medium_category_acrylic(-0.6108) / cat__artist_key_jiwon jang(-0.2163) / num__area_cm2(-0.0099) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>53235</td>
+      <td>1992700.0</td>
+      <td>1.783459e+06</td>
+      <td>0.105004</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_oil__canvas(0.4132)</td>
+      <td>cat__artist_key_wichuda khuntijit(-1.2038) / cat__medium_category_oil(-0.5050) / num__area_cm2(-0.0628) / cat__artist_key_jung boram(-0.0000) / cat__artist_key_mooa 무아(0.0000)</td>
+    </tr>
+    <tr>
+      <td>54706</td>
+      <td>18988000.0</td>
+      <td>2.092616e+07</td>
+      <td>0.102073</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__linen(1.4336) / num__height_cm(1.1242)</td>
+      <td>num__area_cm2(-1.0129) / cat__support_category_linen(-0.7973) / cat__artist_key_infrequent_sklearn(-0.1479) / num__depth_cm(-0.0001) / cat__artist_key_mori ju(-0.0000)</td>
+    </tr>
+    <tr>
+      <td>18893</td>
+      <td>3436200.0</td>
+      <td>3.100233e+06</td>
+      <td>0.097773</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__fabric(0.6082) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__support_category_fabric(-0.3244) / cat__artist_key_infrequent_sklearn(-0.1479) / num__height_cm(-0.0759) / num__aspect_ratio(-0.0050) / num__depth_cm(-0.0002)</td>
+    </tr>
+    <tr>
+      <td>36562</td>
+      <td>13800000.0</td>
+      <td>1.255780e+07</td>
+      <td>0.090015</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / num__width_cm(0.8184)</td>
+      <td>num__area_cm2(-0.5620) / cat__medium_category_oil(-0.5050) / cat__artist_key_infrequent_sklearn(-0.1479) / num__depth_cm(-0.0001) / cat__artist_key_mooa 무아(0.0000)</td>
+    </tr>
+    <tr>
+      <td>36380</td>
+      <td>1104000.0</td>
+      <td>1.004649e+06</td>
+      <td>0.089991</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_oil__canvas(0.4132)</td>
+      <td>num__log_area(-0.5277) / cat__medium_category_oil(-0.5050) / num__width_cm(-0.3494) / num__height_cm(-0.3377) / cat__artist_key_infrequent_sklearn(-0.1479)</td>
+    </tr>
+    <tr>
+      <td>8147</td>
+      <td>1312380.0</td>
+      <td>1.194585e+06</td>
+      <td>0.089757</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_acrylic__canvas(0.4709)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / num__log_area(-0.3768) / num__width_cm(-0.3317) / num__height_cm(-0.2440) / cat__artist_key_infrequent_sklearn(-0.1479)</td>
+    </tr>
+    <tr>
+      <td>2747</td>
+      <td>2539200.0</td>
+      <td>2.681886e+06</td>
+      <td>0.056193</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_oil__canvas(0.4132)</td>
+      <td>cat__medium_category_oil(-0.5050) / cat__artist_key_kim jae hyeon(-0.2557) / num__width_cm(-0.0402) / num__height_cm(-0.0367) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>14511</td>
+      <td>2049300.0</td>
+      <td>1.941373e+06</td>
+      <td>0.052665</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_oil__canvas(0.4132)</td>
+      <td>cat__medium_category_oil(-0.5050) / num__height_cm(-0.2027) / cat__artist_key_infrequent_sklearn(-0.1479) / num__width_cm(-0.1453) / num__log_area(-0.1280)</td>
+    </tr>
+    <tr>
+      <td>25804</td>
+      <td>4968000.0</td>
+      <td>4.738532e+06</td>
+      <td>0.046189</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_False(2.4153) / cat__is_3d_candidate_False(2.0988) / cat__support_category_unknown(1.7725) / num__log_area(0.2627)</td>
+      <td>cat__medium_category_print(-0.8113) / cat__artist_key_infrequent_sklearn(-0.1479) / cat__medium_support_bucket_print__unknown(-0.0450) / num__area_cm2(-0.0020) / num__depth_cm(-0.0001)</td>
+    </tr>
+    <tr>
+      <td>52747</td>
+      <td>1280000.0</td>
+      <td>1.223920e+06</td>
+      <td>0.043812</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__paper(0.4821) / cat__artist_key_sangun ho(0.3725)</td>
+      <td>num__log_area(-0.6311) / num__height_cm(-0.3988) / num__width_cm(-0.3459) / cat__support_category_paper(-0.1455) / num__depth_cm(-0.0003)</td>
+    </tr>
+    <tr>
+      <td>14260</td>
+      <td>6582600.0</td>
+      <td>6.342983e+06</td>
+      <td>0.036402</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_acrylic__canvas(0.4709)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / num__area_cm2(-0.1627) / cat__artist_key_infrequent_sklearn(-0.1479) / cat__artist_key_mooa 무아(0.0000) / cat__artist_key_mori ju(-0.0000)</td>
+    </tr>
+    <tr>
+      <td>52537</td>
+      <td>4000000.0</td>
+      <td>4.069110e+06</td>
+      <td>0.017278</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__support_category_canvas(0.9098) / cat__medium_support_bucket_acrylic__canvas(0.4709)</td>
+      <td>cat__medium_category_acrylic(-0.6108) / cat__artist_key_yislow(-0.1680) / num__area_cm2(-0.0099) / num__depth_cm(-0.0000) / cat__artist_key_mooa 무아(0.0000)</td>
+    </tr>
+    <tr>
+      <td>12967</td>
+      <td>2608200.0</td>
+      <td>2.613452e+06</td>
+      <td>0.002014</td>
+      <td>cat__is_extreme_aspect_ratio_False(4.8134) / cat__has_depth_True(2.3981) / cat__is_3d_candidate_False(2.0988) / cat__medium_support_bucket_mixed_media__fabric(0.6082) / cat__medium_category_mixed_media(0.3387)</td>
+      <td>cat__support_category_fabric(-0.3244) / num__width_cm(-0.1197) / cat__artist_key_jieun kim(-0.0237) / cat__artist_key_mori ju(-0.0000) / cat__artist_key_munja lee(0.0000)</td>
+    </tr>
+  </tbody>
+</table>
+</body></html>

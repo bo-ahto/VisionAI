@@ -1,0 +1,76 @@
+{
+  "experiment_id": "PP-WHUBER8",
+  "title": "Warm residual Huber 반복 split/OOF 재검증",
+  "run_at": "2026-06-06T23:39:53",
+  "seed": 20260606,
+  "n_splits": 5,
+  "n_repeats": 8,
+  "current_candidate": "blend_svcnum_ppv8_wsvc_0.70",
+  "candidate_specs": [
+    {
+      "candidate": "PP-WHUBER7_mdape_best_predbin_mid_open_tail_guard",
+      "source_candidate": "PP-WHUBER7_pred_size_material_svc_artist_eps1.60_alpha0p001_predbin_mid_open_tail_guard_cap0p06_s0p35",
+      "role": "MdAPE 우선 후보",
+      "feature_set": "pred_size_material_svc_artist",
+      "epsilon": 1.6,
+      "alpha": 0.001,
+      "method": "pred_bin_cap",
+      "cap": 0.06,
+      "strength": 0.35,
+      "policy": "mid_open_tail_guard"
+    },
+    {
+      "candidate": "PP-WHUBER7_balanced_all_metric_predbin_mid_open_tail_guard",
+      "source_candidate": "PP-WHUBER7_pred_size_material_svc_artist_eps1.35_alpha0p01_predbin_mid_open_tail_guard_cap0p08_s0p25",
+      "role": "세 지표 균형 후보",
+      "feature_set": "pred_size_material_svc_artist",
+      "epsilon": 1.35,
+      "alpha": 0.01,
+      "method": "pred_bin_cap",
+      "cap": 0.08,
+      "strength": 0.25,
+      "policy": "mid_open_tail_guard"
+    },
+    {
+      "candidate": "PP-WHUBER7_tail_guard_directional_under",
+      "source_candidate": "PP-WHUBER7_pred_size_svc_eps1.05_alpha0p001_dir_under_guard_cap0p08",
+      "role": "큰 오차 방어 후보",
+      "feature_set": "pred_size_svc",
+      "epsilon": 1.05,
+      "alpha": 0.001,
+      "method": "directional_strength",
+      "cap": 0.08,
+      "strength": NaN,
+      "policy": "under_guard"
+    },
+    {
+      "candidate": "PP-WHUBER7_validation_mdape_predbin_mid_open_tail_guard",
+      "source_candidate": "PP-WHUBER7_pred_size_svc_eps1.05_alpha0p001_predbin_mid_open_tail_guard_cap0p08_s0p35",
+      "role": "validation MdAPE 선택 후보",
+      "feature_set": "pred_size_svc",
+      "epsilon": 1.05,
+      "alpha": 0.001,
+      "method": "pred_bin_cap",
+      "cap": 0.08,
+      "strength": 0.35,
+      "policy": "mid_open_tail_guard"
+    },
+    {
+      "candidate": "PP-WHUBER7_validation_balanced_predbin_mid_open_tail_guard",
+      "source_candidate": "PP-WHUBER7_pred_size_svc_eps1.20_alpha0p01_predbin_mid_open_tail_guard_cap0p08_s0p35",
+      "role": "validation 균형 선택 후보",
+      "feature_set": "pred_size_svc",
+      "epsilon": 1.2,
+      "alpha": 0.01,
+      "method": "pred_bin_cap",
+      "cap": 0.08,
+      "strength": 0.35,
+      "policy": "mid_open_tail_guard"
+    }
+  ],
+  "leakage_control": {
+    "oof": "each validation holdout is predicted by residual model fitted on the other validation folds",
+    "test_once": "candidate residual model fitted on full validation and applied once to test",
+    "base_prediction": "fixed current Warm candidate prediction"
+  }
+}

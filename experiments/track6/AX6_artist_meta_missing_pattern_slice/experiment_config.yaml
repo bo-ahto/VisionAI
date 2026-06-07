@@ -1,0 +1,11 @@
+experiment_id: AX6
+status: 계획
+group: AX
+label: AX6
+title: 작가 메타 결측 패턴별 성능 실험
+hypothesis: 생년/국적/활동량 정보가 비어 있는 작가군은 예측 오차가 커질 수 있다.
+purpose: 메타 값을 넣는 실험이 아니라 결측 자체의 위험도를 확인한다.
+train_features: artist_meta_missing_flags + artist_meta_completeness_score
+test_features: 학습 피처와 동일
+models: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+decision: 결측 구간 오차가 높으면 서비스 신뢰도 경고 후보로 둔다.

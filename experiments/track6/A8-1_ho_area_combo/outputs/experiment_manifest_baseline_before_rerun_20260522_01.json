@@ -1,0 +1,163 @@
+{
+  "created_at": "2026-05-22T11:51:07",
+  "experiment_id": "A8-1",
+  "description": "Ho and area combination comparison using Track6 split with year, type, edition, and reusable ho-size enrichment",
+  "run_mode": "full_split_no_sampling",
+  "split_root": "data/track6_split_with_year_type_edition_size",
+  "seed": 20260521,
+  "runner_file": "scripts/track6/fixed_variable_experiment_runner.py",
+  "config_file": "experiments/track6/A8-1_ho_area_combo/experiment_config.json",
+  "prompt_file": "experiments/track6/A8-1_ho_area_combo/prompts/used_prompt.md",
+  "feature_processing": {
+    "numeric_features": [
+      "estimated_ho",
+      "ln_estimated_ho",
+      "area_cm2",
+      "log_area",
+      "width_cm",
+      "height_cm"
+    ],
+    "numeric_imputation": "median",
+    "categorical_encoding": "one_hot_handle_unknown_ignore"
+  },
+  "data_policy": {
+    "train": "fixed Track6 train split only",
+    "warm_test": "fixed Track6 warm test split only",
+    "cold_test": "fixed Track6 cold test split only",
+    "join_key": "_track6_row_id",
+    "label_usage": "labels are used for train target and test metric calculation, not as model input",
+    "sampling": "disabled"
+  },
+  "source_files": {
+    "train_features": "data/track6_split_with_year_type_edition_size/features/warm/track6_train_warm_features.csv",
+    "train_labels": "data/track6_split_with_year_type_edition_size/labels/track6_train_labels.csv",
+    "warm_features": "data/track6_split_with_year_type_edition_size/features/warm/track6_test_warm_warm_features.csv",
+    "warm_labels": "data/track6_split_with_year_type_edition_size/labels/track6_test_warm_labels.csv",
+    "cold_features": "data/track6_split_with_year_type_edition_size/features/cold/track6_test_cold_cold_features.csv",
+    "cold_labels": "data/track6_split_with_year_type_edition_size/labels/track6_test_cold_labels.csv"
+  },
+  "rows": {
+    "train": 26914,
+    "test_warm": 607,
+    "test_cold": 3099
+  },
+  "variable_blocks": [
+    {
+      "name": "호수 원값",
+      "features": [
+        "estimated_ho"
+      ],
+      "description": "면적을 F형 표준 호수로 환산한 값만 사용"
+    },
+    {
+      "name": "로그 호수",
+      "features": [
+        "ln_estimated_ho"
+      ],
+      "description": "표준 호수에 로그 변환을 적용한 값만 사용"
+    },
+    {
+      "name": "면적 원값",
+      "features": [
+        "area_cm2"
+      ],
+      "description": "가로 x 세로로 계산한 실제 면적만 사용"
+    },
+    {
+      "name": "로그 면적",
+      "features": [
+        "log_area"
+      ],
+      "description": "실제 면적에 로그 변환을 적용한 값만 사용"
+    },
+    {
+      "name": "로그 호수 + 로그 면적",
+      "features": [
+        "ln_estimated_ho",
+        "log_area"
+      ],
+      "description": "표준화된 크기와 실측 면적의 로그 표현을 함께 사용"
+    },
+    {
+      "name": "호수 원값 + 면적 원값",
+      "features": [
+        "estimated_ho",
+        "area_cm2"
+      ],
+      "description": "표준 호수와 실제 면적 원값을 함께 사용"
+    },
+    {
+      "name": "로그 호수 + 가로세로",
+      "features": [
+        "ln_estimated_ho",
+        "width_cm",
+        "height_cm"
+      ],
+      "description": "표준 호수와 실제 가로/세로를 함께 사용"
+    },
+    {
+      "name": "로그 호수 + 로그 면적 + 가로세로",
+      "features": [
+        "ln_estimated_ho",
+        "log_area",
+        "width_cm",
+        "height_cm"
+      ],
+      "description": "표준 호수, 면적, 가로/세로를 모두 함께 사용"
+    }
+  ],
+  "models": [
+    {
+      "code": "A",
+      "scope": "Warm",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "B",
+      "scope": "Warm",
+      "name": "Linear Regression",
+      "kind": "linear"
+    },
+    {
+      "code": "C",
+      "scope": "Warm",
+      "name": "Ridge",
+      "kind": "ridge"
+    },
+    {
+      "code": "D",
+      "scope": "Cold",
+      "name": "Huber",
+      "kind": "huber"
+    },
+    {
+      "code": "E",
+      "scope": "Cold",
+      "name": "Quantile-LAD",
+      "kind": "quantile"
+    },
+    {
+      "code": "F",
+      "scope": "Cold",
+      "name": "LightGBM",
+      "kind": "lightgbm"
+    }
+  ],
+  "generated_files": {
+    "train_features": "experiments/track6/A8-1_ho_area_combo/data/train_features.csv",
+    "train_labels": "experiments/track6/A8-1_ho_area_combo/data/train_labels.csv",
+    "test_warm_features": "experiments/track6/A8-1_ho_area_combo/data/test_warm_features.csv",
+    "test_warm_labels": "experiments/track6/A8-1_ho_area_combo/data/test_warm_labels.csv",
+    "test_cold_features": "experiments/track6/A8-1_ho_area_combo/data/test_cold_features.csv",
+    "test_cold_labels": "experiments/track6/A8-1_ho_area_combo/data/test_cold_labels.csv"
+  },
+  "copied_source_files": {
+    "train_features_source": "experiments/track6/A8-1_ho_area_combo/source_data/track6_train_warm_features.csv",
+    "train_labels_source": "experiments/track6/A8-1_ho_area_combo/source_data/track6_train_labels.csv",
+    "test_warm_features_source": "experiments/track6/A8-1_ho_area_combo/source_data/track6_test_warm_warm_features.csv",
+    "test_warm_labels_source": "experiments/track6/A8-1_ho_area_combo/source_data/track6_test_warm_labels.csv",
+    "test_cold_features_source": "experiments/track6/A8-1_ho_area_combo/source_data/track6_test_cold_cold_features.csv",
+    "test_cold_labels_source": "experiments/track6/A8-1_ho_area_combo/source_data/track6_test_cold_labels.csv"
+  }
+}

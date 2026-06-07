@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>모델 구조 기반 피처 영향 해석 보고서</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:32px;color:#1f2933;line-height:1.58}
+    h1{font-size:28px;margin-bottom:8px} h2{font-size:21px;margin-top:32px;border-bottom:1px solid #d9e2ec;padding-bottom:6px}
+    h3{font-size:17px;margin-top:24px}.note{background:#f5f7fa;border-left:4px solid #486581;padding:12px 14px;margin:16px 0}
+    table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0 24px}
+    th,td{border:1px solid #d9e2ec;padding:7px 8px;vertical-align:top} th{background:#f0f4f8;text-align:left}
+    code{background:#f0f4f8;padding:2px 4px;border-radius:4px}
+  </style>
+</head>
+<body>
+<h1>모델 구조 기반 피처 영향 해석 보고서</h1>
+<p>작성일: <code>2026-05-31</code></p>
+<div class="note">최종 artifact 기준으로 Warm Huber, Cold CatBoost, Cold LightGBM의 모델 구조에 맞춰 피처 영향도를 다시 해석했다.</div>
+
+<h2>1. 전체 결론</h2>
+<ul>
+  <li>기존 해석 산출물은 최종 artifact와 피처셋이 달라 최종 모델 설명 자료로 그대로 쓰기 어렵다.</li>
+  <li>Warm Huber는 계수와 실제 기여도, CatBoost는 SHAP/interaction/leaf segment, LightGBM은 permutation/leaf-wise/tail slice 중심으로 해석해야 한다.</li>
+  <li>세 모델 모두 크기 계열 피처가 가장 강한 가격 설명 축이다.</li>
+  <li>CatBoost는 <code>크기 × 깊이</code>, <code>깊이 × 재료</code>, <code>크기 × 재료/지지체</code> interaction이 중요하다.</li>
+  <li>LightGBM은 <code>area_cm2</code>에 매우 민감하며 p95 tail risk가 CatBoost보다 크다.</li>
+</ul>
+
+<h2>2. Warm Huber</h2>
+<table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody>
+<tr><td>모델 구조</td><td>선형 회귀 기반 HuberRegressor</td></tr>
+<tr><td>손실 특성</td><td>작은 오차는 제곱 손실, 큰 오차는 선형 손실</td></tr>
+<tr><td>해석 단위</td><td>계수, 원 단위 환산 계수, 입력값 × 계수, Huber outlier 여부</td></tr>
+<tr><td>test 성능</td><td>MdAPE <code>0.2241</code>, p95_APE <code>2.0209</code>, RMSE_log <code>0.6093</code></td></tr>
+<tr><td>outlier 비율</td><td>test 기준 <code>48.9%</code></td></tr>
+</tbody></table>
+<p>Huber는 선형 모델이므로 직접 계수 해석이 가능하다. 다만 숫자형은 표준화 후 들어가므로 원 단위 환산 계수를 같이 봐야 하고, 범주형 one-hot은 원계수보다 centered contribution 기준으로 해석해야 한다.</p>
+<p>최종 artifact 기준 피처 그룹 기여도는 <code>size &gt; medium_support &gt; support &gt; medium &gt; artist &gt; depth_3d &gt; shape</code> 순서다.</p>
+
+<h2>3. Cold CatBoost</h2>
+<table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody>
+<tr><td>모델 구조</td><td>CatBoost 대칭 트리, Oblivious Tree</td></tr>
+<tr><td>최종 피처셋</td><td><code>base_medium_shape</code></td></tr>
+<tr><td>tree/depth</td><td>tree <code>500</code>, inferred depth <code>6</code>, 트리당 leaf 중앙값 <code>64</code></td></tr>
+<tr><td>test 성능</td><td>MdAPE <code>0.4843</code>, p95_APE <code>4.4183</code>, RMSE_log <code>0.9549</code></td></tr>
+</tbody></table>
+<h3>SHAP 상위</h3>
+<table><thead><tr><th>순위</th><th>피처</th><th>mean_abs_SHAP</th><th>해석</th></tr></thead><tbody>
+<tr><td>1</td><td><code>width_cm</code></td><td>0.2629</td><td>크기 축 중 가장 강한 단독 영향</td></tr>
+<tr><td>2</td><td><code>area_cm2</code></td><td>0.2217</td><td>면적 기반 가격대 분리</td></tr>
+<tr><td>3</td><td><code>log_area</code></td><td>0.1974</td><td>로그 크기 기반 가격대 안정화</td></tr>
+<tr><td>4</td><td><code>height_cm</code></td><td>0.1266</td><td>세로 크기 보조</td></tr>
+<tr><td>5</td><td><code>depth_cm</code></td><td>0.0940</td><td>깊이 조건에서 가격대 분기</td></tr>
+</tbody></table>
+<h3>Interaction 상위</h3>
+<table><thead><tr><th>순위</th><th>interaction</th><th>score</th><th>해석</th></tr></thead><tbody>
+<tr><td>1</td><td><code>width_cm × depth_cm</code></td><td>5.5493</td><td>크기와 깊이 조합으로 2D/3D 또는 대형작 조건을 구분</td></tr>
+<tr><td>2</td><td><code>height_cm × depth_cm</code></td><td>5.2242</td><td>세로 크기와 깊이 조합으로 가격 구간 분화</td></tr>
+<tr><td>3</td><td><code>depth_cm × aspect_ratio</code></td><td>5.1604</td><td>깊이와 형태 비율이 함께 작동</td></tr>
+<tr><td>4</td><td><code>depth_cm × medium_category</code></td><td>4.8243</td><td>깊이 효과가 재료에 따라 다르게 작동</td></tr>
+<tr><td>5</td><td><code>depth_cm × area_cm2</code></td><td>4.6171</td><td>면적과 깊이 조합이 큰 작품 구간을 설명</td></tr>
+</tbody></table>
+<p>CatBoost는 대칭 트리 구조이므로 단독 importance보다 interaction과 leaf segment residual을 함께 봐야 한다. leaf pattern coverage가 낮아 leaf 단독 보정보다는 <code>leaf pattern → medium_shape_bucket → shape/medium → overall</code> fallback 보정이 적합하다.</p>
+
+<h2>4. Cold LightGBM</h2>
+<table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody>
+<tr><td>모델 구조</td><td>leaf-wise gradient boosting tree</td></tr>
+<tr><td>최종 피처셋</td><td><code>base_support_size</code></td></tr>
+<tr><td>tree 수</td><td><code>350</code></td></tr>
+<tr><td>test 성능</td><td>MdAPE <code>0.4797</code>, p95_APE <code>5.0569</code>, RMSE_log <code>0.9551</code></td></tr>
+</tbody></table>
+<table><thead><tr><th>관점</th><th>핵심 피처/구간</th><th>해석</th></tr></thead><tbody>
+<tr><td>split importance</td><td><code>depth_cm</code>, <code>aspect_ratio</code>, <code>area_cm2</code>, <code>width_cm</code>, <code>height_cm</code></td><td>깊이, 형태, 크기 피처를 많이 사용</td></tr>
+<tr><td>permutation</td><td><code>area_cm2</code> MdAPE delta <code>+0.2542</code>, p95 delta <code>+7.5139</code></td><td>면적 의존도가 매우 높고 tail에도 큰 영향</td></tr>
+<tr><td>tail slice</td><td><code>canvas__q5</code>, <code>acrylic</code>, <code>q3</code>, <code>canvas__q3</code></td><td>특정 크기/지지체/재료 구간에서 큰 오차 발생</td></tr>
+</tbody></table>
+<p>LightGBM은 평균 MdAPE는 CatBoost와 비슷하지만 p95 tail risk가 더 크다. 따라서 leaf 단위 보정보다는 <code>pred_log bin</code>, <code>size_bucket</code>, <code>support_size_bucket</code> 기반 tail 안정화 보정이 더 적합하다.</p>
+
+<h2>5. 모델별 해석/보정 원칙</h2>
+<table><thead><tr><th>모델</th><th>해석 우선 기준</th><th>피해야 할 해석</th><th>적합한 보정</th></tr></thead><tbody>
+<tr><td>Warm Huber</td><td>계수, 원 단위 환산 계수, 실제 기여도, outlier 여부</td><td>범주형 one-hot 원계수 단순 비교</td><td>global median residual, group residual</td></tr>
+<tr><td>Cold CatBoost</td><td>SHAP, interaction, leaf segment residual</td><td>importance 순위만으로 단독 영향 단정</td><td>leaf/segment residual + fallback</td></tr>
+<tr><td>Cold LightGBM</td><td>permutation, tail slice, leaf-wise 진단</td><td>split importance만으로 영향 단정</td><td>pred bin, size/support bucket, tail 안정화</td></tr>
+</tbody></table>
+</body>
+</html>

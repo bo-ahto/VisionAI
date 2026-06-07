@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Track6 중간 실험 결과 요약 및 후처리 계획</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5efe3;color:#17211d;margin:0;padding:32px;line-height:1.68}
+    .container{max-width:1280px;margin:0 auto}
+    section{background:#fffaf0;border:1px solid #d7c39e;border-radius:18px;padding:26px;margin:22px 0;box-shadow:0 6px 20px rgba(60,40,20,.06)}
+    h1{font-size:42px;margin:0 0 10px}
+    h2{border-left:6px solid #1f3b5c;padding-left:12px;margin-top:0}
+    h3{margin-top:26px}
+    table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+    th,td{border:1px solid #cdbb9a;padding:10px;vertical-align:top}
+    th{background:#e4d6bf;text-align:left}
+    .badge{display:inline-block;background:#eee5d5;border-radius:6px;padding:1px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .card{background:#fbf4e6;border:1px solid #d7c39e;border-radius:14px;padding:16px}
+    .note{background:#fff2df;border-left:5px solid #b46b2a;padding:14px 16px;border-radius:10px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}body{padding:16px}}
+  </style>
+</head>
+<body>
+<div class="container">
+  <section>
+    <h1>Track6 중간 실험 결과 요약 및 후처리 계획</h1>
+    <p>이 문서는 A~J 그룹 실험과 후속 모델 비교 실험을 바탕으로, 어떤 피처가 가격 예측에 도움이 됐는지와 앞으로 어떤 후처리를 해야 하는지 정리한 보고용 문서입니다.</p>
+    <ul>
+      <li>목적: 실험 결과를 일일이 보지 않아도 현재 결론을 이해할 수 있게 정리</li>
+      <li>평가 구분: Warm / Cold 분리</li>
+      <li>핵심 지표: <span class="badge">MdAPE</span>, <span class="badge">p95_APE</span>, <span class="badge">Within_30</span></li>
+      <li>보고 기준: 어려운 모델 용어보다 실제 의미 중심으로 설명</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>1. 전체 결론</h2>
+    <ul>
+      <li>Warm은 작가명이 가장 큰 영향을 준다.</li>
+      <li>Warm에서는 작가명만 쓰는 것보다 실제 크기 정보를 함께 쓰는 것이 크게 좋았다.</li>
+      <li>Warm 후보 모델은 현재 <span class="badge">Huber</span>가 가장 안정적이다.</li>
+      <li>Cold는 작가명을 직접 쓸 수 없으므로 작품 자체 정보와 작가 메타 정보가 중요하다.</li>
+      <li>Cold에서는 <span class="badge">CatBoost</span>가 현재 가장 좋은 후보로 확인됐다.</li>
+      <li>Cold에서 가장 유효한 피처 조합은 <span class="badge">작품 기본 피처 + 활동량/인지도 정보</span>다.</li>
+      <li>재료, 지지체, 제작연도, 작품 유형, 깊이, 에디션은 단독으로 강하지 않았다.</li>
+      <li>후처리는 특히 Cold에서 중요하다. Cold는 단일 예측값만으로는 위험한 구간이 남아 있다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. 결론과 실험 근거 요약</h2>
+    <table>
+      <thead><tr><th>결론</th><th>근거 실험</th><th>확인 내용</th><th>현재 판단</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Warm은 작가명 영향이 크다.</td>
+          <td>Group B, Group C, WM1</td>
+          <td>작가명만 넣어도 개선됐고, 작가명에 실제 크기를 더하면 Warm 대표 오차가 크게 낮아졌다.</td>
+          <td>Warm 모델에는 작가명을 유지한다.</td>
+        </tr>
+        <tr>
+          <td>Warm은 실제 크기 정보가 중요하다.</td>
+          <td>A2~A7, C1, D8, WM1</td>
+          <td>호수보다 가로, 세로, 로그 면적, 비율을 함께 쓴 조합이 더 좋은 결과를 냈다.</td>
+          <td>Warm 후보 피처는 실제 크기 중심으로 둔다.</td>
+        </tr>
+        <tr>
+          <td>Warm 모델은 Huber가 유리하다.</td>
+          <td>WM1 모델군 비교</td>
+          <td>상위 Warm 조합에서 Huber가 MdAPE와 안정성 기준 모두 강했다.</td>
+          <td>Warm 1차 운영 후보는 Huber로 둔다.</td>
+        </tr>
+        <tr>
+          <td>Cold는 작가명 대신 활동량/인지도 정보가 중요하다.</td>
+          <td>E~J, CM1, OPT-C 계열</td>
+          <td>작품 기본 피처에 총 작품 수, 판매 중 작품 수, 팔로워 수, 주요 작가 여부를 더했을 때 Cold 성능이 가장 좋았다.</td>
+          <td>Cold는 작품 기본 피처와 작가 메타를 함께 사용한다.</td>
+        </tr>
+        <tr>
+          <td>Cold 모델은 CatBoost가 1순위다.</td>
+          <td>CM1 CatBoost 비교</td>
+          <td>Cold 후보 비교에서 CatBoost가 MdAPE 0.4488로 가장 좋은 후보였다.</td>
+          <td>Cold 1차 운영 후보는 CatBoost로 둔다.</td>
+        </tr>
+        <tr>
+          <td>Cold는 후처리가 필요하다.</td>
+          <td>Cold p95_APE, Within_30 비교</td>
+          <td>Cold 대표 오차는 개선됐지만 큰 오차 구간과 30% 이내 적중률 한계가 남아 있다.</td>
+          <td>가격대별 보정, 신뢰도 구간, 위험 구간 라우팅을 추가 검증한다.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>3. 실험군별 역할</h2>
+    <table>
+      <thead><tr><th>실험군</th><th>역할</th><th>확인한 질문</th><th>결론 활용</th></tr></thead>
+      <tbody>
+        <tr><td>Group A</td><td>작품 변수 단독 확인</td><td>작가명 없이 작품 정보만으로 가격을 설명할 수 있는가?</td><td>작품 기본 피처 후보 선정</td></tr>
+        <tr><td>Group B</td><td>작가 변수 단독 확인</td><td>작가명과 작가 메타만으로 가격대가 설명되는가?</td><td>작가 효과와 메타 피처 가치 판단</td></tr>
+        <tr><td>Group C</td><td>작가명 + 작품 변수 확인</td><td>작가명을 넣은 뒤에도 작품 변수가 추가로 도움이 되는가?</td><td>Warm 피처 조합 선정</td></tr>
+        <tr><td>Group D</td><td>작품 변수끼리의 조합 확인</td><td>크기, 재료, 지지체 조합에서 가격 차이가 생기는가?</td><td>조합 피처 후보 판단</td></tr>
+        <tr><td>Group E~G</td><td>작가 메타 효과 확인</td><td>작가 활동량, 인지도, 생년, 국적이 예측에 도움이 되는가?</td><td>Cold 작가 메타 후보 선정</td></tr>
+        <tr><td>Group H~J</td><td>작가 메타와 작품 변수 조합 확인</td><td>작가 특성에 따라 크기/재료 효과가 달라지는가?</td><td>Cold 보완 피처와 후처리 후보 판단</td></tr>
+        <tr><td>OPT/WM/CM</td><td>상위 조합 재비교</td><td>실제 운영 후보로 어떤 피처와 모델을 고를 것인가?</td><td>최종 후보 모델 선정 근거</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>4. Warm 결과</h2>
+    <h3>영향이 큰 피처</h3>
+    <table>
+      <thead><tr><th>피처/효과</th><th>확인 결과</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr><td>작가명 + 전체 크기</td><td>MdAPE 약 64% 개선</td><td>Warm에서 가장 강한 개선 축</td></tr>
+        <tr><td>작가명 + 호수/작품 기본 피처</td><td>MdAPE 약 59% 개선</td><td>작가명 단독보다 작품 정보 추가가 필요</td></tr>
+        <tr><td>작가명 단독</td><td>MdAPE 약 14% 개선</td><td>작가명만으로도 가격대 일부 설명 가능</td></tr>
+        <tr><td>재료 + 크기</td><td>MdAPE 약 6% 개선</td><td>재료는 단독보다 크기와 묶을 때 효과 있음</td></tr>
+        <tr><td>지지체 + 크기/재료</td><td>MdAPE 약 3.5% 개선</td><td>지지체는 조합 피처로 의미 있음</td></tr>
+      </tbody>
+    </table>
+    <h3>Warm 후보</h3>
+    <table>
+      <thead><tr><th>후보</th><th>사용 피처</th><th>모델</th><th>MdAPE</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr><td>성능 후보</td><td>작가명 + 실제 크기 + 작가명 x 면적</td><td>Huber</td><td>0.1545</td><td>대표 오차가 가장 낮은 후보</td></tr>
+        <tr><td>안정 후보</td><td>작가명 + 실제 크기 + 작가 학습 작품 수</td><td>Huber</td><td>0.1562</td><td>Within_30이 높아 안정성 후보</td></tr>
+        <tr><td>운영 후보</td><td>작가명 + 실제 크기</td><td>Huber</td><td>0.1566</td><td>구조가 단순하고 설명하기 쉬움</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <ul>
+        <li>Warm은 작가명 효과가 매우 크다.</li>
+        <li>실제 크기 정보가 붙으면 작품별 가격 차이를 더 잘 설명한다.</li>
+        <li>교차 피처는 성능을 조금 더 올릴 수 있지만 복잡도가 커진다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. Cold 결과</h2>
+    <h3>영향이 큰 피처</h3>
+    <table>
+      <thead><tr><th>피처/효과</th><th>확인 결과</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr><td>활동량/인지도 + CatBoost</td><td>MdAPE 약 6.4% 개선</td><td>현재 Cold 1순위 후보</td></tr>
+        <tr><td>활동량/판매 노출</td><td>MdAPE 약 4.6% 개선</td><td>신규 작가 예측에서 의미 있음</td></tr>
+        <tr><td>전체 작가 메타</td><td>MdAPE 약 2.3% 개선</td><td>일부 개선은 있으나 피처 수 대비 추가 검증 필요</td></tr>
+        <tr><td>작가 생년/세대</td><td>MdAPE 약 1.6% 개선</td><td>수집 품질이 좋아지면 보조 후보</td></tr>
+        <tr><td>활동량/인지도 x 면적</td><td>MdAPE 약 1.3% 개선</td><td>대형작과 시장 노출 조합 후보</td></tr>
+      </tbody>
+    </table>
+    <h3>Cold 후보</h3>
+    <table>
+      <thead><tr><th>후보</th><th>사용 피처</th><th>모델</th><th>MdAPE</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr><td>1순위 후보</td><td>호수 + 난트 재료/도구/지지체 + 총 작품 수 + 판매 중 작품 수 + 팔로워 수 + 주요 작가 여부</td><td>CatBoost</td><td>0.4488</td><td>현재 가장 좋은 Cold 후보</td></tr>
+        <tr><td>보조 후보</td><td>활동량/인지도 + 면적 교차 피처</td><td>LightGBM</td><td>0.4516</td><td>성능은 좋지만 큰 오차 위험 확인 필요</td></tr>
+        <tr><td>안정 후보</td><td>작품 기본 피처 + 활동량 + 결측 정보</td><td>LightGBM</td><td>0.4577</td><td>p95가 상대적으로 안정적</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <ul>
+        <li>Cold는 작가명을 직접 쓸 수 없다.</li>
+        <li>작품 기본 정보만으로는 한계가 있다.</li>
+        <li>작가 활동량/인지도 정보가 붙으면 성능이 좋아졌다.</li>
+        <li>Cold는 대표 오차가 줄어도 큰 오차 위험이 남아 있어 후처리가 필요하다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>6. 최종 후보 피처</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Warm 후보</h3>
+        <ul>
+          <li>작가명</li>
+          <li>가로</li>
+          <li>세로</li>
+          <li>로그 면적</li>
+          <li>가로세로 비율</li>
+          <li>작가 학습 작품 수</li>
+          <li>작가명 x 면적</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Cold 후보</h3>
+        <ul>
+          <li>로그 호수</li>
+          <li>난트 재료 번호</li>
+          <li>난트 도구</li>
+          <li>난트 지지체</li>
+          <li>총 작품 수</li>
+          <li>판매 중 작품 수</li>
+          <li>팔로워 수</li>
+          <li>주요 작가 여부</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>7. 후처리 계획</h2>
+    <table>
+      <thead><tr><th>우선순위</th><th>작업</th><th>이유</th><th>확인 지표</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Cold 가격대별 보정</td><td>특정 가격대에서 반복적으로 높게/낮게 예측하는 문제를 줄임</td><td>MdAPE, p95_APE, Within_30</td></tr>
+        <tr><td>2</td><td>Cold 신뢰도 구간 만들기</td><td>정보가 부족한 작가와 충분한 작가를 구분함</td><td>구간별 MdAPE, 구간별 p95_APE</td></tr>
+        <tr><td>3</td><td>Cold CatBoost + LightGBM 결과 섞기</td><td>한 모델의 약점을 다른 모델로 보완할 수 있는지 확인</td><td>MdAPE, p95_APE</td></tr>
+        <tr><td>4</td><td>Warm 저이력 작가 라우팅</td><td>작가명이 있어도 학습 작품 수가 적으면 과신 위험이 있음</td><td>작품 수 구간별 MdAPE</td></tr>
+        <tr><td>5</td><td>검색/소셜 인지도 피처 추가</td><td>Cold에서 활동량/인지도 정보가 효과를 보였으므로 외부 정보 확장 가능</td><td>Cold MdAPE, p95_APE</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>8. 후처리 실험 계획</h2>
+    <table>
+      <thead><tr><th>실험 ID</th><th>실험 내용</th><th>목적</th><th>판단 기준</th></tr></thead>
+      <tbody>
+        <tr><td>PP-A1</td><td>가격대별 예측 보정</td><td>저가/중가/고가 구간에서 반복되는 예측 치우침을 줄인다.</td><td>구간별 MdAPE와 p95_APE가 낮아지는지 확인</td></tr>
+        <tr><td>PP-A2</td><td>작품 크기 구간별 예측 보정</td><td>대형 작품과 소형 작품에서 예측이 다르게 틀리는지 확인한다.</td><td>크기 구간별 MdAPE와 Within_30 비교</td></tr>
+        <tr><td>PP-B1</td><td>남은 오차를 다시 학습하는 보정 모델</td><td>1차 모델이 남긴 오차를 2차 모델이 줄일 수 있는지 본다.</td><td>보정 전후 MdAPE, p95_APE 비교</td></tr>
+        <tr><td>PP-B2</td><td>작가 정보량 기반 오차 보정</td><td>작가 메타가 많은 경우와 적은 경우를 나눠 보정한다.</td><td>정보량 구간별 p95_APE 감소 여부</td></tr>
+        <tr><td>PP-C1</td><td>예측 가격대 재조정</td><td>예측값이 전반적으로 높거나 낮게 나오는 구간을 재조정한다.</td><td>MdAPE 개선과 과보정 여부 확인</td></tr>
+        <tr><td>PP-C2</td><td>Cold 가격 범위 폭 조정</td><td>Cold에서 단일 가격만 보여줄 때의 위험을 줄인다.</td><td>범위 안에 실제 가격이 들어오는 비율과 범위 폭 비교</td></tr>
+        <tr><td>PP-D1</td><td>CatBoost와 LightGBM 예측값 결합</td><td>두 모델의 장점을 섞어 더 안정적인 예측을 만들 수 있는지 본다.</td><td>MdAPE와 p95_APE 동시 개선 여부</td></tr>
+        <tr><td>PP-D2</td><td>Warm Huber와 보조 모델 결합</td><td>Warm에서 Huber가 놓치는 구간을 다른 모델이 보완하는지 확인한다.</td><td>Warm MdAPE와 p95_APE 비교</td></tr>
+        <tr><td>PP-E1</td><td>저위험/고위험 작품 구분</td><td>예측을 믿어도 되는 작품과 경고가 필요한 작품을 나눈다.</td><td>고위험 구간 p95_APE가 전체보다 높은지 확인</td></tr>
+        <tr><td>PP-E2</td><td>Warm 저이력 작가 fallback</td><td>학습 작품 수가 적은 작가를 Warm으로 처리해도 되는지 확인한다.</td><td>작가 작품 수 구간별 MdAPE 비교</td></tr>
+        <tr><td>PP-F1</td><td>신뢰도 등급 산정</td><td>예측 결과에 높음/보통/낮음 같은 신뢰도 표시를 붙일 수 있는지 본다.</td><td>신뢰도 등급별 실제 오차 차이 확인</td></tr>
+        <tr><td>PP-F2</td><td>가격 범위 표시 정책</td><td>단일 가격과 가격 범위를 함께 보여주는 방식을 검증한다.</td><td>사용 가능한 범위 폭과 실제 포함률 비교</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <ul>
+        <li>후처리 실험도 Warm과 Cold를 분리해서 기록한다.</li>
+        <li>최우선 지표는 MdAPE다.</li>
+        <li>Cold는 p95_APE와 가격 범위 폭을 함께 본다.</li>
+        <li>후처리로 대표 오차가 좋아져도 큰 오차가 늘어나면 채택하지 않는다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>9. 추가 데이터 수집 방향</h2>
+    <ul>
+      <li>작가 총 작품 수</li>
+      <li>판매 중 작품 수</li>
+      <li>팔로워 수</li>
+      <li>주요 작가 여부</li>
+      <li>작가 생년</li>
+      <li>작가 국적</li>
+      <li>개인전 수, 단체전 수, 아트페어 수</li>
+      <li>네이버/구글 검색 결과 수</li>
+      <li>뉴스/전시 페이지 언급 수</li>
+    </ul>
+    <p>검색 기반 데이터는 동명이인 문제가 생길 수 있으므로 작가명 단독 검색이 아니라 작가명 + 미술, 작가명 + gallery, 작가명 + exhibition 같은 조합으로 검증해야 합니다.</p>
+  </section>
+
+  <section>
+    <h2>10. 보고용 요약</h2>
+    <ul>
+      <li>Warm은 작가명과 실제 크기가 가장 중요하다.</li>
+      <li>Warm 모델은 Huber가 현재 가장 안정적이다.</li>
+      <li>Cold는 작가명을 쓸 수 없으므로 작품 기본 정보와 작가 활동량/인지도 정보가 중요하다.</li>
+      <li>Cold 모델은 CatBoost가 현재 가장 좋은 후보로 확인됐다.</li>
+      <li>Cold는 큰 오차 위험이 남아 있으므로 후처리와 신뢰도 표시가 필수다.</li>
+      <li>다음 단계는 모델을 무작정 늘리는 것이 아니라 예측값 보정, 위험 구간 관리, 가격 범위 제공을 검증하는 것이다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>11. 참고 파일</h2>
+    <ul>
+      <li><a href="track6_all_experiment_model_metrics_long.csv">전체 통합 지표 CSV</a></li>
+      <li><a href="track6_best_model_by_feature_block.csv">피처 조합별 모델 순위 CSV</a></li>
+      <li><a href="track6_feature_model_pivot_summary.csv">Warm/Cold 피처-모델 요약 CSV</a></li>
+      <li><a href="feature_influence_analysis.html">피처별 영향도 분석</a></li>
+      <li><a href="final_model_decision_and_enhancement_plan.html">최종 모델 후보 근거</a></li>
+      <li><a href="postprocessing_experiment_matrix.html">후처리 실험 계획</a></li>
+    </ul>
+  </section>
+</div>
+</body>
+</html>

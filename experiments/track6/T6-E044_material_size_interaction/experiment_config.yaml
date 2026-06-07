@@ -1,0 +1,19 @@
+experiment_id: T6-E044
+status: planned
+parent_experiment: T6-E038
+hypothesis_id: H6
+title: 재료 x 크기 조합 피처 실험
+hypothesis: 재료와 크기 조합 피처는 재료와 크기를 따로 넣는 것보다 가격 예측을 개선한다.
+features_under_test: nant_material_support_bucket, nant_material_idx_x_ho_bucket
+model: Warm: Huber/Linear/Ridge, Cold: Huber/Quantile-LAD/LightGBM
+base_features:
+  warm: artist_name_ko, ln_estimated_ho
+  cold: ln_estimated_ho
+single_material_features: nant_material_idx, nant_tool
+single_size_features: width_cm, height_cm, log_area, aspect_ratio, ln_estimated_ho
+interaction_features: nant_material_support_bucket, nant_material_idx_x_ho_bucket
+train_features: Warm single: artist_name_ko + ln_estimated_ho + nant_material_idx + nant_tool + width_cm + height_cm + log_area + aspect_ratio, Warm interaction: artist_name_ko + ln_estimated_ho + nant_material_idx_x_ho_bucket, Cold single: ln_estimated_ho + nant_material_idx + nant_tool + width_cm + height_cm + log_area + aspect_ratio, Cold interaction: ln_estimated_ho + nant_material_idx_x_ho_bucket
+test_features: 학습 피처와 동일
+target: ln_price_krw
+compare: 단독 피처 모델과 조합 피처 모델 비교
+success_criteria: 조합 피처 모델이 단독 피처 모델보다 성능이 좋으면 유지

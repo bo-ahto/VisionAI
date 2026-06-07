@@ -1,0 +1,36 @@
+{
+  "experiment_id": "PP-WCOEF",
+  "title": "Warm Huber 계수 세분화 및 잔차 보정 실험",
+  "run_at": "2026-06-06T02:07:13",
+  "seed": 20260606,
+  "current_candidate": "blend_svcnum_ppv8_wsvc_0.70",
+  "direct_huber_alphas": [
+    0.0001,
+    0.001,
+    0.01
+  ],
+  "residual_huber_alphas": [
+    0.001,
+    0.01
+  ],
+  "residual_caps": [
+    0.03,
+    0.05,
+    0.08,
+    0.12
+  ],
+  "residual_strengths": [
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "bootstrap_iterations": 300,
+  "leakage_control": {
+    "train_comparable_features": "PP-SVC5 train out-of-fold comparable features",
+    "artist_price_priors_train": "train internal out-of-fold",
+    "artist_price_priors_validation_test": "train-only",
+    "PP-WCOEF5_validation": "validation internal cross-fitting",
+    "PP-WCOEF5_test": "residual model fitted on full validation and applied to test"
+  }
+}
