@@ -504,6 +504,7 @@ PP-L은 MAPE 최적화가 목표이므로 공통 기준에 아래 기준을 추�
 | `PP-CGRP1` | 실행 완료 | 작가 미사용 비교군 그룹 가격 통계(매칭 사다리 L1 93.5%)를 Cold base LGB Quantile에 투입(PP-Y 미검증 갭). validation 전 지표 악화 — defense `0.3823/0.6115/1.6341`(base12) vs `0.3852/0.6387/1.6953`(+lean), bootstrap 개선확률 0.02~0.37. test-only MAPE/p95 개선은 원칙상 채택 불가 기록 | **기각** — 트리 base는 categorical 분기로 그룹 조건부 분포를 이미 학습(Warm 선형 Huber와 다름). 명시 통계는 분산만 추가 |
 | `PP-CTXT1` | 실행 완료 | 제목 TF-IDF(char2-4)+SVD32 residual 보정(커버리지 100%). OOF 보정 vs 잔차 상관 `0.039`, 격자 전체 validation 악화, 게이트 진입 0 | **기각** — 이미지(0.083)에 이어 텍스트도 작가 일반화 신호 없음. 콘텐츠 신호 축 종결 |
 | `PP-CCONF2` | 실행 완료 | high tier 경계 완화 격자. validation/holdout은 통과처럼 보임(share 50%, val p95 0.95, holdout P(p95<=1.5) 0.98~1.0)이나 **fixed test에서 확대 tier p95 4.40~4.76으로 붕괴**(동결 q33/g50은 0.99) | **기각** — v0.4 동결 경계가 유일하게 test 분포 이동을 견딤. tier 확장 금지 원칙화. validation 내부 holdout은 val→test 작가 이동을 감지 못함(fixed test 최종 확인의 효용 입증) |
+| `PP-CCORR2` | 실행 완료 | Warm식 모델 특성 보정 이식: 현행 후보 6종 V2식 Huber meta(합의도+clip) + 위험 구간 한정 라우팅. **meta OOF 예측력(상관 0.824)이 research base 단독(0.844)보다 낮음**, 라우팅 전 격자 validation MAPE 악화, 게이트 진입 0 | **기각** — 모델 특성 보정은 후보 다양성이 전제인데 Cold 후보들은 동일 계열·고상관이라 의견차에 정보 없음. Warm과의 구조적 차이 확정 |
 
 ### 보류 실험
 

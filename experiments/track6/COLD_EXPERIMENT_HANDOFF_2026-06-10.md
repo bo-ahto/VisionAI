@@ -76,3 +76,8 @@ experiments/track6/PP-PCOLD1_pseudo_cold_eval_set/outputs/pseudo_cold_metrics.cs
 ```
 
 base 예측 CSV 재생성: `python3 scripts/track6/run_pp_cbase1_cold_base_lock.py`
+
+
+## 추가 (PP-CCORR2): Warm식 모델 특성 보정도 기각
+
+V2식 meta-stack(현행 후보 6종)과 PP148식 위험 구간 라우팅 모두 게이트 진입 0. meta OOF 상관 0.824 < base 단독 0.844 — Cold 후보들은 동일 계열·고상관이라 의견차에 정보가 없음(후보 다양성 전제 불성립). 트랙 결론 변동 없음.
