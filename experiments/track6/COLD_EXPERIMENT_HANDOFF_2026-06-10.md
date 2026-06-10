@@ -46,7 +46,7 @@ Cold(unseen 작가) 가격 예측을 Warm Codex 운영 체계(base lock → 게�
 1. **상수 delta(-0.0313)를 미커버 작가 "p95 방어 모드"로 v0.3 정책 fallback에 반영할지** — MAPE/p95 방어 근거 강함(0.97~1.0), 대가는 MdAPE 소폭 악화. 서비스 목적(큰 오차 회피 vs 중앙 정확도)의 선택.
 2. **검색 수집 확대(2-3b) 착수 여부** — 기대 효과 정량화됨: 미커버 작가 MAPE 0.9381→0.8493 방향(outlier 작가 식별이 본질). cold 운영 트래픽 전망과 함께 판단.
 3. **Phase 3 (PP-CCORR)**: 잔여 보정 직교 결합 — CDIAG1 위험 구간 기반, guard/search 층과 redundancy 분해 필수.
-4. **Phase 4 (운영 반영)**: CCONF1 research tier 표시 정책 + (채택 시) 상수 fallback을 v0.3 정책 JSON/artifact에 반영하는 동결 작업(PP-COLD-ARTIFACT4 후보).
+4. ~~Phase 4 (운영 반영)~~ **완료 — PP-COLD-ARTIFACT4**: `models/track6/cold_prediction_v0.4/` 동결 (tier/표시/2단 검수 + 상수 fallback 기본 off 옵션, 재현 검증 3종 통과: tier mismatch 0 / CSRCH1 재현 1.1e-16 / v0.3 defense 일치 5.3e-15). fallback 활성화는 `confidence_tier_policy_v0_4.json`의 `uncovered_constant_delta.enabled` 한 줄.
 
 ## 재시작 후 바로 확인할 파일
 
