@@ -1,133 +1,115 @@
-# Cold 가격 예측 트랙 종합 보고서
+# Cold 가격 예측 트랙 최종 보고서
 
-- 작성일: 2026-06-10
-- 범위: Cold(unseen 작가) 가격 예측 개선 트랙 전체 — 로드맵 수립부터 잔여 경로 전수 검증·운영 동결까지 (실험 11건 + artifact 1종, 커밋 11개)
-- 브랜치: `exp/track6-price-prediction` (`10c74ae`~`84964f9`)
-- 지표 표기: MdAPE / MAPE / p95_APE
+- 작성일: 2026-06-10 (최종판 — 실험 17건 + artifact 5종 전체 반영)
+- 범위: Cold(train에 작가 이력이 없는 작품) 가격 예측 — 로드맵 수립, 전 경로 실험, 운영 동결, 수집 파일럿까지
+- 지표 표기: MdAPE / MAPE / p95_APE. 평가: validation cold 2,753행(작가 172) / fixed test cold 3,099행(작가 200)
+- 대원칙: 0604는 Warm 시험 제출 전용(전면 사용 금지) / test 후보 선택 금지(최종 1회) / 실험별 전용 폴더 + 단일 재현 스크립트
 
-## 1. 요약 (Executive Summary)
+## 1. 요약
 
-Warm에서 검증된 Codex 운영 체계(base lock → 게이트 → 진단 → 타겟 실험 → 동결)를 Cold에 이식해 하루에 전 로드맵을 완주했다. **결론: 현재 보유 데이터에서 Cold 점 예측의 모든 개선 경로(보정층·콘텐츠 신호·base 피처·tier 확장)가 전수 검증 끝에 소진됐고, 운영 종착점은 "v0.3 점 예측 + v0.4 정책층"이다.** 유일하게 남은 개선 경로는 새 데이터(검색 수집 확대, 거래 시점)이며 그 기대 효과는 정량화되어 있다.
+하루에 Cold 개선의 전 경로(보정층·콘텐츠 신호·base 피처·tier 확장·모델 조합·base 학습·수집 확대)를 17개 실험으로 전수 검증했다. **최종 서빙 체계 = v0.3(점 예측) + v0.4(신뢰도/검수 정책, 미커버 상수 fallback 활성) + v0.5(raw-input p95 방어 blend)** 이며, 현재 보유 데이터와 현행 보정 공식 기준으로 열린 개선 경로는 0건이다(수집 확대도 파일럿에서 ROI 없음 확인). 재시도 조건은 "실제 cold 운영 트래픽의 잔차 확보 시"로 명시했다.
 
-성과는 두 종류다: ① **채택·동결된 것** — 신뢰도 tier/표시/2단 검수 정책(v0.4), 미커버 작가 상수 fallback(활성), pseudo-cold 외부 검증 축. ② **닫힌 것을 확정한 것** — 9건의 기각 실험이 각각 "왜 안 되는지"의 구조적 근거를 남겨, 향후 같은 방향의 재시도를 막는다.
-
-## 2. 대원칙 (전 실험 공통)
-
-1. **0604 신규 라벨은 Warm 시험 제출 전용 — Cold에서 전면 사용 금지** (사용자 지시).
-2. 외부 검증 축 = artist 반복 holdout + pseudo-cold 평가셋 (0604 대체).
-3. test로 후보/경계값 선택 금지 — fixed test는 최종 확인 1회.
-4. 재현성: 실험별 전용 폴더(`experiments/track6/PP-*/` = artifacts/outputs/reports) + 단일 실행 스크립트 + 동결 경계값 manifest. CSV는 비추적(스크립트 재생성).
-
-## 3. 인프라 구축 (Phase 0 ~ 1)
-
-### PP-CBASE1 — 이중 base lock (`10c74ae`)
-
-| base | 정의 | test |
+| 최종 모델 | 환경 | test 성능 |
 |---|---|---|
-| `COLD_BASE_RESEARCH_V1` | v0.3 체인 = PP-Y18 + guard(PP-QR4) + 작가단위 검색 delta(PP-H28) | **0.4098 / 0.8493 / 2.3465** |
-| `COLD_BASE_OPERATIONAL_V1` | v0.2 search-free 직렬화 파이프라인 방어 서빙값 (raw-input 실행 가능) | 0.4852 / 1.1771 / 4.1223 |
+| **v0.3 체인** (점 예측 최고) | 검색 스냅샷 가용 | **0.4098 / 0.8493 / 2.3465** |
+| v0.5 blend (p95 방어) | raw-input 전용 | 0.4822 / 1.1790 / 3.6490 |
+| v0.2 (참조 기준) | raw-input 전용 | 0.4852 / 1.1771 / 4.1223 |
 
-- 평가 데이터: validation cold 2,753행(작가 172) / test cold 3,099행(작가 200). 작가 쏠림 정량화(작가당 중앙값 5~6행, 최대 275~366행) → **artist holdout이 1차 게이트여야 하는 근거**.
-- 채택 게이트: 작가 80%/70% holdout 각 ≥200회 — MAPE/p95 개선확률 ≥0.90, MdAPE ≥0.50 + fixed test 1회.
-- v0.3/v0.2 정책 JSON 지표 재현 검증 통과(오차 <5e-4).
+## 2. 최고 성능 모델 상세 — v0.3 체인의 피처와 보정 로직
 
-### PP-PCOLD1 — pseudo-cold 평가셋 (`8910037`)
+v0.3은 단일 모델이 아니라 **"상류 Quantile 모델 + 3단 보정"** 체인이다. 각 층이 서로 다른 오차 원인을 직교적으로 방어한다(PP-COLD-DEFENSE1에서 가산성 검증, redundancy gap ≈ 0).
 
-- train 거래량 하위(행수 3~10) 작가를 seed 3개로 각 ~210작가/1,206행 마스킹 → unseen 작가 시뮬레이션.
-- **핵심 발견: 마스킹(신규) 작가의 v0.3 검색 lookup 커버리지 = 0.0** — 검색층의 p95 -29% 이점이 진짜 신규 작가에게 전혀 전이되지 않음(100% guard fallback). 검색 커버리지 확대가 신규 작가 서빙 품질의 전제 조건임을 정량 확인.
-- pseudo-cold는 real cold보다 어려움(defense 0.577 vs 0.482 MdAPE) → 절대 레벨 비교 금지, base 대비 delta + seed 방향 일치로만 사용.
+### 2.1 상류 모델 — LightGBM Quantile (PP-Y18 계열)
 
-### PP-CDIAG1 — 잔차 진단 (`667d156`)
+- **피처 3축**: ① 작품 기본(width/height/depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium/support_category, size/support_size_bucket) ② 작가 메타(생년, 팔로워, 총작품수 등 — 외부 출처라 cold 작가도 보유 가능) ③ **검색 피처(search_all) + 외부 상호작용**: 작가 검색 결과수, 소스군(gallery_museum/market/news/social 등) 비율, 미술 맥락 카운트와 그 상호작용 — Cold에서 가장 강한 외부 신호.
+- 분위수 4개(q10/q40/q50/q90)를 각각 학습. **대표 점 예측 = q50**, `quantile_width = q90 − q10`이 행 단위 불확실성 신호가 된다.
+- 검색 피처 유무의 가치: search-free 변형(v0.2)은 0.4852로, 검색 포함 체인(0.4098) 대비 MdAPE +0.075 — 검색 신호가 Cold base에서 가장 큰 단일 기여.
 
-- 위험 구간(validation): `gap_extreme`(운영 base MAPE 2.02배, 과대예측), `qwidth_extreme`(1.77배, 과소예측 +0.284), `guard_on`(1.67배), `artist_rows_3_9`(p95 2.08배).
-- APE 상관: qwidth **+0.215**(최강 위험 신호), 검색 delta **-0.159**(검색 신호 있는 곳이 정확), 작가 행수 -0.157.
-- 정직한 한계: 위험 구간의 test 전이가 약함(ratio 0.60~0.94) → 가설로만 취급.
+### 2.2 1차 보정 — qwidth 구간 OOF median 보정 (PP-Y18, `qwidth_bin_oof_min30_cap0.25`)
 
-## 4. 신호·정책 검증 (Phase 2)
+```
+보정값(행) = clip( median( validation OOF 잔차 | qwidth bin(행) ), ±0.25 )   (bin 표본 ≥ 30)
+대표' = q50 예측 + 보정값
+```
+- **로직**: 불확실성 폭(qwidth)이 큰 구간은 잔차가 0이 아니라 계통적으로 치우친다(주로 과소예측). 구간별 잔차 *중앙값*만 OOF로 학습해 가산 — 개별 행이 아닌 구간 단위라 과적합 위험이 낮다.
+- 효과: PP-Y2 기준 0.4421/1.048/3.354 → **0.4247/0.991/3.305**. (artist holdout 반복검증 통과, PP-Y21)
 
-### PP-CCONF1 — 신뢰도 tier 정책: **채택** (`003c5ce`)
+### 2.3 2차 방어 — guard (PP-QR4, 과대예측 하향 블렌드)
 
-- research tier(qwidth + 모델 gap + 검색 커버, 정답 미사용)는 **test에서도 p95 분리 유지**: high 8.2% `0.3828/0.6811/0.9904` vs low 29.2% `0.5549/0.7824/2.9877` (전체 2.35). pseudo-cold seed 3개 방향 일치.
-- **operational tier(v0.2 qwidth 단독)는 기각** — test 역전(high tier가 MAPE 2.10/p95 8.40/범위 적중률 53.8%로 최악) = unseen 작가에서 "자신 있게 틀리는" 과신 신호. **raw-input 단독 환경 신뢰도 표시 금지** 원칙 확립.
-- low tier(29.2%)는 기존 v0.3 검수 플래그(45.2%)보다 정밀 → OR 결합 2단 검수 채택.
+```
+발동조건: qwidth ≥ 1.4612 (val q67)  AND  (대표' − q40) ≥ 0.0772 (val q50)  AND  q40 < 대표'
+발동 시:  대표'' = 0.5 × 대표' + 0.5 × q40        (미발동 행은 그대로)
+```
+- **로직**: "불확실성이 크고 + 대표가 하위 분위수(q40)보다 한참 높은" 행 = 과대예측 위험 행. 그 행만 q40 방향으로 절반 이동시켜 큰 오차의 위쪽 꼬리를 자른다. 임계값은 전부 validation의 label-free 분위수(정답 미사용) — 운영 재현 가능.
+- 효과: 0.4247/0.991/3.305 → **0.4178/0.964/2.538** (p95 -23%). row/artist 반복검증 양쪽 통과한 Cold 최초의 견고 방어층.
 
-### PP-CIMG1 — 이미지 임베딩: 기각 (`4c8b39e`)
+### 2.4 3차 방어 — 작가단위 검색 delta (PP-H23/H28, frozen lookup)
 
-- CLIP PCA(32) 저차원 residual, 커버리지 92~93%. OOF 보정 vs 잔차 상관 **0.083/0.060** — 작가 경계를 넘으면 예측력 사실상 0. 격자 72개 중 개선 1개(노이즈). IMG-P4의 test 관찰 개선은 같은 작가 내 시각 유사성의 산물로, artist-grouped 검증에서 소멸.
+```
+작가 세그먼트 = 검색결과 중 gallery_museum 소스 비율 기준:
+  ratio = 0          → none → delta = −0.0313
+  0 < ratio ≤ 임계   → low  → delta = −0.20
+  ratio > 임계       → high → delta = +0.20
+  (delta = validation 잔차의 세그먼트별 중앙값, cap ±0.2 — 작가 상수로 동결)
+최종 로그가격 = 대표'' + delta(작가)        / 미커버 작가 → 상수 −0.0313 (v0.4 활성 결정)
+```
+- **로직**: 갤러리·미술관 소스에 많이 노출되는 작가는 체계적으로 과소예측(+0.2 상향), 검색은 되지만 미술기관 노출이 없는 작가는 과대예측(-0.2 하향), 검색 자체가 빈약하면 전역 하향 bias(-0.031)만 보정. 즉 **검색층의 본질 = 전역 bias 보정 + 기관 노출 신호에 의한 양방향 가격대 보정** (PP-CSRCH1에서 분해 확인).
+- 효과: 0.4178/0.964/2.538 → **0.4098/0.8493/2.3465** (guard와 가산적, base 대비 누적 p95 -29%).
 
-### PP-CSRCH1 — 검색 delta 그룹 일반화: 보류(목적별) (`8bf116f`)
+### 2.5 정책층 — v0.4 (점 예측 불변)
 
-- **검색 delta의 정체 규명: 전역 하향 bias 상수(-0.0313, 25/50/75분위 동일) + outlier 작가 5.6%.**
-- 상수만으로 미커버 작가에서 검색층 **p95 이득의 ~57%, MAPE 이득의 22.5% 회수** (test 미커버 시나리오 0.9640→0.9381/2.5377→2.4287). holdout MAPE/p95 개선확률 0.97~1.0이나 MdAPE 0.41~0.46으로 게이트 미통과(center-vs-tail 트레이드오프).
-- 그룹/메타 일반화 후보 전멸 = **per-artist delta는 실수집으로만 획득 가능** → 수집 확대의 가치(나머지 MAPE 이득 77.5%)가 정확히 정량화됨.
+- **신뢰도 tier**(정답 미사용): low = qwidth ≥ val q90 OR 모델 gap(|y18−v0.2|) ≥ val q90 / high = qwidth ≤ q33 AND gap ≤ q50 AND 검색 커버 / 나머지 medium. test p95 분리: high(8.2%) 0.99 vs low(29.2%) 2.99.
+- **2단 검수**: v0.3 플래그(qwidth≥q67 OR 미커버, 재현율 축) OR low tier(정밀 축).
+- 표시: high=점+좁은 범위 / medium=q10~q90 범위 / low=넓은 범위+우선 검수. 금지 동결: v0.2 단독 tier 표시(과신 역전), tier 확장(test p95 붕괴).
 
-## 5. 보정 경로 종결 (Phase 3) — PP-CCORR1: 기각 (`08ad9ad`)
+## 3. raw-input 환경 최고 — v0.5 이종 blend의 로직 (PP-CBOOST1~3)
 
-- 저차원 Huber residual / 위험 구간 segment median 모두 OOF 개선 0개. 보정값이 잔차를 **역예측**(-0.109/-0.090)하고 guard 이동량과 음의 상관(-0.31/-0.25) = 새 정보가 아니라 기존 방어층 되돌림.
-- 결론: 정답 미사용 신호(qwidth/gap/검색delta/크기/매체)의 정보는 guard/search/tier 층이 이미 소진. **현재 피처로 점 예측 추가 보정 경로 폐쇄.**
+검색 신호를 못 쓰는 환경에서 v0.2를 대체하는 p95 방어 옵션(사용자 채택).
 
-## 6. 운영 동결 (Phase 4) — PP-COLD-ARTIFACT4: v0.4 (`f290f0b`, `b12ed90`)
+```
+B = LightGBM Quantile(12 운영 피처, 900 est) × 5-seed 예측 평균 (q10/q40/q50/q90)
+C = 선형 HuberRegressor 6구성(α∈{1e-4,1e-3} × ε∈{1.2,1.35,1.5} × 피처셋) 예측 평균
+    피처: 크기 8종 + 비교군 사다리 통계 8종 + grp_price_proxy
+최종 대표 = 0.7 × B_q50 + 0.3 × C  →  q40 guard(blend 전 B 기준 임계값) 적용
+```
+- **비교군 사다리(작가 미사용)**: ① medium_support_bucket×size_bucket(표본≥30) → ② medium+support+size(≥30) → ③ medium×size(≥50) → ④ 전체 train. 첫 매칭 그룹의 가격 통계(중앙값/Q25/Q75/IQR, 면적단가 중앙값/IQR, 표본수 log, 매칭레벨)를 피처화. `grp_price_proxy = 면적단가 중앙값 + log_area` = 비교군 기반 직접 가격 추정치.
+- **leakage 차단**: C 학습 시 train 행의 그룹 통계는 5-fold 자기 fold 제외로 계산(자기 가격이 자기 피처에 새지 않음). 추론은 full-train 동결 사다리 테이블(JSON).
+- **왜 작동하나**: 17개 실험 중 유일하게 재현된 레버 = **계열 다양성**. 트리(전역 분할)와 선형(전역 계수+명시 비교군 통계)은 오차 구조가 달라, 30% 블렌드만으로 test MAPE -3.5%/p95 -13%. 같은 통계를 트리의 *피처*로 넣으면 무가치(CGRP1 — 트리는 categorical 분기로 기학습)지만 *별도 선형 모델의 본체*로 쓰면 가치가 생긴다.
+- 정직한 한계: MdAPE 반복 비악화 확률 0.12~0.28(구조적 center-vs-tail) → all-metric 후보가 아닌 **p95 방어 목적별** 채택.
 
-`models/track6/cold_prediction_v0.4/` — 점 예측은 v0.3 그대로, 정책층 추가:
+## 4. 실험 전체 기록 (17건)
 
-1. research tier 경계/규칙 동결 + 표시 정책(high=점+좁은 범위 / medium=표준 q10~q90 / low=넓은 범위+우선 검수)
-2. 2단 검수(v0.3 플래그 OR low tier)
-3. 금지 명문화: v0.2 단독 tier 제공 금지, 0604 사용 금지
-4. **미커버 작가 상수 fallback(delta=-0.0313): 2026-06-10 사용자 결정으로 활성화** — p95 방어 우선, 대가(MdAPE 0.4178→0.4262) config 명시
-5. 재현 검증 3종을 freeze 스크립트가 매회 수행: CCONF1 tier 재현 mismatch 0행 / CSRCH1 미커버 시나리오 재현 1.1e-16 / full lookup ≡ v0.3 defense 5.3e-15
-
-## 7. 잔여 경로 전수 검증 — 3건 전부 기각 (`ece4149`, `84964f9`)
-
-| 경로 | 실험 | 결과 | 구조적 근거 |
+| # | 실험 | 판정 | 한 줄 결론 |
 |---|---|---|---|
-| 비교군 그룹 가격 통계 base 투입 (PP-Y 라인 미검증 갭) | PP-CGRP1 | 기각 | validation 전 지표 악화(bootstrap 0.02~0.37). Warm에서 강력했던 건 base가 선형 Huber였기 때문 — 트리 base는 categorical 분기로 동일 정보 기학습. test-only MAPE/p95 개선은 원칙상 채택 불가 기록 |
-| 제목 텍스트(TF-IDF+SVD) | PP-CTXT1 | 기각 | OOF 상관 0.039. 이미지에 이어 **콘텐츠 신호 축 전체 종결** — 콘텐츠의 가격 신호는 작가 내 유사성이 주성분 |
-| high tier 커버리지 확대 | PP-CCONF2 | 기각 | validation(share 50%/p95 0.95)과 artist holdout(0.98~1.0)을 전부 통과하고도 **fixed test에서 p95 4.40~4.76 붕괴**(동결 경계는 0.99). v0.4 경계가 유일한 안전 설정 — tier 확장 금지 원칙화 |
+| 1 | PP-CBASE1 | 인프라 | 이중 base lock, 게이트(artist holdout) 정의, 정책 JSON 재현 검증 |
+| 2 | PP-PCOLD1 | 인프라 | pseudo-cold 평가셋. **신규 작가 검색 lookup 커버리지 0.0 발견** |
+| 3 | PP-CDIAG1 | 진단 | 위험 구간(qwidth_extreme 과소예측, gap_extreme) — 단 test 전이 약함 |
+| 4 | PP-CCONF1 | **채택** | research tier p95 분리(0.99 vs 2.99) / v0.2 단독 tier 과신 기각 |
+| 5 | PP-CIMG1 | 기각 | CLIP 이미지: 작가 간 일반화 신호 0 (OOF 상관 0.06~0.08) |
+| 6 | PP-CSRCH1 | 보류→채택 | delta 분해(상수+outlier 5.6%). 상수 fallback = v0.4 활성 |
+| 7 | PP-CCORR1 | 기각 | 잔차 보정: 잔차 역예측, guard 되돌림 — 보정 경로 폐쇄 |
+| 8 | PP-COLD-ARTIFACT4 | **동결** | v0.4 정책층 (재현 검증 3종 통과) |
+| 9 | PP-CGRP1 | 기각 | 그룹 통계는 트리 base에 무가치 (선형과의 차이 규명) |
+| 10 | PP-CTXT1 | 기각 | 제목 텍스트: 상관 0.039 — 콘텐츠 신호 축 종결 |
+| 11 | PP-CCONF2 | 기각 | tier 확장: val/holdout 통과 후 **test p95 0.99→4.4 붕괴** |
+| 12 | PP-CCORR2 | 기각 | meta/라우팅: 후보 동계열·고상관 — 다양성 부재 규명 |
+| 13 | PP-CBOOST1 | 유망 | 이종 blend 최초 val+test 동방향 개선 (시드/HPO는 기각) |
+| 14 | PP-CBOOST2 | 강한 보류 | price proxy로 MdAPE 비악화 달성, 게이트만 미통과 |
+| 15 | PP-CBOOST3 | 종결 | MAPE 확률 0.91~0.98 확립, MdAPE 트레이드오프 구조적 확인 |
+| 16 | PP-CMIX1 | 기각 | 작가 가중·kNN 3원 blend — v0.5가 프런티어 확정 |
+| 17 | PP-CSRCH2 | **보류(종결)** | 수집 파일럿: **상수가 수집 delta를 전 지표에서 이김** — 수집 ROI 없음 |
+| + | PP-COLD-ARTIFACT5 | **동결** | v0.5 blend 직렬화 (CBOOST3 재현 diff 4.4e-16) |
 
-## 8. 최종 서빙 스택과 artifact 현황
+## 5. 확립된 원칙 (재실험 방지용)
 
-```
-입력(raw 12피처 + artist_key)
-  ├─ 점 예측: v0.3 체인 [PP-Y18 대표 → guard(PP-QR4) → 검색 delta(커버 작가)
-  │                      → 미커버 작가는 guard + 상수 delta(-0.0313, v0.4 활성)]
-  └─ 정책층: v0.4 [confidence tier(high/medium/low) → 표시 정책 → 2단 검수 플래그]
-```
+1. **val→test 작가 구성 이동이 최대 리스크** — validation 내부의 어떤 검증도 완전히 감지 못함. fixed test 최종 1회 확인이 과신 후보 3건을 실제로 걸렀다.
+2. **콘텐츠 신호(이미지·텍스트)는 Cold 점 예측에 닫힘** — 가격 신호가 작가 내 유사성을 탄다.
+3. **다양성이 유일한 조합 레버** — 동계열 조합(meta/routing/kNN)은 전멸, 이종 계열(트리+선형)만 작동.
+4. **명시 그룹 통계: 트리 피처로는 무가치, 선형 본체로는 유효.**
+5. **검색층 = 전역 bias 보정 + 기관 노출 양방향 보정.** 수집된 delta 공식은 신규(warm) 작가에 미전이 — 재적합은 실제 cold 트래픽 잔차 필요.
+6. 금지 3건: 0604 사용 / v0.2 단독 tier 표시 / tier 확장.
 
-| artifact | 내용 | test |
-|---|---|---|
-| v0.1 | guard only 후처리 | 0.4178 / 0.964 / 2.538 |
-| v0.2_operational | search-free raw-input 실행형 | 0.4852 / 1.177 / 4.122 |
-| v0.3 | guard+search 2단 방어 (점 예측 최고) | **0.4098 / 0.849 / 2.347** |
-| v0.4 | v0.3 + 신뢰도/표시/검수 정책층 + 미커버 fallback(활성) | 점 예측 동일 |
+## 6. 재개 조건과 진입점
 
-## 9. 확립된 원칙·교훈
-
-1. **val→test 작가 구성 이동이 Cold 최대 리스크.** validation 내부의 어떤 검증(artist holdout 포함)도 이를 완전히 감지하지 못함 — fixed test 최종 확인 단계가 과신 후보 3건(operational tier, CCONF2 확대 tier, CGRP1 test-only 신호)을 실제로 걸렀다.
-2. **콘텐츠 신호(이미지·텍스트)는 Cold 점 예측에 닫힘** — 가격 신호가 작가 내 유사성을 타기 때문(상관 0.04~0.08).
-3. **검색층의 분해**: 절반 이상은 bias 상수(이전 가능), 나머지는 outlier 작가 식별(수집으로만 가능).
-4. **트리 base에는 명시적 그룹 통계가 무가치** (선형 base인 Warm과 반대).
-5. 금지 원칙 3건 동결: 0604 사용 금지 / v0.2 단독 신뢰도 표시 금지 / tier 확장 금지.
-
-## 10. 남은 경로와 권고
-
-- **검색 수집 확대 (유일한 정량화된 점 예측 개선 경로)**: 미커버 작가 MAPE 0.938→0.849 방향. outlier 작가 식별이 본질. cold 운영 트래픽 전망과 함께 착수 판단.
-- **거래 시점 수집** (데이터 과제): recency 신호 — Warm SVCSHRINK 라인과 공유되는 과제.
-- 그 외 실험 재개는 비권고 — **추가 데이터 확보 전까지 Cold 트랙 휴면.** 재개 시 진입점: `experiments/track6/COLD_EXPERIMENT_HANDOFF_2026-06-10.md` → `docs/track6/experiments/cold_improvement_roadmap.md`.
-
-## 11. 커밋·산출물 색인
-
-| 커밋 | 내용 |
-|---|---|
-| `10c74ae` | 로드맵 + PP-CBASE1 이중 base lock |
-| `8910037` | PP-PCOLD1 pseudo-cold 평가셋 |
-| `667d156` | PP-CDIAG1 잔차 진단 + 핸드오프 신설 |
-| `003c5ce` | PP-CCONF1 신뢰도 tier (채택) |
-| `4c8b39e` | PP-CIMG1 이미지 (기각) |
-| `8bf116f` | PP-CSRCH1 검색 delta 일반화 (보류/수집 가치 정량화) |
-| `f290f0b` | PP-COLD-ARTIFACT4 v0.4 동결 |
-| `b12ed90` | v0.4 미커버 fallback 활성화 (사용자 결정) |
-| `08ad9ad` | PP-CCORR1 잔여 보정 (기각, Phase 3 종결) |
-| `ece4149` | PP-CGRP1 그룹 통계 base (기각) |
-| `84964f9` | PP-CTXT1/PP-CCONF2 (기각, 잔여 경로 소진) |
-
-실험별 상세는 `docs/track6/experiments/pp_c*.md` 요약 문서와 각 실험 폴더의 `reports/result_report.md`, 모든 결과 표는 `postprocessing_experiment_matrix.md`에 등재됨.
+- 재개 조건: ① 실제 cold 운영 트래픽 잔차 확보(검색 보정맵 재적합 + tier 재검증) ② 거래 시점 등 신규 데이터.
+- 진입점: `experiments/track6/COLD_EXPERIMENT_HANDOFF_2026-06-10.md` → `docs/track6/experiments/cold_improvement_roadmap.md`. base 재생성: `run_pp_cbase1_cold_base_lock.py`, v0.5 재생성: `freeze_cold_prediction_artifact_v0_5.py`.
