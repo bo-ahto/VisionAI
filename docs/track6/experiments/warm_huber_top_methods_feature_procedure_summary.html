@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm Huber 최고 성능/안정성 조합 상세 정리</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --amber: #b45309;
+  --amber-soft: #fff7ed;
+  --green: #15803d;
+  --green-soft: #f0fdf4;
+  --red: #b42318;
+  --red-soft: #fff1f0;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 292px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 10px; color: var(--muted); }
+main {
+  max-width: 1220px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 18px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 44px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+p { margin: 10px 0 16px; }
+ul, ol { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.summary {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  padding: 16px 18px;
+  margin: 18px 0 28px;
+}
+.summary strong { color: #111827; }
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.step-table {
+  margin-top: -10px;
+}
+.step-table table {
+  min-width: 940px;
+}
+.step-table th:first-child,
+.step-table td:first-child {
+  width: 86px;
+  text-align: center;
+  font-weight: 800;
+  color: var(--accent);
+}
+.step-table td:nth-child(3) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 2px 9px;
+  background: white;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge.primary { border-color: #bfdbfe; color: var(--accent); background: var(--accent-soft); }
+.badge.research { border-color: #fed7aa; color: var(--amber); background: var(--amber-soft); }
+.badge.display { border-color: #bbf7d0; color: var(--green); background: var(--green-soft); }
+.method-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.logic {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 18px;
+  margin: 18px 0 28px;
+}
+.logic-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px 16px;
+}
+.logic-box h3 {
+  margin-top: 0;
+  font-size: 16px;
+}
+.logic-box ol {
+  margin-bottom: 0;
+}
+.flow {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+  overflow-x: auto;
+}
+.flow-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #344054;
+}
+.flow-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 8px;
+  min-width: max-content;
+}
+.flow-col {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr);
+  gap: 8px;
+}
+.node {
+  min-width: 172px;
+  max-width: 230px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px 11px;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.node strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #111827;
+  font-size: 13px;
+}
+.node small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.node.input { border-color: #bfdbfe; background: var(--accent-soft); }
+.node.gate { border-color: #fed7aa; background: var(--amber-soft); }
+.node.output { border-color: #bbf7d0; background: var(--green-soft); }
+.node.stop { border-color: #fecaca; background: var(--red-soft); }
+.arrow {
+  display: flex;
+  align-items: center;
+  color: #475467;
+  font-weight: 900;
+  font-size: 18px;
+  min-width: 18px;
+}
+.branch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(230px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.branch .node {
+  max-width: none;
+  min-width: 0;
+}
+.formula {
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0 18px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.note {
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 14px 0;
+}
+.decision-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 26px;
+}
+.decision {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 13px 14px;
+  background: white;
+}
+.decision strong {
+  display: block;
+  margin-bottom: 6px;
+}
+@media (max-width: 1020px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+  .logic { grid-template-columns: 1fr; }
+  .decision-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .flow-row { flex-wrap: nowrap; }
+  .node { min-width: 190px; }
+  .branch { grid-template-columns: 1fr; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap, .flow { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+  .logic { grid-template-columns: 1fr; }
+}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#overview">전체 요약</a>
+        <a class="toc-level-1" href="#common">공통 계산 단위</a>
+        <a class="toc-level-1" href="#method-1">1. 70:30 기준가 + 잔차 Huber</a>
+        <a class="toc-level-1" href="#method-2">2. 기준가 gap + 저위험 라우팅</a>
+        <a class="toc-level-1" href="#method-3">3. p95 방어형 fallback 라우팅</a>
+        <a class="toc-level-1" href="#method-4">4. 방향 일치 segment 초미세 이동</a>
+        <a class="toc-level-1" href="#method-5">5. 가격범위 폭 신뢰도 tier</a>
+        <a class="toc-level-1" href="#operation">운영 적용 순서</a>
+      </nav>
+    </aside>
+
+    <main>
+      <h1>Warm Huber 최고 성능/안정성 조합 상세 정리</h1>
+      <p class="meta">작성일: 2026-06-08 · 대상: Warm 가격 예측 후처리 중 성능과 안정성이 가장 높았던 5개 방법 · 표기 기준: 실제 피처, 계산 방법, 적용 순서</p>
+
+      <section class="summary" id="overview">
+        <p><strong>결론:</strong> 운영 점 예측 기본값은 <code>70:30 기준가 + 크기/신뢰도 잔차 Huber 보정</code>을 유지한다. 기준가 gap 라우팅 계열은 fixed test에서 아주 작게 좋아졌지만 반복 안정성이 부족하므로 연구 후보로 분리한다. <code>price_range_width_log</code> 방식은 점 예측을 바꾸는 방법이 아니라 가격 범위와 신뢰도 표시 정책으로 사용한다.</p>
+      </section>
+
+      <h2>전체 판단 요약</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>방법</th>
+              <th>적용 대상</th>
+              <th>fixed test MdAPE/MAPE/p95</th>
+              <th>0604 stress MdAPE/MAPE/p95</th>
+              <th>반복 안정성</th>
+              <th>판단</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="align-center">1</td>
+              <td>70:30 기준가 + 크기/신뢰도 잔차 Huber 보정</td>
+              <td>Warm 점 예측 기본값</td>
+              <td><code>0.1388 / 0.2730 / 0.8064</code></td>
+              <td><code>0.2731 / 0.3744 / 0.9835</code></td>
+              <td>row/artist OOF all3 <code>1.0 / 1.0</code></td>
+              <td><span class="badge primary">현재 기본 후보</span></td>
+            </tr>
+            <tr>
+              <td class="align-center">2</td>
+              <td>기준가 gap 잔차 Huber + 저위험 라우팅</td>
+              <td>Warm 연구 후보</td>
+              <td><code>0.1383 / 0.2729 / 0.8060</code></td>
+              <td><code>0.2734 / 0.3743 / 0.9835</code></td>
+              <td>min any2/all3 <code>0.9333 / 0.4333</code></td>
+              <td><span class="badge research">승격 보류</span></td>
+            </tr>
+            <tr>
+              <td class="align-center">3</td>
+              <td>p95 방어형 fallback-gap 라우팅 보정</td>
+              <td>Warm p95 방어 후보</td>
+              <td><code>0.1382 / 0.2729 / 0.8063</code></td>
+              <td><code>0.2731 / 0.3745 / 0.9835</code></td>
+              <td>min any2/all3 <code>0.8500 / 0.2833</code></td>
+              <td><span class="badge research">참고 후보</span></td>
+            </tr>
+            <tr>
+              <td class="align-center">4</td>
+              <td>방향 일치 segment 초미세 이동</td>
+              <td>Warm tiny correction 후보</td>
+              <td><code>0.1388 / 0.2729 / 0.8062</code></td>
+              <td><code>0.2727 / 0.3744 / 0.9834</code></td>
+              <td>확장 반복 min any2/all3 <code>0.8085 / 0.2785</code></td>
+              <td><span class="badge research">검증 후보</span></td>
+            </tr>
+            <tr>
+              <td class="align-center">5</td>
+              <td>q10~q90 가격범위 폭 기반 신뢰도 tier</td>
+              <td>서비스 표시 정책</td>
+              <td>점 예측 대체 아님</td>
+              <td>점 예측 대체 아님</td>
+              <td>high/low 위험도 분리 확인</td>
+              <td><span class="badge display">표시 정책</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="common">공통 계산 단위</h2>
+      <p>모든 점 예측 후보는 원 가격이 아니라 로그 가격에서 보정한 뒤 다시 원 가격으로 환산한다. 이렇게 해야 보정폭이 고가/저가 구간에서 비율 기준으로 작동한다.</p>
+      <div class="formula">predicted_price = exp(predicted_price_log)</div>
+
+      <h3>component 용어 사전</h3>
+      <p>아래 표는 이 문서의 공식에서 쓰는 설명형 변수명과 실제 입력 component를 연결한 것이다. 모두 원 가격이 아니라 로그 가격 예측값이다. <code>defensive_model_price_log</code>, <code>warm_feature_price_log</code>, <code>similar_artwork_price_log</code>는 이 후처리 단계에서 새로 학습하지 않고 앞단 가격 예측 파이프라인에서 이미 계산되어 들어오는 입력 component다.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>문서 변수</th>
+              <th>실제 입력 컬럼</th>
+              <th>생성 로직</th>
+              <th>이 단계에서의 취급</th>
+              <th>역할</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>similar_artwork_price_log</code></td>
+              <td><code>svc_numeric_seed_mean_pred_log</code></td>
+              <td>작가, 크기, 재료/지지체 등 유사 작품 그룹의 비교가격 기준값을 로그 가격으로 만든 component. 그룹 표본이 부족하면 더 넓은 fallback 그룹을 사용한다.</td>
+              <td>사전 계산 입력</td>
+              <td>Warm 점 예측의 주 기준가. 실제 유사작품 가격 신호를 가장 직접적으로 반영한다.</td>
+            </tr>
+            <tr>
+              <td><code>defensive_model_price_log</code></td>
+              <td><code>pp_v2_defensive_pred_log</code></td>
+              <td>기존 후처리 가격 모델의 방어형 로그 예측값. 작품 메타, 크기, 재료/지지체, 비교가격 계열 피처를 사용하되 큰 오차에 과도하게 끌려가지 않도록 보수적으로 만든 component다.</td>
+              <td>사전 계산 입력</td>
+              <td><code>defensive_blend_price_log</code>를 만들 때 75% 반영되는 안정화 축.</td>
+            </tr>
+            <tr>
+              <td><code>warm_feature_price_log</code></td>
+              <td><code>l10_generated_bucket_seq_pred_log</code></td>
+              <td>작품의 크기, 재료/지지체, 가격 bucket/sequence 성격의 Warm feature variant에서 나온 로그 예측값.</td>
+              <td>사전 계산 입력</td>
+              <td><code>defensive_model_price_log</code>와 다른 피처 축을 25% 섞어 특정 구간 편향을 줄이는 보조 component.</td>
+            </tr>
+            <tr>
+              <td><code>defensive_blend_price_log</code></td>
+              <td><code>pp_v8_compact_blend_mape_guarded_pred_log</code></td>
+              <td><code>defensive_blend_price_log = 0.75 * defensive_model_price_log + 0.25 * warm_feature_price_log</code>로 만드는 compact defensive blend.</td>
+              <td>이 문서의 공통 공식에서 계산</td>
+              <td>유사작품 기준가가 불안정할 때 기준값을 과하게 흔들지 않도록 잡아주는 방어적 component.</td>
+            </tr>
+            <tr>
+              <td><code>base_price_log</code></td>
+              <td><code>v01_operational_pred_log</code></td>
+              <td><code>similar_artwork_price_log</code>를 70%, <code>defensive_blend_price_log</code>를 30% 섞은 현재 Warm 운영 기준 로그 예측값.</td>
+              <td>이 문서의 공통 공식에서 계산</td>
+              <td>1번 방법에서 Huber 잔차 보정을 적용하기 전의 기준점.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>기준 로그 예측값은 위 component 조합에서 출발한다.</p>
+      <div class="formula">defensive_blend_price_log = 0.75 * defensive_model_price_log + 0.25 * warm_feature_price_log
+base_price_log = 0.70 * similar_artwork_price_log + 0.30 * defensive_blend_price_log</div>
+      <p>해석하면, 먼저 기존 방어형 후처리 예측값과 Warm feature variant 예측값을 75:25로 섞어 <code>defensive_blend_price_log</code>를 만들고, 그 다음 유사작품 기준가 <code>similar_artwork_price_log</code>와 방어적 component <code>defensive_blend_price_log</code>를 70:30으로 섞어 운영 기준값을 만든다.</p>
+
+      <section id="method-1">
+        <h2>1. 70:30 기준가 + 크기/신뢰도 잔차 Huber 보정</h2>
+        <div class="method-head">
+          <span class="badge primary">운영 기본 후보</span>
+          <span class="badge">fixed test 0.1388 / 0.2730 / 0.8064</span>
+          <span class="badge">0604 stress 0.2731 / 0.3744 / 0.9835</span>
+        </div>
+        <p>기존 <code>base_price_log</code>를 크게 바꾸지 않고, 남은 잔차 중 유사 작품 기준가의 신뢰도, fallback 여부, 크기 정보로 설명되는 작은 방향만 보정한다. fixed test, 0604 stress, row/artist OOF 반복 검증을 모두 통과했기 때문에 현재 기본 점 예측 후보로 유지한다.</p>
+
+        <div class="logic">
+          <div class="logic-box">
+            <h3>로직 설명</h3>
+            <ol>
+              <li>운영 component로 <code>base_price_log</code>를 만든다.</li>
+              <li>학습 구간에서 <code>actual_price_log - base_price_log</code>를 잔차 목표값으로 둔다.</li>
+              <li>유사 작품 prior, fallback, shrink gap, 면적, 표본 수, 가격 분산 폭을 피처로 만든다.</li>
+              <li>표준화된 피처로 Huber residual model을 학습한다.</li>
+              <li>예측 보정값을 <code>[-0.05, 0.05]</code>로 자르고 절반만 반영한다.</li>
+              <li>보정된 로그 가격을 <code>exp</code>로 원 가격으로 환산한다.</li>
+            </ol>
+          </div>
+          <div class="flow">
+            <p class="flow-title">순서도</p>
+            <div class="flow-row">
+              <div class="node input"><strong>운영 component</strong><small>similar_artwork, defensive_model, warm_feature</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>70:30 기준값</strong><small>0.70 * similar_artwork + 0.30 * defensive_blend</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>잔차 목표</strong><small>actual - 기준값</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>Huber 보정</strong><small>alpha 0.01</small></div>
+              <div class="arrow">→</div>
+              <div class="node gate"><strong>clip + strength</strong><small>[-0.05, 0.05] * 0.50</small></div>
+              <div class="arrow">→</div>
+              <div class="node output"><strong>최종 가격</strong><small>exp(final_price_log)</small></div>
+            </div>
+          </div>
+        </div>
+
+        <h3>순서별 공식/로직</h3>
+        <div class="table-wrap step-table">
+          <table>
+            <thead>
+              <tr><th>순서</th><th>단계</th><th>공식 또는 로직</th><th>해석</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>운영 component 결합</td>
+                <td>defensive_blend_price_log = 0.75 * defensive_model_price_log + 0.25 * warm_feature_price_log
+base_price_log = 0.70 * similar_artwork_price_log + 0.30 * defensive_blend_price_log</td>
+                <td>유사 작품 component를 중심으로 두고 방어적 component를 일부 섞어 기본 로그 가격을 만든다.</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>잔차 목표 생성</td>
+                <td>base_residual_log = actual_price_log - base_price_log</td>
+                <td>기본값이 남긴 오차만 후처리 모델의 학습 목표로 둔다.</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>피처 구성</td>
+                <td>residual_feature_set = [similar_artwork_fallback_log, shrunk_similar_artwork_prior_log, base_to_shrunk_huber_gap_log, defensive_blend_price_log, artwork_area_log, similar_artwork_group_count_log, similar_artwork_prior_iqr_log, ...]</td>
+                <td>기준가 신뢰도, fallback 여부, 크기, component gap으로 잔차의 방향을 설명한다.</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Huber 잔차 예측</td>
+                <td>raw_residual_adjustment_log = HuberResidualModel(residual_feature_set, alpha=0.01)</td>
+                <td>큰 오차에 과민하게 맞추지 않도록 Huber loss로 작은 잔차 방향만 학습한다.</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>보정폭 제한</td>
+                <td>limited_residual_adjustment_log = clip(raw_residual_adjustment_log, -0.05, 0.05) * 0.50</td>
+                <td>로그 가격 기준 최대 이동폭을 제한하고 절반만 반영해 p95 악화를 막는다.</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>최종 가격 변환</td>
+                <td>final_price_log = base_price_log + limited_residual_adjustment_log
+final_price = exp(final_price_log)</td>
+                <td>보정된 로그 가격을 실제 가격 단위로 되돌린다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>핵심 피처</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>표시 변수</th><th>실제 피처명</th><th>의미</th><th>계수 방향</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>similar_artwork_fallback_log</code></td><td><code>svc_fallback</code></td><td>원 유사 작품 fallback 기준가</td><td><code>-0.4718</code></td></tr>
+              <tr><td><code>shrunk_similar_artwork_prior_log</code></td><td><code>shrunk_svc_prior</code></td><td>표본 수를 반영해 완화한 유사 작품 prior</td><td><code>0.2221</code></td></tr>
+              <tr><td><code>base_to_shrunk_huber_gap_log</code></td><td><code>current_shrunk_huber_gap</code></td><td>현재 70:30 기준과 완화 Huber 기준의 차이</td><td><code>0.1308</code></td></tr>
+              <tr><td><code>defensive_blend_price_log</code></td><td><code>ppv8_defensive</code></td><td>방어적 후처리 component</td><td><code>0.1081</code></td></tr>
+              <tr><td><code>shrunk_huber_center_log</code></td><td><code>shrunk_huber_refit</code></td><td>완화 기준가로 다시 맞춘 Huber 중심선</td><td><code>0.0878</code></td></tr>
+              <tr><td><code>raw_to_shrunk_prior_gap_log</code></td><td><code>raw_shrunk_prior_gap</code></td><td>원 prior와 완화 prior의 차이</td><td><code>-0.0580</code></td></tr>
+              <tr><td><code>artwork_area_log</code></td><td><code>log_area</code></td><td>작품 면적의 로그값</td><td><code>0.0570</code></td></tr>
+              <tr><td><code>base_to_defensive_blend_gap_log</code></td><td><code>current_ppv8_gap</code></td><td>70:30 기준과 방어적 component의 차이</td><td><code>0.0491</code></td></tr>
+              <tr><td><code>similar_artwork_group_count_log</code></td><td><code>svc_group_n_log</code></td><td>유사 작품 그룹 표본 수 로그값</td><td><code>-0.0122</code></td></tr>
+              <tr><td><code>similar_artwork_prior_iqr_log</code></td><td><code>svc_prior_iqr</code></td><td>유사 작품 prior의 IQR, 즉 가격 분산 폭</td><td><code>0.0008</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="formula">raw_residual_adjustment_log = HuberResidualModel(residual_feature_set)
+limited_residual_adjustment_log = clip(raw_residual_adjustment_log, -0.05, 0.05) * 0.50
+final_price_log = base_price_log + limited_residual_adjustment_log
+final_price = exp(final_price_log)</div>
+      </section>
+
+      <section id="method-2">
+        <h2>2. 기준가 gap 잔차 Huber + 저위험 라우팅</h2>
+        <div class="method-head">
+          <span class="badge research">연구 후보</span>
+          <span class="badge">fixed test 0.1383 / 0.2729 / 0.8060</span>
+          <span class="badge">반복 all3 0.4333</span>
+        </div>
+        <p>기본 후보보다 더 낮은 MdAPE/MAPE를 얻기 위해 train-only 기준가 component를 추가로 만들고, 여러 기준가가 서로 크게 어긋나지 않는 행에만 작은 보정을 적용한다. fixed test는 더 좋지만 반복 all3 안정성이 낮아 운영 기본값으로 승격하지 않는다.</p>
+
+        <div class="logic">
+          <div class="logic-box">
+            <h3>로직 설명</h3>
+            <ol>
+              <li>먼저 1번 방법으로 <code>stable_default_price_log</code>를 만든다.</li>
+              <li>학습 데이터만 사용해 작가 전체, 작가+크기, 작가+재료/지지체, 작가+크기+재료/지지체, fallback 기준가를 만든다.</li>
+              <li>각 기준가와 <code>stable_default_price_log</code>의 차이를 gap 피처로 변환한다.</li>
+              <li>gap 피처로 <code>actual_price_log - stable_default_price_log</code> 잔차를 예측한다.</li>
+              <li>보정폭은 <code>0.005</code> 이내로 자르고 <code>0.50</code>만 반영한다.</li>
+              <li>표본 수, 기준가 spread, 면적 범위 조건을 통과한 행에만 보정 후보를 적용한다.</li>
+            </ol>
+          </div>
+          <div class="flow">
+            <p class="flow-title">순서도</p>
+            <div class="flow-row">
+              <div class="node input"><strong>stable_default_price_log</strong><small>1번 방법의 출력</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>train-only 기준가</strong><small>작가/크기/재료/fallback</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>reference gap 피처</strong><small>reference_price_log - stable_default_price_log</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>Huber 보정</strong><small>alpha 0.001, cap 0.005</small></div>
+              <div class="arrow">→</div>
+              <div class="node gate"><strong>저위험 조건</strong><small>n, spread, 면적 통과</small></div>
+            </div>
+            <div class="branch">
+              <div class="node output"><strong>조건 통과</strong><small>stable_default_price_log + limited_basis_adjustment_log</small></div>
+              <div class="node stop"><strong>조건 실패</strong><small>stable_default_price_log 그대로 유지</small></div>
+            </div>
+          </div>
+        </div>
+
+        <h3>순서별 공식/로직</h3>
+        <div class="table-wrap step-table">
+          <table>
+            <thead>
+              <tr><th>순서</th><th>단계</th><th>공식 또는 로직</th><th>해석</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>기본 후보 준비</td>
+                <td>stable_default_price_log = default_method_final_price_log</td>
+                <td>이미 안정성이 검증된 1번 방법의 로그 예측값을 새 기준값으로 사용한다.</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>train-only 기준가 생성</td>
+                <td>basis = median_log_price(group)
+group = artist / artist+size / artist+medium_support / artist+size+medium_support / fallback</td>
+                <td>누수를 막기 위해 학습 구간만 사용해 여러 종류의 기준가 component를 만든다.</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>gap 피처 변환</td>
+                <td>reference_to_stable_gap_log = reference_price_log - stable_default_price_log
+reference_price_disagreement_width_log = max(reference_price_logs) - min(reference_price_logs)</td>
+                <td>기준가가 기본 후보보다 높거나 낮은 방향과 component 간 불일치 폭을 피처화한다.</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Huber 보정 후보</td>
+                <td>raw_basis_adjustment_log = HuberResidualModel(reference_gap_feature_set, alpha=0.001)
+limited_basis_adjustment_log = clip(raw_basis_adjustment_log, -0.005, 0.005) * 0.50
+routed_candidate_price_log = stable_default_price_log + limited_basis_adjustment_log</td>
+                <td>기준가 gap이 설명하는 잔차만 매우 작은 폭으로 보정한다.</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>저위험 gate</td>
+                <td>low_risk_route = (
+    svc_group_n &gt;= 5
+    and reference_price_disagreement_width_log &lt;= 1.0532
+    and 5.9339 &lt;= log_area &lt;= 9.9587
+)</td>
+                <td>표본 수가 충분하고 기준가끼리 크게 충돌하지 않으며 면적이 안정 구간인 행만 통과시킨다.</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>최종 분기</td>
+                <td>if low_risk_route:
+    final_price_log = routed_candidate_price_log
+else:
+    final_price_log = stable_default_price_log</td>
+                <td>조건을 만족하지 않으면 보정을 포기하고 안정 후보를 그대로 사용한다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>저위험 라우팅 조건</h3>
+        <div class="formula">svc_group_n &gt;= 5
+reference_price_disagreement_width_log &lt;= 1.0532
+5.9339 &lt;= log_area &lt;= 9.9587</div>
+
+        <h3>핵심 피처</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>표시 변수</th><th>실제 피처명</th><th>의미</th><th>계수 방향</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>artist_overall_reference_gap_log</code></td><td><code>basis_artist_overall_m1_gap</code></td><td>같은 작가 전체 기준가와 기본 후보의 차이</td><td><code>-0.0389</code></td></tr>
+              <tr><td><code>artist_medium_support_reference_gap_log</code></td><td><code>basis_artist_medium_support_m5_gap</code></td><td>같은 작가+재료/지지체 기준가와 기본 후보의 차이</td><td><code>-0.0257</code></td></tr>
+              <tr><td><code>shrink20_reference_gap_log</code></td><td><code>shrink20_stable_gap</code></td><td>20% shrink 기준가와 기본 후보의 차이</td><td><code>0.0255</code></td></tr>
+              <tr><td><code>reference_price_disagreement_width_log</code></td><td><code>basis_component_spread</code></td><td>여러 기준가 component 간 최대 차이</td><td><code>-0.0236</code></td></tr>
+              <tr><td><code>artwork_area_log</code></td><td><code>log_area</code></td><td>작품 면적 로그값</td><td><code>-0.0231</code></td></tr>
+              <tr><td><code>artist_size_reference_gap_log</code></td><td><code>basis_artist_size_m5_gap</code></td><td>같은 작가+크기 기준가와 기본 후보의 차이</td><td><code>-0.0188</code></td></tr>
+              <tr><td><code>artist_size_medium_support_reference_gap_log</code></td><td><code>basis_artist_size_medium_support_m5_gap</code></td><td>같은 작가+크기+재료/지지체 기준가와 기본 후보의 차이</td><td><code>-0.0187</code></td></tr>
+              <tr><td><code>fallback_reference_group_count_log</code></td><td><code>basis_fallback_m5_n_log</code></td><td>fallback 기준가 표본 수 로그값</td><td><code>-0.0175</code></td></tr>
+              <tr><td><code>fallback_to_stable_gap_log</code></td><td><code>fallback_stable_gap</code></td><td>fallback 기준가와 기본 후보의 차이</td><td><code>0.0118</code></td></tr>
+              <tr><td><code>fallback_reference_iqr_log</code></td><td><code>basis_fallback_m5_iqr</code></td><td>fallback 기준가의 가격 분산 폭</td><td><code>0.0095</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="formula">raw_basis_adjustment_log = HuberResidualModel(reference_gap_feature_set)
+limited_basis_adjustment_log = clip(raw_basis_adjustment_log, -0.005, 0.005) * 0.50
+routed_candidate_price_log = stable_default_price_log + limited_basis_adjustment_log
+
+if low_risk_route:
+    final_price_log = routed_candidate_price_log
+else:
+    final_price_log = stable_default_price_log</div>
+      </section>
+
+      <section id="method-3">
+        <h2>3. p95 방어형 fallback-gap 라우팅 보정</h2>
+        <div class="method-head">
+          <span class="badge research">p95 방어 후보</span>
+          <span class="badge">fixed test 0.1382 / 0.2729 / 0.8063</span>
+          <span class="badge">반복 all3 0.2833</span>
+        </div>
+        <p>기준가 gap 보정이 p95를 악화시키는 문제를 줄이기 위해 fallback 기준가와 기본 후보가 크게 어긋나지 않는 행에만 더 약한 보정을 적용한다. 평균 성능을 크게 밀기보다 큰 오차 방어를 우선하는 방식이다.</p>
+
+        <div class="logic">
+          <div class="logic-box">
+            <h3>로직 설명</h3>
+            <ol>
+              <li>기본 후보 <code>stable_default_price_log</code>를 만든다.</li>
+              <li>기준가 gap 피처로 잔차 Huber를 학습한다.</li>
+              <li>cap은 <code>0.0075</code>로 두되 strength를 <code>0.20</code>으로 낮춘다.</li>
+              <li><code>abs_fallback_to_stable_gap_log</code>이 validation 하위 75% 안에 있는 행만 보정한다.</li>
+              <li>조건을 통과하지 못하면 p95 악화를 피하기 위해 기본 후보를 그대로 쓴다.</li>
+            </ol>
+          </div>
+          <div class="flow">
+            <p class="flow-title">순서도</p>
+            <div class="flow-row">
+              <div class="node input"><strong>stable_default_price_log</strong><small>1번 방법의 출력</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>reference gap 피처</strong><small>fallback gap 포함</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>약한 Huber</strong><small>alpha 0.001, cap 0.0075, strength 0.20</small></div>
+              <div class="arrow">→</div>
+              <div class="node gate"><strong>fallback 일치도</strong><small>|fallback - stable| &lt;= 0.6607</small></div>
+            </div>
+            <div class="branch">
+              <div class="node output"><strong>조건 통과</strong><small>small_p95_adjustment_log 적용</small></div>
+              <div class="node stop"><strong>조건 실패</strong><small>stable_default_price_log 유지</small></div>
+            </div>
+          </div>
+        </div>
+
+        <h3>순서별 공식/로직</h3>
+        <div class="table-wrap step-table">
+          <table>
+            <thead>
+              <tr><th>순서</th><th>단계</th><th>공식 또는 로직</th><th>해석</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>기본 후보 준비</td>
+                <td>stable_default_price_log = default_method_final_price_log</td>
+                <td>p95 방어 후보도 안정 후보를 기준값으로 둔다.</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>fallback gap 계산</td>
+                <td>fallback_to_stable_gap_log = fallback_reference_price_log - stable_default_price_log
+abs_fallback_to_stable_gap_log = abs(fallback_to_stable_gap_log)</td>
+                <td>fallback 기준가와 안정 후보가 얼마나 어긋나는지 측정한다.</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>약한 Huber 보정</td>
+                <td>raw_residual_adjustment_log = HuberResidualModel(reference_gap_feature_set, alpha=0.001)
+small_p95_adjustment_log = clip(raw_residual_adjustment_log, -0.0075, 0.0075) * 0.20</td>
+                <td>cap은 0.0075이지만 strength를 0.20으로 낮춰 실제 반영폭을 더 작게 만든다.</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>fallback 일치도 gate</td>
+                <td>fallback_gap_is_safe = abs_fallback_to_stable_gap_log &lt;= 0.6607</td>
+                <td>fallback 기준가와 안정 후보가 크게 충돌하지 않는 validation 하위 75% 구간만 통과시킨다.</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>최종 분기</td>
+                <td>if fallback_gap_is_safe:
+    final_price_log = stable_default_price_log + small_p95_adjustment_log
+else:
+    final_price_log = stable_default_price_log</td>
+                <td>fallback이 불안정한 행에서는 보정을 하지 않아 p95 악화 가능성을 낮춘다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="formula">raw_residual_adjustment_log = HuberResidualModel(reference_gap_feature_set)
+small_p95_adjustment_log = clip(raw_residual_adjustment_log, -0.0075, 0.0075) * 0.20
+
+if abs_fallback_to_stable_gap_log &lt;= 0.6607:
+    final_price_log = stable_default_price_log + small_p95_adjustment_log
+else:
+    final_price_log = stable_default_price_log</div>
+        <p class="note">판단: fixed test MdAPE는 가장 낮은 축에 속하지만 반복 all3 안정성이 약하다. 운영 기본 후보가 아니라 p95 방어형 참고 후보로 관리한다.</p>
+      </section>
+
+      <section id="method-4">
+        <h2>4. 방향 일치 segment 초미세 이동</h2>
+        <div class="method-head">
+          <span class="badge research">tiny correction 후보</span>
+          <span class="badge">fixed test 0.1388 / 0.2729 / 0.8062</span>
+          <span class="badge">0604 stress 0.2727 / 0.3744 / 0.9834</span>
+        </div>
+        <p>강한 source 후보를 그대로 쓰지 않고, row OOF와 artist OOF에서 실제 잔차 방향과 source 이동 방향이 같은 segment에만 아주 작은 이동을 허용한다. 개선폭은 작지만 fixed test와 0604에서 p95-neutral하게 확인된 후보이다.</p>
+
+        <div class="logic">
+          <div class="logic-box">
+            <h3>로직 설명</h3>
+            <ol>
+              <li>1번 방법으로 <code>stable_default_price_log</code>를 만든다.</li>
+              <li>component gap, 가격범위 폭, 위험도 피처를 사용해 direction source 후보의 이동 방향을 만든다.</li>
+              <li>segment별로 <code>median(actual_price_log - stable_default_price_log)</code>와 <code>median(direction_source_price_log - stable_default_price_log)</code>의 부호를 비교한다.</li>
+              <li>row OOF와 artist OOF 양쪽에서 방향이 같고 p95가 나빠지지 않는 segment만 남긴다.</li>
+              <li>통과 segment에서는 direction source 방향으로 <code>0.001</code> 이내의 초미세 이동만 적용한다.</li>
+            </ol>
+          </div>
+          <div class="flow">
+            <p class="flow-title">순서도</p>
+            <div class="flow-row">
+              <div class="node input"><strong>stable_default_price_log</strong><small>1번 방법의 출력</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>direction source</strong><small>component gap + 가격범위 폭 기반 이동 제안</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>OOF 방향 검증</strong><small>row + artist consensus</small></div>
+              <div class="arrow">→</div>
+              <div class="node gate"><strong>segment 선택</strong><small>artist level 또는 low width gap 구간</small></div>
+              <div class="arrow">→</div>
+              <div class="node output"><strong>초미세 이동</strong><small>tiny_directional_adjustment_log</small></div>
+            </div>
+          </div>
+        </div>
+
+        <h3>순서별 공식/로직</h3>
+        <div class="table-wrap step-table">
+          <table>
+            <thead>
+              <tr><th>순서</th><th>단계</th><th>공식 또는 로직</th><th>해석</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>기본 후보와 source 준비</td>
+                <td>stable_default_price_log = default_method_final_price_log
+direction_source_price_log = DirectionSourceModel(component_gap_features, price_range_width_features, risk_feature_set)</td>
+                <td>direction source 후보는 직접 대체하지 않고 이동 방향을 제안하는 용도로만 사용한다.</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>segment별 실제 잔차 방향</td>
+                <td>actual_residual_direction(segment) = sign(median(actual_price_log - stable_default_price_log))</td>
+                <td>각 segment에서 안정 후보가 실제로 높게 예측했는지 낮게 예측했는지 본다.</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>segment별 source 이동 방향</td>
+                <td>source_move_direction(segment) = sign(median(direction_source_price_log - stable_default_price_log))</td>
+                <td>direction source 후보가 해당 segment에서 어느 방향으로 움직이려 하는지 계산한다.</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>OOF 방향 합의</td>
+                <td>oof_direction_consensus = (
+    row_oof_direction_match
+    and artist_oof_direction_match
+    and p95_not_worse
+)</td>
+                <td>row OOF와 artist OOF 양쪽에서 방향이 맞고 p95가 악화되지 않는 segment만 남긴다.</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>segment gate</td>
+                <td>eligible_direction_segment = (
+    svc_group_level == "artist"
+    or (price_range_width_band == "price_range_width_low" and gap_band == "gap_005_010")
+)</td>
+                <td>검증에서 방향 일치가 확인된 대표 segment 2개만 사용한다.</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>초미세 이동</td>
+                <td>source_to_stable_move_log = direction_source_price_log - stable_default_price_log
+tiny_directional_adjustment_log = clip(0.025 * source_to_stable_move_log, -0.001, 0.001)</td>
+                <td>direction source 방향을 2.5%만 따라가고 로그 기준 최대 0.001까지만 이동한다.</td>
+              </tr>
+              <tr>
+                <td>7</td>
+                <td>최종 분기</td>
+                <td>if oof_direction_consensus and eligible_direction_segment:
+    final_price_log = stable_default_price_log + tiny_directional_adjustment_log
+else:
+    final_price_log = stable_default_price_log</td>
+                <td>방향 합의가 없거나 선택 segment가 아니면 안정 후보를 그대로 사용한다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>사용 segment rule</h3>
+        <div class="formula">svc_group_level = artist
+OR
+price_range_width_band = price_range_width_low AND gap_band = gap_005_010</div>
+        <div class="formula">source_to_stable_move_log = direction_source_price_log - stable_default_price_log
+tiny_directional_adjustment_log = clip(0.025 * source_to_stable_move_log, -0.001, 0.001)
+
+if row_artist_oof_direction_consensus_segment:
+    final_price_log = stable_default_price_log + tiny_directional_adjustment_log
+else:
+    final_price_log = stable_default_price_log</div>
+        <p class="note">판단: fixed test와 0604에서는 거의 모든 지표가 아주 작게 좋아지지만, 개선폭이 너무 작고 반복 all3 안정성이 낮다. 기본값 교체보다 검증 후보로 두는 편이 낫다.</p>
+      </section>
+
+      <section id="method-5">
+        <h2>5. q10~q90 가격범위 폭 기반 신뢰도 tier</h2>
+        <div class="method-head">
+          <span class="badge display">서비스 표시 정책</span>
+          <span class="badge">점 예측 대체 아님</span>
+          <span class="badge">test high tier MdAPE 약 0.1148</span>
+        </div>
+        <p>이 방법은 점 예측값을 바꾸는 후보가 아니다. 기본 점 예측은 1번 방법으로 유지하고, q10/q50/q90 기반 가격범위 폭과 component 예측값 분산으로 가격 범위와 신뢰도 badge를 나눈다.</p>
+
+        <div class="logic">
+          <div class="logic-box">
+            <h3>로직 설명</h3>
+            <ol>
+              <li>기본 점 예측은 1번 방법의 <code>final_price</code>를 사용한다.</li>
+              <li>별도 quantile model에서 <code>range_low_price_log</code>, <code>range_mid_price_log</code>, <code>range_high_price_log</code>를 만든다.</li>
+              <li><code>price_range_width_log = range_high_price_log - range_low_price_log</code>를 계산한다.</li>
+              <li>주요 component 간 분산인 <code>component_prediction_spread_log</code>와 함께 validation 고정 경계로 tier를 나눈다.</li>
+              <li>high 구간은 점 예측을 더 신뢰하고, low/very_low 구간은 가격 범위와 검토 필요 표시를 함께 보여준다.</li>
+            </ol>
+          </div>
+          <div class="flow">
+            <p class="flow-title">순서도</p>
+            <div class="flow-row">
+              <div class="node input"><strong>점 예측</strong><small>1번 방법 final_price</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>가격범위 예측</strong><small>range_low, range_mid, range_high</small></div>
+              <div class="arrow">→</div>
+              <div class="node"><strong>불확실성 계산</strong><small>price_range_width_log + component_prediction_spread_log</small></div>
+              <div class="arrow">→</div>
+              <div class="node gate"><strong>tier 분기</strong><small>high / medium / low / very_low</small></div>
+              <div class="arrow">→</div>
+              <div class="node output"><strong>서비스 표시</strong><small>가격 범위 + confidence tier badge</small></div>
+            </div>
+          </div>
+        </div>
+
+        <h3>순서별 공식/로직</h3>
+        <div class="table-wrap step-table">
+          <table>
+            <thead>
+              <tr><th>순서</th><th>단계</th><th>공식 또는 로직</th><th>해석</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>점 예측 고정</td>
+                <td>display_point_price_log = default_method_final_price_log
+display_point_price = exp(display_point_price_log)</td>
+                <td>신뢰도 tier는 점 예측을 바꾸지 않고 표시 정책만 결정한다.</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>quantile 범위 생성</td>
+                <td>range_low_price = exp(range_low_price_log)
+range_mid_price = exp(range_mid_price_log)
+range_high_price = exp(range_high_price_log)</td>
+                <td>로그 quantile을 원 가격 범위로 변환한다.</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>불확실성 폭 계산</td>
+                <td>price_range_width_log = range_high_price_log - range_low_price_log
+relative_price_range = (range_high_price - range_low_price) / display_point_price</td>
+                <td>로그 기준 범위 폭과 원화 기준 상대 범위 폭을 함께 본다.</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>component 예측값 분산 계산</td>
+                <td>component_prediction_spread_log = spread([similar_artwork_price_log, defensive_blend_price_log, warm_feature_price_log, range_mid_price_log])</td>
+                <td>주요 예측 component가 서로 얼마나 다른지 측정해 불확실성 신호로 사용한다.</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>tier 분기</td>
+                <td>if price_range_width_log &lt;= 1.2116 and component_prediction_spread_log &lt;= 0.2611:
+    confidence_tier = high
+elif price_range_width_log &lt;= 1.5114:
+    confidence_tier = medium
+elif price_range_width_log &lt;= 1.7065:
+    confidence_tier = low
+else:
+    confidence_tier = very_low</td>
+                <td>validation에서 고정한 경계값으로 신뢰도 구간을 나눈다.</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>서비스 표시</td>
+                <td>display = {
+    "display_point_price": display_point_price,
+    "range": [range_low_price, range_high_price],
+    "confidence_tier": confidence_tier
+}</td>
+                <td>high는 점 예측 중심, low/very_low는 가격 범위와 검토 필요 신호를 함께 노출한다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>입력 피처와 경계값</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>피처</th><th>의미</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>price_range_width_log</code></td><td>range_low~range_high 로그 가격 범위의 폭</td></tr>
+              <tr><td><code>component_prediction_spread_log</code></td><td>주요 component 예측값 간 분산</td></tr>
+              <tr><td><code>svc_group_n</code></td><td>유사 작품 그룹 표본 수</td></tr>
+              <tr><td><code>relative_price_range</code></td><td>원화 가격 범위의 상대 폭</td></tr>
+              <tr><td><code>range_low_price_log</code>, <code>range_mid_price_log</code>, <code>range_high_price_log</code></td><td>quantile model 기반 가격 범위</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="formula">price_range_width_q33 = 1.2116
+price_range_width_q66 = 1.5114
+price_range_width_q80 = 1.7065
+component_prediction_spread_log_q66 = 0.2611
+component_prediction_spread_log_q80 = 0.3789</div>
+        <div class="formula">if price_range_width_log &lt;= 1.2116 and component_prediction_spread_log &lt;= 0.2611:
+    confidence_tier = high
+elif price_range_width_log &lt;= 1.5114:
+    confidence_tier = medium
+elif price_range_width_log &lt;= 1.7065:
+    confidence_tier = low
+else:
+    confidence_tier = very_low</div>
+      </section>
+
+      <section id="operation">
+        <h2>운영 적용 순서</h2>
+        <p>현재 운영 기본 점 예측은 아래 순서를 사용한다. 연구 후보는 별도 검증이 끝날 때까지 기본값을 대체하지 않는다.</p>
+        <div class="flow">
+          <p class="flow-title">최종 권장 파이프라인</p>
+          <div class="flow-row">
+            <div class="node input"><strong>1. component 생성</strong><small>similar_artwork, defensive_blend, warm_feature</small></div>
+            <div class="arrow">→</div>
+            <div class="node"><strong>2. 70:30 기준값</strong><small>base_price_log</small></div>
+            <div class="arrow">→</div>
+            <div class="node"><strong>3. 잔차 피처</strong><small>크기, 신뢰도, gap</small></div>
+            <div class="arrow">→</div>
+            <div class="node gate"><strong>4. Huber correction</strong><small>clip + strength</small></div>
+            <div class="arrow">→</div>
+            <div class="node output"><strong>5. 점 예측</strong><small>final_price</small></div>
+            <div class="arrow">→</div>
+            <div class="node output"><strong>6. 표시 정책</strong><small>price_range + confidence_tier</small></div>
+          </div>
+        </div>
+
+        <div class="decision-grid">
+          <div class="decision">
+            <strong>운영 기본값</strong>
+            <p>70:30 기준가 + 크기/신뢰도 잔차 Huber 보정을 사용한다. fixed test, 0604 stress, row/artist OOF 반복 검증이 모두 가장 안정적이다.</p>
+          </div>
+          <div class="decision">
+            <strong>연구 후보</strong>
+            <p>기준가 gap low-risk 라우팅은 fixed test에서 더 좋아 보이지만 all3 안정성이 부족하다. 다음 개선 작업은 이 후보의 반복 안정성 보강이 우선이다.</p>
+          </div>
+          <div class="decision">
+            <strong>p95 방어 후보</strong>
+            <p>fallback-gap 라우팅과 방향 일치 초미세 이동은 큰 오차를 방어하거나 아주 작은 개선을 만드는 후보지만 운영 승격 기준에는 아직 부족하다.</p>
+          </div>
+          <div class="decision">
+            <strong>서비스 표시</strong>
+            <p>가격범위 폭 기반 tier는 점 예측 대체가 아니라 가격 범위, 신뢰도 badge, 검토 필요 여부를 나누는 정책으로 유지한다.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
