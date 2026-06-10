@@ -505,6 +505,7 @@ PP-L은 MAPE 최적화가 목표이므로 공통 기준에 아래 기준을 추�
 | `PP-CTXT1` | 실행 완료 | 제목 TF-IDF(char2-4)+SVD32 residual 보정(커버리지 100%). OOF 보정 vs 잔차 상관 `0.039`, 격자 전체 validation 악화, 게이트 진입 0 | **기각** — 이미지(0.083)에 이어 텍스트도 작가 일반화 신호 없음. 콘텐츠 신호 축 종결 |
 | `PP-CCONF2` | 실행 완료 | high tier 경계 완화 격자. validation/holdout은 통과처럼 보임(share 50%, val p95 0.95, holdout P(p95<=1.5) 0.98~1.0)이나 **fixed test에서 확대 tier p95 4.40~4.76으로 붕괴**(동결 q33/g50은 0.99) | **기각** — v0.4 동결 경계가 유일하게 test 분포 이동을 견딤. tier 확장 금지 원칙화. validation 내부 holdout은 val→test 작가 이동을 감지 못함(fixed test 최종 확인의 효용 입증) |
 | `PP-CCORR2` | 실행 완료 | Warm식 모델 특성 보정 이식: 현행 후보 6종 V2식 Huber meta(합의도+clip) + 위험 구간 한정 라우팅. **meta OOF 예측력(상관 0.824)이 research base 단독(0.844)보다 낮음**, 라우팅 전 격자 validation MAPE 악화, 게이트 진입 0 | **기각** — 모델 특성 보정은 후보 다양성이 전제인데 Cold 후보들은 동일 계열·고상관이라 의견차에 정보 없음. Warm과의 구조적 차이 확정 |
+| `PP-CBOOST1` | 실행 완료 | base 학습 축: ①5-seed 평균(차이 없음)·②HPO 3종(validation 악화) 기각. ③이종 계열(선형 Huber+그룹통계)+blend w0.4가 **세션 최초 val+test 동방향 개선**(val MAPE 0.610→0.585, test 1.214→1.172/p95 4.22→3.92) | **보류(유망)** — bootstrap p_MAPE 0.80/p_p95 0.77/p_MdAPE 0.17로 게이트 미통과(MdAPE 희생). CCORR2의 '후보 다양성 부재' 가설 입증. Cold 재개 시 1순위 = PP-CBOOST2(C 강화 + MdAPE-guard blend + pseudo-cold 검증) |
 
 ### 보류 실험
 

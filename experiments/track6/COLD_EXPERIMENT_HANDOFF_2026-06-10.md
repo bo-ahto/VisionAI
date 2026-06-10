@@ -81,3 +81,8 @@ base 예측 CSV 재생성: `python3 scripts/track6/run_pp_cbase1_cold_base_lock.
 ## 추가 (PP-CCORR2): Warm식 모델 특성 보정도 기각
 
 V2식 meta-stack(현행 후보 6종)과 PP148식 위험 구간 라우팅 모두 게이트 진입 0. meta OOF 상관 0.824 < base 단독 0.844 — Cold 후보들은 동일 계열·고상관이라 의견차에 정보가 없음(후보 다양성 전제 불성립). 트랙 결론 변동 없음.
+
+
+## 추가 (PP-CBOOST1): base 학습 축 — 이종 blend 유망 보류
+
+시드 앙상블·HPO 기각. **이종 계열(선형 Huber+그룹통계) blend w0.4가 세션 최초 val+test 동방향 개선**(val MAPE -4%, test MAPE -3.5%/p95 4.22→3.92)이나 게이트 미통과(MdAPE 희생, p95 prob 0.77). Cold 재개 시 1순위 = PP-CBOOST2 (C 강화 + MdAPE-guard blend + pseudo-cold 검증, 통과 시 v0.2 교체+재lock).
