@@ -1,0 +1,51 @@
+# Cold 가격 예측 실험 핸드오프
+
+작성일: 2026-06-10
+
+## 현재 목표
+
+Cold(unseen 작가) 가격 예측을 Warm Codex 운영 체계(base lock → 게이트 → 진단 → 타겟 실험)로 개선한다.
+로드맵: `docs/track6/experiments/cold_improvement_roadmap.md`
+
+## 대원칙 (변경 금지)
+
+- **0604는 Warm 시험 제출 전용 — Cold 실험 전 단계에서 사용 금지.**
+- 외부 검증 축은 ① artist 반복 holdout, ② pseudo-cold 평가셋(PP-PCOLD1).
+- test로 후보/경계값 선택 금지(최종 확인 1회). 보정/경계는 validation fold 내부에서만.
+
+## 고정 기준 (PP-CBASE1, test MdAPE/MAPE/p95)
+
+| base | 정의 | test |
+|---|---|---|
+| `COLD_BASE_RESEARCH_V1` | v0.3 guard+search 체인 (`research_base_pred_log`) | 0.4098 / 0.8493 / 2.3465 |
+| `COLD_BASE_OPERATIONAL_V1` | v0.2 search-free 방어 서빙값 (`v02_defense_pred_log`) | 0.4852 / 1.1771 / 4.1223 |
+
+- 고정 base 예측: `experiments/track6/PP-CBASE1_cold_base_lock/outputs/fixed_cold_base_rows.csv` (스크립트로 재생성 가능)
+- 채택 게이트(1차): validation 작가 80%/70% holdout 각 ≥200회 — base 대비 MAPE ≥0.90 AND p95 ≥0.90, MdAPE ≥0.50. row subsample 보조, fixed test 최종 1회.
+
+## 완료된 실험
+
+| 실험 | 결과 | 다음에 주는 좌표 |
+|---|---|---|
+| `PP-CBASE1` (Phase 0) | 이중 base lock + 정책 JSON 재현 검증 통과. 작가 쏠림 정량화(중앙값 5~6행, 최대 275~366행) | 모든 후속 실험의 고정 기준 |
+| `PP-PCOLD1` (Phase 0.5) | pseudo-cold 평가셋(seed 3개, 각 ~210작가/1,206행). pseudo defense 0.5772/1.1877/4.1654 — real cold보다 어려움. **신규 작가의 검색 lookup 커버리지 0.0** | 절대 레벨 비교 금지, base 대비 delta + seed 3개 방향 일치로만 사용. 검색 커버리지 확대는 신규 작가 서빙의 전제 조건 |
+| `PP-CDIAG1` (Phase 1) | 위험 구간(validation): gap_extreme(운영 2.02배), qwidth_extreme(1.77배/과소예측), guard_on, artist_rows_3_9. APE 상관: qwidth +0.215, 검색 delta -0.159, 작가 행수 -0.157. **위험 구간의 test 전이 약함(0.60~0.94) → 가설 취급** | Phase 2~3 타겟: qwidth_extreme+저행수 작가(이미지 선택 적용), 검색 커버리지(점 예측+fallback 양쪽 유효), qwidth는 표시 정책으로 |
+
+## 다음 작업 (Phase 2, 착수 전 결정 필요)
+
+1. **PP-CSRCH1 — 검색 delta 커버리지 확대 설계**: 현 lookup은 cold split 372작가 frozen. 신규 작가 커버 0% (PCOLD1 정량 확인). 수집 확대는 비용이 들어 **cold 운영 트래픽 전망 확인 후 착수 결정** (로드맵 §3). 선행으로 "수집 없이 가능한 것" 검증 가치: 검색 delta를 작가 단위가 아니라 작가 메타/매체/가격대 그룹 단위로 일반화해 미커버 작가에 전이하는 후보.
+2. **PP-CIMG1 — 이미지 임베딩 선택 적용**: IMG-P4 결론(전 구간 X, 고위험 구간 한정 residual 보정) + CDIAG1 위험 구간(qwidth_extreme, artist_rows_3_9)을 결합. pseudo-cold(PCOLD1)를 외부 검증 축으로 사용. 데이터 준비 상태는 `audit_track6_image_multimodal_readiness.py` 참고.
+3. **PP-CCONF1 — 신뢰도 tier 정책**: qwidth(+작가 행수, 검색 커버 여부)로 Warm CF1식 tier를 Cold에 이식, 기존 검수 플래그(검수율 45.2%)와 통합. 점 예측 변경 없이 서비스 가치 — 가장 싸고 빠름.
+
+권장 순서: 3(CCONF1, 분석만으로 가능) → 2(CIMG1) → 1(CSRCH1, 트래픽 전망 확인 후).
+
+## 재시작 후 바로 확인할 파일
+
+```text
+docs/track6/experiments/cold_improvement_roadmap.md
+experiments/track6/PP-CBASE1_cold_base_lock/reports/cold_base_lock.md
+experiments/track6/PP-CDIAG1_cold_residual_diagnosis/outputs/risk_segments.csv
+experiments/track6/PP-PCOLD1_pseudo_cold_eval_set/outputs/pseudo_cold_metrics.csv
+```
+
+base 예측 CSV 재생성: `python3 scripts/track6/run_pp_cbase1_cold_base_lock.py`
