@@ -1,0 +1,52 @@
+{
+  "experiment_id": "PP-AMW9_warm_artist_feature_impact_summary",
+  "created_at": "2026-06-08",
+  "baseline_candidate": "blend_svcnum_ppv8_wsvc_0.70",
+  "purpose": "Summarize feature-level and treatment-level residual correction impact for Warm artist-related price prediction experiments.",
+  "reports": [
+    "reports/artist_feature_impact_summary.md",
+    "reports/artist_feature_impact_summary.html",
+    "reports/feature_treatment_numeric_impact_summary.md",
+    "reports/feature_treatment_numeric_impact_summary.html"
+  ],
+  "numeric_outputs": [
+    "outputs/feature_level_numeric_impact.csv",
+    "outputs/feature_combo_numeric_impact.csv",
+    "outputs/warm_group_drop_numeric_impact.csv",
+    "outputs/latest_residual_treatment_numeric_impact.csv"
+  ],
+  "source_experiments": [
+    "experiments/track6/PP-AMW5_warm_artist_meta_external_coefficient_correction",
+    "experiments/track6/PP-AMW6_warm_artist_meta_residual_revalidation",
+    "experiments/track6/PP-AMW7_warm_artist_related_single_feature_residual_correction",
+    "experiments/track6/PP-AMW8_warm_artist_signal_combo_residual_correction"
+  ],
+  "recommended_next_candidates": [
+    {
+      "treatment": "huber_residual",
+      "features": ["artist_birth_generation_bin"],
+      "cap": 0.03,
+      "strength": 0.75,
+      "reason": "Best practical balance across fixed test MAPE, MdAPE, p95_APE and bootstrap stability."
+    },
+    {
+      "treatment": "huber_residual",
+      "features": ["artist_birth_generation_bin"],
+      "cap": 0.03,
+      "strength": 0.5,
+      "reason": "More conservative correction amplitude and stronger p95 defense."
+    },
+    {
+      "treatment": "segment_median",
+      "features": ["artist_meta_birth_year"],
+      "cap": 0.03,
+      "reason": "Strong single-feature signal when correction cap is tightly limited."
+    },
+    {
+      "treatment": "segment_median",
+      "features": ["artist_meta_career_stage"],
+      "cap": 0.03,
+      "reason": "Only single feature with fixed test improvements across MdAPE, MAPE, and p95_APE under selected settings."
+    }
+  ]
+}

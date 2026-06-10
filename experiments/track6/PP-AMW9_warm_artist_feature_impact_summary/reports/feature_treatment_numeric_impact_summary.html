@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track6 피처/조합/처리별 수치 영향도 종합</title>
+  <style>
+    body { margin: 0; background: #f5f7fb; color: #1f2937; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.55; }
+    main { width: min(1220px, calc(100% - 36px)); margin: 28px auto 56px; background: #fff; border: 1px solid #d9dee7; border-radius: 8px; padding: 32px; }
+    h1 { margin: 0 0 10px; color: #173b73; font-size: 30px; letter-spacing: 0; }
+    h2 { margin: 34px 0 12px; padding-top: 18px; border-top: 2px solid #d9dee7; color: #173b73; font-size: 22px; letter-spacing: 0; }
+    p, li { font-size: 15px; }
+    .note { background: #eef4ff; border-left: 5px solid #244f91; padding: 13px 15px; border-radius: 6px; margin: 18px 0; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0 24px; font-size: 13px; }
+    th, td { border: 1px solid #d9dee7; padding: 8px 9px; vertical-align: top; }
+    th { background: #173b73; color: #fff; text-align: left; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .good { color: #0f766e; font-weight: 650; }
+    .bad { color: #b42318; font-weight: 650; }
+    .warn { color: #a16207; font-weight: 650; }
+    code { background: #f1f5f9; padding: 2px 5px; border-radius: 5px; font-size: 13px; }
+    @media (max-width: 900px) { main { width: calc(100% - 18px); padding: 20px; } table { display: block; overflow-x: auto; white-space: nowrap; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Track6 피처/조합/처리별 수치 영향도 종합</h1>
+  <p>작가 메타뿐 아니라 작품 관련 피처까지 포함해, 피처 단독/피처 조합/후처리 방식의 성능 영향도를 수치로 비교한다.</p>
+  <div class="note">델타값은 기준 대비 변화량이다. 음수는 개선, 양수는 악화다. 기준선이 다른 표끼리는 직접 순위 비교하지 않고, 같은 표 안에서만 비교한다.</div>
+
+  <h2>1. 결론 요약</h2>
+  <table>
+    <thead><tr><th>우선순위</th><th>피처/처리 축</th><th>수치 근거</th><th>판단</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>작품 크기</td><td>Warm 그룹 제거 시 test MdAPE <code>0.2274 -> 0.5508</code>, delta <span class="bad">+0.3233</span></td><td>필수 축</td></tr>
+      <tr><td class="num">2</td><td>작가명 + 작품 크기 조합</td><td>Warm 초기 조합 MdAPE <code>0.4352 -> 0.1569</code>, <span class="good">-63.95%</span></td><td>Warm 핵심 조합</td></tr>
+      <tr><td class="num">3</td><td>작가 세대 Huber 보정</td><td>최신 Warm 기준 MdAPE/MAPE/p95 delta <span class="good">-0.0023/-0.0010/-0.0191</span></td><td>최신 보정 1순위</td></tr>
+      <tr><td class="num">4</td><td>작품 크기+비교군 신뢰도 weak Huber</td><td>최신 Warm 기준 p95 delta <span class="good">-0.0217</span>, MAPE delta <span class="good">-0.0004</span></td><td>p95 방어 후보</td></tr>
+      <tr><td class="num">5</td><td>깊이/3D</td><td>Cold 초기 실험 MdAPE <code>0.5083 -> 0.4468</code>, <span class="good">-12.10%</span></td><td>Cold에서 강함</td></tr>
+      <tr><td class="num">6</td><td>재료/지지체</td><td>단독은 악화, 조합에서는 Warm <span class="good">-3.50%</span>, Cold <span class="good">-2.53%</span></td><td>조합 피처</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. 모델 내부 영향도</h2>
+  <table>
+    <thead><tr><th>Warm feature_group</th><th>mean_abs_centered_contribution_sum</th><th>순위</th><th>해석</th></tr></thead>
+    <tbody>
+      <tr><td>size</td><td class="num">1.2222</td><td class="num">1</td><td>작품 크기가 Warm 예측값을 가장 크게 움직임</td></tr>
+      <tr><td>medium_support</td><td class="num">0.5625</td><td class="num">2</td><td>재료+지지체 조합이 가격대 보정 역할</td></tr>
+      <tr><td>support</td><td class="num">0.5121</td><td class="num">3</td><td>지지체 단독 영향</td></tr>
+      <tr><td>medium</td><td class="num">0.4920</td><td class="num">4</td><td>재료 단독 영향</td></tr>
+      <tr><td>artist</td><td class="num">0.4353</td><td class="num">5</td><td>Warm 작가 가격대 반영</td></tr>
+      <tr><td>depth_3d</td><td class="num">0.0320</td><td class="num">6</td><td>Warm 선형 구조에서는 작음</td></tr>
+      <tr><td>shape</td><td class="num">0.0067</td><td class="num">7</td><td>보조 수준</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Cold 구분</th><th>피처/조합</th><th>수치</th><th>순위</th><th>해석</th></tr></thead>
+    <tbody>
+      <tr><td>SHAP</td><td>width_cm</td><td class="num">0.2629</td><td class="num">1</td><td>Cold 크기 분기 핵심</td></tr>
+      <tr><td>SHAP</td><td>area_cm2</td><td class="num">0.2217</td><td class="num">2</td><td>크기 축</td></tr>
+      <tr><td>SHAP</td><td>log_area</td><td class="num">0.1974</td><td class="num">3</td><td>크기 축</td></tr>
+      <tr><td>SHAP</td><td>depth_cm</td><td class="num">0.0940</td><td class="num">5</td><td>3D/입체성 신호</td></tr>
+      <tr><td>interaction</td><td>width_cm x depth_cm</td><td class="num">5.5493</td><td class="num">1</td><td>큰 입체/오브제 구간 분리</td></tr>
+      <tr><td>interaction</td><td>height_cm x depth_cm</td><td class="num">5.2242</td><td class="num">2</td><td>크기와 깊이 조합 효과</td></tr>
+      <tr><td>interaction</td><td>depth_cm x medium_category</td><td class="num">4.8243</td><td class="num">4</td><td>재료에 따라 깊이 의미 변화</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 작품 피처 단독/추가 영향</h2>
+  <table>
+    <thead><tr><th>scope</th><th>피처</th><th>비교</th><th>기준 MdAPE</th><th>후보 MdAPE</th><th>delta</th><th>개선율</th><th>MAPE 변화</th><th>p95 변화</th><th>판단</th></tr></thead>
+    <tbody>
+      <tr><td>Warm</td><td>작품 크기 파생</td><td>artist+호수 대비 all_size</td><td class="num">0.1946</td><td class="num">0.1801</td><td class="num good">-0.0145</td><td class="num good">-7.45%</td><td class="num good">-0.0143</td><td class="num good">-0.0550</td><td>강함</td></tr>
+      <tr><td>Cold</td><td>작품 크기 파생</td><td>호수 대비 width/height/aspect</td><td class="num">0.5083</td><td class="num">0.5056</td><td class="num good">-0.0027</td><td class="num good">-0.53%</td><td class="num bad">+0.0599</td><td class="num bad">+0.0583</td><td>MdAPE만 소폭</td></tr>
+      <tr><td>Warm</td><td>지지체</td><td>artist+호수 대비 support</td><td class="num">0.1946</td><td class="num">0.1925</td><td class="num good">-0.0021</td><td class="num good">-1.08%</td><td class="num bad">+0.0025</td><td class="num good">-0.0448</td><td>p95 방어</td></tr>
+      <tr><td>Cold</td><td>지지체</td><td>호수 대비 support</td><td class="num">0.5083</td><td class="num">0.4812</td><td class="num good">-0.0271</td><td class="num good">-5.33%</td><td class="num bad">+0.1395</td><td class="num good">-0.0330</td><td>목적별 판단</td></tr>
+      <tr><td>Warm</td><td>깊이/3D</td><td>artist+호수 대비 depth</td><td class="num">0.1946</td><td class="num">0.1970</td><td class="num bad">+0.0024</td><td class="num bad">+1.23%</td><td class="num good">-0.0008</td><td class="num good">-0.0099</td><td>Warm 단독 약함</td></tr>
+      <tr><td>Cold</td><td>깊이/3D</td><td>호수 대비 depth</td><td class="num">0.5083</td><td class="num">0.4468</td><td class="num good">-0.0615</td><td class="num good">-12.10%</td><td class="num bad">+0.0075</td><td class="num bad">+0.1561</td><td>MdAPE 강함, tail 주의</td></tr>
+      <tr><td>Warm</td><td>재료 단독</td><td>크기 대비 material only</td><td class="num">0.5052</td><td class="num">0.7177</td><td class="num bad">+0.2125</td><td class="num bad">+42.06%</td><td>-</td><td>-</td><td>단독 부적합</td></tr>
+      <tr><td>Cold</td><td>작품 유형</td><td>basic artwork 대비 type</td><td class="num">0.4956</td><td class="num">0.4813</td><td class="num good">-0.0143</td><td class="num good">-2.87%</td><td>-</td><td>-</td><td>보조 효과</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. 피처 조합 영향</h2>
+  <table>
+    <thead><tr><th>scope</th><th>피처 조합</th><th>기준</th><th>기준 MdAPE</th><th>후보</th><th>후보 MdAPE</th><th>delta</th><th>개선율</th><th>판단</th></tr></thead>
+    <tbody>
+      <tr><td>Warm</td><td>작가명 + 전체 크기</td><td>artist only</td><td class="num">0.4352</td><td>artist + size</td><td class="num">0.1569</td><td class="num good">-0.2783</td><td class="num good">-63.95%</td><td>Warm 최강 조합</td></tr>
+      <tr><td>Warm</td><td>작가명 + 기본 작품 피처</td><td>artist only</td><td class="num">0.4352</td><td>artist + 호수/재료/지지체</td><td class="num">0.1801</td><td class="num good">-0.2551</td><td class="num good">-58.62%</td><td>Warm 핵심</td></tr>
+      <tr><td>Warm</td><td>크기 + 재료</td><td>ln_size only</td><td class="num">0.5052</td><td>log_area + material</td><td class="num">0.4764</td><td class="num good">-0.0288</td><td class="num good">-5.70%</td><td>재료는 조합에서 의미</td></tr>
+      <tr><td>Warm</td><td>크기/재료 + 지지체</td><td>size + material</td><td class="num">0.4432</td><td>size + material + support</td><td class="num">0.4277</td><td class="num good">-0.0155</td><td class="num good">-3.50%</td><td>지지체 조합 효과</td></tr>
+      <tr><td>Cold</td><td>작품 기본 + 활동/인지도 CatBoost</td><td>basic artwork</td><td class="num">0.4795</td><td>activity/popularity CatBoost</td><td class="num">0.4488</td><td class="num good">-0.0307</td><td class="num good">-6.40%</td><td>Cold 상위</td></tr>
+      <tr><td>Cold</td><td>작품 기본 + 활동/판매노출</td><td>basic artwork</td><td class="num">0.4795</td><td>activity/sales</td><td class="num">0.4577</td><td class="num good">-0.0218</td><td class="num good">-4.55%</td><td>Cold 핵심 메타</td></tr>
+      <tr><td>Cold</td><td>작품 유형 + 깊이/3D</td><td>basic artwork + type</td><td class="num">0.4813</td><td>+ depth/3D</td><td class="num">0.4745</td><td class="num good">-0.0068</td><td class="num good">-1.41%</td><td>Cold depth 조합</td></tr>
+      <tr><td>Cold</td><td>면적 x 지지체</td><td>basic artwork</td><td class="num">0.4795</td><td>area x support</td><td class="num">0.4745</td><td class="num good">-0.0050</td><td class="num good">-1.04%</td><td>interaction 후보</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. 최신 Warm 후처리 영향</h2>
+  <p>기준 후보는 <code>blend_svcnum_ppv8_wsvc_0.70</code>이고 test 기준 성능은 MdAPE 0.1405, MAPE 0.2748, p95_APE 0.8331이다.</p>
+  <table>
+    <thead><tr><th>피처/조합</th><th>처리 방식</th><th>후보 MdAPE</th><th>delta MdAPE</th><th>후보 MAPE</th><th>delta MAPE</th><th>후보 p95</th><th>delta p95</th><th>판단</th></tr></thead>
+    <tbody>
+      <tr><td>작가 세대 구간</td><td>Huber residual cap0.03 s0.75</td><td class="num">0.1381</td><td class="num good">-0.0023</td><td class="num">0.2738</td><td class="num good">-0.0010</td><td class="num">0.8140</td><td class="num good">-0.0191</td><td>최신 보정 1순위</td></tr>
+      <tr><td>작가 생년</td><td>Segment median cap0.03</td><td class="num">0.1370</td><td class="num good">-0.0035</td><td class="num">0.2747</td><td class="num good">-0.0001</td><td class="num">0.8240</td><td class="num good">-0.0091</td><td>cap 제한 조건부</td></tr>
+      <tr><td>작품 크기+형태+비교군 신뢰도</td><td>Weak Huber cap0.03 s0.50</td><td class="num">0.1397</td><td class="num good">-0.0008</td><td class="num">0.2744</td><td class="num good">-0.0004</td><td class="num">0.8114</td><td class="num good">-0.0217</td><td>p95 방어 후보</td></tr>
+      <tr><td>작품 면적 구간</td><td>validation MAPE segment</td><td class="num">0.1691</td><td class="num bad">+0.0286</td><td class="num">0.2744</td><td class="num good">-0.0004</td><td class="num">0.8268</td><td class="num good">-0.0062</td><td>MdAPE 악화</td></tr>
+      <tr><td>예측 불확실성 구간</td><td>quantile width segment</td><td class="num">0.1638</td><td class="num bad">+0.0233</td><td class="num">0.2674</td><td class="num good">-0.0074</td><td class="num">0.8322</td><td class="num good">-0.0009</td><td>MAPE 목적 전용</td></tr>
+      <tr><td>크기 계수 재학습</td><td>Huber retrain size coefficients</td><td class="num">0.2178</td><td class="num bad">+0.0773</td><td class="num">0.4914</td><td class="num bad">+0.2166</td><td class="num">1.8883</td><td class="num bad">+1.0552</td><td>부적합</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 세부 CSV</h2>
+  <ul>
+    <li><code>outputs/feature_level_numeric_impact.csv</code></li>
+    <li><code>outputs/feature_combo_numeric_impact.csv</code></li>
+    <li><code>outputs/warm_group_drop_numeric_impact.csv</code></li>
+    <li><code>outputs/latest_residual_treatment_numeric_impact.csv</code></li>
+  </ul>
+</main>
+</body>
+</html>
+

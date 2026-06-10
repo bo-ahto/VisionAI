@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm 작가 관련 피처/처리별 영향도 종합</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #1d2733;
+      --muted: #667085;
+      --line: #d9dee7;
+      --head: #173b73;
+      --head-2: #244f91;
+      --good: #0f766e;
+      --warn: #a16207;
+      --bad: #b42318;
+      --code: #f1f5f9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.58;
+    }
+    main {
+      width: min(1180px, calc(100% - 40px));
+      margin: 28px auto 56px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 34px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 30px;
+      letter-spacing: 0;
+      color: var(--head);
+    }
+    h2 {
+      margin: 34px 0 12px;
+      padding-top: 18px;
+      border-top: 2px solid var(--line);
+      font-size: 22px;
+      color: var(--head);
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 18px;
+      color: var(--head-2);
+      letter-spacing: 0;
+    }
+    p, li { font-size: 15px; }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+      margin: 18px 0 22px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .callout {
+      border-left: 5px solid var(--head-2);
+      background: #eef4ff;
+      padding: 14px 16px;
+      margin: 18px 0;
+      border-radius: 6px;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .flow div {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfe;
+      min-height: 82px;
+      position: relative;
+    }
+    .flow div:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      right: -10px;
+      top: 32px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .flow b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--head);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 22px;
+      font-size: 14px;
+    }
+    th {
+      background: var(--head);
+      color: white;
+      text-align: left;
+      font-weight: 650;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      vertical-align: top;
+    }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .good { color: var(--good); font-weight: 650; }
+    .warn { color: var(--warn); font-weight: 650; }
+    .bad { color: var(--bad); font-weight: 650; }
+    code, pre {
+      background: var(--code);
+      border-radius: 6px;
+    }
+    code {
+      padding: 2px 5px;
+      font-size: 13px;
+    }
+    pre {
+      padding: 13px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      font-size: 13px;
+    }
+    @media (max-width: 860px) {
+      main { width: calc(100% - 18px); padding: 20px; }
+      .flow { grid-template-columns: 1fr; }
+      .flow div:not(:last-child)::after { content: "v"; right: 14px; top: auto; bottom: -18px; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Warm 작가 관련 피처/처리별 영향도 종합</h1>
+  <div class="meta">
+    <div>작성일: 2026-06-08</div>
+    <div>기준 모델: <code>blend_svcnum_ppv8_wsvc_0.70</code></div>
+    <div>평가 관점: validation OOF, fixed test, bootstrap</div>
+  </div>
+  <div class="callout">
+    이 문서의 영향도는 모델 내부 feature importance가 아니라, 기준 Warm log 예측값에 피처별 잔차 보정을 적용했을 때 <b>MdAPE, MAPE, p95_APE</b>가 얼마나 개선됐는지를 뜻한다. 델타값은 음수일 때 개선이다.
+  </div>
+
+  <h2>1. 기준 성능</h2>
+  <table>
+    <thead><tr><th>split</th><th>RMSE_log</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>Within_30</th><th>Within_50</th></tr></thead>
+    <tbody>
+      <tr><td>validation</td><td class="num">0.3292</td><td class="num">0.1305</td><td class="num">0.2110</td><td class="num">0.6580</td><td class="num">0.7746</td><td class="num">0.9075</td></tr>
+      <tr><td>test</td><td class="num">0.3996</td><td class="num">0.1405</td><td class="num">0.2748</td><td class="num">0.8331</td><td class="num">0.7628</td><td class="num">0.8781</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. 피처별 영향도 요약</h2>
+  <table>
+    <thead><tr><th>피처 그룹</th><th>대표 피처</th><th>관찰된 영향</th><th>판단</th></tr></thead>
+    <tbody>
+      <tr><td>작가 세대</td><td><code>artist_birth_generation_bin</code></td><td>validation과 test에서 p95 방어가 반복 확인됐고 Huber 처리 시 MAPE도 개선됨.</td><td class="good">가장 안정적인 보정축</td></tr>
+      <tr><td>작가 생년</td><td><code>artist_meta_birth_year</code></td><td>신호는 강하지만 cap이 커지면 test에서 과보정됨.</td><td class="good">cap 0.03 조건부 유효</td></tr>
+      <tr><td>작가 커리어 단계</td><td><code>artist_meta_career_stage</code></td><td>단일 피처 test에서 MdAPE/MAPE/p95 모두 개선.</td><td class="warn">보조 후보</td></tr>
+      <tr><td>전시 횟수</td><td><code>artist_exhibition_*_count</code></td><td>validation 신호는 있으나 test에서 지표가 엇갈림.</td><td class="warn">진단용</td></tr>
+      <tr><td>시장 깊이/거래성</td><td><code>followers</code>, <code>for_sale_works</code></td><td>p95 방어 신호는 있으나 대표 정확도는 흔들림.</td><td class="warn">p95 전용 후보</td></tr>
+      <tr><td>갤러리 관련</td><td><code>gallery_tier_*</code></td><td>커버리지와 값 다양성이 부족함.</td><td class="bad">현재 제외</td></tr>
+      <tr><td>작가 직접 식별자</td><td><code>artist_key</code>, 작가명</td><td>작가 단위 OOF에서 실질 개선이 0에 가까움.</td><td class="bad">블라인드 취약</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 핵심 피처 상세</h2>
+  <h3>작가 세대 구간</h3>
+  <p><code>artist_birth_generation_bin</code>은 작가 생년을 세대 구간으로 묶은 범주형 피처다. 직접 생년보다 거칠게 묶이기 때문에 특정 작가나 특정 연도에 과적합될 가능성이 낮다.</p>
+  <table>
+    <thead><tr><th>처리 방식</th><th>설정</th><th>test delta MdAPE</th><th>test delta MAPE</th><th>test delta p95</th><th>평균 보정폭</th></tr></thead>
+    <tbody>
+      <tr><td>Huber 잔차 보정</td><td>cap 0.03, strength 0.75</td><td class="num good">-0.0023</td><td class="num good">-0.0010</td><td class="num good">-0.0191</td><td class="num">0.0129</td></tr>
+      <tr><td>Huber 잔차 보정</td><td>cap 0.03, strength 0.50</td><td class="num good">-0.0019</td><td class="num good">-0.0008</td><td class="num good">-0.0222</td><td class="num">0.0086</td></tr>
+      <tr><td>세그먼트 median</td><td>cap 0.03</td><td class="num good">-0.0029</td><td class="num warn">+0.0004</td><td class="num good">-0.0092</td><td class="num">0.0107</td></tr>
+    </tbody>
+  </table>
+
+  <h3>작가 생년</h3>
+  <p><code>artist_meta_birth_year</code>는 강한 신호를 갖지만 커버리지가 validation 46.8%, test 35.1% 수준이고 cap이 커질수록 test 과보정이 발생했다.</p>
+  <table>
+    <thead><tr><th>설정</th><th>validation delta MdAPE</th><th>validation delta MAPE</th><th>validation delta p95</th><th>test delta MdAPE</th><th>test delta MAPE</th><th>test delta p95</th></tr></thead>
+    <tbody>
+      <tr><td>cap 0.08</td><td class="num good">-0.0074</td><td class="num good">-0.0007</td><td class="num good">-0.0125</td><td class="num bad">+0.0041</td><td class="num bad">+0.0031</td><td class="num bad">+0.0031</td></tr>
+      <tr><td>cap 0.05</td><td class="num good">-0.0044</td><td class="num good">-0.0012</td><td class="num good">-0.0125</td><td class="num good">-0.0023</td><td class="num warn">+0.0009</td><td class="num warn">+0.0031</td></tr>
+      <tr><td>cap 0.03</td><td class="num good">-0.0042</td><td class="num good">-0.0013</td><td class="num good">-0.0125</td><td class="num good">-0.0035</td><td class="num good">-0.0001</td><td class="num good">-0.0091</td></tr>
+    </tbody>
+  </table>
+
+  <h3>작가 커리어 단계</h3>
+  <p><code>artist_meta_career_stage</code>는 단일 피처 test에서 세 지표가 모두 개선됐다. 다만 validation MAPE 개선이 강하지 않아 기본 후보보다는 보조 후보로 보는 것이 맞다.</p>
+  <table>
+    <thead><tr><th>설정</th><th>validation delta MdAPE</th><th>validation delta MAPE</th><th>validation delta p95</th><th>test delta MdAPE</th><th>test delta MAPE</th><th>test delta p95</th></tr></thead>
+    <tbody>
+      <tr><td>cap 0.03</td><td class="num good">-0.0032</td><td class="num warn">+0.0005</td><td class="num good">-0.0061</td><td class="num good">-0.0028</td><td class="num good">-0.0008</td><td class="num good">-0.0039</td></tr>
+      <tr><td>cap 0.05</td><td class="num good">-0.0032</td><td class="num warn">+0.0003</td><td class="num good">-0.0061</td><td class="num good">-0.0021</td><td class="num good">-0.0011</td><td class="num good">-0.0039</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. 처리 방식 로직</h2>
+  <h3>단일 피처 세그먼트 median 보정</h3>
+  <div class="flow">
+    <div><b>1. 기준 예측</b>Warm log 예측값 산출</div>
+    <div><b>2. 잔차 계산</b>실제 log 가격과 예측값 차이 계산</div>
+    <div><b>3. 구간 집계</b>피처 값 또는 구간별 median 잔차 계산</div>
+    <div><b>4. 제한</b>min_n, strength, cap 적용</div>
+    <div><b>5. 최종 보정</b>기준 log 예측값에 보정값 추가</div>
+  </div>
+  <pre><code>base_residual_log = actual_log_price - base_prediction_log
+segment_correction = median(base_residual_log in same segment)
+safe_correction = clip(segment_correction * strength, -cap, +cap)
+corrected_prediction_log = base_prediction_log + safe_correction</code></pre>
+
+  <h3>Huber 잔차 보정</h3>
+  <div class="flow">
+    <div><b>1. 잔차 목표</b>기준 모델 잔차를 target으로 설정</div>
+    <div><b>2. 피처 입력</b>세대, 생년, 커리어 단계 선택</div>
+    <div><b>3. Huber 학습</b>이상치 영향이 낮은 잔차 모델 학습</div>
+    <div><b>4. 보정폭 제한</b>strength와 cap 적용</div>
+    <div><b>5. 예측 보정</b>log 공간에서 보정 후 가격 변환</div>
+  </div>
+  <pre><code>target_residual_log = actual_log_price - base_prediction_log
+estimated_residual_log = HuberResidualModel(selected_features)
+safe_correction = clip(estimated_residual_log * strength, -cap, +cap)
+corrected_prediction_log = base_prediction_log + safe_correction</code></pre>
+
+  <h2>5. 처리 방식별 판단</h2>
+  <table>
+    <thead><tr><th>처리 방식</th><th>좋았던 조건</th><th>문제 조건</th><th>최종 판단</th></tr></thead>
+    <tbody>
+      <tr><td>단일 세그먼트 median</td><td>생년 cap 0.03, 커리어 단계 cap 0.03</td><td>cap 0.05 이상 생년 과보정</td><td>피처 진단과 보조 후보에 적합</td></tr>
+      <tr><td>Huber 잔차 보정</td><td>세대 구간 단독, cap 0.03, strength 0.50/0.75</td><td>다중 피처와 큰 cap 조합</td><td class="good">우선 운영 후보</td></tr>
+      <tr><td>Ridge 잔차 보정</td><td>작은 cap, 낮은 strength</td><td>test MAPE 악화가 잦음</td><td>비교군으로 유지</td></tr>
+      <tr><td>다중 피처 조합</td><td>validation p95 개선</td><td>test MdAPE/MAPE 악화</td><td class="warn">현재는 과적합 위험</td></tr>
+      <tr><td>전시/갤러리 Huber</td><td>반복 validation p95 일부 개선</td><td>test 3지표 악화</td><td class="bad">채택 보류</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 현재 추천 순위</h2>
+  <table>
+    <thead><tr><th>순위</th><th>추천 처리</th><th>사용 피처</th><th>추천 이유</th><th>주의점</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>약한 Huber 잔차 보정</td><td>작가 세대 구간</td><td>test 3지표 개선, bootstrap MAPE/p95 안정성 양호</td><td>MdAPE 개선 확률은 중간 수준</td></tr>
+      <tr><td class="num">2</td><td>더 보수적인 Huber 잔차 보정</td><td>작가 세대 구간</td><td>보정폭이 작고 p95 방어가 좋음</td><td>MAPE 개선 폭은 1순위보다 작음</td></tr>
+      <tr><td class="num">3</td><td>단일 세그먼트 보정</td><td>작가 생년</td><td>cap 0.03에서 test 개선</td><td>생년 커버리지 낮음</td></tr>
+      <tr><td class="num">4</td><td>단일 세그먼트 보정</td><td>작가 커리어 단계</td><td>test 3지표 개선</td><td>validation MAPE 약함</td></tr>
+      <tr><td class="num">5</td><td>제한적 p95 방어</td><td>판매 작품 수/팔로워</td><td>큰 오차 방어 신호</td><td>대표 정확도 악화 가능</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. 다음 실험 방향</h2>
+  <ol>
+    <li>세대 Huber <code>cap=0.03</code>, <code>strength=0.50/0.75</code>를 신규 split과 0604 데이터에서 반복 검증한다.</li>
+    <li>생년 cap 0.03과 커리어 단계 cap 0.03을 보조 후보로 같은 조건에서 재검증한다.</li>
+    <li>작가 단위 cluster bootstrap을 유지해 블라인드 작가 조건에 대한 안정성을 확인한다.</li>
+    <li>직접 식별자, 갤러리, 전시 조합은 기본 후보에서 제외하고 진단표에만 남긴다.</li>
+    <li>p95 개선이 목표일 때만 판매 작품 수/팔로워 계열을 gated correction으로 별도 실험한다.</li>
+  </ol>
+
+  <h2>8. 참고 산출물</h2>
+  <ul>
+    <li>단일 피처 영향도: <code>experiments/track6/PP-AMW7_warm_artist_related_single_feature_residual_correction/reports/result_report.md</code></li>
+    <li>피처 조합 처리 영향도: <code>experiments/track6/PP-AMW8_warm_artist_signal_combo_residual_correction/reports/result_report.md</code></li>
+    <li>반복 재검증: <code>experiments/track6/PP-AMW6_warm_artist_meta_residual_revalidation/reports/result_report.md</code></li>
+    <li>이전 작가 메타 Huber 후보: <code>experiments/track6/PP-AMW5_warm_artist_meta_external_coefficient_correction/reports/result_report.md</code></li>
+  </ul>
+</main>
+</body>
+</html>
+
