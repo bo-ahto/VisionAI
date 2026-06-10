@@ -1,0 +1,40 @@
+{
+  "experiment_id": "PP-CSRCH1",
+  "purpose": "수집 없이 검색 delta를 그룹 일반화해 미커버 작가 fallback(guard-only)을 대체할 수 있는지 검증",
+  "delta_lookup_stats": {
+    "mean": -0.030066327077313087,
+    "std": 0.047794690424300845,
+    "25%": -0.0312953665890614,
+    "50%": -0.03129536658906133,
+    "75%": -0.03129536658906083
+  },
+  "delta_outlier_share_abs_gt_0.05": 0.056451612903225805,
+  "candidates": [
+    "const_median",
+    "const_mean",
+    "medium_group_median",
+    "price_band_median",
+    "huber_lowdim_meta"
+  ],
+  "strengths": [
+    0.5,
+    1.0
+  ],
+  "delta_cap": 0.2,
+  "meta_coverage_artist": {
+    "artist_meta_birth_year": 0.45698924731182794,
+    "artist_meta_followers": 0.8413978494623656,
+    "artist_meta_total_works": 0.8413978494623656
+  },
+  "gate": "artist [0.8, 0.7] holdout 각 200회 vs guard-only, MAPE/p95>=0.90, MdAPE>=0.50",
+  "test_protocol": "test 작가 전원 미커버 가정, validation 작가로만 적합 (test delta 미사용)",
+  "seed": 20260610,
+  "sources": {
+    "base_rows": "experiments/track6/PP-CBASE1_cold_base_lock/outputs/fixed_cold_base_rows.csv",
+    "lookup": "models/track6/cold_prediction_v0.3/config/search_delta_lookup_v0_3.json"
+  },
+  "prohibitions": [
+    "0604 사용 금지",
+    "test 후보 선택 금지(최종 확인 1회)"
+  ]
+}

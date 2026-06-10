@@ -39,12 +39,14 @@ Cold(unseen 작가) 가격 예측을 Warm Codex 운영 체계(base lock → 게�
 2. **PP-CIMG1 — 이미지 임베딩 선택 적용**: IMG-P4 결론(전 구간 X, 고위험 구간 한정 residual 보정) + CDIAG1 위험 구간(qwidth_extreme, artist_rows_3_9)을 결합. pseudo-cold(PCOLD1)를 외부 검증 축으로 사용. 데이터 준비 상태는 `audit_track6_image_multimodal_readiness.py` 참고.
 2. ~~PP-CIMG1~~ 완료 — 기각 (위 표 참조).
 3. ~~PP-CCONF1~~ 완료 — 채택 권고 (위 표 참조).
+4. ~~PP-CSRCH1(a)~~ 완료 — 보류(목적별). **delta = 전역 bias 상수 + outlier 5.6%** 구조 확인. 상수만으로 미커버 작가 p95 이득 ~57% 회수(MAPE 22.5%), holdout MAPE/p95 개선확률 0.97~1.0이나 MdAPE 0.41~0.46으로 게이트 미통과. 그룹/메타 일반화는 상수와 동일 = per-artist 신호는 수집으로만 획득 가능.
 
-남은 작업: **PP-CSRCH1 (Phase 2-3)** 단계 분리 —
-- (a) 수집 없이 가능한 선행 검증: 기존 검색 delta(372작가)를 작가 메타/매체/가격대 그룹 단위로 일반화해 미커버 작가에 전이하는 후보. pseudo-cold(전원 미커버)가 정확한 평가 축. artist holdout 게이트 적용.
-- (b) 수집 확대(신규 작가 검색 delta): 비용 발생 — **cold 운영 트래픽 전망 확인 후 착수 결정** (사용자 판단 필요).
+## Phase 2 완료 — 의사결정 대기 (사용자 판단 필요)
 
-Phase 3(PP-CCORR, 보정 직교 결합)은 (a) 결과를 본 뒤 진행. Phase 4 표시 정책은 CCONF1 권고안을 운영 artifact(v0.3 정책 JSON)에 반영하는 작업이 남아 있음.
+1. **상수 delta(-0.0313)를 미커버 작가 "p95 방어 모드"로 v0.3 정책 fallback에 반영할지** — MAPE/p95 방어 근거 강함(0.97~1.0), 대가는 MdAPE 소폭 악화. 서비스 목적(큰 오차 회피 vs 중앙 정확도)의 선택.
+2. **검색 수집 확대(2-3b) 착수 여부** — 기대 효과 정량화됨: 미커버 작가 MAPE 0.9381→0.8493 방향(outlier 작가 식별이 본질). cold 운영 트래픽 전망과 함께 판단.
+3. **Phase 3 (PP-CCORR)**: 잔여 보정 직교 결합 — CDIAG1 위험 구간 기반, guard/search 층과 redundancy 분해 필수.
+4. **Phase 4 (운영 반영)**: CCONF1 research tier 표시 정책 + (채택 시) 상수 fallback을 v0.3 정책 JSON/artifact에 반영하는 동결 작업(PP-COLD-ARTIFACT4 후보).
 
 ## 재시작 후 바로 확인할 파일
 
