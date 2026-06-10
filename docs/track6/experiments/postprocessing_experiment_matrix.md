@@ -510,6 +510,7 @@ PP-L은 MAPE 최적화가 목표이므로 공통 기준에 아래 기준을 추�
 | `PP-CBOOST3` | 실행 완료 | C 6구성 앙상블+w 미세 grid+적응 변형+이중 게이트. w0.3: **MAPE 개선확률 0.91~0.98(통과 수준)**, test 1.2138→1.1790/p95 4.22→3.65, pseudo-cold 3/3. 그러나 p95 0.65~0.86, **MdAPE 비악화 0.12~0.28 — 앙상블로도 불변(구조적 center-vs-tail)** | **CBOOST 라인 종결** — all-metric 교체 불가 확정. 후보 정체 = MAPE/p95 방어 목적별 후보(수집 없는 개선분: MAPE -3.5%/p95 -13%, 대가 MdAPE 미세 악화). 채택은 서비스 목적 의사결정(원하면 ARTIFACT5로 v0.2 옵션 동결). 추가 안정화 실험 비권고 |
 | `PP-COLD-ARTIFACT5` | 실행 완료 | 이종 blend(w0.3) 운영 옵션 동결 `models/track6/cold_prediction_v0.5_operational/` — LGB 5-seed + 선형 Huber 6구성 + 그룹통계 사다리 JSON, raw-input 예측기. CBOOST3 재현 diff ≤4.4e-16. test defense `0.4822/1.1790/3.6490` (동결 v0.2 대비 MdAPE -0.003/MAPE 동등/**p95 -11.5%**) | 사용자 채택(p95 방어 목적). all-metric 아님(MdAPE 반복 비악화 0.12~0.28 honest_note 명시). 기본 서빙 v0.3+v0.4 유지, v0.5는 raw-input 환경 p95 방어 모드. joblib 비추적(재생성) |
 | `PP-CMIX1` | 실행 완료 | 브레인스토밍 상위 2가설: 작가 가중 학습(1/√행수)은 val MdAPE +0.015/p95 +0.13 악화, kNN 제3계열 3원 blend는 최선 dMAPE -0.0007(노이즈)·게이트 0.61~0.88 미달·test p95 악화 | **기각 — v0.5 blend가 현 데이터 프런티어 확정.** kNN은 그룹 사다리와 정보 중복, 작가 가중은 순손실. 수집 없는 Cold 점 예측 개선 종결 |
+| `PP-CSRCH2` | 실행 완료 | 검색 수집 확대 파일럿: warm 150작가 라이브 수집(145 매칭) → 동결 H23 맵 delta 파생(상수 -0.0313 = none 세그먼트값 확인) → pseudo-cold 12,925행 3자 비교. **상수 fallback이 3지표 최선(0.3612/0.5269/1.3244), 수집 real delta는 전 지표 악화(0.3738/0.5491/1.3821)** | **전량 수집 보류** — gm비율→delta 관계가 신규 작가에 전이 안 됨, 수집 ROI 없음(현 공식 기준). v0.4 상수 fallback 최적 재확인. 재시도 조건 = 실제 cold 트래픽 잔차로 보정맵 재적합 가능 시. **Cold 트랙 완전 종결** |
 
 ### 보류 실험
 
