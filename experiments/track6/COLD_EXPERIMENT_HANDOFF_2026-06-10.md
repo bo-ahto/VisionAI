@@ -45,7 +45,15 @@ Cold(unseen 작가) 가격 예측을 Warm Codex 운영 체계(base lock → 게�
 
 1. **상수 delta(-0.0313)를 미커버 작가 "p95 방어 모드"로 v0.3 정책 fallback에 반영할지** — MAPE/p95 방어 근거 강함(0.97~1.0), 대가는 MdAPE 소폭 악화. 서비스 목적(큰 오차 회피 vs 중앙 정확도)의 선택.
 2. **검색 수집 확대(2-3b) 착수 여부** — 기대 효과 정량화됨: 미커버 작가 MAPE 0.9381→0.8493 방향(outlier 작가 식별이 본질). cold 운영 트래픽 전망과 함께 판단.
-3. **Phase 3 (PP-CCORR)**: 잔여 보정 직교 결합 — CDIAG1 위험 구간 기반, guard/search 층과 redundancy 분해 필수.
+3. ~~Phase 3 (PP-CCORR1)~~ **완료 — 기각**: 저차원 Huber/segment median 모두 OOF 개선 0개, 보정값이 잔차 역예측(-0.09~-0.11) + guard 층 되돌림(-0.25~-0.31). **현재 피처로 Cold 점 예측 추가 보정 경로 닫힘.**
+
+## 트랙 결론 (2026-06-10)
+
+Cold 로드맵 Phase 0~4 전체 완료. 합리적 종착점 도달:
+- **점 예측**: v0.3 (guard+search, test 0.4098/0.8493/2.3465)
+- **정책층**: v0.4 (신뢰도 tier/표시/2단 검수 + 미커버 상수 fallback 활성)
+- **잔여 개선 경로 = 새 정보뿐**: ① 검색 수집 확대(미커버 MAPE 0.938→0.849 방향, cold 트래픽 전망 필요) ② 거래 시점 등 신규 데이터 과제
+- 추가 데이터/트래픽 확보 전까지 **Cold 실험 트랙 휴면 권고**. 재개 시 이 핸드오프와 `cold_improvement_roadmap.md`부터 확인.
 4. ~~Phase 4 (운영 반영)~~ **완료 — PP-COLD-ARTIFACT4**: `models/track6/cold_prediction_v0.4/` 동결 (tier/표시/2단 검수 + 상수 fallback, 재현 검증 3종 통과: tier mismatch 0 / CSRCH1 재현 1.1e-16 / v0.3 defense 일치 5.3e-15). **상수 fallback은 2026-06-10 사용자 결정으로 활성화(enabled=true) 동결** — 미커버(신규) 작가 p95 방어 우선, 대가(MdAPE 0.4178→0.4262)는 config note 명시. 남은 의사결정은 ②검색 수집 확대 ③Phase 3 CCORR 두 건.
 
 ## 재시작 후 바로 확인할 파일

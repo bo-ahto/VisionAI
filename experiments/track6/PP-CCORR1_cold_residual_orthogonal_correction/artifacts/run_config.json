@@ -1,0 +1,52 @@
+{
+  "experiment_id": "PP-CCORR1",
+  "purpose": "연구 base 잔여 보정(저차원 Huber/segment median)의 직교 결합 검증",
+  "signals": [
+    "quantile_width_log",
+    "model_gap_abs",
+    "search_delta_abs",
+    "guard_applied",
+    "log_area",
+    "is_mixed_media"
+  ],
+  "segment": "qwidth bin(4, val q33/q67/q90) x gap bin(2, val q50)",
+  "seg_min_rows": 40,
+  "caps": [
+    0.05,
+    0.1,
+    0.2
+  ],
+  "strengths": [
+    0.25,
+    0.5,
+    1.0
+  ],
+  "frozen_bounds": {
+    "qwidth_q33": 0.7349424254094605,
+    "qwidth_q67": 1.4612207078910142,
+    "qwidth_q90": 2.1572852836013667,
+    "gap_q50": 0.15320873993739603
+  },
+  "orthogonality_audit": {
+    "resid_huber": {
+      "corr_with_guard_shift": -0.3101857737731532,
+      "corr_with_search_delta": 0.08009107220087038,
+      "oof_corr_pred_vs_actual_residual": -0.10901232961533569
+    },
+    "segment_median": {
+      "corr_with_guard_shift": -0.25114553871946965,
+      "corr_with_search_delta": 0.1472922986714157,
+      "oof_corr_pred_vs_actual_residual": -0.08980756581878865
+    }
+  },
+  "gate": "artist [0.8, 0.7] holdout 각 200회, MAPE/p95>=0.90, MdAPE>=0.50",
+  "seed": 20260610,
+  "sources": {
+    "base_rows": "experiments/track6/PP-CBASE1_cold_base_lock/outputs/fixed_cold_base_rows.csv"
+  },
+  "prohibitions": [
+    "0604 사용 금지",
+    "test 후보 선택 금지",
+    "row-level router 금지(segment까지만)"
+  ]
+}
