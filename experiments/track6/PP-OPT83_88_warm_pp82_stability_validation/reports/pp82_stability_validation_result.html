@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-OPT83~88 Warm PP82 안정성 검증 결과</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f6f8; color: #17202a; line-height: 1.58; }
+    main { max-width: 1280px; margin: 0 auto; min-height: 100vh; background: #fff; padding: 40px 28px 72px; }
+    h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.25; }
+    h2 { margin: 38px 0 12px; padding-top: 20px; border-top: 1px solid #d8dee6; font-size: 22px; }
+    .meta { color: #4b5563; margin-bottom: 24px; }
+    .callout { border-left: 4px solid #2563eb; background: #eff6ff; padding: 16px 18px; margin: 20px 0; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+    .panel { border: 1px solid #d8dee6; background: #fbfcfd; border-radius: 8px; padding: 14px; }
+    .panel strong { display: block; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 14px 0 22px; }
+    th, td { border: 1px solid #d8dee6; padding: 8px 10px; vertical-align: top; }
+    th { background: #f1f3f5; text-align: left; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    code { background: #f3f4f6; padding: 2px 5px; border-radius: 4px; }
+    pre { background: #111827; color: #f9fafb; padding: 14px; border-radius: 8px; overflow-x: auto; }
+    li { margin: 6px 0; }
+    @media (max-width: 900px) { main { padding: 28px 16px 56px; } .grid { grid-template-columns: 1fr; } table { font-size: 12px; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>PP-OPT83~88 Warm PP82 안정성 검증 결과</h1>
+  <div class="meta">작성일: 2026-06-09 13:56 · 제출용 제외 · 기존 Warm validation OOF 519건 + fixed test 607건</div>
+  <div class="callout">PP64/PP70을 운영 기준으로 유지하고 PP82 운영형은 후보로 보류. PP82 운영형 vs PP64: MAPE -0.000007, p95 -0.000049. PP82 p95형은 tail 안정성 우선 모드로 유지할 가치가 있음.</div>
+  <div class="grid">
+    <div class="panel"><strong>비교 후보</strong>19개</div>
+    <div class="panel"><strong>반복 검증 row</strong>49,438개 metric</div>
+    <div class="panel"><strong>PP82 운영형 MAPE</strong>0.270557</div>
+    <div class="panel"><strong>PP82 운영형 p95</strong>0.807450</div>
+  </div>
+  <h2>1. 후보 라벨</h2>
+  <table><thead><tr><th>label</th><th>candidate</th></tr></thead><tbody><tr><td>hcoef_stable_source</td><td>hcoef_stable</td></tr><tr><td>incumbent_pp7</td><td>incumbent_operational_pp_opt7</td></tr><tr><td>pp20_p95_reference</td><td>previous_challenger_pp20</td></tr><tr><td>pp30_p95_reference</td><td>reference_pp30_best</td></tr><tr><td>pp48_stability_reference</td><td>reference_pp48_score</td></tr><tr><td>pp52_quantile_reference</td><td>reference_pp52_challenger</td></tr><tr><td>pp58_mape_reference</td><td>reference_pp58_challenger</td></tr><tr><td>pp64_current_best</td><td>reference_pp64_current_best</td></tr><tr><td>pp70_refinement_candidate</td><td>reference_pp70_refinement</td></tr><tr><td>pp82_operational_tail_routing</td><td>ppopt82_operational_tail_routing_challenger__source=ppopt80_hard_tail__anchor_pp70__helper_pp20__score_p95_prob__thr_0p62__width_0p24__s_1p0</td></tr><tr><td>pp82_p95_tail_routing</td><td>ppopt82_p95_tail_routing_challenger__source=ppopt77_clf_tail__anchor_pp70__helper_pp20__prob_tail85_only__thr_0p26__width_0p18__s_0p64</td></tr><tr><td>pp_opt77_best</td><td>ppopt77_clf_tail__anchor=pp70__helper=pp48__prob=tail85_only__thr=0p1__width=0p18__s=0p64</td></tr><tr><td>pp_opt77_p95_best</td><td>ppopt77_clf_tail__anchor=pp70__helper=pp20__prob=tail85_only__thr=0p26__width=0p18__s=0p64</td></tr><tr><td>pp_opt78_best</td><td>ppopt78_helper_prob__anchor=pp70__helper=pp48_bias__thr=0p2__width=0p34__s=0p52</td></tr><tr><td>pp_opt78_p95_best</td><td>ppopt78_helper_prob__anchor=pp70__helper=p95_bias__thr=0p12__width=0p2__s=0p52</td></tr><tr><td>pp_opt80_best</td><td>ppopt80_hard_tail__anchor=pp70__helper=p95_weighted__score=risk_prob__thr=0p7__width=0p14__s=1p0</td></tr><tr><td>pp_opt80_p95_best</td><td>ppopt80_hard_tail__anchor=pp70__helper=pp20__score=p95_prob__thr=0p62__width=0p14__s=1p0</td></tr><tr><td>pp_opt81_best</td><td>ppopt81_tail_ensemble__anchor=pp70__helper=pp48_p95_mix__thr=0p48__width=0p22__s=0p56</td></tr><tr><td>top_mape_in_pp76_82</td><td>ppopt80_hard_tail__anchor=pp70__helper=pp20__score=p95_prob__thr=0p62__width=0p24__s=1p0</td></tr></tbody></table>
+  <h2>2. 전체 후보 안정성 순위</h2>
+  <table><thead><tr><th>candidate_label</th><th>fixed_test_MAPE</th><th>fixed_test_p95_APE</th><th>fixed_test_delta_vs_pp64_MAPE</th><th>fixed_test_delta_vs_pp64_p95_APE</th><th>fixed_test_delta_vs_pp70_MAPE</th><th>fixed_test_delta_vs_pp70_p95_APE</th><th>avg_delta_vs_pp64_MAPE</th><th>avg_delta_vs_pp64_p95_APE</th><th>avg_pp64_MAPE_win_rate</th><th>avg_pp64_p95_win_rate</th><th>avg_pp64_all3_win_rate</th><th>avg_incumbent_MAPE_win_rate</th><th>avg_incumbent_p95_win_rate</th><th>replacement_score</th></tr></thead><tbody><tr><td>pp_opt81_best</td><td>0.270559</td><td>0.807490</td><td>-0.000005</td><td>-0.000009</td><td>-0.000002</td><td>0.000000</td><td>-0.000004</td><td>-0.000014</td><td>0.890705</td><td>0.410256</td><td>0.062500</td><td>0.997756</td><td>0.533974</td><td>-0.015633</td></tr><tr><td>pp_opt80_best</td><td>0.270561</td><td>0.807490</td><td>-0.000003</td><td>-0.000009</td><td>-0.000000</td><td>0.000000</td><td>-0.000001</td><td>-0.000001</td><td>0.786859</td><td>0.413782</td><td>0.054167</td><td>0.997756</td><td>0.533974</td><td>-0.011477</td></tr><tr><td>pp70_refinement_candidate</td><td>0.270561</td><td>0.807490</td><td>-0.000003</td><td>-0.000009</td><td>0.000000</td><td>0.000000</td><td>-0.000001</td><td>-0.000001</td><td>0.786859</td><td>0.398077</td><td>0.054167</td><td>0.997756</td><td>0.533974</td><td>-0.011477</td></tr><tr><td>pp_opt77_best</td><td>0.270720</td><td>0.807423</td><td>0.000156</td><td>-0.000076</td><td>0.000159</td><td>-0.000067</td><td>0.000054</td><td>-0.000132</td><td>0.429808</td><td>0.731410</td><td>0.225962</td><td>0.980449</td><td>0.620513</td><td>0.002991</td></tr><tr><td>pp48_stability_reference</td><td>0.270816</td><td>0.807385</td><td>0.000252</td><td>-0.000113</td><td>0.000255</td><td>-0.000105</td><td>0.000116</td><td>-0.000387</td><td>0.405449</td><td>0.722756</td><td>0.204487</td><td>0.954487</td><td>0.835577</td><td>0.004092</td></tr><tr><td>pp82_operational_tail_routing</td><td>0.270557</td><td>0.807450</td><td>-0.000007</td><td>-0.000049</td><td>-0.000004</td><td>-0.000040</td><td>0.000018</td><td>0.000050</td><td>0.362179</td><td>0.477244</td><td>0.037179</td><td>0.996795</td><td>0.554808</td><td>0.005532</td></tr><tr><td>top_mape_in_pp76_82</td><td>0.270557</td><td>0.807450</td><td>-0.000007</td><td>-0.000049</td><td>-0.000004</td><td>-0.000040</td><td>0.000018</td><td>0.000050</td><td>0.362179</td><td>0.477244</td><td>0.037179</td><td>0.996795</td><td>0.554808</td><td>0.005532</td></tr><tr><td>pp_opt80_p95_best</td><td>0.270557</td><td>0.807422</td><td>-0.000007</td><td>-0.000077</td><td>-0.000004</td><td>-0.000068</td><td>0.000024</td><td>0.000087</td><td>0.330769</td><td>0.479808</td><td>0.035897</td><td>0.996154</td><td>0.551282</td><td>0.006804</td></tr><tr><td>pp58_mape_reference</td><td>0.270572</td><td>0.807811</td><td>0.000008</td><td>0.000312</td><td>0.000011</td><td>0.000321</td><td>0.000014</td><td>0.000109</td><td>0.250321</td><td>0.158333</td><td>0.013462</td><td>0.997756</td><td>0.535577</td><td>0.010259</td></tr><tr><td>pp52_quantile_reference</td><td>0.270598</td><td>0.807660</td><td>0.000034</td><td>0.000161</td><td>0.000037</td><td>0.000170</td><td>0.000024</td><td>0.000132</td><td>0.219872</td><td>0.152564</td><td>0.011218</td><td>0.997436</td><td>0.529487</td><td>0.011411</td></tr><tr><td>pp_opt78_best</td><td>0.270585</td><td>0.807385</td><td>0.000020</td><td>-0.000114</td><td>0.000024</td><td>-0.000105</td><td>0.000016</td><td>-0.000007</td><td>0.116026</td><td>0.465705</td><td>0.006410</td><td>0.998077</td><td>0.543590</td><td>0.015388</td></tr><tr><td>pp82_p95_tail_routing</td><td>0.270651</td><td>0.806840</td><td>0.000087</td><td>-0.000659</td><td>0.000090</td><td>-0.000650</td><td>0.000082</td><td>0.000179</td><td>0.056090</td><td>0.603846</td><td>0.009615</td><td>0.995513</td><td>0.579167</td><td>0.017948</td></tr><tr><td>pp_opt77_p95_best</td><td>0.270651</td><td>0.806840</td><td>0.000087</td><td>-0.000659</td><td>0.000090</td><td>-0.000650</td><td>0.000082</td><td>0.000179</td><td>0.056090</td><td>0.603846</td><td>0.009615</td><td>0.995513</td><td>0.579167</td><td>0.017948</td></tr><tr><td>pp_opt78_p95_best</td><td>0.270701</td><td>0.807133</td><td>0.000137</td><td>-0.000366</td><td>0.000140</td><td>-0.000357</td><td>0.000122</td><td>0.000176</td><td>0.016026</td><td>0.576282</td><td>0.001282</td><td>0.997756</td><td>0.559936</td><td>0.019619</td></tr><tr><td>pp64_current_best</td><td>0.270564</td><td>0.807499</td><td>0.000000</td><td>0.000000</td><td>0.000003</td><td>0.000009</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.997756</td><td>0.535577</td><td>0.020000</td></tr><tr><td>pp30_p95_reference</td><td>0.270872</td><td>0.806932</td><td>0.000308</td><td>-0.000567</td><td>0.000311</td><td>-0.000558</td><td>0.000241</td><td>0.000433</td><td>0.007051</td><td>0.459936</td><td>0.000962</td><td>0.988141</td><td>0.614103</td><td>0.020298</td></tr><tr><td>pp20_p95_reference</td><td>0.271182</td><td>0.806472</td><td>0.000618</td><td>-0.001026</td><td>0.000621</td><td>-0.001018</td><td>0.000535</td><td>0.000973</td><td>0.005769</td><td>0.461538</td><td>0.001603</td><td>0.964103</td><td>0.592949</td><td>0.020995</td></tr><tr><td>incumbent_pp7</td><td>0.271395</td><td>0.808130</td><td>0.000831</td><td>0.000631</td><td>0.000834</td><td>0.000640</td><td>0.000748</td><td>0.001946</td><td>0.002244</td><td>0.450641</td><td>0.000641</td><td>0.000000</td><td>0.000000</td><td>0.022238</td></tr><tr><td>hcoef_stable_source</td><td>0.272989</td><td>0.806366</td><td>0.002425</td><td>-0.001133</td><td>0.002428</td><td>-0.001124</td><td>0.002013</td><td>0.005297</td><td>0.002244</td><td>0.403526</td><td>0.000641</td><td>0.002564</td><td>0.400321</td><td>0.025195</td></tr></tbody></table>
+  <h2>3. fixed validation/test metric</h2>
+  <table><thead><tr><th>candidate_label</th><th>eval_split</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_vs_incumbent_MAPE</th><th>delta_vs_incumbent_p95_APE</th></tr></thead><tbody><tr><td>top_mape_in_pp76_82</td><td>test</td><td>607</td><td>0.137878</td><td>0.270557</td><td>0.807450</td><td>0.397982</td><td>-0.000838</td><td>-0.000680</td></tr><tr><td>pp82_operational_tail_routing</td><td>test</td><td>607</td><td>0.137878</td><td>0.270557</td><td>0.807450</td><td>0.397982</td><td>-0.000838</td><td>-0.000680</td></tr><tr><td>pp_opt80_p95_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270557</td><td>0.807422</td><td>0.397978</td><td>-0.000838</td><td>-0.000708</td></tr><tr><td>pp_opt81_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270559</td><td>0.807490</td><td>0.397989</td><td>-0.000836</td><td>-0.000640</td></tr><tr><td>pp_opt80_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270561</td><td>0.807490</td><td>0.397991</td><td>-0.000834</td><td>-0.000640</td></tr><tr><td>pp70_refinement_candidate</td><td>test</td><td>607</td><td>0.137878</td><td>0.270561</td><td>0.807490</td><td>0.397991</td><td>-0.000834</td><td>-0.000640</td></tr><tr><td>pp64_current_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270564</td><td>0.807499</td><td>0.397991</td><td>-0.000831</td><td>-0.000631</td></tr><tr><td>pp58_mape_reference</td><td>test</td><td>607</td><td>0.137878</td><td>0.270572</td><td>0.807811</td><td>0.397997</td><td>-0.000823</td><td>-0.000319</td></tr><tr><td>pp_opt78_best</td><td>test</td><td>607</td><td>0.136863</td><td>0.270585</td><td>0.807385</td><td>0.397998</td><td>-0.000810</td><td>-0.000745</td></tr><tr><td>pp52_quantile_reference</td><td>test</td><td>607</td><td>0.137878</td><td>0.270598</td><td>0.807660</td><td>0.397987</td><td>-0.000797</td><td>-0.000470</td></tr><tr><td>pp_opt77_p95_best</td><td>test</td><td>607</td><td>0.137634</td><td>0.270651</td><td>0.806840</td><td>0.397982</td><td>-0.000744</td><td>-0.001290</td></tr><tr><td>pp82_p95_tail_routing</td><td>test</td><td>607</td><td>0.137634</td><td>0.270651</td><td>0.806840</td><td>0.397982</td><td>-0.000744</td><td>-0.001290</td></tr><tr><td>pp_opt78_p95_best</td><td>test</td><td>607</td><td>0.137213</td><td>0.270701</td><td>0.807133</td><td>0.398021</td><td>-0.000693</td><td>-0.000997</td></tr><tr><td>pp_opt77_best</td><td>test</td><td>607</td><td>0.136617</td><td>0.270720</td><td>0.807423</td><td>0.398076</td><td>-0.000675</td><td>-0.000707</td></tr><tr><td>pp48_stability_reference</td><td>test</td><td>607</td><td>0.136800</td><td>0.270816</td><td>0.807385</td><td>0.398121</td><td>-0.000579</td><td>-0.000745</td></tr><tr><td>pp30_p95_reference</td><td>test</td><td>607</td><td>0.137546</td><td>0.270872</td><td>0.806932</td><td>0.398014</td><td>-0.000523</td><td>-0.001198</td></tr><tr><td>pp20_p95_reference</td><td>test</td><td>607</td><td>0.136835</td><td>0.271182</td><td>0.806472</td><td>0.398134</td><td>-0.000213</td><td>-0.001658</td></tr><tr><td>incumbent_pp7</td><td>test</td><td>607</td><td>0.136893</td><td>0.271395</td><td>0.808130</td><td>0.398341</td><td>0.000000</td><td>0.000000</td></tr><tr><td>hcoef_stable_source</td><td>test</td><td>607</td><td>0.138803</td><td>0.272989</td><td>0.806366</td><td>0.398822</td><td>0.001594</td><td>-0.001764</td></tr><tr><td>pp48_stability_reference</td><td>validation_oof</td><td>519</td><td>0.122610</td><td>0.206179</td><td>0.636376</td><td>0.323684</td><td>-0.000844</td><td>-0.000219</td></tr><tr><td>pp_opt77_best</td><td>validation_oof</td><td>519</td><td>0.121961</td><td>0.206188</td><td>0.637867</td><td>0.323718</td><td>-0.000835</td><td>0.001272</td></tr><tr><td>pp_opt81_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206279</td><td>0.637897</td><td>0.323780</td><td>-0.000744</td><td>0.001302</td></tr><tr><td>pp70_refinement_candidate</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206280</td><td>0.637897</td><td>0.323781</td><td>-0.000743</td><td>0.001302</td></tr><tr><td>pp_opt80_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206280</td><td>0.637897</td><td>0.323781</td><td>-0.000743</td><td>0.001302</td></tr><tr><td>pp64_current_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206281</td><td>0.637922</td><td>0.323780</td><td>-0.000742</td><td>0.001327</td></tr><tr><td>pp_opt78_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206298</td><td>0.637621</td><td>0.323790</td><td>-0.000725</td><td>0.001027</td></tr><tr><td>pp52_quantile_reference</td><td>validation_oof</td><td>519</td><td>0.122430</td><td>0.206301</td><td>0.638550</td><td>0.323793</td><td>-0.000722</td><td>0.001955</td></tr><tr><td>pp58_mape_reference</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206304</td><td>0.638224</td><td>0.323798</td><td>-0.000719</td><td>0.001629</td></tr><tr><td>top_mape_in_pp76_82</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206316</td><td>0.637897</td><td>0.323832</td><td>-0.000707</td><td>0.001302</td></tr><tr><td>pp82_operational_tail_routing</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206316</td><td>0.637897</td><td>0.323832</td><td>-0.000707</td><td>0.001302</td></tr><tr><td>pp_opt80_p95_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206325</td><td>0.637897</td><td>0.323848</td><td>-0.000698</td><td>0.001302</td></tr><tr><td>pp_opt77_p95_best</td><td>validation_oof</td><td>519</td><td>0.122780</td><td>0.206340</td><td>0.637897</td><td>0.323887</td><td>-0.000683</td><td>0.001302</td></tr><tr><td>pp82_p95_tail_routing</td><td>validation_oof</td><td>519</td><td>0.122780</td><td>0.206340</td><td>0.637897</td><td>0.323887</td><td>-0.000683</td><td>0.001302</td></tr><tr><td>pp_opt78_p95_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206410</td><td>0.637782</td><td>0.323810</td><td>-0.000613</td><td>0.001187</td></tr><tr><td>pp30_p95_reference</td><td>validation_oof</td><td>519</td><td>0.122377</td><td>0.206462</td><td>0.638459</td><td>0.323853</td><td>-0.000562</td><td>0.001864</td></tr><tr><td>pp20_p95_reference</td><td>validation_oof</td><td>519</td><td>0.125408</td><td>0.206777</td><td>0.638367</td><td>0.324048</td><td>-0.000246</td><td>0.001773</td></tr><tr><td>incumbent_pp7</td><td>validation_oof</td><td>519</td><td>0.125923</td><td>0.207023</td><td>0.636595</td><td>0.324133</td><td>0.000000</td><td>0.000000</td></tr><tr><td>hcoef_stable_source</td><td>validation_oof</td><td>519</td><td>0.125993</td><td>0.208206</td><td>0.647948</td><td>0.325185</td><td>0.001183</td><td>0.011353</td></tr></tbody></table>
+  <h2>4. PP82 시나리오별 PP64 대비 안정성</h2>
+  <table><thead><tr><th>candidate_label</th><th>eval_split</th><th>scenario</th><th>repeats</th><th>mean_delta_vs_pp64_MAPE</th><th>mean_delta_vs_pp64_p95_APE</th><th>pp64_MAPE_win_rate</th><th>pp64_p95_win_rate</th><th>pp64_all3_win_rate</th><th>mean_delta_vs_incumbent_MAPE</th><th>mean_delta_vs_incumbent_p95_APE</th></tr></thead><tbody><tr><td>pp82_operational_tail_routing</td><td>test</td><td>artist_group_holdout</td><td>260</td><td>-0.000008</td><td>0.000054</td><td>0.696154</td><td>0.384615</td><td>0.115385</td><td>-0.000839</td><td>-0.004622</td></tr><tr><td>pp82_operational_tail_routing</td><td>test</td><td>confidence_stratified_rows</td><td>260</td><td>-0.000008</td><td>0.000021</td><td>0.719231</td><td>0.519231</td><td>0.096154</td><td>-0.000838</td><td>-0.003397</td></tr><tr><td>pp82_operational_tail_routing</td><td>test</td><td>full_split</td><td>1</td><td>-0.000007</td><td>-0.000049</td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>-0.000838</td><td>-0.000680</td></tr><tr><td>pp82_operational_tail_routing</td><td>test</td><td>price_band_stratified_rows</td><td>260</td><td>-0.000008</td><td>0.000009</td><td>0.703846</td><td>0.457692</td><td>0.130769</td><td>-0.000841</td><td>-0.004174</td></tr><tr><td>pp82_operational_tail_routing</td><td>test</td><td>risk_focus_bootstrap</td><td>260</td><td>-0.000010</td><td>0.000491</td><td>0.573077</td><td>0.384615</td><td>0.015385</td><td>-0.000599</td><td>-0.001809</td></tr><tr><td>pp82_operational_tail_routing</td><td>test</td><td>row_bootstrap</td><td>260</td><td>-0.000009</td><td>0.000096</td><td>0.646154</td><td>0.411538</td><td>0.088462</td><td>-0.000814</td><td>-0.005746</td></tr><tr><td>pp82_operational_tail_routing</td><td>validation_oof</td><td>artist_group_holdout</td><td>260</td><td>0.000035</td><td>-0.000001</td><td>0.000000</td><td>0.380769</td><td>0.000000</td><td>-0.000717</td><td>-0.001064</td></tr><tr><td>pp82_operational_tail_routing</td><td>validation_oof</td><td>confidence_stratified_rows</td><td>260</td><td>0.000035</td><td>0.000001</td><td>0.000000</td><td>0.342308</td><td>0.000000</td><td>-0.000706</td><td>-0.000623</td></tr><tr><td>pp82_operational_tail_routing</td><td>validation_oof</td><td>full_split</td><td>1</td><td>0.000035</td><td>-0.000025</td><td>0.000000</td><td>1.000000</td><td>0.000000</td><td>-0.000707</td><td>0.001302</td></tr><tr><td>pp82_operational_tail_routing</td><td>validation_oof</td><td>price_band_stratified_rows</td><td>260</td><td>0.000034</td><td>-0.000002</td><td>0.000000</td><td>0.388462</td><td>0.000000</td><td>-0.000702</td><td>-0.000602</td></tr><tr><td>pp82_operational_tail_routing</td><td>validation_oof</td><td>risk_focus_bootstrap</td><td>260</td><td>0.000089</td><td>-0.000001</td><td>0.000000</td><td>0.161538</td><td>0.000000</td><td>-0.000445</td><td>-0.000215</td></tr><tr><td>pp82_operational_tail_routing</td><td>validation_oof</td><td>row_bootstrap</td><td>260</td><td>0.000036</td><td>0.000009</td><td>0.007692</td><td>0.296154</td><td>0.000000</td><td>-0.000717</td><td>-0.001117</td></tr><tr><td>pp82_p95_tail_routing</td><td>test</td><td>artist_group_holdout</td><td>260</td><td>0.000090</td><td>0.000271</td><td>0.007692</td><td>0.630769</td><td>0.003846</td><td>-0.000741</td><td>-0.004404</td></tr><tr><td>pp82_p95_tail_routing</td><td>test</td><td>confidence_stratified_rows</td><td>260</td><td>0.000087</td><td>0.000183</td><td>0.011538</td><td>0.607692</td><td>0.000000</td><td>-0.000744</td><td>-0.003235</td></tr><tr><td>pp82_p95_tail_routing</td><td>test</td><td>full_split</td><td>1</td><td>0.000087</td><td>-0.000659</td><td>0.000000</td><td>1.000000</td><td>0.000000</td><td>-0.000744</td><td>-0.001290</td></tr><tr><td>pp82_p95_tail_routing</td><td>test</td><td>price_band_stratified_rows</td><td>260</td><td>0.000085</td><td>0.000279</td><td>0.019231</td><td>0.573077</td><td>0.003846</td><td>-0.000747</td><td>-0.003904</td></tr><tr><td>pp82_p95_tail_routing</td><td>test</td><td>risk_focus_bootstrap</td><td>260</td><td>0.000143</td><td>0.001606</td><td>0.157692</td><td>0.353846</td><td>0.023077</td><td>-0.000446</td><td>-0.000694</td></tr><tr><td>pp82_p95_tail_routing</td><td>test</td><td>row_bootstrap</td><td>260</td><td>0.000084</td><td>0.000442</td><td>0.092308</td><td>0.469231</td><td>0.019231</td><td>-0.000722</td><td>-0.005400</td></tr><tr><td>pp82_p95_tail_routing</td><td>validation_oof</td><td>artist_group_holdout</td><td>260</td><td>0.000058</td><td>0.000076</td><td>0.065385</td><td>0.557692</td><td>0.011538</td><td>-0.000695</td><td>-0.000987</td></tr><tr><td>pp82_p95_tail_routing</td><td>validation_oof</td><td>confidence_stratified_rows</td><td>260</td><td>0.000060</td><td>0.000068</td><td>0.030769</td><td>0.611538</td><td>0.011538</td><td>-0.000680</td><td>-0.000556</td></tr><tr><td>pp82_p95_tail_routing</td><td>validation_oof</td><td>full_split</td><td>1</td><td>0.000059</td><td>-0.000025</td><td>0.000000</td><td>1.000000</td><td>0.000000</td><td>-0.000683</td><td>0.001302</td></tr><tr><td>pp82_p95_tail_routing</td><td>validation_oof</td><td>price_band_stratified_rows</td><td>260</td><td>0.000059</td><td>0.000054</td><td>0.030769</td><td>0.626923</td><td>0.003846</td><td>-0.000678</td><td>-0.000546</td></tr><tr><td>pp82_p95_tail_routing</td><td>validation_oof</td><td>risk_focus_bootstrap</td><td>260</td><td>0.000116</td><td>-0.000124</td><td>0.088462</td><td>0.326923</td><td>0.011538</td><td>-0.000419</td><td>-0.000338</td></tr><tr><td>pp82_p95_tail_routing</td><td>validation_oof</td><td>row_bootstrap</td><td>260</td><td>0.000061</td><td>-0.000018</td><td>0.169231</td><td>0.488462</td><td>0.026923</td><td>-0.000692</td><td>-0.001145</td></tr></tbody></table>
+  <h2>5. 해석</h2>
+  <ul>
+    <li>PP82 운영형은 fixed test에서 PP64/PP70보다 MAPE와 p95가 모두 낮다.</li>
+    <li>운영 교체 여부는 반복 검증에서 p95 승률이 충분히 따라오는지가 핵심이다.</li>
+    <li>PP82 p95형은 p95를 크게 낮추지만 MAPE가 PP64보다 높으므로 기본 운영값이 아니라 목적형 옵션으로 분리하는 것이 맞다.</li>
+  </ul>
+  <h2>6. 실행 설정</h2>
+  <pre>{
+  &quot;experiment_id&quot;: &quot;PP-OPT83-88&quot;,
+  &quot;experiment_slug&quot;: &quot;PP-OPT83_88_warm_pp82_stability_validation&quot;,
+  &quot;created_at&quot;: &quot;2026-06-09T13:56:52&quot;,
+  &quot;seed&quot;: 20260609,
+  &quot;repeats_per_resample_scenario&quot;: 260,
+  &quot;sample_fraction&quot;: 0.72,
+  &quot;selected_candidates&quot;: {
+    &quot;hcoef_stable_source&quot;: &quot;hcoef_stable&quot;,
+    &quot;incumbent_pp7&quot;: &quot;incumbent_operational_pp_opt7&quot;,
+    &quot;pp20_p95_reference&quot;: &quot;previous_challenger_pp20&quot;,
+    &quot;pp30_p95_reference&quot;: &quot;reference_pp30_best&quot;,
+    &quot;pp48_stability_reference&quot;: &quot;reference_pp48_score&quot;,
+    &quot;pp52_quantile_reference&quot;: &quot;reference_pp52_challenger&quot;,
+    &quot;pp58_mape_reference&quot;: &quot;reference_pp58_challenger&quot;,
+    &quot;pp64_current_best&quot;: &quot;reference_pp64_current_best&quot;,
+    &quot;pp70_refinement_candidate&quot;: &quot;reference_pp70_refinement&quot;,
+    &quot;pp82_operational_tail_routing&quot;: &quot;ppopt82_operational_tail_routing_challenger__source=ppopt80_hard_tail__anchor_pp70__helper_pp20__score_p95_prob__thr_0p62__width_0p24__s_1p0&quot;,
+    &quot;pp82_p95_tail_routing&quot;: &quot;ppopt82_p95_tail_routing_challenger__source=ppopt77_clf_tail__anchor_pp70__helper_pp20__prob_tail85_only__thr_0p26__width_0p18__s_0p64&quot;,
+    &quot;pp_opt77_best&quot;: &quot;ppopt77_clf_tail__anchor=pp70__helper=pp48__prob=tail85_only__thr=0p1__width=0p18__s=0p64&quot;,
+    &quot;pp_opt77_p95_best&quot;: &quot;ppopt77_clf_tail__anchor=pp70__helper=pp20__prob=tail85_only__thr=0p26__width=0p18__s=0p64&quot;,
+    &quot;pp_opt78_best&quot;: &quot;ppopt78_helper_prob__anchor=pp70__helper=pp48_bias__thr=0p2__width=0p34__s=0p52&quot;,
+    &quot;pp_opt78_p95_best&quot;: &quot;ppopt78_helper_prob__anchor=pp70__helper=p95_bias__thr=0p12__width=0p2__s=0p52&quot;,
+    &quot;pp_opt80_best&quot;: &quot;ppopt80_hard_tail__anchor=pp70__helper=p95_weighted__score=risk_prob__thr=0p7__width=0p14__s=1p0&quot;,
+    &quot;pp_opt80_p95_best&quot;: &quot;ppopt80_hard_tail__anchor=pp70__helper=pp20__score=p95_prob__thr=0p62__width=0p14__s=1p0&quot;,
+    &quot;pp_opt81_best&quot;: &quot;ppopt81_tail_ensemble__anchor=pp70__helper=pp48_p95_mix__thr=0p48__width=0p22__s=0p56&quot;,
+    &quot;top_mape_in_pp76_82&quot;: &quot;ppopt80_hard_tail__anchor=pp70__helper=pp20__score=p95_prob__thr=0p62__width=0p24__s=1p0&quot;
+  },
+  &quot;candidate_count&quot;: 19,
+  &quot;validation_rows&quot;: 519,
+  &quot;test_rows&quot;: 607,
+  &quot;decision&quot;: {
+    &quot;operational_verdict&quot;: &quot;PP64/PP70을 운영 기준으로 유지하고 PP82 운영형은 후보로 보류&quot;,
+    &quot;p95_mode_verdict&quot;: &quot;PP82 p95형은 tail 안정성 우선 모드로 유지할 가치가 있음&quot;,
+    &quot;pp82_operational_fixed_test_MAPE&quot;: 0.2705565870369284,
+    &quot;pp82_operational_fixed_test_p95_APE&quot;: 0.807450308348755,
+    &quot;pp82_operational_delta_vs_pp64_MAPE&quot;: -7.454878731938397e-06,
+    &quot;pp82_operational_delta_vs_pp64_p95_APE&quot;: -4.8543957354874046e-05,
+    &quot;pp82_operational_delta_vs_pp70_MAPE&quot;: -4.388340047900563e-06,
+    &quot;pp82_operational_delta_vs_pp70_p95_APE&quot;: -3.975254909294179e-05,
+    &quot;pp82_operational_avg_pp64_MAPE_win_rate&quot;: 0.36217948717948717,
+    &quot;pp82_operational_avg_pp64_p95_win_rate&quot;: 0.47724358974358977,
+    &quot;pp82_operational_avg_pp64_all3_win_rate&quot;: 0.03717948717948718,
+    &quot;pp82_p95_fixed_test_MAPE&quot;: 0.2706512801714569,
+    &quot;pp82_p95_fixed_test_p95_APE&quot;: 0.8068395739408173,
+    &quot;pp82_p95_delta_vs_pp64_MAPE&quot;: 8.72382557965401e-05,
+    &quot;pp82_p95_delta_vs_pp64_p95_APE&quot;: -0.0006592783652925593,
+    &quot;pp82_p95_avg_incumbent_MAPE_win_rate&quot;: 0.9955128205128205,
+    &quot;pp82_p95_avg_incumbent_p95_win_rate&quot;: 0.5791666666666667,
+    &quot;reference_pp64_MAPE&quot;: 0.27056404191566036,
+    &quot;reference_pp64_p95_APE&quot;: 0.8074988523061098,
+    &quot;reference_pp70_MAPE&quot;: 0.2705609753769763,
+    &quot;reference_pp70_p95_APE&quot;: 0.8074900608978479
+  },
+  &quot;items&quot;: [
+    {
+      &quot;item_id&quot;: &quot;PP-OPT83&quot;,
+      &quot;priority&quot;: &quot;1&quot;,
+      &quot;title&quot;: &quot;fixed validation/test PP82 comparison&quot;,
+      &quot;description&quot;: &quot;PP64, PP70, PP82 운영형, PP82 p95형을 fixed validation/test에서 비교한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT84&quot;,
+      &quot;priority&quot;: &quot;2&quot;,
+      &quot;title&quot;: &quot;validation repeated stability&quot;,
+      &quot;description&quot;: &quot;validation OOF에서 confidence, price, artist, risk 기반 반복 부분표본 승률을 계산한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT85&quot;,
+      &quot;priority&quot;: &quot;3&quot;,
+      &quot;title&quot;: &quot;test bootstrap stress stability&quot;,
+      &quot;description&quot;: &quot;fixed test를 bootstrap/stratified resample하여 후보 간 승률을 계산한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT86&quot;,
+      &quot;priority&quot;: &quot;4&quot;,
+      &quot;title&quot;: &quot;PP82 operational replacement decision&quot;,
+      &quot;description&quot;: &quot;PP82 운영형을 PP64/PP70의 운영 기준으로 교체할 수 있는지 판단한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT87&quot;,
+      &quot;priority&quot;: &quot;5&quot;,
+      &quot;title&quot;: &quot;PP82 p95 mode decision&quot;,
+      &quot;description&quot;: &quot;PP82 p95형을 운영 기본값이 아닌 tail 안정성 우선 모드로 둘지 판단한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT88&quot;,
+      &quot;priority&quot;: &quot;6&quot;,
+      &quot;title&quot;: &quot;next experiment recommendation&quot;,
+      &quot;description&quot;: &quot;PP82 검증 결과를 바탕으로 다음 실험 방향을 정리한다.&quot;
+    }
+  ],
+  &quot;sources&quot;: {
+    &quot;pp76_config&quot;: &quot;experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/artifacts/run_config.json&quot;,
+    &quot;pp76_predictions&quot;: &quot;experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/outputs/candidate_predictions.csv&quot;,
+    &quot;pp76_aggregate&quot;: &quot;experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/outputs/aggregate_candidate_stability.csv&quot;,
+    &quot;pp76_item_summary&quot;: &quot;experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/outputs/experiment_item_summary.csv&quot;,
+    &quot;pp71_validation_helper&quot;: &quot;scripts/track6/run_pp_opt71_75_warm_pp70_stability_validation.py&quot;
+  }
+}</pre>
+</main>
+</body>
+</html>

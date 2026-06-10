@@ -1,0 +1,102 @@
+{
+  "experiment_id": "PP-OPT103-110",
+  "experiment_slug": "PP-OPT103_110_warm_pp102_guard_refinement_experiments",
+  "created_at": "2026-06-09T14:30:37",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 1778,
+  "prediction_rows": 2002028,
+  "selected_references": {
+    "pp64": "reference_pp64_current_best",
+    "pp70": "reference_pp70_refinement",
+    "pp81": "reference_pp81_best",
+    "pp82_op": "reference_pp82_operational",
+    "pp82_p95": "reference_pp82_p95",
+    "pp95_op": "reference_pp95_operational",
+    "pp95_p95": "reference_pp95_p95",
+    "pp102_op": "ppopt102_operational_label_refined_tail_challenger__source=ppopt96_best_gain__helper_prob_weighted_tail80__prob_best_gain_tail75__thr_0p32__width_0p18__s_0p46",
+    "pp102_p95": "ppopt102_p95_label_refined_tail_challenger__source=ppopt96_best_gain__helper_pp20__prob_best_gain_any__thr_0p08__width_0p18__s_0p64"
+  },
+  "selection_decision": {
+    "operational_label": "candidate_ppopt104_margin_gate__gain_gain_any__hpen_1p05__rpen_0p0__thr_0p14__s_1p0",
+    "operational_candidate": "ppopt104_margin_gate__gain=gain_any__hpen=1p05__rpen=0p0__thr=0p14__s=1p0",
+    "operational_fixed_test_MAPE": 0.2705553325774607,
+    "operational_fixed_test_p95_APE": 0.8074900608978479,
+    "operational_delta_vs_pp64_MAPE": -8.7093381996306e-06,
+    "operational_delta_vs_pp64_p95_APE": -8.791408261932254e-06,
+    "operational_avg_pp64_MAPE_win_rate": 0.782051282051282,
+    "operational_avg_pp64_p95_win_rate": 0.4548076923076923,
+    "operational_replacement_score": -0.011290760620250914,
+    "p95_label": "candidate_ppopt108_tail_hybrid__target_pp82_p95__opthr_0p02__tailthr_0p08__tails_0p4",
+    "p95_candidate": "ppopt108_tail_hybrid__target=pp82_p95__opthr=0p02__tailthr=0p08__tails=0p4",
+    "p95_fixed_test_MAPE": 0.2705572317653208,
+    "p95_fixed_test_p95_APE": 0.8074823515298154,
+    "p95_delta_vs_pp64_MAPE": -6.8101503395423535e-06,
+    "p95_delta_vs_pp64_p95_APE": -1.6500776294448016e-05,
+    "p95_avg_pp64_MAPE_win_rate": 0.4631410256410256,
+    "p95_avg_pp64_p95_win_rate": 0.5721153846153846,
+    "p95_replacement_score": 0.0014731835639919125,
+    "operational_protocol_candidate": "ppopt110_operational_guarded_pp102_challenger__source=ppopt104_margin_gate__gain_gain_any__hpen_1p05__rpen_0p0__thr_0p14__s_1p0",
+    "p95_protocol_candidate": "ppopt110_p95_guarded_pp102_challenger__source=ppopt108_tail_hybrid__target_pp82_p95__opthr_0p02__tailthr_0p08__tails_0p4"
+  },
+  "items": [
+    {
+      "item_id": "PP-OPT103",
+      "priority": "1",
+      "title": "PP102 risk-score shrink",
+      "description": "기존 risk score가 높은 row에서 PP102 이동량을 PP81/PP95 안정 기준으로 되돌린다."
+    },
+    {
+      "item_id": "PP-OPT104",
+      "priority": "2",
+      "title": "gain-harm margin gate",
+      "description": "개선 확률이 손상 확률과 risk penalty를 충분히 이길 때만 PP102 보정을 허용한다."
+    },
+    {
+      "item_id": "PP-OPT105",
+      "priority": "3",
+      "title": "risk adaptive correction cap",
+      "description": "PP102 보정 로그 이동량을 risk/quantile 폭에 따라 다른 cap으로 제한한다."
+    },
+    {
+      "item_id": "PP-OPT106",
+      "priority": "4",
+      "title": "stable-baseline gated adoption",
+      "description": "PP81/PP95 안정 후보를 기준으로 두고 확률 margin이 충분한 row만 PP102로 이동한다."
+    },
+    {
+      "item_id": "PP-OPT107",
+      "priority": "5",
+      "title": "risk rollback router",
+      "description": "risk가 높거나 harm 확률이 큰 row는 PP102에서 안정 후보로 rollback한다."
+    },
+    {
+      "item_id": "PP-OPT108",
+      "priority": "6",
+      "title": "tail-purpose hybrid router",
+      "description": "운영형 PP102와 p95형 후보를 risk/gain 조건에 따라 제한적으로 섞는다."
+    },
+    {
+      "item_id": "PP-OPT109",
+      "priority": "7",
+      "title": "stability-score selected challenger",
+      "description": "고정 test와 반복 안정성 점수를 함께 사용해 최종 후보를 고른다."
+    },
+    {
+      "item_id": "PP-OPT110",
+      "priority": "8",
+      "title": "final guarded PP102 decision",
+      "description": "선택 후보를 운영형과 p95형으로 복제하고 PP64/PP70/PP81/PP95와 비교한다."
+    }
+  ],
+  "sources": {
+    "pp96_config": "experiments/track6/PP-OPT96_102_warm_tail_label_refinement_experiments/artifacts/run_config.json",
+    "pp96_predictions": "experiments/track6/PP-OPT96_102_warm_tail_label_refinement_experiments/outputs/candidate_predictions.csv",
+    "pp96_label_probabilities": "experiments/track6/PP-OPT96_102_warm_tail_label_refinement_experiments/artifacts/tail_label_probability_detail.csv",
+    "pp96_helper": "scripts/track6/run_pp_opt96_102_warm_tail_label_refinement_experiments.py",
+    "pp71_validation_helper": "scripts/track6/run_pp_opt71_75_warm_pp70_stability_validation.py"
+  }
+}

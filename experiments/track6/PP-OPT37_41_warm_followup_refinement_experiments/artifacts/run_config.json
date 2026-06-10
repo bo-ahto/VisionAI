@@ -1,0 +1,90 @@
+{
+  "experiment_id": "PP-OPT37-41",
+  "experiment_slug": "PP-OPT37_41_warm_followup_refinement_experiments",
+  "created_at": "2026-06-09T12:01:25",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 442,
+  "prediction_rows": 497692,
+  "items": [
+    {
+      "item_id": "PP-OPT37",
+      "priority": "1",
+      "title": "PP30 selector 후 PP31 tail guard 순차 적용",
+      "description": "row별 PP20/PP23 선택값에 tail 위험 구간 보정을 약하게 얹는다."
+    },
+    {
+      "item_id": "PP-OPT38",
+      "priority": "2",
+      "title": "PP35 segment router 안정화",
+      "description": "MAPE 개선 신호가 컸던 segment router를 표본/위험도 기반 shrinkage로 안정화한다."
+    },
+    {
+      "item_id": "PP-OPT39",
+      "priority": "3",
+      "title": "selector 확률 보정 후 재블렌드",
+      "description": "LightGBM selector 확률을 validation OOF에서 bin calibration한 뒤 PP20/PP23 가중치를 다시 계산한다."
+    },
+    {
+      "item_id": "PP-OPT40",
+      "priority": "4",
+      "title": "p95 패널티 목적함수 기반 제한 stacking",
+      "description": "validation OOF에서 MAPE와 p95 패널티를 함께 최소화하는 제한 가중 조합을 고른다."
+    },
+    {
+      "item_id": "PP-OPT41",
+      "priority": "5",
+      "title": "최종 follow-up challenger 선택",
+      "description": "PP20/PP36 대비 MAPE 개선과 p95 손실 한도를 함께 보며 최종 후보를 고른다."
+    }
+  ],
+  "selected_components": {
+    "pp20": "ppopt20_protocol_selected__source=ppopt19_segment_tuning__profile_low_support_tail__artist_cat_artist_mean__as_0p25__ts_0p55",
+    "pp23": "ppopt23_monotonic_gate__src=pp15_best_mape__thr=0p16__s=0p85",
+    "pp23_mape": "ppopt23_monotonic_gate__src=opt8_cat_price_band__thr=0p16__s=0p85",
+    "pp27_tail": "ppopt27_micro_residual__center=pp19_best_score__s=0p5__cap=0p01",
+    "pp15_mape": "ppopt15_absorb_pp12__base=pp9_best_mape__p12s=0p34__p9s=1p05__cap=0p026",
+    "pp21_mape": "ppopt21_uplift_gate__src=opt8_artist_mape__model=lgbm__thr=0p18__s=0p95",
+    "pp19_stable": "ppopt19_segment_tuning__profile=price_tail_high__artist=artist__as=0p35__ts=0p75",
+    "pp14_stable": "ppopt14_gate_grid__artist=artist_stable__sthr=0p12__tthr=0p25__as=0p2__ts=0p75__cap=0p024",
+    "pp24_conformal": "ppopt24_conformal_gate__src=pp19_best_score__s=0p95__cap=0p018"
+  },
+  "prior_candidates": {
+    "pp30_score": "ppopt30_row_selector__model=select_pp23_lgbm__thr=0p18__sharp=1p0",
+    "pp30_p95": "ppopt30_row_selector__model=select_pp23_cat__thr=0p28__sharp=0p75",
+    "pp31_mape": "ppopt31_pp23_tail_guard__thr=0p3__s=0p25__cap=0p01",
+    "pp36": "ppopt36_final_challenger__source=ppopt31_pp23_tail_guard__thr_0p3__s_0p25__cap_0p01",
+    "pp35_mape": "ppopt35_segment_router__group=price__obj=mape",
+    "pp35_guarded": "ppopt35_segment_router__group=spread_price__obj=guarded",
+    "pp35_p95": "ppopt35_segment_router__group=price__obj=guarded"
+  },
+  "thresholds": {
+    "p85": 0.38339160296436176,
+    "p90": 0.4636774710873784,
+    "p95": 0.6365947866362616
+  },
+  "selection_decision": {
+    "selected_source_candidate": "ppopt40_p95_penalty_stack__pen=0p75__p20=0p0__p23=0p9__p30=0p1__p31=0p0__p36=0p0",
+    "protocol_candidate": "ppopt41_followup_challenger__source=ppopt40_p95_penalty_stack__pen_0p75__p20_0p0__p23_0p9__p30_0p1__p31_0p0__p36_0p0",
+    "selected_source_item_id": "PP-OPT40",
+    "selected_source_family": "p95_penalty_limited_stacking",
+    "selection_reason": "operational pass first, then PP36 improvement with tight p95 give-back; fallback to PP20 improvement rule",
+    "test_MdAPE": 0.13784524368141932,
+    "test_MAPE": 0.2707235616573717,
+    "test_p95_APE": 0.807587276131646,
+    "test_delta_vs_incumbent_MdAPE": 0.000952677782803113,
+    "test_delta_vs_incumbent_MAPE": -0.0006713263546947457,
+    "test_delta_vs_incumbent_p95_APE": -0.0005427065818226495,
+    "recommendation_score_vs_incumbent": -0.001312146382352406
+  },
+  "sources": {
+    "pp_opt29_config": "PP-OPT29_36_warm_final_hybrid_selection_experiments",
+    "pp_opt29_predictions": "experiments/track6/PP-OPT29_36_warm_final_hybrid_selection_experiments/outputs/candidate_predictions.csv",
+    "pp_opt29_aggregate": "experiments/track6/PP-OPT29_36_warm_final_hybrid_selection_experiments/outputs/aggregate_candidate_stability.csv",
+    "pp_opt29_helper": "scripts/track6/run_pp_opt29_36_warm_final_hybrid_selection_experiments.py"
+  }
+}

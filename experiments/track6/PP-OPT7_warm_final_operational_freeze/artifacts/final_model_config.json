@@ -1,0 +1,40 @@
+{
+  "experiment_id": "PP-OPT7",
+  "final_model_id": "warm_catboost_artist_qcap_risk_strict_v1",
+  "base_candidate": "hcoef_stable",
+  "reference_candidate": "current_70_30",
+  "final_candidate": "p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__guard=risk_strict_cap0p020",
+  "final_seed_candidate_before_guard": "combo_focus__cat=cb_tier=same__qmult=same__cap=0p02__capprof=qcap_balanced__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__aw=0p5__totalcap=0p025",
+  "formula": {
+    "catboost_correction": "clip(raw_catboost_residual, -dynamic_qcap, +dynamic_qcap)",
+    "artist_correction": "clip(huber_birth_generation_residual, -0.03, +0.03) * 0.75",
+    "pre_guard_correction": "clip(1.0 * catboost_correction + 0.5 * artist_correction, -0.025, +0.025)",
+    "risk_multiplier": "0.15 if high_risk else 0.55 if medium_risk else 0.90",
+    "final_correction": "clip(pre_guard_correction * risk_multiplier, -0.020, +0.020)",
+    "final_log_price": "base_log_price + final_correction",
+    "final_krw_price": "exp(final_log_price)"
+  },
+  "risk_thresholds": {
+    "high_risk": {
+      "confidence_tier": "low_confidence",
+      "quantile_width_gte": 1.65,
+      "component_prediction_spread_gte": 0.13,
+      "current_vs_stable_gap_abs_gte": 0.05,
+      "svc_group_n_lt": 4
+    },
+    "medium_risk": {
+      "confidence_tier": "medium_confidence",
+      "quantile_width_gte": 1.28,
+      "component_prediction_spread_gte": 0.08,
+      "current_vs_stable_gap_abs_gte": 0.025,
+      "svc_group_n_lt": 8
+    }
+  },
+  "sources": {
+    "opt5_aggregate": "experiments/track6/PP-OPT5_warm_focused_repeated_validation/outputs/aggregate_candidate_stability.csv",
+    "opt6_metrics": "experiments/track6/PP-OPT6_warm_p95_guard_refinement/outputs/full_guard_metrics.csv",
+    "opt6_aggregate": "experiments/track6/PP-OPT6_warm_p95_guard_refinement/outputs/aggregate_guard_stability.csv",
+    "opt6_predictions": "experiments/track6/PP-OPT6_warm_p95_guard_refinement/outputs/selected_guard_predictions.csv"
+  },
+  "created_at": "2026-06-09T09:18:30"
+}

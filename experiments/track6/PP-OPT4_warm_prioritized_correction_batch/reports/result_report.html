@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>PP-OPT4 Warm correction batch</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #17202a; line-height: 1.55; }
+    pre { white-space: pre-wrap; background: #f7f8fa; border: 1px solid #d8dee4; border-radius: 8px; padding: 18px; }
+  </style>
+</head>
+<body><pre># PP-OPT4 Warm 우선순위 보정 배치 실험
+
+- 작성일: 2026-06-08 21:10
+- 기준가: `hcoef_stable` from PP-HCOEF20
+- 검증: validation OOF에서 후보 선택, fixed test는 진단용
+- 목적: 최근 논의한 개선 후보를 빠뜨리지 않고 같은 기준으로 비교한다.
+
+## 1. 실행한 우선순위
+
+1. CatBoost residual 보정값에 p95 guard와 작은 cap 적용
+2. 신뢰도 구간별 보정 라우팅
+3. quantile width 기반 동적 cap/strength
+4. 작가 생년/세대 중심 메타 보정
+5. CatBoost 작품/신뢰도 보정 + 작가 메타 보정 합산
+6. SVC 기준가와 PPV8 보조 후보의 동적 blend weight 재탐색
+7. XGBoost residual을 중신뢰/저신뢰 구간에서 비교
+
+## 2. 후보군별 요약
+
+| family | eval_split | candidates | best_MAPE | best_MdAPE | best_p95_APE | all3_improved |
+| --- | --- | --- | --- | --- | --- | --- |
+| catboost_residual_policy | test | 1296 | 0.2682 | 0.1355 | 0.8064 | 0 |
+| catboost_artist_combo | test | 288 | 0.2683 | 0.1349 | 0.8100 | 0 |
+| dynamic_svc_ppv8_blend | test | 11 | 0.2717 | 0.1388 | 0.8165 | 0 |
+| xgboost_residual_route | test | 100 | 0.2721 | 0.1361 | 0.8008 | 3 |
+| artist_meta_residual | test | 88 | 0.2740 | 0.1370 | 0.8119 | 0 |
+| source | test | 4 | 0.2748 | 0.1405 | 0.8331 | 0 |
+| xgboost_residual_route | validation_oof | 100 | 0.2033 | 0.1179 | 0.6345 | 5 |
+| catboost_artist_combo | validation_oof | 288 | 0.2035 | 0.1174 | 0.6307 | 284 |
+| catboost_residual_policy | validation_oof | 1296 | 0.2061 | 0.1209 | 0.6464 | 6 |
+| artist_meta_residual | validation_oof | 88 | 0.2082 | 0.1253 | 0.6300 | 0 |
+| dynamic_svc_ppv8_blend | validation_oof | 11 | 0.2106 | 0.1205 | 0.6437 | 0 |
+| source | validation_oof | 4 | 0.2110 | 0.1272 | 0.6504 | 0 |
+
+## 3. Validation OOF 기준 상위 후보
+
+| candidate | family | eval_split | n | MdAPE | MAPE | p95_APE | RMSE_log | delta_MdAPE | delta_MAPE | delta_p95_APE | guarded_score | improves_all3_vs_base |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| xgboost_route__xgboost_low_only_diagnostic_cap0p08__route=low_only | xgboost_residual_route | validation_oof | 519 | 0.1214 | 0.2033 | 0.6345 | 0.3200 | -0.0046 | -0.0049 | -0.0134 | -0.0049 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1180 | 0.2035 | 0.6363 | 0.3207 | -0.0080 | -0.0047 | -0.0116 | -0.0047 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1180 | 0.2035 | 0.6363 | 0.3207 | -0.0080 | -0.0047 | -0.0116 | -0.0047 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1206 | 0.2036 | 0.6370 | 0.3208 | -0.0054 | -0.0046 | -0.0110 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1183 | 0.2036 | 0.6356 | 0.3208 | -0.0077 | -0.0046 | -0.0123 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1181 | 0.2036 | 0.6356 | 0.3208 | -0.0079 | -0.0046 | -0.0123 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1196 | 0.2036 | 0.6374 | 0.3208 | -0.0064 | -0.0046 | -0.0105 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1207 | 0.2036 | 0.6367 | 0.3208 | -0.0053 | -0.0046 | -0.0112 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1195 | 0.2037 | 0.6355 | 0.3208 | -0.0065 | -0.0046 | -0.0125 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1192 | 0.2037 | 0.6355 | 0.3209 | -0.0068 | -0.0046 | -0.0125 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1192 | 0.2037 | 0.6371 | 0.3208 | -0.0068 | -0.0045 | -0.0108 | -0.0045 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1221 | 0.2037 | 0.6348 | 0.3206 | -0.0039 | -0.0045 | -0.0131 | -0.0045 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1211 | 0.2037 | 0.6365 | 0.3206 | -0.0049 | -0.0045 | -0.0115 | -0.0045 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1221 | 0.2038 | 0.6348 | 0.3207 | -0.0039 | -0.0044 | -0.0131 | -0.0044 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1216 | 0.2038 | 0.6350 | 0.3210 | -0.0044 | -0.0044 | -0.0130 | -0.0044 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1216 | 0.2038 | 0.6350 | 0.3210 | -0.0044 | -0.0044 | -0.0130 | -0.0044 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1200 | 0.2038 | 0.6355 | 0.3207 | -0.0060 | -0.0044 | -0.0125 | -0.0044 | True |
+| xgboost_route__xgboost_all_rows_cap0p08__route=low_only | xgboost_residual_route | validation_oof | 519 | 0.1236 | 0.2039 | 0.6394 | 0.3190 | -0.0024 | -0.0044 | -0.0086 | -0.0044 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1211 | 0.2039 | 0.6362 | 0.3207 | -0.0049 | -0.0043 | -0.0117 | -0.0043 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1183 | 0.2039 | 0.6376 | 0.3199 | -0.0076 | -0.0043 | -0.0103 | -0.0043 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p03 | catboost_artist_combo | validation_oof | 519 | 0.1221 | 0.2040 | 0.6381 | 0.3214 | -0.0039 | -0.0042 | -0.0099 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1183 | 0.2040 | 0.6360 | 0.3200 | -0.0076 | -0.0042 | -0.0120 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1213 | 0.2040 | 0.6355 | 0.3208 | -0.0047 | -0.0042 | -0.0125 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1204 | 0.2040 | 0.6406 | 0.3204 | -0.0056 | -0.0042 | -0.0073 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1180 | 0.2040 | 0.6360 | 0.3201 | -0.0080 | -0.0042 | -0.0120 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1215 | 0.2040 | 0.6342 | 0.3208 | -0.0045 | -0.0042 | -0.0138 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p03 | catboost_artist_combo | validation_oof | 519 | 0.1221 | 0.2040 | 0.6381 | 0.3214 | -0.0039 | -0.0042 | -0.0099 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1174 | 0.2041 | 0.6366 | 0.3201 | -0.0086 | -0.0042 | -0.0113 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1180 | 0.2041 | 0.6376 | 0.3200 | -0.0080 | -0.0041 | -0.0103 | -0.0041 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1222 | 0.2041 | 0.6340 | 0.3208 | -0.0038 | -0.0041 | -0.0140 | -0.0041 | True |
+
+## 4. Validation에서 세 지표 모두 개선된 후보
+
+| candidate | family | eval_split | n | MdAPE | MAPE | p95_APE | RMSE_log | delta_MdAPE | delta_MAPE | delta_p95_APE | guarded_score | improves_all3_vs_base |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| xgboost_route__xgboost_low_only_diagnostic_cap0p08__route=low_only | xgboost_residual_route | validation_oof | 519 | 0.1214 | 0.2033 | 0.6345 | 0.3200 | -0.0046 | -0.0049 | -0.0134 | -0.0049 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1180 | 0.2035 | 0.6363 | 0.3207 | -0.0080 | -0.0047 | -0.0116 | -0.0047 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1180 | 0.2035 | 0.6363 | 0.3207 | -0.0080 | -0.0047 | -0.0116 | -0.0047 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1206 | 0.2036 | 0.6370 | 0.3208 | -0.0054 | -0.0046 | -0.0110 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1183 | 0.2036 | 0.6356 | 0.3208 | -0.0077 | -0.0046 | -0.0123 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1181 | 0.2036 | 0.6356 | 0.3208 | -0.0079 | -0.0046 | -0.0123 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1196 | 0.2036 | 0.6374 | 0.3208 | -0.0064 | -0.0046 | -0.0105 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1207 | 0.2036 | 0.6367 | 0.3208 | -0.0053 | -0.0046 | -0.0112 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1195 | 0.2037 | 0.6355 | 0.3208 | -0.0065 | -0.0046 | -0.0125 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1192 | 0.2037 | 0.6355 | 0.3209 | -0.0068 | -0.0046 | -0.0125 | -0.0046 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1192 | 0.2037 | 0.6371 | 0.3208 | -0.0068 | -0.0045 | -0.0108 | -0.0045 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1221 | 0.2037 | 0.6348 | 0.3206 | -0.0039 | -0.0045 | -0.0131 | -0.0045 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1211 | 0.2037 | 0.6365 | 0.3206 | -0.0049 | -0.0045 | -0.0115 | -0.0045 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1221 | 0.2038 | 0.6348 | 0.3207 | -0.0039 | -0.0044 | -0.0131 | -0.0044 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1216 | 0.2038 | 0.6350 | 0.3210 | -0.0044 | -0.0044 | -0.0130 | -0.0044 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1216 | 0.2038 | 0.6350 | 0.3210 | -0.0044 | -0.0044 | -0.0130 | -0.0044 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1200 | 0.2038 | 0.6355 | 0.3207 | -0.0060 | -0.0044 | -0.0125 | -0.0044 | True |
+| xgboost_route__xgboost_all_rows_cap0p08__route=low_only | xgboost_residual_route | validation_oof | 519 | 0.1236 | 0.2039 | 0.6394 | 0.3190 | -0.0024 | -0.0044 | -0.0086 | -0.0044 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1211 | 0.2039 | 0.6362 | 0.3207 | -0.0049 | -0.0043 | -0.0117 | -0.0043 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1183 | 0.2039 | 0.6376 | 0.3199 | -0.0076 | -0.0043 | -0.0103 | -0.0043 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p03 | catboost_artist_combo | validation_oof | 519 | 0.1221 | 0.2040 | 0.6381 | 0.3214 | -0.0039 | -0.0042 | -0.0099 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1183 | 0.2040 | 0.6360 | 0.3200 | -0.0076 | -0.0042 | -0.0120 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1213 | 0.2040 | 0.6355 | 0.3208 | -0.0047 | -0.0042 | -0.0125 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1204 | 0.2040 | 0.6406 | 0.3204 | -0.0056 | -0.0042 | -0.0073 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1180 | 0.2040 | 0.6360 | 0.3201 | -0.0080 | -0.0042 | -0.0120 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1215 | 0.2040 | 0.6342 | 0.3208 | -0.0045 | -0.0042 | -0.0138 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p03 | catboost_artist_combo | validation_oof | 519 | 0.1221 | 0.2040 | 0.6381 | 0.3214 | -0.0039 | -0.0042 | -0.0099 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1174 | 0.2041 | 0.6366 | 0.3201 | -0.0086 | -0.0042 | -0.0113 | -0.0042 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1180 | 0.2041 | 0.6376 | 0.3200 | -0.0080 | -0.0041 | -0.0103 | -0.0041 | True |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | validation_oof | 519 | 0.1222 | 0.2041 | 0.6340 | 0.3208 | -0.0038 | -0.0041 | -0.0140 | -0.0041 | True |
+
+## 5. Test 진단 상위 후보
+
+| candidate | family | eval_split | n | MdAPE | MAPE | p95_APE | RMSE_log | delta_MdAPE | delta_MAPE | delta_p95_APE | guarded_score | improves_all3_vs_base |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| catboost_resid__model=confidence_weighted__tier=same__qmult=same__cap=0p05__capprof=fixed__s=1p15 | catboost_residual_policy | test | 607 | 0.1397 | 0.2682 | 0.8203 | 0.3981 | 0.0009 | -0.0047 | 0.0140 | 0.0025 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1368 | 0.2683 | 0.8138 | 0.3980 | -0.0020 | -0.0047 | 0.0074 | -0.0010 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1354 | 0.2684 | 0.8138 | 0.3980 | -0.0034 | -0.0046 | 0.0074 | -0.0009 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1371 | 0.2684 | 0.8138 | 0.3982 | -0.0017 | -0.0046 | 0.0074 | -0.0009 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1368 | 0.2684 | 0.8138 | 0.3982 | -0.0020 | -0.0046 | 0.0074 | -0.0009 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1388 | 0.2685 | 0.8134 | 0.3979 | -0.0000 | -0.0045 | 0.0071 | -0.0010 | False |
+| catboost_resid__model=confidence_weighted__tier=same__qmult=same__cap=0p05__capprof=fixed__s=1p0 | catboost_residual_policy | test | 607 | 0.1391 | 0.2685 | 0.8200 | 0.3981 | 0.0003 | -0.0045 | 0.0137 | 0.0024 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1382 | 0.2686 | 0.8134 | 0.3979 | -0.0006 | -0.0044 | 0.0071 | -0.0009 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1365 | 0.2686 | 0.8132 | 0.3980 | -0.0023 | -0.0044 | 0.0068 | -0.0009 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_for_sale_gn_a01_c05_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1356 | 0.2687 | 0.8138 | 0.3982 | -0.0032 | -0.0043 | 0.0074 | -0.0006 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_for_sale_gn_a01_c05_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1362 | 0.2687 | 0.8138 | 0.3982 | -0.0026 | -0.0043 | 0.0074 | -0.0006 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1376 | 0.2687 | 0.8138 | 0.3983 | -0.0012 | -0.0043 | 0.0074 | -0.0006 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1378 | 0.2687 | 0.8138 | 0.3983 | -0.0010 | -0.0043 | 0.0074 | -0.0006 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1351 | 0.2687 | 0.8132 | 0.3980 | -0.0037 | -0.0043 | 0.0068 | -0.0008 | False |
+| catboost_resid__model=confidence_weighted__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15 | catboost_residual_policy | test | 607 | 0.1388 | 0.2687 | 0.8119 | 0.3978 | -0.0000 | -0.0042 | 0.0055 | -0.0015 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1385 | 0.2688 | 0.8138 | 0.3984 | -0.0003 | -0.0042 | 0.0074 | -0.0005 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=0p8__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1373 | 0.2688 | 0.8129 | 0.3981 | -0.0015 | -0.0042 | 0.0065 | -0.0009 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=1p0__aw=0p5__totalcap=0p03 | catboost_artist_combo | test | 607 | 0.1376 | 0.2688 | 0.8119 | 0.3980 | -0.0012 | -0.0042 | 0.0055 | -0.0014 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1362 | 0.2688 | 0.8138 | 0.3983 | -0.0026 | -0.0042 | 0.0074 | -0.0005 | False |
+| catboost_resid__model=all_rows__tier=same__qmult=same__cap=0p05__capprof=fixed__s=1p15 | catboost_residual_policy | test | 607 | 0.1462 | 0.2688 | 0.8208 | 0.3977 | 0.0074 | -0.0042 | 0.0144 | 0.0049 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=1p0__aw=0p5__totalcap=0p03 | catboost_artist_combo | test | 607 | 0.1358 | 0.2688 | 0.8119 | 0.3980 | -0.0030 | -0.0042 | 0.0055 | -0.0014 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1390 | 0.2689 | 0.8137 | 0.3982 | 0.0002 | -0.0041 | 0.0073 | -0.0004 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=0p8__aw=0p5__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1384 | 0.2689 | 0.8129 | 0.3981 | -0.0004 | -0.0041 | 0.0065 | -0.0009 | False |
+| catboost_resid__model=confidence_weighted__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0 | catboost_residual_policy | test | 607 | 0.1379 | 0.2689 | 0.8119 | 0.3978 | -0.0009 | -0.0041 | 0.0055 | -0.0013 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1380 | 0.2689 | 0.8138 | 0.3985 | -0.0008 | -0.0041 | 0.0074 | -0.0004 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=1p0__aw=0p5__totalcap=0p03 | catboost_artist_combo | test | 607 | 0.1349 | 0.2689 | 0.8119 | 0.3980 | -0.0039 | -0.0041 | 0.0055 | -0.0013 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1360 | 0.2689 | 0.8132 | 0.3982 | -0.0028 | -0.0041 | 0.0068 | -0.0006 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_for_sale_gn_a01_c03_s075__cw=0p8__aw=0p5__totalcap=0p03 | catboost_artist_combo | test | 607 | 0.1373 | 0.2689 | 0.8119 | 0.3980 | -0.0015 | -0.0041 | 0.0055 | -0.0013 | False |
+| catboost_resid__model=confidence_weighted__tier=same__qmult=same__cap=0p05__capprof=fixed__s=0p75 | catboost_residual_policy | test | 607 | 0.1394 | 0.2689 | 0.8196 | 0.3979 | 0.0006 | -0.0041 | 0.0132 | 0.0027 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | test | 607 | 0.1396 | 0.2689 | 0.8137 | 0.3982 | 0.0008 | -0.0040 | 0.0073 | -0.0002 | False |
+
+## 6. Test에서 세 지표 모두 개선된 후보
+
+| candidate | family | eval_split | n | MdAPE | MAPE | p95_APE | RMSE_log | delta_MdAPE | delta_MAPE | delta_p95_APE | guarded_score | improves_all3_vs_base |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| xgboost_route__xgboost_low_only_diagnostic_cap0p02__route=medium_only | xgboost_residual_route | test | 607 | 0.1374 | 0.2721 | 0.8037 | 0.3984 | -0.0014 | -0.0008 | -0.0027 | -0.0008 | True |
+| xgboost_route__xgboost_low_only_diagnostic_cap0p03__route=medium_only | xgboost_residual_route | test | 607 | 0.1372 | 0.2722 | 0.8023 | 0.3983 | -0.0016 | -0.0008 | -0.0041 | -0.0008 | True |
+| xgboost_route__xgboost_low_only_diagnostic_cap0p05__route=medium_only | xgboost_residual_route | test | 607 | 0.1372 | 0.2726 | 0.8008 | 0.3982 | -0.0016 | -0.0004 | -0.0055 | -0.0004 | True |
+
+## 7. Validation 선택 후보의 test 대응
+
+| candidate | family | validation_MdAPE | validation_MAPE | validation_p95_APE | validation_delta_MdAPE | validation_delta_MAPE | validation_delta_p95_APE | test_MdAPE | test_MAPE | test_p95_APE | test_delta_MdAPE | test_delta_MAPE | test_delta_p95_APE | test_improves_all3_vs_base |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| xgboost_route__xgboost_low_only_diagnostic_cap0p08__route=low_only | xgboost_residual_route | 0.1214 | 0.2033 | 0.6345 | -0.0046 | -0.0049 | -0.0134 | 0.1421 | 0.2750 | 0.8750 | 0.0033 | 0.0020 | 0.0686 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1180 | 0.2035 | 0.6363 | -0.0080 | -0.0047 | -0.0116 | 0.1389 | 0.2705 | 0.8138 | 0.0001 | -0.0025 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1180 | 0.2035 | 0.6363 | -0.0080 | -0.0047 | -0.0116 | 0.1389 | 0.2706 | 0.8138 | 0.0001 | -0.0024 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1206 | 0.2036 | 0.6370 | -0.0054 | -0.0046 | -0.0110 | 0.1376 | 0.2703 | 0.8138 | -0.0012 | -0.0027 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1183 | 0.2036 | 0.6356 | -0.0077 | -0.0046 | -0.0123 | 0.1396 | 0.2709 | 0.8138 | 0.0008 | -0.0021 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1181 | 0.2036 | 0.6356 | -0.0079 | -0.0046 | -0.0123 | 0.1387 | 0.2710 | 0.8138 | -0.0001 | -0.0020 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1196 | 0.2036 | 0.6374 | -0.0064 | -0.0046 | -0.0105 | 0.1376 | 0.2698 | 0.8138 | -0.0012 | -0.0031 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1207 | 0.2036 | 0.6367 | -0.0053 | -0.0046 | -0.0112 | 0.1376 | 0.2704 | 0.8138 | -0.0012 | -0.0026 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1195 | 0.2037 | 0.6355 | -0.0065 | -0.0046 | -0.0125 | 0.1407 | 0.2710 | 0.8138 | 0.0019 | -0.0020 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1192 | 0.2037 | 0.6355 | -0.0068 | -0.0046 | -0.0125 | 0.1402 | 0.2710 | 0.8138 | 0.0014 | -0.0020 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1192 | 0.2037 | 0.6371 | -0.0068 | -0.0045 | -0.0108 | 0.1376 | 0.2699 | 0.8138 | -0.0012 | -0.0030 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1221 | 0.2037 | 0.6348 | -0.0039 | -0.0045 | -0.0131 | 0.1439 | 0.2696 | 0.8131 | 0.0051 | -0.0034 | 0.0068 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1211 | 0.2037 | 0.6365 | -0.0049 | -0.0045 | -0.0115 | 0.1390 | 0.2689 | 0.8137 | 0.0002 | -0.0041 | 0.0073 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1221 | 0.2038 | 0.6348 | -0.0039 | -0.0044 | -0.0131 | 0.1427 | 0.2696 | 0.8131 | 0.0039 | -0.0033 | 0.0068 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1216 | 0.2038 | 0.6350 | -0.0044 | -0.0044 | -0.0130 | 0.1396 | 0.2714 | 0.8138 | 0.0008 | -0.0016 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p0__artist=am_h_birth_gen_gallery_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1216 | 0.2038 | 0.6350 | -0.0044 | -0.0044 | -0.0130 | 0.1387 | 0.2714 | 0.8138 | -0.0001 | -0.0016 | 0.0074 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1200 | 0.2038 | 0.6355 | -0.0060 | -0.0044 | -0.0125 | 0.1426 | 0.2694 | 0.8134 | 0.0038 | -0.0036 | 0.0070 | False |
+| xgboost_route__xgboost_all_rows_cap0p08__route=low_only | xgboost_residual_route | 0.1236 | 0.2039 | 0.6394 | -0.0024 | -0.0044 | -0.0086 | 0.1389 | 0.2751 | 0.8750 | 0.0001 | 0.0021 | 0.0686 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1211 | 0.2039 | 0.6362 | -0.0049 | -0.0043 | -0.0117 | 0.1396 | 0.2689 | 0.8137 | 0.0008 | -0.0040 | 0.0073 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1183 | 0.2039 | 0.6376 | -0.0076 | -0.0043 | -0.0103 | 0.1371 | 0.2698 | 0.8132 | -0.0017 | -0.0032 | 0.0068 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p03 | catboost_artist_combo | 0.1221 | 0.2040 | 0.6381 | -0.0039 | -0.0042 | -0.0099 | 0.1443 | 0.2697 | 0.8118 | 0.0055 | -0.0032 | 0.0055 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1183 | 0.2040 | 0.6360 | -0.0076 | -0.0042 | -0.0120 | 0.1395 | 0.2707 | 0.8126 | 0.0007 | -0.0023 | 0.0063 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1213 | 0.2040 | 0.6355 | -0.0047 | -0.0042 | -0.0125 | 0.1435 | 0.2695 | 0.8134 | 0.0047 | -0.0035 | 0.0070 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1204 | 0.2040 | 0.6406 | -0.0056 | -0.0042 | -0.0073 | 0.1360 | 0.2689 | 0.8132 | -0.0028 | -0.0041 | 0.0068 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1180 | 0.2040 | 0.6360 | -0.0080 | -0.0042 | -0.0120 | 0.1395 | 0.2708 | 0.8126 | 0.0007 | -0.0022 | 0.0063 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1215 | 0.2040 | 0.6342 | -0.0045 | -0.0042 | -0.0138 | 0.1426 | 0.2701 | 0.8129 | 0.0038 | -0.0029 | 0.0065 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p03 | catboost_artist_combo | 0.1221 | 0.2040 | 0.6381 | -0.0039 | -0.0042 | -0.0099 | 0.1432 | 0.2698 | 0.8118 | 0.0044 | -0.0032 | 0.0055 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=0p8__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1174 | 0.2041 | 0.6366 | -0.0086 | -0.0042 | -0.0113 | 0.1400 | 0.2704 | 0.8129 | 0.0012 | -0.0025 | 0.0065 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p0__artist=am_h_birth_gen_total_works_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1180 | 0.2041 | 0.6376 | -0.0080 | -0.0041 | -0.0103 | 0.1376 | 0.2700 | 0.8132 | -0.0012 | -0.0030 | 0.0068 | False |
+| combo_cat_artist__cat=cb_model=cw__tier=same__qmult=same__cap=0p015__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__aw=1p0__totalcap=0p04 | catboost_artist_combo | 0.1222 | 0.2041 | 0.6340 | -0.0038 | -0.0041 | -0.0140 | 0.1441 | 0.2702 | 0.8128 | 0.0053 | -0.0028 | 0.0065 | False |
+
+## 8. 해석
+
+- CatBoost/XGBoost처럼 유연한 잔차 모델은 MAPE를 낮출 수 있지만, cap과 저신뢰 구간 제어가 없으면 p95가 흔들린다.
+- 작가 메타는 생년/세대 계열의 작은 보정으로 둘 때 p95 방어 신호가 가장 안정적이다.
+- SVC/PPV8 동적 blend는 기준가 구조를 바꾸는 후보이므로, validation 선택과 test 진단이 일치할 때만 후속 반복 검증으로 승격한다.
+- 이번 배치는 기존 OOF 산출물을 재조합한 1차 screening이다. 최종 반영 전에는 선택 후보만 별도 재학습/repeated holdout으로 확인해야 한다.
+
+## 9. 산출물
+
+- `outputs/candidate_metrics.csv`
+- `outputs/candidate_predictions_sample.csv`
+- `outputs/validation_selected_test_counterparts.csv`
+- `outputs/family_summary.csv`
+- `reports/result_report.md`
+- `reports/result_report.html`
+- `artifacts/run_config.json`
+</pre></body>
+</html>

@@ -1,0 +1,86 @@
+{
+  "experiment_id": "PP-OPT53-58",
+  "experiment_slug": "PP-OPT53_58_warm_rollback_router_experiments",
+  "created_at": "2026-06-09T12:32:12",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 1512,
+  "prediction_rows": 1702512,
+  "items": [
+    {
+      "item_id": "PP-OPT53",
+      "priority": "1",
+      "title": "PP52 위험도 기반 PP48/PP20 rollback",
+      "description": "위험 row에서 PP52를 안정 후보로 부분 rollback한다."
+    },
+    {
+      "item_id": "PP-OPT54",
+      "priority": "2",
+      "title": "PP52 악화 확률 classifier rollback",
+      "description": "validation OOF에서 PP52가 PP45보다 나빠지는 row를 학습해 되돌린다."
+    },
+    {
+      "item_id": "PP-OPT55",
+      "priority": "3",
+      "title": "quantile consensus dynamic cap",
+      "description": "잔차 quantile 폭과 신뢰도에 따라 PP45 기반 보정 cap을 동적으로 조절한다."
+    },
+    {
+      "item_id": "PP-OPT56",
+      "priority": "4",
+      "title": "segment별 quantile 보정 강도",
+      "description": "가격대/신뢰도/불확실성 구간별로 quantile consensus 보정 강도를 다르게 적용한다."
+    },
+    {
+      "item_id": "PP-OPT57",
+      "priority": "5",
+      "title": "MAPE 후보와 안정 후보의 row별 router",
+      "description": "PP52, PP48, PP20, PP30 중 row별로 안전한 후보를 선택 또는 혼합한다."
+    },
+    {
+      "item_id": "PP-OPT58",
+      "priority": "6",
+      "title": "최종 rollback-router challenger 선택",
+      "description": "PP52 대비 개선과 p95 방어를 모두 고려해 최종 후보를 선택한다."
+    }
+  ],
+  "selected_references": {
+    "pp20": "previous_challenger_pp20",
+    "pp23": "reference_pp23",
+    "pp30": "reference_pp30_best",
+    "pp38": "reference_pp38_best",
+    "pp41": "reference_pp41_challenger",
+    "pp45": "reference_pp45_challenger",
+    "pp52": "ppopt52_finetune_challenger__source=ppopt49_quantile_consensus_micro__center_pp45__wlim_0p22__guard_medium__s_0p42__cap_0p01",
+    "pp48_score": "ppopt48_segment_micro__center=pp38__group=price_conf__shrink=110p0__guard=medium__s=0p32__cap=0p0045",
+    "pp48_mape": "ppopt48_segment_micro__center=pp45__group=price_conf__shrink=160p0__guard=medium__s=0p32__cap=0p008",
+    "pp50_mape": "ppopt50_lowrisk_q50__center=pp23__rel=0p75__width=mild__s=0p34__cap=0p008",
+    "pp49_alt": "ppopt49_quantile_consensus_micro__center=pp45__wlim=0p22__guard=medium__s=0p3__cap=0p01",
+    "pp48_safe": "ppopt48_segment_micro__center=pp38__group=price_conf__shrink=110p0__guard=medium__s=0p32__cap=0p0045"
+  },
+  "selection_decision": {
+    "selected_source_candidate": "ppopt54_classifier_rollback__helper=pp48_mape__thr=0p44__width=0p4__rel=none__s=0p85",
+    "selected_source_item_id": "PP-OPT54",
+    "selected_source_family": "classifier_rollback",
+    "selection_reason": "prefer PP52 MAPE improvement with p95 not worse than PP7 and p95 give-back <= 0.00035 versus PP52",
+    "test_MdAPE": 0.13787846966744394,
+    "test_MAPE": 0.2705716656301805,
+    "test_p95_APE": 0.8078112428963969,
+    "test_delta_vs_incumbent_MdAPE": 0.000985903768827734,
+    "test_delta_vs_incumbent_MAPE": -0.0008232223818859796,
+    "test_delta_vs_incumbent_p95_APE": -0.0003187398170717559,
+    "recommendation_score_vs_incumbent": -0.0013174240321455041,
+    "protocol_candidate": "ppopt58_rollback_router_challenger__source=ppopt54_classifier_rollback__helper_pp48_mape__thr_0p44__width_0p4__rel_none__s_0p85"
+  },
+  "sources": {
+    "pp_opt47_config": "PP-OPT47_52_warm_residual_finetune_experiments",
+    "pp_opt47_predictions": "experiments/track6/PP-OPT47_52_warm_residual_finetune_experiments/outputs/candidate_predictions.csv",
+    "pp_opt47_aggregate": "experiments/track6/PP-OPT47_52_warm_residual_finetune_experiments/outputs/aggregate_candidate_stability.csv",
+    "pp_opt47_quantile": "experiments/track6/PP-OPT47_52_warm_residual_finetune_experiments/artifacts/quantile_residual_predictions.csv",
+    "pp_opt47_helper": "scripts/track6/run_pp_opt47_52_warm_residual_finetune_experiments.py"
+  }
+}

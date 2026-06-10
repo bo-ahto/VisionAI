@@ -1,0 +1,108 @@
+{
+  "experiment_id": "PP-OPT119-126",
+  "experiment_slug": "PP-OPT119_126_warm_pp118_stack_gate_refinement",
+  "created_at": "2026-06-09T14:59:30",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 2406,
+  "prediction_rows": 2709156,
+  "selected_references": {
+    "pp64": "reference_pp64_current_best",
+    "pp70": "reference_pp70_refinement",
+    "pp81": "reference_pp81_best",
+    "pp82_op": "reference_pp82_operational",
+    "pp82_p95": "reference_pp82_p95",
+    "pp95_op": "reference_pp95_operational",
+    "pp95_p95": "reference_pp95_p95",
+    "pp102_op": "reference_pp102_operational",
+    "pp110_op": "ppopt110_operational_guarded_pp102_challenger__source=ppopt104_margin_gate__gain_gain_any__hpen_1p05__rpen_0p0__thr_0p14__s_1p0",
+    "pp110_p95": "ppopt110_p95_guarded_pp102_challenger__source=ppopt108_tail_hybrid__target_pp82_p95__opthr_0p02__tailthr_0p08__tails_0p4",
+    "pp118_op": "ppopt118_operational_next_dimension_challenger__source=ppopt116_hybrid_stack_router__target_huber_stack_weighted__thr_0p12__s_0p75",
+    "pp118_p95": "ppopt118_p95_next_dimension_challenger__source=ppopt111_meta_router__set_tail_mix__thr_0p22__s_1p0",
+    "pp111_p95_source": "ppopt111_meta_router__set=tail_mix__thr=0p22__s=1p0"
+  },
+  "selection_decision": {
+    "operational_label": "candidate_ppopt119_fine_gate__safe_pp81__policy_less_harm__thr_0p1__width_0p16__s_0p75",
+    "operational_candidate": "ppopt119_fine_gate__safe=pp81__policy=less_harm__thr=0p1__width=0p16__s=0p75",
+    "operational_fixed_test_MAPE": 0.2701143967498518,
+    "operational_fixed_test_p95_APE": 0.8074900608978479,
+    "operational_delta_vs_pp64_MAPE": -0.0004496451658085321,
+    "operational_delta_vs_pp64_p95_APE": -8.791408261932254e-06,
+    "operational_avg_pp64_MAPE_win_rate": 0.9192307692307692,
+    "operational_avg_pp64_p95_win_rate": 0.49423076923076925,
+    "operational_replacement_score": -0.0172188759350393,
+    "p95_label": "candidate_ppopt124_p95_limited__target_pp82_p95__thr_0p08__mpen_0p2__s_0p4",
+    "p95_candidate": "ppopt124_p95_limited__target=pp82_p95__thr=0p08__mpen=0p2__s=0p4",
+    "p95_fixed_test_MAPE": 0.2703165497281949,
+    "p95_fixed_test_p95_APE": 0.8074645851983092,
+    "p95_delta_vs_pp64_MAPE": -0.0002474921874654479,
+    "p95_delta_vs_pp64_p95_APE": -3.426710780063402e-05,
+    "p95_avg_pp64_MAPE_win_rate": 0.9099358974358974,
+    "p95_avg_pp64_p95_win_rate": 0.6657051282051282,
+    "p95_replacement_score": -0.016644928084901346,
+    "operational_protocol_candidate": "ppopt126_operational_stack_gate_challenger__source=ppopt119_fine_gate__safe_pp81__policy_less_harm__thr_0p1__width_0p16__s_0p75",
+    "p95_protocol_candidate": "ppopt126_p95_stack_gate_challenger__source=ppopt124_p95_limited__target_pp82_p95__thr_0p08__mpen_0p2__s_0p4"
+  },
+  "items": [
+    {
+      "item_id": "PP-OPT119",
+      "priority": "1",
+      "title": "fine stack adoption gate",
+      "description": "PP118의 Huber stack 채택 gate 주변에서 threshold, width, strength를 세분화한다."
+    },
+    {
+      "item_id": "PP-OPT120",
+      "priority": "2",
+      "title": "p95 guarded stack gate",
+      "description": "risk, harm, stack gap이 큰 row에서는 Huber stack 이동량을 줄여 p95 악화를 방어한다."
+    },
+    {
+      "item_id": "PP-OPT121",
+      "priority": "3",
+      "title": "adaptive movement cap",
+      "description": "Huber stack으로 이동하는 로그 이동량에 risk별 cap을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT122",
+      "priority": "4",
+      "title": "segment strength schedule",
+      "description": "신뢰도, 가격대, risk에 따라 stack 채택 강도를 다르게 적용한다."
+    },
+    {
+      "item_id": "PP-OPT123",
+      "priority": "5",
+      "title": "risk rollback from aggressive stack",
+      "description": "MAPE가 강한 stack 후보를 쓰되 high-risk row는 PP118 또는 PP81로 되돌린다."
+    },
+    {
+      "item_id": "PP-OPT124",
+      "priority": "6",
+      "title": "p95 purpose limited router",
+      "description": "XGBoost p95 성향 후보와 p95 meta-router를 MAPE guard 안에서만 제한 채택한다."
+    },
+    {
+      "item_id": "PP-OPT125",
+      "priority": "7",
+      "title": "stability selected stack challenger",
+      "description": "고정 test와 반복 안정성 점수로 후보를 선별한다."
+    },
+    {
+      "item_id": "PP-OPT126",
+      "priority": "8",
+      "title": "final stack-gate decision",
+      "description": "선택 후보를 운영형/p95형으로 복제하고 PP118, PP81/PP95와 비교한다."
+    }
+  ],
+  "sources": {
+    "pp111_config": "experiments/track6/PP-OPT111_118_warm_next_dimension_experiments/artifacts/run_config.json",
+    "pp111_predictions": "experiments/track6/PP-OPT111_118_warm_next_dimension_experiments/outputs/candidate_predictions.csv",
+    "pp111_model_detail": "experiments/track6/PP-OPT111_118_warm_next_dimension_experiments/artifacts/next_dimension_model_prediction_detail.csv",
+    "pp96_label_probabilities": "experiments/track6/PP-OPT96_102_warm_tail_label_refinement_experiments/artifacts/tail_label_probability_detail.csv",
+    "pp96_helper": "scripts/track6/run_pp_opt96_102_warm_tail_label_refinement_experiments.py",
+    "pp111_helper": "scripts/track6/run_pp_opt111_118_warm_next_dimension_experiments.py",
+    "pp71_validation_helper": "scripts/track6/run_pp_opt71_75_warm_pp70_stability_validation.py"
+  }
+}

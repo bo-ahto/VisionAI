@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-OPT71~75 Warm PP70 안정성 검증 결과</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f6f8; color: #17202a; line-height: 1.58; }
+    main { max-width: 1280px; margin: 0 auto; min-height: 100vh; background: #fff; padding: 40px 28px 72px; }
+    h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.25; }
+    h2 { margin: 38px 0 12px; padding-top: 20px; border-top: 1px solid #d8dee6; font-size: 22px; }
+    .meta { color: #4b5563; margin-bottom: 24px; }
+    .callout { border-left: 4px solid #2563eb; background: #eff6ff; padding: 16px 18px; margin: 20px 0; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+    .panel { border: 1px solid #d8dee6; background: #fbfcfd; border-radius: 8px; padding: 14px; }
+    .panel strong { display: block; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 14px 0 22px; }
+    th, td { border: 1px solid #d8dee6; padding: 8px 10px; vertical-align: top; }
+    th { background: #f1f3f5; text-align: left; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    code { background: #f3f4f6; padding: 2px 5px; border-radius: 4px; }
+    pre { background: #111827; color: #f9fafb; padding: 14px; border-radius: 8px; overflow-x: auto; }
+    li { margin: 6px 0; }
+    @media (max-width: 900px) { main { padding: 28px 16px 56px; } .grid { grid-template-columns: 1fr; } table { font-size: 12px; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>PP-OPT71~75 Warm PP70 안정성 검증 결과</h1>
+  <div class="meta">작성일: 2026-06-09 12:59 · 제출용 제외 · 기존 Warm validation OOF 519건 + fixed test 607건</div>
+  <div class="callout"><strong>PP64를 운영 기준으로 유지하고 PP70은 보조 후보로 두는 것이 더 안전하다.</strong><br>PP70의 fixed test 개선폭이 매우 작거나 반복 검증 승률이 충분히 우세하지 않다. PP70 vs PP64 fixed test delta: MAPE -0.000003, p95 -0.000009. 반복 검증 평균 승률: MAPE 0.787, p95 0.398, all3 0.054.</div>
+  <div class="grid">
+    <div class="panel"><strong>비교 후보</strong>13개</div>
+    <div class="panel"><strong>반복 검증 row</strong>33,826개 metric</div>
+    <div class="panel"><strong>부모 후보</strong>ppopt70_pp64_refinement_challenger__source=p</div>
+    <div class="panel"><strong>시나리오</strong>6개</div>
+  </div>
+  <h2>1. 후보 라벨</h2>
+  <table><thead><tr><th>label</th><th>candidate</th></tr></thead><tbody><tr><td>hcoef_stable_source</td><td>hcoef_stable</td></tr><tr><td>incumbent_pp7</td><td>incumbent_operational_pp_opt7</td></tr><tr><td>pp20_p95_reference</td><td>previous_challenger_pp20</td></tr><tr><td>pp48_stability_reference</td><td>reference_pp48_score</td></tr><tr><td>pp52_quantile_reference</td><td>reference_pp52_challenger</td></tr><tr><td>pp58_mape_reference</td><td>reference_pp58_challenger</td></tr><tr><td>pp64_current_best</td><td>reference_pp64_current_best</td></tr><tr><td>pp70_refinement_candidate</td><td>ppopt70_pp64_refinement_challenger__source=ppopt68_shrinkage__global_1p04__risk_0p7__vh_0p82__lowconf_0p78</td></tr><tr><td>pp67_best_mape_non_operational</td><td>ppopt67_quantile_micro__guard=risk_discount__s=0p1__cap=0p014</td></tr><tr><td>pp_opt65_best</td><td>ppopt65_local_threshold__helper=pp48_score__base=0p4__vh=0p04__lowconf=0p02__width=0p48__s=0p76</td></tr><tr><td>pp_opt66_best</td><td>ppopt66_tail_guard__helper=pp48_score__score=combined__thr=0p66__width=0p22__s=0p44</td></tr><tr><td>pp_opt68_best</td><td>ppopt68_shrinkage__global=1p04__risk=0p7__vh=0p82__lowconf=1p0</td></tr><tr><td>pp_opt69_best</td><td>ppopt69_dynamic_blend__low=pp52__high=pp48_score__lows=0p0__highs=0p32</td></tr></tbody></table>
+  <h2>2. 전체 후보 안정성 순위</h2>
+  <table><thead><tr><th>candidate_label</th><th>fixed_test_MAPE</th><th>fixed_test_p95_APE</th><th>fixed_test_delta_vs_pp64_MAPE</th><th>fixed_test_delta_vs_pp64_p95_APE</th><th>avg_delta_vs_pp64_MAPE</th><th>avg_delta_vs_pp64_p95_APE</th><th>avg_pp64_MAPE_win_rate</th><th>avg_pp64_p95_win_rate</th><th>avg_pp64_all3_win_rate</th><th>avg_delta_vs_incumbent_MAPE</th><th>avg_delta_vs_incumbent_p95_APE</th><th>avg_incumbent_MAPE_win_rate</th><th>avg_incumbent_p95_win_rate</th><th>replacement_score</th></tr></thead><tbody><tr><td>pp_opt68_best</td><td>0.270562</td><td>0.807491</td><td>-0.000002</td><td>-0.000007</td><td>-0.000001</td><td>-0.000003</td><td>0.833333</td><td>0.415064</td><td>0.052564</td><td>-0.000750</td><td>-0.001949</td><td>0.997756</td><td>0.535256</td><td>-0.013336</td></tr><tr><td>pp67_best_mape_non_operational</td><td>0.270518</td><td>0.807499</td><td>-0.000046</td><td>0.000000</td><td>-0.000073</td><td>-0.000234</td><td>0.819231</td><td>0.058654</td><td>0.005449</td><td>-0.000822</td><td>-0.002180</td><td>0.987500</td><td>0.522115</td><td>-0.012815</td></tr><tr><td>pp70_refinement_candidate</td><td>0.270561</td><td>0.807490</td><td>-0.000003</td><td>-0.000009</td><td>-0.000001</td><td>-0.000001</td><td>0.786859</td><td>0.398077</td><td>0.054167</td><td>-0.000750</td><td>-0.001946</td><td>0.997756</td><td>0.533974</td><td>-0.011477</td></tr><tr><td>pp_opt66_best</td><td>0.270577</td><td>0.807512</td><td>0.000013</td><td>0.000014</td><td>0.000007</td><td>-0.000030</td><td>0.398718</td><td>0.142308</td><td>0.002885</td><td>-0.000742</td><td>-0.001976</td><td>0.997115</td><td>0.534295</td><td>0.004077</td></tr><tr><td>pp48_stability_reference</td><td>0.270816</td><td>0.807385</td><td>0.000252</td><td>-0.000113</td><td>0.000116</td><td>-0.000387</td><td>0.405449</td><td>0.722756</td><td>0.204487</td><td>-0.000632</td><td>-0.002332</td><td>0.954487</td><td>0.835577</td><td>0.004092</td></tr><tr><td>pp_opt69_best</td><td>0.270571</td><td>0.807509</td><td>0.000007</td><td>0.000011</td><td>0.000004</td><td>-0.000016</td><td>0.326282</td><td>0.181731</td><td>0.008333</td><td>-0.000744</td><td>-0.001961</td><td>0.997115</td><td>0.536538</td><td>0.006965</td></tr><tr><td>pp58_mape_reference</td><td>0.270572</td><td>0.807811</td><td>0.000008</td><td>0.000312</td><td>0.000014</td><td>0.000109</td><td>0.250321</td><td>0.158333</td><td>0.013462</td><td>-0.000734</td><td>-0.001837</td><td>0.997756</td><td>0.535577</td><td>0.010259</td></tr><tr><td>pp52_quantile_reference</td><td>0.270598</td><td>0.807660</td><td>0.000034</td><td>0.000161</td><td>0.000024</td><td>0.000132</td><td>0.219872</td><td>0.152564</td><td>0.011218</td><td>-0.000724</td><td>-0.001813</td><td>0.997436</td><td>0.529487</td><td>0.011411</td></tr><tr><td>pp_opt65_best</td><td>0.270586</td><td>0.807613</td><td>0.000022</td><td>0.000114</td><td>0.000019</td><td>0.000110</td><td>0.188782</td><td>0.152885</td><td>0.008013</td><td>-0.000729</td><td>-0.001836</td><td>0.997436</td><td>0.530769</td><td>0.012598</td></tr><tr><td>pp64_current_best</td><td>0.270564</td><td>0.807499</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>-0.000748</td><td>-0.001946</td><td>0.997756</td><td>0.535577</td><td>0.020000</td></tr><tr><td>pp20_p95_reference</td><td>0.271182</td><td>0.806472</td><td>0.000618</td><td>-0.001026</td><td>0.000535</td><td>0.000973</td><td>0.005769</td><td>0.461538</td><td>0.001603</td><td>-0.000214</td><td>-0.000973</td><td>0.964103</td><td>0.592949</td><td>0.020995</td></tr><tr><td>incumbent_pp7</td><td>0.271395</td><td>0.808130</td><td>0.000831</td><td>0.000631</td><td>0.000748</td><td>0.001946</td><td>0.002244</td><td>0.450641</td><td>0.000641</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.000000</td><td>0.022238</td></tr><tr><td>hcoef_stable_source</td><td>0.272989</td><td>0.806366</td><td>0.002425</td><td>-0.001133</td><td>0.002013</td><td>0.005297</td><td>0.002244</td><td>0.403526</td><td>0.000641</td><td>0.001265</td><td>0.003351</td><td>0.002564</td><td>0.400321</td><td>0.025195</td></tr></tbody></table>
+  <h2>3. fixed validation/test metric</h2>
+  <table><thead><tr><th>candidate_label</th><th>eval_split</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_vs_incumbent_MAPE</th><th>delta_vs_incumbent_p95_APE</th></tr></thead><tbody><tr><td>pp67_best_mape_non_operational</td><td>test</td><td>607</td><td>0.139573</td><td>0.270518</td><td>0.807499</td><td>0.397976</td><td>-0.000877</td><td>-0.000631</td></tr><tr><td>pp70_refinement_candidate</td><td>test</td><td>607</td><td>0.137878</td><td>0.270561</td><td>0.807490</td><td>0.397991</td><td>-0.000834</td><td>-0.000640</td></tr><tr><td>pp_opt68_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270562</td><td>0.807491</td><td>0.397991</td><td>-0.000833</td><td>-0.000639</td></tr><tr><td>pp64_current_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270564</td><td>0.807499</td><td>0.397991</td><td>-0.000831</td><td>-0.000631</td></tr><tr><td>pp_opt69_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270571</td><td>0.807509</td><td>0.397997</td><td>-0.000824</td><td>-0.000621</td></tr><tr><td>pp58_mape_reference</td><td>test</td><td>607</td><td>0.137878</td><td>0.270572</td><td>0.807811</td><td>0.397997</td><td>-0.000823</td><td>-0.000319</td></tr><tr><td>pp_opt66_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270577</td><td>0.807512</td><td>0.397999</td><td>-0.000818</td><td>-0.000618</td></tr><tr><td>pp_opt65_best</td><td>test</td><td>607</td><td>0.137878</td><td>0.270586</td><td>0.807613</td><td>0.397988</td><td>-0.000809</td><td>-0.000517</td></tr><tr><td>pp52_quantile_reference</td><td>test</td><td>607</td><td>0.137878</td><td>0.270598</td><td>0.807660</td><td>0.397987</td><td>-0.000797</td><td>-0.000470</td></tr><tr><td>pp48_stability_reference</td><td>test</td><td>607</td><td>0.136800</td><td>0.270816</td><td>0.807385</td><td>0.398121</td><td>-0.000579</td><td>-0.000745</td></tr><tr><td>pp20_p95_reference</td><td>test</td><td>607</td><td>0.136835</td><td>0.271182</td><td>0.806472</td><td>0.398134</td><td>-0.000213</td><td>-0.001658</td></tr><tr><td>incumbent_pp7</td><td>test</td><td>607</td><td>0.136893</td><td>0.271395</td><td>0.808130</td><td>0.398341</td><td>0.000000</td><td>0.000000</td></tr><tr><td>hcoef_stable_source</td><td>test</td><td>607</td><td>0.138803</td><td>0.272989</td><td>0.806366</td><td>0.398822</td><td>0.001594</td><td>-0.001764</td></tr><tr><td>pp48_stability_reference</td><td>validation_oof</td><td>519</td><td>0.122610</td><td>0.206179</td><td>0.636376</td><td>0.323684</td><td>-0.000844</td><td>-0.000219</td></tr><tr><td>pp67_best_mape_non_operational</td><td>validation_oof</td><td>519</td><td>0.123934</td><td>0.206185</td><td>0.637922</td><td>0.323772</td><td>-0.000838</td><td>0.001327</td></tr><tr><td>pp_opt66_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206278</td><td>0.637922</td><td>0.323770</td><td>-0.000745</td><td>0.001327</td></tr><tr><td>pp_opt68_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206280</td><td>0.637897</td><td>0.323780</td><td>-0.000743</td><td>0.001302</td></tr><tr><td>pp70_refinement_candidate</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206280</td><td>0.637897</td><td>0.323781</td><td>-0.000743</td><td>0.001302</td></tr><tr><td>pp_opt69_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206281</td><td>0.637922</td><td>0.323778</td><td>-0.000742</td><td>0.001327</td></tr><tr><td>pp64_current_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206281</td><td>0.637922</td><td>0.323780</td><td>-0.000742</td><td>0.001327</td></tr><tr><td>pp52_quantile_reference</td><td>validation_oof</td><td>519</td><td>0.122430</td><td>0.206301</td><td>0.638550</td><td>0.323793</td><td>-0.000722</td><td>0.001955</td></tr><tr><td>pp_opt65_best</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206303</td><td>0.638537</td><td>0.323790</td><td>-0.000720</td><td>0.001943</td></tr><tr><td>pp58_mape_reference</td><td>validation_oof</td><td>519</td><td>0.122635</td><td>0.206304</td><td>0.638224</td><td>0.323798</td><td>-0.000719</td><td>0.001629</td></tr><tr><td>pp20_p95_reference</td><td>validation_oof</td><td>519</td><td>0.125408</td><td>0.206777</td><td>0.638367</td><td>0.324048</td><td>-0.000246</td><td>0.001773</td></tr><tr><td>incumbent_pp7</td><td>validation_oof</td><td>519</td><td>0.125923</td><td>0.207023</td><td>0.636595</td><td>0.324133</td><td>0.000000</td><td>0.000000</td></tr><tr><td>hcoef_stable_source</td><td>validation_oof</td><td>519</td><td>0.125993</td><td>0.208206</td><td>0.647948</td><td>0.325185</td><td>0.001183</td><td>0.011353</td></tr></tbody></table>
+  <h2>4. PP70 시나리오별 PP64 대비 안정성</h2>
+  <table><thead><tr><th>candidate_label</th><th>eval_split</th><th>scenario</th><th>repeats</th><th>mean_delta_vs_pp64_MAPE</th><th>mean_delta_vs_pp64_p95_APE</th><th>pp64_MAPE_win_rate</th><th>pp64_p95_win_rate</th><th>pp64_all3_win_rate</th><th>mean_delta_vs_incumbent_MAPE</th><th>mean_delta_vs_incumbent_p95_APE</th></tr></thead><tbody><tr><td>pp70_refinement_candidate</td><td>test</td><td>artist_group_holdout</td><td>260</td><td>-0.000003</td><td>-0.000004</td><td>0.984615</td><td>0.326923</td><td>0.119231</td><td>-0.000834</td><td>-0.004679</td></tr><tr><td>pp70_refinement_candidate</td><td>test</td><td>confidence_stratified_rows</td><td>260</td><td>-0.000003</td><td>-0.000003</td><td>1.000000</td><td>0.442308</td><td>0.107692</td><td>-0.000834</td><td>-0.003421</td></tr><tr><td>pp70_refinement_candidate</td><td>test</td><td>full_split</td><td>1</td><td>-0.000003</td><td>-0.000009</td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>-0.000834</td><td>-0.000640</td></tr><tr><td>pp70_refinement_candidate</td><td>test</td><td>price_band_stratified_rows</td><td>260</td><td>-0.000003</td><td>-0.000003</td><td>0.980769</td><td>0.376923</td><td>0.115385</td><td>-0.000835</td><td>-0.004186</td></tr><tr><td>pp70_refinement_candidate</td><td>test</td><td>risk_focus_bootstrap</td><td>260</td><td>-0.000002</td><td>-0.000018</td><td>0.823077</td><td>0.161538</td><td>0.000000</td><td>-0.000591</td><td>-0.002317</td></tr><tr><td>pp70_refinement_candidate</td><td>test</td><td>row_bootstrap</td><td>260</td><td>-0.000003</td><td>-0.000012</td><td>0.876923</td><td>0.346154</td><td>0.073077</td><td>-0.000809</td><td>-0.005854</td></tr><tr><td>pp70_refinement_candidate</td><td>validation_oof</td><td>artist_group_holdout</td><td>260</td><td>-0.000000</td><td>0.000002</td><td>0.611538</td><td>0.280769</td><td>0.069231</td><td>-0.000753</td><td>-0.001061</td></tr><tr><td>pp70_refinement_candidate</td><td>validation_oof</td><td>confidence_stratified_rows</td><td>260</td><td>-0.000001</td><td>0.000003</td><td>0.688462</td><td>0.288462</td><td>0.076923</td><td>-0.000741</td><td>-0.000621</td></tr><tr><td>pp70_refinement_candidate</td><td>validation_oof</td><td>full_split</td><td>1</td><td>-0.000001</td><td>-0.000025</td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>-0.000743</td><td>0.001302</td></tr><tr><td>pp70_refinement_candidate</td><td>validation_oof</td><td>price_band_stratified_rows</td><td>260</td><td>-0.000001</td><td>0.000000</td><td>0.665385</td><td>0.319231</td><td>0.046154</td><td>-0.000737</td><td>-0.000599</td></tr><tr><td>pp70_refinement_candidate</td><td>validation_oof</td><td>risk_focus_bootstrap</td><td>260</td><td>0.000003</td><td>0.000048</td><td>0.257692</td><td>0.000000</td><td>0.000000</td><td>-0.000531</td><td>-0.000166</td></tr><tr><td>pp70_refinement_candidate</td><td>validation_oof</td><td>row_bootstrap</td><td>260</td><td>-0.000000</td><td>0.000012</td><td>0.553846</td><td>0.234615</td><td>0.042308</td><td>-0.000753</td><td>-0.001114</td></tr></tbody></table>
+  <h2>5. 해석</h2>
+  <ul>
+    <li>PP70은 fixed test에서 PP64보다 MAPE와 p95가 모두 낮지만 개선폭은 1e-5 미만이다.</li>
+    <li>반복 검증에서 PP64 대비 승률이 압도적이지 않으면, PP70은 구조적 개선이라기보다 PP64의 미세 튜닝으로 해석해야 한다.</li>
+    <li>p95를 더 크게 낮추려면 PP20/PP48 계열 안정 후보를 위험 row에만 쓰는 tail 라우팅을 다시 별도 탐색해야 한다.</li>
+  </ul>
+  <h2>6. 실행 설정</h2>
+  <pre>{
+  &quot;experiment_id&quot;: &quot;PP-OPT71-75&quot;,
+  &quot;experiment_slug&quot;: &quot;PP-OPT71_75_warm_pp70_stability_validation&quot;,
+  &quot;created_at&quot;: &quot;2026-06-09T12:59:58&quot;,
+  &quot;seed&quot;: 20260609,
+  &quot;repeats_per_resample_scenario&quot;: 260,
+  &quot;sample_fraction&quot;: 0.72,
+  &quot;selected_candidates&quot;: {
+    &quot;hcoef_stable_source&quot;: &quot;hcoef_stable&quot;,
+    &quot;incumbent_pp7&quot;: &quot;incumbent_operational_pp_opt7&quot;,
+    &quot;pp20_p95_reference&quot;: &quot;previous_challenger_pp20&quot;,
+    &quot;pp48_stability_reference&quot;: &quot;reference_pp48_score&quot;,
+    &quot;pp52_quantile_reference&quot;: &quot;reference_pp52_challenger&quot;,
+    &quot;pp58_mape_reference&quot;: &quot;reference_pp58_challenger&quot;,
+    &quot;pp64_current_best&quot;: &quot;reference_pp64_current_best&quot;,
+    &quot;pp70_refinement_candidate&quot;: &quot;ppopt70_pp64_refinement_challenger__source=ppopt68_shrinkage__global_1p04__risk_0p7__vh_0p82__lowconf_0p78&quot;,
+    &quot;pp67_best_mape_non_operational&quot;: &quot;ppopt67_quantile_micro__guard=risk_discount__s=0p1__cap=0p014&quot;,
+    &quot;pp_opt65_best&quot;: &quot;ppopt65_local_threshold__helper=pp48_score__base=0p4__vh=0p04__lowconf=0p02__width=0p48__s=0p76&quot;,
+    &quot;pp_opt66_best&quot;: &quot;ppopt66_tail_guard__helper=pp48_score__score=combined__thr=0p66__width=0p22__s=0p44&quot;,
+    &quot;pp_opt68_best&quot;: &quot;ppopt68_shrinkage__global=1p04__risk=0p7__vh=0p82__lowconf=1p0&quot;,
+    &quot;pp_opt69_best&quot;: &quot;ppopt69_dynamic_blend__low=pp52__high=pp48_score__lows=0p0__highs=0p32&quot;
+  },
+  &quot;candidate_count&quot;: 13,
+  &quot;validation_rows&quot;: 519,
+  &quot;test_rows&quot;: 607,
+  &quot;decision&quot;: {
+    &quot;verdict&quot;: &quot;PP64를 운영 기준으로 유지하고 PP70은 보조 후보로 두는 것이 더 안전하다.&quot;,
+    &quot;reason&quot;: &quot;PP70의 fixed test 개선폭이 매우 작거나 반복 검증 승률이 충분히 우세하지 않다. PP70 vs PP64 fixed test delta: MAPE -0.000003, p95 -0.000009. 반복 검증 평균 승률: MAPE 0.787, p95 0.398, all3 0.054.&quot;
+  },
+  &quot;items&quot;: [
+    {
+      &quot;item_id&quot;: &quot;PP-OPT71&quot;,
+      &quot;priority&quot;: &quot;1&quot;,
+      &quot;title&quot;: &quot;fixed validation/test reference comparison&quot;,
+      &quot;description&quot;: &quot;기존 fixed validation/test 전체 row에서 주요 후보를 다시 비교한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT72&quot;,
+      &quot;priority&quot;: &quot;2&quot;,
+      &quot;title&quot;: &quot;validation repeated holdout stability&quot;,
+      &quot;description&quot;: &quot;validation OOF에서 confidence, price, artist, risk 기반 반복 부분표본 승률을 계산한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT73&quot;,
+      &quot;priority&quot;: &quot;3&quot;,
+      &quot;title&quot;: &quot;test bootstrap stress stability&quot;,
+      &quot;description&quot;: &quot;fixed test를 재학습 없이 bootstrap/stratified resample하여 후보 간 승률을 계산한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT74&quot;,
+      &quot;priority&quot;: &quot;4&quot;,
+      &quot;title&quot;: &quot;PP70 vs PP64 replacement decision&quot;,
+      &quot;description&quot;: &quot;PP70의 미세 개선이 PP64 교체 근거로 충분한지 판단한다.&quot;
+    },
+    {
+      &quot;item_id&quot;: &quot;PP-OPT75&quot;,
+      &quot;priority&quot;: &quot;5&quot;,
+      &quot;title&quot;: &quot;next experiment recommendation&quot;,
+      &quot;description&quot;: &quot;검증 결과를 바탕으로 다음 실험 방향을 정리한다.&quot;
+    }
+  ],
+  &quot;sources&quot;: {
+    &quot;pp65_config&quot;: &quot;experiments/track6/PP-OPT65_70_warm_pp64_refinement_experiments/artifacts/run_config.json&quot;,
+    &quot;pp65_predictions&quot;: &quot;experiments/track6/PP-OPT65_70_warm_pp64_refinement_experiments/outputs/candidate_predictions.csv&quot;,
+    &quot;pp65_aggregate&quot;: &quot;experiments/track6/PP-OPT65_70_warm_pp64_refinement_experiments/outputs/aggregate_candidate_stability.csv&quot;,
+    &quot;pp65_item_summary&quot;: &quot;experiments/track6/PP-OPT65_70_warm_pp64_refinement_experiments/outputs/experiment_item_summary.csv&quot;,
+    &quot;pp65_helper&quot;: &quot;scripts/track6/run_pp_opt65_70_warm_pp64_refinement_experiments.py&quot;
+  }
+}</pre>
+</main>
+</body>
+</html>

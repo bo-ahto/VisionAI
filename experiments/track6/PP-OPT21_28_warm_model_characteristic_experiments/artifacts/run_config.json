@@ -1,0 +1,95 @@
+{
+  "experiment_id": "PP-OPT21-28",
+  "experiment_slug": "PP-OPT21_28_warm_model_characteristic_experiments",
+  "created_at": "2026-06-09T11:33:07",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 259,
+  "prediction_rows": 291634,
+  "items": [
+    {
+      "item_id": "PP-OPT21",
+      "priority": "1",
+      "title": "uplift model 기반 보정 선택",
+      "description": "row별로 보정하면 좋아지는지를 직접 학습한다."
+    },
+    {
+      "item_id": "PP-OPT22",
+      "priority": "2",
+      "title": "quantile residual shrinkage",
+      "description": "잔차의 q25/q50/q75를 학습해 불확실성이 큰 보정은 줄인다."
+    },
+    {
+      "item_id": "PP-OPT23",
+      "priority": "3",
+      "title": "monotonic constrained gate",
+      "description": "불확실성이 커질수록 보정 사용 확률이 줄도록 제약을 둔다."
+    },
+    {
+      "item_id": "PP-OPT24",
+      "priority": "4",
+      "title": "conformal risk gate",
+      "description": "예측구간 폭과 비순응 점수로 위험한 row의 보정을 축소한다."
+    },
+    {
+      "item_id": "PP-OPT25",
+      "priority": "5",
+      "title": "CatBoost categorical specialist",
+      "description": "범주형 상호작용을 잘 다루는 CatBoost로 보정/선택을 전담시킨다."
+    },
+    {
+      "item_id": "PP-OPT26",
+      "priority": "6",
+      "title": "LightGBM risk classifier specialist",
+      "description": "LightGBM을 가격 보정이 아니라 tail-risk gate 전용으로 사용한다."
+    },
+    {
+      "item_id": "PP-OPT27",
+      "priority": "7",
+      "title": "two-stage micro residual",
+      "description": "선택 후보 이후 남은 잔차만 아주 작은 cap으로 2차 보정한다."
+    },
+    {
+      "item_id": "PP-OPT28",
+      "priority": "8",
+      "title": "segment별 model-of-models router",
+      "description": "구간별로 PP-OPT7/20/15/19/14 후보 중 가장 안정적인 후보를 선택한다."
+    }
+  ],
+  "selected_components": {
+    "pp20_protocol": "ppopt20_protocol_selected__source=ppopt19_segment_tuning__profile_low_support_tail__artist_cat_artist_mean__as_0p25__ts_0p55",
+    "pp20_source": "ppopt19_segment_tuning__profile=low_support_tail__artist=cat_artist_mean__as=0p25__ts=0p55",
+    "pp19_best_score": "ppopt19_segment_tuning__profile=price_tail_high__artist=artist__as=0p35__ts=0p75",
+    "pp14_best_score": "ppopt14_gate_grid__artist=artist_stable__sthr=0p12__tthr=0p25__as=0p2__ts=0p75__cap=0p024",
+    "pp15_best_mape": "ppopt15_absorb_pp12__base=pp9_best_mape__p12s=0p34__p9s=1p05__cap=0p026",
+    "pp16_best_score": "ppopt16_tail_label__label=p90__src=xgb_tail__thr=0p2__s=0p65",
+    "pp17_best_score": "ppopt17_mdape_guard__src=pp9_best_operational__floor=0p4__s=0p9",
+    "pp18_best_mape": "ppopt18_constrained_ensemble__aw=0p22__cw=0p36__xw=0p35__qw=0p24__p12w=0p16__cap=0p022",
+    "opt8_artist_mape": "existing_opt5__combo_focus__cat=cb_tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04",
+    "opt8_artist_stable": "existing_opt5__combo_focus__cat=cb_tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=0p8__aw=0p75__totalcap=0p025",
+    "opt8_cat_price_band": "catboost_price_band__cap_strength",
+    "opt8_qwidth_mild": "qwidth_strength__continuous_mild",
+    "opt8_qwidth_strict": "qwidth_strength__continuous_strict",
+    "opt8_xgb_tail": "gap_routing__xgb_tail_else_incumbent__existing_opt5__xgb_xgboost_low_only_diagnostic_cap0p05__rout",
+    "opt8_tail_guard": "tail_guard__logistic",
+    "opt8_lightgbm_tail_guard": "lightgbm_tail_guard__classifier",
+    "opt8_cat_lgb_equal": "correction_ensemble__cat_lgb_equal"
+  },
+  "thresholds": {
+    "p85": 0.38339160296436176,
+    "p90": 0.4636774710873784,
+    "p95": 0.6365947866362616
+  },
+  "sources": {
+    "pp_opt14_predictions": "experiments/track6/PP-OPT14_20_warm_gate_refinement_experiments/outputs/candidate_predictions.csv",
+    "pp_opt14_aggregate": "experiments/track6/PP-OPT14_20_warm_gate_refinement_experiments/outputs/aggregate_candidate_stability.csv",
+    "pp_opt14_config": "experiments/track6/PP-OPT14_20_warm_gate_refinement_experiments/artifacts/run_config.json",
+    "pp_opt8_helper": "scripts/track6/run_pp_opt8_warm_extended_correction_experiments.py",
+    "pp_opt9_helper": "scripts/track6/run_pp_opt9_13_warm_followup_improvement_experiments.py",
+    "pp_opt14_helper": "scripts/track6/run_pp_opt14_20_warm_gate_refinement_experiments.py"
+  }
+}

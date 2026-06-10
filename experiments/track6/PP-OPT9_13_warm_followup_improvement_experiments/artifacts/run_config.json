@@ -1,0 +1,66 @@
+{
+  "experiment_id": "PP-OPT9-13",
+  "experiment_slug": "PP-OPT9_13_warm_followup_improvement_experiments",
+  "created_at": "2026-06-09T11:12:42",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 275,
+  "prediction_rows": 309650,
+  "items": [
+    {
+      "item_id": "PP-OPT9",
+      "priority": "1",
+      "title": "게이트형 하이브리드 보정",
+      "description": "작가 메타 CatBoost 보정, XGBoost tail 방어, 퀀타일 폭 governor를 row별로 조합한다."
+    },
+    {
+      "item_id": "PP-OPT10",
+      "priority": "2",
+      "title": "작가 메타 CatBoost 보정 안전 구간 분류",
+      "description": "작가 메타 보정이 이득을 주는 row를 학습해 안전할 때만 보정을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT11",
+      "priority": "3",
+      "title": "p95 큰 오차 위험 라우터",
+      "description": "큰 오차 위험 확률이 높은 row에서만 XGBoost/tail guard 방어 보정을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT12",
+      "priority": "4",
+      "title": "다목적 cap/strength 탐색",
+      "description": "MAPE, p95, 반복 검증 안정성을 함께 고려하는 cap/strength 조합을 탐색한다."
+    },
+    {
+      "item_id": "PP-OPT13",
+      "priority": "5",
+      "title": "작품 피쳐 shrinkage 보정",
+      "description": "재료/크기/가격대/신뢰도 조합의 잔차를 표본 수 기반 shrinkage로 약하게 보정한다."
+    }
+  ],
+  "component_candidates": {
+    "artist_mape": "existing_opt5__combo_focus__cat=cb_tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04",
+    "artist_stable": "existing_opt5__combo_focus__cat=cb_tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=0p8__aw=0p75__totalcap=0p025",
+    "cat_price_band": "catboost_price_band__cap_strength",
+    "qwidth_mild": "qwidth_strength__continuous_mild",
+    "qwidth_strict": "qwidth_strength__continuous_strict",
+    "xgb_tail": "gap_routing__xgb_tail_else_incumbent__existing_opt5__xgb_xgboost_low_only_diagnostic_cap0p05__rout",
+    "tail_guard": "tail_guard__logistic",
+    "lightgbm_tail_guard": "lightgbm_tail_guard__classifier",
+    "cat_lgb_equal": "correction_ensemble__cat_lgb_equal"
+  },
+  "labels": {
+    "incumbent_validation_p90_ape": 0.4636774710873784,
+    "incumbent_validation_p95_ape": 0.6365947866362616,
+    "artist_safety_positive_rate": 0.35452793834296725,
+    "tail_risk_positive_rate": 0.1001926782273603
+  },
+  "sources": {
+    "pp_opt8_predictions": "experiments/track6/PP-OPT8_warm_extended_correction_experiments/outputs/candidate_predictions.csv",
+    "pp_opt8_aggregate": "experiments/track6/PP-OPT8_warm_extended_correction_experiments/outputs/aggregate_candidate_stability.csv",
+    "helper_script": "scripts/track6/run_pp_opt8_warm_extended_correction_experiments.py"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "experiment_id": "PP-OPT65-70",
+  "experiment_slug": "PP-OPT65_70_warm_pp64_refinement_experiments",
+  "created_at": "2026-06-09T12:51:03",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 4723,
+  "prediction_rows": 5318098,
+  "items": [
+    {
+      "item_id": "PP-OPT65",
+      "priority": "1",
+      "title": "PP64 segment threshold local fine grid",
+      "description": "PP64의 핵심 구조를 유지하고 rollback threshold, width, strength만 좁은 범위에서 다시 탐색한다."
+    },
+    {
+      "item_id": "PP-OPT66",
+      "priority": "2",
+      "title": "PP64 tail-only fallback guard",
+      "description": "tail 위험이 높은 row에서만 PP64를 PP48/PP20 등 안정 후보 쪽으로 약하게 되돌린다."
+    },
+    {
+      "item_id": "PP-OPT67",
+      "priority": "3",
+      "title": "quantile consensus micro correction on PP64",
+      "description": "잔차 quantile 방향이 일치할 때만 PP64 위에 아주 작은 보정을 더한다."
+    },
+    {
+      "item_id": "PP-OPT68",
+      "priority": "4",
+      "title": "PP64 correction shrinkage by risk segment",
+      "description": "PP52에서 PP64로 이동한 rollback 보정량을 위험 구간별로 줄이거나 유지한다."
+    },
+    {
+      "item_id": "PP-OPT69",
+      "priority": "5",
+      "title": "PP64 stability dynamic blend",
+      "description": "위험이 낮은 row는 PP64/PP52 쪽, 위험이 높은 row는 PP48/PP20 쪽으로 동적 혼합한다."
+    },
+    {
+      "item_id": "PP-OPT70",
+      "priority": "6",
+      "title": "최종 PP64 refinement challenger 선택",
+      "description": "PP64 대비 MAPE와 p95의 균형을 기준으로 최종 후보를 선택한다."
+    }
+  ],
+  "selected_references": {
+    "pp20": "previous_challenger_pp20",
+    "pp30": "reference_pp30_best",
+    "pp45": "reference_pp45_challenger",
+    "pp48_score": "reference_pp48_score",
+    "pp52": "reference_pp52_challenger",
+    "pp58": "reference_pp58_challenger",
+    "pp64": "ppopt64_p95_guard_challenger__source=ppopt62_segment_threshold__helper_pp48_score__base_0p36__vh_0p08__lowconf_0p06__s_0p85"
+  },
+  "selection_decision": {
+    "selected_source_candidate": "ppopt68_shrinkage__global=1p04__risk=0p7__vh=0p82__lowconf=0p78",
+    "selected_source_item_id": "PP-OPT68",
+    "selected_source_family": "pp64_risk_segment_shrinkage",
+    "selection_reason": "prefer MAPE not worse than PP64 with p95 neutral; fallback to p95 improvement within 0.00003 MAPE loss",
+    "reference_pp64_test_MAPE": 0.27056404191566036,
+    "reference_pp64_test_p95_APE": 0.8074988523061098,
+    "delta_vs_pp64_MAPE": -3.0665386839823228e-06,
+    "delta_vs_pp64_p95_APE": -8.791408261932254e-06,
+    "test_MdAPE": 0.13787846966744394,
+    "test_MAPE": 0.2705609753769764,
+    "test_p95_APE": 0.8074900608978479,
+    "test_delta_vs_incumbent_MAPE": -0.0008339126350900838,
+    "test_delta_vs_incumbent_p95_APE": -0.0006399218156207809,
+    "recommendation_score_vs_incumbent": -0.0013248233276436719,
+    "protocol_candidate": "ppopt70_pp64_refinement_challenger__source=ppopt68_shrinkage__global_1p04__risk_0p7__vh_0p82__lowconf_0p78"
+  },
+  "sources": {
+    "pp_opt59_config": "experiments/track6/PP-OPT59_64_warm_p95_guard_experiments/artifacts/run_config.json",
+    "pp_opt59_predictions": "experiments/track6/PP-OPT59_64_warm_p95_guard_experiments/outputs/candidate_predictions.csv",
+    "pp_opt59_rollback_calibration": "experiments/track6/PP-OPT59_64_warm_p95_guard_experiments/artifacts/rollback_probability_calibration.csv",
+    "pp_opt47_quantile": "experiments/track6/PP-OPT47_52_warm_residual_finetune_experiments/artifacts/quantile_residual_predictions.csv",
+    "pp_opt59_helper": "scripts/track6/run_pp_opt59_64_warm_p95_guard_experiments.py"
+  }
+}
