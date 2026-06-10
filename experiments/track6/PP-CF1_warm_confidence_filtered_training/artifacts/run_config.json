@@ -1,0 +1,76 @@
+{
+  "experiment_id": "PP-CF1",
+  "created_at": "2026-06-08T13:13:14",
+  "source_predictions": "experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv",
+  "source_audit": {
+    "source_rows_by_split": {
+      "test": 607,
+      "validation": 1038
+    },
+    "source_unique_row_ids_by_split": {
+      "test": 607,
+      "validation": 519
+    },
+    "deduplicated_rows_by_split": {
+      "test": 607,
+      "validation": 519
+    }
+  },
+  "base_candidate": "hcoef_stable",
+  "reference_candidate": "current_70_30",
+  "component_columns": [
+    "hcoef_stable",
+    "current_70_30",
+    "ppv8_service_proxy",
+    "svc_numeric_seed_mean",
+    "l10_seq_pred_log"
+  ],
+  "residual_features": [
+    "quantile_width",
+    "l10_price_range_ratio",
+    "svc_group_n_log",
+    "log_area",
+    "component_prediction_spread",
+    "component_prediction_range",
+    "current_vs_stable_gap_abs",
+    "current_minus_stable_log",
+    "ppv8_minus_stable_log",
+    "svc_minus_stable_log",
+    "l10_minus_stable_log",
+    "confidence_risk_score"
+  ],
+  "high_confidence_rule": {
+    "quantile_width_max": 1.2,
+    "component_prediction_spread_max": 0.1,
+    "l10_price_range_ratio_max": 2.0,
+    "svc_group_n_min": 5,
+    "current_vs_stable_gap_abs_max": 0.025
+  },
+  "low_confidence_rule": {
+    "quantile_width_min": 1.6,
+    "component_prediction_spread_min": 0.18,
+    "l10_price_range_ratio_min": 2.5,
+    "svc_group_n_max": 4,
+    "current_vs_stable_gap_abs_min": 0.05
+  },
+  "confidence_weight_by_tier": {
+    "high_confidence": 1.0,
+    "medium_confidence": 0.45,
+    "low_confidence": 0.15
+  },
+  "model_families": [
+    "huber",
+    "ridge",
+    "catboost",
+    "xgboost"
+  ],
+  "residual_caps_log": [
+    0.01,
+    0.02,
+    0.03,
+    0.05,
+    0.08
+  ],
+  "selection_policy": "Select by validation_oof/all MAPE, then inspect fixed test. Test is diagnostic only.",
+  "best_validation_oof_candidate": "catboost_all_rows_cap0p08"
+}

@@ -1,0 +1,25 @@
+{
+  "experiment_id": "PP-CF2",
+  "created_at": "2026-06-08T13:45:03",
+  "source_experiment": "PP-CF1_warm_confidence_filtered_training",
+  "cf1_predictions": "experiments/track6/PP-CF1_warm_confidence_filtered_training/outputs/candidate_predictions.csv",
+  "cf1_metrics": "experiments/track6/PP-CF1_warm_confidence_filtered_training/outputs/metrics.csv",
+  "cf1_confidence_rules": {
+    "high_confidence_rule": {
+      "quantile_width_max": 1.2,
+      "component_prediction_spread_max": 0.1,
+      "l10_price_range_ratio_max": 2.0,
+      "svc_group_n_min": 5,
+      "current_vs_stable_gap_abs_max": 0.025
+    },
+    "low_confidence_rule": {
+      "quantile_width_min": 1.6,
+      "component_prediction_spread_min": 0.18,
+      "l10_price_range_ratio_min": 2.5,
+      "svc_group_n_max": 4,
+      "current_vs_stable_gap_abs_min": 0.05
+    }
+  },
+  "selection_policy": "Rank routing candidates by validation_oof/all for general operation, and validation_oof/high_confidence for high-confidence-only operation. Test is diagnostic.",
+  "route_count": 8
+}
