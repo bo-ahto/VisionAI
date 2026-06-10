@@ -1,0 +1,164 @@
+{
+  "experiment_id": "PP-HCOEF8",
+  "experiment_slug": "PP-HCOEF8_warm_huber_price_basis_coefficient_refinement",
+  "created_at": "2026-06-07T23:24:06",
+  "reference_candidate": "hcoef2_size_reliability_cap005_s050",
+  "feature_sets": {
+    "unit_area_reliability": [
+      "ppv8_defensive",
+      "svc_fallback",
+      "shrunk_huber_refit",
+      "shrunk_svc_prior",
+      "log_area",
+      "svc_group_n_log",
+      "svc_prior_iqr",
+      "current_ppv8_gap",
+      "current_shrunk_huber_gap",
+      "raw_shrunk_prior_gap",
+      "basis_relaxed_unit_area_log",
+      "basis_relaxed_n_log",
+      "basis_relaxed_iqr",
+      "basis_unit_gap",
+      "basis_shrunk_weight"
+    ],
+    "shrunk_basis_gap": [
+      "ppv8_defensive",
+      "svc_fallback",
+      "shrunk_huber_refit",
+      "shrunk_svc_prior",
+      "log_area",
+      "svc_group_n_log",
+      "svc_prior_iqr",
+      "current_ppv8_gap",
+      "current_shrunk_huber_gap",
+      "raw_shrunk_prior_gap",
+      "basis_shrunk_price_log",
+      "basis_shrunk_vs_current_gap",
+      "basis_relaxed_unit_area_log",
+      "basis_unit_gap",
+      "basis_relaxed_n_log",
+      "basis_relaxed_iqr",
+      "basis_shrunk_weight"
+    ],
+    "risk_flags": [
+      "ppv8_defensive",
+      "svc_fallback",
+      "shrunk_huber_refit",
+      "shrunk_svc_prior",
+      "log_area",
+      "svc_group_n_log",
+      "svc_prior_iqr",
+      "current_ppv8_gap",
+      "current_shrunk_huber_gap",
+      "raw_shrunk_prior_gap",
+      "basis_relaxed_unit_area_log",
+      "basis_unit_gap",
+      "basis_abs_gap",
+      "basis_low_iqr_flag",
+      "basis_high_n_flag",
+      "basis_artist_family_flag",
+      "basis_shrunk_weight"
+    ]
+  },
+  "alphas": [
+    0.01,
+    0.001
+  ],
+  "segment_policies": [
+    {
+      "name": "low_strong_mid_light_high_none",
+      "low": {
+        "cap": 0.05,
+        "strength": 0.75
+      },
+      "mid": {
+        "cap": 0.03,
+        "strength": 0.25
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    },
+    {
+      "name": "low_medium_mid_light_high_none",
+      "low": {
+        "cap": 0.03,
+        "strength": 0.75
+      },
+      "mid": {
+        "cap": 0.02,
+        "strength": 0.25
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    },
+    {
+      "name": "low_only_medium",
+      "low": {
+        "cap": 0.05,
+        "strength": 0.5
+      },
+      "mid": {
+        "cap": 0.0,
+        "strength": 0.0
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    },
+    {
+      "name": "all_tiny_low_priority",
+      "low": {
+        "cap": 0.03,
+        "strength": 0.5
+      },
+      "mid": {
+        "cap": 0.02,
+        "strength": 0.2
+      },
+      "high": {
+        "cap": 0.01,
+        "strength": 0.1
+      }
+    },
+    {
+      "name": "low_mid_balanced_high_none",
+      "low": {
+        "cap": 0.05,
+        "strength": 0.5
+      },
+      "mid": {
+        "cap": 0.03,
+        "strength": 0.5
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    },
+    {
+      "name": "artist_low_only_strong",
+      "low": {
+        "cap": 0.05,
+        "strength": 0.75
+      },
+      "mid": {
+        "cap": 0.0,
+        "strength": 0.0
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      },
+      "low_requires_artist_family": true
+    }
+  ],
+  "n_repeats": 12,
+  "n_folds": 5,
+  "seed": 20260611,
+  "selection_policy": "row/artist repeated OOF first; fixed test p95 must not worsen for operational candidate"
+}

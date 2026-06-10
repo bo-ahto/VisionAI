@@ -1,0 +1,1087 @@
+{
+  "experiment_id": "PP-HCOEF20",
+  "created_at": "2026-06-08T03:19:27",
+  "purpose": "Warm Huber low-dimensional residual coefficient search and quantile range/confidence policy",
+  "baseline": "hcoef_stable",
+  "reference": "current_70_30",
+  "candidate_count": 61,
+  "n_folds": 5,
+  "n_bootstrap": 300,
+  "threshold_source": "validation split only",
+  "thresholds": {
+    "qwidth_q33": 1.211578871599578,
+    "qwidth_q66": 1.5114122715075664,
+    "qwidth_q80": 1.706460316290511,
+    "pred_spread_q66": 0.2611428975257778,
+    "pred_spread_q80": 0.3788904313440783
+  },
+  "inputs": {
+    "hcoef18_predictions": "experiments/track6/PP-HCOEF18_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv",
+    "pp_l10_predictions": "experiments/track6/PP-L10_warm_l8_feature_variant_sequential/outputs/predictions.csv",
+    "operational_0604": "models/track6/price_prediction_v0.1/operational/outputs/0604_evaluation/operational_predictions_with_actual.csv"
+  },
+  "candidate_configs": [
+    {
+      "candidate": "hcoef_stable",
+      "method": "source",
+      "features": [],
+      "alpha": null,
+      "cap": null,
+      "strength": null,
+      "source_col": "hcoef_stable",
+      "purpose": "현재 HCOEF 안정 후보"
+    },
+    {
+      "candidate": "current_70_30",
+      "method": "source",
+      "features": [],
+      "alpha": null,
+      "cap": null,
+      "strength": null,
+      "source_col": "current_70_30",
+      "purpose": "서비스 v0.1 70:30 기준 후보"
+    },
+    {
+      "candidate": "ppv8_service_proxy",
+      "method": "source",
+      "features": [],
+      "alpha": null,
+      "cap": null,
+      "strength": null,
+      "source_col": "ppv8_service_proxy",
+      "purpose": "PP-V8/service component proxy"
+    },
+    {
+      "candidate": "svc_numeric_seed_mean",
+      "method": "source",
+      "features": [],
+      "alpha": null,
+      "cap": null,
+      "strength": null,
+      "source_col": "svc_numeric_seed_mean",
+      "purpose": "유사 작품 기반 가격 피처"
+    },
+    {
+      "candidate": "l10_seq_full_generated_bucket",
+      "method": "source",
+      "features": [],
+      "alpha": null,
+      "cap": null,
+      "strength": null,
+      "source_col": "l10_seq_pred_log",
+      "purpose": "PP-L10 순차 component"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p001_cap0p02_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p001_cap0p02_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p001_cap0p03_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p001_cap0p03_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p001_cap0p05_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p001_cap0p05_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p01_cap0p02_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p01_cap0p02_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p01_cap0p03_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p01_cap0p03_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p01_cap0p05_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_a0p01_cap0p05_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p001_cap0p02_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p001_cap0p02_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p001_cap0p03_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p001_cap0p03_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p001_cap0p05_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p001_cap0p05_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p01_cap0p02_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p01_cap0p02_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p01_cap0p03_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p01_cap0p03_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p01_cap0p05_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_qwidth_reliability_a0p01_cap0p05_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p02_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p02_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p03_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p03_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p05_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p05_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p01_cap0p02_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p01_cap0p02_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p01_cap0p03_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p01_cap0p03_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p01_cap0p05_s0p25",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_huber_component_gaps_qwidth_a0p01_cap0p05_s0p5",
+      "method": "residual_huber",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "HCOEF 안정 후보 위에 작은 Huber 잔차 보정"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_component_gaps_qwidth_a0p1_cap0p02_s0p25",
+      "method": "residual_ridge",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.1,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_component_gaps_qwidth_a0p1_cap0p02_s0p5",
+      "method": "residual_ridge",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.1,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_component_gaps_qwidth_a0p1_cap0p03_s0p25",
+      "method": "residual_ridge",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.1,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_component_gaps_qwidth_a0p1_cap0p03_s0p5",
+      "method": "residual_ridge",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 0.1,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_component_gaps_qwidth_a1_cap0p02_s0p25",
+      "method": "residual_ridge",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 1.0,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_component_gaps_qwidth_a1_cap0p02_s0p5",
+      "method": "residual_ridge",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 1.0,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_component_gaps_qwidth_a1_cap0p03_s0p25",
+      "method": "residual_ridge",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 1.0,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_component_gaps_qwidth_a1_cap0p03_s0p5",
+      "method": "residual_ridge",
+      "features": [
+        "current_minus_stable",
+        "ppv8_minus_stable",
+        "svc_minus_stable",
+        "l10_minus_stable",
+        "pred_spread",
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "log_area_filled"
+      ],
+      "alpha": 1.0,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_qwidth_reliability_a0p1_cap0p02_s0p25",
+      "method": "residual_ridge",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.1,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_qwidth_reliability_a0p1_cap0p02_s0p5",
+      "method": "residual_ridge",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.1,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_qwidth_reliability_a0p1_cap0p03_s0p25",
+      "method": "residual_ridge",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.1,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_qwidth_reliability_a0p1_cap0p03_s0p5",
+      "method": "residual_ridge",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.1,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_qwidth_reliability_a1_cap0p02_s0p25",
+      "method": "residual_ridge",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 1.0,
+      "cap": 0.02,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_qwidth_reliability_a1_cap0p02_s0p5",
+      "method": "residual_ridge",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 1.0,
+      "cap": 0.02,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_qwidth_reliability_a1_cap0p03_s0p25",
+      "method": "residual_ridge",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 1.0,
+      "cap": 0.03,
+      "strength": 0.25,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_resid_ridge_qwidth_reliability_a1_cap0p03_s0p5",
+      "method": "residual_ridge",
+      "features": [
+        "quantile_width",
+        "l10_price_range_ratio",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 1.0,
+      "cap": 0.03,
+      "strength": 0.5,
+      "source_col": null,
+      "purpose": "Huber보다 부드러운 Ridge 잔차 보정 대조군"
+    },
+    {
+      "candidate": "hcoef20_direct_huber_component_stack_a0p001",
+      "method": "direct_huber",
+      "features": [
+        "hcoef_stable",
+        "current_70_30",
+        "ppv8_service_proxy",
+        "svc_numeric_seed_mean",
+        "l10_seq_pred_log",
+        "quantile_width",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.001,
+      "cap": null,
+      "strength": null,
+      "source_col": null,
+      "purpose": "기준가/component 자체를 저차원 선형 stack으로 직접 재학습"
+    },
+    {
+      "candidate": "hcoef20_direct_huber_component_stack_a0p01",
+      "method": "direct_huber",
+      "features": [
+        "hcoef_stable",
+        "current_70_30",
+        "ppv8_service_proxy",
+        "svc_numeric_seed_mean",
+        "l10_seq_pred_log",
+        "quantile_width",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.01,
+      "cap": null,
+      "strength": null,
+      "source_col": null,
+      "purpose": "기준가/component 자체를 저차원 선형 stack으로 직접 재학습"
+    },
+    {
+      "candidate": "hcoef20_direct_ridge_component_stack_a0p1",
+      "method": "direct_ridge",
+      "features": [
+        "hcoef_stable",
+        "current_70_30",
+        "ppv8_service_proxy",
+        "svc_numeric_seed_mean",
+        "l10_seq_pred_log",
+        "quantile_width",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 0.1,
+      "cap": null,
+      "strength": null,
+      "source_col": null,
+      "purpose": "기준가/component 자체를 저차원 선형 stack으로 직접 재학습"
+    },
+    {
+      "candidate": "hcoef20_direct_ridge_component_stack_a1",
+      "method": "direct_ridge",
+      "features": [
+        "hcoef_stable",
+        "current_70_30",
+        "ppv8_service_proxy",
+        "svc_numeric_seed_mean",
+        "l10_seq_pred_log",
+        "quantile_width",
+        "svc_group_n_log",
+        "coverage_numeric",
+        "pred_spread"
+      ],
+      "alpha": 1.0,
+      "cap": null,
+      "strength": null,
+      "source_col": null,
+      "purpose": "기준가/component 자체를 저차원 선형 stack으로 직접 재학습"
+    }
+  ]
+}

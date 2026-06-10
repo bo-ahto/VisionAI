@@ -1,0 +1,128 @@
+{
+  "experiment_id": "PP-HCOEF6",
+  "experiment_slug": "PP-HCOEF6_warm_huber_price_basis_coefficient_refinement",
+  "created_at": "2026-06-07T23:03:10",
+  "reference_candidate": "hcoef2_size_reliability_cap005_s050",
+  "basis_configs": [
+    {
+      "name": "loose_basis_core_huber_alpha0p1",
+      "policy": "loose",
+      "feature_key": "basis_core",
+      "kind": "huber",
+      "alpha": 0.1
+    },
+    {
+      "name": "loose_basis_core_huber_alpha0p01",
+      "policy": "loose",
+      "feature_key": "basis_core",
+      "kind": "huber",
+      "alpha": 0.01
+    },
+    {
+      "name": "loose_basis_gap_huber_alpha0p1",
+      "policy": "loose",
+      "feature_key": "basis_gap_reliability",
+      "kind": "huber",
+      "alpha": 0.1
+    }
+  ],
+  "routing_rules": [
+    {
+      "name": "artist_reliable_n5_iqr090_gap080_cap005_s050",
+      "levels": [
+        "artist_medium_support_size",
+        "artist_size",
+        "artist"
+      ],
+      "min_n": 5,
+      "max_iqr": 0.9,
+      "max_abs_gap": 0.8,
+      "min_weight": 0.35,
+      "cap": 0.05,
+      "strength": 0.5
+    },
+    {
+      "name": "artist_strict_n10_iqr075_gap065_cap005_s075",
+      "levels": [
+        "artist_medium_support_size",
+        "artist_size",
+        "artist"
+      ],
+      "min_n": 10,
+      "max_iqr": 0.75,
+      "max_abs_gap": 0.65,
+      "min_weight": 0.55,
+      "cap": 0.05,
+      "strength": 0.75
+    },
+    {
+      "name": "detail_or_artist_n3_iqr080_gap060_cap003_s050",
+      "levels": [
+        "artist_medium_support_size",
+        "artist_size",
+        "artist"
+      ],
+      "min_n": 3,
+      "max_iqr": 0.8,
+      "max_abs_gap": 0.6,
+      "min_weight": 0.25,
+      "cap": 0.03,
+      "strength": 0.5
+    },
+    {
+      "name": "broad_reliable_n20_iqr080_gap080_cap005_s050",
+      "levels": [
+        "artist_medium_support_size",
+        "artist_size",
+        "artist",
+        "medium_support_size",
+        "medium_category_support_size",
+        "medium_size"
+      ],
+      "min_n": 20,
+      "max_iqr": 0.8,
+      "max_abs_gap": 0.8,
+      "min_weight": 0.7,
+      "cap": 0.05,
+      "strength": 0.5
+    },
+    {
+      "name": "broad_lowrisk_n30_iqr065_gap050_cap003_s075",
+      "levels": [
+        "artist_medium_support_size",
+        "artist_size",
+        "artist",
+        "medium_support_size",
+        "medium_category_support_size",
+        "medium_size"
+      ],
+      "min_n": 30,
+      "max_iqr": 0.65,
+      "max_abs_gap": 0.5,
+      "min_weight": 0.78,
+      "cap": 0.03,
+      "strength": 0.75
+    },
+    {
+      "name": "coverage_high_n8_iqr100_gap100_cap003_s025",
+      "levels": [
+        "artist_medium_support_size",
+        "artist_size",
+        "artist",
+        "medium_support_size",
+        "medium_category_support_size",
+        "medium_size"
+      ],
+      "min_n": 8,
+      "max_iqr": 1.0,
+      "max_abs_gap": 1.0,
+      "min_weight": 0.45,
+      "cap": 0.03,
+      "strength": 0.25
+    }
+  ],
+  "n_repeats": 12,
+  "n_folds": 5,
+  "seed": 20260609,
+  "selection_policy": "row/artist repeated OOF first; fixed test p95 must not worsen for operational candidate"
+}

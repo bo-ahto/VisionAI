@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset='utf-8'>
+    <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 28px; color: #1f2933; }
+    h1, h2, h3 { color: #17202a; }
+    table { border-collapse: collapse; width: 100%; margin: 14px 0 24px; font-size: 13px; }
+    th, td { border: 1px solid #d7dee8; padding: 7px 9px; text-align: left; vertical-align: top; }
+    th { background: #eef3f8; }
+    p { line-height: 1.55; }
+    code { background: #eef3f8; padding: 1px 3px; border-radius: 3px; }
+    </style>
+    </head><body><h1>PP-HCOEF21 Warm Huber 가변 기준가/계수 검증 요약</h1>
+
+<p>- 실험 폴더: `experiments/track6/PP-HCOEF21_warm_huber_price_basis_coefficient_refinement`</p>
+<p>- 실행 스크립트: `scripts/track6/run_pp_hcoef21_warm_huber_price_basis_coefficient_refinement.py`</p>
+<p>- 목적: 단일 70:30 기준가를 표본 수/coverage/quantile 폭 기반 가변 기준가로 바꾸고, Huber residual로 작게 보정 가능한지 검증.</p>
+
+<h2>핵심 결과</h2>
+
+<table>
+<tr><th>candidate</th><th>decision</th><th>test_MdAPE</th><th>test_MAPE</th><th>test_p95_APE</th><th>stress0604_MdAPE</th><th>stress0604_MAPE</th><th>stress0604_p95_APE</th></tr>
+<tr><td>hcoef_stable</td><td>현재 기준 후보</td><td>0.1388</td><td>0.2730</td><td>0.8064</td><td>0.2731</td><td>0.3744</td><td>0.9835</td></tr>
+<tr><td>hcoef21_resid_huber_adaptive_interactions_a0p001_cap0p02_s0p25</td><td>OOF 개선 후보</td><td>0.1388</td><td>0.2727</td><td>0.8099</td><td>0.2696</td><td>0.3731</td><td>0.9834</td></tr>
+<tr><td>hcoef21_resid_huber_adaptive_interactions_a0p01_cap0p02_s0p25</td><td>OOF 개선 후보</td><td>0.1388</td><td>0.2727</td><td>0.8099</td><td>0.2696</td><td>0.3731</td><td>0.9834</td></tr>
+<tr><td>hcoef21_resid_ridge_adaptive_interactions_a1_cap0p02_s0p25</td><td>OOF 개선 후보</td><td>0.1388</td><td>0.2728</td><td>0.8097</td><td>0.2698</td><td>0.3730</td><td>0.9834</td></tr>
+<tr><td>hcoef21_resid_ridge_adaptive_interactions_a0p1_cap0p02_s0p25</td><td>OOF 개선 후보</td><td>0.1388</td><td>0.2728</td><td>0.8097</td><td>0.2698</td><td>0.3730</td><td>0.9834</td></tr>
+<tr><td>hcoef21_resid_huber_adaptive_reliability_a0p001_cap0p02_s0p25</td><td>OOF 개선 후보</td><td>0.1389</td><td>0.2727</td><td>0.8100</td><td>0.2725</td><td>0.3733</td><td>0.9834</td></tr>
+<tr><td>hcoef21_resid_huber_adaptive_reliability_a0p01_cap0p02_s0p25</td><td>OOF 개선 후보</td><td>0.1389</td><td>0.2727</td><td>0.8100</td><td>0.2725</td><td>0.3733</td><td>0.9834</td></tr>
+<tr><td>hcoef21_resid_ridge_adaptive_reliability_a0p1_cap0p02_s0p25</td><td>OOF 개선 후보</td><td>0.1389</td><td>0.2729</td><td>0.8100</td><td>0.2748</td><td>0.3733</td><td>0.9834</td></tr>
+</table>
+
+<h2>해석</h2>
+
+<p>- 가변 기준가는 Huber가 설명할 수 있는 기준가/신뢰도 피처를 명확히 만들기 위한 실험임.</p>
+<p>- 운영 후보 판단은 fixed test 단독이 아니라 validation OOF, artist OOF, bootstrap을 우선함.</p>
+<p>- 0604는 외부 stress test로만 사용함.</p></body></html>

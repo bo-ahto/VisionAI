@@ -1,0 +1,122 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>PP-HCOEF15</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:32px;color:#1f2937}table{border-collapse:collapse;margin:12px 0;width:100%}th,td{border:1px solid #d8dee9;padding:6px 9px;font-size:13px;text-align:left;vertical-align:top}th{background:#f3f4f6}h1,h2,h3{margin-top:24px}p{line-height:1.55}</style></head><body><h1>PP-HCOEF15 Warm 최신 라벨 stress test</h1>
+<p>- 작성일: 2026-06-08 01:26</p>
+<p>- 목적: 0604 최신 라벨을 외부 stress test로 사용해 HCOEF 안정 후보와 운영 후보의 차이를 비교</p>
+<p>- 기준 후보: `hcoef2_size_reliability_cap005_s050`</p>
+<p>- 비교 기준: `current_70_30`</p>
+<p>- 후보 선택/보정값 산출에는 0604 라벨을 사용하지 않음</p>
+<p>- 0604는 외부 확인용이며 fixed test/OOF 결론을 대체하지 않음</p>
+<h2>1. 실행 결론</h2>
+<p>- HCOEF 안정 후보는 0604에서 `current_70_30`보다 MdAPE/MAPE/p95가 모두 소폭 개선됨.</p>
+<p>- 운영 service primary는 0604에서 HCOEF 안정 후보보다 MdAPE/MAPE/p95가 모두 낮음.</p>
+<p>- 다만 service primary는 HCOEF 계열 OOF/fixed test 후보 선택 절차로 검증된 새 Huber 후보가 아니므로 바로 Warm 개선 후보로 승격하지 않음.</p>
+<p>- 다음 실험은 service primary 또는 PP-V8 운영 component를 Huber 계수/위험도 피처로 넣고 OOF 기준으로 재검증하는 방향이 적절함.</p>
+<p>- 0604 actual price join 검증은 아래와 같음.</p>
+<p>  - actual price 일치율: `1.0000`</p>
+<p>  - actual price 최대 차이: `0.0000`</p>
+<h2>2. 전체 0604 외부 라벨 성능</h2>
+<table>
+<tr><th>candidate</th><th>candidate_source</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_MdAPE_vs_stable</th><th>delta_MAPE_vs_stable</th><th>delta_p95_APE_vs_stable</th></tr>
+<tr><td>pp_v2_defensive</td><td>operational_v0.1</td><td>829</td><td>0.2263</td><td>0.3623</td><td>1.0902</td><td>0.7131</td><td>-0.0467</td><td>-0.0121</td><td>0.1068</td></tr>
+<tr><td>pp_v8_compact_blend_mape_guarded_operational</td><td>operational_v0.1</td><td>829</td><td>0.2298</td><td>0.3359</td><td>0.9273</td><td>0.7124</td><td>-0.0433</td><td>-0.0385</td><td>-0.0561</td></tr>
+<tr><td>service_primary_ppv8_operational</td><td>operational_v0.1</td><td>829</td><td>0.2298</td><td>0.3359</td><td>0.9273</td><td>0.7124</td><td>-0.0433</td><td>-0.0385</td><td>-0.0561</td></tr>
+<tr><td>hcoef14_seg_iqr_cap002_s025</td><td>research_hcoef</td><td>829</td><td>0.2731</td><td>0.3741</td><td>0.9834</td><td>1.3078</td><td>0.0000</td><td>-0.0002</td><td>-0.0000</td></tr>
+<tr><td>hcoef2_size_reliability_cap005_s050</td><td>research_hcoef</td><td>829</td><td>0.2731</td><td>0.3744</td><td>0.9835</td><td>1.3078</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td>hcoef14_shrink_iqr_mid_high_keep050</td><td>research_hcoef</td><td>829</td><td>0.2734</td><td>0.3748</td><td>0.9833</td><td>1.3081</td><td>0.0003</td><td>0.0004</td><td>-0.0002</td></tr>
+<tr><td>current_70_30</td><td>research_hcoef</td><td>829</td><td>0.2779</td><td>0.3774</td><td>0.9871</td><td>1.3117</td><td>0.0049</td><td>0.0030</td><td>0.0036</td></tr>
+<tr><td>v01_operational_70_30</td><td>operational_v0.1</td><td>829</td><td>0.2779</td><td>0.3774</td><td>0.9871</td><td>1.3117</td><td>0.0049</td><td>0.0030</td><td>0.0036</td></tr>
+<tr><td>svc_numeric_seed_mean</td><td>operational_v0.1</td><td>829</td><td>0.3072</td><td>0.4318</td><td>0.9998</td><td>1.6906</td><td>0.0342</td><td>0.0575</td><td>0.0163</td></tr>
+<tr><td>l10_generated_bucket_seq</td><td>operational_v0.1</td><td>829</td><td>0.3207</td><td>0.4598</td><td>1.2569</td><td>1.0793</td><td>0.0477</td><td>0.0854</td><td>0.2734</td></tr>
+</table>
+<h2>3. HCOEF 안정 후보 대비 bootstrap</h2>
+<table>
+<tr><th>summary_type</th><th>candidate</th><th>baseline</th><th>point_delta_MdAPE</th><th>point_delta_MAPE</th><th>point_delta_p95_APE</th><th>MdAPE_improve_prob</th><th>MAPE_improve_prob</th><th>p95_improve_prob</th><th>all3_improve_prob</th></tr>
+<tr><td>row_bootstrap</td><td>current_70_30</td><td>hcoef2_size_reliability_cap005_s050</td><td>0.0049</td><td>0.0030</td><td>0.0036</td><td>0.3020</td><td>0.0000</td><td>0.1100</td><td>0.0000</td></tr>
+<tr><td>row_bootstrap</td><td>service_primary_ppv8_operational</td><td>hcoef2_size_reliability_cap005_s050</td><td>-0.0433</td><td>-0.0385</td><td>-0.0561</td><td>0.9990</td><td>1.0000</td><td>0.8760</td><td>0.8750</td></tr>
+<tr><td>row_bootstrap</td><td>v01_operational_70_30</td><td>hcoef2_size_reliability_cap005_s050</td><td>0.0049</td><td>0.0030</td><td>0.0036</td><td>0.3380</td><td>0.0000</td><td>0.1150</td><td>0.0000</td></tr>
+<tr><td>artist_bootstrap</td><td>current_70_30</td><td>hcoef2_size_reliability_cap005_s050</td><td>0.0049</td><td>0.0030</td><td>0.0036</td><td>0.3660</td><td>0.0130</td><td>0.2090</td><td>0.0050</td></tr>
+<tr><td>artist_bootstrap</td><td>service_primary_ppv8_operational</td><td>hcoef2_size_reliability_cap005_s050</td><td>-0.0433</td><td>-0.0385</td><td>-0.0561</td><td>0.9890</td><td>0.9940</td><td>0.7560</td><td>0.7480</td></tr>
+<tr><td>artist_bootstrap</td><td>v01_operational_70_30</td><td>hcoef2_size_reliability_cap005_s050</td><td>0.0049</td><td>0.0030</td><td>0.0036</td><td>0.3580</td><td>0.0100</td><td>0.2190</td><td>0.0020</td></tr>
+</table>
+<h2>4. 잔차 요약</h2>
+<table>
+<tr><th>candidate</th><th>n</th><th>median_residual_log</th><th>mean_residual_log</th><th>residual_std</th><th>ape_median</th><th>ape_mean</th><th>ape_p95</th><th>over_2x_n</th><th>under_half_n</th></tr>
+<tr><td>pp_v2_defensive</td><td>829</td><td>0.0695</td><td>0.1296</td><td>0.7012</td><td>0.2263</td><td>0.3623</td><td>1.0902</td><td>47</td><td>81</td></tr>
+<tr><td>pp_v8_compact_blend_mape_guarded_operational</td><td>829</td><td>0.0703</td><td>0.1690</td><td>0.6921</td><td>0.2298</td><td>0.3359</td><td>0.9273</td><td>31</td><td>89</td></tr>
+<tr><td>service_primary_ppv8_operational</td><td>829</td><td>0.0703</td><td>0.1690</td><td>0.6921</td><td>0.2298</td><td>0.3359</td><td>0.9273</td><td>31</td><td>89</td></tr>
+<tr><td>hcoef14_seg_iqr_cap002_s025</td><td>829</td><td>0.0608</td><td>0.3281</td><td>1.2659</td><td>0.2731</td><td>0.3741</td><td>0.9834</td><td>26</td><td>152</td></tr>
+<tr><td>hcoef2_size_reliability_cap005_s050</td><td>829</td><td>0.0608</td><td>0.3278</td><td>1.2660</td><td>0.2731</td><td>0.3744</td><td>0.9835</td><td>26</td><td>152</td></tr>
+<tr><td>hcoef14_shrink_iqr_mid_high_keep050</td><td>829</td><td>0.0608</td><td>0.3286</td><td>1.2661</td><td>0.2734</td><td>0.3748</td><td>0.9833</td><td>26</td><td>154</td></tr>
+<tr><td>current_70_30</td><td>829</td><td>0.0782</td><td>0.3370</td><td>1.2677</td><td>0.2779</td><td>0.3774</td><td>0.9871</td><td>30</td><td>153</td></tr>
+<tr><td>v01_operational_70_30</td><td>829</td><td>0.0782</td><td>0.3370</td><td>1.2677</td><td>0.2779</td><td>0.3774</td><td>0.9871</td><td>30</td><td>153</td></tr>
+<tr><td>svc_numeric_seed_mean</td><td>829</td><td>0.0829</td><td>0.4091</td><td>1.6404</td><td>0.3072</td><td>0.4318</td><td>0.9998</td><td>38</td><td>168</td></tr>
+<tr><td>l10_generated_bucket_seq</td><td>829</td><td>0.0475</td><td>0.2873</td><td>1.0403</td><td>0.3207</td><td>0.4598</td><td>1.2569</td><td>63</td><td>170</td></tr>
+</table>
+<h2>5. service primary가 HCOEF 안정 후보보다 좋아진 구간</h2>
+<table>
+<tr><th>segment_column</th><th>segment_value</th><th>n</th><th>service_improve_rate_vs_stable</th><th>median_service_minus_stable_ape</th><th>mean_service_minus_stable_ape</th><th>median_service_minus_stable_pred_log</th></tr>
+<tr><td>svc_group_level</td><td>medium_support_size</td><td>66</td><td>0.7273</td><td>-0.0951</td><td>-0.1165</td><td>-0.1081</td></tr>
+<tr><td>svc_coverage_tier</td><td>high_n</td><td>87</td><td>0.7701</td><td>-0.0812</td><td>-0.1261</td><td>-0.0198</td></tr>
+<tr><td>actual_price_band</td><td>500_1k_usd</td><td>168</td><td>0.6190</td><td>-0.0736</td><td>-0.0873</td><td>0.0678</td></tr>
+<tr><td>service_confidence_tier</td><td>high</td><td>22</td><td>0.6818</td><td>-0.0646</td><td>-0.1468</td><td>-0.1035</td></tr>
+<tr><td>actual_price_band</td><td>1k_5k_usd</td><td>285</td><td>0.5825</td><td>-0.0130</td><td>-0.0748</td><td>0.0024</td></tr>
+<tr><td>service_confidence_tier</td><td>medium</td><td>308</td><td>0.5325</td><td>-0.0075</td><td>-0.0653</td><td>-0.0122</td></tr>
+<tr><td>svc_group_level</td><td>artist</td><td>412</td><td>0.5097</td><td>-0.0028</td><td>-0.0219</td><td>-0.0013</td></tr>
+<tr><td>service_confidence_tier</td><td>low</td><td>499</td><td>0.5090</td><td>-0.0018</td><td>-0.0172</td><td>0.0161</td></tr>
+<tr><td>svc_group_level</td><td>artist_medium_support_size</td><td>91</td><td>0.5165</td><td>-0.0014</td><td>-0.0330</td><td>0.0020</td></tr>
+<tr><td>svc_coverage_tier</td><td>low_n</td><td>569</td><td>0.4938</td><td>0.0003</td><td>-0.0155</td><td>0.0091</td></tr>
+<tr><td>actual_price_band</td><td>100_500usd</td><td>104</td><td>0.4808</td><td>0.0021</td><td>0.0551</td><td>0.1465</td></tr>
+<tr><td>actual_price_band</td><td>20k_100k_usd</td><td>65</td><td>0.4923</td><td>0.0026</td><td>-0.0164</td><td>0.0090</td></tr>
+<tr><td>svc_coverage_tier</td><td>medium_n</td><td>155</td><td>0.4774</td><td>0.0095</td><td>-0.0745</td><td>-0.0123</td></tr>
+<tr><td>svc_group_level</td><td>artist_size</td><td>224</td><td>0.4464</td><td>0.0119</td><td>-0.0380</td><td>0.0749</td></tr>
+<tr><td>actual_price_band</td><td>5k_20k_usd</td><td>195</td><td>0.4051</td><td>0.0119</td><td>-0.0238</td><td>-0.0123</td></tr>
+</table>
+<h2>6. service primary 개선 상위 작품</h2>
+<table>
+<tr><th>_track6_row_id</th><th>title</th><th>artist_name</th><th>actual_price_krw</th><th>actual_price_usd_equiv</th><th>svc_group_level</th><th>svc_coverage_tier</th><th>svc_group_n</th><th>actual_price_band</th><th>hcoef2_size_reliability_cap005_s050_pred_price_krw</th><th>hcoef2_size_reliability_cap005_s050_ape</th><th>service_primary_ppv8_operational_pred_price_krw</th><th>service_primary_ppv8_operational_ape</th><th>service_minus_stable_ape</th></tr>
+<tr><td>4098</td><td>T11- W04</td><td>Yeun Song</td><td>552000.0000</td><td>400.0000</td><td>artist_size</td><td>low_n</td><td>5.0000</td><td>100_500usd</td><td>2858558.4132</td><td>4.1785</td><td>1474200.7414</td><td>1.6707</td><td>-2.5079</td></tr>
+<tr><td>4165</td><td>Equation-like Forms</td><td>Gyul E Kim</td><td>3864000.0000</td><td>2800.0000</td><td>artist_size</td><td>low_n</td><td>10.0000</td><td>1k_5k_usd</td><td>16788670.0510</td><td>3.3449</td><td>9701027.3683</td><td>1.5106</td><td>-1.8343</td></tr>
+<tr><td>6144</td><td>Rosetta Stone</td><td>Nam June Paik</td><td>6900000.0000</td><td>5000.0000</td><td>artist_size</td><td>low_n</td><td>12.0000</td><td>1k_5k_usd</td><td>28129374.7080</td><td>3.0767</td><td>18489371.1055</td><td>1.6796</td><td>-1.3971</td></tr>
+<tr><td>6143</td><td>Etching on Etching</td><td>Nam June Paik</td><td>6900000.0000</td><td>5000.0000</td><td>artist_size</td><td>low_n</td><td>12.0000</td><td>1k_5k_usd</td><td>28129374.7080</td><td>3.0767</td><td>18489371.1055</td><td>1.6796</td><td>-1.3971</td></tr>
+<tr><td>4698</td><td>Moonlit Glow</td><td>A Jihye</td><td>3500000.0000</td><td>2536.2319</td><td>artist</td><td>low_n</td><td>5.0000</td><td>1k_5k_usd</td><td>8711806.5081</td><td>1.4891</td><td>4577997.5601</td><td>0.3080</td><td>-1.1811</td></tr>
+<tr><td>5407</td><td>The Dust Recorder’s Way of Remembering 222</td><td>Hanna Kim</td><td>1035000.0000</td><td>750.0000</td><td>artist</td><td>medium_n</td><td>27.0000</td><td>500_1k_usd</td><td>3392177.7265</td><td>2.2775</td><td>2356065.1113</td><td>1.2764</td><td>-1.0011</td></tr>
+<tr><td>5408</td><td>The Dust Recorder’s Way of Remembering 221</td><td>Hanna Kim</td><td>1035000.0000</td><td>750.0000</td><td>artist</td><td>medium_n</td><td>27.0000</td><td>500_1k_usd</td><td>3392177.7265</td><td>2.2775</td><td>2356065.1113</td><td>1.2764</td><td>-1.0011</td></tr>
+<tr><td>5409</td><td>The Dust Recorder’s Way of Remembering 202</td><td>Hanna Kim</td><td>1035000.0000</td><td>750.0000</td><td>artist</td><td>medium_n</td><td>27.0000</td><td>500_1k_usd</td><td>3392177.7265</td><td>2.2775</td><td>2356065.1113</td><td>1.2764</td><td>-1.0011</td></tr>
+<tr><td>4999</td><td>Twilight</td><td>Moon Eunchae</td><td>1104000.0000</td><td>800.0000</td><td>artist</td><td>low_n</td><td>5.0000</td><td>500_1k_usd</td><td>50125.0418</td><td>0.9546</td><td>1007009.2142</td><td>0.0879</td><td>-0.8667</td></tr>
+<tr><td>152</td><td>- [Lucky Symbol &#x27;#&#x27;] &quot;You, Like #, a Symbol Always Connecting by My Side.&quot;</td><td>Mi Young Um</td><td>372600.0000</td><td>270.0000</td><td>artist</td><td>low_n</td><td>7.0000</td><td>100_500usd</td><td>1119326.5680</td><td>2.0041</td><td>878897.9737</td><td>1.3588</td><td>-0.6453</td></tr>
+<tr><td>5401</td><td>With my friend</td><td>Nina Park</td><td>483000.0000</td><td>350.0000</td><td>medium_support_size</td><td>high_n</td><td>1115.0000</td><td>100_500usd</td><td>952990.9015</td><td>0.9731</td><td>650067.1374</td><td>0.3459</td><td>-0.6272</td></tr>
+<tr><td>5403</td><td>Cake collectors</td><td>Nina Park</td><td>2070000.0000</td><td>1500.0000</td><td>medium_support_size</td><td>high_n</td><td>1512.0000</td><td>1k_5k_usd</td><td>5050799.8733</td><td>1.4400</td><td>3764431.6820</td><td>0.8186</td><td>-0.6214</td></tr>
+<tr><td>5402</td><td>Feel Like Ice Cream</td><td>Nina Park</td><td>2484000.0000</td><td>1800.0000</td><td>medium_support_size</td><td>high_n</td><td>1512.0000</td><td>1k_5k_usd</td><td>5398298.4628</td><td>1.1732</td><td>3866998.7402</td><td>0.5568</td><td>-0.6165</td></tr>
+<tr><td>6495</td><td>where to go</td><td>Qwaya</td><td>828000.0000</td><td>600.0000</td><td>artist</td><td>low_n</td><td>11.0000</td><td>500_1k_usd</td><td>185156.4746</td><td>0.7764</td><td>679003.6152</td><td>0.1799</td><td>-0.5964</td></tr>
+<tr><td>42</td><td>Dear</td><td>Kwon Oon</td><td>372600.0000</td><td>270.0000</td><td>medium_size</td><td>high_n</td><td>103.0000</td><td>100_500usd</td><td>848025.4432</td><td>1.2760</td><td>628986.7322</td><td>0.6881</td><td>-0.5879</td></tr>
+<tr><td>5760</td><td>the light on the curtain</td><td>Bahk Younghoon</td><td>20700000.0000</td><td>15000.0000</td><td>artist</td><td>low_n</td><td>6.0000</td><td>5k_20k_usd</td><td>1000.0000</td><td>1.0000</td><td>11733494.3839</td><td>0.4332</td><td>-0.5668</td></tr>
+<tr><td>6169</td><td>Chunju&#x27;s Multiverse Story- Chunja World 1</td><td>Shin Seung-Hun</td><td>828000.0000</td><td>600.0000</td><td>artist</td><td>medium_n</td><td>15.0000</td><td>500_1k_usd</td><td>1522163.4108</td><td>0.8384</td><td>583496.7644</td><td>0.2953</td><td>-0.5431</td></tr>
+<tr><td>2869</td><td>warding charm</td><td>Do Su Kim</td><td>1449000.0000</td><td>1050.0000</td><td>artist</td><td>low_n</td><td>6.0000</td><td>1k_5k_usd</td><td>3199857.8007</td><td>1.2083</td><td>2416049.4242</td><td>0.6674</td><td>-0.5409</td></tr>
+<tr><td>2870</td><td>companion plant</td><td>Do Su Kim</td><td>1449000.0000</td><td>1050.0000</td><td>artist</td><td>low_n</td><td>6.0000</td><td>1k_5k_usd</td><td>3199857.8007</td><td>1.2083</td><td>2416049.4242</td><td>0.6674</td><td>-0.5409</td></tr>
+<tr><td>954</td><td>15 Knots (Gray)</td><td>YOON JUNGHEE</td><td>8970000.0000</td><td>6500.0000</td><td>artist</td><td>low_n</td><td>13.0000</td><td>5k_20k_usd</td><td>3768553.3301</td><td>0.5799</td><td>9510750.8211</td><td>0.0603</td><td>-0.5196</td></tr>
+<tr><td>4534</td><td>관측과 소화</td><td>Hanna Kim</td><td>13000000.0000</td><td>9420.2899</td><td>artist_medium_support_size</td><td>low_n</td><td>5.0000</td><td>5k_20k_usd</td><td>22312129.1363</td><td>0.7163</td><td>15587495.6443</td><td>0.1990</td><td>-0.5173</td></tr>
+<tr><td>5332</td><td>Untitled</td><td>Jeong Jingab</td><td>4576080.0000</td><td>3316.0000</td><td>artist_size</td><td>low_n</td><td>5.0000</td><td>1k_5k_usd</td><td>131811.9919</td><td>0.9712</td><td>2444377.9725</td><td>0.4658</td><td>-0.5054</td></tr>
+<tr><td>5293</td><td>WalkingmanHGw</td><td>Nam Jeeyeon</td><td>621000.0000</td><td>450.0000</td><td>artist_medium_support_size</td><td>low_n</td><td>7.0000</td><td>100_500usd</td><td>1089245.6443</td><td>0.7540</td><td>777961.0639</td><td>0.2528</td><td>-0.5013</td></tr>
+<tr><td>2859</td><td>Sanjo 2621</td><td>MAN SOO LEE 이만수</td><td>7038000.0000</td><td>5100.0000</td><td>artist</td><td>medium_n</td><td>15.0000</td><td>5k_20k_usd</td><td>10823999.4309</td><td>0.5379</td><td>7325916.5156</td><td>0.0409</td><td>-0.4970</td></tr>
+<tr><td>2861</td><td>Sanjo 2610</td><td>MAN SOO LEE 이만수</td><td>7038000.0000</td><td>5100.0000</td><td>artist</td><td>medium_n</td><td>15.0000</td><td>5k_20k_usd</td><td>10823999.4309</td><td>0.5379</td><td>7325916.5156</td><td>0.0409</td><td>-0.4970</td></tr>
+<tr><td>5254</td><td>Triangular energy</td><td>Min Kim</td><td>13800000.0000</td><td>10000.0000</td><td>artist_size</td><td>low_n</td><td>10.0000</td><td>5k_20k_usd</td><td>22664475.4686</td><td>0.6424</td><td>15849381.9752</td><td>0.1485</td><td>-0.4938</td></tr>
+<tr><td>5375</td><td>Rose from the stars</td><td>Jamsan</td><td>9798000.0000</td><td>7100.0000</td><td>artist_medium_support_size</td><td>low_n</td><td>6.0000</td><td>5k_20k_usd</td><td>17681823.4395</td><td>0.8046</td><td>12857563.6751</td><td>0.3123</td><td>-0.4924</td></tr>
+<tr><td>5372</td><td>Rose from the stars</td><td>Jamsan</td><td>9798000.0000</td><td>7100.0000</td><td>artist_medium_support_size</td><td>low_n</td><td>6.0000</td><td>5k_20k_usd</td><td>17512278.4967</td><td>0.7873</td><td>12722009.8168</td><td>0.2984</td><td>-0.4889</td></tr>
+<tr><td>90</td><td>Night Curtain</td><td>Yumi Jang</td><td>910800.0000</td><td>660.0000</td><td>artist_size</td><td>low_n</td><td>6.0000</td><td>500_1k_usd</td><td>404221.1043</td><td>0.5562</td><td>848994.9129</td><td>0.0679</td><td>-0.4883</td></tr>
+<tr><td>2876</td><td>anonymity10-3-24</td><td>Byung Wang Cho</td><td>11040000.0000</td><td>8000.0000</td><td>artist</td><td>medium_n</td><td>18.0000</td><td>5k_20k_usd</td><td>18564437.4799</td><td>0.6816</td><td>13195526.9253</td><td>0.1952</td><td>-0.4863</td></tr>
+</table>
+<h2>7. 해석</h2>
+<p>- HCOEF 안정 후보는 기존 70:30 기준 위에 작은 Huber 잔차 보정만 더한 후보라 fixed test와 OOF 근거가 가장 강함.</p>
+<p>- 0604에서는 PP-V8 운영 component가 더 강하게 나타남.</p>
+<p>- 이 결과는 PP-V8 계열이 신규 운영성 데이터에서 유효한 신호를 갖고 있음을 시사하지만, 0604 라벨로 새 가중치나 보정값을 만들면 과적합 위험이 있음.</p>
+<p>- 따라서 다음 후보는 `service_primary_pred_log`, `pp_v8_compact_blend_mape_guarded_pred_log`, `HCOEF stable pred_log`, `svc coverage`, `quantile width`를 저차원 Huber/meta guard 피처로 넣고 validation OOF에서 검증해야 함.</p>
+<p>- service primary가 낮은 가격대와 일부 low_n 구간에서 더 나은지, 또는 특정 고가 구간에서만 우연히 좋은지는 segment별 OOF 실험에서 다시 확인해야 함.</p>
+<h2>8. 산출물</h2>
+<p>- `outputs/metrics.csv`</p>
+<p>- `outputs/candidate_predictions.csv`</p>
+<p>- `outputs/feature_coefficients.csv`</p>
+<p>- `outputs/residual_analysis.csv`</p>
+<p>- `outputs/bootstrap_or_repeated_split_summary.csv`</p>
+<p>- `outputs/segment_metric_summary.csv`</p>
+<p>- `outputs/service_vs_hcoef_gap_analysis.csv`</p>
+<p>- `outputs/service_improvement_top100.csv`</p>
+<p>- `outputs/actual_price_join_audit.csv`</p></body></html>

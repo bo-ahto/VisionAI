@@ -1,0 +1,3020 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm Huber 기준가 계수 고도화 해석 리포트</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#warm-huber-기준가-계수-고도화-해석-리포트">Warm Huber 기준가/계수 고도화 해석 리포트</a>
+<a class="toc-level-2" href="#1.-현재-기준과-최종-판단">1. 현재 기준과 최종 판단</a>
+<a class="toc-level-2" href="#2.-warm-huber-가격-계산-방식">2. Warm Huber 가격 계산 방식</a>
+<a class="toc-level-3" href="#2.1-hcoef3-안정-후보의-보정-공식">2.1 HCOEF3 안정 후보의 보정 공식</a>
+<a class="toc-level-2" href="#3.-기준가-생성-방식-해석">3. 기준가 생성 방식 해석</a>
+<a class="toc-level-2" href="#4.-hcoef3-안정-후보-계수-해석">4. HCOEF3 안정 후보 계수 해석</a>
+<a class="toc-level-2" href="#5.-hcoef4-기준가-huber-후보-계수-해석">5. HCOEF4 기준가-Huber 후보 계수 해석</a>
+<a class="toc-level-2" href="#6.-hcoef5-capped-blend-해석">6. HCOEF5 capped blend 해석</a>
+<a class="toc-level-2" href="#7.-hcoef6-조건부-routing-해석">7. HCOEF6 조건부 routing 해석</a>
+<a class="toc-level-2" href="#8.-hcoef7-면적단가-기준가-직접-잔차-피처-해석">8. HCOEF7 면적단가 기준가 직접 잔차 피처 해석</a>
+<a class="toc-level-2" href="#9.-hcoef8-segmented-보정-해석">9. HCOEF8 segmented 보정 해석</a>
+<a class="toc-level-2" href="#10.-hcoef9-위험도-기반-기준가-결합-해석">10. HCOEF9 위험도 기반 기준가 결합 해석</a>
+<a class="toc-level-2" href="#11.-hcoef10-원인-구간-기반-약한-보정-해석">11. HCOEF10 원인 구간 기반 약한 보정 해석</a>
+<a class="toc-level-2" href="#12.-hcoef11-확장-반복-검증-해석">12. HCOEF11 확장 반복 검증 해석</a>
+<a class="toc-level-2" href="#13.-hcoef12-운영-패키징-감사-해석">13. HCOEF12 운영 패키징 감사 해석</a>
+<a class="toc-level-2" href="#14.-hcoef13-잔차-위험-원인-진단">14. HCOEF13 잔차 위험 원인 진단</a>
+<a class="toc-level-2" href="#15.-hcoef14-위험-구간-한정-보정-검증">15. HCOEF14 위험 구간 한정 보정 검증</a>
+<a class="toc-level-2" href="#16.-hcoef15-최신-라벨-stress-test">16. HCOEF15 최신 라벨 stress test</a>
+<a class="toc-level-2" href="#17.-hcoef16-pp-v8-운영-component-oof-재검증">17. HCOEF16 PP-V8 운영 component OOF 재검증</a>
+<a class="toc-level-2" href="#18.-hcoef17-pp-v8-제한-이동-정책-검증">18. HCOEF17 PP-V8 제한 이동 정책 검증</a>
+<a class="toc-level-2" href="#19.-hcoef18-quantile-width-risk-guard-검증">19. HCOEF18 quantile width risk guard 검증</a>
+<a class="toc-level-2" href="#20.-hcoef19-운영-피처-파이프라인-재현성-감사">20. HCOEF19 운영 피처 파이프라인 재현성 감사</a>
+<a class="toc-level-2" href="#21.-hcoef20-운영-component-기반-저차원-huber-재탐색">21. HCOEF20 운영 component 기반 저차원 Huber 재탐색</a>
+<a class="toc-level-3" href="#21.1-quantile-width-가격-범위-신뢰도-정책">21.1 Quantile Width 가격 범위/신뢰도 정책</a>
+<a class="toc-level-2" href="#22.-hcoef21-가변-기준가-신뢰도별-huber-보정">22. HCOEF21 가변 기준가 신뢰도별 Huber 보정</a>
+<a class="toc-level-2" href="#23.-hcoef22-목적별-라우팅-신뢰도-정책-검증">23. HCOEF22 목적별 라우팅/신뢰도 정책 검증</a>
+<a class="toc-level-2" href="#24.-hcoef23-남은-오차-원인-분석">24. HCOEF23 남은 오차 원인 분석</a>
+<a class="toc-level-2" href="#25.-hcoef24-위험-완화-기준가-생성">25. HCOEF24 위험 완화 기준가 생성</a>
+<a class="toc-level-2" href="#26.-hcoef25-보수적-계수-기준가-보정">26. HCOEF25 보수적 계수/기준가 보정</a>
+<a class="toc-level-2" href="#27.-hcoef26-low-risk-적용-p95-fallback">27. HCOEF26 low-risk 적용/p95 fallback</a>
+<a class="toc-level-2" href="#28.-hcoef27-반복-split-artist-holdout-재검증">28. HCOEF27 반복 split/artist holdout 재검증</a>
+<a class="toc-level-2" href="#29.-hcoef28-huber-risk-aware-shrinkage">29. HCOEF28 Huber risk-aware shrinkage</a>
+<a class="toc-level-2" href="#30.-hcoef29-oof-huber-meta-residual-계수-결합">30. HCOEF29 OOF Huber meta residual 계수 결합</a>
+<a class="toc-level-2" href="#31.-hcoef30-validation-consensus-segment-gate">31. HCOEF30 validation-consensus segment gate</a>
+<a class="toc-level-2" href="#32.-hcoef31-p95-neutral-directional-micro-correction">32. HCOEF31 p95-neutral directional micro correction</a>
+<a class="toc-level-2" href="#33.-hcoef32-ultra-micro-p95-first-directional-correction">33. HCOEF32 ultra-micro p95-first directional correction</a>
+<a class="toc-level-2" href="#34.-hcoef33-hcoef32-extended-repeated-validation">34. HCOEF33 HCOEF32 extended repeated validation</a>
+<a class="toc-level-2" href="#35.-hcoef34-기준가-생성-방식-재탐색">35. HCOEF34 기준가 생성 방식 재탐색</a>
+<a class="toc-level-2" href="#36.-hcoef35-p95-방어-fine-grid">36. HCOEF35 p95 방어 fine grid</a>
+<a class="toc-level-2" href="#37.-hcoef36-low-risk-routing">37. HCOEF36 low-risk routing</a>
+<a class="toc-level-2" href="#38.-hcoef37-hcoef36-확장-반복-검증">38. HCOEF37 HCOEF36 확장 반복 검증</a>
+<a class="toc-level-2" href="#39.-hcoef38-stricter-low-risk-routing">39. HCOEF38 stricter low-risk routing</a>
+<a class="toc-level-2" href="#40.-피처별-의미-정리">40. 피처별 의미 정리</a>
+<a class="toc-level-2" href="#41.-최종-판단">41. 최종 판단</a>
+<a class="toc-level-2" href="#42.-다음-보정-방향">42. 다음 보정 방향</a>
+<a class="toc-level-2" href="#43.-주요-산출물">43. 주요 산출물</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/pp_hcoef_warm_huber_price_basis_coefficient_interpretation_report.md</code></div>
+      <h1 id="warm-huber-기준가-계수-고도화-해석-리포트">Warm Huber 기준가/계수 고도화 해석 리포트</h1>
+<ul>
+<li>작성일: 2026-06-08</li>
+<li>대상 실험: <code>PP-HCOEF1~PP-HCOEF38</code></li>
+<li>목적: Warm Huber에서 기준가 생성 방식, 피처별 계수 조정, 잔차 보정 후보를 종합해 현재 Warm 후보보다 안정적으로 좋은 조합이 있는지 판단</li>
+<li>현재 결론: <code>hcoef2_size_reliability_cap005_s050</code>를 Warm 개선 후보로 유지</li>
+<li>보류 결론: loose 기준가 Huber 후보는 MdAPE/MAPE 개선 잠재력은 크지만 p95_APE 방어가 부족해 기본 후보로 채택하지 않음</li>
+<li>추가 결론: 조건부 routing은 p95를 방어했지만 개선폭이 작고 반복 OOF 안정성이 부족해 새 기본 후보로 채택하지 않음</li>
+<li>추가 결론: 면적단가 기준가를 Huber 잔차 피처로 직접 넣으면 MdAPE/MAPE는 개선되지만 p95가 악화되어 기본 후보로 채택하지 않음</li>
+<li>추가 결론: 면적단가 계열 segmented 보정은 MdAPE/MAPE/p95가 모두 HCOEF3보다 악화되어 새 기본 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF4 loose 기준가 후보를 위험도 기반으로 제한 결합해도 p95 방어 기준을 통과하지 못해 새 기본 후보로 채택하지 않음</li>
+<li>추가 결론: 원인 구간별 residual 중앙값 보정은 fixed test에서 일부 소폭 개선 후보가 있었지만 반복 OOF 안정성이 부족해 새 기본 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF11 확장 반복 검증에서 <code>hcoef2_size_reliability_cap005_s050</code>는 row/artist OOF 80회 all3 개선확률 <code>1.0</code>으로 재확인됨</li>
+<li>추가 결론: HCOEF12 운영 패키징 감사에서 저장 모델 재로딩 예측이 direct rebuild와 완전히 일치하고 readiness check가 모두 통과함</li>
+<li>추가 결론: HCOEF13 잔차 위험 진단에서 현재 후보의 남은 큰 오차는 기준가 표본 수 <code>10~19</code>, 기준가 IQR 중간 이상, 후보 간 gap이 큰 구간, 작가 전체 fallback 구간에 집중됨</li>
+<li>추가 결론: HCOEF14 위험 구간 한정 보정은 fixed test p95를 아주 작게 낮추는 후보가 있었지만 반복 OOF gate를 통과하지 못해 새 기본 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF15 최신 라벨 stress test에서 HCOEF 안정 후보는 기존 70:30 대비 0604 개선을 유지했고, 운영 PP-V8/service primary component는 0604에서 더 강했지만 OOF 후보가 아니므로 즉시 채택하지 않음</li>
+<li>추가 결론: HCOEF16에서 PP-V8/service component를 validation OOF와 artist OOF로 재검증했지만 fixed test p95 guard와 반복 OOF gate를 통과하지 못해 새 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF17에서 PP-V8을 신뢰 구간에만 제한 반영하는 정책을 검증했지만 validation/bootstrap 기준을 통과한 후보가 없어 새 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF18에서 PP-L10 quantile width를 risk gate로 붙여 HCOEF 보정폭 축소와 PP-V8 제한 이동을 검증했지만 validation/bootstrap 기준을 통과한 후보가 없어 새 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF19에서 연구 산출물과 운영 v0.1 산출물의 Warm component/formula/필수 피처 재현성을 감사했고 0604 공통 829건 기준 모두 통과함</li>
+<li>추가 결론: HCOEF20에서 운영 component 기반 저차원 Huber/Ridge 계수 재탐색을 수행했지만 fixed test p95 guard와 bootstrap all3 gate를 통과한 후보가 없어 새 점 예측 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF20에서 quantile width 기반 가격 범위/신뢰도 tier는 validation/test에서 위험도 분리에 유효해 서비스 표시 정책 후보로 유지함</li>
+<li>추가 결론: HCOEF21에서 고정 70:30 기준가를 표본 수/coverage/quantile width 기반 가변 기준가로 바꾸고 Huber residual을 검증했지만 fixed test p95 guard와 bootstrap all3 gate를 통과하지 못해 새 점 예측 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF22에서 HCOEF20~21 후보를 validation OOF 구간별로 제한 적용하는 목적별 라우팅을 검증했지만 fixed test MdAPE/p95가 악화되어 새 점 예측 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF23에서 현재 HCOEF 안정 후보의 남은 오차를 validation/OOF 기준으로 분해했고, <code>qwidth_extreme</code>, <code>gap_020_plus</code>, 후보 간 gap이 큰 구간이 다음 기준가/계수 조정의 우선 대상임을 확인함</li>
+<li>추가 결론: HCOEF24에서 HCOEF23 위험 구간을 기준으로 risk-shrunk basis를 만들었지만 fixed test p95 guard를 통과하지 못해 새 점 예측 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF25에서 더 작은 cap과 보수적 risk guard로 HCOEF24 신호를 안정화했지만 p95가 계속 소폭 악화되어 새 점 예측 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF26에서 HCOEF25 후보 이동분을 low-risk/reliable 구간에만 제한 적용해 fixed test p95를 기준 후보와 동일하게 방어했지만 bootstrap all3 gate를 통과하지 못해 운영 후보 즉시 채택은 보류함</li>
+<li>추가 결론: HCOEF27에서 HCOEF26 상위 후보를 반복 split/artist holdout으로 재검증했지만 repeated any2/all3 기준을 통과하지 못해 운영 후보 즉시 채택은 계속 보류함</li>
+<li>추가 결론: HCOEF28에서 Huber risk model로 큰 오차 위험도를 예측해 후보 이동폭을 줄였지만 반복 검증 기준을 통과한 새 점 예측 후보는 나오지 않음</li>
+<li>추가 결론: HCOEF29에서 OOF Huber meta residual 계수 결합을 시도했지만 fixed confirmation에서 MdAPE/p95가 악화되어 새 운영 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF30에서 HCOEF29 source 후보를 validation-consensus segment에만 제한 적용했지만 fixed p95 guard를 통과하지 못해 새 운영 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF31에서 방향 일치 segment에만 작은 cap으로 미세 보정했지만 fixed p95 guard와 반복 all3 안정성 기준을 통과하지 못해 새 운영 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF32에서 ultra-micro p95-first 보정으로 fixed test p95를 소폭 낮춘 후보가 나왔지만 반복 all3 안정성이 부족해 운영 후보 즉시 채택은 보류함</li>
+<li>추가 결론: HCOEF33에서 HCOEF32 핵심 후보를 row/artist 확장 반복 검증 2,000회 기준으로 재확인했지만 repeated min all3 <code>0.2785</code>로 운영 후보 승격 기준에 크게 못 미쳐 <code>hcoef_stable</code>을 현재 안정 후보로 유지함</li>
+<li>추가 결론: HCOEF34에서 train-only 기준가를 재생성하고 기준가 gap을 Huber 잔차 피처로 넣으면 MdAPE/MAPE 개선 신호가 있었지만 fixed p95가 악화되어 기본 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF35에서 cap/strength를 촘촘하게 낮춘 p95 방어 fine grid를 수행했지만 <code>hcoef_stable</code>의 p95를 명확히 넘는 후보가 없어 기본 후보로 채택하지 않음</li>
+<li>추가 결론: HCOEF36에서 기준가 신뢰도가 높은 행에만 개선 후보를 적용하는 low-risk routing은 fixed test 세 지표를 소폭 개선했지만 반복 all3 안정성이 약해 운영 후보가 아니라 반복 검증 후보로 분리함</li>
+<li>추가 결론: HCOEF37에서 HCOEF36 상위 라우팅 후보를 row/artist OOF 60회로 확장 재검증했고 any2 반복 안정성은 확인됐지만 all3 운영 기준에는 부족해 <code>hcoef_stable</code>을 현재 안정 후보로 유지함</li>
+<li>추가 결론: HCOEF38에서 더 엄격한 low-risk routing을 적용했지만 repeated all3가 더 좋아지지 않았고, 적용 구간을 줄일수록 stable 대비 개선확률이 낮아져 운영 후보로 채택하지 않음</li>
+</ul>
+<h2 id="1.-현재-기준과-최종-판단">1. 현재 기준과 최종 판단</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">의미</th>
+<th class="align-right">validation MdAPE/MAPE/p95</th>
+<th class="align-right">fixed test MdAPE/MAPE/p95</th>
+<th class="align-right">0604 MdAPE/MAPE/p95</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>current_70_30</code></td>
+<td class="align-left">유사 작품 기반 가격 피처 70% + 오차 안정화 후보 30%</td>
+<td class="align-right"><code>0.1305 / 0.2110 / 0.6580</code></td>
+<td class="align-right"><code>0.1405 / 0.2748 / 0.8331</code></td>
+<td class="align-right"><code>0.2779 / 0.3774 / 0.9871</code></td>
+<td class="align-left">기존 Warm 1순위 기준</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-left">기존 70:30 후보 위에 작은 Huber 잔차 보정 추가</td>
+<td class="align-right"><code>0.1260 / 0.2082 / 0.6479</code>; HCOEF11 row/artist OOF all3 <code>1.0 / 1.0</code></td>
+<td class="align-right"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3744 / 0.9835</code></td>
+<td class="align-left">Warm 개선 후보 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>loose_huber_basis_core_alpha0.1</code></td>
+<td class="align-left">loose 기준가와 기존 후보를 Huber가 직접 재학습</td>
+<td class="align-right"><code>0.1224 / 0.2077 / 0.6441</code></td>
+<td class="align-right"><code>0.1346 / 0.2618 / 0.8916</code></td>
+<td class="align-right"><code>0.2304 / 0.3447 / 0.9514</code></td>
+<td class="align-left">MdAPE/MAPE는 좋지만 fixed test p95 악화로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>loose_basis_core_huber_alpha0p01_on_hcoef2_cap0.05_s0.75</code></td>
+<td class="align-left">HCOEF3 안정 후보에 basis-Huber 차이를 제한 결합</td>
+<td class="align-right">반복 OOF 일부 개선</td>
+<td class="align-right"><code>0.1384 / 0.2681 / 0.8124</code></td>
+<td class="align-right"><code>0.2621 / 0.3618 / 0.9573</code> 수준의 개선 신호</td>
+<td class="align-left">fixed test는 좋지만 반복 OOF 통과 부족으로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>loose_basis_core_huber_alpha0p01__route_broad_lowrisk_n30_iqr065_gap050_cap003_s075</code></td>
+<td class="align-left">신뢰도 높은 일부 샘플에만 basis-Huber 차이를 제한 적용</td>
+<td class="align-right">반복 OOF all3 <code>0.0</code></td>
+<td class="align-right"><code>0.1384 / 0.2728 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3744 / 0.9835</code> 수준</td>
+<td class="align-left">p95는 방어했지만 개선폭과 반복 안정성 부족으로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef7_shrunk_basis_gap_alpha0.001_cap0.03_s0.50</code></td>
+<td class="align-left">면적단가/기준가 gap 피처를 HCOEF3 잔차 Huber에 직접 추가</td>
+<td class="align-right">반복 OOF all3 row <code>0.4167</code>, artist <code>0.5000</code></td>
+<td class="align-right"><code>0.1361 / 0.2718 / 0.8298</code></td>
+<td class="align-right">MAPE 개선 신호</td>
+<td class="align-left">MdAPE/MAPE는 개선됐지만 p95 악화로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef8_shrunk_basis_gap_alpha0.01_all_tiny_low_priority</code></td>
+<td class="align-left">면적단가 raw residual을 low/mid/high 위험 구간별 cap/strength로 제한</td>
+<td class="align-right">반복 OOF all3 <code>0.0</code></td>
+<td class="align-right"><code>0.1395 / 0.2744 / 0.8340</code></td>
+<td class="align-right">악화</td>
+<td class="align-left">segmented 방식도 HCOEF3보다 악화되어 탈락</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef9_loose_basis_core_huber_alpha0p1_model_agreement_only</code></td>
+<td class="align-left">HCOEF3와 HCOEF4 예측 차이가 작은 구간에만 basis-Huber 방향으로 제한 이동</td>
+<td class="align-right">반복 OOF all3 row <code>0.50</code>, artist <code>0.35</code></td>
+<td class="align-right"><code>0.1356 / 0.2670 / 0.8308</code></td>
+<td class="align-right">0604 개선 신호</td>
+<td class="align-left">MdAPE/MAPE는 개선됐지만 p95 악화와 반복 안정성 부족으로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef10_pred_reliability_cap0.02_s0.25</code></td>
+<td class="align-left">예측 가격대와 기준가 표본 수 조합별 residual 중앙값을 아주 약하게 보정</td>
+<td class="align-right">반복 OOF all3 row <code>0.00</code>, artist <code>0.10</code></td>
+<td class="align-right"><code>0.1383 / 0.2729 / 0.8062</code></td>
+<td class="align-right">0604 MdAPE 소폭 개선</td>
+<td class="align-left">fixed test는 3지표 소폭 개선이나 반복 안정성 부족으로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef14_shrink_iqr_mid_high_keep050</code></td>
+<td class="align-left">기준가 IQR 중간/높음 위험 구간에서 Huber 잔차 보정폭을 절반으로 줄임</td>
+<td class="align-right">반복 OOF all3 row <code>0.00</code>, artist <code>0.00</code></td>
+<td class="align-right"><code>0.1384 / 0.2731 / 0.8047</code></td>
+<td class="align-right"><code>0.2734 / 0.3748 / 0.9833</code></td>
+<td class="align-left">fixed test p95는 소폭 개선됐지만 반복 안정성 부족으로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>service_primary_ppv8_operational</code></td>
+<td class="align-left">운영 v0.1 0604 출력에서 PP-V8 계열 component가 service primary로 사용된 후보</td>
+<td class="align-right">HCOEF OOF 후보 아님</td>
+<td class="align-right">fixed test 미검증</td>
+<td class="align-right"><code>0.2298 / 0.3359 / 0.9273</code></td>
+<td class="align-left">0604에서는 강하지만 OOF/fixed test 절차 미통과. HCOEF16에서 proxy로 재검증 완료</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p25</code></td>
+<td class="align-left">PP-V8 component와 HCOEF 안정 후보의 차이를 Huber 잔차 피처로 제한 보정</td>
+<td class="align-right">row/artist OOF all3 <code>0.85 / 0.45</code></td>
+<td class="align-right"><code>0.1394 / 0.2728 / 0.8091</code></td>
+<td class="align-right">0604 개선 신호</td>
+<td class="align-left">MAPE/RMSE만 극소 개선, MdAPE/p95와 artist OOF 기준 미통과로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef17_guard_agree_gap0p05_cap0p03_w0p5</code></td>
+<td class="align-left">PP-V8과 HCOEF 안정 후보 차이가 작을 때만 PP-V8 방향으로 제한 이동</td>
+<td class="align-right">validation bootstrap all3 낮음</td>
+<td class="align-right"><code>0.1374 / 0.2735 / 0.8064</code></td>
+<td class="align-right">0604 일부 개선</td>
+<td class="align-left">fixed test MdAPE만 개선, validation MAPE/p95 악화로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p25</code></td>
+<td class="align-left">coverage high, 표본수 10 이상, PP-V8 gap 0.15 이하일 때만 제한 이동</td>
+<td class="align-right">validation/bootstrap gate 미통과</td>
+<td class="align-right"><code>0.1384 / 0.2729 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3739 / 0.9790</code></td>
+<td class="align-left">fixed/0604 소폭 개선이나 validation 안정성 부족으로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef18_qrisk_lowq_ppv8_qwidth_q50_gap0p05_cap0p03_w0p50</code></td>
+<td class="align-left">quantile width가 낮고 PP-V8 gap이 작은 구간에만 PP-V8 방향으로 제한 이동</td>
+<td class="align-right">validation/bootstrap gate 미통과</td>
+<td class="align-right"><code>0.1361 / 0.2731 / 0.8064</code></td>
+<td class="align-right">0604 변화 작음</td>
+<td class="align-left">fixed test MdAPE는 개선됐지만 MAPE 소폭 악화와 validation 안정성 부족으로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef18_qrisk_shrink_current_qwidth_q80_cap0p03_w0p75</code></td>
+<td class="align-left">quantile width가 높은 구간에서 HCOEF 보정폭을 current_70_30 방향으로 축소</td>
+<td class="align-right">validation MdAPE만 소폭 개선</td>
+<td class="align-right"><code>0.1389 / 0.2737 / 0.8237</code></td>
+<td class="align-right"><code>0.2731 / 0.3754 / 0.9833</code></td>
+<td class="align-left">MAPE/p95와 bootstrap gate가 약해 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF19 operational pipeline audit</code></td>
+<td class="align-left">연구 산출물과 운영 v0.1 산출물의 Warm component/formula/피처 schema 재현성 감사</td>
+<td class="align-right">후보 선택 실험 아님</td>
+<td class="align-right">fixed test 후보 아님</td>
+<td class="align-right">0604 공통 829건 component 로그 차이 <code>0.0</code></td>
+<td class="align-left">다음 HCOEF 실험을 운영 산출물 기준으로 이어갈 수 있음</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p02_s0p25</code></td>
+<td class="align-left">운영 component gap, quantile width, 표본 수 신뢰도를 Huber 잔차 보정 피처로 사용</td>
+<td class="align-right">row/artist OOF <code>0.1263 / 0.2081 / 0.6409</code>, <code>0.1263 / 0.2080 / 0.6408</code></td>
+<td class="align-right"><code>0.1388 / 0.2727 / 0.8089</code></td>
+<td class="align-right"><code>0.2765 / 0.3736 / 0.9835</code></td>
+<td class="align-left">OOF p95와 test MAPE는 개선됐지만 fixed p95 guard 미통과로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>HCOEF20 quantile range confidence tier</code></td>
+<td class="align-left">quantile width와 유사 표본 수로 가격 범위/신뢰도 tier를 나눔</td>
+<td class="align-right">high tier validation MdAPE <code>0.0692</code>, q10~q90 포함률 <code>0.9118</code></td>
+<td class="align-right">high tier test MdAPE <code>0.1148</code>, q10~q90 포함률 <code>0.8636</code></td>
+<td class="align-right">0604에서는 medium/low tier가 더 안정</td>
+<td class="align-left">점 예측 후보가 아니라 서비스 신뢰도/범위 표시 정책 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef21_resid_huber_adaptive_interactions_a0p001_cap0p02_s0p25</code></td>
+<td class="align-left">표본 수/coverage/quantile width로 SVC:PP-V8 가변 기준가를 만들고 Huber residual로 작은 보정</td>
+<td class="align-right">row/artist OOF <code>0.1263 / 0.2077 / 0.6409</code>, <code>0.1261 / 0.2078 / 0.6409</code></td>
+<td class="align-right"><code>0.1388 / 0.2727 / 0.8099</code></td>
+<td class="align-right"><code>0.2696 / 0.3731 / 0.9834</code></td>
+<td class="align-left">OOF와 0604 MAPE 개선 신호는 있으나 fixed p95 guard와 bootstrap gate 미통과로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef22_route_mape_guard</code></td>
+<td class="align-left">HCOEF20~21 후보 중 validation row/artist OOF에서 동시에 개선되는 구간에만 MAPE 후보를 제한 적용</td>
+<td class="align-right">row/artist OOF <code>0.1250 / 0.2068 / 0.6394</code>, <code>0.1250 / 0.2068 / 0.6397</code></td>
+<td class="align-right"><code>0.1448 / 0.2726 / 0.8164</code></td>
+<td class="align-right"><code>0.2672 / 0.3694 / 0.9790</code></td>
+<td class="align-left">validation/0604는 개선되지만 fixed test MdAPE/p95 악화로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef24_default_risk_basis_k8_cap0p05_s0p75</code></td>
+<td class="align-left">HCOEF23 위험 구간에서 유사 작품 기준가 이동을 줄인 default risk-shrunk basis 후보</td>
+<td class="align-right">row/artist OOF <code>0.1245 / 0.2082 / 0.6484</code></td>
+<td class="align-right"><code>0.1383 / 0.2729 / 0.8079</code></td>
+<td class="align-right"><code>0.2734 / 0.3736 / 0.9835</code></td>
+<td class="align-left">MdAPE/MAPE는 소폭 개선됐지만 fixed p95 guard 미통과로 MAPE 특화 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef25_resid_huber_strict_conservative_guard_core_a0p001_cap0p01_s0p25</code></td>
+<td class="align-left">HCOEF24 기준가 신호를 더 작은 cap과 conservative guard로 제한한 저차원 Huber 잔차 후보</td>
+<td class="align-right">row OOF <code>0.1252 / 0.2080 / 0.6440</code>, artist OOF <code>0.1252 / 0.2080 / 0.6453</code></td>
+<td class="align-right"><code>0.1366 / 0.2727 / 0.8080</code></td>
+<td class="align-right"><code>0.2726 / 0.3743 / 0.9835</code></td>
+<td class="align-left">MdAPE/MAPE는 개선됐지만 p95가 <code>+0.0016</code> 악화되어 MAPE 특화 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef26_h25_rh_strict_conservative_guard_core_a0p01_cap0p03_s0p25_no_extreme_reliable_cap0p0075_s1</code></td>
+<td class="align-left">HCOEF25 후보 이동분을 극단 위험이 아닌 신뢰 구간에만 적용하고 나머지는 <code>hcoef_stable</code>로 fallback</td>
+<td class="align-right">row OOF <code>0.1260 / 0.2082 / 0.6425</code>, artist OOF <code>0.1260 / 0.2082 / 0.6416</code></td>
+<td class="align-right"><code>0.1371 / 0.2727 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3745 / 0.9835</code></td>
+<td class="align-left">fixed p95는 방어했지만 bootstrap all3 gate 미통과로 반복 검증 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF27 repeated split/artist holdout validation</code></td>
+<td class="align-left">HCOEF26 후보 25개를 row 80% 반복 표본과 artist 80% holdout으로 재검증</td>
+<td class="align-right">상위 fixed 확인 후보 repeated min any2 <code>0.480</code>, min all3 <code>0.108</code></td>
+<td class="align-right"><code>0.1371 / 0.2727 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3745 / 0.9835</code></td>
+<td class="align-left">fixed 확인 후보는 유지하지만 반복 검증 기준 미통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef28_h26_lowrisk_fixed_a0p25_f0p5_q80zero_boost0</code></td>
+<td class="align-left">Huber가 예측한 큰 오차 위험도가 높으면 HCOEF26 후보 이동폭을 줄이는 risk-aware shrinkage</td>
+<td class="align-right">row OOF <code>0.1260 / 0.2082 / 0.6430</code>, artist OOF <code>0.1260 / 0.2082 / 0.6420</code>, repeated min any2/all3 <code>0.394 / 0.086</code></td>
+<td class="align-right"><code>0.1372 / 0.2727 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3745 / 0.9835</code></td>
+<td class="align-left">fixed 확인 후보이나 반복 검증은 HCOEF26보다 약해 운영 후보 미채택</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef28_h26_direct_guarded_a0p25_f0p5_noguard_boost0</code></td>
+<td class="align-left">반복 OOF 신호가 강했던 direct guarded 후보를 risk Huber로 완화</td>
+<td class="align-right">row OOF <code>0.1253 / 0.2081 / 0.6474</code>, artist OOF <code>0.1253 / 0.2080 / 0.6401</code>, repeated min any2/all3 <code>0.764 / 0.328</code></td>
+<td class="align-right"><code>0.1410 / 0.2727 / 0.8064</code></td>
+<td class="align-right"><code>0.2775 / 0.3749 / 0.9835</code></td>
+<td class="align-left">반복 신호는 비교적 강하지만 fixed MdAPE 악화로 MAPE 목적 연구 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef29_risk_guarded_component_s0p5_cap0p08</code></td>
+<td class="align-left">component delta와 risk 피처로 <code>actual_log - hcoef_stable</code> 잔차를 OOF Huber가 재학습</td>
+<td class="align-right">row OOF <code>0.1242 / 0.2071 / 0.6347</code>, artist OOF <code>0.1239 / 0.2071 / 0.6392</code>, repeated min any2/all3 <code>0.928 / 0.548</code></td>
+<td class="align-right"><code>0.1442 / 0.2718 / 0.8081</code></td>
+<td class="align-right"><code>0.2789 / 0.3678 / 0.9446</code></td>
+<td class="align-left">OOF 신호는 강하지만 fixed MdAPE/p95 악화로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef30_s01_all3_top5_w1</code></td>
+<td class="align-left">HCOEF29 source 후보를 validation row/artist OOF가 동시에 개선된 segment에만 적용</td>
+<td class="align-right">row OOF <code>0.1214 / 0.2057 / 0.6245</code>, artist OOF <code>0.1213 / 0.2053 / 0.6321</code>, repeated min any2/all3 <code>1.000 / 0.960</code></td>
+<td class="align-right"><code>0.1402 / 0.2700 / 0.8081</code></td>
+<td class="align-right"><code>0.2736 / 0.3716 / 0.9841</code></td>
+<td class="align-left">반복 신호는 가장 강하지만 fixed MdAPE/p95가 기준보다 악화되어 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef30_s01_all3_top5_w0p5</code></td>
+<td class="align-left">같은 segment gate를 절반 weight로 약하게 적용</td>
+<td class="align-right">row/artist OOF와 반복 신호는 강함, repeated min any2/all3 <code>0.998 / 0.892</code></td>
+<td class="align-right"><code>0.1387 / 0.2713 / 0.8072</code></td>
+<td class="align-right"><code>0.2792 / 0.3720 / 0.9838</code></td>
+<td class="align-left">fixed p95가 기준 <code>0.8064</code>보다 소폭 높아 운영 후보 미채택</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef31_s06_mape_dir_top3_w0p1_cap0p005</code></td>
+<td class="align-left">잔차 방향과 source 이동 방향이 validation row/artist OOF 양쪽에서 일치하는 segment에만 작은 cap 보정</td>
+<td class="align-right">repeated min any2/all3 <code>0.882 / 0.388</code></td>
+<td class="align-right"><code>0.1382 / 0.2729 / 0.8070</code></td>
+<td class="align-right"><code>0.2720 / 0.3744 / 0.9834</code></td>
+<td class="align-left">MdAPE/MAPE는 소폭 개선됐지만 fixed p95와 반복 all3 기준 미통과로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef31_s06_any2_dir_top3_w0p1_cap0p005</code></td>
+<td class="align-left">HCOEF31 p95 근접 후보. 방향 일치 segment 3개에만 미세 이동</td>
+<td class="align-right">repeated min any2/all3 <code>0.898 / 0.410</code></td>
+<td class="align-right"><code>0.1382 / 0.2730 / 0.8066</code></td>
+<td class="align-right"><code>0.2731 / 0.3744 / 0.9834</code></td>
+<td class="align-left">fixed p95가 기준 <code>0.8064</code>보다 근소하게 높아 운영 후보 미채택</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef32_s03_all3_dir_top2_w0p025_cap0p001</code></td>
+<td class="align-left">HCOEF31보다 더 작은 weight/cap으로 p95-first 방향 일치 segment에만 초미세 이동</td>
+<td class="align-right">repeated min any2/all3 <code>0.828 / 0.306</code></td>
+<td class="align-right"><code>0.1388 / 0.2729 / 0.8062</code></td>
+<td class="align-right"><code>0.2727 / 0.3744 / 0.9834</code></td>
+<td class="align-left">fixed test p95는 소폭 개선됐지만 반복 all3 부족으로 fixed 확인 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF33 extended validation</code></td>
+<td class="align-left">HCOEF32 핵심 후보를 새로 튜닝하지 않고 row 80/70%, artist 80/70% 반복 검증 각 2,000회로 재확인</td>
+<td class="align-right">핵심 후보 repeated min any2/all3 <code>0.8085 / 0.2785</code></td>
+<td class="align-right"><code>0.1388 / 0.2729 / 0.8062</code></td>
+<td class="align-right"><code>0.2727 / 0.3744 / 0.9834</code></td>
+<td class="align-left">fixed/0604 tiny 개선은 유지되지만 운영 후보 승격 기준 미달. <code>hcoef_stable</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef34_resid_basis_resid_all_a0p001_cap0p005_s0p5</code></td>
+<td class="align-left">train-only 기준가를 다시 만들고 기준가 gap/표본 수/IQR/크기 피처를 Huber 잔차 모델에 입력</td>
+<td class="align-right">확장 반복 전 후보</td>
+<td class="align-right"><code>0.1373 / 0.2729 / 0.8074</code></td>
+<td class="align-right"><code>0.2749 / 0.3746 / 0.9835</code></td>
+<td class="align-left">MdAPE/MAPE 개선 신호는 있지만 p95가 기준보다 악화되어 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef35_resid_basis_resid_all_a0p01_cap0p01_s0p35</code></td>
+<td class="align-left">HCOEF34 구조에서 cap/strength를 더 촘촘하게 낮춘 p95 방어 fine grid 후보</td>
+<td class="align-right">확장 반복 전 후보</td>
+<td class="align-right"><code>0.1365 / 0.2729 / 0.8078</code></td>
+<td class="align-right">0604 변화 작음</td>
+<td class="align-left">MdAPE는 가장 낮지만 p95 guard 미통과로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef36_route_basis_balanced_all_cap0p005_s0p5__spread_q66</code></td>
+<td class="align-left">HCOEF35 계수 이동을 전체가 아니라 기준가 신뢰도가 높은 행에만 적용하는 low-risk routing</td>
+<td class="align-right">row/artist stable all3 <code>0.375 / 0.375</code></td>
+<td class="align-right"><code>0.1383 / 0.2729 / 0.8060</code></td>
+<td class="align-right"><code>0.2734 / 0.3744 / 0.9835</code></td>
+<td class="align-left">fixed test 세 지표는 개선됐지만 반복 all3가 약해 반복 검증 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef36_route_basis_balanced_all_cap0p005_s0p5__n_ge5_spread_q66_area90</code></td>
+<td class="align-left">HCOEF36 상위 라우팅 후보를 row/artist OOF 60회로 확장 재검증한 최상위 안정 후보</td>
+<td class="align-right">min stable any2/all3 <code>0.9333 / 0.4333</code></td>
+<td class="align-right"><code>0.1383 / 0.2729 / 0.8060</code></td>
+<td class="align-right"><code>0.2734 / 0.3743 / 0.9835</code></td>
+<td class="align-left">any2 반복 안정성은 강하지만 all3 운영 기준에는 부족. Warm 안정 반복 검증 후보로 유지</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><code>hcoef2_size_reliability_cap005_s050</code>는 fixed test와 0604에서 세 지표가 모두 기존 70:30 기준보다 개선됨.</li>
+<li><code>hcoef2_size_reliability_cap005_s050</code>는 row OOF와 artist OOF 반복 검증에서 MdAPE/MAPE/p95 개선 확률이 모두 <code>1.0</code>으로 확인됨.</li>
+<li>loose 기준가 Huber는 중앙 오차와 평균 오차를 크게 줄이는 방향은 확인됐지만, 큰 오차 방어 지표인 p95_APE가 fixed test에서 악화됨.</li>
+<li>capped blend는 p95 악화를 줄였지만 반복 OOF와 fixed test guard를 동시에 만족하는 후보가 나오지 않음.</li>
+<li>조건부 routing은 p95 악화를 막았지만 적용 조건을 강하게 둘수록 성능 이득이 거의 사라짐.</li>
+<li>면적단가 기준가를 직접 잔차 피처로 넣으면 Huber가 평균 오차를 줄이는 방향은 학습하지만 큰 오차 방어는 아직 부족함.</li>
+<li>segmented cap/strength는 p95 방어를 목표로 했지만 HCOEF3보다 전체 성능이 악화됨.</li>
+<li>위험도 기반 basis 결합은 HCOEF4의 중앙/평균 오차 개선 신호를 일부 유지했지만 fixed test p95와 반복 OOF 안정성 기준을 통과하지 못함.</li>
+<li>원인 구간 기반 median 보정은 fixed test에서 아주 작은 개선 신호가 있었지만 반복 OOF에서 안정적으로 재현되지 않음.</li>
+<li>HCOEF11 확장 검증에서는 HCOEF3 안정 후보가 row OOF/artist OOF 80회 모두에서 MdAPE/MAPE/p95 개선확률 <code>1.0</code>을 유지함.</li>
+<li>Bootstrap에서는 MAPE와 RMSE 개선 신호가 강하고, MdAPE/p95는 split별 신뢰구간이 넓어 개선 방향은 확인되지만 과도하게 해석하지 않음.</li>
+<li>HCOEF12에서는 같은 후보를 joblib 패키지로 저장하고 다시 불러왔을 때 validation/test/0604 예측 차이가 모두 <code>0.0</code>으로 재현됨.</li>
+<li>HCOEF13에서는 새 후보를 고르지 않고, 현재 최고 후보의 남은 위험 구간을 validation 기준으로 분리함.</li>
+<li>HCOEF13 기준 다음 우선 실험 구간은 <code>basis_n_bucket=n_10_19</code>, <code>basis_iqr_bucket=iqr_mid/high</code>, <code>ppv8_gap_sign=ppv8_pos</code>, <code>risk_cause=basis_current_disagreement</code>, <code>basis_level_simple=artist_overall</code>임.</li>
+<li>HCOEF14에서는 위 위험 구간을 실제 보정 후보로 바꿨지만 반복 OOF gate를 통과한 후보가 없었음.</li>
+<li>HCOEF15에서는 0604 최신 라벨 829건의 actual price join이 모두 일치했고, HCOEF 안정 후보는 기존 70:30보다 0604에서 계속 개선됨.</li>
+<li>HCOEF15에서 운영 PP-V8/service primary는 0604 MdAPE/MAPE/p95 균형이 <code>0.2298 / 0.3359 / 0.9273</code>으로 가장 좋았지만, 이 값은 0604 라벨로 선택하면 과적합 위험이 있으므로 운영 후보로 즉시 승격하지 않음.</li>
+<li>HCOEF16에서는 PP-V8/service component를 validation/test에서 같은 proxy로 재현해 검증했지만, fixed test에서는 PP-V8 proxy가 <code>0.1632 / 0.2816 / 0.9311</code>로 HCOEF 안정 후보보다 약함.</li>
+<li>HCOEF16의 가장 나은 PP-V8 gap Huber 후보도 fixed test에서 <code>0.1394 / 0.2728 / 0.8091</code>로 MAPE/RMSE만 극소 개선하고 MdAPE/p95는 HCOEF 안정 후보보다 악화됨.</li>
+<li>HCOEF16 반복 검증에서 운영 후보 gate를 통과한 후보는 없으므로, 0604에서 좋아 보이는 PP-V8 component를 현재 Warm 기본 후보로 교체하지 않음.</li>
+<li>HCOEF17에서는 PP-V8을 전체 반영하지 않고 gap/coverage/표본 수 조건에서만 제한 이동했지만 전체 후보 100개가 모두 보류됨.</li>
+<li>HCOEF17 fixed test 상위 후보는 MdAPE를 <code>0.1374</code>까지 낮췄지만 validation에서 MAPE와 p95가 악화되어 test-only 후보로 판단함.</li>
+<li>HCOEF17 coverage 제한 후보는 fixed test와 0604에서 매우 작은 개선 신호가 있지만 validation/bootstrap gate를 통과하지 못함.</li>
+<li>0604에서는 PP-V8이 HCOEF 안정 후보보다 APE가 낮은 샘플이 <code>52.2%</code>였으나, 현재의 gap/coverage 규칙만으로 해당 샘플을 안정적으로 선별하지 못함.</li>
+<li>HCOEF18에서는 PP-L10 quantile width를 validation 기준 risk gate로 사용했지만 전체 후보 101개가 모두 보류됨.</li>
+<li>HCOEF18 fixed test 상위 후보는 MdAPE를 <code>0.1361</code>까지 낮췄지만 MAPE가 <code>0.2731~0.2732</code>로 HCOEF 안정 후보보다 소폭 악화되어 운영 후보로 채택하지 않음.</li>
+<li>HCOEF18 high quantile width shrink 후보는 validation MdAPE를 소폭 낮췄지만 MAPE/p95와 bootstrap gate가 약해 보류함.</li>
+<li>HCOEF19에서는 연구 산출물과 운영 v0.1 산출물이 같은 component를 보고 있는지 확인했고, <code>svc</code>, <code>current_70_30</code>, <code>ppv8</code>, <code>l10</code>, <code>quantile_width</code>, <code>price_range_ratio</code>가 0604 공통 829건에서 모두 일치함.</li>
+<li>HCOEF19에서는 운영 공식 <code>ppv8 = 0.75 * pp_v2 + 0.25 * l10</code>, <code>v01 = 0.70 * svc + 0.30 * ppv8</code>, <code>service_primary = ppv8</code>가 저장된 운영 예측값과 일치함.</li>
+<li>HCOEF19에서는 운영 Warm feature file 기준 필수 입력 피처 누락이 <code>0</code>개로 확인됨.</li>
+<li>HCOEF20에서는 운영 component mismatch 걱정 없이 저차원 Huber/Ridge 잔차 후보와 direct stack 후보를 검증함.</li>
+<li>HCOEF20 상위 후보는 validation OOF에서 p95를 낮추는 신호가 있었지만 fixed test p95가 기준 <code>0.8064</code>보다 소폭 악화되어 운영 후보로 채택하지 않음.</li>
+<li>HCOEF20 bootstrap all3 개선확률 최대값은 <code>0.43</code> 수준으로 운영 후보 기준 <code>0.90</code>에 크게 못 미침.</li>
+<li>HCOEF20 quantile width tier는 validation/test에서 high confidence 구간의 MdAPE와 큰 오차율이 낮아 서비스 신뢰도 표시에는 유효한 후보임.</li>
+<li>HCOEF21에서는 <code>current_70_30 = 0.7 * SVC + 0.3 * PP-V8</code>임을 확인한 뒤, SVC:PP-V8 비율을 표본 수/coverage/quantile width로 가변화함.</li>
+<li>HCOEF21 상위 후보는 validation OOF에서 MAPE/p95를 낮췄지만 fixed test p95가 <code>0.8099</code>로 HCOEF 안정 후보 <code>0.8064</code>보다 악화됨.</li>
+<li>HCOEF21 bootstrap all3 개선확률 최대값은 약 <code>0.33</code>으로 운영 후보 기준에 미달함.</li>
+<li>HCOEF21 결과상 가변 기준가와 신뢰도 피처는 해석 가능한 연구 후보로 유지하되, 점 예측 기본값은 HCOEF 안정 후보로 유지함.</li>
+<li>HCOEF22에서는 validation row/artist OOF에서 동시에 개선되는 구간에만 HCOEF20~21 후보를 제한 적용하는 목적별 라우팅을 검증함.</li>
+<li>HCOEF22 <code>mape_guard</code>는 validation과 0604에서 MAPE를 낮췄지만 fixed test MdAPE와 p95가 악화되어 운영 기본 후보로 채택하지 않음.</li>
+<li>HCOEF22 range confidence tier는 fixed test에서 high tier p95 <code>0.4927</code>, low tier p95 <code>1.7126</code>으로 위험 구간 분리력이 있어 점 예측이 아니라 서비스 신뢰도/범위 표시 후보로 유지함.</li>
+<li>HCOEF23에서는 새 보정값을 만들지 않고 HCOEF 안정 후보의 남은 오차 원인을 validation 기준으로 재분해함.</li>
+<li>HCOEF23 기준 우선 위험 구간은 <code>qwidth_extreme</code>, <code>gap_020_plus</code>, <code>svc_group_n_band=n_10_19</code>, <code>svc_group_level=artist</code>, <code>pred_spread_band=spread_extreme</code>임.</li>
+<li>HCOEF23 잔차 크기 계수 감사에서 <code>quantile_width</code>, <code>stable_ppv8_gap_abs</code>, <code>gap_020_plus</code>가 오차 위험 증가 방향으로 확인됨.</li>
+<li>HCOEF34에서는 기준가 생성 방식을 다시 잡고 Huber가 기준가 gap 계수를 학습하도록 했으며, MdAPE/MAPE 개선 신호를 확인함.</li>
+<li>HCOEF35에서는 HCOEF34 신호의 p95 악화를 줄이기 위해 cap/strength를 더 작게 쪼갰지만 p95 방어 기준을 통과하지 못함.</li>
+<li>HCOEF36에서는 보정 신호를 기준가 신뢰도가 높은 구간에만 제한 적용해 fixed test 세 지표를 소폭 개선함.</li>
+<li>HCOEF37에서는 HCOEF36 후보를 확장 반복 검증했고 any2 안정성은 확인했지만 all3 운영 기준이 약해 운영 후보 승격은 보류함.</li>
+<li>따라서 현재 운영 후보를 교체하지 않고, <code>hcoef2_size_reliability_cap005_s050</code>를 Warm 개선 후보로 유지하는 판단이 가장 안정적임.</li>
+</ul>
+<h2 id="2.-warm-huber-가격-계산-방식">2. Warm Huber 가격 계산 방식</h2>
+<ul>
+<li>Warm Huber는 가격을 바로 예측하지 않고 로그 가격을 먼저 예측함.</li>
+<li>기본 구조는 아래와 같음.</li>
+</ul>
+<pre><code>pred_log = intercept + beta_1 * z_1 + beta_2 * z_2 + ... + beta_k * z_k
+pred_price = exp(pred_log)</code></pre>
+<ul>
+<li><code>z_j</code>는 표준화된 피처 값임.</li>
+<li><code>beta_j</code>는 Huber가 학습한 피처별 계수임.</li>
+<li>계수가 양수이면 해당 피처가 커질수록 로그 가격을 올리는 방향임.</li>
+<li>계수가 음수이면 해당 피처가 커질수록 로그 가격을 낮추는 방향임.</li>
+<li>실제 가격 영향은 로그 가격에서 더해진 뒤 <code>exp()</code>로 원화 가격으로 환산됨.</li>
+</ul>
+<h3 id="2.1-hcoef3-안정-후보의-보정-공식">2.1 HCOEF3 안정 후보의 보정 공식</h3>
+<pre><code>base_pred_log = current_70_30
+residual_log = actual_log - base_pred_log
+raw_correction = HuberResidualModel(features)
+limited_correction = clip(raw_correction, -0.05, 0.05) * 0.50
+corrected_pred_log = base_pred_log + limited_correction
+corrected_pred_price = exp(corrected_pred_log)</code></pre>
+<ul>
+<li><code>current_70_30</code>은 이미 강한 기준 후보임.</li>
+<li>HCOEF3는 전체 예측을 다시 만들지 않고, 남은 반복 오차만 작게 보정함.</li>
+<li>cap <code>0.05</code>는 로그 가격 기준 보정폭을 제한하는 장치임.</li>
+<li>strength <code>0.50</code>은 산출된 보정값을 절반만 반영해 과보정을 줄이는 장치임.</li>
+<li>이 구조 때문에 성능 개선 폭은 크지 않지만 p95_APE와 0604 방향성이 안정적으로 유지됨.</li>
+</ul>
+<h2 id="3.-기준가-생성-방식-해석">3. 기준가 생성 방식 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">기준가 방식</th>
+<th class="align-left">생성 방식</th>
+<th class="align-left">실험에서 본 역할</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가 전체 기준가</td>
+<td class="align-left">같은 작가의 과거 거래 로그 가격 중앙값</td>
+<td class="align-left">작가별 가격 기준선을 잡는 가장 안정적인 fallback</td>
+<td class="align-left">Warm에서는 필수 기준선</td>
+</tr>
+<tr>
+<td class="align-left">작가+크기 기준가</td>
+<td class="align-left">같은 작가와 같은 size bucket의 과거 거래 중앙값</td>
+<td class="align-left">같은 작가 안에서 작품 크기별 가격 차이를 반영</td>
+<td class="align-left">표본이 충분하면 유효</td>
+</tr>
+<tr>
+<td class="align-left">작가+재료/지지체+크기 기준가</td>
+<td class="align-left">같은 작가, 재료/지지체 묶음, 크기 구간의 거래 중앙값</td>
+<td class="align-left">가장 세밀하지만 표본 부족 위험이 큼</td>
+<td class="align-left">loose 정책에서 성능 잠재력 확인</td>
+</tr>
+<tr>
+<td class="align-left">재료/지지체+크기 기준가</td>
+<td class="align-left">작가를 빼고 재료/지지체와 크기 중심으로 묶음</td>
+<td class="align-left">작가 표본이 부족할 때 시장 공통 기준으로 fallback</td>
+<td class="align-left">Cold 성격의 보조 기준</td>
+</tr>
+<tr>
+<td class="align-left">global 기준가</td>
+<td class="align-left">전체 학습 데이터 중앙값</td>
+<td class="align-left">모든 기준가가 비었을 때 마지막 fallback</td>
+<td class="align-left">직접 예측력보다는 결측 방어용</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>기준가를 세밀하게 만들수록 MdAPE/MAPE가 좋아질 수 있음.</li>
+<li>기준가를 너무 세밀하게 만들면 표본 수가 작아져 p95_APE가 악화될 수 있음.</li>
+<li>HCOEF4의 loose 정책은 이 효과를 잘 보여줌.</li>
+<li>loose 기준가 Huber는 fixed test MdAPE <code>0.1346</code>, MAPE <code>0.2618</code>로 좋았지만 p95_APE <code>0.8916</code>으로 악화됨.</li>
+<li>따라서 기준가 세분화는 “대표 가격 개선”에는 유효하나, “큰 오차 방어”까지 자동으로 해결하지는 못함.</li>
+</ul>
+<h2 id="4.-hcoef3-안정-후보-계수-해석">4. HCOEF3 안정 후보 계수 해석</h2>
+<p><code>hcoef2_size_reliability_cap005_s050</code>의 주요 계수는 표준화된 피처 기준이다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처</th>
+<th class="align-right">계수 방향</th>
+<th class="align-right">계수 크기</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>svc_fallback</code></td>
+<td class="align-right">음수</td>
+<td class="align-right"><code>-0.4718</code></td>
+<td class="align-left">기존 유사 작품 기반 가격 피처가 일부 구간에서 과하게 높게 작동하는 경우를 낮추는 역할</td>
+</tr>
+<tr>
+<td class="align-left"><code>shrunk_svc_prior</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.2221</code></td>
+<td class="align-left">표본 수를 고려해 완화한 유사 작품 기준가는 안정적인 가격 기준으로 인정</td>
+</tr>
+<tr>
+<td class="align-left"><code>current_shrunk_huber_gap</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.1308</code></td>
+<td class="align-left">현재 70:30 후보와 완화 Huber 기준 사이의 차이가 남은 오차를 설명</td>
+</tr>
+<tr>
+<td class="align-left"><code>ppv8_defensive</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.1081</code></td>
+<td class="align-left">오차 안정화 후보가 큰 오차 방어에 보조적으로 기여</td>
+</tr>
+<tr>
+<td class="align-left"><code>shrunk_huber_refit</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.0877</code></td>
+<td class="align-left">완화된 기준가로 재학습한 Huber 예측값이 보조 중심선으로 작동</td>
+</tr>
+<tr>
+<td class="align-left"><code>raw_shrunk_prior_gap</code></td>
+<td class="align-right">음수</td>
+<td class="align-right"><code>-0.0580</code></td>
+<td class="align-left">원 기준가와 완화 기준가 차이가 클 때 과한 기준가 의존을 낮춤</td>
+</tr>
+<tr>
+<td class="align-left"><code>log_area</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.0570</code></td>
+<td class="align-left">같은 작가라도 작품 크기가 커질수록 가격이 올라가는 기본 시장 효과</td>
+</tr>
+<tr>
+<td class="align-left"><code>current_ppv8_gap</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.0491</code></td>
+<td class="align-left">70:30 후보와 오차 안정화 후보의 차이가 보정 방향을 알려줌</td>
+</tr>
+<tr>
+<td class="align-left"><code>svc_group_n_log</code></td>
+<td class="align-right">음수</td>
+<td class="align-right"><code>-0.0121</code></td>
+<td class="align-left">표본 수 자체는 강한 가격 상승 피처가 아니라 신뢰도 조정 축으로 작동</td>
+</tr>
+<tr>
+<td class="align-left"><code>svc_prior_iqr</code></td>
+<td class="align-right">거의 0</td>
+<td class="align-right"><code>0.0008</code></td>
+<td class="align-left">가격 범위 폭은 직접 가격 조정보다는 안정성 진단에 가까움</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>가장 큰 음수 계수는 <code>svc_fallback</code>임.</li>
+<li>이는 “유사 작품 기반 가격 피처를 무조건 더 믿는다”가 아니라, 기존 fallback 예측이 높은 구간에서 과대예측을 낮추는 역할을 했다는 뜻임.</li>
+<li><code>shrunk_svc_prior</code>는 양수로 남아 있음.</li>
+<li>이는 표본 수와 fallback을 반영해 완화한 기준가는 여전히 가격 기준선으로 유효하다는 뜻임.</li>
+<li><code>log_area</code>의 계수는 크지 않지만 양수로 유지됨.</li>
+<li>이는 현재 후보가 이미 크기 정보를 많이 반영하고 있어, 추가 보정 단계에서는 크기가 보조 조정만 담당한다는 뜻임.</li>
+</ul>
+<h2 id="5.-hcoef4-기준가-huber-후보-계수-해석">5. HCOEF4 기준가-Huber 후보 계수 해석</h2>
+<p><code>loose_huber_basis_core_alpha0.1</code>의 주요 계수는 아래와 같다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처</th>
+<th class="align-right">계수 방향</th>
+<th class="align-right">계수 크기</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>current_70_30</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.8625</code></td>
+<td class="align-left">기존 70:30 후보가 여전히 가장 강한 중심선</td>
+</tr>
+<tr>
+<td class="align-left"><code>basis_relaxed_unit_area_log</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.4560</code></td>
+<td class="align-left">면적단가 기준가가 작품 크기 차이를 보정하는 강한 보조축</td>
+</tr>
+<tr>
+<td class="align-left"><code>shrunk_huber_refit</code></td>
+<td class="align-right">음수</td>
+<td class="align-right"><code>-0.2590</code></td>
+<td class="align-left">기존 후보들과 중복되는 중심선을 과하게 더하지 않도록 조정</td>
+</tr>
+<tr>
+<td class="align-left"><code>shrunk_svc_prior</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.2273</code></td>
+<td class="align-left">완화된 유사 작품 기준가는 여전히 유효한 가격 prior</td>
+</tr>
+<tr>
+<td class="align-left"><code>ppv8_defensive</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.1711</code></td>
+<td class="align-left">오차 안정화 후보가 basis 후보에서도 방어축으로 작동</td>
+</tr>
+<tr>
+<td class="align-left"><code>svc_fallback</code></td>
+<td class="align-right">음수</td>
+<td class="align-right"><code>-0.1525</code></td>
+<td class="align-left">원 fallback 기준가에 대한 과신을 낮추는 역할</td>
+</tr>
+<tr>
+<td class="align-left"><code>log_area</code></td>
+<td class="align-right">양수</td>
+<td class="align-right"><code>0.0374</code></td>
+<td class="align-left">크기 효과는 이미 면적단가 기준가에 흡수되어 보조 역할</td>
+</tr>
+<tr>
+<td class="align-left"><code>basis_relaxed_price_log</code></td>
+<td class="align-right">음수</td>
+<td class="align-right"><code>-0.0305</code></td>
+<td class="align-left">직접 기준가 중앙값보다 면적단가 방식이 더 안정적으로 작동</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF4에서 가장 중요한 발견은 <code>basis_relaxed_unit_area_log</code>의 양수 계수가 큼.</li>
+<li>이는 같은 작가라도 작품 크기 차이를 단순 크기 피처보다 “면적단가 기준가”로 반영하는 것이 유효하다는 의미임.</li>
+<li>다만 이 후보는 p95_APE가 악화됨.</li>
+<li>이유는 loose 기준이 더 많은 세부 기준가를 사용하면서 대표 가격은 좋아졌지만, 일부 희소/불안정 구간에서 큰 오차가 커졌기 때문임.</li>
+<li>따라서 HCOEF4는 최종 후보가 아니라 “기준가 생성 방식 개선의 근거”로 쓰는 것이 적절함.</li>
+</ul>
+<h2 id="6.-hcoef5-capped-blend-해석">6. HCOEF5 capped blend 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">반복 OOF</th>
+<th class="align-left">fixed test</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>loose_basis_gap_huber_alpha0p1_on_hcoef2_cap0.03_s0.25</code></td>
+<td class="align-left">row all3 <code>1.0</code>, artist all3 <code>0.9167</code></td>
+<td class="align-left">MdAPE <code>+0.0012</code>, MAPE <code>-0.0013</code>, p95 <code>+0.0009</code> vs HCOEF3</td>
+<td class="align-left">반복 OOF는 좋지만 fixed test MdAPE 악화로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>loose_basis_core_huber_alpha0p01_on_hcoef2_cap0.05_s0.75</code></td>
+<td class="align-left">row all3 <code>0.5000</code>, artist all3 <code>0.3333</code></td>
+<td class="align-left">MdAPE <code>-0.0004</code>, MAPE <code>-0.0049</code>, p95 <code>+0.0060</code> vs HCOEF3</td>
+<td class="align-left">fixed test는 좋지만 반복 OOF 불안정으로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>loose_basis_core_huber_alpha0p1</code></td>
+<td class="align-left">row all3 <code>0.9167</code>, artist all3 <code>0.6667</code></td>
+<td class="align-left">MdAPE <code>-0.0042</code>, MAPE <code>-0.0112</code>, p95 <code>+0.0853</code> vs HCOEF3</td>
+<td class="align-left">p95 악화로 보류</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF5는 HCOEF4의 장점을 HCOEF3 안정 후보에 제한적으로 섞는 실험임.</li>
+<li>cap을 작게 두면 p95 악화는 줄지만 MdAPE 개선이 약해짐.</li>
+<li>cap을 크게 두면 MdAPE/MAPE는 좋아지지만 p95_APE가 악화됨.</li>
+<li>반복 OOF와 fixed test guard를 동시에 만족한 후보는 없음.</li>
+<li>따라서 HCOEF5는 “기준가 고도화 방향은 맞지만, 현재 데이터에서는 안전한 운영 후보까지는 아님”이라는 결론임.</li>
+</ul>
+<h2 id="7.-hcoef6-조건부-routing-해석">7. HCOEF6 조건부 routing 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">적용 방식</th>
+<th class="align-left">fixed test</th>
+<th class="align-left">반복 OOF</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">full basis-Huber</td>
+<td class="align-left">모든 샘플에 basis-Huber 적용</td>
+<td class="align-left"><code>0.1346 / 0.2618~0.2628 / 0.8916~0.9110</code></td>
+<td class="align-left">row OOF는 강하지만 artist OOF 불충분</td>
+<td class="align-left">중앙 오차는 좋지만 p95 위험으로 보류</td>
+</tr>
+<tr>
+<td class="align-left">broad lowrisk routing</td>
+<td class="align-left">표본 수 <code>&gt;=30</code>, IQR <code>&lt;=0.65</code>, gap <code>&lt;=0.50</code>인 일부 샘플만 적용</td>
+<td class="align-left"><code>0.1384 / 0.2728 / 0.8064</code></td>
+<td class="align-left">all3 <code>0.0</code></td>
+<td class="align-left">p95는 방어했지만 개선폭이 너무 작음</td>
+</tr>
+<tr>
+<td class="align-left">detail/artist routing</td>
+<td class="align-left">작가 계열 기준가가 있고 gap이 낮은 넓은 구간에 제한 적용</td>
+<td class="align-left">MdAPE 악화, MAPE 소폭 개선, p95 유지</td>
+<td class="align-left">all3 <code>0.5</code> 수준</td>
+<td class="align-left">목적별 MAPE 후보는 가능하나 기본 후보는 아님</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF6는 HCOEF4의 basis-Huber를 전체에 쓰지 않고, 신뢰도 조건을 만족한 샘플에만 적용한 실험임.</li>
+<li>사용한 신뢰도 조건은 표본 수, 가격 분산 IQR, 기준가 level, 현재 후보와의 gap, 완화 weight임.</li>
+<li>결과적으로 p95 악화는 막을 수 있었음.</li>
+<li>그러나 조건을 강하게 걸면 적용 샘플이 줄어들어 MdAPE/MAPE 개선폭도 거의 사라짐.</li>
+<li>조건을 넓히면 MAPE는 좋아지지만 fixed test MdAPE 또는 반복 p95 안정성이 부족함.</li>
+<li>따라서 basis-Huber는 “전체 대체 모델”이나 “단순 routing 후보”보다는 HCOEF3 잔차 보정에 들어가는 설명 가능한 보조 피처로 쓰는 방향이 더 적절함.</li>
+</ul>
+<h2 id="8.-hcoef7-면적단가-기준가-직접-잔차-피처-해석">8. HCOEF7 면적단가 기준가 직접 잔차 피처 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">구조</th>
+<th class="align-left">fixed test</th>
+<th class="align-left">반복 OOF</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>hcoef7_shrunk_basis_gap_alpha0.001_cap0.03_s0.50</code></td>
+<td class="align-left">HCOEF3 잔차 피처 + shrink 기준가 gap + 면적단가 기준가</td>
+<td class="align-left"><code>0.1361 / 0.2718 / 0.8298</code></td>
+<td class="align-left">row all3 <code>0.4167</code>, artist all3 <code>0.5000</code></td>
+<td class="align-left">MdAPE/MAPE 개선, p95 악화로 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef7_unit_area_reliability_alpha0.01_cap0.05_s0.75</code></td>
+<td class="align-left">HCOEF3 잔차 피처 + 면적단가 기준가 + 표본 수/IQR/weight</td>
+<td class="align-left">fixed MdAPE 악화, MAPE 개선</td>
+<td class="align-left">row all3 <code>0.8333</code>, artist all3 <code>0.5000</code></td>
+<td class="align-left">반복 신호는 있으나 fixed guard 미통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef7_risk_flags_alpha0.001_cap0.05_s0.50</code></td>
+<td class="align-left">HCOEF3 잔차 피처 + basis risk flag</td>
+<td class="align-left"><code>0.1386 / 0.2719 / 0.8289</code> 수준</td>
+<td class="align-left">row all3 <code>0.6667</code>, artist all3 <code>0.4167</code></td>
+<td class="align-left">MAPE 개선 후보, p95 악화로 보류</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF7은 HCOEF6처럼 사람이 적용 구간을 고정하지 않고, Huber가 면적단가/신뢰도 피처의 계수를 직접 학습하게 한 실험임.</li>
+<li>fixed test에서는 MdAPE와 MAPE를 HCOEF3보다 낮추는 후보가 나왔음.</li>
+<li>하지만 p95_APE가 HCOEF3의 <code>0.8064</code>보다 <code>0.017~0.026</code> 정도 악화됨.</li>
+<li>반복 OOF에서도 row split은 일부 강하지만 artist-level split에서 all3 gate를 통과하지 못함.</li>
+<li>따라서 면적단가 기준가는 가격 중심선 개선 신호가 있지만, 그대로 잔차 보정에 넣으면 큰 오차를 충분히 방어하지 못함.</li>
+<li>다음 실험은 면적단가 피처 자체를 버리는 것이 아니라, p95 위험 구간을 별도로 분리해 보정 강도를 다르게 두는 segmented Huber가 더 적절함.</li>
+</ul>
+<h2 id="9.-hcoef8-segmented-보정-해석">9. HCOEF8 segmented 보정 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">구조</th>
+<th class="align-left">fixed test</th>
+<th class="align-left">반복 OOF</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-left">HCOEF3 안정 후보</td>
+<td class="align-left"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-left">기준 후보</td>
+<td class="align-left">현재 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef8_shrunk_basis_gap_alpha0.01_all_tiny_low_priority</code></td>
+<td class="align-left">low/mid/high 구간별 아주 약한 basis residual 보정</td>
+<td class="align-left"><code>0.1395 / 0.2744 / 0.8340</code></td>
+<td class="align-left">all3 <code>0.0</code></td>
+<td class="align-left">HCOEF3보다 악화</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef8_unit_area_reliability_alpha0.01_low_only_medium</code></td>
+<td class="align-left">low risk 구간에만 약한 면적단가 보정</td>
+<td class="align-left"><code>0.1398 / 0.2748 / 0.8331</code></td>
+<td class="align-left">all3 <code>0.0</code></td>
+<td class="align-left">HCOEF3보다 악화</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF8은 HCOEF7의 p95 악화를 막기 위해 보정 강도를 low/mid/high 기준가 위험 구간별로 다르게 둔 실험임.</li>
+<li>기대는 low risk 구간에서는 면적단가 신호를 살리고, high risk 구간에서는 보정을 거의 하지 않는 것이었음.</li>
+<li>실제 결과는 HCOEF3 안정 후보보다 모든 주요 후보가 악화됨.</li>
+<li>이는 HCOEF3 잔차 보정이 이미 작은 cap/strength로 충분히 안정화되어 있고, 면적단가 기반 보정은 구간을 나누더라도 추가 이득보다 교란이 더 크다는 의미임.</li>
+<li>따라서 HCOEF 계열에서는 HCOEF3 안정 후보가 현재 가장 균형 잡힌 후보임.</li>
+</ul>
+<h2 id="10.-hcoef9-위험도-기반-기준가-결합-해석">10. HCOEF9 위험도 기반 기준가 결합 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">구조</th>
+<th class="align-left">fixed test</th>
+<th class="align-left">반복 OOF</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-left">HCOEF3 안정 후보</td>
+<td class="align-left"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-left">기준 후보</td>
+<td class="align-left">현재 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>loose_basis_core_huber_alpha0p1</code></td>
+<td class="align-left">loose 기준가 Huber 단독</td>
+<td class="align-left"><code>0.1346 / 0.2618 / 0.8916</code></td>
+<td class="align-left">row/artist all3 <code>0.65 / 0.65</code></td>
+<td class="align-left">MdAPE/MAPE 좋지만 p95 크게 악화</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef9_loose_basis_core_huber_alpha0p1_model_agreement_only</code></td>
+<td class="align-left">HCOEF3와 HCOEF4 예측 차이가 작은 구간에만 제한 결합</td>
+<td class="align-left"><code>0.1356 / 0.2670 / 0.8308</code></td>
+<td class="align-left">row/artist all3 <code>0.50 / 0.35</code></td>
+<td class="align-left">p95 악화와 반복 안정성 부족</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef9_loose_basis_core_huber_alpha0p1_low_strong_mid_light_high_stable</code></td>
+<td class="align-left">low/mid 기준가 신뢰도 구간에만 제한 결합</td>
+<td class="align-left"><code>0.1410 / 0.2717 / 0.8087</code></td>
+<td class="align-left">row/artist all3 <code>0.55 / 0.25</code></td>
+<td class="align-left">p95는 거의 방어했지만 MdAPE 악화</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF9는 HCOEF4의 강한 MdAPE/MAPE 개선 신호를 버리지 않고, 기준가 신뢰도와 모델 간 예측 차이로 적용 구간을 제한한 실험임.</li>
+<li>model agreement 방식은 fixed test에서 MdAPE/MAPE를 가장 많이 줄였지만 p95가 HCOEF3 기준 <code>0.8064</code>에서 <code>0.8308</code>로 악화됨.</li>
+<li>low/mid 신뢰도 방식은 p95를 거의 방어했지만 MdAPE 개선이 사라져 HCOEF3보다 대표 정확도가 나빠짐.</li>
+<li>이는 HCOEF4 basis-Huber가 특정 구간에서는 유효하지만, 운영 기본 후보로 쓰려면 큰 오차 방어가 아직 부족하다는 의미임.</li>
+<li>따라서 HCOEF9도 새 기본 후보로 채택하지 않고 HCOEF3 안정 후보를 유지함.</li>
+</ul>
+<h2 id="11.-hcoef10-원인-구간-기반-약한-보정-해석">11. HCOEF10 원인 구간 기반 약한 보정 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">구조</th>
+<th class="align-left">fixed test</th>
+<th class="align-left">반복 OOF</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-left">HCOEF3 안정 후보</td>
+<td class="align-left"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-left">기준 후보</td>
+<td class="align-left">현재 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef10_pred_reliability_cap0.02_s0.25</code></td>
+<td class="align-left">예측 가격대 + 기준가 표본 수 조합별 residual 중앙값 보정</td>
+<td class="align-left"><code>0.1383 / 0.2729 / 0.8062</code></td>
+<td class="align-left">row/artist all3 <code>0.00 / 0.10</code></td>
+<td class="align-left">fixed test만 소폭 개선</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef10_medium_size_cap0.05_s0.50</code></td>
+<td class="align-left">재료/지지체 + 크기 조합별 residual 중앙값 보정</td>
+<td class="align-left"><code>0.1441 / 0.2755 / 0.8035</code></td>
+<td class="align-left">반복 안정성 부족</td>
+<td class="align-left">p95만 개선, 대표/평균 오차 악화</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef10_basis_gap_sign_cap0.03_s0.25</code></td>
+<td class="align-left">기준가와 기존 후보 간 gap 방향별 residual 중앙값 보정</td>
+<td class="align-left"><code>0.1394 / 0.2734 / 0.8115</code> 수준</td>
+<td class="align-left">row all3 <code>0.25</code>, artist all3 <code>0.20</code></td>
+<td class="align-left">OOF p95 신호는 있으나 fixed guard 실패</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF10은 HCOEF3가 남긴 오차를 가격대, 기준가 표본 수, 기준가 분산, 크기, 재료/지지체, 기준가 gap 방향으로 나눠 확인한 실험임.</li>
+<li><code>pred_reliability</code> 후보는 fixed test에서 MdAPE/MAPE/p95를 모두 아주 작게 개선했지만 반복 OOF에서는 같은 방향이 유지되지 않음.</li>
+<li><code>medium_size</code>, <code>medium_support</code> 후보는 fixed test p95를 약간 낮췄지만 MdAPE/MAPE가 악화되어 가격 대표값 후보로는 부적합함.</li>
+<li><code>basis_gap_sign</code> 후보는 validation 반복 OOF에서 p95 개선 신호가 일부 있었지만 artist OOF와 fixed test를 동시에 통과하지 못함.</li>
+<li>따라서 원인 구간 median 보정은 운영 후보가 아니라 오차 원인 진단 자료로 유지하는 것이 적절함.</li>
+</ul>
+<h2 id="12.-hcoef11-확장-반복-검증-해석">12. HCOEF11 확장 반복 검증 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">검증 항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">row OOF 80회</td>
+<td class="align-left">MdAPE/MAPE/p95 개선확률 <code>1.0 / 1.0 / 1.0</code></td>
+<td class="align-left">행 단위로 반복 분할해도 70:30 기준 후보보다 안정적으로 개선</td>
+</tr>
+<tr>
+<td class="align-left">artist OOF 80회</td>
+<td class="align-left">MdAPE/MAPE/p95 개선확률 <code>1.0 / 1.0 / 1.0</code></td>
+<td class="align-left">작가 단위로 분리해도 같은 방향이 유지됨</td>
+</tr>
+<tr>
+<td class="align-left">fixed test</td>
+<td class="align-left"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-left">기준 후보 <code>0.1405 / 0.2748 / 0.8331</code> 대비 3지표 개선</td>
+</tr>
+<tr>
+<td class="align-left">0604 외부 테스트</td>
+<td class="align-left"><code>0.2731 / 0.3744 / 0.9835</code></td>
+<td class="align-left">정합성 검증 중인 외부 데이터에서도 같은 방향의 개선</td>
+</tr>
+<tr>
+<td class="align-left">paired bootstrap</td>
+<td class="align-left">MAPE/RMSE 개선확률 높음, MdAPE/p95 CI는 넓음</td>
+<td class="align-left">개선 신호는 있으나 p95는 split 민감도가 있어 운영 전 추가 stress test 필요</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF11은 새 보정식을 추가한 실험이 아니라 HCOEF3 안정 후보의 재현성을 강화한 감사 실험임.</li>
+<li>fixed test만 보고 후보를 고른 것이 아니라 validation 반복 OOF에서 같은 방향이 유지되는지 확인함.</li>
+<li><code>hcoef2_size_reliability_cap005_s050</code>는 기존 70:30 후보 위에 아주 작은 Huber 잔차 보정만 더하는 구조라 설명 가능성과 운영 안정성이 높음.</li>
+<li>다만 bootstrap p95 신뢰구간은 넓기 때문에, “큰 오차가 항상 줄어든다”가 아니라 “현재 split에서는 큰 오차 지표가 악화되지 않았고 반복 OOF에서도 안정적”이라고 표현하는 것이 정확함.</li>
+</ul>
+<h2 id="13.-hcoef12-운영-패키징-감사-해석">13. HCOEF12 운영 패키징 감사 해석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">검증 항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">패키지 저장</td>
+<td class="align-left"><code>warm_hcoef12_hcoef3_stable_residual_huber.joblib</code> 생성</td>
+<td class="align-left">선택된 residual Huber 보정식을 재현 가능한 파일로 보관</td>
+</tr>
+<tr>
+<td class="align-left">저장 모델 재로딩</td>
+<td class="align-left">validation/test/0604 direct rebuild 대비 최대 예측 차이 <code>0.0</code></td>
+<td class="align-left">같은 입력 피처가 있으면 동일한 예측을 재현 가능</td>
+</tr>
+<tr>
+<td class="align-left">fixed test 재현</td>
+<td class="align-left"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-left">HCOEF11과 같은 성능 재현</td>
+</tr>
+<tr>
+<td class="align-left">0604 재현</td>
+<td class="align-left"><code>0.2731 / 0.3744 / 0.9835</code></td>
+<td class="align-left">외부 스트레스 테스트에서도 같은 수치 재현</td>
+</tr>
+<tr>
+<td class="align-left">readiness check</td>
+<td class="align-left">전체 <code>pass</code></td>
+<td class="align-left">운영 반영 전 실험 패키지로 관리 가능</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF12는 새 성능 후보를 만든 실험이 아니라, HCOEF11에서 검증된 후보를 저장 가능한 artifact로 묶는 감사 실험임.</li>
+<li>패키지에는 후보명, 기준 후보명, Huber alpha/cap/strength, 사용 피처 목록, source evidence, 파일 hash가 포함됨.</li>
+<li>사용 피처는 <code>ppv8_defensive</code>, <code>svc_fallback</code>, <code>shrunk_huber_refit</code>, <code>shrunk_svc_prior</code>, <code>log_area</code>, <code>svc_group_n_log</code>, <code>svc_prior_iqr</code>, <code>current_ppv8_gap</code>, <code>current_shrunk_huber_gap</code>, <code>raw_shrunk_prior_gap</code>임.</li>
+<li>이 패키지는 production artifact를 덮어쓴 것이 아니라, 운영 반영 여부를 결정하기 위한 재현 가능한 실험 패키지임.</li>
+<li>실제 운영 반영 시에는 <code>current_70_30</code> 기준 예측값과 위 residual 피처가 서비스 feature pipeline에서 동일하게 생성되는지 별도 통합 테스트가 필요함.</li>
+</ul>
+<h2 id="14.-hcoef13-잔차-위험-원인-진단">14. HCOEF13 잔차 위험 원인 진단</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">진단 축</th>
+<th class="align-left">validation에서 확인된 현상</th>
+<th class="align-left">다음 실험 방향</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기준가 표본 수 <code>10~19</code></td>
+<td class="align-left"><code>basis_n_bucket=n_10_19</code>는 전체적으로는 기준 후보보다 좋지만 p95_APE가 높게 남음</td>
+<td class="align-left">표본 수 <code>10~19</code> 구간의 shrinkage 강도와 fallback 우선순위 재검증</td>
+</tr>
+<tr>
+<td class="align-left">작은 크기 + 표본 수 <code>10~19</code></td>
+<td class="align-left"><code>size00 + n_10_19</code>는 MdAPE <code>0.2320</code>, MAPE <code>0.4923</code>, p95 <code>1.4874</code>로 위험도가 큼</td>
+<td class="align-left">작은 작품에서 기준가 영향도를 줄이거나 보수형 fallback 적용</td>
+</tr>
+<tr>
+<td class="align-left">기준가 IQR 중간/높음</td>
+<td class="align-left"><code>iqr_mid</code> 구간은 MAPE <code>0.4463</code>, p95 <code>1.4109</code>로 큰 오차 위험이 큼</td>
+<td class="align-left">IQR이 큰 구간은 기준가 계수 축소 또는 p95 방어 cap 적용</td>
+</tr>
+<tr>
+<td class="align-left">후보 간 gap 양수</td>
+<td class="align-left"><code>ppv8_pos</code> 구간은 현재 후보가 70:30 기준보다 MdAPE/MAPE/p95 모두 악화됨</td>
+<td class="align-left">후보 gap이 큰 구간에 current_70_30 또는 보수형 후보로 routing 검증</td>
+</tr>
+<tr>
+<td class="align-left">기준가와 현재 후보 불일치</td>
+<td class="align-left"><code>basis_current_disagreement</code> 구간은 p95가 <code>1.0770</code> 수준으로 높음</td>
+<td class="align-left">기준가-Huber 방향을 그대로 반영하지 말고 gap별 cap/strength 분리</td>
+</tr>
+<tr>
+<td class="align-left">작가 전체 fallback</td>
+<td class="align-left"><code>artist_overall</code> 구간은 p95가 기준 후보보다 악화되는 구간이 있음</td>
+<td class="align-left">작가 전체 기준가 fallback의 신뢰도별 계수 조정 또는 하향 보정 후보 검증</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF13은 새 보정 후보를 채택하지 않는 진단 실험임.</li>
+<li>fixed test를 보고 구간 규칙을 만든 것이 아니라 validation 위험 구간을 다음 실험 후보로 정리함.</li>
+<li>현재 후보는 fixed test <code>0.1388 / 0.2730 / 0.8064</code>, 0604 <code>0.2731 / 0.3744 / 0.9835</code>로 기존 70:30 대비 개선을 유지함.</li>
+<li>다음 HCOEF 실험은 위 위험 구간에 한정해 shrinkage, fallback, routing, cap/strength를 OOF 기준으로 비교하는 것이 적절함.</li>
+</ul>
+<h2 id="15.-hcoef14-위험-구간-한정-보정-검증">15. HCOEF14 위험 구간 한정 보정 검증</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보 유형</th>
+<th class="align-left">적용 방식</th>
+<th class="align-left">fixed test 결과</th>
+<th class="align-left">반복 OOF 판단</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Huber 보정폭 축소</td>
+<td class="align-left">IQR 중간/높음, 표본 수 <code>10~19</code>, 핵심 위험 구간에서 Huber 잔차 보정폭을 줄임</td>
+<td class="align-left">최상위 fixed test <code>0.1384 / 0.2731 / 0.8047</code></td>
+<td class="align-left">all3 gate 통과 <code>0</code>개</td>
+<td class="align-left">큰 오차 p95는 아주 작게 낮출 수 있지만 반복 안정성이 없음</td>
+</tr>
+<tr>
+<td class="align-left">70:30 기준 routing</td>
+<td class="align-left">위험 구간을 <code>current_70_30</code> 쪽으로 일부 되돌림</td>
+<td class="align-left">일부 MdAPE/MAPE 소폭 개선 또는 p95 악화</td>
+<td class="align-left">all3 gate 통과 <code>0</code>개</td>
+<td class="align-left">단순 되돌림은 HCOEF3의 장점을 깎거나 p95를 다시 악화시킴</td>
+</tr>
+<tr>
+<td class="align-left">segment residual 중앙값 보정</td>
+<td class="align-left">위험 구간별 validation train residual 중앙값을 작은 cap/strength로 적용</td>
+<td class="align-left">일부 후보 fixed p95 <code>0.8055~0.8062</code></td>
+<td class="align-left">all3 gate 통과 <code>0</code>개</td>
+<td class="align-left">test-only 소폭 개선 신호는 있으나 fold가 바뀌면 재현되지 않음</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF14는 HCOEF13에서 찾은 위험 구간을 실제 보정 후보로 바꾼 검증 실험임.</li>
+<li>보정값은 validation 전체나 test를 보고 만든 것이 아니라 각 train fold 안에서만 계산함.</li>
+<li>fixed test에서는 <code>hcoef14_shrink_iqr_mid_high_keep050</code>이 p95_APE를 <code>0.8064</code>에서 <code>0.8047</code>로 낮췄지만 MAPE는 <code>0.2730</code>에서 <code>0.2731</code>로 소폭 악화됨.</li>
+<li>반복 OOF에서는 row/artist 양쪽 모두에서 all3 개선 gate를 통과한 후보가 없음.</li>
+<li>따라서 HCOEF14 결과는 “위험 구간 보정은 더 세밀하게 만들 수 있으나, 현재 데이터에서는 운영 후보로 채택할 만큼 안정적이지 않다”로 해석함.</li>
+<li>fixed test만 보고 후보를 바꾸면 과적합 가능성이 크므로 <code>hcoef2_size_reliability_cap005_s050</code> 유지 판단이 맞음.</li>
+<li>다음 HCOEF 계열은 같은 위험 구간 보정을 반복하기보다 최신 라벨 stress test, 서비스 feature pipeline 통합 검증, 또는 별도 risk/quantile 모델 결합으로 넘어가는 것이 더 적절함.</li>
+</ul>
+<h2 id="16.-hcoef15-최신-라벨-stress-test">16. HCOEF15 최신 라벨 stress test</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">0604 MdAPE/MAPE/p95</th>
+<th class="align-right">HCOEF 안정 후보 대비</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>current_70_30</code></td>
+<td class="align-right"><code>0.2779 / 0.3774 / 0.9871</code></td>
+<td class="align-right">기준보다 악화</td>
+<td class="align-left">기존 서비스 v0.1 기준 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-right"><code>0.2731 / 0.3744 / 0.9835</code></td>
+<td class="align-right">기준 후보</td>
+<td class="align-left">기존 70:30 대비 개선 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef14_seg_iqr_cap002_s025</code></td>
+<td class="align-right"><code>0.2731 / 0.3741 / 0.9834</code></td>
+<td class="align-right">MAPE/p95 극소 개선</td>
+<td class="align-left">반복 OOF gate 미통과라 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef14_shrink_iqr_mid_high_keep050</code></td>
+<td class="align-right"><code>0.2734 / 0.3748 / 0.9833</code></td>
+<td class="align-right">p95만 극소 개선</td>
+<td class="align-left">반복 OOF gate 미통과라 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>service_primary_ppv8_operational</code></td>
+<td class="align-right"><code>0.2298 / 0.3359 / 0.9273</code></td>
+<td class="align-right">0604에서는 크게 개선</td>
+<td class="align-left">OOF/fixed test 후보가 아니므로 다음 입력 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>pp_v2_defensive</code></td>
+<td class="align-right"><code>0.2263 / 0.3623 / 1.0902</code></td>
+<td class="align-right">MdAPE/MAPE는 좋지만 p95 악화</td>
+<td class="align-left">큰 오차 위험으로 보류</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF15는 0604 최신 라벨을 외부 stress test로 사용한 실험임.</li>
+<li>0604 라벨로 새 보정값이나 가중치를 만들지 않았음.</li>
+<li>actual price join 감사 결과 829건 모두 HCOEF 연구 파일과 운영 평가 파일의 실제 가격이 일치함.</li>
+<li>HCOEF 안정 후보는 0604에서 <code>current_70_30</code>보다 MdAPE, MAPE, p95가 모두 낮아 기존 개선 방향을 유지함.</li>
+<li>운영 <code>service_primary_ppv8_operational</code>은 0604에서 HCOEF 안정 후보보다 MdAPE <code>-0.0433</code>, MAPE <code>-0.0385</code>, p95 <code>-0.0561</code>만큼 낮음.</li>
+<li>row bootstrap 기준 service primary의 HCOEF 안정 후보 대비 all3 개선확률은 <code>0.875</code>, artist bootstrap 기준은 <code>0.748</code>임.</li>
+<li>이 수치는 0604에서 PP-V8 운영 component가 강한 신호를 가진다는 뜻이지, HCOEF 최종 후보로 바로 채택할 수 있다는 뜻은 아님.</li>
+<li>해당 신호는 HCOEF16에서 <code>pp_v8_compact_blend_mape_guarded</code> proxy, HCOEF stable pred_log, gap, coverage tier, 표본 수를 저차원 Huber 계수 피처로 넣어 validation OOF에서 재검증함.</li>
+</ul>
+<h2 id="17.-hcoef16-pp-v8-운영-component-oof-재검증">17. HCOEF16 PP-V8 운영 component OOF 재검증</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">fixed test MdAPE/MAPE/p95</th>
+<th class="align-right">0604 MdAPE/MAPE/p95</th>
+<th class="align-left">반복 OOF 판단</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>hcoef_stable</code></td>
+<td class="align-right"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3744 / 0.9835</code></td>
+<td class="align-left">기존 통과 후보</td>
+<td class="align-left">현재 Warm 개선 후보 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>ppv8_service_proxy</code></td>
+<td class="align-right"><code>0.1632 / 0.2816 / 0.9311</code></td>
+<td class="align-right"><code>0.2298 / 0.3359 / 0.9273</code></td>
+<td class="align-left">OOF 개선 후보 아님</td>
+<td class="align-left">0604는 강하지만 fixed test 약함</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef16_stable_ppv8_blend_w010</code></td>
+<td class="align-right"><code>0.1415 / 0.2707 / 0.8308</code></td>
+<td class="align-right"><code>0.2582 / 0.3638 / 0.9784</code></td>
+<td class="align-left">row/artist all3 <code>0.00 / 0.00</code></td>
+<td class="align-left">MAPE는 일부 개선, MdAPE/p95 악화</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p25</code></td>
+<td class="align-right"><code>0.1394 / 0.2728 / 0.8091</code></td>
+<td class="align-right">0604 개선 신호</td>
+<td class="align-left">row/artist all3 <code>0.85 / 0.45</code></td>
+<td class="align-left">fixed p95 guard와 artist OOF 미통과</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF16은 HCOEF15에서 강하게 보인 PP-V8/service component를 바로 채택하지 않고, validation OOF 기준으로 다시 검증한 실험임.</li>
+<li>PP-SVC3와 PP-V8 산출물의 validation/test PP-V8 proxy는 1126건에서 최대 차이 <code>0.0</code>으로 일치함.</li>
+<li>PP-V8 proxy 단독은 0604에서는 HCOEF 안정 후보보다 좋지만 fixed test에서는 MdAPE, MAPE, p95가 모두 약함.</li>
+<li>HCOEF 안정 후보에 PP-V8을 10%만 섞으면 fixed test MAPE는 <code>0.2730</code>에서 <code>0.2707</code>로 낮아지지만, MdAPE는 <code>0.1388</code>에서 <code>0.1415</code>, p95는 <code>0.8064</code>에서 <code>0.8308</code>로 악화됨.</li>
+<li>PP-V8 gap/coverage를 Huber residual 피처로 넣은 후보는 fixed test MAPE/RMSE를 아주 작게 낮추지만 MdAPE와 p95가 악화됨.</li>
+<li>row OOF와 artist OOF를 함께 보면 운영 후보 gate를 통과한 후보가 없음.</li>
+<li>결론: PP-V8 component는 최신 라벨 stress test에서만 강한 신호로 남기고, 현재 Warm 기본 후보는 <code>hcoef2_size_reliability_cap005_s050</code>로 유지함.</li>
+</ul>
+<h2 id="18.-hcoef17-pp-v8-제한-이동-정책-검증">18. HCOEF17 PP-V8 제한 이동 정책 검증</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">validation MdAPE/MAPE/p95</th>
+<th class="align-right">fixed test MdAPE/MAPE/p95</th>
+<th class="align-right">0604 MdAPE/MAPE/p95</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>hcoef_stable</code></td>
+<td class="align-right"><code>0.1260 / 0.2082 / 0.6479</code></td>
+<td class="align-right"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3744 / 0.9835</code></td>
+<td class="align-left">현재 Warm 개선 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef17_guard_agree_gap0p05_cap0p03_w0p5</code></td>
+<td class="align-right"><code>0.1260 / 0.2085 / 0.6483</code> 수준</td>
+<td class="align-right"><code>0.1374 / 0.2735 / 0.8064</code></td>
+<td class="align-right">소폭 변화</td>
+<td class="align-left">fixed test MdAPE만 개선, validation MAPE/p95 악화</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p25</code></td>
+<td class="align-right"><code>0.1260 / 0.2083 / 0.6479</code> 수준</td>
+<td class="align-right"><code>0.1384 / 0.2729 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3739 / 0.9790</code></td>
+<td class="align-left">fixed/0604 소폭 개선, validation/bootstrap gate 미통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>ppv8_service_proxy</code></td>
+<td class="align-right"><code>0.1544 / 0.2544 / 0.8084</code></td>
+<td class="align-right"><code>0.1632 / 0.2816 / 0.9311</code></td>
+<td class="align-right"><code>0.2298 / 0.3359 / 0.9273</code></td>
+<td class="align-left">0604에서는 강하지만 validation/test 약함</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF17은 HCOEF16의 PP-V8 전체/계수 반영 실패 이후, PP-V8을 아주 제한적으로만 쓰는 정책 실험임.</li>
+<li>정책은 HCOEF 안정 후보를 기본값으로 두고, PP-V8과의 로그 예측 차이를 <code>cap</code>으로 자른 뒤 <code>weight</code>만큼만 이동함.</li>
+<li>적용 조건은 <code>abs_ppv8_stable_gap</code>, <code>svc_coverage_tier</code>, <code>svc_group_n</code>처럼 예측 시점에 알 수 있는 피처만 사용함.</li>
+<li>fixed test에서는 gap <code>0.05</code>, cap <code>0.03</code>, weight <code>0.50</code> 후보가 MdAPE를 <code>0.1388</code>에서 <code>0.1374</code>로 낮췄지만 MAPE는 <code>0.2730</code>에서 <code>0.2735</code>로 악화됨.</li>
+<li>coverage high 구간에만 적용한 후보는 fixed test <code>0.1384 / 0.2729 / 0.8064</code>, 0604 <code>0.2731 / 0.3739 / 0.9790</code>으로 매우 작은 개선을 보였지만 validation/bootstrap gate를 통과하지 못함.</li>
+<li>전체 100개 후보의 decision은 모두 <code>보류</code>임.</li>
+<li>0604에서는 PP-V8이 HCOEF 안정 후보보다 낮은 APE를 보인 샘플이 <code>433/829</code>, 즉 <code>52.2%</code>였음.</li>
+<li>다만 PP-V8이 이기는 샘플을 현재의 gap/coverage/표본 수 규칙만으로 안정적으로 구분하지 못했음.</li>
+<li>결론: PP-V8은 점 예측을 이동시키는 후보보다, 가격 범위/신뢰도/risk guard를 만드는 별도 모델 입력으로 쓰는 방향이 더 적절함.</li>
+</ul>
+<h2 id="19.-hcoef18-quantile-width-risk-guard-검증">19. HCOEF18 quantile width risk guard 검증</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">validation MdAPE/MAPE/p95</th>
+<th class="align-right">fixed test MdAPE/MAPE/p95</th>
+<th class="align-right">0604 MdAPE/MAPE/p95</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>hcoef_stable</code></td>
+<td class="align-right"><code>0.1260 / 0.2082 / 0.6479</code></td>
+<td class="align-right"><code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-right"><code>0.2731 / 0.3744 / 0.9835</code></td>
+<td class="align-left">현재 Warm 개선 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef18_qrisk_lowq_ppv8_qwidth_q50_gap0p05_cap0p03_w0p50</code></td>
+<td class="align-right"><code>0.1260 / 0.2085 / 0.6482</code> 수준</td>
+<td class="align-right"><code>0.1361 / 0.2731 / 0.8064</code></td>
+<td class="align-right">0604 변화 작음</td>
+<td class="align-left">fixed test MdAPE만 개선, validation/bootstrap gate 미통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>hcoef18_qrisk_shrink_current_qwidth_q80_cap0p03_w0p75</code></td>
+<td class="align-right"><code>0.1253 / 0.2095 / 0.6481</code></td>
+<td class="align-right"><code>0.1389 / 0.2737 / 0.8237</code></td>
+<td class="align-right"><code>0.2731 / 0.3754 / 0.9833</code></td>
+<td class="align-left">validation MdAPE만 개선, MAPE/p95 악화</td>
+</tr>
+<tr>
+<td class="align-left"><code>ppv8_service_proxy</code></td>
+<td class="align-right"><code>0.1544 / 0.2544 / 0.8084</code></td>
+<td class="align-right"><code>0.1632 / 0.2816 / 0.9311</code></td>
+<td class="align-right"><code>0.2298 / 0.3359 / 0.9273</code></td>
+<td class="align-left">0604에서는 강하지만 validation/test 약함</td>
+</tr>
+<tr>
+<td class="align-left"><code>l10_seq_full_generated_bucket</code></td>
+<td class="align-right"><code>0.1685 / 0.2981 / 0.8769</code></td>
+<td class="align-right"><code>0.1743 / 0.3265 / 0.9818</code></td>
+<td class="align-right">운영 0604 component로만 확인</td>
+<td class="align-left">단독 점 예측 후보로는 약함</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF18은 PP-L10의 <code>quantile_width = q90_log - q10_log</code>를 HCOEF 후보에 붙인 실험임.</li>
+<li>quantile width 경계는 validation 분포에서만 계산함.</li>
+<li>사용한 validation 경계는 q33 <code>1.2116</code>, q50 <code>1.3780</code>, q66 <code>1.5114</code>, q80 <code>1.7065</code>임.</li>
+<li>low quantile width 구간은 quantile 모델이 가격 범위를 좁게 본 구간임.</li>
+<li>high quantile width 구간은 quantile 모델이 가격 범위를 넓게 본 구간임.</li>
+<li>low quantile width + PP-V8 gap small 후보는 fixed test MdAPE를 <code>0.1361</code>까지 낮췄지만 MAPE가 <code>0.2731~0.2732</code>로 HCOEF 안정 후보 <code>0.2730</code>보다 소폭 악화됨.</li>
+<li>high quantile width shrink 후보는 validation MdAPE를 소폭 낮췄지만 validation MAPE/p95와 fixed test p95가 악화됨.</li>
+<li>validation row/artist bootstrap all3 개선확률이 기준 <code>0.90</code>에 크게 못 미쳐 전체 후보 101개가 모두 보류됨.</li>
+<li>결론: quantile width는 HCOEF 점 예측을 직접 움직이는 후보 선택 기준으로는 아직 약함.</li>
+<li>다만 quantile width는 예측 가격 범위, 신뢰도 등급, 위험 경고를 만들기 위한 별도 서비스 표시 피처로는 유지 가치가 있음.</li>
+</ul>
+<h2 id="20.-hcoef19-운영-피처-파이프라인-재현성-감사">20. HCOEF19 운영 피처 파이프라인 재현성 감사</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">감사 항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">연구 <code>svc_numeric_seed_mean</code> vs 운영 <code>svc_numeric_seed_mean_pred_log</code></td>
+<td class="align-left">829건 로그 차이 <code>0.0</code></td>
+<td class="align-left">유사 작품 기반 가격 component가 연구/운영에서 동일함</td>
+</tr>
+<tr>
+<td class="align-left">연구 <code>ppv8_service_proxy</code> vs 운영 <code>pp_v8_compact_blend_mape_guarded_pred_log</code></td>
+<td class="align-left">829건 로그 차이 <code>0.0</code></td>
+<td class="align-left">HCOEF16~18에서 쓴 PP-V8 proxy와 운영 PP-V8 component가 동일함</td>
+</tr>
+<tr>
+<td class="align-left">연구 <code>current_70_30</code> vs 운영 <code>v01_operational_pred_log</code></td>
+<td class="align-left">829건 로그 차이 <code>0.0</code></td>
+<td class="align-left">보고서 기준 70:30 후보가 운영 산출물과 동일하게 재현됨</td>
+</tr>
+<tr>
+<td class="align-left">연구 <code>l10_seq_pred_log</code> vs 운영 <code>l10_generated_bucket_seq_pred_log</code></td>
+<td class="align-left">829건 로그 차이 <code>0.0</code></td>
+<td class="align-left">Quantile-Huber-CatBoost 순차 component가 동일함</td>
+</tr>
+<tr>
+<td class="align-left">연구 <code>quantile_width</code> vs 운영 <code>l10_quantile_width</code></td>
+<td class="align-left">829건 로그 차이 <code>0.0</code></td>
+<td class="align-left">HCOEF18의 quantile width 해석을 운영 산출물에도 그대로 연결 가능함</td>
+</tr>
+<tr>
+<td class="align-left">운영 공식 검증</td>
+<td class="align-left">모두 통과</td>
+<td class="align-left"><code>ppv8 = 0.75 * pp_v2 + 0.25 * l10</code>, <code>v01 = 0.70 * svc + 0.30 * ppv8</code>, <code>service_primary = ppv8</code> 일치</td>
+</tr>
+<tr>
+<td class="align-left">운영 Warm 입력 피처 schema</td>
+<td class="align-left">필수 피처 누락 <code>0</code>개</td>
+<td class="align-left">다음 실험에서 운영 피처 생성 차이를 별도 장애물로 보지 않아도 됨</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF19는 새 점 예측 후보를 만드는 실험이 아님.</li>
+<li>목적은 HCOEF16~18에서 쓴 연구 component와 실제 서비스 v0.1 component가 같은 값인지 확인하는 것임.</li>
+<li>0604 공통 Warm 829건에서 연구 산출물과 운영 산출물의 핵심 component가 모두 일치함.</li>
+<li>따라서 HCOEF16~18의 결론은 운영 산출물 기준에서도 동일하게 해석할 수 있음.</li>
+<li>운영 <code>service_primary</code>는 현재 <code>ppv8_compact_blend_mape_guarded</code>이고, 보고서용 70:30 후보는 <code>v01_operational</code>로 함께 저장됨.</li>
+<li>0604에서는 운영 PP-V8/service primary가 <code>0.2298 / 0.3359 / 0.9273</code>으로 HCOEF 안정 후보보다 좋지만, HCOEF16~18의 OOF/fixed test 기준을 통과하지 못했으므로 기본 후보 교체 근거로 쓰지 않음.</li>
+<li>HCOEF19 결과상 이후 HCOEF20~HCOEF38에서는 column mismatch 걱정 없이 quantile width 기반 가격 범위/신뢰도 정책, 저차원 Huber 계수 재탐색, 가변 기준가 신뢰도 보정, 목적별 라우팅, 남은 오차 원인 분석, 위험 완화 기준가 생성, 보수적 cap guard, low-risk fallback, 반복 split/artist holdout 재검증, risk Huber shrinkage, OOF Huber meta 계수 결합, validation-consensus segment gate, p95-neutral 방향 일치 미세 보정, ultra-micro p95-first 보정, 기준가 재탐색, low-risk routing, 확장 반복 검증, stricter routing을 진행할 수 있었음.</li>
+</ul>
+<h2 id="21.-hcoef20-운영-component-기반-저차원-huber-재탐색">21. HCOEF20 운영 component 기반 저차원 Huber 재탐색</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기준 후보</td>
+<td class="align-left"><code>hcoef_stable</code> fixed test <code>0.1388 / 0.2730 / 0.8064</code></td>
+<td class="align-left">현재 넘겨야 할 Warm 개선 후보</td>
+</tr>
+<tr>
+<td class="align-left">최소 비교 기준</td>
+<td class="align-left"><code>current_70_30</code> fixed test <code>0.1405 / 0.2748 / 0.8331</code></td>
+<td class="align-left">HCOEF 계열 이전 서비스 v0.1 기준 후보</td>
+</tr>
+<tr>
+<td class="align-left">상위 OOF 후보</td>
+<td class="align-left"><code>hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p02_s0p25</code></td>
+<td class="align-left">component gap + quantile width + 표본 수 신뢰도를 Huber 잔차 피처로 사용</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 validation row OOF</td>
+<td class="align-left"><code>0.1263 / 0.2081 / 0.6409</code></td>
+<td class="align-left">HCOEF 안정 후보 대비 p95는 낮아지는 신호</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 validation artist OOF</td>
+<td class="align-left"><code>0.1263 / 0.2080 / 0.6408</code></td>
+<td class="align-left">작가 단위 OOF에서도 비슷한 방향</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 fixed test</td>
+<td class="align-left"><code>0.1388 / 0.2727 / 0.8089</code></td>
+<td class="align-left">MAPE는 소폭 개선, p95는 기준 <code>0.8064</code>보다 악화</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 0604 stress</td>
+<td class="align-left"><code>0.2765 / 0.3736 / 0.9835</code></td>
+<td class="align-left">MAPE는 소폭 개선, MdAPE는 악화</td>
+</tr>
+<tr>
+<td class="align-left">bootstrap all3 최대</td>
+<td class="align-left">약 <code>0.43</code></td>
+<td class="align-left">운영 후보 기준 <code>0.90</code>에 크게 못 미침</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF20은 HCOEF19에서 검증된 운영 component만 사용해 저차원 Huber/Ridge 잔차 후보를 만들었음.</li>
+<li>사용 축은 <code>current_70_30</code>, <code>ppv8_service_proxy</code>, <code>svc_numeric_seed_mean</code>, <code>l10_seq_pred_log</code>, <code>hcoef_stable</code>, <code>quantile_width</code>, <code>l10_price_range_ratio</code>, <code>svc_group_n_log</code>, <code>coverage_numeric</code>, 후보 간 gap임.</li>
+<li>상위 후보의 계수 방향은 대체로 component 간 gap과 예측값 spread가 커질 때 보정폭을 줄이는 방향임.</li>
+<li><code>quantile_width</code> 계수는 일부 후보에서 양수, <code>l10_price_range_ratio</code> 계수는 음수로 나타나 불확실성 피처가 단순 가격 상승/하락 피처가 아니라 잔차 방향을 보조하는 역할임을 보여줌.</li>
+<li>다만 fixed test p95가 기준보다 소폭 악화되고 bootstrap all3 확률이 낮아 새 운영 점 예측 후보로는 채택하지 않음.</li>
+<li>결론: HCOEF 안정 후보는 유지하고, HCOEF20 후보는 OOF 개선 신호가 있는 연구 후보로만 보류함.</li>
+</ul>
+<h3 id="21.1-quantile-width-가격-범위-신뢰도-정책">21.1 Quantile Width 가격 범위/신뢰도 정책</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">split</th>
+<th class="align-left">tier</th>
+<th class="align-right">N</th>
+<th class="align-right">q10~q90 포함률</th>
+<th class="align-right">stable MdAPE/MAPE/p95</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">validation</td>
+<td class="align-left">high</td>
+<td class="align-right">34</td>
+<td class="align-right"><code>0.9118</code></td>
+<td class="align-right"><code>0.0692 / 0.1104 / 0.3019</code></td>
+<td class="align-left">신뢰도 높은 구간은 실제로 오차가 작음</td>
+</tr>
+<tr>
+<td class="align-left">validation</td>
+<td class="align-left">medium</td>
+<td class="align-right">119</td>
+<td class="align-right"><code>0.8487</code></td>
+<td class="align-right"><code>0.1194 / 0.1991 / 0.6188</code></td>
+<td class="align-left">중간 신뢰 구간</td>
+</tr>
+<tr>
+<td class="align-left">validation</td>
+<td class="align-left">low</td>
+<td class="align-right">366</td>
+<td class="align-right"><code>0.8197</code></td>
+<td class="align-right"><code>0.1292 / 0.2203 / 0.6496</code></td>
+<td class="align-left">큰 오차율이 높음</td>
+</tr>
+<tr>
+<td class="align-left">test</td>
+<td class="align-left">high</td>
+<td class="align-right">44</td>
+<td class="align-right"><code>0.8636</code></td>
+<td class="align-right"><code>0.1148 / 0.1772 / 0.4927</code></td>
+<td class="align-left">test에서도 high tier는 상대적으로 안정</td>
+</tr>
+<tr>
+<td class="align-left">test</td>
+<td class="align-left">medium</td>
+<td class="align-right">127</td>
+<td class="align-right"><code>0.6929</code></td>
+<td class="align-right"><code>0.1118 / 0.1978 / 0.5178</code></td>
+<td class="align-left">포함률은 낮지만 오차는 낮은 편</td>
+</tr>
+<tr>
+<td class="align-left">test</td>
+<td class="align-left">low</td>
+<td class="align-right">436</td>
+<td class="align-right"><code>0.7982</code></td>
+<td class="align-right"><code>0.1573 / 0.3045 / 1.0320</code></td>
+<td class="align-left">low tier는 p95와 큰 오차율이 높음</td>
+</tr>
+<tr>
+<td class="align-left">0604</td>
+<td class="align-left">high</td>
+<td class="align-right">26</td>
+<td class="align-right"><code>0.6538</code></td>
+<td class="align-right"><code>0.2234 / 0.3580 / 1.0017</code></td>
+<td class="align-left">0604에서는 표본 수가 작아 불안정</td>
+</tr>
+<tr>
+<td class="align-left">0604</td>
+<td class="align-left">medium</td>
+<td class="align-right">148</td>
+<td class="align-right"><code>0.9054</code></td>
+<td class="align-right"><code>0.2374 / 0.3431 / 1.0134</code></td>
+<td class="align-left">0604에서는 medium tier가 포함률이 높음</td>
+</tr>
+<tr>
+<td class="align-left">0604</td>
+<td class="align-left">low</td>
+<td class="align-right">655</td>
+<td class="align-right"><code>0.8321</code></td>
+<td class="align-right"><code>0.3032 / 0.3821 / 0.9788</code></td>
+<td class="align-left">0604 low tier는 중앙 오차가 큼</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF20의 신뢰도 tier는 validation에서만 정한 <code>quantile_width</code> 경계와 유사 표본 수를 사용함.</li>
+<li>high tier는 <code>quantile_width &lt;= validation q33</code>이고 <code>svc_group_n &gt;= 20</code>인 경우임.</li>
+<li>medium tier는 <code>quantile_width &lt;= validation q66</code>이고 <code>svc_group_n &gt;= 10</code>인 경우임.</li>
+<li>나머지는 low tier임.</li>
+<li>이 정책은 점 예측값을 바꾸기 위한 후보가 아님.</li>
+<li>서비스 화면에서 가격 범위, 신뢰도, 주의 문구를 다르게 보여주기 위한 후보임.</li>
+<li>fixed test 기준 low tier의 p95가 <code>1.0320</code>으로 높아, low tier에는 가격 범위를 넓게 보여주거나 신뢰도 낮음 표시를 붙이는 것이 타당함.</li>
+</ul>
+<h2 id="22.-hcoef21-가변-기준가-신뢰도별-huber-보정">22. HCOEF21 가변 기준가 신뢰도별 Huber 보정</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기준 확인</td>
+<td class="align-left"><code>current_70_30 = 0.7 * svc_numeric_seed_mean + 0.3 * ppv8_service_proxy</code></td>
+<td class="align-left">기존 70:30 후보의 실제 구성 확인</td>
+</tr>
+<tr>
+<td class="align-left">가변 기준가 방식</td>
+<td class="align-left">SVC 비중을 표본 수, coverage, quantile width로 조정</td>
+<td class="align-left">유사 작품 기준가를 항상 70%로 고정하지 않고 신뢰도에 따라 바꿈</td>
+</tr>
+<tr>
+<td class="align-left">상위 OOF 후보</td>
+<td class="align-left"><code>hcoef21_resid_huber_adaptive_interactions_a0p001_cap0p02_s0p25</code></td>
+<td class="align-left">가변 기준가 gap과 신뢰도 상호작용을 Huber residual 피처로 사용</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 validation row OOF</td>
+<td class="align-left"><code>0.1263 / 0.2077 / 0.6409</code></td>
+<td class="align-left">HCOEF 안정 후보 대비 MAPE/p95 개선 신호</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 validation artist OOF</td>
+<td class="align-left"><code>0.1261 / 0.2078 / 0.6409</code></td>
+<td class="align-left">작가 단위 OOF에서도 유사한 개선 신호</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 fixed test</td>
+<td class="align-left"><code>0.1388 / 0.2727 / 0.8099</code></td>
+<td class="align-left">MAPE는 소폭 개선, p95는 기준 <code>0.8064</code>보다 악화</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 0604 stress</td>
+<td class="align-left"><code>0.2696 / 0.3731 / 0.9834</code></td>
+<td class="align-left">0604에서는 MdAPE/MAPE가 개선되는 신호</td>
+</tr>
+<tr>
+<td class="align-left">bootstrap all3 최대</td>
+<td class="align-left">약 <code>0.33</code></td>
+<td class="align-left">운영 후보 기준 <code>0.90</code>에 크게 못 미침</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF21은 HCOEF20과 달리 component를 단순히 다시 stack하지 않고, 고정 70:30 기준가 자체를 신뢰도별로 바꾸는 실험임.</li>
+<li>신뢰도 점수는 유사 표본 수, coverage tier, quantile width를 결합해 만듦.</li>
+<li>신뢰도가 높으면 SVC 비중을 높이고, quantile width가 크거나 component gap이 큰 경우 PP-V8 쪽으로 일부 이동함.</li>
+<li>Huber residual은 이 가변 기준가와 HCOEF 안정 후보의 차이, low/high reliability flag, quantile width extreme flag를 계수로 학습함.</li>
+<li>상위 후보의 계수는 <code>adaptive_basis_conservative_minus_stable</code>에는 음수, <code>adaptive_basis_ppv8_guard_minus_stable</code>에는 양수로 나타남.</li>
+<li>해석하면, 안정 후보보다 높은 보수형 SVC 기준가를 무조건 따라가기보다 low reliability와 qwidth extreme 구간에서는 이동폭을 제한하는 방향임.</li>
+<li><code>basis_low_reliability</code> 계수는 음수로 나타나, 유사 기준가를 믿기 어려운 구간에서 가격을 무리하게 올리지 않는 방향을 학습함.</li>
+<li>다만 fixed test p95가 안정 후보보다 악화되고 bootstrap all3 확률이 낮아 운영 점 예측 후보로 채택하지 않음.</li>
+<li>결론: 가변 기준가는 Huber가 설명할 수 있는 피처 구조로는 유효하지만, 현재 split에서는 점 예측 기본값을 바꿀 만큼 안정적이지 않음.</li>
+</ul>
+<h2 id="23.-hcoef22-목적별-라우팅-신뢰도-정책-검증">23. HCOEF22 목적별 라우팅/신뢰도 정책 검증</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">라우팅 방식</td>
+<td class="align-left">validation row/artist OOF에서 동시에 개선되는 segment에만 후보 적용</td>
+<td class="align-left">fixed test나 0604 residual로 구간을 고르지 않음</td>
+</tr>
+<tr>
+<td class="align-left">후보군</td>
+<td class="align-left">HCOEF20~21 OOF 개선 후보 + HCOEF 안정 후보</td>
+<td class="align-left">이미 검증된 후보를 목적별로 제한 적용</td>
+</tr>
+<tr>
+<td class="align-left"><code>mape_guard</code> validation row OOF</td>
+<td class="align-left"><code>0.1250 / 0.2068 / 0.6394</code></td>
+<td class="align-left">HCOEF 안정 후보 <code>0.1260 / 0.2082 / 0.6479</code>보다 개선</td>
+</tr>
+<tr>
+<td class="align-left"><code>mape_guard</code> validation artist OOF</td>
+<td class="align-left"><code>0.1250 / 0.2068 / 0.6397</code></td>
+<td class="align-left">작가 단위 OOF에서도 개선</td>
+</tr>
+<tr>
+<td class="align-left"><code>mape_guard</code> fixed test</td>
+<td class="align-left"><code>0.1448 / 0.2726 / 0.8164</code></td>
+<td class="align-left">MAPE는 소폭 개선되지만 MdAPE/p95가 기준보다 악화</td>
+</tr>
+<tr>
+<td class="align-left"><code>mape_guard</code> 0604 stress</td>
+<td class="align-left"><code>0.2672 / 0.3694 / 0.9790</code></td>
+<td class="align-left">최신 라벨 stress에서는 개선 신호</td>
+</tr>
+<tr>
+<td class="align-left">bootstrap</td>
+<td class="align-left">row any2 <code>0.8133</code>, artist any2 <code>0.8467</code>, all3는 <code>0.42/0.33</code></td>
+<td class="align-left">2개 지표 개선 가능성은 있으나 운영 all3 gate 미달</td>
+</tr>
+<tr>
+<td class="align-left">range confidence high tier</td>
+<td class="align-left">fixed test p95 <code>0.4927</code></td>
+<td class="align-left">high tier는 실제로 큰 오차율이 낮음</td>
+</tr>
+<tr>
+<td class="align-left">range confidence low tier</td>
+<td class="align-left">fixed test p95 <code>1.7126</code></td>
+<td class="align-left">low tier는 가격 범위를 넓게 보여야 하는 위험 구간</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF22는 새 Huber 계수를 더 추가한 실험이 아니라, 이미 나온 후보를 “어느 구간에만 쓸 수 있는지” 검증한 실험임.</li>
+<li>validation OOF 기준으로는 라우팅이 효과가 있었지만, fixed test에서 MdAPE와 p95가 악화되어 운영 기본 후보로 채택하지 않음.</li>
+<li>0604에서는 라우팅 후보가 좋아 보이지만, 0604는 stress test이므로 이 결과만으로 후보를 승격하지 않음.</li>
+<li>이 결과는 HCOEF 내부에서 더 복잡한 점 예측 라우팅을 추가하는 것보다, HCOEF 안정 후보를 유지하고 신뢰도/범위 정책을 분리하는 편이 안전하다는 근거임.</li>
+<li>quantile width와 유사 표본 수를 결합한 tier는 점 예측값을 바꾸기보다 서비스에서 <code>신뢰도 낮음</code>, <code>가격 범위 넓음</code>, <code>추가 검수 필요</code> 표시를 붙이는 데 적합함.</li>
+</ul>
+<h2 id="24.-hcoef23-남은-오차-원인-분석">24. HCOEF23 남은 오차 원인 분석</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기준 후보</td>
+<td class="align-left"><code>hcoef_stable</code></td>
+<td class="align-left">fixed test <code>0.1388 / 0.2730 / 0.8064</code>, 0604 <code>0.2731 / 0.3744 / 0.9835</code> 재현</td>
+</tr>
+<tr>
+<td class="align-left">비교 기준</td>
+<td class="align-left"><code>current_70_30</code></td>
+<td class="align-left">HCOEF 안정 후보가 validation/test/0604에서 기존 70:30보다 우위 유지</td>
+</tr>
+<tr>
+<td class="align-left">1순위 위험 구간</td>
+<td class="align-left"><code>qwidth_extreme</code></td>
+<td class="align-left">validation MAPE +<code>0.0874</code>, p95 +<code>0.3066</code>; fixed test에서도 p95 +<code>1.1304</code></td>
+</tr>
+<tr>
+<td class="align-left">2순위 위험 구간</td>
+<td class="align-left"><code>gap_020_plus</code></td>
+<td class="align-left">validation MAPE +<code>0.0825</code>, p95 +<code>0.2198</code>; fixed test에서도 p95 +<code>0.8870</code></td>
+</tr>
+<tr>
+<td class="align-left">표본 수 위험 구간</td>
+<td class="align-left"><code>svc_group_n_band=n_10_19</code></td>
+<td class="align-left">validation p95 +<code>0.3015</code>; fixed test p95 +<code>0.4992</code></td>
+</tr>
+<tr>
+<td class="align-left">기준가 level 위험 구간</td>
+<td class="align-left"><code>svc_group_level=artist</code></td>
+<td class="align-left">작가 전체 fallback 구간에서 p95 위험이 반복됨</td>
+</tr>
+<tr>
+<td class="align-left">예측 후보 간 불일치</td>
+<td class="align-left"><code>pred_spread_band=spread_extreme</code></td>
+<td class="align-left">후보 간 예측 차이가 큰 구간은 validation/fixed/0604에서 평균 오차가 커짐</td>
+</tr>
+<tr>
+<td class="align-left">잔차 크기 계수</td>
+<td class="align-left"><code>quantile_width</code>, <code>stable_ppv8_gap_abs</code>, <code>gap_020_plus</code></td>
+<td class="align-left">Huber 안정 후보의 남은 오차를 키우는 설명 축</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF23은 새 보정값을 test나 0604에서 고른 실험이 아님.</li>
+<li>validation row OOF와 artist OOF에서 동시에 나쁜 구간을 먼저 찾고, fixed test와 0604는 확인용으로만 사용함.</li>
+<li><code>qwidth_extreme</code>은 모델이 가격 범위를 넓게 보는 구간이므로, 점 예측을 크게 움직이기보다 신뢰도/범위 표시 또는 보수적 cap 기준으로 쓰는 것이 적절함.</li>
+<li><code>gap_020_plus</code>와 <code>pred_spread_extreme</code>은 HCOEF 안정 후보, PP-V8, SVC 등 후보 예측값 사이의 의견 차이가 큰 구간임.</li>
+<li>이 구간에서 한 후보를 강하게 선택하면 test에 맞춘 라우팅이 되기 쉬우므로, HCOEF24~38에서는 기준가 fallback, Huber 잔차 보정 cap 축소, low-risk hard fallback, 반복 split/artist holdout 재검증, risk Huber shrinkage, OOF Huber meta 계수 결합, validation-consensus segment gate, p95-neutral 방향 일치 미세 보정, ultra-micro p95-first 보정, 기준가 재탐색, low-risk routing, 확장 반복 검증, stricter routing을 함께 확인함.</li>
+<li><code>svc_group_n_band=n_10_19</code>는 표본이 아주 적지는 않지만 충분히 안정적이지 않은 중간 표본 구간임.</li>
+<li>따라서 다음 기준가 생성 실험은 표본 수가 많은 구간에 기준가 계수를 더 크게 주고, 중간/불확실 구간에서는 HCOEF 안정 후보 쪽으로 shrink하는 구조가 맞음.</li>
+</ul>
+<h2 id="25.-hcoef24-위험-완화-기준가-생성">25. HCOEF24 위험 완화 기준가 생성</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실험 목적</td>
+<td class="align-left">HCOEF23 위험 구간에서 기준가 이동을 줄임</td>
+<td class="align-left">loose basis-Huber의 MdAPE/MAPE 장점을 살리되 p95 악화를 막는 시도</td>
+</tr>
+<tr>
+<td class="align-left">기준 후보</td>
+<td class="align-left"><code>hcoef_stable</code></td>
+<td class="align-left">fixed test <code>0.1388 / 0.2730 / 0.8064</code></td>
+</tr>
+<tr>
+<td class="align-left">상위 목적별 후보</td>
+<td class="align-left"><code>hcoef24_default_risk_basis_k8_cap0p05_s0p75</code></td>
+<td class="align-left">fixed test <code>0.1383 / 0.2729 / 0.8079</code></td>
+</tr>
+<tr>
+<td class="align-left">validation OOF</td>
+<td class="align-left">row/artist <code>0.1245 / 0.2082 / 0.6484</code></td>
+<td class="align-left">MdAPE는 개선되지만 p95는 기준보다 소폭 악화</td>
+</tr>
+<tr>
+<td class="align-left">0604 stress</td>
+<td class="align-left"><code>0.2734 / 0.3736 / 0.9835</code></td>
+<td class="align-left">MAPE는 소폭 개선, p95는 기준과 같은 수준</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">MAPE 특화 후보</td>
+<td class="align-left">fixed p95 guard 미통과, bootstrap all3 gate 미통과</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF24는 HCOEF4/5의 loose 기준가를 그대로 반복하지 않고, HCOEF23에서 확인한 <code>qwidth_extreme</code>, <code>gap_020_plus</code>, <code>n_10_19</code>, <code>spread_extreme</code> 위험 신호를 기준으로 기준가 이동을 줄임.</li>
+<li><code>risk_shrunk_basis</code>는 유사 작품 기준가를 바로 따르지 않고, 표본 수와 위험도에 따라 <code>hcoef_stable</code> 쪽으로 되돌린 기준가임.</li>
+<li>상위 후보는 MdAPE/MAPE를 낮췄지만 fixed test p95가 <code>0.8064</code>에서 <code>0.8079</code>로 악화됨.</li>
+<li>direct Huber capped 후보는 validation과 0604에서 더 강한 개선 신호가 있었지만 fixed test p95가 더 크게 악화되어 기본 후보로 부적합함.</li>
+<li>결론: 기준가 생성 방향은 유효하지만, HCOEF24 수준의 이동폭은 아직 p95 방어에 부족함.</li>
+</ul>
+<h2 id="26.-hcoef25-보수적-계수-기준가-보정">26. HCOEF25 보수적 계수/기준가 보정</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실험 목적</td>
+<td class="align-left">HCOEF24의 MAPE 개선 신호를 더 작은 cap과 risk guard로 안정화</td>
+<td class="align-left">p95 guard 통과가 핵심</td>
+</tr>
+<tr>
+<td class="align-left">기준 후보</td>
+<td class="align-left"><code>hcoef_stable</code></td>
+<td class="align-left">fixed test <code>0.1388 / 0.2730 / 0.8064</code></td>
+</tr>
+<tr>
+<td class="align-left">상위 목적별 후보</td>
+<td class="align-left"><code>hcoef25_resid_huber_strict_conservative_guard_core_a0p001_cap0p01_s0p25</code></td>
+<td class="align-left">fixed test <code>0.1366 / 0.2727 / 0.8080</code></td>
+</tr>
+<tr>
+<td class="align-left">validation OOF</td>
+<td class="align-left">row <code>0.1252 / 0.2080 / 0.6440</code>, artist <code>0.1252 / 0.2080 / 0.6453</code></td>
+<td class="align-left">OOF에서는 3지표 개선</td>
+</tr>
+<tr>
+<td class="align-left">0604 stress</td>
+<td class="align-left"><code>0.2726 / 0.3743 / 0.9835</code></td>
+<td class="align-left">MdAPE/MAPE는 소폭 개선, p95는 기준보다 아주 작게 악화</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">MAPE 특화 후보</td>
+<td class="align-left">fixed p95가 <code>+0.0016</code> 악화되어 운영 기본 후보 미채택</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF25는 <code>lowrisk_only</code>, <code>no_extreme</code>, <code>conservative</code>, <code>soft</code> guard를 만들어 HCOEF24 기준가 이동을 더 작게 제한함.</li>
+<li>cap은 <code>0.01~0.03</code>, strength는 <code>0.10~0.50</code> 범위로 낮춰 p95 방어를 우선함.</li>
+<li>상위 후보의 계수에서는 <code>hcoef23_risk_score</code>가 음수 방향으로 나타나 위험 신호가 많을수록 보정 이동을 줄이는 구조가 확인됨.</li>
+<li><code>svc_group_n_log</code>는 양수 방향으로 나타나 유사 표본 수가 많을수록 잔차 보정 신뢰도가 올라가는 방향을 보임.</li>
+<li>다만 더 보수적으로 줄여도 fixed p95가 <code>0.8064</code> 아래로 내려가지 못했으므로, 현재 기준으로는 운영 기본 후보가 아님.</li>
+<li>결론: HCOEF25는 MAPE/MdAPE 개선 가능성을 다시 확인했지만 p95 병목을 해결하지 못했으므로 <code>hcoef_stable</code>을 계속 기준 후보로 유지함.</li>
+</ul>
+<h2 id="27.-hcoef26-low-risk-적용-p95-fallback">27. HCOEF26 low-risk 적용/p95 fallback</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실험 목적</td>
+<td class="align-left">HCOEF25 후보 이동분을 안전 구간에만 제한 적용</td>
+<td class="align-left">p95를 방어하면서 MdAPE/MAPE 개선 신호를 살리는지 확인</td>
+</tr>
+<tr>
+<td class="align-left">기준 후보</td>
+<td class="align-left"><code>hcoef_stable</code></td>
+<td class="align-left">fixed test <code>0.1388 / 0.2730 / 0.8064</code>, 0604 <code>0.2731 / 0.3744 / 0.9835</code></td>
+</tr>
+<tr>
+<td class="align-left">상위 목적별 후보</td>
+<td class="align-left"><code>hcoef26_h25_rh_strict_conservative_guard_core_a0p01_cap0p03_s0p25_no_extreme_reliable_cap0p0075_s1</code></td>
+<td class="align-left">fixed test <code>0.1371 / 0.2727 / 0.8064</code></td>
+</tr>
+<tr>
+<td class="align-left">validation OOF</td>
+<td class="align-left">row <code>0.1260 / 0.2082 / 0.6425</code>, artist <code>0.1260 / 0.2082 / 0.6416</code></td>
+<td class="align-left">p95는 OOF에서 개선, MdAPE/MAPE는 거의 기준 수준</td>
+</tr>
+<tr>
+<td class="align-left">0604 stress</td>
+<td class="align-left"><code>0.2731 / 0.3745 / 0.9835</code></td>
+<td class="align-left">p95는 방어, MAPE는 아주 작게 악화</td>
+</tr>
+<tr>
+<td class="align-left">적용률</td>
+<td class="align-left">fixed test <code>30.3%</code>, 0604 <code>15.4%</code></td>
+<td class="align-left">위험 구간은 <code>hcoef_stable</code>로 fallback하여 큰 오차 악화를 막음</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">반복 검증 후보</td>
+<td class="align-left">fixed p95 guard는 통과했지만 bootstrap all3 gate 미통과</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF26은 HCOEF25 후보를 전체에 적용하지 않음.</li>
+<li><code>qwidth_extreme</code>, <code>gap_020_plus</code>, <code>spread_extreme</code>, <code>hcoef23_risk_score&gt;=2</code> 같은 위험 구간은 기본적으로 <code>hcoef_stable</code>을 유지함.</li>
+<li><code>no_extreme_reliable</code>, <code>p95_defense_core</code>처럼 위험 신호가 낮고 유사 표본 수가 충분한 구간에서만 HCOEF25 후보 이동분을 적용함.</li>
+<li>이 방식은 fixed test에서 p95 악화를 막고 MdAPE/MAPE를 소폭 개선함.</li>
+<li>다만 bootstrap all3 gate가 통과되지 않아, 운영 기본 후보로 즉시 교체하기에는 재검증 근거가 부족함.</li>
+<li>결론: HCOEF26은 HCOEF25의 p95 병목을 “제한 적용”으로 완화한 첫 후보이며, HCOEF27에서 반복 split/artist holdout 재검증 대상으로 올림.</li>
+</ul>
+<h2 id="28.-hcoef27-반복-split-artist-holdout-재검증">28. HCOEF27 반복 split/artist holdout 재검증</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실험 목적</td>
+<td class="align-left">HCOEF26 상위 후보가 반복 표본에서도 안정적인지 확인</td>
+<td class="align-left">fixed test에서만 좋아진 후보를 운영 후보로 오판하지 않기 위한 재검증</td>
+</tr>
+<tr>
+<td class="align-left">후보군</td>
+<td class="align-left">baseline/component 후보 + HCOEF26 validation OOF 상위 후보 + HCOEF26 보고서 상위 후보, 총 25개</td>
+<td class="align-left">새 보정식을 만들지 않고 HCOEF26 예측값을 재사용</td>
+</tr>
+<tr>
+<td class="align-left">검증 방식</td>
+<td class="align-left">validation row OOF와 validation artist OOF에서 각각 500회 row 80% subsample, artist 80% holdout</td>
+<td class="align-left">같은 후보가 일반 표본과 작가 단위 분리 표본에서 반복적으로 개선되는지 확인</td>
+</tr>
+<tr>
+<td class="align-left">상위 fixed 확인 후보</td>
+<td class="align-left"><code>hcoef26_h25_rh_strict_conservative_guard_core_a0p01_cap0p03_s0p25_no_extreme_reliable_cap0p0075_s1</code></td>
+<td class="align-left">HCOEF26의 대표 low-risk fallback 후보</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 fixed test</td>
+<td class="align-left"><code>0.1371 / 0.2727 / 0.8064</code></td>
+<td class="align-left">MdAPE/MAPE는 <code>hcoef_stable</code>보다 개선, p95는 동일 수준 방어</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 0604 stress</td>
+<td class="align-left"><code>0.2731 / 0.3745 / 0.9835</code></td>
+<td class="align-left">p95는 방어하지만 MAPE는 아주 작게 악화</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보 반복 검증</td>
+<td class="align-left">repeated min any2 <code>0.480</code>, min all3 <code>0.108</code></td>
+<td class="align-left">운영 후보로 보기에는 반복 개선 확률이 부족</td>
+</tr>
+<tr>
+<td class="align-left">direct guarded 참고 후보</td>
+<td class="align-left">repeated any2 최대 <code>0.776~0.832</code>, all3 최대 <code>0.350~0.406</code></td>
+<td class="align-left">반복 OOF 신호는 더 강하지만 fixed test MdAPE가 <code>0.1410</code> 수준으로 악화</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">새 운영 후보 채택 없음</td>
+<td class="align-left">HCOEF26은 fixed 확인 후보/연구 후보로 유지하고 <code>hcoef_stable</code>을 Warm 개선 기준 후보로 유지</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF27은 HCOEF26의 후보를 더 많이 튜닝한 실험이 아님.</li>
+<li>HCOEF27은 이미 나온 HCOEF26 후보가 반복 표본에서도 버틸 수 있는지 확인한 검증 실험임.</li>
+<li>상위 후보는 fixed test에서 MdAPE/MAPE가 좋아지고 p95를 방어했지만, 반복 표본에서 최소 2개 지표 개선 확률이 <code>0.480</code>에 그침.</li>
+<li>세 지표를 동시에 개선할 확률은 <code>0.108</code>로 낮아 운영 기본 후보로 승격하기에는 근거가 부족함.</li>
+<li>direct guarded 후보는 반복 OOF 개선 확률이 더 높았지만 fixed test MdAPE가 기준보다 악화되어, 안정적인 운영 후보가 아니라 연구 후보로만 남김.</li>
+<li>HCOEF27 결론: HCOEF26 정책을 단순히 더 미세 조정하기보다, p95/risk 전용 모델 또는 가격 범위/신뢰도 정책과 분리해서 다루는 방향이 더 적절함.</li>
+</ul>
+<h2 id="29.-hcoef28-huber-risk-aware-shrinkage">29. HCOEF28 Huber risk-aware shrinkage</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실험 목적</td>
+<td class="align-left">큰 오차 위험도를 Huber로 예측하고 위험도가 높을수록 후보 이동폭을 줄임</td>
+<td class="align-left">HCOEF26/27의 p95·반복 검증 병목을 해결하려는 시도</td>
+</tr>
+<tr>
+<td class="align-left">risk 학습 대상</td>
+<td class="align-left"><code>abs(actual_log - hcoef_stable_log)</code></td>
+<td class="align-left">현재 안정 후보가 크게 틀리는 정도를 예측</td>
+</tr>
+<tr>
+<td class="align-left">risk 입력 피처</td>
+<td class="align-left"><code>quantile_width</code>, 후보 간 gap, <code>svc_group_n</code>, <code>hcoef23_risk_score</code>, <code>log_area</code>, 위험 flag</td>
+<td class="align-left">기준가 신뢰도와 후보 간 불일치를 선형 계수로 해석</td>
+</tr>
+<tr>
+<td class="align-left">적용식</td>
+<td class="align-left"><code>corrected_log = hcoef_stable + weight * (source_candidate - hcoef_stable)</code></td>
+<td class="align-left">위험도가 높으면 후보 이동폭을 줄이고, 위험도가 낮으면 후보 이동을 일부 허용</td>
+</tr>
+<tr>
+<td class="align-left">대표 fixed 후보</td>
+<td class="align-left"><code>hcoef28_h26_lowrisk_fixed_a0p25_f0p5_q80zero_boost0</code></td>
+<td class="align-left">HCOEF26 low-risk 후보를 risk q80 이상에서 더 줄인 후보</td>
+</tr>
+<tr>
+<td class="align-left">대표 후보 fixed test</td>
+<td class="align-left"><code>0.1372 / 0.2727 / 0.8064</code></td>
+<td class="align-left">HCOEF26 top <code>0.1371 / 0.2727 / 0.8064</code>보다 개선되지 않음</td>
+</tr>
+<tr>
+<td class="align-left">대표 후보 반복 검증</td>
+<td class="align-left">repeated min any2 <code>0.394</code>, min all3 <code>0.086</code></td>
+<td class="align-left">HCOEF26/HCOEF27 top 후보보다 반복 안정성이 약함</td>
+</tr>
+<tr>
+<td class="align-left">direct guarded shrink 후보</td>
+<td class="align-left">repeated min any2 최대 <code>0.764</code>, min all3 <code>0.328</code></td>
+<td class="align-left">반복 신호는 있으나 fixed MdAPE <code>0.1410</code>으로 기준보다 악화</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">새 운영 후보 채택 없음</td>
+<td class="align-left">risk Huber는 점 예측 이동보다 위험도/신뢰도 설명 피처로 남기는 것이 적절</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF28은 fixed test 결과를 보고 후보 이동폭을 고르지 않음.</li>
+<li>risk Huber는 validation OOF에서 현재 안정 후보의 절대 로그 오차를 학습함.</li>
+<li>계수 해석상 <code>quantile_width</code>, <code>ppv8_svc_gap_abs</code>, <code>pred_spread_numeric</code>, <code>risk_gap_020_plus</code>, <code>risk_artist_fallback</code>이 큰 오차 위험 증가 방향으로 나타남.</li>
+<li>이는 기존 HCOEF23의 위험 구간 진단과 방향이 일치함.</li>
+<li>다만 이 위험도를 이용해 점 예측 이동폭을 줄여도 반복 검증 통과 후보는 나오지 않음.</li>
+<li>결론: HCOEF28은 “큰 오차 위험을 설명하는 피처”는 확인했지만, 이를 점 예측 보정으로 바로 쓰기에는 부족함.</li>
+<li>다음에는 이 위험 피처를 점 예측 보정이 아니라 가격 범위, 신뢰도, 수동 검수 필요 여부에 연결하는 것이 더 타당함.</li>
+</ul>
+<h2 id="30.-hcoef29-oof-huber-meta-residual-계수-결합">30. HCOEF29 OOF Huber meta residual 계수 결합</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실험 목적</td>
+<td class="align-left">기존 component delta와 신뢰도/risk 피처를 Huber가 OOF로 재결합</td>
+<td class="align-left">고정 70:30 비율보다 데이터 기반 계수 결합이 안정적인지 확인</td>
+</tr>
+<tr>
+<td class="align-left">학습 target</td>
+<td class="align-left"><code>actual_log - hcoef_stable_log</code></td>
+<td class="align-left">현재 안정 후보가 남긴 잔차만 작게 보정</td>
+</tr>
+<tr>
+<td class="align-left">입력 피처</td>
+<td class="align-left"><code>current_delta</code>, <code>ppv8_delta</code>, <code>svc_delta</code>, <code>l10_delta</code>, <code>quantile_width</code>, <code>risk_norm</code>, <code>svc_group_n_log</code>, HCOEF26 후보 delta</td>
+<td class="align-left">기준가/오차 안정화/유사 작품 피처가 stable 대비 얼마나 움직여야 하는지 선형 계수로 확인</td>
+</tr>
+<tr>
+<td class="align-left">적용식</td>
+<td class="align-left"><code>corrected_log = hcoef_stable + clip(strength * HuberResidual, -cap, cap)</code></td>
+<td class="align-left">Huber가 제안한 보정값을 cap으로 제한해 과한 이동 방어</td>
+</tr>
+<tr>
+<td class="align-left">대표 반복 후보</td>
+<td class="align-left"><code>hcoef29_risk_guarded_component_s0p5_cap0p08</code></td>
+<td class="align-left">risk 피처와 component delta를 함께 사용</td>
+</tr>
+<tr>
+<td class="align-left">validation OOF</td>
+<td class="align-left">row <code>0.1242 / 0.2071 / 0.6347</code>, artist <code>0.1239 / 0.2071 / 0.6392</code></td>
+<td class="align-left">OOF에서는 <code>hcoef_stable</code>보다 MdAPE/MAPE/p95가 모두 개선</td>
+</tr>
+<tr>
+<td class="align-left">반복 검증</td>
+<td class="align-left">repeated min any2 <code>0.928</code>, min all3 <code>0.548</code></td>
+<td class="align-left">최소 2개 지표 개선 신호는 강하지만 세 지표 동시 개선은 충분하지 않음</td>
+</tr>
+<tr>
+<td class="align-left">fixed test</td>
+<td class="align-left"><code>0.1442 / 0.2718 / 0.8081</code></td>
+<td class="align-left">MAPE는 개선되지만 MdAPE와 p95가 기준보다 악화</td>
+</tr>
+<tr>
+<td class="align-left">0604 stress</td>
+<td class="align-left"><code>0.2789 / 0.3678 / 0.9446</code></td>
+<td class="align-left">MAPE/p95는 개선되지만 MdAPE는 악화</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">새 운영 후보 채택 없음</td>
+<td class="align-left">OOF에서 잘 맞는 잔차 패턴이 fixed/stress에서 그대로 유지되지 않음</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF29는 fixed test 결과를 보고 계수나 cap을 고르지 않음.</li>
+<li>Huber meta residual은 validation OOF에서만 잔차 보정식을 학습함.</li>
+<li><code>risk_guarded_component</code> 계열은 OOF에서 가장 강한 신호를 보였지만 fixed MdAPE가 <code>0.1388</code>에서 <code>0.1442</code>로 악화됨.</li>
+<li><code>all_lowdim_signal</code> 계열도 OOF 개선 신호가 있으나 fixed p95가 <code>0.8302</code> 수준으로 악화됨.</li>
+<li>결론: 현재 데이터에서는 Huber가 OOF 잔차를 너무 잘 따라가면 fixed test에서 일반화가 약해짐.</li>
+<li>HCOEF29 결과는 “component delta + risk 피처”가 설명력은 있지만, 점 예측 보정 후보로 쓰려면 더 강한 holdout 검증 또는 목적별 라우팅이 필요하다는 근거로 남김.</li>
+</ul>
+<h2 id="31.-hcoef30-validation-consensus-segment-gate">31. HCOEF30 validation-consensus segment gate</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실험 목적</td>
+<td class="align-left">HCOEF29 후보를 전체에 적용하지 않고 validation row OOF와 validation artist OOF가 동시에 개선된 segment에만 제한 적용</td>
+<td class="align-left">OOF 잔차 추종의 과적합 위험을 줄이고, 실제로 개선 신호가 반복된 구간만 쓰려는 실험</td>
+</tr>
+<tr>
+<td class="align-left">source 후보</td>
+<td class="align-left">HCOEF29 repeated 상위 후보 10개</td>
+<td class="align-left">이미 OOF 신호가 있던 후보만 재사용해 새 search 공간을 과하게 넓히지 않음</td>
+</tr>
+<tr>
+<td class="align-left">segment 선택 기준</td>
+<td class="align-left">qwidth, 표본 수, 후보 간 gap, 예측 spread, 신뢰도 level 조합</td>
+<td class="align-left">fixed test/0604를 보지 않고 validation row/artist OOF consensus로만 rule 선택</td>
+</tr>
+<tr>
+<td class="align-left">적용식</td>
+<td class="align-left"><code>corrected_log = hcoef_stable + weight * (source_candidate - hcoef_stable)</code></td>
+<td class="align-left">선택된 segment 안에서만 source 후보 방향으로 이동하고, 나머지는 <code>hcoef_stable</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left">반복 최상위 후보</td>
+<td class="align-left"><code>hcoef30_s01_all3_top5_w1</code></td>
+<td class="align-left">HCOEF29 <code>risk_guarded_component</code>를 validation-consensus segment 5개에 적용</td>
+</tr>
+<tr>
+<td class="align-left">validation OOF</td>
+<td class="align-left">row <code>0.1214 / 0.2057 / 0.6245</code>, artist <code>0.1213 / 0.2053 / 0.6321</code></td>
+<td class="align-left">HCOEF 전체 실험 중 OOF 신호는 가장 강한 편</td>
+</tr>
+<tr>
+<td class="align-left">반복 검증</td>
+<td class="align-left">repeated min any2 <code>1.000</code>, min all3 <code>0.960</code></td>
+<td class="align-left">반복 표본에서는 매우 안정적인 개선 신호</td>
+</tr>
+<tr>
+<td class="align-left">fixed test</td>
+<td class="align-left"><code>0.1402 / 0.2700 / 0.8081</code></td>
+<td class="align-left">MAPE는 개선되지만 MdAPE와 p95가 <code>hcoef_stable</code>보다 악화</td>
+</tr>
+<tr>
+<td class="align-left">p95 근접 후보</td>
+<td class="align-left"><code>hcoef30_s01_all3_top5_w0p5</code> fixed <code>0.1387 / 0.2713 / 0.8072</code></td>
+<td class="align-left">p95가 기준 <code>0.8064</code>보다 근소하게 높아 guard 미통과</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">새 운영 후보 채택 없음</td>
+<td class="align-left">segment gate로 반복 안정성은 크게 좋아졌지만 fixed p95 guard를 넘지 못함</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF30은 HCOEF29보다 과격한 보정이 아님.</li>
+<li>HCOEF30은 HCOEF29의 source 후보를 validation에서 반복 개선된 segment에만 제한 적용한 보수적 라우팅 실험임.</li>
+<li><code>hcoef30_s01_all3_top5_w1</code>은 반복 검증 수치만 보면 매우 강하지만, fixed test에서 p95가 <code>0.8081</code>로 기준 후보 <code>0.8064</code>보다 높음.</li>
+<li><code>hcoef30_s01_all3_top5_w0p5</code>는 p95 악화를 크게 줄였지만 여전히 fixed p95 guard를 아주 작게 통과하지 못함.</li>
+<li>따라서 HCOEF30은 “OOF와 반복 split에서 좋아 보이는 구간 선택도 fixed p95 병목을 완전히 해결하지 못했다”는 근거임.</li>
+<li>다음 실험에서 같은 component 이동을 더 세밀하게 반복하는 것보다, 이 segment/risk 신호를 가격 범위, 신뢰도, 수동 검수 필요 여부에 연결하는 방향이 더 타당함.</li>
+</ul>
+<h2 id="32.-hcoef31-p95-neutral-directional-micro-correction">32. HCOEF31 p95-neutral directional micro correction</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">HCOEF30의 fixed p95 병목 완화</td>
+<td class="align-left">강한 source 이동 대신 방향이 맞는 구간에만 아주 작은 보정을 적용</td>
+</tr>
+<tr>
+<td class="align-left">방향 확인</td>
+<td class="align-left"><code>actual_log - hcoef_stable</code> 중앙값과 <code>source_candidate - hcoef_stable</code> 중앙값의 부호가 validation row/artist OOF 양쪽에서 일치하는지 확인</td>
+<td class="align-left">안정 후보가 낮게 본 구간은 높이는 방향, 높게 본 구간은 낮추는 방향으로만 움직임</td>
+</tr>
+<tr>
+<td class="align-left">적용식</td>
+<td class="align-left"><code>corrected_log = hcoef_stable + clip(weight * (source_candidate - hcoef_stable), -cap, cap)</code></td>
+<td class="align-left">조건을 만족하지 않으면 <code>hcoef_stable</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left">상위 MAPE 후보</td>
+<td class="align-left"><code>hcoef31_s06_mape_dir_top3_w0p1_cap0p005</code> fixed <code>0.1382 / 0.2729 / 0.8070</code>, 0604 <code>0.2720 / 0.3744 / 0.9834</code></td>
+<td class="align-left">MdAPE/MAPE는 소폭 개선됐지만 p95가 기준 <code>0.8064</code>보다 높음</td>
+</tr>
+<tr>
+<td class="align-left">p95 근접 후보</td>
+<td class="align-left"><code>hcoef31_s06_any2_dir_top3_w0p1_cap0p005</code> fixed <code>0.1382 / 0.2730 / 0.8066</code>, repeated min any2/all3 <code>0.898 / 0.410</code></td>
+<td class="align-left">p95 악화는 거의 줄였지만 기준 후보를 넘지는 못함</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">새 운영 후보 채택 없음</td>
+<td class="align-left">방향 일치와 작은 cap만으로는 p95 병목을 넘기 어려움</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF31은 HCOEF30의 보정 강도를 더 줄인 실험임.</li>
+<li>HCOEF31은 source 후보를 전체에 적용하지 않고, validation row/artist OOF 양쪽에서 잔차 방향과 source 이동 방향이 맞는 segment에만 적용함.</li>
+<li>이 방식은 과한 보정을 막는 데는 도움이 됐지만, fixed p95가 기준 <code>0.8064</code>보다 근소하게 높아 운영 후보 기준을 통과하지 못함.</li>
+<li>repeated any2는 <code>0.88~0.90</code> 수준까지 나왔지만 repeated all3는 <code>0.39~0.41</code> 수준이라 안정 후보로 보기 부족함.</li>
+<li>결론: 같은 component 이동을 더 작게 만드는 것만으로는 충분하지 않음.</li>
+<li>다음 개선은 점 예측 이동을 계속 세분화하기보다, p95/risk 전용 모델이나 가격 범위/신뢰도 정책으로 위험 신호를 분리하는 방향이 더 적절함.</li>
+</ul>
+<h2 id="33.-hcoef32-ultra-micro-p95-first-directional-correction">33. HCOEF32 ultra-micro p95-first directional correction</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">HCOEF31의 fixed p95 근소 악화 완화</td>
+<td class="align-left">weight와 cap을 더 줄여 점 예측 이동을 거의 움직이지 않는 수준으로 제한</td>
+</tr>
+<tr>
+<td class="align-left">설정</td>
+<td class="align-left">source 후보 3개, weight <code>0.025/0.050</code>, cap <code>0.001/0.0025/0.005</code>, top_n <code>1/2</code></td>
+<td class="align-left">full grid는 비용이 커 lite grid로 반복 검증 비용 통제</td>
+</tr>
+<tr>
+<td class="align-left">p95-first 조건</td>
+<td class="align-left">validation row/artist OOF segment 양쪽에서 p95가 기준보다 나빠지지 않는 rule을 별도 목적 후보로 사용</td>
+<td class="align-left">fixed test를 보지 않고 p95 방어 후보를 먼저 좁힘</td>
+</tr>
+<tr>
+<td class="align-left">상위 fixed 확인 후보</td>
+<td class="align-left"><code>hcoef32_s03_all3_dir_top2_w0p025_cap0p001</code> fixed <code>0.1388 / 0.2729 / 0.8062</code></td>
+<td class="align-left"><code>hcoef_stable</code> fixed <code>0.1388 / 0.2730 / 0.8064</code> 대비 MAPE/p95/RMSE가 아주 작게 개선</td>
+</tr>
+<tr>
+<td class="align-left">0604 확인</td>
+<td class="align-left"><code>0.2727 / 0.3744 / 0.9834</code></td>
+<td class="align-left">0604에서도 기준보다 소폭 개선되지만 튜닝 기준은 아님</td>
+</tr>
+<tr>
+<td class="align-left">반복 검증</td>
+<td class="align-left">repeated min any2/all3 <code>0.828 / 0.306</code></td>
+<td class="align-left">any2는 참고 가능하지만 all3 안정성은 운영 후보 기준에 부족</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">fixed 확인 후보</td>
+<td class="align-left">운영 후보 즉시 채택은 보류하고 추가 반복 검증 후보로만 관리</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF32는 HCOEF31보다 더 보수적인 점 예측 이동 실험임.</li>
+<li>상위 후보는 fixed test에서 p95를 <code>0.8064</code>에서 <code>0.8062</code>로 낮췄고 MAPE/RMSE도 아주 작게 개선함.</li>
+<li>다만 MdAPE 개선폭은 사실상 0에 가깝고, repeated all3가 <code>0.306</code>이라 반복 안정성 기준에는 부족함.</li>
+<li>이 결과는 “초미세 계수 보정으로 fixed p95를 넘길 수는 있지만, 운영 후보로 쓰기에는 개선폭과 반복 안정성이 약하다”는 근거임.</li>
+<li>따라서 HCOEF32는 운영 후보 교체가 아니라 fixed 확인 후보/추가 반복 검증 후보로 관리함.</li>
+</ul>
+<h2 id="34.-hcoef33-hcoef32-extended-repeated-validation">34. HCOEF33 HCOEF32 extended repeated validation</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">HCOEF32 핵심 후보의 tiny p95 개선이 반복 split/artist split에서도 안정적인지 확인</td>
+<td class="align-left">새 후보를 만들지 않고 검증 강도만 높임</td>
+</tr>
+<tr>
+<td class="align-left">검증 대상</td>
+<td class="align-left"><code>hcoef_stable</code>, <code>current_70_30</code>, HCOEF32 핵심 후보 4개, HCOEF29 source 후보 2개</td>
+<td class="align-left">fixed에서 좋아 보인 후보와 OOF에서 강했던 source 후보를 함께 비교</td>
+</tr>
+<tr>
+<td class="align-left">반복 방식</td>
+<td class="align-left">validation row/artist OOF에서 row 80/70%, artist 80/70%를 각 2,000회 반복</td>
+<td class="align-left">한 번의 split이 아니라 표본 구성 변화에 대한 민감도를 확인</td>
+</tr>
+<tr>
+<td class="align-left">핵심 후보</td>
+<td class="align-left"><code>hcoef32_s03_all3_dir_top2_w0p025_cap0p001</code></td>
+<td class="align-left">fixed <code>0.1388 / 0.2729 / 0.8062</code>, 0604 <code>0.2727 / 0.3744 / 0.9834</code></td>
+</tr>
+<tr>
+<td class="align-left">확장 반복 결과</td>
+<td class="align-left">min any2/all3 <code>0.8085 / 0.2785</code></td>
+<td class="align-left">MAPE와 p95는 자주 좋아지지만 MdAPE까지 동시에 좋아지는 비율은 낮음</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">fixed/0604 확인 후보</td>
+<td class="align-left">운영 후보 승격 기준 repeated all3 <code>0.90</code>에 크게 못 미쳐 기본 후보로 채택하지 않음</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF33은 HCOEF32 결과를 다시 튜닝하지 않고 검증만 강화한 실험임.</li>
+<li>HCOEF32 핵심 후보는 fixed test와 0604에서 tiny p95 개선을 유지함.</li>
+<li>그러나 확장 반복 검증에서 repeated min all3가 <code>0.2785</code>로 낮아, 세 지표가 동시에 안정적으로 개선된다고 보기 어려움.</li>
+<li>HCOEF29 source 후보들은 validation/OOF 반복 신호가 HCOEF32보다 강하지만 fixed test MdAPE/p95가 악화되어 운영 후보 기준을 통과하지 못함.</li>
+<li>결론: 현재 component를 더 미세하게 움직이는 방식만으로는 <code>hcoef_stable</code>을 안정적으로 넘기 어렵고, 다음 개선은 기준가 생성 방식 재탐색 또는 가격 범위/신뢰도 정책으로 이동하는 것이 타당함.</li>
+</ul>
+<h2 id="35.-hcoef34-기준가-생성-방식-재탐색">35. HCOEF34 기준가 생성 방식 재탐색</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">작가 전체, 작가+크기, 작가+재료/지지체, 작가+크기+재료/지지체 기준가를 train-only로 다시 생성</td>
+<td class="align-left">test 라벨을 보지 않고 유사 작품 기반 가격 축을 재구성</td>
+</tr>
+<tr>
+<td class="align-left">Huber 입력</td>
+<td class="align-left">기준가 residual, 기준가 표본 수, 기준가 IQR, 크기/형태 피처</td>
+<td class="align-left">Huber가 “기준가와 현재 예측의 차이를 얼마나 믿을지”를 계수로 학습</td>
+</tr>
+<tr>
+<td class="align-left">상위 후보</td>
+<td class="align-left"><code>hcoef34_resid_basis_resid_all_a0p001_cap0p005_s0p5</code></td>
+<td class="align-left">fixed <code>0.1373 / 0.2729 / 0.8074</code>, 0604 <code>0.2749 / 0.3746 / 0.9835</code></td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">MdAPE/MAPE 개선 후보</td>
+<td class="align-left">p95가 <code>hcoef_stable</code>보다 <code>+0.0010</code> 악화되어 운영 후보 미승격</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF34는 “기준가를 더 잘 만들면 Huber 계수 보정이 더 좋아질 수 있는가”를 확인한 실험임.</li>
+<li>기준가 gap은 중앙/평균 오차를 줄이는 방향으로 작동했지만, 일부 큰 오차 구간에서 p95를 악화시킴.</li>
+<li>따라서 기준가 신호는 버리지 않고, p95 방어를 위해 HCOEF35 fine grid로 이동함.</li>
+</ul>
+<h2 id="36.-hcoef35-p95-방어-fine-grid">36. HCOEF35 p95 방어 fine grid</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">HCOEF34 구조에서 cap/strength를 더 작게 쪼개 p95 악화를 막을 수 있는지 확인</td>
+<td class="align-left">개선 신호를 유지하되 큰 오차 악화를 줄이는 실험</td>
+</tr>
+<tr>
+<td class="align-left">탐색 범위</td>
+<td class="align-left">cap <code>0.001~0.010</code>, strength <code>0.10~0.50</code></td>
+<td class="align-left">보정폭을 작게 제한해 Huber 이동을 보수화</td>
+</tr>
+<tr>
+<td class="align-left">최고 MdAPE 후보</td>
+<td class="align-left"><code>hcoef35_resid_basis_resid_all_a0p01_cap0p01_s0p35</code> fixed <code>0.1365 / 0.2729 / 0.8078</code></td>
+<td class="align-left">중앙 오차는 더 좋아졌지만 p95 guard 미통과</td>
+</tr>
+<tr>
+<td class="align-left">p95 최접근 후보</td>
+<td class="align-left">fixed p95 <code>0.806407</code></td>
+<td class="align-left"><code>hcoef_stable</code>보다 약 <code>+0.000041</code> 높아 명확한 p95 개선으로 보기 어려움</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF35는 HCOEF34의 약점을 줄이려는 보수적 계수 실험임.</li>
+<li>MdAPE는 좋아졌지만 p95가 기준을 확실히 넘지 못했기 때문에 운영 후보로 올리지 않음.</li>
+<li>다만 “좋은 방향을 전체에 적용하지 말고 신뢰 구간에만 적용하면 가능성이 있는가”라는 HCOEF36 가설로 이어짐.</li>
+</ul>
+<h2 id="37.-hcoef36-low-risk-routing">37. HCOEF36 low-risk routing</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">HCOEF35 이동분을 전체에 적용하지 않고 기준가 신뢰도가 높은 행에만 적용</td>
+<td class="align-left">p95 위험이 큰 행은 기존 <code>hcoef_stable</code>로 유지</td>
+</tr>
+<tr>
+<td class="align-left">대표 후보</td>
+<td class="align-left"><code>hcoef36_route_basis_balanced_all_cap0p005_s0p5__spread_q66</code></td>
+<td class="align-left">fixed <code>0.1383 / 0.2729 / 0.8060</code>, 0604 <code>0.2734 / 0.3744 / 0.9835</code></td>
+</tr>
+<tr>
+<td class="align-left">적용률</td>
+<td class="align-left">test 약 <code>62.1%</code></td>
+<td class="align-left">전체가 아니라 절반 이상 신뢰 구간에만 제한 적용</td>
+</tr>
+<tr>
+<td class="align-left">반복 안정성</td>
+<td class="align-left">row/artist stable all3 <code>0.375 / 0.375</code></td>
+<td class="align-left">fixed test 개선은 있지만 운영 후보로 보기에는 반복 안정성이 약함</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF36은 Huber 계수 보정의 장점을 “신뢰도가 높은 샘플에만” 쓰는 실험임.</li>
+<li>fixed test에서는 MdAPE/MAPE/p95가 모두 소폭 좋아졌지만 반복 all3가 낮음.</li>
+<li>따라서 바로 채택하지 않고 HCOEF37에서 상위 라우팅 후보를 더 많이 반복 검증함.</li>
+</ul>
+<h2 id="38.-hcoef37-hcoef36-확장-반복-검증">38. HCOEF37 HCOEF36 확장 반복 검증</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">HCOEF36 상위 라우팅 후보 8개가 반복 split에서도 유지되는지 확인</td>
+<td class="align-left">새 후보를 만들지 않고 검증 강도를 높임</td>
+</tr>
+<tr>
+<td class="align-left">반복 방식</td>
+<td class="align-left">row OOF 60회, artist OOF 60회</td>
+<td class="align-left">행 단위 변동과 작가 단위 변동을 모두 확인</td>
+</tr>
+<tr>
+<td class="align-left">최상위 후보</td>
+<td class="align-left"><code>hcoef36_route_basis_balanced_all_cap0p005_s0p5__n_ge5_spread_q66_area90</code></td>
+<td class="align-left">fixed <code>0.1383 / 0.2729 / 0.8060</code>, 0604 <code>0.2734 / 0.3743 / 0.9835</code></td>
+</tr>
+<tr>
+<td class="align-left">반복 결과</td>
+<td class="align-left">min stable any2/all3 <code>0.9333 / 0.4333</code></td>
+<td class="align-left">두 지표 이상 개선은 안정적이나 세 지표 동시 개선은 아직 약함</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">Warm 안정 반복 검증 후보</td>
+<td class="align-left">운영 기본 후보는 <code>hcoef_stable</code> 유지</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF37은 HCOEF36이 test-only 개선인지 확인하기 위한 검증 실험임.</li>
+<li>any2 반복 안정성이 <code>0.90</code>을 넘었으므로 개선 신호 자체는 의미가 있음.</li>
+<li>all3가 <code>0.4333</code>에 그쳐 운영 기본 후보 교체 기준에는 부족함.</li>
+<li>다음 실험은 더 강한 점 예측 이동보다 <code>hcoef_stable</code>을 유지한 상태에서 신뢰도/가격 범위 정책을 강화하거나, 더 엄격한 route 조건으로 all3 안정성을 다시 확인하는 방향이 타당함.</li>
+</ul>
+<h2 id="39.-hcoef38-stricter-low-risk-routing">39. HCOEF38 stricter low-risk routing</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">HCOEF37에서 부족했던 all3 안정성을 높이기 위해 적용 구간을 더 엄격하게 제한</td>
+<td class="align-left">더 좋은 fixed test가 아니라 반복 안정성 개선 여부를 확인</td>
+</tr>
+<tr>
+<td class="align-left">후보 수</td>
+<td class="align-left">27개</td>
+<td class="align-left">HCOEF35 상위 3개 base improver x stricter route 9개</td>
+</tr>
+<tr>
+<td class="align-left">대표 route</td>
+<td class="align-left"><code>n_ge10_spread_q66_area80</code>, <code>spread_q50</code>, <code>n_ge5_spread_q50_area80</code>, <code>precise_level_spread_q50</code></td>
+<td class="align-left">표본 수, 기준가 component spread, 면적 중앙 구간, 정밀 기준가 level을 사용</td>
+</tr>
+<tr>
+<td class="align-left">최상위 후보</td>
+<td class="align-left"><code>hcoef38_route_best_mdape_all_cap0p01_s0p35__n_ge10_spread_q66_area80</code></td>
+<td class="align-left">fixed <code>0.1388 / 0.2728 / 0.8064</code>, 0604 <code>0.2731 / 0.3744 / 0.9835</code></td>
+</tr>
+<tr>
+<td class="align-left">반복 결과</td>
+<td class="align-left">min stable any2/all3 <code>0.7167 / 0.2167</code></td>
+<td class="align-left">HCOEF37의 <code>0.9333 / 0.4333</code>보다 낮음</td>
+</tr>
+<tr>
+<td class="align-left">판단</td>
+<td class="align-left">기존 70:30 대비 p95 방어 후보</td>
+<td class="align-left">운영 후보나 반복 검증 후보로 승격하지 않음</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>HCOEF38은 HCOEF37 후보를 더 좁은 “안전 구간”에만 적용하면 all3가 올라가는지 확인한 실험임.</li>
+<li>결과적으로 적용률이 test 약 <code>23.1%</code>까지 줄어든 상위 후보는 p95를 방어했지만, stable 대비 MdAPE/MAPE/p95가 동시에 좋아지는 반복 확률은 낮았음.</li>
+<li><code>spread_q50</code>처럼 fixed test p95를 더 낮춘 후보도 있었지만, row/artist repeated all3는 <code>0.0</code>에 가까워 운영 후보가 아님.</li>
+<li>결론: low-risk routing을 더 엄격하게 만드는 것만으로는 HCOEF37의 all3 병목을 해결하지 못함.</li>
+<li>다음 방향은 라우팅 조건 추가가 아니라 기준가 생성 방식 또는 Huber 저차원 계수 구조를 다시 보는 것이 타당함.</li>
+</ul>
+<h2 id="40.-피처별-의미-정리">40. 피처별 의미 정리</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처 축</th>
+<th class="align-left">왜 Warm Huber에서 의미가 있는가</th>
+<th class="align-left">이번 실험에서의 결론</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가 기준가</td>
+<td class="align-left">Warm은 같은 작가의 과거 거래가 있으므로 작가별 가격 수준을 직접 반영할 수 있음</td>
+<td class="align-left">가장 안정적인 fallback 축</td>
+</tr>
+<tr>
+<td class="align-left">작가+크기 기준가</td>
+<td class="align-left">같은 작가라도 크기에 따라 가격대가 달라짐</td>
+<td class="align-left">표본이 충분하면 유효</td>
+</tr>
+<tr>
+<td class="align-left">작가+재료/지지체+크기 기준가</td>
+<td class="align-left">작품 조건을 가장 세밀하게 맞춤</td>
+<td class="align-left">대표 오차 개선 가능, 희소 구간 p95 위험 존재</td>
+</tr>
+<tr>
+<td class="align-left">면적단가 기준가</td>
+<td class="align-left">작품 크기를 가격 총액이 아니라 단위 면적 가격으로 보정</td>
+<td class="align-left">HCOEF4에서 강한 양수 계수 확인</td>
+</tr>
+<tr>
+<td class="align-left">유사 작품 표본 수</td>
+<td class="align-left">기준가 신뢰도를 알려줌</td>
+<td class="align-left">가격 자체를 올리는 피처라기보다 보정 강도 조절 축</td>
+</tr>
+<tr>
+<td class="align-left">IQR</td>
+<td class="align-left">비교군 가격 분산을 알려줌</td>
+<td class="align-left">직접 가격 계수보다는 위험도/신뢰도 진단 축</td>
+</tr>
+<tr>
+<td class="align-left">오차 안정화 후보</td>
+<td class="align-left">평균 오차와 큰 오차를 방어하는 보조 예측값</td>
+<td class="align-left">HCOEF3 안정 후보에서 유지할 가치 있음</td>
+</tr>
+<tr>
+<td class="align-left">Huber 기본/완화 예측값</td>
+<td class="align-left">기존 선형 예측 중심선</td>
+<td class="align-left">단독 대체보다 잔차 보정 또는 보조 피처로 적합</td>
+</tr>
+<tr>
+<td class="align-left">조건부 routing 신뢰도</td>
+<td class="align-left">basis-Huber를 적용해도 되는 샘플을 고르는 기준</td>
+<td class="align-left">p95 방어는 가능하지만 개선폭이 작아 기본 후보로는 부족</td>
+</tr>
+<tr>
+<td class="align-left">면적단가 기준가 잔차 피처</td>
+<td class="align-left">작품 크기 차이를 단위 면적 가격으로 다시 설명</td>
+<td class="align-left">MdAPE/MAPE 개선 신호는 있으나 p95 방어 장치가 함께 필요</td>
+</tr>
+<tr>
+<td class="align-left">segmented cap/strength</td>
+<td class="align-left">위험 구간별로 보정 강도를 달리함</td>
+<td class="align-left">이번 데이터에서는 HCOEF3보다 악화되어 탈락</td>
+</tr>
+<tr>
+<td class="align-left">quantile width</td>
+<td class="align-left">q90 로그 예측과 q10 로그 예측의 차이로, 모델이 가격 범위를 얼마나 넓게 보는지 나타냄</td>
+<td class="align-left">점 예측 이동보다는 가격 범위/신뢰도 표시 피처로 유지</td>
+</tr>
+<tr>
+<td class="align-left">운영 component 일치성</td>
+<td class="align-left">연구 후보와 서비스 산출물이 같은 값을 내는지 확인하는 재현성 기준</td>
+<td class="align-left">HCOEF19에서 0604 공통 829건 기준 모두 일치</td>
+</tr>
+<tr>
+<td class="align-left">운영 component gap</td>
+<td class="align-left">HCOEF 안정 후보와 <code>current_70_30</code>/PP-V8/SVC/L10 component의 차이</td>
+<td class="align-left">HCOEF20에서 OOF p95 개선 신호는 있으나 fixed p95 guard 미통과</td>
+</tr>
+<tr>
+<td class="align-left">가변 기준가 신뢰도</td>
+<td class="align-left">표본 수, coverage, quantile width로 SVC:PP-V8 비율을 조정하는 기준</td>
+<td class="align-left">HCOEF21에서 설명 가능한 계수 후보이나 fixed p95 guard와 bootstrap gate 미통과</td>
+</tr>
+<tr>
+<td class="align-left">목적별 라우팅 구간</td>
+<td class="align-left">qwidth, coverage, gap, component spread별로 후보를 다르게 적용하는 기준</td>
+<td class="align-left">HCOEF22에서 validation/0604 개선 신호는 있으나 fixed test 안정성 부족</td>
+</tr>
+<tr>
+<td class="align-left">신뢰도/범위 tier</td>
+<td class="align-left">quantile width와 유사 표본 수로 예측 신뢰도와 가격 범위 폭을 나누는 기준</td>
+<td class="align-left">점 예측 후보가 아니라 서비스 표시 정책 후보로 유지</td>
+</tr>
+<tr>
+<td class="align-left">남은 오차 위험 구간</td>
+<td class="align-left">HCOEF23에서 validation 기준으로 반복 확인된 큰 오차 구간</td>
+<td class="align-left"><code>qwidth_extreme</code>, <code>gap_020_plus</code>, <code>n_10_19</code>, <code>spread_extreme</code>을 HCOEF24~38 우선 보정/검증 축으로 사용</td>
+</tr>
+<tr>
+<td class="align-left">후보 간 gap</td>
+<td class="align-left">HCOEF 안정 후보와 PP-V8/SVC component의 예측 차이</td>
+<td class="align-left">gap이 클수록 남은 오차 크기가 커지는 방향이므로 강한 후보 교체보다 보수적 shrink/fallback이 필요</td>
+</tr>
+<tr>
+<td class="align-left">위험 완화 기준가</td>
+<td class="align-left">유사 작품 기준가를 표본 수와 위험도에 따라 안정 후보 쪽으로 줄인 기준가</td>
+<td class="align-left">HCOEF24에서 MdAPE/MAPE 개선 신호는 있으나 p95 guard 미통과</td>
+</tr>
+<tr>
+<td class="align-left">보수적 guard 계수</td>
+<td class="align-left">위험 구간에서 Huber 보정 이동폭을 줄이는 계수</td>
+<td class="align-left">HCOEF25에서 MAPE/MdAPE 개선 신호는 유지됐지만 p95 병목은 계속 남음</td>
+</tr>
+<tr>
+<td class="align-left">low-risk hard fallback</td>
+<td class="align-left">위험 구간은 기준 후보를 유지하고 안전 구간에만 후보 이동분을 적용하는 정책</td>
+<td class="align-left">HCOEF26에서 fixed p95 방어 신호를 확인했지만 HCOEF27 반복 검증 기준은 미통과</td>
+</tr>
+<tr>
+<td class="align-left">반복 split/artist holdout</td>
+<td class="align-left">후보를 한 번의 test가 아니라 여러 표본과 작가 단위 분리 표본에서 다시 확인하는 검증 방식</td>
+<td class="align-left">HCOEF27에서 HCOEF26 상위 후보의 운영 후보 승격 근거가 부족함을 확인</td>
+</tr>
+<tr>
+<td class="align-left">Huber risk model</td>
+<td class="align-left">현재 안정 후보의 절대 로그 오차를 Huber로 예측하는 선형 위험도 모델</td>
+<td class="align-left">HCOEF28에서 <code>quantile_width</code>, 후보 간 gap, 작가 fallback이 큰 오차 위험 증가 방향임을 확인</td>
+</tr>
+<tr>
+<td class="align-left">risk-aware shrinkage</td>
+<td class="align-left">위험도가 높을수록 후보 이동폭을 <code>hcoef_stable</code> 쪽으로 줄이는 보정 방식</td>
+<td class="align-left">HCOEF28에서 fixed 개선 후보는 있었지만 반복 검증 기준을 통과하지 못해 점 예측 후보로는 보류</td>
+</tr>
+<tr>
+<td class="align-left">OOF Huber meta residual</td>
+<td class="align-left"><code>actual_log - hcoef_stable</code> 잔차를 component delta와 risk 피처로 직접 학습하는 방식</td>
+<td class="align-left">HCOEF29에서 OOF 반복 신호는 강했지만 fixed MdAPE/p95 악화로 운영 후보 보류</td>
+</tr>
+<tr>
+<td class="align-left">component delta</td>
+<td class="align-left">각 후보가 <code>hcoef_stable</code>보다 높게/낮게 보는 정도</td>
+<td class="align-left">HCOEF29에서 Huber 계수 해석은 가능하지만, 강한 잔차 추종은 fixed 일반화가 약함</td>
+</tr>
+<tr>
+<td class="align-left">validation-consensus segment gate</td>
+<td class="align-left">validation row OOF와 validation artist OOF에서 동시에 개선된 segment에만 후보 이동을 허용하는 방식</td>
+<td class="align-left">HCOEF30에서 반복 안정성은 강해졌지만 fixed p95 guard 미통과</td>
+</tr>
+<tr>
+<td class="align-left">방향 일치 미세 보정</td>
+<td class="align-left">안정 후보의 잔차 방향과 source 후보 이동 방향이 같은 구간에만 아주 작은 보정을 허용하는 방식</td>
+<td class="align-left">HCOEF31에서 MdAPE/MAPE는 소폭 개선됐지만 fixed p95 guard와 repeated all3 기준 미통과</td>
+</tr>
+<tr>
+<td class="align-left">ultra-micro p95-first 보정</td>
+<td class="align-left">p95가 나빠지지 않는 validation segment에서만 weight/cap을 더 작게 적용하는 방식</td>
+<td class="align-left">HCOEF32에서 fixed p95는 소폭 개선됐지만 repeated all3 부족으로 추가 검증 후보</td>
+</tr>
+<tr>
+<td class="align-left">확장 반복 검증</td>
+<td class="align-left">새 후보를 만들지 않고 같은 후보를 row/artist split 비율을 바꿔 더 많이 반복 확인하는 방식</td>
+<td class="align-left">HCOEF33에서 HCOEF32 핵심 후보의 fixed/0604 개선은 유지됐지만 repeated all3가 <code>0.2785</code>로 낮아 운영 후보 승격 근거 부족</td>
+</tr>
+<tr>
+<td class="align-left">segment rule</td>
+<td class="align-left"><code>svc_group_level=artist &amp; gap_band=gap_003_005</code>, <code>qwidth_extreme</code>, <code>n_10_19</code> 같은 적용 조건</td>
+<td class="align-left">개선 구간을 설명하는 데는 유효하지만 현재는 점 예측 후보 교체보다 위험도/신뢰도 정책에 더 적합</td>
+</tr>
+</tbody></table></div>
+<h2 id="41.-최종-판단">41. 최종 판단</h2>
+<ul>
+<li>Warm 개선 후보는 <code>hcoef2_size_reliability_cap005_s050</code>로 유지.</li>
+<li>이 후보는 기존 Warm 1순위 대비 fixed test에서 MdAPE, MAPE, p95_APE가 모두 개선됨.</li>
+<li>이 후보는 HCOEF11 확장 검증에서 row OOF와 artist OOF 80회 모두 개선 방향이 안정적임.</li>
+<li>Bootstrap 기준으로는 MAPE/RMSE 개선은 강하고 MdAPE/p95는 split 민감도가 남아 있으므로, 운영 반영 전 최신 라벨 스트레스 테스트가 필요함.</li>
+<li>HCOEF12에서 저장 모델 재로딩 재현성은 확인됐으므로, 연구 산출물 기준의 재현성 요건은 충족함.</li>
+<li>HCOEF13에서 남은 오차 원인은 기준가 표본 수/IQR/gap 구간으로 좁혀졌으므로, 다음 실험은 전체 모델 교체가 아니라 위험 구간 한정 보정으로 진행하는 것이 맞음.</li>
+<li>HCOEF14에서 위험 구간 한정 보정은 반복 OOF gate를 통과하지 못했으므로, 같은 유형의 보정을 운영 후보로 승격하지 않음.</li>
+<li>HCOEF15에서 운영 PP-V8/service primary component가 0604에서 MdAPE/MAPE/p95 균형상 가장 강했지만, OOF/fixed test 후보 선택 절차를 거치지 않았으므로 바로 운영 후보로 교체하지 않음.</li>
+<li>HCOEF16에서 PP-V8/service component를 OOF 기준으로 재검증했지만 fixed test p95 guard와 artist OOF 안정성 기준을 통과하지 못했으므로 새 후보로 채택하지 않음.</li>
+<li>HCOEF17에서 PP-V8 제한 이동 정책을 검증했지만 validation/bootstrap 기준을 통과한 후보가 없으므로 새 후보로 채택하지 않음.</li>
+<li>HCOEF18에서 quantile width risk guard를 검증했지만 validation/bootstrap 기준을 통과한 후보가 없으므로 새 후보로 채택하지 않음.</li>
+<li>HCOEF19에서 연구 산출물과 운영 v0.1 산출물의 Warm component/formula/필수 피처 schema가 일치함을 확인했으므로, 다음 실험은 피처 파이프라인 수정이 아니라 성능/신뢰도 정책 자체에 집중할 수 있음.</li>
+<li>HCOEF20에서 운영 component 기반 저차원 Huber/Ridge 후보를 검증했지만 fixed test p95 guard와 bootstrap all3 gate를 통과하지 못했으므로 새 점 예측 후보로 채택하지 않음.</li>
+<li>HCOEF20에서 quantile width 기반 신뢰도 tier는 점 예측 교체 근거가 아니라 가격 범위/신뢰도 표시 정책 후보로 유지함.</li>
+<li>HCOEF21에서 가변 SVC:PP-V8 기준가와 신뢰도별 Huber residual 후보를 검증했지만 fixed test p95 guard와 bootstrap all3 gate를 통과하지 못했으므로 새 점 예측 후보로 채택하지 않음.</li>
+<li>HCOEF22에서 목적별 라우팅을 검증했지만 fixed test MdAPE/p95가 악화되므로 새 점 예측 후보로 채택하지 않음.</li>
+<li>HCOEF22의 신뢰도/범위 tier는 high/low 위험도 분리력이 있으므로 서비스 표시 정책 후보로 유지함.</li>
+<li>HCOEF23은 새 점 예측 후보가 아니라 다음 실험의 원인 근거임.</li>
+<li>HCOEF23에서 확인된 위험 구간은 기존 HCOEF13의 원인 진단과 방향이 맞고, 특히 quantile width와 후보 간 gap이 큰 구간은 단순 라우팅보다 보수적 기준가 shrink가 필요함.</li>
+<li>HCOEF24에서 위험 완화 기준가를 만들었지만 fixed p95 guard를 통과하지 못했으므로 새 점 예측 후보로 채택하지 않음.</li>
+<li>HCOEF25에서 더 작은 cap과 conservative/no-extreme guard를 적용했지만 p95가 계속 소폭 악화되어 새 점 예측 후보로 채택하지 않음.</li>
+<li>HCOEF26에서 low-risk hard fallback을 적용하자 fixed p95는 <code>hcoef_stable</code>과 동일하게 방어되고 MdAPE/MAPE는 소폭 개선됨.</li>
+<li>HCOEF27에서 HCOEF26 후보를 반복 split/artist holdout으로 재검증했지만 repeated any2/all3 기준을 통과하지 못했으므로 운영 기본 후보 즉시 채택은 보류함.</li>
+<li>HCOEF27에서 direct guarded 후보는 반복 OOF 개선 확률이 더 높았지만 fixed test MdAPE가 악화되어 연구 후보로만 유지함.</li>
+<li>HCOEF28에서 Huber risk model로 위험도를 예측해 후보 이동폭을 줄였지만, 대표 fixed 후보의 repeated min any2/all3가 <code>0.394/0.086</code>에 그쳐 새 운영 후보로 채택하지 않음.</li>
+<li>HCOEF28 direct guarded shrink 후보는 repeated min any2가 <code>0.764</code>까지 나오지만 fixed MdAPE가 <code>0.1410</code>으로 악화되어 MAPE 목적 연구 후보로만 유지함.</li>
+<li>HCOEF29에서 OOF Huber meta residual 후보는 repeated min any2가 <code>0.928</code>까지 올라갔지만 fixed MdAPE <code>0.1442</code>, p95 <code>0.8081</code>로 기준보다 악화되어 새 운영 후보로 채택하지 않음.</li>
+<li>HCOEF30에서 validation-consensus segment gate 후보는 repeated min any2/all3가 <code>1.000/0.960</code>까지 올라갔지만 fixed test <code>0.1402/0.2700/0.8081</code>로 MdAPE/p95가 악화되어 새 운영 후보로 채택하지 않음.</li>
+<li>HCOEF30 p95 근접 후보 <code>hcoef30_s01_all3_top5_w0p5</code>도 fixed test <code>0.1387/0.2713/0.8072</code>로 p95가 기준 <code>0.8064</code>보다 근소하게 높아 미채택.</li>
+<li>HCOEF31에서 방향 일치와 작은 cap을 적용하자 fixed test MdAPE/MAPE는 소폭 개선됐지만 p95가 <code>0.8070</code> 또는 <code>0.8066</code>으로 기준 <code>0.8064</code>보다 근소하게 높아 미채택.</li>
+<li>HCOEF31 repeated min any2는 <code>0.88~0.90</code> 수준이나 repeated min all3는 <code>0.39~0.41</code> 수준이므로 안정 후보 승격 근거가 부족함.</li>
+<li>HCOEF32는 fixed test <code>0.1388/0.2729/0.8062</code>로 MAPE/p95/RMSE를 아주 작게 개선했지만 repeated min all3가 <code>0.306</code>으로 부족해 운영 후보 즉시 채택은 보류함.</li>
+<li>HCOEF33에서 HCOEF32 핵심 후보를 row/artist 확장 반복 검증으로 재확인했지만 repeated min any2/all3가 <code>0.8085/0.2785</code>에 그쳐 운영 후보 승격 기준을 통과하지 못함.</li>
+<li>HCOEF24~38 결과상 Warm Huber는 MdAPE/MAPE를 더 낮출 수 있는 여지가 있지만, 현재 데이터에서는 p95 방어와 fixed/generalization 안정성이 기준 후보 교체의 병목임.</li>
+<li>loose 기준가 Huber는 대표 오차 개선 잠재력이 크므로 버리지 않음.</li>
+<li>다만 loose 기준가 Huber는 p95_APE 방어가 부족하므로 현재 기본 후보로 채택하지 않음.</li>
+<li>capped blend는 목적별 후보로 남길 수 있으나, 현재 기준으로 운영 후보 승격은 보류.</li>
+<li>조건부 routing은 p95 방어에는 성공했지만 성능 이득이 작아 운영 후보 승격은 보류.</li>
+<li>면적단가 기준가 직접 잔차 피처는 MdAPE/MAPE 개선 신호가 있으나 p95 악화로 운영 후보 승격은 보류.</li>
+<li>segmented cap/strength는 HCOEF3보다 성능이 나빠져 탈락.</li>
+<li>quantile width는 점 예측 이동보다 가격 범위/신뢰도/risk 표시용 보조 피처로 유지.</li>
+<li>가변 기준가 신뢰도 피처는 점 예측 기본 후보가 아니라 설명 가능한 연구 후보 또는 향후 목적별 MAPE 후보로 유지.</li>
+<li>목적별 라우팅은 validation/0604에만 맞을 위험이 있으므로 현재 기본 후보로 쓰지 않음.</li>
+<li>low-risk hard fallback, OOF Huber meta residual, validation-consensus segment gate, 방향 일치 미세 보정, ultra-micro p95-first 보정, 기준가 재탐색, low-risk routing, stricter routing은 각각 fixed 또는 OOF/repeated에서는 강점이 있지만, HCOEF27~HCOEF38 기준으로 운영 후보 승격 기준을 완전히 통과하지 못했음.</li>
+</ul>
+<h2 id="42.-다음-보정-방향">42. 다음 보정 방향</h2>
+<ul>
+<li>조건부 routing과 직접 잔차 피처는 모두 p95 방어가 핵심 병목임.</li>
+<li>segmented Huber 계수 실험에서도 HCOEF3보다 나은 후보가 나오지 않았음.</li>
+<li>HCOEF11에서 반복 횟수 확대 재검증은 완료됨.</li>
+<li>HCOEF12에서 운영 전 실험 패키징 감사는 완료됨.</li>
+<li>HCOEF13에서 작품별 큰 오차 원인 진단은 완료됨.</li>
+<li>HCOEF14에서 위험 구간 한정 shrinkage/routing/cap-strength OOF 검증은 완료됐고, 새 후보는 채택하지 않음.</li>
+<li>HCOEF15에서 최신 라벨 stress test는 완료됐고, PP-V8 운영 component를 OOF 후보로 검토할 근거가 생겼음.</li>
+<li>HCOEF16에서 PP-V8 운영 component의 OOF 재검증은 완료됐고, 현재 기준으로 새 후보 채택은 보류함.</li>
+<li>HCOEF17에서 PP-V8 제한 이동 정책도 완료됐고, 현재 기준으로 새 후보 채택은 보류함.</li>
+<li>HCOEF18에서 quantile width risk guard도 완료됐고, 현재 기준으로 새 후보 채택은 보류함.</li>
+<li>HCOEF19에서 서비스 feature pipeline 재현성 감사가 통과했고 HCOEF20~HCOEF38에서 저차원 계수/가변 기준가/목적별 라우팅/남은 오차 원인 분석/위험 완화 기준가/보수적 cap guard/low-risk fallback/반복 split 재검증/risk Huber shrinkage/OOF Huber meta residual 계수 결합/validation-consensus segment gate/p95-neutral 방향 일치 미세 보정/ultra-micro p95-first 보정/기준가 재탐색/low-risk routing/확장 반복 검증/stricter routing을 완료함.</li>
+<li>HCOEF26의 p95 hard fallback은 fixed test에서는 작동했지만 HCOEF27 반복 split/artist holdout과 HCOEF28 risk Huber shrinkage 기준을 통과하지 못했고, HCOEF29의 OOF meta residual, HCOEF30의 validation-consensus segment gate, HCOEF31의 방향 일치 미세 보정, HCOEF32의 ultra-micro p95-first 보정, HCOEF33의 확장 반복 검증은 validation/반복 OOF에서는 일부 강점이 있지만 fixed confirmation 또는 repeated all3 기준을 통과하지 못함.</li>
+<li>같은 component를 더 세밀하게 계수화하거나 segment gate를 더 쪼개는 방식만으로는 운영 후보 승격 가능성이 낮으므로, 다음은 점 예측 이동보다 가격 범위/신뢰도/수동 검수 정책으로 위험 신호를 분리하는 방향이 더 타당함.</li>
+<li>fixed p95를 더 낮추려면 점 예측 후보를 계속 복잡하게 하는 것보다 p95 전용 risk 모델, quantile 위험도, 가격 범위/신뢰도 정책과 결합하는 것이 적절함.</li>
+<li>면적단가 기준가는 버리지 않고, HCOEF 기본 후보가 아니라 별도 MAPE 목적 후보나 리포트용 해석 피처로 유지하는 것이 적절함.</li>
+<li>p95를 더 줄이려면 HCOEF 내부 세분화보다 별도 p95/risk 모델, quantile 위험도, 작가 메타 방어 후보와 결합하는 방향이 더 적절함.</li>
+<li>운영 반영 전에는 <code>hcoef2_size_reliability_cap005_s050</code>를 재현 가능한 v0.1 개선 후보 패키지로 유지하고, PP-V8/service primary component는 HCOEF16/HCOEF17 결과 기준으로 기본 후보 승격을 보류하는 것이 맞음.</li>
+<li>다음 HCOEF 계열은 점 예측 초미세 이동을 반복하기보다 기준가 생성 방식 자체를 다시 만들거나, p95/risk 전용 모델을 가격 범위/신뢰도 정책으로 분리하거나, 현재 component와 독립적인 새 피처 신호를 추가하는 방향이 맞음.</li>
+</ul>
+<h2 id="43.-주요-산출물">43. 주요 산출물</h2>
+<ul>
+<li><code>experiments/track6/PP-HCOEF3_warm_huber_residual_repeated_validation/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF4_warm_basis_generation_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF5_warm_basis_hcoef_blend_repeated_validation/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF6_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF7_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF8_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF9_warm_huber_risk_gated_basis_blend/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF10_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF11_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF12_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF13_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF14_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF3_warm_huber_residual_repeated_validation/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF4_warm_basis_generation_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF5_warm_basis_hcoef_blend_repeated_validation/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF6_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF7_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF8_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF9_warm_huber_risk_gated_basis_blend/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF10_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF11_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF12_warm_huber_price_basis_coefficient_refinement/artifacts/operational_candidate_manifest.json</code></li>
+<li><code>experiments/track6/PP-HCOEF13_warm_huber_price_basis_coefficient_refinement/outputs/risk_segment_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF13_warm_huber_price_basis_coefficient_refinement/outputs/next_experiment_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF14_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF14_warm_huber_price_basis_coefficient_refinement/outputs/segment_correction_map.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF15_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF15_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF15_warm_huber_price_basis_coefficient_refinement/outputs/service_vs_hcoef_gap_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF15_warm_huber_price_basis_coefficient_refinement/outputs/actual_price_join_audit.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF16_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF16_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF16_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF16_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF16_warm_huber_price_basis_coefficient_refinement/outputs/input_component_audit.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF17_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF17_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF17_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF17_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF17_warm_huber_price_basis_coefficient_refinement/outputs/policy_map.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF17_warm_huber_price_basis_coefficient_refinement/outputs/service_feature_gap_audit.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF18_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF18_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF18_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF18_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF18_warm_huber_price_basis_coefficient_refinement/outputs/policy_map.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF18_warm_huber_price_basis_coefficient_refinement/outputs/quantile_feature_audit.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF19_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF19_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF19_warm_huber_price_basis_coefficient_refinement/outputs/component_reconciliation.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF19_warm_huber_price_basis_coefficient_refinement/outputs/formula_checks.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF19_warm_huber_price_basis_coefficient_refinement/outputs/feature_pipeline_audit.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF19_warm_huber_price_basis_coefficient_refinement/outputs/policy_map.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/range_confidence_policy.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF21_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF21_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF21_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF21_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF21_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF21_warm_huber_price_basis_coefficient_refinement/outputs/adaptive_weight_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF21_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF22_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF22_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF22_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF22_warm_huber_price_basis_coefficient_refinement/outputs/segment_policy_selection.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF22_warm_huber_price_basis_coefficient_refinement/outputs/range_confidence_policy.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF22_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF23_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF23_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF23_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF23_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF23_warm_huber_price_basis_coefficient_refinement/outputs/risk_segments.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF23_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF23_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF24_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF24_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF24_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF24_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF24_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF24_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF24_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF25_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF25_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF25_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF25_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF25_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF25_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF25_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/outputs/policy_map.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/outputs/mask_coverage_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF26_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF27_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF27_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF27_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF27_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF27_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF27_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF27_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF28_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF28_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF28_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF28_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF28_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF28_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF28_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF28_warm_huber_price_basis_coefficient_refinement/outputs/risk_model_thresholds.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF29_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF29_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF29_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF29_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF29_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF29_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF29_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/outputs/consensus_rules.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF30_warm_huber_price_basis_coefficient_refinement/outputs/segment_rule_metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/outputs/consensus_rules.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF31_warm_huber_price_basis_coefficient_refinement/outputs/segment_rule_metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/outputs/consensus_rules.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF32_warm_huber_price_basis_coefficient_refinement/outputs/segment_rule_metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF33_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF33_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF33_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF33_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF33_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF33_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF33_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF33_warm_huber_price_basis_coefficient_refinement/outputs/segment_impact.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF34_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF34_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF34_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF34_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF34_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF34_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF34_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF35_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF35_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF35_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF35_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF35_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF35_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF35_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF36_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF36_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF36_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF36_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF36_warm_huber_price_basis_coefficient_refinement/outputs/policy_map.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF36_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF36_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF36_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/outputs/policy_map.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/outputs/repeated_iteration_metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF37_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/reports/result_report.md</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/outputs/metrics.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/outputs/feature_coefficients.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/outputs/policy_map.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/outputs/residual_analysis.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/outputs/repeated_validation_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/outputs/bootstrap_or_repeated_split_summary.csv</code></li>
+<li><code>experiments/track6/PP-HCOEF38_warm_huber_price_basis_coefficient_refinement/outputs/selected_candidates.csv</code></li>
+</ul>
+    </main>
+  </div>
+</body>
+</html>

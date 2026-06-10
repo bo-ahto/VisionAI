@@ -1,0 +1,177 @@
+{
+  "experiment_id": "PP-HCOEF9",
+  "experiment_slug": "PP-HCOEF9_warm_huber_risk_gated_basis_blend",
+  "created_at": "2026-06-07T23:37:44",
+  "reference_candidate": "hcoef2_size_reliability_cap005_s050",
+  "original_warm_reference": "current_70_30",
+  "basis_configs": [
+    {
+      "name": "loose_basis_core_huber_alpha0p1",
+      "policy": "loose",
+      "feature_key": "basis_core",
+      "kind": "huber",
+      "alpha": 0.1,
+      "source": "HCOEF4 MdAPE/MAPE 개선 신호 후보"
+    },
+    {
+      "name": "loose_basis_core_huber_alpha0p01",
+      "policy": "loose",
+      "feature_key": "basis_core",
+      "kind": "huber",
+      "alpha": 0.01,
+      "source": "HCOEF4 neighbouring basis-core 후보"
+    },
+    {
+      "name": "loose_basis_gap_huber_alpha0p1",
+      "policy": "loose",
+      "feature_key": "basis_gap_reliability",
+      "kind": "huber",
+      "alpha": 0.1,
+      "source": "HCOEF4 gap/reliability 후보"
+    }
+  ],
+  "risk_policies": [
+    {
+      "name": "low_strong_mid_light_high_stable",
+      "low": {
+        "min_n": 10,
+        "max_iqr": 0.75,
+        "max_basis_gap": 0.7,
+        "max_model_gap": 0.55,
+        "cap": 0.1,
+        "strength": 0.75
+      },
+      "mid": {
+        "min_n": 5,
+        "max_iqr": 1.0,
+        "max_basis_gap": 0.95,
+        "max_model_gap": 0.75,
+        "cap": 0.05,
+        "strength": 0.35
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    },
+    {
+      "name": "low_medium_mid_tiny_high_stable",
+      "low": {
+        "min_n": 10,
+        "max_iqr": 0.75,
+        "max_basis_gap": 0.7,
+        "max_model_gap": 0.55,
+        "cap": 0.08,
+        "strength": 0.5
+      },
+      "mid": {
+        "min_n": 5,
+        "max_iqr": 1.0,
+        "max_basis_gap": 0.95,
+        "max_model_gap": 0.75,
+        "cap": 0.03,
+        "strength": 0.2
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    },
+    {
+      "name": "low_only_basis_high_stable",
+      "low": {
+        "min_n": 10,
+        "max_iqr": 0.7,
+        "max_basis_gap": 0.65,
+        "max_model_gap": 0.5,
+        "cap": 0.1,
+        "strength": 0.75
+      },
+      "mid": {
+        "min_n": 999999,
+        "max_iqr": 0.0,
+        "max_basis_gap": 0.0,
+        "max_model_gap": 0.0,
+        "cap": 0.0,
+        "strength": 0.0
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    },
+    {
+      "name": "broad_low_mid_guarded",
+      "low": {
+        "min_n": 8,
+        "max_iqr": 0.85,
+        "max_basis_gap": 0.8,
+        "max_model_gap": 0.65,
+        "cap": 0.08,
+        "strength": 0.6
+      },
+      "mid": {
+        "min_n": 4,
+        "max_iqr": 1.1,
+        "max_basis_gap": 1.05,
+        "max_model_gap": 0.85,
+        "cap": 0.04,
+        "strength": 0.25
+      },
+      "high": {
+        "cap": 0.01,
+        "strength": 0.1
+      }
+    },
+    {
+      "name": "model_agreement_only",
+      "low": {
+        "min_n": 3,
+        "max_iqr": 9.99,
+        "max_basis_gap": 9.99,
+        "max_model_gap": 0.3,
+        "cap": 0.08,
+        "strength": 0.75
+      },
+      "mid": {
+        "min_n": 3,
+        "max_iqr": 9.99,
+        "max_basis_gap": 9.99,
+        "max_model_gap": 0.5,
+        "cap": 0.04,
+        "strength": 0.35
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    },
+    {
+      "name": "sample_count_only",
+      "low": {
+        "min_n": 15,
+        "max_iqr": 9.99,
+        "max_basis_gap": 9.99,
+        "max_model_gap": 9.99,
+        "cap": 0.08,
+        "strength": 0.5
+      },
+      "mid": {
+        "min_n": 7,
+        "max_iqr": 9.99,
+        "max_basis_gap": 9.99,
+        "max_model_gap": 9.99,
+        "cap": 0.04,
+        "strength": 0.25
+      },
+      "high": {
+        "cap": 0.0,
+        "strength": 0.0
+      }
+    }
+  ],
+  "n_repeats": 20,
+  "n_folds": 5,
+  "seed": 20260612,
+  "selection_policy": "row/artist repeated OOF first; fixed test p95 must not worsen"
+}

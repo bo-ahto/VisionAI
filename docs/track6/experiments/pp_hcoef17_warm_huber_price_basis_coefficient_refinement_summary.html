@@ -1,0 +1,345 @@
+<!doctype html><html><head><meta charset='utf-8'>
+    <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 28px; color: #1f2933; }
+    h1, h2, h3 { color: #17202a; }
+    table { border-collapse: collapse; width: 100%; margin: 14px 0 24px; font-size: 13px; }
+    th, td { border: 1px solid #d7dee8; padding: 7px 9px; text-align: left; vertical-align: top; }
+    th { background: #eef3f8; }
+    p { line-height: 1.55; }
+    </style>
+    </head><body><h1>PP-HCOEF17 Warm guarded PP-V8 movement</h1>
+
+<p>- 작성일: 2026-06-08 02:06</p>
+<p>- 목적: HCOEF 안정 후보를 기본으로 유지하면서 PP-V8/service component를 신뢰 가능한 구간에만 제한 반영할 수 있는지 검증</p>
+<p>- 기준 후보: `hcoef2_size_reliability_cap005_s050`</p>
+<p>- 선택 기준: validation 우선, fixed test와 0604는 확인용</p>
+<p>- 금지 기준: test/0604 residual을 보고 threshold, weight, cap을 만들지 않음</p>
+
+<h2>1. 실행 결론</h2>
+
+<p>- PP-V8 전체 반영은 HCOEF16에서 fixed test/artist OOF 기준 미통과였음.</p>
+<p>- HCOEF17은 PP-V8과 HCOEF 안정 후보의 예측 차이가 작거나 비교군 신뢰도가 높은 구간에서만 제한 이동하는 후보를 비교함.</p>
+<p>- 새 후보는 validation에서 먼저 판단하고, fixed test p95 guard와 bootstrap으로 재검증함.</p>
+<p>- 0604에서 PP-V8이 HCOEF 안정 후보보다 APE가 낮은 비율: `0.5223`</p>
+
+<h2>2. validation 상위 후보</h2>
+
+<table>
+<tr><th>candidate</th><th>method</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_MdAPE_vs_stable</th><th>delta_MAPE_vs_stable</th><th>delta_p95_APE_vs_stable</th><th>policy_apply_rate</th></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>guarded_move</td><td>519</td><td>0.1253</td><td>0.2095</td><td>0.6542</td><td>0.3258</td><td>-0.0006</td><td>0.0013</td><td>0.0063</td><td>0.7592</td></tr>
+<tr><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2081</td><td>0.6479</td><td>0.3251</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0944</td></tr>
+<tr><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2081</td><td>0.6479</td><td>0.3251</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0944</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p15_cap0p05_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2081</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.1002</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2081</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.1002</td></tr>
+<tr><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0944</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.0674</td></tr>
+<tr><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.0944</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.1002</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.0674</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.1002</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.0674</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.0674</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6481</td><td>0.3253</td><td>0.0000</td><td>-0.0000</td><td>0.0001</td><td>0.3699</td></tr>
+<tr><td>hcoef17_adaptive_tiered_conservative</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.0963</td></tr>
+<tr><td>hcoef_stable</td><td>baseline</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>1.0000</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6481</td><td>0.3254</td><td>0.0000</td><td>0.0000</td><td>0.0002</td><td>0.3699</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0886</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0886</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0886</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p02_w0p25</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6481</td><td>0.3253</td><td>0.0000</td><td>0.0000</td><td>0.0002</td><td>0.3699</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td></tr>
+</table>
+
+<p>_Only first 25 of 100 rows shown._</p>
+
+<h2>3. fixed test 상위 후보</h2>
+
+<table>
+<tr><th>candidate</th><th>method</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_MdAPE_vs_stable</th><th>delta_MAPE_vs_stable</th><th>delta_p95_APE_vs_stable</th><th>policy_apply_rate</th></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p03_w0p5</td><td>guarded_move</td><td>607</td><td>0.1374</td><td>0.2735</td><td>0.8064</td><td>0.3991</td><td>-0.0014</td><td>0.0005</td><td>0.0000</td><td>0.3377</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p05_w0p5</td><td>guarded_move</td><td>607</td><td>0.1374</td><td>0.2736</td><td>0.8064</td><td>0.3991</td><td>-0.0014</td><td>0.0007</td><td>0.0000</td><td>0.3377</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0001</td><td>0.0000</td><td>0.0214</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p05_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0001</td><td>0.0000</td><td>0.0214</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p05_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0001</td><td>0.0000</td><td>0.0198</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p05_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0001</td><td>0.0000</td><td>0.0198</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0214</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0214</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0198</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0198</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0214</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0214</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0099</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0099</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0198</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0198</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0099</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0099</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0214</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0214</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0198</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0198</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0099</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0099</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>607</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0099</td></tr>
+</table>
+
+<p>_Only first 25 of 100 rows shown._</p>
+
+<h2>4. 0604 stress test 상위 후보</h2>
+
+<table>
+<tr><th>candidate</th><th>method</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_MdAPE_vs_stable</th><th>delta_MAPE_vs_stable</th><th>delta_p95_APE_vs_stable</th><th>policy_apply_rate</th></tr>
+<tr><td>ppv8_service_proxy</td><td>component</td><td>829</td><td>0.2298</td><td>0.3359</td><td>0.9273</td><td>0.7124</td><td>-0.0433</td><td>-0.0385</td><td>-0.0561</td><td>1.0000</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3739</td><td>0.9790</td><td>1.3077</td><td>0.0000</td><td>-0.0004</td><td>-0.0045</td><td>0.0338</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p05_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3739</td><td>0.9790</td><td>1.3077</td><td>0.0000</td><td>-0.0004</td><td>-0.0045</td><td>0.0338</td></tr>
+<tr><td>hcoef17_adaptive_tiered_mape_guard</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3740</td><td>0.9790</td><td>1.3077</td><td>0.0000</td><td>-0.0004</td><td>-0.0045</td><td>0.1170</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p15_cap0p05_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3740</td><td>0.9790</td><td>1.3077</td><td>0.0000</td><td>-0.0004</td><td>-0.0045</td><td>0.0989</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3741</td><td>0.9808</td><td>1.3077</td><td>0.0000</td><td>-0.0003</td><td>-0.0027</td><td>0.0338</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3741</td><td>0.9808</td><td>1.3077</td><td>0.0000</td><td>-0.0003</td><td>-0.0027</td><td>0.0338</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3742</td><td>0.9808</td><td>1.3078</td><td>0.0000</td><td>-0.0002</td><td>-0.0027</td><td>0.0989</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3742</td><td>0.9835</td><td>1.3077</td><td>0.0000</td><td>-0.0002</td><td>0.0000</td><td>0.0338</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3742</td><td>0.9835</td><td>1.3077</td><td>0.0000</td><td>-0.0002</td><td>0.0000</td><td>0.0338</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3742</td><td>0.9835</td><td>1.3078</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0989</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p05_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3742</td><td>0.9790</td><td>1.3077</td><td>0.0000</td><td>-0.0001</td><td>-0.0045</td><td>0.0145</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p05_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3742</td><td>0.9790</td><td>1.3077</td><td>0.0000</td><td>-0.0001</td><td>-0.0045</td><td>0.0145</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9835</td><td>1.3077</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0338</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9835</td><td>1.3077</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0338</td></tr>
+<tr><td>hcoef17_guard_cov1_n10_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9835</td><td>1.3078</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.1315</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9808</td><td>1.3077</td><td>0.0000</td><td>-0.0001</td><td>-0.0027</td><td>0.0145</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9808</td><td>1.3077</td><td>0.0000</td><td>-0.0001</td><td>-0.0027</td><td>0.0145</td></tr>
+<tr><td>hcoef17_guard_cov1_n10_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9808</td><td>1.3078</td><td>0.0000</td><td>-0.0001</td><td>-0.0027</td><td>0.1315</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p1_cap0p05_w0p25</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9790</td><td>1.3077</td><td>0.0000</td><td>-0.0001</td><td>-0.0045</td><td>0.0700</td></tr>
+<tr><td>hcoef17_guard_cov1_n20_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9835</td><td>1.3078</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0989</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9835</td><td>1.3078</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0145</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9835</td><td>1.3078</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.0145</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p2_cap0p05_w0p1</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9835</td><td>1.3077</td><td>0.0000</td><td>-0.0001</td><td>0.0000</td><td>0.5151</td></tr>
+<tr><td>hcoef17_adaptive_tiered_conservative</td><td>guarded_move</td><td>829</td><td>0.2731</td><td>0.3743</td><td>0.9808</td><td>1.3077</td><td>0.0000</td><td>-0.0000</td><td>-0.0027</td><td>0.0724</td></tr>
+</table>
+
+<p>_Only first 25 of 100 rows shown._</p>
+
+<h2>5. 후보 선택표</h2>
+
+<table>
+<tr><th>candidate</th><th>method</th><th>validation_MdAPE</th><th>validation_MAPE</th><th>validation_p95_APE</th><th>validation_RMSE_log</th><th>delta_MdAPE_vs_stable</th><th>delta_MAPE_vs_stable</th><th>delta_p95_APE_vs_stable</th><th>policy_apply_rate</th><th>test_MdAPE</th><th>test_MAPE</th><th>test_p95_APE</th><th>test_RMSE_log</th><th>test_delta_MdAPE_vs_stable</th><th>test_delta_MAPE_vs_stable</th><th>test_delta_p95_APE_vs_stable</th><th>validation_artist_bootstrap_all3_improve_prob</th><th>validation_row_bootstrap_all3_improve_prob</th><th>validation_artist_bootstrap_any2_improve_prob</th><th>validation_row_bootstrap_any2_improve_prob</th><th>validation_pass_2of3</th><th>fixed_test_p95_guard</th><th>fixed_test_2of3</th><th>bootstrap_gate</th><th>decision</th></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>guarded_move</td><td>0.1253</td><td>0.2095</td><td>0.6542</td><td>0.3258</td><td>-0.0006</td><td>0.0013</td><td>0.0063</td><td>0.7592</td><td>0.1408</td><td>0.2726</td><td>0.8097</td><td>0.3977</td><td>0.0020</td><td>-0.0004</td><td>0.0033</td><td>0.0100</td><td>0.0067</td><td>0.1500</td><td>0.1433</td><td>False</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0077</td><td>0.1384</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>0.1260</td><td>0.2083</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>0.1260</td><td>0.2083</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef17_guard_cov2_n20_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>0.1260</td><td>0.2083</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0096</td><td>0.1384</td><td>0.2729</td><td>0.8064</td><td>0.3988</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>False</td><td>True</td><td>True</td><td>False</td><td>보류</td></tr>
+</table>
+
+<h2>6. bootstrap 요약</h2>
+
+<table>
+<tr><th>split</th><th>validation_scheme</th><th>candidate</th><th>method</th><th>n_bootstrap</th><th>mean_delta_MdAPE_vs_stable</th><th>mean_delta_MAPE_vs_stable</th><th>mean_delta_p95_APE_vs_stable</th><th>mean_delta_RMSE_log_vs_stable</th><th>MdAPE_improve_prob</th><th>MAPE_improve_prob</th><th>p95_improve_prob</th><th>all3_improve_prob</th><th>any2_improve_prob</th></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>guarded_move</td><td>300</td><td>0.0011</td><td>-0.0004</td><td>0.0004</td><td>-0.0012</td><td>0.3800</td><td>0.6600</td><td>0.3533</td><td>0.1067</td><td>0.4567</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>current_70_30</td><td>baseline</td><td>300</td><td>-0.0003</td><td>0.0017</td><td>-0.0056</td><td>0.0007</td><td>0.5100</td><td>0.0467</td><td>0.5733</td><td>0.0267</td><td>0.2933</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>ppv8_service_proxy</td><td>component</td><td>300</td><td>0.0239</td><td>0.0085</td><td>0.0487</td><td>0.0038</td><td>0.0100</td><td>0.2100</td><td>0.3200</td><td>0.0067</td><td>0.1367</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef_stable</td><td>baseline</td><td>300</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0001</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1600</td><td>0.9233</td><td>0.0000</td><td>0.0000</td><td>0.1567</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2733</td><td>0.8967</td><td>0.0000</td><td>0.0000</td><td>0.2700</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1833</td><td>0.9333</td><td>0.0000</td><td>0.0000</td><td>0.1800</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.3300</td><td>0.9067</td><td>0.0000</td><td>0.0000</td><td>0.3267</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2000</td><td>0.9233</td><td>0.0000</td><td>0.0000</td><td>0.1933</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.3467</td><td>0.9200</td><td>0.0000</td><td>0.0000</td><td>0.3367</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2500</td><td>0.9033</td><td>0.0000</td><td>0.0000</td><td>0.2400</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2000</td><td>0.9400</td><td>0.0000</td><td>0.0000</td><td>0.1967</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.3467</td><td>0.9367</td><td>0.0000</td><td>0.0000</td><td>0.3400</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2500</td><td>0.9333</td><td>0.0000</td><td>0.0000</td><td>0.2433</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0001</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1600</td><td>0.9233</td><td>0.0000</td><td>0.0000</td><td>0.1567</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2733</td><td>0.8967</td><td>0.0000</td><td>0.0000</td><td>0.2700</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1833</td><td>0.9333</td><td>0.0000</td><td>0.0000</td><td>0.1800</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.3300</td><td>0.9067</td><td>0.0000</td><td>0.0000</td><td>0.3267</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2000</td><td>0.9233</td><td>0.0000</td><td>0.0000</td><td>0.1933</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.3467</td><td>0.9200</td><td>0.0000</td><td>0.0000</td><td>0.3367</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2500</td><td>0.9033</td><td>0.0000</td><td>0.0000</td><td>0.2400</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2000</td><td>0.9400</td><td>0.0000</td><td>0.0000</td><td>0.1967</td></tr>
+<tr><td>test</td><td>artist_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2500</td><td>0.9333</td><td>0.0000</td><td>0.0000</td><td>0.2433</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>guarded_move</td><td>300</td><td>0.0011</td><td>-0.0003</td><td>0.0010</td><td>-0.0011</td><td>0.3833</td><td>0.6700</td><td>0.3133</td><td>0.0733</td><td>0.4500</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>current_70_30</td><td>baseline</td><td>300</td><td>-0.0004</td><td>0.0018</td><td>-0.0063</td><td>0.0008</td><td>0.5433</td><td>0.0300</td><td>0.5967</td><td>0.0067</td><td>0.3400</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef_stable</td><td>baseline</td><td>300</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>ppv8_service_proxy</td><td>component</td><td>300</td><td>0.0240</td><td>0.0087</td><td>0.0553</td><td>0.0042</td><td>0.0067</td><td>0.1500</td><td>0.2633</td><td>0.0000</td><td>0.1000</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0001</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1600</td><td>0.8833</td><td>0.0000</td><td>0.0000</td><td>0.1600</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2633</td><td>0.8467</td><td>0.0000</td><td>0.0000</td><td>0.2600</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1933</td><td>0.8867</td><td>0.0000</td><td>0.0000</td><td>0.1933</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2967</td><td>0.8567</td><td>0.0000</td><td>0.0000</td><td>0.2933</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1967</td><td>0.8900</td><td>0.0000</td><td>0.0000</td><td>0.1833</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.3167</td><td>0.8667</td><td>0.0000</td><td>0.0000</td><td>0.2900</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2433</td><td>0.8667</td><td>0.0000</td><td>0.0000</td><td>0.2267</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1967</td><td>0.9267</td><td>0.0000</td><td>0.0000</td><td>0.1867</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0004</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.3167</td><td>0.9167</td><td>0.0000</td><td>0.0000</td><td>0.3033</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n10_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2433</td><td>0.9133</td><td>0.0000</td><td>0.0000</td><td>0.2300</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0001</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1600</td><td>0.8833</td><td>0.0000</td><td>0.0000</td><td>0.1600</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>300</td><td>-0.0003</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.2633</td><td>0.8467</td><td>0.0000</td><td>0.0000</td><td>0.2600</td></tr>
+<tr><td>test</td><td>row_bootstrap</td><td>hcoef17_guard_cov2_n20_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>300</td><td>-0.0002</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>0.1933</td><td>0.8867</td><td>0.0000</td><td>0.0000</td><td>0.1933</td></tr>
+</table>
+
+<p>_Only first 40 of 92 rows shown._</p>
+
+<h2>7. 0604 PP-V8/HCOEF 승패 구간</h2>
+
+<table>
+<tr><th>svc_coverage_tier</th><th>gap_band</th><th>winner</th><th>n</th></tr>
+<tr><td>fallback_global</td><td>gap_020_plus</td><td>hcoef_better_or_tie</td><td>7</td></tr>
+<tr><td>fallback_global</td><td>gap_020_plus</td><td>ppv8_better</td><td>11</td></tr>
+<tr><td>high_n</td><td>gap_000_003</td><td>hcoef_better_or_tie</td><td>4</td></tr>
+<tr><td>high_n</td><td>gap_000_003</td><td>ppv8_better</td><td>1</td></tr>
+<tr><td>high_n</td><td>gap_003_005</td><td>hcoef_better_or_tie</td><td>1</td></tr>
+<tr><td>high_n</td><td>gap_003_005</td><td>ppv8_better</td><td>2</td></tr>
+<tr><td>high_n</td><td>gap_005_010</td><td>ppv8_better</td><td>4</td></tr>
+<tr><td>high_n</td><td>gap_010_020</td><td>hcoef_better_or_tie</td><td>7</td></tr>
+<tr><td>high_n</td><td>gap_010_020</td><td>ppv8_better</td><td>18</td></tr>
+<tr><td>high_n</td><td>gap_020_plus</td><td>hcoef_better_or_tie</td><td>8</td></tr>
+<tr><td>high_n</td><td>gap_020_plus</td><td>ppv8_better</td><td>42</td></tr>
+<tr><td>low_n</td><td>gap_000_003</td><td>hcoef_better_or_tie</td><td>44</td></tr>
+<tr><td>low_n</td><td>gap_000_003</td><td>ppv8_better</td><td>34</td></tr>
+<tr><td>low_n</td><td>gap_003_005</td><td>hcoef_better_or_tie</td><td>26</td></tr>
+<tr><td>low_n</td><td>gap_003_005</td><td>ppv8_better</td><td>14</td></tr>
+<tr><td>low_n</td><td>gap_005_010</td><td>hcoef_better_or_tie</td><td>61</td></tr>
+<tr><td>low_n</td><td>gap_005_010</td><td>ppv8_better</td><td>39</td></tr>
+<tr><td>low_n</td><td>gap_010_020</td><td>hcoef_better_or_tie</td><td>43</td></tr>
+<tr><td>low_n</td><td>gap_010_020</td><td>ppv8_better</td><td>43</td></tr>
+<tr><td>low_n</td><td>gap_020_plus</td><td>hcoef_better_or_tie</td><td>114</td></tr>
+<tr><td>low_n</td><td>gap_020_plus</td><td>ppv8_better</td><td>151</td></tr>
+<tr><td>medium_n</td><td>gap_000_003</td><td>hcoef_better_or_tie</td><td>28</td></tr>
+<tr><td>medium_n</td><td>gap_000_003</td><td>ppv8_better</td><td>8</td></tr>
+<tr><td>medium_n</td><td>gap_003_005</td><td>hcoef_better_or_tie</td><td>8</td></tr>
+<tr><td>medium_n</td><td>gap_003_005</td><td>ppv8_better</td><td>4</td></tr>
+<tr><td>medium_n</td><td>gap_005_010</td><td>hcoef_better_or_tie</td><td>14</td></tr>
+<tr><td>medium_n</td><td>gap_005_010</td><td>ppv8_better</td><td>7</td></tr>
+<tr><td>medium_n</td><td>gap_010_020</td><td>hcoef_better_or_tie</td><td>12</td></tr>
+<tr><td>medium_n</td><td>gap_010_020</td><td>ppv8_better</td><td>5</td></tr>
+<tr><td>medium_n</td><td>gap_020_plus</td><td>hcoef_better_or_tie</td><td>19</td></tr>
+<tr><td>medium_n</td><td>gap_020_plus</td><td>ppv8_better</td><td>50</td></tr>
+</table>
+
+<h2>8. 구간별 오차 요약</h2>
+
+<table>
+<tr><th>split</th><th>candidate</th><th>segment_col</th><th>segment_value</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>median_residual_log</th><th>policy_apply_rate</th></tr>
+<tr><td>0604_ex50</td><td>current_70_30</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4302</td><td>0.5054</td><td>1.0000</td><td>0.2961</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p1</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p25</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p1</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p25</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p05_cap0p05_w0p25</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p15_cap0p03_w0p25</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p15_cap0p05_w0p25</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef_stable</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.4344</td><td>0.5047</td><td>0.9999</td><td>0.2799</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>ppv8_service_proxy</td><td>gap_band</td><td>gap_020_plus</td><td>402</td><td>0.3131</td><td>0.4234</td><td>1.1510</td><td>0.1623</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>current_70_30</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2248</td><td>0.3419</td><td>0.8656</td><td>-0.0556</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p1</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2255</td><td>0.3393</td><td>0.8728</td><td>-0.0465</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p25</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2255</td><td>0.3393</td><td>0.8728</td><td>-0.0465</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p1</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2255</td><td>0.3393</td><td>0.8728</td><td>-0.0465</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p25</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2255</td><td>0.3393</td><td>0.8728</td><td>-0.0465</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p05_cap0p05_w0p25</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2255</td><td>0.3393</td><td>0.8728</td><td>-0.0465</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef_stable</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2255</td><td>0.3393</td><td>0.8728</td><td>-0.0465</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p15_cap0p03_w0p25</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2255</td><td>0.3383</td><td>0.8728</td><td>-0.0390</td><td>0.1875</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p15_cap0p05_w0p25</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2255</td><td>0.3376</td><td>0.8728</td><td>-0.0340</td><td>0.1875</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2213</td><td>0.3370</td><td>0.8729</td><td>-0.0215</td><td>0.5781</td></tr>
+<tr><td>0604_ex50</td><td>ppv8_service_proxy</td><td>gap_band</td><td>gap_010_020</td><td>128</td><td>0.2540</td><td>0.3269</td><td>0.7844</td><td>0.0520</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>ppv8_service_proxy</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1764</td><td>0.2618</td><td>0.7685</td><td>0.0806</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>current_70_30</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1531</td><td>0.2572</td><td>0.9461</td><td>0.0641</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1528</td><td>0.2547</td><td>0.9044</td><td>0.0520</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p1</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1498</td><td>0.2514</td><td>0.9526</td><td>0.0403</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p25</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1498</td><td>0.2514</td><td>0.9526</td><td>0.0403</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p1</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1498</td><td>0.2514</td><td>0.9526</td><td>0.0403</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p25</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1498</td><td>0.2514</td><td>0.9526</td><td>0.0403</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p05_cap0p05_w0p25</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1498</td><td>0.2514</td><td>0.9526</td><td>0.0403</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef_stable</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1498</td><td>0.2514</td><td>0.9526</td><td>0.0403</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p15_cap0p03_w0p25</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1436</td><td>0.2510</td><td>0.9406</td><td>0.0403</td><td>0.1520</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n20_gap0p15_cap0p05_w0p25</td><td>gap_band</td><td>gap_005_010</td><td>125</td><td>0.1436</td><td>0.2506</td><td>0.9327</td><td>0.0403</td><td>0.1520</td></tr>
+<tr><td>0604_ex50</td><td>current_70_30</td><td>gap_band</td><td>gap_000_003</td><td>119</td><td>0.1066</td><td>0.1953</td><td>0.5444</td><td>0.0401</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>ppv8_service_proxy</td><td>gap_band</td><td>gap_000_003</td><td>119</td><td>0.1162</td><td>0.1942</td><td>0.5405</td><td>0.0395</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>ppv8_service_proxy</td><td>gap_band</td><td>gap_003_005</td><td>55</td><td>0.1039</td><td>0.1925</td><td>0.4983</td><td>0.0427</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>gap_band</td><td>gap_000_003</td><td>119</td><td>0.1079</td><td>0.1912</td><td>0.5353</td><td>0.0333</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>current_70_30</td><td>gap_band</td><td>gap_003_005</td><td>55</td><td>0.0809</td><td>0.1908</td><td>0.5325</td><td>0.0305</td><td>1.0000</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p03_w0p25</td><td>gap_band</td><td>gap_000_003</td><td>119</td><td>0.1059</td><td>0.1893</td><td>0.5300</td><td>0.0303</td><td>0.3445</td></tr>
+<tr><td>0604_ex50</td><td>hcoef17_guard_cov1_n10_gap0p05_cap0p05_w0p25</td><td>gap_band</td><td>gap_000_003</td><td>119</td><td>0.1059</td><td>0.1893</td><td>0.5300</td><td>0.0303</td><td>0.3445</td></tr>
+</table>
+
+<h2>9. 정책/계수 해석</h2>
+
+<table>
+<tr><th>candidate</th><th>method</th><th>policy_type</th><th>gap</th><th>cap</th><th>weight</th><th>coverage_min</th><th>n_min</th><th>source_col</th><th>description</th></tr>
+<tr><td>hcoef_stable</td><td>baseline</td><td>baseline</td><td></td><td></td><td></td><td></td><td></td><td>hcoef_stable</td><td>HCOEF 안정 후보</td></tr>
+<tr><td>current_70_30</td><td>baseline</td><td>baseline</td><td></td><td></td><td></td><td></td><td></td><td>current_70_30</td><td>기존 70:30 기준</td></tr>
+<tr><td>ppv8_service_proxy</td><td>component</td><td>component</td><td></td><td></td><td></td><td></td><td></td><td>ppv8_service_proxy</td><td>PP-V8/service proxy</td></tr>
+<tr><td>svc_numeric_seed_mean</td><td>component</td><td>component</td><td></td><td></td><td></td><td></td><td></td><td>svc_numeric_seed_mean</td><td>유사 작품 기반 가격 피처</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p02_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0200</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.02, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p02_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0200</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.02, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p02_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0200</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.02, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p03_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0300</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.03, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p03_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0300</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.03, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p03_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0300</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.03, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p05_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0500</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.05, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p05_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0500</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.05, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p03_cap0p05_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.0300</td><td>0.0500</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.03 이하일 때만 cap 0.05, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p02_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0200</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.02, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p02_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0200</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.02, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p02_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0200</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.02, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p03_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0300</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.03, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p03_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0300</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.03, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p03_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0300</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.03, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p05_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0500</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.05, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p05_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0500</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.05, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p05_cap0p05_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.0500</td><td>0.0500</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.05 이하일 때만 cap 0.05, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p02_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0200</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.02, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p02_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0200</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.02, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p02_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0200</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.02, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p03_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0300</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.03, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p03_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0300</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.03, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p03_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0300</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.03, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p05_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0500</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.05, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p05_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0500</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.05, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p1_cap0p05_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.1000</td><td>0.0500</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.1 이하일 때만 cap 0.05, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p02_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0200</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.02, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p02_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0200</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.02, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p02_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0200</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.02, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p03_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0300</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.03, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p03_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0300</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.03, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p03_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0300</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.03, weight 0.5로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p1</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0500</td><td>0.1000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.05, weight 0.1로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p25</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0500</td><td>0.2500</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.05, weight 0.25로 이동.</td></tr>
+<tr><td>hcoef17_guard_agree_gap0p15_cap0p05_w0p5</td><td>guarded_move</td><td>agreement_only</td><td>0.1500</td><td>0.0500</td><td>0.5000</td><td>0.0000</td><td>0.0000</td><td></td><td>PP-V8과 HCOEF 안정 후보 차이가 0.15 이하일 때만 cap 0.05, weight 0.5로 이동.</td></tr>
+</table>
+
+<h2>10. 해석</h2>
+
+<p>- `ppv8_minus_stable`는 PP-V8 예측값과 HCOEF 안정 후보의 로그 가격 차이임.</p>
+<p>- 정책 후보는 이 차이를 그대로 쓰지 않고 `cap`으로 자른 뒤 `weight`만큼만 반영함.</p>
+<p>- `abs_ppv8_stable_gap`은 두 모델이 얼마나 다르게 보는지를 의미함. 차이가 큰 구간에서는 PP-V8을 신뢰하지 않고 HCOEF 안정 후보를 유지함.</p>
+<p>- `svc_coverage_tier`와 `svc_group_n`은 유사 작품 기반 가격 피처의 신뢰도를 나타냄. 표본이 많고 coverage가 높을 때만 PP-V8 이동을 허용하는 후보를 별도 비교함.</p>
+<p>- 이 실험에서 운영 후보가 나오지 않으면, PP-V8은 점 예측 교체보다 신뢰도/가격 범위/risk guard에 쓰는 것이 더 타당함.</p>
+
+<h2>11. 산출물</h2>
+
+<p>- `outputs/metrics.csv`</p>
+<p>- `outputs/candidate_predictions.csv`</p>
+<p>- `outputs/feature_coefficients.csv`</p>
+<p>- `outputs/policy_map.csv`</p>
+<p>- `outputs/residual_analysis.csv`</p>
+<p>- `outputs/bootstrap_or_repeated_split_summary.csv`</p>
+<p>- `outputs/service_feature_gap_audit.csv`</p>
+<p>- `outputs/error_segment_summary.csv`</p>
+<p>- `outputs/selected_candidates.csv`</p></body></html>

@@ -1,0 +1,148 @@
+{
+  "experiment_id": "PP-HCOEF38",
+  "created_at": "2026-06-08T09:33:42",
+  "reference": "current_70_30",
+  "stable_alias": "hcoef_stable",
+  "n_repeats": 60,
+  "seed": 20260609,
+  "n_candidates": 27,
+  "improvers": [
+    {
+      "label": "basis_balanced_all_cap0p005_s0p5",
+      "candidate": "hcoef35_basis_balanced_basis_resid_all_a0p001_cap0p005_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "basis_resid_all",
+      "alpha": 0.001,
+      "cap": 0.005,
+      "strength": 0.5,
+      "basis_col": null,
+      "max_weight": null,
+      "k": null,
+      "clip_margin": null,
+      "description": "HCOEF35 계열 low-risk routing 입력 후보"
+    },
+    {
+      "label": "best_mdape_all_cap0p01_s0p35",
+      "candidate": "hcoef35_best_mdape_basis_resid_all_a0p01_cap0p01_s0p35",
+      "kind": "residual_huber",
+      "feature_key": "basis_resid_all",
+      "alpha": 0.01,
+      "cap": 0.01,
+      "strength": 0.35,
+      "basis_col": null,
+      "max_weight": null,
+      "k": null,
+      "clip_margin": null,
+      "description": "HCOEF35 계열 low-risk routing 입력 후보"
+    },
+    {
+      "label": "p95_near_all_cap0p0075_s0p2",
+      "candidate": "hcoef35_p95_near_basis_resid_all_a0p001_cap0p0075_s0p2",
+      "kind": "residual_huber",
+      "feature_key": "basis_resid_all",
+      "alpha": 0.001,
+      "cap": 0.0075,
+      "strength": 0.2,
+      "basis_col": null,
+      "max_weight": null,
+      "k": null,
+      "clip_margin": null,
+      "description": "HCOEF35 계열 low-risk routing 입력 후보"
+    }
+  ],
+  "routing_rules": [
+    {
+      "rule_key": "spread_q50",
+      "description": "기준가 컴포넌트 차이가 validation 하위 50%인 행",
+      "spread_q": 0.5,
+      "abs_gap_q": null,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge5_spread_q50",
+      "description": "표본 수 5개 이상이고 기준가 컴포넌트 차이가 하위 50%인 행",
+      "spread_q": 0.5,
+      "abs_gap_q": null,
+      "min_n": 5,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge10_spread_q50",
+      "description": "표본 수 10개 이상이고 기준가 컴포넌트 차이가 하위 50%인 행",
+      "spread_q": 0.5,
+      "abs_gap_q": null,
+      "min_n": 10,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge5_spread_q50_gap_q50",
+      "description": "표본 수 5개 이상, 기준가 차이 하위 50%, fallback-stable gap 하위 50%인 행",
+      "spread_q": 0.5,
+      "abs_gap_q": 0.5,
+      "min_n": 5,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge10_spread_q50_gap_q50",
+      "description": "표본 수 10개 이상, 기준가 차이 하위 50%, fallback-stable gap 하위 50%인 행",
+      "spread_q": 0.5,
+      "abs_gap_q": 0.5,
+      "min_n": 10,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge5_spread_q50_area80",
+      "description": "표본 수 5개 이상, 기준가 차이 하위 50%, 면적 중앙 80%인 행",
+      "spread_q": 0.5,
+      "abs_gap_q": null,
+      "min_n": 5,
+      "area_mid_q": 0.8,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge10_spread_q66_area80",
+      "description": "표본 수 10개 이상, 기준가 차이 하위 66%, 면적 중앙 80%인 행",
+      "spread_q": 0.66,
+      "abs_gap_q": null,
+      "min_n": 10,
+      "area_mid_q": 0.8,
+      "levels": null
+    },
+    {
+      "rule_key": "precise_level_spread_q50",
+      "description": "작가+재료 또는 작가+크기+재료 기준가가 있고 기준가 차이가 하위 50%인 행",
+      "spread_q": 0.5,
+      "abs_gap_q": null,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": [
+        "artist_medium_support",
+        "artist_size_medium_support"
+      ]
+    },
+    {
+      "rule_key": "precise_level_spread_q66_gap_q50",
+      "description": "정밀 기준가 level이 있고 기준가 차이 하위 66%, fallback-stable gap 하위 50%인 행",
+      "spread_q": 0.66,
+      "abs_gap_q": 0.5,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": [
+        "artist_medium_support",
+        "artist_size_medium_support"
+      ]
+    }
+  ],
+  "selection_policy": [
+    "validation/OOF first",
+    "fixed test and 0604 confirmation only",
+    "stricter routing after HCOEF37 any2-only stability",
+    "no test residual based routing"
+  ]
+}

@@ -1,0 +1,392 @@
+{
+  "experiment_id": "PP-HCOEF16",
+  "created_at": "2026-06-08T01:45:58",
+  "purpose": "OOF validation of PP-V8/service component as Huber residual input; 0604 stress only",
+  "reference": "current_70_30",
+  "stable": "hcoef2_size_reliability_cap005_s050",
+  "n_repeats": 20,
+  "n_folds": 5,
+  "inputs": {
+    "svc3_predictions": "experiments/track6/PP-SVC3_warm_svc_blend_routing/outputs/predictions.csv",
+    "v8_predictions": "experiments/track6/PP-V8_warm_deployment_simplification/outputs/predictions.csv",
+    "hcoef3_predictions": "experiments/track6/PP-HCOEF3_warm_huber_residual_repeated_validation/outputs/candidate_predictions.csv",
+    "hcoef15_predictions": "experiments/track6/PP-HCOEF15_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv",
+    "operational_0604": "models/track6/price_prediction_v0.1/operational/outputs/0604_evaluation/operational_predictions_with_actual.csv"
+  },
+  "feature_sets": {
+    "ppv8_pred_stack": [
+      "hcoef_stable",
+      "current_70_30",
+      "ppv8_service_proxy",
+      "svc_numeric_seed_mean"
+    ],
+    "ppv8_gap_reliability": [
+      "stable_ppv8_gap",
+      "current_ppv8_gap",
+      "svc_ppv8_gap",
+      "pred_spread",
+      "svc_group_n_log",
+      "coverage_numeric"
+    ],
+    "ppv8_core_reliability": [
+      "hcoef_stable",
+      "current_70_30",
+      "ppv8_service_proxy",
+      "stable_ppv8_gap",
+      "current_ppv8_gap",
+      "svc_group_n_log",
+      "coverage_numeric"
+    ]
+  },
+  "candidate_count": 40,
+  "candidates": [
+    {
+      "candidate": "hcoef16_ppv8_proxy_direct",
+      "kind": "direct",
+      "weight_ppv8": 1.0,
+      "description": "PP-V8/service component 단독. 0604에서는 강하지만 fixed test/OOF 대조군으로만 사용."
+    },
+    {
+      "candidate": "hcoef16_stable_ppv8_blend_w010",
+      "kind": "direct",
+      "weight_ppv8": 0.1,
+      "description": "HCOEF 안정 후보 90% + PP-V8 10% 제한 결합."
+    },
+    {
+      "candidate": "hcoef16_stable_ppv8_blend_w025",
+      "kind": "direct",
+      "weight_ppv8": 0.25,
+      "description": "HCOEF 안정 후보 75% + PP-V8 25% 제한 결합."
+    },
+    {
+      "candidate": "hcoef16_stable_ppv8_blend_w050",
+      "kind": "direct",
+      "weight_ppv8": 0.5,
+      "description": "HCOEF 안정 후보 50% + PP-V8 50% 공격형 결합."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.25,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.02, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.5,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.02, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.25,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.03, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.5,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.03, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.25,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.05, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.5,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.05, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.25,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.02, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.5,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.02, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.25,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.03, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.5,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.03, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p05_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.25,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.05, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p05_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_pred_stack",
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5,
+      "description": "ppv8_pred_stack 피처 기반 Huber residual 보정, cap 0.05, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p02_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.25,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.02, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p02_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.5,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.02, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p03_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.25,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.03, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p03_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.5,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.03, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p05_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.25,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.05, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p05_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.5,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.05, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.25,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.02, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.5,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.02, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p03_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.25,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.03, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p03_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.5,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.03, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p05_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.25,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.05, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p05_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_gap_reliability",
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5,
+      "description": "ppv8_gap_reliability 피처 기반 Huber residual 보정, cap 0.05, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.25,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.02, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.001,
+      "cap": 0.02,
+      "strength": 0.5,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.02, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p03_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.25,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.03, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p03_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.001,
+      "cap": 0.03,
+      "strength": 0.5,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.03, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.25,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.05, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.001,
+      "cap": 0.05,
+      "strength": 0.5,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.05, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.25,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.02, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.01,
+      "cap": 0.02,
+      "strength": 0.5,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.02, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p03_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.25,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.03, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p03_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.01,
+      "cap": 0.03,
+      "strength": 0.5,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.03, strength 0.5."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p25",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.25,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.05, strength 0.25."
+    },
+    {
+      "candidate": "hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "ppv8_core_reliability",
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5,
+      "description": "ppv8_core_reliability 피처 기반 Huber residual 보정, cap 0.05, strength 0.5."
+    }
+  ]
+}

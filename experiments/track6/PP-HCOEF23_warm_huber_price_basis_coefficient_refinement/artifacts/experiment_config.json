@@ -1,0 +1,51 @@
+{
+  "experiment_id": "PP-HCOEF23",
+  "created_at": "2026-06-08T04:24:22",
+  "purpose": "Current Warm Huber stable residual driver audit before new basis/coefficient tuning.",
+  "input_predictions": "experiments/track6/PP-HCOEF22_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv",
+  "baseline_candidate": "hcoef_stable",
+  "minimum_reference": "current_70_30",
+  "focus_candidates": [
+    "hcoef_stable",
+    "current_70_30",
+    "hcoef22_route_mape_guard",
+    "hcoef22_route_p95_guard",
+    "hcoef22_route_any2_guard"
+  ],
+  "segment_columns": [
+    "svc_coverage_tier",
+    "svc_group_level",
+    "svc_group_n_band",
+    "qwidth_band",
+    "gap_band",
+    "pred_spread_band",
+    "service_confidence_tier",
+    "stable_pred_price_band",
+    "log_area_band",
+    "medium_support_bucket_grouped"
+  ],
+  "numeric_features_for_coefficient_audit": [
+    "quantile_width",
+    "l10_price_range_ratio",
+    "svc_group_n",
+    "log_area",
+    "stable_current_gap_abs",
+    "stable_ppv8_gap_abs",
+    "stable_svc_gap_abs",
+    "ppv8_svc_gap_abs"
+  ],
+  "categorical_features_for_coefficient_audit": [
+    "svc_coverage_tier",
+    "svc_group_level",
+    "svc_group_n_band",
+    "qwidth_band",
+    "gap_band",
+    "pred_spread_band",
+    "service_confidence_tier",
+    "log_area_band",
+    "medium_support_bucket_grouped"
+  ],
+  "selection_policy": "No threshold, coefficient, or correction is selected from fixed test or 0604 residuals.",
+  "bootstrap_iterations": 300,
+  "min_segment_n": 15
+}

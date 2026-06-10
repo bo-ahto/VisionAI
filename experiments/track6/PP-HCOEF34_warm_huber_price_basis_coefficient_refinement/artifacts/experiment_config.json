@@ -1,0 +1,111 @@
+{
+  "experiment_id": "PP-HCOEF34",
+  "experiment_slug": "PP-HCOEF34_warm_huber_price_basis_coefficient_refinement",
+  "created_at": "2026-06-08T08:02:19",
+  "reference_candidate": "current_70_30",
+  "stable_candidate": {
+    "candidate": "hcoef2_size_reliability_cap005_s050",
+    "source_candidate": "residual_huber_resid_basis_size_reliability_alpha0.01_cap0.05_s0.50",
+    "feature_key": "resid_basis_size_reliability",
+    "alpha": 0.01,
+    "cap": 0.05,
+    "strength": 0.5,
+    "purpose": "작은 폭 MAPE/p95 안정화 대안"
+  },
+  "n_folds": 5,
+  "n_repeats": 12,
+  "seed": 20260608,
+  "basis_levels": {
+    "artist_overall": [
+      "artist_key"
+    ],
+    "artist_size": [
+      "artist_key",
+      "size_bin"
+    ],
+    "artist_medium_support": [
+      "artist_key",
+      "medium_support_bucket"
+    ],
+    "artist_size_medium_support": [
+      "artist_key",
+      "size_bin",
+      "medium_support_bucket"
+    ]
+  },
+  "fallback_order": [
+    "artist_size_medium_support",
+    "artist_medium_support",
+    "artist_size",
+    "artist_overall"
+  ],
+  "fallback_min_ns": [
+    5,
+    10
+  ],
+  "shrink_ks": [
+    5.0,
+    20.0,
+    50.0
+  ],
+  "meta_feature_sets": {
+    "basis_trust_core": [
+      "hcoef_stable",
+      "current_70_30",
+      "basis_fallback_m5",
+      "basis_shrink_k20",
+      "basis_fallback_m5_n_log",
+      "basis_fallback_m5_iqr",
+      "log_area"
+    ],
+    "basis_generation_all": [
+      "hcoef_stable",
+      "current_70_30",
+      "basis_artist_overall_m1",
+      "basis_artist_size_m5",
+      "basis_artist_medium_support_m5",
+      "basis_artist_size_medium_support_m5",
+      "basis_fallback_m5",
+      "basis_shrink_k5",
+      "basis_shrink_k20",
+      "basis_fallback_m5_n_log",
+      "basis_fallback_m5_iqr",
+      "basis_component_spread",
+      "log_area"
+    ],
+    "basis_gap_reliability": [
+      "fallback_stable_gap",
+      "shrink20_stable_gap",
+      "current_stable_gap",
+      "fallback_shrink20_gap",
+      "basis_fallback_m5_n_log",
+      "basis_fallback_m5_iqr",
+      "basis_component_spread",
+      "log_area"
+    ]
+  },
+  "residual_feature_sets": {
+    "basis_resid_core": [
+      "fallback_stable_gap",
+      "shrink20_stable_gap",
+      "current_stable_gap",
+      "basis_fallback_m5_n_log",
+      "basis_fallback_m5_iqr",
+      "log_area"
+    ],
+    "basis_resid_all": [
+      "fallback_stable_gap",
+      "shrink20_stable_gap",
+      "basis_artist_overall_m1_gap",
+      "basis_artist_size_m5_gap",
+      "basis_artist_medium_support_m5_gap",
+      "basis_artist_size_medium_support_m5_gap",
+      "basis_component_spread",
+      "basis_fallback_m5_n_log",
+      "basis_fallback_m5_iqr",
+      "log_area"
+    ]
+  },
+  "candidate_count": 57,
+  "selection_policy": "validation repeated OOF first, fixed test/0604 confirmation only"
+}
