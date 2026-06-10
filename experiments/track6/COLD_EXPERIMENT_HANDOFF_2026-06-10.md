@@ -31,14 +31,20 @@ Cold(unseen 작가) 가격 예측을 Warm Codex 운영 체계(base lock → 게�
 | `PP-PCOLD1` (Phase 0.5) | pseudo-cold 평가셋(seed 3개, 각 ~210작가/1,206행). pseudo defense 0.5772/1.1877/4.1654 — real cold보다 어려움. **신규 작가의 검색 lookup 커버리지 0.0** | 절대 레벨 비교 금지, base 대비 delta + seed 3개 방향 일치로만 사용. 검색 커버리지 확대는 신규 작가 서빙의 전제 조건 |
 | `PP-CDIAG1` (Phase 1) | 위험 구간(validation): gap_extreme(운영 2.02배), qwidth_extreme(1.77배/과소예측), guard_on, artist_rows_3_9. APE 상관: qwidth +0.215, 검색 delta -0.159, 작가 행수 -0.157. **위험 구간의 test 전이 약함(0.60~0.94) → 가설 취급** | Phase 2~3 타겟: qwidth_extreme+저행수 작가(이미지 선택 적용), 검색 커버리지(점 예측+fallback 양쪽 유효), qwidth는 표시 정책으로 |
 | `PP-CCONF1` (Phase 2-1) | research tier(qwidth+gap+검색커버)는 test p95 분리 유지(high 0.99 vs low 2.99), pseudo-cold seed 3개 방향 일치 → **표시 정책 채택 권고**(high=좁은 범위/low=넓은 범위+우선 검수, v0.3 플래그와 OR 2단 검수). **operational tier(v0.2 qwidth 단독)는 test 역전(high tier MAPE 2.10/p95 8.40/범위적중 53.8%) → 기각** | raw-input 환경 신뢰도 신호는 추가 입력 확보 전 제공 금지. low tier(29.2%)는 v0.3 플래그(45.2%)보다 정밀한 우선 검수 축 |
+| `PP-CIMG1` (Phase 2-2) | **기각** — CLIP PCA 저차원 residual은 artist-grouped OOF에서 신호 소멸(MAPE 개선 1/72, 게이트 진입 0). OOF 보정값 vs 잔차 상관 0.06~0.08 = 작가 경계 일반화 신호 없음 | 이미지의 가격 신호는 같은 작가 내 시각 유사성이 주성분 → Cold 점 예측 보정 부적합. 용도 전환 후보(신뢰도 보조 신호)로만 유지. IMG-P4식 test 관찰 개선은 강한 검증에서 사라짐 |
 
 ## 다음 작업 (Phase 2, 착수 전 결정 필요)
 
 1. **PP-CSRCH1 — 검색 delta 커버리지 확대 설계**: 현 lookup은 cold split 372작가 frozen. 신규 작가 커버 0% (PCOLD1 정량 확인). 수집 확대는 비용이 들어 **cold 운영 트래픽 전망 확인 후 착수 결정** (로드맵 §3). 선행으로 "수집 없이 가능한 것" 검증 가치: 검색 delta를 작가 단위가 아니라 작가 메타/매체/가격대 그룹 단위로 일반화해 미커버 작가에 전이하는 후보.
 2. **PP-CIMG1 — 이미지 임베딩 선택 적용**: IMG-P4 결론(전 구간 X, 고위험 구간 한정 residual 보정) + CDIAG1 위험 구간(qwidth_extreme, artist_rows_3_9)을 결합. pseudo-cold(PCOLD1)를 외부 검증 축으로 사용. 데이터 준비 상태는 `audit_track6_image_multimodal_readiness.py` 참고.
-3. ~~PP-CCONF1~~ 완료 (위 표 참조).
+2. ~~PP-CIMG1~~ 완료 — 기각 (위 표 참조).
+3. ~~PP-CCONF1~~ 완료 — 채택 권고 (위 표 참조).
 
-권장 순서: 2(CIMG1, 다음 차례 — CLIP ViT-B/32 임베딩 캐시 `data/curated/image_embeddings_clipvitb32_v1.npy` 보유 확인, IMG-P1~4 산출물 로컬 존재) → 1(CSRCH1, cold 트래픽 전망 확인 후). CIMG1 적용 구간은 CDIAG1 위험 구간 + CCONF1 low tier로 한정하고, 채택은 PP-CBASE1 artist holdout 게이트로 판단.
+남은 작업: **PP-CSRCH1 (Phase 2-3)** 단계 분리 —
+- (a) 수집 없이 가능한 선행 검증: 기존 검색 delta(372작가)를 작가 메타/매체/가격대 그룹 단위로 일반화해 미커버 작가에 전이하는 후보. pseudo-cold(전원 미커버)가 정확한 평가 축. artist holdout 게이트 적용.
+- (b) 수집 확대(신규 작가 검색 delta): 비용 발생 — **cold 운영 트래픽 전망 확인 후 착수 결정** (사용자 판단 필요).
+
+Phase 3(PP-CCORR, 보정 직교 결합)은 (a) 결과를 본 뒤 진행. Phase 4 표시 정책은 CCONF1 권고안을 운영 artifact(v0.3 정책 JSON)에 반영하는 작업이 남아 있음.
 
 ## 재시작 후 바로 확인할 파일
 
