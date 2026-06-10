@@ -1,0 +1,196 @@
+{
+  "candidate": "warm_high_confidence_residual_huber_rowid_dedup",
+  "base_candidate": "hcoef_stable",
+  "model_path": "experiments/track6/SUB-MAPE15_warm_high_confidence_100_submission/artifacts/warm_high_confidence_residual_huber.joblib",
+  "feature_columns": [
+    "quantile_width",
+    "l10_price_range_ratio",
+    "svc_group_n_log",
+    "log_area",
+    "component_prediction_spread",
+    "current_vs_stable_gap_abs",
+    "current_minus_stable_log",
+    "ppv8_minus_stable_log",
+    "svc_minus_stable_log",
+    "l10_minus_stable_log"
+  ],
+  "feature_descriptions": {
+    "quantile_width": "Warm L10 quantile 모델의 q90_log - q10_log. 예측 범위가 좁을수록 가격 불확실성이 낮다는 신호로 사용한다.",
+    "l10_price_range_ratio": "Warm L10 가격 범위를 중앙 예측 가격으로 나눈 비율. 가격 범위가 과도하게 넓은 케이스를 위험 신호로 본다.",
+    "svc_group_n_log": "유사작품 기반 표본 수 svc_group_n에 log1p를 적용한 값. 표본 수 신뢰도를 완만하게 반영한다.",
+    "log_area": "작품 면적의 로그값. 크기에 따른 가격 잔차 패턴을 보정하기 위한 보조 피처다.",
+    "component_prediction_spread": "hcoef_stable, current_70_30, ppv8_service_proxy, svc_numeric_seed_mean, l10_seq_pred_log 간 로그 예측 표준편차. 모델 컴포넌트들이 서로 비슷하게 예측하는지 측정한다.",
+    "current_vs_stable_gap_abs": "abs(current_70_30 - hcoef_stable). 운영 기준가와 안정 Warm 기준가의 차이가 작을수록 안정 구간으로 본다.",
+    "current_minus_stable_log": "current_70_30 - hcoef_stable. 운영 70:30 기준가가 안정 기준가보다 높은지 낮은지 방향성을 제공한다.",
+    "ppv8_minus_stable_log": "ppv8_service_proxy - hcoef_stable. 방어형 PP-V8 컴포넌트와 안정 기준가의 차이를 제공한다.",
+    "svc_minus_stable_log": "svc_numeric_seed_mean - hcoef_stable. 유사작품 기반 가격과 안정 기준가의 차이를 제공한다.",
+    "l10_minus_stable_log": "l10_seq_pred_log - hcoef_stable. Warm L10 순차 컴포넌트와 안정 기준가의 차이를 제공한다."
+  },
+  "test_selection_feature_descriptions": {
+    "quantile_width": "테스트셋 고신뢰 조건: 1.20 이하",
+    "component_prediction_spread": "테스트셋 고신뢰 조건: 0.10 이하",
+    "l10_price_range_ratio": "테스트셋 고신뢰 조건: 2.00 이하",
+    "svc_group_n": "테스트셋 고신뢰 조건: 5 이상",
+    "current_vs_stable_gap_abs": "테스트셋 고신뢰 조건: 0.025 이하"
+  },
+  "residual_adjustment_cap_log": 0.01,
+  "training_selection_rule": {
+    "quantile_width_max": 1.25,
+    "component_prediction_spread_max": 0.12,
+    "l10_price_range_ratio_max": 2.0,
+    "svc_group_n_min": 5,
+    "current_vs_stable_gap_abs_max": 0.025
+  },
+  "test_selection_rule": {
+    "quantile_width_max": 1.2,
+    "component_prediction_spread_max": 0.1,
+    "l10_price_range_ratio_max": 2.0,
+    "svc_group_n_min": 5,
+    "current_vs_stable_gap_abs_max": 0.025
+  },
+  "source_dedupe_audit": {
+    "source_rows_by_split": {
+      "test": 607,
+      "validation": 1038
+    },
+    "source_unique_row_ids_by_split": {
+      "test": 607,
+      "validation": 519
+    },
+    "deduplicated_rows_by_split": {
+      "test": 607,
+      "validation": 519
+    },
+    "duplicate_rows_removed_by_split": {
+      "test": 0,
+      "validation": 519
+    },
+    "dedupe_key": [
+      "split",
+      "_track6_row_id"
+    ],
+    "dedupe_reason": "validation source includes row-level and artist-level OOF views with identical price/feature values for this candidate"
+  },
+  "model_info": {
+    "model_type": "HuberRegressor residual calibrator",
+    "alpha": 0.001,
+    "epsilon": 1.35,
+    "candidate_residual_adjustment_caps_log": [
+      0.0,
+      0.01,
+      0.02,
+      0.03,
+      0.05,
+      0.08
+    ],
+    "selected_residual_adjustment_cap_log": 0.01,
+    "selection_basis": "lowest 5-fold OOF MAPE on deduplicated validation high-confidence row ids only; p95_APE tie-breaker",
+    "oof_metrics": {
+      "n": 110,
+      "MdAPE": 0.0873433675903747,
+      "MAPE": 0.142649099180738,
+      "p95_APE": 0.5056882533775144,
+      "RMSE_log": 0.24884831913469482,
+      "within_15": 0.6818181818181818,
+      "within_30": 0.8454545454545455,
+      "within_50": 0.9454545454545454,
+      "over_50pct_error_rate": 0.05454545454545454
+    },
+    "cap_search_metrics": [
+      {
+        "cap": 0.0,
+        "n": 110,
+        "MdAPE": 0.08403033607968449,
+        "MAPE": 0.14329975187603766,
+        "p95_APE": 0.4914039010829518,
+        "RMSE_log": 0.25003709841193794,
+        "within_15": 0.6727272727272727,
+        "within_30": 0.8363636363636363,
+        "within_50": 0.9454545454545454,
+        "over_50pct_error_rate": 0.05454545454545454
+      },
+      {
+        "cap": 0.01,
+        "n": 110,
+        "MdAPE": 0.0873433675903747,
+        "MAPE": 0.142649099180738,
+        "p95_APE": 0.5056882533775144,
+        "RMSE_log": 0.24884831913469482,
+        "within_15": 0.6818181818181818,
+        "within_30": 0.8454545454545455,
+        "within_50": 0.9454545454545454,
+        "over_50pct_error_rate": 0.05454545454545454
+      },
+      {
+        "cap": 0.02,
+        "n": 110,
+        "MdAPE": 0.08515167038047533,
+        "MAPE": 0.14313475966119338,
+        "p95_APE": 0.5060461406495685,
+        "RMSE_log": 0.24808560439864785,
+        "within_15": 0.6818181818181818,
+        "within_30": 0.8454545454545455,
+        "within_50": 0.9454545454545454,
+        "over_50pct_error_rate": 0.05454545454545454
+      },
+      {
+        "cap": 0.03,
+        "n": 110,
+        "MdAPE": 0.08563806453085979,
+        "MAPE": 0.14437356094985393,
+        "p95_APE": 0.5034480053499475,
+        "RMSE_log": 0.2480314053859385,
+        "within_15": 0.6545454545454545,
+        "within_30": 0.8545454545454545,
+        "within_50": 0.9454545454545454,
+        "over_50pct_error_rate": 0.05454545454545454
+      },
+      {
+        "cap": 0.05,
+        "n": 110,
+        "MdAPE": 0.08855623357632317,
+        "MAPE": 0.14747604802751982,
+        "p95_APE": 0.5034480053499475,
+        "RMSE_log": 0.24853820287940084,
+        "within_15": 0.6363636363636364,
+        "within_30": 0.8545454545454545,
+        "within_50": 0.9454545454545454,
+        "over_50pct_error_rate": 0.05454545454545454
+      },
+      {
+        "cap": 0.08,
+        "n": 110,
+        "MdAPE": 0.08720904406898317,
+        "MAPE": 0.1509931618220104,
+        "p95_APE": 0.5034480053499475,
+        "RMSE_log": 0.2480831018241893,
+        "within_15": 0.6090909090909091,
+        "within_30": 0.8727272727272727,
+        "within_50": 0.9454545454545454,
+        "over_50pct_error_rate": 0.05454545454545454
+      }
+    ]
+  },
+  "baseline_test_metrics": {
+    "n": 100,
+    "MdAPE": 0.09495897423239064,
+    "MAPE": 0.1272155916323314,
+    "p95_APE": 0.31867583516128073,
+    "RMSE_log": 0.16752354305843145,
+    "within_15": 0.68,
+    "within_30": 0.93,
+    "within_50": 0.98,
+    "over_50pct_error_rate": 0.02
+  },
+  "final_test_metrics": {
+    "n": 100,
+    "MdAPE": 0.09940639734326771,
+    "MAPE": 0.12604117404013018,
+    "p95_APE": 0.3118284134661705,
+    "RMSE_log": 0.16625841299581517,
+    "within_15": 0.68,
+    "within_30": 0.94,
+    "within_50": 0.99,
+    "over_50pct_error_rate": 0.01
+  }
+}

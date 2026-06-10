@@ -1,0 +1,48 @@
+{
+  "purpose": "Blind candidate pool input schema for the frozen Warm high-confidence price prediction protocol.",
+  "row_requirement": "Provide a candidate pool large enough to contain at least 100 rows satisfying the fixed high-confidence rule. Labels must not be included in the prediction input file.",
+  "required_columns": {
+    "hcoef_stable": "Frozen Warm/HCOEF stable base log-price prediction.",
+    "current_70_30": "Operational 70:30 blended log-price candidate.",
+    "ppv8_service_proxy": "Defensive PP-V8/service component log-price candidate.",
+    "svc_numeric_seed_mean": "Comparable-artwork numeric seed mean log-price candidate.",
+    "l10_seq_pred_log": "Warm L10 sequential feature log-price candidate.",
+    "quantile_width": "Warm L10 quantile width, q90_log - q10_log.",
+    "l10_price_range_ratio": "L10 price range ratio around the center prediction.",
+    "svc_group_n": "Comparable-artwork group sample count.",
+    "log_area": "Log-transformed artwork area."
+  },
+  "optional_metadata_columns": {
+    "_track6_row_id": "Stable internal row identifier. Used for deterministic sorting and label join if available.",
+    "external_artwork_id": "External artwork identifier. Used for deterministic sorting and label join if _track6_row_id is unavailable.",
+    "artist_key": "Artist identifier.",
+    "artist_name_ko": "Korean artist name.",
+    "artist_name_en": "English artist name.",
+    "title": "Artwork title.",
+    "medium_support_bucket": "Medium/support bucket.",
+    "svc_group_level": "Comparable group level.",
+    "svc_coverage_tier": "Comparable coverage tier.",
+    "service_confidence_tier": "Existing service confidence tier."
+  },
+  "fixed_high_confidence_rule": {
+    "quantile_width_max": 1.2,
+    "component_prediction_spread_max": 0.1,
+    "l10_price_range_ratio_max": 2.0,
+    "svc_group_n_min": 5,
+    "current_vs_stable_gap_abs_max": 0.025
+  },
+  "forbidden_prediction_input_columns": [
+    "actual_log",
+    "actual_price",
+    "final_price_log",
+    "final_price",
+    "absolute_percentage_error"
+  ],
+  "prediction_output_columns": {
+    "blind_high_confidence_eligible": "Whether the row satisfied the fixed high-confidence rule.",
+    "blind_selected_for_evaluation": "Whether the row was selected into the fixed 100-row evaluation subset.",
+    "high_confidence_risk_score": "Feature-only ranking score. Lower is more reliable.",
+    "final_price_log": "Frozen model final log-price prediction.",
+    "final_price": "Frozen model final price prediction."
+  }
+}

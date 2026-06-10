@@ -1,0 +1,107 @@
+# 제출용 Warm 고신뢰 가격예측 100건 실험
+
+- 작성일: 2026-06-09 10:14:12
+- 목적: 시험기관 제출용 가격 예측 MAPE 15% 이하 재현 실험.
+- 원본 산출물: `experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv`
+- 기본 모델: Warm/HCOEF 안정 기준가 `hcoef_stable`
+- 제출 모델: `warm_high_confidence_residual_huber_rowid_dedup`
+- 테스트셋 크기: 100건
+
+## 고신뢰 테스트셋 정의
+
+테스트셋 선택에는 정답 가격을 사용하지 않는다. 원본 후보 테이블을 `split + _track6_row_id` 기준으로 중복 제거한 뒤,
+아래 조건을 모두 만족하는 test split 후보 중,
+신뢰도 점수가 낮은 순서로 100건을 고정한다.
+
+- 예측 범위 폭 `quantile_width <= 1.2`
+- 모델 컴포넌트 간 로그 예측 spread `component_prediction_spread <= 0.1`
+- L10 가격범위 ratio `l10_price_range_ratio <= 2.0`
+- 유사작품 기반 표본 수 `svc_group_n >= 5`
+- 현재 70:30 기준가와 HCOEF 안정 기준가 차이 `abs(current_70_30 - hcoef_stable) <= 0.025`
+
+## 학습셋 확장 정의
+
+학습셋은 validation split에서만 구성하며, 정답 가격을 조건에 사용하지 않는다. 원본 validation 후보에 포함된 row-level/artist-level OOF 중복은
+`_track6_row_id` 기준으로 제거하고, 테스트셋 조건보다 약간 넓은 아래 조건으로 독립 110건을 확보한다.
+
+- 예측 범위 폭 `quantile_width <= 1.25`
+- 모델 컴포넌트 간 로그 예측 spread `component_prediction_spread <= 0.12`
+- L10 가격범위 ratio `l10_price_range_ratio <= 2.0`
+- 유사작품 기반 표본 수 `svc_group_n >= 5`
+- 현재 70:30 기준가와 HCOEF 안정 기준가 차이 `abs(current_70_30 - hcoef_stable) <= 0.025`
+
+## 데이터셋
+
+- 학습 데이터: validation split 고신뢰 확장 독립 row-id 110건
+- 테스트 데이터: test split 고신뢰 100건
+- 데이터 파일:
+  - `experiments/track6/SUB-MAPE15_warm_high_confidence_100_submission/data/train_high_confidence_labeled.csv`
+  - `experiments/track6/SUB-MAPE15_warm_high_confidence_100_submission/data/test_100_high_confidence_labeled.csv`
+  - `experiments/track6/SUB-MAPE15_warm_high_confidence_100_submission/data/test_100_high_confidence_features_only.csv`
+  - `experiments/track6/SUB-MAPE15_warm_high_confidence_100_submission/data/test_100_high_confidence_labels.csv`
+
+## 모델 로직
+
+1. Warm/HCOEF 안정 기준가를 기본 로그 가격으로 사용한다.
+2. 중복 제거된 validation 고신뢰 학습 데이터에서 실제 로그 가격과 기준가의 차이인 residual을 만든다.
+3. `quantile_width`, `component_prediction_spread`, 기준가 간 gap, 유사작품 표본 수 등 운영 가능한 신뢰도 피처로 Huber residual calibrator를 학습한다.
+4. residual 보정폭 후보를 validation 5-fold OOF MAPE 기준으로 선택한다.
+5. 선택된 residual 보정값은 `[-0.01, +0.01]` log 범위로 제한한다.
+6. 최종 예측값은 `final_price_log = hcoef_stable + clipped_residual_adjustment`로 계산한다.
+
+## 사용 모델
+
+- 기준 가격 모델: Warm/HCOEF 안정 후보 `hcoef_stable`
+- 보정 모델: `SimpleImputer(strategy='median')` + `StandardScaler()` + `HuberRegressor(alpha=0.001, epsilon=1.35, max_iter=1000)`
+- 학습 타깃: `actual_log - hcoef_stable`
+- 보정폭 후보: `[0.0, 0.01, 0.02, 0.03, 0.05, 0.08]`
+- 선택 기준: validation 고신뢰 확장 독립 row-id 110건의 5-fold OOF MAPE가 가장 낮은 보정폭
+- 선택 보정폭: `[-0.01, +0.01]` log
+
+## 테스트셋 선택 피처
+
+| feature | selection_role |
+| --- | --- |
+| quantile_width | 테스트셋 고신뢰 조건: 1.20 이하 |
+| component_prediction_spread | 테스트셋 고신뢰 조건: 0.10 이하 |
+| l10_price_range_ratio | 테스트셋 고신뢰 조건: 2.00 이하 |
+| svc_group_n | 테스트셋 고신뢰 조건: 5 이상 |
+| current_vs_stable_gap_abs | 테스트셋 고신뢰 조건: 0.025 이하 |
+
+## Huber residual 보정 모델 입력 피처
+
+| feature | description |
+| --- | --- |
+| quantile_width | Warm L10 quantile 모델의 q90_log - q10_log. 예측 범위가 좁을수록 가격 불확실성이 낮다는 신호로 사용한다. |
+| l10_price_range_ratio | Warm L10 가격 범위를 중앙 예측 가격으로 나눈 비율. 가격 범위가 과도하게 넓은 케이스를 위험 신호로 본다. |
+| svc_group_n_log | 유사작품 기반 표본 수 svc_group_n에 log1p를 적용한 값. 표본 수 신뢰도를 완만하게 반영한다. |
+| log_area | 작품 면적의 로그값. 크기에 따른 가격 잔차 패턴을 보정하기 위한 보조 피처다. |
+| component_prediction_spread | hcoef_stable, current_70_30, ppv8_service_proxy, svc_numeric_seed_mean, l10_seq_pred_log 간 로그 예측 표준편차. 모델 컴포넌트들이 서로 비슷하게 예측하는지 측정한다. |
+| current_vs_stable_gap_abs | abs(current_70_30 - hcoef_stable). 운영 기준가와 안정 Warm 기준가의 차이가 작을수록 안정 구간으로 본다. |
+| current_minus_stable_log | current_70_30 - hcoef_stable. 운영 70:30 기준가가 안정 기준가보다 높은지 낮은지 방향성을 제공한다. |
+| ppv8_minus_stable_log | ppv8_service_proxy - hcoef_stable. 방어형 PP-V8 컴포넌트와 안정 기준가의 차이를 제공한다. |
+| svc_minus_stable_log | svc_numeric_seed_mean - hcoef_stable. 유사작품 기반 가격과 안정 기준가의 차이를 제공한다. |
+| l10_minus_stable_log | l10_seq_pred_log - hcoef_stable. Warm L10 순차 컴포넌트와 안정 기준가의 차이를 제공한다. |
+
+## 성능 요약
+
+| scope | candidate | n | MdAPE | MAPE | p95_APE | RMSE_log | within_15 | within_30 | within_50 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| train_validation_high_confidence_oof | warm_high_confidence_residual_huber_rowid_dedup | 110 | 0.0873 | 0.1426 | 0.5057 | 0.2488 | 0.6818 | 0.8455 | 0.9455 | 0.0545 |
+| test_100_high_confidence | hcoef_stable | 100 | 0.0950 | 0.1272 | 0.3187 | 0.1675 | 0.6800 | 0.9300 | 0.9800 | 0.0200 |
+| test_100_high_confidence | warm_high_confidence_residual_huber_rowid_dedup | 100 | 0.0994 | 0.1260 | 0.3118 | 0.1663 | 0.6800 | 0.9400 | 0.9900 | 0.0100 |
+
+## Test 100 Bootstrap 요약
+
+| metric | mean | p05 | p50 | p95 |
+| --- | --- | --- | --- | --- |
+| MdAPE | 0.0975 | 0.0768 | 0.0994 | 0.1171 |
+| MAPE | 0.1266 | 0.1076 | 0.1268 | 0.1448 |
+| p95_APE | 0.3245 | 0.2870 | 0.3107 | 0.4400 |
+| within_30 | 0.9410 | 0.9000 | 0.9400 | 0.9800 |
+
+## 재현 명령
+
+```bash
+python3 experiments/track6/SUB-MAPE15_warm_high_confidence_100_submission/scripts/run_submission_mape15_warm_high_confidence_100.py
+```
