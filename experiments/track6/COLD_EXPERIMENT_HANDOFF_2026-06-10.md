@@ -96,3 +96,8 @@ C 강화(grp_price_proxy)로 `w0.3` blend가 validation MdAPE 비악화 + MAPE/p
 ## 추가 (PP-CBOOST3): CBOOST 라인 종결
 
 C 앙상블/적응 w로도 MdAPE 비악화 확률(0.12~0.28) 불변 — 구조적 트레이드오프 확정, all-metric 교체 불가. MAPE 개선은 0.91~0.98로 확립. **후보 확정: 이종 blend w0.3 = MAPE/p95 방어 목적별 후보**(test MAPE -3.5%/p95 -13%, 대가 MdAPE 미세 악화). 채택 여부는 서비스 목적 의사결정(채택 시 ARTIFACT5로 v0.2 옵션 동결). 추가 안정화 실험 비권고. Cold 최종 좌표: 전 지표 개선=검색 수집 확대 / 수집 없는 목적별 개선=이 blend / 현행=v0.3+v0.4.
+
+
+## 추가 (PP-COLD-ARTIFACT5): blend 채택·동결 완료
+
+사용자 결정으로 이종 blend(w0.3)를 v0.5 운영 옵션으로 동결(raw-input p95 방어 모드, test 0.4822/1.1790/3.6490, CBOOST3 재현 4.4e-16). Cold artifact 5종 완성. 남은 의사결정 = 검색 수집 확대 1건.
