@@ -54,6 +54,16 @@ Cold 로드맵 Phase 0~4 전체 완료. 합리적 종착점 도달:
 - **정책층**: v0.4 (신뢰도 tier/표시/2단 검수 + 미커버 상수 fallback 활성)
 - **잔여 개선 경로 = 새 정보뿐**: ① 검색 수집 확대(미커버 MAPE 0.938→0.849 방향, cold 트래픽 전망 필요) ② 거래 시점 등 신규 데이터 과제
 - 추가 데이터/트래픽 확보 전까지 **Cold 실험 트랙 휴면 권고**. 재개 시 이 핸드오프와 `cold_improvement_roadmap.md`부터 확인.
+
+## 추가 검증 (2026-06-10 후속): 잔여 경로 ①③④ 전부 기각 — 트랙 결론 확정
+
+| 경로 | 실험 | 판정 |
+|---|---|---|
+| ① 비교군 그룹 가격 통계 base 투입 (PP-Y 미검증 갭) | `PP-CGRP1` | 기각 — validation 악화(bootstrap 0.02~0.37). 트리 base는 동일 정보 기학습 |
+| ③ 제목 텍스트(TF-IDF+SVD) residual | `PP-CTXT1` | 기각 — OOF 상관 0.039, 콘텐츠 신호 축 종결 |
+| ④ high tier 커버리지 확대 | `PP-CCONF2` | 기각 — val/holdout 통과처럼 보였으나 **test p95 0.99→4.4 붕괴**. v0.4 동결 경계 유지 필수, tier 확장 금지 |
+
+종합: 현재 데이터의 잔여 경로(보정/콘텐츠/base 피처/tier 확장) 전수 소진. **유일한 개선 경로 = ② 검색 수집 확대**(미커버 MAPE 0.938→0.849 정량화) + 거래 시점 수집. 요약: `docs/track6/experiments/pp_ctxt1_cconf2_cold_path_rejection_summary.md`, `pp_cgrp1_cold_group_price_stats_base_summary.md`
 4. ~~Phase 4 (운영 반영)~~ **완료 — PP-COLD-ARTIFACT4**: `models/track6/cold_prediction_v0.4/` 동결 (tier/표시/2단 검수 + 상수 fallback, 재현 검증 3종 통과: tier mismatch 0 / CSRCH1 재현 1.1e-16 / v0.3 defense 일치 5.3e-15). **상수 fallback은 2026-06-10 사용자 결정으로 활성화(enabled=true) 동결** — 미커버(신규) 작가 p95 방어 우선, 대가(MdAPE 0.4178→0.4262)는 config note 명시. 남은 의사결정은 ②검색 수집 확대 ③Phase 3 CCORR 두 건.
 
 ## 재시작 후 바로 확인할 파일
