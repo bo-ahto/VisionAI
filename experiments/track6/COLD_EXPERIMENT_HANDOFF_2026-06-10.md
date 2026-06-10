@@ -91,3 +91,8 @@ V2식 meta-stack(현행 후보 6종)과 PP148식 위험 구간 라우팅 모두 
 ## 추가 (PP-CBOOST2): 이종 blend 안정화 — 보류(강한 후보)
 
 C 강화(grp_price_proxy)로 `w0.3` blend가 validation MdAPE 비악화 + MAPE/p95 개선, pseudo-cold 3/3, fixed test 3지표 전부 개선(MAPE 1.2138→1.1787, p95 4.22→3.66) 달성. bootstrap 게이트만 미통과(0.87/0.76/0.25). **Cold 재개 1순위 = PP-CBOOST3** (C 앙상블 분산 축소 + w 미세 grid + artist holdout 직접 게이트 → 통과 시 v0.2 교체 + CBASE 재lock + guard/tier 재적합).
+
+
+## 추가 (PP-CBOOST3): CBOOST 라인 종결
+
+C 앙상블/적응 w로도 MdAPE 비악화 확률(0.12~0.28) 불변 — 구조적 트레이드오프 확정, all-metric 교체 불가. MAPE 개선은 0.91~0.98로 확립. **후보 확정: 이종 blend w0.3 = MAPE/p95 방어 목적별 후보**(test MAPE -3.5%/p95 -13%, 대가 MdAPE 미세 악화). 채택 여부는 서비스 목적 의사결정(채택 시 ARTIFACT5로 v0.2 옵션 동결). 추가 안정화 실험 비권고. Cold 최종 좌표: 전 지표 개선=검색 수집 확대 / 수집 없는 목적별 개선=이 blend / 현행=v0.3+v0.4.
