@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cold 가격 예측 트랙 최종 보고서 (2026-06-10)</title>
+<style>
+  :root { --ink:#1a202c; --sub:#4a5568; --line:#e2e8f0; --bg:#f7fafc; --accent:#2b6cb0; --ok:#276749; --no:#9b2c2c; --hold:#975a16; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif; color:var(--ink); margin:0; background:var(--bg); line-height:1.65; }
+  .wrap { max-width:980px; margin:0 auto; padding:32px 20px 80px; }
+  h1 { font-size:26px; border-bottom:3px solid var(--accent); padding-bottom:10px; }
+  h2 { font-size:20px; color:var(--accent); margin-top:44px; border-left:5px solid var(--accent); padding-left:10px; }
+  h3 { font-size:16px; margin-top:26px; }
+  ul { padding-left:22px; margin:6px 0; }
+  li { margin:3px 0; }
+  table { border-collapse:collapse; width:100%; margin:12px 0; background:#fff; font-size:13.5px; }
+  th, td { border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top; }
+  th { background:#edf2f7; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  code, pre { font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px; }
+  code { background:#edf2f7; padding:1px 5px; border-radius:4px; }
+  pre { background:#1a202c; color:#e2e8f0; padding:14px 16px; border-radius:8px; overflow-x:auto; line-height:1.55; }
+  pre code { background:none; padding:0; color:inherit; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin:14px 0; }
+  .badge { display:inline-block; padding:1px 9px; border-radius:99px; font-size:12px; font-weight:700; color:#fff; }
+  .b-ok { background:var(--ok); } .b-no { background:var(--no); } .b-hold { background:var(--hold); } .b-info { background:var(--accent); }
+  .kpi { display:flex; gap:12px; flex-wrap:wrap; margin:14px 0; }
+  .kpi > div { flex:1 1 240px; background:#fff; border:1px solid var(--line); border-left:5px solid var(--accent); border-radius:8px; padding:12px 16px; }
+  .kpi b { font-size:18px; }
+  .muted { color:var(--sub); font-size:13px; }
+  .note { background:#fffaf0; border:1px solid #f6e05e; border-radius:8px; padding:10px 14px; margin:10px 0; font-size:13.5px; }
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Cold 가격 예측 트랙 최종 보고서</h1>
+<p class="muted">작성 2026-06-10 · 범위: Cold(train에 작가 이력 없는 작품) 가격 예측 — 로드맵, 실험 17건, artifact 5종, 수집 파일럿 · 지표 = MdAPE / MAPE / p95_APE · 평가 = validation cold 2,753행(작가 172) / fixed test cold 3,099행(작가 200)</p>
+
+<h2>1. 최종 결과 요약</h2>
+<div class="kpi">
+  <div><span class="badge b-ok">기본 서빙</span><br><b>v0.3 체인</b><br>test <b>0.4098 / 0.8493 / 2.3465</b><br><span class="muted">검색 스냅샷 가용 환경 · 점 예측 최고</span></div>
+  <div><span class="badge b-ok">raw-input p95 방어</span><br><b>v0.5 이종 blend</b><br>test 0.4822 / 1.1790 / <b>3.6490</b><br><span class="muted">검색 불가 환경 · v0.2 대비 p95 −11.5%</span></div>
+  <div><span class="badge b-info">정책층</span><br><b>v0.4</b><br>tier·2단 검수·미커버 상수 fallback(활성)<br><span class="muted">점 예측 불변 · 표시/검수 정책</span></div>
+</div>
+<ul>
+  <li>17개 실험으로 전 경로(보정·콘텐츠 신호·base 피처·tier 확장·모델 조합·base 학습·검색 수집) 전수 검증 — <b>현재 데이터 기준 열린 개선 경로 0건</b></li>
+  <li>수집 확대 파일럿(PP-CSRCH2)도 종결: 수집 delta가 상수 fallback에 전 지표 열위 → 수집 ROI 없음</li>
+  <li>재개 조건: 실제 cold 운영 트래픽의 잔차 확보(보정맵 재적합) 또는 거래 시점 등 신규 데이터</li>
+</ul>
+
+<h2>2. 대원칙 (전 실험 공통)</h2>
+<ul>
+  <li><b>0604 신규 라벨 = Warm 시험 제출 전용</b> — Cold 전 단계 사용 금지</li>
+  <li>test로 후보/경계값 선택 금지 — fixed test는 최종 확인 1회만</li>
+  <li>외부 검증 축 = artist 반복 holdout + pseudo-cold 평가셋(작가 마스킹 시뮬레이션)</li>
+  <li>재현성: 실험별 전용 폴더(<code>experiments/track6/PP-*</code>) + 단일 실행 스크립트 + 동결 경계값 manifest</li>
+</ul>
+
+<h2>3. 최고 성능 모델 — v0.3 체인 (피처·로직·계산식)</h2>
+<p>단일 모델이 아니라 <b>상류 Quantile 모델 + 3단 보정 체인</b>. 각 층이 서로 다른 오차 원인을 직교 방어(가산성 검증: redundancy gap ≈ 0).</p>
+
+<div class="card">
+<h3>3.1 상류 — LightGBM Quantile (PP-Y18 계열)</h3>
+<ul>
+  <li>분위수 4개 학습: q10 / q40 / q50 / q90 — <b>대표 점 예측 = q50</b>, 불확실성 = <code>quantile_width = q90 − q10</code></li>
+  <li>피처 3축:
+    <ul>
+      <li>① 작품 기본: <code>width_cm, height_cm, depth_cm, area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate, medium_category, support_category, size_bucket, support_size_bucket</code></li>
+      <li>② 작가 메타(외부 출처 — cold 작가도 보유 가능): 생년, 팔로워, 총작품수 등</li>
+      <li>③ <b>검색 피처(search_all) + 외부 상호작용</b>: 작가 검색 결과수, 소스군 비율(gallery_museum/market/news/social…), 미술 맥락 카운트와 상호작용</li>
+    </ul></li>
+  <li>검색 피처의 가치: search-free 변형(v0.2) MdAPE 0.4852 vs 검색 포함 체인 0.4098 — <b>Cold 최대 단일 신호</b></li>
+</ul>
+</div>
+
+<div class="card">
+<h3>3.2 ① qwidth 구간 OOF median 보정 <span class="muted">(qwidth_bin_oof_min30_cap0.25)</span></h3>
+<pre><code>보정값(행) = clip( median( validation OOF 잔차 | 행의 qwidth bin ), −0.25, +0.25 )   # bin 표본 ≥ 30
+대표' = q50 + 보정값</code></pre>
+<ul>
+  <li>로직: 불확실성 폭이 큰 구간은 잔차가 계통적으로 치우침(주로 과소예측) → 구간 <b>중앙값</b>만 OOF로 학습해 가산(행 단위가 아니라 구간 단위 = 과적합에 강함)</li>
+  <li>효과: 0.4421/1.048/3.354 → <b>0.4247/0.991/3.305</b> · artist holdout 반복검증 통과(PP-Y21)</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>3.3 ② guard — 과대예측 하향 블렌드 <span class="muted">(PP-QR4)</span></h3>
+<pre><code>발동: qwidth ≥ 1.4612 (val q67)  AND  (대표' − q40) ≥ 0.0772 (val q50)  AND  q40 < 대표'
+발동 시: 대표'' = 0.5 × 대표' + 0.5 × q40        # 미발동 행은 그대로</code></pre>
+<ul>
+  <li>로직: "불확실성 크고 + 하위 분위수(q40)와 괴리가 큰" 행 = 과대예측 위험 → 그 행만 q40 방향으로 절반 이동(위쪽 꼬리 절단)</li>
+  <li>임계값은 전부 validation의 <b>정답 미사용</b> 분위수 → 운영 재현 가능</li>
+  <li>효과: → <b>0.4178/0.964/2.538</b> (p95 −23%) · row/artist 반복검증 양쪽 통과한 Cold 최초의 견고 방어층</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>3.4 ③ 작가단위 검색 delta <span class="muted">(PP-H23/H28, frozen lookup 372작가)</span></h3>
+<pre><code>작가 세그먼트(검색결과 중 gallery_museum 소스 비율):
+  ratio = 0        → none → delta = −0.0313     # 전역 하향 bias 보정
+  0 < ratio ≤ 임계 → low  → delta = −0.20       # 검색되지만 기관 노출 없음 = 과대예측 보정
+  ratio > 임계     → high → delta = +0.20       # 기관 노출 많음 = 과소예측 보정
+  (delta = validation 잔차의 세그먼트별 중앙값, cap ±0.2 — 작가 상수로 동결)
+
+최종 로그가격 = 대표'' + delta(작가)
+미커버 작가 → 상수 −0.0313 (v0.4 활성, 2026-06-10 결정)
+최종 가격(KRW) = exp(최종 로그가격)</code></pre>
+<ul>
+  <li>로직: 검색층의 본질 = <b>전역 bias 보정 + 미술기관 노출 신호의 양방향 가격대 보정</b> (PP-CSRCH1 분해로 확인)</li>
+  <li>guard와 가산적(중복 없음) · 효과: → <b>0.4098/0.8493/2.3465</b> (base 대비 누적 p95 −29%)</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>3.5 정책층 v0.4 <span class="muted">(점 예측 불변)</span></h3>
+<ul>
+  <li>신뢰도 tier(정답 미사용, 경계는 validation 분위수 동결):
+    <ul>
+      <li><b>low</b>: qwidth ≥ val q90(2.157) <b>OR</b> 모델 gap |y18−v0.2| ≥ val q90(0.425)</li>
+      <li><b>high</b>: qwidth ≤ q33(0.735) <b>AND</b> gap ≤ q50(0.153) <b>AND</b> 검색 커버 (low 아님)</li>
+      <li>나머지 medium · test p95 분리: high(8.2%) <b>0.99</b> vs low(29.2%) <b>2.99</b></li>
+    </ul></li>
+  <li>표시: high = 점 예측+좁은 범위 / medium = q10~q90 범위(적중 ~74%) / low = 넓은 범위+우선 검수</li>
+  <li>2단 검수: <code>review_v03(qwidth≥1.4612 OR 미커버)</code> OR <code>priority(low tier)</code></li>
+  <li>금지 동결: v0.2 단독 tier 표시(test 과신 역전) · tier 확장(test p95 0.99→4.4 붕괴)</li>
+</ul>
+</div>
+
+<h2>4. raw-input 환경 — v0.5 이종 blend (피처·로직·계산식)</h2>
+<div class="card">
+<pre><code>B = LightGBM Quantile(12 운영 피처, n_est 900) × 5-seed 예측 평균   # q10/q40/q50/q90
+C = 선형 HuberRegressor 6구성 평균                                   # α∈{1e-4,1e-3} × ε∈{1.2,1.35,1.5} × 피처셋
+    C 피처 = 크기 8종 + 비교군 사다리 통계 8종 + grp_price_proxy
+
+최종 대표 = 0.7 × B_q50 + 0.3 × C
+guard: width=B_q90−B_q10 기준, (대표−B_q40) gap 조건 충족 시 0.5×대표+0.5×B_q40  # 임계값은 blend 전 B 기준 val 분위수</code></pre>
+<h3>비교군 사다리 (작가 미사용) — 첫 매칭 그룹 사용</h3>
+<ul>
+  <li>L1: <code>medium_support_bucket × size_bucket</code> (표본 ≥ 30) → L2: <code>medium + support + size</code> (≥30) → L3: <code>medium × size</code> (≥50) → L4: 전체 train fallback</li>
+  <li>그룹 통계 피처: 로그가격 중앙값/Q25/Q75/IQR, 면적단가(<code>ln_price − log_area</code>) 중앙값/IQR, 표본수 log, 매칭레벨</li>
+  <li><code>grp_price_proxy = 면적단가 중앙값 + log_area</code> = 비교군 기반 직접 가격 추정치 (MdAPE 비악화의 열쇠)</li>
+</ul>
+<h3>leakage 차단</h3>
+<ul>
+  <li>C 학습: train 행의 그룹 통계는 5-fold <b>자기 fold 제외</b>로 계산 (자기 가격이 자기 피처에 새지 않음)</li>
+  <li>추론: full-train 동결 사다리 테이블(JSON) — 신규 행 raw-input 추론 가능</li>
+</ul>
+<h3>작동 원리와 한계</h3>
+<ul>
+  <li>17개 실험 중 유일하게 재현된 레버 = <b>계열 다양성</b>: 트리(전역 분할) vs 선형(전역 계수+명시 비교군 통계)의 오차 구조가 다름 → 30% 블렌드로 test MAPE −3.5% / p95 −13%</li>
+  <li>같은 통계를 트리 <i>피처</i>로 넣으면 무가치(트리는 categorical 분기로 기학습, PP-CGRP1) — <i>별도 선형 모델의 본체</i>일 때만 가치</li>
+  <li>한계(정직): MdAPE 반복 비악화 확률 0.12~0.28 (구조적 center-vs-tail) → all-metric 아님, <b>p95 방어 목적별 채택</b>(사용자 결정)</li>
+  <li>재현 검증: 동결 예측기 ≡ PP-CBOOST3 fixed test, diff ≤ 4.4e-16</li>
+</ul>
+</div>
+
+<h2>5. 실험 전체 기록 (17건)</h2>
+<table>
+<tr><th>#</th><th>실험</th><th>판정</th><th>한 줄 결론</th></tr>
+<tr><td>1</td><td>PP-CBASE1</td><td><span class="badge b-info">인프라</span></td><td>이중 base lock(연구 v0.3/운영 v0.2) + artist holdout 게이트 정의, 정책 JSON 재현 검증</td></tr>
+<tr><td>2</td><td>PP-PCOLD1</td><td><span class="badge b-info">인프라</span></td><td>pseudo-cold 평가셋 — <b>신규 작가 검색 lookup 커버리지 0.0 발견</b></td></tr>
+<tr><td>3</td><td>PP-CDIAG1</td><td><span class="badge b-info">진단</span></td><td>위험 구간(qwidth_extreme 과소예측 +0.284, gap_extreme) — test 전이 약해 가설 취급</td></tr>
+<tr><td>4</td><td>PP-CCONF1</td><td><span class="badge b-ok">채택</span></td><td>research tier p95 분리(0.99 vs 2.99) / v0.2 단독 tier는 test 과신 역전으로 기각</td></tr>
+<tr><td>5</td><td>PP-CIMG1</td><td><span class="badge b-no">기각</span></td><td>CLIP 이미지 — 작가 간 일반화 신호 0 (OOF 상관 0.06~0.08)</td></tr>
+<tr><td>6</td><td>PP-CSRCH1</td><td><span class="badge b-hold">보류→채택</span></td><td>delta 분해(전역 상수 −0.0313 + outlier 5.6%) → 상수 fallback = v0.4 활성</td></tr>
+<tr><td>7</td><td>PP-CCORR1</td><td><span class="badge b-no">기각</span></td><td>잔차 보정 — 잔차 역예측(−0.09~−0.11), guard 되돌림 → 보정 경로 폐쇄</td></tr>
+<tr><td>8</td><td>PP-COLD-ARTIFACT4</td><td><span class="badge b-ok">동결</span></td><td>v0.4 정책층 — 재현 검증 3종 통과(tier mismatch 0)</td></tr>
+<tr><td>9</td><td>PP-CGRP1</td><td><span class="badge b-no">기각</span></td><td>그룹 통계는 트리 base에 무가치 — 선형 base(Warm)와의 차이 규명</td></tr>
+<tr><td>10</td><td>PP-CTXT1</td><td><span class="badge b-no">기각</span></td><td>제목 텍스트(TF-IDF+SVD) 상관 0.039 — 콘텐츠 신호 축 종결</td></tr>
+<tr><td>11</td><td>PP-CCONF2</td><td><span class="badge b-no">기각</span></td><td>tier 확장 — val/holdout 통과 후 <b>test p95 0.99→4.4 붕괴</b></td></tr>
+<tr><td>12</td><td>PP-CCORR2</td><td><span class="badge b-no">기각</span></td><td>meta/라우팅 — 후보 동계열·고상관(meta 상관 0.824 &lt; base 0.844), 다양성 부재 규명</td></tr>
+<tr><td>13</td><td>PP-CBOOST1</td><td><span class="badge b-hold">유망</span></td><td>이종 blend 최초 val+test 동방향 개선 (시드 평균·HPO는 기각)</td></tr>
+<tr><td>14</td><td>PP-CBOOST2</td><td><span class="badge b-hold">강한 보류</span></td><td>price proxy로 MdAPE 비악화 달성 — 게이트만 미통과</td></tr>
+<tr><td>15</td><td>PP-CBOOST3</td><td><span class="badge b-hold">종결</span></td><td>MAPE 개선확률 0.91~0.98 확립 / MdAPE 트레이드오프는 구조적 확인</td></tr>
+<tr><td>16</td><td>PP-CMIX1</td><td><span class="badge b-no">기각</span></td><td>작가 가중 학습·kNN 3원 blend — v0.5가 프런티어 확정</td></tr>
+<tr><td>17</td><td>PP-CSRCH2</td><td><span class="badge b-hold">보류(종결)</span></td><td>수집 파일럿(150작가) — <b>상수가 수집 delta를 전 지표에서 이김</b>, 수집 ROI 없음</td></tr>
+<tr><td>+</td><td>PP-COLD-ARTIFACT5</td><td><span class="badge b-ok">동결</span></td><td>v0.5 blend 직렬화 (재현 diff 4.4e-16, p95 방어 목적 채택)</td></tr>
+</table>
+
+<h2>6. 확립된 원칙 (재실험 방지)</h2>
+<ul>
+  <li><b>val→test 작가 구성 이동이 최대 리스크</b> — validation 내부 검증(artist holdout 포함)으로 감지 불가, fixed test 최종 1회가 과신 후보 3건을 거름</li>
+  <li>콘텐츠 신호(이미지·텍스트)는 Cold 점 예측에 닫힘 — 가격 신호가 작가 내 유사성을 탐</li>
+  <li>조합의 유일한 레버 = <b>계열 다양성</b> (동계열 meta/routing/kNN 전멸, 트리+선형만 작동)</li>
+  <li>명시 그룹 통계: 트리 피처로는 무가치, 선형 모델 본체로는 유효</li>
+  <li>검색층 = 전역 bias 보정 + 기관 노출 양방향 보정 — 현 공식의 delta는 신규 작가에 미전이(재적합엔 실제 cold 트래픽 잔차 필요)</li>
+  <li>금지 3건: 0604 사용 / v0.2 단독 tier 표시 / tier 확장</li>
+</ul>
+
+<h2>7. 재개 조건·재현 명령</h2>
+<ul>
+  <li>재개 조건: ① 실제 cold 운영 트래픽 잔차 확보(검색 보정맵 재적합 + tier 재검증) ② 거래 시점 등 신규 데이터</li>
+  <li>진입점: <code>experiments/track6/COLD_EXPERIMENT_HANDOFF_2026-06-10.md</code> → <code>docs/track6/experiments/cold_improvement_roadmap.md</code></li>
+  <li>base 재생성: <code>python3 scripts/track6/run_pp_cbase1_cold_base_lock.py</code> · v0.5 재생성: <code>python3 scripts/track6/freeze_cold_prediction_artifact_v0_5.py</code></li>
+</ul>
+
+<p class="muted">상세 수치·산출물은 같은 폴더의 <code>cold_track_final_report_2026-06-10.md</code>, 실험별 <code>pp_c*_summary.md</code>, <code>postprocessing_experiment_matrix.md</code> 참조.</p>
+</div></body>
+</html>
