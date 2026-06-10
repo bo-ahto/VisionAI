@@ -1,0 +1,36 @@
+# PP-FPOL12 segment median + Huber residual 혼합
+
+- 작성일: 2026-06-08 16:32
+- segment priors: L4 quantile-width segment median, M1 artist median
+- residual: FPOL6 source - L4 warm Huber baseline
+
+## Test 상위 후보
+
+| candidate | MdAPE | MAPE | p95_APE | delta_MdAPE | delta_MAPE | delta_p95_APE | balanced_delta | improves_all_three |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.04__direction=under_guard__price=none__segmix=source_hybrid_segment_soft_blend | 0.157908 | 0.288279 | 0.878751 | 0.017424 | 0.013480 | 0.045677 | 0.025527 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.05__direction=under_guard__price=none__segmix=source_hybrid_segment_soft_blend | 0.157908 | 0.288279 | 0.878751 | 0.017424 | 0.013480 | 0.045677 | 0.025527 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.06__direction=under_guard__price=none__segmix=source_hybrid_segment_soft_blend | 0.157908 | 0.288279 | 0.878751 | 0.017424 | 0.013480 | 0.045677 | 0.025527 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.04__direction=under_guard__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.157774 | 0.288717 | 0.878751 | 0.017290 | 0.013918 | 0.045677 | 0.025628 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.05__direction=under_guard__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.157774 | 0.288717 | 0.878751 | 0.017290 | 0.013918 | 0.045677 | 0.025628 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.06__direction=under_guard__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.157774 | 0.288717 | 0.878751 | 0.017290 | 0.013918 | 0.045677 | 0.025628 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.04__direction=none__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.158654 | 0.288891 | 0.879186 | 0.018170 | 0.014092 | 0.046112 | 0.026124 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.05__direction=none__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.158654 | 0.288891 | 0.879186 | 0.018170 | 0.014092 | 0.046112 | 0.026124 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.06__direction=none__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.158654 | 0.288891 | 0.879186 | 0.018170 | 0.014092 | 0.046112 | 0.026124 | False |
+| artist=huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.04__direction=under_guard__price=none__segmix=source_hybrid_segment_soft_blend | 0.159708 | 0.288167 | 0.881655 | 0.019225 | 0.013368 | 0.048581 | 0.027058 | False |
+| artist=huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.05__direction=under_guard__price=none__segmix=source_hybrid_segment_soft_blend | 0.159708 | 0.288167 | 0.881655 | 0.019225 | 0.013368 | 0.048581 | 0.027058 | False |
+| artist=huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.04__direction=under_guard__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.159356 | 0.288678 | 0.881655 | 0.018872 | 0.013880 | 0.048581 | 0.027111 | False |
+| artist=huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.05__direction=under_guard__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.159356 | 0.288678 | 0.881655 | 0.018872 | 0.013880 | 0.048581 | 0.027111 | False |
+| artist=huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.04__direction=none__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.160009 | 0.288853 | 0.882326 | 0.019525 | 0.014054 | 0.049252 | 0.027610 | False |
+| artist=huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.05__direction=none__price=mid_open_tail_guard__segmix=source_hybrid_segment_soft_blend | 0.160009 | 0.288853 | 0.882326 | 0.019525 | 0.014054 | 0.049252 | 0.027610 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.04__direction=under_guard__price=none__segmix=source_l4_segment_soft_blend | 0.148518 | 0.288754 | 0.894404 | 0.008034 | 0.013955 | 0.061330 | 0.027773 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.05__direction=under_guard__price=none__segmix=source_l4_segment_soft_blend | 0.148518 | 0.288754 | 0.894404 | 0.008034 | 0.013955 | 0.061330 | 0.027773 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.06__direction=under_guard__price=none__segmix=source_l4_segment_soft_blend | 0.148518 | 0.288754 | 0.894404 | 0.008034 | 0.013955 | 0.061330 | 0.027773 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.04__direction=under_guard__price=tail_open_mid_guard__segmix=source_l4_segment_soft_blend | 0.148518 | 0.289109 | 0.894404 | 0.008034 | 0.014310 | 0.061330 | 0.027891 | False |
+| artist=huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5__svc=PP-WHUBER7_pred_size_material_svc_artist_eps1.05_alpha0p01_dir_under_guard_cap0p08__totalcap=0.05__direction=under_guard__price=tail_open_mid_guard__segmix=source_l4_segment_soft_blend | 0.148518 | 0.289109 | 0.894404 | 0.008034 | 0.014310 | 0.061330 | 0.027891 | False |
+
+## 산출물
+
+- `outputs/candidate_metrics.csv`
+- `outputs/candidate_predictions.csv`
+- `artifacts/experiment_manifest.json`
