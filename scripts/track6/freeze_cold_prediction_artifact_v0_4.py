@@ -75,11 +75,12 @@ def main() -> None:
         "review_flag_v03": {"qwidth_q67": v03_qw_q67, "rule": "qwidth >= q67 OR not covered"},
         "review_two_stage": "review_flag_v03(재현율) OR priority_review(low tier, 정밀)",
         "uncovered_constant_delta": {
-            "enabled": False,
+            "enabled": True,
             "delta": const_delta,
             "cap": 0.20,
             "evidence": "PP-CSRCH1: holdout MAPE/p95 개선확률 0.97~1.0, MdAPE 0.41~0.46 게이트 미통과",
-            "note": "미커버 작가 p95 방어 모드. 기본 off — 서비스 목적(큰 오차 회피)에 따라 활성화",
+            "note": "미커버 작가 p95 방어 모드. 2026-06-10 서비스 목적(큰 오차 회피) 우선 결정으로 활성화. "
+                    "대가: 미커버 작가 MdAPE 소폭 악화(test 시나리오 0.4178→0.4262)",
         },
     }
     (BUNDLE / "config" / "confidence_tier_policy_v0_4.json").write_text(
@@ -139,7 +140,8 @@ def main() -> None:
         },
         "tier_share_test_reproduced": {k: float(v) for k, v in tier_share_test.items()},
         "uncovered_fallback_option": {
-            "enabled_default": False,
+            "enabled_default": params["uncovered_constant_delta"]["enabled"],
+            "decision": "2026-06-10 활성화 결정 — 미커버(신규) 작가 p95 방어 우선",
             "delta": const_delta,
             "metrics_test_uncovered_scenario": got,
             "vs_guard_only": {"MdAPE": 0.4178, "MAPE": 0.9640, "p95_APE": 2.5377},
@@ -165,7 +167,7 @@ def main() -> None:
         "",
         f"- 동결일: {FREEZE_TS}",
         "- 점 예측: v0.3 그대로 (guard+search 2단 방어).",
-        "- 추가 층: PP-CCONF1 research tier + 표시 정책 + 2단 검수, PP-CSRCH1 미커버 상수 fallback(기본 off).",
+        "- 추가 층: PP-CCONF1 research tier + 표시 정책 + 2단 검수, PP-CSRCH1 미커버 상수 fallback(**활성화**, 2026-06-10 결정).",
         "",
         "## 검증",
         "",
@@ -176,13 +178,13 @@ def main() -> None:
         "## 사용",
         "",
         "- 적용기: `predict/apply_cold_confidence_policy_v0_4.py` (입력: qwidth, y18/v0.2 예측, artist_key)",
-        "- fallback 활성화: `confidence_tier_policy_v0_4.json`의 `uncovered_constant_delta.enabled`",
+        "- fallback 상태: 활성화(enabled=true). 비활성화는 `confidence_tier_policy_v0_4.json`의 `uncovered_constant_delta.enabled`",
         "- 재생성: `python3 scripts/track6/freeze_cold_prediction_artifact_v0_4.py`",
     ])
     (BUNDLE / "reports" / "cold_artifact_release_v0_4.md").write_text(release, encoding="utf-8")
     (BUNDLE / "README.md").write_text(
         "# Cold prediction v0.4 (confidence/display policy layer)\n\n"
-        "PP-CCONF1 신뢰도 tier/표시/검수 정책 동결 + PP-CSRCH1 미커버 상수 fallback 옵션(기본 off).\n"
+        "PP-CCONF1 신뢰도 tier/표시/검수 정책 동결 + PP-CSRCH1 미커버 상수 fallback(활성화).\n"
         "점 예측은 v0.3 그대로.\n\n"
         "재생성: `python3 scripts/track6/freeze_cold_prediction_artifact_v0_4.py`\n"
         "적용기: `predict/apply_cold_confidence_policy_v0_4.py`\n",

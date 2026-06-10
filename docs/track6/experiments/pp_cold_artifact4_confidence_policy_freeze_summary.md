@@ -12,7 +12,7 @@
 2. **표시 정책**: high=점 예측+좁은 범위 / medium=점 예측+표준 q10~q90 범위 / low=넓은 범위 우선+우선 검수.
 3. **2단 검수**: `review_flag_v03`(재현율 축, qwidth≥1.4612 OR 미커버) OR `priority_review`(정밀 축, low tier).
 4. **금지 명문화**: v0.2 qwidth 단독 tier 제공 금지(PP-CCONF1 test 역전/과신), 0604 사용 금지.
-5. **미커버 상수 delta fallback (PP-CSRCH1, 기본 off 옵션)**: delta=-0.031295(validation 작가 중앙값, cap 0.2). 활성화 시 미커버 작가 p95 방어 모드(holdout 개선확률 0.97~1.0, 대가 MdAPE 소폭 악화). 게이트 미통과로 **기본 off** — 활성화는 서비스 목적에 따른 의사결정.
+5. **미커버 상수 delta fallback (PP-CSRCH1)**: delta=-0.031295(validation 작가 중앙값, cap 0.2). 미커버 작가 p95 방어 모드(holdout 개선확률 0.97~1.0, 대가 MdAPE 소폭 악화 0.4178→0.4262). **2026-06-10 서비스 목적(큰 오차 회피) 우선 결정으로 활성화(enabled=true) 상태로 동결** — 게이트 미통과 이력과 트레이드오프는 config note에 명시.
 
 ## 재현 검증 (freeze 스크립트가 매회 수행)
 
@@ -47,6 +47,6 @@ models/track6/cold_prediction_v0.4/
 | v0.3 | guard+search 2단 방어 (점 예측 최고) | 0.4098 / 0.849 / 2.347 |
 | **v0.4** | **v0.3 + 신뢰도/표시/검수 정책층** | 점 예측 동일, tier·검수·fallback 옵션 추가 |
 
-## 남은 의사결정 (변동 없음)
+## 남은 의사결정
 
-① 상수 fallback 활성화 여부(서비스 목적), ② 검색 수집 확대(2-3b, cold 트래픽 전망), ③ Phase 3 PP-CCORR 진행 여부.
+① ~~상수 fallback 활성화~~ → **활성화 결정·반영 완료 (2026-06-10)**, ② 검색 수집 확대(2-3b, cold 트래픽 전망), ③ Phase 3 PP-CCORR 진행 여부.
