@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VisionAI 가격 예측 v0.2 로컬 테스트</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182230;
+      --muted: #667085;
+      --line: #d0d5dd;
+      --panel: #f8fafc;
+      --soft: #eef4ff;
+      --accent: #175cd3;
+      --warn: #b54708;
+      --bad: #b42318;
+      --ok: #027a48;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+    header {
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 480px) minmax(0, 1fr);
+      gap: 20px;
+      padding: 20px 28px 36px;
+    }
+    section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    section h2 {
+      margin: 0;
+      padding: 14px 16px;
+      font-size: 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    form {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 14px;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    button {
+      border: 1px solid #164caa;
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 8px 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary {
+      border-color: var(--line);
+      background: #fff;
+      color: var(--ink);
+    }
+    .result {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel);
+      min-height: 82px;
+    }
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .metric .value {
+      font-size: 18px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 750;
+      background: var(--soft);
+      color: var(--accent);
+    }
+    .pill.cold { background: #fff7ed; color: var(--warn); }
+    .pill.review_required { background: #fef3f2; color: var(--bad); }
+    .pill.high { background: #ecfdf3; color: var(--ok); }
+    .pill.medium { background: #fffaeb; color: var(--warn); }
+    .pill.low { background: #fef3f2; color: var(--bad); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--panel); }
+    pre {
+      margin: 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #101828;
+      color: #e4e7ec;
+      overflow: auto;
+      max-height: 420px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .notice {
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      background: var(--soft);
+      font-size: 13px;
+      color: #1d2939;
+    }
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; padding: 16px; }
+      header { padding: 20px 16px 14px; }
+      .summary { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .grid2, .summary { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VisionAI 가격 예측 v0.2 로컬 테스트</h1>
+    <p class="sub">Warm은 작가 이력이 충분한 경우, Cold는 신규/이력 부족 작품의 참고 가격 표시를 확인합니다.</p>
+  </header>
+  <main>
+    <section>
+      <h2>입력값</h2>
+      <form id="estimateForm">
+        <div class="grid2">
+          <label>한글 작가명
+            <input id="nameKo" value="박서보" autocomplete="off" />
+          </label>
+          <label>영문 작가명
+            <input id="nameEn" value="Park Seo-Bo" autocomplete="off" />
+          </label>
+        </div>
+        <label>내부 작가키
+          <input id="artistKey" placeholder="알고 있을 때만 입력" autocomplete="off" />
+        </label>
+        <label>작품명
+          <input id="title" value="Untitled" autocomplete="off" />
+        </label>
+        <div class="grid2">
+          <label>제작연도
+            <input id="year" type="number" value="2020" />
+          </label>
+          <label>작품 유형
+            <select id="category">
+              <option>Painting</option>
+              <option>Sculpture</option>
+              <option>Installation</option>
+              <option>Drawing</option>
+            </select>
+          </label>
+        </div>
+        <div class="grid2">
+          <label>가로(cm)
+            <input id="widthCm" type="number" step="0.1" value="72.7" />
+          </label>
+          <label>세로(cm)
+            <input id="heightCm" type="number" step="0.1" value="60.6" />
+          </label>
+        </div>
+        <div class="grid2">
+          <label>깊이(cm)
+            <input id="depthCm" type="number" step="0.1" value="0" />
+          </label>
+          <label>외부 작품 ID
+            <input id="externalArtworkId" value="local-v02-test-001" autocomplete="off" />
+          </label>
+        </div>
+        <div class="grid2">
+          <label>재료
+            <select id="mediumCategory">
+              <option value="painting">painting</option>
+              <option value="mixed_media">mixed_media</option>
+              <option value="print">print</option>
+              <option value="sculpture">sculpture</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label>지지체
+            <select id="supportCategory">
+              <option value="canvas">canvas</option>
+              <option value="paper">paper</option>
+              <option value="panel">panel</option>
+              <option value="wood">wood</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+        </div>
+        <label>작품 URL
+          <input id="artworkUrl" value="https://example.com/artwork/local-v02-test-001" autocomplete="off" />
+        </label>
+        <label>
+          <span><input id="includeSamples" type="checkbox" checked /> 유사 작품 샘플 포함</span>
+        </label>
+        <div class="actions">
+          <button type="submit">가격 예측 실행</button>
+          <button type="button" class="secondary" id="coldExample">Cold 예시 입력</button>
+          <button type="button" class="secondary" id="modelInfo">모델 정보 조회</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <h2>결과</h2>
+      <div class="result">
+        <div class="summary">
+          <div class="metric">
+            <div class="label">경로</div>
+            <div class="value" id="routeValue">-</div>
+          </div>
+          <div class="metric">
+            <div class="label">예측가격</div>
+            <div class="value" id="priceValue">-</div>
+          </div>
+          <div class="metric">
+            <div class="label">가격범위</div>
+            <div class="value" id="rangeValue">-</div>
+          </div>
+          <div class="metric">
+            <div class="label">신뢰도</div>
+            <div class="value" id="confidenceValue">-</div>
+          </div>
+        </div>
+
+        <div class="notice" id="policyText">입력 후 실행하면 Warm/Cold 라우팅과 계산 설명이 표시됩니다.</div>
+
+        <div>
+          <h3>계산 순서</h3>
+          <table id="componentsTable">
+            <thead><tr><th>구성</th><th>역할</th><th>식</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div>
+          <h3>작가 매칭 및 입력 품질</h3>
+          <table>
+            <tbody id="qualityTable"></tbody>
+          </table>
+        </div>
+
+        <div>
+          <h3>실제 판매가 피드백</h3>
+          <form id="feedbackForm">
+            <div class="grid2">
+              <label>예측 ID
+                <input id="predictionId" readonly />
+              </label>
+              <label>실제 판매가(KRW)
+                <input id="actualSalePrice" type="number" min="1" placeholder="예: 12000000" />
+              </label>
+            </div>
+            <div class="grid2">
+              <label>증빙 상태
+                <select id="evidenceStatus">
+                  <option value="partial">partial</option>
+                  <option value="verified">verified</option>
+                  <option value="none">none</option>
+                </select>
+              </label>
+              <label>판매 채널
+                <input id="saleChannel" placeholder="gallery, auction, direct 등" />
+              </label>
+            </div>
+            <label>메모
+              <textarea id="feedbackNote" placeholder="검수자가 확인할 메모"></textarea>
+            </label>
+            <button type="submit">피드백 저장</button>
+          </form>
+        </div>
+
+        <div>
+          <h3>Raw JSON</h3>
+          <pre id="rawJson">{}</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let lastResponse = null;
+
+    function valueOrNull(id) {
+      const value = $(id).value.trim();
+      return value === "" ? null : value;
+    }
+
+    function numberOrNull(id) {
+      const value = $(id).value.trim();
+      return value === "" ? null : Number(value);
+    }
+
+    function payload() {
+      return {
+        artwork: {
+          external_artwork_id: valueOrNull("externalArtworkId"),
+          title: valueOrNull("title"),
+          artist: {
+            artist_key: valueOrNull("artistKey"),
+            name_ko: valueOrNull("nameKo"),
+            name_en: valueOrNull("nameEn")
+          },
+          year: numberOrNull("year"),
+          dimensions: {
+            width_cm: numberOrNull("widthCm"),
+            height_cm: numberOrNull("heightCm"),
+            depth_cm: numberOrNull("depthCm")
+          },
+          medium: {
+            medium_category: $("mediumCategory").value,
+            support_category: $("supportCategory").value
+          },
+          category: $("category").value,
+          artwork_url: valueOrNull("artworkUrl")
+        },
+        options: {
+          currency: "KRW",
+          include_comparable_samples: $("includeSamples").checked,
+          max_comparable_samples: 5,
+          include_calculation_summary: true,
+          include_feedback_guide: true
+        }
+      };
+    }
+
+    async function postJson(url, body) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(body)
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(JSON.stringify(json, null, 2));
+      }
+      return json;
+    }
+
+    function pill(text, cls) {
+      return `<span class="pill ${cls || ""}">${text || "-"}</span>`;
+    }
+
+    function render(json) {
+      lastResponse = json;
+      $("rawJson").textContent = JSON.stringify(json, null, 2);
+      $("routeValue").innerHTML = pill(json.route, json.route);
+      $("priceValue").textContent = json.prediction?.price_display || "-";
+      $("rangeValue").textContent = json.prediction?.range_display || "-";
+      const confidence = json.prediction?.confidence;
+      $("confidenceValue").innerHTML = confidence ? pill(confidence.level, confidence.level) : "-";
+      $("predictionId").value = json.prediction_id || "";
+
+      const summary = json.calculation_summary;
+      $("policyText").textContent = summary
+        ? `${summary.user_facing_formula} / ${summary.explanation}`
+        : "계산 설명이 없습니다.";
+
+      const tbody = $("componentsTable").querySelector("tbody");
+      tbody.innerHTML = "";
+      (summary?.model_components || []).forEach((item) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${item.name || "-"}</td><td>${item.role || "-"}</td><td>${item.formula || "-"}</td>`;
+        tbody.appendChild(tr);
+      });
+      if (!tbody.children.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td colspan='3'>표시할 계산 구성요소가 없습니다.</td>";
+        tbody.appendChild(tr);
+      }
+
+      const q = json.input_quality || {};
+      const r = json.routing || {};
+      $("qualityTable").innerHTML = `
+        <tr><th>작가 매칭</th><td>${r.artist_matched ? "매칭됨" : "미매칭"}</td></tr>
+        <tr><th>작가키</th><td>${r.matched_artist_key || "-"}</td></tr>
+        <tr><th>작가 매칭 신뢰도</th><td>${r.artist_match_score ?? "-"}</td></tr>
+        <tr><th>동명이인 위험도</th><td>${r.homonym_risk_score ?? "-"}</td></tr>
+        <tr><th>동일 작가 학습 가격 수</th><td>${r.same_artist_training_price_count ?? "-"}</td></tr>
+        <tr><th>라우팅 사유</th><td>${r.route_reason || "-"}</td></tr>
+        <tr><th>최소 입력 상태</th><td>${q.minimum_input_status || "-"}</td></tr>
+        <tr><th>부족한 필수 입력</th><td>${(q.missing_required_fields || []).join(", ") || "-"}</td></tr>
+        <tr><th>부족한 권장 입력</th><td>${(q.missing_recommended_fields || []).join(", ") || "-"}</td></tr>
+        <tr><th>주의 메시지</th><td>${(json.warnings || []).map(w => `${w.code}: ${w.message}`).join("<br>") || "-"}</td></tr>
+      `;
+    }
+
+    $("estimateForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      $("rawJson").textContent = "실행 중...";
+      try {
+        render(await postJson("/api/v2/artworks/price-estimate", payload()));
+      } catch (error) {
+        $("rawJson").textContent = String(error.message || error);
+      }
+    });
+
+    $("coldExample").addEventListener("click", () => {
+      $("artistKey").value = "";
+      $("nameKo").value = "신규작가테스트";
+      $("nameEn").value = "New Artist Test";
+      $("title").value = "New Work";
+      $("widthCm").value = "45";
+      $("heightCm").value = "53";
+      $("depthCm").value = "0";
+      $("year").value = "2025";
+      $("mediumCategory").value = "painting";
+      $("supportCategory").value = "canvas";
+      $("externalArtworkId").value = "local-v02-cold-001";
+    });
+
+    $("modelInfo").addEventListener("click", async () => {
+      const response = await fetch("/api/v2/price-models/current");
+      const json = await response.json();
+      $("rawJson").textContent = JSON.stringify(json, null, 2);
+    });
+
+    $("feedbackForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!lastResponse?.prediction_id) {
+        $("rawJson").textContent = "먼저 가격 예측을 실행해야 합니다.";
+        return;
+      }
+      const body = {
+        prediction_id: lastResponse.prediction_id,
+        external_artwork_id: valueOrNull("externalArtworkId"),
+        actual_sale_price_krw: Number($("actualSalePrice").value),
+        sale_channel: valueOrNull("saleChannel"),
+        evidence_status: $("evidenceStatus").value,
+        consent_for_training: true,
+        note: valueOrNull("feedbackNote")
+      };
+      try {
+        const json = await postJson("/api/v2/feedback/sale-price", body);
+        $("rawJson").textContent = JSON.stringify(json, null, 2);
+      } catch (error) {
+        $("rawJson").textContent = String(error.message || error);
+      }
+    });
+  </script>
+</body>
+</html>

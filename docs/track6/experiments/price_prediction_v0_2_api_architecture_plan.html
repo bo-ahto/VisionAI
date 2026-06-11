@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>가격 예측 API 및 서비스 아키텍처 v0.2 종합 기획서</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#가격-예측-api-및-서비스-아키텍처-v0.2-종합-기획서">가격 예측 API 및 서비스 아키텍처 v0.2 종합 기획서</a>
+<a class="toc-level-2" href="#1.-결론">1. 결론</a>
+<a class="toc-level-2" href="#2.-v0.1-대비-v0.2-변경점">2. v0.1 대비 v0.2 변경점</a>
+<a class="toc-level-2" href="#3.-v0.2-서비스-범위">3. v0.2 서비스 범위</a>
+<a class="toc-level-3" href="#3.1-v0.2에-포함">3.1 v0.2에 포함</a>
+<a class="toc-level-3" href="#3.2-v0.2-이후로-미루는-항목">3.2 v0.2 이후로 미루는 항목</a>
+<a class="toc-level-2" href="#4.-전체-아키텍처">4. 전체 아키텍처</a>
+<a class="toc-level-2" href="#5.-로컬-테스트-아키텍처">5. 로컬 테스트 아키텍처</a>
+<a class="toc-level-2" href="#6.-api-설계-원칙">6. API 설계 원칙</a>
+<a class="toc-level-2" href="#7.-엔드포인트-목록">7. 엔드포인트 목록</a>
+<a class="toc-level-2" href="#8.-api-1-health">8. API 1: Health</a>
+<a class="toc-level-3" href="#8.1-endpoint">8.1 Endpoint</a>
+<a class="toc-level-3" href="#8.2-response-예시">8.2 Response 예시</a>
+<a class="toc-level-2" href="#9.-api-2-현재-모델-조회">9. API 2: 현재 모델 조회</a>
+<a class="toc-level-3" href="#9.1-endpoint">9.1 Endpoint</a>
+<a class="toc-level-3" href="#9.2-response-예시">9.2 Response 예시</a>
+<a class="toc-level-2" href="#10.-api-3-작가-매칭">10. API 3: 작가 매칭</a>
+<a class="toc-level-3" href="#10.1-endpoint">10.1 Endpoint</a>
+<a class="toc-level-3" href="#10.2-request-예시">10.2 Request 예시</a>
+<a class="toc-level-3" href="#10.3-작가-매칭-점수">10.3 작가 매칭 점수</a>
+<a class="toc-level-3" href="#10.4-response-예시">10.4 Response 예시</a>
+<a class="toc-level-2" href="#11.-api-4-가격-예측">11. API 4: 가격 예측</a>
+<a class="toc-level-3" href="#11.1-endpoint">11.1 Endpoint</a>
+<a class="toc-level-3" href="#11.2-request-예시">11.2 Request 예시</a>
+<a class="toc-level-3" href="#11.3-최소-입력-정책">11.3 최소 입력 정책</a>
+<a class="toc-level-3" href="#11.4-warm-cold-라우팅-공식">11.4 Warm/Cold 라우팅 공식</a>
+<a class="toc-level-3" href="#11.5-response-예시">11.5 Response 예시</a>
+<a class="toc-level-2" href="#12.-warm-모델-처리-흐름">12. Warm 모델 처리 흐름</a>
+<a class="toc-level-2" href="#13.-cold-모델-처리-흐름">13. Cold 모델 처리 흐름</a>
+<a class="toc-level-2" href="#14.-api-5-실제-판매가-피드백">14. API 5: 실제 판매가 피드백</a>
+<a class="toc-level-3" href="#14.1-endpoint">14.1 Endpoint</a>
+<a class="toc-level-3" href="#14.2-request-예시">14.2 Request 예시</a>
+<a class="toc-level-3" href="#14.3-response-예시">14.3 Response 예시</a>
+<a class="toc-level-2" href="#15.-운영-데이터-학습-루프">15. 운영 데이터 학습 루프</a>
+<a class="toc-level-2" href="#16.-db-테이블-구성">16. DB 테이블 구성</a>
+<a class="toc-level-2" href="#17.-핵심-테이블-필드">17. 핵심 테이블 필드</a>
+<a class="toc-level-3" href="#17.1-price_prediction_events">17.1 `price_prediction_events`</a>
+<a class="toc-level-3" href="#17.2-price_prediction_feedback">17.2 `price_prediction_feedback`</a>
+<a class="toc-level-3" href="#17.3-training_candidate_labels">17.3 `training_candidate_labels`</a>
+<a class="toc-level-2" href="#18.-프론트-화면-구성">18. 프론트 화면 구성</a>
+<a class="toc-level-3" href="#18.1-입력-화면">18.1 입력 화면</a>
+<a class="toc-level-3" href="#18.2-결과-화면">18.2 결과 화면</a>
+<a class="toc-level-2" href="#19.-warning-code">19. Warning Code</a>
+<a class="toc-level-2" href="#20.-error-code">20. Error Code</a>
+<a class="toc-level-2" href="#21.-모니터링">21. 모니터링</a>
+<a class="toc-level-3" href="#21.1-api-모니터링">21.1 API 모니터링</a>
+<a class="toc-level-3" href="#21.2-모델-모니터링">21.2 모델 모니터링</a>
+<a class="toc-level-2" href="#22.-구현-단계">22. 구현 단계</a>
+<a class="toc-level-2" href="#23.-배포-전-체크리스트">23. 배포 전 체크리스트</a>
+<a class="toc-level-2" href="#24.-요약">24. 요약</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/price_prediction_v0_2_api_architecture_plan.md</code></div>
+      <h1 id="가격-예측-api-및-서비스-아키텍처-v0.2-종합-기획서">가격 예측 API 및 서비스 아키텍처 v0.2 종합 기획서</h1>
+<ul>
+<li>작성일: 2026-06-11</li>
+<li>적용 버전: <code>price_prediction_v0.2</code></li>
+<li>문서 목적: v0.1 API/서비스 기획 문서를 바탕으로, v0.2 Warm/Cold 가격 예측 서비스의 API 계약, 화면 연동, 추론 아키텍처, 운영 데이터 학습 루프를 통합 정의</li>
+<li>참고 v0.1 문서:</li>
+<li><code>models/track6/price_prediction_v0.1/evidence/reports/price_prediction_api_v0_1_spec.md</code></li>
+<li><code>models/track6/price_prediction_v0.1/evidence/reports/service_api_detailed_spec.md</code></li>
+<li><code>models/track6/price_prediction_v0.1/evidence/reports/service_model_operationalization_plan.md</code></li>
+<li>참고 v0.2 문서:</li>
+<li><code>docs/track6/experiments/warm_cold_service_operationalization_plan_next_version.md</code></li>
+<li><code>docs/track6/experiments/warm_cold_v0_2_operational_learning_loop_plan.md</code></li>
+<li><code>docs/track6/experiments/partner_warm_cold_best_model_report.md</code></li>
+</ul>
+<h2 id="1.-결론">1. 결론</h2>
+<ul>
+<li>v0.2는 v0.1의 작가명 기반 <code>artist_key</code> 매칭 구조를 유지</li>
+<li>v0.2는 가격 예측 API에 계산 설명, 입력 품질, 부족 정보, 실제 판매가 피드백 연결 정보를 추가</li>
+<li>v0.2는 Warm/Cold route를 더 명확하게 분리</li>
+<li>Warm은 작가 매칭이 확실하고 같은 작가 가격 이력이 충분한 경우에만 적용</li>
+<li>Cold는 같은 작가 가격 이력이 부족한 경우에도 최소 입력 기준을 만족하면 참고용 예상 가격을 표시</li>
+<li>Cold 예상 가격은 정확 감정가가 아니라 입력 정보 기반 예상 가격으로 표시</li>
+<li>v0.2는 예측만 하는 버전이 아니라, 운영 중 들어오는 실제 판매가를 검수 후 학습 후보 데이터로 축적하는 구조까지 포함</li>
+<li>로컬 테스트는 v0.1과 동일하게 FastAPI 서버가 <code>/test/v0.2</code> 프론트 화면을 직접 서빙하는 방식으로 시작</li>
+</ul>
+<h2 id="2.-v0.1-대비-v0.2-변경점">2. v0.1 대비 v0.2 변경점</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">v0.1</th>
+<th class="align-left">v0.2</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">서비스 버전</td>
+<td class="align-left"><code>price_prediction_v0.1</code></td>
+<td class="align-left"><code>price_prediction_v0.2</code></td>
+</tr>
+<tr>
+<td class="align-left">로컬 테스트 화면</td>
+<td class="align-left"><code>/test/v0.1</code></td>
+<td class="align-left"><code>/test/v0.2</code></td>
+</tr>
+<tr>
+<td class="align-left">API prefix</td>
+<td class="align-left"><code>/api/v1</code></td>
+<td class="align-left"><code>/api/v2</code> 기준</td>
+</tr>
+<tr>
+<td class="align-left">작가 입력</td>
+<td class="align-left">한글명/영문명으로 후보 확인</td>
+<td class="align-left">동일 유지</td>
+</tr>
+<tr>
+<td class="align-left">사용자 <code>artist_key</code> 입력</td>
+<td class="align-left">내부 테스트 옵션</td>
+<td class="align-left">일반 사용자 비노출 유지</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭 결과</td>
+<td class="align-left">후보/확정 여부 중심</td>
+<td class="align-left"><code>artist_match_score</code>, 동명이인 위험, Warm 가능 기준 추가</td>
+</tr>
+<tr>
+<td class="align-left">Warm 기준</td>
+<td class="align-left">유효 가격 이력 1건 이상이면 Warm 가능 처리</td>
+<td class="align-left"><code>작가매칭신뢰도점수 &gt;= 0.90</code> AND <code>같은작가_사용가능가격이력수 &gt;= 5</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold 처리</td>
+<td class="align-left">자동 예측 보류 또는 참고 범위 중심</td>
+<td class="align-left">최소 입력 충족 시 참고용 예상 가격 표시</td>
+</tr>
+<tr>
+<td class="align-left">계산 설명</td>
+<td class="align-left">제한적</td>
+<td class="align-left"><code>calculation_summary</code>, <code>model_components</code>, <code>guard_applied</code> 제공</td>
+</tr>
+<tr>
+<td class="align-left">입력 품질</td>
+<td class="align-left">warning 중심</td>
+<td class="align-left"><code>input_quality</code>, 누락 필수/권장 정보 제공</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 피드백</td>
+<td class="align-left">2차 후보</td>
+<td class="align-left">v0.2 핵심 기능으로 포함</td>
+</tr>
+<tr>
+<td class="align-left">학습 루프</td>
+<td class="align-left">별도 운영 필요</td>
+<td class="align-left">검수 후 학습 후보 데이터셋으로 축적</td>
+</tr>
+</tbody></table></div>
+<h2 id="3.-v0.2-서비스-범위">3. v0.2 서비스 범위</h2>
+<h3 id="3.1-v0.2에-포함">3.1 v0.2에 포함</h3>
+<ul>
+<li>모델 버전 조회</li>
+<li>작가명 기반 작가 후보 확인</li>
+<li>단일 작품 가격 예측</li>
+<li>Warm/Cold route와 라우팅 이유 반환</li>
+<li>Cold 최소 입력 정책 적용</li>
+<li>예측가격, 가격범위, 신뢰도 반환</li>
+<li>계산 요약 반환</li>
+<li>부족 정보와 보완 입력 안내</li>
+<li>실제 판매가 입력 API</li>
+<li>예측 이벤트와 피드백 저장 구조</li>
+<li>운영자 검수와 학습 후보 승격 구조</li>
+<li>로컬 테스트 프론트</li>
+</ul>
+<h3 id="3.2-v0.2-이후로-미루는-항목">3.2 v0.2 이후로 미루는 항목</h3>
+<ul>
+<li>완전 자동 재학습</li>
+<li>자동 모델 승격</li>
+<li>실시간 외부 검색 API 상시 호출</li>
+<li>검색 캐시 자동 수집/자동 갱신</li>
+<li>이미지 피처를 운영 모델에 직접 반영</li>
+<li>비동기 대량 배치 예측</li>
+<li>운영자 수동 예측가 override</li>
+</ul>
+<p>참고: 이미 사전 수집/검수된 검색 캐시를 조회해 사용하는 것은 v0.2 범위에 포함한다.</p>
+<h2 id="4.-전체-아키텍처">4. 전체 아키텍처</h2>
+<pre><code>[웹/앱 프론트]
+  - 작품 입력
+  - 작가 후보 선택
+  - 예측 결과 확인
+  - 실제 판매가 입력
+        |
+        v
+[Price Prediction API v0.2]
+  - /api/v2/price-models/current
+  - /api/v2/artists:resolve
+  - /api/v2/artworks/price-estimate
+  - /api/v2/feedback/sale-price
+        |
+        v
+[서비스 계층]
+  - 입력 검증
+  - 작가명 정규화
+  - artist_key 매칭
+  - Warm/Cold 라우팅
+  - 피처 생성
+  - 모델 추론
+  - 계산 설명 생성
+  - 예측 이벤트 저장
+        |
+        +--------------------------+
+        |                          |
+        v                          v
+[모델/피처 계층]              [운영 데이터 계층]
+  - Warm 예측기                 - prediction events
+  - Cold 예측기                 - feedback
+  - 비교군 통계                 - training candidates
+  - 검색/작가 메타 캐시          - training runs
+        |
+        v
+[응답 생성]
+  - 예측 가격
+  - 가격 범위
+  - 신뢰도
+  - 계산 설명
+  - 부족 정보
+  - 피드백 입력 토큰</code></pre>
+<h2 id="5.-로컬-테스트-아키텍처">5. 로컬 테스트 아키텍처</h2>
+<p>v0.1과 같은 방식으로 FastAPI 서버가 테스트 HTML을 직접 제공한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구성</th>
+<th class="align-left">v0.2 권장 파일</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">서버</td>
+<td class="align-left"><code>src/visionai/price_engine/api/operational_v0_2_server.py</code></td>
+</tr>
+<tr>
+<td class="align-left">서비스 계층</td>
+<td class="align-left"><code>src/visionai/price_engine/api/operational_v0_2_service.py</code></td>
+</tr>
+<tr>
+<td class="align-left">스키마</td>
+<td class="align-left"><code>src/visionai/price_engine/api/operational_v0_2_schemas.py</code></td>
+</tr>
+<tr>
+<td class="align-left">테스트 프론트</td>
+<td class="align-left"><code>src/visionai/price_engine/api/static/operational_v0_2_test.html</code></td>
+</tr>
+<tr>
+<td class="align-left">로컬 화면</td>
+<td class="align-left"><code>http://127.0.0.1:8020/test/v0.2</code></td>
+</tr>
+<tr>
+<td class="align-left">API base</td>
+<td class="align-left"><code>http://127.0.0.1:8020/api/v2</code></td>
+</tr>
+</tbody></table></div>
+<p>로컬 테스트 흐름:</p>
+<pre><code>[브라우저 /test/v0.2]
+        |
+        v
+[작가명 입력]
+        |
+        v
+POST /api/v2/artists:resolve
+        |
+        v
+[작가 후보 선택 또는 자동 확정]
+        |
+        v
+POST /api/v2/artworks/price-estimate
+        |
+        v
+[예측 결과 + 계산 설명 + 부족 정보 표시]
+        |
+        v
+POST /api/v2/feedback/sale-price</code></pre>
+<h2 id="6.-api-설계-원칙">6. API 설계 원칙</h2>
+<ul>
+<li>서비스 화면에서 필요한 정보를 한 번의 예측 응답으로 받을 수 있게 구성</li>
+<li>내부 실험명은 사용자 화면에 노출하지 않음</li>
+<li>기능 중심 이름을 API 응답에 사용</li>
+<li>Warm/Cold route와 route 사유를 항상 반환</li>
+<li>Cold는 참고용 예상 가격임을 응답과 화면 문구에서 명확히 표시</li>
+<li>작가 매칭이 불확실하면 자동 예측보다 후보 선택 또는 운영 검수를 우선</li>
+<li>예측 당시 입력값과 피처는 반드시 저장</li>
+<li>실제 판매가 피드백은 예측 결과와 <code>prediction_id</code>로 연결</li>
+<li>검수 전 피드백은 학습에 반영하지 않음</li>
+</ul>
+<h2 id="7.-엔드포인트-목록">7. 엔드포인트 목록</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">Method</th>
+<th class="align-left">Endpoint</th>
+<th class="align-left">목적</th>
+<th class="align-left">v0.2 포함</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>GET</code></td>
+<td class="align-left"><code>/api/v2/health</code></td>
+<td class="align-left">API 상태 확인</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>GET</code></td>
+<td class="align-left"><code>/api/v2/price-models/current</code></td>
+<td class="align-left">현재 모델/정책 조회</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>POST</code></td>
+<td class="align-left"><code>/api/v2/artists:resolve</code></td>
+<td class="align-left">작가명으로 artist_key 후보 확인</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>POST</code></td>
+<td class="align-left"><code>/api/v2/artworks/price-estimate</code></td>
+<td class="align-left">단일 작품 가격 예측</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>POST</code></td>
+<td class="align-left"><code>/api/v2/feedback/sale-price</code></td>
+<td class="align-left">실제 판매가 입력</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>PATCH</code></td>
+<td class="align-left"><code>/api/v2/predictions/{prediction_id}/additional-input</code></td>
+<td class="align-left">예측 후 보완 정보 입력</td>
+<td class="align-left">권장</td>
+</tr>
+<tr>
+<td class="align-left"><code>GET</code></td>
+<td class="align-left"><code>/api/v2/predictions/{prediction_id}</code></td>
+<td class="align-left">예측 결과 재조회</td>
+<td class="align-left">선택</td>
+</tr>
+<tr>
+<td class="align-left"><code>GET</code></td>
+<td class="align-left"><code>/api/v2/admin/training-candidates</code></td>
+<td class="align-left">학습 후보 검수 목록</td>
+<td class="align-left">운영자용</td>
+</tr>
+<tr>
+<td class="align-left"><code>POST</code></td>
+<td class="align-left"><code>/api/v2/admin/training-candidates/{candidate_id}:approve</code></td>
+<td class="align-left">학습 후보 승인</td>
+<td class="align-left">운영자용</td>
+</tr>
+</tbody></table></div>
+<h2 id="8.-api-1-health">8. API 1: Health</h2>
+<h3 id="8.1-endpoint">8.1 Endpoint</h3>
+<pre><code>GET /api/v2/health</code></pre>
+<h3 id="8.2-response-예시">8.2 Response 예시</h3>
+<pre><code>{
+  &quot;status&quot;: &quot;ok&quot;,
+  &quot;service_version&quot;: &quot;price_prediction_v0.2&quot;,
+  &quot;operational_loaded&quot;: true,
+  &quot;warm_model_loaded&quot;: true,
+  &quot;cold_model_loaded&quot;: true,
+  &quot;feedback_store_loaded&quot;: true
+}</code></pre>
+<h2 id="9.-api-2-현재-모델-조회">9. API 2: 현재 모델 조회</h2>
+<h3 id="9.1-endpoint">9.1 Endpoint</h3>
+<pre><code>GET /api/v2/price-models/current</code></pre>
+<h3 id="9.2-response-예시">9.2 Response 예시</h3>
+<pre><code>{
+  &quot;request_id&quot;: &quot;req_20260611_000001&quot;,
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;created_at&quot;: &quot;2026-06-11T12:00:00+09:00&quot;,
+  &quot;model_version&quot;: &quot;price_prediction_v0.2&quot;,
+  &quot;model_status&quot;: &quot;candidate&quot;,
+  &quot;display_policy&quot;: {
+    &quot;warm&quot;: &quot;price_with_range&quot;,
+    &quot;cold&quot;: &quot;estimated_price_with_reference_warning&quot;,
+    &quot;review_required&quot;: &quot;no_single_price&quot;
+  },
+  &quot;routing_policy&quot;: {
+    &quot;warm_artist_match_score_min&quot;: 0.9,
+    &quot;warm_same_artist_price_count_min&quot;: 5
+  },
+  &quot;exchange_rates&quot;: {
+    &quot;base_currency&quot;: &quot;KRW&quot;,
+    &quot;USD&quot;: 1380,
+    &quot;EUR&quot;: 1530,
+    &quot;GBP&quot;: 1780,
+    &quot;HKD&quot;: 178,
+    &quot;JPY&quot;: 9.5
+  },
+  &quot;feedback_policy&quot;: {
+    &quot;actual_sale_price_feedback_enabled&quot;: true,
+    &quot;auto_training_enabled&quot;: false,
+    &quot;review_required_before_training&quot;: true
+  }
+}</code></pre>
+<h2 id="10.-api-3-작가-매칭">10. API 3: 작가 매칭</h2>
+<h3 id="10.1-endpoint">10.1 Endpoint</h3>
+<pre><code>POST /api/v2/artists:resolve</code></pre>
+<h3 id="10.2-request-예시">10.2 Request 예시</h3>
+<pre><code>{
+  &quot;artist&quot;: {
+    &quot;artist_key&quot;: null,
+    &quot;name_ko&quot;: &quot;박서보&quot;,
+    &quot;name_en&quot;: &quot;Park Seo-Bo&quot;,
+    &quot;birth_year&quot;: 1931,
+    &quot;nationality&quot;: &quot;Korea&quot;
+  },
+  &quot;options&quot;: {
+    &quot;max_candidates&quot;: 5
+  }
+}</code></pre>
+<h3 id="10.3-작가-매칭-점수">10.3 작가 매칭 점수</h3>
+<pre><code>작가매칭신뢰도점수 =
+  0.70 * 이름일치점수
++ 0.20 * 보조정보일치점수
++ 0.10 * 학습작가등록점수
+- 0.15 * 동명이인위험점수
+- 0.20 * 핵심정보충돌점수</code></pre>
+<p>직접 <code>artist_key</code>가 검증된 경우에는 <code>1.00</code>으로 처리할 수 있다. 이름 기반 후보는 최대 <code>0.95</code>로 제한해, 사용자가 직접 입력한 이름만으로 과도하게 확정하지 않도록 한다.</p>
+<h3 id="10.4-response-예시">10.4 Response 예시</h3>
+<pre><code>{
+  &quot;request_id&quot;: &quot;req_20260611_000002&quot;,
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;created_at&quot;: &quot;2026-06-11T12:01:00+09:00&quot;,
+  &quot;model_version&quot;: &quot;price_prediction_v0.2&quot;,
+  &quot;resolved&quot;: true,
+  &quot;requires_selection&quot;: false,
+  &quot;selected_artist&quot;: {
+    &quot;artist_key&quot;: &quot;park-seobo&quot;,
+    &quot;name_ko&quot;: &quot;박서보&quot;,
+    &quot;name_en&quot;: &quot;Park Seo-Bo&quot;,
+    &quot;birth_year&quot;: 1931,
+    &quot;nationality&quot;: &quot;Korea&quot;,
+    &quot;match_status&quot;: &quot;exact&quot;,
+    &quot;matched_alias&quot;: &quot;박서보&quot;,
+    &quot;match_basis&quot;: &quot;verified_ko_name&quot;,
+    &quot;artist_match_score&quot;: 0.95,
+    &quot;homonym_risk_score&quot;: 0.02,
+    &quot;review_required&quot;: false,
+    &quot;same_artist_training_price_count&quot;: 24,
+    &quot;warm_available&quot;: true,
+    &quot;route_recommendation&quot;: &quot;warm&quot;
+  },
+  &quot;candidates&quot;: [
+    {
+      &quot;artist_key&quot;: &quot;park-seobo&quot;,
+      &quot;name_ko&quot;: &quot;박서보&quot;,
+      &quot;name_en&quot;: &quot;Park Seo-Bo&quot;,
+      &quot;birth_year&quot;: 1931,
+      &quot;nationality&quot;: &quot;Korea&quot;,
+      &quot;match_status&quot;: &quot;exact&quot;,
+      &quot;matched_alias&quot;: &quot;박서보&quot;,
+      &quot;match_basis&quot;: &quot;verified_ko_name&quot;,
+      &quot;artist_match_score&quot;: 0.95,
+      &quot;homonym_risk_score&quot;: 0.02,
+      &quot;review_required&quot;: false,
+      &quot;same_artist_training_price_count&quot;: 24,
+      &quot;warm_available&quot;: true,
+      &quot;route_recommendation&quot;: &quot;warm&quot;
+    }
+  ],
+  &quot;warnings&quot;: []
+}</code></pre>
+<h2 id="11.-api-4-가격-예측">11. API 4: 가격 예측</h2>
+<h3 id="11.1-endpoint">11.1 Endpoint</h3>
+<pre><code>POST /api/v2/artworks/price-estimate</code></pre>
+<h3 id="11.2-request-예시">11.2 Request 예시</h3>
+<pre><code>{
+  &quot;artwork&quot;: {
+    &quot;external_artwork_id&quot;: &quot;artwork_12345&quot;,
+    &quot;title&quot;: &quot;Untitled&quot;,
+    &quot;artist&quot;: {
+      &quot;artist_key&quot;: &quot;park-seobo&quot;,
+      &quot;name_ko&quot;: &quot;박서보&quot;,
+      &quot;name_en&quot;: &quot;Park Seo-Bo&quot;
+    },
+    &quot;year&quot;: 2010,
+    &quot;dimensions&quot;: {
+      &quot;width_cm&quot;: 130.0,
+      &quot;height_cm&quot;: 162.0,
+      &quot;depth_cm&quot;: null
+    },
+    &quot;medium&quot;: {
+      &quot;medium_category&quot;: &quot;mixed&quot;,
+      &quot;support_category&quot;: &quot;paper&quot;
+    },
+    &quot;category&quot;: &quot;Painting&quot;,
+    &quot;artwork_url&quot;: &quot;https://example.com/artwork/12345&quot;
+  },
+  &quot;options&quot;: {
+    &quot;currency&quot;: &quot;KRW&quot;,
+    &quot;include_comparable_samples&quot;: true,
+    &quot;max_comparable_samples&quot;: 10,
+    &quot;include_calculation_summary&quot;: true,
+    &quot;include_feedback_token&quot;: true
+  }
+}</code></pre>
+<h3 id="11.3-최소-입력-정책">11.3 최소 입력 정책</h3>
+<p>Warm은 작가 매칭과 같은 작가 가격 이력이 핵심이다. Cold는 최소 입력이 충족되어야 단일 예상 가격을 표시한다.</p>
+<pre><code>Cold 예상 가격 표시 가능 =
+  (한글 작가명 또는 영문 작가명 존재)
+  AND (가로 cm 존재)
+  AND (세로 cm 존재)
+  AND (매체 존재)
+  AND (지지체 존재)</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">입력 상태</th>
+<th class="align-left">처리</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가명 + 가로/세로 + 매체 + 지지체 존재</td>
+<td class="align-left">Cold 예상 가격 표시 가능</td>
+</tr>
+<tr>
+<td class="align-left">크기/매체/지지체 일부 누락</td>
+<td class="align-left">단일 예상 가격 숨김, 부족 정보 요청</td>
+</tr>
+<tr>
+<td class="align-left">작가명 없음</td>
+<td class="align-left">예측 보류</td>
+</tr>
+<tr>
+<td class="align-left">동명이인 후보 여러 명</td>
+<td class="align-left">예측 보류, 후보 선택 요청</td>
+</tr>
+</tbody></table></div>
+<h3 id="11.4-warm-cold-라우팅-공식">11.4 Warm/Cold 라우팅 공식</h3>
+<pre><code>Warm 적용 여부 =
+  (작가매칭신뢰도점수 &gt;= 0.90)
+  AND
+  (같은작가_사용가능가격이력수 &gt;= 5)</code></pre>
+<p>위 조건을 만족하지 못하면 Cold 또는 review_required로 보낸다.</p>
+<h3 id="11.5-response-예시">11.5 Response 예시</h3>
+<pre><code>{
+  &quot;request_id&quot;: &quot;req_20260611_000003&quot;,
+  &quot;prediction_id&quot;: &quot;pred_20260611_000003&quot;,
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;created_at&quot;: &quot;2026-06-11T12:02:00+09:00&quot;,
+  &quot;model_version&quot;: &quot;price_prediction_v0.2&quot;,
+  &quot;route&quot;: &quot;warm&quot;,
+  &quot;display_policy&quot;: &quot;price_with_range&quot;,
+  &quot;prediction&quot;: {
+    &quot;price_krw&quot;: 19854740,
+    &quot;price_display&quot;: &quot;1,985만원&quot;,
+    &quot;range_krw&quot;: {
+      &quot;low&quot;: 11868000,
+      &quot;mid&quot;: 19854740,
+      &quot;high&quot;: 32640000
+    },
+    &quot;range_display&quot;: &quot;1,187만 - 3,264만원&quot;,
+    &quot;confidence&quot;: {
+      &quot;level&quot;: &quot;medium&quot;,
+      &quot;score&quot;: 0.72,
+      &quot;reason_codes&quot;: [
+        &quot;WARM_ARTIST_MATCHED&quot;,
+        &quot;LOW_SIMILAR_SAMPLE_COUNT&quot;
+      ]
+    }
+  },
+  &quot;routing&quot;: {
+    &quot;artist_matched&quot;: true,
+    &quot;matched_artist_key&quot;: &quot;park-seobo&quot;,
+    &quot;artist_match_score&quot;: 1.0,
+    &quot;same_artist_training_price_count&quot;: 24,
+    &quot;route_policy&quot;: &quot;warm_match_score_0.90_and_price_count_5&quot;,
+    &quot;route_reason&quot;: &quot;작가 매칭 신뢰도와 같은 작가 가격 이력 기준을 모두 만족해 Warm route 적용&quot;
+  },
+  &quot;input_quality&quot;: {
+    &quot;minimum_input_status&quot;: &quot;passed&quot;,
+    &quot;missing_required_fields&quot;: [],
+    &quot;missing_recommended_fields&quot;: [
+      &quot;artwork_url&quot;
+    ],
+    &quot;confidence_penalty_reasons&quot;: []
+  },
+  &quot;calculation_summary&quot;: {
+    &quot;user_facing_formula&quot;: &quot;예측가격 = 기준가격 + 보정값&quot;,
+    &quot;route&quot;: &quot;warm&quot;,
+    &quot;model_components&quot;: [
+      &quot;같은 작가와 유사 작품 가격 이력 기반 기준가격&quot;,
+      &quot;방향 분류 기반 보정 여부 판단&quot;,
+      &quot;Huber 잔차 기반 미세 보정&quot;
+    ],
+    &quot;guard_applied&quot;: false,
+    &quot;explanation_text&quot;: &quot;같은 작가 가격 이력이 충분하여 Warm 기준가격을 만들고, 보정 신호가 안정적인 경우에만 작은 폭으로 보정했습니다.&quot;
+  },
+  &quot;feedback&quot;: {
+    &quot;can_submit_actual_sale_price&quot;: true,
+    &quot;feedback_endpoint&quot;: &quot;/api/v2/feedback/sale-price&quot;,
+    &quot;required_fields&quot;: [
+      &quot;actual_sale_price&quot;,
+      &quot;actual_sale_currency&quot;,
+      &quot;sale_date&quot;,
+      &quot;sale_channel&quot;,
+      &quot;user_consent_for_training&quot;
+    ]
+  },
+  &quot;warnings&quot;: []
+}</code></pre>
+<h2 id="12.-warm-모델-처리-흐름">12. Warm 모델 처리 흐름</h2>
+<p>사용자 설명용 구조:</p>
+<pre><code>Warm 예측가격 =
+  같은 작가/유사 작품 기반 기준가격
++ 안정 조건을 통과한 미세 보정값</code></pre>
+<p>운영 내부 처리 흐름:</p>
+<pre><code>[작가 매칭 확정]
+        |
+        v
+[같은 작가 가격 이력 수 확인]
+        |
+        v
+[기준 로그가격 생성]
+  - 같은 작가 가격 이력
+  - 유사 작품 통계
+  - 작품 크기/매체/지지체
+        |
+        v
+[위험도와 불확실성 계산]
+  - 유사 작품 표본 수
+  - 가격 범위 비율
+  - Quantile 예측 폭
+  - 내부 예측값 간 차이
+        |
+        v
+[보정 방향 판단]
+  - 방향 분류 모델
+  - Huber 잔차 모델
+        |
+        v
+[상한 내 미세 보정]
+        |
+        v
+[최종 Warm 가격 = exp(최종 Warm 로그가격)]</code></pre>
+<p>Warm은 기준가격을 크게 흔드는 모델이 아니라, 기준가격이 안정적일 때만 작은 보정값을 더하는 구조다.</p>
+<h2 id="13.-cold-모델-처리-흐름">13. Cold 모델 처리 흐름</h2>
+<p>사용자 설명용 구조:</p>
+<pre><code>Cold 예상 가격 =
+  작품 정보 기반 기준 가격
++ 작가 정보 보정
++ 사전 수집/검수된 검색 문맥 보정
+- 과대예측 방어 보정</code></pre>
+<p>운영 내부 처리 흐름:</p>
+<pre><code>[Cold 최소 입력 확인]
+        |
+        v
+[작품 기본 피처 생성]
+  - 가로/세로/깊이
+  - 면적
+  - 로그 면적
+  - 가로세로비
+  - 매체/지지체
+  - 크기 구간
+        |
+        v
+[작가 메타/검색 피처 결합]
+  - 작가 생년/국적
+  - 작가 활동성
+  - 사전 수집/검수된 검색 품질
+  - 사전 수집/검수된 갤러리/미술관 문맥
+        |
+        v
+[LightGBM Quantile 예측]
+  - 낮은 분위 가격
+  - 중앙 분위 가격
+  - 높은 분위 가격
+  - Quantile 예측구간폭
+        |
+        v
+[과대예측 방어]
+  - 예측구간폭이 넓고
+  - 중앙 예측이 낮은쪽 40% 지점보다 충분히 높으면
+  - 방어 가격 쪽으로 일부 이동
+        |
+        v
+[작가 검색 보정]
+        |
+        v
+[최종 Cold 가격 = exp(최종 Cold 로그가격)]</code></pre>
+<p>검색 캐시가 없는 경우:</p>
+<ul>
+<li>실시간 외부 검색을 즉시 호출하지 않음</li>
+<li>검색 문맥 보정값은 <code>0</code>으로 처리</li>
+<li>raw-input 실행 가능 Cold fallback을 사용하거나 신뢰도를 하향</li>
+<li>화면에는 검색 문맥이 부족해 예상 가격의 신뢰도가 낮아질 수 있음을 표시</li>
+</ul>
+<p>Cold 화면 문구:</p>
+<pre><code>이 가격은 입력 정보 기반 예상 가격입니다.
+같은 작가의 충분한 가격 이력이 없거나 작가 정보가 제한적인 경우,
+작품 크기, 매체, 지지체, 작가 정보, 검색 문맥을 이용해 계산합니다.
+정확 감정가 또는 판매 보장 가격은 아닙니다.</code></pre>
+<h2 id="14.-api-5-실제-판매가-피드백">14. API 5: 실제 판매가 피드백</h2>
+<h3 id="14.1-endpoint">14.1 Endpoint</h3>
+<pre><code>POST /api/v2/feedback/sale-price</code></pre>
+<h3 id="14.2-request-예시">14.2 Request 예시</h3>
+<pre><code>{
+  &quot;prediction_id&quot;: &quot;pred_20260611_000003&quot;,
+  &quot;actual_sale_price&quot;: 12000000,
+  &quot;actual_sale_currency&quot;: &quot;KRW&quot;,
+  &quot;sale_date&quot;: &quot;2026-06-11&quot;,
+  &quot;sale_channel&quot;: &quot;gallery&quot;,
+  &quot;sale_type&quot;: &quot;actual_sale&quot;,
+  &quot;evidence_status&quot;: &quot;partial&quot;,
+  &quot;user_consent_for_training&quot;: true,
+  &quot;additional_input&quot;: {
+    &quot;year&quot;: 2024,
+    &quot;medium_category&quot;: &quot;acrylic&quot;,
+    &quot;support_category&quot;: &quot;canvas&quot;
+  }
+}</code></pre>
+<h3 id="14.3-response-예시">14.3 Response 예시</h3>
+<pre><code>{
+  &quot;feedback_id&quot;: &quot;fb_20260611_000001&quot;,
+  &quot;prediction_id&quot;: &quot;pred_20260611_000003&quot;,
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;review_status&quot;: &quot;needs_review&quot;,
+  &quot;message&quot;: &quot;실제 판매가가 접수되었습니다. 운영 검수 후 학습 후보 데이터로 반영될 수 있습니다.&quot;
+}</code></pre>
+<h2 id="15.-운영-데이터-학습-루프">15. 운영 데이터 학습 루프</h2>
+<p>v0.2에서는 실제 판매가를 바로 모델에 넣지 않는다. 검수된 데이터만 학습 후보로 승격한다.</p>
+<pre><code>[예측 이벤트 저장]
+        |
+        v
+[실제 판매가 또는 보완 입력 접수]
+        |
+        v
+[운영 검수]
+  - 작가 매칭 검수
+  - 작품 중복 검수
+  - 가격 이상치 검수
+  - 판매 증빙 검수
+  - 학습 활용 동의 확인
+        |
+        v
+[학습 후보 승격]
+        |
+        v
+[주기적 재학습 후보 데이터셋 생성]
+        |
+        v
+[기존 fixed test + 신규 운영 holdout 검증]
+        |
+        v
+[후보 모델 승격 또는 보류]</code></pre>
+<p>학습 후보 승격 기준:</p>
+<pre><code>학습후보승격 =
+  (실제판매가_원화 &gt; 0)
+  AND (거래유형 = actual_sale)
+  AND (판매증빙상태 IN {partial, verified})
+  AND (학습활용동의 = true)
+  AND (검수상태 = approved)
+  AND (운영데이터품질점수 &gt;= 0.80)
+  AND (중복상태 != duplicate_excluded)</code></pre>
+<p>운영데이터품질점수:</p>
+<pre><code>운영데이터품질점수 =
+  0.30 * 판매가격증빙점수
++ 0.25 * 작가매칭신뢰도점수
++ 0.20 * 작품정보완성도점수
++ 0.15 * 판매채널신뢰도점수
++ 0.10 * 중복검수통과점수</code></pre>
+<h2 id="16.-db-테이블-구성">16. DB 테이블 구성</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">테이블</th>
+<th class="align-left">목적</th>
+<th class="align-left">v0.2 필수</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>artist_registry</code></td>
+<td class="align-left">작가 식별, alias, 동명이인 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>artwork_master</code></td>
+<td class="align-left">작품 기본 정보 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_history</code></td>
+<td class="align-left">검수된 가격 이력 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparable_group_stats</code></td>
+<td class="align-left">유사 작품 통계와 호당가 카드</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>search_artist_signal_cache</code></td>
+<td class="align-left">사전 수집/검수된 작가 검색/전시/갤러리 문맥 캐시</td>
+<td class="align-left">권장</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_artifact_registry</code></td>
+<td class="align-left">모델 artifact 버전 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>feature_schema_registry</code></td>
+<td class="align-left">피처 생성 버전 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_prediction_events</code></td>
+<td class="align-left">예측 이벤트 저장</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_prediction_feedback</code></td>
+<td class="align-left">실제 판매가/보완 입력 저장</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>training_candidate_labels</code></td>
+<td class="align-left">학습 후보 라벨 관리</td>
+<td class="align-left">필수</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_training_runs</code></td>
+<td class="align-left">재학습 실행 이력</td>
+<td class="align-left">필수</td>
+</tr>
+</tbody></table></div>
+<h2 id="17.-핵심-테이블-필드">17. 핵심 테이블 필드</h2>
+<h3 id="17.1-price_prediction_events">17.1 <code>price_prediction_events</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>prediction_id</code></td>
+<td class="align-left">예측 요청 고유 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_version</code></td>
+<td class="align-left"><code>price_prediction_v0.2</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>warm_model_version</code></td>
+<td class="align-left">Warm 내부 모델 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>cold_model_version</code></td>
+<td class="align-left">Cold 내부 모델 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>route</code></td>
+<td class="align-left">warm/cold/review_required</td>
+</tr>
+<tr>
+<td class="align-left"><code>display_policy</code></td>
+<td class="align-left">price_with_range/estimated_price_with_reference_warning/no_single_price</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">내부 작가 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_match_score</code></td>
+<td class="align-left">작가 매칭 신뢰도</td>
+</tr>
+<tr>
+<td class="align-left"><code>same_artist_training_price_count</code></td>
+<td class="align-left">같은 작가 사용 가능 가격 이력 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>input_snapshot_json</code></td>
+<td class="align-left">사용자 입력 원본</td>
+</tr>
+<tr>
+<td class="align-left"><code>feature_snapshot_json</code></td>
+<td class="align-left">예측에 사용한 파생 피처</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_price_krw</code></td>
+<td class="align-left">예측 가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>range_low_krw</code>, <code>range_high_krw</code></td>
+<td class="align-left">가격 범위</td>
+</tr>
+<tr>
+<td class="align-left"><code>confidence_level</code></td>
+<td class="align-left">high/medium/low</td>
+</tr>
+<tr>
+<td class="align-left"><code>calculation_summary_json</code></td>
+<td class="align-left">계산 설명</td>
+</tr>
+</tbody></table></div>
+<h3 id="17.2-price_prediction_feedback">17.2 <code>price_prediction_feedback</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>feedback_id</code></td>
+<td class="align-left">피드백 고유 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_id</code></td>
+<td class="align-left">연결된 예측 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_price</code></td>
+<td class="align-left">실제 판매가</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_currency</code></td>
+<td class="align-left">통화</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_price_krw</code></td>
+<td class="align-left">원화 환산 판매가</td>
+</tr>
+<tr>
+<td class="align-left"><code>sale_date</code></td>
+<td class="align-left">판매일</td>
+</tr>
+<tr>
+<td class="align-left"><code>sale_channel</code></td>
+<td class="align-left">판매 채널</td>
+</tr>
+<tr>
+<td class="align-left"><code>sale_type</code></td>
+<td class="align-left">actual_sale/offer_price/listing_price/appraisal</td>
+</tr>
+<tr>
+<td class="align-left"><code>evidence_status</code></td>
+<td class="align-left">none/partial/verified</td>
+</tr>
+<tr>
+<td class="align-left"><code>user_consent_for_training</code></td>
+<td class="align-left">학습 활용 동의</td>
+</tr>
+<tr>
+<td class="align-left"><code>review_status</code></td>
+<td class="align-left">raw_collected/needs_review/approved/rejected</td>
+</tr>
+</tbody></table></div>
+<h3 id="17.3-training_candidate_labels">17.3 <code>training_candidate_labels</code></h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>candidate_id</code></td>
+<td class="align-left">학습 후보 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_id</code></td>
+<td class="align-left">원 예측 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>feedback_id</code></td>
+<td class="align-left">원 피드백 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>route_at_prediction</code></td>
+<td class="align-left">예측 당시 route</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">작가 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_price_krw</code></td>
+<td class="align-left">학습 라벨</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_log_price</code></td>
+<td class="align-left"><code>log(actual_price_krw)</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>quality_score</code></td>
+<td class="align-left">운영데이터품질점수</td>
+</tr>
+<tr>
+<td class="align-left"><code>training_eligible</code></td>
+<td class="align-left">학습 사용 가능 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>holdout_reserved</code></td>
+<td class="align-left">신규 holdout 보관 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>feature_snapshot_json</code></td>
+<td class="align-left">당시 피처</td>
+</tr>
+<tr>
+<td class="align-left"><code>source_model_version</code></td>
+<td class="align-left">예측 당시 모델 버전</td>
+</tr>
+</tbody></table></div>
+<h2 id="18.-프론트-화면-구성">18. 프론트 화면 구성</h2>
+<h3 id="18.1-입력-화면">18.1 입력 화면</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">영역</th>
+<th class="align-left">필드</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가 정보</td>
+<td class="align-left">한글 작가명, 영문 작가명, 후보 선택</td>
+</tr>
+<tr>
+<td class="align-left">작품 정보</td>
+<td class="align-left">작품명, 제작연도, 가로, 세로, 깊이</td>
+</tr>
+<tr>
+<td class="align-left">재료 정보</td>
+<td class="align-left">매체, 지지체, 작품 유형</td>
+</tr>
+<tr>
+<td class="align-left">선택 정보</td>
+<td class="align-left">작품 URL, 이미지, 판매 채널 후보</td>
+</tr>
+<tr>
+<td class="align-left">내부 테스트 옵션</td>
+<td class="align-left">artist_key, 샘플 수, 원본 JSON 보기</td>
+</tr>
+</tbody></table></div>
+<h3 id="18.2-결과-화면">18.2 결과 화면</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">카드</th>
+<th class="align-left">내용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예측 가격</td>
+<td class="align-left">가격 또는 참고 예상 가격</td>
+</tr>
+<tr>
+<td class="align-left">가격 범위</td>
+<td class="align-left">하단/대표/상단</td>
+</tr>
+<tr>
+<td class="align-left">route</td>
+<td class="align-left">Warm/Cold/review_required</td>
+</tr>
+<tr>
+<td class="align-left">신뢰도</td>
+<td class="align-left">level, score, reason code</td>
+</tr>
+<tr>
+<td class="align-left">계산 설명</td>
+<td class="align-left">기준가격, 보정값, 방어 적용 여부</td>
+</tr>
+<tr>
+<td class="align-left">사용된 입력</td>
+<td class="align-left">예측에 반영된 필드</td>
+</tr>
+<tr>
+<td class="align-left">부족 정보</td>
+<td class="align-left">추가하면 좋은 필드</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 입력</td>
+<td class="align-left">피드백 API 연결</td>
+</tr>
+<tr>
+<td class="align-left">원본 JSON</td>
+<td class="align-left">개발/검수용</td>
+</tr>
+</tbody></table></div>
+<h2 id="19.-warning-code">19. Warning Code</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">코드</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>ARTIST_NOT_RESOLVED</code></td>
+<td class="align-left">작가 매칭 실패</td>
+</tr>
+<tr>
+<td class="align-left"><code>ARTIST_AMBIGUOUS</code></td>
+<td class="align-left">동명이인 또는 후보 다수</td>
+</tr>
+<tr>
+<td class="align-left"><code>ARTIST_REVIEW_REQUIRED</code></td>
+<td class="align-left">작가 검수 필요</td>
+</tr>
+<tr>
+<td class="align-left"><code>WARM_ROUTE_APPLIED</code></td>
+<td class="align-left">Warm route 적용</td>
+</tr>
+<tr>
+<td class="align-left"><code>COLD_ROUTE_APPLIED</code></td>
+<td class="align-left">Cold route 적용</td>
+</tr>
+<tr>
+<td class="align-left"><code>LOW_SAME_ARTIST_HISTORY</code></td>
+<td class="align-left">같은 작가 가격 이력 부족</td>
+</tr>
+<tr>
+<td class="align-left"><code>COLD_REFERENCE_PRICE_ONLY</code></td>
+<td class="align-left">Cold 참고용 예상 가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>MISSING_REQUIRED_INPUT</code></td>
+<td class="align-left">필수 입력 누락</td>
+</tr>
+<tr>
+<td class="align-left"><code>MISSING_RECOMMENDED_INPUT</code></td>
+<td class="align-left">권장 입력 누락</td>
+</tr>
+<tr>
+<td class="align-left"><code>LOW_SIMILAR_SAMPLE_COUNT</code></td>
+<td class="align-left">유사 작품 표본 부족</td>
+</tr>
+<tr>
+<td class="align-left"><code>WIDE_PRICE_RANGE</code></td>
+<td class="align-left">가격 범위 넓음</td>
+</tr>
+<tr>
+<td class="align-left"><code>OVERPREDICTION_GUARD_APPLIED</code></td>
+<td class="align-left">과대예측 방어 적용</td>
+</tr>
+<tr>
+<td class="align-left"><code>SEARCH_QUALITY_LOW</code></td>
+<td class="align-left">검색 문맥 품질 낮음</td>
+</tr>
+<tr>
+<td class="align-left"><code>FEEDBACK_REVIEW_REQUIRED</code></td>
+<td class="align-left">실제 판매가 검수 필요</td>
+</tr>
+</tbody></table></div>
+<h2 id="20.-error-code">20. Error Code</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">HTTP Status</th>
+<th class="align-left">코드</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">400</td>
+<td class="align-left"><code>INVALID_REQUEST</code></td>
+<td class="align-left">요청 JSON 형식 오류</td>
+</tr>
+<tr>
+<td class="align-right">400</td>
+<td class="align-left"><code>MISSING_REQUIRED_FIELD</code></td>
+<td class="align-left">필수 입력값 누락</td>
+</tr>
+<tr>
+<td class="align-right">404</td>
+<td class="align-left"><code>ARTIST_NOT_FOUND</code></td>
+<td class="align-left">요청한 artist_key 없음</td>
+</tr>
+<tr>
+<td class="align-right">409</td>
+<td class="align-left"><code>ARTIST_SELECTION_REQUIRED</code></td>
+<td class="align-left">후보 선택 필요</td>
+</tr>
+<tr>
+<td class="align-right">422</td>
+<td class="align-left"><code>INVALID_DIMENSIONS</code></td>
+<td class="align-left">크기 값 비정상</td>
+</tr>
+<tr>
+<td class="align-right">422</td>
+<td class="align-left"><code>UNSUPPORTED_MEDIUM</code></td>
+<td class="align-left">지원하지 않는 매체/지지체</td>
+</tr>
+<tr>
+<td class="align-right">422</td>
+<td class="align-left"><code>COLD_MINIMUM_INPUT_NOT_MET</code></td>
+<td class="align-left">Cold 예상 가격 최소 입력 미충족</td>
+</tr>
+<tr>
+<td class="align-right">500</td>
+<td class="align-left"><code>MODEL_INFERENCE_FAILED</code></td>
+<td class="align-left">모델 추론 실패</td>
+</tr>
+<tr>
+<td class="align-right">503</td>
+<td class="align-left"><code>MODEL_UNAVAILABLE</code></td>
+<td class="align-left">모델 artifact 또는 feature store 사용 불가</td>
+</tr>
+</tbody></table></div>
+<h2 id="21.-모니터링">21. 모니터링</h2>
+<h3 id="21.1-api-모니터링">21.1 API 모니터링</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">지표</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">요청 수</td>
+<td class="align-left">사용량 확인</td>
+</tr>
+<tr>
+<td class="align-left">latency p50/p95</td>
+<td class="align-left">응답 속도</td>
+</tr>
+<tr>
+<td class="align-left">error rate</td>
+<td class="align-left">장애 감지</td>
+</tr>
+<tr>
+<td class="align-left">route별 요청 비율</td>
+<td class="align-left">Warm/Cold 데이터 커버리지 확인</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭 실패율</td>
+<td class="align-left">alias/registry 보강 필요성 확인</td>
+</tr>
+<tr>
+<td class="align-left">동명이인 후보율</td>
+<td class="align-left">검수 UX 개선 필요성 확인</td>
+</tr>
+</tbody></table></div>
+<h3 id="21.2-모델-모니터링">21.2 모델 모니터링</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">지표</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예측 가격 분포</td>
+<td class="align-left">비정상 예측 감지</td>
+</tr>
+<tr>
+<td class="align-left">가격 범위 폭 분포</td>
+<td class="align-left">과도하게 넓은 범위 감지</td>
+</tr>
+<tr>
+<td class="align-left">confidence 분포</td>
+<td class="align-left">낮은 신뢰도 비중 추적</td>
+</tr>
+<tr>
+<td class="align-left">Cold 최소 입력 부족률</td>
+<td class="align-left">입력 UX 개선</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 입력률</td>
+<td class="align-left">학습 데이터 확보 속도 확인</td>
+</tr>
+<tr>
+<td class="align-left">예측가 대비 실제 판매가 APE</td>
+<td class="align-left">운영 성능 추적</td>
+</tr>
+<tr>
+<td class="align-left">route별 MAPE/p95 APE</td>
+<td class="align-left">Warm/Cold 성능 분리 추적</td>
+</tr>
+</tbody></table></div>
+<h2 id="22.-구현-단계">22. 구현 단계</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">순서</th>
+<th class="align-left">작업</th>
+<th class="align-left">산출물</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left">v0.2 API 스키마 정의</td>
+<td class="align-left"><code>operational_v0_2_schemas.py</code></td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left">v0.1 작가 매칭 로직 재사용/확장</td>
+<td class="align-left"><code>artist_match_score</code>, 후보 사유</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left">v0.2 라우팅 정책 적용</td>
+<td class="align-left">Warm/Cold route validator</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left">Cold 최소 입력 validator 추가</td>
+<td class="align-left"><code>input_quality</code></td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left">Warm/Cold 추론 서비스 연결</td>
+<td class="align-left"><code>operational_v0_2_service.py</code>, Warm raw adapter, Cold cache-backed/fallback 경로</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left">계산 설명 생성기 추가</td>
+<td class="align-left"><code>calculation_summary</code></td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left">예측 이벤트 저장 추가</td>
+<td class="align-left"><code>price_prediction_events</code></td>
+</tr>
+<tr>
+<td class="align-right">8</td>
+<td class="align-left">실제 판매가 피드백 API 추가</td>
+<td class="align-left"><code>price_prediction_feedback</code></td>
+</tr>
+<tr>
+<td class="align-right">9</td>
+<td class="align-left">로컬 테스트 프론트 작성</td>
+<td class="align-left"><code>/test/v0.2</code></td>
+</tr>
+<tr>
+<td class="align-right">10</td>
+<td class="align-left">학습 후보 승격 배치 작성</td>
+<td class="align-left"><code>training_candidate_labels</code></td>
+</tr>
+<tr>
+<td class="align-right">11</td>
+<td class="align-left">회귀 테스트 작성</td>
+<td class="align-left">반복 입력, route, 누락 입력, feedback</td>
+</tr>
+<tr>
+<td class="align-right">12</td>
+<td class="align-left">HTML/API 문서 갱신</td>
+<td class="align-left">개발 공유 문서</td>
+</tr>
+</tbody></table></div>
+<h2 id="23.-배포-전-체크리스트">23. 배포 전 체크리스트</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">같은 입력 반복 호출</td>
+<td class="align-left">예측값 동일</td>
+</tr>
+<tr>
+<td class="align-left">작가명 입력</td>
+<td class="align-left">한글/영문명으로 후보 조회 가능</td>
+</tr>
+<tr>
+<td class="align-left">동명이인 처리</td>
+<td class="align-left">자동 예측 보류</td>
+</tr>
+<tr>
+<td class="align-left">Warm 라우팅</td>
+<td class="align-left">점수 0.90 이상, 같은 작가 가격 이력 5건 이상</td>
+</tr>
+<tr>
+<td class="align-left">Cold 최소 입력</td>
+<td class="align-left">누락 시 단일 예상 가격 숨김</td>
+</tr>
+<tr>
+<td class="align-left">Cold 문구</td>
+<td class="align-left">정확 감정가/판매 보장 표현 없음</td>
+</tr>
+<tr>
+<td class="align-left">계산 설명</td>
+<td class="align-left">사용자용 설명과 내부 JSON 모두 제공</td>
+</tr>
+<tr>
+<td class="align-left">예측 이벤트 저장</td>
+<td class="align-left">prediction_id로 입력/피처/결과 재조회 가능</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 피드백</td>
+<td class="align-left">prediction_id와 연결 저장</td>
+</tr>
+<tr>
+<td class="align-left">학습 후보 승격</td>
+<td class="align-left">검수 전 데이터 학습 반영 금지</td>
+</tr>
+<tr>
+<td class="align-left">로컬 프론트</td>
+<td class="align-left"><code>/test/v0.2</code>에서 작가 매칭부터 피드백까지 테스트 가능</td>
+</tr>
+</tbody></table></div>
+<h2 id="24.-요약">24. 요약</h2>
+<pre><code>v0.2 가격 예측 API는 v0.1의 작가명 기반 매칭 구조를 유지하면서,
+Warm/Cold 라우팅 기준을 수치화하고,
+Cold에서도 최소 입력이 충족되면 참고용 예상 가격을 보여줄 수 있게 확장한 버전입니다.
+
+예측 결과에는 단순 가격만 제공하지 않고,
+어떤 입력과 모델 구성으로 계산됐는지,
+어떤 정보가 부족한지,
+실제 판매가를 입력하면 향후 모델 개선에 어떻게 연결되는지를 함께 제공합니다.
+
+또한 실제 판매가는 바로 학습에 넣지 않고,
+예측 당시 입력·피처·모델 버전과 연결해 저장한 뒤
+운영 검수와 품질 점수를 통과한 데이터만 다음 재학습 후보로 사용합니다.</code></pre>
+    </main>
+  </div>
+</body>
+</html>
