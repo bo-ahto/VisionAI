@@ -441,11 +441,6 @@
           <label>깊이(cm)
             <input id="depthCm" type="number" step="0.1" value="0" />
           </label>
-          <label>외부 작품 ID
-            <input id="externalArtworkId" value="local-v02-test-001" autocomplete="off" />
-          </label>
-        </div>
-        <div class="grid2">
           <label>재료
             <select id="mediumCategory">
               <option value="painting">painting</option>
@@ -455,6 +450,8 @@
               <option value="unknown">unknown</option>
             </select>
           </label>
+        </div>
+        <div class="grid2">
           <label>지지체
             <select id="supportCategory">
               <option value="canvas">canvas</option>
@@ -465,9 +462,6 @@
             </select>
           </label>
         </div>
-        <label>작품 URL
-          <input id="artworkUrl" value="https://example.com/artwork/local-v02-test-001" autocomplete="off" />
-        </label>
         <details>
           <summary>고급 입력</summary>
           <div class="details-body">
@@ -616,6 +610,7 @@
     const $ = (id) => document.getElementById(id);
     const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8020" : "";
     let lastResponse = null;
+    let localRequestSeq = 0;
 
     function valueOrNull(id) {
       const value = $(id).value.trim();
@@ -628,9 +623,10 @@
     }
 
     function payload() {
+      localRequestSeq += 1;
       return {
         artwork: {
-          external_artwork_id: valueOrNull("externalArtworkId"),
+          external_artwork_id: `local-v02-${Date.now()}-${localRequestSeq}`,
           title: valueOrNull("title"),
           artist: {
             artist_key: valueOrNull("artistKey"),
@@ -648,7 +644,7 @@
             support_category: $("supportCategory").value
           },
           category: $("category").value,
-          artwork_url: valueOrNull("artworkUrl")
+          artwork_url: null
         },
         options: {
           currency: "KRW",
@@ -875,7 +871,6 @@
       $("year").value = "2025";
       $("mediumCategory").value = "painting";
       $("supportCategory").value = "canvas";
-      $("externalArtworkId").value = "local-v02-cold-001";
     });
 
     $("modelInfo").addEventListener("click", async () => {
@@ -892,7 +887,7 @@
       }
       const body = {
         prediction_id: lastResponse.prediction_id,
-        external_artwork_id: valueOrNull("externalArtworkId"),
+        external_artwork_id: null,
         actual_sale_price_krw: Number($("actualSalePrice").value),
         sale_channel: valueOrNull("saleChannel"),
         evidence_status: $("evidenceStatus").value,
