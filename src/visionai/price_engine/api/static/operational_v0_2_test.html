@@ -357,6 +357,7 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
+    const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8020" : "";
     let lastResponse = null;
 
     function valueOrNull(id) {
@@ -403,7 +404,7 @@
     }
 
     async function postJson(url, body) {
-      const response = await fetch(url, {
+      const response = await fetch(`${API_BASE}${url}`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(body)
@@ -488,7 +489,7 @@
     });
 
     $("modelInfo").addEventListener("click", async () => {
-      const response = await fetch("/api/v2/price-models/current");
+      const response = await fetch(`${API_BASE}/api/v2/price-models/current`);
       const json = await response.json();
       $("rawJson").textContent = JSON.stringify(json, null, 2);
     });
