@@ -11,6 +11,7 @@
       --muted: #667085;
       --line: #d0d5dd;
       --panel: #f8fafc;
+      --surface: #ffffff;
       --soft: #eef4ff;
       --warm: #f0f9ff;
       --accent: #175cd3;
@@ -232,10 +233,160 @@
       font-size: 12px;
       line-height: 1.5;
     }
+    .form-group-title {
+      margin: 4px 0 -4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .hero-result {
+      border: 1px solid #84caff;
+      border-radius: 8px;
+      padding: 18px;
+      background: linear-gradient(180deg, #fff, #f5fbff);
+      display: grid;
+      gap: 14px;
+    }
+    .result-topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .price-large {
+      margin: 2px 0 0;
+      font-size: 34px;
+      line-height: 1.1;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+    .result-caption {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .range-strip {
+      display: grid;
+      gap: 8px;
+    }
+    .range-track {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #b2ddff, #2e90fa, #b2ddff);
+    }
+    .range-point {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 1px 4px rgba(16, 24, 40, 0.22);
+    }
+    .range-labels {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .range-labels strong {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+    .range-labels span:nth-child(2) { text-align: center; }
+    .range-labels span:nth-child(3) { text-align: right; }
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .insight-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface);
+      min-height: 92px;
+    }
+    .insight-card .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .insight-card .value {
+      font-size: 16px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .insight-card .hint {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .next-actions {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #fedf89;
+      background: #fffcf5;
+      color: #7a2e0e;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .next-actions strong { color: #7a2e0e; }
+    .empty-state {
+      padding: 18px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .sample-list {
+      display: grid;
+      gap: 8px;
+    }
+    .sample-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      font-size: 13px;
+    }
+    .sample-title {
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .sample-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .sample-price {
+      font-weight: 850;
+      white-space: nowrap;
+    }
     @media (max-width: 980px) {
       main { grid-template-columns: 1fr; padding: 16px; }
       header { padding: 20px 16px 14px; }
       .summary { grid-template-columns: 1fr; }
+      .insight-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 560px) {
       .grid2, .summary { grid-template-columns: 1fr; }
@@ -251,6 +402,7 @@
     <section>
       <h2>작품 정보 입력</h2>
       <form id="estimateForm">
+        <div class="form-group-title">작가</div>
         <div class="grid2">
           <label>한글 작가명
             <input id="nameKo" value="박서보" autocomplete="off" />
@@ -262,6 +414,7 @@
         <label>작품명
           <input id="title" value="Untitled" autocomplete="off" />
         </label>
+        <div class="form-group-title">작품 기본 정보</div>
         <div class="grid2">
           <label>제작연도
             <input id="year" type="number" value="2020" />
@@ -275,6 +428,7 @@
             </select>
           </label>
         </div>
+        <div class="form-group-title">크기와 재료</div>
         <div class="grid2">
           <label>가로(cm)
             <input id="widthCm" type="number" step="0.1" value="72.7" />
@@ -338,31 +492,66 @@
     <section>
       <h2>예측 결과</h2>
       <div class="result">
-        <div class="summary">
-          <div class="metric primary">
-            <div class="label">예상 가격</div>
-            <div class="value" id="priceValue">-</div>
+        <div class="hero-result">
+          <div class="result-topline">
+            <span id="routeBadge" class="pill">예측 전</span>
+            <span id="confidenceBadge" class="pill">신뢰도 -</span>
           </div>
-          <div class="metric">
-            <div class="label">참고 범위</div>
-            <div class="value" id="rangeValue">-</div>
+          <div>
+            <div class="result-caption">예상 가격</div>
+            <div class="price-large" id="priceValue">-</div>
+            <div class="result-caption" id="policyText">가격 예측을 실행하면 결과 해석이 표시됩니다.</div>
           </div>
-          <div class="metric">
-            <div class="label">신뢰도</div>
-            <div class="value" id="confidenceValue">-</div>
+          <div class="range-strip">
+            <div class="range-track"><span class="range-point"></span></div>
+            <div class="range-labels">
+              <span>낮은 참고가<strong id="rangeLowValue">-</strong></span>
+              <span>예상가<strong id="rangeMidValue">-</strong></span>
+              <span>높은 참고가<strong id="rangeHighValue">-</strong></span>
+            </div>
           </div>
         </div>
 
-        <div class="notice" id="policyText">가격 예측을 실행하면 결과 해석이 표시됩니다.</div>
+        <div class="insight-grid" id="insightGrid">
+          <div class="insight-card">
+            <div class="label">작가 확인</div>
+            <div class="value">-</div>
+            <div class="hint">작가명 또는 내부 작가키 기준</div>
+          </div>
+          <div class="insight-card">
+            <div class="label">가격 근거</div>
+            <div class="value">-</div>
+            <div class="hint">동일 작가 또는 작품 정보 기반</div>
+          </div>
+          <div class="insight-card">
+            <div class="label">정보 보완</div>
+            <div class="value">-</div>
+            <div class="hint">부족한 입력을 보완하면 정확도 관리에 도움이 됩니다.</div>
+          </div>
+        </div>
 
         <details open>
-          <summary>예측 방식</summary>
+          <summary>가격 근거</summary>
           <div class="details-body">
             <table>
               <tbody id="routeTable"></tbody>
             </table>
           </div>
         </details>
+
+        <details id="sampleDetails">
+          <summary>유사 작품 참고</summary>
+          <div class="details-body">
+            <div class="sample-list" id="sampleList">
+              <div class="empty-state">유사 작품 샘플이 있으면 여기에 표시됩니다.</div>
+            </div>
+          </div>
+        </details>
+
+        <div class="next-actions" id="nextActions">
+          <strong>정확도를 높이는 방법</strong>
+          <span>작가명, 제작연도, 크기, 재료, 실제 판매가를 입력하면 향후 가격 예측 개선에 활용할 수 있습니다.</span>
+        </div>
 
         <details>
           <summary>계산 과정 보기</summary>
@@ -502,6 +691,26 @@
       return labels[level] || "-";
     }
 
+    function formatKrwShort(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+      const number = Number(value);
+      if (number >= 100000000) {
+        const eok = number / 100000000;
+        return eok < 10 ? `${eok.toFixed(1)}억원` : `${Math.round(eok).toLocaleString()}억원`;
+      }
+      if (number >= 10000) return `${Math.round(number / 10000).toLocaleString()}만원`;
+      return `${Math.round(number).toLocaleString()}원`;
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
     function displayText(text) {
       return String(text || "-")
         .replaceAll("Warm", "이력 기반 예측")
@@ -512,13 +721,93 @@
         .replaceAll("routing", "예측 방식 결정");
     }
 
+    function renderInsightCards(json) {
+      const r = json.routing || {};
+      const q = json.input_quality || {};
+      const count = r.same_artist_training_price_count ?? 0;
+      const missingRequired = q.missing_required_fields || [];
+      const missingRecommended = q.missing_recommended_fields || [];
+      const basisValue = json.route === "warm" ? `${count}건 가격 이력` : "작품 기본 정보";
+      const basisHint = json.route === "warm"
+        ? "동일 작가의 과거 가격과 유사 작품 정보를 함께 사용했습니다."
+        : "작가 가격 이력이 부족해 크기, 재료, 지지체 기반 참고가로 표시합니다.";
+      const infoValue = missingRequired.length
+        ? "필수 정보 부족"
+        : (missingRecommended.length ? "보완 권장" : "기본 입력 충족");
+      const infoHint = missingRequired.length
+        ? `${missingRequired.join(", ")} 입력이 필요합니다.`
+        : (missingRecommended.length ? `${missingRecommended.join(", ")} 정보를 추가하면 좋습니다.` : "현재 입력값으로 예측을 진행할 수 있습니다.");
+
+      $("insightGrid").innerHTML = `
+        <div class="insight-card">
+          <div class="label">작가 확인</div>
+          <div class="value">${r.artist_matched ? "확인됨" : "신규/미확인"}</div>
+          <div class="hint">${r.artist_matched ? `매칭 신뢰도 ${r.artist_match_score ?? "-"} 기준` : "기존 작가 이력이 부족하거나 신규 작가에 가깝습니다."}</div>
+        </div>
+        <div class="insight-card">
+          <div class="label">가격 근거</div>
+          <div class="value">${basisValue}</div>
+          <div class="hint">${basisHint}</div>
+        </div>
+        <div class="insight-card">
+          <div class="label">정보 보완</div>
+          <div class="value">${infoValue}</div>
+          <div class="hint">${infoHint}</div>
+        </div>
+      `;
+    }
+
+    function renderSamples(samples) {
+      if (!samples || samples.length === 0) {
+        $("sampleList").innerHTML = `<div class="empty-state">표시할 유사 작품 샘플이 없습니다. 이력 기반 예측이 가능한 작가에서 샘플을 확인할 수 있습니다.</div>`;
+        return;
+      }
+      $("sampleList").innerHTML = samples.map((sample) => {
+        const title = escapeHtml(sample.title || "Untitled");
+        const artist = escapeHtml(sample.artist_name || "-");
+        const medium = escapeHtml([sample.medium_category, sample.support_category].filter(Boolean).join(" / "));
+        const size = [sample.width_cm, sample.height_cm].filter(v => v !== null && v !== undefined).join(" x ");
+        return `
+          <div class="sample-item">
+            <div>
+              <div class="sample-title">${title}</div>
+              <div class="sample-meta">${artist}${medium ? ` · ${medium}` : ""}${size ? ` · ${size}cm` : ""}</div>
+            </div>
+            <div class="sample-price">${formatKrwShort(sample.sale_price_krw)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderNextActions(json) {
+      const q = json.input_quality || {};
+      const missing = [...(q.missing_required_fields || []), ...(q.missing_recommended_fields || [])];
+      const warnings = json.warnings || [];
+      const routeTip = json.route === "cold"
+        ? "작가 이력, 전시 정보, 실제 판매가가 쌓이면 이후 더 안정적인 예측으로 전환할 수 있습니다."
+        : "실제 판매가를 입력하면 다음 학습 후보로 검수할 수 있습니다.";
+      const warningTip = warnings.length ? displayText(warnings[0].message) : "현재 입력값으로 가격 계산이 완료되었습니다.";
+      $("nextActions").innerHTML = `
+        <strong>정확도를 높이는 방법</strong>
+        <span>${routeTip}</span>
+        <span>${missing.length ? `추가 권장 정보: ${missing.join(", ")}` : warningTip}</span>
+      `;
+    }
+
     function render(json) {
       lastResponse = json;
       $("rawJson").textContent = JSON.stringify(json, null, 2);
-      $("priceValue").textContent = json.prediction?.price_display || "-";
-      $("rangeValue").textContent = json.prediction?.range_display || "-";
+      const prediction = json.prediction || {};
+      const range = prediction.range_krw || {};
+      $("priceValue").textContent = prediction.price_display || "가격 표시 불가";
+      $("rangeLowValue").textContent = formatKrwShort(range.low);
+      $("rangeMidValue").textContent = formatKrwShort(range.mid || prediction.price_krw);
+      $("rangeHighValue").textContent = formatKrwShort(range.high);
       const confidence = json.prediction?.confidence;
-      $("confidenceValue").innerHTML = confidence ? pill(confidenceLabel(confidence.level), confidence.level) : "-";
+      $("routeBadge").innerHTML = routeLabel(json.route);
+      $("routeBadge").className = `pill ${json.route || ""}`;
+      $("confidenceBadge").innerHTML = confidence ? `신뢰도 ${confidenceLabel(confidence.level)}` : "신뢰도 -";
+      $("confidenceBadge").className = `pill ${confidence?.level || ""}`;
       $("predictionId").value = json.prediction_id || "";
 
       const summary = json.calculation_summary;
@@ -527,6 +816,9 @@
         : "계산 설명이 없습니다.";
 
       const r = json.routing || {};
+      renderInsightCards(json);
+      renderSamples(json.comparable_samples || []);
+      renderNextActions(json);
       $("routeTable").innerHTML = `
         <tr><th>예측 방식</th><td>${pill(routeLabel(json.route), json.route)}</td></tr>
         <tr><th>판단 기준</th><td>${displayText(r.route_reason || "-")}</td></tr>
