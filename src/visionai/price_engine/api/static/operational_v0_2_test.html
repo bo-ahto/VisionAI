@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VisionAI 가격 예측 v0.2 로컬 테스트</title>
+  <title>VisionAI 작품 가격 예측 v0.2</title>
   <style>
     :root {
       color-scheme: light;
@@ -12,6 +12,7 @@
       --line: #d0d5dd;
       --panel: #f8fafc;
       --soft: #eef4ff;
+      --warm: #f0f9ff;
       --accent: #175cd3;
       --warn: #b54708;
       --bad: #b42318;
@@ -22,7 +23,7 @@
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
-      background: #fff;
+      background: #f8fafc;
     }
     header {
       padding: 24px 28px 16px;
@@ -88,7 +89,21 @@
       background: #fff;
       color: var(--ink);
     }
+    input[type="checkbox"] {
+      width: 16px;
+      min-height: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent);
+    }
     textarea { min-height: 72px; resize: vertical; }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 650;
+      color: var(--ink);
+    }
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -113,19 +128,23 @@
     .result {
       padding: 16px;
       display: grid;
-      gap: 14px;
+      gap: 16px;
     }
     .summary {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: 1.2fr 1fr 0.8fr;
       gap: 10px;
+    }
+    .metric.primary {
+      background: #fff;
+      border-color: #84caff;
     }
     .metric {
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 12px;
       background: var(--panel);
-      min-height: 82px;
+      min-height: 86px;
     }
     .metric .label {
       color: var(--muted);
@@ -182,10 +201,41 @@
       font-size: 13px;
       color: #1d2939;
     }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    details > summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      font-weight: 800;
+      background: var(--panel);
+      list-style: none;
+    }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::after {
+      content: "+";
+      float: right;
+      color: var(--muted);
+    }
+    details[open] > summary::after { content: "-"; }
+    .details-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .small-help {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
     @media (max-width: 980px) {
       main { grid-template-columns: 1fr; padding: 16px; }
       header { padding: 20px 16px 14px; }
-      .summary { grid-template-columns: 1fr 1fr; }
+      .summary { grid-template-columns: 1fr; }
     }
     @media (max-width: 560px) {
       .grid2, .summary { grid-template-columns: 1fr; }
@@ -194,12 +244,12 @@
 </head>
 <body>
   <header>
-    <h1>VisionAI 가격 예측 v0.2 로컬 테스트</h1>
-    <p class="sub">Warm은 작가 이력이 충분한 경우, Cold는 신규/이력 부족 작품의 참고 가격 표시를 확인합니다.</p>
+    <h1>VisionAI 작품 가격 예측 v0.2</h1>
+    <p class="sub">작가명과 작품 정보를 입력하면 예상 가격, 참고 범위, 신뢰도를 확인할 수 있습니다.</p>
   </header>
   <main>
     <section>
-      <h2>입력값</h2>
+      <h2>작품 정보 입력</h2>
       <form id="estimateForm">
         <div class="grid2">
           <label>한글 작가명
@@ -209,9 +259,6 @@
             <input id="nameEn" value="Park Seo-Bo" autocomplete="off" />
           </label>
         </div>
-        <label>내부 작가키
-          <input id="artistKey" placeholder="알고 있을 때만 입력" autocomplete="off" />
-        </label>
         <label>작품명
           <input id="title" value="Untitled" autocomplete="off" />
         </label>
@@ -267,31 +314,37 @@
         <label>작품 URL
           <input id="artworkUrl" value="https://example.com/artwork/local-v02-test-001" autocomplete="off" />
         </label>
-        <label>
-          <span><input id="includeSamples" type="checkbox" checked /> 유사 작품 샘플 포함</span>
-        </label>
+        <details>
+          <summary>고급 입력</summary>
+          <div class="details-body">
+            <label>내부 작가키
+              <input id="artistKey" placeholder="알고 있을 때만 입력" autocomplete="off" />
+            </label>
+            <label class="checkbox-row">
+              <input id="includeSamples" type="checkbox" checked />
+              유사 작품 샘플 포함
+            </label>
+            <p class="small-help">내부 작가키는 운영 DB의 작가 식별값을 알고 있을 때만 사용합니다. 일반 사용자는 작가명만 입력해도 됩니다.</p>
+          </div>
+        </details>
         <div class="actions">
           <button type="submit">가격 예측 실행</button>
-          <button type="button" class="secondary" id="coldExample">Cold 예시 입력</button>
-          <button type="button" class="secondary" id="modelInfo">모델 정보 조회</button>
+          <button type="button" class="secondary" id="coldExample">신규 작가 예시</button>
+          <button type="button" class="secondary" id="modelInfo">모델 상태</button>
         </div>
       </form>
     </section>
 
     <section>
-      <h2>결과</h2>
+      <h2>예측 결과</h2>
       <div class="result">
         <div class="summary">
-          <div class="metric">
-            <div class="label">경로</div>
-            <div class="value" id="routeValue">-</div>
-          </div>
-          <div class="metric">
-            <div class="label">예측가격</div>
+          <div class="metric primary">
+            <div class="label">예상 가격</div>
             <div class="value" id="priceValue">-</div>
           </div>
           <div class="metric">
-            <div class="label">가격범위</div>
+            <div class="label">참고 범위</div>
             <div class="value" id="rangeValue">-</div>
           </div>
           <div class="metric">
@@ -300,25 +353,38 @@
           </div>
         </div>
 
-        <div class="notice" id="policyText">입력 후 실행하면 Warm/Cold 라우팅과 계산 설명이 표시됩니다.</div>
+        <div class="notice" id="policyText">가격 예측을 실행하면 결과 해석이 표시됩니다.</div>
 
-        <div>
-          <h3>계산 순서</h3>
-          <table id="componentsTable">
-            <thead><tr><th>구성</th><th>역할</th><th>식</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <details open>
+          <summary>예측 방식</summary>
+          <div class="details-body">
+            <table>
+              <tbody id="routeTable"></tbody>
+            </table>
+          </div>
+        </details>
 
-        <div>
-          <h3>작가 매칭 및 입력 품질</h3>
-          <table>
-            <tbody id="qualityTable"></tbody>
-          </table>
-        </div>
+        <details>
+          <summary>계산 과정 보기</summary>
+          <div class="details-body">
+            <table id="componentsTable">
+              <thead><tr><th>구성</th><th>역할</th><th>계산 방식</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </details>
 
-        <div>
-          <h3>실제 판매가 피드백</h3>
+        <details>
+          <summary>입력 품질 및 주의사항</summary>
+          <div class="details-body">
+            <table>
+              <tbody id="qualityTable"></tbody>
+            </table>
+          </div>
+        </details>
+
+        <details>
+          <summary>실제 판매가 입력</summary>
           <form id="feedbackForm">
             <div class="grid2">
               <label>예측 ID
@@ -345,12 +411,14 @@
             </label>
             <button type="submit">피드백 저장</button>
           </form>
-        </div>
+        </details>
 
-        <div>
-          <h3>Raw JSON</h3>
+        <details>
+          <summary>개발자 응답 데이터</summary>
+          <div class="details-body">
           <pre id="rawJson">{}</pre>
-        </div>
+          </div>
+        </details>
       </div>
     </section>
   </main>
@@ -420,26 +488,57 @@
       return `<span class="pill ${cls || ""}">${text || "-"}</span>`;
     }
 
+    function routeLabel(route) {
+      const labels = {
+        warm: "이력 기반 예측",
+        cold: "기본 정보 기반 참고 예측",
+        review_required: "검수 필요"
+      };
+      return labels[route] || "-";
+    }
+
+    function confidenceLabel(level) {
+      const labels = {high: "높음", medium: "보통", low: "낮음"};
+      return labels[level] || "-";
+    }
+
+    function displayText(text) {
+      return String(text || "-")
+        .replaceAll("Warm", "이력 기반 예측")
+        .replaceAll("warm", "이력 기반 예측")
+        .replaceAll("Cold", "기본 정보 기반 참고 예측")
+        .replaceAll("cold", "기본 정보 기반 참고 예측")
+        .replaceAll("route", "예측 방식")
+        .replaceAll("routing", "예측 방식 결정");
+    }
+
     function render(json) {
       lastResponse = json;
       $("rawJson").textContent = JSON.stringify(json, null, 2);
-      $("routeValue").innerHTML = pill(json.route, json.route);
       $("priceValue").textContent = json.prediction?.price_display || "-";
       $("rangeValue").textContent = json.prediction?.range_display || "-";
       const confidence = json.prediction?.confidence;
-      $("confidenceValue").innerHTML = confidence ? pill(confidence.level, confidence.level) : "-";
+      $("confidenceValue").innerHTML = confidence ? pill(confidenceLabel(confidence.level), confidence.level) : "-";
       $("predictionId").value = json.prediction_id || "";
 
       const summary = json.calculation_summary;
       $("policyText").textContent = summary
-        ? `${summary.user_facing_formula} / ${summary.explanation}`
+        ? displayText(`${summary.user_facing_formula} / ${summary.explanation}`)
         : "계산 설명이 없습니다.";
+
+      const r = json.routing || {};
+      $("routeTable").innerHTML = `
+        <tr><th>예측 방식</th><td>${pill(routeLabel(json.route), json.route)}</td></tr>
+        <tr><th>판단 기준</th><td>${displayText(r.route_reason || "-")}</td></tr>
+        <tr><th>작가 확인</th><td>${r.artist_matched ? "기존 작가 정보와 매칭됨" : "기존 작가 정보 없음 또는 신규 작가"}</td></tr>
+        <tr><th>학습에 사용 가능한 동일 작가 가격 수</th><td>${r.same_artist_training_price_count ?? 0}건</td></tr>
+      `;
 
       const tbody = $("componentsTable").querySelector("tbody");
       tbody.innerHTML = "";
       (summary?.model_components || []).forEach((item) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${item.name || "-"}</td><td>${item.role || "-"}</td><td>${item.formula || "-"}</td>`;
+        tr.innerHTML = `<td>${displayText(item.name)}</td><td>${displayText(item.role)}</td><td>${displayText(item.formula)}</td>`;
         tbody.appendChild(tr);
       });
       if (!tbody.children.length) {
@@ -449,18 +548,17 @@
       }
 
       const q = json.input_quality || {};
-      const r = json.routing || {};
       $("qualityTable").innerHTML = `
-        <tr><th>작가 매칭</th><td>${r.artist_matched ? "매칭됨" : "미매칭"}</td></tr>
+        <tr><th>작가 확인</th><td>${r.artist_matched ? "확인됨" : "확인되지 않음"}</td></tr>
         <tr><th>작가키</th><td>${r.matched_artist_key || "-"}</td></tr>
         <tr><th>작가 매칭 신뢰도</th><td>${r.artist_match_score ?? "-"}</td></tr>
         <tr><th>동명이인 위험도</th><td>${r.homonym_risk_score ?? "-"}</td></tr>
-        <tr><th>동일 작가 학습 가격 수</th><td>${r.same_artist_training_price_count ?? "-"}</td></tr>
-        <tr><th>라우팅 사유</th><td>${r.route_reason || "-"}</td></tr>
-        <tr><th>최소 입력 상태</th><td>${q.minimum_input_status || "-"}</td></tr>
+        <tr><th>동일 작가 가격 수</th><td>${r.same_artist_training_price_count ?? 0}건</td></tr>
+        <tr><th>판단 사유</th><td>${displayText(r.route_reason || "-")}</td></tr>
+        <tr><th>필수 입력 상태</th><td>${q.minimum_input_status === "passed" ? "충족" : "부족"}</td></tr>
         <tr><th>부족한 필수 입력</th><td>${(q.missing_required_fields || []).join(", ") || "-"}</td></tr>
         <tr><th>부족한 권장 입력</th><td>${(q.missing_recommended_fields || []).join(", ") || "-"}</td></tr>
-        <tr><th>주의 메시지</th><td>${(json.warnings || []).map(w => `${w.code}: ${w.message}`).join("<br>") || "-"}</td></tr>
+        <tr><th>주의 메시지</th><td>${(json.warnings || []).map(w => displayText(w.message)).join("<br>") || "-"}</td></tr>
       `;
     }
 
