@@ -64,6 +64,24 @@ WARM_MODEL_VERSION = "warm_runtime_v0.1_with_v0.2_routing_policy"
 COLD_MODEL_VERSION = "cold_prediction_v0.2_operational_search_free"
 WARM_MATCH_SCORE_MIN = 0.90
 WARM_TRAINING_PRICE_MIN = 5
+REFERENCE_SAMPLE_POLICY = {
+    "warm": {
+        "scope": "same_artist",
+        "label": "동일 작가 참고 사례",
+        "sort_order": "target_area_distance_asc_then_price_desc",
+        "similarity_reason": "same_artist_closest_area",
+    },
+    "cold": {
+        "scope": "cross_artist_allowed",
+        "label": "타 작가 포함 참고 사례",
+        "medium_match_weight": 2,
+        "support_match_weight": 1,
+        "max_per_artist": 2,
+        "dedupe_key": "artist_name_width_height_price",
+        "sort_order": "material_support_match_score_desc_then_target_area_distance_asc_then_price_desc",
+        "similarity_reason": "cross_artist_medium_support_area_reference",
+    },
+}
 
 
 def prediction_id() -> str:
@@ -89,6 +107,7 @@ class OperationalV02Service:
         feedback_store: Path | None = None,
     ) -> None:
         self.v01 = OperationalV01Service(model_root=v01_model_root)
+        self.title_lookup = self._load_title_lookup()
         self.cold_bundle_root = cold_bundle_root or REPO / "models" / "track6" / "cold_prediction_v0.2_operational"
         self.cold_predictor = _load_module(
             self.cold_bundle_root / "predict" / "predict_cold_operational_v0_2.py",
@@ -464,11 +483,74 @@ class OperationalV02Service:
         frame = feature_ops.add_bucket_features(base, self.v01.feature_generation, "cold")
         return frame
 
+    def _load_title_lookup(self) -> dict[str, str]:
+        paths = [
+            self.v01.model_root / "data" / "training" / "track6_split" / "track6_train_title_lookup_complete.csv",
+            REPO / "data" / "track6_split" / "track6_train_title_lookup_complete.csv",
+        ]
+        path = next((candidate for candidate in paths if candidate.exists()), None)
+        if path is None:
+            return {}
+
+        usecols = ["_track6_row_id", "title_resolved", "title_raw", "title_url_slug", "source_artwork_id"]
+        lookup_frame = pd.read_csv(path, usecols=usecols)
+        lookup: dict[str, str] = {}
+        for _, row in lookup_frame.iterrows():
+            title = self._best_title_from_row(row)
+            if not title:
+                continue
+            row_id = row.get("_track6_row_id")
+            source_id = row.get("source_artwork_id")
+            if pd.notna(row_id):
+                lookup[str(int(row_id))] = title
+                lookup[str(row_id)] = title
+            if pd.notna(source_id) and str(source_id).strip():
+                lookup[str(source_id).strip()] = title
+        return lookup
+
     @staticmethod
-    def _normalize_sample_title(sample: v01s.ComparableSample | ComparableSample) -> ComparableSample:
+    def _clean_title_value(value: object, from_slug: bool = False) -> str | None:
+        if value is None or pd.isna(value):
+            return None
+        text = str(value).strip()
+        if not text or text.lower() in {"nan", "none", "null"}:
+            return None
+        if from_slug:
+            text = text.rsplit("/", 1)[-1]
+            text = text.replace("_", " ").replace("-", " ").strip()
+            text = text.removeprefix("Painting ").removeprefix("painting ").strip()
+        return text or None
+
+    @classmethod
+    def _best_title_from_row(cls, row: pd.Series) -> str | None:
+        for column, from_slug in [
+            ("title_resolved", False),
+            ("title_raw", False),
+            ("title_url_slug", True),
+        ]:
+            title = cls._clean_title_value(row.get(column), from_slug=from_slug)
+            if title:
+                return title
+        return None
+
+    def _title_for_identifier(self, identifier: object) -> str | None:
+        if identifier is None or pd.isna(identifier):
+            return None
+        text = str(identifier).strip()
+        if not text:
+            return None
+        if text in self.title_lookup:
+            return self.title_lookup[text]
+        try:
+            numeric_key = str(int(float(text)))
+        except (TypeError, ValueError):
+            numeric_key = text
+        return self.title_lookup.get(numeric_key)
+
+    def _normalize_sample_title(self, sample: v01s.ComparableSample | ComparableSample) -> ComparableSample:
         data = sample.model_dump()
         title = str(data.get("title") or "").strip()
-        data["title"] = title if title else "제목 정보 없음"
+        data["title"] = title or self._title_for_identifier(data.get("artwork_id")) or "제목 정보 없음"
         return ComparableSample(**data)
 
     def _cold_reference_samples(self, feature_row: pd.Series, max_samples: int) -> list[ComparableSample]:
@@ -481,10 +563,14 @@ class OperationalV02Service:
         target_area = float(feature_row.get("area_cm2", 0) or 0)
         target_medium = str(feature_row.get("medium_category") or "")
         target_support = str(feature_row.get("support_category") or "")
+        policy = REFERENCE_SAMPLE_POLICY["cold"]
         source["_area_diff"] = (pd.to_numeric(source["area_cm2"], errors="coerce") - target_area).abs()
         source["_medium_match"] = source["medium_category"].astype(str).eq(target_medium).astype(int)
         source["_support_match"] = source["support_category"].astype(str).eq(target_support).astype(int)
-        source["_match_score"] = 2 * source["_medium_match"] + source["_support_match"]
+        source["_match_score"] = (
+            policy["medium_match_weight"] * source["_medium_match"]
+            + policy["support_match_weight"] * source["_support_match"]
+        )
         source = source.sort_values(
             ["_match_score", "_area_diff", "price_krw"],
             ascending=[False, True, False],
@@ -501,21 +587,21 @@ class OperationalV02Service:
             signature = (artist_name, width, height, price)
             if signature in seen_signatures:
                 continue
-            if artist_counts.get(artist_name, 0) >= 2:
+            if artist_counts.get(artist_name, 0) >= policy["max_per_artist"]:
                 continue
             seen_signatures.add(signature)
             artist_counts[artist_name] = artist_counts.get(artist_name, 0) + 1
             artwork_id = str(row.get("source_artwork_id") or row.get("_track6_row_id") or "")
             samples.append(ComparableSample(
                 artwork_id=artwork_id,
-                title="제목 정보 없음",
+                title=self._title_for_identifier(artwork_id) or self._best_title_from_row(row) or "제목 정보 없음",
                 artist_name=artist_name,
                 sale_price_krw=price,
                 width_cm=width,
                 height_cm=height,
                 medium_category=str(row.get("medium_category") or ""),
                 support_category=str(row.get("support_category") or ""),
-                similarity_reason="cross_artist_medium_support_area_reference",
+                similarity_reason=policy["similarity_reason"],
             ))
             if len(samples) >= max_samples:
                 break

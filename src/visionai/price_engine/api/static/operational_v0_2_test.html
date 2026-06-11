@@ -606,6 +606,7 @@
         <details id="sampleDetails">
           <summary>참고 작품 사례</summary>
           <div class="details-body">
+            <p class="small-help" id="samplePolicyText">예측을 실행하면 참고 작품 선택 기준이 표시됩니다.</p>
             <div class="sample-list" id="sampleList">
               <div class="empty-state">가격 판단에 참고할 작품 사례가 있으면 여기에 표시됩니다.</div>
             </div>
@@ -952,6 +953,16 @@
       return labels[reason] || "가격 참고 사례";
     }
 
+    function referenceSamplePolicyText(route) {
+      if (route === "warm") {
+        return "동일 작가의 가격 이력이 충분한 경우에는 같은 작가의 작품 중 면적이 가장 가까운 사례를 우선 표시합니다.";
+      }
+      if (route === "cold") {
+        return "동일 작가 가격 이력이 부족한 경우에는 타 작가를 포함해 재료, 지지체, 크기가 가까운 거래 사례를 참고용으로 표시합니다. 특정 작가가 과도하게 반복되지 않도록 작가별 최대 2건까지 노출합니다.";
+      }
+      return "작가 확정 또는 필수 입력값이 부족한 경우에는 참고 작품 사례를 표시하지 않습니다.";
+    }
+
     function renderSamples(samples) {
       if (!samples || samples.length === 0) {
         $("sampleList").innerHTML = `<div class="empty-state">표시할 참고 작품 사례가 없습니다. 작가 이력 또는 크기/재료가 맞는 사례가 있으면 표시됩니다.</div>`;
@@ -959,7 +970,7 @@
       }
       $("sampleList").innerHTML = samples.map((sample) => {
         const rawTitle = String(sample.title || "").trim();
-        const title = escapeHtml(rawTitle && rawTitle.toLowerCase() !== "untitled" ? rawTitle : "제목 정보 없음");
+        const title = escapeHtml(rawTitle || "제목 정보 없음");
         const artist = escapeHtml(sample.artist_name || "-");
         const medium = escapeHtml([sample.medium_category, sample.support_category].filter(Boolean).join(" / "));
         const size = [sample.width_cm, sample.height_cm].filter(v => v !== null && v !== undefined).join(" x ");
@@ -1015,6 +1026,7 @@
 
       const r = json.routing || {};
       renderInsightCards(json);
+      $("samplePolicyText").textContent = referenceSamplePolicyText(json.route);
       renderSamples(json.comparable_samples || []);
       renderNextActions(json);
       $("routeTable").innerHTML = `
@@ -1022,6 +1034,7 @@
         <tr><th>판단 기준</th><td>${displayText(r.route_reason || "-")}</td></tr>
         <tr><th>작가 확인</th><td>${r.artist_matched ? "기존 작가 정보와 매칭됨" : "기존 작가 정보 없음 또는 신규 작가"}</td></tr>
         <tr><th>학습에 사용 가능한 동일 작가 가격 수</th><td>${r.same_artist_training_price_count ?? 0}건</td></tr>
+        <tr><th>참고 작품 선택 기준</th><td>${referenceSamplePolicyText(json.route)}</td></tr>
       `;
 
       const tbody = $("componentsTable").querySelector("tbody");
