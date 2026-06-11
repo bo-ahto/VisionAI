@@ -67,9 +67,12 @@ WARM_TRAINING_PRICE_MIN = 5
 REFERENCE_SAMPLE_POLICY = {
     "warm": {
         "scope": "same_artist",
-        "label": "동일 작가 참고 사례",
-        "sort_order": "target_area_distance_asc_then_price_desc",
-        "similarity_reason": "same_artist_closest_area",
+        "label": "동일 작가의 재료/크기 유사 참고 사례",
+        "medium_match_weight": 2,
+        "support_match_weight": 1,
+        "dedupe_key": "artist_name_width_height_price",
+        "sort_order": "material_support_match_score_desc_then_target_area_distance_asc_then_price_desc",
+        "similarity_reason": "same_artist_material_support_area_reference",
     },
     "cold": {
         "scope": "cross_artist_allowed",
@@ -308,7 +311,11 @@ class OperationalV02Service:
             ),
             basis=PredictionBasis(**v01_response.basis.model_dump()),
             market_price_card=MarketPriceCard(**v01_response.market_price_card.model_dump()),
-            comparable_samples=[self._normalize_sample_title(sample) for sample in v01_response.comparable_samples],
+            comparable_samples=(
+                self._warm_reference_samples(v01_request, selected.artist_key, request.options.max_comparable_samples)
+                if request.options.include_comparable_samples
+                else []
+            ),
             input_quality=input_quality,
             calculation_summary=self._warm_calculation_summary(),
             feedback=self._feedback_guide(),
@@ -553,6 +560,75 @@ class OperationalV02Service:
         data["title"] = title or self._title_for_identifier(data.get("artwork_id")) or "제목 정보 없음"
         return ComparableSample(**data)
 
+    @staticmethod
+    def _reference_similarity_reason(scope: str, match_score: int) -> str:
+        if match_score >= 3:
+            return f"{scope}_material_support_area_reference"
+        if match_score == 2:
+            return f"{scope}_material_area_reference"
+        if match_score == 1:
+            return f"{scope}_support_area_reference"
+        return f"{scope}_area_reference"
+
+    def _warm_reference_samples(
+        self,
+        request: v01s.PriceEstimateRequest,
+        artist_key: str,
+        max_samples: int,
+    ) -> list[ComparableSample]:
+        if max_samples <= 0:
+            return []
+        source = self.v01.comparable_source[
+            self.v01.comparable_source["artist_key"].astype(str).eq(str(artist_key))
+        ].copy()
+        if source.empty:
+            return []
+
+        feature_row = self.v01._build_feature_frame(request, artist_key).iloc[0]
+        target_area = float(feature_row.get("area_cm2", 0) or 0)
+        target_medium = str(feature_row.get("medium_category") or "")
+        target_support = str(feature_row.get("support_category") or "")
+        policy = REFERENCE_SAMPLE_POLICY["warm"]
+        source["_area_diff"] = (pd.to_numeric(source["area_cm2"], errors="coerce") - target_area).abs()
+        source["_medium_match"] = source["medium_category"].astype(str).eq(target_medium).astype(int)
+        source["_support_match"] = source["support_category"].astype(str).eq(target_support).astype(int)
+        source["_match_score"] = (
+            policy["medium_match_weight"] * source["_medium_match"]
+            + policy["support_match_weight"] * source["_support_match"]
+        )
+        source = source.sort_values(
+            ["_match_score", "_area_diff", "price_krw"],
+            ascending=[False, True, False],
+        )
+
+        samples: list[ComparableSample] = []
+        seen_signatures: set[tuple[str, float | None, float | None, int | None]] = set()
+        for _, row in source.iterrows():
+            artist_name = str(row.get("artist_name_ko") or row.get("artist_key") or "")
+            width = float(row["width_cm"]) if pd.notna(row.get("width_cm")) else None
+            height = float(row["height_cm"]) if pd.notna(row.get("height_cm")) else None
+            price = safe_price(row.get("price_krw"))
+            signature = (artist_name, width, height, price)
+            if signature in seen_signatures:
+                continue
+            seen_signatures.add(signature)
+            artwork_id = str(row.get("source_artwork_id") or row.get("_track6_row_id") or "")
+            reason = self._reference_similarity_reason("same_artist", int(row.get("_match_score") or 0))
+            samples.append(ComparableSample(
+                artwork_id=artwork_id,
+                title=self._title_for_identifier(artwork_id) or self._best_title_from_row(row) or "제목 정보 없음",
+                artist_name=artist_name,
+                sale_price_krw=price,
+                width_cm=width,
+                height_cm=height,
+                medium_category=str(row.get("medium_category") or ""),
+                support_category=str(row.get("support_category") or ""),
+                similarity_reason=reason,
+            ))
+            if len(samples) >= max_samples:
+                break
+        return samples
+
     def _cold_reference_samples(self, feature_row: pd.Series, max_samples: int) -> list[ComparableSample]:
         if max_samples <= 0:
             return []
@@ -601,7 +677,7 @@ class OperationalV02Service:
                 height_cm=height,
                 medium_category=str(row.get("medium_category") or ""),
                 support_category=str(row.get("support_category") or ""),
-                similarity_reason=policy["similarity_reason"],
+                similarity_reason=self._reference_similarity_reason("cross_artist", int(row.get("_match_score") or 0)),
             ))
             if len(samples) >= max_samples:
                 break

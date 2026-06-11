@@ -947,7 +947,15 @@
 
     function sampleReasonLabel(reason) {
       const labels = {
-        same_artist_closest_area: "동일 작가 · 크기 유사",
+        same_artist_material_support_area_reference: "동일 작가 · 재료/지지체/크기 유사",
+        same_artist_material_area_reference: "동일 작가 · 재료/크기 유사",
+        same_artist_support_area_reference: "동일 작가 · 지지체/크기 유사",
+        same_artist_area_reference: "동일 작가 · 크기 참고",
+        same_artist_closest_area: "동일 작가 · 크기 참고",
+        cross_artist_material_support_area_reference: "타 작가 포함 · 재료/지지체/크기 유사",
+        cross_artist_material_area_reference: "타 작가 포함 · 재료/크기 유사",
+        cross_artist_support_area_reference: "타 작가 포함 · 지지체/크기 유사",
+        cross_artist_area_reference: "타 작가 포함 · 크기 참고",
         cross_artist_medium_support_area_reference: "타 작가 포함 · 재료/지지체/크기 유사"
       };
       return labels[reason] || "가격 참고 사례";
@@ -955,10 +963,10 @@
 
     function referenceSamplePolicyText(route) {
       if (route === "warm") {
-        return "동일 작가의 가격 이력이 충분한 경우에는 같은 작가의 작품 중 면적이 가장 가까운 사례를 우선 표시합니다.";
+        return "동일 작가의 가격 이력이 충분한 경우에는 같은 작가의 작품 중 재료와 지지체가 모두 맞는 사례를 최우선으로 보고, 부족하면 재료 일치, 지지체 일치, 면적 유사 순으로 참고 수준을 낮춰 표시합니다.";
       }
       if (route === "cold") {
-        return "동일 작가 가격 이력이 부족한 경우에는 타 작가를 포함해 재료, 지지체, 크기가 가까운 거래 사례를 참고용으로 표시합니다. 특정 작가가 과도하게 반복되지 않도록 작가별 최대 2건까지 노출합니다.";
+        return "동일 작가 가격 이력이 부족한 경우에는 타 작가를 포함하되 재료와 지지체가 모두 맞는 사례를 최우선으로 보고, 부족하면 재료 일치, 지지체 일치, 면적 유사 순으로 참고 수준을 낮춰 표시합니다. 특정 작가가 과도하게 반복되지 않도록 작가별 최대 2건까지 노출합니다.";
       }
       return "작가 확정 또는 필수 입력값이 부족한 경우에는 참고 작품 사례를 표시하지 않습니다.";
     }
