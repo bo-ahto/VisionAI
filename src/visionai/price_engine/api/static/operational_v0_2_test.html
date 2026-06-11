@@ -540,7 +540,7 @@
             </label>
             <label class="checkbox-row">
               <input id="includeSamples" type="checkbox" checked />
-              유사 작품 샘플 포함
+              참고 작품 사례 포함
             </label>
             <p class="small-help">내부 작가키는 운영 DB의 작가 식별값을 알고 있을 때만 사용합니다. 일반 사용자는 작가명만 입력해도 됩니다.</p>
           </div>
@@ -604,10 +604,10 @@
         </details>
 
         <details id="sampleDetails">
-          <summary>유사 작품 참고</summary>
+          <summary>참고 작품 사례</summary>
           <div class="details-body">
             <div class="sample-list" id="sampleList">
-              <div class="empty-state">유사 작품 샘플이 있으면 여기에 표시됩니다.</div>
+              <div class="empty-state">가격 판단에 참고할 작품 사례가 있으면 여기에 표시됩니다.</div>
             </div>
           </div>
         </details>
@@ -916,7 +916,7 @@
       const missingRecommended = q.missing_recommended_fields || [];
       const basisValue = json.route === "warm" ? `${count}건 가격 이력` : "작품 기본 정보";
       const basisHint = json.route === "warm"
-        ? "동일 작가의 과거 가격과 유사 작품 정보를 함께 사용했습니다."
+        ? "동일 작가의 과거 가격과 참고 작품 정보를 함께 사용했습니다."
         : "작가 가격 이력이 부족해 크기, 재료, 지지체 기반 참고가로 표시합니다.";
       const infoValue = missingRequired.length
         ? "필수 정보 부족"
@@ -944,20 +944,31 @@
       `;
     }
 
+    function sampleReasonLabel(reason) {
+      const labels = {
+        same_artist_closest_area: "동일 작가 · 크기 유사",
+        cross_artist_medium_support_area_reference: "타 작가 포함 · 재료/지지체/크기 유사"
+      };
+      return labels[reason] || "가격 참고 사례";
+    }
+
     function renderSamples(samples) {
       if (!samples || samples.length === 0) {
-        $("sampleList").innerHTML = `<div class="empty-state">표시할 유사 작품 샘플이 없습니다. 이력 기반 예측이 가능한 작가에서 샘플을 확인할 수 있습니다.</div>`;
+        $("sampleList").innerHTML = `<div class="empty-state">표시할 참고 작품 사례가 없습니다. 작가 이력 또는 크기/재료가 맞는 사례가 있으면 표시됩니다.</div>`;
         return;
       }
       $("sampleList").innerHTML = samples.map((sample) => {
-        const title = escapeHtml(sample.title || "Untitled");
+        const rawTitle = String(sample.title || "").trim();
+        const title = escapeHtml(rawTitle && rawTitle.toLowerCase() !== "untitled" ? rawTitle : "제목 정보 없음");
         const artist = escapeHtml(sample.artist_name || "-");
         const medium = escapeHtml([sample.medium_category, sample.support_category].filter(Boolean).join(" / "));
         const size = [sample.width_cm, sample.height_cm].filter(v => v !== null && v !== undefined).join(" x ");
+        const reason = escapeHtml(sampleReasonLabel(sample.similarity_reason));
         return `
           <div class="sample-item">
             <div>
               <div class="sample-title">${title}</div>
+              <div class="sample-meta">${reason}</div>
               <div class="sample-meta">${artist}${medium ? ` · ${medium}` : ""}${size ? ` · ${size}cm` : ""}</div>
             </div>
             <div class="sample-price">${formatKrwShort(sample.sale_price_krw)}</div>

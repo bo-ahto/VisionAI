@@ -289,7 +289,7 @@ class OperationalV02Service:
             ),
             basis=PredictionBasis(**v01_response.basis.model_dump()),
             market_price_card=MarketPriceCard(**v01_response.market_price_card.model_dump()),
-            comparable_samples=[ComparableSample(**sample.model_dump()) for sample in v01_response.comparable_samples],
+            comparable_samples=[self._normalize_sample_title(sample) for sample in v01_response.comparable_samples],
             input_quality=input_quality,
             calculation_summary=self._warm_calculation_summary(),
             feedback=self._feedback_guide(),
@@ -334,6 +334,12 @@ class OperationalV02Service:
                 message="예측 불확실성이 큰 구간이라 과대예측 방어 보정을 적용했습니다.",
             ))
 
+        comparable_samples = (
+            self._cold_reference_samples(frame.iloc[0], request.options.max_comparable_samples)
+            if request.options.include_comparable_samples
+            else []
+        )
+
         return PriceEstimateResponse(
             request_id=request_id,
             status="partial_success",
@@ -367,7 +373,7 @@ class OperationalV02Service:
                 sample_count=0,
                 sample_count_display="Cold 경로는 동일 작가 시장가 카드가 없습니다.",
             ),
-            comparable_samples=[],
+            comparable_samples=comparable_samples,
             input_quality=input_quality,
             calculation_summary=self._cold_calculation_summary(guard_applied),
             feedback=self._feedback_guide(),
@@ -457,6 +463,63 @@ class OperationalV02Service:
         }])
         frame = feature_ops.add_bucket_features(base, self.v01.feature_generation, "cold")
         return frame
+
+    @staticmethod
+    def _normalize_sample_title(sample: v01s.ComparableSample | ComparableSample) -> ComparableSample:
+        data = sample.model_dump()
+        title = str(data.get("title") or "").strip()
+        data["title"] = title if title else "제목 정보 없음"
+        return ComparableSample(**data)
+
+    def _cold_reference_samples(self, feature_row: pd.Series, max_samples: int) -> list[ComparableSample]:
+        if max_samples <= 0:
+            return []
+        source = self.v01.comparable_source.copy()
+        if source.empty:
+            return []
+
+        target_area = float(feature_row.get("area_cm2", 0) or 0)
+        target_medium = str(feature_row.get("medium_category") or "")
+        target_support = str(feature_row.get("support_category") or "")
+        source["_area_diff"] = (pd.to_numeric(source["area_cm2"], errors="coerce") - target_area).abs()
+        source["_medium_match"] = source["medium_category"].astype(str).eq(target_medium).astype(int)
+        source["_support_match"] = source["support_category"].astype(str).eq(target_support).astype(int)
+        source["_match_score"] = 2 * source["_medium_match"] + source["_support_match"]
+        source = source.sort_values(
+            ["_match_score", "_area_diff", "price_krw"],
+            ascending=[False, True, False],
+        )
+
+        samples: list[ComparableSample] = []
+        artist_counts: dict[str, int] = {}
+        seen_signatures: set[tuple[str, float | None, float | None, int | None]] = set()
+        for _, row in source.iterrows():
+            artist_name = str(row.get("artist_name_ko") or row.get("artist_key") or "")
+            width = float(row["width_cm"]) if pd.notna(row.get("width_cm")) else None
+            height = float(row["height_cm"]) if pd.notna(row.get("height_cm")) else None
+            price = safe_price(row.get("price_krw"))
+            signature = (artist_name, width, height, price)
+            if signature in seen_signatures:
+                continue
+            if artist_counts.get(artist_name, 0) >= 2:
+                continue
+            seen_signatures.add(signature)
+            artist_counts[artist_name] = artist_counts.get(artist_name, 0) + 1
+            artwork_id = str(row.get("source_artwork_id") or row.get("_track6_row_id") or "")
+            samples.append(ComparableSample(
+                artwork_id=artwork_id,
+                title="제목 정보 없음",
+                artist_name=artist_name,
+                sale_price_krw=price,
+                width_cm=width,
+                height_cm=height,
+                medium_category=str(row.get("medium_category") or ""),
+                support_category=str(row.get("support_category") or ""),
+                similarity_reason="cross_artist_medium_support_area_reference",
+            ))
+            if len(samples) >= max_samples:
+                break
+        return samples
 
     def _input_quality(self, request: PriceEstimateRequest) -> InputQuality:
         artwork = request.artwork
