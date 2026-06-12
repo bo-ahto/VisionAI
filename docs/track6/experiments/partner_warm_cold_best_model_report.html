@@ -150,17 +150,7 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <body>
   <div class="layout">
     <aside>
-      <h3 id="4.6-warm-lite-모델-상세">4.6 Warm-lite 모델 상세 (이력 1~4건 전용 경로)</h3>
-<ul>
-<li>적용 대상: 작가가 고신뢰 매칭되고 사용 가능 가격 이력이 1~4건인 작품 (기존에는 Cold로 처리되던 구간)</li>
-<li>핵심 아이디어: 이력이 1건이라도 그 작가의 실제 거래 가격이 가장 강한 가격 신호 — 작가 이력 통계를 서빙 시점에 즉시 계산해 기준가격으로 사용</li>
-<li>사용 피처: 작품 크기 8종 + 매체/지지체/크기구간 + <strong>작가 이력 통계</strong>(이력 1~4건의 로그가격 중앙값·사분위·면적단가 중앙값·표본수) + 비교군 기준가격대용치(면적단가 중앙값 + 로그면적)</li>
-<li>작가 이력 매칭 순서: ① 같은 매체·지지체+크기 구간 → ② 같은 크기 구간 → ③ 작가 전체 → ④ 동결된 비작가 비교군 통계</li>
-<li>모델: 선형 Huber 회귀 6구성 앙상블 / 산식: <code>예측 로그가격 = HuberEnsemble(작품 피처, 작가 이력 통계)</code> → <code>예측가격 = exp(예측 로그가격)</code></li>
-<li>학습 시 누수 차단: 학습 데이터의 작가 통계는 자기 fold 제외로 계산</li>
-<li>성능(실존 저이력 작가 649명 leave-one-out ×3, 게이트 1.0/1.0/1.0): 이력 1건 MdAPE <code>0.1195</code> / 2건 <code>0.1194</code> / 3건 <code>0.1049</code> / 4건 <code>0.0948</code> — 같은 작품 Cold 처리 시 <code>0.51~0.56</code></li>
-<li>등급 정책: 이력 1건 = <code>warm_lite_low</code>(넓은 범위 + 검수 플래그) / 동결 번들: <code>models/track6/warm_lite_v0.1</code></li>
-</ul>
+      
 <h2>목차</h2>
       <nav class="toc">
         <a class="toc-level-1" href="#warm-cold-가격-예측-모델-종합-리포트">Warm/Cold 가격 예측 모델 종합 리포트</a>
@@ -175,6 +165,7 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <a class="toc-level-3" href="#4.3-warm-사용-피처">4.3 Warm 사용 피처</a>
 <a class="toc-level-3" href="#4.4-warm-모델과-산식">4.4 Warm 모델과 산식</a>
 <a class="toc-level-3" href="#4.5-warm-성능-해석">4.5 Warm 성능 해석</a>
+<a class="toc-level-3" href="#4.6-warm-lite-모델-상세">4.6 Warm-lite 모델 상세</a>
 <a class="toc-level-2" href="#5.-cold-모델-상세">5. Cold 모델 상세</a>
 <a class="toc-level-3" href="#5.1-모델-목적">5.1 모델 목적</a>
 <a class="toc-level-3" href="#5.2-cold-계산-순서도">5.2 Cold 계산 순서도</a>
@@ -1663,6 +1654,18 @@ Quantile예측구간폭
 <ul>
 <li>Warm 모델 해석: 큰 폭으로 가격을 바꾸는 모델이 아니라, 이미 안정화된 기준가격을 거의 유지하면서 일부 작품의 방향만 확인해 미세 보정</li>
 <li>대외 설명 권장 표현: <code>안정성 중심의 미세 보정형 Warm 모델</code></li>
+</ul>
+<h3 id="4.6-warm-lite-모델-상세">4.6 Warm-lite 모델 상세</h3>
+<ul>
+<li>경로 성격: 이력 1~4건 전용 경량 경로</li>
+<li>적용 대상: 작가가 고신뢰 매칭되고 사용 가능 가격 이력이 1~4건인 작품 (기존에는 Cold로 처리되던 구간)</li>
+<li>핵심 아이디어: 이력이 1건이라도 그 작가의 실제 거래 가격이 가장 강한 가격 신호 — 작가 이력 통계를 서빙 시점에 즉시 계산해 기준가격으로 사용</li>
+<li>사용 피처: 작품 크기 8종 + 매체/지지체/크기구간 + <strong>작가 이력 통계</strong>(이력 1~4건의 로그가격 중앙값·사분위·면적단가 중앙값·표본수) + 비교군 기준가격대용치(면적단가 중앙값 + 로그면적)</li>
+<li>작가 이력 매칭 순서: ① 같은 매체·지지체+크기 구간 → ② 같은 크기 구간 → ③ 작가 전체 → ④ 동결된 비작가 비교군 통계</li>
+<li>모델: 선형 Huber 회귀 6구성 앙상블 / 산식: <code>예측 로그가격 = HuberEnsemble(작품 피처, 작가 이력 통계)</code> → <code>예측가격 = exp(예측 로그가격)</code></li>
+<li>학습 시 누수 차단: 학습 데이터의 작가 통계는 자기 fold 제외로 계산</li>
+<li>성능(실존 저이력 작가 649명 leave-one-out ×3, 게이트 1.0/1.0/1.0): 이력 1건 MdAPE <code>0.1195</code> / 2건 <code>0.1194</code> / 3건 <code>0.1049</code> / 4건 <code>0.0948</code> — 같은 작품 Cold 처리 시 <code>0.51~0.56</code></li>
+<li>등급 정책: 이력 1건 = <code>warm_lite_low</code>(넓은 범위 + 검수 플래그) / 동결 번들: <code>models/track6/warm_lite_v0.1</code></li>
 </ul>
 <h2 id="5.-cold-모델-상세">5. Cold 모델 상세</h2>
 <h3 id="5.1-모델-목적">5.1 모델 목적</h3>
