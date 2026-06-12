@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""PP-E2E1: 라우팅 end-to-end replay (라우팅 재검증 3단계).
+"""PP-E2E1 v2: 라우팅 end-to-end replay (codex 리뷰 P1 수정판).
 
-입력 작가명 → 매칭(파트너 문서 산식, MCAL1 구현 재사용) → 3-경로 라우팅까지
-전체를 실데이터 스트림으로 replay해 오라우팅률과 그 기대 비용을 측정한다.
-
-스트림(정답 라벨 자명):
-- Warm행: warm test 607 (사전 내 5+ 작가 → 정답 Warm)
-- Warm-lite행: WCUT4 hold-out seed0 649 (사전 내 1~4건 작가 → 정답 Warm-lite)
-- Cold행: cold test 3,099 (사전 밖 작가 → 정답 Cold)
-시나리오: clean(원형 이름) / dirty(30% 행에 공백·오탈자 변형 + 보조정보 50% 결측)
-- 체크포인트: outputs/replay_<scenario>.csv — 재실행 시 스킵. 0604 미사용.
+수정 사항(2026-06-12 codex review):
+- P1 누수: warm-lite 스트림(WCUT4 hold-out) 행은 사전 hist_n에서 held 1건을
+  차감해 서빙 시점 이력으로 라우팅 (이전: full train 카운트 → 5건 작가 오라우팅)
+- P1 임계: THRESH 파라미터화 + tolerance(1e-6), 0.80/0.90 양쪽을 in-repo로 스윕
+- P1 동명이인: 완전일치 후보 중 생년 일치 후보 우선 선택
+- P2 비용: warm-lite 정매칭 비용을 행별 실제 이력 k로 청구
+스트림: warm test 607(정답 Warm) + WCUT4 hold-out seed0 649(정답 Warm-lite)
++ cold test 3,099(정답 Cold). 시나리오 clean/dirty × 임계 0.80/0.90,
+체크포인트 단위 재개. 0604 미사용.
 """
 from __future__ import annotations
 
@@ -29,7 +29,8 @@ mcal = importlib.util.module_from_spec(_m); _m.loader.exec_module(mcal)
 REPO = Path(__file__).resolve().parents[2]
 EXP = REPO / "experiments" / "track6" / "PP-E2E1_routing_pipeline_replay"
 SEED = 20260612
-THRESH = 0.90
+TOL = 1e-6
+THRESHOLDS = [0.80, 0.90]
 COSTS = {"warm": 0.2699, "warm_lite": {1: 0.3415, 2: 0.2707, 3: 0.2541, 4: 0.2557},
          "cold": 0.9946, "mismatch": 2.69}
 
@@ -56,26 +57,34 @@ def match(name: str, birth, dic: pd.DataFrame) -> tuple[float, object]:
         best = cand.loc[sims[cand.index].idxmax()]
         sim = float(sims[cand.index].max())
     else:
+        # P1 수정: 동명이인 완전일치 — 생년 일치 후보 우선
         best = cand.iloc[0]
+        if pd.notna(birth):
+            bm = cand[cand["artist_meta_birth_year"] == birth]
+            if len(bm):
+                best = bm.iloc[0]
         sim = 1.0
     homo = 1.0 if (len(cand) > 1 or bool(best["is_homonym"])) else 0.0
     if pd.notna(birth) and pd.notna(best["artist_meta_birth_year"]):
         aux, conflict = (1.0, 0.0) if birth == best["artist_meta_birth_year"] else (0.0, 1.0)
     else:
         aux, conflict = 0.0, 0.0
+    # 생년 일치로 동명이인이 해소된 경우 위험 감점 면제 (aux=1이면 homo*(1-aux)=0)
     return mcal.score_pair(sim, aux, 1.0, homo * (1 - aux), conflict), best
 
 
-def route(score: float, best) -> str:
-    if score < THRESH or best is None:
-        return "cold"
-    return "warm" if int(best["hist_n"]) >= 5 else "warm_lite"
+def route(score: float, best, held_adjust: int, thresh: float) -> tuple[str, int]:
+    if best is None or score < thresh - TOL:
+        return "cold", 0
+    hist_eff = int(best["hist_n"]) - int(held_adjust)  # P1 수정: 서빙 시점 이력
+    return ("warm", hist_eff) if hist_eff >= 5 else ("warm_lite", hist_eff)
 
 
-def run_scenario(name: str, stream: pd.DataFrame, dic: pd.DataFrame, dirty: bool) -> pd.DataFrame:
-    ckpt = EXP / "outputs" / f"replay_{name}.csv"
+def run_scenario(name: str, stream: pd.DataFrame, dic: pd.DataFrame,
+                 dirty: bool, thresh: float) -> pd.DataFrame:
+    ckpt = EXP / "outputs" / f"replay_v2_{name}_th{int(round(thresh * 100))}.csv"
     if ckpt.exists():
-        print(f"[resume] {name} 체크포인트 — 스킵")
+        print(f"[resume] {ckpt.name} — 스킵")
         return pd.read_csv(ckpt)
     rng = np.random.default_rng(SEED)
     rows = []
@@ -86,27 +95,22 @@ def run_scenario(name: str, stream: pd.DataFrame, dic: pd.DataFrame, dirty: bool
             if rng.random() < 0.5:
                 birth = np.nan
         sc, best = match(nm, birth, dic)
-        rt = route(sc, best)
-        correct_key = (best is not None and str(best["artist_key"]) == str(r["artist_key"]))
+        rt, k_eff = route(sc, best, int(r["held_adjust"]), thresh)
+        correct = (best is not None and str(best["artist_key"]) == str(r["artist_key"]))
         rows.append({"true_route": r["true_route"], "routed": rt, "score": round(sc, 3),
-                     "matched_correct_key": bool(correct_key)})
-        if len(rows) % 1000 == 0:
-            print(f"  {name}: {len(rows)}행")
+                     "k_eff": k_eff, "matched_correct_key": bool(correct)})
     out = pd.DataFrame(rows)
     out.to_csv(ckpt, index=False)
+    print(f"[done] {ckpt.name}")
     return out
 
 
 def expected_cost(df: pd.DataFrame) -> float:
-    c = 0.0
-    for _, r in df.iterrows():
-        if r["routed"] == "cold":
-            c += COSTS["cold"]
-        elif r["matched_correct_key"]:
-            c += COSTS["warm"] if r["routed"] == "warm" else COSTS["warm_lite"][3]
-        else:
-            c += COSTS["mismatch"]
-    return c / len(df)
+    c = np.where(df["routed"] == "cold", COSTS["cold"],
+                 np.where(~df["matched_correct_key"], COSTS["mismatch"],
+                          np.where(df["routed"] == "warm", COSTS["warm"],
+                                   df["k_eff"].clip(1, 4).map(COSTS["warm_lite"]))))
+    return float(np.mean(c.astype(float)))
 
 
 def main() -> None:
@@ -116,43 +120,46 @@ def main() -> None:
 
     wt = pd.read_csv(REPO / "data/track6_split/track6_test_warm.csv", low_memory=False,
                      usecols=["artist_key", "artist_name_ko", "artist_meta_birth_year"])
-    wt = wt.rename(columns={"artist_meta_birth_year": "birth"}).assign(true_route="warm")
+    wt = wt.rename(columns={"artist_meta_birth_year": "birth"}).assign(
+        true_route="warm", held_adjust=0)
     held = pd.read_csv(REPO / "experiments/track6/PP-WCUT4_real_low_history_validation/outputs/preds_seed20260612.csv")
     lm = dic.set_index("artist_key")
     wl = pd.DataFrame({"artist_key": held["artist_key"],
                        "artist_name_ko": held["artist_key"].map(lm["artist_name_ko"]),
                        "birth": held["artist_key"].map(lm["artist_meta_birth_year"]),
-                       "true_route": "warm_lite"})
+                       "true_route": "warm_lite", "held_adjust": 1})
     ct = pd.read_csv(REPO / "data/track6_split/track6_test_cold.csv", low_memory=False,
                      usecols=["artist_key", "artist_name_ko", "artist_meta_birth_year"])
-    ct = ct.rename(columns={"artist_meta_birth_year": "birth"}).assign(true_route="cold")
+    ct = ct.rename(columns={"artist_meta_birth_year": "birth"}).assign(
+        true_route="cold", held_adjust=0)
     stream = pd.concat([wt, wl, ct], ignore_index=True)
 
     results = {}
-    for scen, dirty in (("clean", False), ("dirty", True)):
-        df = run_scenario(scen, stream, dic, dirty)
-        conf = df.groupby(["true_route", "routed"]).size().unstack(fill_value=0)
-        acc = float((df["true_route"] == df["routed"]).mean())
-        # 자격(warm/warm_lite) 행이 cold로 새는 비율 / cold 자격이 상위 경로로 새는 비율
-        up = df[df["true_route"].isin(["warm", "warm_lite"])]
-        down = df[df["true_route"] == "cold"]
-        results[scen] = {
-            "routing_accuracy": round(acc, 4),
-            "eligible_leak_to_cold": round(float((up["routed"] == "cold").mean()), 4),
-            "cold_leak_to_upper": round(float((down["routed"] != "cold").mean()), 4),
-            "wrong_key_in_upper_route": round(float((~df[df["routed"] != "cold"]["matched_correct_key"]).mean()), 4),
-            "expected_MAPE": round(expected_cost(df), 4),
-            "confusion": conf.to_dict(),
-        }
-        print(scen, json.dumps({k: v for k, v in results[scen].items() if k != "confusion"}, ensure_ascii=False))
+    for th in THRESHOLDS:
+        for scen, dirty in (("clean", False), ("dirty", True)):
+            df = run_scenario(scen, stream, dic, dirty, th)
+            up = df[df["true_route"].isin(["warm", "warm_lite"])]
+            down = df[df["true_route"] == "cold"]
+            upper = df[df["routed"] != "cold"]
+            results[f"{scen}_th{th}"] = {
+                "routing_accuracy": round(float((df["true_route"] == df["routed"]).mean()), 4),
+                "eligible_leak_to_cold": round(float((up["routed"] == "cold").mean()), 4),
+                "cold_leak_to_upper": round(float((down["routed"] != "cold").mean()), 4),
+                "wrong_key_in_upper_route": round(float((~upper["matched_correct_key"]).mean()), 4)
+                if len(upper) else 0.0,
+                "expected_MAPE": round(expected_cost(df), 4),
+            }
+            print(f"{scen}_th{th}", json.dumps(results[f"{scen}_th{th}"], ensure_ascii=False))
 
-    cfg = {"experiment_id": "PP-E2E1", "threshold": THRESH, "costs": COSTS, "seed": SEED,
+    cfg = {"experiment_id": "PP-E2E1", "version": "v2 (codex P1 수정)",
+           "thresholds": THRESHOLDS, "tolerance": TOL, "costs": COSTS, "seed": SEED,
+           "fixes": ["held_adjust로 LOO 이력 누수 제거", "임계 파라미터화+tolerance(0.80/0.90 in-repo 스윕)",
+                     "동명이인 생년 우선 선택", "warm-lite 비용 행별 k 청구"],
            "stream": {"warm": len(wt), "warm_lite": len(wl), "cold": len(ct)},
-           "results": results,
-           "resume": "outputs/replay_<scenario>.csv 체크포인트", "prohibitions": ["0604 사용 금지"]}
+           "results": results, "prohibitions": ["0604 사용 금지"]}
     (EXP / "artifacts" / "run_config.json").write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
     (EXP / "reports" / "result_report.md").write_text(
-        "# PP-E2E1 라우팅 end-to-end replay\n\n" + json.dumps(results, ensure_ascii=False, indent=1), encoding="utf-8")
+        "# PP-E2E1 v2 라우팅 replay (codex P1 수정판)\n\n" + json.dumps(results, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

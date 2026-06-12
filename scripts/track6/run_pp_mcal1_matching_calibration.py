@@ -93,18 +93,17 @@ def build_pairs() -> pd.DataFrame:
                 rows.append({"pair_type": "neg_homonym", "label": 0,
                              "score": score_pair(1.0, aux, 1.0, 1.0, conflict)})
 
-    # 음성 ②: 유사 이름 타작가 (fuzzy 0.85~0.97)
-    names = d["nname"].tolist()
-    idx = rng.permutation(len(names))[:600]
-    for i in idx:
-        for j in rng.permutation(len(names))[:40]:
-            if i == j or names[i] == names[j]:
-                continue
+    # 음성 ②: 유사 이름 타작가 — 전수 쌍 탐색 (codex P1 수정: 표본 탐색은 0건 산출)
+    names = [n for n in d["nname"].unique() if len(n) >= 3]
+    n_sim = 0
+    for i in range(len(names)):
+        for j in range(i + 1, len(names)):
             sim = fuzzy(names[i], names[j])
-            if 0.85 <= sim <= 0.97:
+            if 0.80 <= sim <= 0.98:
                 rows.append({"pair_type": "neg_similar", "label": 0,
                              "score": score_pair(sim, 0.0, 1.0, 0.5, 0.0)})
-                break
+                n_sim += 1
+    print(f"[neg_similar] 전수 탐색 결과 {n_sim}쌍")
 
     # 음성 ③: 무작위 타작가
     for _ in range(800):

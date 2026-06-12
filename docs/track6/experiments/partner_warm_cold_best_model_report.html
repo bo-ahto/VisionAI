@@ -344,7 +344,7 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <ul>
 <li>목적: 입력 작가가 학습 데이터의 특정 작가와 같은 사람인지 0~1 사이 점수로 환산</li>
 <li>점수 해석: <code>1.00</code>에 가까울수록 같은 작가일 가능성이 높고, <code>0.00</code>에 가까울수록 같은 작가로 볼 근거가 약함</li>
-<li>Warm 라우팅 기준: <code>작가매칭신뢰도점수 &gt;= 0.90</code></li>
+<li>Warm/Warm-lite 라우팅 기준: <code>작가매칭신뢰도점수 &gt;= 0.80</code> (재검증으로 하향 확정)</li>
 <li>보수 원칙: 작가명이 같아도 생년/국적/동명이인 위험을 확인할 수 없으면 Warm으로 보내지 않음</li>
 </ul>
 <p>작가명 정규화 방식:</p>
@@ -413,7 +413,7 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <tr>
 <td class="align-left">한글명만 있고 보조 정보 없음</td>
 <td class="align-left">이름은 같지만 생년/국적/외부 식별자를 확인할 수 없음</td>
-<td class="align-left"><code>작가매칭신뢰도점수</code>가 보통 <code>0.80</code> 수준이라 Cold</td>
+<td class="align-left"><code>작가매칭신뢰도점수</code>가 보통 <code>0.80</code> 수준 — 하향 확정된 임계(0.80)에서는 검수 플래그 동반으로 상위 경로 적용</td>
 </tr>
 </tbody></table></div>
 <p>운영에서 필요한 작가 사전 필드:</p>

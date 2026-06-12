@@ -23,18 +23,18 @@ EXP = REPO / "experiments" / "track6" / "PP-RMAP1_routing_map_optimization"
 
 # 동결 실측 비용 (MAPE 기준, 출처 명시)
 WLITE_COST = {1: 0.3415, 2: 0.2707, 3: 0.2541, 4: 0.2557}  # WCUT4 실존 per-k MAPE (seed 평균)
-COLD_COST = 0.9946          # WCUT4 동일 행 Cold serving MAPE
+COLD_COST_LOWHIST = 0.9946  # 저이력 행 Cold serving MAPE (WCUT4 — k<5 모집단)
+COLD_COST_WARMPOP = 0.6746  # warm test 행 Cold MAPE (WCUT1 — k>=5 모집단, codex P1 수정)
 MISMATCH_COST = 2.69        # WMATCH1 오매칭 Warm MAPE
 WARM_COST = 0.2699          # 기존 Warm(5+) 운영 test MAPE
 SCORES = [0.70, 0.75, 0.80, 0.85, 0.88, 0.90, 0.93, 0.95, 1.00]
 RHOS = [0.0, 0.05, 0.10, 0.20]
-# MCAL1 합성 정확도: 사전 내 위험은 0.65 이하로 차단 → 0.70+ 구간 합성 정확도 1.0
-SYN_ACC = {s: 1.0 for s in SCORES}
+# codex P1 수정: 합성 정확도 1.0 하드코딩(순환) 제거 — 이름 기반 매칭의
+# 유효 정확도는 ρ(사전 밖 동명이인율)만으로 보수 모델링. key 직접일치는 ρ 면제.
 
 
 def eff_acc(score: float, rho: float) -> float:
-    """유효 정확도: 합성 정확도 × (1-사전 밖 동명이인율). key 직접일치(1.0)는 ρ 면제."""
-    return 1.0 if score >= 1.0 else SYN_ACC[score] * (1.0 - rho)
+    return 1.0 if score >= 1.0 else (1.0 - rho)
 
 
 def main() -> None:
@@ -47,13 +47,14 @@ def main() -> None:
             acc = eff_acc(s, rho)
             for k in [1, 2, 3, 4, 5]:
                 match_cost = WARM_COST if k >= 5 else WLITE_COST[k]
+                cold_cost = COLD_COST_WARMPOP if k >= 5 else COLD_COST_LOWHIST
                 e_match_path = acc * match_cost + (1 - acc) * MISMATCH_COST
-                best = "warm" if (k >= 5 and e_match_path < COLD_COST) else \
-                       ("warm_lite" if (k < 5 and e_match_path < COLD_COST) else "cold")
+                best = "warm" if (k >= 5 and e_match_path < cold_cost) else \
+                       ("warm_lite" if (k < 5 and e_match_path < cold_cost) else "cold")
                 rows.append({"rho_out_of_dict": rho, "score": s, "history_k": k,
                              "eff_accuracy": round(acc, 3),
                              "E_loss_match_path": round(e_match_path, 4),
-                             "E_loss_cold": COLD_COST, "best_route": best})
+                             "E_loss_cold": cold_cost, "best_route": best})
     grid = pd.DataFrame(rows)
     grid.to_csv(EXP / "outputs" / "routing_map_grid.csv", index=False)
 
@@ -62,7 +63,8 @@ def main() -> None:
     summary = []
     for k in [1, 2, 3, 4, 5]:
         c_m = WARM_COST if k >= 5 else WLITE_COST[k]
-        a_min = (MISMATCH_COST - COLD_COST) / (MISMATCH_COST - c_m)
+        cold_cost = COLD_COST_WARMPOP if k >= 5 else COLD_COST_LOWHIST
+        a_min = (MISMATCH_COST - cold_cost) / (MISMATCH_COST - c_m)
         rho_max = 1 - a_min  # 합성 정확도 1.0 가정 시 허용 가능한 사전 밖 오매칭율
         summary.append({"history_k": k, "min_required_accuracy": round(a_min, 4),
                         "max_tolerable_rho": round(rho_max, 4)})
@@ -70,15 +72,9 @@ def main() -> None:
     summ.to_csv(EXP / "outputs" / "threshold_robustness.csv", index=False)
 
     verdict = {
-        "joint_boundary_needed": False,
-        "reason": "이력 k 전 구간에서 요구 정확도(~0.69)와 허용 ρ(~0.31)가 거의 동일 — "
-                  "k에 따라 매칭 임계를 다르게 둘 근거 없음(독립 임계 구조 유지)",
-        "rho_tolerance": "사전 밖 동명이인율이 ~31% 미만이면 모든 k에서 match-path 우위 "
-                         "(train 사전 내 동명이인 6.6% 참고 시 큰 마진)",
-        "threshold_0_90": "합성상 0.70+ 동일 정확도이므로 0.90은 미측정 위험(ρ) 대비 마진 — "
-                          "운영 로그로 ρ 실측 후 0.80~0.85 하향(통과량 +69%) 검토 가능",
+        "note": "수치 기반 결론은 threshold_robustness.csv 참조 (codex P1 수정 재도출판)",
     }
-    cfg = {"experiment_id": "PP-RMAP1", "costs": {"wlite_by_k": WLITE_COST, "cold": COLD_COST,
+    cfg = {"experiment_id": "PP-RMAP1", "costs": {"wlite_by_k": WLITE_COST, "cold_lowhist": COLD_COST_LOWHIST, "cold_warmpop": COLD_COST_WARMPOP,
            "mismatch": MISMATCH_COST, "warm": WARM_COST},
            "sources": ["PP-WCUT4", "PP-WMATCH1", "PP-MCAL1"], "rhos": RHOS,
            "verdict": verdict, "note": "순수 계산 — 재실행 즉시 재현"}

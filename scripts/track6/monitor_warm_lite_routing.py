@@ -25,7 +25,7 @@ import pandas as pd
 
 ALERT = {
     "wlite_mdape_limit_by_k": {1: 0.179, 2: 0.179, 3: 0.157, 4: 0.142},  # WCUT4 ×1.5
-    "score_band_review_required": [0.795, 0.90],
+    "score_band_review_required": [0.80 - 1e-6, 0.90],
     "rho_proxy_reference": 0.05,
     "min_rows_for_perf_check": 50,
 }
@@ -35,8 +35,8 @@ def main(path: str) -> None:
     df = pd.read_csv(path)
     rep = {"n_rows": len(df)}
 
-    ok_warm = (df["route"] != "warm") | ((df["match_score"] >= 0.795) & (df["history_n"] >= 5))
-    ok_lite = (df["route"] != "warm_lite") | ((df["match_score"] >= 0.795)
+    ok_warm = (df["route"] != "warm") | ((df["match_score"] >= 0.80 - 1e-6) & (df["history_n"] >= 5))
+    ok_lite = (df["route"] != "warm_lite") | ((df["match_score"] >= 0.80 - 1e-6)
                                               & df["history_n"].between(1, 4))
     rep["R1_rule_violations"] = int((~ok_warm).sum() + (~ok_lite).sum())
 
