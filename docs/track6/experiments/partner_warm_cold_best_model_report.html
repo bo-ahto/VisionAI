@@ -150,7 +150,18 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <body>
   <div class="layout">
     <aside>
-      <h2>목차</h2>
+      <h3 id="4.6-warm-lite-모델-상세">4.6 Warm-lite 모델 상세 (이력 1~4건 전용 경로)</h3>
+<ul>
+<li>적용 대상: 작가가 고신뢰 매칭되고 사용 가능 가격 이력이 1~4건인 작품 (기존에는 Cold로 처리되던 구간)</li>
+<li>핵심 아이디어: 이력이 1건이라도 그 작가의 실제 거래 가격이 가장 강한 가격 신호 — 작가 이력 통계를 서빙 시점에 즉시 계산해 기준가격으로 사용</li>
+<li>사용 피처: 작품 크기 8종 + 매체/지지체/크기구간 + <strong>작가 이력 통계</strong>(이력 1~4건의 로그가격 중앙값·사분위·면적단가 중앙값·표본수) + 비교군 기준가격대용치(면적단가 중앙값 + 로그면적)</li>
+<li>작가 이력 매칭 순서: ① 같은 매체·지지체+크기 구간 → ② 같은 크기 구간 → ③ 작가 전체 → ④ 동결된 비작가 비교군 통계</li>
+<li>모델: 선형 Huber 회귀 6구성 앙상블 / 산식: <code>예측 로그가격 = HuberEnsemble(작품 피처, 작가 이력 통계)</code> → <code>예측가격 = exp(예측 로그가격)</code></li>
+<li>학습 시 누수 차단: 학습 데이터의 작가 통계는 자기 fold 제외로 계산</li>
+<li>성능(실존 저이력 작가 649명 leave-one-out ×3, 게이트 1.0/1.0/1.0): 이력 1건 MdAPE <code>0.1195</code> / 2건 <code>0.1194</code> / 3건 <code>0.1049</code> / 4건 <code>0.0948</code> — 같은 작품 Cold 처리 시 <code>0.51~0.56</code></li>
+<li>등급 정책: 이력 1건 = <code>warm_lite_low</code>(넓은 범위 + 검수 플래그) / 동결 번들: <code>models/track6/warm_lite_v0.1</code></li>
+</ul>
+<h2>목차</h2>
       <nav class="toc">
         <a class="toc-level-1" href="#warm-cold-가격-예측-모델-종합-리포트">Warm/Cold 가격 예측 모델 종합 리포트</a>
 <a class="toc-level-2" href="#1.-결론-요약">1. 결론 요약</a>
@@ -227,6 +238,7 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <td class="align-right">0.397454</td>
 <td class="align-left">기존 Warm 기준가격을 거의 유지하면서 방향이 확인된 작품만 미세 보정</td>
 </tr>
+<tr><td>Warm-lite</td><td>작가 이력 1~4건 전용 경량 기준가격 모델</td><td>실존 저이력 작가 leave-one-out</td><td class="align-right">1,947</td><td class="align-right">0.109200</td><td class="align-right">0.286600</td><td class="align-right">0.876500</td><td class="align-right">0.447600</td><td>매칭된 작가의 1~4건 이력으로 기준가격을 즉시 계산 — 같은 작품을 Cold로 보낼 때(MdAPE 0.54) 대비 5배 정확</td></tr>
 <tr>
 <td class="align-left">Cold</td>
 <td class="align-left">검색 피처 포함 Quantile 예측 + 과대예측 방어 + 작가 검색 보정</td>
@@ -245,7 +257,8 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <ul>
 <li>Warm 모델 구조: <code>기준가격 + 미세 보정값</code></li>
 <li>Warm 보정 방식: 기준가격을 크게 바꾸지 않고, 방향 분류 모델과 Huber 잔차 모델이 같은 방향을 가리킬 때만 아주 작게 보정</li>
-<li>Warm 적용 범위: 같은 작가로 고신뢰 매칭되고 같은 작가 가격 이력이 5건 이상인 작품만 Warm으로 처리</li>
+<li>적용 범위(3-경로): 고신뢰 매칭 + 이력 5건 이상 → Warm / 고신뢰 매칭 + 이력 1~4건 → Warm-lite / 그 외 → Cold</li>
+<li>Warm-lite의 의미: 이력이 1건이라도 있으면 그 작가의 실제 가격이 가장 강한 신호 — 재검증(PP-WCUT4)에서 실존 저이력 작가 기준 Cold 대비 MdAPE 5배 개선 확인</li>
 <li>Warm 보조 정보: 유사작품 정보는 Warm 내부 기준가격과 신뢰도 계산을 돕는 보조 피처이며, 유사작가나 유사작품만으로 Warm 적용 범위를 넓히지 않음</li>
 <li>Cold 모델 구조: <code>검색 피처 포함 대표 예측가격 + 과대예측 방어 + 작가 검색 보정값</code></li>
 <li>Cold 보정 방식: 검색 피처로 작가 문맥을 보강하고, 예측 불확실성이 큰 경우 낮은쪽 40% 지점 가격 기준으로 하향</li>
@@ -265,19 +278,20 @@ tbody tr:nth-child(even) { background: var(--soft); }
         |
         v
 [작품 라우팅]
-  - 작가가 신뢰도 높게 매칭되는가?
-  - 학습 데이터 안에 같은 작가의 사용 가능한 가격 이력이 충분한가?
+  - 작가가 신뢰도 높게 매칭되는가? (매칭점수 0.80 이상)
+  - 같은 작가의 사용 가능한 가격 이력이 몇 건인가?
         |
-        +-------------------------------+
-        |                               |
-        v                               v
- [Warm 가격 예측 경로]             [Cold 가격 예측 경로]
-  - 유사작품 기반 기준가격          - 작품/작가/검색 피처 기반 기준가격
-  - 방향 확인                       - Quantile 예측으로 불확실성 계산
-  - Huber 잔차 미세 보정            - 과대예측 방어
-                                   - 작가 검색 보정
-        |                               |
-        +---------------+---------------+
+        +---------------+----------------------+
+        |               |                      |
+        v               v                      v
+ [Warm 경로]       [Warm-lite 경로]        [Cold 경로]
+  이력 5건 이상      이력 1~4건              매칭 실패 또는 이력 0건
+  - 유사작품 기준가격 - 작가 이력 1~4건으로   - 작품/작가/검색 피처 기준가격
+  - 방향 확인          기준가격 즉시 계산     - Quantile 불확실성 계산
+  - Huber 잔차       - 경량 Huber 앙상블      - 과대예측 방어
+    미세 보정        - 이력 1건은 차등 등급   - 작가 검색 보정
+        |               |                      |
+        +---------------+----------------------+
                         |
                         v
               [최종 예측가격 및 지표 출력]</code></pre>
@@ -286,8 +300,8 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <li>핵심 답변: 작가 이력이 1건이라도 있으면 무조건 Warm으로 보내는 구조가 아님</li>
 <li>실험 split 기준: Warm validation/test 작가는 학습 데이터에 같은 작가가 존재하고, 최소 학습 이력 5건을 만족하도록 구성</li>
 <li>실험 split 기준: Cold validation/test 작가는 학습 데이터의 <code>artist_key</code>, 정규화 작가명과 겹치지 않도록 구성</li>
-<li>운영 고정 기준: <code>작가매칭신뢰도점수 &gt;= 0.90</code>이고 <code>같은작가_사용가능가격이력수 &gt;= 5</code>이면 Warm, 그 외에는 Cold</li>
-<li>운영 고정 기준: 같은 작가 이력이 1~4건이면 자동 Warm으로 보내지 않고 Cold로 처리</li>
+<li>운영 고정 기준(재검증 반영): <code>작가매칭신뢰도점수 &gt;= 0.80</code> 통과 시 이력 <code>5건 이상 → Warm</code>, <code>1~4건 → Warm-lite</code>, 그 외(매칭 실패/이력 0건) <code>→ Cold</code></li>
+<li>이력 1~4건 처리: 기존 Warm 파이프라인이 아니라 전용 경량 경로(Warm-lite)로 처리 — 기존 Warm으로 보내지 않는 구조 제약은 유지</li>
 <li>1~4건을 Cold로 처리하는 이유: 현행 Warm 파이프라인의 작가 단위 유사작품 매칭이 최소 표본 5건을 요구하는 구조라서, 5건 미만은 작가 가격 신호가 발동하지 않음 (성능 실험으로 정한 임계값이 아니라 현행 구조의 적용 가능 최소선)</li>
 <li>Warm-lite 경로 동결 완료: 이력 1~4건 고신뢰 매칭 작가 전용 경량 Warm 경로가 검증을 통과해 별도 모델 번들로 동결됨 (<code>warm_lite_v0.1</code>, PP-WCUT1/PP-WCUT2/PP-WLITE-ARTIFACT1). 기존 Warm/Cold 경로는 변경 없음</li>
 <li>Warm-lite 적용 시 라우팅: <code>매칭신뢰도 &gt;= 0.90 AND 이력 5건 이상 → Warm</code> / <code>매칭신뢰도 &gt;= 0.90 AND 이력 1~4건 → Warm-lite</code> / <code>그 외 → Cold</code>. 이력 1건은 차등 등급(넓은 범위 표시 + 검수 플래그)으로 처리</li>
@@ -305,25 +319,27 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <tbody>
 <tr>
 <td class="align-left"><code>작가매칭신뢰도점수</code></td>
-<td class="align-right"><code>0.90 이상</code></td>
-<td class="align-right"><code>0.90 미만</code></td>
+<td class="align-right"><code>0.80 이상</code> (Warm/Warm-lite 공통, 재검증으로 0.90→0.80 하향 확정)</td>
+<td class="align-right"><code>0.80 미만</code></td>
 <td class="align-left">입력 작가와 학습 데이터 작가가 같은 사람인지 판단한 0~1 점수</td>
 </tr>
 <tr>
 <td class="align-left"><code>같은작가_사용가능가격이력수</code></td>
-<td class="align-right"><code>5건 이상</code></td>
-<td class="align-right"><code>0~4건</code></td>
+<td class="align-right">Warm <code>5건 이상</code> / Warm-lite <code>1~4건</code></td>
+<td class="align-right">Cold <code>0건</code></td>
 <td class="align-left">동일 작가로 확정된 학습 데이터 중 가격 예측 기준으로 사용할 수 있는 작품 가격 이력 수</td>
 </tr>
 </tbody></table></div>
 <pre><code>운영 라우팅 공식
 
-Warm 적용 여부 =
-  (작가매칭신뢰도점수 &gt;= 0.90)
-  AND
-  (같은작가_사용가능가격이력수 &gt;= 5)
+매칭 통과 = (작가매칭신뢰도점수 &gt;= 0.80)   # 재검증으로 0.90에서 하향 확정
+            # 구현 주의: 부동소수점 경계 — tolerance(1e-6) 적용 필수
 
-위 조건을 하나라도 만족하지 못하면 Cold 적용</code></pre>
+매칭 통과 AND 이력 &gt;= 5     → Warm
+매칭 통과 AND 이력 1~4건    → Warm-lite (이력 1건은 차등 등급: 넓은 범위 + 검수 플래그)
+그 외 (매칭 실패/이력 0건)  → Cold
+
+점수 0.80~0.90 구간(이름 일치·보조정보 무)은 상위 경로 적용 + 검수 플래그 동반</code></pre>
 <h4 id="2.1.1.1-이력-5건-기준의-성격과-실험-근거">2.1.1.1 이력 5건 기준의 성격과 실험 근거</h4>
 <ul>
 <li>기준의 성격: <code>5건 이상</code>은 성능 비교로 찾은 임계값이 아니라, 현행 Warm 파이프라인의 작가 매칭(1~3순위)이 최소 표본 5를 요구하는 구조 제약에 따른 적용 가능 최소선</li>
@@ -2421,6 +2437,8 @@ Quantile예측구간폭 = 저장된_Quantile예측폭
 <td class="align-left">작품의 시기, 장르, 희소성 차이 반영</td>
 <td class="align-left">Warm, Cold</td>
 </tr>
+<tr><td class="align-right">6</td><td>신규/저이력 작가의 첫 가격 이력 1건+</td><td><strong>가격 1건만 확보되면 해당 작가가 Cold에서 Warm-lite로 즉시 전환</strong> — MdAPE 0.54 → 0.12 (재검증 실측)</td><td>Warm-lite</td></tr>
+<tr><td class="align-right">7</td><td>운영 매칭 로그(입력 작가명 ↔ 확정 artist_key)</td><td>매칭 점수 캘리브레이션과 사전 밖 동명이인율 최종 추인 (현재 proxy 5.0%)</td><td>라우팅 전체</td></tr>
 <tr>
 <td class="align-right">6</td>
 <td class="align-left">작가 생년, 국적, 경력 단계</td>
@@ -2635,6 +2653,10 @@ label 변경 후 예측 차이                = 0.000e+00</code></pre>
 <li>전체 구조: 가격 예측 모델은 Warm과 Cold 두 경로로 구성</li>
 <li>Warm 적용 조건: 작가 매칭이 확실하고 같은 작가의 사용 가능한 학습 가격 이력이 충분한 작품</li>
 <li>Warm 계산 방식: 기존 Warm 기준가격을 만든 뒤 방향 분류 모델과 Huber 잔차 모델이 같은 방향을 가리킬 때만 미세 보정</li>
+<li>Warm-lite 적용 조건: 작가 매칭이 확실하고 같은 작가의 사용 가능 가격 이력이 1~4건인 작품</li>
+<li>Warm-lite 계산 방식: 매칭 작가의 이력 1~4건으로 작가 가격 통계를 즉시 계산해 경량 Huber 앙상블로 예측 (이력 1건은 차등 등급)</li>
+<li>Warm-lite 성능: 실존 저이력 작가 1,947행 기준 MdAPE 0.1092, p95 APE 0.8765 (동일 행 Cold 대비 MdAPE 5배 개선)</li>
+<li>라우팅 운영: 매칭 임계 0.80(경계 비교 tolerance 필수), 모니터링 하니스(<code>monitor_warm_lite_routing.py</code>)로 규칙 위반·트래픽 분포·성능 경보 상시 점검</li>
 <li>Cold 적용 조건: 같은 작가 이력이 없거나 부족하거나 작가 매칭이 불확실한 작품</li>
 <li>Cold 계산 방식: 작품 피처, 작가 메타, 작가명 검색 피처를 함께 사용한 LightGBM Quantile 회귀 후보를 Quantile예측구간폭 구간별 검증 잔차로 안정화해 대표 예측가격 계산</li>
 <li>Cold 방어 방식: Quantile예측구간폭이 넓고 대표 예측가격이 낮은쪽 40% 지점 가격보다 높은 작품은 낮은쪽 가격 기준으로 낮춤</li>
@@ -2666,6 +2688,8 @@ label 변경 후 예측 차이                = 0.000e+00</code></pre>
 <td class="align-left"><code>SUB-WARM-PP258_operational_fixed_test_submission</code></td>
 <td class="align-left">Warm fixed test 607건 재현 패키지</td>
 </tr>
+<tr><td>Warm-lite 경량 기준가격 모델</td><td><code>warm_lite_v0.1</code>, <code>PP-WCUT1/2/4</code>, <code>PP-WLITE-ARTIFACT1</code></td><td>이력 1~4건 경로, 실존 저이력 검증 통과</td></tr>
+<tr><td>라우팅 정책(3-경로 + 임계 0.80)</td><td><code>routing_policy_v0.1</code>, <code>PP-MCAL1/RMAP1/E2E1/RHO1</code></td><td>재검증 근거·채택 조건·모니터링 하니스</td></tr>
 <tr>
 <td class="align-left">Cold 검색 피처 포함 최고 성능 모델</td>
 <td class="align-left"><code>COLD_BASE_RESEARCH_V1</code>, <code>v0.3 guard+search</code>, <code>guard_search_gm</code></td>
