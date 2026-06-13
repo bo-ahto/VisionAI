@@ -31,8 +31,25 @@ ALERT = {
 }
 
 
-def main(path: str) -> None:
-    df = pd.read_csv(path)
+def r5_homonym_rate(n_decisions: int, n_mismatch: int, n_queue_pending: int) -> dict:
+    """R5: 사전 밖 동명이인율(ρ) 실측 — 동명이인 검수 결정에서 산출.
+
+    오매칭(다른 작가로 잘못 매칭) 결정 / 전체 해소 결정. 결정이 없으면
+    PP-RHO1 proxy 5%로 회귀하고 대기 큐 규모를 보고."""
+    if n_decisions == 0:
+        return {"status": "pending", "n_decisions": 0, "n_queue_pending": n_queue_pending,
+                "rho_measured": None, "rho_operating": ALERT["rho_proxy_reference"],
+                "note": "검수 결정 0건 — 라벨 기반 ρ 측정 불가, PP-RHO1 proxy 5% 유지. "
+                        f"대기 큐 {n_queue_pending}건 해소 시 측정 가능"}
+    rho = n_mismatch / n_decisions
+    return {"status": "measured", "n_decisions": n_decisions, "n_mismatch": n_mismatch,
+            "rho_measured": round(rho, 4), "rho_operating": round(rho, 4),
+            "rmap1_tolerance_k5plus": 0.167,
+            "ALERT": bool(rho > 0.167),
+            "note": "ρ > 16.7%(RMAP1 k>=5 허용 한계)면 임계 0.80 재검토 경보"}
+
+
+def run(df: pd.DataFrame, r5: dict | None = None) -> dict:
     rep = {"n_rows": len(df)}
 
     ok_warm = (df["route"] != "warm") | ((df["match_score"] >= 0.80 - 1e-6) & (df["history_n"] >= 5))
@@ -59,15 +76,25 @@ def main(path: str) -> None:
             perf[int(k)] = {"n": len(g), "MdAPE": round(md, 4),
                             "ALERT": bool(md > ALERT["wlite_mdape_limit_by_k"].get(int(k), 0.2))}
         rep["R4_wlite_perf_by_k"] = perf
+    else:
+        rep["R4_wlite_perf_by_k"] = {"status": "no_labels (sale feedback < min)"}
+
+    rep["R5_out_of_dict_homonym"] = r5 or {"status": "not_supplied"}
 
     alerts = []
     if rep["R1_rule_violations"]:
         alerts.append(f"R1 라우팅 규칙 위반 {rep['R1_rule_violations']}건")
     for k, v in rep.get("R4_wlite_perf_by_k", {}).items():
-        if v["ALERT"]:
+        if isinstance(v, dict) and v.get("ALERT"):
             alerts.append(f"R4 warm_lite k={k} MdAPE {v['MdAPE']} > 한계")
+    if rep["R5_out_of_dict_homonym"].get("ALERT"):
+        alerts.append(f"R5 동명이인율 {rep['R5_out_of_dict_homonym']['rho_measured']} > 허용 16.7%")
     rep["alerts"] = alerts or ["없음"]
-    print(json.dumps(rep, ensure_ascii=False, indent=1))
+    return rep
+
+
+def main(path: str) -> None:
+    print(json.dumps(run(pd.read_csv(path)), ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
