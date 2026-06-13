@@ -219,15 +219,15 @@ tbody tr:nth-child(even) { background: var(--soft); }
 </tr></thead>
 <tbody>
 <tr>
-<td class="align-left">Warm</td>
-<td class="align-left">기준가격 기반 미세 보정 모델</td>
-<td class="align-left">fixed test</td>
+<td>Warm</td>
+<td>이력 기반 조건부 유사작품 보정 모델</td>
+<td>fixed test</td>
 <td class="align-right">607</td>
-<td class="align-right">0.140976</td>
-<td class="align-right">0.269888</td>
-<td class="align-right">0.807325</td>
-<td class="align-right">0.397454</td>
-<td class="align-left">기존 Warm 기준가격을 거의 유지하면서 방향이 확인된 작품만 미세 보정</td>
+<td class="align-right">0.104326</td>
+<td class="align-right">0.235814</td>
+<td class="align-right">0.739416</td>
+<td class="align-right">0.377190</td>
+<td>정밀 유사작품 매칭(최소 표본 1)으로 기준가격을 만들고, 위험도가 높은 작품만 보수적 대안 가중으로 조건부 교체</td>
 </tr>
 <tr><td>Warm-lite</td><td>작가 이력 1~4건 전용 경량 기준가격 모델</td><td>실존 저이력 작가 leave-one-out</td><td class="align-right">1,947</td><td class="align-right">0.109200</td><td class="align-right">0.286600</td><td class="align-right">0.876500</td><td class="align-right">0.447600</td><td>매칭된 작가의 1~4건 이력으로 기준가격을 즉시 계산 — 같은 작품을 Cold로 보낼 때(MdAPE 0.54) 대비 5배 정확</td></tr>
 <tr>
@@ -246,8 +246,8 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <li>핵심 판단:</li>
 </ul>
 <ul>
-<li>Warm 모델 구조: <code>기준가격 + 미세 보정값</code></li>
-<li>Warm 보정 방식: 기준가격을 크게 바꾸지 않고, 방향 분류 모델과 Huber 잔차 모델이 같은 방향을 가리킬 때만 아주 작게 보정</li>
+<li>Warm 모델 구조: <code>정밀 유사작품 기준가격(최소 표본 1) + Huber 잔차 보정 + 위험도 조건부 가중 라우터</code> (2026-06-13 교체, 이전 대비 MdAPE −26%/MAPE −13%/p95 −8%)</li>
+<li>Warm 보정 방식: 기본은 유사작품 가중 0.70 기준가격 + Huber 잔차 보정, 예측 위험도가 상위 50%이고 보수 대안(가중 0.85)이 0.005 로그 이상 낮을 때만 대안으로 교체</li>
 <li>적용 범위(3-경로): 고신뢰 매칭 + 이력 5건 이상 → Warm / 고신뢰 매칭 + 이력 1~4건 → Warm-lite / 그 외 → Cold</li>
 <li>Warm-lite의 의미: 이력이 1건이라도 있으면 그 작가의 실제 가격이 가장 강한 신호 — 재검증(PP-WCUT4)에서 실존 저이력 작가 기준 Cold 대비 MdAPE 5배 개선 확인</li>
 <li>Warm 보조 정보: 유사작품 정보는 Warm 내부 기준가격과 신뢰도 계산을 돕는 보조 피처이며, 유사작가나 유사작품만으로 Warm 적용 범위를 넓히지 않음</li>
@@ -333,7 +333,7 @@ tbody tr:nth-child(even) { background: var(--soft); }
 점수 0.80~0.90 구간(이름 일치·보조정보 무)은 상위 경로 적용 + 검수 플래그 동반</code></pre>
 <h4 id="2.1.1.1-이력-5건-기준의-성격과-실험-근거">2.1.1.1 이력 5건 기준의 성격과 실험 근거</h4>
 <ul>
-<li>기준의 성격: <code>5건 이상</code>은 성능 비교로 찾은 임계값이 아니라, 현행 Warm 파이프라인의 작가 매칭(1~3순위)이 최소 표본 5를 요구하는 구조 제약에 따른 적용 가능 최소선</li>
+<li>기준의 성격: <code>5건 이상 → Warm / 1~4건 → Warm-lite</code>는 경로 분리 설계 — 2026-06-13 교체된 Warm 본체는 내부 유사작품 매칭의 최소 표본을 5→1로 완화 반영(검증 통과)했으며, 1~4건 작가는 여전히 전용 경량 경로(Warm-lite)로 처리</li>
 <li>실측 근거 1 (이력 절단 실험, warm test 607행): 작가 이력을 k건으로 인위 절단하면 현행 구조에서는 k=1~4에서 작가 매칭이 발동하지 않아 Warm이 Cold와 동등~열위, k=5에서 MdAPE <code>0.49 → 0.18</code>로 단절 개선 — 즉 5건 미만 작품을 현행 Warm으로 보내면 안 되는 것은 실측으로 확인됨</li>
 <li>실측 근거 2 (이력 수별 성능, warm test 실측): 이력 5~7건 작가 MdAPE <code>0.2256</code> vs 50건 이상 작가 <code>0.1072</code> — 이력이 많을수록 오차가 단조 감소</li>
 <li>Warm-lite 동결 완료: 저표본 매칭(최소 1건)을 허용한 경량 Warm 경로가 반복 검증(절단 seed 3개 × k=1~4 전 조합, 개선확률 0.995 이상)을 통과해 <code>warm_lite_v0.1</code>로 동결됨</li>
@@ -931,6 +931,13 @@ p95 APE = quantile(작품별_APE, 0.95)</code></pre>
         v
 [최종 Cold 로그가격]</code></pre>
 <h2 id="4.-warm-모델-상세">4. Warm 모델 상세</h2>
+<div class="note"><strong>2026-06-13 모델 교체 반영</strong>: 운영 Warm이 <code>이력 기반 조건부 유사작품 보정 모델</code>(내부 추적 WMIN8)로 교체됨.
+<ul>
+<li>핵심 변경: 유사작품 매칭 최소 표본 5→1 완화(정밀 매칭률 40.7%→81.9%) + Huber 잔차 보정 재적합 + 위험도 조건부 가중 라우터(기본 0.70 / 위험 구간 보수 대안 0.85)</li>
+<li>성능: fixed test <code>0.104326 / 0.235814 / 0.739416</code> (이전 운영 대비 MdAPE −26% / MAPE −13% / p95 −8%) · 0604 신규 라벨 stress 비악화 확인</li>
+<li>재현: 동결 번들 <code>models/track6/warm_wmin8_exact_runtime_candidate</code> — 실험↔서비스 API 예측 일치 검증(parity max diff 5.3e-15)</li>
+<li>아래 4.2~4.5의 방향 분류 기반 설명은 이전 운영 후보 기준이며, 기준가격+보정의 적용 철학은 동일 (상세 산식 개정 예정)</li>
+</ul></div>
 <h3 id="4.1-모델-목적">4.1 모델 목적</h3>
 <ul>
 <li>적용 대상: 작가가 신뢰도 높게 매칭되고, 학습 데이터 안에 같은 작가의 사용 가능한 가격 이력이 충분한 작품</li>
@@ -2655,7 +2662,7 @@ label 변경 후 예측 차이                = 0.000e+00</code></pre>
 <ul>
 <li>전체 구조: 가격 예측 모델은 Warm과 Cold 두 경로로 구성</li>
 <li>Warm 적용 조건: 작가 매칭이 확실하고 같은 작가의 사용 가능한 학습 가격 이력이 충분한 작품</li>
-<li>Warm 계산 방식: 기존 Warm 기준가격을 만든 뒤 방향 분류 모델과 Huber 잔차 모델이 같은 방향을 가리킬 때만 미세 보정</li>
+<li>Warm 계산 방식: 정밀 유사작품 매칭(최소 표본 1) 기준가격 + Huber 잔차 보정, 위험도 상위 구간만 보수 대안 가중으로 조건부 교체</li>
 <li>Warm-lite 적용 조건: 작가 매칭이 확실하고 같은 작가의 사용 가능 가격 이력이 1~4건인 작품</li>
 <li>Warm-lite 계산 방식: 매칭 작가의 이력 1~4건으로 작가 가격 통계를 즉시 계산해 경량 Huber 앙상블로 예측 (이력 1건은 차등 등급)</li>
 <li>Warm-lite 성능: 실존 저이력 작가 1,947행 기준 MdAPE 0.1092, p95 APE 0.8765 (동일 행 Cold 대비 MdAPE 5배 개선)</li>
@@ -2664,7 +2671,7 @@ label 변경 후 예측 차이                = 0.000e+00</code></pre>
 <li>Cold 계산 방식: 작품 피처, 작가 메타, 작가명 검색 피처를 함께 사용한 LightGBM Quantile 회귀 후보를 Quantile예측구간폭 구간별 검증 잔차로 안정화해 대표 예측가격 계산</li>
 <li>Cold 방어 방식: Quantile예측구간폭이 넓고 대표 예측가격이 낮은쪽 40% 지점 가격보다 높은 작품은 낮은쪽 가격 기준으로 낮춤</li>
 <li>Cold 최종 보정: 갤러리/미술관 검색 문맥 기반 작가별 보정값 추가</li>
-<li>Warm 성능: fixed test 607건 기준 MAPE 0.269888, p95 APE 0.807325</li>
+<li>Warm 성능: fixed test 607건 기준 MdAPE 0.104326, MAPE 0.235814, p95 APE 0.739416 (0604 신규 라벨 stress 비악화 확인)</li>
 <li>Cold 성능: fixed test 3,099건 기준 MAPE 0.849260, p95 APE 2.346465</li>
 <li>최종 가격 산출: 두 모델 모두 로그가격 기준으로 계산한 뒤 <code>exp()</code>를 적용해 원화 예측가격으로 변환</li>
 <li>재현 가능성: 재현 스크립트와 결과 파일을 통해 동일 지표 확인 가능</li>
@@ -2682,9 +2689,19 @@ label 변경 후 예측 차이                = 0.000e+00</code></pre>
 </tr></thead>
 <tbody>
 <tr>
+<td>Warm 이력 기반 조건부 유사작품 보정 모델</td>
+<td><code>WMIN8 min1_route_w850_risk_q50_altlower_gap005</code>, 동결 <code>warm_wmin8_exact_runtime_candidate</code></td>
+<td>Warm 운영 1순위 (2026-06-13 교체, API parity 5.3e-15)</td>
+</tr>
+<tr>
 <td class="align-left">Warm 기준가격 기반 미세 보정 모델</td>
 <td class="align-left"><code>PP258</code>, <code>ppopt256_pp252_residual_continue__thr=0p12__rs=0p025__ss=0p0__cap=5em05</code></td>
-<td class="align-left">Warm fixed test 운영 1순위 후보</td>
+<td class="align-left">이전 운영 후보 (참조)</td>
+</tr>
+<tr>
+<td>Warm min1 검증 체인</td>
+<td><code>PP-WMIN1~10</code></td>
+<td>proxy→운영 svc→보정 스택→0604 stress→API parity 단계 검증</td>
 </tr>
 <tr>
 <td class="align-left">Warm 재현 패키지</td>
