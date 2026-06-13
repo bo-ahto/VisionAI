@@ -1,0 +1,29 @@
+{
+  "experiment_id": "PP-WMIN3",
+  "title": "Warm min1 70:30 기준가와 HCOEF 안정 보정 재검증",
+  "run_id": "20260612_203549",
+  "seed": 20260612,
+  "n_folds": 5,
+  "n_repeats": 40,
+  "source_wmin2_predictions": "experiments/track6/PP-WMIN2_warm_artist_min1_svc_numeric/outputs/predictions.csv",
+  "source_wmin2_features": "experiments/track6/PP-WMIN2_warm_artist_min1_svc_numeric/outputs/comparable_features_min1.csv",
+  "source_old_hcoef": "experiments/track6/PP-HCOEF18_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv",
+  "stable_config": {
+    "candidate": "hcoef2_size_reliability_cap005_s050",
+    "source_candidate": "residual_huber_resid_basis_size_reliability_alpha0.01_cap0.05_s0.50",
+    "feature_key": "resid_basis_size_reliability",
+    "alpha": 0.01,
+    "cap": 0.05,
+    "strength": 0.5,
+    "purpose": "작은 폭 MAPE/p95 안정화 대안"
+  },
+  "candidate_definitions": {
+    "old_current_70_30_min5": "기존 min5 SVC 기반 70:30",
+    "old_hcoef_stable_min5": "기존 HCOEF 안정 후보",
+    "wmin2_svc_numeric_seed_mean_min1": "WMIN2 min1 SVC seed mean",
+    "wmin3_min1_70_30_basis": "WMIN2 min1 SVC 70% + PP-V8 30%",
+    "wmin3_min1_hcoef_delta_transplant": "min1 70:30 + 기존 HCOEF 이동분",
+    "wmin3_min1_hcoef_refit_partial": "min1 current/svc 교체 후 HCOEF 안정 보정 재학습",
+    "wmin3_min1_hcoef_refit_svc_proxy": "min1 current/svc/raw/shrunk proxy 교체 후 HCOEF 안정 보정 재학습"
+  }
+}

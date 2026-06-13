@@ -1,0 +1,58 @@
+{
+  "experiment_id": "PP-WMIN6",
+  "experiment_slug": "PP-WMIN6_warm_min1_eb_shrinkage_decision",
+  "created_at": "2026-06-12T22:58:55",
+  "selection_policy": "validation repeated stability and validation replacement score only; fixed test is confirmation; 0604 is not used",
+  "reference_candidate_label": "current_pp258_operational_reference",
+  "wmin4_selected_candidate_label": "min1_huber_refit_partial",
+  "k_grid": [
+    2,
+    5,
+    10,
+    20,
+    50
+  ],
+  "seeds": [
+    202606030,
+    202606031,
+    202606032,
+    202606033,
+    202606034,
+    202606035,
+    202606036,
+    202606037,
+    202606038,
+    202606039
+  ],
+  "median_replacement": "replace only svc_group_log_price_median with hierarchical empirical-Bayes shrunk median",
+  "eb_formula": "shrunk = n/(n+k)*group_median + k/(n+k)*parent_estimate, applied from global -> artist -> artist+size -> artist+medium/support+size",
+  "basis_formula": "min1_eb_70_30_basis = 0.70 * min1_eb_svc_numeric_seed_mean + 0.30 * pp_v8_compact_blend_mape_guarded",
+  "huber_refit": {
+    "mode": "WMIN3 partial",
+    "current_70_30": "EB 70:30 basis",
+    "svc_fallback": "EB SVC seed mean",
+    "stable_config": {
+      "candidate": "hcoef2_size_reliability_cap005_s050",
+      "source_candidate": "residual_huber_resid_basis_size_reliability_alpha0.01_cap0.05_s0.50",
+      "feature_key": "resid_basis_size_reliability",
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5,
+      "purpose": "작은 폭 MAPE/p95 안정화 대안"
+    }
+  },
+  "decision": {
+    "decision_status": "adopt_candidate",
+    "selected_candidate_label": "min1_huber_refit_partial",
+    "reason": "validation gate를 통과했고 fixed test 확인에서도 기존 PP258 운영 후보보다 MdAPE/MAPE/p95가 모두 낮다.",
+    "selected_fixed_validation_MdAPE": 0.10156770146068649,
+    "selected_fixed_validation_MAPE": 0.17840703537366578,
+    "selected_fixed_validation_p95_APE": 0.5712913918014471,
+    "selected_fixed_test_MdAPE": 0.10659775415481275,
+    "selected_fixed_test_MAPE": 0.23930208581696472,
+    "selected_fixed_test_p95_APE": 0.7791959634055454,
+    "selected_validation_MAPE_win_rate": 0.9967948717948718,
+    "selected_validation_p95_win_rate": 0.9807692307692308,
+    "selected_validation_replacement_score": -0.027221524605975767
+  }
+}
