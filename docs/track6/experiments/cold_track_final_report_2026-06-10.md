@@ -113,3 +113,12 @@ C = 선형 HuberRegressor 6구성(α∈{1e-4,1e-3} × ε∈{1.2,1.35,1.5} × 피
 
 - 재개 조건: ① 실제 cold 운영 트래픽 잔차 확보(검색 보정맵 재적합 + tier 재검증) ② 거래 시점 등 신규 데이터.
 - 진입점: `experiments/track6/COLD_EXPERIMENT_HANDOFF_2026-06-10.md` → `docs/track6/experiments/cold_improvement_roadmap.md`. base 재생성: `run_pp_cbase1_cold_base_lock.py`, v0.5 재생성: `freeze_cold_prediction_artifact_v0_5.py`.
+
+### 6.1 실서비스 트래픽 현황 (2026-06-13, PP-MONLIVE1)
+
+실서비스 운영 로그(`price_prediction_v0_1.sqlite`, 라우팅 637건)를 모니터링 하니스에 연동한 결과 Cold 관련 현황:
+
+- **Cold 트래픽 첫 관측**: route=cold 9건(1.4%) + review_required 3건 — 그동안 "0604 전부 warm, cold 운영 트래픽 0"이던 상태에서 cold 트래픽이 처음 나타남.
+- 단 재개 조건은 **여전히 미충족**: cold 피처 스냅샷 0건, cold 예측의 확정 판매 라벨 0건 — 검색 보정맵 재적합·tier 재검증에 필요한 cold 잔차가 아직 없음.
+- 현 단계 = **트래픽 누적 모니터링**. cold 예측의 판매 라벨이 쌓이면 v0.1/v0.2/v0.3/v0.4 재평가(roadmap Cold 운영 항목)와 검색 커버리지 확대(PP-CSRCH2 재개)의 실데이터 근거가 생김.
+- 현행 서빙은 변동 없음: Cold = v0.3 점 예측 + v0.4 정책층(미커버 상수 fallback 활성), raw-input 환경은 v0.5.
