@@ -1,0 +1,100 @@
+{
+  "created_at": "2026-06-13T09:52:59",
+  "artifact_id": "official_v0_1_wmin8_exact_runtime_candidate",
+  "status": "runtime_prerequisite_packaged",
+  "source_experiments": [
+    "experiments/track6/PP-SVCSHRINK1_warm_comparable_prior_shrinkage",
+    "experiments/track6/PP-SVCSHRINK2_warm_huber_shrunk_comparable_refit",
+    "experiments/track6/PP-WMIN3_warm_min1_hcoef_refit",
+    "experiments/track6/PP-WMIN7_warm_min1_weight_retuning",
+    "experiments/track6/PP-WMIN8_warm_min1_weight_router"
+  ],
+  "selected_wmin8_candidate_label": "min1_route_w850_risk_q50_altlower_gap005",
+  "base_candidate": "min1_w700_huber_refit_partial",
+  "alternative_candidate": "min1_w850_huber_refit_partial",
+  "route_gate": {
+    "kind": "risk_ge_altlower_gap",
+    "threshold": 0.2534165869100283,
+    "gap": 0.005
+  },
+  "files": {
+    "shrinkage_runtime": "artifacts/shrinkage_runtime.json",
+    "shrunk_huber_refit_model": "artifacts/shrunk_huber_refit_model.joblib",
+    "huber_runtime": "artifacts/wmin8_huber_runtime.json",
+    "base_huber_refit_pipeline": "artifacts/base_w700_huber_refit_pipeline.joblib",
+    "alternative_huber_refit_pipeline": "artifacts/alternative_w850_huber_refit_pipeline.joblib",
+    "huber_pipeline_parity": "artifacts/wmin8_huber_pipeline_parity.csv",
+    "fixed_test_feature_store": "artifacts/fixed_test_feature_store.csv"
+  },
+  "fixed_test_feature_store": {
+    "file": "artifacts/fixed_test_feature_store.csv",
+    "rows": 1126,
+    "validation_rows": 519,
+    "test_rows": 607,
+    "lookup_keys": [
+      "source_artwork_id",
+      "artwork_url"
+    ]
+  },
+  "shrinkage_status": {
+    "training_rows": 26914,
+    "group_counts": {
+      "L1_artist": 1773,
+      "L2_artist_size": 4569,
+      "L3_artist_medium_support_size": 6385
+    },
+    "size_edges": [
+      1235.6300000000003,
+      2411.5,
+      4453.0,
+      9491.060000000021
+    ],
+    "shrinkage_k": 5.0
+  },
+  "huber_pipeline_parity": {
+    "max_abs_log_diff": 3.552713678800501e-15,
+    "rows": [
+      {
+        "role": "base_w700",
+        "candidate_label": "min1_w700_huber_refit_partial",
+        "eval_split": "validation_oof",
+        "n": 519,
+        "max_abs_log_diff": 3.552713678800501e-15,
+        "mean_abs_log_diff": 4.107183443700001e-16
+      },
+      {
+        "role": "base_w700",
+        "candidate_label": "min1_w700_huber_refit_partial",
+        "eval_split": "test",
+        "n": 607,
+        "max_abs_log_diff": 3.552713678800501e-15,
+        "mean_abs_log_diff": 4.536001813954511e-16
+      },
+      {
+        "role": "alternative_w850",
+        "candidate_label": "min1_w850_huber_refit_partial",
+        "eval_split": "validation_oof",
+        "n": 519,
+        "max_abs_log_diff": 1.7763568394002505e-15,
+        "mean_abs_log_diff": 3.696465099330001e-16
+      },
+      {
+        "role": "alternative_w850",
+        "candidate_label": "min1_w850_huber_refit_partial",
+        "eval_split": "test",
+        "n": 607,
+        "max_abs_log_diff": 3.552713678800501e-15,
+        "mean_abs_log_diff": 3.9507112573152193e-16
+      }
+    ],
+    "passes_prediction_csv_replay": true
+  },
+  "api_connection_status": {
+    "official_v0_1_adapter_connected": true,
+    "fixed_test_feature_store_packaged": true,
+    "api_fixed_test_parity_experiment": "experiments/track6/PP-WMIN10_warm_wmin8_api_fixed_test_parity",
+    "api_fixed_test_parity_pass": true,
+    "api_fixed_test_max_abs_log_diff": 5.3290705182007506e-15
+  },
+  "remaining_for_api_connection": []
+}

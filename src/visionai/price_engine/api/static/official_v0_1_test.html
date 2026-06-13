@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VisionAI 가격 예측 공식 테스트 v0.1</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --line: #cfd7e3;
+      --text: #172033;
+      --muted: #526072;
+      --blue: #2d5bd1;
+      --blue-soft: #e9f0ff;
+      --amber: #fff6df;
+      --amber-line: #f4c76d;
+      --green: #0f7a45;
+      --green-soft: #ecfdf3;
+      --red: #ad2a2a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    header {
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: 0; }
+    h2 { margin: 0 0 14px; font-size: 18px; }
+    h3 { margin: 18px 0 8px; font-size: 16px; }
+    header p, .sub { margin: 0; color: var(--muted); line-height: 1.5; }
+    main {
+      display: grid;
+      grid-template-columns: minmax(380px, 500px) minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px;
+      max-width: 1460px;
+      margin: 0 auto;
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: visible;
+    }
+    .body { padding: 16px; }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    label {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+    input, select, textarea {
+      display: block;
+      width: 100%;
+      min-height: 38px;
+      margin-top: 6px;
+      border: 1px solid #c7d0df;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+    input:focus, select:focus {
+      border-color: #7aa7ff;
+      outline: 3px solid rgba(45, 91, 209, 0.13);
+    }
+    .form-group-title {
+      margin: 16px 0 10px;
+      font-size: 13px;
+      font-weight: 850;
+      color: #25324a;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    button {
+      border: 1px solid #b9c5d6;
+      border-radius: 6px;
+      padding: 9px 12px;
+      background: #fff;
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+      min-height: 38px;
+    }
+    button.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+    button.secondary { background: #fff; }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    details {
+      margin-top: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fafcff;
+    }
+    summary {
+      padding: 12px;
+      font-weight: 850;
+      cursor: pointer;
+      list-style-position: inside;
+    }
+    .details-body {
+      padding: 0 12px 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+    .checkbox-row input {
+      width: auto;
+      min-height: auto;
+      margin: 0;
+    }
+    .small-help {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .notice {
+      padding: 10px 12px;
+      border-left: 4px solid var(--blue);
+      background: var(--blue-soft);
+      color: #243653;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .warning {
+      border: 1px solid var(--amber-line);
+      background: var(--amber);
+      padding: 12px;
+      border-radius: 8px;
+      color: #684a0b;
+      line-height: 1.55;
+    }
+    .artist-match-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      display: grid;
+      gap: 10px;
+    }
+    .artist-match-panel.confirmed {
+      border-color: #75e0a7;
+      background: #f6fef9;
+    }
+    .artist-match-panel.warning {
+      border-color: var(--amber-line);
+      background: #fffcf5;
+    }
+    .artist-match-panel.searching {
+      border-color: #84caff;
+      background: #f5fbff;
+    }
+    .artist-match-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .artist-match-title {
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+    .artist-match-summary,
+    .artist-search-status,
+    .artist-candidate-meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .artist-search-status strong { color: var(--text); }
+    .artist-candidates {
+      display: grid;
+      gap: 8px;
+    }
+    .artist-candidate {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+    .artist-candidate-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .artist-candidate-name {
+      font-weight: 900;
+    }
+    .artist-candidate-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .mini-badge,
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+    .mini-badge.warning {
+      background: var(--amber);
+      color: #7a4d00;
+    }
+    .mini-badge.ok {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+    .artist-representative-list {
+      display: grid;
+      gap: 6px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .artist-representative-heading {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+    .artist-representative-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .artist-representative-title {
+      color: var(--text);
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .artist-representative-price {
+      color: var(--text);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .size-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      padding: 9px 10px;
+      border: 1px dashed #b8c3d4;
+      border-radius: 8px;
+      background: #fbfcff;
+      color: var(--muted);
+      font-size: 13px;
+      margin: -2px 0 12px;
+    }
+    .size-preview strong { color: var(--text); }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      min-height: 82px;
+    }
+    .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .value { font-size: 18px; font-weight: 850; overflow-wrap: anywhere; }
+    .price {
+      border: 1px solid #83aeff;
+      background: #f8fbff;
+      padding: 18px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+    .price-main {
+      font-size: 36px;
+      font-weight: 950;
+      margin: 10px 0 2px;
+    }
+    .muted { color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      padding: 8px;
+      vertical-align: top;
+    }
+    th { background: #f6f8fb; }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #111827;
+      color: #e5e7eb;
+      padding: 12px;
+      border-radius: 8px;
+      max-height: 300px;
+      overflow: auto;
+      font-size: 12px;
+    }
+    .stack { display: grid; gap: 12px; }
+    .error { color: var(--red); font-weight: 800; }
+    .loading-layer {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(246, 248, 251, 0.72);
+      z-index: 20;
+    }
+    .loading-layer.active { display: grid; }
+    .loading-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 16px 18px;
+      box-shadow: 0 14px 40px rgba(15, 23, 42, 0.14);
+      font-weight: 850;
+    }
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .grid2, .cards { grid-template-columns: 1fr; }
+      header, main { padding-left: 12px; padding-right: 12px; }
+      .price-main { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VisionAI 가격 예측 공식 테스트 v0.1</h1>
+    <p class="sub">작가명과 작품 정보를 입력하면 예측 경로, 참고 가격, 신뢰도, 계산 근거를 확인할 수 있습니다.</p>
+  </header>
+
+  <main>
+    <section>
+      <div class="body">
+        <h2>작품 정보 입력</h2>
+        <form id="estimateForm">
+          <div class="form-group-title">작가</div>
+          <div class="grid2">
+            <label>한글 작가명
+              <input id="nameKo" value="박서보" autocomplete="off" />
+            </label>
+            <label>영문 작가명
+              <input id="nameEn" value="Park Seo-Bo" autocomplete="off" />
+            </label>
+          </div>
+
+          <div class="artist-match-panel" id="artistMatchPanel">
+            <div class="artist-match-header">
+              <div>
+                <div class="artist-match-title" id="artistMatchTitle">작가 확인 필요</div>
+                <div class="artist-match-summary" id="artistMatchSummary">작가명을 입력하면 후보를 자동으로 확인합니다.</div>
+              </div>
+              <button type="button" class="secondary" id="artistResolveButton">후보 새로고침</button>
+            </div>
+            <div class="artist-search-status" id="artistSearchStatus">
+              한글명이나 영문명을 입력하면 기존 작가 정보와 비교합니다.
+            </div>
+            <div class="artist-candidates" id="artistCandidateList"></div>
+          </div>
+
+          <label style="margin-top:12px;">작품명
+            <input id="title" value="Untitled" autocomplete="off" />
+          </label>
+
+          <div class="form-group-title">작품 기본 정보</div>
+          <div class="grid2">
+            <label>제작연도
+              <input id="year" type="number" value="2020" />
+            </label>
+            <label>작품 유형
+              <select id="category">
+                <option>Painting</option>
+                <option>Drawing</option>
+                <option>Sculpture</option>
+                <option>Print</option>
+                <option>Installation</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-group-title">크기와 재료</div>
+          <div class="grid2">
+            <label>가로(cm)
+              <input id="width" type="number" step="0.1" value="72.7" />
+            </label>
+            <label>세로(cm)
+              <input id="height" type="number" step="0.1" value="60.6" />
+            </label>
+          </div>
+          <div class="size-preview" id="targetSizePreview">
+            <span>예측 대상 작품</span>
+            <strong>-</strong>
+          </div>
+          <div class="grid2">
+            <label>재료
+              <select id="medium">
+                <option value="mixed_media">혼합재료 (mixed_media)</option>
+                <option value="acrylic">아크릴 (acrylic)</option>
+                <option value="oil">유화 (oil)</option>
+                <option value="painting">회화 (painting)</option>
+                <option value="print">판화/프린트 (print)</option>
+                <option value="pencil">연필 (pencil)</option>
+                <option value="other">기타 (other)</option>
+                <option value="unknown">모름 (unknown)</option>
+              </select>
+            </label>
+            <label>지지체
+              <select id="support">
+                <option value="canvas">캔버스 (canvas)</option>
+                <option value="paper">종이 (paper)</option>
+                <option value="panel">패널 (panel)</option>
+                <option value="linen">린넨 (linen)</option>
+                <option value="fabric">천/섬유 (fabric)</option>
+                <option value="wood">나무 (wood)</option>
+                <option value="metal">금속 (metal)</option>
+                <option value="unknown">모름 (unknown)</option>
+              </select>
+            </label>
+          </div>
+
+          <details>
+            <summary>고급 입력</summary>
+            <div class="details-body">
+              <label>선택한 내부 작가키
+                <input id="selectedKey" placeholder="작가 후보 선택 후 자동 입력" autocomplete="off" />
+              </label>
+              <label class="checkbox-row">
+                <input id="includeSamples" type="checkbox" checked />
+                유사 작품 사례 포함
+              </label>
+              <p class="small-help">내부 작가키는 일반 사용자가 직접 입력하는 값이 아닙니다. 후보 선택 시 자동으로 채워집니다.</p>
+            </div>
+          </details>
+
+          <div class="actions">
+            <button type="submit" class="primary" id="estimateBtn">가격 예측 실행</button>
+            <button type="button" class="secondary" id="coldExample">신규 작가 예시</button>
+            <button type="button" class="secondary" id="modelBtn">모델 상태</button>
+          </div>
+        </form>
+        <div id="inputMsg" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="body stack">
+        <h2>예측 결과</h2>
+        <div id="summary" class="notice">가격 예측을 실행하면 결과가 표시됩니다.</div>
+        <div id="resultBox"></div>
+        <details>
+          <summary>Raw JSON</summary>
+          <pre id="raw">{}</pre>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <div class="loading-layer" id="loadingLayer">
+    <div class="loading-box" id="loadingText">계산 중입니다.</div>
+  </div>
+
+  <script>
+    const raw = document.getElementById("raw");
+    const summary = document.getElementById("summary");
+    const resultBox = document.getElementById("resultBox");
+    const inputMsg = document.getElementById("inputMsg");
+    const loadingLayer = document.getElementById("loadingLayer");
+    const loadingText = document.getElementById("loadingText");
+    const buttons = [...document.querySelectorAll("button")];
+    let artistConfirmation = null;
+    let artistResolveTimer = null;
+    let artistResolveSeq = 0;
+
+    const HO_AREA = 220.5;
+
+    function $(id) { return document.getElementById(id); }
+
+    function value(id) {
+      return $(id).value.trim();
+    }
+
+    function numberValue(id) {
+      const text = value(id);
+      return text === "" ? null : Number(text);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setLoading(on, text = "계산 중입니다.") {
+      buttons.forEach((btn) => btn.disabled = on);
+      loadingText.textContent = text;
+      loadingLayer.classList.toggle("active", on);
+    }
+
+    function formatKrw(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+      const num = Number(value);
+      if (num >= 100000000) {
+        const eok = num / 100000000;
+        return eok < 10 ? `${eok.toFixed(1)}억원` : `${Math.round(eok).toLocaleString()}억원`;
+      }
+      if (num >= 10000) return `${Math.round(num / 10000).toLocaleString()}만원`;
+      return `${Math.round(num).toLocaleString()}원`;
+    }
+
+    function updateSizePreview() {
+      const width = numberValue("width");
+      const height = numberValue("height");
+      const area = width && height ? width * height : null;
+      const ho = area ? Math.max(1, Math.round(area / HO_AREA)) : null;
+      $("targetSizePreview").innerHTML = `
+        <span>예측 대상 작품</span>
+        <strong>${width || "-"} x ${height || "-"}cm</strong>
+        <span>${area ? `${Math.round(area).toLocaleString()}㎠` : "면적 -"}</span>
+        <strong>${ho ? `${ho}호` : "호수 -"}</strong>
+      `;
+    }
+
+    async function requestJson(path, options = {}, loadingMessage = "처리 중입니다.") {
+      setLoading(true, loadingMessage);
+      try {
+        const res = await fetch(path, {
+          headers: { "Content-Type": "application/json" },
+          ...options,
+        });
+        const json = await res.json();
+        raw.textContent = JSON.stringify(json, null, 2);
+        if (!res.ok) throw new Error(json?.error?.message || res.statusText);
+        inputMsg.innerHTML = "";
+        return json;
+      } catch (err) {
+        summary.innerHTML = `<span class="error">${escapeHtml(err.message)}</span>`;
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function currentArtistSignature() {
+      return [value("nameKo"), value("nameEn"), value("selectedKey")].join("|");
+    }
+
+    function hasArtistQuery() {
+      return Boolean(value("selectedKey") || value("nameKo") || value("nameEn"));
+    }
+
+    function clearArtistResolveTimer() {
+      if (artistResolveTimer) {
+        window.clearTimeout(artistResolveTimer);
+        artistResolveTimer = null;
+      }
+    }
+
+    function setArtistSearchStatus(text, strong = "") {
+      $("artistSearchStatus").innerHTML = strong
+        ? `<strong>${escapeHtml(strong)}</strong><span>${escapeHtml(text)}</span>`
+        : escapeHtml(text);
+    }
+
+    function resetArtistConfirmation() {
+      artistConfirmation = null;
+      $("selectedKey").value = "";
+      $("artistMatchPanel").className = "artist-match-panel";
+      $("artistMatchTitle").textContent = "작가 확인 필요";
+      $("artistMatchSummary").textContent = hasArtistQuery()
+        ? "작가명을 입력하면 후보를 자동으로 확인합니다."
+        : "한글명이나 영문명을 입력해 주세요.";
+      setArtistSearchStatus("한글명이나 영문명을 입력하면 기존 작가 정보와 비교합니다.");
+      $("artistCandidateList").innerHTML = "";
+    }
+
+    function artistPayload() {
+      return {
+        name_ko: value("nameKo") || null,
+        name_en: value("nameEn") || null,
+        selected_artist_key: value("selectedKey") || null,
+      };
+    }
+
+    function estimatePayload() {
+      return {
+        artwork: {
+          artist: artistPayload(),
+          title: value("title") || null,
+          year: numberValue("year"),
+          category: value("category") || null,
+          dimensions: {
+            width_cm: numberValue("width"),
+            height_cm: numberValue("height"),
+            depth_cm: 0,
+          },
+          medium: {
+            medium_category: value("medium") || null,
+            support_category: value("support") || null,
+          },
+        },
+        options: {
+          include_comparable_samples: $("includeSamples").checked,
+          max_comparable_samples: 8,
+          include_calculation_steps: true,
+        },
+      };
+    }
+
+    function artistMeta(candidate) {
+      return [
+        candidate.name_en,
+        candidate.birth_year ? `${candidate.birth_year}년생` : null,
+        candidate.nationality_ko || candidate.nationality,
+        candidate.same_artist_training_price_count !== null && candidate.same_artist_training_price_count !== undefined
+          ? `가격 이력 ${candidate.same_artist_training_price_count}건`
+          : null
+      ].filter(Boolean).join(" · ");
+    }
+
+    function homonymLabel(score) {
+      if (score === null || score === undefined) return "확인 필요";
+      if (score >= 0.45) return "높음";
+      if (score >= 0.20) return "보통";
+      return "낮음";
+    }
+
+    function matchScoreLabel(score) {
+      if (score === null || score === undefined) return "확인 필요";
+      if (score >= 0.90) return "높음";
+      if (score >= 0.75) return "보통";
+      return "낮음";
+    }
+
+    function representativeArtworkList(candidate) {
+      const artworks = candidate.representative_artworks || [];
+      if (!artworks.length) return "";
+      return `
+        <div class="artist-representative-list">
+          <div class="artist-representative-heading">대표 작품</div>
+          ${artworks.slice(0, 3).map((artwork) => {
+            const title = escapeHtml(artwork.title || "제목 정보 없음");
+            const medium = escapeHtml([artwork.medium_category, artwork.support_category].filter(Boolean).join(" / "));
+            const size = [artwork.width_cm, artwork.height_cm].filter(v => v !== null && v !== undefined).join(" x ");
+            const hoSize = artwork.ho_size_display || (artwork.ho_size ? `${artwork.ho_size}호` : "");
+            const sizeInfo = [size ? `${size}cm` : "", hoSize].filter(Boolean).join(" · ");
+            return `
+              <div class="artist-representative-item">
+                <div>
+                  <div class="artist-representative-title">${title}</div>
+                  <div>${medium}${sizeInfo ? ` · ${escapeHtml(sizeInfo)}` : ""}</div>
+                </div>
+                <div class="artist-representative-price">${formatKrw(artwork.sale_price_krw)}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function setConfirmedArtist(candidate) {
+      clearArtistResolveTimer();
+      artistConfirmation = {
+        signature: currentArtistSignature(),
+        artistKey: candidate ? candidate.artist_key : null,
+        mode: candidate ? "matched" : "unmatched"
+      };
+      if (candidate) {
+        $("selectedKey").value = candidate.artist_key;
+        artistConfirmation.signature = currentArtistSignature();
+      } else {
+        $("selectedKey").value = "";
+        artistConfirmation.signature = currentArtistSignature();
+      }
+      $("artistMatchPanel").className = `artist-match-panel ${candidate ? "confirmed" : "warning"}`;
+      $("artistMatchTitle").textContent = candidate ? "선택된 작가" : "신규/미확인 작가로 참고 예측";
+      $("artistMatchSummary").textContent = candidate
+        ? `${candidate.name_ko || candidate.artist_key} ${artistMeta(candidate) ? `· ${artistMeta(candidate)}` : ""}`
+        : "기존 작가 정보와 확정 매칭되지 않았습니다. 참고 예측으로 진행합니다.";
+      setArtistSearchStatus(candidate ? "작가가 확정되었습니다. 다른 작가라면 선택을 변경할 수 있습니다." : "신규 또는 이력 부족 작가로 계산합니다. 정확도는 낮아질 수 있습니다.");
+      $("artistCandidateList").innerHTML = candidate
+        ? `
+          <div class="artist-candidate">
+            <div class="artist-candidate-main">
+              <div>
+                <div class="artist-candidate-name">${escapeHtml(candidate.name_ko || candidate.artist_key)}</div>
+                <div class="artist-candidate-meta">${escapeHtml(artistMeta(candidate) || "추가 작가 정보 없음")}</div>
+                <div class="artist-candidate-badges">
+                  <span class="mini-badge ok">선택 완료</span>
+                  <span class="mini-badge">매칭 신뢰도 ${escapeHtml(matchScoreLabel(candidate.artist_match_score))}</span>
+                  <span class="mini-badge ${candidate.homonym_risk_score >= 0.20 ? "warning" : "ok"}">동명이인 가능성 ${escapeHtml(homonymLabel(candidate.homonym_risk_score))}</span>
+                </div>
+                ${representativeArtworkList(candidate)}
+              </div>
+              <button type="button" class="secondary change-artist-selection-button">선택 변경</button>
+            </div>
+          </div>
+        `
+        : `<button type="button" class="secondary change-artist-selection-button">작가 후보 다시 확인</button>`;
+    }
+
+    function candidateCard(candidate, index) {
+      const score = candidate.artist_match_score ?? "-";
+      const routeText = candidate.warm_available ? "이력 기반 예측 가능" : "참고 예측 가능";
+      return `
+        <div class="artist-candidate">
+          <div class="artist-candidate-main">
+            <div>
+              <div class="artist-candidate-name">${escapeHtml(candidate.name_ko || candidate.artist_key)}</div>
+              <div class="artist-candidate-meta">${escapeHtml(artistMeta(candidate) || "추가 작가 정보 없음")}</div>
+              <div class="artist-candidate-badges">
+                <span class="mini-badge ${candidate.artist_match_score >= 0.90 ? "ok" : "warning"}">매칭 ${escapeHtml(matchScoreLabel(candidate.artist_match_score))} (${score})</span>
+                <span class="mini-badge ${candidate.homonym_risk_score >= 0.20 ? "warning" : "ok"}">동명이인 가능성 ${escapeHtml(homonymLabel(candidate.homonym_risk_score))}</span>
+                <span class="mini-badge">${escapeHtml(routeText)}</span>
+              </div>
+              ${representativeArtworkList(candidate)}
+            </div>
+            <button type="button" class="secondary artist-select-button" data-index="${index}">이 작가 선택</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderArtistResolution(json) {
+      const candidates = (json.candidates && json.candidates.length)
+        ? json.candidates
+        : (json.selected_artist ? [json.selected_artist] : []);
+      $("artistCandidateList").dataset.candidates = JSON.stringify(candidates);
+      if (json.selected_artist && candidates.length === 1 && !json.requires_selection) {
+        $("artistMatchPanel").className = "artist-match-panel warning";
+        $("artistMatchTitle").textContent = "가장 가까운 작가 후보";
+        $("artistMatchSummary").textContent = "아래 작가가 맞는지 확인한 뒤 선택해 주세요.";
+        setArtistSearchStatus(`${json.selected_artist.name_ko || json.selected_artist.artist_key} · ${artistMeta(json.selected_artist) || "추가 정보 없음"}`, "추천 후보");
+        $("artistCandidateList").innerHTML = `
+          ${candidateCard(json.selected_artist, 0)}
+          <button type="button" class="secondary confirm-unmatched-artist-button">다른/신규 작가로 참고 예측</button>
+        `;
+        return;
+      }
+      if (candidates.length > 0) {
+        $("artistMatchPanel").className = "artist-match-panel warning";
+        $("artistMatchTitle").textContent = "동명이인 또는 유사 작가 후보가 있습니다";
+        $("artistMatchSummary").textContent = "가격 예측 전에 정확한 작가를 선택해야 합니다.";
+        setArtistSearchStatus(`후보 ${candidates.length}명을 찾았습니다. 맞는 작가를 선택해 주세요.`, "확인 필요");
+        $("artistCandidateList").innerHTML = candidates.map(candidateCard).join("");
+        return;
+      }
+      $("artistMatchPanel").className = "artist-match-panel warning";
+      $("artistMatchTitle").textContent = "기존 작가 정보와 매칭되지 않았습니다";
+      $("artistMatchSummary").textContent = "작가명이 신규이거나 이력이 부족한 경우 참고 예측으로 진행할 수 있습니다.";
+      setArtistSearchStatus("기존 작가 후보가 없습니다. 신규/미확인 작가로 참고 예측을 진행할 수 있습니다.", "후보 없음");
+      $("artistCandidateList").innerHTML = `<button type="button" class="secondary confirm-unmatched-artist-button">신규/미확인 작가로 참고 예측</button>`;
+    }
+
+    async function resolveArtistForConfirmation(options = {}) {
+      clearArtistResolveTimer();
+      if (!hasArtistQuery()) {
+        resetArtistConfirmation();
+        return null;
+      }
+      const seq = ++artistResolveSeq;
+      $("artistMatchPanel").className = "artist-match-panel searching";
+      $("artistMatchTitle").textContent = "작가 확인 중";
+      $("artistMatchSummary").textContent = "기존 작가 정보와 입력한 이름을 비교하고 있습니다.";
+      setArtistSearchStatus(options.auto ? "입력값 변경을 감지해 자동 확인 중입니다." : "작가 후보를 새로 확인하고 있습니다.");
+      $("artistCandidateList").innerHTML = "";
+      const json = await requestJson("/api/v1/artists/resolve", {
+        method: "POST",
+        body: JSON.stringify({artist: artistPayload(), options: {max_candidates: 5}}),
+      }, "작가 후보 확인 중입니다.");
+      if (seq !== artistResolveSeq) return null;
+      renderArtistResolution(json);
+      return json;
+    }
+
+    function scheduleArtistResolve() {
+      clearArtistResolveTimer();
+      artistConfirmation = null;
+      $("selectedKey").value = "";
+      $("artistMatchPanel").className = "artist-match-panel";
+      $("artistMatchTitle").textContent = "작가 확인 필요";
+      $("artistMatchSummary").textContent = "입력이 멈추면 후보를 확인합니다.";
+      setArtistSearchStatus("작가명을 입력 중입니다.");
+      $("artistCandidateList").innerHTML = "";
+      if (!hasArtistQuery()) return;
+      artistResolveTimer = window.setTimeout(() => {
+        resolveArtistForConfirmation({auto: true}).catch(() => {
+          $("artistMatchPanel").className = "artist-match-panel warning";
+          $("artistMatchTitle").textContent = "작가 확인 실패";
+          $("artistMatchSummary").textContent = "작가 확인 중 오류가 발생했습니다.";
+        });
+      }, 650);
+    }
+
+    function renderEstimate(json) {
+      const p = json.prediction || {};
+      const market = json.market_reference || {};
+      summary.innerHTML = `
+        <div class="cards">
+          <div class="card"><div class="label">예측 경로</div><div class="value">${escapeHtml(json.display_route || "-")}</div></div>
+          <div class="card"><div class="label">신뢰도</div><div class="value">${escapeHtml(p.confidence?.level || "-")}</div></div>
+          <div class="card"><div class="label">가격 근거</div><div class="value">${json.basis?.similar_sample_count || 0}건</div></div>
+          <div class="card"><div class="label">예측 ID</div><div class="value" style="font-size:13px">${escapeHtml(json.prediction_id || "-")}</div></div>
+        </div>`;
+      resultBox.innerHTML = `
+        <div class="price">
+          <span class="pill">${escapeHtml(json.display_route || "-")}</span>
+          <div class="price-main">${escapeHtml(p.price_display || "-")}</div>
+          <div class="muted">참고 범위 ${escapeHtml(p.range_display || "-")}</div>
+        </div>
+        <div class="warning">
+          현재 화면은 공식 v0.1 DB/cache adapter 골격 확인용입니다. 보고서 기준 최종 Warm/Cold 추론 adapter는 다음 단계에서 연결됩니다.
+        </div>
+        <table>
+          <tbody>
+            <tr><th>호수</th><td>${escapeHtml(market.target_ho_size_display || "-")}</td></tr>
+            <tr><th>호당 중앙값</th><td>${escapeHtml(market.median_display || "-")}</td></tr>
+            <tr><th>호당 총액 환산</th><td>${escapeHtml(market.converted_total_price_display || "-")}</td></tr>
+            <tr><th>가격 근거 범위</th><td>${escapeHtml(json.basis?.similar_group_level || "-")} / ${escapeHtml(json.basis?.similar_coverage_tier || "-")}</td></tr>
+            <tr><th>라우팅 사유</th><td>${escapeHtml(json.routing?.route_reason || "-")}</td></tr>
+          </tbody>
+        </table>
+        ${json.calculation_summary?.steps?.length ? `
+          <h3>계산 과정</h3>
+          <table>
+            <thead><tr><th>순서</th><th>단계</th><th>식/로직</th></tr></thead>
+            <tbody>
+              ${json.calculation_summary.steps.map(s => `<tr><td>${s.step_order}</td><td><b>${escapeHtml(s.name)}</b><br><span class="muted">${escapeHtml(s.role)}</span></td><td>${escapeHtml(s.formula || "-")}</td></tr>`).join("")}
+            </tbody>
+          </table>` : ""}
+        ${json.similar_artworks?.length ? `
+          <h3>유사 작품</h3>
+          <table>
+            <thead><tr><th>작품</th><th>작가</th><th>가격</th><th>조건</th></tr></thead>
+            <tbody>
+              ${json.similar_artworks.map(a => `<tr><td>${escapeHtml(a.title || "-")}</td><td>${escapeHtml(a.artist_name || "-")}</td><td>${escapeHtml(a.sale_price_display || "-")}</td><td>${escapeHtml(a.medium_category || "-")} / ${escapeHtml(a.support_category || "-")} / ${escapeHtml(a.ho_size_display || "-")}</td></tr>`).join("")}
+            </tbody>
+          </table>` : ""}
+      `;
+    }
+
+    $("artistResolveButton").addEventListener("click", () => {
+      resolveArtistForConfirmation().catch(() => {
+        $("artistMatchPanel").className = "artist-match-panel warning";
+        $("artistMatchTitle").textContent = "작가 확인 실패";
+        $("artistMatchSummary").textContent = "작가 확인 중 오류가 발생했습니다.";
+      });
+    });
+
+    $("artistCandidateList").addEventListener("click", (event) => {
+      const selectButton = event.target.closest(".artist-select-button");
+      if (selectButton) {
+        const candidates = JSON.parse($("artistCandidateList").dataset.candidates || "[]");
+        const candidate = candidates[Number(selectButton.dataset.index)];
+        if (candidate) setConfirmedArtist(candidate);
+        return;
+      }
+      if (event.target.closest(".confirm-unmatched-artist-button")) {
+        setConfirmedArtist(null);
+        return;
+      }
+      if (event.target.closest(".change-artist-selection-button")) {
+        resetArtistConfirmation();
+      }
+    });
+
+    $("estimateForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        if (!artistConfirmation && hasArtistQuery()) {
+          const resolution = await resolveArtistForConfirmation();
+          const candidates = resolution?.candidates || [];
+          if (resolution?.requires_selection && candidates.length > 1) {
+            summary.innerHTML = `<div class="warning">동명이인 후보가 있습니다. 가격 예측 전에 정확한 작가를 선택해 주세요.</div>`;
+            return;
+          }
+          if (resolution?.selected_artist) {
+            setConfirmedArtist(resolution.selected_artist);
+          } else if (!candidates.length) {
+            setConfirmedArtist(null);
+          }
+        }
+        const json = await requestJson("/api/v1/artworks/price-estimate", {
+          method: "POST",
+          body: JSON.stringify(estimatePayload()),
+        }, "가격 예측 중입니다.");
+        renderEstimate(json);
+      } catch (err) {
+        inputMsg.innerHTML = `<div class="warning">요청 처리 중 오류가 발생했습니다.</div>`;
+      }
+    });
+
+    $("coldExample").addEventListener("click", () => {
+      $("nameKo").value = "신규작가테스트";
+      $("nameEn").value = "";
+      $("selectedKey").value = "";
+      $("title").value = "Cold Example";
+      $("year").value = "2024";
+      $("width").value = "53";
+      $("height").value = "45.5";
+      $("medium").value = "acrylic";
+      $("support").value = "canvas";
+      resetArtistConfirmation();
+      updateSizePreview();
+      inputMsg.innerHTML = `<div class="notice">신규/미확인 작가 참고 예측 예시를 입력했습니다.</div>`;
+    });
+
+    $("modelBtn").addEventListener("click", async () => {
+      const json = await requestJson("/api/v1/price-models/current", {}, "모델 상태 조회 중입니다.");
+      summary.textContent = "모델 상태를 조회했습니다.";
+      resultBox.innerHTML = `<pre>${escapeHtml(JSON.stringify(json, null, 2))}</pre>`;
+    });
+
+    ["nameKo", "nameEn"].forEach(id => $(id).addEventListener("input", scheduleArtistResolve));
+    ["width", "height"].forEach(id => $(id).addEventListener("input", updateSizePreview));
+    updateSizePreview();
+
+    requestJson("/api/v1/health", {}, "API 상태 확인 중입니다.").then(json => {
+      summary.textContent = `API 준비 완료 · 작가 ${json.table_counts.artist_registry.toLocaleString()}명 · 가격이력 ${json.table_counts.artwork_price_observations.toLocaleString()}건`;
+    }).catch(() => {});
+  </script>
+</body>
+</html>

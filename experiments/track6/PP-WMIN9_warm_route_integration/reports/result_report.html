@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>PP-WMIN9 Warm 운영 라우팅 통합 검증</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 36px; color: #111827; line-height: 1.55; }
+    h1 { font-size: 28px; margin-bottom: 24px; }
+    h2 { font-size: 20px; margin-top: 32px; border-top: 1px solid #d1d5db; padding-top: 18px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+    th, td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: #f3f4f6; }
+    code { background: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<h1>PP-WMIN9 Warm 운영 라우팅 통합 검증</h1><p>- 작성일: 2026-06-13T10:15:44+09:00</p><p>- 데이터 기준: WMIN8 산출물 + Warm-lite/routing policy 아티팩트 + official v0.1 서비스 코드</p><p>- 0604 사용: 없음</p><p>- 결론: `candidate_artifact_connected_api_parity_passed`</p><p>- 요약: WMIN8 후보 아티팩트, Warm-lite 경로, 0.80 매칭 임계값, 5건 이상 Warm 라우팅, 607건 API parity가 연결 완료 상태</p><h2>1. 선택된 Warm 5건 이상 후보</h2><p>- 문서용 모델명: 이력 기반 조건부 유사작품 보정 모델</p><p>- 내부 추적 ID: `WMIN8 conditional min1 SVC weight router`</p><p>- 선택 후보: `min1_route_w850_risk_q50_altlower_gap005`</p><p>- validation MdAPE/MAPE/p95: `0.094033 / 0.175114 / 0.571291`</p><p>- fixed test MdAPE/MAPE/p95: `0.104326 / 0.235814 / 0.739416`</p><h2>2. WMIN8 라우팅 규칙</h2><p>- 기본 후보: `min1_huber_refit_partial`</p><p>- 대안 후보: `min1_w850_huber_refit_partial`</p><p>- gate kind: `risk_ge_altlower_gap`</p><p>- risk threshold: `0.2534165869100283`</p><p>- alternative lower gap: `0.005`</p><p>- 적용 방식: 기본 후보를 사용하되, 위험도가 validation q50 이상이고 대안 후보가 기본 후보보다 0.005 log 이상 낮은 경우에만 대안 후보로 교체</p><h2>3. Warm / Warm-lite / Cold 목표 라우팅</h2><table><tbody><tr><th>history_count</th><th>current_official_v0_1_route</th><th>target_route_after_integration</th><th>target_artifact</th><th>condition</th></tr><tr><td>0</td><td>Cold</td><td>Cold</td><td>cold v0.3/v0.4 policy layer</td><td>match_score < 0.8 또는 usable_history = 0</td></tr><tr><td>1~4</td><td>Warm-lite</td><td>Warm-lite</td><td>models/track6/warm_lite_v0.1</td><td>match_score >= 0.8 AND 1 <= usable_history <= 4</td></tr><tr><td>5+</td><td>Warm / WMIN8 exact adapter</td><td>Warm</td><td>models/track6/warm_wmin8_operational_candidate</td><td>match_score >= 0.8 AND usable_history >= 5</td></tr></tbody></table><h2>4. 준비 상태</h2><p>- wmin8_outputs_exist: `True`</p><p>- wmin8_selected_candidate_packaged: `True`</p><p>- warm_lite_artifact_ready: `True`</p><p>- routing_policy_artifact_ready: `True`</p><p>- current_service_has_warm_5plus_route: `True`</p><p>- current_service_has_warm_lite_route: `True`</p><p>- current_service_mentions_wmin8: `True`</p><p>- current_service_threshold_matches_recommended_policy: `True`</p><p>- exact_raw_adapter_ready: `True`</p><p>- fixed_test_parity_through_api_ready: `True`</p><h2>5. 남은 연결 작업</h2><p>- 없음</p><h2>6. 생성 파일</h2><p>- 후보 아티팩트 manifest: `models/track6/warm_wmin8_operational_candidate/manifest.json`</p><p>- 후보 정책: `models/track6/warm_wmin8_operational_candidate/config/warm_model_policy_wmin8.json`</p><p>- 통합 검증 JSON: `experiments/track6/PP-WMIN9_warm_route_integration/outputs/readiness_checks.json`</p>
+</body>
+</html>
