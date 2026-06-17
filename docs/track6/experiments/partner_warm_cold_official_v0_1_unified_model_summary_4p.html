@@ -291,7 +291,7 @@ Warm-lite current 후보를 fixed test와 API 재현성 기준으로 검증</cod
       <thead><tr><th>검증</th><th>결과</th><th>해석</th></tr></thead>
       <tbody>
         <tr><td>Warm-lite current fixed test</td><td>607행, MdAPE 0.084485, MAPE 0.225214, p95 0.803203</td><td>기본 Warm 후보</td></tr>
-        <tr><td>기존 Warm WMIN8 대비</td><td>같은 607행에서 MdAPE -0.019841, MAPE -0.010600</td><td>대표 오차와 평균 오차가 개선됐다. p95는 +0.063786으로 악화되어 큰 오차 모니터링이 필요하다.</td></tr>
+        <tr><td>기존 Warm WMIN8 대비</td><td>같은 607행에서 MdAPE -0.019841, MAPE -0.010600</td><td>대표 오차와 평균 오차가 개선됐다. p95는 +0.063787로 악화되어 큰 오차 모니터링이 필요하다.</td></tr>
         <tr><td>학습 데이터 증가 실험</td><td>25% → 100% fixed cohort에서 MdAPE 평균 -0.064615</td><td>품질 관리된 학습 데이터가 늘면 Warm 개선 가능성이 큼</td></tr>
       </tbody>
     </table>
@@ -565,8 +565,9 @@ q90 - q10으로 예측의 불확실성 폭 계산
       </tbody>
     </table>
     <div class="note">
-      25%에서 100%로 늘렸을 때 fixed cohort 평균 변화는 MdAPE -0.064615, MAPE -0.134015, p95 APE -0.184062, RMSE log -0.107926이다.
+      25%에서 100%로 늘렸을 때 fixed cohort 평균 변화는 MdAPE -0.064615, MAPE -0.134014, p95 APE -0.184062, RMSE log -0.107926이다.
       따라서 품질 관리된 학습 데이터가 늘면 Warm 정확도가 좋아질 근거는 있다. 다만 신규 운영 데이터도 가격 라벨, 작가 매칭, 작품 피처 품질 검수를 통과해야 같은 개선을 기대할 수 있다.
+      주의: 이 학습곡선 100% 행(MdAPE 0.088637 / p95 0.806068)은 학습곡선 전용으로 재학습한 별도 실험이라, Page 2의 배포 Warm-lite current(0.084485 / 0.803203)와 셋업이 달라 정확히 같지 않다. 핵심은 절대 수치가 아니라 데이터가 늘수록 좋아지는 추세다.
     </div>
 
     <h3>3. 운영 설명 문장</h3>
