@@ -264,13 +264,13 @@ Warm-lite current 후보를 fixed test와 API 재현성 기준으로 검증</cod
 작가 로그가격 중앙값, q25/q75, IQR, 면적단가, 표본 수, 매칭 단계
         |
         v
-[Quantile 예측]
+[LightGBM Quantile 회귀 예측]
 전체 피처 기반 q50과 흔들림을 줄인 q50을 각각 계산
 두 q50 평균을 기준 로그가격으로 사용
         |
         v
-[Huber residual 보정]
-기준 로그가격에서 남은 오차를 예측하고 clip으로 보정 폭 제한
+[LightGBM Huber residual 회귀 보정]
+기준 로그가격에서 남은 오차를 예측하고 clip(±0.10 로그)으로 보정 폭 제한
         |
         v
 최종 Warm 로그가격 → exp(로그가격) = 최종 Warm 가격</code></pre>
