@@ -3,18 +3,18 @@
 - 작성일: 2026-06-17
 - 보고 목적: 새로 승격한 official 0.1v 기본 모델 기준으로 Warm/Cold 가격 예측 구조, 피처, 산식, 검증 근거를 설명
 - 기준 API 표기: `0.1v API`
-- 현재 기본 Warm 정책: `1건 이상 -> Warm-lite unified route_gap_q50`
+- 현재 기본 Warm 정책: `1건 이상 -> 통합 Warm-lite`
 - Cold 정책: 같은 작가 가격 이력을 직접 쓰지 못하는 입력은 Cold 검색/방어 모델로 처리
 
 ## 1. 결론 요약
 
 > **핵심 결론:** 현재 official 0.1v 기본 운영 모델은 예전의 `1~4건 Warm-lite, 5건 이상 Warm WMIN8` split 정책이 아니다.
- 기본값은 `작가 매칭이 신뢰 가능하고 같은 작가 가격 이력이 1건 이상이면 Warm-lite unified route_gap_q50`를 사용한다.
+ 기본값은 `작가 매칭이 신뢰 가능하고 같은 작가 가격 이력이 1건 이상이면 통합 Warm-lite`를 사용한다.
  같은 작가 가격 이력이 없거나 작가 매칭이 신뢰 기준을 통과하지 못하면 Cold 또는 검수 경로로 보낸다.
 
 | 구분 | 현재 기본 정책 | 설명 |
 |---|---|---|
-| Warm 경로 | `same_artist_training_price_count >= 1` | 같은 작가 가격 이력이 1건 이상이면 unified Warm-lite route_gap_q50 predictor를 사용한다. |
+| Warm 경로 | `same_artist_training_price_count >= 1` | 같은 작가 가격 이력이 1건 이상이면 통합 Warm-lite predictor를 사용한다. |
 | Cold 경로 | 신뢰 가능한 작가 매칭이 없거나 사용 가능한 같은 작가 가격 이력이 0건 | 같은 작가 가격 이력을 기준가로 직접 쓰지 못하므로 작품 조건, 작가 메타, 검색 피처, 방어/신뢰도 정책을 사용한다. |
 | Rollback | `PRICE_PREDICTION_OFFICIAL_V01_WARM_ROUTE_POLICY=current_split` | 필요하면 예전 split 정책인 `1~4건 Warm-lite current, 5건 이상 Warm WMIN8`로 되돌릴 수 있다. |
 
@@ -49,8 +49,8 @@
         |
         v
 [Warm]
-  - Warm-lite unified route_gap_q50 predictor
-  - current 후보와 CF7 방어 후보 중 조건부 선택
+  - 통합 Warm-lite predictor
+  - 같은 작가 이력 통계 → Quantile 기준가격 + Huber 잔차 보정
 
 [Cold]
   - 작품 조건 + 작가 메타 + 검색 피처 기반 Cold guard+search
@@ -63,8 +63,8 @@
 
 | 경로 | 평가 기준 | n | MdAPE | MAPE | p95 APE | RMSE log | 해석 |
 |---|---|---|---|---|---|---|---|
-| Warm 기본값 | CF9 fixed test | 607 | 0.086405 | 0.223590 | 0.758056 | 0.380030 | 현재 기본 Warm 라우팅 후보인 route_gap_q50의 test split 성능 |
-| Warm 기본값 | CF9 validation | 519 | 0.079075 | 0.167521 | 0.560746 | 0.298469 | route_gap_q50 후보 선택과 검증에 사용된 validation split 성능 |
+| Warm 기본값 | fixed test | 607 | 0.084485 | 0.225214 | 0.803203 | 0.382171 | 현재 기본 통합 Warm-lite(current) 모델의 test split 성능. WMIN8(0.104326) 대비 MdAPE 우세, p95는 WMIN8(0.739416)보다 높아 모니터링 대상 |
+| Warm 기본값 | validation | 519 | 0.079850 | 0.169398 | 0.579734 | 0.300315 | 후보 선택과 검증에 사용된 validation split 성능 |
 | Cold 점예측 | fixed test | 3,099 | 0.409820 | 0.849260 | 2.346465 | 비교값 없음 | Cold 최고 성능 연구 기준인 v0.3 guard+search 점예측 |
 
 - Warm과 Cold는 입력 조건이 다르므로 성능 숫자를 단순 순위로 비교하면 안 된다.
@@ -76,12 +76,12 @@
 
 ### 5.1 목적
 
-현재 Warm 경로는 작가가 신뢰도 높게 매칭되고 같은 작가 가격 이력이 1건 이상 있을 때 사용한다. 예전 구조처럼 1~4건과 5건 이상을 서로 다른 운영 모델로 나누지 않고, `Warm-lite unified route_gap_q50` predictor가 전체 1건 이상 구간을 처리한다.
+현재 Warm 경로는 작가가 신뢰도 높게 매칭되고 같은 작가 가격 이력이 1건 이상 있을 때 사용한다. 예전 구조처럼 1~4건과 5건 이상을 서로 다른 운영 모델로 나누지 않고, 통합 Warm-lite predictor가 전체 1건 이상 구간을 처리한다.
 
 목표는 두 가지다.
 
 - 같은 작가 가격 이력을 쓰되, 이력이 적은 작가와 많은 작가를 하나의 통합 방식으로 처리한다.
-- 중앙값 정확도만 보지 않고 MAPE와 p95 큰 오차를 줄이기 위해 조건부 tail guard를 적용한다.
+- 중앙값 정확도를 높이면서, Huber 잔차 보정 폭을 ±0.10 로그로 제한해 보정이 과도해지지 않게 한다.
 
 ### 5.2 학습 단계
 
@@ -116,11 +116,6 @@
   - Quantile 평균 기준가격에서 남은 잔차를 학습
         |
         v
-[route_gap_q50 후보 선택]
-  - full q50과 lean q50 차이가 큰 row는 CF7 방어 후보로 전환
-  - threshold는 validation에서 선택한 0.0252975144340901
-        |
-        v
 [동결 산출물]
   - 모델 파일
   - 파라미터 JSON
@@ -150,17 +145,8 @@
   - qavg = full q50과 lean q50 중심값의 평균 계열
         |
         v
-[current 후보 계산]
-  - qavg + clip(0.50 * Huber residual, -0.10, +0.10)
-        |
-        v
-[CF7 방어 후보 계산]
-  - qavg + clip(1.00 * seed_mean(Huber residual), -0.15, +0.15)
-        |
-        v
-[route_gap_q50 라우팅]
-  - seed_mean(abs(full_q50 - lean_q50)) >= 0.0252975144340901 이면 CF7 방어 후보
-  - 아니면 current 후보
+[기준가격 + Huber 잔차 보정]
+  - 최종 Warm 로그가격 = qavg + clip(0.50 * Huber residual, -0.10, +0.10)
         |
         v
 [최종 Warm 가격]
@@ -178,29 +164,12 @@
 | Quantile 피처 | `q10_log`, `q50_log`, `q90_log`, `q90_log - q10_log` | 중심 가격과 예측 불확실성을 함께 만든다. |
 | Residual 피처 | Quantile 기준가격, 작품 피처, 작가 이력 통계 | 기준가격에서 남은 오차를 제한적으로 보정한다. |
 
-### 5.5 route_gap_q50 라우터
-
-`route_gap_q50`는 가격을 직접 임의로 깎는 규칙이 아니다. 먼저 두 후보 가격을 계산한 뒤, 두 Quantile 중심 예측이 얼마나 불일치하는지 보고 방어 후보를 쓸지 결정한다.
-
-```text
-gap_log =
-  seed_mean(abs(full_q50_log - lean_q50_log))
-
-if gap_log >= 0.0252975144340901:
-  최종 Warm 로그가격 = CF7 방어 후보
-else:
-  최종 Warm 로그가격 = current 후보
-```
-
-> **해석:** full q50과 lean q50이 거의 같으면 모델이 중심 가격에 대해 비교적 안정적으로 보고 있으므로 current 후보를 유지한다.
- 두 q50이 벌어지면 피처를 넓게 쓴 모델과 흔들림을 줄인 모델의 판단이 갈린 것이므로, MAPE/p95 방어 성격의 CF7 후보를 사용한다.
-
-### 5.6 검증 근거
+### 5.5 검증 근거
 
 | 검증 | 결과 | 판단 |
 |---|---|---|
-| CF9 fixed test | 607행, MdAPE 0.086405, MAPE 0.223590, p95 0.758056 | Warm WMIN8보다 MdAPE/MAPE 우세, Warm-lite current보다 p95 방어 개선 |
-| CF9 validation | 519행, MdAPE 0.079075, MAPE 0.167521, p95 0.560746 | route_gap_q50 후보 선택과 검증에 사용 |
+| current fixed test | 607행, MdAPE 0.084485, MAPE 0.225214, p95 0.803203 | WMIN8(MdAPE 0.104326)보다 MdAPE/MAPE 우세. p95는 WMIN8(0.739416)보다 높아 큰 오차는 별도 모니터링 |
+| current validation | 519행, MdAPE 0.079850, MAPE 0.169398, p95 0.579734 | 후보 선택과 검증에 사용 |
 | Bundle replay parity | 1,126행, max abs log diff 5.329070518200751e-15, route mismatch 0 | 실험 CSV 산출물을 동결 predictor가 row-level 재현 |
 | HTTP API parity | 1,126행, API-direct log diff 0.0, direct-CF9 diff 5.329070518200751e-15 | official 0.1v endpoint와 동결 predictor가 일치 |
 | Deterministic check | 등록 작가 1건/4건/5건 모두 warm_lite, report adapter, deterministic true | 현재 기본 라우팅이 1건 이상 통합 Warm 경로로 고정됨 |
@@ -327,7 +296,7 @@ Cold 경로는 같은 작가 가격 이력을 직접 기준가격으로 쓸 수 
 | high tier | `qwidth <= 0.7349424254094605` AND `model_gap <= 0.15320873993739603` AND 검색 커버 | 불확실성 폭과 모델 간 gap이 작고 검색 커버가 있는 안정 구간 |
 | low tier | `qwidth >= 2.1572852836013667` OR `model_gap >= 0.42534619182266353` | 가격 범위가 넓거나 모델 간 차이가 큰 저신뢰 구간 |
 | review flag | `qwidth >= 1.4612207078910142` OR 검색 미커버 | 검수 또는 주의 표시가 필요한 구간 |
-| 미커버 fallback | `delta = -0.03129536658906122`, cap 0.2 | 검색 미커버 작가의 p95 방어 목적. 기본 활성화. |
+| 미커버 fallback | `delta = -0.03129536658906122`, cap 0.2 | 검색 미커버 작가의 p95 방어 목적. 기본 활성화. 단 §6.6 fixed test는 검색 커버리지 1.0이라 이 fallback이 발동하지 않은 셋이다. |
 
 ### 6.6 검증 근거
 
@@ -353,7 +322,7 @@ Cold 경로는 같은 작가 가격 이력을 직접 기준가격으로 쓸 수 
 |---|---|---|
 | 적용 조건 | 신뢰 가능한 작가 매칭 + 같은 작가 가격 이력 1건 이상 | 같은 작가 가격 이력을 직접 쓰지 못하거나 작가 매칭 신뢰가 부족한 경우 |
 | 핵심 기준 | 같은 작가 가격 이력 통계 + Quantile/Huber residual | 작품 조건 + 작가 메타 + 검색 피처 + guard/search 보정 |
-| 주요 불확실성 처리 | full q50과 lean q50의 gap으로 CF7 방어 후보 조건부 선택 | qwidth/gap 조건으로 과대예측 방어, confidence tier와 review flag 표시 |
+| 주요 불확실성 처리 | Huber 잔차 보정 폭을 ±0.10 로그로 제한 | qwidth/gap 조건으로 과대예측 방어, confidence tier와 review flag 표시 |
 | 출력 | 단일 최종 Warm 가격과 계산 근거 | Cold 가격, 가격 범위, 신뢰도/검수 표시 |
 | 주의 | 이전 WMIN8 split 정책과 혼동하지 않음 | Cold는 Warm보다 절대 난이도가 높아 성능 숫자를 직접 비교하지 않음 |
 
@@ -361,11 +330,11 @@ Cold 경로는 같은 작가 가격 이력을 직접 기준가격으로 쓸 수 
 
 Warm·Cold 모두 현재 모델 구조는 성숙 단계에 있고, 남은 개선 레버는 데이터다. 단 두 경로가 필요로 하는 데이터의 **종류가 다르다**. 아래는 학습곡선 실험으로 확인한 결과다.
 
-> **한 줄 요약:** Warm은 **같은 작가의 가격 데이터**가 쌓이면 좋아지고(입증됨), Cold는 작품을 더 모으는 게 아니라 **신규 작가의 프로필 메타(생년·경력·작품수·전시 이력 등)**를 채워야 좋아진다.
+> **한 줄 요약:** Warm은 **같은 작가의 가격 데이터**가 쌓이면 좋아지고(학습곡선으로 입증), Cold는 작품을 더 모으는 게 아니라 **신규 작가의 프로필 메타(생년·경력·작품수·전시 이력 등)**를 채우는 것이 가장 유력한 개선 경로다(관측된 강한 연관, 하단 측정 한계 참고).
 
 ### 8.1 Warm — 가격 데이터가 늘면 정확도가 오른다 (입증됨)
 
-fixed test split은 고정하고 Warm 학습 데이터만 25→100%로 늘린 학습곡선(동일 cohort, PP-ROUTE-CF12). 평가 대상이 바뀐 게 아니라 순수 학습 데이터 증가 효과다.
+fixed test split은 고정하고 Warm 학습 데이터만 25→100%로 늘린 학습곡선(동일 cohort, PP-ROUTE-CF12). 평가 대상이 바뀐 게 아니라 순수 학습 데이터 증가 효과다. 주의: 이 표는 학습곡선 전용으로 재학습한 별도 실험이라 100% 행 수치(MdAPE 0.0886/p95 0.806)는 §4의 배포 current 후보(0.084485/0.803203)와 셋업이 달라 정확히 같지 않다. 여기서 핵심은 절대 수치가 아니라 데이터가 늘수록 좋아지는 추세다.
 
 | 학습 비율 | 학습 작가 | MdAPE | MAPE | p95 APE |
 |---|---|---|---|---|
@@ -377,7 +346,7 @@ fixed test split은 고정하고 Warm 학습 데이터만 25→100%로 늘린 �
 - 25%→100%에서 **MdAPE −44%**(0.153→0.089), MAPE −0.134, p95 −0.184. 아직 포화하지 않았다.
 - 즉 품질 검수(가격 라벨·작가 매칭·작품 피처)를 통과한 가격 데이터가 더 쌓이면 Warm은 계속 좋아질 근거가 있다.
 
-### 8.2 Cold — 작품이 아니라 "작가 메타"를 채워야 한다 (PP-CDATA1/2)
+### 8.2 Cold — 작품보다 "작가 메타"가 핵심 신호다 (PP-CDATA1/2, 관측 기반)
 
 Cold는 처음 보는 작가 예측이라, 같은 cold 작가에 가격을 더 주면 그 작가는 Warm이 된다. 따라서 질문은 "학습 작가/작품을 늘리면 *처음 보는* cold 작가가 좋아지는가"이다. cold test(3,099행/200작가, train과 작가 완전 분리)를 고정하고 학습 데이터를 늘려 측정했다.
 
@@ -389,7 +358,7 @@ Cold는 처음 보는 작가 예측이라, 같은 cold 작가에 가격을 더 �
 | **작가 메타 완성도: 빈약 → 풍부** | **0.497 → 0.348 (−30%)** | **압도적 레버** — 메타를 충분히 채운 작가가 30% 정확 |
 
 - 메타 완성도별 cold test: 빈약(0~2개) MdAPE 0.497 / 보통(3~4개) 0.580 / **풍부(5~6개) 0.348**. 메타는 *충분히* 채워야 효과가 난다(어중간하면 오히려 tail 악화).
-- 피처 중요도에서 **작가 메타가 전체의 54%**를 차지(1위 총 작품 수, 2위 경력 단계). 즉 cold 작가의 가격 수준을 추정할 유일한 사전 신호다.
+- 피처 중요도에서 **작가 메타가 전체의 54%**를 차지(1위 총 작품 수, 2위 경력 단계). 즉 가격 이력이 없을 때 cold 작가의 가격 수준을 추정할 주요 사전 신호다.
 - 반대로 작품 이미지·크기·매체만 더 모으는 것은 Cold 개선에 도움이 되지 않는다.
 
 ### 8.3 수집해야 할 로우데이터 (우선순위)
@@ -408,7 +377,7 @@ Cold는 처음 보는 작가 예측이라, 같은 cold 작가에 가격을 더 �
 - 가장 큰 개선은 그 작가의 **첫 가격 데이터**를 수집해 Cold→Warm으로 전환되는 것이다(이때 §8.1의 Warm 개선 효과가 적용된다).
 - 근거: `experiments/track6/PP-CDATA1_cold_data_growth_learning_curve/` (학습곡선·메타 완성도·breadth/depth), Warm은 `PP-ROUTE-CF12_warm_unified_learning_curve`.
 
-> **측정 한계:** Cold 메타 완성도 tier는 관측 분할이라 "메타 풍부 작가가 본질적으로 쉬운 작가"일 가능성(선택 bias)을 완전히 배제하진 못한다. "개선 상한 근사치"로 해석한다. 다만 메타를 피처로 넣었을 때 일관되게 개선하고 중요도 54%인 점이 인과 방향을 뒷받침한다.
+> **측정 한계:** Cold 메타 완성도 tier는 관측 분할이라 "메타 풍부 작가가 본질적으로 쉬운 작가"일 가능성(선택 bias)을 완전히 배제하진 못한다. "개선 상한 근사치"로 해석한다. 다만 메타를 피처로 넣었을 때 일관되게 개선하고 중요도 54%인 점은, 인과로 단정하긴 어렵지만 메타가 유력한 개선 레버임을 시사한다.
 
 ## 9. 재현 가능성과 운영 확인
 
@@ -425,10 +394,12 @@ Cold는 처음 보는 작가 예측이라, 같은 cold 작가에 가격을 더 �
 
 ## 10. 내부 추적 정보
 
+아래 ID는 내부 실험·아티팩트 계보용 이름이다. `CF5~CF12`는 통합 Warm-lite 후보를 단계별로 검증한 `PP-ROUTE-CF*` 실험, `route_gap_q50`·`CF7`은 그 과정에서 검토했던 조건부 tail guard(라우터) 후보의 내부 명칭이며 현재 기본 운영에는 적용하지 않는다(§5.3 산식 참조).
+
 | 문서용 이름 | 내부 추적 ID / 파일 | 역할 |
 |---|---|---|
 | 현재 Warm 기본 모델 | `warm_lite_unified_route_gap_q50_v0.1_candidate` | 1건 이상 같은 작가 이력용 unified Warm predictor |
-| Warm route_gap 후보 | `PP-ROUTE-CF9_conditional_cf7_router` | current 후보와 CF7 방어 후보를 gap 조건으로 선택 |
+| Warm 후보 검증 실험 | `PP-ROUTE-CF9_conditional_cf7_router` | 통합 Warm-lite 후보 선택·검증 실험 (현재 기본은 기준가격+Huber 보정 적용) |
 | Warm bundle parity | `PP-ROUTE-CF10_unified_route_gap_q50_bundle_parity` | 동결 predictor가 CF9 산출물을 재현하는지 검증 |
 | Warm API parity | `PP-ROUTE-CF11_unified_route_gap_q50_api_parity` | official 0.1v HTTP API와 동결 predictor 일치 검증 |
 | Cold 점예측 | `cold_prediction_v0.3 guard+search` | 검색 피처 포함 Cold 최고 성능 점예측 |
@@ -438,9 +409,8 @@ Cold는 처음 보는 작가 예측이라, 같은 cold 작가에 가격을 더 �
 
 ```text
 현재 official 0.1v 가격 예측은 작가 매칭과 같은 작가 가격 이력 수로 Warm과 Cold를 나눈다.
-작가가 신뢰도 높게 매칭되고 같은 작가 가격 이력이 1건 이상이면 Warm-lite unified route_gap_q50 모델을 사용한다.
-이 모델은 같은 작가 이력 통계와 작품 피처로 Quantile 중심 가격을 만들고, Huber residual로 제한 보정한 뒤,
-full q50과 lean q50의 차이가 클 때만 CF7 방어 후보를 선택한다.
+작가가 신뢰도 높게 매칭되고 같은 작가 가격 이력이 1건 이상이면 통합 Warm-lite 모델을 사용한다.
+이 모델은 같은 작가 이력 통계와 작품 피처로 Quantile 중심 가격을 만들고, Huber residual로 ±0.10 로그 한도 내에서 제한 보정해 최종 가격을 정한다.
 
 같은 작가 가격 이력을 직접 쓰기 어렵거나 작가 매칭이 불확실하면 Cold 경로를 사용한다.
 Cold는 작품 크기, 매체, 지지체, 작가 메타, 검색 피처를 사용해 LightGBM Quantile 기준가격을 만들고,
