@@ -233,6 +233,7 @@
     <p>
       Warm은 작가가 신뢰도 높게 매칭되고 같은 작가 가격 이력이 1건 이상 있을 때 사용한다.
       핵심은 “같은 작가의 유사 작품 가격 통계로 기준가격을 만들고, 작품 조건과 모델 보정으로 과도한 오차를 줄이는 것”이다.
+      사용하는 모델은 두 개다. ① 기준가격을 만드는 <strong>LightGBM Quantile 회귀</strong>, ② 그 위에 남은 오차를 작게 보정하는 <strong>LightGBM Huber residual 회귀</strong>다.
     </p>
 
     <h3>1. 학습 단계</h3>
@@ -242,12 +243,14 @@
 
 [피처 생성]
 같은 작가 가격 통계 + 작품 크기/면적/비율 + 매체/지지체 + 크기/형태 bucket
-  → q10/q50/q90 Quantile 예측
-  → q90 - q10으로 예측의 불확실성 폭 계산
 
-[보정 모델 학습]
-Huber residual 모델이 Quantile 기준가격에서 남은 오차를 학습
-  → clip으로 보정 폭을 제한해 극단 보정을 방지
+[모델 1 — LightGBM Quantile 회귀 학습]
+  - 전체 피처 q10/q50/q90 + 안정(흔들림 축소) 피처 q50
+  - 기준가격 생성용. q90 - q10으로 예측의 불확실성 폭 계산
+
+[모델 2 — LightGBM Huber residual 회귀 학습]
+  - Quantile 기준가격에서 남은 오차(잔차)를 학습
+  - clip(±0.10 로그)으로 보정 폭을 제한해 극단 보정을 방지
 
 [동결/검증]
 Warm-lite current 후보를 fixed test와 API 재현성 기준으로 검증</code></pre>
