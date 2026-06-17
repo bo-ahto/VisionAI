@@ -8,19 +8,19 @@ table(thead/tbody), div.callout, pre/code, 인라인 strong/em/code/br.
 
 from __future__ import annotations
 
+import argparse
 import re
 from html.parser import HTMLParser
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-SRC = (
+DEFAULT_SRC = (
     REPO
     / "docs"
     / "track6"
     / "experiments"
     / "partner_warm_cold_official_v0_1_unified_model_report.html"
 )
-DST = SRC.with_suffix(".md")
 
 
 class ReportParser(HTMLParser):
@@ -77,9 +77,9 @@ class ReportParser(HTMLParser):
         elif tag == "pre":
             self.in_pre = True
             self.cur = ""
-        elif tag == "div" and "callout" in a.get("class", ""):
-            self.callout = "warn" if "warn" in a["class"] else "note"
-            self.cur = ""  # callout 직접 텍스트 캡처 시작
+        elif tag == "div" and ("callout" in a.get("class", "") or "note" in a.get("class", "")):
+            self.callout = "warn" if "warn" in a.get("class", "") else "note"
+            self.cur = ""  # callout/note 직접 텍스트 캡처 시작
         elif tag in ("strong", "b"):
             self.cur += "**"
         elif tag in ("em", "i"):
@@ -164,13 +164,17 @@ class ReportParser(HTMLParser):
 
 
 def main():
-    html = SRC.read_text(encoding="utf-8")
+    ap = argparse.ArgumentParser(description="unified report html -> md 충실 변환")
+    ap.add_argument("--source", type=Path, default=DEFAULT_SRC)
+    args = ap.parse_args()
+    src = args.source if args.source.is_absolute() else REPO / args.source
+    dst = src.with_suffix(".md")
     p = ReportParser()
-    p.feed(html)
+    p.feed(src.read_text(encoding="utf-8"))
     md = "\n".join(p.out)
     md = re.sub(r"\n{3,}", "\n\n", md).strip() + "\n"
-    DST.write_text(md, encoding="utf-8")
-    print(f"wrote {DST.relative_to(REPO)} ({len(md.splitlines())} lines)")
+    dst.write_text(md, encoding="utf-8")
+    print(f"wrote {dst.relative_to(REPO)} ({len(md.splitlines())} lines)")
 
 
 if __name__ == "__main__":
