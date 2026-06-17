@@ -54,7 +54,30 @@ WARM_WMIN8_MANIFEST_PATH = REPO / "models" / "track6" / "warm_wmin8_operational_
 WARM_WMIN8_EXACT_RUNTIME_DIR = REPO / "models" / "track6" / "warm_wmin8_exact_runtime_candidate"
 WARM_WMIN8_EXACT_RUNTIME_MANIFEST_PATH = WARM_WMIN8_EXACT_RUNTIME_DIR / "manifest.json"
 WARM_WMIN8_FEATURE_STORE_PATH = WARM_WMIN8_EXACT_RUNTIME_DIR / "artifacts" / "fixed_test_feature_store.csv"
-WARM_LITE_PREDICTOR_PATH = REPO / "models" / "track6" / "warm_lite_v0.1" / "predict" / "predict_warm_lite_v0_1.py"
+WARM_LITE_PREDICTOR_PATH = (
+    REPO
+    / "models"
+    / "track6"
+    / "warm_lite_quantile_residual_v0.1"
+    / "predict"
+    / "predict_warm_lite_quantile_residual_v0_1.py"
+)
+WARM_LITE_UNIFIED_ROUTE_GAP_PREDICTOR_PATH = (
+    REPO
+    / "models"
+    / "track6"
+    / "warm_lite_unified_route_gap_q50_v0.1_candidate"
+    / "predict"
+    / "predict_warm_lite_unified_route_gap_q50_v0_1.py"
+)
+WARM_LITE_UNIFIED_ROUTE_GAP_FEATURE_STORE_PATH = (
+    REPO
+    / "models"
+    / "track6"
+    / "warm_lite_unified_route_gap_q50_v0.1_candidate"
+    / "artifacts"
+    / "fixed_replay_feature_store.csv"
+)
 COLD_REFREEZE_DIR = REPO / "models" / "track6" / "cold_v03_research_upstream_refreeze_candidate" / "artifacts"
 DEFAULT_OFFICIAL_DB_PATH = REPO / "data" / "track6" / "service_v0_1" / "price_prediction_v0_1.sqlite"
 COLD_EXTERNAL_FEATURE_CACHE_PATH = (
@@ -255,6 +278,13 @@ class ReportModelProxyAdapter:
         self.warm_lite = _load_module(WARM_LITE_PREDICTOR_PATH, "official_v01_warm_lite_runtime")
         self.warm_lite_params = self.warm_lite.load_params()
         self.warm_lite_models = self.warm_lite.load_models()
+        self.warm_lite_unified = _load_module(
+            WARM_LITE_UNIFIED_ROUTE_GAP_PREDICTOR_PATH,
+            "official_v01_warm_lite_unified_route_gap_q50_runtime",
+        )
+        self.warm_lite_unified_params = self.warm_lite_unified.load_params()
+        self.warm_lite_unified_models = self.warm_lite_unified.load_models()
+        self.warm_lite_unified_feature_store = self._load_warm_lite_unified_feature_store()
         self.warm_refreeze_schema = _load_json(WARM_REFREEZE_DIR / "feature_schema.json")
         self.warm_direction_model = _maybe_joblib(WARM_REFREEZE_DIR / "direction_hist_gbc_35_seed17_fullfit.joblib")
         self.warm_huber_residual_model = _maybe_joblib(WARM_REFREEZE_DIR / "huber_residual_epsilon1p15_fullfit.joblib")
@@ -831,14 +861,22 @@ class ReportModelProxyAdapter:
             confidence_tier=confidence,
             warning_code="WARM_LITE_MODEL_ADAPTER_APPLIED",
             warning_message=(
-                "같은 작가 가격 이력 1~4건 전용 Warm-lite 모델을 적용했습니다. "
+                "같은 작가 가격 이력 1~4건 전용 Warm-lite Quantile residual 모델을 적용했습니다. "
                 "이력 수가 적기 때문에 k=1은 넓은 범위와 검수 플래그를 권장합니다."
             ),
-            formula="Warm-lite 로그가격 = Huber앙상블(작품조건 + 같은작가 1~4건 이력 통계 + 비작가 fallback 통계)",
+            formula=(
+                "Warm-lite 로그가격 = Quantile평균("
+                "LightGBM full q50, lean q50) + clip(0.50 * LightGBM Huber 잔차, -0.10, +0.10)"
+            ),
             input_columns=list(frame.columns) + ["artist_history_1_to_4"],
             output={
                 "warm_lite_pred_log": float(pred["warm_lite_pred_log"]),
                 "warm_lite_pred_price_krw": final_price,
+                "lgbq_full_q50": float(pred["lgbq_full_q50"]),
+                "lgbq_lean_q50": float(pred["lgbq_lean_q50"]),
+                "lgbq_full_lean_avg": float(pred["lgbq_full_lean_avg"]),
+                "lgb_huber_residual": float(pred["lgb_huber_residual"]),
+                "applied_residual_correction_log": float(pred["applied_residual_correction_log"]),
                 "artist_history_n": history_n,
                 "confidence_grade": str(pred["confidence_grade"]),
                 "display_policy": str(pred["display_policy"]),
@@ -862,12 +900,118 @@ class ReportModelProxyAdapter:
                     },
                 },
                 {
-                    "name": "Warm-lite Huber 앙상블",
-                    "formula": "최종 로그가격 = mean(Huber_1...Huber_6)",
+                    "name": "Warm-lite Quantile residual 계산",
+                    "formula": (
+                        "최종 로그가격 = full/lean Quantile q50 평균 "
+                        "+ clip(0.50 * LightGBM Huber 잔차, -0.10, +0.10)"
+                    ),
                     "output": {
+                        "lgbq_full_q50": float(pred["lgbq_full_q50"]),
+                        "lgbq_lean_q50": float(pred["lgbq_lean_q50"]),
+                        "lgbq_full_lean_avg": float(pred["lgbq_full_lean_avg"]),
+                        "lgb_huber_residual": float(pred["lgb_huber_residual"]),
+                        "applied_residual_correction_log": float(pred["applied_residual_correction_log"]),
                         "warm_lite_pred_log": float(pred["warm_lite_pred_log"]),
                         "final_price_krw": final_price,
                         "confidence_grade": str(pred["confidence_grade"]),
+                    },
+                },
+            ],
+        )
+
+    def predict_warm_lite_unified_route_gap_q50(
+        self,
+        request: PriceEstimateRequest,
+        artist_key: str,
+    ) -> ReportAdapterResult:
+        frame, history, feature_store_status = self._warm_lite_unified_runtime_inputs(request, artist_key)
+        pred = self.warm_lite_unified.predict(
+            frame,
+            history,
+            models=self.warm_lite_unified_models,
+            params=self.warm_lite_unified_params,
+        ).iloc[0]
+        final_price = _safe_price(pred["warm_lite_unified_route_gap_q50_pred_price_krw"])
+        history_n = int(pred["artist_history_n"])
+        if final_price:
+            if history_n == 1:
+                low = _safe_price(final_price * 0.45)
+                high = _safe_price(final_price * 1.90)
+            elif history_n < 5:
+                low = _safe_price(final_price * 0.65)
+                high = _safe_price(final_price * 1.55)
+            else:
+                low = _safe_price(final_price * 0.70)
+                high = _safe_price(final_price * 1.45)
+        else:
+            low = None
+            high = None
+        confidence = "low" if history_n == 1 else "medium"
+        return ReportAdapterResult(
+            route="warm_lite",
+            execution_level="report_model_adapter",
+            price_krw=final_price,
+            low_krw=low,
+            high_krw=high,
+            confidence_tier=confidence,
+            warning_code="WARM_LITE_UNIFIED_ROUTE_GAP_Q50_ADAPTER_APPLIED",
+            warning_message=(
+                "같은 작가 가격 이력 1건 이상에 Warm-lite unified route_gap_q50 candidate adapter를 적용했습니다. "
+                "이 후보는 official 0.1v 기본 라우팅을 대체하기 전 API parity 검증 대상으로 연결된 상태입니다."
+            ),
+            formula=(
+                "Warm-lite unified 로그가격 = 기본 후보("
+                "seed_mean(qavg + clip(0.50 * residual, -0.10, +0.10))) 또는 "
+                "gap>=0.0252975144340901일 때 방어 후보(seed_mean(qavg)+clip(1.00*seed_mean(residual), -0.15, +0.15))"
+            ),
+            input_columns=list(frame.columns) + ["artist_history_1_plus"],
+            output={
+                "warm_lite_unified_route_gap_q50_pred_log": float(
+                    pred["warm_lite_unified_route_gap_q50_pred_log"]
+                ),
+                "warm_lite_unified_route_gap_q50_pred_price_krw": final_price,
+                "current_pred_log": float(pred["current_pred_log"]),
+                "cf7_pred_log": float(pred["cf7_pred_log"]),
+                "route_to_cf7": bool(pred["route_to_cf7"]),
+                "route_gap_threshold": float(pred["route_gap_threshold"]),
+                "full_lean_gap_abs_log": float(pred["full_lean_gap_abs_log"]),
+                "lgbq_full_q50": float(pred["lgbq_full_q50"]),
+                "lgbq_lean_q50": float(pred["lgbq_lean_q50"]),
+                "lgbq_full_lean_avg": float(pred["lgbq_full_lean_avg"]),
+                "lgb_huber_residual_log": float(pred["lgb_huber_residual_log"]),
+                "artist_history_n": history_n,
+                "confidence_grade": str(pred["confidence_grade"]),
+                "range_low_krw": low,
+                "range_high_krw": high,
+                "fixed_replay_feature_store": feature_store_status,
+            },
+            steps=[
+                {
+                    "name": "Warm-lite unified 입력 피처 생성",
+                    "formula": "작품 피처 = 크기/면적/비율/재료/지지체/size bucket/medium-support bucket",
+                    "output": frame.iloc[0].to_dict(),
+                },
+                {
+                    "name": "같은 작가 이력 통계 생성",
+                    "formula": "작가 이력 1건 이상에서 동일 재료·크기 -> 동일 크기 -> 작가 전체 순서로 중앙값/IQR 통계 계산",
+                    "output": {
+                        "artist_key": artist_key,
+                        "artist_history_n": history_n,
+                        "history_price_median": float(history["ln_price_krw"].median()),
+                        "fixed_replay_feature_store": feature_store_status,
+                    },
+                },
+                {
+                    "name": "route_gap_q50 후보 계산",
+                    "formula": "gap = abs(full q50 - lean q50), gap >= 0.0252975144340901이면 CF7 방어 후보 사용",
+                    "output": {
+                        "current_pred_log": float(pred["current_pred_log"]),
+                        "cf7_pred_log": float(pred["cf7_pred_log"]),
+                        "full_lean_gap_abs_log": float(pred["full_lean_gap_abs_log"]),
+                        "route_gap_threshold": float(pred["route_gap_threshold"]),
+                        "route_to_cf7": bool(pred["route_to_cf7"]),
+                        "final_log_price": float(pred["warm_lite_unified_route_gap_q50_pred_log"]),
+                        "final_price_krw": final_price,
                     },
                 },
             ],
@@ -1046,6 +1190,92 @@ class ReportModelProxyAdapter:
             raise ValueError(f"warm_lite target feature missing: {missing}")
         return frame[required].copy()
 
+    def _build_warm_lite_unified_feature_frame(self, request: PriceEstimateRequest) -> pd.DataFrame:
+        frame = self._build_cold_feature_frame(request)
+        required = list(self.warm_lite_unified.REQUIRED)
+        missing = [col for col in required if col not in frame.columns]
+        if missing:
+            raise ValueError(f"warm_lite_unified target feature missing: {missing}")
+        return frame[required].copy()
+
+    def _load_warm_lite_unified_feature_store(self) -> pd.DataFrame:
+        if not WARM_LITE_UNIFIED_ROUTE_GAP_FEATURE_STORE_PATH.exists():
+            return pd.DataFrame()
+        store = pd.read_csv(WARM_LITE_UNIFIED_ROUTE_GAP_FEATURE_STORE_PATH, low_memory=False)
+        if "_track6_row_id" in store.columns:
+            store["_track6_row_id"] = pd.to_numeric(store["_track6_row_id"], errors="coerce").astype("Int64")
+        for col in ["split", "artist_key"]:
+            if col not in store.columns:
+                store[col] = ""
+            store[col] = store[col].astype("string").fillna("")
+        return store
+
+    def _lookup_warm_lite_unified_feature_store_row(
+        self,
+        request: PriceEstimateRequest,
+        artist_key: str,
+    ) -> tuple[pd.Series | None, dict[str, Any]]:
+        status = {"found": False, "lookup_basis": "feature_store_not_available"}
+        store = self.warm_lite_unified_feature_store
+        if store.empty:
+            return None, status
+        artwork = request.artwork
+        raw_ids = [
+            getattr(artwork, "source_artwork_id", None),
+            getattr(artwork, "external_artwork_id", None),
+        ]
+        for raw_id in raw_ids:
+            if raw_id is None or str(raw_id).strip() == "":
+                continue
+            try:
+                row_id = int(float(str(raw_id).strip()))
+            except ValueError:
+                continue
+            matched = store[store["_track6_row_id"].eq(row_id)]
+            if artist_key:
+                matched = matched[matched["artist_key"].astype(str).eq(str(artist_key))]
+            if not matched.empty:
+                status.update({"found": True, "lookup_basis": "warm_lite_unified_feature_store_track6_row_id"})
+                return matched.iloc[0], status
+        status["lookup_basis"] = "feature_store_not_found"
+        return None, status
+
+    def _warm_lite_unified_runtime_inputs(
+        self,
+        request: PriceEstimateRequest,
+        artist_key: str,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+        row, status = self._lookup_warm_lite_unified_feature_store_row(request, artist_key)
+        if row is None:
+            return (
+                self._build_warm_lite_unified_feature_frame(request),
+                self._build_warm_lite_unified_artist_history(artist_key),
+                status,
+            )
+        store = self.warm_lite_unified_feature_store
+        train = store[
+            store["split"].astype(str).eq("train")
+            & store["artist_key"].astype(str).eq(str(artist_key))
+        ].copy()
+        if train.empty:
+            return (
+                self._build_warm_lite_unified_feature_frame(request),
+                self._build_warm_lite_unified_artist_history(artist_key),
+                {"found": False, "lookup_basis": "feature_store_train_history_not_found"},
+            )
+        required_frame = list(self.warm_lite_unified.REQUIRED)
+        required_history = ["ln_price_krw", "log_area", "medium_support_bucket", "size_bucket", "medium_category", "support_category"]
+        frame = pd.DataFrame([{col: row.get(col, np.nan) for col in required_frame}])
+        history = train[required_history].copy()
+        status.update(
+            {
+                "target_track6_row_id": int(row["_track6_row_id"]),
+                "target_split": str(row.get("split") or ""),
+                "train_history_rows": int(len(history)),
+            }
+        )
+        return frame, history, status
+
     def _build_warm_lite_artist_history(self, artist_key: str) -> pd.DataFrame:
         with sqlite3.connect(self.db_path) as conn:
             rows = pd.read_sql_query(
@@ -1083,6 +1313,46 @@ class ReportModelProxyAdapter:
         missing = [col for col in required if col not in featured.columns]
         if missing:
             raise ValueError(f"warm_lite history feature missing: {missing}")
+        return featured[required].copy()
+
+    def _build_warm_lite_unified_artist_history(self, artist_key: str) -> pd.DataFrame:
+        with sqlite3.connect(self.db_path) as conn:
+            rows = pd.read_sql_query(
+                """
+                SELECT price_krw, log_price_krw, width_cm, height_cm, depth_cm,
+                       area_cm2, log_area, aspect_ratio, has_depth, is_3d_candidate,
+                       medium_category, support_category, medium_support_bucket
+                FROM artwork_price_observations
+                WHERE artist_key = ?
+                  AND split_name = 'train'
+                  AND price_krw IS NOT NULL
+                  AND price_krw > 0
+                  AND area_cm2 IS NOT NULL
+                  AND area_cm2 > 0
+                ORDER BY price_krw DESC
+                """,
+                conn,
+                params=(artist_key,),
+            )
+        if len(rows) < 1:
+            raise ValueError(f"Warm-lite unified artist history must be 1+ rows, got {len(rows)}")
+        base = rows.copy()
+        base["ln_price_krw"] = pd.to_numeric(base["log_price_krw"], errors="coerce")
+        missing_log = base["ln_price_krw"].isna()
+        if missing_log.any():
+            base.loc[missing_log, "ln_price_krw"] = np.log(pd.to_numeric(base.loc[missing_log, "price_krw"], errors="coerce"))
+        base["depth_cm"] = pd.to_numeric(base["depth_cm"], errors="coerce").fillna(0.0)
+        if "medium_support_bucket" not in base.columns or base["medium_support_bucket"].isna().any():
+            base["medium_support_bucket"] = (
+                base["medium_category"].fillna("unknown").astype(str)
+                + "__"
+                + base["support_category"].fillna("unknown").astype(str)
+            )
+        featured = feature_ops.add_bucket_features(base, self.warm_runtime.feature_generation, "cold")
+        required = ["ln_price_krw", "log_area", "medium_support_bucket", "size_bucket", "medium_category", "support_category"]
+        missing = [col for col in required if col not in featured.columns]
+        if missing:
+            raise ValueError(f"warm_lite_unified history feature missing: {missing}")
         return featured[required].copy()
 
     def _build_cold_feature_frame(self, request: PriceEstimateRequest) -> pd.DataFrame:

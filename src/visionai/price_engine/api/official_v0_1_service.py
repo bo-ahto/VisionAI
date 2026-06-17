@@ -6,6 +6,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import os
 import re
 import sqlite3
 from dataclasses import dataclass
@@ -51,6 +52,10 @@ WARM_MATCH_SCORE_MIN = 0.80
 WARM_LITE_PRICE_COUNT_MIN = 1
 WARM_FULL_PRICE_COUNT_MIN = 5
 WARM_PRICE_COUNT_MIN = WARM_FULL_PRICE_COUNT_MIN
+WARM_ROUTE_POLICY_ENV = "PRICE_PREDICTION_OFFICIAL_V01_WARM_ROUTE_POLICY"
+WARM_ROUTE_POLICY_CURRENT = "current_split"
+WARM_ROUTE_POLICY_UNIFIED_GAP_Q50 = "warm_lite_unified_route_gap_q50"
+WARM_ROUTE_POLICY_DEFAULT = WARM_ROUTE_POLICY_UNIFIED_GAP_Q50
 DEFAULT_DB_PATH = Path("data/track6/service_v0_1/price_prediction_v0_1.sqlite")
 EXACT_ADAPTER_READINESS_JSON = (
     Path("docs")
@@ -130,8 +135,16 @@ WARM_WMIN8_ARTIFACT_DIR = REPO / "models" / "track6" / "warm_wmin8_operational_c
 WARM_WMIN8_MANIFEST_PATH = WARM_WMIN8_ARTIFACT_DIR / "manifest.json"
 WARM_WMIN8_EXACT_RUNTIME_DIR = REPO / "models" / "track6" / "warm_wmin8_exact_runtime_candidate"
 WARM_WMIN8_EXACT_RUNTIME_MANIFEST_PATH = WARM_WMIN8_EXACT_RUNTIME_DIR / "manifest.json"
-WARM_LITE_ARTIFACT_DIR = REPO / "models" / "track6" / "warm_lite_v0.1"
-WARM_LITE_POLICY_PATH = WARM_LITE_ARTIFACT_DIR / "config" / "warm_lite_policy_v0_1.json"
+WARM_LITE_ARTIFACT_DIR = REPO / "models" / "track6" / "warm_lite_quantile_residual_v0.1"
+WARM_LITE_POLICY_PATH = WARM_LITE_ARTIFACT_DIR / "config" / "warm_lite_quantile_residual_policy_v0_1.json"
+WARM_LITE_UNIFIED_ROUTE_GAP_ARTIFACT_DIR = (
+    REPO / "models" / "track6" / "warm_lite_unified_route_gap_q50_v0.1_candidate"
+)
+WARM_LITE_UNIFIED_ROUTE_GAP_POLICY_PATH = (
+    WARM_LITE_UNIFIED_ROUTE_GAP_ARTIFACT_DIR
+    / "config"
+    / "warm_lite_unified_route_gap_q50_policy_v0_1.json"
+)
 COLD_V03_POSTPROCESSOR_PATH = (
     REPO
     / "models"
@@ -229,6 +242,18 @@ def format_range(low: int | None, high: int | None) -> str | None:
     if low is None or high is None:
         return None
     return f"{format_krw(low)} - {format_krw(high)}"
+
+
+def warm_lite_unified_route_enabled() -> bool:
+    value = os.getenv(WARM_ROUTE_POLICY_ENV, WARM_ROUTE_POLICY_DEFAULT).strip().lower()
+    if value in {WARM_ROUTE_POLICY_CURRENT, "split", "current"}:
+        return False
+    return value in {
+        WARM_ROUTE_POLICY_UNIFIED_GAP_Q50,
+        "unified_route_gap_q50",
+        "route_gap_q50",
+        "unified",
+    }
 
 
 def area_cm2(width_cm: float | None, height_cm: float | None) -> float | None:
@@ -335,9 +360,16 @@ class OfficialV01Service:
             service_version=SERVICE_VERSION,
             model_status="candidate",
             routing_policy={
+                "warm_route_policy": (
+                    WARM_ROUTE_POLICY_UNIFIED_GAP_Q50
+                    if warm_lite_unified_route_enabled()
+                    else WARM_ROUTE_POLICY_CURRENT
+                ),
                 "warm_artist_match_score_min": WARM_MATCH_SCORE_MIN,
                 "warm_lite_same_artist_price_count_min": WARM_LITE_PRICE_COUNT_MIN,
-                "warm_lite_same_artist_price_count_max": WARM_FULL_PRICE_COUNT_MIN - 1,
+                "warm_lite_same_artist_price_count_max": (
+                    "unbounded" if warm_lite_unified_route_enabled() else WARM_FULL_PRICE_COUNT_MIN - 1
+                ),
                 "warm_same_artist_price_count_min": WARM_FULL_PRICE_COUNT_MIN,
                 "ambiguous_artist_policy": "review_required",
                 "cold_minimum_input_policy": "artist_name + width_cm + height_cm + medium + support",
@@ -486,11 +518,7 @@ class OfficialV01Service:
                 artist_match_score=match.artist.artist_match_score if match.artist else None,
                 homonym_risk_score=match.artist.homonym_risk_score if match.artist else None,
                 same_artist_training_price_count=match.artist.same_artist_training_price_count if match.artist else None,
-                route_policy=(
-                    f"artist_match_score >= {WARM_MATCH_SCORE_MIN} AND "
-                    f"same_artist_training_price_count 1~{WARM_FULL_PRICE_COUNT_MIN - 1} => warm_lite, "
-                    f">= {WARM_FULL_PRICE_COUNT_MIN} => warm"
-                ),
+                route_policy=self._routing_policy_text(),
                 route_reason=self._route_reason(route, match.artist),
             ),
             basis=PredictionBasis(
@@ -998,14 +1026,37 @@ class OfficialV01Service:
             policy = json.loads(WARM_LITE_POLICY_PATH.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             policy = {}
-        return {
+        status = {
             "warm_lite_candidate_artifact_ready": True,
             "warm_lite_raw_adapter_ready": True,
             "warm_lite_artifact_path": str(WARM_LITE_ARTIFACT_DIR.relative_to(REPO)),
             "warm_lite_policy_version": str(policy.get("version") or "v0.1"),
             "warm_lite_route_rule": "artist_match_score >= 0.80 AND same_artist_training_price_count 1~4",
             "warm_lite_fixed_model_status": str(policy.get("status") or ""),
+            "warm_lite_selected_candidate": str(policy.get("selected_candidate") or ""),
+            "warm_lite_candidate_formula": str(policy.get("candidate_formula") or ""),
         }
+        unified_policy: dict[str, Any] = {}
+        if WARM_LITE_UNIFIED_ROUTE_GAP_POLICY_PATH.exists():
+            try:
+                unified_policy = json.loads(WARM_LITE_UNIFIED_ROUTE_GAP_POLICY_PATH.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                unified_policy = {}
+        status.update(
+            {
+                "warm_lite_unified_route_gap_q50_enabled": warm_lite_unified_route_enabled(),
+                "warm_lite_unified_route_gap_q50_artifact_ready": WARM_LITE_UNIFIED_ROUTE_GAP_POLICY_PATH.exists(),
+                "warm_lite_unified_route_gap_q50_artifact_path": (
+                    str(WARM_LITE_UNIFIED_ROUTE_GAP_ARTIFACT_DIR.relative_to(REPO))
+                    if WARM_LITE_UNIFIED_ROUTE_GAP_ARTIFACT_DIR.exists()
+                    else ""
+                ),
+                "warm_lite_unified_route_gap_q50_policy_version": str(unified_policy.get("version") or ""),
+                "warm_lite_unified_route_gap_q50_status": str(unified_policy.get("status") or ""),
+                "warm_lite_unified_route_gap_q50_route_rule": str(unified_policy.get("route_rule") or ""),
+            }
+        )
+        return status
 
     def _warm_wmin8_status(self) -> dict[str, bool | str]:
         payload = self._warm_wmin8_manifest()
@@ -1319,11 +1370,26 @@ class OfficialV01Service:
             return "review_required"
         if match.artist and match.artist.warm_available:
             count = match.artist.same_artist_training_price_count
+            if warm_lite_unified_route_enabled() and count >= WARM_LITE_PRICE_COUNT_MIN:
+                return "warm_lite"
             if count >= WARM_FULL_PRICE_COUNT_MIN:
                 return "warm"
             if count >= WARM_LITE_PRICE_COUNT_MIN:
                 return "warm_lite"
         return "cold"
+
+    def _routing_policy_text(self) -> str:
+        if warm_lite_unified_route_enabled():
+            return (
+                f"artist_match_score >= {WARM_MATCH_SCORE_MIN} AND "
+                "same_artist_training_price_count >= 1 => warm_lite unified route_gap_q50, "
+                "0건 또는 매칭 미달 => cold"
+            )
+        return (
+            f"artist_match_score >= {WARM_MATCH_SCORE_MIN} AND "
+            f"same_artist_training_price_count 1~{WARM_FULL_PRICE_COUNT_MIN - 1} => warm_lite, "
+            f">= {WARM_FULL_PRICE_COUNT_MIN} => warm"
+        )
 
     def _choose_stats(
         self,
@@ -1683,11 +1749,7 @@ class OfficialV01Service:
                 step_order=2,
                 name="작가 매칭과 경로 판단",
                 role="같은 작가 이력이 충분하면 이력 기반 예측, 부족하면 참고 예측으로 분기",
-                formula=(
-                    f"작가매칭점수 >= {WARM_MATCH_SCORE_MIN}일 때 "
-                    f"가격이력 1~{WARM_FULL_PRICE_COUNT_MIN - 1}건은 저이력 기반 예측, "
-                    f"{WARM_FULL_PRICE_COUNT_MIN}건 이상은 이력 기반 예측, 0건은 참고 예측"
-                ),
+                formula=self._routing_policy_text(),
                 output={
                     "artist_key": artist.artist_key if artist else None,
                     "artist_match_score": artist.artist_match_score if artist else None,
@@ -1811,8 +1873,7 @@ class OfficialV01Service:
             result[key] = value
         return result
 
-    @staticmethod
-    def _display_route(route: str) -> str:
+    def _display_route(self, route: str) -> str:
         if route == "warm":
             return "이력 기반 예측"
         if route == "warm_lite":
@@ -1831,11 +1892,12 @@ class OfficialV01Service:
             return "reference_range_only"
         return "review_required"
 
-    @staticmethod
-    def _route_reason(route: str, artist: ResolvedArtist | None) -> str:
+    def _route_reason(self, route: str, artist: ResolvedArtist | None) -> str:
         if route == "warm":
             return "작가 매칭 신뢰도와 같은 작가 가격 이력이 이력 기반 예측 기준을 충족했습니다."
         if route == "warm_lite":
+            if warm_lite_unified_route_enabled():
+                return "작가 매칭 신뢰도와 같은 작가 가격 이력이 1건 이상이어서 통합 Warm-lite route_gap_q50 예측을 적용했습니다."
             return "작가 매칭 신뢰도는 충분하지만 같은 작가 가격 이력이 1~4건이라 저이력 기반 예측을 적용했습니다."
         if route == "cold":
             return "같은 작가 가격 이력이 부족하거나 작가 매칭 신뢰도가 낮아 참고 예측을 적용했습니다."
@@ -1843,22 +1905,24 @@ class OfficialV01Service:
             return "동명이인 위험이 있어 작가 후보 선택 또는 검수가 필요합니다."
         return "최소 입력값이 부족하거나 작가 확인이 필요합니다."
 
-    @staticmethod
-    def _user_formula(route: str) -> str:
+    def _user_formula(self, route: str) -> str:
         if route == "warm":
             return "예측가격 = 기준가격 + 미세보정값"
         if route == "warm_lite":
+            if warm_lite_unified_route_enabled():
+                return "예측가격 = 통합 Warm-lite 기준가격 + route_gap_q50 조건부 보정값"
             return "예측가격 = 저이력 작가 기준가격 + Warm-lite 보정값"
         if route == "cold":
             return "참고가격 = 조건이 비슷한 작품군의 시장 기준가격 + 검색/방어 보정값"
         return "작가 확인 후 가격 계산"
 
-    @staticmethod
-    def _calculation_explanation(route: str) -> str:
+    def _calculation_explanation(self, route: str) -> str:
         if route == "warm":
             return "같은 작가 가격 이력과 유사작품 통계로 기준가격을 만들고, 연결 가능한 보고서 기준 Warm 보정 adapter를 적용합니다."
         if route == "warm_lite":
-            return "같은 작가 가격 이력이 1~4건일 때 저이력 전용 Warm-lite 모델로 기준가격과 보정값을 함께 계산합니다."
+            if warm_lite_unified_route_enabled():
+                return "같은 작가 가격 이력이 1건 이상일 때 Warm-lite unified 모델로 기준가격을 만들고, full/lean q50 차이가 큰 경우 CF7 방어 보정 후보로 전환합니다."
+            return "같은 작가 가격 이력이 1~4건일 때 저이력 전용 Warm-lite Quantile residual 모델로 기준가격과 보정값을 함께 계산합니다."
         if route == "cold":
             return "같은 작가 이력이 부족한 경우 작품 조건 기반 참고가격을 만들고, feature store 또는 proxy feature로 보고서 기준 Cold 후처리 adapter를 적용합니다."
         return "동명이인 또는 최소 입력 부족으로 단일 가격 계산을 보류했습니다."
@@ -1905,6 +1969,8 @@ class OfficialV01Service:
                 return None
         if route == "warm_lite" and artist_key:
             try:
+                if warm_lite_unified_route_enabled():
+                    return self._report_adapter().predict_warm_lite_unified_route_gap_q50(request, artist_key)
                 return self._report_adapter().predict_warm_lite(request, artist_key)
             except Exception:
                 return None
@@ -1918,6 +1984,11 @@ class OfficialV01Service:
     def _route_adapter_status(self, route: str, adapter_result: Any | None = None) -> dict[str, Any]:
         if adapter_result is not None:
             if adapter_result.route == "warm_lite":
+                history_label = (
+                    "artist_history_1_plus"
+                    if "warm_lite_unified_route_gap_q50_pred_log" in adapter_result.output
+                    else "artist_history_1_to_4"
+                )
                 required_columns: Any = [
                     "width_cm",
                     "height_cm",
@@ -1927,7 +1998,7 @@ class OfficialV01Service:
                     "support_category",
                     "size_bucket",
                     "medium_support_bucket",
-                    "artist_history_1_to_4",
+                    history_label,
                 ]
             else:
                 required_columns = (
@@ -1966,6 +2037,29 @@ class OfficialV01Service:
                 ),
             }
         if route == "warm_lite":
+            if warm_lite_unified_route_enabled():
+                return {
+                    "execution_level": "db_cache_foundation",
+                    "final_layer_module_loaded": WARM_LITE_UNIFIED_ROUTE_GAP_POLICY_PATH.exists(),
+                    "raw_upstream_adapter_ready": WARM_LITE_UNIFIED_ROUTE_GAP_POLICY_PATH.exists(),
+                    "required_upstream_columns": [
+                        "width_cm",
+                        "height_cm",
+                        "area_cm2",
+                        "log_area",
+                        "medium_category",
+                        "support_category",
+                        "size_bucket",
+                        "medium_support_bucket",
+                        "artist_history_1_plus",
+                    ],
+                    "warning_code": "WARM_LITE_UNIFIED_ROUTE_GAP_Q50_ADAPTER_PENDING",
+                    "warning_message": "Warm-lite unified route_gap_q50 후보 아티팩트는 확인됐지만 adapter 실행 결과가 없어 DB/cache 기반 기준가격을 표시했습니다.",
+                    "formula": (
+                        "Warm-lite unified 예측가격 = current 후보 또는 "
+                        "gap 조건 통과 시 CF7 방어 후보"
+                    ),
+                }
             return {
                 "execution_level": "db_cache_foundation",
                 "final_layer_module_loaded": WARM_LITE_POLICY_PATH.exists(),
@@ -1983,7 +2077,10 @@ class OfficialV01Service:
                 ],
                 "warning_code": "WARM_LITE_ADAPTER_PENDING",
                 "warning_message": "Warm-lite 아티팩트는 확인됐지만 adapter 실행 결과가 없어 DB/cache 기반 기준가격을 표시했습니다.",
-                "formula": "Warm-lite 예측가격 = Huber앙상블(작품조건 + 작가 1~4건 이력 통계 + 비작가 fallback 통계)",
+                "formula": (
+                    "Warm-lite 예측가격 = Quantile평균 + "
+                    "clip(0.50 * LightGBM Huber 잔차, -0.10, +0.10)"
+                ),
             }
         if route == "cold":
             return {
