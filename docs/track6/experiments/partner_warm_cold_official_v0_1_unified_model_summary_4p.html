@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Official 0.1v Warm/Cold 최종 모델 4페이지 요약</title>
+  <title>Official 0.1v Warm/Cold 최종 모델 5페이지 요약</title>
   <style>
     :root {
       --ink: #17202a;
@@ -161,10 +161,10 @@
     <h1>Warm/Cold 가격 예측 모델 핵심 설명</h1>
     <p class="lead">
       이 문서는 상세 리포트 <code>partner_warm_cold_official_v0_1_unified_model_report.html</code>의 운영 설명용 축약본이다.
-      목표는 모델을 처음 보는 사람도 “어떤 입력이 어떤 경로로 가고, 가격이 어떤 계산으로 나오며, 검증 근거가 무엇인지”를 3~4장 안에서 이해하게 하는 것이다.
+      목표는 모델을 처음 보는 사람도 “어떤 입력이 어떤 경로로 가고, 어떤 피처를 쓰며, 가격이 어떤 계산으로 나오고, 검증 근거가 무엇인지”를 5장 안에서 이해하게 하는 것이다.
     </p>
 
-    <h3>1. 설명 기준 라우팅</h3>
+    <h3>1. 운영 라우팅</h3>
     <table>
       <thead>
         <tr><th>입력 조건</th><th>사용 경로</th><th>의미</th></tr>
@@ -183,9 +183,8 @@
       </tbody>
     </table>
     <div class="note">
-      현재 기본 운영 설명은 라우터 없는 <code>Warm-lite current</code> 기준으로 작성한다.
-      예전의 <code>1~4건 Warm-lite, 5건 이상 Warm WMIN8</code> 분리 방식이 아니라, <code>1건 이상 같은 작가 이력</code>을 하나의 Warm-lite current 계산 흐름으로 설명한다.
-      <code>route_gap_q50</code> 라우터 방식은 환경변수로 되돌릴 수 있는 보조 운영 모드로 유지한다.
+      현재 기본 운영은 <code>1건 이상 같은 작가 가격 이력</code>을 하나의 Warm-lite current 계산 흐름으로 처리한다.
+      예전처럼 <code>1~4건</code>과 <code>5건 이상</code>을 서로 다른 Warm 모델로 나누지 않는다.
     </div>
 
     <h3>2. Warm과 Cold를 나누는 이유</h3>
@@ -209,7 +208,7 @@
       </thead>
       <tbody>
         <tr>
-          <td>Warm current</td><td>fixed test</td><td class="right">607</td><td class="right">0.084485</td><td class="right">0.225214</td><td class="right">0.803203</td><td class="right">0.382171</td><td>라우터 없는 설명 기준 후보</td>
+          <td>Warm current</td><td>fixed test</td><td class="right">607</td><td class="right">0.084485</td><td class="right">0.225214</td><td class="right">0.803203</td><td class="right">0.382171</td><td>기본 Warm 후보</td>
         </tr>
         <tr>
           <td>Warm 기존 WMIN8</td><td>fixed test</td><td class="right">607</td><td class="right">0.104326</td><td class="right">0.235814</td><td class="right">0.739416</td><td class="right">0.377190</td><td>이전 Warm 운영 후보</td>
@@ -291,16 +290,100 @@ Warm-lite current 후보를 fixed test와 API 재현성 기준으로 검증</cod
     <table>
       <thead><tr><th>검증</th><th>결과</th><th>해석</th></tr></thead>
       <tbody>
-        <tr><td>Warm-lite current fixed test</td><td>607행, MdAPE 0.084485, MAPE 0.225214, p95 0.803203</td><td>라우터 없는 단순 설명 기준 후보</td></tr>
+        <tr><td>Warm-lite current fixed test</td><td>607행, MdAPE 0.084485, MAPE 0.225214, p95 0.803203</td><td>기본 Warm 후보</td></tr>
         <tr><td>기존 Warm WMIN8 대비</td><td>같은 607행에서 MdAPE -0.019841, MAPE -0.010600</td><td>대표 오차와 평균 오차가 개선됐다. p95는 +0.063786으로 악화되어 큰 오차 모니터링이 필요하다.</td></tr>
-        <tr><td>운영 fallback</td><td><code>PRICE_PREDICTION_OFFICIAL_V01_WARM_ROUTE_POLICY=warm_lite_unified_route_gap_q50</code></td><td>큰 오차 방어를 우선할 때 라우터 운영 모드로 되돌릴 수 있다.</td></tr>
         <tr><td>학습 데이터 증가 실험</td><td>25% → 100% fixed cohort에서 MdAPE 평균 -0.064615</td><td>품질 관리된 학습 데이터가 늘면 Warm 개선 가능성이 큼</td></tr>
       </tbody>
     </table>
   </section>
 
   <section class="page">
-    <p class="eyebrow">Page 3 · Cold 모델</p>
+    <p class="eyebrow">Page 3 · 사용 피처</p>
+    <h2>가격 예측에 사용하는 피처</h2>
+    <p>
+      피처는 모델에 넣는 입력 정보다. Warm과 Cold는 같은 작품 기본 정보를 쓰지만, Warm은 같은 작가의 과거 가격 이력을 직접 쓰고,
+      Cold는 같은 작가 가격 이력을 쓰지 못해 작가 메타와 검색 기반 정보를 더 많이 사용한다.
+    </p>
+
+    <h3>1. Warm 사용 피처</h3>
+    <table>
+      <thead><tr><th>피처 묶음</th><th>구체 항목</th><th>가격 계산에서 하는 역할</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>작품 크기</td>
+          <td>가로, 세로, 깊이, 면적, 로그 면적, 가로세로 비율, 입체 여부</td>
+          <td>같은 작가라도 크기와 형태가 다르면 가격 수준이 달라지므로 기준가격과 보정값에 반영한다.</td>
+        </tr>
+        <tr>
+          <td>재료/지지체</td>
+          <td>매체 분류, 지지체 분류, 매체+지지체 조합</td>
+          <td>캔버스, 종이, 혼합재료 등 제작 조건 차이를 반영한다.</td>
+        </tr>
+        <tr>
+          <td>크기/형태 구간</td>
+          <td>크기 구간, 형태 구간, 매체+형태 조합, 지지체+크기 조합</td>
+          <td>연속 숫자인 크기 정보를 모델이 더 안정적으로 해석하도록 구간화한다.</td>
+        </tr>
+        <tr>
+          <td>같은 작가 가격 이력</td>
+          <td>로그가격 중앙값, q25, q75, IQR, 면적단가 중앙값, 면적단가 IQR, 표본 수, 매칭 단계</td>
+          <td>Warm의 핵심 근거다. 같은 작가의 과거 가격 분포를 기준가격 생성에 직접 사용한다.</td>
+        </tr>
+        <tr>
+          <td>Quantile 예측값</td>
+          <td>낮은값 q10, 중앙값 q50, 높은값 q90, 전체 피처 q50, 안정 피처 q50</td>
+          <td>가격의 중심과 예측 불확실성을 만든다. 기본 Warm 가격은 두 q50의 평균을 중심으로 삼는다.</td>
+        </tr>
+        <tr>
+          <td>잔차 보정 입력</td>
+          <td>작품 피처, 작가 이력 피처, Quantile 예측값, 예측 불확실성 폭</td>
+          <td>기준가격에서 남은 오차를 LightGBM Huber residual 모델이 작게 보정한다.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2. Cold 사용 피처</h3>
+    <table>
+      <thead><tr><th>피처 묶음</th><th>구체 항목</th><th>가격 계산에서 하는 역할</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>작품 조건</td>
+          <td>가로, 세로, 깊이, 면적, 비율, 매체, 지지체, 크기/형태 구간</td>
+          <td>같은 작가 이력이 없을 때 작품 자체 조건으로 기본 가격대를 추정한다.</td>
+        </tr>
+        <tr>
+          <td>작가 메타</td>
+          <td>작가 등록 여부, 작가 식별 상태, 작가 관련 외부/내부 메타 가용성</td>
+          <td>작가 정보가 충분한지, 신뢰 가능한 예측인지 판단하는 데 사용한다.</td>
+        </tr>
+        <tr>
+          <td>검색 기반 피처</td>
+          <td>작가명 검색 커버 여부, 검색 기반 가격 신호, 검색 결과 품질 상태</td>
+          <td>같은 작가 가격 이력을 직접 쓰지 못할 때 시장 기준가격을 보완한다.</td>
+        </tr>
+        <tr>
+          <td>Cold Quantile 예측값</td>
+          <td>q10, q40, q50, q90, q90 - q10</td>
+          <td>대표 가격과 보수 가격 후보, 예측 불확실성 폭을 만든다.</td>
+        </tr>
+        <tr>
+          <td>검수/신뢰도 피처</td>
+          <td>예측 불확실성 폭, 모델 간 차이, 검색 커버 여부</td>
+          <td>high/low/review 표시와 보수 후보 적용 여부를 결정한다.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>3. 피처 해석에서 주의할 점</h3>
+    <ul>
+      <li>Warm의 같은 작가 가격 이력은 입력 작품 자기 가격을 직접 참조하지 않도록 fold/hold-out으로 누수를 차단해 만든다.</li>
+      <li>Cold는 같은 작가 가격 이력을 직접 쓰지 않으므로 Warm보다 불확실성이 크고, 검색/메타/검수 피처의 역할이 커진다.</li>
+      <li>Quantile의 <code>q90 - q10</code>은 모델이 보는 가격 범위의 폭이며, 폭이 클수록 예측이 더 불확실하다는 뜻이다.</li>
+    </ul>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">Page 4 · Cold 모델</p>
     <h2>Cold: 같은 작가 가격 이력이 없을 때의 예측</h2>
     <p>
       Cold는 같은 작가 가격 이력을 직접 기준가격으로 쓸 수 없는 입력을 처리한다.
@@ -400,7 +483,7 @@ guarded로그가격 =
   </section>
 
   <section class="page">
-    <p class="eyebrow">Page 4 · 운영 검증과 해석</p>
+    <p class="eyebrow">Page 5 · 운영 검증과 해석</p>
     <h2>검증, 재현성, 운영 시 해석 기준</h2>
 
     <h3>1. 재현성 체크</h3>
@@ -414,13 +497,13 @@ guarded로그가격 =
         </tr>
         <tr>
           <td>Warm bundle replay parity</td>
-          <td>Warm current와 route_gap_q50이 같은 unified bundle에서 계산되는지 확인</td>
-          <td>동일 아티팩트 사용</td>
+          <td>Warm current가 동결된 모델 산출물에서 재현되는지 확인</td>
+          <td>동결된 Warm-lite 산출물의 current 후보 사용</td>
         </tr>
         <tr>
           <td>Warm HTTP API parity</td>
           <td>운영 반영 전 기본 정책별 API 출력 비교</td>
-          <td>current 기본값 확인 완료, route_gap_q50는 env fallback 유지</td>
+          <td>current 기본값 확인 완료</td>
         </tr>
         <tr>
           <td>Cold v0.3 reproducibility</td>
@@ -429,7 +512,7 @@ guarded로그가격 =
         </tr>
         <tr>
           <td>Cold v0.4 confidence policy</td>
-          <td>신뢰도 tier, review flag, fallback 표시 정책 검증</td>
+          <td>신뢰도 등급, 검수 필요 표시, 검색 미커버 보정 표시 정책 검증</td>
           <td>tier mismatch 0행, review flag mismatch 0행</td>
         </tr>
       </tbody>
@@ -473,6 +556,14 @@ Cold는 작품 조건, 작가 메타, 검색 피처로 가격 분포를 예측�
       <li>임계값과 보정 폭은 운영 중 매 요청마다 다시 최적화하지 않고, 검증 실험에서 선택한 값을 동결해 재현성을 확보한다.</li>
       <li>새 학습 데이터 추가는 자동 승격이 아니라 재학습, hold-out 검증, parity 검증을 통과한 뒤 운영 반영한다.</li>
     </ul>
+
+    <h3>5. 보조 운영 모드</h3>
+    <p>
+      현재 기본 Warm은 Warm-lite current다. 다만 큰 오차 방어를 우선해야 하는 상황에 대비해,
+      같은 Warm-lite 모델 산출물 안에서 더 강한 잔차 보정 후보를 조건부로 선택하는 보조 운영 모드를 남겨 둔다.
+      이 보조 모드는 기본 설명 흐름에는 포함하지 않으며, 운영자가 환경변수로 명시했을 때만 사용한다.
+    </p>
+    <pre><code>PRICE_PREDICTION_OFFICIAL_V01_WARM_ROUTE_POLICY=warm_lite_unified_route_gap_q50</code></pre>
   </section>
 </main>
 </body>
