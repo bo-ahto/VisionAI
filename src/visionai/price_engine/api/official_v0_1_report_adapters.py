@@ -919,10 +919,26 @@ class ReportModelProxyAdapter:
             ],
         )
 
+    def predict_warm_lite_unified_current(
+        self,
+        request: PriceEstimateRequest,
+        artist_key: str,
+    ) -> ReportAdapterResult:
+        return self._predict_warm_lite_unified(request, artist_key, use_route_gap=False)
+
     def predict_warm_lite_unified_route_gap_q50(
         self,
         request: PriceEstimateRequest,
         artist_key: str,
+    ) -> ReportAdapterResult:
+        return self._predict_warm_lite_unified(request, artist_key, use_route_gap=True)
+
+    def _predict_warm_lite_unified(
+        self,
+        request: PriceEstimateRequest,
+        artist_key: str,
+        *,
+        use_route_gap: bool,
     ) -> ReportAdapterResult:
         frame, history, feature_store_status = self._warm_lite_unified_runtime_inputs(request, artist_key)
         pred = self.warm_lite_unified.predict(
@@ -931,7 +947,39 @@ class ReportModelProxyAdapter:
             models=self.warm_lite_unified_models,
             params=self.warm_lite_unified_params,
         ).iloc[0]
-        final_price = _safe_price(pred["warm_lite_unified_route_gap_q50_pred_price_krw"])
+        if use_route_gap:
+            final_log = float(pred["warm_lite_unified_route_gap_q50_pred_log"])
+            final_price = _safe_price(pred["warm_lite_unified_route_gap_q50_pred_price_krw"])
+            warning_code = "WARM_LITE_UNIFIED_ROUTE_GAP_Q50_ADAPTER_APPLIED"
+            warning_message = (
+                "같은 작가 가격 이력 1건 이상에 Warm-lite unified route_gap_q50 candidate adapter를 적용했습니다. "
+                "이 후보는 official 0.1v 기본 라우팅을 대체하기 전 API parity 검증 대상으로 연결된 상태입니다."
+            )
+            formula = (
+                "Warm-lite unified 로그가격 = 기본 후보("
+                "seed_mean(qavg + clip(0.50 * residual, -0.10, +0.10))) 또는 "
+                "gap>=0.0252975144340901일 때 방어 후보(seed_mean(qavg)+clip(1.00*seed_mean(residual), -0.15, +0.15))"
+            )
+            output_key = "warm_lite_unified_route_gap_q50_pred_log"
+            output_price_key = "warm_lite_unified_route_gap_q50_pred_price_krw"
+            candidate_step_name = "route_gap_q50 후보 계산"
+            candidate_step_formula = "gap = abs(full q50 - lean q50), gap >= 0.0252975144340901이면 CF7 방어 후보 사용"
+        else:
+            final_log = float(pred["current_pred_log"])
+            final_price = _safe_price(np.exp(final_log))
+            warning_code = "WARM_LITE_UNIFIED_CURRENT_ADAPTER_APPLIED"
+            warning_message = (
+                "같은 작가 가격 이력 1건 이상에 Warm-lite unified current adapter를 적용했습니다. "
+                "route_gap_q50 라우터 없이 current 후보를 최종 가격으로 사용합니다."
+            )
+            formula = (
+                "Warm-lite unified current 로그가격 = "
+                "seed_mean(qavg + clip(0.50 * residual, -0.10, +0.10))"
+            )
+            output_key = "warm_lite_unified_current_pred_log"
+            output_price_key = "warm_lite_unified_current_pred_price_krw"
+            candidate_step_name = "Warm-lite current 후보 계산"
+            candidate_step_formula = "최종 로그가격 = current 후보 = q50 평균 기준가격 + 제한 폭 Huber residual 보정"
         history_n = int(pred["artist_history_n"])
         if final_price:
             if history_n == 1:
@@ -954,22 +1002,19 @@ class ReportModelProxyAdapter:
             low_krw=low,
             high_krw=high,
             confidence_tier=confidence,
-            warning_code="WARM_LITE_UNIFIED_ROUTE_GAP_Q50_ADAPTER_APPLIED",
-            warning_message=(
-                "같은 작가 가격 이력 1건 이상에 Warm-lite unified route_gap_q50 candidate adapter를 적용했습니다. "
-                "이 후보는 official 0.1v 기본 라우팅을 대체하기 전 API parity 검증 대상으로 연결된 상태입니다."
-            ),
-            formula=(
-                "Warm-lite unified 로그가격 = 기본 후보("
-                "seed_mean(qavg + clip(0.50 * residual, -0.10, +0.10))) 또는 "
-                "gap>=0.0252975144340901일 때 방어 후보(seed_mean(qavg)+clip(1.00*seed_mean(residual), -0.15, +0.15))"
-            ),
+            warning_code=warning_code,
+            warning_message=warning_message,
+            formula=formula,
             input_columns=list(frame.columns) + ["artist_history_1_plus"],
             output={
+                output_key: final_log,
+                output_price_key: final_price,
                 "warm_lite_unified_route_gap_q50_pred_log": float(
                     pred["warm_lite_unified_route_gap_q50_pred_log"]
                 ),
-                "warm_lite_unified_route_gap_q50_pred_price_krw": final_price,
+                "warm_lite_unified_route_gap_q50_pred_price_krw": _safe_price(
+                    pred["warm_lite_unified_route_gap_q50_pred_price_krw"]
+                ),
                 "current_pred_log": float(pred["current_pred_log"]),
                 "cf7_pred_log": float(pred["cf7_pred_log"]),
                 "route_to_cf7": bool(pred["route_to_cf7"]),
@@ -1002,15 +1047,15 @@ class ReportModelProxyAdapter:
                     },
                 },
                 {
-                    "name": "route_gap_q50 후보 계산",
-                    "formula": "gap = abs(full q50 - lean q50), gap >= 0.0252975144340901이면 CF7 방어 후보 사용",
+                    "name": candidate_step_name,
+                    "formula": candidate_step_formula,
                     "output": {
                         "current_pred_log": float(pred["current_pred_log"]),
                         "cf7_pred_log": float(pred["cf7_pred_log"]),
                         "full_lean_gap_abs_log": float(pred["full_lean_gap_abs_log"]),
                         "route_gap_threshold": float(pred["route_gap_threshold"]),
                         "route_to_cf7": bool(pred["route_to_cf7"]),
-                        "final_log_price": float(pred["warm_lite_unified_route_gap_q50_pred_log"]),
+                        "final_log_price": final_log,
                         "final_price_krw": final_price,
                     },
                 },
