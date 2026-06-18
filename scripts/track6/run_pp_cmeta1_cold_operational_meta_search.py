@@ -25,6 +25,11 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from run_pre_pp_experiments import BASE_EXP_DIR, REPO  # noqa: E402
+from cold_experiment_harness import (  # noqa: E402
+    assert_no_artist_lookup_postprocess,
+    assert_strict_cold_features,
+    strict_cold_run_summary,
+)
 from run_pp_w_experiments import META_ALL, base_feature_sets, unique  # noqa: E402
 from run_pp_y_cold_combination_experiments import (  # noqa: E402
     direct_bundle_experiment,
@@ -150,6 +155,9 @@ def main() -> None:
 
     search_df = load_search_df()
     cands = candidates()
+    for candidate, _strategy, features, _hypothesis in cands:
+        assert_strict_cold_features(features, context=f"{EXP_ID}:{candidate}")
+    assert_no_artist_lookup_postprocess(uses_artist_key_lookup=False, context=EXP_ID)
     metric_rows, prediction_frames, feature_map = direct_bundle_experiment(
         EXP_ID,
         cands,
@@ -172,10 +180,11 @@ def main() -> None:
     test = metrics[metrics["split"].eq("test")].sort_values(["MdAPE", "MAPE", "p95_APE"]).reset_index(drop=True)
     val = metrics[metrics["split"].eq("validation")].sort_values(["MdAPE", "MAPE", "p95_APE"]).reset_index(drop=True)
 
-    summary = {
+    summary = strict_cold_run_summary({
         "experiment_id": EXP_ID,
         "slug": SLUG,
         "created_at": datetime.now().isoformat(timespec="seconds"),
+        "strict_cold_compliant": True,
         "design": {
             "uses_same_artist_price_history": False,
             "uses_artist_key_as_model_feature": False,
@@ -186,7 +195,7 @@ def main() -> None:
         },
         "best_test_candidate": test.iloc[0].to_dict() if not test.empty else {},
         "source_note": "검색 피처는 기존 동결 검색 cache를 사용했다. 운영 적용 시 동일 schema로 신규 작가 검색 수집 후 입력한다.",
-    }
+    })
     (ARTIFACTS / "run_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     metric_cols = ["candidate", "split", "MdAPE", "MAPE", "p95_APE", "RMSE_log", "n_features", "feature_strategy"]

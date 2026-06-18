@@ -1,9 +1,10 @@
-# PP-CMETA2 Cold 운영형 메타/검색 + q40 guard + lookup 검증 요약
+# PP-CMETA2 Cold 비엄격 lookup 진단 요약
 
 - 실행일: 2026-06-18
 - 실험 폴더: `experiments/track6/PP-CMETA2_cold_meta_search_guard_lookup_validation`
 - 선행 실험: `PP-CMETA1_cold_operational_meta_search_validation`
 - 목적: 운영형 Cold 후보에 q40 보수 후보와 v0.3 작가별 `search_delta_lookup` 후처리를 붙이면 성능이 추가 개선되는지 확인
+- 판정: 이 실험은 `artist_key` 기반 lookup을 후처리에 사용하므로 strict Cold 하네스 기준에는 맞지 않는다. 신규 작가 Cold 운영 성능으로 인용하면 안 되고, lookup 효과를 분리해 본 진단용 결과로만 사용한다.
 
 ## 1. 검증 방식
 
@@ -24,7 +25,7 @@ PP-CMETA1의 같은 후보 피처셋을 그대로 사용하되, q10/q50/q90에 �
 - 같은 작가 가격 중앙값/평균/면적단가
 - 같은 작가 학습 작품 수
 
-다만 `lookup_only`와 `guard_plus_lookup`은 후처리 단계에서 frozen `search_delta_lookup[artist_key]`를 사용한다.
+다만 `lookup_only`와 `guard_plus_lookup`은 후처리 단계에서 frozen `search_delta_lookup[artist_key]`를 사용한다. 따라서 이 두 정책은 “artist_key가 매칭되지 않는 Cold”가 아니라 “artist_key lookup이 가능한 진단 조건”이다.
 
 ## 2. Test 결과 핵심
 
@@ -39,7 +40,7 @@ PP-CMETA1의 같은 후보 피처셋을 그대로 사용하되, q10/q50/q90에 �
 
 ## 3. 결론
 
-lookup 후처리는 추가 개선 효과가 있다.
+lookup 후처리는 fixed test 진단 조건에서는 추가 개선 효과가 있다.
 
 `PP-CMETA1`의 최상위 순수 운영형 후보인 `작품+작가메타+검색+전시/갤러리` 기준으로 보면:
 
@@ -49,7 +50,7 @@ lookup 후처리는 추가 개선 효과가 있다.
 
 즉 lookup만 더하면 MdAPE와 MAPE가 개선되고, guard까지 같이 쓰면 MdAPE는 lookup-only보다 조금 나빠지지만 MAPE와 p95 APE는 더 좋아진다.
 
-따라서 선택 기준은 아래처럼 나뉜다.
+단, 아래 선택 기준은 strict Cold 운영안이 아니라 lookup이 가능한 진단 조건 안에서만 유효하다.
 
 - 중앙값 정확도 우선: `작품+작가메타+전시/갤러리 + lookup_only`
 - MAPE/p95 큰 오차 방어 우선: `작품+작가메타+검색+전시/갤러리 + guard_plus_lookup`
@@ -64,7 +65,7 @@ PP-CMETA2 최상위 후보도 현재 v0.3 최종 성능에는 아직 못 미친�
 | PP-CMETA2 MdAPE 최상위 | 0.422821 | 0.993299 | 3.390348 |
 | PP-CMETA2 MAPE/p95 균형 후보 | 0.435616 | 0.902715 | 2.876001 |
 
-따라서 PP-CMETA2는 v0.3 즉시 대체 후보라기보다, v0.3의 lookup 의존을 줄이고 운영형 메타/검색 입력 구조로 이동하기 위한 후속 후보로 보는 것이 맞다.
+따라서 PP-CMETA2는 v0.3 즉시 대체 후보도, strict Cold 운영 후보도 아니다. v0.3의 lookup 의존 효과가 어느 정도인지 확인한 비엄격 진단 결과로만 보는 것이 맞다.
 
 ## 5. 운영상 주의
 
@@ -84,6 +85,7 @@ PP-CMETA2 최상위 후보도 현재 v0.3 최종 성능에는 아직 못 미친�
 현재 기준 권장안은 아래와 같다.
 
 1. 공식 운영 Cold는 당장 v0.3을 대체하지 않는다.
-2. PP-CMETA2는 차기 Cold 운영형 후보로 관리한다.
-3. 문서에서는 v0.3을 “최고 성능 연구/보고 기준”으로, PP-CMETA 계열을 “작가 가격 이력 없이 메타/검색으로 예측하는 운영형 후보”로 분리 설명한다.
-4. 다음 검증은 신규 작가 live search 수집 파이프라인을 붙인 뒤, lookup coverage가 낮은 조건에서 성능이 유지되는지 확인하는 것이다.
+2. strict Cold 운영 후보는 `PP-CMETA1` 및 lookup 없는 `base_q50`/`guard_only` 결과로만 판단한다.
+3. PP-CMETA2는 lookup 효과 진단으로만 보관하고, 운영 후보 표에서는 제외하거나 “비엄격 진단”으로 표시한다.
+4. 문서에서는 v0.3을 “artist_key lookup 가능한 보고 기준”으로, PP-CMETA1을 “작가 가격 이력 없이 메타/검색으로 예측하는 strict Cold 후보”로 분리 설명한다.
+5. 다음 검증은 신규 작가 live search 수집 파이프라인을 붙인 뒤, artist_key lookup 없이 성능이 유지되는지 확인하는 것이다.

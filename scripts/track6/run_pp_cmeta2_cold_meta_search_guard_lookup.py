@@ -13,6 +13,7 @@ tests post-processing combinations:
 """
 from __future__ import annotations
 
+import argparse
 import html
 import json
 import sys
@@ -28,6 +29,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from run_pre_pp_experiments import BASE_EXP_DIR, REPO, metrics  # noqa: E402
+from cold_experiment_harness import non_strict_artist_lookup_warning  # noqa: E402
 from run_pp_cmeta1_cold_operational_meta_search import candidates  # noqa: E402
 from run_pp_y_cold_combination_experiments import (  # noqa: E402
     fit_predict,
@@ -155,7 +157,28 @@ def html_table(df: pd.DataFrame, cols: list[str]) -> str:
     return f"<table><thead><tr>{header}</tr></thead><tbody>{''.join(rows)}</tbody></table>"
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=TITLE)
+    parser.add_argument(
+        "--allow-artist-key-lookup-diagnostic",
+        action="store_true",
+        help=(
+            "Run a non-strict diagnostic that uses frozen search_delta_lookup[artist_key]. "
+            "This is not unresolved-artist Cold compliant."
+        ),
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
+    if not args.allow_artist_key_lookup_diagnostic:
+        raise SystemExit(
+            "Refusing to run PP-CMETA2 under the strict Cold harness: this script uses "
+            "frozen search_delta_lookup[artist_key]. Re-run only as a non-strict diagnostic "
+            "with --allow-artist-key-lookup-diagnostic."
+        )
+
     for path in [OUT, REPORTS, ARTIFACTS]:
         path.mkdir(parents=True, exist_ok=True)
 
@@ -243,6 +266,7 @@ def main() -> None:
         "experiment_id": EXP_ID,
         "slug": SLUG,
         "created_at": datetime.now().isoformat(timespec="seconds"),
+        **non_strict_artist_lookup_warning(),
         "guard_params": guard,
         "lookup_artists": len(lookup),
         "best_test": best,
