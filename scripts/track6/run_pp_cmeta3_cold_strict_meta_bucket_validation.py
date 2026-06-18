@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""PP-CMETA3: strict Cold meta/search bucket validation.
+"""PP-CMETA3: strict Cold meta/external-live-search bucket validation.
 
 This run keeps the unresolved-artist Cold harness:
 - no artist_key model feature
 - no same-artist price history feature
 - no artist_key lookup postprocess
 
-It tests whether artist metadata buckets, search/context buckets, and
+It tests whether artist metadata buckets, external live search/context buckets, and
 artwork-meta interaction buckets improve the operational Cold candidate.
 """
 from __future__ import annotations
@@ -224,10 +224,10 @@ def candidate_defs() -> list[tuple[str, str, list[str], str]]:
     bucket_only = unique(artwork + META_BUCKET_FEATURES + SEARCH_BUCKET_FEATURES + COMBO_BUCKET_FEATURES)
     return [
         ("cmeta1_repro_artwork_only", "작품 정보만", unique(artwork), "PP-CMETA1 artwork_only 재현"),
-        ("cmeta1_repro_full", "작품+작가메타+검색+전시/갤러리", baseline_full, "PP-CMETA1 strict 최상위 후보 재현"),
+        ("cmeta1_repro_full", "작품+작가메타+외부 live 검색+전시/갤러리", baseline_full, "PP-CMETA1 strict 최상위 후보 재현"),
         ("meta_bucket_raw", "작품+작가메타+메타 bucket", meta_bucket, "작가 메타 구간화 단독 효과"),
-        ("search_external_bucket", "작품+작가메타+검색/전시+검색 bucket", search_bucket, "검색/전시 문맥 구간화 효과"),
-        ("meta_search_combo_bucket", "작품+작가메타+검색/전시+메타/search/조합 bucket", combo_bucket, "작품 조건과 메타/검색 상태 조합 bucket 효과"),
+        ("search_external_bucket", "작품+작가메타+외부 live 검색/전시+외부 live 검색 bucket", search_bucket, "외부 live 검색/전시 문맥 구간화 효과"),
+        ("meta_search_combo_bucket", "작품+작가메타+외부 live 검색/전시+메타/외부 live 검색 조합 bucket", combo_bucket, "작품 조건과 메타/외부 live 검색 상태 조합 bucket 효과"),
         ("bucket_only_no_raw_meta", "작품+bucket only", bucket_only, "raw meta 없이 구간화 표현만 사용했을 때 안정성"),
     ]
 
@@ -544,7 +544,7 @@ def main() -> None:
             "uses_artist_key_as_model_feature": False,
             "uses_per_artist_lookup_postprocess": False,
             "uses_artist_meta_buckets": True,
-            "uses_search_buckets": True,
+            "uses_external_live_search_buckets": True,
             "uses_combo_buckets": True,
             "live_search_in_this_run": False,
         },
@@ -579,7 +579,8 @@ def main() -> None:
         "",
         f"- 작성일: {summary['created_at']}",
         "- strict Cold 조건: `artist_key`, 같은 작가 가격 통계, artist_key lookup 후처리 미사용.",
-        "- 목적: 작가 메타/검색/작품 bucket이 unresolved-artist Cold 성능을 개선하는지 확인.",
+        "- 목적: 작가 메타/외부 live 검색/작품 bucket이 unresolved-artist Cold 성능을 개선하는지 확인.",
+        "- 외부 live 검색 피처는 이번 실행에서 실제 live 호출이 아니라, live 검색과 같은 schema로 저장된 동결 cache를 사용했다.",
         f"- validation 선택 base 후보: `{best_base_name}`",
         "",
         "## Test 결과",
@@ -615,7 +616,7 @@ def main() -> None:
 </head>
 <body>
   <h1>{html.escape(TITLE)}</h1>
-  <div class="note">artist_key와 같은 작가 가격 이력 없이, 작품정보 + 작가 메타/검색 bucket만으로 검증한 strict Cold 실험이다.</div>
+  <div class="note">artist_key와 같은 작가 가격 이력 없이, 작품정보 + 작가 메타/외부 live 검색 bucket만으로 검증한 strict Cold 실험이다. 이번 실행은 동결 cache를 사용했다.</div>
   <h2>Test 결과</h2>
   {html_table(test, metric_cols)}
   <h2>Validation 결과</h2>
