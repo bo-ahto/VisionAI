@@ -248,14 +248,14 @@
   - q90 - q10은 예측 불확실성 폭
         |
         v
-[Huber residual 보정 학습]
+[LightGBM Huber residual 모델 학습]
   - q50 기준가격에서 남은 오차를 학습
   - 보정값은 clip으로 과도하게 커지지 않게 제한
         |
         v
 [동결 산출물]
   - Quantile 모델
-  - Huber residual 모델
+  - LightGBM Huber residual 모델
   - 피처 생성 규칙
   - fixed test/API parity 검증 결과</code></pre>
 
@@ -281,7 +281,7 @@
   - q50을 기본 대표 로그가격으로 사용
         |
         v
-[Huber residual 보정]
+[LightGBM Huber residual 보정값 계산]
   - q50에서 남은 오차를 예측
   - clip으로 보정 폭 제한
         |
@@ -308,8 +308,8 @@
         q50은 대표 예측값이고, q10/q90은 가격 범위와 불확실성 폭을 보여준다. 단일 가격만 내는 것보다 위험도를 설명하기 쉽다.
       </div>
       <div class="box">
-        <strong>Huber residual 보정</strong>
-        기준가격이 놓친 반복 오차를 보정한다. Huber 계열은 큰 이상치에 덜 민감하고, clip은 보정이 과도하게 튀는 것을 막는다.
+        <strong>LightGBM Huber residual 보정</strong>
+        기준가격이 놓친 반복 오차를 LightGBM Huber residual 모델로 보정한다. Huber objective는 큰 이상치에 덜 민감하고, clip은 보정이 과도하게 튀는 것을 막는다.
       </div>
     </div>
   </section>
@@ -381,20 +381,83 @@
       </tbody>
     </table>
 
-    <h3>3. 운영 설명 문장</h3>
+    <h3>3. 학습 데이터 증가 효과</h3>
+    <p>
+      별도 learning curve 실험에서는 fixed test split을 고정하고 Warm train split만
+      <code>25%</code>, <code>50%</code>, <code>75%</code>, <code>100%</code>로 늘렸다.
+      모든 비율에서 Warm 처리가 가능한 동일 test cohort 기준으로 비교했기 때문에,
+      단순히 평가 대상이 바뀌어서 좋아진 것이 아니라 학습 데이터 증가 효과를 본 실험이다.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>train 비율</th>
+          <th class="right">n 평균</th>
+          <th class="right">MdAPE 평균</th>
+          <th class="right">MAPE 평균</th>
+          <th class="right">p95 APE 평균</th>
+          <th class="right">RMSE log 평균</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>25%</td>
+          <td class="right">550</td>
+          <td class="right">0.153252</td>
+          <td class="right">0.363610</td>
+          <td class="right">0.990130</td>
+          <td class="right">0.487094</td>
+        </tr>
+        <tr>
+          <td>50%</td>
+          <td class="right">550</td>
+          <td class="right">0.114222</td>
+          <td class="right">0.256292</td>
+          <td class="right">0.908345</td>
+          <td class="right">0.425109</td>
+        </tr>
+        <tr>
+          <td>75%</td>
+          <td class="right">550</td>
+          <td class="right">0.102419</td>
+          <td class="right">0.234519</td>
+          <td class="right">0.815625</td>
+          <td class="right">0.404022</td>
+        </tr>
+        <tr>
+          <td>100%</td>
+          <td class="right">550</td>
+          <td class="right">0.088637</td>
+          <td class="right">0.229596</td>
+          <td class="right">0.806068</td>
+          <td class="right">0.379168</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      25%에서 100%로 늘렸을 때 fixed cohort 평균 변화는
+      MdAPE <code>-0.064615</code>, MAPE <code>-0.134014</code>,
+      p95 APE <code>-0.184062</code>, RMSE log <code>-0.107926</code>이다.
+      따라서 품질 관리된 학습 데이터가 늘면 Warm 정확도가 좋아질 근거가 있다.
+      다만 신규 운영 데이터도 가격 라벨, 작가 매칭, 작품 피처 품질 검수를 통과해야 같은 개선을 기대할 수 있다.
+      이 학습곡선 100% 행은 학습곡선 전용으로 재학습한 별도 실험이므로,
+      Page 1의 배포 Warm current 수치와 셋업이 정확히 같지는 않다. 핵심은 절대 수치가 아니라 데이터가 늘수록 좋아지는 추세다.
+    </div>
+
+    <h3>4. 운영 설명 문장</h3>
     <pre><code>Official 0.1v Warm 가격 예측은 먼저 작가가 기존 작가로 신뢰 가능하게 매칭되는지 확인한다.
 같은 작가 가격 이력이 1건 이상 있으면 Warm current 모델을 사용한다.
 
 Warm current는 같은 작가의 과거 가격 통계와 입력 작품의 크기·매체·지지체 피처를 함께 사용한다.
 먼저 LightGBM Quantile이 q10/q50/q90 로그가격을 만들고,
 q50을 대표 기준가격으로 둔다.
-그 다음 Huber residual 보정이 q50에서 남은 오차를 제한된 폭으로 보정한다.
+그 다음 LightGBM Huber residual 모델이 q50에서 남은 오차를 제한된 폭으로 보정한다.
 
 같은 607개 Stable Warm fixed test 기준에서 Warm current는 기존 WMIN8보다
 MdAPE와 MAPE가 개선됐다. 다만 p95 APE는 기존 WMIN8보다 높으므로,
 큰 오차 구간은 운영 모니터링과 검수 표시를 유지한다.</code></pre>
 
-    <h3>4. 최종 해석</h3>
+    <h3>5. 최종 해석</h3>
     <ul>
       <li>Warm current는 같은 작가 가격 이력을 쓸 수 있는 입력의 official 0.1v 기본 Warm 후보다.</li>
       <li>기존 WMIN8과 같은 607개 fixed test에서 비교했을 때 중앙 오차와 평균 오차가 개선됐다.</li>
