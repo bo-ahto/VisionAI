@@ -1,0 +1,83 @@
+{
+  "cold_harness_policy": "strict_unresolved_artist_cold",
+  "uses_artist_identity_feature": false,
+  "uses_same_artist_price_history": false,
+  "uses_artist_key_lookup_postprocess": false,
+  "allowed_artist_information": [
+    "user-entered non-price artist_meta_* fields",
+    "user-entered or approved-cache exhibition/gallery fields for profile-context challengers"
+  ],
+  "forbidden_artist_information": [
+    "artist_key",
+    "artist_works_count_train",
+    "artist_works_log"
+  ],
+  "forbidden_postprocess": [
+    "search_delta_lookup[artist_key]",
+    "any frozen per-artist correction keyed by artist identity"
+  ],
+  "experiment_id": "PP-CMETA4",
+  "slug": "PP-CMETA4_user_input_meta_only",
+  "created_at": "2026-06-18T10:43:45",
+  "strict_cold_compliant": true,
+  "design": {
+    "uses_same_artist_price_history": false,
+    "uses_artist_key_as_model_feature": false,
+    "uses_per_artist_lookup_postprocess": false,
+    "uses_search_features": false,
+    "uses_external_live_search": false,
+    "uses_user_enterable_artist_meta": true,
+    "uses_artist_meta_buckets": true,
+    "uses_manual_profile_context_candidates": true
+  },
+  "validation_selected_base_candidate": "existing_meta_full",
+  "best_test_candidate": {
+    "experiment_id": "PP-CMETA4",
+    "candidate": "manual_profile_context_bucket",
+    "scope": "cold",
+    "split": "test",
+    "policy": "strict_user_meta_lgbq_base_q50",
+    "RMSE_log": 0.892918788153237,
+    "MdAPE": 0.4494825230609308,
+    "MAPE": 1.1307192798943708,
+    "p95_APE": 3.991237154581576,
+    "Within_30": 0.31461761858664083,
+    "Within_50": 0.5450145208131656,
+    "model": "lightgbm",
+    "feature_strategy": "작품+사용자 입력 작가 메타+전시/갤러리 문맥+bucket",
+    "n_features": 68,
+    "quantile_width_median": 1.4972842212994895,
+    "price_range_ratio_median": 4.469534306912913,
+    "residual_scale": null,
+    "residual_clip": null,
+    "guard_rate": null,
+    "width_quantile": null,
+    "width_threshold": null,
+    "q50_q40_gap": null,
+    "require_meta_sparse": null
+  },
+  "recommended_official_candidate": {
+    "candidate": "user_meta_core_bucket",
+    "reason": "search-free, artist_key-free, uses user-enterable core artist metadata, and improves artwork-only without the p95 blow-up seen in profile-context candidates"
+  },
+  "optional_conservative_candidate": {
+    "candidate": "user_meta_core_bucket_search_free_guard_q40",
+    "reason": "lower p95 than user_meta_core_bucket, but worse MdAPE/MAPE; suitable as a conservative display or review-priority candidate, not the primary point estimate"
+  },
+  "candidate_count": 11,
+  "reference": {
+    "PP-CMETA3_search_external_bucket_test": {
+      "candidate": "search_external_bucket",
+      "MdAPE": 0.4405492129795688,
+      "MAPE": 1.0376326155477198,
+      "p95_APE": 3.3943354548035987,
+      "status": "external search/cache dependent; not official while live search is paused"
+    },
+    "PP-CMETA3_meta_bucket_raw_test": {
+      "candidate": "meta_bucket_raw",
+      "MdAPE": 0.468331,
+      "MAPE": 1.094027,
+      "p95_APE": 3.003857
+    }
+  }
+}
