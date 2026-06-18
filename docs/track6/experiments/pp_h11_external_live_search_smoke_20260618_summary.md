@@ -64,7 +64,22 @@ PP-CMETA3 자체는 동결 cache 기반 실험이다. 이 스모크 검증은 �
 - live 수집 가능성: PP-H11 `20260618_101143` 스모크 기준
 - 운영 승격 전 필요 조건: 더 큰 작가 표본에서 live 검색 수집 성공률, 품질 등급, 동명이인 위험, cache 대비 schema parity를 검증해야 한다.
 
-## 6. 운영 latest 복구
+## 6. 운영 사용 판정
+
+이 스모크는 “외부 live 검색을 실행할 수 있는가”만 확인한 것이다. “가격 예측 API가 요청 중 live 검색을 직접 호출해도 된다”는 승격 판정은 아니다.
+
+현재 판정은 아래와 같다.
+
+- official 0.1v 가격 예측 요청 안에서 외부 live 검색을 동기 호출해 쓰지 않는다.
+- live 검색은 별도 배치 수집으로만 실행한다.
+- 수집 결과는 표준 schema 변환, 동명이인 위험 점검, 품질 등급 확인, cache 대비 parity 검증을 통과해야 한다.
+- 검증을 통과한 결과만 승인 cache/snapshot으로 승격한다.
+- 가격 예측 API는 승인 cache/snapshot만 읽는다.
+- 승인 cache가 없거나 live 검색 품질을 보장할 수 없으면 외부 검색 피처는 missing/default로 처리하고, search 없는 Cold fallback을 사용한다.
+
+이 기준을 두는 이유는 운영 요청 중 live 검색을 직접 호출하면 provider 장애, 응답 지연, rate limit, 검색 결과 변동, 동명이인 오탐이 가격 예측값에 바로 영향을 주기 때문이다. 가격 예측은 같은 입력에 대해 같은 결과가 재현되어야 하므로, live 검색 결과는 검수와 동결을 거친 뒤에만 모델 입력으로 사용할 수 있다.
+
+## 7. 운영 latest 복구
 
 스모크 실행 직후 `track6_artist_search_operational_snapshot_latest.csv`와 `track6_artist_search_operational_standardized_latest.csv`가 소량 샘플로 갱신되어, 기존 2026-06-10 대량 수집본으로 복구했다.
 
