@@ -546,3 +546,4 @@ PP-L은 MAPE 최적화가 목표이므로 공통 기준에 아래 기준을 추�
 | 실험 ID | 후처리 전 기본 예측 모델 | 사용 피처셋 | 보정/선택 기준 | Warm MdAPE 전/후 | Cold MdAPE 전/후 | p95_APE 전/후 | 결론 | 다음 작업 |
 |---|---|---|---|---|---|---|---|---|
 | 예시 | Warm `Huber(base_existing_combo)` / Cold `CatBoost(base_medium_shape)` | `base_existing_combo` / `base_medium_shape` | 가격대별 `median(residual_log)` 보정 | - | - | - | 채택/보류/중단 | - |
+| PP-CCOEF1 | Cold LGB Quantile (size-normalized 타깃 ln(price/area)) | v0.2 운영 12 피처 | artist 80/70% holdout 200회 paired vs direct, 게이트 ≥0.90 | - | 0.4823 → 0.4884 (record) | 4.380 → 3.917 (record) | 기각 (게이트 미달 win-prob MAPE 0.54/p95 0.555) | PP-CCOEF2 메타→작가계수 임퓨테이션 |
