@@ -547,3 +547,4 @@ PP-L은 MAPE 최적화가 목표이므로 공통 기준에 아래 기준을 추�
 |---|---|---|---|---|---|---|---|---|
 | 예시 | Warm `Huber(base_existing_combo)` / Cold `CatBoost(base_medium_shape)` | `base_existing_combo` / `base_medium_shape` | 가격대별 `median(residual_log)` 보정 | - | - | - | 채택/보류/중단 | - |
 | PP-CCOEF1 | Cold LGB Quantile (size-normalized 타깃 ln(price/area)) | v0.2 운영 12 피처 | artist 80/70% holdout 200회 paired vs direct, 게이트 ≥0.90 | - | 0.4823 → 0.4884 (record) | 4.380 → 3.917 (record) | 기각 (게이트 미달 win-prob MAPE 0.54/p95 0.555) | PP-CCOEF2 메타→작가계수 임퓨테이션 |
+| PP-CCOEF2 | Cold 2단계 (Warm 작가 EB-수축 계수 → 메타 6피처 LGB 회귀 → ×면적) | 작가 메타 6 (생년·작품수·팔로워·경력·전시·갤러리등급) | 고정 test 커버리지 층화(B vs A vs base), OOF 누수점검 | - | 0.4823 → 0.4887 (coverage 1.0) | 4.380 → 3.828 | 기각 (MdAPE base 동급, MAPE 1.242→1.777 +43% 악화) | 종결 재확인 — 레버는 Warm 확대 |
