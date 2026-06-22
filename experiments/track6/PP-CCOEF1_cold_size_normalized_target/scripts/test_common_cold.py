@@ -9,5 +9,6 @@ def test_splits_disjoint_and_area_positive():
     assert np.allclose(train["ln_coef"], train["ln_price"] - np.log(train["area_cm2"]))
 
 def test_metrics_perfect_is_zero():
-    m = metrics([0.0, 1.0], [0.0, 1.0])
+    logs = [np.log(1_000_000.0), np.log(5_000_000.0)]
+    m = metrics(logs, logs)
     assert m["MdAPE"] == 0.0
