@@ -18,6 +18,9 @@
 
 관련 문서:
 
+- [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
+- [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+- [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
 - [4개 원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [4개 원천 사이트 주기 수집 및 MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
@@ -26,13 +29,19 @@
 
 데이터 수집 문서는 아래 순서로 읽는 것을 기준으로 한다.
 
-1. [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
+1. [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
+   - 사용자/어드민/수집 job이 어떤 상황에서 어떻게 동작하는지 설명한다.
+2. [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+   - 시나리오를 화면 구조, 필터, 버튼, 상태 표시로 옮긴다.
+3. [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
+   - 화면 기능이 호출할 사용자/어드민 API와 DB 참조 범위를 설명한다.
+4. [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
    - 운영자가 매주 수집 결과를 어떻게 확인하고, 실패 시 어떻게 판단하는지 설명한다.
-2. [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
+5. [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
    - 작가명 한글화/영문화, alias, 동명이인, 최종 artist_key 생성 기준을 설명한다.
-3. [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
+6. [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
    - Artsy / Saatchi / Print Bakery / Art1에서 어떤 작품/작가 값을 수집하고 표준화하는지 설명한다.
-4. [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
+7. [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
    - 개발자가 DB, job, migration, 재실행 안전성을 어떻게 구현할지 설명한다.
 
 이 문서는 운영 흐름을 담당한다. 따라서 먼저 전체 수집 흐름과 실패 처리, 운영자 알림, snapshot 반영 기준을 설명하고, MySQL 테이블 구성은 운영 흐름을 이해하기 위한 참조 정보로 둔다. 작가명 보강, 동명이인 검수, 최종 `artist_key` 확정 흐름은 [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)을 함께 본다.
@@ -548,8 +557,8 @@ Print Bakery
 | `canonical_name_en` | 대표 영문명 |
 | `birth_year` | 승인된 생년 |
 | `nationality` | 승인된 국적 |
-| `identity_status` | `active`, `merged`, `needs_review` |
-| `created_by` | 자동 생성 또는 운영자 ID |
+| `identity_status` | `active`, `merged` |
+| `created_by` | 자동 생성(system) 또는 데이터 관리자 ID |
 | `created_at` | 최종 작가 키 생성 시각 |
 | `approved_by` | 수동 승인 관리자 ID. 자동 확정 건은 비워두거나 system으로 기록 |
 | `approved_at` | 수동 승인 시각 |
@@ -584,10 +593,11 @@ Print Bakery
 9. normalized_artist_staging 생성
 10. artist_name_alias 후보 생성/검수 상태 갱신
 11. artist_identity_candidate 생성/갱신
-12. artist_identity 자동 확정 가능 건 연결/신규 생성
-13. 자동 확정/반려 기준을 충족하지 못한 후보는 운영자 검수 큐에 등록
-14. 품질 점검 결과 저장
-15. 알림 발송
+12. 기존 artist_key 자동 연결 가능 건 연결
+13. 자동 확정/반려 기준을 충족하지 못한 후보와 신규 작가 후보는 운영자 검수 큐에 등록
+14. 운영자 검수 후 데이터 관리자 승인이 있을 때만 신규 artist_key 생성
+15. 품질 점검 결과 저장
+16. 알림 발송
 ```
 
 권장 실행 순서:
@@ -671,12 +681,12 @@ LIMIT 20;
 | 원천별 필드 보유율 | source별 `artist_source_id`, 이름, 생년, 국적, 활동지 보유율 집계 | source별 보유율이 30% 미만인 필드는 자동 확정 근거로 쓰지 않는다 |
 | 교차 원천 비교 가능성 | 같은 이름 후보를 원천쌍별로 만들고, 양쪽 모두 비교 가능한 메타가 있는지 집계 | 원천쌍별 비교 가능 후보가 20쌍 미만이거나 후보 대비 30% 미만이면 점수화하지 않고 검수 참고값으로 둔다 |
 | 추출값 신뢰도 | 자유 텍스트에서 추출한 연도/지역이 실제 의미와 맞는지 샘플 검수 | 단순 4자리 연도처럼 잘못 추출된 값이 있으면 `low`로 두고 자동 확정에 쓰지 않는다 |
-| 자동 확정 결과 샘플 검수(cross-source는 MVP 비활성, post-MVP 적용) | `auto_approved` 후보를 원천쌍별 최대 30건 샘플링해 사람이 확인 | 샘플에서 1건 이상 잘못 확정된 후보가 발견되면 해당 규칙은 즉시 `needs_review` 기준으로 낮춘다 |
+| 자동 확정 결과 샘플 검수 | `auto_approved` 후보를 원천쌍별 최대 30건 샘플링해 사람이 확인 | 샘플에서 1건 이상 잘못 확정된 후보가 발견되면 해당 규칙은 즉시 `needs_review` 기준으로 낮춘다 |
 
 현재 적용 가능한 보수 기준:
 
 - 같은 `source + artist_source_id`가 이미 확정된 경우는 같은 원천 내부 식별자이므로 바로 연결할 수 있다.
-- 서로 다른 원천 간 자동 확정은 `alias_exact` 또는 `alias_approved`와 `birth_year_confidence=high`인 생년 일치가 모두 있을 때만 허용한다. 단, MVP에서는 cross-source 자동 확정을 끄고 cross-source 후보를 전부 `needs_review`로 보낸다. 이 기준은 비교 가능한 메타가 확보된 post-MVP 활성화 시 적용한다.
+- 서로 다른 원천 간 자동 확정은 `alias_exact` 또는 `alias_approved`와 `birth_year_confidence=high`인 생년 일치가 모두 있을 때만 허용한다.
 - 국적, 활동지, 전시, 갤러리는 원천별 보유율과 의미가 다르므로 자동 점수로 쓰지 않고 검수 참고 또는 충돌 경고로만 사용한다.
 - 문서에 있는 기준이라도 실제 데이터에서 비교 가능한 필드가 없거나 잘못 추출된 값이 확인되면 운영 규칙에서 제외하고 문서를 업데이트한다.
 
@@ -812,8 +822,8 @@ GROUP BY source;
 2. 성공 row는 raw에 저장
 3. 실패 row는 raw_fetch.error_message에 저장
 4. 성공 row만 source_artwork_interpreted_staging 후보로 전달
-5. 실패율이 기준 이하이면 이번 run 사용 가능
-6. 실패율이 기준 이상이면 staging 승격 보류
+5. 실패율 5% 미만이면 이번 run 사용 가능
+6. 실패율 5~20%는 표준화는 수행하되 `quality_status=blocked`로 두어 snapshot 자동 반영을 보류한다(20% 이상은 failed)
 7. 실패율과 실패 URL 요약을 운영자에게 알림
 ```
 
@@ -953,7 +963,7 @@ GROUP BY source;
 | 가격 보유율 급락 | 직전 정상 run 대비 가격 숫자 보유율이 10%p 이상 감소 | `quality_status=warning`, 가격 parser 확인 |
 | 가격 보유율 절대 미달 | 가격 숫자 보유율이 20% 미만 | `quality_status=blocked`, snapshot 자동 반영 금지 |
 | 크기 파싱 성공률 미달 | 가로/세로 cm 추출 성공률이 90% 미만 | `quality_status=warning`, 크기 parser 확인 |
-| 상세 실패율 초과 | 상세 실패율이 5% 이상 | `partial_success`, 운영자 확인 후 반영 여부 결정 |
+| 상세 실패율 경고 구간 | 상세 실패율 5~20% | `quality_status=blocked`, 운영자 승인 전 snapshot 자동 반영 보류(표준화는 수행) |
 | 상세 실패율 차단 | 상세 실패율이 20% 이상 | `failed`, 해당 source snapshot 반영 금지 |
 | 중복률 기준 초과 | 같은 `source_artwork_id` 중복률이 5% 이상이거나 직전 정상 run 대비 2배 이상 | `quality_status=warning`, upsert/key 추출 확인 |
 | parser error 증가 | parser error row가 전체 row의 1% 이상이거나 직전 정상 run 대비 2배 이상 | `quality_status=warning`, parser regression 확인 |
@@ -997,7 +1007,7 @@ GROUP BY source;
 
 6. artist_identity_candidate
    - 같은 alias 또는 승인 alias에 연결된 기존 artist_key 후보가 있을 때만 검수 후보 생성
-   - 기존 후보가 없으면 이 단계를 건너뛰고 신규 artist_key 후보로 둠
+   - 기존 후보가 없으면 이 단계를 건너뛰고 신규 작가 후보 큐로 둠
 
 7. artwork_snapshot / snapshot export
    - 학습에 넣을 row만 고정
@@ -1175,10 +1185,10 @@ support_text_candidate = "canvas"
 | 운영 상태 | 처리 |
 |---|---|
 | 같은 원천 ID 기존 연결 | 같은 `source + artist_source_id`에 이미 `artist_key`가 있으면 점수 계산 없이 해당 `artist_key`에 연결 |
-| `auto_approved` | [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)의 자동 확정 가능 조건을 만족하면 해당 후보 `artist_key`에 연결하고, 자동 확정 시각과 규칙 버전을 기록한다. 서로 다른 원천 간 자동 확정은 이름 alias 일치와 고신뢰 생년 일치가 모두 필요. **MVP에서는 cross-source 자동 확정을 끄고 same-source 연결만 자동 처리하며, cross-source 후보는 전부 수동 검수 큐로 보낸다(자동 확정은 post-MVP).** |
-| 신규 `artist_key` 생성 후보 | `source + artist_source_id`가 있고 해당 조합에 연결된 기존 `artist_key`가 없으면 신규 생성 후보로 둠. `artist_source_id`가 없으면 cross-source 신규 생성 조건([artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md) 6.1 신규 artist_key 후보 기준)을 만족할 때만 생성 후보로 둠 |
+| `auto_approved` | [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)의 자동 확정 가능 조건을 만족하면 해당 후보 `artist_key`에 연결하고, 자동 확정 시각과 규칙 버전을 기록한다. 서로 다른 원천 간 자동 확정은 이름 alias 일치와 고신뢰 생년 일치가 모두 필요 |
+| 신규 작가 후보 | `source + artist_source_id`가 있고 해당 조합에 연결된 기존 `artist_key`가 없으면 신규 작가 후보로 둔다. `artist_source_id`가 없으면 원천 작가명, 원천 작가 URL 또는 `source_artist_raw_id`, 작품 row 연결 정보 같은 최소 식별값이 있을 때만 신규 작가 후보로 둔다. 승인 전에는 `artist_key`를 생성하지 않는다 |
 | `needs_review` | 기존 artist_key 연결 후보가 있으나 alias만 일치하고 고신뢰 생년을 확인할 수 없거나, fuzzy alias만 있거나, 국적/활동지 같은 참고 메타만 있는 경우 artist_key에 바로 연결하지 않고 운영자 검수 큐로 이동 |
-| `match_rejected` | 강한 충돌 조건이 있고 운영자가 반려했거나, 기존 승인 이력과 직접 충돌하는 경우 해당 후보 artist_key와의 연결만 금지하고 반려 관리자/시각/사유를 남김. 원천 row는 유지하며 다른 후보 비교 또는 신규 artist_key 후보 처리는 계속 가능 |
+| `match_rejected` | 강한 충돌 조건이 있고 운영자가 반려했거나, 기존 승인 이력과 직접 충돌하는 경우 해당 후보 artist_key와의 연결만 금지하고 반려 관리자/시각/사유를 남김. 원천 row는 유지하며 다른 후보 비교 또는 신규 작가 후보 처리는 계속 가능 |
 
 운영자 검수 화면에는 최소 아래 정보가 필요하다.
 
@@ -1200,7 +1210,7 @@ support_text_candidate = "canvas"
 - 이름만 같다고 자동 병합하지 않는다.
 - 자동 확정/반려 기준을 충족하지 못하면 분리 상태로 두고 수동 검수한다.
 - 잘못 병합하는 것이 잠시 분리해 두는 것보다 위험하다.
-- 검수 승인/반려는 현재 상태(승인자/시각/사유, 반려자/시각/사유)로 남긴다. 변경 전체를 남기는 audit 이력 테이블은 post-MVP다.
+- 검수 승인/반려는 현재 상태(승인자/시각/사유, 반려자/시각/사유)로 남긴다. 변경 전체 audit 이력 테이블은 별도 고도화 항목으로 두되, 신규 생성·연결 확정·병합·un-merge 같은 비가역 identity 결정은 `identity_event_log`(MySQL 적재 기획 5.12.1)에 append-only로 남긴다.
 
 ### 7.7 판매상태 평준화
 
@@ -1295,6 +1305,12 @@ Art1
 - 가격 보유율 10%p 이상 감소 또는 20% 미만
 - 크기 파싱 성공률 90% 미만
 - parser error row 1% 이상 또는 직전 정상 run 대비 2배 이상
+- 예정 실행 시각 + 유예 시간이 지나도 해당 주차 `collector_run`이 생성되지 않음(스케줄러 미실행/크론 실패)
+
+스케줄러 미실행 감지(heartbeat):
+
+- 위 알림은 run이 생성된 뒤의 품질 기준이다. run 자체가 안 생기면 `collector_run`에 row가 없어 품질 알림도 발생하지 않는다.
+- 따라서 예정 실행 시각(예: 월요일 03:00) + 유예 시간이 지나도 해당 주차 `collector_run`이 없으면 별도 heartbeat 알림을 보낸다. 판정은 수집 job 외부의 스케줄러/모니터(cron 종료 코드, dead-man's switch, 외부 watchdog)가 담당한다.
 
 ## 10. 운영 담당자 확인 화면
 
@@ -1398,7 +1414,7 @@ partial_success는 일부 데이터만 수집된 상태다. 상세 실패율이 
 |---|---|---|---|
 | 이름 alias 큐 | 한글/영문 보강 `needs_review`(영문명/한글명 누락·자동 변환) | 수백 건(예: Print Bakery 영문명 미보유 약 105건) | 신규 작가 수에 비례, 소량 |
 | 동명이인 큐 | 같은 alias가 여러 `artist_key` 후보에 걸림 | 수십 건 | 소량 |
-| artist identity 큐 | cross-source 후보(MVP는 전부 `needs_review`) | 정규화 이름 일치쌍 약 110(Artsy-Print Bakery 66, Artsy-Saatchi 37 등) | 신규 작가 등장분만 |
+| artist identity 큐 | 자동 확정 조건을 만족하지 못한 cross-source 후보 | 정규화 이름 일치쌍 약 110(Artsy-Print Bakery 66, Artsy-Saatchi 37 등) | 신규 작가 등장분만 |
 | 작품 검수 큐 | 가격/크기 충돌, 액자만 있는 row, unmapped 재료/상태 | 수십~수백 건(예: Print Bakery frame-only 39건) | 가격/상태 변경분에 비례 |
 
 운영 판단:
@@ -1409,7 +1425,7 @@ partial_success는 일부 데이터만 수집된 상태다. 상세 실패율이 
 
 ### 12.2 에스컬레이션 SLA
 
-알림과 큐는 방치되면 의미가 없으므로 처리 시한과 담당을 정한다. 아래는 MVP 기본값이며 운영 부하를 보고 조정한다.
+알림과 큐는 방치되면 의미가 없으므로 처리 시한과 담당을 정한다. 아래는 1차 적용 기본값이며 운영 부하를 보고 조정한다.
 
 | 항목 | 담당 | 처리 시한 | 미처리 시 |
 |---|---|---|---|
@@ -1417,12 +1433,21 @@ partial_success는 일부 데이터만 수집된 상태다. 상세 실패율이 
 | `partial_success`(보류 구간) 검토 | 운영 담당자 | 영업일 2일 내 반영/보류 결정 | 기본 보류, 자동 반영 안 함 |
 | 이름 alias / 동명이인 / identity 검수 큐 | 운영 담당자 | 주 1회 정기 처리(수집 주기와 동기) | 미처리분은 다음 주로 이월, 큐 적체 지표로 추적 |
 | 작품 검수 큐(가격/크기/unmapped) | 데이터 분석가 + 운영 담당자 | 주 1회 | 해당 row는 학습 snapshot 보류 유지 |
-| 개인정보 / 삭제 요청 | 별도 정책(정식 런칭 전 수립) | 별도 정책 | MVP 범위 외, 정식 런칭 전 정책 필요 |
+| 개인정보 / 삭제 요청 | 별도 정책(정식 런칭 전 수립) | 별도 정책 | 정식 런칭 전 정책 필요 |
 
 원칙:
 
 - 큐 적체량(유입 − 처리)을 주간 리포트에 함께 노출해, 적체가 늘면 인력 또는 기준을 조정한다.
 - 검수 미처리는 데이터 손실이 아니라 "반영 보류"다. 미처리분은 raw/staging에 남고 다음 주에 다시 검토된다.
+
+### 12.3 개인정보 / 삭제 요청 처리(1차 원칙)
+
+수집 대상에는 생존 작가의 이름·약력·SNS·국적 등 개인 식별 정보가 포함될 수 있다. 정식 정책은 정식 런칭 전 수립하되, 1차 운영 원칙은 다음과 같다.
+
+- 원천 공개 페이지에서 수집한 정보만 보존하고, 비공개/회원 전용 데이터는 수집하지 않는다.
+- 작가의 삭제/수정 요청이 오면 서비스 노출(`*_display`, 작가 검색 결과, 1차 시장 카드)에서 우선 제외하고 사유·처리자를 남긴다.
+- raw payload는 감사/재현 목적상 즉시 삭제하지 않되, 요청이 확인되면 서비스 노출과 학습 snapshot 대상에서 제외한다. 보존 기간과 물리 삭제 범위는 정식 정책에서 확정한다.
+- 삭제/제외 요청 처리도 비가역 결정이므로 처리자·시각·사유를 남긴다(작가 identity 관련이면 `identity_event_log`).
 
 ## 13. 정리
 

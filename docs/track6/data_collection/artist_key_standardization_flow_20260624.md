@@ -10,6 +10,9 @@
 
 관련 문서:
 
+- [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
+- [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+- [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
 - [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
 - [4개 원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
 - [4개 원천 사이트 주기 수집 및 MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
@@ -18,16 +21,24 @@
 
 데이터 수집 문서는 아래 순서로 읽는 것을 기준으로 한다.
 
-1. [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
+1. [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
+   - 사용자/어드민/수집 job이 어떤 상황에서 어떻게 동작하는지 설명한다.
+2. [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+   - 작가 검색, 작가명 검수, artist_key 연결 검수 화면 구조를 설명한다.
+3. [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
+   - 작가 검색, 신규 작가 후보 등록, artist_key 승인 API를 설명한다.
+4. [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
    - 수집 실행, 실패 처리, 운영자 알림, snapshot 반영 기준을 설명한다.
-2. [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
+5. [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
    - 작가명 한글화/영문화, alias, 동명이인, 최종 artist_key 생성 기준을 설명한다.
-3. [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
+6. [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
    - 각 원천에서 어떤 작품/작가 값을 수집하고, 어떤 공통 컬럼으로 옮기는지 설명한다.
-4. [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
+7. [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
    - DB 구조, job 구조, migration, 테스트 기준을 설명한다.
 
 이 문서는 네 문서 중 작가명과 작가 키 판단 기준을 담당한다. 다른 문서에서는 핵심 요약만 남기고, 상세한 판단 흐름은 이 문서를 기준으로 한다.
+
+> 권한 기준(이 문서 전체 적용): 검수 큐의 보류·반려·연결 검토·신규 작가 후보 판단은 운영자가 수행한다. 그러나 `artist_identity`에 쓰는 최종 확정(신규 `artist_key` 생성, 기존 `artist_key` 연결 확정)은 데이터 관리자 권한이다. 아래에서 "운영자 검수 큐에서 승인 시 생성/확정"이라고 적힌 단계의 최종 승인 주체는 데이터 관리자다. 권한 단일 기준은 [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md) 5장과 [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md) 2.2다.
 
 ## 1. 전체 흐름
 
@@ -53,7 +64,9 @@ artist_name_alias
   - 같은 alias 또는 승인 alias에 연결된 기존 artist_key 후보 확인
         |
         +-- 기존 후보 없음
-        |     -> 신규 artist_key 후보
+        |     -> 신규 작가 후보
+        |     -> artist_key는 아직 생성하지 않음
+        |     -> 운영자 검수 큐
         |     -> artist_identity_candidate 생성 안 함
         |
         +-- 기존 후보 있음
@@ -68,7 +81,7 @@ artist_identity_candidate
         |
         +-- 기존 후보와 같은 작가로 볼 수 없음
         |     -> 해당 후보와의 연결만 match_rejected
-        |     -> 다른 후보 비교 또는 신규 artist_key 후보
+        |     -> 다른 후보 비교 또는 신규 작가 후보
         |
         +-- 판단 근거 부족 또는 동명이인 가능성 있음
               -> needs_review
@@ -76,7 +89,7 @@ artist_identity_candidate
         v
 artist_identity
   - 기존 artist_key 연결 확정
-  - 또는 신규 artist_key 생성 확정
+  - 또는 데이터 관리자 승인 후 신규 artist_key 생성 확정
   - 승인/반려/자동 확정 이력 보존
 ```
 
@@ -174,7 +187,7 @@ artist_name_alias 저장
 
 동명이인 처리는 모든 작가 row에 적용하지 않는다. 같은 `alias_name` 또는 승인 alias가 기존 `artist_key` 후보와 겹칠 때만 이 로직에 들어간다.
 
-동명이인은 같은 `alias_name`이 여러 작가 후보에 걸리는 상황이다. 기존 후보가 없고 원천 ID도 처음 등장한 작가는 동명이인 처리 없이 신규 `artist_key` 후보로 둔다.
+동명이인은 같은 `alias_name`이 여러 작가 후보에 걸리는 상황이다. 기존 후보가 없고 원천 ID도 처음 등장한 작가는 동명이인 처리 없이 신규 작가 후보로 둔다. 이 단계에서는 최종 운영 키인 `artist_key`를 아직 생성하지 않는다.
 
 아래 분기 기준은 [6.1 자동 확정/검수/반려 기준](#61-자동-확정검수반려-기준)을 따른다.
 
@@ -194,7 +207,9 @@ artist_name_alias 저장
 [같은 alias 또는 승인 alias에 연결된 기존 artist_key 후보가 있는가?]
         |
         +-- NO
-        |     -> 신규 artist_key 후보
+        |     -> 신규 작가 후보
+        |     -> artist_key는 아직 생성하지 않음
+        |     -> 운영자 검수 큐
         |     -> 동명이인 처리 진입 안 함
         |
         +-- YES
@@ -225,13 +240,13 @@ alias 기반 1차 후보 artist_key 목록 조회
         |   (해당 후보와 같은 작가로 볼 수 없는 경우)
         |     -> 해당 후보 artist_key와의 연결만 match_rejected로 기록
         |     -> 원천 row는 유지
-        |     -> 다른 후보 비교 또는 신규 artist_key 후보로 이동
+        |     -> 다른 후보 비교 또는 신규 작가 후보로 이동
         |
         +-- 자동 확정/반려 기준 모두 미달
             (6.1의 "수동 검수 필요" 기준)
               -> artist_key에 바로 연결하지 않음
               -> review_status=needs_review 기록
-              -> 운영자 검수 큐에서 승인/반려/신규 생성 판단
+              -> 운영자 검수 큐에서 검토(보류/반려), 신규 artist_key 생성·연결 확정은 데이터 관리자 승인
 ```
 
 동명이인 상태 기준:
@@ -240,22 +255,22 @@ alias 기반 1차 후보 artist_key 목록 조회
 |---|---|---|
 | `unique` | 같은 `alias_name`으로 연결 가능한 작가 후보가 1개뿐임 | 고신뢰 생년과 충돌 조건 확인 후 자동 확정 검토 가능 |
 | `ambiguous` | alias가 여러 작가 후보에 걸림 | 자동 병합 금지 |
-| `needs_review` | 자동 확정도 반려도 할 수 없는 상태 | 원천 row는 유지하고 artist_key에 바로 연결하지 않음. 운영자 검수 큐에서 승인/반려/신규 생성 판단 |
-| `match_rejected` | 특정 후보 artist_key와는 같은 작가가 아님 | 해당 후보와의 연결만 금지. 원천 row는 유지하고 다른 후보 비교 또는 신규 artist_key 후보로 이동 |
+| `needs_review` | 자동 확정도 반려도 할 수 없는 상태 | 원천 row는 유지하고 artist_key에 바로 연결하지 않음. 운영자 검수 큐에서 검토하고, 신규 artist_key 생성·연결 확정은 데이터 관리자가 승인 |
+| `match_rejected` | 특정 후보 artist_key와는 같은 작가가 아님 | 해당 후보와의 연결만 금지. 원천 row는 유지하고 다른 후보 비교 또는 신규 작가 후보로 이동 |
 
 중요 원칙:
 
 - 같은 이름이라는 이유만으로 병합하지 않는다.
 - 같은 alias가 여러 artist_key 후보에 걸리면 `ambiguity_status=ambiguous`로 둔다.
-- 운영자가 승인한 후보만 `artist_key`에 연결한다.
+- 데이터 관리자가 승인한 후보만 `artist_key`에 연결한다(운영자 검수 큐의 검토를 거친 뒤).
 - 잘못 병합하는 것보다 일시적으로 분리해 두는 편이 안전하다.
 
-## 6. artist_key 생성 기준
+## 6. artist_key 확정 기준
 
 `artist_key`는 서비스와 모델에서 사용하는 최종 작가 키다. 원천 사이트의 `artist_source_id`, `artist_slug`, `artist_idx`와 다르다.
 
 ```text
-artist_identity_candidate
+normalized_artist_staging / artist_name_alias
         |
         v
 1순위: 같은 원천의 같은 artist_source_id 확인
@@ -269,7 +284,9 @@ artist_identity_candidate
 2순위: 같은 alias 또는 승인 alias에 연결된 기존 artist_key 후보 확인
         |
         +-- 기존 후보 없음
-        |     -> 신규 artist_key 후보
+        |     -> 신규 작가 후보
+        |     -> artist_key는 아직 생성하지 않음
+        |     -> 운영자 검수 후 데이터 관리자 승인 시 신규 artist_key 생성
         |     -> 동명이인 처리 진입 안 함
         |
         +-- 기존 후보 있음
@@ -289,7 +306,7 @@ artist_identity_candidate
         +-- 강한 충돌 기준 충족
               -> 해당 후보 artist_key와의 연결만 match_rejected로 기록
               -> 원천 row는 유지
-              -> 다른 후보 비교 또는 신규 artist_key 후보로 이동
+              -> 다른 후보 비교 또는 신규 작가 후보로 이동
 ```
 
 ### 6.1 자동 확정/검수/반려 기준
@@ -312,7 +329,9 @@ artist_identity_candidate
 [같은 alias 또는 승인 alias에 연결된 기존 artist_key 후보가 있는가?]
         |
         +-- NO
-        |     -> 신규 artist_key 후보
+        |     -> 신규 작가 후보
+        |     -> artist_key는 아직 생성하지 않음
+        |     -> 운영자 검수 후 데이터 관리자 승인 시 신규 artist_key 생성
         |     -> 동명이인 처리 진입 안 함
         |
         +-- YES
@@ -334,7 +353,7 @@ artist_identity_candidate
         +-- YES
         |     -> 해당 후보 artist_key와의 연결만 match_rejected
         |     -> 원천 row는 유지
-        |     -> 다른 후보 비교 또는 신규 artist_key 후보로 이동
+        |     -> 다른 후보 비교 또는 신규 작가 후보로 이동
         |
         +-- NO
               |
@@ -379,8 +398,6 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 
 5장의 `자동 확정 조건 충족` 분기는 이 기준을 따른다.
 
-> MVP 범위: MVP에서는 cross-source(서로 다른 원천 간) 자동 확정을 비활성화하고 같은 `source + artist_source_id` 자동 연결만 운영한다. 아래 서로 다른 원천 간 자동 확정 기준은 비교 가능한 작가 메타가 충분히 확보된 post-MVP에서만 적용한다. MVP 단계의 cross-source 후보는 전부 `needs_review`로 두고 수동 검수 큐로 보낸다.
-
 - `alias_exact` 또는 `alias_approved` 중 하나를 만족한다.
 - 서로 다른 원천 후보라면 양쪽 모두 `birth_year_confidence=high`인 생년이 있고 같은 연도다.
 - 같은 alias가 2개 이상의 `artist_key` 후보에 걸린 `ambiguous` 상태가 아니다.
@@ -398,9 +415,9 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 - 국적이 서로 다르지만 생년 충돌처럼 강한 충돌까지는 아니다.
 - 한글명은 같지만 영문명이 다르다. 표기 변형일 수도, 다른 인물일 수도 있어 자동 확정하지 않는다.
 - 원천 프로필 URL이 같은 원천 안에서 서로 다른 인물을 가리키는 것으로 보인다.
-- 같은 이름인데 dominant medium 분류가 다르고, 양쪽 모두 가격 row가 5건 이상이며 같은 통화 기준 가격 중앙값 차이가 2.0 log 이상이다. 자동 반려가 아니라 검수 경고로 둔다. MVP에서는 참고 경고로만 두고 자동/필수 검수 조건에서는 제외한다.
+- 같은 이름인데 dominant medium 분류가 다르고, 양쪽 모두 가격 row가 5건 이상이며 같은 통화 기준 가격 중앙값 차이가 2.0 log 이상이다. 자동 반려가 아니라 검수 경고로 둔다.
 
-`needs_review`는 반려가 아니다. 원천 row는 유지하고 운영자 검수 큐에서 승인, 반려, 신규 `artist_key` 생성 여부를 판단한다.
+`needs_review`는 반려가 아니다. 원천 row는 유지하고 운영자 검수 큐에서 보류/반려를 처리하며, 기존 `artist_key` 연결 확정과 신규 `artist_key` 생성은 데이터 관리자가 승인한다.
 
 **강한 충돌 조건 기준**
 
@@ -411,14 +428,14 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 - 같은 원천에서 같은 `artist_source_id`가 서로 다른 `artist_key`에 승인되어 있다.
 - 운영자가 후보 비교 후 같은 작가가 아니라고 반려했다.
 
-`match_rejected`는 데이터 삭제나 격리가 아니다. 원천 row는 유지하고, 다른 후보가 있으면 계속 비교한다. 맞는 후보가 없으면 신규 `artist_key` 후보 또는 `needs_review`로 이동한다.
+`match_rejected`는 데이터 삭제나 격리가 아니다. 원천 row는 유지하고, 다른 후보가 있으면 계속 비교한다. 맞는 후보가 없으면 신규 작가 후보 또는 `needs_review`로 이동한다.
 
-**신규 artist_key 후보 기준**
+**신규 작가 후보 기준**
 
 - `source + artist_source_id`가 있고, 해당 조합에 연결된 기존 `artist_key`가 없고, 강한 충돌 조건이 없다.
-- `artist_source_id`가 없더라도 `alias_exact` 또는 `alias_approved`가 있고, 기존 `artist_key` 후보가 0개이며, 강한 충돌 조건이 없다.
+- `artist_source_id`가 없으면 자동으로 `artist_key`를 만들지 않는다. 원천 작가명, 원천 작가 URL 또는 `source_artist_raw_id`, 작품 row 연결 정보처럼 최소 식별값이 있을 때만 신규 작가 후보로 두고 운영자 검수 큐에 올린다.
 
-이 경우도 바로 최종 확정하지 않고 신규 후보로 생성한 뒤 운영자 확인 대상에 둔다. 신규 후보는 `artist_identity_candidate`를 거치지 않고 `artist_identity`에 `identity_status=needs_review`, `created_by=auto_new_candidate`로 저장해 운영자 확인 큐에 노출한다(저장 위치 정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.10/5.11).
+신규 작가 후보는 바로 최종 확정하지 않는다. `artist_identity_candidate`를 거치지 않는 경우에도 별도 신규 후보 큐에 저장하고, 운영자 검수를 거쳐 데이터 관리자가 승인한 뒤에만 `artist_identity.artist_key`를 생성한다. 즉 `artist_key`는 `active` 상태로 확정된 최종 운영 키만 의미한다.
 
 **보조 메타 사용 원칙**
 
@@ -447,6 +464,15 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 | `approval_note` | 승인 사유 |
 | `match_evidence_json` | 승인 근거 |
 
+### 6.2 병합 취소(un-merge) 기준
+
+잘못 병합한 작가는 되돌릴 수 있어야 한다. "잘못 병합이 분리보다 위험"하다는 원칙은 사고 시 복구 경로가 있을 때만 성립한다.
+
+- 병합으로 `identity_status=merged`가 된 작가 키는 삭제하지 않고 보존한다. 어느 `artist_key`로 병합됐는지와 `merge_evidence_json`을 남긴다.
+- 병합이 틀렸다고 판단되면 데이터 관리자가 un-merge를 확정한다. 운영자는 un-merge 후보를 검수 큐에 올릴 수 있으나 확정 권한은 데이터 관리자다.
+- un-merge 시 병합됐던 원천 작가 row를 원래 또는 신규 `artist_key`로 다시 연결하고, 처리자·시각·사유와 직전 상태를 `identity_event_log`([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.1)에 append한다.
+- 병합/un-merge로 영향받은 작가의 가격 이력·Warm feature는 재생성 대상으로 표시한다. 과거 snapshot은 수정하지 않고 다음 snapshot부터 반영한다.
+
 ## 7. 운영 화면에서 봐야 할 항목
 
 운영자는 아래 큐를 분리해서 봐야 한다.
@@ -455,7 +481,8 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 |---|---|---|
 | 이름 alias 큐 | 한글명/영문명 후보, 자동 변환 후보 | 표시명 승인/수정/반려 |
 | 동명이인 큐 | 같은 alias가 여러 artist_key 후보에 걸린 경우 | 후보 비교 후 승인/반려 |
-| artist identity 큐 | 동명이인 가능성이 있거나 기존 artist_key 연결 후보가 있는 작가 row | 기존 artist_key 연결 승인, 신규 artist_key 생성, 보류, 반려 |
+| artist identity 큐 | 동명이인 가능성이 있거나 기존 artist_key 연결 후보가 있는 작가 row | 연결 검토/보류/반려(운영자), 기존 키 연결 확정(데이터 관리자) |
+| 신규 작가 후보 큐 | 연결 가능한 기존 artist_key 후보가 없는 작가 row | 검토/보류/반려(운영자), 신규 artist_key 생성 승인(데이터 관리자) |
 
 운영 화면 필수 표시:
 
@@ -474,7 +501,7 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 - 승인/반려 버튼
 - 승인자/승인시각/승인메모
 
-승인/반려 이력은 MVP에서는 각 테이블의 현재 승인/반려 필드(`approved_by`/`approved_at`/`approval_note`, `rejected_by`/`rejected_at`/`reject_reason`)로 현재 상태만 보존한다. 변경 전체를 남기는 audit 이력 테이블은 post-MVP다.
+승인/반려 이력은 각 테이블의 현재 승인/반려 필드(`approved_by`/`approved_at`/`approval_note`, `rejected_by`/`rejected_at`/`reject_reason`)로 현재 상태를 보존한다. 변경 전체 audit 이력 테이블은 별도 고도화 항목으로 둔다. 단, 신규 생성·연결 확정·병합·un-merge 같은 비가역 identity 결정은 `identity_event_log`([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.1)에 append-only로 남긴다.
 
 ## 8. 요약
 
@@ -483,5 +510,5 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 자동 변환 이름은 candidate/display 컬럼에 분리한다.
 alias는 같은 작가를 찾기 위한 이름 후보 목록이다.
 동명이인은 ambiguous로 분리하고 자동 병합하지 않는다.
-운영(active) artist_key는 자동 확정 조건 통과 또는 운영자 승인 후에만 확정한다. 신규 후보는 provisional artist_key(needs_review)로 생성되며 active가 아니다.
+artist_key는 자동 확정 조건 통과 또는 데이터 관리자 승인 후에만 생성/확정되는 최종 운영 키다(운영자 검수 큐를 거친 뒤). 신규 작가 후보 단계에서는 artist_key를 발급하지 않는다.
 ```

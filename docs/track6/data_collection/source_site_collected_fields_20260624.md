@@ -17,6 +17,9 @@
 
 관련 문서:
 
+- [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
+- [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+- [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
 - [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [4개 원천 사이트 주기 수집 및 MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
@@ -25,13 +28,19 @@
 
 데이터 수집 문서는 아래 순서로 읽는 것을 기준으로 한다.
 
-1. [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
+1. [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
+   - 사용자/어드민/수집 job이 어떤 상황에서 어떻게 동작하는지 설명한다.
+2. [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+   - 수집/검수 데이터를 화면에서 어떻게 보여줄지 설명한다.
+3. [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
+   - 수집/검수 데이터를 화면에 제공하는 API를 설명한다.
+4. [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
    - 수집 실행, 실패 처리, 운영자 알림, snapshot 반영 기준을 설명한다.
-2. [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
+5. [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
    - 작가명 한글화/영문화, alias, 동명이인, 최종 artist_key 생성 기준을 설명한다.
-3. [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
+6. [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
    - 각 원천에서 어떤 작품/작가 값을 수집하고, 어떤 공통 컬럼으로 옮기는지 설명한다.
-4. [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
+7. [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
    - DB 구조, job 구조, migration, 테스트 기준을 설명한다.
 
 이 문서는 데이터 항목과 표준화 기준을 담당한다. 운영 실패 처리나 DB migration보다, 각 원천 데이터가 어떤 의미를 갖고 어떤 컬럼으로 이동하는지에 집중한다. 작가명 표시값과 `artist_key` 생성 흐름은 별도 문서인 [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)을 기준으로 한다.
@@ -72,15 +81,15 @@
 - `source_*_interpreted_staging`: 한 컬럼에 섞인 값을 분해하고, 같은 의미의 다른 명칭을 정리한 중간 테이블
 - `normalized_*_staging`: 공통 컬럼/단위/상태값으로 맞춘 1차 표준화 테이블
 - `artist_source_id`: 각 원천 사이트 안에서만 의미가 있는 작가 ID/slug
-- `normalized_artist_id_candidate`: 기존 artist_key 연결 후보를 검토할 때 쓰는 내부 후보 ID
-- `artist_key`: 운영자가 검수/승인한 뒤 모델과 서비스에서 사용할 최종 작가 키
+- `normalized_artist_id_candidate`: 기존 artist_key 연결 후보 또는 신규 작가 후보를 검토할 때 쓰는 내부 후보 ID
+- `artist_key`: 운영자 검수를 거쳐 데이터 관리자가 승인/확정한 뒤 모델과 서비스에서 사용할 최종 작가 키
 - `학습 snapshot export`: 품질 점검을 통과한 row를 특정 시점 기준으로 고정해 parquet로 내보내고, 운영자 검수, 외부 공유, 기존 CSV 기반 코드 호환 목적일 때만 CSV를 추가 생성하는 단계
 
 추측성 보완 금지 원칙:
 
 - 원천에 없는 국적, 생년, 성별, 갤러리, 전시 이력, 재료, 지지체, 제작연도는 자동으로 채우지 않는다.
 - 이름, 작품명, 재료명, 가격 문구를 보고 다른 값을 추정하지 않는다.
-- 외부 지식이나 과거 데이터로 보완이 필요하면 별도 보강 단계로 분리하고, `value_source`, `confidence`, `reviewer`, `review_status`를 남긴다(post-MVP enrichment 테이블, MVP 스키마 외).
+- 외부 지식이나 과거 데이터로 보완이 필요하면 별도 보강 단계로 분리하고, `value_source`, `confidence`, `reviewer`, `review_status`를 남긴다.
 - 자동 분류나 파서 결과가 `confidence=high`가 아닌 값은 `candidate` 또는 `unmapped`로 남기고, 학습 snapshot export 대상에서는 제외하거나 검수 대기 상태로 둔다.
 
 원천 저장 포맷 원칙:
@@ -138,11 +147,11 @@ artist_name_alias
         v
 artist_identity_candidate
   - 같은 alias 또는 승인 alias에 연결된 기존 artist_key 후보가 있을 때만 검수 후보 생성
-  - 기존 후보가 없으면 신규 artist_key 후보로 둠
+  - 기존 후보가 없으면 신규 작가 후보 큐로 둠
         |
         v
 artist_identity
-  - 자동 확정 또는 운영자 승인 후 서비스 공통 artist_key 부여
+  - 자동 확정 또는 데이터 관리자 승인 후 서비스 공통 artist_key 부여
 ```
 
 ## 2. 원천별 수집 방식 요약
@@ -536,12 +545,12 @@ Art1 작가 정보는 작품 상세 안의 작가 프로필을 먼저 파싱하�
 | `exhibition_text` | 전시 이력 |
 | `website_url` | 홈페이지 |
 | `instagram_url` | 인스타그램 |
-| `artist_identity_status` | `unmatched`, `candidate`, `auto_approved`, `approved`, `needs_review`, `match_rejected`. staging 단계의 매칭 상태이며, 최종 `artist_identity.identity_status`(`active`/`merged`/`needs_review`)와 이름·의미가 다르다 |
+| `artist_identity_status` | `unmatched`, `candidate`, `auto_approved`, `approved`, `needs_review`, `match_rejected`. staging 단계의 매칭 상태이며, 최종 `artist_identity.identity_status`(`active`/`merged`)와 이름·의미가 다르다 |
 | `quality_flags_json` | 검수 필요 플래그 |
 
 ### 7.4 작가 이름 한글화/영문화 보강 기준
 
-작가 이름 보강은 `artist_key` 생성 전에 수행한다. 서비스 표시에는 한글명이 필요하고, 기존 artist_key 연결 후보를 찾거나 신규 artist_key 후보를 만들 때 한글명과 영문명을 모두 후보로 볼 수 있어야 하기 때문이다.
+작가 이름 보강은 `artist_key` 확정 전에 수행한다. 서비스 표시에는 한글명이 필요하고, 기존 artist_key 연결 후보를 찾거나 신규 작가 후보를 만들 때 한글명과 영문명을 모두 후보로 볼 수 있어야 하기 때문이다.
 
 전체 순서도와 컬럼 역할은 [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)을 기준으로 한다. 이 섹션은 원천 사이트별 수집 항목 문맥에서 필요한 요약이다.
 
@@ -565,7 +574,7 @@ Art1 작가 정보는 작품 상세 안의 작가 프로필을 먼저 파싱하�
 
 작가 identity는 이름 하나만으로 확정하지 않는다.
 
-같은 alias 또는 승인 alias가 기존 `artist_key` 후보와 겹칠 때만 후보 그룹을 만든다. 기존 후보가 없으면 불필요한 동명이인 검토를 하지 않고 신규 `artist_key` 후보로 둔다. 같은 이름이 여러 `artist_key` 후보에 걸릴 수 있으므로, alias 일치만으로 병합하지 않는다. 후보 생성과 수동 승인/반려 기준은 [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)을 따른다.
+같은 alias 또는 승인 alias가 기존 `artist_key` 후보와 겹칠 때만 후보 그룹을 만든다. 기존 후보가 없으면 불필요한 동명이인 검토를 하지 않고 신규 작가 후보 큐로 둔다. 같은 이름이 여러 `artist_key` 후보에 걸릴 수 있으므로, alias 일치만으로 병합하지 않는다. 후보 생성과 수동 승인/반려 기준은 [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)을 따른다.
 
 1차 후보 생성:
 
@@ -596,12 +605,13 @@ normalized_artist_staging
         v
 artist_identity_candidate
   - 같은 alias 또는 승인 alias에 연결된 기존 artist_key 후보가 있을 때만 후보 그룹 생성
-  - 기존 후보가 없으면 신규 artist_key 후보로 둠
+  - 기존 후보가 없으면 신규 작가 후보 큐로 둠
         |
         v
-artist_key
-  - 신규 후보는 provisional 키(needs_review)로 생성, 자동 확정/운영자 승인 시 active로 확정
-  - 서비스/모델은 active 키만 사용
+artist_identity
+  - 기존 artist_key 연결 확정 또는 신규 artist_key 생성(운영자 검수 후 데이터 관리자 승인)
+  - artist_key는 최종 운영 키만 의미
+  - 서비스/모델은 artist_key가 확정된 작가만 사용
 ```
 
 주의:
@@ -681,6 +691,8 @@ artist_key
 ## 9. 작품 공통 표준화 매핑
 
 최종적으로 4개 사이트의 수집 결과는 아래 공통 컬럼으로 맞춘다.
+
+> 라벨 주: 3~6장 원천별 표의 "표준화 대상"은 목표/후보 라벨이다. `normalized_artwork_staging`(SoT는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.8) 공통 컬럼에 없는 값(갤러리명/유형/도시, subject, style 등)은 공통 컬럼이 아니라 `metadata_json`에 보존하며, 모델 피처 승격은 별도 검증 후에 한다(§9.1·10장). 작가 메타 라벨의 SoT 컬럼 대응은 §7.3을 따른다.
 
 | 공통 컬럼 | Artsy | Saatchi | Print Bakery | Art1 |
 |---|---|---|---|---|
@@ -789,16 +801,16 @@ artist_key
 - 정규화 규칙 버전: 수집 run이 아니라 snapshot(`artwork_snapshot.rules_version`)과 모델 아티팩트에 기록
 - `payload_hash`: 원본 응답 hash
 - `quality_flags_json`: 이상치, 충돌, 검수 필요 사유
-- `artist_identity_status`(normalized_*_staging의 staging 매칭 상태)와 `artist_identity.identity_status`(최종 `active`/`merged`/`needs_review`): 작가 identity 상태를 단계별로 구분
+- `artist_identity_status`(normalized_*_staging의 staging 매칭 상태)와 `artist_identity.identity_status`(최종 `active`/`merged`): 작가 identity 상태를 단계별로 구분. 검수 대기는 최종 artist_key가 아니라 후보 큐 상태로 관리
 
-`artist_key`는 이름만으로 찍어내는 단순 자동 생성값이 아니라, 자동 확정 조건을 통과했거나 운영자가 승인한 최종 운영 키로 본다. 원천 ID가 같더라도 사이트가 다르면 같은 작가라는 뜻이 아니며, 이름이 같아도 동명이인일 수 있다.
+`artist_key`는 이름만으로 찍어내는 단순 자동 생성값이 아니라, 자동 확정 조건을 통과했거나 데이터 관리자가 승인한 최종 운영 키로 본다. 원천 ID가 같더라도 사이트가 다르면 같은 작가라는 뜻이 아니며, 이름이 같아도 동명이인일 수 있다.
 
 데이터 보관 정책:
 
 - raw payload는 재현성과 감사 목적을 위해 파일/object storage에 보관한다.
 - MySQL에는 payload 경로, hash, 파싱 결과, 품질 지표를 저장한다.
 - 학습에 사용한 snapshot은 삭제하지 않고 모델 버전과 연결한다.
-- 수동 검수 결과는 현재 승인/반려 상태(승인자/시각/사유)로 남긴다. 변경 전체 audit 이력은 post-MVP다.
+- 수동 검수 결과는 현재 승인/반려 상태(승인자/시각/사유)로 남긴다. 변경 전체 audit 이력은 별도 고도화 항목으로 두되, 신규 생성·연결 확정·병합·un-merge 같은 비가역 작가 identity 결정은 `identity_event_log`([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.1)에 append-only로 남긴다.
 
 ## 12. 정리
 
@@ -811,4 +823,4 @@ artist_key
 
 따라서 운영 DB에서는 원천별 raw를 먼저 보존하고, 이후 `source_artwork_interpreted_staging`에서 원천별 값을 분해/정리한 뒤, 마지막으로 `normalized_artwork_staging`에서 공통 컬럼으로 맞추는 구조를 사용한다.
 
-작가 정보도 동일하게 `source_artist_raw`를 먼저 보존하고, `source_artist_interpreted_staging`에서 이름/국적/출생연도/활동지/전시 이력 등을 분해한 뒤, `normalized_artist_staging`에서 공통 컬럼으로 맞춘다. 이후 `artist_name_alias`에서 한글명/영문명 보강 후보를 검수한다. 같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 `artist_identity_candidate`에서 검수 가능한 구조로 관리하고, 기존 후보가 없으면 신규 `artist_key` 후보로 둔다. 신규 작가도 `artist_identity`에 provisional `artist_key`(`identity_status=needs_review`)로 생성하며, 서비스/모델에는 `identity_status=active`인 `artist_key`만 사용한다.
+작가 정보도 동일하게 `source_artist_raw`를 먼저 보존하고, `source_artist_interpreted_staging`에서 이름/국적/출생연도/활동지/전시 이력 등을 분해한 뒤, `normalized_artist_staging`에서 공통 컬럼으로 맞춘다. 이후 `artist_name_alias`에서 한글명/영문명 보강 후보를 검수한다. 같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 `artist_identity_candidate`에서 검수 가능한 구조로 관리하고, 기존 후보가 없으면 신규 작가 후보 큐로 둔다. 신규 작가는 운영자 검수를 거쳐 데이터 관리자가 승인한 뒤에만 `artist_identity`에 최종 `artist_key`를 생성하며, 서비스/모델에는 확정된 `artist_key`만 사용한다.

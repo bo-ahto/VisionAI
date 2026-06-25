@@ -11,6 +11,9 @@
 
 관련 문서:
 
+- [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
+- [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+- [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
 - [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [4개 원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
@@ -19,13 +22,19 @@
 
 데이터 수집 문서는 아래 순서로 읽는 것을 기준으로 한다.
 
-1. [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
+1. [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
+   - 사용자/어드민/수집 job이 어떤 상황에서 어떻게 동작하는지 설명한다.
+2. [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+   - DB에 저장된 상태와 검수 데이터를 화면에서 어떻게 쓸지 설명한다.
+3. [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
+   - 화면 기능이 호출할 사용자/어드민 API와 DB 참조 범위를 설명한다.
+4. [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
    - 운영자가 수집 결과를 어떻게 확인하고 실패를 어떻게 처리하는지 설명한다.
-2. [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
+5. [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
    - 작가명 한글화/영문화, alias, 동명이인, 최종 artist_key 생성 기준을 설명한다.
-3. [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
+6. [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
    - 원천별 작품/작가 수집 항목과 표준화 기준을 설명한다.
-4. [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
+7. [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
    - 위 운영/데이터 기준을 실제 DB와 job으로 구현하는 방법을 설명한다.
 
 이 문서는 구현 설계를 담당한다. 운영 알림 문구나 사이트별 세부 컬럼 설명은 다른 문서에 두고, 여기서는 MySQL 테이블, 수집 job, upsert, snapshot export, 테스트 기준을 중심으로 정리한다. 작가명/alias/동명이인/`artist_key` 판단 규칙은 [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)을 기준으로 구현한다.
@@ -39,11 +48,12 @@
   -> 현재 CSV 중심 수집 방식의 한계
   -> raw first, normalize later 원칙
   -> 전체 수집 파이프라인
-  -> MySQL 테이블 설계
+  -> MySQL 스키마 레이어와 테이블 설계
+  -> 화면/API가 참조할 스키마 범위
   -> 원천별 collector 구현 전략
   -> 주기 실행과 upsert/변경 이력
   -> 품질 감사와 모델 학습 연결
-  -> MVP 범위와 구현 단계
+  -> 1차 적용 범위와 구현 단계
   -> 개발자 구현 체크리스트
 ```
 
@@ -98,7 +108,7 @@
 - 모델 학습/실험은 parquet를 우선 사용한다.
 - 외부 공유, 감사, 수동 검수에는 CSV가 편하다.
 - 기존 실험 코드가 CSV 입력을 요구하는 경우에는 CSV export를 추가로 생성한다.
-- 따라서 MySQL은 source of truth, parquet는 학습/분석용 snapshot, CSV는 공유/검수/호환용 export로 보는 것이 맞다.
+- 따라서 MySQL은 운영 단일 기준 저장소, parquet는 학습/분석용 snapshot, CSV는 공유/검수/호환용 export로 보는 것이 맞다.
 
 ### 권장 저장 포맷
 
@@ -137,7 +147,7 @@
 |---|---|---|
 | 원본 payload | 원천 응답 재현 | 원래 형식 그대로 보관 |
 | JSONL | row 단위 raw 파싱 결과 | 사이트별 컬럼 차이와 중첩 구조 보존에 유리 |
-| MySQL | 운영 조회, 이력, 품질 감사 | source of truth |
+| MySQL | 운영 조회, 이력, 품질 감사 | 운영 단일 기준 저장소 |
 | Parquet | 학습/분석 snapshot | 타입 보존과 대용량 처리에 유리 |
 | CSV | 외부 공유, 수동 검수, 제출, 기존 코드 호환 | 주 저장 포맷으로 사용하지 않음 |
 
@@ -152,7 +162,7 @@
 | 공통 매핑 실패 | 원천 값은 보존하고 `unmapped_*` 또는 `quality_flags_json`에 기록 |
 | 후보는 있으나 확정 불가 | candidate 컬럼에 저장하고 `review_status=needs_review` |
 | 원천 값 없음 | null 유지 |
-| 외부/수동 보강 필요 | post-MVP enrichment 테이블에 기록하고 `value_source`, `confidence`, `reviewer`, `review_status`를 남김(MVP 스키마에는 포함하지 않음) |
+| 외부/수동 보강 필요 | 별도 enrichment 테이블에 기록하고 `value_source`, `confidence`, `reviewer`, `review_status`를 남김 |
 
 `unmapped_*`(예: `unmapped_medium`)과 `unmapped` 목록은 별도 물리 컬럼이 아니라 `quality_flags_json` 내 키로 기록한다(예: `quality_flags_json.unmapped_medium`). mapping table 보강 대상 표시도 같은 방식이다.
 
@@ -223,16 +233,226 @@
   - 모델 학습에는 export snapshot만 사용
 ```
 
-## 5. MySQL 테이블 설계 초안
+## 5. MySQL 스키마 설계
 
-### 5.1 collector_run
+이 장은 DB 스키마의 단일 기준이다. API 문서나 화면 문서에서 테이블/컬럼/상태값을 다시 정의하지 않고, 이 장의 정의를 참조한다.
+
+API 문서는 아래 내용만 가져간다.
+
+- 어떤 화면 기능이 어떤 테이블을 읽는지
+- 어떤 버튼이 어떤 테이블의 어떤 상태를 바꾸는지
+- 응답에 필요한 표시 필드가 어느 테이블에서 오는지
+
+API 문서에는 전체 컬럼 목록을 복사하지 않는다. 컬럼 정의, enum 정의, FK 기준은 이 문서를 기준으로 한다.
+
+### 5.0 스키마 레이어 요약
+
+수집 데이터는 한 번에 최종 테이블로 들어가지 않는다. 운영자가 문제 원인을 추적할 수 있도록 아래 레이어를 분리한다.
+
+```text
+collector_run / raw_fetch
+  - 수집 실행과 HTTP/파일 응답 단위 기록
+        |
+        v
+source_artwork_raw / source_artist_raw
+  - 원천 사이트에서 받은 작품/작가 row 보존
+        |
+        v
+source_*_interpreted_staging
+  - 원천 문자열 분해, 가격/크기/작가명 후보 추출
+        |
+        v
+normalized_*_staging
+  - 4개 사이트를 공통 컬럼으로 표준화
+        |
+        v
+artist_name_alias / artist_identity_candidate / artist_identity
+  - 작가명 표시, 동명이인 검수, 최종 artist_key 확정
+        |
+        v
+artwork_snapshot / artwork_snapshot_item
+  - 학습/운영 반영 가능한 고정 snapshot 생성
+        |
+        v
+price_model_registry / price_model_deployment
+  - 학습된 모델 버전 등록, 운영 승격, 롤백 이력 관리
+```
+
+레이어별 책임:
+
+| 레이어 | 대표 테이블 | 역할 | 직접 수정 주체 |
+|---|---|---|---|
+| 수집 실행 | `collector_run`, `raw_fetch` | 언제, 어떤 방식으로, 어떤 응답을 수집했는지 기록 | crawler/job |
+| 원천 raw | `source_artwork_raw`, `source_artist_raw` | 원천 사이트별 작품/작가 row 보존 | crawler/job |
+| 원천 분해 | `source_artwork_interpreted_staging`, `source_artist_interpreted_staging` | 한 컬럼에 섞인 값을 후보값으로 분해 | parser/normalizer job |
+| 공통 표준화 | `normalized_artwork_staging`, `normalized_artist_staging` | 4개 사이트 데이터를 공통 컬럼으로 맞춤 | normalizer job, 일부 운영자 수정 |
+| 작가 identity | `artist_name_alias`, `artist_identity_candidate`, `artist_identity` | 표시명, alias, 동명이인, 최종 `artist_key` 관리 | 운영자/데이터 관리자, 일부 자동 규칙 |
+| snapshot | `artwork_snapshot`, `artwork_snapshot_item` | 학습/운영 반영 기준 데이터 고정 | 데이터 관리자/job |
+| 모델 운영 | `price_model_registry`, `price_model_deployment`, `price_prediction_log` | 모델 버전, 배포 이력, 예측 재현 정보 관리 | 데이터 관리자/API |
+| 환율 | `fx_rate_daily` | 원천 통화를 KRW 학습 가격으로 환산 | 운영자/job |
+
+확장성 기준:
+
+- Artsy / Saatchi / Print Bakery / Art1 외 원천이 추가되어도 테이블을 원천별로 새로 만들지 않는다.
+- 새 원천은 `source` 코드와 원천별 parser/normalizer 버전을 추가하고, 기존 raw -> interpreted staging -> normalized staging -> 검수 -> snapshot 흐름을 그대로 사용한다.
+- 운영자가 수동 CSV를 업로드하는 경우도 예외 테이블에 바로 넣지 않는다. `manual_csv` 또는 구체적인 수동 원천 코드로 `source`를 부여하고, 원본 CSV row를 raw 레이어에 보존한 뒤 동일한 표준화/검수/snapshot 흐름을 태운다.
+- 새 원천 또는 CSV에만 있는 컬럼은 공통 컬럼에 추측해서 넣지 않고 `metadata_json`, `parsed_parts_json`, `quality_flags_json`, unmapped 목록에 남긴다.
+- 원천 등록/비활성화, parser 버전, 마지막 정상 run은 `source_registry` 물리 테이블에서 관리한다. 운영 기준은 DB다.
+
+### 5.0.1 화면/API 참조 범위
+
+화면과 API는 모든 테이블을 직접 다루지 않는다. 아래 표는 API 문서를 작성할 때의 참조 범위다.
+
+| 화면/기능 | 주로 읽는 테이블 | 주로 쓰는 테이블 | 비고 |
+|---|---|---|---|
+| 사용자 작가 검색 | `artist_identity`, `artist_name_alias`, 필요 시 `normalized_artist_staging` | 없음 | 사용자에게 원천 사이트명/URL/ID는 노출하지 않음 |
+| 사용자 신규 작가 후보 제출 | `artist_name_alias`, `artist_identity` | `normalized_artist_staging` 기반 신규 후보 상태, 검수 메모 영역 | 승인 전 `artist_key` 생성 금지 |
+| 사용자 예측 결과 | 운영 모델/feature store, `artist_identity`, snapshot에서 만든 요약 feature | 없음 | 수집 DB를 실시간 예측 경로에 직접 연결하지 않는 것이 원칙 |
+| 모델 버전 관리 | `price_model_registry`, `price_model_deployment` | `price_model_registry`, `price_model_deployment` | 모델 승인/승격/롤백 |
+| 1차 시장 가격 카드 | snapshot 또는 별도 집계 feature store | 없음 | 사용자에게는 호당가 중앙값/범위/매체별 분포/N만 노출 |
+| 수집 대시보드 | `collector_run`, `raw_fetch` 집계 | 없음 | 실패/부분 실패/품질 상태 확인 |
+| 수집 run 상세 | `collector_run`, `raw_fetch`, `source_*_raw` | `collector_run.approved_*`, `override_reason` | 반영 승인/보류 사유 기록 |
+| 작품 품질 검수 | `source_artwork_raw`, `source_artwork_interpreted_staging`, `normalized_artwork_staging` | `normalized_artwork_staging.quality_flags_json`, 검수 상태/메모 | 가격/크기/재료/제외 여부 판단 |
+| 작가명 검수 | `normalized_artist_staging`, `artist_name_alias` | `artist_name_alias`, `normalized_artist_staging.artist_name_*_display` | 원천명과 표시명 분리 |
+| artist_key 연결 검수 | `artist_identity_candidate`, `artist_identity`, `artist_name_alias` | `artist_identity_candidate.review_status`, `artist_identity` | 기존 key 연결 또는 반려 |
+| 신규 작가 승인 | `normalized_artist_staging`, `artist_name_alias` | `artist_identity` | 운영자 검수 후 데이터 관리자 승인이 있을 때만 신규 `artist_key` 생성 |
+| snapshot 후보 확인 | `normalized_artwork_staging`, `normalized_artist_staging`, `artist_identity`, `fx_rate_daily` | `artwork_snapshot`, `artwork_snapshot_item` | 포함/제외 사유 확정 |
+
+주의:
+
+- 사용자 화면 API는 원천 추적용 컬럼(`source`, `source_artwork_url`, `artist_source_id`, `artist_source_url`)을 기본 응답에 포함하지 않는다.
+- 어드민 화면 API는 원천 추적용 컬럼을 표시해야 한다.
+- 예측 API는 수집 DB를 직접 조회하지 않고, 승인된 snapshot과 모델 번들/feature store를 사용한다.
+
+### 5.0.2 상태값 기준
+
+상태값은 화면/API 문서에서 새로 만들지 않는다. 아래 enum을 기준으로 한다.
+
+| 대상 | 컬럼 | 값 |
+|---|---|---|
+| 수집 run | `collector_run.status` | `running`, `success`, `partial_success`, `failed` |
+| 수집 품질 | `collector_run.quality_status` | `ok`, `warning`, `blocked` |
+| 가격/판매상태 | `normalized_artwork_staging.availability` | `available`, `sold`, `price_on_request`, `missing_price`, `unavailable` |
+| 작가 staging 매칭 | `normalized_artist_staging.artist_identity_status` | `unmatched`, `candidate`, `auto_approved`, `approved`, `needs_review`, `match_rejected` |
+| alias 검수 | `artist_name_alias.review_status` | `auto_approved`, `approved`, `needs_review`, `match_rejected` |
+| alias 동명이인 | `artist_name_alias.ambiguity_status` | `unique`, `ambiguous`, `needs_review` |
+| artist identity 후보 | `artist_identity_candidate.review_status` | `pending`, `auto_approved`, `approved`, `match_rejected`, `needs_review` |
+| artist identity 후보 모호성 | `artist_identity_candidate.ambiguity_status` | `unique`, `ambiguous`, `needs_review` |
+| 최종 작가 키 | `artist_identity.identity_status` | `active`, `merged` |
+| snapshot 포함 | `artwork_snapshot_item.include_status` | `included`, `excluded` |
+| 모델 버전 | `price_model_registry.model_status` | `candidate`, `approved`, `deployed`, `retired`, `rejected` |
+| 모델 배포 | `price_model_deployment.deployment_status` | `active`, `inactive`, `rolled_back` |
+
+`needs_review`는 최종 작가 키 상태가 아니다. 검수 큐 또는 staging 단계의 상태다. 최종 운영 `artist_key`는 `artist_identity.identity_status=active`일 때만 서비스/모델에서 사용한다.
+
+`blocked`는 수집 run 품질 상태다. 사용자 화면에는 노출하지 않고, 어드민에서는 “snapshot 자동 반영 차단”으로 설명한다.
+
+### 5.0.3 쓰기 책임과 승인 이력
+
+운영 중 같은 컬럼을 여러 주체가 동시에 수정하면 재현성이 깨진다. 따라서 쓰기 책임을 아래처럼 둔다.
+
+| 데이터 | 자동 job 쓰기 | 운영자 쓰기 | 비고 |
+|---|---|---|---|
+| raw 응답/원천 row | 가능 | 불가 | 원천 보존 영역이므로 운영자가 직접 수정하지 않음 |
+| interpreted 후보값 | 가능 | 원칙적으로 불가 | parser 재실행으로 수정 |
+| normalized 후보값 | 가능 | 제한적 가능 | 운영자 수정은 사유와 처리자 기록 필요 |
+| 작가 표시명/alias | 후보 생성 가능 | 승인/수정/반려 가능 | 원천명은 보존, 표시명은 별도 컬럼 |
+| artist_key 연결 | 자동 확정 조건 통과 시 가능 | 검수 큐 검토(보류/반려/연결 제안) | 신규 `artist_key` 생성과 기존 키 연결 확정은 데이터 관리자 승인 후 |
+| snapshot 생성 | job 생성 가능 | 반영 보류 요청 | snapshot 생성 승인은 데이터 관리자 권한이다. run 단위 반영 보류/승인은 운영자(`collector_run.approved_*`). 생성 시 rules_version과 cutoff 기록 |
+
+수동 조치가 들어가는 테이블에는 최소 아래 기록이 필요하다.
+
+- `approved_by`
+- `approved_at`
+- `approval_note`
+- `rejected_by`
+- `rejected_at`
+- `reject_reason`
+
+해당 컬럼이 아직 본문 테이블에 명시되지 않은 경우, DDL 작성 시 위 승인/반려 이력 컬럼을 추가한다.
+
+### 5.0.4 API 문서 작성 전 확정해야 할 스키마 항목
+
+API 문서를 확정하기 전에 아래 항목만 이 문서 기준으로 확인한다.
+
+| 확인 항목 | 기준 위치 |
+|---|---|
+| 원천 등록/비활성화와 수집 방식 관리 위치 | 5.1 |
+| 사용자 작가 검색 응답에 원천 사이트 정보를 제외하는지 | 5.0.1 |
+| 신규 작가 후보가 승인 전 `artist_key`를 만들지 않는지 | 5.11, 5.12 |
+| 신규 작가 후보 큐가 물리 테이블인지 view/export인지 | 5.0.5 |
+| 어드민 검수 큐 상태값이 어디에 저장되는지 | 5.9, 5.10, 5.11 |
+| 작품 품질 검수 결과가 어디에 남는지 | 5.8 |
+| 수집 실패와 품질 차단이 어떤 상태값인지 | 5.2, 5.0.2 |
+| snapshot 포함/제외가 어디에 남는지 | 5.13, 5.14 |
+| 1차 시장 가격 카드가 어떤 원천 필드를 노출하지 않아야 하는지 | 5.0.1 |
+| 모델 버전과 운영 배포 이력이 어디에 남는지 | 5.17, 5.18 |
+| 예측 결과가 어떤 모델에서 나왔는지 재현 가능한지 | 5.19 |
+
+### 5.0.5 신규 작가 후보 큐 기준
+
+신규 작가 후보 큐는 최종 `artist_key` 테이블이 아니다. 1차 적용에서는 별도 물리 테이블을 필수로 만들지 않고, `normalized_artist_staging`과 `artist_name_alias`를 기준으로 만든 SQL view 또는 CSV export로 운영해도 된다.
+
+신규 작가 후보가 되는 조건:
+
+- 같은 `source + artist_source_id`에 이미 연결된 active `artist_key`가 없다.
+- 같은 alias 또는 승인 alias로 연결 가능한 기존 `artist_key` 후보가 없다.
+- 원천 작가명과 원천 작가 URL 또는 `source_artist_raw_id`처럼 최소 식별값이 있다.
+- 작품 row 연결 정보가 있다.
+
+처리 원칙:
+
+- 신규 후보 단계에서는 `artist_identity.artist_key`를 만들지 않는다.
+- 운영자 검수를 거쳐 데이터 관리자가 신규 작가 생성을 승인하면 그때 `artist_identity`에 `identity_status=active`인 최종 `artist_key`를 생성한다.
+- 기존 작가와 같은 인물이라고 판단되면 신규 생성 대신 기존 `artist_key`에 연결한다(연결 확정은 데이터 관리자 승인).
+- 보류 또는 반려된 후보는 원천 row를 삭제하지 않고 검수 상태와 사유를 남긴다.
+
+API/화면 관점:
+
+- 사용자 화면은 신규 작가 후보를 제출할 수 있지만, 최종 `artist_key` 생성 여부는 보여주지 않는다.
+- 어드민 화면은 신규 후보의 원천 작가명, 표시명 후보, 작품 목록, 후보 없음 사유, 승인/보류/반려 버튼을 제공한다.
+- API 문서에서는 “신규 작가 후보 등록”과 “신규 artist_key 생성 승인”을 별도 기능으로 분리한다.
+
+### 5.1 source_registry
+
+수집 원천의 운영 설정을 저장한다. 새 원천 사이트나 수동 CSV source가 추가되어도 코드에 하드코딩하지 않고 이 테이블에 등록한 뒤 같은 수집/검수/snapshot 흐름을 사용한다.
+
+| 컬럼 | 설명 |
+|---|---|
+| `source` | 원천 코드 PK. 예: `artsy`, `saatchi`, `printbakery`, `art1`, `manual_csv` |
+| `display_name` | 어드민 화면 표시명 |
+| `source_type` | `marketplace`, `gallery_csv`, `manual_csv`, `internal` 등 원천 유형 |
+| `collection_mode` | `api`, `html`, `crawler`, `csv_upload` |
+| `raw_payload_format` | `json`, `html`, `csv`, `mixed` |
+| `is_enabled` | 정기 수집 활성 여부 |
+| `allow_manual_upload` | 해당 source로 수동 업로드를 허용하는지 |
+| `parser_version` | 원천별 parser 버전 |
+| `normalizer_version` | 공통 표준화 버전 |
+| `schedule_cron` | 정기 수집 주기. 수동 CSV 전용이면 null 가능 |
+| `request_delay_sec` | 기본 요청 간격 |
+| `last_success_run_id` | 마지막 성공 run |
+| `last_failed_run_id` | 마지막 실패 run |
+| `paused_reason` | 수집 일시 중지 사유 |
+| `created_by` | 등록자 |
+| `created_at` | 등록 시각 |
+| `updated_by` | 마지막 수정자 |
+| `updated_at` | 마지막 수정 시각 |
+
+운영 원칙:
+
+- `source_registry.is_enabled=false`인 source는 정기 크론에서 제외한다.
+- 수동 CSV는 `collection_mode=csv_upload`로 등록한다.
+- parser/normalizer 버전을 바꾸면 이후 run부터 적용하고, 과거 run은 당시 버전을 유지한다.
+- source를 삭제하지 않는다. 더 이상 쓰지 않는 원천은 `is_enabled=false`와 `paused_reason`으로 관리한다.
+
+### 5.2 collector_run
 
 수집 실행 단위를 기록한다.
 
 | 컬럼 | 설명 |
 |---|---|
 | `id` | run PK |
-| `source` | `saatchi`, `artsy`, `art1`, `printbakery` |
+| `source` | `source_registry.source` 참조 |
 | `collector_name` | 실행 스크립트/모듈명 |
 | `collector_version` | 코드 버전 또는 git SHA. run 시작 시 자동 캡처. 파서도 함께 배포되므로 이 값으로 갈음 |
 | `started_at` | 시작 시각 |
@@ -242,7 +462,7 @@
 | `quality_flags_json` | 품질 경고/차단 사유와 위반한 기준 지표 요약 |
 | `approved_by` | warning/partial_success run을 snapshot 반영 승인한 운영자 ID. 자동 승인은 비우거나 system |
 | `approved_at` | run 반영 승인 시각 |
-| `approval_note` | 반영 승인/보류/회수/확인 조치 내용과 사유 메모. 조치 유형을 나누는 별도 필드는 post-MVP |
+| `approval_note` | 반영 승인/보류/회수/확인 조치 내용과 사유 메모. 조치 유형을 나누는 별도 필드는 후속 고도화 항목 |
 | `override_reason` | `blocked` 해제/수동 반영 사유 |
 | `snapshot_date` | 수집 기준일 |
 | `request_delay_sec` | 요청 간격 |
@@ -257,7 +477,7 @@
 | `normalized_artist_rows` | 작가 표준화 row 수 |
 | `summary_json` | run별 요약 |
 
-### 5.2 raw_fetch
+### 5.3 raw_fetch
 
 URL/API 요청 단위 원본을 저장한다.
 
@@ -278,9 +498,9 @@ URL/API 요청 단위 원본을 저장한다.
 | `error_message` | 실패 메시지 |
 | `fetched_at` | 수집 시각 |
 
-권장: MySQL에는 `payload_hash`, `payload_path`, 요약만 저장하고, 큰 HTML/JSON은 파일 또는 object storage에 저장한다. 단기 MVP에서는 MySQL `MEDIUMTEXT`도 가능하다.
+권장: MySQL에는 `payload_hash`, `payload_path`, 요약만 저장하고, 큰 HTML/JSON은 파일 또는 object storage에 저장한다. 단기 운영에서는 MySQL `MEDIUMTEXT`도 가능하지만, 장기 운영에서는 object storage 분리를 우선한다.
 
-### 5.3 source_artwork_raw
+### 5.4 source_artwork_raw
 
 원천별 작품 row를 저장한다. 원천별 컬럼 차이를 보존하기 위한 raw structured table이다. 작품 관련 부가 정보는 이 테이블의 `metadata_json`에 저장하고, 작가 프로필/이력처럼 작가 자체에 속하는 정보는 `source_artist_raw.metadata_json`에 분리 저장한다.
 
@@ -311,7 +531,7 @@ URL/API 요청 단위 원본을 저장한다.
 | `row_hash` | 주요 필드 hash |
 | `collected_at` | 수집 시각 |
 
-### 5.4 source_artist_raw
+### 5.5 source_artist_raw
 
 작가 메타를 원천별로 저장한다. 작가 소개문, 학력, 전시, 수상, 프로젝트, 소장처, 홈페이지, SNS처럼 작가 자체에 속하는 부가 정보는 이 테이블의 `metadata_json`에 저장한다. 작품 설명, 액자, 배송, edition처럼 작품에 속하는 정보는 `source_artwork_raw.metadata_json`에 둔다.
 
@@ -335,13 +555,13 @@ URL/API 요청 단위 원본을 저장한다.
 | `row_hash` | 주요 필드 hash |
 | `collected_at` | 수집 시각 |
 
-### 5.5 source_artwork_interpreted_staging
+### 5.6 source_artwork_interpreted_staging
 
 raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼저 분해하고 정리하는 중간 결과다.
 
 작품 설명과 작가 소개가 한 원문에 섞여 있으면 raw에는 원문 전체를 보존하고, 이 단계에서는 작품 관련 후보만 분리한다. 작가 관련 후보는 `source_artist_interpreted_staging`에서 분리한다.
 
-> 설계 메모(interpreted/normalized 분리 근거와 MVP 단순화 옵션): 두 단계를 물리 테이블로 나누는 이유는 분해 실패(원문 파싱 단계)와 표준화 실패(공통 컬럼 변환 단계)를 구분해 운영자가 원인을 빠르게 찾고, raw 재수집 없이 해당 단계만 재처리하기 위해서다. 다만 현재 원천 규모(원천별 수천 row)에서는 물리 테이블 2벌이 과할 수 있다. 따라서 MVP에서는 interpreted 결과를 별도 테이블 대신 `normalized_*_staging`의 `*_candidate` 컬럼과 `parsed_parts_json`/`quality_flags_json`에 흡수하는 단순화 옵션도 허용한다. 단, 이 경우에도 분해 실패와 표준화 실패 플래그는 구분해 남겨야 두 방식의 추적성이 동일해진다. MVP에서 어느 방식을 채택하는지는 §12 MVP 구현 범위를 따른다.
+> 설계 메모(interpreted/normalized 분리 근거와 단순화 옵션): 두 단계를 물리 테이블로 나누는 이유는 분해 실패(원문 파싱 단계)와 표준화 실패(공통 컬럼 변환 단계)를 구분해 운영자가 원인을 빠르게 찾고, raw 재수집 없이 해당 단계만 재처리하기 위해서다. 다만 현재 원천 규모(원천별 수천 row)에서는 물리 테이블 2벌이 과할 수 있다. 따라서 interpreted 결과를 별도 테이블 대신 `normalized_*_staging`의 `*_candidate` 컬럼과 `parsed_parts_json`/`quality_flags_json`에 흡수하는 단순화 옵션도 허용한다. 단, 이 경우에도 분해 실패와 표준화 실패 플래그는 구분해 남겨야 두 방식의 추적성이 동일해진다. 어느 방식을 채택하는지는 §12 1차 적용 범위를 따른다.
 
 | 컬럼 | 설명 |
 |---|---|
@@ -371,7 +591,7 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `quality_flags_json` | 분해 실패/검수 필요 플래그 |
 | `interpreted_at` | 분해/정리 시각 |
 
-### 5.6 source_artist_interpreted_staging
+### 5.7 source_artist_interpreted_staging
 
 작가 raw를 바로 최종 작가 키로 쓰지 않고, 원천별 작가 정보를 먼저 분해하고 정리하는 중간 결과다.
 
@@ -413,7 +633,7 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `quality_flags_json` | 동명이인 위험/이름 충돌/메타 부족 플래그 |
 | `interpreted_at` | 분해/정리 시각 |
 
-### 5.7 normalized_artwork_staging
+### 5.8 normalized_artwork_staging
 
 원천별 분해/정리 staging을 입력으로 받아 만든 학습 데이터 생성 전의 표준화 결과다.
 
@@ -449,7 +669,7 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `quality_flags_json` | 가격 없음, 크기 오류 등 |
 | `normalized_at` | 표준화 시각 |
 
-### 5.8 normalized_artist_staging
+### 5.9 normalized_artist_staging
 
 원천별 작가 분해/정리 staging을 입력으로 받아 만든 공통 작가 메타 테이블이다.
 
@@ -492,13 +712,13 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `bio_text` | 작가 소개문 |
 | `website_url` | 홈페이지 |
 | `instagram_url` | 인스타그램 |
-| `artist_identity_status` | staging 매칭 상태: `unmatched`/`candidate`/`auto_approved`/`approved`/`needs_review`/`match_rejected`. 최종 `artist_identity.identity_status`(active/merged/needs_review)와 다름 |
+| `artist_identity_status` | staging 매칭 상태: `unmatched`/`candidate`/`auto_approved`/`approved`/`needs_review`/`match_rejected`. 최종 `artist_identity.identity_status`(`active`/`merged`)와 다름 |
 | `quality_flags_json` | 작가 메타 품질 플래그 |
 | `normalized_at` | 표준화 시각 |
 
 > 컬럼 범위 메모: `solo_count`, `group_count`, `fair_count`, `total_shows`, `followers`, `for_sale_works`, `total_works` 같은 인기도/전시량 지표는 보존은 하되 모델 피처로 바로 쓰지 않는다([원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md) 10장). 결측률/입력 가능성 검증 후 승격한다.
 
-### 5.9 artist_name_alias
+### 5.10 artist_name_alias
 
 작가 이름 한글화/영문화 보강과 검수 이력을 관리하는 테이블이다. 서비스 표시와 artist_key 후보 생성을 위해 사용하지만, 자동 변환명만으로 작가 identity를 확정하지 않는다.
 
@@ -524,11 +744,11 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `approved_at` | 수동 승인 시각 |
 | `approval_note` | 승인 메모 |
 
-### 5.10 artist_identity_candidate
+### 5.11 artist_identity_candidate
 
-같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 생성하는 검수 후보 테이블이다. 원천 ID나 이름을 바로 운영 artist_key로 쓰지 않고, 근거와 상태를 남긴다. 기존 후보가 없으면 이 테이블을 거치지 않고 신규 `artist_key` 후보로 둔다.
+같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 생성하는 검수 후보 테이블이다. 원천 ID나 이름을 바로 운영 artist_key로 쓰지 않고, 근거와 상태를 남긴다. 기존 후보가 없으면 이 테이블을 거치지 않고 신규 작가 후보 큐로 둔다.
 
-신규 `artist_key` 후보(기존 후보가 0개)는 이 테이블을 거치지 않고 `artist_identity`에 `identity_status=needs_review`, `created_by=auto_new_candidate`로 생성해 운영자 확인 큐에 노출한다. 신규 후보는 자동으로 `active`로 두지 않고, 운영자가 승인해야 `identity_status=active`로 전환한다. 다만 같은 `source + artist_source_id`가 이미 active `artist_key`에 연결된 경우는 신규 후보가 아니라 기존 연결이므로 바로 그 키에 연결한다.
+신규 작가 후보(기존 후보가 0개)는 `normalized_artist_staging` 기반 검수 큐로 노출한다. `artist_identity`에는 넣지 않는다. 운영자 검수를 거쳐 데이터 관리자가 신규 작가로 승인한 뒤에만 `artist_identity.artist_key`를 생성한다. 다만 같은 `source + artist_source_id`가 이미 active `artist_key`에 연결된 경우는 신규 후보가 아니라 기존 연결이므로 바로 그 키에 연결한다.
 
 | 컬럼 | 설명 |
 |---|---|
@@ -556,9 +776,9 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `rejected_at` | 매칭 반려 시각 |
 | `reject_reason` | 매칭 반려 사유 |
 
-### 5.11 artist_identity
+### 5.12 artist_identity
 
-운영에서 사용하는 작가 키 테이블이다. 같은 작가로 확정된 여러 원천 작가 row는 하나의 `artist_key`에 연결한다. `identity_status`로 `active`(운영 사용)·`needs_review`(신규/검수 대기 provisional)·`merged`를 구분하며, 서비스와 모델은 `active` 키만 사용한다. 신규 작가도 provisional `artist_key`(needs_review)로 이 테이블에 생성되고, 승인 시 `active`로 전환한다.
+운영에서 사용하는 최종 작가 키 테이블이다. 같은 작가로 확정된 여러 원천 작가 row는 하나의 `artist_key`에 연결한다. `identity_status`는 `active`(운영 사용)와 `merged`를 사용한다. 검수 대기 상태는 `artist_identity`가 아니라 `artist_identity_candidate` 또는 신규 작가 후보 큐에서 관리한다. 신규 작가는 운영자 검수를 거쳐 데이터 관리자가 승인한 뒤에만 `artist_identity.artist_key`가 생성된다.
 
 | 컬럼 | 설명 |
 |---|---|
@@ -568,8 +788,8 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `canonical_name_en` | 대표 영문명 |
 | `birth_year` | 승인된 생년 |
 | `nationality` | 승인된 국적 |
-| `identity_status` | `active`, `merged`, `needs_review` |
-| `created_by` | 자동 생성 또는 운영자 ID |
+| `identity_status` | `active`, `merged` |
+| `created_by` | 자동 생성(system) 또는 데이터 관리자 ID |
 | `created_at` | 최종 작가 키 생성 시각 |
 | `approved_by` | 수동 승인 관리자 ID. 자동 확정 건은 비워두거나 system으로 기록 |
 | `approved_at` | 수동 승인 시각 |
@@ -580,7 +800,33 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 
 자동 확정, 수동 승인, 반려, 보류 판단 기준은 [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)을 따른다. 이 테이블에서는 최종 `artist_key`와 승인/병합 근거만 보존한다.
 
-### 5.12 artwork_snapshot
+### 5.12.1 identity_event_log (append-only)
+
+비가역 작가 identity 결정(신규 `artist_key` 생성, 기존 키 연결 확정/반려, 병합, 병합 취소)과 개인정보 요청에 따른 서비스 노출 억제/해제는 현재 상태 컬럼만으로는 사후 추적이 약하므로 append-only 이벤트 로그로 남긴다. 작품/가격 등 전체 필드의 변경 audit은 여전히 고도화 항목이지만, 되돌리기 어려운 identity 결정은 1차 적용에 포함한다.
+
+| 컬럼 | 설명 |
+|---|---|
+| `id` | PK |
+| `event_type` | `create`, `link`, `reject`, `merge`, `unmerge`, `reactivate`, `suppress`, `unsuppress` |
+| `artist_key` | 대상 최종 작가 키 |
+| `related_artist_key` | 병합/un-merge 상대 키(있을 때) |
+| `normalized_artist_id` | 관련 staging row |
+| `before_status` | 직전 `identity_status`/연결/서비스 노출 상태 |
+| `after_status` | 변경 후 `identity_status`/연결/서비스 노출 상태 |
+| `actor_id` | 처리자 ID |
+| `actor_role` | `data_admin`, `system`(자동 확정) |
+| `reason` | 사유 |
+| `evidence_json` | 결정 근거 |
+| `created_at` | 발생 시각 |
+
+운영 원칙:
+
+- 이벤트는 수정/삭제하지 않고 append만 한다.
+- 자동 확정(`auto_approved`)도 `actor_role=system`으로 1건 남긴다.
+- 개인정보/삭제 요청으로 작가의 서비스 노출을 억제/해제하면 `event_type=suppress`/`unsuppress`로 남긴다(raw 물리 삭제 정책은 정식 정책에서 확정).
+- API `GET /api/v1/admin/audit-logs`의 `entity_type=artist_identity` 조회는 이 테이블을 source로 쓴다. 다른 엔티티의 변경 이력은 각 테이블의 승인/반려 필드를 그대로 사용한다.
+
+### 5.13 artwork_snapshot
 
 학습/운영 기준 snapshot을 고정한다.
 
@@ -595,7 +841,7 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 
 모델 아티팩트의 `training_snapshot_id`/`snapshot_export_id`는 이 `artwork_snapshot.snapshot_id`를 가리킨다. `snapshot_export_id`는 같은 `snapshot_id`에서 만든 export 산출물(parquet/manifest)의 ID이며, 단일 export면 `snapshot_id`와 동일하게 둔다.
 
-### 5.13 artwork_snapshot_item
+### 5.14 artwork_snapshot_item
 
 snapshot에 포함된 작품 row 목록이다.
 
@@ -610,7 +856,7 @@ snapshot에 포함된 작품 row 목록이다.
 | `include_status` | `included`, `excluded` |
 | `exclude_reason` | 제외 사유 |
 
-### 5.14 fx_rate_daily
+### 5.15 fx_rate_daily
 
 학습 snapshot에서 가격 통화를 KRW로 통일할 때 사용하는 기준일 환율 테이블이다. raw/normalized 단계에서는 원천 통화를 그대로 보존하고, 환산은 snapshot export 직전의 `price_conversion` 단계에서만 수행한다. 이렇게 해야 환율 정책이 바뀌어도 원천 가격을 다시 환산해 재현할 수 있다.
 
@@ -636,22 +882,104 @@ snapshot에 포함된 작품 row 목록이다.
 
 이 출력 컬럼은 학습 snapshot export(parquet)에 포함되는 export 산출물이다. 재현/감사를 위해 환산에 사용한 `fx_rate_date`/`fx_rate_source`와 환율 정책 버전을 `artwork_snapshot.summary_json`(또는 export manifest)에 함께 기록한다.
 
-### 5.15 주요 키/제약/인덱스
+### 5.16 주요 키/제약/인덱스
 
 재현성과 재실행 안전성을 위해 최소 아래 제약을 둔다. 상세 컬럼은 위 각 테이블 정의를 따른다.
 
 | 대상 | 제약 |
 |---|---|
-| `collector_run` | PK `id`. `(source, snapshot_date, collector_version)` 조회 인덱스 |
+| `source_registry` | PK `source` |
+| `collector_run` | PK `id`. `(source, snapshot_date, collector_version)` 조회 인덱스. `source`는 `source_registry.source` 참조 |
+| `price_model_registry` | PK `model_version`. `(route, model_status)` 조회 인덱스 |
+| `price_model_deployment` | PK `deployment_id`. route별 active deployment는 1개만 허용 |
+| `price_prediction_log` | PK `prediction_id`. `(model_version, deployment_id, predicted_at)` 조회 인덱스 |
 | `raw_fetch` | `(run_id, url, payload_hash)` 유니크로 같은 응답 중복 적재 방지 |
 | `source_artwork_raw` | `(run_id, source, source_artwork_id)` 유니크. 재실행 시 중복 insert 금지 |
 | `source_artist_raw` | `(run_id, source, artist_source_id)` 유니크 |
 | `normalized_artwork_staging` | `source_artwork_key`(= `source + source_artwork_id`) 인덱스, 최신 row 조회용 인덱스 |
 | `artist_name_alias` | `(normalized_artist_id, alias_name, alias_language)` 유니크 |
 | `artist_identity` | `artist_key` PK |
+| `identity_event_log` | PK `id`. `(artist_key, created_at)` 조회 인덱스. append-only(수정/삭제 금지) |
 | 멱등성 | 같은 `(source, source_artwork_id, run_id)` 재처리 시 결과 불변. snapshot export는 같은 입력 + 같은 규칙/환율 버전이면 동일 결과 |
 
 FK는 각 본문 테이블 정의의 `*_id` 컬럼(`run_id`, `raw_fetch_id`, `source_artwork_raw_id`, `source_artwork_interpreted_id`, `source_artist_raw_id`, `source_artist_interpreted_id`, `normalized_artist_id`)을 따른다.
+
+### 5.17 price_model_registry
+
+학습된 가격 예측 모델 버전을 등록하는 테이블이다. 모델 파일이 object storage나 파일 시스템에 있더라도, 운영에서 어떤 모델을 쓸 수 있는지는 이 테이블을 기준으로 판단한다.
+
+| 컬럼 | 설명 |
+|---|---|
+| `model_version` | 모델 버전 PK. 예: `official_v0_1_warm_20260625_01` |
+| `route` | `warm`, `cold`, `unified` 등 모델 경로 |
+| `model_status` | `candidate`, `approved`, `deployed`, `retired`, `rejected` |
+| `training_snapshot_id` | 학습에 사용한 `artwork_snapshot.snapshot_id` |
+| `snapshot_export_id` | 학습 parquet/export 산출물 ID |
+| `feature_generation_version` | feature 생성 코드/규칙 버전 |
+| `training_code_version` | 학습 코드 git SHA 또는 버전 |
+| `artifact_uri` | model bundle/joblib 등 아티팩트 위치 |
+| `feature_store_uri` | 운영 feature store 위치 |
+| `metrics_json` | validation/test 성능 지표 |
+| `parity_report_uri` | parity 검증 리포트 위치 |
+| `approved_by` | 승인자 |
+| `approved_at` | 승인 시각 |
+| `approval_note` | 승인/반려 사유 |
+| `created_at` | 등록 시각 |
+
+운영 원칙:
+
+- 새 모델은 처음에 `candidate`로 등록한다.
+- validation/test 검증과 parity 검증을 통과한 모델만 `approved`로 바꾼다.
+- `approved` 모델만 운영 배포 대상이 될 수 있다.
+- 모델이 바뀌어도 과거 `model_version` row는 삭제하지 않는다.
+
+### 5.18 price_model_deployment
+
+운영 API가 현재 어떤 모델 버전을 사용하는지 기록한다. 모델 승격과 롤백은 이 테이블에 남긴다.
+
+| 컬럼 | 설명 |
+|---|---|
+| `deployment_id` | 배포 ID PK |
+| `route` | `warm`, `cold`, `unified` 등 모델 경로 |
+| `model_version` | `price_model_registry.model_version` 참조 |
+| `deployment_status` | `active`, `inactive`, `rolled_back` |
+| `deployed_by` | 배포 승인자 |
+| `deployed_at` | 배포 시각 |
+| `deployment_note` | 배포 사유 |
+| `rolled_back_by` | 롤백 처리자 |
+| `rolled_back_at` | 롤백 시각 |
+| `rollback_reason` | 롤백 사유 |
+
+운영 원칙:
+
+- route별 `active` deployment는 하나만 허용한다.
+- 새 deployment를 활성화하면 같은 route의 이전 active deployment는 `inactive`로 전환한다.
+- 문제가 생기면 이전 검증 완료 모델로 `rollback` deployment를 생성하거나 이전 deployment를 다시 active로 전환한다.
+- 수집 snapshot 생성, 모델 학습, 모델 운영 승격은 서로 다른 단계다. 새 수집 데이터가 들어와도 운영 모델은 자동으로 바뀌지 않는다.
+
+### 5.19 price_prediction_log
+
+사용자에게 반환한 가격 예측이 어느 모델에서 나온 것인지 재현하기 위한 로그다.
+
+| 컬럼 | 설명 |
+|---|---|
+| `prediction_id` | 예측 요청 ID PK |
+| `deployment_id` | 사용된 운영 배포 ID |
+| `model_version` | 사용된 모델 버전 |
+| `route` | 실제 적용된 모델 경로 |
+| `artist_key` | 확정 작가 키. 없으면 null |
+| `input_hash` | 입력값 hash. 원문 전체 저장이 부담되면 hash와 요약만 보존 |
+| `input_summary_json` | 가격 예측에 사용한 주요 입력 요약 |
+| `predicted_price_krw` | 예측 가격 |
+| `confidence_label` | 사용자 표시 신뢰도 |
+| `review_required` | 검수 필요 여부 |
+| `created_at` | 예측 시각 |
+
+운영 원칙:
+
+- 개인정보나 민감 입력을 장기 보존하지 않도록 `input_summary_json` 범위를 제한한다.
+- 예측 장애 또는 모델 품질 이슈가 발생하면 `prediction_id`로 모델 버전과 입력 요약을 추적한다.
+- 모델 업데이트 전후 성능/응답 차이를 비교할 때 이 로그를 사용한다.
 
 ## 6. 원천별 수집 전략
 
@@ -767,7 +1095,7 @@ FK는 각 본문 테이블 정의의 `*_id` 컬럼(`run_id`, `raw_fetch_id`, `so
 
 ### 실행 방식
 
-MVP:
+1차 적용:
 
 - cron 또는 GitHub Actions/self-hosted runner
 - Python collector 실행
@@ -812,7 +1140,7 @@ run마다 최소 아래 지표를 남긴다.
 
 중단 기준 예시:
 
-- 상세 실패율이 5% 이상이면 표준화 단계 중단
+- 상세 실패율 5~20%는 `quality_status=blocked`로 두어 학습 snapshot 자동 반영을 보류한다(표준화 자체는 수행). 20% 이상이면 `failed`로 처리한다. 상세 기준은 [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md) 6.2·8장을 따른다.
 - 전회 대비 수집 건수가 30% 이상 감소하면 알림
 - 주요 필드 파싱 성공률이 90% 미만이면 알림
 - 같은 `source_artwork_id` 중복률이 5% 이상이거나 직전 정상 run 대비 2배 이상이면 알림
@@ -828,11 +1156,13 @@ run마다 최소 아래 지표를 남긴다.
 3. normalized staging 생성
 4. 품질 감사
 5. 가격 통화 통일(price_conversion): snapshot 기준일 환율로 KRW 환산, 원천 KRW(price_krw_source)는 그대로 사용
-6. 학습 snapshot export 생성
-7. snapshot parquet export
+6. `artwork_snapshot`과 `artwork_snapshot_item`으로 포함/제외 row 고정
+7. snapshot parquet export 생성
 8. 운영자 검수, 외부 공유, 기존 CSV 기반 코드 호환이 필요할 때만 CSV export
 9. 모델 학습
-10. 모델 버전과 학습 snapshot ID 연결
+10. `price_model_registry`에 모델 버전과 학습 snapshot ID 연결
+11. validation/test 검증과 parity 검증 통과 시 `approved` 처리
+12. 운영 승격 시 `price_model_deployment`에 active deployment 기록
 
 모델 아티팩트에는 반드시 다음을 기록한다.
 
@@ -842,6 +1172,15 @@ run마다 최소 아래 지표를 남긴다.
 - `normalization_rules_version`(사용한 snapshot의 `rules_version`)
 - `feature_generation_version`
 - `train/validation/test split id`
+- `model_version`
+- `deployment_id`(운영 승격 후)
+
+모델 업데이트 원칙:
+
+- 새 모델이 학습되었다고 바로 운영 API에 반영하지 않는다.
+- 모델은 `candidate -> approved -> deployed -> retired` 흐름으로 관리한다.
+- 동일한 입력이라도 모델 버전이 다르면 예측값이 달라질 수 있으므로, 예측 응답과 예측 로그에는 항상 `model_version`과 `deployment_id`를 남긴다.
+- 롤백 가능한 상태를 유지하기 위해 직전 운영 모델 아티팩트와 feature store는 삭제하지 않는다.
 
 ## 11. MySQL을 쓸 때의 장단점
 
@@ -862,13 +1201,14 @@ run마다 최소 아래 지표를 남긴다.
 
 ### 결론
 
-MySQL은 운영 수집의 source of truth로 적합하다. 다만 원본 대용량 payload는 파일/object storage에 두고, MySQL에는 경로/hash/파싱 결과/품질 지표를 저장하는 하이브리드 방식이 가장 현실적이다.
+MySQL은 운영 단일 기준 저장소로 적합하다. 다만 원본 대용량 payload는 파일/object storage에 두고, MySQL에는 경로/hash/파싱 결과/품질 지표를 저장하는 하이브리드 방식이 가장 현실적이다.
 
-## 12. MVP 구현 범위
+## 12. 1차 적용 범위
 
-1차 MVP는 아래 범위로 충분하다.
+바로 운영 적용할 1차 범위는 아래와 같다.
 
 - 공통 collector_run 테이블
+- source_registry 테이블
 - raw_fetch 테이블
 - source_artwork_raw 테이블
 - source_artist_raw 테이블
@@ -879,23 +1219,24 @@ MySQL은 운영 수집의 source of truth로 적합하다. 다만 원본 대용�
 - artist_name_alias 테이블
 - artist_identity_candidate 테이블
 - artist_identity 테이블
+- 신규 작가 후보 큐 SQL view 또는 export
 - source별 collector 4개를 같은 인터페이스로 래핑
 - run summary JSON 저장
 - fx_rate_daily 테이블과 가격 통화 통일(price_conversion) 단계
 - parquet export 기능
 - 검수/공유/기존 코드 호환용 CSV export 기능
 - 최소 검수 수단: SQL 뷰 또는 CSV 추출 기반 이름 alias·동명이인·identity 검수 큐와 승인/반려 기록
+- `identity_event_log` 테이블(신규 생성·연결 확정·병합·un-merge 등 비가역 identity 결정 append-only 기록)
 
-`artist_identity_candidate`와 `artist_identity` 테이블은 MVP에도 포함하지만, MVP 단계에서는 같은 `source + artist_source_id` 자동 연결과 수동 검수 큐 운영까지만 사용한다. 서로 다른 원천 간 자동 확정은 켜지 않는다.
+`artist_identity_candidate`와 `artist_identity` 테이블을 포함한다. 같은 `source + artist_source_id` 기존 연결은 자동 연결하고, 서로 다른 원천 간 자동 확정은 `alias_exact` 또는 `alias_approved`와 `birth_year_confidence=high`인 생년 일치가 모두 있을 때만 허용한다. 신규 작가 후보는 `artist_identity`에 미리 넣지 않고 후보 큐에서 관리하며, 운영자 검수 후 데이터 관리자 승인이 있을 때만 최종 `artist_key`를 생성한다.
 
-interpreted/normalized 분리는 택일 설계다. 분해 규칙이 자주 바뀌거나 분해 실패와 표준화 실패를 분리 추적해야 하면 2-table(interpreted+normalized)을 채택하고, 그렇지 않으면 MVP는 단일 staging+`*_candidate`/`quality_flags_json` 흡수안으로 시작한다. §5.5 설계 메모의 단순화 옵션이 이 흡수안이며, 두 방식을 동시에 필수로 두지 않는다.
+interpreted/normalized 분리는 택일 설계다. 분해 규칙이 자주 바뀌거나 분해 실패와 표준화 실패를 분리 추적해야 하면 2-table(interpreted+normalized)을 채택하고, 그렇지 않으면 단일 staging+`*_candidate`/`quality_flags_json` 흡수안으로 시작한다. §5.6 설계 메모의 단순화 옵션이 이 흡수안이며, 두 방식을 동시에 필수로 두지 않는다.
 
-MVP에서 하지 않아도 되는 것:
+후속 고도화 항목:
 
-- 서로 다른 원천 간(cross-source) 자동 `artist_key` 확정. MVP에서는 같은 `source + artist_source_id` 자동 연결까지만 자동화하고, cross-source 후보는 전부 수동 검수 큐로 보낸다. cross-source 자동 확정 규칙은 비교 가능한 작가 메타가 충분히 확보된 뒤 활성화한다
 - 최종 학습 feature 생성
 - 자동 모델 재학습
-- 고도화된 관리자 검수 UI(대시보드/시각화). 최소 검수 수단은 위 MVP 범위에 포함한다
+- 고도화된 관리자 검수 UI(대시보드/시각화). 최소 검수 수단은 위 1차 적용 범위에 포함한다
 - 별도 물리 current 테이블. `normalized_artwork_current`는 view로 충분
 - 복잡한 canonical artwork merge
 
@@ -936,9 +1277,9 @@ MVP에서 하지 않아도 되는 것:
 - 같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 작가 identity 검수 후보를 생성한다.
 - 같은 alias가 여러 기존 `artist_key` 후보에 걸리면 `ambiguity_status=ambiguous`로 두고 자동 확정하지 않는다.
 - 작가 identity는 이름만으로 자동 확정하지 않고, 기존 후보 확인과 최종 키 부여 단계를 분리한다.
-- MVP에서는 같은 `source + artist_source_id` 자동 연결만 운영하고, cross-source 자동 확정은 비활성화한 채 후보를 수동 검수 큐로 보낸다. cross-source 자동 확정 규칙은 데이터 축적 후 활성화한다.
-- 자동 확정 가능 조건을 만족하는 후보는 `auto_approved`로 기록하고 해당 `artist_key`에 연결한다. 자동 확정/반려 기준을 충족하지 못한 후보는 `needs_review`로 두고 artist_key에 바로 연결하지 않는다. 강한 충돌 조건이 있고 운영자가 반려했거나 기존 승인 이력과 직접 충돌하는 후보는 `match_rejected`로 남기되, 이는 해당 후보 artist_key와의 연결만 금지한다. 원천 row는 유지하며 다른 후보 비교 또는 신규 artist_key 후보 처리는 계속 가능하다.
-- 자동 확정 조건을 통과한 후보와 운영자가 승인한 후보만 `artist_identity.artist_key`에 연결한다. MVP에서는 cross-source 자동 확정을 끄므로 여기서 자동 연결되는 것은 같은 `source + artist_source_id` 케이스뿐이고, 나머지는 운영자 승인이 필요하다.
+- 같은 `source + artist_source_id` 기존 연결은 자동 연결한다. 서로 다른 원천 간 자동 확정은 `alias_exact` 또는 `alias_approved`와 `birth_year_confidence=high`인 생년 일치가 모두 있을 때만 허용한다.
+- 자동 확정 가능 조건을 만족하는 후보는 `auto_approved`로 기록하고 해당 `artist_key`에 연결한다. 자동 확정/반려 기준을 충족하지 못한 후보는 `needs_review`로 두고 artist_key에 바로 연결하지 않는다. 강한 충돌 조건이 있고 운영자가 반려했거나 기존 승인 이력과 직접 충돌하는 후보는 `match_rejected`로 남기되, 이는 해당 후보 artist_key와의 연결만 금지한다. 원천 row는 유지하며 다른 후보 비교 또는 신규 작가 후보 처리는 계속 가능하다.
+- 자동 확정 조건을 통과했거나 데이터 관리자가 승인한 후보만 `artist_identity.artist_key`에 연결한다(운영자 검수 큐 검토를 거친 뒤).
 
 ### 5단계: 학습 snapshot 고정
 
@@ -997,6 +1338,7 @@ data_exports/
 - 학습에는 MySQL에서 고정 snapshot을 export한 parquet를 우선 사용한다.
 - CSV는 외부 공유, 수동 검수, 제출, 기존 코드 호환이 필요할 때만 추가 생성한다.
 - 모델 운영 API는 수집 DB를 직접 보지 않고, 학습된 모델 번들과 별도 운영 feature store를 사용한다.
+- 운영 모델 버전은 `price_model_deployment`의 active row를 기준으로 결정한다.
 
 이 구조가 좋은 이유:
 
@@ -1012,8 +1354,10 @@ data_exports/
 ### 16.1 스키마/버전 관리
 
 - MySQL DDL은 migration 파일로 관리한다.
-- `collector_version`(git SHA)은 run 시작 시 자동 캡처해 run마다 기록한다. 파서가 collector와 함께 배포되므로 별도 `parser_version`은 두지 않고 이 값으로 갈음한다.
+- `collector_version`(git SHA)은 run 시작 시 자동 캡처해 run마다 기록한다. 파서가 collector와 함께 배포되므로 run 단위 provenance로는 별도 `parser_version`을 두지 않고 이 값으로 갈음한다.
+- `source_registry.parser_version`/`normalizer_version`은 원천별 현재 적용 버전을 보여주는 설정 표시값이며 run 재현 기준이 아니다. 재현 기준은 run의 `collector_version`과 snapshot의 `rules_version`이다.
 - 정규화 규칙 버전은 수집 run이 아니라 snapshot(`artwork_snapshot.rules_version`)과 모델 아티팩트에 기록한다.
+- 버전 개념 SoT 정리: 코드/파서=`collector_run.collector_version`, 정규화·필터 규칙=`artwork_snapshot.rules_version`, feature 생성=`price_model_registry.feature_generation_version`, 원천별 설정 표시값=`source_registry.parser_version`/`normalizer_version`.
 - 모델 학습 snapshot에는 `snapshot_export_id`, `source_cutoff_at`, `feature_generation_version`을 기록한다.
 - raw payload는 파일/object storage에 두고, DB에는 `payload_path`, `payload_hash`, `payload_size`를 저장한다.
 
@@ -1042,7 +1386,7 @@ data_exports/
 - 수집 DB 장애가 예측 API 장애로 이어지지 않게 한다.
 - 예측 API는 운영 모델 번들과 검증된 feature store만 본다.
 - 새 수집 데이터는 검수와 snapshot export를 거친 뒤 다음 모델 학습에만 반영한다.
-- 모델 승격은 학습, validation/test 검증, parity 검증, 아티팩트 등록, API 배포 순서로 진행한다.
+- 모델 승격은 학습, validation/test 검증, parity 검증, `price_model_registry` 등록/승인, `price_model_deployment` 활성화, API smoke test 순서로 진행한다.
 
 ## 17. 다음 작업
 
