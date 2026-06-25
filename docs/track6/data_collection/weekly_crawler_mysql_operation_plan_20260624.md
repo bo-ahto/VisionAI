@@ -257,7 +257,7 @@ https://www.art1.com/marketPlace/__detail_view.php?goods={goods_id}
 
 이 섹션은 운영자가 수집 결과와 실패 원인을 이해할 때 필요한 테이블 참조다. 상세 DDL, migration, job 구조는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)에서 관리한다.
 
-이 절의 테이블/컬럼은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 스키마의 운영 참조 부분집합이다. 전체 컬럼·enum의 단일 기준(SoT)은 그 문서이며, 정의가 어긋나면 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)을 기준으로 맞춘다.
+이 절의 테이블/컬럼은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 스키마의 운영 참조 부분집합이다. 전체 컬럼·enum의 단일 기준은 그 문서이며, 정의가 어긋나면 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)을 기준으로 맞춘다.
 
 ### 3.1 collector_run
 
@@ -282,7 +282,15 @@ https://www.art1.com/marketPlace/__detail_view.php?goods={goods_id}
 | `interpreted_artist_rows` | 작가 원천별 분해/정리 row 수 |
 | `normalized_artwork_rows` | 작품 표준화 row 수 |
 | `normalized_artist_rows` | 작가 표준화 row 수 |
+| `snapshot_date` | 수집 기준일. run/snapshot 재현과 주차 식별 기준 |
+| `heartbeat_at` | 실행 중 수집 job이 주기 갱신하는 lease 시각. single-flight·watchdog 좀비 run 회수에 사용(§9, 정의는 periodic §5.2/§5.2.2) |
+| `approved_by` | `warning`/`partial_success` run을 snapshot 반영 승인한 운영자 ID. 자동 승인은 비우거나 system |
+| `approved_at` | run 반영 승인 시각 |
+| `approval_note` | 반영 승인/보류/회수/확인 조치 내용과 사유 |
+| `override_reason` | `blocked` 해제/수동 반영 사유 |
 | `summary_json` | 수집 요약 |
+
+> `snapshot_date`/`heartbeat_at`/`approved_by`/`approved_at`/`approval_note`/`override_reason`의 단일 정의 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.2다. 본 문서 운영 로직(§4·§5.4·§6.5·§8·§9)이 이 컬럼들을 사용하므로 참조용으로 함께 표기한다.
 
 ### 3.2 raw_fetch
 
@@ -294,12 +302,20 @@ https://www.art1.com/marketPlace/__detail_view.php?goods={goods_id}
 | `run_id` | collector_run ID |
 | `source` | 사이트 |
 | `fetch_type` | `list`, `detail`, `artist`, `search`, `export` |
-| `url` | 요청 URL |
+| `url_sanitized` | 비밀 파라미터를 마스킹한 요청 URL. 원문 URL과 비밀 파라미터 원본은 DB에 저장하지 않는다. 어드민 화면·알림·로그에는 이 값을 노출한다 |
+| `url_hash` | 정규화 URL의 SHA256. 긴 URL을 고정 길이로 인덱싱·중복 판정하는 값(원문 URL 보존용이 아님) |
 | `http_status` | HTTP 상태 |
 | `payload_hash` | 응답 내용 hash |
-| `payload_path` | 원본 HTML/JSON 저장 경로 |
+| `payload_path` | 원본 HTML/JSON object storage 저장 경로 |
 | `error_message` | 실패 사유 |
 | `fetched_at` | 수집 시각 |
+
+> 정의의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.3다.
+
+payload/시크릿 운영 원칙:
+
+- raw payload 본문은 object storage(`payload_path`)에 저장하고, DB에는 `payload_hash`/`payload_path`/요약만 둔다. 단기 PoC 외에는 DB 본문 직접 저장을 운영 기준으로 금지한다(장기 저장 비용·보안).
+- 원문 URL은 DB에 보존하지 않는다. 비밀 파라미터(예: Print Bakery `cafe24_app_key`, API 토큰)를 마스킹한 `url_sanitized`와, 인덱싱·중복 판정용 `url_hash`만 저장한다. 어드민/알림/로그는 모두 `url_sanitized`만 노출하며, `cafe24_app_key` 같은 secret이 DB나 로그에 평문으로 남지 않는 것을 운영 기준으로 못박는다(자격증명은 secret manager/env 주입, [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.3·§5.20).
 
 ### 3.3 source_artwork_raw
 
@@ -318,12 +334,19 @@ https://www.art1.com/marketPlace/__detail_view.php?goods={goods_id}
 | `price_raw` | 가격 원문 |
 | `price_currency_raw` | 원천 통화 |
 | `price_amount_raw` | 원천 숫자 가격 |
-| `dimensions_raw` | 크기 원문 |
+| `dimensions_raw` | 크기 원문(분해 전 원문 문자열) |
+| `width_raw` | 원천 가로 원문(원천이 분리 제공 시) |
+| `height_raw` | 원천 세로 원문 |
+| `depth_raw` | 원천 깊이 원문 |
 | `medium_raw` | 재료/매체 원문 |
 | `availability_raw` | 판매상태 원문 |
+| `year_raw` | 제작연도 원문 |
 | `image_url` | 이미지 URL |
 | `metadata_json` | 사이트별 작품 추가 필드 |
 | `row_hash` | 주요 값 hash |
+| `collected_at` | 수집 시각 |
+
+> `width_raw`/`height_raw`/`depth_raw`/`year_raw`/`collected_at`의 단일 정의 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.4다. 본 표만 보고 DDL을 만들 때 누락되지 않도록 참조용으로 표기한다.
 
 ### 3.4 source_artist_raw
 
@@ -609,6 +632,46 @@ Print Bakery
 
 이 순서는 중요도가 아니라 운영 안정성 기준이다. 해외 대량 수집을 먼저 실행하고, 국내 사이트는 비교적 짧은 job으로 뒤에 둔다.
 
+### 4.1 중복 실행 방지(single-flight)
+
+이전 주 run이 길어져 다음 cron과 겹칠 수 있으므로 source별로 동시에 1개 run만 돌게 보장한다.
+
+- source별 `flock` 락을 잡고 실행한다. 락을 못 잡으면(이전 run이 아직 살아 있으면) 두 번째 run을 띄우지 않고 스킵 알림만 남긴다.
+- 락 파일은 source 단위로 분리해, 한 source가 막혀도 다른 source 수집은 정상 실행되게 한다.
+- 실행시간 상한(run별 wall-clock 상한, 확정 필요)을 둔다. 상한을 넘기면 해당 source run을 강제 종료하고 `status=failed`, 사유를 `error_message`/`summary_json`에 남긴 뒤 알림한다(stuck run 자동 종료). single-flight 락·watchdog 회수의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.2.2다.
+- 강제 종료된 run의 raw/staging는 보존하고, 다음 주기 또는 운영자 재실행에서 §4.3 멱등 재처리 기준으로 이어받는다.
+
+```text
+# 의사코드(per-source)
+flock -n /var/lock/collect_{source}.lock \
+  timeout {RUN_WALLCLOCK_LIMIT(확정 필요)} \
+  python -m collectors.run --source {source}
+# 락 미획득 -> 스킵+알림, timeout 초과 -> 강제 종료+failed+알림
+```
+
+### 4.2 차단/재시도 정책의 1차 적용
+
+원천 차단을 악화시키지 않도록 backoff/재시도 정책을 운영 안정화 단계로 미루지 않고 1차 cron 실행에 포함한다.
+
+- `source_registry`의 `request_delay_sec`/`max_concurrency`/`daily_request_cap`/`user_agent`/`backoff_policy_json`/`robots_policy`를 collector가 읽어 적용한다(정의·기본값은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.1, 구체 수치는 확정 필요).
+- 차단 신호(429/403/WAF challenge 등)가 감지되면 즉시 재요청으로 밀어붙이지 않고 backoff 후 재개한다. 반복되면 해당 source를 자동 일시중지한다(§6.1).
+- 재시도가 밴을 악화시키지 않도록, 차단 계열 응답에는 일반 5xx보다 보수적인 backoff와 낮은 재시도 상한을 적용한다.
+
+### 4.3 run 재개와 멱등 재처리
+
+run이 일부 진행(예: fetch 80%) 후 죽었을 때, 같은 raw를 중복 적재하지 않도록 다음 기준을 적용한다.
+
+- fetch 단위 멱등: 이미 성공한 `raw_fetch`(같은 run의 동일 `url_hash`/`payload_hash`)는 재개 시 skip한다.
+- raw 적재 멱등: `source_artwork_raw`/`source_artist_raw`는 run별 append이고, run 내 중복 insert는 유니크 `(run_id, source, source_artwork_id)`(작가는 `(run_id, source, artist_source_id)`)로 막는다. `row_hash`는 raw insert 제약이 아니라 정규화/`_current` view 단계에서 직전 최신 row와 비교해 변경 감지(`unchanged`/`changed`)에 쓰는 값이다(정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.16 유니크 키, §8 변경 감지/`normalized_artwork_current`).
+- 재개는 새 run을 만들지 않고 같은 `run_id`를 이어받는 것을 기본으로 한다. 같은 run 재개가 어려우면 backfill run으로 처리하되, 위 멱등 기준으로 중복 raw 누적을 막는다.
+
+### 4.4 수집 주기 상향 결정
+
+전 원천 주 1회를 기본으로 하고, 주 2회 상향은 다음 기준으로 판단한다(정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §7).
+
+- 트리거(자동 집계): 국내 사이트(Art1, Print Bakery)에서 최근 4회 정상 run 기준 `price_amount`/`price_currency`/`availability` 중 하나 이상이 바뀐 row 비율의 평균이 임계치(확정 필요, 잠정 10%) 이상이면 상향 후보로 표시한다.
+- 결정 주체: 자동 집계는 상향 "후보"만 띄우고, 실제 주기 변경(`source_registry.schedule_cron` 수정)은 운영 담당자 검토·승인으로만 적용한다. 자동으로 주기를 바꾸지 않는다.
+
 ## 5. 데이터 수집 결과는 어떻게 확인하는가
 
 수집 결과는 MySQL의 `collector_run`(요청/행 수, `status`, `quality_status`, `summary_json`, `quality_flags_json`)에서 확인한다.
@@ -745,6 +808,26 @@ GROUP BY source;
   - 제외 후보 row
 ```
 
+### 5.5 셀렉터/응답 변경 능동 감지(canary)
+
+§5.2의 품질 지표는 대부분 "전주 대비 상대치"라, 200 응답 + 레이아웃 변경으로 특정 필드(예: 가격)만 null이 되는 변경을 놓칠 수 있다. 이를 보완하기 위해 매 run 시작 전 source별 canary와 절대 임계치를 병행한다.
+
+run 시작 전 canary:
+
+- source별로 알려진 작품 1건을 고정 fixture로 등록하고, run 시작 전 이 fixture를 파싱해 핵심 필드(`price`, `width`/`height`, `artist_name`) 추출 성공 여부를 검증한다.
+- canary가 실패하면(셀렉터 깨짐/응답 구조 변경 의심) 해당 source의 본 run을 시작하지 않고 중단 + 알림한다. 본 수집으로 깨진 파서를 대량 적재하는 것을 막는다.
+- API 원천은 응답 스키마의 필수 키 존재를 함께 검증하고, 누락 시 HTML fallback을 트리거한다(§2.3/§2.4 fallback 기준과 연결).
+
+절대 임계치(상대치와 병행):
+
+| 지표 | 절대 임계치(하한선) | 처리 |
+|---|---|---|
+| 가격 숫자 보유율 | 확정 필요(예: 6.5의 20% 미만은 `blocked`) | 하한 미달 시 가격 parser 점검 + snapshot 반영 보류 |
+| 크기(가로/세로 cm) 보유율 | 확정 필요 | 하한 미달 시 크기 parser 점검 |
+| 작가명 보유율 | 확정 필요 | 하한 미달 시 작가명 추출 위치 변경 의심, 점검 |
+
+> 절대 임계치는 §6.5 품질 경고/차단 기준 표(상대치 위주)와 병행 적용한다. 구체 하한값은 초기 2~4주 실측 후 확정한다(확정 필요).
+
 ## 6. 1차 데이터 수집이 안 되었을 때 어떻게 동작하는가
 
 수집 실패와 품질 차단은 크게 5가지 케이스로 나눈다.
@@ -766,14 +849,26 @@ GROUP BY source;
 | 운영자 확인 항목 | 실패 URL, parser error, unmapped 값, identity 검수 후보, 전주 대비 급감 사유 |
 | 다음 조치 | 재수집, parser 수정, alias table 보강, 수동 승인, 이번 run 폐기 |
 
+> 알림/로그에 노출하는 "실패 URL"은 모두 `url_sanitized`(마스킹된 URL)다. 비밀 파라미터가 들어간 원문 URL은 저장하지 않으므로 알림에도 노출하지 않는다(§3.2).
+
 ### 6.1 전체 사이트 수집 실패
 
-예:
+실패 원인은 아래 유형으로 구분한다. 특히 **차단 계열**과 **HTML 구조 변경**은 조치가 다르므로 분리해 진단한다(차단을 구조 변경으로 오진하면 파서를 잘못 고치고, 구조 변경을 차단으로 오진하면 무의미한 backoff만 반복한다).
 
-- 사이트 접속 불가
-- DNS 실패
-- API 인증 실패
-- HTML 구조가 완전히 변경됨
+| 실패 유형 | 감지 신호 | 구분 포인트 |
+|---|---|---|
+| 접속 불가 / DNS 실패 | 연결 실패, 타임아웃 | 네트워크/인프라 문제 |
+| `rate_limited`(요청 제한) | HTTP 429, Retry-After | 차단 계열. backoff로 완화 가능 |
+| `blocked`(IP밴/WAF) | HTTP 403, WAF challenge 페이지, 캡차 | 차단 계열. 재요청이 밴을 악화시킬 수 있음 |
+| robots.txt 정책 변경 | 대상 경로가 새로 disallow됨 | 합법성/약관 재평가 필요. 파서 문제 아님 |
+| `auth_failed`(API 키 만료) | 401/403 + 인증 오류 본문, 키/토큰 만료 | 키 회전 필요. 파서 문제 아님 |
+| HTML 구조 변경 | 200 응답인데 핵심 셀렉터/필드 추출 실패 | parser 수정 필요(차단 아님) |
+
+차단 감지 시 운영 절차:
+
+- `rate_limited`(429) 또는 `blocked`(403/WAF/challenge)가 감지되면 재요청으로 밀어붙이지 않고 backoff한다(§4.2). 같은 source에서 반복되면 collector/watchdog가 해당 source를 자동 일시중지한다: `source_registry.paused_reason`에 사유(`rate_limited`/`blocked`/`auth_failed`)를 세팅하고 정기 크론에서 제외 + 운영자 알림.
+- backoff 후 재개를 시도하되, 재수집이 밴을 악화시키지 않도록 §4.2의 보수적 backoff/재시도 상한을 1차 cron부터 적용한다. 재개(일시중지 해제)는 운영자가 `is_enabled`/`paused_reason`을 정리한 뒤에만 한다(정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.1).
+- `auth_failed`는 키 회전으로, robots.txt 정책 변경은 합법성/약관 재평가로 처리한다. 둘 다 parser 수정 대상이 아니다.
 
 동작:
 
@@ -795,10 +890,11 @@ GROUP BY source;
 - run_id: {run_id}
 - 실패 단계: list/detail/API 접속
 - 실패 요청: {failed_requests}/{total_requests}
-- 주요 원인: {대표 error_message}
-- 자동 조치: raw/staging/normalized 생성 중단, 이번 주 snapshot 반영 제외
-- 운영자 확인: 사이트 접속 가능 여부, API 인증/endpoint 변경 여부, HTML 구조 변경 여부
-- 권장 조치: 원인 확인 후 재수집 또는 parser 수정
+- 실패 유형: rate_limited / blocked / auth_failed / robots 변경 / HTML 구조 변경 / 접속·DNS 중 하나
+- 주요 원인: {대표 error_message, HTTP status}
+- 자동 조치: raw/staging/normalized 생성 중단, 이번 주 snapshot 반영 제외, 차단 계열이면 paused_reason 세팅 + 자동 일시중지
+- 운영자 확인: (차단 계열) 429/403/WAF·키 만료·robots 변경 여부 / (구조 변경) 200 응답인데 셀렉터 실패 여부
+- 권장 조치: 차단=backoff 후 재개·키 회전·약관 재평가, 구조 변경=parser 수정
 ```
 
 중요한 점:
@@ -806,6 +902,14 @@ GROUP BY source;
 - 실패한 수집 결과로 기존 데이터를 덮어쓰지 않는다.
 - 이번 주 수집이 실패해도 이전 주 정상 데이터는 유지한다.
 - 모델 학습 snapshot은 실패 run을 자동 포함하지 않는다.
+
+키/엔드포인트 의존 원천 정기 점검 항목:
+
+Print Bakery `cafe24_app_key`(페이지에 노출되는 키)와 Art1 내부 AJAX endpoint 사용은 키 회전·약관 변경에 취약하므로 아래를 정기 운영 점검 항목으로 둔다.
+
+- 약관/합법성 평가: 페이지 노출 키·내부 AJAX endpoint 사용이 원천 약관과 robots 정책에 부합하는지 주기적으로 재평가한다. robots/약관이 바뀌면 수집 방식을 재검토한다.
+- 키 회전 감지: `cafe24_app_key`/API 버전 변경으로 401/403/auth_failed가 늘면 키 회전으로 진단하고(파서 문제와 구분), 키를 갱신한다.
+- HTML fallback 동작 검증: API/AJAX가 막혔을 때 HTML fallback이 실제로 동작해 핵심 필드를 채우는지 정기적으로 확인한다(키가 살아 있을 때도 fallback 경로를 주기 점검해, 차단 시 무동작 fallback에 의존하지 않도록 한다).
 
 ### 6.2 일부 상세 수집 실패
 
@@ -1055,7 +1159,7 @@ raw에서 바로 `normalized_artwork_staging`으로 가지 않는 이유:
 | 작가 부가 정보 | `source_artist_raw.metadata_json` | 작가 identity/메타 검수 대상 |
 | 작품/작가가 섞인 원문 | raw에 원문 보존 후 interpreted staging에서 후보 분리 | 확정 전 학습 반영 금지 |
 
-예를 들어 Print Bakery의 description에 작품 설명과 작가 소개가 함께 있으면, raw에는 원문 전체를 보존한다. 이후 `source_artwork_interpreted_staging`에서는 `artwork_description_candidate`를 만들고, `source_artist_interpreted_staging`에서는 `artist_bio_candidate`(SoT 컬럼명 `bio_text_candidate`)를 만든다. 분리 기준이 불확실하면 두 후보 모두 확정하지 않고 `quality_flags_json`에 검수 필요 사유를 남긴다.
+예를 들어 Print Bakery의 description에 작품 설명과 작가 소개가 함께 있으면, raw에는 원문 전체를 보존한다. 이후 `source_artwork_interpreted_staging`에서는 `artwork_description_candidate`를 만들고, `source_artist_interpreted_staging`에서는 `bio_text_candidate`(작가 소개문 후보, §3.6)를 만든다. 분리 기준이 불확실하면 두 후보 모두 확정하지 않고 `quality_flags_json`에 검수 필요 사유를 남긴다.
 
 금지하는 처리:
 
@@ -1306,11 +1410,14 @@ Art1
 - 크기 파싱 성공률 90% 미만
 - parser error row 1% 이상 또는 직전 정상 run 대비 2배 이상
 - 예정 실행 시각 + 유예 시간이 지나도 해당 주차 `collector_run`이 생성되지 않음(스케줄러 미실행/크론 실패)
+- `status=running`인 채로 `heartbeat_at`이 임계 시간 이상 갱신되지 않은 좀비 run이 있음
 
-스케줄러 미실행 감지(heartbeat):
+스케줄러 미실행/좀비 run 감지(heartbeat):
 
 - 위 알림은 run이 생성된 뒤의 품질 기준이다. run 자체가 안 생기면 `collector_run`에 row가 없어 품질 알림도 발생하지 않는다.
-- 따라서 예정 실행 시각(예: 월요일 03:00) + 유예 시간이 지나도 해당 주차 `collector_run`이 없으면 별도 heartbeat 알림을 보낸다. 판정은 수집 job 외부의 스케줄러/모니터(cron 종료 코드, dead-man's switch, 외부 watchdog)가 담당한다.
+- 따라서 예정 실행 시각(예: 월요일 03:00) + 유예 시간이 지나도 해당 주차 `collector_run`이 없으면 별도 heartbeat 알림을 보낸다(run 미생성).
+- run이 생겼더라도 `status=running`으로 멈춘 좀비 run을 별도로 처리한다: run은 진행 중 `heartbeat_at`을 주기 갱신하고, 외부 watchdog가 `heartbeat_at`이 임계 시간(확정 필요)을 초과하면 해당 run을 `failed`로 전환하고 사유를 남긴 뒤 알림한다(회수 기준의 단일 정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.2.2). 이렇게 해야 §4.1 실행시간 상한이 동작하지 않은 경우에도 멈춘 run이 영원히 `running`으로 남지 않는다.
+- 판정은 수집 job 외부의 스케줄러/모니터(cron 종료 코드, dead-man's switch, 외부 watchdog)가 담당한다. watchdog는 수집 호스트와 분리해 둔다. 수집 호스트가 통째로 죽으면 같은 호스트의 감시도 함께 죽어 무알림 누락이 생기기 때문이다.
 
 ## 10. 운영 담당자 확인 화면
 

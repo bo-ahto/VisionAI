@@ -38,7 +38,7 @@
 
 이 문서는 네 문서 중 작가명과 작가 키 판단 기준을 담당한다. 다른 문서에서는 핵심 요약만 남기고, 상세한 판단 흐름은 이 문서를 기준으로 한다.
 
-> 권한 기준(이 문서 전체 적용): 검수 큐의 보류·반려·연결 검토·신규 작가 후보 판단은 운영자가 수행한다. 그러나 `artist_identity`에 쓰는 최종 확정(신규 `artist_key` 생성, 기존 `artist_key` 연결 확정)은 데이터 관리자 권한이다. 아래에서 "운영자 검수 큐에서 승인 시 생성/확정"이라고 적힌 단계의 최종 승인 주체는 데이터 관리자다. 권한 단일 기준은 [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md) 5장과 [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md) 2.2다.
+> 권한 기준(이 문서 전체 적용): 검수 큐의 보류·반려·연결 검토·신규 작가 후보 판단은 운영자가 수행한다. 그러나 `artist_identity`에 쓰는 최종 확정(신규 `artist_key` 생성, 기존 `artist_key` 연결 확정)은 데이터 관리자 권한이다. 운영 초기에는 슈퍼유저가 운영자/데이터 관리자 권한을 모두 가진 어드민으로 처리할 수 있다. 아래에서 "운영자 검수 큐에서 승인 시 생성/확정"이라고 적힌 단계의 최종 승인 주체는 데이터 관리자이며, 초기 운영에서는 슈퍼유저가 이 승인을 대신 수행할 수 있다. 권한 단일 기준은 [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md) 5장과 [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md) 2.2다.
 
 ## 1. 전체 흐름
 
@@ -245,7 +245,7 @@ artist_name_alias 저장 + reason code 기록
 
 ### 4.6 override 우선 적용
 
-확정 한글명의 single source of truth는 `scripts/track6/artist_ko_overrides.csv`다. 한글화 파이프라인은 다음 순서로 적용한다.
+확정 한글명의 단일 기준 파일은 `scripts/track6/artist_ko_overrides.csv`다. 한글화 파이프라인은 다음 순서로 적용한다.
 
 ```text
 1) override 적용  -> 등록된 artist_key는 override 한글명으로 확정
@@ -584,6 +584,16 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 - 병합이 틀렸다고 판단되면 데이터 관리자가 un-merge를 확정한다. 운영자는 un-merge 후보를 검수 큐에 올릴 수 있으나 확정 권한은 데이터 관리자다.
 - un-merge 시 병합됐던 원천 작가 row를 원래 또는 신규 `artist_key`로 다시 연결하고, 처리자·시각·사유와 직전 상태를 `identity_event_log`([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.1)에 append한다.
 - 병합/un-merge로 영향받은 작가의 가격 이력·Warm feature는 재생성 대상으로 표시한다. 과거 snapshot은 수정하지 않고 다음 snapshot부터 반영한다.
+
+### 6.3 artist_key 의미의 snapshot 시점 정합성
+
+같은 `artist_key`라도 snapshot 버전마다 가리키는 작가가 달라질 수 있다(병합/un-merge로 연결이 바뀜). 이 의미 변화를 기록하지 않으면, 서로 다른 시점에 학습한 모델 버전 간 정합성이 깨진다(모델 A가 본 `artist_key=123`과 모델 B가 본 `artist_key=123`이 다른 작가일 수 있음). 다음 기준으로 "이 snapshot에서의 artist_key 의미"를 고정한다.
+
+- snapshot export 시 `rules_version`(필터/정규화 규칙)과 함께 **artist identity 상태의 버전을 `artist_identity_version`으로 기록**한다. `artist_identity_version`은 해당 snapshot의 cutoff 시점까지 확정된 `artist_identity`(연결/병합/un-merge) 상태를 가리키는 단조 증가 버전이며, `artwork_snapshot.summary_json`(또는 export manifest)에 `rules_version`과 같은 위치에 바인딩한다. 이렇게 해야 snapshot의 `artist_key` 의미가 한 시점으로 고정된다.
+- 이 버전의 생성 주체·저장 위치는 SoT의 `artist_identity_version` 테이블([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.2)이다. 버전은 단조 증가하며, 승인된 merge/un-merge가 새 버전을 발급한다. 각 버전은 `source_event_id`로 `identity_event_log`([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.1)의 발급 이벤트와 연결된다. snapshot export는 이 테이블의 현재 최댓값(또는 cutoff 시점 버전)을 읽어 `artist_identity_version`으로 바인딩한다. 본 문서에서는 이 테이블을 중복 정의하지 않고 SoT 정의를 참조한다.
+- 서빙 시 모델은 자신이 학습한 snapshot의 `artist_identity_version` 기준으로 Warm 이력을 조회한다. 즉 모델이 학습한 identity 버전과 현재 identity 버전을 매칭해, 학습 당시의 `artist_key` 의미로 가격 이력·Warm feature를 읽는다. "특정 버전 시점의 `artist_key` 멤버십"은 SoT의 `artist_key_membership_history` 테이블([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.2)을 as-of 조회해 재현한다. 이 테이블은 `(artist_key, member_ref, valid_from_version, valid_to_version)`을 보존하며, 조회는 `valid_from_version <= 학습 버전 < valid_to_version`(미종료 행은 `valid_to_version=NULL`) 조건으로 한다. 서빙 Warm 이력 조회는 모델이 학습한 snapshot의 `artist_identity_version` 기준 멤버십으로 고정한다(이 테이블도 SoT에 정의되며 본 문서에서 중복 정의하지 않는다). 버전 불일치(학습 버전 ≠ 현재 버전)이고 해당 `artist_key`가 그 사이 병합/un-merge 영향 범위에 들면, 자동 매핑하지 않고 해당 작가를 재생성 대상으로 처리하거나(다음 snapshot 재학습) 서빙 측에서 Cold 경로로 폴백한다.
+- merge/un-merge로 영향받은 `artist_key` 범위는 추적 가능하게 남긴다. 각 결정마다 영향 작가 목록(이전·이후 `artist_key`)과 재생성 대상 플래그를 `identity_event_log`([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.1)에 append하고, 해당 작가의 가격 이력·Warm feature가 다음 snapshot에서 재생성됨을 명시한다. 다음 snapshot은 더 높은 `artist_identity_version`으로 export된다.
+- 한계: 국내 원천은 고신뢰 생년 결측이 많아 교차 원천 자동 확정이 사실상 불가하고(6.1·수동 검수 적체), merge/un-merge 결정은 비가역에 가까우므로 영향 범위 추적은 선택이 아니라 필수다.
 
 ## 7. 운영 화면에서 봐야 할 항목
 

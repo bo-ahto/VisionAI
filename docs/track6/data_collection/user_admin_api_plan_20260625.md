@@ -75,12 +75,42 @@ MySQL 스키마 문서
 | 운영자 | 수집 run 확인, 검수 큐 처리, 보류/제외 처리 |
 | 데이터 관리자 | 신규 `artist_key` 생성 승인, 기존 `artist_key` 연결 확정, snapshot 생성 승인 |
 | 개발자 | 원천 등록, 수집 재실행, parser 장애 확인, 기술 로그 확인 |
+| 슈퍼유저 | 운영 초기 전용 역할. 운영자, 데이터 관리자, 개발자 권한을 모두 수행 |
 
 원칙:
 
 - 일반 사용자는 최종 `artist_key`를 만들 수 없다.
 - 신규 작가 후보 등록과 신규 `artist_key` 생성 승인은 별도 API다.
+- 운영 초기에는 슈퍼유저 계정 1개 또는 소수 계정으로 시작할 수 있다. 이 경우 슈퍼유저는 모든 어드민 쓰기 API를 호출할 수 있지만, 응답/로그에는 실제 처리자의 `actor_id`와 처리 사유를 반드시 남긴다.
+- 운영이 안정화되면 슈퍼유저를 상시 운영 역할로 쓰지 않고, 운영자/데이터 관리자/개발자 역할로 분리한다.
 - 모든 어드민 쓰기 API는 `actor_id`, 처리 시각, 처리 사유를 남긴다.
+
+### 2.2.1 인증 주체와 권한 게이트
+
+`actor_id`는 request body로 받지 않는다. 서버가 인증 컨텍스트(세션 또는 JWT claim)에서 인증된 주체를 식별해 주입한다.
+
+- request body에 `actor_id`를 넣는 방식은 금지한다. body로 받으면 위조한 `actor_id`로 다른 사람 이름으로 처리할 수 있고, 감사 로그가 무력화된다.
+- 따라서 이 문서의 쓰기 API request 예시에는 `actor_id`를 넣지 않는다. `actor_id`는 서버가 인증 컨텍스트에서 채우는 값으로, response/감사 로그(`10.1`) 필드로만 나타난다.
+- 인증된 주체 식별자는 감사 로그(`10.1`)에 `request_id`와 함께 남긴다.
+- 공용/공유 계정으로 어드민 쓰기 API를 호출하지 않는다. 처리자를 1인으로 특정할 수 없는 계정은 감사 추적을 깨뜨린다.
+
+쓰기 엔드포인트 최소 권한(`required_role`):
+
+| 엔드포인트 | 동작 | required_role(확정 필요) |
+|---|---|---|
+| `POST /api/v1/admin/collection-runs/{run_id}/actions` | 수집 run 조치 | 운영자 |
+| `POST /api/v1/admin/sources` · `PATCH /api/v1/admin/sources/{source}` | 원천 등록/수정 | 개발자 |
+| `POST /api/v1/admin/manual-imports` 계열 | 수동 CSV 업로드/매핑 | 운영자 |
+| `POST /api/v1/admin/model-deployments` (`promote`/`rollback`/`retire`) | 모델 승격/롤백 (7.3) | 데이터 관리자 |
+| `POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision` | 작품 품질 검수 (8.2) | 운영자 |
+| `POST /api/v1/admin/review/artist-names/{alias_id}/decision` | 작가명 검수 (8.4) | 운영자 |
+| `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | artist identity 결정 (8.6) | 데이터 관리자 |
+| `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 작가 후보 결정 (8.8) | 데이터 관리자 |
+| `POST /api/v1/admin/snapshots` | snapshot 생성 (9.3) | 데이터 관리자 |
+
+- 모델 승격/롤백(7.3), artist identity 결정(8.6/8.8), snapshot 생성(9.3)은 데이터 관리자 권한으로 게이트한다. 운영자는 모델을 임의로 롤백할 수 없다.
+- 운영 초기 슈퍼유저는 위 역할을 모두 수행할 수 있으나, 실제 처리자 식별과 사유 기록 의무는 동일하게 적용된다.
+- 위 표의 `required_role` 값은 운영 역할 분리 확정 후 고정한다(확정 필요).
 
 ### 2.3 사용자 화면 응답 제한
 
@@ -156,6 +186,38 @@ source 등록
 - 원천별 컬럼명이 달라도 API는 공통 표준화 결과(`normalized_*_staging`, snapshot 집계)를 읽는다.
 - 새 원천의 컬럼이 아직 표준화되지 않으면 공통 컬럼에 추측해서 넣지 않고 부가 JSON과 unmapped/quality flag로 남긴다.
 
+### 2.6 데이터 최신성(freshness)
+
+사용자 예측/가격 카드 응답은 어느 시점 데이터로 산출된 값인지 함께 표시한다.
+
+정상 snapshot 정의:
+
+- "정상 snapshot"은 `status`가 `approved` 또는 `generated`이고 보존기간 내에 있는 snapshot을 가리킨다. 그 외(만료·폐기·미승인) snapshot은 사용자 응답의 기준으로 쓰지 않는다.
+
+as_of 기준(모델이 실제 쓴 값):
+
+- 사용자에게 노출하는 `as_of`는 "현재 active deployment가 학습에 사용한 snapshot의 `source_cutoff_at`"이다(모델이 실제 쓴 값이며, 단순 최신 snapshot이 아니다). 9.3 / 7.3 참조.
+- 예측/가격 카드는 이 active deployment 기준 snapshot을 참조한다. 응답에 `as_of`와 데이터 기준일을 표기한다.
+
+지연 임계와 차단:
+
+- SLA 문구: "최신 snapshot 기준, 최대 `N`일." 참조 snapshot의 `as_of`가 `N`일(확정 필요, 12.1)을 초과하면 화면에 최신성 경고를 표시한다(카드는 계속 노출).
+- 완전 차단 임계 `M`일(확정 필요, `M>N`, 12.1)을 초과하면 구데이터의 무한 노출을 막기 위해 카드 자체를 숨긴다.
+- 따라서 응답에는 기준일(`as_of`/`data_reference_date`)을 항상 포함해 화면이 경고/차단을 판단할 수 있게 한다.
+
+deployment freshness vs 데이터 freshness 불일치:
+
+- `as_of`는 모델이 실제 학습에 쓴 snapshot 기준이므로, 그 후 더 최신 정상 snapshot이 수집·승인됐어도 운영 모델이 갱신되지 않았으면 `as_of`는 옛 값으로 남는다.
+- active deployment의 학습 snapshot과 현재 최신 정상 snapshot의 `source_cutoff_at` 괴리가 임계(확정 필요, 12.1)를 초과하면, 데이터는 신선해도 모델이 옛 데이터를 쓰고 있다는 뜻이므로 신선도 경고를 띄운다.
+
+### 2.7 동시성과 멱등(idempotency)
+
+검수/생성 계열 쓰기 API는 동시 처리와 중복 호출을 전제로 설계한다.
+
+- 검수 decision API(8.2/8.4/8.6/8.8)는 request에 `expected_review_status`(또는 리소스 version)를 받는다. 서버 상태와 불일치하면 처리하지 않고 `CONFLICT`를 반환한다. 마지막 호출이 무조건 이긴다(last-write-wins)면 이미 다른 담당자가 끝낸 결정을 덮어쓴다.
+- 생성 계열(8.8 신규 `artist_key` 생성, 9.3 snapshot 생성, 6.1 원천 등록)은 `idempotency_key`를 받는다. 같은 키의 재요청은 새로 만들지 않고 직전 결과를 반환한다(네트워크 재시도/더블클릭 중복 생성 방지).
+- 검수 큐 항목은 claim/lock(담당자 + 만료시간) 또는 "검수 중" 상태를 둔다. 같은 항목을 두 사람이 동시에 처리하지 않게 한다. lock 만료시간 등 수치는 확정 필요(12.1)다.
+
 ## 3. API 목록 요약
 
 | 화면/기능 | API |
@@ -184,10 +246,12 @@ source 등록
 | artist_key 연결 검수 큐 | `GET /api/v1/admin/review/artist-identities` |
 | artist_key 연결 검수 처리 | `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` |
 | 신규 작가 후보 큐 | `GET /api/v1/admin/review/new-artists` |
-| 신규 artist_key 생성 승인 | `POST /api/v1/admin/review/new-artists/{candidate_id}/approve` |
+| 신규 작가 후보 결정 | `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` |
 | snapshot 후보 요약 | `GET /api/v1/admin/snapshots/candidates/summary` |
 | snapshot 후보 목록 | `GET /api/v1/admin/snapshots/candidates/items` |
-| snapshot 생성 | `POST /api/v1/admin/snapshots` |
+| snapshot 확정요청(운영자) | `POST /api/v1/admin/snapshots/requests` |
+| snapshot 생성승인(데이터 관리자) | `POST /api/v1/admin/snapshots` |
+| row 영향 범위 역조회 | `GET /api/v1/admin/normalized-artworks/{normalized_artwork_id}/impact` |
 | 운영 로그 | `GET /api/v1/admin/audit-logs` |
 
 ## 4. 사용자 API
@@ -346,7 +410,9 @@ response:
       {"medium": "회화", "hodang_median_krw": 330000},
       {"medium": "드로잉", "hodang_median_krw": 280000}
     ],
-    "sample_count": 24
+    "sample_count": 24,
+    "as_of": "2026-06-25T00:00:00Z",
+    "data_reference_date": "2026-06-25"
   }
 }
 ```
@@ -354,6 +420,7 @@ response:
 주의:
 
 - `primary_market_summary`에는 원천 사이트명, 원천 URL, 원천 작품 ID를 넣지 않는다.
+- `as_of`/`data_reference_date`는 active deployment가 학습에 쓴 snapshot 기준 최신성 표기다(2.6 / 4.4).
 - 예측 API는 수집 DB를 직접 조회하지 않고, 승인된 snapshot과 운영 feature store를 참조한다.
 - 예측 응답에는 사용된 `model_version`, `model_route`, `deployment_id`를 남긴다. 모델이 중간에 바뀌어도 특정 예측이 어느 모델에서 나온 값인지 추적하기 위함이다.
 - 응답의 `model_route`는 `price_prediction_log.route`(MySQL 문서 5.19)와 동일 값이며 표시 필드명만 다르다.
@@ -374,6 +441,9 @@ GET /api/v1/public/artists/{artist_key}/primary-market-summary
 ```json
 {
   "artist_key": "artist_123",
+  "as_of": "2026-06-25T00:00:00Z",
+  "data_reference_date": "2026-06-25",
+  "freshness_label": "최신 snapshot 기준, 최대 N일",
   "summary": {
     "title": "1차 시장 가격",
     "hodang_median_krw": 350000,
@@ -386,6 +456,11 @@ GET /api/v1/public/artists/{artist_key}/primary-market-summary
   }
 }
 ```
+
+주의:
+
+- `as_of`는 현재 active deployment가 학습에 사용한 snapshot의 `source_cutoff_at`(2.6 / 9.3 / 7.3)이며, `data_reference_date`는 화면 표시용 기준일이다.
+- `freshness_label`의 `N`(경고 임계, 허용 지연 상한)은 확정 필요(12.1)다. `N`일 초과 시 경고, 완전 차단 임계 `M`일(M>N, 확정 필요) 초과 시 카드를 숨긴다. 최신성 정책은 2.6을 따른다.
 
 ## 5. 어드민 수집 API
 
@@ -415,6 +490,9 @@ response:
       "status": "success",
       "raw_artwork_rows": 1541,
       "normalized_artwork_rows": 1142,
+      "size_parse_success_rate": 0.92,
+      "price_present_rows": 980,
+      "price_present_rate": 0.86,
       "total_failed": 0
     }
   ],
@@ -427,6 +505,12 @@ response:
   "snapshot_candidate_count": 1100
 }
 ```
+
+화면 대응 수치:
+
+- `size_parse_success_rate`: 화면의 "크기 파싱 성공률". 모집단은 해당 원천의 `normalized_artwork_rows`다.
+- `price_present_rows` / `price_present_rate`: 화면의 "가격 보유 row 수" / "가격 보유율". 모집단은 해당 원천의 `normalized_artwork_rows`다(문의가 등 가격 없음 row 제외 비율).
+- 두 비율의 분모(모집단) 정의는 raw 기준인지 normalized 기준인지 확정 필요(12.1). 본 문서는 normalized 기준으로 표기한다.
 
 참조:
 
@@ -479,9 +563,9 @@ request:
 
 ```json
 {
-  "action": "hold",
-  "reason": "상세 실패율이 높아 이번 snapshot 반영 보류",
-  "actor_id": "admin_123"
+  "action": "request_retry",
+  "scope": "failed_only",
+  "reason": "상세 실패 URL만 재수집"
 }
 ```
 
@@ -493,6 +577,15 @@ request:
 | `hold` | 반영 보류 |
 | `request_retry` | 재수집 요청 |
 | `clear_blocked_with_override` | 차단 상태를 사유와 함께 해제 |
+
+`request_retry` 범위 파라미터:
+
+| `scope` | 의미 |
+|---|---|
+| `failed_only` | 실패 URL/row만 재수집(기본 권장) |
+| `full` | run 전체 재수집 |
+
+- `scope` 미지정 시 기본값은 확정 필요(12.1). 운영 비용상 `failed_only`를 기본으로 두는 것을 권장한다.
 
 쓰기:
 
@@ -536,19 +629,21 @@ request 예:
 
 ```json
 {
+  "idempotency_key": "source_create_new_market_001",
   "source": "new_market",
   "display_name": "New Market",
   "collection_mode": "api",
   "default_enabled": false,
   "raw_payload_format": "json",
-  "parser_version": "new_market_parser_2026_06_25",
-  "normalizer_version": "normalizer_2026_06_25",
+  "default_parser_version": "new_market_parser_2026_06_25",
+  "default_normalizer_version": "normalizer_2026_06_25",
   "note": "신규 원천 테스트 등록"
 }
 ```
 
 주의:
 
+- `POST`(원천 등록)는 `idempotency_key`로 중복 생성을 막는다. 같은 키의 재요청은 기존 원천을 그대로 반환한다(2.7).
 - 원천 등록은 수집 가능 상태를 등록하는 것이지, 곧바로 학습 snapshot에 반영한다는 뜻이 아니다.
 - 새 원천은 최소 1회 수집, raw 저장, staging 생성, 검수 큐 확인, snapshot 후보 검증을 통과한 뒤 활성화한다.
 - 원천별 고유 컬럼은 API 응답 스키마를 늘리지 않고 `metadata_json` 또는 원천별 staging parser에서 관리한다.
@@ -642,8 +737,7 @@ request 예:
     "price": "price_raw",
     "currency": "price_currency"
   },
-  "reason": "컬럼 의미 확인 후 매핑",
-  "actor_id": "operator_123"
+  "reason": "컬럼 의미 확인 후 매핑"
 }
 ```
 
@@ -671,7 +765,7 @@ query:
 | 파라미터 | 설명 |
 |---|---|
 | `route` | `warm`, `cold`, `unified` 등 모델 경로 |
-| `status` | `candidate`, `approved`, `deployed`, `retired`, `rejected` |
+| `status` | `candidate`, `approved`, `retired`, `rejected` |
 | `page` / `page_size` | 페이지 |
 
 응답 항목:
@@ -725,8 +819,7 @@ request 예:
   "model_version": "official_v0_1_warm_20260625_01",
   "route": "warm",
   "action": "promote",
-  "reason": "fixed test와 parity 검증 통과",
-  "actor_id": "data_admin_123"
+  "reason": "fixed test와 parity 검증 통과"
 }
 ```
 
@@ -783,8 +876,22 @@ GET /api/v1/admin/model-deployments/current
 | `reject` / `reject_candidate` | `review_status=match_rejected` |
 | `hold` | `review_status=needs_review` |
 | `move_to_new_artist_candidate` | 해당 후보 연결을 `match_rejected`로 막고 신규 작가 후보 큐로 이동 |
+| `add_alias`(8.4 전용) | review_status 전이가 아니라 해당 작가에 alias 1건 등록 |
+
+작가명 검수(8.4)에서 alias 등록은 `decision=add_alias` 한 동사로만 한다. `approve`/`approve_with_edit`는 표시명을 승인할 뿐 alias를 등록하지 않는다. 화면의 "alias 추가" 버튼은 항상 `decision=add_alias`로만 보낸다(8.4).
 
 작품 품질 검수(8.2)의 `approve`/`approve_with_patch`/`hold`/`exclude`는 별도 `review_status` enum이 아니라 `normalized_artwork_staging.quality_flags_json`과 snapshot 포함 여부(`artwork_snapshot_item.include_status`)로 표현한다. `exclude`는 `include_status=excluded`(+`exclude_reason`)에 대응한다.
+
+큐 응답 ID와 decision 경로 정렬:
+
+각 큐 응답의 item ID는 대응 decision API의 경로 파라미터와 동일한 값이어야 한다. 화면이 큐 항목에서 받은 ID를 변환 없이 그대로 decision 호출에 쓸 수 있어야 한다.
+
+| 큐 조회 | 큐 item ID 필드 | decision 경로 파라미터 |
+|---|---|---|
+| 작품 품질 (8.1) | `normalized_artwork_id` | `.../review/artworks/{normalized_artwork_id}/decision` |
+| 작가명 (8.3) | `alias_id` | `.../review/artist-names/{alias_id}/decision` |
+| artist_key 연결 (8.5) | `candidate_id` | `.../review/artist-identities/{candidate_id}/decision` |
+| 신규 작가 (8.7) | `candidate_id` | `.../review/new-artists/{candidate_id}/decision` |
 
 ### 8.1 작품 품질 검수 큐 조회
 
@@ -829,13 +936,13 @@ request:
 ```json
 {
   "decision": "approve",
+  "expected_review_status": "needs_review",
   "patch": {
     "width_cm": 60.0,
     "height_cm": 72.7,
     "medium_category_candidate": "painting"
   },
-  "reason": "원천 상세 페이지 확인 후 크기 수정",
-  "actor_id": "operator_123"
+  "reason": "원천 상세 페이지 확인 후 크기 수정"
 }
 ```
 
@@ -848,10 +955,20 @@ request:
 | `hold` | 보류 |
 | `exclude` | snapshot 제외 |
 
+동시성:
+
+- `expected_review_status`가 서버 현재 상태와 다르면 처리하지 않고 `CONFLICT`를 반환한다(2.7).
+
 쓰기:
 
 - `normalized_artwork_staging.quality_flags_json`
 - 검수 상태/메모 컬럼 또는 감사 로그
+
+`approve_with_patch` 패치 적재(되돌리기/영향추적):
+
+- `approve_with_patch`는 normalized 후보값을 직접 덮어쓰지 않는다. normalized 후보값(`*_candidate`)은 불변으로 유지하고, 패치는 override 레이어로 적용한다.
+- 패치는 항목별 `(field, old_value, new_value)`를 append-only 이벤트로 적재한다. artist identity뿐 아니라 작품 등 다른 엔티티의 패치도 같은 이벤트로 남긴다.
+- 이 패치 이벤트가 `10.1` 감사 로그의 before/after 원천이다. override는 언제든 사유와 함께 되돌릴 수 있고, 원본 후보값은 보존된다.
 
 ### 8.3 작가명 검수 큐 조회
 
@@ -862,6 +979,8 @@ GET /api/v1/admin/review/artist-names
 목적:
 
 - 한글명/영문명 표시 후보와 alias 후보를 검수한다.
+
+각 큐 항목은 decision 경로 파라미터와 동일한 `alias_id`를 item ID로 반환한다(8절 큐-decision 정렬 표).
 
 응답에 한글화 검수 필드를 포함한다(표준화 흐름 4.8 자동 산출값):
 
@@ -889,10 +1008,10 @@ request:
 ```json
 {
   "decision": "approve",
+  "expected_review_status": "needs_review",
   "display_name_ko": "홍길동",
   "display_name_en": "Hong Gildong",
-  "reason": "작가 공식 표기 확인",
-  "actor_id": "operator_123"
+  "reason": "작가 공식 표기 확인"
 }
 ```
 
@@ -901,8 +1020,14 @@ request:
 - `approve`
 - `approve_with_edit`
 - `register_override` — 확정 한글명을 override로 등록(표준화 흐름 4.6)
+- `add_alias` — 화면 "alias 추가" 버튼 대응. 해당 작가에 표시/연결 alias를 추가한다.
+- `recheck_candidates` — 화면 "기존 후보 재검색" 버튼 대응. alias 후보를 다시 검색해 큐 항목을 갱신한다(쓰기 결정이 아니라 후보 재계산).
 - `reject`
 - `hold`
+
+동시성:
+
+- `expected_review_status`가 서버 현재 상태와 다르면 처리하지 않고 `CONFLICT`를 반환한다(2.7). `recheck_candidates`는 상태 전이가 아니므로 충돌 검사 대상이 아니다.
 
 쓰기:
 
@@ -943,9 +1068,9 @@ request:
 ```json
 {
   "decision": "approve_existing_artist_key",
+  "expected_review_status": "needs_review",
   "artist_key": "artist_123",
-  "reason": "생년과 승인 alias가 일치",
-  "actor_id": "data_admin_123"
+  "reason": "생년과 승인 alias가 일치"
 }
 ```
 
@@ -957,6 +1082,11 @@ request:
 | `reject_candidate` | 해당 후보와의 연결 반려 |
 | `hold` | 판단 보류 |
 | `move_to_new_artist_candidate` | 신규 작가 후보로 전환 |
+
+동시성:
+
+- `expected_review_status`가 서버 현재 상태와 다르면 처리하지 않고 `CONFLICT`를 반환한다(2.7).
+- `move_to_new_artist_candidate`로 신규 `artist_key` 생성(8.8)으로 이어질 때는 8.8의 `idempotency_key`로 중복 생성을 막는다.
 
 쓰기:
 
@@ -998,26 +1128,30 @@ GET /api/v1/admin/review/new-artists
 - 읽기: `normalized_artist_staging`, `artist_name_alias`
 - 기준: MySQL 문서 `5.0.5 신규 작가 후보 큐 기준`
 
-### 8.8 신규 artist_key 생성 승인
+### 8.8 신규 작가 후보 결정
 
 ```text
-POST /api/v1/admin/review/new-artists/{candidate_id}/approve
+POST /api/v1/admin/review/new-artists/{candidate_id}/decision
 ```
 
-request:
+화면(4.6)의 4개 버튼(신규 artist_key 생성 승인 / 기존 후보 재검색 / 보류 / 반려)을 단일 decision endpoint로 통합한다. `decision` 값으로 동작을 구분한다.
+
+request(`decision=approve`, 신규 `artist_key` 생성):
 
 ```json
 {
+  "decision": "approve",
+  "idempotency_key": "new_artist_create_2026_06_25_001",
+  "expected_review_status": "needs_review",
   "canonical_name_ko": "홍길동",
   "canonical_name_en": "Hong Gildong",
   "birth_year": 1980,
   "nationality": "Korean",
-  "reason": "기존 후보 없음, 작가 페이지와 작품 row 확인",
-  "actor_id": "data_admin_123"
+  "reason": "기존 후보 없음, 작가 페이지와 작품 row 확인"
 }
 ```
 
-response:
+response(`decision=approve`):
 
 ```json
 {
@@ -1027,15 +1161,26 @@ response:
 }
 ```
 
+허용 decision:
+
+| decision | 의미 | 화면 버튼(4.6) |
+|---|---|---|
+| `approve` | 신규 `artist_key`를 생성하고 후보를 확정 | 신규 artist_key 생성 승인 |
+| `recheck` | 새 키를 만들기 전, 동일 작가가 기존에 있는지 이름/생년 조건으로 다시 검색해 후보를 갱신(상태 전이 아님, 후보 재계산) | 기존 후보 재검색 |
+| `hold` | 검수 대기 유지 | 보류 |
+| `reject` | 신규 작가로 쓰지 않음 | 반려 |
+
 쓰기:
 
-- `artist_identity`
-- 필요 시 `artist_name_alias.artist_key`
+- `approve` 시: `artist_identity`, 필요 시 `artist_name_alias.artist_key`
+- `hold`/`reject` 시: 신규 작가 후보의 `review_status`, 처리자/시각/사유(2.2.1)
 
 주의:
 
-- 이 API만 신규 `artist_key`를 생성할 수 있다.
+- `decision=approve`만 신규 `artist_key`를 생성할 수 있다. `recheck`/`hold`/`reject`는 키를 만들지 않는다.
 - 일반 사용자 API에서는 호출할 수 없다.
+- `approve`는 `idempotency_key`로 중복 생성을 막는다. 같은 키의 재요청은 이미 생성된 `artist_key`를 그대로 반환한다(2.7).
+- `approve`/`hold`/`reject`는 `expected_review_status`가 서버 현재 상태와 다르면 처리하지 않고 `CONFLICT`를 반환한다(2.7). `recheck`는 상태 전이가 아니므로 충돌 검사 대상이 아니다(8.4 `recheck_candidates`와 동일 원칙).
 
 ## 9. Snapshot API
 
@@ -1077,7 +1222,43 @@ query:
 | `artist_identity_status` | 작가 확정 상태 |
 | `page` / `page_size` | 페이지 |
 
-### 9.3 snapshot 생성
+### 9.3 snapshot 확정요청 / 생성승인
+
+화면은 2단계로 나뉜다(화면 기획): 운영자가 후보를 검토해 **확정요청**하고, 데이터 관리자가 **생성승인**해 실제 snapshot을 만든다. 한 번의 호출로 운영자가 곧장 snapshot을 생성하지 않게 두 액션을 분리한다.
+
+#### 9.3.1 확정요청 (운영자)
+
+```text
+POST /api/v1/admin/snapshots/requests
+```
+
+request:
+
+```json
+{
+  "idempotency_key": "snapshot_req_2026_06_25_001",
+  "snapshot_name": "train_candidate_2026_06_25",
+  "source_cutoff_at": "2026-06-25T00:00:00Z",
+  "rules_version": "rules_2026_06_25",
+  "reason": "주간 수집 검수 완료, 생성 요청"
+}
+```
+
+response:
+
+```json
+{
+  "snapshot_request_id": "snapshot_req_2026_06_25",
+  "status": "requested",
+  "candidate_included_count": 12000,
+  "candidate_excluded_count": 300
+}
+```
+
+- required_role: 운영자. snapshot을 직접 만들지 않고 후보 범위/규칙을 고정한 생성요청만 만든다.
+- `idempotency_key`로 중복 요청을 막는다(2.7).
+
+#### 9.3.2 생성승인 (데이터 관리자)
 
 ```text
 POST /api/v1/admin/snapshots
@@ -1087,11 +1268,9 @@ request:
 
 ```json
 {
-  "snapshot_name": "train_candidate_2026_06_25",
-  "source_cutoff_at": "2026-06-25T00:00:00Z",
-  "rules_version": "rules_2026_06_25",
-  "reason": "주간 수집 검수 완료",
-  "actor_id": "data_admin_123"
+  "idempotency_key": "snapshot_create_2026_06_25_001",
+  "snapshot_request_id": "snapshot_req_2026_06_25",
+  "reason": "확정요청 검토 완료, snapshot 생성 승인"
 }
 ```
 
@@ -1107,6 +1286,9 @@ response:
 }
 ```
 
+- required_role: 데이터 관리자(2.2.1). 확정요청(`snapshot_request_id`)을 받아 실제 snapshot을 생성한다.
+- `idempotency_key`로 중복 생성을 막는다. 같은 키의 재요청은 이미 만든 `snapshot_id`를 반환한다(2.7).
+
 쓰기:
 
 - `artwork_snapshot`
@@ -1117,6 +1299,32 @@ response:
 - `collector_run.status=failed` 또는 `collector_run.quality_status=blocked`인 run은 자동 포함하지 않는다.
 - `blocked`는 수집 결과 삭제가 아니라 snapshot 자동 반영 차단 상태다. 운영자 override 사유가 있을 때만 후보에 포함할 수 있다.
 - 환율이 없어 `price_krw_normalized`를 만들 수 없는 row는 snapshot 포함 대상에서 제외한다.
+
+### 9.4 row 영향 범위 역조회
+
+```text
+GET /api/v1/admin/normalized-artworks/{normalized_artwork_id}/impact
+```
+
+목적:
+
+- 잘못된 row가 어느 snapshot에, 어느 배포에 반영됐는지 역조회한다.
+- 작품 row → `artwork_snapshot_item` → `artwork_snapshot` → 그 snapshot으로 학습된 모델/배포까지 영향 범위를 산정한다.
+
+응답 항목:
+
+- 대상 `normalized_artwork_id`와 현재 include_status
+- 포함된 snapshot 목록(`snapshot_id`, `include_status`, `source_cutoff_at`)
+- 각 snapshot으로 학습된 `model_version` 목록
+- 그 모델이 운영에 올라간 적이 있으면 `deployment_id`와 배포 기간
+
+참조:
+
+- 읽기: `artwork_snapshot_item`, `artwork_snapshot`, 모델 학습 snapshot 매핑(7.1/7.2), `model_deployment`
+
+주의:
+
+- 이 조회는 영향 산정용 읽기 전용이다. row 정정 자체는 8.2 검수 처리로 한다.
 
 ## 10. 운영 로그 API
 
@@ -1141,10 +1349,16 @@ query:
 - 대상 유형
 - 대상 ID
 - 이벤트 유형
-- 이전 상태
-- 변경 후 상태
-- 처리자
+- 이전 상태(before)
+- 변경 후 상태(after)
+- 처리자(인증 컨텍스트에서 식별한 주체 식별자, 2.2.1)
+- `request_id`(요청 추적용)
 - 처리 사유
+
+주의:
+
+- before/after는 `8.2 approve_with_patch`가 적재하는 append-only 변경 이벤트에서 채운다. 이 before/after의 단일 기준(SoT)은 MySQL 문서 [`periodic_raw_collection_mysql_plan_20260623.md`](periodic_raw_collection_mysql_plan_20260623.md)의 §5.8.1 `normalized_artwork_change_event`(append-only)다. 별도 audit 테이블 확대는 고도화 대상이다(12.1).
+- 처리자는 body 입력값이 아니라 인증 주체이며, `request_id`와 함께 남겨 단일 요청 단위로 추적한다.
 
 ## 11. API 작성 기준
 
@@ -1158,6 +1372,9 @@ API 구현 시 반드시 지켜야 할 기준:
 - `artist_identity.identity_status=active`인 작가만 사용자 검색의 기본 결과로 노출한다.
 - 검수 상태값은 MySQL 문서 `5.0.2 상태값 기준`을 따른다.
 - 모든 어드민 쓰기 API는 처리자, 처리시각, 처리 사유를 남긴다.
+- `actor_id`는 request body로 받지 않고 인증 컨텍스트에서 주입한다(2.2.1). 인증은 본 설계의 전제다(12.0).
+- 검수 decision API는 `expected_review_status`로 충돌을 검사하고, 생성 계열은 `idempotency_key`로 중복 생성을 막는다(2.7).
+- 사용자 예측/가격 카드 응답에는 참조 snapshot 기준 `as_of`/기준일을 표기한다(2.6).
 - 수집 DB 장애가 가격 예측 API 장애로 번지지 않게 예측 API는 운영 feature store와 모델 번들을 우선한다.
 - snapshot 생성은 `artwork_snapshot`과 `artwork_snapshot_item`에 남기고, 모델 학습은 snapshot export를 기준으로 한다.
 - 모델 버전 등록, 승인, 운영 승격, 롤백은 API와 DB에 이력으로 남긴다.
@@ -1165,13 +1382,24 @@ API 구현 시 반드시 지켜야 할 기준:
 
 ## 12. 다음 확정 필요 항목
 
+### 12.0 전제(precondition)
+
+인증 방식은 "다음에 정할 항목"이 아니라 본 설계의 전제다. `actor_id` 서버 주입(`2.2.1`)과 권한 게이트가 인증 컨텍스트 위에서만 성립하기 때문이다.
+
+- 인증 주체를 인증 컨텍스트(세션/JWT claim)에서 식별하는 방식이 확정되기 전에는 어드민 쓰기 API를 운영하지 않는다.
+- 인증 미정 상태에서 쓰기 API를 열면 `actor_id` 위조 차단과 `required_role` 게이트가 무력화된다.
+- 세션/JWT/내부 관리자 계정 중 어떤 방식을 쓸지는 확정 필요지만, "인증 컨텍스트에서 주체를 식별한다"는 전제 자체는 협상 대상이 아니다.
+
+### 12.1 그 외 확정 필요 항목
+
 API 구현 전에 아래 항목을 정해야 한다.
 
 | 항목 | 결정 필요 내용 |
 |---|---|
-| 인증 방식 | 세션, JWT, 내부 관리자 계정 중 선택 |
+| 인증 방식 상세 | 세션, JWT, 내부 관리자 계정 중 선택(전제는 12.0, 여기서는 구현 방식만 확정) |
+| freshness 임계 `N`/`M` | 예측/가격 카드 `as_of` 경고 임계 `N`일과 카드 차단 임계 `M`일(M>N), 그리고 active deployment 학습 snapshot ↔ 최신 정상 snapshot 괴리 경고 임계(2.6 / 4.4) |
 | 신규 작가 후보 저장 방식 | SQL view/export로 시작할지, 별도 물리 큐 테이블을 만들지 |
-| 수동 CSV 업로드 저장 방식 | 파일 스토리지 경로와 import run 테이블을 어떻게 둘지 |
+| 수동 CSV 업로드 파일 저장 위치 | `manual_import_file.file_uri`에 기록할 저장소 경로 규칙. row 처리 구조는 MySQL 문서 5.3.1의 `manual_import_file` + `collector_run` 기준으로 확정 |
 | 운영 로그 저장 방식 | 비가역 작가 identity 결정은 `identity_event_log`(MySQL 5.12.1)에 append-only로 남기고, 그 외 엔티티는 각 테이블 승인/반려 컬럼을 사용한다. 전체 필드 변경 audit 테이블 확대는 고도화 |
 | 예측 API 연결 방식 | 기존 가격 예측 API에 이 입력/응답 구조를 맞출지, wrapper를 둘지 |
 | 1차 시장 가격 카드 데이터 위치 | feature store, snapshot 집계 테이블, 캐시 중 선택 |

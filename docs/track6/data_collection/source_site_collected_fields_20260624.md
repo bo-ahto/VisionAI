@@ -92,6 +92,17 @@
 - 외부 지식이나 과거 데이터로 보완이 필요하면 별도 보강 단계로 분리하고, `value_source`, `confidence`, `reviewer`, `review_status`를 남긴다.
 - 자동 분류나 파서 결과가 `confidence=high`가 아닌 값은 `candidate` 또는 `unmapped`로 남기고, 학습 snapshot export 대상에서는 제외하거나 검수 대기 상태로 둔다.
 
+가격 라벨 의미 고정 원칙:
+
+가격 표준 컬럼에는 가격의 의미를 명시하는 컬럼을 함께 둔다. 같은 `price_amount`라도 판매 호가/낙찰가/추정가는 의미가 다르므로, 라벨을 고정하지 않으면 학습 타깃이 섞인다.
+
+- `price_type`: 가격 라벨. 값 집합은 `retail_ask`(판매 호가), `auction_hammer`(경매 낙찰가), `estimate`(추정가)다. **현재 4개 원천(Artsy/Saatchi/Print Bakery/Art1)은 전부 `retail_ask`(판매 호가)로 고정한다.** Art1 판매완료(`is_sold`) row의 가격도 "거래 체결가"가 아니라 "판매 당시 호가"이므로 `auction_hammer`나 체결가로 해석하지 않고 `retail_ask`로 둔다.
+- `price_tax_basis`: 세금/수수료 포함 여부. 값 집합은 `tax_incl`(포함), `tax_excl`(미포함), `unknown`(원천별 포함 여부 불명). 현재 4개 원천은 세금·수수료 포함 여부를 신뢰 가능하게 알 수 없으므로 대부분 `unknown`으로 둔다. 원천이 명시적으로 표기한 경우에만 `tax_incl`/`tax_excl`로 채운다.
+
+가격 신뢰 가정(가격예측 트랙 한계):
+
+> 본 트랙은 원천에서 수집되는 가격을 해당 작품의 가격으로 신뢰하고 사용한다. 원천 가격의 진위/일관성 검증은 본 트랙 범위 밖이며, `price_type=retail_ask` 가정 하에 학습 라벨로 사용한다. 즉 모델 타깃은 "원천에 표기된 판매 호가"이지 "실제 거래 체결가"가 아니다.
+
 원천 저장 포맷 원칙:
 
 - API 응답은 원본 JSON으로 보존한다.
@@ -507,7 +518,7 @@ Art1 작가 정보는 작품 상세 안의 작가 프로필을 먼저 파싱하�
 
 ### 7.3 작가 표준화 컬럼
 
-원천별 작가 후보는 최종적으로 아래 공통 컬럼으로 맞춘다. 이 표가 작가 공통 컬럼명의 기준이다. 3.2/4.2 등 원천별 표의 `artist_location_country`/`artist_followers`/`artist_bio` 같은 표준화 대상명은 표시용 라벨이며, 실제 SoT 컬럼은 이 표와 `normalized_artist_staging`의 이름(`location_country`/`followers`/`bio_text` 등)을 따른다. 마찬가지로 `artist_bio_candidate`는 SoT의 `bio_text_candidate`와 동일 컬럼이다.
+원천별 작가 후보는 최종적으로 아래 공통 컬럼으로 맞춘다. 이 표가 작가 공통 컬럼명의 기준이다. 3.2/4.2 등 원천별 표의 `artist_location_country`/`artist_followers`/`artist_bio` 같은 표준화 대상명은 표시용 라벨이며, 실제 단일 기준 컬럼은 이 표와 `normalized_artist_staging`의 이름(`location_country`/`followers`/`bio_text` 등)을 따른다. 마찬가지로 `artist_bio_candidate`는 단일 기준의 `bio_text_candidate`와 동일 컬럼이다.
 
 | 표준 컬럼 | 설명 |
 |---|---|
@@ -692,7 +703,7 @@ artist_identity
 
 최종적으로 4개 사이트의 수집 결과는 아래 공통 컬럼으로 맞춘다.
 
-> 라벨 주: 3~6장 원천별 표의 "표준화 대상"은 목표/후보 라벨이다. `normalized_artwork_staging`(SoT는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.8) 공통 컬럼에 없는 값(갤러리명/유형/도시, subject, style 등)은 공통 컬럼이 아니라 `metadata_json`에 보존하며, 모델 피처 승격은 별도 검증 후에 한다(§9.1·10장). 작가 메타 라벨의 SoT 컬럼 대응은 §7.3을 따른다.
+> 라벨 주: 3~6장 원천별 표의 "표준화 대상"은 목표/후보 라벨이다. `normalized_artwork_staging`의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.8이며, 공통 컬럼에 없는 값(갤러리명/유형/도시, subject, style 등)은 공통 컬럼이 아니라 `metadata_json`에 보존한다. 모델 피처 승격은 별도 검증 후에 한다(§9.1·10장). 작가 메타 라벨의 단일 기준 컬럼 대응은 §7.3을 따른다.
 
 | 공통 컬럼 | Artsy | Saatchi | Print Bakery | Art1 |
 |---|---|---|---|---|
@@ -707,6 +718,8 @@ artist_identity
 | `price_raw` | price_raw | price_usd 원문 | price/price_content | price_text_detail |
 | `price_currency` | 원천 통화 | USD | KRW | KRW |
 | `price_amount` | 원천 통화 숫자 | USD 숫자 | KRW 숫자 | KRW 숫자 |
+| `price_type` | retail_ask | retail_ask | retail_ask | retail_ask (판매완료 row도 호가) |
+| `price_tax_basis` | unknown | unknown | unknown | unknown |
 | `price_krw_source` | 원천 KRW일 때만 | 보통 없음 | 원천 KRW | 원천 KRW |
 | `width_cm` | width | width | size 파싱 | width_cm_detail |
 | `height_cm` | height | height | size 파싱 | height_cm_detail |
@@ -764,6 +777,15 @@ artist_identity
 
 이 값들은 결측률, 입력 가능성, 중복/오염 가능성을 별도 실험으로 확인한 뒤 피처로 승격한다.
 
+### 10.1 결측 가격 row 처리
+
+가격이 없거나 가격 대신 문의 문구만 있는 row는 수집·보존은 하되 학습 가격 라벨에서는 제외한다.
+
+- `price_on_request`: Print Bakery `price_content = "구매 별도 문의"`처럼 가격 숫자 없이 문의 문구만 있는 경우다. `availability_candidate=price_on_request`로 두고 `price_amount`는 빈 값으로 유지한다.
+- 원천에 가격이 아예 없는 row도 같은 규칙을 따른다.
+- 빈 값은 빈 값으로 유지하고, 학습 가격 라벨(`price_krw_normalized`/`price_krw_source`) 대상에서만 제외한다. **결측 가격을 `0`이나 임의값으로 대체하지 않는다.**
+- 이 row들은 크기/재료/작가 등 다른 메타가 있으면 보존·분석에는 쓰되, 가격 타깃이 없는 학습 snapshot row로 분류한다.
+
 ## 11. 데이터 분석/관리 검토 기준
 
 수집 항목은 모델 학습에 바로 쓰기 위한 컬럼과, 향후 검증 후 승격할 수 있는 후보 컬럼을 구분해서 관리한다.
@@ -784,7 +806,13 @@ artist_identity
 
 분석용 지표는 원천별 편향을 같이 봐야 한다. 예를 들어 Artsy/Saatchi는 해외 작가와 USD 가격 비중이 높고, Print Bakery/Art1은 국내 원화 가격과 평면 작품 비중이 높을 수 있다. 따라서 단순 row 수만 비교하지 않고, 가격대, 통화, 작가 국적, 매체 분포를 함께 비교한다.
 
-가격을 원천 간 비교하거나 모델 타깃으로 쓸 때는 혼합 통화(`price_currency`+`price_amount`)를 그대로 비교하지 않는다. 학습용 단일 통화 가격은 snapshot export 직전 `price_conversion` 단계에서 `fx_rate_daily` 기준일 환율로 환산한 `price_krw_normalized`를 사용한다. 원천이 직접 KRW를 제공한 `price_krw_source`는 환산하지 않고 그대로 쓴다. 설계는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)의 `fx_rate_daily`/`price_conversion`을 따른다.
+가격을 원천 간 비교하거나 모델 타깃으로 쓸 때는 혼합 통화(`price_currency`+`price_amount`)를 그대로 비교하지 않는다. 학습용 단일 통화 가격은 `price_conversion` 단계에서 환산한 `price_krw_normalized`를 사용한다. 원천이 직접 KRW를 제공한 `price_krw_source`는 환산하지 않고 그대로 쓴다. 설계는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)의 `fx_rate_daily`/`price_conversion`을 따른다.
+
+환율 기준일은 단일 규칙으로 고정한다.
+
+- **각 row는 그 row의 수집 시점(`collected_at`) 환율로 KRW 환산한다(point-in-time 정합성).** `fx_rate_daily`에서 `collected_at` 날짜의 환율을 조회해 적용한다.
+- 환산에 사용한 환율과 기준일을 `price_krw_normalized`와 함께 동반 저장한다(예: `price_fx_rate`, `price_fx_date`). 어떤 환율로 언제 기준 환산했는지 추적 가능해야 한다.
+- **snapshot export 시점의 환율을 전체 row에 일괄 적용하지 않는다.** 과거 수집 가격에 최근 환율을 입히면 과거 가격에 환율 노이즈가 유입되어 타깃이 왜곡된다.
 
 ### 11.2 데이터 관리자 관점
 
