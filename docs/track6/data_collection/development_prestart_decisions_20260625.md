@@ -32,6 +32,7 @@ MySQL 8.0 + 명시 SQL migration
   -> rate limit/idempotency/익명세션 카운터는 M1 단일 인스턴스 + MySQL 저장(확장 시 Redis)
   -> 비동기 job은 cron + collector_run/watchdog DB 패턴(별도 큐는 후속)
   -> 어드민 프론트는 React + TypeScript SPA(데이터테이블/쿼리 라이브러리), 사용자 화면 SSR은 SEO 필요 시 택
+  -> 서버 이미지는 모델을 굽지 않고 object storage/registry에서 런타임 로드(API=slim python, 프론트=React→nginx 정적, dev=compose+MinIO)
 ```
 
 이 조합을 추천하는 이유:
@@ -63,6 +64,7 @@ MySQL 8.0 + 명시 SQL migration
 | prediction API 연결 | 기존 가격 예측 API를 호출하지 않고, 데이터 수집 서비스 안에 joblib serving adapter를 둔다. adapter는 active deployment/model registry에서 joblib artifact를 읽고 직접 예측한다. | joblib serving adapter, parity smoke |
 | M1 모델 | Warm은 `models/track6/warm_lite_unified_current_joblib_v0.1_candidate`를 active deployment 후보로 둔다. Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `models/track6/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 뒤 active deployment에 올린다. `cold_prediction_v0.5_operational`은 M1 적용 후보가 아니라 과거 raw-input p95 방어 참고 산출물로만 둔다. | model registry seed, deployment seed, cold k80 joblib freeze/parity |
 | 신규 작가 후보 | 사용자 신규 작가 후보 제출을 M1에 포함한다. 따라서 SQL view/export만으로 시작하지 않고 물리 후보 큐 테이블을 1차 DDL에 포함한다. | physical candidate queue table, public submit API |
+| 서버 이미지 / 모델 전달 | 모델 artifact는 이미지에 굽지 않고 object storage/registry에서 런타임 pull한다(§3.11). API 이미지는 `python:3.11-slim`(모델/데이터 미포함), 프론트는 React SPA→nginx 정적. 모델 교체는 deployment 행으로 하고 이미지 rebuild를 요구하지 않는다. | Dockerfile/Dockerfile.frontend, docker-compose, startup artifact loader, `.dockerignore` |
 
 ## 3. 선택이 필요한 항목
 
@@ -190,6 +192,37 @@ Cold k80 joblib 적용 산출물:
 | Next.js(React + SSR) | 사용자 화면 SEO/초기 로딩에 유리하고 같은 React 생태계를 어드민과 공유. | 어드민 전용엔 과하고 배포 복잡도가 늘어남. | 사용자 화면 SEO 필요 시 |
 | Vue/Svelte 등 비React | 팀 역량에 따라 생산성이 좋을 수 있음. | 컴포넌트 기준 매핑/채용을 재검증해야 함. | 팀 역량 기준 선택 |
 
+### 3.11 서버 / 컨테이너 이미지 구성
+
+확정: 모델 artifact는 이미지에 굽지 않고 object storage/registry에서 런타임 로드한다. (코덱스 의견 + 검토 합의)
+
+기존 레포의 `Dockerfile.api`는 모델(.cbm/.json/parquet)을 이미지에 COPY로 굽지만, Track6는 §3.6 joblib serving adapter와 `price_model_registry`/`price_model_deployment` 테이블 레이어가 "이미지 rebuild 없이 active deployment를 바꾼다"를 전제한다. 모델을 이미지에 구우면 이 레이어가 무의미해지므로, Track6 서버 이미지는 기존 패턴을 그대로 답습하지 않는다.
+
+모델 artifact 전달:
+
+| 선택지 | 장점 | 단점 | 판단 |
+|---|---|---|---|
+| object storage/registry 런타임 pull | active deployment 행 + `artifact_uri` 기준으로 startup에 joblib 번들을 다운로드/캐시/checksum 검증 후 로드. 승격/롤백 = DB·스토리지 상태 변경 + reload/restart, 이미지 rebuild 불필요. registry/deployment 테이블이 실제 control plane이 됨. | startup fetch/캐시/체크섬을 구현해야 함. | 확정 |
+| 이미지 bake(기존 `Dockerfile.api` 방식) | 런타임 fetch 없음, 단순. | 모델 교체 = 이미지 rebuild. deployment 테이블이 장식이 됨(§3.6 위배). | 비권장(오프라인 smoke용 dev seed로만 허용) |
+| hybrid(bake 기본 + registry override) | 오프라인에서도 동작. | SoT가 둘로 갈라져 더 혼란. | 비권장 |
+
+권장 이미지 구성(M1):
+
+| 항목 | 권장 |
+|---|---|
+| API 이미지 | `python:3.11-slim` 멀티스테이지(기존 `Dockerfile.api` 패턴을 정리해 재사용). 모델/데이터 artifact는 COPY하지 않음. non-root 실행, pinned requirements/lockfile, healthcheck. |
+| 프론트 이미지 | React + TypeScript 빌드(멀티스테이지 node build) → nginx 정적 서빙(기존 `Dockerfile` 방향 유지, 어드민엔 SSR 불필요). |
+| dev 오케스트레이션 | `docker-compose` 1개: `track6-api` + `track6-frontend` + `mysql:8.0`(migration/seed) + `minio`(S3 호환 artifact/raw payload). Kubernetes는 M1 범위 아님. |
+| 이미지 태그 | API=`track6-api:<git_sha>`, 프론트=UI 빌드 버전. 모델 정체성은 `model_version`/`artifact_uri`/checksum/`deployment_id`로 분리한다. 배포 로그에 `api_image_sha`와 `deployment_id`를 함께 남기되, 모델 교체가 이미지 태그를 바꾸지 않는다. |
+
+기존 `Dockerfile.api`에서 가져오지 말아야 할 것([RISK]):
+
+- 모델 파일(.cbm/.json/warm list/metrics/calibration)·parquet 데이터셋을 이미지에 COPY → registry 롤백 무력화 + 빌드 비대화
+- `requirements-api.txt`가 `>=` 부동 핀 → 재현성 깨짐. lock 또는 `==` 고정으로 전환
+- `.dockerignore` 없음 → build context에 대용량 data/model 트리 유입 위험
+- root 실행 → non-root user 지정
+- 모델 선택을 이미지 env 기본값(예: `SOURCE_ROUTER_MODE`)에 섞기 → deployment 테이블 밖의 숨은 런타임 동작. Track6는 모델 선택을 env가 아니라 deployment 행으로만 통제
+
 ## 4. Phase 0에서 바로 만들어야 할 산출물
 
 1. `docs/track6/data_collection/openapi/track6_data_collection_v1.yaml`
@@ -204,6 +237,8 @@ Cold k80 joblib 적용 산출물:
 10. model registry/deployment seed for Warm joblib + Cold k80 joblib M1
 11. public artist candidate submit queue fixture
 12. Warm joblib + Cold k80 joblib serving smoke/parity fixture
+13. API Dockerfile(non-root, 모델 미포함) / 프론트 Dockerfile(React build→nginx) / docker-compose(api+frontend+mysql+minio) / `.dockerignore`
+14. startup artifact loader(active deployment → object storage joblib pull + checksum 검증) smoke fixture
 
 ## 5. 개발 착수 전 확인 질문
 
@@ -219,3 +254,4 @@ Cold k80 joblib 적용 산출물:
 | rate limit/idempotency 저장을 별도 Redis로 둘 것인가? | 아니오. M1은 단일 인스턴스 + MySQL. 확장 시 Redis |
 | 비동기 job에 별도 작업 큐를 도입할 것인가? | 아니오. M1은 cron + collector_run/watchdog DB 패턴 |
 | 프론트 프레임워크를 무엇으로 둘 것인가? | 어드민 React + TypeScript SPA. 사용자 화면 SSR은 SEO 필요 시 |
+| 모델을 서버 이미지에 구울 것인가? | 아니오. object storage/registry 런타임 pull. 이미지 rebuild 없이 deployment 행으로 교체 |
