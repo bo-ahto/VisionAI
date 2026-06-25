@@ -96,22 +96,26 @@ MySQL 스키마 문서
 
 쓰기 엔드포인트 최소 권한(`required_role`):
 
-| 엔드포인트 | 동작 | required_role(확정 필요) |
+| 엔드포인트 | 동작 | required_role |
 |---|---|---|
-| `POST /api/v1/admin/collection-runs/{run_id}/actions` | 수집 run 조치 | 운영자 |
-| `POST /api/v1/admin/sources` · `PATCH /api/v1/admin/sources/{source}` | 원천 등록/수정 | 개발자 |
-| `POST /api/v1/admin/manual-imports` 계열 | 수동 CSV 업로드/매핑 | 운영자 |
+| `GET /api/v1/admin/...` (조회 전반) | 대시보드/큐/상세 조회 (GET) | 운영 담당자 |
+| `POST /api/v1/admin/collection-runs/{run_id}/actions` | 수집 run 재수집 (5.4) | 운영 담당자 |
+| `POST /api/v1/admin/sources` · `PATCH /api/v1/admin/sources/{source}` | 원천 등록/수정 (6.x) | 데이터 관리자 |
+| `POST /api/v1/admin/manual-imports` 계열 | 수동 CSV 업로드/매핑 (6.3/6.5) | 데이터 분석가 |
 | `POST /api/v1/admin/model-deployments` (`promote`/`rollback`/`retire`) | 모델 승격/롤백 (7.3) | 데이터 관리자 |
-| `POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision` | 작품 품질 검수 (8.2) | 운영자 |
-| `POST /api/v1/admin/review/artist-names/{alias_id}/decision` | 작가명 검수 (8.4) | 운영자 |
-| `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | artist identity 결정 (8.6) | 데이터 관리자 |
-| `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 작가 후보 결정 (8.8) | 데이터 관리자 |
-| `POST /api/v1/admin/snapshots` | snapshot 생성 승인 (9.3) | 데이터 관리자 |
-| `POST /api/v1/admin/snapshots/{snapshot_id}/approve` | snapshot 서빙 승인 (9.3.3) | 데이터 관리자 |
+| `POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision` | 작품 품질 검수 (8.2) | 운영 담당자 |
+| `POST /api/v1/admin/review/artist-names/{alias_id}/decision` | 작가명 검수 (8.4) | 운영 담당자 |
+| `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | artist identity 연결 검수 (8.6) | 데이터 관리자 |
+| `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 artist_key 결정 (8.8) | 데이터 관리자 |
+| `POST /api/v1/admin/snapshots/requests` | snapshot 확정요청 (9.3.1) | 운영 담당자 |
+| `POST /api/v1/admin/snapshots` | snapshot 생성승인 (9.3.2) | 데이터 관리자 |
+| `POST /api/v1/admin/snapshots/{snapshot_id}/approve` | snapshot 서빙승인 (9.3.3) | 데이터 관리자 |
+| `GET /api/v1/admin/audit-logs` | audit-logs 조회 (10.1) | 데이터 관리자 |
 
-- 모델 승격/롤백(7.3), artist identity 결정(8.6/8.8), snapshot 생성 승인(9.3) 및 snapshot 서빙 승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영자는 모델을 임의로 롤백할 수 없고, snapshot을 서빙 대상으로 승인할 수도 없다.
+- 역할 위계는 개발자 < 운영 담당자 < 데이터 분석가 < 데이터 관리자이며, `required_role`은 해당 역할 "이상"을 의미한다(상위 역할은 하위 권한 포함).
+- 모델 승격/롤백(7.3), artist identity 결정(8.6/8.8), snapshot 생성승인(9.3.2) 및 snapshot 서빙승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영 담당자는 모델을 임의로 롤백할 수 없고, snapshot을 서빙 대상으로 승인할 수도 없다.
 - 운영 초기 슈퍼유저는 위 역할을 모두 수행할 수 있으나, 실제 처리자 식별과 사유 기록 의무는 동일하게 적용된다.
-- 위 표의 `required_role` 값은 운영 역할 분리 확정 후 고정한다(확정 필요).
+- 전체 역할 매핑의 단일 기준은 [운영 파라미터](operational_parameters_20260625.md) §A-1.
 
 ### 2.3 사용자 화면 응답 제한
 
@@ -205,15 +209,15 @@ as_of 기준(모델이 실제 쓴 값):
 
 지연 임계와 차단:
 
-- SLA 문구: "최신 snapshot 기준, 최대 `N`일." 참조 snapshot의 `as_of`가 `N`일(확정 필요, 12.1)을 초과하면 화면에 최신성 경고를 표시한다(카드는 계속 노출).
-- 완전 차단 임계 `M`일(확정 필요, `M>N`, 12.1)을 초과하면 구데이터의 무한 노출을 막기 위해 카드 자체를 숨긴다.
+- SLA 문구: "최신 snapshot 기준, 최대 `N`일." 참조 snapshot의 `as_of`가 `N`=10일([운영 파라미터](operational_parameters_20260625.md) §E `FRESH-WARN-N`)을 초과하면 화면에 최신성 경고를 표시한다(카드는 계속 노출).
+- 완전 차단 임계 `M`=21일(`M>N`, §E `FRESH-HIDE-M`)을 초과하면 구데이터의 무한 노출을 막기 위해 카드 자체를 숨긴다.
 - 따라서 응답에는 기준일(`as_of`/`data_reference_date`)을 항상 포함해 화면이 경고/차단을 판단할 수 있게 한다.
 
 deployment freshness vs 데이터 freshness 불일치:
 
 - 두 snapshot의 역할을 구분한다: 사용자에게 노출하는 `as_of`/기준은 "현재 active deployment가 학습에 사용한 `approved` snapshot의 `source_cutoff_at`"가 1차 기준이고, "마지막(최신) `approved` snapshot"은 그 1차 기준과 비교해 신선도 괴리를 판단하는 비교 대상일 뿐 사용자 `as_of`로 노출하지 않는다.
 - `as_of`는 모델이 실제 학습에 쓴 snapshot 기준이므로, 그 후 더 최신 `approved` snapshot이 생성·승인됐어도 운영 모델이 갱신되지 않았으면 `as_of`는 옛 값으로 남는다.
-- active deployment의 학습 snapshot과 현재 최신 `approved` snapshot의 `source_cutoff_at` 괴리가 임계(확정 필요, 12.1)를 초과하면, 데이터는 신선해도 모델이 옛 데이터를 쓰고 있다는 뜻이므로 신선도 경고를 띄운다.
+- active deployment의 학습 snapshot과 현재 최신 `approved` snapshot의 `source_cutoff_at` 괴리가 임계 14일(§E `FRESH-MODEL-GAP`)을 초과하면, 데이터는 신선해도 모델이 옛 데이터를 쓰고 있다는 뜻이므로 신선도 경고를 띄운다.
 
 ### 2.7 동시성과 멱등(idempotency)
 
@@ -221,7 +225,7 @@ deployment freshness vs 데이터 freshness 불일치:
 
 - 검수 decision API(8.2/8.4/8.6/8.8)는 request에 `expected_review_status`(또는 리소스 version)를 받는다. 서버 상태와 불일치하면 처리하지 않고 `CONFLICT`를 반환한다. 마지막 호출이 무조건 이긴다(last-write-wins)면 이미 다른 담당자가 끝낸 결정을 덮어쓴다.
 - 생성 계열(8.8 신규 `artist_key` 생성, 9.3 snapshot 생성, 6.1 원천 등록)은 `idempotency_key`를 받는다. 같은 키의 재요청은 새로 만들지 않고 직전 결과를 반환한다(네트워크 재시도/더블클릭 중복 생성 방지).
-- 검수 큐 항목은 claim/lock(담당자 + 만료시간) 또는 "검수 중" 상태를 둔다. 같은 항목을 두 사람이 동시에 처리하지 않게 한다. lock 만료시간 등 수치는 확정 필요(12.1)다.
+- 검수 큐 항목은 claim/lock(담당자 + 만료시간) 또는 "검수 중" 상태를 둔다. 같은 항목을 두 사람이 동시에 처리하지 않게 한다. claim/lock 만료시간 기본값은 30분이며 방치 시 자동 해제한다([운영 파라미터](operational_parameters_20260625.md) §F `REVIEW-CLAIM-TTL`).
 
 ## 3. API 목록 요약
 
@@ -449,7 +453,7 @@ GET /api/v1/public/artists/{artist_key}/primary-market-summary
   "artist_key": "artist_123",
   "as_of": "2026-06-25T00:00:00Z",
   "data_reference_date": "2026-06-25",
-  "freshness_label": "최신 snapshot 기준, 최대 N일",
+  "freshness_label": "최신 snapshot 기준, 최대 10일",
   "summary": {
     "title": "1차 시장 가격",
     "hodang_median_krw": 350000,
@@ -466,7 +470,7 @@ GET /api/v1/public/artists/{artist_key}/primary-market-summary
 주의:
 
 - `as_of`는 현재 active deployment가 학습에 사용한 snapshot의 `source_cutoff_at`(2.6 / 9.3 / 7.3)이며, `data_reference_date`는 화면 표시용 기준일이다.
-- `freshness_label`의 `N`(경고 임계, 허용 지연 상한)은 확정 필요(12.1)다. `N`일 초과 시 경고, 완전 차단 임계 `M`일(M>N, 확정 필요) 초과 시 카드를 숨긴다. 최신성 정책은 2.6을 따른다.
+- `freshness_label`의 `N`(경고 임계, 허용 지연 상한)은 10일이다. `N`=10일 초과 시 경고, 완전 차단 임계 `M`=21일(M>N) 초과 시 카드를 숨긴다. 최신성 정책은 2.6을 따른다.
 
 ## 5. 어드민 수집 API
 
@@ -516,7 +520,7 @@ response:
 
 - `size_parse_success_rate`: 화면의 "크기 파싱 성공률". 모집단은 해당 원천의 `normalized_artwork_rows`다.
 - `price_present_rows` / `price_present_rate`: 화면의 "가격 보유 row 수" / "가격 보유율". 모집단은 해당 원천의 `normalized_artwork_rows`다(문의가 등 가격 없음 row 제외 비율).
-- 두 비율의 분모(모집단) 정의는 raw 기준인지 normalized 기준인지 확정 필요(12.1). 본 문서는 normalized 기준으로 표기한다.
+- 두 비율의 분모(모집단)는 normalized 기준이다([운영 파라미터](operational_parameters_20260625.md) §H `SUMMARY-DENOM`).
 
 참조:
 
@@ -591,7 +595,7 @@ request:
 | `failed_only` | 실패 URL/row만 재수집(기본 권장) |
 | `full` | run 전체 재수집 |
 
-- `scope` 미지정 시 기본값은 확정 필요(12.1). 운영 비용상 `failed_only`를 기본으로 두는 것을 권장한다.
+- `scope` 미지정 시 기본값은 `failed_only`다(운영 비용상 실패분만 재수집; [운영 파라미터](operational_parameters_20260625.md) §H `RETRY-SCOPE-DEFAULT`).
 
 쓰기:
 
@@ -1443,26 +1447,28 @@ API 구현 시 반드시 지켜야 할 기준:
 - 모델 버전 등록, 승인, 운영 승격, 롤백은 API와 DB에 이력으로 남긴다.
 - 예측 응답과 예측 로그에는 `model_version`과 `deployment_id`를 남긴다.
 
-## 12. 다음 확정 필요 항목
+## 12. 정책 확정/조정 항목 (운영 파라미터 참조)
+
+> 운영 임계·기간·역할 등 정책 상수는 [운영 파라미터](operational_parameters_20260625.md)에서 기본값으로 확정되어 있다. 아래는 그 전제와, 조직 정책/운영 실측에 따라 갱신할 항목을 정리한 것이다.
 
 ### 12.0 전제(precondition)
 
 인증 방식은 "다음에 정할 항목"이 아니라 본 설계의 전제다. `actor_id` 서버 주입(`2.2.1`)과 권한 게이트가 인증 컨텍스트 위에서만 성립하기 때문이다.
 
-- 인증 주체를 인증 컨텍스트(세션/JWT claim)에서 식별하는 방식이 확정되기 전에는 어드민 쓰기 API를 운영하지 않는다.
-- 인증 미정 상태에서 쓰기 API를 열면 `actor_id` 위조 차단과 `required_role` 게이트가 무력화된다.
-- 세션/JWT/내부 관리자 계정 중 어떤 방식을 쓸지는 확정 필요지만, "인증 컨텍스트에서 주체를 식별한다"는 전제 자체는 협상 대상이 아니다.
+- 기본 인증 방식은 JWT 액세스 토큰 + 역할 claim(액세스 60분 / 리프레시 14일)으로 결정한다([운영 파라미터](operational_parameters_20260625.md) §A `AUTH-METHOD`/`AUTH-TOKEN-TTL`). `actor_id`는 토큰 claim에서 서버가 주입한다(2.2.1). 이 값은 조직 정책 확정 시 갱신한다.
+- 인증 컨텍스트에서 주체를 식별하는 방식이 운영되기 전에는 어드민 쓰기 API를 열지 않는다. 인증 미정 상태에서 쓰기 API를 열면 `actor_id` 위조 차단과 `required_role` 게이트가 무력화된다.
+- 세션/내부 관리자 계정 등 구체 구현 방식은 조직 정책 확정 시 갱신하되, "인증 컨텍스트에서 주체를 식별한다"는 전제 자체는 협상 대상이 아니다.
 
-### 12.1 그 외 확정 필요 항목
+### 12.1 그 외 정책/실측 조정 항목
 
-API 구현 전에 아래 항목을 정해야 한다.
+아래 항목은 [운영 파라미터](operational_parameters_20260625.md)에서 기본값으로 확정되어 있으며, 조직 정책 또는 운영 실측 후 갱신한다.
 
 | 항목 | 결정 필요 내용 |
 |---|---|
-| 인증 방식 상세 | 세션, JWT, 내부 관리자 계정 중 선택(전제는 12.0, 여기서는 구현 방식만 확정) |
-| freshness 임계 `N`/`M` | 예측/가격 카드 `as_of` 경고 임계 `N`일과 카드 차단 임계 `M`일(M>N), 그리고 active deployment 학습 snapshot ↔ 최신 `approved` snapshot 괴리 경고 임계(2.6 / 4.4) |
+| 인증 방식 상세 | 기본값(JWT 액세스 토큰 + 역할 claim, 액세스 60분/리프레시 14일)은 12.0에서 결정. 세션/내부 관리자 계정 등 구체 구현 방식 → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신 |
+| freshness 임계 `N`/`M` | 예측/가격 카드 `as_of` 경고 임계 `N`일·카드 차단 임계 `M`일(M>N)·deployment 괴리 경고 임계(2.6 / 4.4) → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신 |
 | 신규 작가 후보 저장 방식 | SQL view/export로 시작할지, 별도 물리 큐 테이블을 만들지 |
 | 수동 CSV 업로드 파일 저장 위치 | `manual_import_file.file_uri`에 기록할 저장소 경로 규칙. row 처리 구조는 MySQL 문서 5.3.1의 `manual_import_file` + `collector_run` 기준으로 확정 |
-| 운영 로그 저장 방식 | 비가역 작가 identity 결정은 `identity_event_log`(MySQL 5.12.1)에 append-only로 남기고, 그 외 엔티티는 각 테이블 승인/반려 컬럼을 사용한다. 전체 필드 변경 audit 테이블 확대는 고도화 |
+| 운영 로그 저장 방식 | 비가역 작가 identity 결정은 `identity_event_log`(MySQL 5.12.1)에 append-only로 남기고, 그 외 엔티티는 각 테이블 승인/반려 컬럼을 사용한다. 검수 큐 claim/lock TTL 등 동시성 수치 → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신. 전체 필드 변경 audit 테이블 확대는 고도화 |
 | 예측 API 연결 방식 | 기존 가격 예측 API에 이 입력/응답 구조를 맞출지, wrapper를 둘지 |
 | 1차 시장 가격 카드 데이터 위치 | feature store, snapshot 집계 테이블, 캐시 중 선택 |

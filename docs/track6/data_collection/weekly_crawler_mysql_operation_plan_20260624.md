@@ -24,6 +24,9 @@
 - [4개 원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [4개 원천 사이트 주기 수집 및 MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
+- [운영 파라미터](operational_parameters_20260625.md)
+
+운영 임계·기간의 단일 기준은 [운영 파라미터](operational_parameters_20260625.md)다. 아래 값은 그 기본값 인용.
 
 ## 문서 세트에서의 위치
 
@@ -638,14 +641,15 @@ Print Bakery
 
 - source별 `flock` 락을 잡고 실행한다. 락을 못 잡으면(이전 run이 아직 살아 있으면) 두 번째 run을 띄우지 않고 스킵 알림만 남긴다.
 - 락 파일은 source 단위로 분리해, 한 source가 막혀도 다른 source 수집은 정상 실행되게 한다.
-- 실행시간 상한(run별 wall-clock 상한, 확정 필요)을 둔다. 상한을 넘기면 해당 source run을 강제 종료하고 `status=failed`, 사유를 `error_message`/`summary_json`에 남긴 뒤 알림한다(stuck run 자동 종료). single-flight 락·watchdog 회수의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.2.2다.
+- 실행시간 상한(run별 wall-clock 상한, 기본값 24시간; [운영 파라미터](operational_parameters_20260625.md) §C `RUN-WALLCLOCK-LIMIT`)을 둔다. 상한을 넘기면 해당 source run을 강제 종료하고 `status=failed`, 사유를 `error_message`/`summary_json`에 남긴 뒤 알림한다(stuck run 자동 종료). single-flight 락·watchdog 회수의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.2.2다.
 - 강제 종료된 run의 raw/staging는 보존하고, 다음 주기 또는 운영자 재실행에서 §4.3 멱등 재처리 기준으로 이어받는다.
 
 ```text
 # 의사코드(per-source)
 flock -n /var/lock/collect_{source}.lock \
-  timeout {RUN_WALLCLOCK_LIMIT(확정 필요)} \
+  timeout 24h \
   python -m collectors.run --source {source}
+# timeout 24h(=86400s): RUN-WALLCLOCK-LIMIT, 운영 파라미터 §C
 # 락 미획득 -> 스킵+알림, timeout 초과 -> 강제 종료+failed+알림
 ```
 
@@ -653,7 +657,7 @@ flock -n /var/lock/collect_{source}.lock \
 
 원천 차단을 악화시키지 않도록 backoff/재시도 정책을 운영 안정화 단계로 미루지 않고 1차 cron 실행에 포함한다.
 
-- `source_registry`의 `request_delay_sec`/`max_concurrency`/`daily_request_cap`/`user_agent`/`backoff_policy_json`/`robots_policy`를 collector가 읽어 적용한다(정의·기본값은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.1, 구체 수치는 확정 필요).
+- `source_registry`의 `request_delay_sec`/`max_concurrency`/`daily_request_cap`/`user_agent`/`backoff_policy_json`/`robots_policy`를 collector가 읽어 적용한다(스키마 정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.1, 구체 기본값은 [운영 파라미터](operational_parameters_20260625.md) §B 참조).
 - 차단 신호(429/403/WAF challenge 등)가 감지되면 즉시 재요청으로 밀어붙이지 않고 backoff 후 재개한다. 반복되면 해당 source를 자동 일시중지한다(§6.1).
 - 재시도가 밴을 악화시키지 않도록, 차단 계열 응답에는 일반 5xx보다 보수적인 backoff와 낮은 재시도 상한을 적용한다.
 
@@ -669,7 +673,7 @@ run이 일부 진행(예: fetch 80%) 후 죽었을 때, 같은 raw를 중복 적
 
 전 원천 주 1회를 기본으로 하고, 주 2회 상향은 다음 기준으로 판단한다(정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §7).
 
-- 트리거(자동 집계): 국내 사이트(Art1, Print Bakery)에서 최근 4회 정상 run 기준 `price_amount`/`price_currency`/`availability` 중 하나 이상이 바뀐 row 비율의 평균이 임계치(확정 필요, 잠정 10%) 이상이면 상향 후보로 표시한다.
+- 트리거(자동 집계): 국내 사이트(Art1, Print Bakery)에서 최근 4회 정상 run 기준 `price_amount`/`price_currency`/`availability` 중 하나 이상이 바뀐 row 비율의 평균이 임계치(기본값 10%; [운영 파라미터](operational_parameters_20260625.md) §G `UPGRADE-TRIGGER`) 이상이면 상향 후보로 표시한다.
 - 결정 주체: 자동 집계는 상향 "후보"만 띄우고, 실제 주기 변경(`source_registry.schedule_cron` 수정)은 운영 담당자 검토·승인으로만 적용한다. 자동으로 주기를 바꾸지 않는다.
 
 ## 5. 데이터 수집 결과는 어떻게 확인하는가
@@ -822,11 +826,11 @@ run 시작 전 canary:
 
 | 지표 | 절대 임계치(하한선) | 처리 |
 |---|---|---|
-| 가격 숫자 보유율 | 확정 필요(예: 6.5의 20% 미만은 `blocked`) | 하한 미달 시 가격 parser 점검 + snapshot 반영 보류 |
-| 크기(가로/세로 cm) 보유율 | 확정 필요 | 하한 미달 시 크기 parser 점검 |
-| 작가명 보유율 | 확정 필요 | 하한 미달 시 작가명 추출 위치 변경 의심, 점검 |
+| 가격 숫자 보유율 | 20%([운영 파라미터](operational_parameters_20260625.md) §G `QUAL-PRICE-MIN`) | 하한 미달 시 가격 parser 점검 + snapshot 반영 보류 |
+| 크기(가로/세로 cm) 보유율 | 30%([운영 파라미터](operational_parameters_20260625.md) §G `QUAL-SIZE-MIN`) | 하한 미달 시 크기 parser 점검 |
+| 작가명 보유율 | 90%([운영 파라미터](operational_parameters_20260625.md) §G `QUAL-ARTIST-MIN`) | 하한 미달 시 작가명 추출 위치 변경 의심, 점검 |
 
-> 절대 임계치는 §6.5 품질 경고/차단 기준 표(상대치 위주)와 병행 적용한다. 구체 하한값은 초기 2~4주 실측 후 확정한다(확정 필요).
+> 절대 임계치는 §6.5 품질 경고/차단 기준 표(상대치 위주)와 병행 적용한다. 위 값은 잠정 기본값이며, 구체 하한값은 초기 2~4주 실측 후 확정한다.
 
 ## 6. 1차 데이터 수집이 안 되었을 때 어떻게 동작하는가
 
@@ -1416,7 +1420,7 @@ Art1
 
 - 위 알림은 run이 생성된 뒤의 품질 기준이다. run 자체가 안 생기면 `collector_run`에 row가 없어 품질 알림도 발생하지 않는다.
 - 따라서 예정 실행 시각(예: 월요일 03:00) + 유예 시간이 지나도 해당 주차 `collector_run`이 없으면 별도 heartbeat 알림을 보낸다(run 미생성).
-- run이 생겼더라도 `status=running`으로 멈춘 좀비 run을 별도로 처리한다: run은 진행 중 `heartbeat_at`을 주기 갱신하고, 외부 watchdog가 `heartbeat_at`이 임계 시간(확정 필요)을 초과하면 해당 run을 `failed`로 전환하고 사유를 남긴 뒤 알림한다(회수 기준의 단일 정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.2.2). 이렇게 해야 §4.1 실행시간 상한이 동작하지 않은 경우에도 멈춘 run이 영원히 `running`으로 남지 않는다.
+- run이 생겼더라도 `status=running`으로 멈춘 좀비 run을 별도로 처리한다: run은 진행 중 `heartbeat_at`을 주기 갱신하고, 외부 watchdog가 `heartbeat_at`이 임계 시간(기본값 2시간; [운영 파라미터](operational_parameters_20260625.md) §C `RUN-HEARTBEAT-TIMEOUT`)을 초과하면 해당 run을 `failed`로 전환하고 사유를 남긴 뒤 알림한다(회수 기준의 단일 정의는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.2.2). 이렇게 해야 §4.1 실행시간 상한이 동작하지 않은 경우에도 멈춘 run이 영원히 `running`으로 남지 않는다.
 - 판정은 수집 job 외부의 스케줄러/모니터(cron 종료 코드, dead-man's switch, 외부 watchdog)가 담당한다. watchdog는 수집 호스트와 분리해 둔다. 수집 호스트가 통째로 죽으면 같은 호스트의 감시도 함께 죽어 무알림 누락이 생기기 때문이다.
 
 ## 10. 운영 담당자 확인 화면

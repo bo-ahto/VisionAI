@@ -245,6 +245,8 @@ API 문서는 아래 내용만 가져간다.
 
 API 문서에는 전체 컬럼 목록을 복사하지 않는다. 컬럼 정의, enum 정의, FK 기준은 이 문서를 기준으로 한다.
 
+운영 임계·기간 등 정책 상수의 단일 기준은 [운영 파라미터](operational_parameters_20260625.md) 문서다. 아래 값은 그 기본값을 인용한 것이며 변경 시 파라미터 문서를 고친다.
+
 ### 5.0 스키마 레이어 요약
 
 수집 데이터는 한 번에 최종 테이블로 들어가지 않는다. 운영자가 문제 원인을 추적할 수 있도록 아래 레이어를 분리한다.
@@ -436,10 +438,10 @@ API/화면 관점:
 | `default_normalizer_version` | 이 원천의 기본 normalizer 버전. snapshot 재현 기준은 `artwork_snapshot.rules_version` |
 | `schedule_cron` | 정기 수집 주기. 수동 CSV 전용이면 null 가능 |
 | `request_delay_sec` | 기본 요청 간격 |
-| `max_concurrency` | 동시 요청 상한. 원천 부하/차단 대응용. 권장 기본값은 확정 필요 |
-| `daily_request_cap` | 1일 요청 상한. 초과 시 수집을 멈추고 다음 주기로 미룬다. 상한값은 확정 필요 |
+| `max_concurrency` | 동시 요청 상한. 원천 부하/차단 대응용. 기본값 2(해외 Artsy/Saatchi는 1) (운영 파라미터 §B `CRAWL-CONCURRENCY`) |
+| `daily_request_cap` | 1일 요청 상한. 초과 시 수집을 멈추고 다음 주기로 미룬다. 기본값 20,000회/일 (운영 파라미터 §B `CRAWL-DAILY-CAP`) |
 | `user_agent` | 요청에 사용할 User-Agent 문자열. 원천별로 다르게 둘 수 있다 |
-| `backoff_policy_json` | 재시도 backoff 정책: 초기 지연(`initial_delay_sec`), 최대 재시도(`max_retries`), 지수 배수(`multiplier`). 구체 수치는 확정 필요 |
+| `backoff_policy_json` | 재시도 backoff 정책: 초기 지연(`initial_delay_sec`), 최대 재시도(`max_retries`), 지수 배수(`multiplier`). 기본값 initial_delay_sec=2, max_retries=5, multiplier=2, jitter ±20%(2→4→8→16→32초) (운영 파라미터 §B `CRAWL-BACKOFF`) |
 | `robots_policy` | robots.txt 준수 여부와 근거. 예: `respect`/`override_with_reason`와 근거 메모 |
 | `last_success_run_id` | 마지막 성공 run 캐시. 물리 FK는 걸지 않는다 |
 | `last_failed_run_id` | 마지막 실패 run 캐시. 물리 FK는 걸지 않는다 |
@@ -523,7 +525,7 @@ single-flight 보장(source별 단일 실행):
 watchdog 좀비 run 회수:
 
 - 실행 중인 수집 job은 `heartbeat_at`을 주기적으로 갱신한다.
-- watchdog는 `heartbeat_at`이 임계(확정 필요, 예: 2h)를 초과했거나 run의 max runtime(확정 필요)을 초과한 `status='running'` 행을 회수한다.
+- watchdog는 `heartbeat_at`이 임계(기본값 2시간, 운영 파라미터 §C `RUN-HEARTBEAT-TIMEOUT`)를 초과했거나 run의 max runtime(기본값 24시간, 운영 파라미터 §C `RUN-WALLCLOCK-LIMIT`)을 초과한 `status='running'` 행을 회수한다.
 - 회수 시 `status='failed'`, `failure_type='stuck_timeout'`으로 전환한다. 이로써 해당 행의 `active_source_lock`이 NULL이 되어 `uq_running_source` 유니크가 풀려 다음 run이 생성될 수 있고, `last_success_run_id` 갱신이 막히는 문제도 해소된다.
 - watchdog는 수집 호스트와 분리된 외부 스케줄러/모니터에서 실행한다. 수집 호스트가 멈춰도 회수가 동작해야 하기 때문이다(스케줄러 미실행 감지는 [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)의 heartbeat 알림과 연계).
 
@@ -562,13 +564,13 @@ URL/API 요청 단위 원본을 저장한다.
 - 휘발성 tracking 파라미터(예: `utm_*`, `fbclid`, `gclid`, 세션/타임스탬프성 파라미터)는 제거한다.
 - 비밀 파라미터(예: `cafe24_app_key`, 토큰)는 fingerprint에서 제외한다. 키 회전 시 같은 요청이 다른 hash로 잡혀 중복 적재되는 것을 막기 위해서다.
 - 요청을 구분하는 API 파라미터(페이지/필터/ID 등)와 POST body 파라미터는 포함한다. 서로 다른 요청이 같은 hash가 되지 않도록 한다.
-- 제거/포함 대상 목록(특히 tracking·secret 파라미터 화이트/블랙리스트)은 원천별로 다를 수 있으며 구체 목록은 확정 필요.
+- 제거/포함 대상 목록(특히 tracking·secret 파라미터 화이트/블랙리스트)은 원천별로 다를 수 있다. 기본값은 SECRET-DENYLIST(`cafe24_app_key`, `api_key`, `access_token`, `token`, `secret`, `signature`, `sig`, `key`, `password`) / TRACKING-DENYLIST(`utm_*`, `fbclid`, `gclid`, `_ga`, `ref`)다 (운영 파라미터 §D `SECRET-DENYLIST`/`TRACKING-DENYLIST`).
 - 보수적 기본값(목록 확정 전): secret/tracking 목록이 확정되기 전까지는 secret denylist만 제외하고, 나머지 query/body 파라미터는 모두 fingerprint에 포함한다. 서로 다른 요청이 같은 hash가 되는 위험(과병합)을 우선 차단하기 위해서다. 같은 요청이 여러 hash로 잡히는 과분할은 raw가 일부 중복될 뿐 안전하므로, 목록이 확정되면 그때 tracking 제외를 넓힌다.
 
 raw 무한 증가 대비:
 
 - `raw_fetch`와 raw 레이어 테이블은 `snapshot_date`(또는 월) 기준 파티셔닝을 적용해 조회/삭제 비용을 낮춘다.
-- raw payload(object storage)와 DB raw row의 보존기간(확정 필요)을 정하고, 만료분은 일괄 정리한다. 비가역 identity 결정과 snapshot은 보존기간 정리 대상이 아니다.
+- raw payload(object storage)와 DB raw row의 보존기간(기본값 180일(6개월), 운영 파라미터 §D `RAW-RETENTION`)을 정하고, 만료분은 일괄 정리한다. 비가역 identity 결정과 snapshot은 보존기간 정리 대상이 아니다.
 
 ### 5.3.1 manual_import_file
 
@@ -1123,7 +1125,7 @@ snapshot 생성은 운영자 확정요청과 데이터 관리자 생성승인의
 - 운영자가 확정요청하면 `status=requested` row를 만든다(`snapshot_name`/`source_cutoff_at`/`rules_version` 고정).
 - 데이터 관리자가 생성을 승인하면 `status=approved`로 전이한 뒤 `status=generating`으로 생성에 진입하고, 생성 완료 시 `status=generated` + `resulting_snapshot_id`를 채운다. 승인 endpoint는 `snapshot_request_id`만 받아도 요청 row의 `snapshot_name`/`source_cutoff_at`/`rules_version`/`artist_identity_version`/`override_watermark_event_id`로 snapshot을 재현한다. 승인 자체는 `approval_idempotency_key`로 멱등 처리해 같은 승인이 중복 생성을 일으키지 않는다.
 - `generating` 중 생성이 실패하면 `status=failed`로 전이한다. 이때 두 생성 컬럼(`active_cutoff_at`/`active_rules_version`)이 NULL이 되어 활성 lock(`uq_active_snapshot_request`)이 풀리므로, 같은 `(source_cutoff_at, rules_version)`로 재시도(새 요청)가 가능하다.
-- lock wedge 방지(watchdog): `approved`/`generating`에서 처리 job이 죽으면 진행 중 행이 남아 같은 `(source_cutoff_at, rules_version)`의 재시도가 영구 차단된다. 이를 막기 위해 처리 job은 `heartbeat_at`을 주기적으로 갱신하고, watchdog가 `heartbeat_at`이 임계(확정 필요)를 초과한 `approved`/`generating` 행을 `status=failed`로 전이한다. 그러면 두 생성 컬럼이 NULL이 되어 `uq_active_snapshot_request`가 풀려 같은 cutoff/rules로 재시도가 가능해진다. watchdog는 §5.2.2 `collector_run` 회수와 동일 패턴이며, 처리 호스트와 분리된 외부 스케줄러/모니터에서 실행한다(처리 호스트가 멈춰도 회수가 동작해야 함).
+- lock wedge 방지(watchdog): `approved`/`generating`에서 처리 job이 죽으면 진행 중 행이 남아 같은 `(source_cutoff_at, rules_version)`의 재시도가 영구 차단된다. 이를 막기 위해 처리 job은 `heartbeat_at`을 주기적으로 갱신하고, watchdog가 `heartbeat_at`이 임계(기본값 1시간, 운영 파라미터 §C `SNAP-HEARTBEAT-TIMEOUT`)를 초과한 `approved`/`generating` 행을 `status=failed`로 전이한다. 그러면 두 생성 컬럼이 NULL이 되어 `uq_active_snapshot_request`가 풀려 같은 cutoff/rules로 재시도가 가능해진다. watchdog는 §5.2.2 `collector_run` 회수와 동일 패턴이며, 처리 호스트와 분리된 외부 스케줄러/모니터에서 실행한다(처리 호스트가 멈춰도 회수가 동작해야 함).
 - 반려하면 `status=rejected`로 두고 snapshot은 만들지 않는다.
 - 동시 생성 가드는 두 겹이다. (1) `idempotency_key` UNIQUE로 같은 확정요청의 중복 제출/중복 승인을 막고, (2) 생성 컬럼 `(active_cutoff_at, active_rules_version)` + `UNIQUE KEY uq_active_snapshot_request`로 같은 `(source_cutoff_at, rules_version)`에 대해 진행 중 요청이 1개만 존재하도록 강제한다. 이로써 `idempotency_key`가 서로 다른 두 요청이 같은 cutoff/rules로 둘 다 snapshot을 생성하는 경합을 차단한다. 진행 중 행의 base 컬럼(`status`/`source_cutoff_at`/`rules_version`)은 `NOT NULL`이라 활성 분기에서 생성 컬럼이 NULL이 되어 중복 활성이 새는 NULL-unique 누수는 없다. 단일 `CONCAT` lock을 쓰지 않는 이유는 TIMESTAMP를 문자열로 합치면 타임존/SQL모드에 따라 표현이 흔들려 유니크 판정이 깨질 수 있어서다. 두 컬럼을 각자의 원본 타입으로 두고 복합 유니크를 건다.
 - 승인 잠금 절차: 상태 전이는 expected status 조건부 UPDATE(낙관적 잠금)로 한다. 예) `UPDATE snapshot_request SET status='approved', approved_by=?, approved_at=NOW() WHERE snapshot_request_id=? AND status='requested'` — `affected_rows=0`이면 이미 다른 트랜잭션이 전이한 것이므로 실패 처리한다. 같은 cutoff/rules로 동시에 진입하려는 별개 요청은 `uq_active_snapshot_request` 복합 유니크가 거부한다. 같은 요청을 두 관리자가 동시에 승인해도 조건부 UPDATE에서 한쪽만 성공한다.
@@ -1277,7 +1279,7 @@ FK는 각 본문 테이블 정의의 `*_id` 컬럼(`run_id`, `raw_fetch_id`, `so
 
 - 대상 자격증명: 원천 API 앱 키(예: Cafe24 app key), DB 접속 정보, object storage 키, 환율 API 키.
 - 주입 경로: secret manager 또는 환경변수(env)로 주입한다. DB row, raw payload, `request_params_json`, `url`에는 저장하지 않는다(§5.3 마스킹 원칙).
-- 회전: 키는 주기적으로 회전한다. 회전 주기(확정 필요)와 회전 절차(신규 키 발급 → 무중단 교체 → 구 키 폐기)를 운영 런북에 둔다.
+- 회전: 키는 주기적으로 회전한다. 회전 주기(기본값 90일, 운영 파라미터 §D `KEY-ROTATION`)와 회전 절차(신규 키 발급 → 무중단 교체 → 구 키 폐기)를 운영 런북에 둔다.
 - 만료/실패: 키 만료로 수집이 실패하면 `collector_run.failure_type=auth_failed`로 남기고, 회전 후 재실행한다.
 
 ## 6. 원천별 수집 전략
