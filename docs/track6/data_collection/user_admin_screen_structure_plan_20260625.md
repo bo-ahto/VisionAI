@@ -295,17 +295,26 @@ API 기획
 
 - 원천 작가명
 - 원천 언어
+- 보정 전 한글명(`artist_name_ko_orig`)
 - 자동 변환 한글명
 - 자동 변환 영문명
 - 서비스 표시용 한글명 후보
 - 서비스 표시용 영문명 후보
 - 기존 alias 후보
+- 한글화 입력 유형(①~⑥, [표준화 흐름](artist_key_standardization_flow_20260624.md) 4.1)
+- reason code(`obvious_bad_romanization` 등, 4.4)
+- 위험 점수/사유(`흐/운그/우르`… 기계 음역 흔적)
+- RR 역검증 신뢰도
+- override 등록 여부
 - 검수 필요 사유
+
+> 한글화 입력 유형·reason code·위험 점수·역검증 신뢰도는 [표준화 흐름](artist_key_standardization_flow_20260624.md) 4.8에서 자동 산출해 큐에 함께 적재한다. 위험 점수·영향 행수 순으로 정렬(트리아지)한다.
 
 처리 버튼:
 
 - 표시명 승인
 - 표시명 수정 후 승인
+- override 등록(확정 한글명을 `artist_ko_overrides.csv`에 등록, 4.6)
 - alias 추가
 - 보류
 - 반려

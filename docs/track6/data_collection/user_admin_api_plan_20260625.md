@@ -863,6 +863,17 @@ GET /api/v1/admin/review/artist-names
 
 - 한글명/영문명 표시 후보와 alias 후보를 검수한다.
 
+응답에 한글화 검수 필드를 포함한다(표준화 흐름 4.8 자동 산출값):
+
+- `artist_name_ko_orig` 보정 전 한글명
+- `artist_name_ko_input_type` 입력 유형(①~⑥)
+- `artist_name_ko_reason` reason code
+- `artist_name_ko_risk_score` / `artist_name_ko_risk_reasons` 위험 점수/사유
+- `artist_name_ko_roundtrip_confidence` RR 역검증 신뢰도
+- `artist_name_ko_override_status` override 등록 여부
+
+정렬 기준은 `artist_name_ko_risk_score` 내림차순 → 영향 행수 내림차순(트리아지).
+
 참조:
 
 - 읽기: `normalized_artist_staging`, `artist_name_alias`
@@ -889,6 +900,7 @@ request:
 
 - `approve`
 - `approve_with_edit`
+- `register_override` — 확정 한글명을 override로 등록(표준화 흐름 4.6)
 - `reject`
 - `hold`
 
@@ -898,6 +910,7 @@ request:
 - `artist_name_alias.approved_by`
 - `artist_name_alias.approved_at`
 - `artist_name_alias.approval_note`
+- `register_override` 시: override 레지스트리(`scripts/track6/artist_ko_overrides.csv` 또는 동등 테이블)에 `artist_key`, `artist_name_ko`, `reason`, `approved_by/at` 기록 + `normalized_artist_staging.artist_name_ko_display`/`artist_name_ko_override_status=registered` 반영
 - 필요 시 `normalized_artist_staging.artist_name_*_display`
 
 ### 8.5 artist_key 연결 검수 큐 조회

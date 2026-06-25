@@ -690,6 +690,13 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `artist_name_en_display` | 서비스 표시용 영문 작가명 |
 | `artist_name_display_source` | 표시명이 온 경로: `source`, `parsed`, `alias_approved`, `manual`, `auto_transliteration`, `auto_translation` |
 | `artist_name_review_status` | 이름 보강 검수 상태 |
+| `artist_name_ko_orig` | 보정 전 한글명 원본(검수·복구용 보존) |
+| `artist_name_ko_input_type` | 한글화 입력 유형([표준화 흐름](artist_key_standardization_flow_20260624.md) 4.1) 최종값: `source_hangul`/`parsed_mixed`/`hangul_restore`/`foreign_translit`/`pen_name`. `meta_polluted`는 메타 오염 제거 전 임시값으로, 정리 후 위 최종값으로 재분류하며 최종값에는 남지 않는다 |
+| `artist_name_ko_reason` | 한글명 reason code([표준화 흐름](artist_key_standardization_flow_20260624.md) 4.4): `source_hangul`/`obvious_bad_romanization`/`metadata_removed_and_romanization_fixed`/`readable_foreign_name_transliteration`/`readable_gallery_name_transliteration`/`readable_studio_name_transliteration`/`pen_name_official` |
+| `artist_name_ko_risk_score` | 자동 위험 점수(클수록 우선 검수) |
+| `artist_name_ko_risk_reasons` | 위험 패턴 사유 목록(예: `long_hangul_ge_8`, `awkward_운그`, `brand_or_studio_spacing_review`) |
+| `artist_name_ko_roundtrip_confidence` | RR 역검증 신뢰도(복원 한글명을 다시 로마자화해 원천 로마자와 비교) |
+| `artist_name_ko_override_status` | override 등록 여부: `none`/`registered` |
 | `artist_name_normalized` | 매칭용 정규화 이름 |
 | `nationality` | 표준 국적 |
 | `gender` | 성별 |
