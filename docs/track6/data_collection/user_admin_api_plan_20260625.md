@@ -106,10 +106,10 @@ MySQL 스키마 문서
 | `POST /api/v1/admin/review/artist-names/{alias_id}/decision` | 작가명 검수 (8.4) | 운영자 |
 | `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | artist identity 결정 (8.6) | 데이터 관리자 |
 | `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 작가 후보 결정 (8.8) | 데이터 관리자 |
-| `POST /api/v1/admin/snapshots` | snapshot 생성 (9.3) | 데이터 관리자 |
+| `POST /api/v1/admin/snapshots` | snapshot 생성 승인 (9.3) | 데이터 관리자 |
 | `POST /api/v1/admin/snapshots/{snapshot_id}/approve` | snapshot 서빙 승인 (9.3.3) | 데이터 관리자 |
 
-- 모델 승격/롤백(7.3), artist identity 결정(8.6/8.8), snapshot 생성(9.3) 및 snapshot 서빙 승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영자는 모델을 임의로 롤백할 수 없고, snapshot을 서빙 대상으로 승인할 수도 없다.
+- 모델 승격/롤백(7.3), artist identity 결정(8.6/8.8), snapshot 생성 승인(9.3) 및 snapshot 서빙 승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영자는 모델을 임의로 롤백할 수 없고, snapshot을 서빙 대상으로 승인할 수도 없다.
 - 운영 초기 슈퍼유저는 위 역할을 모두 수행할 수 있으나, 실제 처리자 식별과 사유 기록 의무는 동일하게 적용된다.
 - 위 표의 `required_role` 값은 운영 역할 분리 확정 후 고정한다(확정 필요).
 
@@ -211,6 +211,7 @@ as_of 기준(모델이 실제 쓴 값):
 
 deployment freshness vs 데이터 freshness 불일치:
 
+- 두 snapshot의 역할을 구분한다: 사용자에게 노출하는 `as_of`/기준은 "현재 active deployment가 학습에 사용한 `approved` snapshot의 `source_cutoff_at`"가 1차 기준이고, "마지막(최신) `approved` snapshot"은 그 1차 기준과 비교해 신선도 괴리를 판단하는 비교 대상일 뿐 사용자 `as_of`로 노출하지 않는다.
 - `as_of`는 모델이 실제 학습에 쓴 snapshot 기준이므로, 그 후 더 최신 `approved` snapshot이 생성·승인됐어도 운영 모델이 갱신되지 않았으면 `as_of`는 옛 값으로 남는다.
 - active deployment의 학습 snapshot과 현재 최신 `approved` snapshot의 `source_cutoff_at` 괴리가 임계(확정 필요, 12.1)를 초과하면, 데이터는 신선해도 모델이 옛 데이터를 쓰고 있다는 뜻이므로 신선도 경고를 띄운다.
 
