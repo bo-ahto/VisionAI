@@ -793,13 +793,13 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 
 | 컬럼 | 설명 |
 |---|---|
-| `change_event_id` | PK |
+| `change_event_id` | PK. 커밋 순서로 부여되는 gap-free 단조 증가 시퀀스(또는 시퀀스 테이블)에서 발급한다. watermark 재생 결정성의 기준 id다(§5.14.1) |
 | `source_artwork_key` | 대상 작품의 안정 키(= `source + source_artwork_id`, `normalized_artwork_staging.source_artwork_key`). 다른 테이블과 동일한 기준 키를 쓴다. normalized 후보값은 parser/normalizer 재실행으로 row가 갈릴 수 있으므로 행 ID가 아니라 이 안정 키를 기준으로 한다 |
 | `field` | 변경된 필드명 |
 | `value_type` | 값 타입 enum: `number`/`string`/`date`/`json`/`bool`. `old_value_json`/`new_value_json` 해석과 export 캐스팅 기준 |
 | `old_value_json` | 변경 전 값. canonical JSON으로 저장 |
-| `new_value_json` | 변경 후 값. canonical JSON으로 저장 |
-| `change_type` | 변경 유형. 예: `approve_with_patch` |
+| `new_value_json` | 변경 후 값. canonical JSON으로 저장. `change_type=clear`이면 `NULL`(override 해제 tombstone) |
+| `change_type` | 변경 유형 enum: `set`(override 신규 적용)/`update`(override 값 변경)/`clear`(override 해제 = rollback). `set`/`update`는 해당 필드를 활성으로 만들고, `clear`는 비활성으로 만든다(tombstone). 검수 결정 유형(`approve_with_patch` 등)은 `review_decision`에 기록한다 |
 | `actor_id` | 처리자 ID |
 | `changed_at` | 변경 시각 |
 | `review_decision` | 검수 결정 |
@@ -812,6 +812,7 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 - 작품의 필드 단위 변경(`approve_with_patch` 등)은 이 테이블에 append한다. 단순 승인/반려 상태는 각 테이블의 상태/승인/반려 컬럼을 그대로 쓴다.
 - 어드민 audit의 작품 before/after 조회는 이 테이블을 source로 쓴다(작가 identity 결정은 §5.12.1 `identity_event_log`).
 - 역할 분리: 이 테이블은 **감사 로그**이고, "현재 적용 중인 patch 값"은 §5.8.2 `normalized_artwork_override`(현재 적용 상태)가 가진다. append-only 이벤트만으로는 export가 현재 유효한 override 값을 단번에 알 수 없으므로 두 테이블을 분리한다.
+- watermark 재생 결정성: 특정 `(source_artwork_key, field)`의 override 활성/비활성은 watermark 이하 `change_event_id`까지 재생해 결정한다. 그 범위에서 **마지막 이벤트가 `set`/`update`면 활성(그 `new_value_json`을 적용), `clear`면 비활성**(override 없음)이다. `clear` tombstone의 `new_value_json`은 NULL이다. `change_event_id`가 커밋 순서의 gap-free 단조 시퀀스이고 watermark가 low-water mark(§5.14.1)이므로, 같은 watermark로 재생하면 항상 같은 활성/비활성 상태가 복원된다.
 
 ### 5.8.2 normalized_artwork_override (현재 적용 상태)
 
@@ -820,24 +821,25 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | 컬럼 | 설명 |
 |---|---|
 | `override_id` | PK |
-| `source_artwork_key` | 대상 작품 안정 키(= `source + source_artwork_id`). 다른 테이블과 동일 기준 키. `NOT NULL`(generated `active_override_key`의 활성 분기 base 컬럼) |
-| `field` | override 대상 필드명. `NOT NULL`(generated `active_override_key`의 활성 분기 base 컬럼) |
+| `source_artwork_key` | 대상 작품 안정 키(= `source + source_artwork_id`). 다른 테이블과 동일 기준 키. `NOT NULL`(generated `active_override_artwork_key`의 활성 분기 base 컬럼) |
+| `field` | override 대상 필드명. `NOT NULL`(generated `active_override_field`의 활성 분기 base 컬럼) |
 | `value_type` | 값 타입 enum: `number`/`string`/`date`/`json`/`bool`. `override_value_json` 해석과 export 캐스팅 기준 |
 | `override_value_json` | 현재 적용 중인 값. canonical JSON으로 저장 |
-| `is_active` | 적용 여부(BOOL). rollback 시 `false`. `NOT NULL`(generated `active_override_key`의 활성 분기 base 컬럼) |
+| `is_active` | 적용 여부(BOOL). rollback/override 해제(clear) 시 `false`. `NOT NULL`(generated `active_override_artwork_key`/`active_override_field`의 활성 분기 base 컬럼) |
 | `applied_by` | 적용 처리자 |
 | `applied_at` | 적용 시각 |
 | `source_change_event_id` | 이 override를 만든 `normalized_artwork_change_event.change_event_id` FK |
-| `active_override_key` | 생성 컬럼. `VARCHAR(255) GENERATED ALWAYS AS (CASE WHEN is_active THEN CONCAT_WS('::', source_artwork_key, field) END) STORED`. 타입은 유니크 인덱스에 맞는 bounded `VARCHAR(255)`. `(source_artwork_key, field)`당 `is_active` 행을 1개만 강제하는 유니크(`uq_active_override`)의 키. `is_active=false` 행은 NULL이라 제약에서 빠진다 |
+| `active_override_artwork_key` | 생성 컬럼. 타입은 베이스 컬럼 `source_artwork_key`와 동일(`<source_artwork_key 타입> GENERATED ALWAYS AS (CASE WHEN is_active THEN source_artwork_key END) STORED`). `active_override_field`와 함께 `(source_artwork_key, field)`당 `is_active` 행 1개를 강제하는 복합 유니크(`uq_active_override`)의 키. `is_active=false` 행은 NULL이라 제약에서 빠진다 |
+| `active_override_field` | 생성 컬럼. 타입은 베이스 컬럼 `field`와 동일(`<field 타입> GENERATED ALWAYS AS (CASE WHEN is_active THEN field END) STORED`). `active_override_artwork_key`와 같은 CASE 조건을 쓴다. 두 컬럼을 원본 타입으로 두고 복합 유니크를 걸어, `CONCAT_WS` 단일 키의 길이 비유계(truncation)·구분자 충돌 위험을 없앤다 |
 
 운영 원칙(역할 분리):
 
 - normalized 후보값은 불변이다(파서/normalizer 재실행으로만 재생성). override는 그 후보값 위에 덮는 현재 적용 상태다.
 - snapshot export 최종값 = normalized 후보값 위에 `is_active=true` override를 덮어 산출한다. override 값은 `override_value_json`(canonical JSON)으로 저장되고, export는 대상 컬럼 타입에 맞춰 `value_type` 기준으로 캐스팅한다(`number`→숫자, `date`→날짜, `bool`→불리언 등).
-- patch = override row upsert(`is_active=true`) + `normalized_artwork_change_event` append를 함께 한다.
-- rollback = 해당 override `is_active=false`로 닫고 `normalized_artwork_change_event`에 1건 append한다(이력 보존).
+- patch = override row upsert(`is_active=true`) + `normalized_artwork_change_event`에 `change_type=set`(신규)/`update`(값 변경) 1건 append를 함께 한다.
+- rollback(override 해제) = 해당 override `is_active=false`로 닫고 `normalized_artwork_change_event`에 `change_type=clear`(`new_value_json=NULL`) 1건 append한다(이력 보존·watermark 재생용 tombstone).
 - 따라서 `normalized_artwork_change_event`는 감사 로그, `normalized_artwork_override`는 현재 적용 상태로 역할이 분리된다.
-- MySQL은 부분 유니크(`... WHERE is_active`)를 지원하지 않으므로, `active_override_key` 생성 컬럼 + `uq_active_override` 유니크로 `(source_artwork_key, field)`당 활성 override 1개를 강제한다(§5.2.2의 `active_source_lock`과 동일 패턴). 활성 행의 base 컬럼(`source_artwork_key`/`field`/`is_active`)은 `NOT NULL`이라 활성 분기에서 키가 NULL이 되어 중복 활성이 새는 NULL-unique 누수는 없다.
+- MySQL은 부분 유니크(`... WHERE is_active`)를 지원하지 않으므로, 두 생성 컬럼 `active_override_artwork_key`/`active_override_field`(각각 베이스 `source_artwork_key`/`field`와 동일 타입) + 복합 유니크 `uq_active_override (active_override_artwork_key, active_override_field)`로 `(source_artwork_key, field)`당 활성 override 1개를 강제한다(§5.14.1 `snapshot_request`의 2-컬럼 복합 유니크와 동일 패턴). 단일 `CONCAT_WS('::', ...)` 키를 쓰지 않는 이유는 합성 문자열 길이가 비유계라 `VARCHAR(N)` truncation·구분자 충돌로 서로 다른 `(key, field)`가 같은 유니크 값이 될 수 있어서다. 활성 행의 base 컬럼(`source_artwork_key`/`field`/`is_active`)은 `NOT NULL`이라 활성 분기에서 두 키 컬럼이 NULL이 되어 중복 활성이 새는 NULL-unique 누수는 없다.
 
 ### 5.9 normalized_artist_staging
 
@@ -1021,6 +1023,8 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 
 버전 생성 주체/시점(이벤트 기반 단일화): artist_key 멤버십을 바꾸는 승인된 identity 결정(신규 작가 생성, 기존 키 연결/확정, merge, un-merge)이 멤버십을 바꾸는 순간, 그 이벤트가 새 `artist_identity_version`을 발급한다. snapshot export는 새 버전을 만들지 않고 그 시점의 최신 `artist_identity_version`을 `artwork_snapshot.artist_identity_version`에 기록만 한다(§5.13). 첫 버전은 `trigger_event=initial`이다.
 
+재현 결정성: 버전 id는 멤버십 변경 이벤트 **커밋 시 확정**된다(미커밋 버전은 존재하지 않음). `snapshot_request.artist_identity_version`이 "요청 생성 시점에 커밋 완료된 최신 버전"을 동결하므로(§5.14.1), 같은 요청은 항상 같은 identity 버전으로 멤버십을 고정한다.
+
 `artist_key_membership_history`(as-of 멤버십 이력):
 
 | 컬럼 | 설명 |
@@ -1054,7 +1058,7 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 | `created_at` | 생성 시각 |
 | `status` | snapshot 라이프사이클 상태. enum: `building`(생성 중) → `generated`(빌드 완료/고정, **비서빙**: 내부 검증용이며 서빙·freshness 대상이 아님) → `approved`(운영 승인, 서빙 가능), 그리고 실패/폐기 terminal `failed`/`discarded`. 서빙/freshness 기준 정상 snapshot은 `approved`만이다(SoT 확정). `generated`는 빌드만 끝난 비서빙 상태다. 전이: `building`→`generated`→`approved`(정상), `building`→`failed`(빌드 실패), `generated`/`approved`→`discarded`(폐기) |
 | `rules_version` | 필터/정규화 규칙 버전 |
-| `artist_identity_version` | 이 snapshot이 고정한 작가 identity 버전(`artist_identity_version.artist_identity_version` 참조, §5.12.2). 영속 출처는 `snapshot_request.artist_identity_version`(요청 생성 시점 최신 버전을 동결)이며 생성 시 그 값을 복사한다. 요청~승인~생성 사이 identity 변경이 같은 요청 산출을 바꾸지 못한다. 서빙 Warm 이력 조회는 이 버전 기준으로 멤버십을 고정한다([artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)) |
+| `artist_identity_version` | 이 snapshot이 고정한 작가 identity 버전(`artist_identity_version.artist_identity_version` 참조, §5.12.2). 영속 출처는 `snapshot_request.artist_identity_version`(요청 생성 시점에 **커밋 완료된** 최신 버전을 동결)이며 생성 시 그 값을 복사한다. 요청~승인~생성 사이 identity 변경이 같은 요청 산출을 바꾸지 못한다. 이는 identity watermark이며 엄밀한 cutoff point-in-time이 아니다(§5.14.1, 의도된 설계). 서빙 Warm 이력 조회는 이 버전 기준으로 멤버십을 고정한다([artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)) |
 | `summary_json` | 구성 요약 |
 
 모델 아티팩트의 `training_snapshot_id`/`snapshot_export_id`는 이 `artwork_snapshot.snapshot_id`를 가리킨다. `snapshot_export_id`는 같은 `snapshot_id`에서 만든 export 산출물(parquet/manifest)의 ID이며, 단일 export면 `snapshot_id`와 동일하게 둔다.
@@ -1071,12 +1075,15 @@ snapshot에 포함된 작품 row 목록이다.
 |---|---|
 | `snapshot_id` | snapshot FK |
 | `normalized_artwork_id` | normalized_artwork_staging FK |
-| `price_krw_normalized` | KRW로 통일한 최종 학습용 가격(이 snapshot 기준) |
+| `price_krw_normalized` | KRW로 통일한 최종 학습용 가격(이 snapshot 기준). `normalized_artwork_staging`의 값을 snapshot 시점에 그대로 복사 저장한다(재현·감사) |
 | `price_krw_is_converted` | 환산값이면 `true`, 원천 KRW면 `false` |
+| `price_fx_rate` | 환산에 사용한 실제 환율값. `normalized_artwork_staging`의 값을 복사 저장한다. 이후 환율 정책/환율표가 바뀌어도 이 snapshot row가 쓴 환율을 그대로 재현·감사할 수 있다 |
 | `price_fx_date` | 환산에 사용한 환율 기준일(= row `collected_at` 시점, 결측 시 직전 가용 환율일). §5.15와 동일 컬럼명 |
 | `price_fx_source` | 환산에 사용한 환율 출처 |
 | `include_status` | `included`, `excluded` |
 | `exclude_reason` | 제외 사유 |
+
+`artwork_snapshot_item`은 고정된 학습 row의 감사 출처다. 따라서 환율 기준일/출처(`price_fx_date`/`price_fx_source`)뿐 아니라 실제 적용 환율(`price_fx_rate`)과 환산 결과(`price_krw_normalized`)값도 snapshot 시점 값으로 복사 저장한다. `normalized_artwork_staging`의 환산 컬럼이 이후 갱신되어도 이 snapshot row로 당시 가격·환율을 재현·감사할 수 있다.
 
 ### 5.14.1 snapshot_request
 
@@ -1085,20 +1092,21 @@ snapshot 생성은 운영자 확정요청과 데이터 관리자 생성승인의
 | 컬럼 | 설명 |
 |---|---|
 | `snapshot_request_id` | PK |
-| `idempotency_key` | UNIQUE. 같은 확정요청의 중복 제출/중복 승인을 막는 키 |
+| `idempotency_key` | 요청(확정요청) 멱등 키. 전역 UNIQUE. 같은 확정요청 제출의 중복 생성을 막는다. 승인 멱등 키(`approval_idempotency_key`)와 구분한다 |
 | `snapshot_name` | 요청 시 입력한 snapshot 이름. 승인 후 생성되는 `artwork_snapshot.snapshot_name`의 영속 출처다. 승인 endpoint가 `snapshot_request_id`만 넘겨도 이 값으로 snapshot 이름을 재현한다 |
 | `requested_by` | 확정요청한 운영자 ID |
 | `requested_at` | 확정요청 시각 |
 | `status` | `requested`, `approved`, `generating`, `generated`, `rejected`, `failed`, `cancelled`. `requested`/`approved`/`generating`은 진행 중(non-terminal), `generated`/`rejected`/`failed`/`cancelled`는 종료(terminal). `NOT NULL`(generated `active_cutoff_at`/`active_rules_version`의 활성 분기 base 컬럼) |
-| `artist_identity_version` | 요청 생성 시점의 최신 `artist_identity_version`을 동결(`artist_identity_version.artist_identity_version` FK). snapshot export는 이 버전 기준으로 identity를 고정하므로, 요청~승인~생성 사이 identity 변경이 같은 요청의 산출을 바꾸지 못한다. 생성된 snapshot의 `artwork_snapshot.artist_identity_version`이 된다 |
-| `override_watermark_event_id` | cutoff 시점의 max `normalized_artwork_change_event.change_event_id`(BIGINT). export는 이 watermark까지 change_event(append-only·단조 id)를 재생해 그 시점에 유효했던 override를 재구성한다(현재상태 `normalized_artwork_override`는 라이브 머티리얼라이즈라 시점 재현이 안 됨). 같은 snapshot 재export가 동일 override 산출을 내도록 point-in-time을 고정한다 |
+| `heartbeat_at` | `approved`/`generating` 진행 중 요청을 처리하는 job이 주기적으로 갱신하는 lease 시각. watchdog가 lock wedge(좀비 요청)를 회수하는 데 사용(§5.2.2 collector_run watchdog와 동일 패턴) |
+| `artist_identity_version` | 요청 생성 시점에 **커밋 완료된** 최신 `artist_identity_version`을 동결(`artist_identity_version.artist_identity_version` FK). 버전 id는 멤버십 변경 이벤트 커밋 시 확정되므로, 미커밋 버전은 동결 대상이 아니다. snapshot export는 이 버전 기준으로 identity를 고정하므로, 요청~승인~생성 사이 identity 변경이 같은 요청의 산출을 바꾸지 못한다. 이는 identity watermark이며 엄밀한 `source_cutoff_at` point-in-time이 아님(의도된 설계: cutoff 시점이 아니라 요청 생성 시점의 커밋된 최신 멤버십을 동결). 생성된 snapshot의 `artwork_snapshot.artist_identity_version`이 된다 |
+| `override_watermark_event_id` | cutoff 시점의 override low-water mark(BIGINT) = `id ≤ N`이 모두 커밋 완료된 최대 N. 단순 MAX가 아닌 이유는, MAX를 잡으면 그보다 작은 미커밋 id가 뒤늦게 커밋되며 재생 결과에 끼어 같은 watermark가 다른 override를 내기 때문이다(`change_event_id`가 gap-free 단조라도 커밋 시점은 발급 순서와 다를 수 있음). export는 이 watermark까지 change_event(§5.8.1)를 재생해 그 시점에 유효했던 override를 재구성한다(현재상태 `normalized_artwork_override`는 라이브 머티리얼라이즈라 시점 재현이 안 됨). low-water mark이므로 뒤늦게 커밋된 더 작은 id가 끼지 않아, 같은 snapshot 재export가 동일 override 산출을 낸다 |
 | `approved_by` | 생성승인한 데이터 관리자 ID |
 | `approved_at` | 승인 시각 |
-| `approval_idempotency_key` | 생성승인 멱등 키. API 생성승인의 `idempotency_key`가 여기 저장·replay되어 같은 승인이 중복 생성을 일으키지 않게 한다 |
+| `approval_idempotency_key` | 생성승인 멱등 키(요청 `idempotency_key`와 구분). API 생성승인의 멱등 키가 여기 저장·replay되어 같은 승인이 중복 생성을 일으키지 않게 한다. 유니크 스코프는 §5.16에서 정의한다(같은 키+다른 payload 호출은 충돌로 거부) |
 | `source_cutoff_at` | 이 요청이 고정한 cutoff 시점(= 생성될 snapshot의 `artwork_snapshot.source_cutoff_at`). 컬럼명은 API/snapshot과 통일한다. `NOT NULL`(generated `active_cutoff_at`의 활성 분기 base 컬럼) |
-| `rules_version` | 이 요청이 고정한 필터/정규화 규칙 버전(= 생성될 snapshot의 `artwork_snapshot.rules_version`). `NOT NULL`(generated `active_rules_version`의 활성 분기 base 컬럼) |
+| `rules_version` | 이 요청이 고정한 필터/정규화 규칙 버전(= 생성될 snapshot의 `artwork_snapshot.rules_version`). 물리 타입 `VARCHAR(64) NOT NULL`. `NOT NULL`인 이유는 generated `active_rules_version`의 활성 분기 base 컬럼이기 때문이다 |
 | `active_cutoff_at` | 생성 컬럼. `TIMESTAMP GENERATED ALWAYS AS (CASE WHEN status IN ('requested','approved','generating') THEN source_cutoff_at END) STORED`. 타입은 베이스 `source_cutoff_at`와 동일한 `TIMESTAMP`. `active_rules_version`과 함께 동시 생성 가드 유니크(`uq_active_snapshot_request`)를 구성한다. terminal(`generated`/`rejected`/`failed`/`cancelled`) 행은 NULL이라 제약에서 빠진다(§5.16) |
-| `active_rules_version` | 생성 컬럼. 타입은 베이스 컬럼 `rules_version`과 동일하다(`rules_version`이 `VARCHAR(N)`이면 동일 `VARCHAR(N)`). `<rules_version 타입> GENERATED ALWAYS AS (CASE WHEN status IN ('requested','approved','generating') THEN rules_version END) STORED`. `active_cutoff_at`와 같은 CASE 조건을 쓴다 |
+| `active_rules_version` | 생성 컬럼. `VARCHAR(64) GENERATED ALWAYS AS (CASE WHEN status IN ('requested','approved','generating') THEN rules_version END) STORED`. 타입은 베이스 컬럼 `rules_version`(`VARCHAR(64)`)과 동일하다. `active_cutoff_at`와 같은 CASE 조건을 쓴다 |
 | `resulting_snapshot_id` | 생성된 snapshot의 `artwork_snapshot.snapshot_id` FK. 생성 후 채운다 |
 | `request_note` | 요청/승인/반려 메모 |
 
@@ -1107,6 +1115,7 @@ snapshot 생성은 운영자 확정요청과 데이터 관리자 생성승인의
 - 운영자가 확정요청하면 `status=requested` row를 만든다(`snapshot_name`/`source_cutoff_at`/`rules_version` 고정).
 - 데이터 관리자가 생성을 승인하면 `status=approved`로 전이한 뒤 `status=generating`으로 생성에 진입하고, 생성 완료 시 `status=generated` + `resulting_snapshot_id`를 채운다. 승인 endpoint는 `snapshot_request_id`만 받아도 요청 row의 `snapshot_name`/`source_cutoff_at`/`rules_version`/`artist_identity_version`/`override_watermark_event_id`로 snapshot을 재현한다. 승인 자체는 `approval_idempotency_key`로 멱등 처리해 같은 승인이 중복 생성을 일으키지 않는다.
 - `generating` 중 생성이 실패하면 `status=failed`로 전이한다. 이때 두 생성 컬럼(`active_cutoff_at`/`active_rules_version`)이 NULL이 되어 활성 lock(`uq_active_snapshot_request`)이 풀리므로, 같은 `(source_cutoff_at, rules_version)`로 재시도(새 요청)가 가능하다.
+- lock wedge 방지(watchdog): `approved`/`generating`에서 처리 job이 죽으면 진행 중 행이 남아 같은 `(source_cutoff_at, rules_version)`의 재시도가 영구 차단된다. 이를 막기 위해 처리 job은 `heartbeat_at`을 주기적으로 갱신하고, watchdog가 `heartbeat_at`이 임계(확정 필요)를 초과한 `approved`/`generating` 행을 `status=failed`로 전이한다. 그러면 두 생성 컬럼이 NULL이 되어 `uq_active_snapshot_request`가 풀려 같은 cutoff/rules로 재시도가 가능해진다. watchdog는 §5.2.2 `collector_run` 회수와 동일 패턴이며, 처리 호스트와 분리된 외부 스케줄러/모니터에서 실행한다(처리 호스트가 멈춰도 회수가 동작해야 함).
 - 반려하면 `status=rejected`로 두고 snapshot은 만들지 않는다.
 - 동시 생성 가드는 두 겹이다. (1) `idempotency_key` UNIQUE로 같은 확정요청의 중복 제출/중복 승인을 막고, (2) 생성 컬럼 `(active_cutoff_at, active_rules_version)` + `UNIQUE KEY uq_active_snapshot_request`로 같은 `(source_cutoff_at, rules_version)`에 대해 진행 중 요청이 1개만 존재하도록 강제한다. 이로써 `idempotency_key`가 서로 다른 두 요청이 같은 cutoff/rules로 둘 다 snapshot을 생성하는 경합을 차단한다. 진행 중 행의 base 컬럼(`status`/`source_cutoff_at`/`rules_version`)은 `NOT NULL`이라 활성 분기에서 생성 컬럼이 NULL이 되어 중복 활성이 새는 NULL-unique 누수는 없다. 단일 `CONCAT` lock을 쓰지 않는 이유는 TIMESTAMP를 문자열로 합치면 타임존/SQL모드에 따라 표현이 흔들려 유니크 판정이 깨질 수 있어서다. 두 컬럼을 각자의 원본 타입으로 두고 복합 유니크를 건다.
 - 승인 잠금 절차: 상태 전이는 expected status 조건부 UPDATE(낙관적 잠금)로 한다. 예) `UPDATE snapshot_request SET status='approved', approved_by=?, approved_at=NOW() WHERE snapshot_request_id=? AND status='requested'` — `affected_rows=0`이면 이미 다른 트랜잭션이 전이한 것이므로 실패 처리한다. 같은 cutoff/rules로 동시에 진입하려는 별개 요청은 `uq_active_snapshot_request` 복합 유니크가 거부한다. 같은 요청을 두 관리자가 동시에 승인해도 조건부 UPDATE에서 한쪽만 성공한다.
@@ -1163,9 +1172,9 @@ snapshot 생성은 운영자 확정요청과 데이터 관리자 생성승인의
 | `identity_event_log` | PK `id`. `(artist_key, created_at)` 조회 인덱스. append-only(수정/삭제 금지) |
 | `artist_identity_version` | PK `artist_identity_version`(단조 증가 int). `source_event_id`는 `identity_event_log.id` 참조 |
 | `artist_key_membership_history` | PK `membership_id`(`BIGINT`). `(member_type, member_id, valid_from_version)` 유니크. 한 멤버가 한 버전 구간(`valid_from_version`)에 복수 `artist_key`에 동시에 속하는 행을 차단한다(`artist_key`를 유니크에 포함하지 않는 이유). as-of 조회용 `(member_type, member_id, valid_from_version)`/`(artist_key, valid_from_version)` 인덱스. `artist_key`는 `artist_identity(artist_key)` FK. `valid_from_version`/`valid_to_version`은 `artist_identity_version.artist_identity_version` 참조(`valid_to_version`은 nullable). `CHECK (valid_to_version IS NULL OR valid_to_version > valid_from_version)`(MySQL 8.0 CHECK). 구간 중첩 금지(no-overlap)는 app/trigger 유지 |
-| `normalized_artwork_change_event` | PK `change_event_id`. `(source_artwork_key, changed_at)` 조회 인덱스. 대상 작품은 안정 키 `source_artwork_key`(= `source + source_artwork_id`)로 식별(행 ID가 아닌 안정 키 기준, 다른 테이블과 일치). append-only(수정/삭제 금지) |
-| `normalized_artwork_override` | PK `override_id`. `(source_artwork_key, field)` 조회 인덱스. 활성 override 1개 강제: 생성 컬럼 `active_override_key VARCHAR(255) GENERATED ALWAYS AS (CASE WHEN is_active THEN CONCAT_WS('::', source_artwork_key, field) END) STORED`(유니크 인덱스에 맞는 bounded 길이) + `UNIQUE KEY uq_active_override (active_override_key)`. 활성 분기 base 컬럼 `source_artwork_key`/`field`/`is_active`는 `NOT NULL`이라 NULL-unique 누수 없음. `is_active=false` 행은 NULL이라 제약에서 빠진다(§5.8.2). `source_change_event_id`는 `normalized_artwork_change_event.change_event_id` 참조 |
-| `snapshot_request` | PK `snapshot_request_id`. `idempotency_key` UNIQUE. 동시 생성 가드: 생성 컬럼 `active_cutoff_at TIMESTAMP GENERATED ALWAYS AS (CASE WHEN status IN ('requested','approved','generating') THEN source_cutoff_at END) STORED`(타입은 베이스 `source_cutoff_at`와 동일 `TIMESTAMP`) + `active_rules_version GENERATED ALWAYS AS (CASE WHEN status IN ('requested','approved','generating') THEN rules_version END) STORED`(타입은 베이스 `rules_version`과 동일) + `UNIQUE KEY uq_active_snapshot_request (active_cutoff_at, active_rules_version)`로 같은 `(source_cutoff_at, rules_version)`에 진행 중 요청 1개만 강제(§5.14.1). terminal(`generated`/`rejected`/`failed`/`cancelled`) 행은 두 생성 컬럼이 NULL이라 제약에서 빠진다. 활성 분기 base 컬럼 `status`/`source_cutoff_at`/`rules_version`은 `NOT NULL`이라 NULL-unique 누수 없음. `CONCAT(cutoff_at, ...)` 단일 문자열 lock은 TIMESTAMP→문자열 변환이 타임존/SQL모드에 흔들려 쓰지 않고, 두 컬럼을 원본 타입으로 둔 복합 유니크를 쓴다. 상태 전이는 expected status 조건부 UPDATE(낙관적)로 한다. `artist_identity_version`은 `artist_identity_version.artist_identity_version` 참조, `resulting_snapshot_id`는 `artwork_snapshot.snapshot_id` 참조 |
+| `normalized_artwork_change_event` | PK `change_event_id`(커밋 순서 gap-free 단조 시퀀스/시퀀스 테이블 발급, watermark 재생 결정성 기준). `(source_artwork_key, changed_at)` 조회 인덱스. 대상 작품은 안정 키 `source_artwork_key`(= `source + source_artwork_id`)로 식별(행 ID가 아닌 안정 키 기준, 다른 테이블과 일치). `change_type` enum `set`/`update`/`clear`(clear는 tombstone, `new_value_json=NULL`). append-only(수정/삭제 금지) |
+| `normalized_artwork_override` | PK `override_id`. `(source_artwork_key, field)` 조회 인덱스. 활성 override 1개 강제: 두 생성 컬럼 `active_override_artwork_key`(베이스 `source_artwork_key`와 동일 타입) `GENERATED ALWAYS AS (CASE WHEN is_active THEN source_artwork_key END) STORED` + `active_override_field`(베이스 `field`와 동일 타입) `GENERATED ALWAYS AS (CASE WHEN is_active THEN field END) STORED` + `UNIQUE KEY uq_active_override (active_override_artwork_key, active_override_field)`. 두 컬럼을 원본 타입으로 둔 복합 유니크라 `CONCAT_WS` 단일 키의 길이 비유계(truncation)·구분자 충돌 위험이 없다. 활성 분기 base 컬럼 `source_artwork_key`/`field`/`is_active`는 `NOT NULL`이라 NULL-unique 누수 없음. `is_active=false` 행은 NULL이라 제약에서 빠진다(§5.8.2). `source_change_event_id`는 `normalized_artwork_change_event.change_event_id` 참조 |
+| `snapshot_request` | PK `snapshot_request_id`. `idempotency_key`(요청 멱등) 전역 UNIQUE. `approval_idempotency_key`(승인 멱등)는 `snapshot_request_id` 범위 내 유니크(승인은 항상 단일 요청에 귀속되므로; 운영 단순화를 위해 전역 유니크로 둬도 됨 — 둘 중 택일은 확정 필요). 같은 `approval_idempotency_key` + 다른 payload(다른 `snapshot_request_id`/승인 대상) 호출은 충돌로 거부한다. 요청 멱등 키와 승인 멱등 키는 별개 키다. 동시 생성 가드: 생성 컬럼 `active_cutoff_at TIMESTAMP GENERATED ALWAYS AS (CASE WHEN status IN ('requested','approved','generating') THEN source_cutoff_at END) STORED`(타입은 베이스 `source_cutoff_at`와 동일 `TIMESTAMP`) + `active_rules_version VARCHAR(64) GENERATED ALWAYS AS (CASE WHEN status IN ('requested','approved','generating') THEN rules_version END) STORED`(타입은 베이스 `rules_version VARCHAR(64) NOT NULL`과 동일) + `UNIQUE KEY uq_active_snapshot_request (active_cutoff_at, active_rules_version)`로 같은 `(source_cutoff_at, rules_version)`에 진행 중 요청 1개만 강제(§5.14.1). terminal(`generated`/`rejected`/`failed`/`cancelled`) 행은 두 생성 컬럼이 NULL이라 제약에서 빠진다. 활성 분기 base 컬럼 `status`/`source_cutoff_at`/`rules_version`은 `NOT NULL`이라 NULL-unique 누수 없음. `CONCAT(cutoff_at, ...)` 단일 문자열 lock은 TIMESTAMP→문자열 변환이 타임존/SQL모드에 흔들려 쓰지 않고, 두 컬럼을 원본 타입으로 둔 복합 유니크를 쓴다. 상태 전이는 expected status 조건부 UPDATE(낙관적)로 한다. `artist_identity_version`은 `artist_identity_version.artist_identity_version` 참조, `resulting_snapshot_id`는 `artwork_snapshot.snapshot_id` 참조 |
 | `artwork_snapshot` | PK `snapshot_id`. `artist_identity_version`은 `artist_identity_version.artist_identity_version` 참조 |
 | 멱등성 | 같은 `(source, source_artwork_id, run_id)` 재처리 시 결과 불변. snapshot export는 같은 입력 + 같은 규칙/환율 버전이면 동일 결과 |
 

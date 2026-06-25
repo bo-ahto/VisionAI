@@ -107,8 +107,9 @@ MySQL 스키마 문서
 | `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | artist identity 결정 (8.6) | 데이터 관리자 |
 | `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 작가 후보 결정 (8.8) | 데이터 관리자 |
 | `POST /api/v1/admin/snapshots` | snapshot 생성 (9.3) | 데이터 관리자 |
+| `POST /api/v1/admin/snapshots/{snapshot_id}/approve` | snapshot 서빙 승인 (9.3.3) | 데이터 관리자 |
 
-- 모델 승격/롤백(7.3), artist identity 결정(8.6/8.8), snapshot 생성(9.3)은 데이터 관리자 권한으로 게이트한다. 운영자는 모델을 임의로 롤백할 수 없다.
+- 모델 승격/롤백(7.3), artist identity 결정(8.6/8.8), snapshot 생성(9.3) 및 snapshot 서빙 승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영자는 모델을 임의로 롤백할 수 없고, snapshot을 서빙 대상으로 승인할 수도 없다.
 - 운영 초기 슈퍼유저는 위 역할을 모두 수행할 수 있으나, 실제 처리자 식별과 사유 기록 의무는 동일하게 적용된다.
 - 위 표의 `required_role` 값은 운영 역할 분리 확정 후 고정한다(확정 필요).
 
@@ -254,6 +255,7 @@ deployment freshness vs 데이터 freshness 불일치:
 | snapshot 후보 목록 | `GET /api/v1/admin/snapshots/candidates/items` |
 | snapshot 확정요청(운영자) | `POST /api/v1/admin/snapshots/requests` |
 | snapshot 생성승인(데이터 관리자) | `POST /api/v1/admin/snapshots` |
+| snapshot 서빙승인(데이터 관리자) | `POST /api/v1/admin/snapshots/{snapshot_id}/approve` |
 | row 영향 범위 역조회 | `GET /api/v1/admin/normalized-artworks/{normalized_artwork_id}/impact` |
 | 운영 로그 | `GET /api/v1/admin/audit-logs` |
 
@@ -1227,9 +1229,15 @@ query:
 | `artist_identity_status` | 작가 확정 상태 |
 | `page` / `page_size` | 페이지 |
 
-### 9.3 snapshot 확정요청 / 생성승인
+### 9.3 snapshot 확정요청 / 생성승인 / 서빙승인
 
-화면은 2단계로 나뉜다(화면 기획): 운영자가 후보를 검토해 **확정요청**하고, 데이터 관리자가 **생성승인**해 실제 snapshot을 만든다. 한 번의 호출로 운영자가 곧장 snapshot을 생성하지 않게 두 액션을 분리한다.
+snapshot 전이는 **3단계**로 나뉘며, 각 단계는 서로 다른 액션·엔드포인트다.
+
+1. **요청 확정 (운영자, 9.3.1)** — 운영자가 후보 범위/규칙을 고정한 생성요청을 만든다(`snapshot_request`). snapshot을 직접 만들지 않는다.
+2. **생성 승인 (데이터 관리자, 9.3.2)** — 데이터 관리자가 확정요청을 받아 실제 snapshot을 만든다. 결과는 `artwork_snapshot.status=generated`(빌드 완료·비서빙)다.
+3. **서빙 승인 (데이터 관리자, 9.3.3)** — 데이터 관리자가 `generated` snapshot을 운영 사용 승인해 `status=approved`(서빙 가능)로 올린다.
+
+한 번의 호출로 운영자가 곧장 snapshot을 생성하지 않게, 그리고 생성과 서빙 노출을 분리하기 위해 세 액션을 나눈다. 사용자 서빙/freshness 기준이 되는 정상 snapshot은 `approved`뿐이며(2.6), `generated`까지만으로는 사용자 `as_of`/freshness 기준이 되지 않는다.
 
 #### 9.3.1 확정요청 (운영자)
 
@@ -1293,7 +1301,7 @@ response:
 
 - required_role: 데이터 관리자(2.2.1). 확정요청(`snapshot_request_id`)을 받아 실제 snapshot을 생성한다.
 - `snapshot_name`은 승인 request에 다시 받지 않는다. 확정요청(9.3.1)에서 입력한 `snapshot_request.snapshot_name`이 영속 출처이므로, 승인 endpoint가 `snapshot_request_id`만 넘겨도 그 이름이 `artwork_snapshot.snapshot_name`으로 재현돼 response에 그대로 반환된다(SoT §5.14.1).
-- 생성 완료 snapshot은 `artwork_snapshot.status=generated`(비서빙)로 만들어진다. 데이터 관리자가 운영 사용을 승인하면 `status=approved`로 전이해 서빙 대상이 된다(2.6). `generated` 상태로는 사용자 `as_of`/freshness 기준이 되지 않는다.
+- 생성 완료 snapshot은 `artwork_snapshot.status=generated`(비서빙)로 만들어진다. 이 endpoint는 `generated`까지만 만든다. 서빙 대상으로 올리려면 별도 액션인 서빙 승인(9.3.3)으로 `status=approved`로 전이해야 한다(2.6). `generated` 상태로는 사용자 `as_of`/freshness 기준이 되지 않는다.
 - 생성승인의 `idempotency_key`는 확정요청(9.3.1)의 요청 `idempotency_key`와 별개 값이다. 요청 `idempotency_key`는 `snapshot_request`의 요청 멱등키로, 생성승인 `idempotency_key`는 같은 `snapshot_request` 행의 `approval_idempotency_key` 컬럼에 저장·replay된다(SoT §5.14.1). 따라서 같은 `snapshot_request_id`에 대한 생성승인 중복 호출(네트워크 재시도/더블클릭)은 `approval_idempotency_key`로 판별돼 새 snapshot을 다시 만들지 않고 이미 만든 `snapshot_id`를 그대로 반환한다(중복 승인/중복 생성 방지, 2.7).
 
 쓰기:
@@ -1306,6 +1314,52 @@ response:
 - `collector_run.status=failed` 또는 `collector_run.quality_status=blocked`인 run은 자동 포함하지 않는다.
 - `blocked`는 수집 결과 삭제가 아니라 snapshot 자동 반영 차단 상태다. 운영자 override 사유가 있을 때만 후보에 포함할 수 있다.
 - 환율이 없어 `price_krw_normalized`를 만들 수 없는 row는 snapshot 포함 대상에서 제외한다.
+
+#### 9.3.3 서빙승인 (데이터 관리자)
+
+```text
+POST /api/v1/admin/snapshots/{snapshot_id}/approve
+```
+
+목적:
+
+- `generated`(빌드 완료·비서빙) snapshot을 운영 사용 승인해 서빙 대상으로 올린다.
+- 생성승인(9.3.2)과 별개 액션이다. 생성은 snapshot을 만들 뿐이고, 서빙 노출은 이 액션으로만 일어난다.
+
+request:
+
+```json
+{
+  "idempotency_key": "snapshot_approve_2026_06_25_001",
+  "reason": "생성 snapshot 검토 완료, 서빙 사용 승인"
+}
+```
+
+response:
+
+```json
+{
+  "snapshot_id": "snapshot_2026_06_25",
+  "status": "approved",
+  "approved_at": "2026-06-25T02:30:00Z"
+}
+```
+
+효과:
+
+- `artwork_snapshot.status` `generated` → `approved`. 이 전이 이후에만 해당 snapshot이 사용자 서빙/freshness 기준이 된다(2.6).
+
+처리 규칙:
+
+- required_role: 데이터 관리자(2.2.1). 운영자는 snapshot을 서빙 대상으로 승인할 수 없다.
+- `idempotency_key`로 중복 승인을 막는다. 같은 키의 재호출(네트워크 재시도/더블클릭)은 다시 전이시키지 않고 직전 결과(`approved` 상태와 `snapshot_id`)를 그대로 반환한다(2.7).
+- `generated` 상태가 아닌 snapshot(이미 `approved`이거나 만료·폐기 등)에 대한 호출은 새로 전이하지 않고 `CONFLICT`(또는 멱등 재호출이면 직전 결과)를 반환한다.
+- 처리자(`actor_id`), 처리 시각, 처리 사유를 운영 로그(10.1)에 남긴다. `actor_id`는 body로 받지 않고 인증 컨텍스트에서 주입한다(2.2.1).
+
+쓰기:
+
+- `artwork_snapshot.status`(`generated` → `approved`)
+- `artwork_snapshot`의 서빙 승인자/승인시각/승인 사유 컬럼(또는 운영 로그)
 
 ### 9.4 row 영향 범위 역조회
 
