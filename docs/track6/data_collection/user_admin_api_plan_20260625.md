@@ -1302,7 +1302,7 @@ response:
 - required_role: 데이터 관리자(2.2.1). 확정요청(`snapshot_request_id`)을 받아 실제 snapshot을 생성한다.
 - `snapshot_name`은 승인 request에 다시 받지 않는다. 확정요청(9.3.1)에서 입력한 `snapshot_request.snapshot_name`이 영속 출처이므로, 승인 endpoint가 `snapshot_request_id`만 넘겨도 그 이름이 `artwork_snapshot.snapshot_name`으로 재현돼 response에 그대로 반환된다(SoT §5.14.1).
 - 생성 완료 snapshot은 `artwork_snapshot.status=generated`(비서빙)로 만들어진다. 이 endpoint는 `generated`까지만 만든다. 서빙 대상으로 올리려면 별도 액션인 서빙 승인(9.3.3)으로 `status=approved`로 전이해야 한다(2.6). `generated` 상태로는 사용자 `as_of`/freshness 기준이 되지 않는다.
-- 생성승인의 `idempotency_key`는 확정요청(9.3.1)의 요청 `idempotency_key`와 별개 값이다. 요청 `idempotency_key`는 `snapshot_request`의 요청 멱등키로, 생성승인 `idempotency_key`는 같은 `snapshot_request` 행의 `approval_idempotency_key` 컬럼에 저장·replay된다(SoT §5.14.1). 이 컬럼은 전역 UNIQUE다. 따라서 같은 `snapshot_request_id`에 대한 생성승인 중복 호출(네트워크 재시도/더블클릭)은 `approval_idempotency_key`로 판별돼 새 snapshot을 다시 만들지 않고 이미 만든 `snapshot_id`를 그대로 반환한다(중복 승인/중복 생성 방지, 2.7). 같은 키에 다른 payload가 오면 충돌로 거부한다.
+- 생성승인의 `idempotency_key`는 확정요청(9.3.1)의 요청 `idempotency_key`와 별개 값이다. 요청 `idempotency_key`는 `snapshot_request`의 요청 멱등키로, 생성승인 `idempotency_key`는 같은 `snapshot_request` 행의 `approval_idempotency_key`(생성승인 전용) 컬럼에 저장·replay된다(SoT §5.14.1). 이 컬럼은 전역 UNIQUE다. 따라서 같은 `snapshot_request_id`에 대한 생성승인 중복 호출(네트워크 재시도/더블클릭)은 `approval_idempotency_key`로 판별돼 새 snapshot을 다시 만들지 않고 이미 만든 `snapshot_id`를 그대로 반환한다(중복 승인/중복 생성 방지, 2.7). 같은 키에 다른 payload가 오면 충돌로 거부한다. 이 컬럼은 생성승인 전용이며, 서빙승인(9.3.3)의 멱등키는 별개 컬럼(`artwork_snapshot.serving_approval_idempotency_key`, SoT §5.13)에 저장된다(한 컬럼 공유 안 함).
 
 쓰기:
 
@@ -1352,13 +1352,14 @@ response:
 처리 규칙:
 
 - required_role: 데이터 관리자(2.2.1). 운영자는 snapshot을 서빙 대상으로 승인할 수 없다.
-- `idempotency_key`는 `snapshot_request.approval_idempotency_key` 컬럼에 저장·replay된다(SoT §5.14.1). 이 컬럼은 전역 UNIQUE이므로, 같은 키의 재호출(네트워크 재시도/더블클릭)은 다시 전이시키지 않고 직전 결과(`approved` 상태와 `snapshot_id`)를 그대로 반환한다(2.7). 같은 키에 다른 payload(다른 `snapshot_id`/`reason`)가 오면 충돌로 거부한다.
+- `idempotency_key`는 `artwork_snapshot.serving_approval_idempotency_key` 컬럼에 저장·replay된다(SoT §5.13). 이 컬럼은 생성승인(9.3.2)의 `snapshot_request.approval_idempotency_key`와 별개 컬럼/저장소다(서빙승인 전용). 이 컬럼은 전역 UNIQUE이므로, 같은 키의 재호출(네트워크 재시도/더블클릭)은 다시 전이시키지 않고 직전 결과(`approved` 상태와 `snapshot_id`)를 그대로 반환한다(2.7). 같은 키에 다른 payload(다른 `snapshot_id`/`reason`)가 오면 충돌로 거부한다.
 - `generated` 상태가 아닌 snapshot(이미 `approved`이거나 만료·폐기 등)에 대한 호출은 새로 전이하지 않고 `CONFLICT`(또는 멱등 재호출이면 직전 결과)를 반환한다.
 - 서빙 승인의 영속 기준은 `artwork_snapshot.approved_by`/`approved_at`/`approval_note` 컬럼이다(SoT). 이 전이 시 세 컬럼을 채우는 것이 승인 사실의 단일 출처이며, 운영 로그(10.1)는 부가 감사로만 남긴다. `approved_by`(=`actor_id`)는 body로 받지 않고 인증 컨텍스트에서 주입한다(2.2.1).
 
 쓰기:
 
 - `artwork_snapshot.status`(`generated` → `approved`)
+- `artwork_snapshot.serving_approval_idempotency_key`(서빙승인 멱등키, 전역 UNIQUE; 생성승인의 `snapshot_request.approval_idempotency_key`와 별개 컬럼)
 - `artwork_snapshot.approved_by`/`approved_at`/`approval_note`(서빙 승인의 영속 기준 = 이 컬럼; 운영 로그 10.1은 부가 감사)
 
 ### 9.4 row 영향 범위 역조회
