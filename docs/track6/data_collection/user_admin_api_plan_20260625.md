@@ -938,7 +938,7 @@ request:
 
 ```json
 {
-  "decision": "approve",
+  "decision": "approve_with_patch",
   "expected_review_status": "needs_review",
   "patch": {
     "width_cm": 60.0,
@@ -948,6 +948,8 @@ request:
   "reason": "원천 상세 페이지 확인 후 크기 수정"
 }
 ```
+
+- `patch`를 포함하는 검수는 `decision=approve_with_patch`로 보낸다. 수정 없이 후보값을 그대로 승인할 때만 `decision=approve`(이때 `patch` 미포함)다.
 
 허용 decision:
 
@@ -970,8 +972,8 @@ request:
 `approve_with_patch` 패치 적재(되돌리기/영향추적):
 
 - `approve_with_patch`는 normalized 후보값을 직접 덮어쓰지 않는다. normalized 후보값(`*_candidate`)은 불변으로 유지하고, 패치는 override 레이어로 적용한다.
-- 패치는 항목별 `(field, old_value, new_value)`를 append-only 이벤트로 적재한다. artist identity뿐 아니라 작품 등 다른 엔티티의 패치도 같은 이벤트로 남긴다.
-- 이 패치 이벤트가 `10.1` 감사 로그의 before/after 원천이다. override는 언제든 사유와 함께 되돌릴 수 있고, 원본 후보값은 보존된다.
+- 패치는 항목별 `(field, old_value, new_value)`를 append-only 이벤트로 적재한다. 이 이벤트(`normalized_artwork_change_event`)의 범위는 작품 normalized 필드 변경(크기/가격/재료 등 작품 검수 패치)으로 한정한다. artist identity 결정(연결 확정/신규 키 생성 등 비가역 결정)은 이 테이블이 아니라 `identity_event_log`(MySQL 5.12.1)가 SoT다(8.6/8.8, 12.1).
+- 이 패치 이벤트가 `10.1` 감사 로그의 작품 필드 변경 before/after 원천이다. override는 언제든 사유와 함께 되돌릴 수 있고, 원본 후보값은 보존된다.
 
 ### 8.3 작가명 검수 큐 조회
 
@@ -1292,7 +1294,7 @@ response:
 - required_role: 데이터 관리자(2.2.1). 확정요청(`snapshot_request_id`)을 받아 실제 snapshot을 생성한다.
 - `snapshot_name`은 승인 request에 다시 받지 않는다. 확정요청(9.3.1)에서 입력한 `snapshot_request.snapshot_name`이 영속 출처이므로, 승인 endpoint가 `snapshot_request_id`만 넘겨도 그 이름이 `artwork_snapshot.snapshot_name`으로 재현돼 response에 그대로 반환된다(SoT §5.14.1).
 - 생성 완료 snapshot은 `artwork_snapshot.status=generated`(비서빙)로 만들어진다. 데이터 관리자가 운영 사용을 승인하면 `status=approved`로 전이해 서빙 대상이 된다(2.6). `generated` 상태로는 사용자 `as_of`/freshness 기준이 되지 않는다.
-- `idempotency_key`로 중복 생성을 막는다. 같은 키의 재요청은 이미 만든 `snapshot_id`를 반환한다(2.7).
+- 생성승인의 `idempotency_key`는 확정요청(9.3.1)의 요청 `idempotency_key`와 별개 값이다. 요청 `idempotency_key`는 `snapshot_request`의 요청 멱등키로, 생성승인 `idempotency_key`는 같은 `snapshot_request` 행의 `approval_idempotency_key` 컬럼에 저장·replay된다(SoT §5.14.1). 따라서 같은 `snapshot_request_id`에 대한 생성승인 중복 호출(네트워크 재시도/더블클릭)은 `approval_idempotency_key`로 판별돼 새 snapshot을 다시 만들지 않고 이미 만든 `snapshot_id`를 그대로 반환한다(중복 승인/중복 생성 방지, 2.7).
 
 쓰기:
 
