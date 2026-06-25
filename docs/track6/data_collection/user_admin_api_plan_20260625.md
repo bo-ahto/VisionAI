@@ -190,9 +190,12 @@ source 등록
 
 사용자 예측/가격 카드 응답은 어느 시점 데이터로 산출된 값인지 함께 표시한다.
 
-정상 snapshot 정의:
+서빙(정상) snapshot 정의:
 
-- "정상 snapshot"은 `status`가 `approved` 또는 `generated`이고 보존기간 내에 있는 snapshot을 가리킨다. 그 외(만료·폐기·미승인) snapshot은 사용자 응답의 기준으로 쓰지 않는다.
+- 사용자 서빙/freshness 기준이 되는 snapshot은 `status=approved`(운영 사용 승인 완료)이고 보존기간 내에 있는 snapshot뿐이다. 사용자 노출 `as_of`/freshness는 이 `approved` snapshot 기준으로만 산정한다.
+- `status=generated`는 빌드는 완료됐지만 운영 승인 전(비서빙) 상태다. 빌드 완료 snapshot이라도 데이터 관리자의 운영 승인을 받기 전에는 사용자 기준데이터로 쓰지 않는다.
+- 그 외(만료·폐기·미승인 또는 `generated`) snapshot은 사용자 응답의 기준으로 쓰지 않는다.
+- snapshot 생성 흐름과의 연결: `snapshot_request` 승인 → `generating` → `generated`(비서빙) → 데이터 관리자가 운영 승인하면 `artwork_snapshot.status=approved`(서빙 가능)로 전이한다(9.3). 미승인 `generated` snapshot이 사용자 기준데이터가 되지 않도록 서빙은 `approved`만 본다.
 
 as_of 기준(모델이 실제 쓴 값):
 
@@ -207,8 +210,8 @@ as_of 기준(모델이 실제 쓴 값):
 
 deployment freshness vs 데이터 freshness 불일치:
 
-- `as_of`는 모델이 실제 학습에 쓴 snapshot 기준이므로, 그 후 더 최신 정상 snapshot이 수집·승인됐어도 운영 모델이 갱신되지 않았으면 `as_of`는 옛 값으로 남는다.
-- active deployment의 학습 snapshot과 현재 최신 정상 snapshot의 `source_cutoff_at` 괴리가 임계(확정 필요, 12.1)를 초과하면, 데이터는 신선해도 모델이 옛 데이터를 쓰고 있다는 뜻이므로 신선도 경고를 띄운다.
+- `as_of`는 모델이 실제 학습에 쓴 snapshot 기준이므로, 그 후 더 최신 `approved` snapshot이 생성·승인됐어도 운영 모델이 갱신되지 않았으면 `as_of`는 옛 값으로 남는다.
+- active deployment의 학습 snapshot과 현재 최신 `approved` snapshot의 `source_cutoff_at` 괴리가 임계(확정 필요, 12.1)를 초과하면, 데이터는 신선해도 모델이 옛 데이터를 쓰고 있다는 뜻이므로 신선도 경고를 띄운다.
 
 ### 2.7 동시성과 멱등(idempotency)
 
@@ -633,7 +636,7 @@ request 예:
   "source": "new_market",
   "display_name": "New Market",
   "collection_mode": "api",
-  "default_enabled": false,
+  "is_enabled": false,
   "raw_payload_format": "json",
   "default_parser_version": "new_market_parser_2026_06_25",
   "default_normalizer_version": "normalizer_2026_06_25",
@@ -1287,6 +1290,8 @@ response:
 ```
 
 - required_role: 데이터 관리자(2.2.1). 확정요청(`snapshot_request_id`)을 받아 실제 snapshot을 생성한다.
+- `snapshot_name`은 승인 request에 다시 받지 않는다. 확정요청(9.3.1)에서 입력한 `snapshot_request.snapshot_name`이 영속 출처이므로, 승인 endpoint가 `snapshot_request_id`만 넘겨도 그 이름이 `artwork_snapshot.snapshot_name`으로 재현돼 response에 그대로 반환된다(SoT §5.14.1).
+- 생성 완료 snapshot은 `artwork_snapshot.status=generated`(비서빙)로 만들어진다. 데이터 관리자가 운영 사용을 승인하면 `status=approved`로 전이해 서빙 대상이 된다(2.6). `generated` 상태로는 사용자 `as_of`/freshness 기준이 되지 않는다.
 - `idempotency_key`로 중복 생성을 막는다. 같은 키의 재요청은 이미 만든 `snapshot_id`를 반환한다(2.7).
 
 쓰기:
@@ -1320,7 +1325,7 @@ GET /api/v1/admin/normalized-artworks/{normalized_artwork_id}/impact
 
 참조:
 
-- 읽기: `artwork_snapshot_item`, `artwork_snapshot`, 모델 학습 snapshot 매핑(7.1/7.2), `model_deployment`
+- 읽기: `artwork_snapshot_item`, `artwork_snapshot`, 모델 학습 snapshot 매핑(7.1/7.2), `price_model_deployment`
 
 주의:
 
@@ -1397,7 +1402,7 @@ API 구현 전에 아래 항목을 정해야 한다.
 | 항목 | 결정 필요 내용 |
 |---|---|
 | 인증 방식 상세 | 세션, JWT, 내부 관리자 계정 중 선택(전제는 12.0, 여기서는 구현 방식만 확정) |
-| freshness 임계 `N`/`M` | 예측/가격 카드 `as_of` 경고 임계 `N`일과 카드 차단 임계 `M`일(M>N), 그리고 active deployment 학습 snapshot ↔ 최신 정상 snapshot 괴리 경고 임계(2.6 / 4.4) |
+| freshness 임계 `N`/`M` | 예측/가격 카드 `as_of` 경고 임계 `N`일과 카드 차단 임계 `M`일(M>N), 그리고 active deployment 학습 snapshot ↔ 최신 `approved` snapshot 괴리 경고 임계(2.6 / 4.4) |
 | 신규 작가 후보 저장 방식 | SQL view/export로 시작할지, 별도 물리 큐 테이블을 만들지 |
 | 수동 CSV 업로드 파일 저장 위치 | `manual_import_file.file_uri`에 기록할 저장소 경로 규칙. row 처리 구조는 MySQL 문서 5.3.1의 `manual_import_file` + `collector_run` 기준으로 확정 |
 | 운영 로그 저장 방식 | 비가역 작가 identity 결정은 `identity_event_log`(MySQL 5.12.1)에 append-only로 남기고, 그 외 엔티티는 각 테이블 승인/반려 컬럼을 사용한다. 전체 필드 변경 audit 테이블 확대는 고도화 |

@@ -264,8 +264,9 @@
 
 “정상 snapshot” 정의:
 
-- status가 `approved`/`generated`(생성 승인되어 운영에 쓸 수 있는 상태)이고 보존기간 내인 snapshot을 “정상 snapshot”으로 본다.
-- 마지막 정상 snapshot = 위 조건을 만족하는 snapshot 중 `source_cutoff_at`가 가장 최근인 것.
+- 서빙(사용자 노출/폴백) 기준의 “정상 snapshot”은 status가 `approved`(운영 사용 승인됨)이고 보존기간 내인 snapshot으로 한정한다. `generated`는 빌드 완료/고정 상태지만 운영 승인 전(비서빙)이므로 사용자 노출/폴백 기준에서 제외한다.
+- 마지막 정상 snapshot = 위 조건을 만족하는 `approved` snapshot 중 `source_cutoff_at`가 가장 최근인 것.
+- 미승인 `generated` snapshot은 사용자 freshness/기준 데이터로 노출하지 않는다(짝 문서 [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md) 2.6, [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) `artwork_snapshot.status` 정의와 일치).
 
 폴백 케이스:
 
