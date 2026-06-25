@@ -77,7 +77,7 @@ API 호출 전 클라이언트가 표시한다([사용자 명세](user_frontend_
 | 상태 | 문구 |
 |---|---|
 | normal | "데이터 기준일: {data_reference_date}" |
-| warn | "데이터 기준일이 {N}일 이상 지났습니다. 참고용으로만 확인해 주세요. (기준일: {data_reference_date})" |
+| warn | "데이터 기준일이 {N}일을 초과했습니다. 참고용으로만 확인해 주세요. (기준일: {data_reference_date})" |
 | hide | "최신 데이터 기준일이 너무 오래되어 1차 시장 가격 카드를 숨겼습니다." |
 | model_gap | "최신 데이터보다 이전 데이터로 학습한 모델 기준입니다. (기준일: {data_reference_date})" |
 

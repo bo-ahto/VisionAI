@@ -159,7 +159,7 @@ artwork_snapshot(생성 → 서빙):
 모든 decision:
 
 - reason 필수
-- expected_review_status 포함
+- expected_review_status 포함(단 `recheck`/`recheck_candidates` 등 상태 전이가 아닌 decision은 제외 — [API 기획](user_admin_api_plan_20260625.md) §8.4/§8.8)
 - 처리 중 disabled
 - 성공 후 row 재조회 또는 목록 갱신
 

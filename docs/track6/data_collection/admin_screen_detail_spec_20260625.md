@@ -84,7 +84,7 @@ API:
 |---|---|---|
 | run 상세 보기 | 모든 row | 상세 route 이동 |
 | 실패분 재수집 | `failed` 또는 `partial_success` | `POST /collection-runs/{run_id}/actions`, `action=request_retry`, `scope=failed_only` |
-| 전체 재수집 | 데이터 관리자 또는 개발자 승인 필요 | `POST /collection-runs/{run_id}/actions`, `scope=full_run` |
+| 전체 재수집 | 데이터 관리자 승인 필요(비용 큼) | `POST /collection-runs/{run_id}/actions`, `scope=full` |
 
 ## 4. 수집 run 상세
 
@@ -169,7 +169,7 @@ API:
 | 보류 | `hold` | reason |
 | 제외 | `exclude` | exclude_reason, reason |
 
-모든 decision은 `expected_review_status`를 함께 보낸다.
+상태 전이 decision은 `expected_review_status`를 함께 보낸다. `recheck_candidates`는 상태 전이가 아니므로 제외한다(아래 주의 참조).
 
 ## 6. 작가명 검수 큐
 
@@ -403,7 +403,7 @@ API:
 ## 12. 공통 완료 기준
 
 - 모든 쓰기 액션은 reason 입력을 요구한다.
-- decision API는 `expected_review_status`를 보낸다.
+- 상태 전이 decision API는 `expected_review_status`를 보낸다(`recheck`/`recheck_candidates` 제외).
 - 생성/승인 계열은 `idempotency_key`를 보낸다.
 - claim된 row는 담당자와 만료 상태를 표시한다.
 - 사용자 화면에 노출 금지인 원천 URL/source/internal ID는 어드민에서만 표시한다.

@@ -152,6 +152,7 @@ API:
 - `review_required=true`여도 계산값이 있으면 예측 가격과 검수 필요 사유를 함께 보여준다.
 - 계산 실패와 검수 필요는 다른 상태다.
 - `as_of`는 최신 수집일이 아니라 active deployment가 학습에 사용한 snapshot 기준일이다.
+- 위 표는 화면 표시 항목이며, 응답 구조상 `model_version`/`model_route`/`deployment_id`는 `model` 객체 하위, `as_of`는 `primary_market_summary`(또는 응답 최상위) 기준이다([API 기획](user_admin_api_plan_20260625.md) §4.3).
 
 ## 7. 1차 시장 가격 카드
 

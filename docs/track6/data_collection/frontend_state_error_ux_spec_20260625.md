@@ -98,11 +98,12 @@ UX:
 
 ## 6. Idempotency 상태
 
-적용:
+적용(`idempotency_key` 전송):
 
 - 신규 artist_key 생성
 - snapshot 확정요청/생성승인/서빙승인
-- 모델 승격/롤백
+
+모델 승격/롤백은 `idempotency_key`를 받지 않는다([API 기획](user_admin_api_plan_20260625.md) §7.3). 중복 제출은 확인 dialog + 진행 중 버튼 disabled로 방지한다.
 
 UX:
 
@@ -164,6 +165,8 @@ badge enum/라벨의 단일 기준은 [프론트 컴포넌트 기준](frontend_c
 | blocked | 차단 | source 일시 중지, 운영 확인 |
 | auth_failed | 인증 실패 | 키 회전 안내 |
 | stuck_timeout | 멈춘 run | watchdog 회수 표시 |
+
+이 "Source 상태"는 단일 API 필드가 아니라 화면 표시용 합성값이다: `collector_run.status`(success/partial_success/failed) + `quality_status`(blocked) + run 상세의 `failure_type`(rate_limited/auth_failed 등) + watchdog 회수(stuck_timeout)를 모아 표시한다([API 기획](user_admin_api_plan_20260625.md) §5.2/§5.3, [운영 파라미터](operational_parameters_20260625.md) §C). 컴포넌트 §4의 Run/Quality badge enum과는 별개의 합성 표시다.
 
 ## 10. Toast/Banner 기준
 

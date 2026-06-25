@@ -21,6 +21,7 @@
 - success, empty, error, conflict, forbidden, stale 상태를 모두 가진다.
 - id 값은 화면 decision path parameter와 일치해야 한다.
 - 페이지 목록 응답은 표준 envelope `{items, page, page_size, total}`를, 검색 등 비페이지 목록은 `{items, total}`를 따른다(API 기획 응답 예시 기준).
+- 필드명의 단일 기준은 API 기획 응답 예시다. 특히 작가명 검수 큐 필드는 API §8.3(`artist_name_ko_orig`, `artist_name_ko_input_type`, `artist_name_ko_reason`, `artist_name_ko_risk_score`, `artist_name_ko_roundtrip_confidence`, `artist_name_ko_override_status`)을 따른다. 아래 §5.2 예시의 `display_name_*_candidate`는 표시 후보용 보조 필드이며, API 표준 필드를 대체하지 않는다.
 
 ## 3. 권장 fixture 파일 구조
 
@@ -217,6 +218,6 @@ fixtures/track6/
 - primary market card: normal / warning / hidden / low sample
 - admin dashboard: success / empty / failed source / blocked source
 - review queues: unclaimed / claimed_by_me / claimed_by_other / conflict
-- snapshot: requested / generating / generated / approved / failed
+- snapshot: snapshot_request(requested / approved) / artwork_snapshot(generating / generated / approved / failed)
 - model deployment: active / rollback available / no active model
 - audit logs: normal / empty / filtered
