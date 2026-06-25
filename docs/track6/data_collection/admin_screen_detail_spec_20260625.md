@@ -138,6 +138,8 @@ API:
 - review_status
 - claim 상태
 
+작품 품질 큐의 `review_status`는 저장된 컬럼이 아니라 `quality_flags_json` + `artwork_snapshot_item.include_status`에서 파생한 필터값이다(MySQL 5.0.2). 작가명/identity 큐의 `review_status`와 값 집합이 다르다.
+
 테이블 컬럼:
 
 | 컬럼 | 설명 |

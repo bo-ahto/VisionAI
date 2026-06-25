@@ -73,6 +73,8 @@ Review:
 
 `review_status` 값 집합과 decision→status 매핑의 단일 기준은 [API 기획](user_admin_api_plan_20260625.md) §8(및 MySQL 5.0.2)이다. 화면이 `expected_review_status`로 비교/전송하는 값도 이 enum을 따른다.
 
+위 표는 큐 전체의 합집합이며 실제 값 집합은 큐마다 다르다(MySQL 5.0.2): 작가명 alias는 `auto_approved`/`approved`/`needs_review`/`match_rejected`, artist identity 후보는 여기에 `pending`을 더한다. 작품 품질 큐는 별도 `review_status` 컬럼이 없고 `quality_flags_json` + `artwork_snapshot_item.include_status`(included/excluded)에서 파생한 표시 상태다.
+
 Snapshot:
 
 snapshot 계열 상태값은 두 엔터티로 나뉜다(단일 기준: [API 기획](user_admin_api_plan_20260625.md) §2.6/§9.3). 같은 `approved` 문자열이 두 레이어에 모두 있으므로 badge는 `(레이어, 상태)`로 구분해 라벨을 그린다.
