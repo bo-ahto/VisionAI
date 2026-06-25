@@ -17,6 +17,7 @@
 
 관련 문서:
 
+- [1차 개발 로드맵](first_development_roadmap_20260625.md)
 - [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
 - [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
 - [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
@@ -72,17 +73,18 @@ MySQL 스키마 문서
 | 역할 | 권한 |
 |---|---|
 | 일반 사용자 | 작가 검색, 신규 작가 후보 제출, 가격 예측 요청 |
-| 운영자 | 수집 run 확인, 검수 큐 처리, 보류/제외 처리 |
-| 데이터 관리자 | 신규 `artist_key` 생성 승인, 기존 `artist_key` 연결 확정, snapshot 생성 승인 |
-| 개발자 | 원천 등록, 수집 재실행, parser 장애 확인, 기술 로그 확인 |
-| 슈퍼유저 | 운영 초기 전용 역할. 운영자, 데이터 관리자, 개발자 권한을 모두 수행 |
+| 운영 담당자 | 수집 run 확인, 재수집 요청, 검수 큐 처리, 보류/제외 처리 |
+| 데이터 분석가 | 수동 CSV 업로드/매핑, snapshot 품질/분포 검토, 학습 피처 승격 판단 |
+| 데이터 관리자 | 원천 등록/수정, 신규 `artist_key` 생성 승인, 기존 `artist_key` 연결 확정, snapshot 생성/서빙 승인, 모델 승격/롤백 |
+| 개발자 | crawler/parser 장애 확인, migration/배포 점검, 기술 로그 확인 |
+| 슈퍼유저 | 운영 초기 전용 역할. 운영 담당자, 데이터 분석가, 데이터 관리자, 개발자 권한을 모두 수행 |
 
 원칙:
 
 - 일반 사용자는 최종 `artist_key`를 만들 수 없다.
 - 신규 작가 후보 등록과 신규 `artist_key` 생성 승인은 별도 API다.
 - 운영 초기에는 슈퍼유저 계정 1개 또는 소수 계정으로 시작할 수 있다. 이 경우 슈퍼유저는 모든 어드민 쓰기 API를 호출할 수 있지만, 응답/로그에는 실제 처리자의 `actor_id`와 처리 사유를 반드시 남긴다.
-- 운영이 안정화되면 슈퍼유저를 상시 운영 역할로 쓰지 않고, 운영자/데이터 관리자/개발자 역할로 분리한다.
+- 운영이 안정화되면 슈퍼유저를 상시 운영 역할로 쓰지 않고, 운영 담당자/데이터 분석가/데이터 관리자/개발자 역할로 분리한다.
 - 모든 어드민 쓰기 API는 `actor_id`, 처리 시각, 처리 사유를 남긴다.
 
 ### 2.2.1 인증 주체와 권한 게이트
@@ -105,15 +107,17 @@ MySQL 스키마 문서
 | `POST /api/v1/admin/model-deployments` (`promote`/`rollback`/`retire`) | 모델 승격/롤백 (7.3) | 데이터 관리자 |
 | `POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision` | 작품 품질 검수 (8.2) | 운영 담당자 |
 | `POST /api/v1/admin/review/artist-names/{alias_id}/decision` | 작가명 검수 (8.4) | 운영 담당자 |
-| `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | artist identity 연결 검수 (8.6) | 데이터 관리자 |
-| `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 artist_key 결정 (8.8) | 데이터 관리자 |
+| `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | artist identity 후보 검토(8.6 `reject_candidate`/`hold`/`move_to_new_artist_candidate`) | 운영 담당자 |
+| `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | 기존 artist_key 연결 확정(8.6 `approve_existing_artist_key`) | 데이터 관리자 |
+| `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 작가 후보 검토(8.8 `recheck`/`hold`/`reject`) | 운영 담당자 |
+| `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 artist_key 생성(8.8 `approve`) | 데이터 관리자 |
 | `POST /api/v1/admin/snapshots/requests` | snapshot 확정요청 (9.3.1) | 운영 담당자 |
 | `POST /api/v1/admin/snapshots` | snapshot 생성승인 (9.3.2) | 데이터 관리자 |
 | `POST /api/v1/admin/snapshots/{snapshot_id}/approve` | snapshot 서빙승인 (9.3.3) | 데이터 관리자 |
 | `GET /api/v1/admin/audit-logs` | audit-logs 조회 (10.1) | 데이터 관리자 |
 
 - 역할 위계는 개발자 < 운영 담당자 < 데이터 분석가 < 데이터 관리자이며, `required_role`은 해당 역할 "이상"을 의미한다(상위 역할은 하위 권한 포함).
-- 모델 승격/롤백(7.3), artist identity 결정(8.6/8.8), snapshot 생성승인(9.3.2) 및 snapshot 서빙승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영 담당자는 모델을 임의로 롤백할 수 없고, snapshot을 서빙 대상으로 승인할 수도 없다.
+- 모델 승격/롤백(7.3), artist identity 최종 확정(8.6 `approve_existing_artist_key`), 신규 artist_key 생성(8.8 `approve`), snapshot 생성승인(9.3.2) 및 snapshot 서빙승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영 담당자는 후보 보류/반려/재검토를 처리할 수 있지만 최종 artist_key 확정, 모델 롤백, snapshot 서빙승인은 할 수 없다.
 - 운영 초기 슈퍼유저는 위 역할을 모두 수행할 수 있으나, 실제 처리자 식별과 사유 기록 의무는 동일하게 적용된다.
 - 전체 역할 매핑의 단일 기준은 [운영 파라미터](operational_parameters_20260625.md) §A-1.
 
@@ -887,6 +891,8 @@ GET /api/v1/admin/model-deployments/current
 | `hold` | `review_status=needs_review` |
 | `move_to_new_artist_candidate` | 해당 후보 연결을 `match_rejected`로 막고 신규 작가 후보 큐로 이동 |
 | `add_alias`(8.4 전용) | review_status 전이가 아니라 해당 작가에 alias 1건 등록 |
+| `register_override`(8.4 전용) | review_status 전이가 아니라 확정 한글명을 override로 등록(표준화 흐름 4.6). `expected_review_status` 비대상 |
+| `recheck_candidates`(8.4) / `recheck`(8.8) | review_status 전이가 아니라 후보 재계산. conflict 검사·`expected_review_status` 비대상 |
 
 작가명 검수(8.4)에서 alias 등록은 `decision=add_alias` 한 동사로만 한다. `approve`/`approve_with_edit`는 표시명을 승인할 뿐 alias를 등록하지 않는다. 화면의 "alias 추가" 버튼은 항상 `decision=add_alias`로만 보낸다(8.4).
 
@@ -1088,12 +1094,16 @@ request:
 
 허용 decision:
 
-| decision | 의미 |
-|---|---|
-| `approve_existing_artist_key` | 기존 `artist_key`에 연결 |
-| `reject_candidate` | 해당 후보와의 연결 반려 |
-| `hold` | 판단 보류 |
-| `move_to_new_artist_candidate` | 신규 작가 후보로 전환 |
+| decision | 의미 | required_role |
+|---|---|---|
+| `approve_existing_artist_key` | 기존 `artist_key`에 연결 | 데이터 관리자 |
+| `reject_candidate` | 해당 후보와의 연결 반려 | 운영 담당자 |
+| `hold` | 판단 보류 | 운영 담당자 |
+| `move_to_new_artist_candidate` | 신규 작가 후보로 전환 | 운영 담당자 |
+
+권한:
+
+- endpoint 전체를 데이터 관리자 전용으로 묶지 않는다. 최종 `artist_key` 연결 확정(`approve_existing_artist_key`)만 데이터 관리자 권한이고, 보류/반려/신규 후보 전환은 운영 담당자 권한으로 처리한다(운영 파라미터 §A-1).
 
 동시성:
 
@@ -1175,20 +1185,21 @@ response(`decision=approve`):
 
 허용 decision:
 
-| decision | 의미 | 화면 버튼(4.6) |
-|---|---|---|
-| `approve` | 신규 `artist_key`를 생성하고 후보를 확정 | 신규 artist_key 생성 승인 |
-| `recheck` | 새 키를 만들기 전, 동일 작가가 기존에 있는지 이름/생년 조건으로 다시 검색해 후보를 갱신(상태 전이 아님, 후보 재계산) | 기존 후보 재검색 |
-| `hold` | 검수 대기 유지 | 보류 |
-| `reject` | 신규 작가로 쓰지 않음 | 반려 |
+| decision | 의미 | 화면 버튼(4.6) | required_role |
+|---|---|---|---|
+| `approve` | 신규 `artist_key`를 생성하고 후보를 확정 | 신규 artist_key 생성 승인 | 데이터 관리자 |
+| `recheck` | 새 키를 만들기 전, 동일 작가가 기존에 있는지 이름/생년 조건으로 다시 검색해 후보를 갱신(상태 전이 아님, 후보 재계산) | 기존 후보 재검색 | 운영 담당자 |
+| `hold` | 검수 대기 유지 | 보류 | 운영 담당자 |
+| `reject` | 신규 작가로 쓰지 않음 | 반려 | 운영 담당자 |
 
 쓰기:
 
 - `approve` 시: `artist_identity`, 필요 시 `artist_name_alias.artist_key`
 - `hold`/`reject` 시: 신규 작가 후보의 `review_status`, 처리자/시각/사유(2.2.1)
 
-주의:
+권한/주의:
 
+- endpoint 전체를 데이터 관리자 전용으로 묶지 않는다. 신규 `artist_key`를 실제 생성하는 `approve`만 데이터 관리자 권한이고, `recheck`/`hold`/`reject`는 운영 담당자 권한으로 처리한다(운영 파라미터 §A-1).
 - `decision=approve`만 신규 `artist_key`를 생성할 수 있다. `recheck`/`hold`/`reject`는 키를 만들지 않는다.
 - 일반 사용자 API에서는 호출할 수 없다.
 - `approve`는 `idempotency_key`로 중복 생성을 막는다. 같은 키의 재요청은 이미 생성된 `artist_key`를 그대로 반환한다(2.7).
@@ -1449,7 +1460,7 @@ API 구현 시 반드시 지켜야 할 기준:
 
 ## 12. 정책 확정/조정 항목 (운영 파라미터 참조)
 
-> 운영 임계·기간·역할 등 정책 상수는 [운영 파라미터](operational_parameters_20260625.md)에서 기본값으로 확정되어 있다. 아래는 그 전제와, 조직 정책/운영 실측에 따라 갱신할 항목을 정리한 것이다.
+> 운영 임계·기간·역할 등 정책 상수는 [운영 파라미터](operational_parameters_20260625.md)에서 기본값으로 확정되어 있다. 개발 착수 전에 고정해야 하는 구조적 선택은 [개발 착수 전 결정안](development_prestart_decisions_20260625.md)을 따른다. 아래는 그 전제와, 조직 정책/운영 실측에 따라 갱신할 항목을 정리한 것이다.
 
 ### 12.0 전제(precondition)
 
@@ -1465,10 +1476,10 @@ API 구현 시 반드시 지켜야 할 기준:
 
 | 항목 | 결정 필요 내용 |
 |---|---|
-| 인증 방식 상세 | 기본값(JWT 액세스 토큰 + 역할 claim, 액세스 60분/리프레시 14일)은 12.0에서 결정. 세션/내부 관리자 계정 등 구체 구현 방식 → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신 |
+| 인증 방식 상세 | 사용자는 로그인 없이 first-party 익명 세션 + rate limit을 기본값으로 둔다. 어드민은 제공 이메일/비밀번호 로그인 후 JWT 액세스 토큰 + 역할 claim을 발급한다. SSO는 후속 도입 예정이다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.1/§3.2). 토큰 TTL은 [운영 파라미터](operational_parameters_20260625.md) 기준을 따른다. |
 | freshness 임계 `N`/`M` | 예측/가격 카드 `as_of` 경고 임계 `N`일·카드 차단 임계 `M`일(M>N)·deployment 괴리 경고 임계(2.6 / 4.4) → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신 |
-| 신규 작가 후보 저장 방식 | SQL view/export로 시작할지, 별도 물리 큐 테이블을 만들지 |
-| 수동 CSV 업로드 파일 저장 위치 | `manual_import_file.file_uri`에 기록할 저장소 경로 규칙. row 처리 구조는 MySQL 문서 5.3.1의 `manual_import_file` + `collector_run` 기준으로 확정 |
+| 신규 작가 후보 저장 방식 | 사용자 신규 작가 후보 제출을 M1에 포함하므로 물리 후보 큐 테이블을 1차 DDL에 포함한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.4). |
+| 수동 CSV 업로드 파일 저장 위치 | `manual_import_file.file_uri`는 `manual/{env}/source={source}/dt={YYYY-MM-DD}/import={import_id}/original.csv` 규칙을 기본값으로 둔다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). row 처리 구조는 MySQL 문서 5.3.1의 `manual_import_file` + `collector_run` 기준으로 확정 |
 | 운영 로그 저장 방식 | 비가역 작가 identity 결정은 `identity_event_log`(MySQL 5.12.1)에 append-only로 남기고, 그 외 엔티티는 각 테이블 승인/반려 컬럼을 사용한다. 검수 큐 claim/lock TTL 등 동시성 수치 → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신. 전체 필드 변경 audit 테이블 확대는 고도화 |
-| 예측 API 연결 방식 | 기존 가격 예측 API에 이 입력/응답 구조를 맞출지, wrapper를 둘지 |
-| 1차 시장 가격 카드 데이터 위치 | feature store, snapshot 집계 테이블, 캐시 중 선택 |
+| 예측 API 연결 방식 | 기존 예측 API를 호출하지 않고, 데이터 수집 서비스 내부 joblib serving adapter가 active deployment의 joblib artifact를 직접 로드한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.6). |
+| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 집계 테이블을 만들고, API는 active deployment의 training snapshot 기준 row를 조회한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). |

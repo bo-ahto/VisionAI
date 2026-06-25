@@ -43,8 +43,8 @@
 | 수집 run 상세 | `/admin/track6/collection-runs/:run_id` | 운영 담당자 |
 | 작품 품질 검수 | `/admin/track6/review/artworks` | 운영 담당자 |
 | 작가명 검수 | `/admin/track6/review/artist-names` | 운영 담당자 |
-| artist_key 연결 검수 | `/admin/track6/review/artist-identities` | 데이터 관리자 |
-| 신규 작가 후보 | `/admin/track6/review/new-artists` | 데이터 관리자 |
+| artist_key 연결 검수 | `/admin/track6/review/artist-identities` | 운영 담당자(조회/triage), 키 연결 확정은 데이터 관리자 |
+| 신규 작가 후보 | `/admin/track6/review/new-artists` | 운영 담당자(조회/triage), 키 생성은 데이터 관리자 |
 | snapshot 후보/승인 | `/admin/track6/snapshots` | 운영 담당자 |
 | 모델 배포 | `/admin/track6/model-deployments` | 데이터 관리자 |
 | 운영 로그/알림 | `/admin/track6/audit-logs` | 데이터 관리자 |
@@ -84,7 +84,7 @@ API:
 |---|---|---|
 | run 상세 보기 | 모든 row | 상세 route 이동 |
 | 실패분 재수집 | `failed` 또는 `partial_success` | `POST /collection-runs/{run_id}/actions`, `action=request_retry`, `scope=failed_only` |
-| 전체 재수집 | 데이터 관리자 승인 필요(비용 큼) | `POST /collection-runs/{run_id}/actions`, `scope=full` |
+| 전체 재수집 | 운영 담당자(비용 큼 → confirm dialog 필수, 역할 게이트는 실패분 재수집과 동일) | `POST /collection-runs/{run_id}/actions`, `scope=full` |
 
 ## 4. 수집 run 상세
 
@@ -237,7 +237,8 @@ API:
 
 권한:
 
-- 데이터 관리자 이상
+- 조회/후보 반려/보류/신규 후보 전환: 운영 담당자 이상
+- 기존 `artist_key` 연결 확정(`approve_existing_artist_key`): 데이터 관리자 이상
 
 상세 비교 영역:
 
@@ -251,12 +252,12 @@ API:
 
 버튼/API 매핑:
 
-| 버튼 | decision | 필수 입력 |
-|---|---|---|
-| 기존 artist_key 연결 승인 | `approve_existing_artist_key` | artist_key, reason |
-| 후보 반려 | `reject_candidate` | reason |
-| 보류 | `hold` | reason |
-| 신규 작가 후보로 전환 | `move_to_new_artist_candidate` | reason |
+| 버튼 | decision | 필수 입력 | 최소 권한 |
+|---|---|---|---|
+| 기존 artist_key 연결 승인 | `approve_existing_artist_key` | artist_key, reason | 데이터 관리자 |
+| 후보 반려 | `reject_candidate` | reason | 운영 담당자 |
+| 보류 | `hold` | reason | 운영 담당자 |
+| 신규 작가 후보로 전환 | `move_to_new_artist_candidate` | reason | 운영 담당자 |
 
 ## 8. 신규 작가 후보 큐
 
@@ -273,16 +274,17 @@ API:
 
 권한:
 
-- 데이터 관리자 이상
+- 조회/기존 후보 재검색/보류/반려: 운영 담당자 이상
+- 신규 `artist_key` 생성 승인(`approve`): 데이터 관리자 이상
 
 버튼/API 매핑:
 
-| 버튼 | decision |
-|---|---|
-| 신규 artist_key 생성 승인 | `approve` |
-| 기존 후보 재검색 | `recheck` |
-| 보류 | `hold` |
-| 반려 | `reject` |
+| 버튼 | decision | 최소 권한 |
+|---|---|---|
+| 신규 artist_key 생성 승인 | `approve` | 데이터 관리자 |
+| 기존 후보 재검색 | `recheck` | 운영 담당자 |
+| 보류 | `hold` | 운영 담당자 |
+| 반려 | `reject` | 운영 담당자 |
 
 주의:
 
@@ -325,10 +327,16 @@ snapshot 계열은 `snapshot_request`와 `artwork_snapshot` 두 엔터티로 나
 |---|---|---|---|
 | snapshot_request | requested | 확정요청됨 | 아님 |
 | snapshot_request | approved | 생성승인됨 | 아님 |
-| artwork_snapshot | generating | 생성 중 | 아님 |
+| snapshot_request | generating | 생성 진행 중 | 아님 |
+| snapshot_request | generated | 생성 완료(요청 terminal) | 아님 |
+| snapshot_request | rejected | 요청 반려 | 아님 |
+| snapshot_request | failed | 생성 실패 | 아님 |
+| snapshot_request | cancelled | 요청 취소 | 아님 |
+| artwork_snapshot | building | 생성 중 | 아님 |
 | artwork_snapshot | generated | 빌드완료(비서빙) | 아님 |
 | artwork_snapshot | approved | 서빙승인 | 사용자 기준 |
-| artwork_snapshot | failed | 실패 | 아님 |
+| artwork_snapshot | failed | 생성 실패 | 아님 |
+| artwork_snapshot | discarded | 폐기 | 아님 |
 
 버튼/API 매핑:
 

@@ -220,6 +220,6 @@ fixtures/track6/
 - primary market card: normal / warning / hidden / low sample
 - admin dashboard: success / empty / failed source / blocked source
 - review queues: unclaimed / claimed_by_me / claimed_by_other / conflict
-- snapshot: snapshot_request(requested / approved) / artwork_snapshot(generating / generated / approved / failed)
+- snapshot: snapshot_request(requested / approved / generating / generated / rejected / failed / cancelled) / artwork_snapshot(building / generated / approved / failed / discarded)
 - model deployment: active / rollback available / no active model
 - audit logs: normal / empty / filtered

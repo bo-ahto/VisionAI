@@ -120,10 +120,11 @@ badge enum/라벨의 단일 기준은 [프론트 컴포넌트 기준](frontend_c
 |---|---|---|
 | snapshot_request / requested | 확정요청됨 | 운영자가 후보 범위/규칙을 고정 |
 | snapshot_request / approved | 생성승인됨 | 생성 job 진입 전/중 |
-| artwork_snapshot / generating | 생성 중 | snapshot build 진행 |
+| artwork_snapshot / building | 생성 중 | snapshot build 진행 |
 | artwork_snapshot / generated | 빌드완료(비서빙) | 사용자 기준 아님 |
 | artwork_snapshot / approved | 서빙승인 | 사용자 기준 |
-| artwork_snapshot / failed | 실패 | 재시도 또는 조사 필요 |
+| artwork_snapshot / failed | 생성 실패 | 재시도 또는 조사 필요 |
+| artwork_snapshot / discarded | 폐기 | 서빙 대상 아님 |
 
 주의:
 

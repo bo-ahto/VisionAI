@@ -11,6 +11,7 @@
 
 관련 문서:
 
+- [1차 개발 로드맵](first_development_roadmap_20260625.md)
 - [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
 - [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
 - [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
@@ -390,7 +391,7 @@ API 문서를 확정하기 전에 아래 항목만 이 문서 기준으로 확�
 | 작품 품질 검수 결과가 어디에 남는지 | 5.8 |
 | 수집 실패와 품질 차단이 어떤 상태값인지 | 5.2, 5.0.2 |
 | snapshot 포함/제외가 어디에 남는지 | 5.13, 5.14 |
-| snapshot 확정요청/생성승인 2단계가 어디에 남는지 | 5.14.1 |
+| snapshot 확정요청/생성승인/서빙승인 3단계가 어디에 남는지 | 5.13, 5.14.1 |
 | 작품 필드 단위 변경(approve_with_patch) audit이 어디에 남는지 | 5.8.1 |
 | snapshot이 고정한 작가 identity 버전과 멤버십 as-of 조회 | 5.13, 5.12.2 |
 | 1차 시장 가격 카드가 어떤 원천 필드를 노출하지 않아야 하는지 | 5.0.1 |
@@ -399,7 +400,7 @@ API 문서를 확정하기 전에 아래 항목만 이 문서 기준으로 확�
 
 ### 5.0.5 신규 작가 후보 큐 기준
 
-신규 작가 후보 큐는 최종 `artist_key` 테이블이 아니다. 1차 적용에서는 별도 물리 테이블을 필수로 만들지 않고, `normalized_artist_staging`과 `artist_name_alias`를 기준으로 만든 SQL view 또는 CSV export로 운영해도 된다.
+신규 작가 후보 큐는 최종 `artist_key` 테이블이 아니다. 사용자 신규 작가 후보 제출을 M1에 포함하므로, 1차 DDL에는 물리 후보 큐 테이블을 둔다. SQL view/export는 후보 제출을 제외한 내부 검수용 단순화 옵션으로만 남기며 M1 기본값은 아니다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.4).
 
 신규 작가 후보가 되는 조건:
 
@@ -552,6 +553,8 @@ URL/API 요청 단위 원본을 저장한다.
 
 필수: raw payload 본문은 1차 운영부터 object storage에 저장하고, MySQL에는 `payload_hash`, `payload_path`, `payload_size`와 요약만 저장한다. DB에 본문(`MEDIUMTEXT`)을 직접 넣는 방식은 단기 PoC 한정으로만 허용하며, 운영 적용에서는 사용하지 않는다.
 
+1차 path convention은 `raw/{env}/source={source}/dt={YYYY-MM-DD}/run={run_id}/{raw_fetch_id}-{sha16}.{ext}.gz`다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). 저장소 provider는 local dev backend + S3-compatible adapter를 기본값으로 둔다.
+
 마스킹/시크릿 원칙(§5.20과 연계):
 
 - 원문 `url`은 저장하지 않는다. `url_sanitized`(비밀 파라미터 마스킹본)와 `url_hash`만 남긴다. `request_params_json`도 비밀 파라미터(예: `cafe24_app_key`)를 마스킹한 뒤에만 저장하고, 비밀 원본은 DB에 저장하지 않는다.
@@ -581,7 +584,7 @@ raw 무한 증가 대비:
 | `id` | 수동 업로드 파일 ID |
 | `source` | `source_registry.source` 참조. 예: `manual_csv`, `gallery_csv_abc` |
 | `file_name` | 업로드 원본 파일명 |
-| `file_uri` | 파일 저장 위치 |
+| `file_uri` | 파일 저장 위치. 1차 path convention은 `manual/{env}/source={source}/dt={YYYY-MM-DD}/import={import_id}/original.csv` |
 | `file_hash` | 파일 hash |
 | `encoding` | 감지 또는 입력한 encoding |
 | `delimiter` | CSV delimiter |
@@ -668,7 +671,7 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 
 작품 설명과 작가 소개가 한 원문에 섞여 있으면 raw에는 원문 전체를 보존하고, 이 단계에서는 작품 관련 후보만 분리한다. 작가 관련 후보는 `source_artist_interpreted_staging`에서 분리한다.
 
-> 설계 메모(interpreted/normalized 분리 근거와 단순화 옵션): 두 단계를 물리 테이블로 나누는 이유는 분해 실패(원문 파싱 단계)와 표준화 실패(공통 컬럼 변환 단계)를 구분해 운영자가 원인을 빠르게 찾고, raw 재수집 없이 해당 단계만 재처리하기 위해서다. 다만 현재 원천 규모(원천별 수천 row)에서는 물리 테이블 2벌이 과할 수 있다. 따라서 interpreted 결과를 별도 테이블 대신 `normalized_*_staging`의 `*_candidate` 컬럼과 `parsed_parts_json`/`quality_flags_json`에 흡수하는 단순화 옵션도 허용한다. 단, 이 경우에도 분해 실패와 표준화 실패 플래그는 구분해 남겨야 두 방식의 추적성이 동일해진다. 어느 방식을 채택하는지는 §12 1차 적용 범위를 따른다.
+> 설계 결정(interpreted/normalized 분리): 1차 개발은 `source_*_interpreted_staging`과 `normalized_*_staging`을 물리적으로 분리한다. 분해 실패(원문 파싱 단계)와 표준화 실패(공통 컬럼 변환 단계)를 구분해 운영자가 원인을 빠르게 찾고, raw 재수집 없이 해당 단계만 재처리하기 위해서다. 단일 staging에 `*_candidate`와 `quality_flags_json`을 흡수하는 단순화안은 이번 1차 기준에서 채택하지 않는다(로드맵 §4).
 
 | 컬럼 | 설명 |
 |---|---|
@@ -1097,7 +1100,7 @@ snapshot에 포함된 작품 row 목록이다.
 
 ### 5.14.1 snapshot_request
 
-snapshot 생성은 운영자 확정요청과 데이터 관리자 생성승인의 2단계로 나눈다. 운영자가 바로 snapshot을 생성하지 못하게 하고, 동시 생성을 잠그기 위한 요청 테이블이다. 실제 snapshot row(`artwork_snapshot`)는 승인 후에만 만들어진다.
+snapshot 생성/반영은 운영자 확정요청, 데이터 관리자 생성승인, 데이터 관리자 서빙승인의 3단계로 나눈다. 운영자가 바로 snapshot을 생성하지 못하게 하고, 생성 완료(`generated`)와 사용자 서빙 반영(`approved`)을 분리하기 위한 요청 테이블이다. 실제 snapshot row(`artwork_snapshot`)는 생성승인 후 만들어지고, 서빙승인 전까지 사용자 기준 데이터가 아니다.
 
 | 컬럼 | 설명 |
 |---|---|
@@ -1120,10 +1123,11 @@ snapshot 생성은 운영자 확정요청과 데이터 관리자 생성승인의
 | `resulting_snapshot_id` | 생성된 snapshot의 `artwork_snapshot.snapshot_id` FK. 생성 후 채운다 |
 | `request_note` | 요청/승인/반려 메모 |
 
-2단계 운영:
+3단계 운영:
 
 - 운영자가 확정요청하면 `status=requested` row를 만든다(`snapshot_name`/`source_cutoff_at`/`rules_version` 고정).
-- 데이터 관리자가 생성을 승인하면 `status=approved`로 전이한 뒤 `status=generating`으로 생성에 진입하고, 생성 완료 시 `status=generated` + `resulting_snapshot_id`를 채운다. 승인 endpoint는 `snapshot_request_id`만 받아도 요청 row의 `snapshot_name`/`source_cutoff_at`/`rules_version`/`artist_identity_version`/`override_watermark_event_id`로 snapshot을 재현한다. 승인 자체는 `approval_idempotency_key`로 멱등 처리해 같은 승인이 중복 생성을 일으키지 않는다.
+- 데이터 관리자가 생성을 승인하면 `snapshot_request.status=approved`로 전이한 뒤 `generating`으로 생성에 진입하고, 생성 완료 시 `snapshot_request.status=generated` + `resulting_snapshot_id`를 채운다. 승인 endpoint는 `snapshot_request_id`만 받아도 요청 row의 `snapshot_name`/`source_cutoff_at`/`rules_version`/`artist_identity_version`/`override_watermark_event_id`로 snapshot을 재현한다. 승인 자체는 `approval_idempotency_key`로 멱등 처리해 같은 승인이 중복 생성을 일으키지 않는다.
+- 생성된 `artwork_snapshot.status`는 `generated`(비서빙)로 시작한다. 데이터 관리자가 별도 서빙승인 API(`POST /api/v1/admin/snapshots/{snapshot_id}/approve`)를 호출해 `artwork_snapshot.status=approved`로 올린 뒤에만 사용자 `as_of`/freshness/서빙 기준이 된다. 서빙승인의 영속 기준은 `artwork_snapshot.approved_by`/`approved_at`/`approval_note`다.
 - `generating` 중 생성이 실패하면 `status=failed`로 전이한다. 이때 두 생성 컬럼(`active_cutoff_at`/`active_rules_version`)이 NULL이 되어 활성 lock(`uq_active_snapshot_request`)이 풀리므로, 같은 `(source_cutoff_at, rules_version)`로 재시도(새 요청)가 가능하다.
 - lock wedge 방지(watchdog): `approved`/`generating`에서 처리 job이 죽으면 진행 중 행이 남아 같은 `(source_cutoff_at, rules_version)`의 재시도가 영구 차단된다. 이를 막기 위해 처리 job은 `heartbeat_at`을 주기적으로 갱신하고, watchdog가 `heartbeat_at`이 임계(기본값 1시간, 운영 파라미터 §C `SNAP-HEARTBEAT-TIMEOUT`)를 초과한 `approved`/`generating` 행을 `status=failed`로 전이한다. 그러면 두 생성 컬럼이 NULL이 되어 `uq_active_snapshot_request`가 풀려 같은 cutoff/rules로 재시도가 가능해진다. watchdog는 §5.2.2 `collector_run` 회수와 동일 패턴이며, 처리 호스트와 분리된 외부 스케줄러/모니터에서 실행한다(처리 호스트가 멈춰도 회수가 동작해야 함).
 - 반려하면 `status=rejected`로 두고 snapshot은 만들지 않는다.
@@ -1208,6 +1212,7 @@ FK는 각 본문 테이블 정의의 `*_id` 컬럼(`run_id`, `raw_fetch_id`, `so
 | `feature_generation_version` | feature 생성 코드/규칙 버전 |
 | `training_code_version` | 학습 코드 git SHA 또는 버전 |
 | `artifact_uri` | model bundle/joblib 등 아티팩트 위치 |
+| `artifact_sha256` | 아티팩트 번들 무결성 해시. 서빙 어댑터가 startup에 object storage에서 받은 번들을 이 값과 대조해 검증한다([개발 착수 결정안](development_prestart_decisions_20260625.md) §3.11) |
 | `feature_store_uri` | 운영 feature store 위치 |
 | `metrics_json` | validation/test 성능 지표 |
 | `parity_report_uri` | parity 검증 리포트 위치 |
@@ -1515,8 +1520,8 @@ MySQL은 운영 단일 기준 저장소로 적합하다. 다만 원본 대용량
 - 비밀 파라미터 마스킹(`url_sanitized`/마스킹된 `request_params_json`)과 자격증명 secret manager/env 주입(§5.20)
 - source_artwork_raw 테이블
 - source_artist_raw 테이블
-- source_artwork_interpreted_staging 테이블(2-table 옵션 선택 시)
-- source_artist_interpreted_staging 테이블(2-table 옵션 선택 시)
+- source_artwork_interpreted_staging 테이블
+- source_artist_interpreted_staging 테이블
 - normalized_artwork_staging 테이블
 - normalized_artist_staging 테이블
 - artist_name_alias 테이블
@@ -1533,7 +1538,7 @@ MySQL은 운영 단일 기준 저장소로 적합하다. 다만 원본 대용량
 
 `artist_identity_candidate`와 `artist_identity` 테이블을 포함한다. 같은 `source + artist_source_id` 기존 연결은 자동 연결하고, 서로 다른 원천 간 자동 확정은 `alias_exact` 또는 `alias_approved`와 `birth_year_confidence=high`인 생년 일치가 모두 있을 때만 허용한다. 신규 작가 후보는 `artist_identity`에 미리 넣지 않고 후보 큐에서 관리하며, 운영자 검수 후 데이터 관리자 승인이 있을 때만 최종 `artist_key`를 생성한다.
 
-interpreted/normalized 분리는 택일 설계다. 분해 규칙이 자주 바뀌거나 분해 실패와 표준화 실패를 분리 추적해야 하면 2-table(interpreted+normalized)을 채택하고, 그렇지 않으면 단일 staging+`*_candidate`/`quality_flags_json` 흡수안으로 시작한다. §5.6 설계 메모의 단순화 옵션이 이 흡수안이며, 두 방식을 동시에 필수로 두지 않는다.
+interpreted/normalized 분리는 1차 개발 기준으로 물리 테이블 2단계(interpreted+normalized)를 채택한다. 단일 staging+`*_candidate`/`quality_flags_json` 흡수안은 PoC 단순화 옵션으로만 남기고, 운영 1차 범위의 DDL/OpenAPI/검수 화면 기준에는 넣지 않는다.
 
 후속 고도화 항목:
 

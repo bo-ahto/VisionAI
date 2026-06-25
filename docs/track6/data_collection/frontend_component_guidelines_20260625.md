@@ -77,25 +77,31 @@ Review:
 
 Snapshot:
 
-snapshot 계열 상태값은 두 엔터티로 나뉜다(단일 기준: [API 기획](user_admin_api_plan_20260625.md) §2.6/§9.3). 같은 `approved` 문자열이 두 레이어에 모두 있으므로 badge는 `(레이어, 상태)`로 구분해 라벨을 그린다.
+snapshot 계열 상태값은 두 엔터티로 나뉜다(enum 단일 기준: [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.13/§5.14.1, 워크플로우 설명: [API 기획](user_admin_api_plan_20260625.md) §2.6/§9.3). 같은 `generated`/`approved` 문자열이 두 레이어에 모두 있으므로 badge는 `(레이어, 상태)`로 구분해 라벨을 그린다.
 
-snapshot_request(확정요청 → 생성승인):
+snapshot_request(확정요청 → 생성승인 워크플로우):
 
 | 값 | 라벨 | 사용자 기준 |
 |---|---|---|
 | requested | 확정요청됨 | 아님 |
-| approved | 생성승인됨(생성 job 진입 전/중) | 아님 |
+| approved | 생성승인됨 | 아님 |
+| generating | 생성 진행 중 | 아님 |
+| generated | 생성 완료(요청 terminal) | 아님 |
+| rejected | 요청 반려 | 아님 |
+| failed | 생성 실패 | 아님 |
+| cancelled | 요청 취소 | 아님 |
 
-artwork_snapshot(생성 → 서빙):
+artwork_snapshot(생성 산출물):
 
 | 값 | 라벨 | 사용자 기준 |
 |---|---|---|
-| generating | 생성 중 | 아님 |
+| building | 생성 중 | 아님 |
 | generated | 빌드완료(비서빙) | 아님 |
 | approved | 서빙승인 | 사용자 기준 |
-| failed | 실패 | 아님 |
+| failed | 생성 실패 | 아님 |
+| discarded | 폐기 | 아님 |
 
-이 표가 snapshot badge 라벨의 단일 기준이며, [어드민 화면 명세](admin_screen_detail_spec_20260625.md) §9와 [상태/에러 UX 기준](frontend_state_error_ux_spec_20260625.md) §7은 이 표를 참조한다.
+artwork_snapshot의 "생성 중"은 `building`이다(`generating`은 snapshot_request 레이어 값이지 산출물 상태가 아니다). 이 표가 snapshot badge 라벨의 단일 기준이며, [어드민 화면 명세](admin_screen_detail_spec_20260625.md) §9와 [상태/에러 UX 기준](frontend_state_error_ux_spec_20260625.md) §7은 이 표를 참조한다.
 
 ## 5. FilterBar 기준
 

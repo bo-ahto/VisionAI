@@ -172,6 +172,8 @@ Cold k80 joblib 적용 산출물:
 | Redis | rate limit/idempotency/세션 카운터에 atomic 연산 + TTL이 최적. | 운영 컴포넌트 1개 추가. | 멀티 인스턴스 전환 시 |
 | in-memory(프로세스 로컬) | 가장 빠르고 의존성 0. | 멀티 인스턴스에서 깨지고 재시작 시 소실. | 비권장 |
 
+필요 테이블(`rate_limit_counter`, `idempotency_key`, `anonymous_session`)은 §4 Phase 0 DDL에 포함한다. snapshot/원천 전용 idempotency 컬럼(MySQL §5.13/§5.14.1)과 별개로, public/admin API용 범용 저장을 명시한다.
+
 ### 3.9 비동기 job 실행 방식
 
 권장: M1은 cron + 기존 `collector_run`/watchdog DB 패턴(이미 SoT에 존재)을 재사용한다. 별도 작업 큐는 후속.
@@ -202,7 +204,7 @@ Cold k80 joblib 적용 산출물:
 
 | 선택지 | 장점 | 단점 | 판단 |
 |---|---|---|---|
-| object storage/registry 런타임 pull | active deployment 행 + `artifact_uri` 기준으로 startup에 joblib 번들을 다운로드/캐시/checksum 검증 후 로드. 승격/롤백 = DB·스토리지 상태 변경 + reload/restart, 이미지 rebuild 불필요. registry/deployment 테이블이 실제 control plane이 됨. | startup fetch/캐시/체크섬을 구현해야 함. | 확정 |
+| object storage/registry 런타임 pull | active deployment 행 → `price_model_registry.artifact_uri`로 startup에 joblib 번들을 다운로드/캐시하고 `price_model_registry.artifact_sha256`(MySQL §5.17)과 대조 검증 후 로드. 승격/롤백 = DB·스토리지 상태 변경 + reload/restart, 이미지 rebuild 불필요. registry/deployment 테이블이 실제 control plane이 됨. | startup fetch/캐시/체크섬을 구현해야 함. | 확정 |
 | 이미지 bake(기존 `Dockerfile.api` 방식) | 런타임 fetch 없음, 단순. | 모델 교체 = 이미지 rebuild. deployment 테이블이 장식이 됨(§3.6 위배). | 비권장(오프라인 smoke용 dev seed로만 허용) |
 | hybrid(bake 기본 + registry override) | 오프라인에서도 동작. | SoT가 둘로 갈라져 더 혼란. | 비권장 |
 
@@ -238,7 +240,8 @@ Cold k80 joblib 적용 산출물:
 11. public artist candidate submit queue fixture
 12. Warm joblib + Cold k80 joblib serving smoke/parity fixture
 13. API Dockerfile(non-root, 모델 미포함) / 프론트 Dockerfile(React build→nginx) / docker-compose(api+frontend+mysql+minio) / `.dockerignore`
-14. startup artifact loader(active deployment → object storage joblib pull + checksum 검증) smoke fixture
+14. startup artifact loader(active deployment → object storage joblib pull + `artifact_sha256` 검증) smoke fixture
+15. `rate_limit_counter` / `idempotency_key` / `anonymous_session` 테이블 DDL(§3.8) + `price_model_registry.artifact_sha256` 컬럼(§3.11)
 
 ## 5. 개발 착수 전 확인 질문
 
