@@ -1,4 +1,4 @@
-# Track6 데이터 수집 개발 착수 전 결정안
+# 작품 가격 데이터 플랫폼 개발 착수 전 결정안
 
 작성일: 2026-06-25
 
@@ -45,7 +45,7 @@ MySQL 8.0 + 명시 SQL migration
 
 | 항목 | 권장 확정안 | 개발 산출물 |
 |---|---|---|
-| 스펙 산출물 위치 | data_collection 문서 하위에 `openapi/`와 `mysql/`을 둔다. | `docs/track6/data_collection/openapi/track6_data_collection_v1.yaml`, `docs/track6/data_collection/mysql/001_track6_data_collection_core.up.sql` |
+| 스펙 산출물 위치 | 프로젝트 `docs/` 하위에 `openapi/`와 `mysql/`을 둔다. | `projects/art-price-data-platform/docs/openapi/art_price_data_platform_v1.yaml`, `projects/art-price-data-platform/docs/mysql/001_art_price_data_platform_core.up.sql` |
 | DB/migration | MySQL 8.0, InnoDB, `utf8mb4`, 명시 SQL migration. Alembic/ORM migration은 1차에서 도입하지 않는다. | `schema_migrations` 테이블, `.up.sql`/`.down.sql`, dev DB migration smoke test |
 | ID 전략 | 내부 조인 PK는 `BIGINT UNSIGNED AUTO_INCREMENT`, API/public 식별자는 prefix id 또는 기존 업무 키(`artist_key`, `snapshot_id`)를 사용한다. | DDL PK/FK, OpenAPI id format |
 | OpenAPI | OpenAPI 3.1 YAML을 계약서로 고정하고 FastAPI/Pydantic 구현이 이를 만족하는지 테스트한다. | OpenAPI lint, request/response fixture 검증 |
@@ -58,11 +58,11 @@ MySQL 8.0 + 명시 SQL migration
 | raw object storage | 1차부터 private object storage 사용. DB에는 `payload_path`, `payload_hash`, `payload_size`만 저장한다. | object key convention, storage adapter |
 | object path | raw는 `raw/{env}/source={source}/dt={YYYY-MM-DD}/run={run_id}/{raw_fetch_id}-{sha16}.{ext}.gz`, CSV는 `manual/{env}/source={source}/dt={YYYY-MM-DD}/import={import_id}/original.csv`. | `payload_path`, `manual_import_file.file_uri` 규칙 |
 | 1차 시장 카드 저장 위치 | feature store 실시간 계산이 아니라 approved snapshot 생성 시 집계 테이블을 만든다. API는 active deployment의 training snapshot 기준 row를 조회한다. | `primary_market_artist_summary` 또는 동등 테이블 |
-| 1차 시장 카드 계산 | 기존 Track6 `estimated_ho` 기준을 사용한다. `estimated_ho = argmin_h |area_cm2 - HO_TABLE_F[h]|`, `unit_price_per_ho = price_krw / estimated_ho`. | summary build job, API fixture |
+| 1차 시장 카드 계산 | 기존 가격 예측 `estimated_ho` 기준을 사용한다. `estimated_ho = argmin_h |area_cm2 - HO_TABLE_F[h]|`, `unit_price_per_ho = price_krw / estimated_ho`. | summary build job, API fixture |
 | 1차 시장 카드 표본 | 승인 snapshot의 정상화 row 중 가격/크기/작가키/품질/suppression 조건을 통과한 row만 사용한다. 전체 표본 최소 N=5, 매체별 분포는 매체 그룹 N>=3만 표시한다. | aggregation test |
 | 1차 시장 카드 이상치 | artist+medium 그룹 내 `unit_price_per_ho`의 q05~q95 winsorized 값을 기준으로 median/q25/q75를 계산한다. 표본이 20개 미만이면 winsorize 없이 median/q25/q75만 계산하고 low_sample flag를 붙인다. | calculation spec/test |
 | prediction API 연결 | 기존 가격 예측 API를 호출하지 않고, 데이터 수집 서비스 안에 joblib serving adapter를 둔다. adapter는 active deployment/model registry에서 joblib artifact를 읽고 직접 예측한다. | joblib serving adapter, parity smoke |
-| M1 모델 | Warm은 `models/track6/warm_lite_unified_current_joblib_v0.1_candidate`를 active deployment 후보로 둔다. Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `models/track6/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 뒤 active deployment에 올린다. `cold_prediction_v0.5_operational`은 M1 적용 후보가 아니라 과거 raw-input p95 방어 참고 산출물로만 둔다. | model registry seed, deployment seed, cold k80 joblib freeze/parity |
+| M1 모델 | Warm은 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`를 active deployment 후보로 둔다. Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 뒤 active deployment에 올린다. `cold_prediction_v0.5_operational`은 M1 적용 후보가 아니라 과거 raw-input p95 방어 참고 산출물로만 둔다. | model registry seed, deployment seed, cold k80 joblib freeze/parity |
 | 신규 작가 후보 | 사용자 신규 작가 후보 제출을 M1에 포함한다. 따라서 SQL view/export만으로 시작하지 않고 물리 후보 큐 테이블을 1차 DDL에 포함한다. | physical candidate queue table, public submit API |
 | 서버 이미지 / 모델 전달 | 모델 artifact는 이미지에 굽지 않고 object storage/registry에서 런타임 pull한다(§3.11). API 이미지는 `python:3.11-slim`(모델/데이터 미포함), 프론트는 React SPA→nginx 정적. 모델 교체는 deployment 행으로 하고 이미지 rebuild를 요구하지 않는다. | Dockerfile/Dockerfile.frontend, docker-compose, startup artifact loader, `.dockerignore` |
 
@@ -150,7 +150,7 @@ MySQL 8.0 + 명시 SQL migration
 
 Cold k80 joblib 적용 산출물:
 
-1. `models/track6/cold_k80_conservative_official_v0.1_candidate/runtime_store.joblib`
+1. `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/runtime_store.joblib`
 2. predictor entrypoint: `predict_cold_k80_conservative_v0_1.py` 또는 동등한 import 가능한 predictor module
 3. feature schema/order, policy thresholds, model metadata를 담은 manifest 또는 model card
 4. fixed test parity report
@@ -198,7 +198,7 @@ Cold k80 joblib 적용 산출물:
 
 확정: 모델 artifact는 이미지에 굽지 않고 object storage/registry에서 런타임 로드한다. (코덱스 의견 + 검토 합의)
 
-기존 레포의 `Dockerfile.api`는 모델(.cbm/.json/parquet)을 이미지에 COPY로 굽지만, Track6는 §3.6 joblib serving adapter와 `price_model_registry`/`price_model_deployment` 테이블 레이어가 "이미지 rebuild 없이 active deployment를 바꾼다"를 전제한다. 모델을 이미지에 구우면 이 레이어가 무의미해지므로, Track6 서버 이미지는 기존 패턴을 그대로 답습하지 않는다.
+기존 레포의 `Dockerfile.api`는 모델(.cbm/.json/parquet)을 이미지에 COPY로 굽지만, 작품 가격 데이터 플랫폼은 §3.6 joblib serving adapter와 `price_model_registry`/`price_model_deployment` 테이블 레이어가 "이미지 rebuild 없이 active deployment를 바꾼다"를 전제한다. 모델을 이미지에 구우면 이 레이어가 무의미해지므로, 작품 가격 데이터 플랫폼 서버 이미지는 기존 패턴을 그대로 답습하지 않는다.
 
 모델 artifact 전달:
 
@@ -214,8 +214,8 @@ Cold k80 joblib 적용 산출물:
 |---|---|
 | API 이미지 | `python:3.11-slim` 멀티스테이지(기존 `Dockerfile.api` 패턴을 정리해 재사용). 모델/데이터 artifact는 COPY하지 않음. non-root 실행, pinned requirements/lockfile, healthcheck. |
 | 프론트 이미지 | React + TypeScript 빌드(멀티스테이지 node build) → nginx 정적 서빙(기존 `Dockerfile` 방향 유지, 어드민엔 SSR 불필요). |
-| dev 오케스트레이션 | `docker-compose` 1개: `track6-api` + `track6-frontend` + `mysql:8.0`(migration/seed) + `minio`(S3 호환 artifact/raw payload). Kubernetes는 M1 범위 아님. |
-| 이미지 태그 | API=`track6-api:<git_sha>`, 프론트=UI 빌드 버전. 모델 정체성은 `model_version`/`artifact_uri`/checksum/`deployment_id`로 분리한다. 배포 로그에 `api_image_sha`와 `deployment_id`를 함께 남기되, 모델 교체가 이미지 태그를 바꾸지 않는다. |
+| dev 오케스트레이션 | `docker-compose` 1개: `art-price-api` + `art-price-frontend` + `mysql:8.0`(migration/seed) + `minio`(S3 호환 artifact/raw payload). Kubernetes는 M1 범위 아님. |
+| 이미지 태그 | API=`art-price-api:<git_sha>`, 프론트=UI 빌드 버전. 모델 정체성은 `model_version`/`artifact_uri`/checksum/`deployment_id`로 분리한다. 배포 로그에 `api_image_sha`와 `deployment_id`를 함께 남기되, 모델 교체가 이미지 태그를 바꾸지 않는다. |
 
 기존 `Dockerfile.api`에서 가져오지 말아야 할 것([RISK]):
 
@@ -223,14 +223,14 @@ Cold k80 joblib 적용 산출물:
 - `requirements-api.txt`가 `>=` 부동 핀 → 재현성 깨짐. lock 또는 `==` 고정으로 전환
 - `.dockerignore` 없음 → build context에 대용량 data/model 트리 유입 위험
 - root 실행 → non-root user 지정
-- 모델 선택을 이미지 env 기본값(예: `SOURCE_ROUTER_MODE`)에 섞기 → deployment 테이블 밖의 숨은 런타임 동작. Track6는 모델 선택을 env가 아니라 deployment 행으로만 통제
+- 모델 선택을 이미지 env 기본값(예: `SOURCE_ROUTER_MODE`)에 섞기 → deployment 테이블 밖의 숨은 런타임 동작. 작품 가격 데이터 플랫폼은 모델 선택을 env가 아니라 deployment 행으로만 통제
 
 ## 4. Phase 0에서 바로 만들어야 할 산출물
 
-1. `docs/track6/data_collection/openapi/track6_data_collection_v1.yaml`
-2. `docs/track6/data_collection/mysql/001_track6_data_collection_core.up.sql`
-3. `docs/track6/data_collection/mysql/001_track6_data_collection_core.down.sql`
-4. `docs/track6/data_collection/mysql/002_track6_data_collection_seed_operational_parameters.up.sql`
+1. `projects/art-price-data-platform/docs/openapi/art_price_data_platform_v1.yaml`
+2. `projects/art-price-data-platform/docs/mysql/001_art_price_data_platform_core.up.sql`
+3. `projects/art-price-data-platform/docs/mysql/001_art_price_data_platform_core.down.sql`
+4. `projects/art-price-data-platform/docs/mysql/002_art_price_data_platform_seed_operational_parameters.up.sql`
 5. API enum/status/error/idempotency matrix
 6. anonymous session + admin JWT auth fixture
 7. object storage key convention test fixture

@@ -1,10 +1,10 @@
-# Track6 데이터 수집/표준화/운영 1차 개발 로드맵
+# 작품 가격 데이터 플랫폼 1차 개발 로드맵
 
 작성일: 2026-06-25
 
 ## 1. 목적
 
-이 문서는 `docs/track6/data_collection/` 문서 세트 전체를 **1차 개발 범위**로 보고, 실제 구현 순서와 산출물을 고정하기 위한 로드맵이다.
+이 문서는 `projects/art-price-data-platform/docs/` 문서 세트 전체를 **1차 개발 범위**로 보고, 실제 구현 순서와 산출물을 고정하기 위한 로드맵이다.
 
 이 문서는 범위를 줄이는 MVP 문서가 아니다. 기존 설계 문서의 기능 범위를 유지하되, 개발자가 어떤 순서로 구현하고 어떤 산출물이 준비되어야 다음 단계로 넘어갈 수 있는지 명확히 한다.
 
@@ -50,7 +50,14 @@
 | `data_collection_service_scenarios_20260625.md` | 사용자/운영자/job 시나리오 |
 | `user_admin_api_plan_20260625.md` | API 기능과 request/response 기준 |
 | `user_admin_screen_structure_plan_20260625.md` | 사용자/어드민 화면 구조와 버튼/상태 기준 |
+| `user_frontend_screen_spec_20260625.md` | 사용자 가격 예측 화면 상세 입력/결과/상태 기준 |
+| `admin_screen_detail_spec_20260625.md` | 어드민 화면별 필드/액션/API 매핑 상세 기준 |
+| `frontend_state_error_ux_spec_20260625.md` | loading/empty/error/claim/conflict/freshness 표시 기준 |
+| `frontend_component_guidelines_20260625.md` | 프론트 공통 컴포넌트 설계 기준 |
+| `frontend_api_mock_fixtures_20260625.md` | API mock/fixture 파일 구조와 예시 응답 기준 |
+| `frontend_e2e_test_plan_20260625.md` | 사용자/어드민 E2E 검증 시나리오 |
 | `operational_parameters_20260625.md` | 운영 임계치/권한/보존/스케줄 정책 상수 SoT |
+| `development_prestart_decisions_20260625.md` | 개발 착수 전 확정할 API/DB/auth/storage/model 연결 기본 조합과 선택지 |
 
 ## 4. 1차 개발 기준 결정
 
@@ -93,11 +100,11 @@ Phase는 "레이어 완성" 순서지만, 모든 레이어를 4원천·전체 UI
 ```text
 Art1 raw 적재
   -> interpreted/normalized (Art1만)
-  -> 작가 identity 후보 + 검수 큐 1종(작가명) 처리
+  -> 작가명 alias + 사용자 신규 작가 후보 제출 + 최소 identity 후보 + 검수 큐 최소 2경로(작가명 1건 + 신규 후보 1건)
   -> snapshot 확정요청 -> 생성승인 -> 서빙승인
-  -> model registry/deployment active
+  -> joblib 모델 번들/feature store 연결 -> model registry/deployment active
   -> 사용자 예측 API + 예측 결과 화면
-  -> 어드민 수집 대시보드 + 작가명 검수 큐 화면
+  -> 어드민 수집 대시보드 + 작가명 검수 큐 + 신규 작가 후보 최소 큐 화면
 ```
 
 M1 완료 기준:
@@ -105,8 +112,10 @@ M1 완료 기준:
 - Art1 1원천 데이터로 사용자 예측 API가 active deployment 기준 응답을 반환한다.
 - 예측 결과 화면에 가격/신뢰도/as_of/1차 시장 카드가 표시된다(freshness 경고/카드 숨김은 M2).
 - 어드민이 화면에서 Art1 run 상태를 보고 작가명 검수 1건을 처리할 수 있다.
+- 사용자가 신규 작가 후보를 제출할 수 있고, 어드민이 신규 후보 최소 큐 1건을 처리할 수 있다. `approve`로 최종 artist_key를 생성하는 경로는 데이터 관리자 권한으로만 통과한다.
+- M1 모델 경로는 기존 예측 API 호출이 아니라 joblib 모델 번들을 registry/deployment에 등록해 active deployment로 둔다. Warm 기본 후보는 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`이고, Cold 기본 후보는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 산출물이다. Cold k80은 fixed test parity/joblib smoke 통과 후 active deployment에 등록한다. `projects/art-price-data-platform/models/cold_prediction_v0.5_operational`은 M1 적용 fallback이 아니라 과거 raw-input p95 방어 참고 산출물이다. 어떤 방식을 쓰든 prediction log가 `model_version`/`deployment_id`/`route`를 남겨야 한다.
 - 스키마/상태값/합성키 정합성이 실데이터로 한 번 깨져보고 고정된다.
-- M1 범위는 **검수 큐 1종·원천 1개·화면 최소 경로**로 한정한다(나머지는 M2).
+- M1 범위는 **원천 1개·사용자 예측 최소 경로·작가명 큐 1건·신규 작가 후보 큐 1건**으로 한정한다. 작품 품질/artist_key 연결/freshness/나머지 원천/전체 검수 큐는 M2에서 확장한다.
 
 ### M2. 폭 확장 (운영 가능한 1차 완성)
 
@@ -128,8 +137,8 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 
 산출물:
 
-- `mysql/` migration 초안
-- `openapi/track6_data_collection_v1.yaml`
+- `projects/art-price-data-platform/docs/mysql/` migration 초안
+- `projects/art-price-data-platform/docs/openapi/art_price_data_platform_v1.yaml`
 - API enum/status/error/idempotency 규칙 표
 - 사용자 API 인증/rate limit/abuse 방지 정책
 - 개인정보 suppression/do-not-train/do-not-show 처리 기준
@@ -312,6 +321,12 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 6. 1차 시장 가격 카드
 7. freshness 경고/카드 숨김 처리
 
+상세 기준:
+
+- 화면별 필드/검증/결과 표시는 `user_frontend_screen_spec_20260625.md`를 따른다.
+- loading/empty/error/freshness 상태 표시는 `frontend_state_error_ux_spec_20260625.md`를 따른다.
+- API mock과 화면 fixture는 `frontend_api_mock_fixtures_20260625.md`를 따른다.
+
 어드민 화면 구현 순서:
 
 1. 수집 대시보드
@@ -323,6 +338,12 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 7. snapshot 후보 확인과 승인
 8. 모델 버전/배포 관리
 9. 운영 로그/알림
+
+상세 기준:
+
+- 화면별 필드/액션/API 매핑은 `admin_screen_detail_spec_20260625.md`를 따른다.
+- 공통 badge/table/filter/dialog/decision 컴포넌트는 `frontend_component_guidelines_20260625.md`를 따른다.
+- Phase 7 완료 검증은 `frontend_e2e_test_plan_20260625.md`의 M1/M2 시나리오를 따른다.
 
 완료 기준:
 

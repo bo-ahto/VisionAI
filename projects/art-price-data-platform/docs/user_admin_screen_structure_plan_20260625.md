@@ -16,8 +16,15 @@
 
 관련 문서:
 
+- [1차 개발 로드맵](first_development_roadmap_20260625.md)
 - [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
 - [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
+- [사용자 화면 상세 명세](user_frontend_screen_spec_20260625.md)
+- [어드민 화면 상세 명세](admin_screen_detail_spec_20260625.md)
+- [프론트 상태/에러 UX 기준](frontend_state_error_ux_spec_20260625.md)
+- [프론트 컴포넌트 기준](frontend_component_guidelines_20260625.md)
+- [프론트 API Mock / Fixture 기준](frontend_api_mock_fixtures_20260625.md)
+- [프론트 E2E 테스트 계획](frontend_e2e_test_plan_20260625.md)
 - [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
@@ -374,10 +381,12 @@ API 기획
 
 처리 버튼:
 
-- 기존 `artist_key`에 연결 승인
-- 후보 반려
-- 보류
-- 신규 작가 후보로 전환
+| 버튼 | 최소 권한 |
+|---|---|
+| 기존 `artist_key`에 연결 승인 | 데이터 관리자 |
+| 후보 반려 | 운영 담당자 |
+| 보류 | 운영 담당자 |
+| 신규 작가 후보로 전환 | 운영 담당자 |
 
 기록:
 
@@ -411,12 +420,12 @@ API 기획
 
 처리는 신규 작가 후보 결정 API(`POST /api/v1/admin/review/new-artists/{candidate_id}/decision`)에 매핑된다.
 
-| 버튼 | 결과 | API 매핑 |
-|---|---|---|
-| 신규 artist_key 생성 승인 | 최종 `artist_key` 생성 | `decision=approve` |
-| 기존 후보 재검색 | 이름/생년 조건으로 다시 검색 | `decision=recheck` |
-| 보류 | 검수 대기 유지 | `decision=hold` |
-| 반려 | 신규 작가로 쓰지 않음 | `decision=reject` |
+| 버튼 | 결과 | API 매핑 | 최소 권한 |
+|---|---|---|---|
+| 신규 artist_key 생성 승인 | 최종 `artist_key` 생성 | `decision=approve` | 데이터 관리자 |
+| 기존 후보 재검색 | 이름/생년 조건으로 다시 검색 | `decision=recheck` | 운영 담당자 |
+| 보류 | 검수 대기 유지 | `decision=hold` | 운영 담당자 |
+| 반려 | 신규 작가로 쓰지 않음 | `decision=reject` | 운영 담당자 |
 
 이 화면의 4개 버튼은 신규 작가 후보 결정 API의 decision 동사와 1:1로 대응한다: 신규 artist_key 생성 승인=`approve`, 기존 후보 재검색=`recheck`, 보류=`hold`, 반려=`reject`. `decision=approve`만 최종 `artist_key`를 생성하고, 나머지 3개는 키를 만들지 않는다. "기존 후보 재검색(`recheck`)"은 새 artist_key를 만들기 전에 동일 작가가 기존에 있는지 이름/생년 조건으로 다시 확인하는 동작이다.
 
@@ -453,12 +462,12 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 
 | 화면 액션 | 권한 | API 액션 |
 |---|---|---|
-| snapshot 후보 확정 요청 | 운영자 | 확정 요청(snapshot 후보 확정 요청 액션) |
+| snapshot 후보 확정 요청 | 운영 담당자 | 확정 요청(snapshot 후보 확정 요청 액션) |
 | snapshot 생성 승인 | 데이터 관리자 | 생성 승인(`POST /api/v1/admin/snapshots`) |
 | snapshot 서빙 승인 | 데이터 관리자 | 서빙 승인(`POST /api/v1/admin/snapshots/{snapshot_id}/approve`) |
-| 보류 | 운영자 | 후보 보류 액션 |
+| 보류 | 운영 담당자 | 후보 보류 액션 |
 | 보류 사유 입력 | 운영자 / 데이터 관리자 | 액션 `reason` 필드 |
-| 후보 목록 다운로드 | 운영자 | `GET /api/v1/admin/snapshots/candidates/items` |
+| 후보 목록 다운로드 | 운영 담당자 | `GET /api/v1/admin/snapshots/candidates/items` |
 
 - 운영자의 "확정 요청", 데이터 관리자의 "생성 승인", 데이터 관리자의 "서빙 승인"은 모두 별도 액션이며, 한 사람이 여러 단계를 동시에 끝내지 않는다. 화면의 세 버튼은 API의 세 액션(확정 요청, 생성 승인, 서빙 승인)과 1:1로 대응한다.
 - "생성 승인"은 빌드만 완료한 `generated`(비서빙) snapshot을 만든다. `generated`는 빌드 완료 상태일 뿐 사용자 서빙/노출 기준이 아니다.
@@ -496,17 +505,18 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 | 역할 | 가능 작업 |
 |---|---|
 | 일반 사용자 | 가격 예측 입력, 작가 검색/선택, 신규 작가 후보 제출 |
-| 운영자 | 검수 큐 처리, 보류/제외, snapshot 후보 확인 |
-| 데이터 관리자 | 신규 artist_key 생성 승인, 기존 artist_key 연결 확정, alias 정책 관리, snapshot 생성 승인 |
-| 개발자 | crawler/parser 장애 확인, 수집 run 재처리, 기술 로그 확인 |
-| 슈퍼유저 | 운영 초기 전용 관리자. 운영자, 데이터 관리자, 개발자 화면 기능을 모두 사용 |
+| 운영 담당자 | 수집 run 확인/재수집 요청, 검수 큐 처리, 보류/제외, snapshot 후보 확인 |
+| 데이터 분석가 | 수동 CSV 업로드/매핑, snapshot 품질/분포 검토, 학습 피처 승격 판단 |
+| 데이터 관리자 | 원천 등록/수정, 신규 artist_key 생성 승인, 기존 artist_key 연결 확정, alias 정책 관리, snapshot 생성/서빙 승인, 모델 승격/롤백 |
+| 개발자 | crawler/parser 장애 확인, migration/배포 점검, 기술 로그 확인 |
+| 슈퍼유저 | 운영 초기 전용 관리자. 운영 담당자, 데이터 분석가, 데이터 관리자, 개발자 화면 기능을 모두 사용 |
 
 권한 원칙:
 
 - 일반 사용자는 최종 `artist_key`를 생성할 수 없다.
-- 운영자는 검수 상태를 변경하고 연결 후보를 검토할 수 있지만, `artist_identity`에 쓰는 최종 확정(신규 artist_key 생성·기존 키 연결 확정)은 데이터 관리자 권한으로 제한한다.
-- 운영 초기에는 슈퍼유저가 운영자/데이터 관리자/개발자 작업을 모두 수행할 수 있다. 다만 화면에는 실제 처리자, 처리시각, 처리 사유가 남아야 하며, 추후 역할 분리 시 같은 이력이 그대로 추적 가능해야 한다.
-- 슈퍼유저는 초기 운영 편의를 위한 임시 통합 권한이다. 장기 운영에서는 운영자/데이터 관리자/개발자 권한을 분리한다.
+- 운영 담당자는 검수 상태를 변경하고 연결 후보를 검토할 수 있지만, `artist_identity`에 쓰는 최종 확정(신규 artist_key 생성·기존 키 연결 확정)은 데이터 관리자 권한으로 제한한다.
+- 운영 초기에는 슈퍼유저가 운영 담당자/데이터 분석가/데이터 관리자/개발자 작업을 모두 수행할 수 있다. 다만 화면에는 실제 처리자, 처리시각, 처리 사유가 남아야 하며, 추후 역할 분리 시 같은 이력이 그대로 추적 가능해야 한다.
+- 슈퍼유저는 초기 운영 편의를 위한 임시 통합 권한이다. 장기 운영에서는 운영 담당자/데이터 분석가/데이터 관리자/개발자 권한을 분리한다.
 - 모든 승인/반려/보류는 처리자와 처리시각을 남긴다.
 
 ## 6. 화면 상태 기준

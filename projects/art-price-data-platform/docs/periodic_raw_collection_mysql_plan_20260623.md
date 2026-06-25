@@ -573,7 +573,7 @@ URL/API 요청 단위 원본을 저장한다.
 raw 무한 증가 대비:
 
 - `raw_fetch`와 raw 레이어 테이블은 `snapshot_date`(또는 월) 기준 파티셔닝을 적용해 조회/삭제 비용을 낮춘다.
-- raw payload(object storage)와 DB raw row의 보존기간(기본값 180일(6개월), 운영 파라미터 §D `RAW-RETENTION`)을 정하고, 만료분은 일괄 정리한다. 비가역 identity 결정과 snapshot은 보존기간 정리 대상이 아니다.
+- raw payload(object storage)와 DB raw row의 보존기간(기본값 180일(6개월), 운영 파라미터 §D `RAW-RETENTION`)을 정한다. 1차 개발은 만료 대상 식별과 수동 운영 절차까지 구현하고, 만료분 자동 purge job은 후속 고도화로 둔다. 비가역 identity 결정과 snapshot은 보존기간 정리 대상이 아니다.
 
 ### 5.3.1 manual_import_file
 
@@ -1008,7 +1008,7 @@ raw에서 바로 공통 표준으로 가지 않고, 사이트별 원문을 먼�
 - 이벤트는 수정/삭제하지 않고 append만 한다.
 - 자동 확정(`auto_approved`)도 `actor_role=system`으로 1건 남긴다.
 - 운영 초기 슈퍼유저가 신규 `artist_key` 생성, 기존 키 연결 확정, 병합 등 데이터 관리자 권한 작업을 수행한 경우 `actor_role=superuser`로 남긴다. 이력에는 실제 처리자의 `actor_id`와 `reason`을 반드시 기록한다.
-- 개인정보/삭제 요청으로 작가의 서비스 노출을 억제/해제하면 `event_type=suppress`/`unsuppress`로 남긴다(raw 물리 삭제 정책은 정식 정책에서 확정).
+- 개인정보/삭제 요청으로 작가의 서비스 노출을 억제/해제하면 `event_type=suppress`/`unsuppress`로 남긴다. raw 기본 보존기간은 운영 파라미터 §D `RAW-RETENTION`을 따르며, 예외적 물리 삭제 범위와 자동 purge job은 정식 런칭 전 정책 보강 항목으로 둔다.
 - API `GET /api/v1/admin/audit-logs`의 `entity_type=artist_identity` 조회는 이 테이블을 source로 쓴다. 다른 엔티티의 변경 이력은 각 테이블의 승인/반려 필드를 그대로 사용한다(단, 작품 필드 단위 변경은 §5.8.1 참조).
 
 ### 5.12.2 artist_identity_version / artist_key_membership_history

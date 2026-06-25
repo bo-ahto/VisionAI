@@ -1,10 +1,10 @@
-# Track6 어드민 화면 상세 명세
+# 작품 가격 데이터 플랫폼 어드민 화면 상세 명세
 
 작성일: 2026-06-25
 
 ## 1. 문서 목적
 
-이 문서는 Track6 데이터 수집/표준화/검수/운영 어드민 화면을 실제 프론트엔드 개발 단위로 구체화한다.
+이 문서는 작품 가격 데이터 플랫폼/표준화/검수/운영 어드민 화면을 실제 프론트엔드 개발 단위로 구체화한다.
 
 상위 화면 구조는 [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)을 따르고, API 기준은 [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)을 따른다.
 
@@ -24,7 +24,7 @@
 권장 route prefix:
 
 ```text
-/admin/track6
+/admin/art-price-data
 ```
 
 공통 레이아웃:
@@ -39,22 +39,22 @@
 
 | 메뉴 | Route | 최소 권한 |
 |---|---|---|
-| 수집 대시보드 | `/admin/track6/collection-runs` | 운영 담당자 |
-| 수집 run 상세 | `/admin/track6/collection-runs/:run_id` | 운영 담당자 |
-| 작품 품질 검수 | `/admin/track6/review/artworks` | 운영 담당자 |
-| 작가명 검수 | `/admin/track6/review/artist-names` | 운영 담당자 |
-| artist_key 연결 검수 | `/admin/track6/review/artist-identities` | 운영 담당자(조회/triage), 키 연결 확정은 데이터 관리자 |
-| 신규 작가 후보 | `/admin/track6/review/new-artists` | 운영 담당자(조회/triage), 키 생성은 데이터 관리자 |
-| snapshot 후보/승인 | `/admin/track6/snapshots` | 운영 담당자 |
-| 모델 배포 | `/admin/track6/model-deployments` | 데이터 관리자 |
-| 운영 로그/알림 | `/admin/track6/audit-logs` | 데이터 관리자 |
+| 수집 대시보드 | `/admin/art-price-data/collection-runs` | 운영 담당자 |
+| 수집 run 상세 | `/admin/art-price-data/collection-runs/:run_id` | 운영 담당자 |
+| 작품 품질 검수 | `/admin/art-price-data/review/artworks` | 운영 담당자 |
+| 작가명 검수 | `/admin/art-price-data/review/artist-names` | 운영 담당자 |
+| artist_key 연결 검수 | `/admin/art-price-data/review/artist-identities` | 운영 담당자(조회/triage), 키 연결 확정은 데이터 관리자 |
+| 신규 작가 후보 | `/admin/art-price-data/review/new-artists` | 운영 담당자(조회/triage), 키 생성은 데이터 관리자 |
+| snapshot 후보/승인 | `/admin/art-price-data/snapshots` | 운영 담당자 |
+| 모델 배포 | `/admin/art-price-data/model-deployments` | 데이터 관리자 |
+| 운영 로그/알림 | `/admin/art-price-data/audit-logs` | 데이터 관리자 |
 
 ## 3. 수집 대시보드
 
 Route:
 
 ```text
-/admin/track6/collection-runs
+/admin/art-price-data/collection-runs
 ```
 
 API:
@@ -91,7 +91,7 @@ API:
 Route:
 
 ```text
-/admin/track6/collection-runs/:run_id
+/admin/art-price-data/collection-runs/:run_id
 ```
 
 API:
@@ -121,7 +121,7 @@ API:
 Route:
 
 ```text
-/admin/track6/review/artworks
+/admin/art-price-data/review/artworks
 ```
 
 API:
@@ -178,7 +178,7 @@ API:
 Route:
 
 ```text
-/admin/track6/review/artist-names
+/admin/art-price-data/review/artist-names
 ```
 
 API:
@@ -227,7 +227,7 @@ API:
 Route:
 
 ```text
-/admin/track6/review/artist-identities
+/admin/art-price-data/review/artist-identities
 ```
 
 API:
@@ -264,7 +264,7 @@ API:
 Route:
 
 ```text
-/admin/track6/review/new-artists
+/admin/art-price-data/review/new-artists
 ```
 
 API:
@@ -296,7 +296,7 @@ API:
 Route:
 
 ```text
-/admin/track6/snapshots
+/admin/art-price-data/snapshots
 ```
 
 API:
@@ -352,7 +352,7 @@ snapshot 계열은 `snapshot_request`와 `artwork_snapshot` 두 엔터티로 나
 Route:
 
 ```text
-/admin/track6/model-deployments
+/admin/art-price-data/model-deployments
 ```
 
 API:
@@ -383,7 +383,7 @@ API:
 Route:
 
 ```text
-/admin/track6/audit-logs
+/admin/art-price-data/audit-logs
 ```
 
 API:

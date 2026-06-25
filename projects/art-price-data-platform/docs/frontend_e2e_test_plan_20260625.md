@@ -1,4 +1,4 @@
-# Track6 프론트 E2E 테스트 계획
+# 작품 가격 데이터 플랫폼 프론트 E2E 테스트 계획
 
 작성일: 2026-06-25
 
@@ -46,7 +46,7 @@
 
 절차:
 
-1. `/admin/track6/review/artist-names` 진입
+1. `/admin/art-price-data/review/artist-names` 진입
 2. 검수 row 선택
 3. 상세 패널 확인
 4. 표시명 승인
@@ -63,7 +63,7 @@
 
 절차:
 
-1. `/admin/track6/collection-runs` 진입
+1. `/admin/art-price-data/collection-runs` 진입
 2. Art1 source 카드 확인
 3. run 상세 이동
 

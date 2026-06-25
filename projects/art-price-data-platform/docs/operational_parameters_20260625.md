@@ -1,6 +1,6 @@
-# Track6 데이터 수집 운영 파라미터(정책 상수) 기준
+# 작품 가격 데이터 플랫폼 운영 파라미터(정책 상수) 기준
 
-이 문서는 `docs/track6/data_collection/` 설계 문서 세트에서 "확정 필요"로 두었던
+이 문서는 `projects/art-price-data-platform/docs/` 설계 문서 세트에서 "확정 필요"로 두었던
 운영 파라미터(임계치·기간·정책값)를 **한 곳에 모은 단일 기준**이다.
 
 - 각 설계 문서는 이 표의 **파라미터 키**(예: `FRESH-WARN-N`)를 참조한다. 값을 바꿀 때는 **이 문서만** 수정한다.
@@ -21,7 +21,7 @@
 ### A-1. required_role 매핑 (엔드포인트 최소 권한)
 
 역할 위계: 개발자 < 운영 담당자(운영자) < 데이터 분석가 < 데이터 관리자.
-"최소 권한"은 해당 역할 **이상**을 의미한다(데이터 관리자는 하위 권한 포함).
+"최소 권한"은 해당 역할 **이상**을 의미한다(데이터 관리자는 하위 권한 포함). 1차는 이 상속형 RBAC만 구현하고, 직무별 capability matrix는 후속으로 분리한다.
 
 | 엔드포인트/액션(절) | 최소 권한 |
 |----------------------|-----------|
@@ -31,8 +31,10 @@
 | 수동 CSV 업로드/매핑 확정(6.3/6.5) | 데이터 분석가 |
 | 작품 품질 검수(8.2 approve/patch/hold/exclude) | 운영 담당자 |
 | 작가명 검수(8.4 approve/add_alias/hold/reject) | 운영 담당자 |
-| artist identity 연결 검수(8.6) | 데이터 관리자 |
-| 신규 artist_key 생성 결정(8.8 decision) | 데이터 관리자 |
+| artist identity 연결 검수(8.6 `reject_candidate`/`hold`/`move_to_new_artist_candidate`) | 운영 담당자 |
+| artist identity 기존 키 연결 확정(8.6 `approve_existing_artist_key`) | 데이터 관리자 |
+| 신규 작가 후보 검토(8.8 `recheck`/`hold`/`reject`) | 운영 담당자 |
+| 신규 artist_key 생성 결정(8.8 `approve`) | 데이터 관리자 |
 | snapshot 확정요청(9.3.1) | 운영 담당자 |
 | snapshot 생성승인(9.3.2) | 데이터 관리자 |
 | snapshot 서빙승인(9.3.3) | 데이터 관리자 |
@@ -72,7 +74,7 @@
 
 | 키 | 항목 | 기본값 | 상태 | 근거 / 사용처 |
 |----|------|--------|------|---------------|
-| `RAW-RETENTION` | raw payload(object storage)+DB raw row 보존기간 | 180일(6개월) | 정책 | 만료분 일괄 정리. 비가역 identity 결정·snapshot은 정리 제외(영구). periodic §5.3 |
+| `RAW-RETENTION` | raw payload(object storage)+DB raw row 보존기간 | 180일(6개월) | 정책 | 보존기간 기준값. 1차는 만료 대상 식별/수동 운영 절차까지 구현하고, 자동 purge job은 후속. 비가역 identity 결정·snapshot은 정리 제외(영구). periodic §5.3 |
 | `SECRET-DENYLIST` | fingerprint/저장 시 마스킹할 비밀 파라미터 | `cafe24_app_key, api_key, access_token, token, secret, signature, sig, key, password` | 기준 | url_sanitized/fingerprint에서 제외. periodic §5.3 |
 | `TRACKING-DENYLIST` | fingerprint에서 제거할 휘발성 파라미터 | `utm_source, utm_medium, utm_campaign, utm_term, utm_content, fbclid, gclid, _ga, ref` | 기준 | 동일 요청이 다른 hash 되는 것 방지. periodic §5.3 |
 | `KEY-ROTATION` | 자격증명 회전 주기 | 90일 | 정책 | 신규 발급→무중단 교체→구 키 폐기. periodic §5.20 |

@@ -1,10 +1,10 @@
-# Track6 데이터 수집/표준화/운영 PRD
+# 작품 가격 데이터 플랫폼 PRD
 
 작성일: 2026-06-25
 
 ## 1. 문서 목적
 
-이 PRD는 Track6 가격 예측 서비스의 데이터 수집/표준화/운영 기능을 왜 만들고, 1차 개발에서 어떤 사용자 가치와 운영 기준을 만족해야 하는지 정의한다.
+이 PRD는 작품 가격 예측 서비스의 데이터 수집/표준화/운영 기능을 왜 만들고, 1차 개발에서 어떤 사용자 가치와 운영 기준을 만족해야 하는지 정의한다.
 
 상세 DB/API/화면/운영 설계는 관련 문서를 따른다. 이 문서는 제품 목표, 사용자, 기능 요구사항, 성공 기준을 한 곳에서 정리한다.
 
@@ -14,6 +14,9 @@
 - [1차 개발 백로그](first_development_backlog_20260625.md)
 - [데이터 수집 서비스 시나리오](data_collection_service_scenarios_20260625.md)
 - [사용자 / 어드민 화면 구조 및 기능 기획](user_admin_screen_structure_plan_20260625.md)
+- [사용자 화면 상세 명세](user_frontend_screen_spec_20260625.md)
+- [어드민 화면 상세 명세](admin_screen_detail_spec_20260625.md)
+- [프론트 상태/에러 UX 기준](frontend_state_error_ux_spec_20260625.md)
 - [사용자 / 어드민 API 기획](user_admin_api_plan_20260625.md)
 - [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
 - [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
@@ -22,7 +25,7 @@
 
 ## 2. 문제 정의
 
-Track6 가격 예측은 작품/작가/시장 데이터를 기준으로 동작하지만, 현재 데이터 수집과 표준화가 운영 서비스 기준으로 충분히 고정되어 있지 않다.
+작품 가격 예측은 작품/작가/시장 데이터를 기준으로 동작하지만, 현재 데이터 수집과 표준화가 운영 서비스 기준으로 충분히 고정되어 있지 않다.
 
 해결해야 할 문제:
 
@@ -54,7 +57,7 @@ Track6 가격 예측은 작품/작가/시장 데이터를 기준으로 동작하
 | 개발자 | 수집/파서/API 장애를 진단 | run 로그, raw_fetch, parser error, watchdog/알림 확인 |
 | 데이터 분석가 | 학습 snapshot과 품질을 검토 | snapshot 후보, export, 품질 지표, 모델 학습 데이터 추적 |
 
-역할 위계는 개발자 < 운영 담당자 < 데이터 분석가 < 데이터 관리자이며, 엔드포인트별 최소 권한 매핑은 [운영 파라미터](operational_parameters_20260625.md) §A-1을 SoT로 따른다.
+역할 위계는 개발자 < 운영 담당자 < 데이터 분석가 < 데이터 관리자이며, 엔드포인트별 최소 권한 매핑은 [운영 파라미터](operational_parameters_20260625.md) §A-1을 SoT로 따른다. 1차 RBAC는 상위 역할이 하위 역할의 권한을 포함하는 단순 모델이다. 장기적으로 직무별 capability 분리는 후속 고도화로 둔다.
 
 ## 5. 1차 개발 범위
 
@@ -142,9 +145,9 @@ Track6 가격 예측은 작품/작가/시장 데이터를 기준으로 동작하
 - 4개 외 원천 추가 및 자동 온보딩 UI
 - 모델 자동 재학습/스케줄 재배포 (1차는 수동 승격/롤백만)
 - canonical artwork 단위 merge (1차는 작가 identity 단위까지만)
-- 조직 SSO 연동과 세분화된 RBAC (1차는 §4 4단계 역할 위계만)
+- 조직 SSO 연동과 세분화된 capability RBAC (1차는 §4 상속형 역할 위계만)
 - 고급 대시보드 시각화/BI (1차는 운영 처리에 필요한 표/상태 표시까지만)
-- raw 물리 삭제 정책 자동화 (1차는 보존기간 정책값과 suppression 차단까지만, `RAW-RETENTION` 일괄 정리 자동화는 후속)
+- raw 물리 삭제 job 자동화 (1차는 `RAW-RETENTION` 보존기간 정책값과 수동/운영 절차, suppression 차단까지 구현한다. 만료분 일괄 purge 자동 job은 후속)
 
 ## 6. 후속 고도화
 
@@ -231,7 +234,7 @@ Track6 가격 예측은 작품/작가/시장 데이터를 기준으로 동작하
 | ID | 요구사항 | 설명 | 구현/검증 |
 |---|---|---|---|
 | NFR-01 | 재현성 | raw hash, collector_version, rules_version, snapshot_id, model_version으로 결과를 역추적한다. | E5-T05(deterministic), E9-T03 |
-| NFR-02 | 장애 격리 | 수집 DB 장애가 사용자 예측 API 장애로 직접 전파되지 않는다. | 로드맵 §4 설계 고정, E9-T09 |
+| NFR-02 | 장애 격리 | 수집 DB 장애가 사용자 예측 API 장애로 직접 전파되지 않는다. | 로드맵 §4 설계 고정, E9-T08 |
 | NFR-03 | 감사 가능성 | 주요 쓰기 액션은 actor/시각/사유/전후 상태를 남긴다. | E6-T01, E6-T10 |
 | NFR-04 | 멱등성 | 생성/승인 계열 API는 idempotency key 중복 호출을 안전하게 처리한다. | E6-T03 |
 | NFR-05 | 동시성 | 검수 decision은 expected status 또는 claim/lock으로 충돌을 막는다. (`REVIEW-CLAIM-TTL`) | E6-T03, E6-T07 |
@@ -272,12 +275,16 @@ Track6 가격 예측은 작품/작가/시장 데이터를 기준으로 동작하
 
 ## 12. 오픈 이슈
 
-아래 항목은 **구현 원칙(1차 포함 여부)이 아니라 남은 세부 파라미터/스키마 결정**이다. 원칙은 [로드맵](first_development_roadmap_20260625.md) §4 "1차 개발 기준 결정"에서 이미 확정했고(예: object storage 1차 채택, suppression 1차 지원, 인증은 `public`=무인증 아님), 이 표는 그 위에서 확정해야 할 값/형태만 추적한다.
+아래 항목은 **구현 원칙(1차 포함 여부)이 아니라 세부 파라미터/스키마 결정**이다. 2026-06-25 기준 기본 선택은 [개발 착수 전 결정안](development_prestart_decisions_20260625.md)을 따른다. 사용자가 별도 선택하지 않으면 아래 "권장 기본값"으로 Phase 0 산출물(DDL/OpenAPI/seed/test)을 작성한다.
 
-| 항목 | 결정 필요 내용 (확정된 원칙 위의 세부값) | 결정 시점 |
-|---|---|---|
-| 사용자 API 인증 | 인증 방식 자체가 미정(운영 파라미터 `AUTH-METHOD`는 어드민 전용), 익명 허용 여부, rate limit 수치, user/session 식별 범위 | Phase 0 |
-| 1차 시장 가격 카드 계산 | 최소 N, 이상치 제거, 매체 그룹핑, 호당 환산 기준 | Phase 0 |
-| suppression 스키마 | 컬럼 방식 vs 별도 테이블 방식, `RAW-RETENTION` 물리 삭제 정책과의 관계 | Phase 0 |
-| object storage | 로컬/클라우드 경로, 접근권한 (보존기간=`RAW-RETENTION` 확정, 1차 채택 확정) | Phase 1 |
-| 어드민 계정 | 초기 슈퍼유저 부트스트랩, 역할 분리 시점, 감사 로그 주체 | Phase 0 |
+| 항목 | 권장 기본값 | 사용자 선택이 필요한 경우 | 결정 시점 |
+|---|---|---|---|
+| 사용자 API 인증/남용 방지 | 사용자 로그인 없음. first-party 익명 세션 + session/IP rate limit. 완전 공개 API는 채택하지 않는다. | M1부터 사용자 로그인/회원 기능이 필요하면 로그인 필수안으로 변경 | Phase 0 |
+| 어드민 계정 | 제공 이메일/비밀번호 기반 admin user + JWT + 역할 claim. 초기 superuser는 개인 식별 가능한 계정으로 seed/CLI 생성. SSO는 후속 도입 | 조직 IdP/SSO를 M1부터 강제해야 하면 외부 IdP 우선안 선택 | Phase 0 |
+| suppression 스키마 | 별도 `suppression_rule` 테이블을 SoT로 두고 service display/model training/raw scope를 분리 | 컬럼-only 단순화가 필요하면 audit/범위 확장 리스크 승인 필요 | Phase 0 |
+| 1차 시장 가격 카드 계산 | 기존 가격 예측 `estimated_ho` nearest mapping, 최소 N=5, 매체별 N>=3, q05~q95 winsorized median/q25/q75 | 표본 부족 시 카드 숨김 기준을 더 강하게 둘지 정책 선택 | Phase 0 |
+| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 집계 테이블 생성. API는 active deployment training snapshot 기준 조회 | 실시간 feature store 계산을 원하면 latency/재현성 리스크 승인 필요 | Phase 0 |
+| 예측 API 연결 방식 | 기존 예측 API를 호출하지 않고 데이터 수집 서비스 내부 joblib serving adapter가 active deployment의 joblib artifact를 직접 로드 | 기존 가격 예측 API를 직접 확장/호출하려면 회귀 테스트 범위 확대 필요 | Phase 0 |
+| 신규 작가 후보 저장 방식 | 사용자 후보 제출을 M1에 포함하므로 물리 후보 큐 테이블을 1차 DDL에 포함 | 후보 제출을 M1에서 제외하면 SQL view/export로 축소 가능 | Phase 0/1 |
+| object storage | local dev backend + S3-compatible adapter/path convention. DB에는 URI/hash/size만 저장 | 특정 cloud provider/IAM을 M1부터 고정해야 하면 provider 직접 고정 | Phase 1 |
+| M1 모델 연결 | Warm은 `warm_lite_unified_current_joblib_v0.1_candidate`, Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `cold_k80_conservative_official_v0.1_candidate` joblib bundle로 freeze해 registry/deployment에 등록 | Cold k80 joblib freeze/parity가 막히면 M1 cold route는 보류하고 fallback은 별도 승인 필요. `cold_prediction_v0.5_operational`은 과거 raw-input p95 방어 참고 산출물 | Phase 5 |

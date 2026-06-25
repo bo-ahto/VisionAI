@@ -1,4 +1,4 @@
-# Track6 프론트 API Mock / Fixture 기준
+# 작품 가격 데이터 플랫폼 프론트 API Mock / Fixture 기준
 
 작성일: 2026-06-25
 
@@ -26,7 +26,7 @@
 ## 3. 권장 fixture 파일 구조
 
 ```text
-fixtures/track6/
+fixtures/art-price-data-platform/
   public/
     artists_search_success.json
     artists_search_multiple.json
@@ -119,6 +119,67 @@ fixtures/track6/
     "as_of": "2026-06-25T00:00:00Z",
     "data_reference_date": "2026-06-25"
   }
+}
+```
+
+### 4.3 예측 성공 - Cold
+
+미확정 작가 또는 작가 이력이 부족한 경우의 cold fixture다. 계산은 성공하지만 `review_required=true`로 검수 필요 사유를 함께 보여준다.
+
+```json
+{
+  "prediction_id": "pred_cold_123",
+  "predicted_price_krw": 1800000,
+  "display_price": "180만원",
+  "display_hodang_price": "18만원/호",
+  "confidence_label": "검수 필요",
+  "review_required": true,
+  "review_reasons": [
+    "artist_identity_unconfirmed"
+  ],
+  "model": {
+    "model_version": "official_v0_1_cold_k80_20260625_01",
+    "model_route": "cold",
+    "deployment_id": "deploy_cold_k80_20260625_01"
+  },
+  "artist": {
+    "artist_key": null,
+    "artist_candidate_id": "new_artist_candidate_123",
+    "display_name_ko": "신규 후보 작가",
+    "display_name_en": "New Candidate Artist"
+  },
+  "primary_market_summary": null
+}
+```
+
+### 4.4 예측 검수 필요 - 계산값 있음
+
+`review_required=true`는 실패 상태가 아니다. 계산값이 있으면 가격과 사유를 함께 표시한다.
+
+```json
+{
+  "prediction_id": "pred_review_123",
+  "predicted_price_krw": 2200000,
+  "display_price": "220만원",
+  "display_hodang_price": "22만원/호",
+  "confidence_label": "검수 필요",
+  "review_required": true,
+  "review_reasons": [
+    "artist_identity_unconfirmed",
+    "low_comparable_count"
+  ],
+  "model": {
+    "model_version": "official_v0_1_cold_k80_20260625_01",
+    "model_route": "cold",
+    "deployment_id": "deploy_cold_k80_20260625_01"
+  },
+  "artist": {
+    "artist_key": null,
+    "artist_candidate_id": "new_artist_candidate_456",
+    "display_name_ko": "후보 작가",
+    "display_name_en": null
+  },
+  "primary_market_summary": null
 }
 ```
 

@@ -116,7 +116,7 @@ MySQL 스키마 문서
 | `POST /api/v1/admin/snapshots/{snapshot_id}/approve` | snapshot 서빙승인 (9.3.3) | 데이터 관리자 |
 | `GET /api/v1/admin/audit-logs` | audit-logs 조회 (10.1) | 데이터 관리자 |
 
-- 역할 위계는 개발자 < 운영 담당자 < 데이터 분석가 < 데이터 관리자이며, `required_role`은 해당 역할 "이상"을 의미한다(상위 역할은 하위 권한 포함).
+- 역할 위계는 개발자 < 운영 담당자 < 데이터 분석가 < 데이터 관리자이며, `required_role`은 해당 역할 "이상"을 의미한다(상위 역할은 하위 권한 포함). 1차는 이 상속형 RBAC로 구현하고, 직무별 capability matrix는 후속으로 분리한다.
 - 모델 승격/롤백(7.3), artist identity 최종 확정(8.6 `approve_existing_artist_key`), 신규 artist_key 생성(8.8 `approve`), snapshot 생성승인(9.3.2) 및 snapshot 서빙승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영 담당자는 후보 보류/반려/재검토를 처리할 수 있지만 최종 artist_key 확정, 모델 롤백, snapshot 서빙승인은 할 수 없다.
 - 운영 초기 슈퍼유저는 위 역할을 모두 수행할 수 있으나, 실제 처리자 식별과 사유 기록 의무는 동일하게 적용된다.
 - 전체 역할 매핑의 단일 기준은 [운영 파라미터](operational_parameters_20260625.md) §A-1.
@@ -1053,7 +1053,7 @@ request:
 - `artist_name_alias.approved_by`
 - `artist_name_alias.approved_at`
 - `artist_name_alias.approval_note`
-- `register_override` 시: override 레지스트리(`scripts/track6/artist_ko_overrides.csv` 또는 동등 테이블)에 `artist_key`, `artist_name_ko`, `reason`, `approved_by/at` 기록 + `normalized_artist_staging.artist_name_ko_display`/`artist_name_ko_override_status=registered` 반영
+- `register_override` 시: override 레지스트리(`projects/art-price-data-platform/config/artist_ko_overrides.csv` 또는 동등 테이블)에 `artist_key`, `artist_name_ko`, `reason`, `approved_by/at` 기록 + `normalized_artist_staging.artist_name_ko_display`/`artist_name_ko_override_status=registered` 반영
 - 필요 시 `normalized_artist_staging.artist_name_*_display`
 
 ### 8.5 artist_key 연결 검수 큐 조회

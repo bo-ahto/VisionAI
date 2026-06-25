@@ -221,7 +221,7 @@ artist_name_alias 저장 + reason code 기록
 
 ### 4.4 한글화 reason code (표준 분류)
 
-각 한글명 후보는 `artist_name_ko_reason`에 아래 코드를 기록하고, 코드에 따라 자동/검수 게이트가 정해진다. (코드 체계는 `scripts/track6/artist_ko_overrides.csv` 및 [작가 한글명 개선 보고서](../dataset/artist_name_ko_improvement_report.md)와 동일하게 유지한다.)
+각 한글명 후보는 `artist_name_ko_reason`에 아래 코드를 기록하고, 코드에 따라 자동/검수 게이트가 정해진다. 코드 체계는 `projects/art-price-data-platform/config/artist_ko_overrides.csv`와 프로젝트 내 작가 한글명 품질 기준으로 관리한다.
 
 | reason code | 의미 | 게이트 |
 |---|---|---|
@@ -245,7 +245,7 @@ artist_name_alias 저장 + reason code 기록
 
 ### 4.6 override 우선 적용
 
-확정 한글명의 단일 기준 파일은 `scripts/track6/artist_ko_overrides.csv`다. 한글화 파이프라인은 다음 순서로 적용한다.
+확정 한글명의 단일 기준 파일은 `projects/art-price-data-platform/config/artist_ko_overrides.csv`다. 한글화 파이프라인은 다음 순서로 적용한다.
 
 ```text
 1) override 적용  -> 등록된 artist_key는 override 한글명으로 확정
@@ -262,11 +262,11 @@ override 행 스키마:
 | `reason` | 4.4의 reason code |
 | `approved_by` / `approved_at` | 승인자 / 승인 시각 |
 
-### 4.7 track6 한글 복원에 자동 음역기 사용 금지
+### 4.7 작가 한글명 복원에 자동 음역기 사용 금지
 
 과거 track3 데이터셋 생성기(`scripts/track3/build_unified_dataset.py`의 `_romanize_to_hangul`, `lookup_artist_name_ko`)는 로마자를 greedy longest-match 음절표로 글자 단위 음역했고, 이것이 `choonjae kim` → `김초온재` 같은 오표기를 **생성한 원인**이다. 이 음역기는 아직 코드에 살아 있다.
 
-- track6 한글 복원(유형 ③)에는 이 음역기를 사용하지 않는다. 신규 작가가 들어와도 자동 음역으로 한글명을 만들지 않고, override(4.6) 또는 검수 큐로 보낸다.
+- 작가 한글명 복원(유형 ③)에는 이 음역기를 사용하지 않는다. 신규 작가가 들어와도 자동 음역으로 한글명을 만들지 않고, override(4.6) 또는 검수 큐로 보낸다.
 - track3/track4 경로에서 생성된 기존 한글명은 그대로 신뢰하지 않고, 4.8의 자동 플래그로 위험도를 재산정한다.
 
 ### 4.8 한글명 자동 플래그 (파이프라인 단계)
@@ -279,7 +279,7 @@ override 행 스키마:
 |---|---|
 | `artist_name_ko_input_type` | 4.1 분기로 ①~⑥ 최종 코드 판별(메타 오염은 `meta_polluted` 임시값 후 재분류) |
 | `artist_name_ko_reason` | 4.4 reason code 후보 |
-| `artist_name_ko_risk_score` / `_risk_reasons` | 위험 패턴 검출(`흐/운그/우르/엑스응` 등 기계 음역 흔적, 8자 이상 장음절, 브랜드명 공백 누락). 로직 기준은 `scripts/track6/audit_artist_korean_name_quality.py` |
+| `artist_name_ko_risk_score` / `_risk_reasons` | 위험 패턴 검출(`흐/운그/우르/엑스응` 등 기계 음역 흔적, 8자 이상 장음절, 브랜드명 공백 누락). 로직 기준은 `projects/art-price-data-platform/scripts/audit_artist_korean_name_quality.py` |
 | `artist_name_ko_roundtrip_confidence` | 복원 한글명을 RR로 재로마자화(`korean-romanizer` 류)해 원천 로마자와 유사도 비교 |
 
 자동 게이트:
@@ -635,7 +635,7 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 - override 등록 여부 및 등록 시 확정 한글명
 - 자동/검수 게이트 사유(reason code는 4.4, 게이트 규칙은 4.8)
 
-한글명 검수(이름 alias / 한글명 검수 큐의 한글명 탭)는 동명이인·artist identity 큐와 분리해 운영한다. 한글명 검수에서 확정한 값은 `scripts/track6/artist_ko_overrides.csv`(4.6)에 등록하고, 등록 결과는 다음 snapshot부터 반영한다.
+한글명 검수(이름 alias / 한글명 검수 큐의 한글명 탭)는 동명이인·artist identity 큐와 분리해 운영한다. 한글명 검수에서 확정한 값은 `projects/art-price-data-platform/config/artist_ko_overrides.csv`(4.6)에 등록하고, 등록 결과는 다음 snapshot부터 반영한다.
 
 검수 트리아지(우선순위): 잔여 검수 후보가 누적되므로 큐를 무한정 쌓지 않도록 정렬·필터한다.
 

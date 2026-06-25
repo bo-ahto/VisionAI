@@ -622,7 +622,8 @@ artist_identity_candidate
 artist_identity
   - 기존 artist_key 연결 확정 또는 신규 artist_key 생성(운영자 검수 후 데이터 관리자 승인)
   - artist_key는 최종 운영 키만 의미
-  - 서비스/모델은 artist_key가 확정된 작가만 사용
+  - Warm 경로와 작가 이력 feature는 artist_key가 확정된 작가만 사용
+  - artist_key가 없는 미확정 작가는 Cold 경로로만 예측하고 검수 필요 표시를 강제한다
 ```
 
 주의:
@@ -851,4 +852,4 @@ artist_identity
 
 따라서 운영 DB에서는 원천별 raw를 먼저 보존하고, 이후 `source_artwork_interpreted_staging`에서 원천별 값을 분해/정리한 뒤, 마지막으로 `normalized_artwork_staging`에서 공통 컬럼으로 맞추는 구조를 사용한다.
 
-작가 정보도 동일하게 `source_artist_raw`를 먼저 보존하고, `source_artist_interpreted_staging`에서 이름/국적/출생연도/활동지/전시 이력 등을 분해한 뒤, `normalized_artist_staging`에서 공통 컬럼으로 맞춘다. 이후 `artist_name_alias`에서 한글명/영문명 보강 후보를 검수한다. 같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 `artist_identity_candidate`에서 검수 가능한 구조로 관리하고, 기존 후보가 없으면 신규 작가 후보 큐로 둔다. 신규 작가는 운영자 검수를 거쳐 데이터 관리자가 승인한 뒤에만 `artist_identity`에 최종 `artist_key`를 생성하며, 서비스/모델에는 확정된 `artist_key`만 사용한다.
+작가 정보도 동일하게 `source_artist_raw`를 먼저 보존하고, `source_artist_interpreted_staging`에서 이름/국적/출생연도/활동지/전시 이력 등을 분해한 뒤, `normalized_artist_staging`에서 공통 컬럼으로 맞춘다. 이후 `artist_name_alias`에서 한글명/영문명 보강 후보를 검수한다. 같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 `artist_identity_candidate`에서 검수 가능한 구조로 관리하고, 기존 후보가 없으면 신규 작가 후보 큐로 둔다. 신규 작가는 운영자 검수를 거쳐 데이터 관리자가 승인한 뒤에만 `artist_identity`에 최종 `artist_key`를 생성한다. Warm 경로와 작가 이력 feature는 확정된 `artist_key`만 사용하며, 미확정 작가는 Cold 경로로만 예측하고 검수 필요 표시를 강제한다.
