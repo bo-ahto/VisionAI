@@ -15,6 +15,8 @@
 
 ## 2. 테스트 원칙
 
+- E2E runner는 Playwright를 기본으로 한다.
+- 테스트 대상은 `service-web`의 public route와 `admin-web`의 admin route다.
 - 사용자 화면은 원천 정보 비노출을 반드시 검증한다.
 - 어드민 decision은 API payload까지 검증한다.
 - conflict, forbidden, stale, loading, empty 상태를 포함한다.

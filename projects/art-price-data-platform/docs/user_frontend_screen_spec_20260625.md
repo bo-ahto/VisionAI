@@ -14,8 +14,15 @@
 - [화면 상태/에러 UX 기준](frontend_state_error_ux_spec_20260625.md)
 - [프론트 컴포넌트 기준](frontend_component_guidelines_20260625.md)
 - [프론트 마이크로카피 기준](frontend_microcopy_spec_20260625.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 
 ## 2. 사용자 route 구조
+
+프론트 앱 기준:
+
+- 사용자 화면은 별도 `service-web` Next.js + React + TypeScript 앱에 둔다.
+- 어드민 화면은 별도 `admin-web` React SPA로 분리한다.
+- 사용자 화면은 원천 추적 정보를 노출하지 않는 public API만 호출한다.
 
 권장 route:
 
@@ -26,7 +33,7 @@
 | 신규 작가 후보 입력 | `/price-prediction/new-artist` 또는 modal |
 | 예측 결과 | `/price-prediction/result/:prediction_id` 또는 same-page result |
 
-1차 구현은 single-page flow로 시작할 수 있다.
+1차 구현은 `service-web`의 `/price-prediction` route 안에서 single-page flow로 시작할 수 있다.
 
 ```text
 작가 검색/선택
@@ -53,8 +60,8 @@ API:
 | width_cm | 필수 | 양수 |
 | height_cm | 필수 | 양수 |
 | depth_cm | 선택 | 값이 있으면 양수 |
-| medium | 필수 | 입력 또는 선택 |
-| support | 선택 | canvas/paper/panel 등 |
+| medium | 필수 | 입력 또는 선택. 서버는 DB active NANT mapping 기준으로 매핑/학습 제외 여부를 판단 |
+| support | 선택 | canvas/paper/panel 등. 서버는 DB active NANT mapping 기준으로 매핑 |
 | artwork_type | 필수 | painting/drawing/print 등 |
 
 사용자 안내:
@@ -141,17 +148,17 @@ API:
 | review_required | 검수 필요 여부 |
 | review_reasons | 검수 필요 사유 |
 | model_version | 사용 모델 |
-| model_route | warm/cold/unified |
+| model_route | warm/cold |
 | deployment_id | 운영 배포 ID |
 | artist | 선택 작가 표시명 |
-| as_of | 모델이 참조한 snapshot 기준일 |
+| as_of | active deployment가 학습/import 기준으로 기록한 데이터 cutoff |
 | primary_market_summary | 1차 시장 가격 카드 |
 
 주의:
 
 - `review_required=true`여도 계산값이 있으면 예측 가격과 검수 필요 사유를 함께 보여준다.
 - 계산 실패와 검수 필요는 다른 상태다.
-- `as_of`는 최신 수집일이 아니라 active deployment가 학습에 사용한 snapshot 기준일이다.
+- `as_of`는 최신 수집일이 아니라 active deployment가 학습/import 기준으로 기록한 데이터 cutoff다.
 - 위 표는 화면 표시 항목이며, 응답 구조상 `model_version`/`model_route`/`deployment_id`는 `model` 객체 하위, `as_of`는 `primary_market_summary`(또는 응답 최상위) 기준이다([API 기획](user_admin_api_plan_20260625.md) §4.3).
 
 ## 7. 1차 시장 가격 카드

@@ -18,8 +18,15 @@
 - [프론트 마이크로카피 기준](frontend_microcopy_spec_20260625.md)
 - [API mock/fixture 기준](frontend_api_mock_fixtures_20260625.md)
 - [프론트 E2E 테스트 계획](frontend_e2e_test_plan_20260625.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 
 ## 2. 공통 어드민 레이아웃
+
+프론트 앱 기준:
+
+- 어드민 화면은 별도 `admin-web` React + TypeScript SPA에 둔다.
+- 어드민 route는 `/admin/art-price-data/**`로 분리하고, route guard와 공통 레이아웃을 적용한다.
+- 어드민 화면의 데이터 조회/쓰기 SoT는 FastAPI/OpenAPI 기준 API다. 프론트 dev proxy나 별도 프론트 서버에 검수, snapshot, 모델 배포 쓰기 로직을 중복 구현하지 않는다.
 
 권장 route prefix:
 
@@ -46,7 +53,8 @@
 | artist_key 연결 검수 | `/admin/art-price-data/review/artist-identities` | 운영 담당자(조회/triage), 키 연결 확정은 데이터 관리자 |
 | 신규 작가 후보 | `/admin/art-price-data/review/new-artists` | 운영 담당자(조회/triage), 키 생성은 데이터 관리자 |
 | snapshot 후보/승인 | `/admin/art-price-data/snapshots` | 운영 담당자 |
-| 모델 배포 | `/admin/art-price-data/model-deployments` | 데이터 관리자 |
+| NANT mapping 관리 | `/admin/art-price-data/nant-mapping` | 운영 담당자(조회), 편집은 데이터 분석가, active 전환은 데이터 관리자 |
+| 모델 운영 | `/admin/art-price-data/model-deployments` | 데이터 분석가(학습/import job), 데이터 관리자(승인/승격/롤백) |
 | 운영 로그/알림 | `/admin/art-price-data/audit-logs` | 데이터 관리자 |
 
 ## 3. 수집 대시보드
@@ -134,7 +142,7 @@ API:
 - source
 - price_status
 - size_status
-- medium_status
+- medium_status(NANT mapped/unmapped/learning_excluded)
 - review_status
 - claim 상태
 
@@ -150,7 +158,8 @@ API:
 | artist_name_raw | 원천 작가명 |
 | price_raw / price_krw_normalized | 원천 가격과 환산 후보 |
 | size | width/height/depth 후보 |
-| quality_flags | 가격 없음, 크기 실패, 제외 후보 등 |
+| NANT 분류 | `nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status` |
+| quality_flags | 가격 없음, 크기 실패, NANT 제외 후보 등 |
 | claim | 담당자/만료 |
 
 상세 패널:
@@ -158,6 +167,7 @@ API:
 - 원천값
 - interpreted 값
 - normalized 후보값
+- NANT 분류와 DB `learning_excluded` 여부
 - 원천 URL
 - 변경 patch 입력
 - reason 입력
@@ -316,6 +326,7 @@ API:
 - source별 row 수
 - 가격 보유율
 - 크기 파싱 성공률
+- NANT 분류 성공/학습 제외/unmapped 수
 - 작가 확정률
 - 직전 snapshot 대비 변화량
 
@@ -347,7 +358,74 @@ snapshot 계열은 `snapshot_request`와 `artwork_snapshot` 두 엔터티로 나
 | 서빙승인 | 데이터 관리자 | `POST /snapshots/{snapshot_id}/approve` |
 | 후보 목록 다운로드 | 운영 담당자 | `GET /snapshots/candidates/items` |
 
-## 10. 모델 배포 화면
+## 10. NANT mapping 관리 화면
+
+Route:
+
+```text
+/admin/art-price-data/nant-mapping
+```
+
+API:
+
+- `GET /api/v1/admin/nant/mapping-versions`
+- `POST /api/v1/admin/nant/mapping-versions/import`
+- `POST /api/v1/admin/nant/mapping-versions/{mapping_version_id}/validate`
+- `POST /api/v1/admin/nant/mapping-versions/{mapping_version_id}/activate`
+- `GET /api/v1/admin/nant/mappings`
+- `POST /api/v1/admin/nant/mappings`
+- `PATCH /api/v1/admin/nant/mappings/{material_mapping_id}`
+- `DELETE /api/v1/admin/nant/mappings/{material_mapping_id}`
+- `GET /api/v1/admin/nant/unmapped-materials`
+
+주요 영역:
+
+- active mapping version 요약
+- draft/import version 목록
+- validation 결과
+- mapping row 검색/필터
+- unmapped 재료 목록
+- draft row 편집 패널
+- activate 영향 범위 안내
+
+목록 필터:
+
+- version status: draft/active/archived
+- mapping status: mapped/learning_excluded/unmapped
+- source material 검색
+- NANT support/medium
+- learning_excluded 여부
+
+테이블 컬럼:
+
+| 컬럼 | 설명 |
+|---|---|
+| source_material_text | 원천/표준화 재료 표현 |
+| nant_support / nant_medium | NANT 지지체/매체 |
+| nant_category_key | 95개 허용 조합 key |
+| learning_excluded | 학습 제외 여부 |
+| learning_exclusion_reason | 제외 사유 |
+| raw_note2 | CSV `비고2` 또는 admin 메모 |
+| updated_by / updated_at | 마지막 수정자/시각 |
+
+버튼/API 매핑:
+
+| 버튼 | API | 권한 |
+|---|---|---|
+| CSV import로 draft 생성 | `POST /mapping-versions/import` | 데이터 분석가 |
+| draft row 추가 | `POST /mappings` | 데이터 분석가 |
+| draft row 수정 | `PATCH /mappings/{material_mapping_id}` | 데이터 분석가 |
+| draft row 삭제 | `DELETE /mappings/{material_mapping_id}` | 데이터 분석가 |
+| validation 실행 | `POST /mapping-versions/{mapping_version_id}/validate` | 데이터 분석가 |
+| active 전환 | `POST /mapping-versions/{mapping_version_id}/activate` | 데이터 관리자 |
+
+상태/제약:
+
+- active/archived version row는 수정 버튼을 비활성화한다.
+- validation failed 상태에서는 active 전환 버튼을 비활성화한다.
+- active 전환은 현재 active를 archived로 닫고 대상 draft를 active로 올리는 단일 트랜잭션이어야 한다.
+
+## 11. 모델 운영 화면
 
 Route:
 
@@ -357,28 +435,46 @@ Route:
 
 API:
 
+- `POST /api/v1/admin/model-training/jobs`
+- `GET /api/v1/admin/model-training/jobs`
+- `GET /api/v1/admin/model-training/jobs/{training_job_id}`
 - `GET /api/v1/admin/model-versions`
 - `GET /api/v1/admin/model-versions/{model_version}`
+- `POST /api/v1/admin/model-versions/{model_version}/decision`
 - `POST /api/v1/admin/model-deployments`
 - `GET /api/v1/admin/model-deployments/current`
 
 주요 영역:
 
 - 현재 active deployment
-- 모델 후보 목록
-- 학습 snapshot 연결
+- 학습/import job 목록과 상태
+- 모델 candidate/approved 목록
+- 학습 snapshot/export 연결
 - validation/test 요약
+- gate 결과(data contract, fixed-test parity, API smoke)
+- artifact URI/SHA-256, feature schema hash
 - promote/rollback/retire 액션
 
 버튼/API 매핑:
 
 | 버튼 | action | 권한 |
 |---|---|---|
-| 승격 | `promote` | 데이터 관리자 |
-| 롤백 | `rollback` | 데이터 관리자 |
-| retired 처리 | `retire` | 데이터 관리자 |
+| 학습/import job 생성 | `POST /model-training/jobs` | 데이터 분석가 |
+| 후보 승인 | `POST /model-versions/{model_version}/decision`, `decision=approve` | 데이터 관리자 |
+| 후보 반려 | `POST /model-versions/{model_version}/decision`, `decision=reject` | 데이터 관리자 |
+| 운영 승격 | `POST /model-deployments`, `action=promote` | 데이터 관리자 |
+| 롤백 | `POST /model-deployments`, `action=rollback` | 데이터 관리자 |
+| retired 처리 | `POST /model-deployments`, `action=retire` | 데이터 관리자 |
 
-## 11. 운영 로그/알림
+표시 규칙:
+
+- `candidate`는 운영 중 모델이 아니며 승격 버튼을 노출하지 않는다.
+- `approved` 모델에만 운영 승격 버튼을 노출한다.
+- 현재 운영 중 여부는 `price_model_registry.model_status`가 아니라 `price_model_deployment.deployment_status=active`로 표시한다.
+- active deployment의 `training_snapshot_id`, `source_cutoff_at`, `model_version`, `deployment_id`를 상단에 고정 표시한다.
+- job 실패 row는 error 요약과 재실행 버튼을 보여주되, 기존 job을 덮어쓰지 않고 새 job을 만든다.
+
+## 12. 운영 로그/알림
 
 Route:
 
@@ -410,7 +506,7 @@ API:
 - reason
 - request_id
 
-## 12. 공통 완료 기준
+## 13. 공통 완료 기준
 
 - 모든 쓰기 액션은 reason 입력을 요구한다.
 - 상태 전이 decision API는 `expected_review_status`를 보낸다(`recheck`/`recheck_candidates` 제외).

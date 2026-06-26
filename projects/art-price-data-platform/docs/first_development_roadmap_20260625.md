@@ -17,6 +17,7 @@
   -> 4개 원천 raw 수집 및 payload 보존
   -> 원천별 interpreted staging
   -> 공통 normalized staging
+  -> NANT 재료(지지체/매체) 95분류와 학습 제외 플래그
   -> 작가명/alias/artist_key 표준화
   -> 검수 큐와 어드민 처리
   -> snapshot 확정요청/생성/서빙승인
@@ -46,6 +47,7 @@
 | `periodic_raw_collection_mysql_plan_20260623.md` | DB/스키마/수집 레이어 SoT |
 | `weekly_crawler_mysql_operation_plan_20260624.md` | 주기 수집, 실패 처리, 알림, 운영 루틴 |
 | `source_site_collected_fields_20260624.md` | 원천별 필드와 표준화 입력 기준 |
+| `nant_material_classification_criteria_20260626.md` | 표준화 이후 DB active NANT 지지체/매체 95분류와 CSV `비고2` -> DB `learning_excluded` import 변환 기준 |
 | `artist_key_standardization_flow_20260624.md` | 작가명, alias, identity, artist_key 확정 기준 |
 | `data_collection_service_scenarios_20260625.md` | 사용자/운영자/job 시나리오 |
 | `user_admin_api_plan_20260625.md` | API 기능과 request/response 기준 |
@@ -67,6 +69,7 @@
 |---|---|
 | interpreted/normalized 분리 | 물리 테이블 2단계로 구현한다. 분해 실패와 표준화 실패를 운영상 분리 추적해야 하므로 단일 staging 흡수안은 채택하지 않는다. |
 | raw payload 저장 | 1차부터 object storage에 저장하고 MySQL에는 `payload_path`/`payload_hash`/`payload_size`만 저장한다. |
+| NANT 재료 분류 | `normalized_artwork_staging` 다음 단계에서 DB active NANT mapping version으로 지지체/매체 95분류를 수행한다. 학습 제외는 mapping row의 `learning_excluded=true` 기준이며, 기존 재료/지지체 하드코딩 학습 필터는 쓰지 않는다. |
 | 수집 DB와 예측 API 연결 | 예측 API는 수집 DB를 실시간 조회하지 않는다. 승인 snapshot과 운영 feature store/model bundle만 본다. |
 | snapshot 상태 | 사용자 기준은 `artwork_snapshot.status=approved`만 사용한다. `generated`는 비서빙 상태다. |
 | 어드민 actor | `actor_id`는 body로 받지 않고 인증 컨텍스트에서 주입한다. |
@@ -81,8 +84,9 @@ Phase 0. API/DB/운영 기준 확정
 Phase 1. DB/migration/object storage 기반
 Phase 2. collector 공통 인터페이스와 raw 적재
 Phase 3. 4개 원천별 interpreted/normalized 파이프라인
+Phase 3.5. NANT 재료(지지체/매체) 분류와 학습 제외 플래그
 Phase 4. 작가명/artist_key 표준화와 검수 큐
-Phase 5. snapshot/export/model registry/deployment
+Phase 5. snapshot/export/model training/registry/deployment
 Phase 6. API 구현
 Phase 7. 사용자/어드민 화면 구현
 Phase 8. 운영 자동화와 runbook
@@ -100,9 +104,10 @@ Phase는 "레이어 완성" 순서지만, 모든 레이어를 4원천·전체 UI
 ```text
 Art1 raw 적재
   -> interpreted/normalized (Art1만)
+  -> NANT 지지체/매체 분류 + 학습 제외 플래그 (Art1만)
   -> 작가명 alias + 사용자 신규 작가 후보 제출 + 최소 identity 후보 + 검수 큐 최소 2경로(작가명 1건 + 신규 후보 1건)
   -> snapshot 확정요청 -> 생성승인 -> 서빙승인
-  -> joblib 모델 번들/feature store 연결 -> model registry/deployment active
+  -> joblib 모델 번들/feature store 연결 -> model training/import + registry/deployment active
   -> 사용자 예측 API + 예측 결과 화면
   -> 어드민 수집 대시보드 + 작가명 검수 큐 + 신규 작가 후보 최소 큐 화면
 ```
@@ -113,7 +118,7 @@ M1 완료 기준:
 - 예측 결과 화면에 가격/신뢰도/as_of/1차 시장 카드가 표시된다(freshness 경고/카드 숨김은 M2).
 - 어드민이 화면에서 Art1 run 상태를 보고 작가명 검수 1건을 처리할 수 있다.
 - 사용자가 신규 작가 후보를 제출할 수 있고, 어드민이 신규 후보 최소 큐 1건을 처리할 수 있다. `approve`로 최종 artist_key를 생성하는 경로는 데이터 관리자 권한으로만 통과한다.
-- M1 모델 경로는 기존 예측 API 호출이 아니라 joblib 모델 번들을 registry/deployment에 등록해 active deployment로 둔다. Warm 기본 후보는 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`이고, Cold 기본 후보는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 산출물이다. Cold k80은 fixed test parity/joblib smoke 통과 후 active deployment에 등록한다. `projects/art-price-data-platform/models/cold_prediction_v0.5_operational`은 M1 적용 fallback이 아니라 과거 raw-input p95 방어 참고 산출물이다. 어떤 방식을 쓰든 prediction log가 `model_version`/`deployment_id`/`route`를 남겨야 한다.
+- M1 모델 경로는 기존 예측 API 호출이 아니라 joblib 모델 번들을 training/import 이력과 registry/deployment에 등록해 active deployment로 둔다. Warm 기본 후보는 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`이고, Cold 기본 후보는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 산출물이다. Cold k80은 fixed test parity/joblib smoke 통과 후 active deployment에 등록한다. `projects/art-price-data-platform/models/cold_prediction_v0.5_operational`은 M1 적용 fallback이 아니라 과거 raw-input p95 방어 참고 산출물이다. 어떤 방식을 쓰든 prediction log가 `model_version`/`deployment_id`/`route`를 남겨야 한다.
 - 스키마/상태값/합성키 정합성이 실데이터로 한 번 깨져보고 고정된다.
 - M1 범위는 **원천 1개·사용자 예측 최소 경로·작가명 큐 1건·신규 작가 후보 큐 1건**으로 한정한다. 작품 품질/artist_key 연결/freshness/나머지 원천/전체 검수 큐는 M2에서 확장한다.
 
@@ -166,7 +171,7 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 2. `source_artwork_raw`, `source_artist_raw`
 3. `source_artwork_interpreted_staging`, `source_artist_interpreted_staging`
 4. `normalized_artwork_staging`, `normalized_artist_staging`
-5. `artist_name_alias`, `artist_identity_candidate`, `artist_identity`
+5. `artist_name_alias`, `artist_identity_candidate`, `artist_identity`, `artist_profile_item`, `artist_profile_current`
 6. `identity_event_log`, `artist_identity_version`, `artist_key_membership_history`
 7. `artwork_snapshot`, `artwork_snapshot_item`, `snapshot_request`
 8. `fx_rate_daily`
@@ -218,15 +223,40 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 3. 작품 normalized job: 공통 컬럼, KRW 환산 후보, quality flag 생성
 4. 작가 normalized job: 표시명 후보, source artist key, 후보 상태 생성
 5. 가격 환율 처리: `fx_rate_daily` 기반 point-in-time KRW 환산
-6. unmapped medium/support/material 리포트 생성
-7. parser fixture/integration test 추가
+6. DB active NANT mapping version 조회
+7. NANT 재료(지지체/매체) 95분류와 `learning_excluded` 플래그 적용
+8. unmapped medium/support/material 및 NANT unmapped 리포트 생성
+9. parser/normalizer/NANT fixture integration test 추가
 
 완료 기준:
 
 - 4개 source 모두 raw -> interpreted -> normalized row 수 추적이 가능하다.
 - 가격/크기/작가명 보유율이 source별로 집계되고, `QUAL-PRICE-MIN`/`QUAL-SIZE-MIN`/`QUAL-ARTIST-MIN` 임계 미달 시 parser 점검/snapshot 보류 신호가 산출된다.
 - 분해 실패와 표준화 실패가 별도 flag로 남는다.
-- snapshot 후보에서 제외해야 할 row의 사유가 계산된다.
+- NANT 기준 조합 95개와 CSV import -> DB `learning_excluded` 변환이 fixture로 검증된다.
+- snapshot 후보에서 제외해야 할 row의 사유가 NANT 제외 사유를 포함해 계산된다.
+
+## 9.5 Phase 3.5. NANT 재료(지지체/매체) 분류
+
+목표:
+
+- 공통 표준화가 끝난 작품 row를 NANT 지지체/매체 95분류로 고정한다.
+- 학습 snapshot의 재료/지지체 제외 기준을 DB mapping row의 `learning_excluded=true`로 단일화한다.
+
+구현 기준:
+
+- 기준 파일은 [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)을 따른다.
+- 결과는 `nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status`, `mapping_version_id`, `learning_excluded`를 포함해야 한다.
+- NANT mapping은 DB에서 `draft`를 편집하고 데이터 관리자가 `active`로 전환한다. active version은 직접 수정하지 않는다.
+- 기존 코드에 있던 재료/지지체/작품 유형 하드코딩 학습 필터는 새 snapshot 후보 query에서 사용하지 않는다.
+- 매핑 실패 row는 임의 분류하지 않고 `nant_unmapped` 사유로 제외 또는 보류한다.
+
+완료 기준:
+
+- Art1 M1 데이터에서 표준화 다음 NANT 분류가 실행된다.
+- 기준 조합 95개와 초기 CSV import SHA-256이 fixture로 검증된다.
+- DB mapping row의 `learning_excluded=true`가 학습 snapshot/export에서 제외된다.
+- raw/interpreted/normalized row는 삭제되지 않고 제외 사유만 snapshot과 분류 결과에 남는다.
 
 ## 10. Phase 4. 작가명/artist_key 표준화와 검수 큐
 
@@ -253,30 +283,41 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 - 자동 확정 샘플 검수 리포트가 생성된다.
 - 비가역 identity 결정은 `identity_event_log`에 남는다.
 
-## 11. Phase 5. snapshot/export/model registry/deployment
+## 11. Phase 5. snapshot/export/model training/registry/deployment
 
 목표:
 
-- 학습/운영 반영 가능한 고정 데이터와 모델 배포 이력을 만든다.
+- 학습/운영 반영 가능한 고정 데이터, 모델 학습/import 이력, 모델 배포 이력을 만든다.
 
 구현 순서:
 
 1. snapshot 후보 summary/items query
 2. snapshot 확정요청 API/job
 3. snapshot 생성승인 job
-4. `artwork_snapshot_item` 포함/제외 고정
+4. `artwork_snapshot_item` 포함/제외 고정(`nant_learning_excluded`, `nant_unmapped` 포함)
 5. parquet export와 manifest 생성
 6. 검수/공유/호환용 CSV export 생성
-7. model registry 등록
-8. model deployment active/rollback 전이
-9. prediction log 적재
+7. `model_training_job` 생성 또는 기존 joblib import 이력 생성
+8. model registry에 `candidate` 등록
+9. validation/test, fixed-test parity, API smoke gate 확인
+10. candidate 승인/반려(`approved`/`rejected`)
+11. model deployment active/rollback 전이
+12. prediction log 적재
+
+M1 적용:
+
+- M1은 새 학습 자동화가 아니라 기존 Warm joblib와 Cold k80 joblib bundle을 import/seed로 registry에 등록한다.
+- Warm/Cold joblib smoke와 fixed-test parity를 통과한 모델만 active deployment seed에 넣는다.
+- 이후 재학습 job과 candidate 승인/반려/운영 승격 UI는 [모델 학습과 운영 모델 변경 수명주기](model_training_deployment_lifecycle_20260626.md)를 기준으로 확장한다.
 
 완료 기준:
 
 - 같은 입력과 같은 `rules_version`이면 같은 snapshot export가 생성된다.
 - `generated` snapshot은 사용자 기준 데이터가 되지 않는다.
-- `approved` snapshot만 사용자 `as_of`/freshness 기준이 된다.
-- active deployment가 학습에 사용한 snapshot을 역추적할 수 있다.
+- `approved` snapshot만 서빙·freshness 비교 기준이 되고, 사용자 `as_of`는 active deployment가 학습/import에 쓴 cutoff로 산정한다.
+- 모델 학습/import job에서 registry candidate까지 추적할 수 있다.
+- `candidate` 모델은 운영 승격되지 않는다.
+- active deployment가 사용한 학습 snapshot 또는 legacy import manifest를 역추적할 수 있다.
 
 ## 12. Phase 6. API 구현
 
@@ -293,7 +334,7 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 5. public artist search / artist candidate / price prediction / primary-market-summary
 6. admin collection run dashboard/list/detail/action
 7. source registry/manual import API
-8. model registry/deployment API
+8. model operation API(training/import, registry, deployment)
 9. review queues and decisions
 10. snapshot APIs
 11. audit log and impact lookup
@@ -323,6 +364,7 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 
 상세 기준:
 
+- 사용자 화면은 `service-web` Next.js 앱으로 구현하고, 어드민 화면은 별도 `admin-web` React SPA로 구현한다.
 - 화면별 필드/검증/결과 표시는 `user_frontend_screen_spec_20260625.md`를 따른다.
 - loading/empty/error/freshness 상태 표시는 `frontend_state_error_ux_spec_20260625.md`를 따른다.
 - API mock과 화면 fixture는 `frontend_api_mock_fixtures_20260625.md`를 따른다.
@@ -341,6 +383,7 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 
 상세 기준:
 
+- 어드민은 별도 `admin-web` React SPA의 `/admin/art-price-data/**` route로 구현한다. 비즈니스 쓰기 로직은 프론트 dev proxy나 별도 프론트 서버가 아니라 FastAPI/OpenAPI 기준 API를 호출한다.
 - 화면별 필드/액션/API 매핑은 `admin_screen_detail_spec_20260625.md`를 따른다.
 - 공통 badge/table/filter/dialog/decision 컴포넌트는 `frontend_component_guidelines_20260625.md`를 따른다.
 - Phase 7 완료 검증은 `frontend_e2e_test_plan_20260625.md`의 M1/M2 시나리오를 따른다.
@@ -416,8 +459,8 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 | Collector | 4개 원천 수집, payload store, retry/backoff | Phase 1 기본 테이블 |
 | Standardization | parser/normalizer, artist identity, quality flags | Phase 2 raw 적재 |
 | Backend API | public/admin/internal API | Phase 0 OpenAPI, Phase 1 schema |
-| Frontend | 사용자 화면, 어드민 화면 | Phase 6 API mock/입출력 기준 |
-| ML/Serving | feature store, model registry/deployment, prediction log | Phase 5 snapshot/export |
+| Frontend | service-web Next.js, admin-web React SPA | Phase 6 API mock/입출력 기준 |
+| ML/Serving | feature store, model training/import, registry/deployment, prediction log | Phase 5 snapshot/export |
 | Ops | cron, watchdog, alert, runbook | Phase 1 run tables, Phase 8 jobs |
 
 ## 17. 최우선 착수 순서
@@ -445,7 +488,7 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 
 - 4개 원천 수집 결과가 raw/interpreted/normalized/identity/snapshot/model deployment까지 연결된다.
 - 사용자 가격 예측 화면은 active deployment 기준으로 가격, 신뢰도, 기준일, 1차 시장 가격 카드를 표시한다.
-- 어드민은 수집 상태, 검수 큐, snapshot 후보, 모델 배포 상태를 화면에서 처리할 수 있다.
+- 어드민은 수집 상태, 검수 큐, snapshot 후보, 모델 운영 상태를 화면에서 처리할 수 있다.
 - 운영 알림과 watchdog가 수집 실패, 품질 하락, stuck job을 잡는다.
 - 개인정보/삭제 요청에 대해 서비스 노출과 학습 반영 차단이 가능하다.
 - 모든 주요 쓰기 액션은 actor, 시각, 사유, idempotency 또는 expected status 기준으로 감사 가능하다.

@@ -15,6 +15,7 @@
 - [API 기획](user_admin_api_plan_20260625.md)
 - [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
 - [프론트 mock fixture 기준](frontend_api_mock_fixtures_20260625.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 
 ## 1. 추천 조합 요약
 
@@ -25,14 +26,15 @@ MySQL 8.0 + 명시 SQL migration
   -> private object storage에 raw payload 저장
   -> Art1 수직 슬라이스(M1)
   -> approved snapshot 기반 feature/export
+  -> 표준화 다음 DB active NANT 지지체/매체 95분류 + `learning_excluded` 학습 제외
   -> 데이터 수집 서비스 내부 joblib serving adapter
-  -> Warm joblib + Cold k80 보수적 운영 joblib 번들을 model registry/deployment에 연결
+  -> Warm joblib + Cold k80 보수적 운영 joblib 번들을 model training/import job + registry/deployment에 연결
   -> 사용자 API는 로그인 없이 익명 세션 + rate limit
   -> 어드민 API는 제공 이메일/비밀번호 로그인 + JWT + 역할 claim + actor 서버 주입
   -> rate limit/idempotency/익명세션 카운터는 M1 단일 인스턴스 + MySQL 저장(확장 시 Redis)
   -> 비동기 job은 cron + collector_run/watchdog DB 패턴(별도 큐는 후속)
-  -> 어드민 프론트는 React + TypeScript SPA(데이터테이블/쿼리 라이브러리), 사용자 화면 SSR은 SEO 필요 시 택
-  -> 서버 이미지는 모델을 굽지 않고 object storage/registry에서 런타임 로드(API=slim python, 프론트=React→nginx 정적, dev=compose+MinIO)
+  -> 서비스 화면은 Next.js + React + TypeScript, 어드민 화면은 React + TypeScript SPA로 앱/배포 분리
+  -> 서버 이미지는 모델을 굽지 않고 object storage/registry에서 런타임 로드(API=slim python, service-web=Next.js standalone, admin-web=정적 nginx, dev=compose+MinIO)
 ```
 
 이 조합을 추천하는 이유:
@@ -55,6 +57,7 @@ MySQL 8.0 + 명시 SQL migration
 | 어드민 인증 | 제공된 이메일/비밀번호로 로그인하고 JWT access token + role claim, refresh token을 발급한다. SSO는 후속 도입 예정이다. `actor_id`는 body 금지, 서버가 claim에서 주입한다. | admin auth middleware, role test |
 | 어드민 bootstrap | 초기 superuser 1개를 CLI 또는 seed command로 생성한다. 공유 계정은 금지하고, 최초 계정도 개인 식별 가능한 email/login을 갖는다. | `admin_user` seed, password hash, audit actor |
 | suppression | 컬럼-only가 아니라 별도 `suppression_rule` 테이블을 SoT로 둔다. 서비스 노출 차단, 학습 제외, raw 보존/삭제 요청 scope를 분리한다. | DDL, query filter, snapshot exclusion test |
+| NANT 재료 분류 | 표준화 이후 DB active NANT mapping version으로 지지체/매체 95분류를 수행한다. CSV는 seed/import 원본이고, 어드민은 draft mapping을 관리하며 데이터 관리자가 active 전환한다. 학습 제외는 `learning_excluded=true`로 고정하고, 기존 재료/지지체 하드코딩 학습 필터는 쓰지 않는다. | NANT import/validator, mapping 관리 DDL, admin API/screen fixture, snapshot exclusion test |
 | raw object storage | 1차부터 private object storage 사용. DB에는 `payload_path`, `payload_hash`, `payload_size`만 저장한다. | object key convention, storage adapter |
 | object path | raw는 `raw/{env}/source={source}/dt={YYYY-MM-DD}/run={run_id}/{raw_fetch_id}-{sha16}.{ext}.gz`, CSV는 `manual/{env}/source={source}/dt={YYYY-MM-DD}/import={import_id}/original.csv`. | `payload_path`, `manual_import_file.file_uri` 규칙 |
 | 1차 시장 카드 저장 위치 | feature store 실시간 계산이 아니라 approved snapshot 생성 시 집계 테이블을 만든다. API는 active deployment의 training snapshot 기준 row를 조회한다. | `primary_market_artist_summary` 또는 동등 테이블 |
@@ -62,9 +65,10 @@ MySQL 8.0 + 명시 SQL migration
 | 1차 시장 카드 표본 | 승인 snapshot의 정상화 row 중 가격/크기/작가키/품질/suppression 조건을 통과한 row만 사용한다. 전체 표본 최소 N=5, 매체별 분포는 매체 그룹 N>=3만 표시한다. | aggregation test |
 | 1차 시장 카드 이상치 | artist+medium 그룹 내 `unit_price_per_ho`의 q05~q95 winsorized 값을 기준으로 median/q25/q75를 계산한다. 표본이 20개 미만이면 winsorize 없이 median/q25/q75만 계산하고 low_sample flag를 붙인다. | calculation spec/test |
 | prediction API 연결 | 기존 가격 예측 API를 호출하지 않고, 데이터 수집 서비스 안에 joblib serving adapter를 둔다. adapter는 active deployment/model registry에서 joblib artifact를 읽고 직접 예측한다. | joblib serving adapter, parity smoke |
-| M1 모델 | Warm은 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`를 active deployment 후보로 둔다. Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 뒤 active deployment에 올린다. `cold_prediction_v0.5_operational`은 M1 적용 후보가 아니라 과거 raw-input p95 방어 참고 산출물로만 둔다. | model registry seed, deployment seed, cold k80 joblib freeze/parity |
+| M1 모델 | Warm은 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`를 active deployment 후보로 둔다. Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 뒤 active deployment에 올린다. `cold_prediction_v0.5_operational`은 M1 적용 후보가 아니라 과거 raw-input p95 방어 참고 산출물로만 둔다. | model training/import seed, registry seed, deployment seed, cold k80 joblib freeze/parity |
+| 모델 학습/교체 lifecycle | Warm/Cold route와 model family는 고정한다. M1은 기존 joblib import/seed + fixed-test parity + active deployment로 닫는다. 이후 재학습은 같은 family 안에서 `model_training_job -> registry candidate -> candidate 승인 -> deployment promote/rollback` 흐름으로 `model_version`만 올린다. 새 snapshot 또는 candidate 생성만으로 운영 모델은 자동 변경되지 않는다. | model family/알고리즘/feature contract 변경은 별도 개발 작업 |
 | 신규 작가 후보 | 사용자 신규 작가 후보 제출을 M1에 포함한다. 따라서 SQL view/export만으로 시작하지 않고 물리 후보 큐 테이블을 1차 DDL에 포함한다. | physical candidate queue table, public submit API |
-| 서버 이미지 / 모델 전달 | 모델 artifact는 이미지에 굽지 않고 object storage/registry에서 런타임 pull한다(§3.11). API 이미지는 `python:3.11-slim`(모델/데이터 미포함), 프론트는 React SPA→nginx 정적. 모델 교체는 deployment 행으로 하고 이미지 rebuild를 요구하지 않는다. | Dockerfile/Dockerfile.frontend, docker-compose, startup artifact loader, `.dockerignore` |
+| 서버 이미지 / 모델 전달 | 모델 artifact는 이미지에 굽지 않고 object storage/registry에서 런타임 pull한다(§3.11). API 이미지는 `python:3.11-slim`(모델/데이터 미포함), 서비스 화면은 Next.js standalone Node runtime, 어드민 화면은 정적 SPA nginx로 배포한다. 모델 교체는 deployment 행으로 하고 이미지 rebuild를 요구하지 않는다. | Dockerfile.api, Dockerfile.service-web, Dockerfile.admin-web, docker-compose, startup artifact loader, `.dockerignore` |
 
 ## 3. 선택이 필요한 항목
 
@@ -155,7 +159,7 @@ Cold k80 joblib 적용 산출물:
 3. feature schema/order, policy thresholds, model metadata를 담은 manifest 또는 model card
 4. fixed test parity report
 5. serving smoke fixture
-6. `price_model_registry` / `price_model_deployment` seed
+6. `model_training_job` import/seed 이력 + `price_model_registry` / `price_model_deployment` seed
 
 적용 규칙:
 
@@ -186,13 +190,42 @@ Cold k80 joblib 적용 산출물:
 
 ### 3.10 프론트엔드 프레임워크 / 렌더링
 
-권장: 어드민은 React + TypeScript SPA(데이터테이블/쿼리/라우터 라이브러리). 사용자 화면 SSR 여부는 SEO 요구로 판단한다.
+확정: 서비스 화면과 어드민 화면은 **별도 앱/별도 배포 단위**로 구현한다.
+
+기준:
+
+- `service-web`: 일반 사용자 가격 예측 화면. Next.js + React + TypeScript.
+- `admin-web`: 내부 운영자 어드민 화면. React + TypeScript SPA.
+- 두 앱은 OpenAPI 기반 API client, 공통 타입, 일부 UI primitive만 공유한다.
+- public route는 `service-web`에서 필요 시 SSR/metadata 최적화를 허용한다.
+- admin route는 `admin-web`에서 client-heavy 화면(DataTable, FilterBar, DetailPanel, DecisionBar)으로 구현하고 SSR/cache를 쓰지 않는다.
+- M1에서 비즈니스 API의 SoT는 FastAPI/OpenAPI다. Next.js route handler/server action 또는 admin-web dev proxy에 수집/검수/모델 운영 쓰기 로직을 중복 구현하지 않는다.
+- 어드민 장애/배포가 사용자 가격 예측 화면 배포와 분리되도록 컨테이너와 release unit을 나눈다.
+
+권장 세부 스택(M1):
+
+| 영역 | 선택 |
+|---|---|
+| Workspace/package manager | pnpm workspace |
+| Service app | `apps/service-web`: Next.js App Router + React + TypeScript |
+| Admin app | `apps/admin-web`: Vite + React + TypeScript SPA |
+| Shared packages | `packages/api-client`, `packages/ui`, `packages/config` |
+| Server state | TanStack Query |
+| Data table | TanStack Table |
+| Form/validation | React Hook Form + Zod |
+| API client | `openapi-typescript`로 schema type 생성 + shared fetch client. TanStack Query hook은 앱/도메인별 wrapper로 작성 |
+| Mock | MSW + `frontend_api_mock_fixtures_20260625.md` fixture JSON. service/admin handler는 앱별로 분리 |
+| E2E | Playwright |
+| Unit/component test | Vitest + Testing Library |
+| Styling/UI | Tailwind CSS + Radix UI primitives + lucide-react icons. 공통 컴포넌트는 `frontend_component_guidelines_20260625.md`를 우선한다 |
+| Lint/format | ESLint + Prettier + TypeScript strict |
 
 | 선택지 | 장점 | 단점 | 판단 |
 |---|---|---|---|
-| React + TypeScript SPA | [프론트 컴포넌트 기준](frontend_component_guidelines_20260625.md)(DataTable/FilterBar/URL-query 보존)과 1:1 매핑. 생태계/채용 넓음. | 사용자 화면 SEO/초기 로딩에는 약함. | 권장(어드민) |
-| Next.js(React + SSR) | 사용자 화면 SEO/초기 로딩에 유리하고 같은 React 생태계를 어드민과 공유. | 어드민 전용엔 과하고 배포 복잡도가 늘어남. | 사용자 화면 SEO 필요 시 |
-| Vue/Svelte 등 비React | 팀 역량에 따라 생산성이 좋을 수 있음. | 컴포넌트 기준 매핑/채용을 재검증해야 함. | 팀 역량 기준 선택 |
+| 서비스 Next.js + 어드민 React SPA | 서비스 화면은 SEO/metadata 여지를 확보하고, 어드민은 정적 SPA로 단순하고 최신 상태 중심으로 운영한다. 배포 장애 범위도 분리된다. | 앱 2개와 shared package 관리가 필요하다. | 확정 |
+| 단일 Next.js 앱 | 사용자/어드민 route, 공통 layout, 공통 컴포넌트를 한 앱에서 관리한다. | admin SSR/cache/client boundary 관리가 필요하고, 사용자/어드민 배포 장애 범위가 묶인다. | 비선택 |
+| 서비스 Next.js + 어드민 Next.js | 기술 스택이 통일된다. | Node runtime 2개 운영이 필요하고 어드민 SSR/cache 이점이 작다. | 후속 검토 |
+| Vue/Svelte 등 비React | 팀 역량에 따라 생산성이 좋을 수 있음. | Next.js/React 기준과 공통 컴포넌트 설계를 다시 잡아야 한다. | 비권장 |
 
 ### 3.11 서버 / 컨테이너 이미지 구성
 
@@ -213,9 +246,10 @@ Cold k80 joblib 적용 산출물:
 | 항목 | 권장 |
 |---|---|
 | API 이미지 | `python:3.11-slim` 멀티스테이지(기존 `Dockerfile.api` 패턴을 정리해 재사용). 모델/데이터 artifact는 COPY하지 않음. non-root 실행, pinned requirements/lockfile, healthcheck. |
-| 프론트 이미지 | React + TypeScript 빌드(멀티스테이지 node build) → nginx 정적 서빙(기존 `Dockerfile` 방향 유지, 어드민엔 SSR 불필요). |
-| dev 오케스트레이션 | `docker-compose` 1개: `art-price-api` + `art-price-frontend` + `mysql:8.0`(migration/seed) + `minio`(S3 호환 artifact/raw payload). Kubernetes는 M1 범위 아님. |
-| 이미지 태그 | API=`art-price-api:<git_sha>`, 프론트=UI 빌드 버전. 모델 정체성은 `model_version`/`artifact_uri`/checksum/`deployment_id`로 분리한다. 배포 로그에 `api_image_sha`와 `deployment_id`를 함께 남기되, 모델 교체가 이미지 태그를 바꾸지 않는다. |
+| service-web 이미지 | Next.js standalone output 기반 Node runtime 이미지. 멀티스테이지 node build, production dependency 최소화, non-root 실행, healthcheck. |
+| admin-web 이미지 | Vite React 정적 빌드 결과를 nginx 또는 정적 hosting으로 서빙. SSR/Node runtime 없음. |
+| dev 오케스트레이션 | `docker-compose` 1개: `art-price-api` + `art-price-service-web` + `art-price-admin-web` + `mysql:8.0`(migration/seed) + `minio`(S3 호환 artifact/raw payload). Kubernetes는 M1 범위 아님. |
+| 이미지 태그 | API=`art-price-api:<git_sha>`, service-web=`art-price-service-web:<git_sha>`, admin-web=`art-price-admin-web:<git_sha>`. 모델 정체성은 `model_version`/`artifact_uri`/checksum/`deployment_id`로 분리한다. 배포 로그에 `api_image_sha`와 `deployment_id`를 함께 남기되, 모델 교체가 이미지 태그를 바꾸지 않는다. |
 
 기존 `Dockerfile.api`에서 가져오지 말아야 할 것([RISK]):
 
@@ -235,13 +269,15 @@ Cold k80 joblib 적용 산출물:
 6. anonymous session + admin JWT auth fixture
 7. object storage key convention test fixture
 8. suppression query/snapshot exclusion test fixture
-9. primary market summary calculation fixture
-10. model registry/deployment seed for Warm joblib + Cold k80 joblib M1
-11. public artist candidate submit queue fixture
-12. Warm joblib + Cold k80 joblib serving smoke/parity fixture
-13. API Dockerfile(non-root, 모델 미포함) / 프론트 Dockerfile(React build→nginx) / docker-compose(api+frontend+mysql+minio) / `.dockerignore`
-14. startup artifact loader(active deployment → object storage joblib pull + `artifact_sha256` 검증) smoke fixture
-15. `rate_limit_counter` / `idempotency_key` / `anonymous_session` 테이블 DDL(§3.8) + `price_model_registry.artifact_sha256` 컬럼(§3.11)
+9. NANT DB mapping DDL + CSV import/validator + 95개 조합/`비고2 -> learning_excluded` 변환 fixture
+10. primary market summary calculation fixture
+11. `model_training_job` DDL + model training/import + registry/deployment seed for Warm joblib + Cold k80 joblib M1
+12. public artist candidate submit queue fixture
+13. Warm joblib + Cold k80 joblib serving smoke/parity fixture
+14. API Dockerfile(non-root, 모델 미포함) / service-web Dockerfile(Next.js standalone) / admin-web Dockerfile(Vite build→nginx) / docker-compose(api+service-web+admin-web+mysql+minio) / `.dockerignore`
+15. startup artifact loader(active deployment → object storage joblib pull + `artifact_sha256` 검증) smoke fixture
+16. `rate_limit_counter` / `idempotency_key` / `anonymous_session` 테이블 DDL(§3.8) + `price_model_registry.artifact_sha256`/`feature_schema_hash` 컬럼(§3.11)
+17. admin NANT mapping 관리 API/screen fixture(draft edit, unmapped 처리, validation, activate)
 
 ## 5. 개발 착수 전 확인 질문
 
@@ -256,5 +292,5 @@ Cold k80 joblib 적용 산출물:
 | 기존 예측 API를 직접 수정/호출할 것인가? | 아니오. joblib serving adapter 우선 |
 | rate limit/idempotency 저장을 별도 Redis로 둘 것인가? | 아니오. M1은 단일 인스턴스 + MySQL. 확장 시 Redis |
 | 비동기 job에 별도 작업 큐를 도입할 것인가? | 아니오. M1은 cron + collector_run/watchdog DB 패턴 |
-| 프론트 프레임워크를 무엇으로 둘 것인가? | 어드민 React + TypeScript SPA. 사용자 화면 SSR은 SEO 필요 시 |
+| 프론트 프레임워크를 무엇으로 둘 것인가? | 서비스 화면은 Next.js + React + TypeScript, 어드민 화면은 React + TypeScript SPA로 분리 |
 | 모델을 서버 이미지에 구울 것인가? | 아니오. object storage/registry 런타임 pull. 이미지 rebuild 없이 deployment 행으로 교체 |

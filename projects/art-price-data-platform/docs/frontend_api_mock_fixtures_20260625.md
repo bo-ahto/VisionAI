@@ -12,12 +12,16 @@
 - [사용자 화면 상세 명세](user_frontend_screen_spec_20260625.md)
 - [어드민 화면 상세 명세](admin_screen_detail_spec_20260625.md)
 - [프론트 E2E 테스트 계획](frontend_e2e_test_plan_20260625.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 
 ## 2. Mock 원칙
 
+- M1 프론트 mock은 MSW(Mock Service Worker)로 구성하고, 이 문서의 JSON fixture를 OpenAPI response shape 그대로 반환한다.
+- `service-web`과 `admin-web`은 같은 fixture 원본을 쓰되 MSW handler 등록은 앱별로 분리한다.
 - mock 필드는 API 문서의 response 필드명과 맞춘다.
 - 사용자 mock에는 source URL/internal row id를 넣지 않는다.
 - 어드민 mock에는 원천 추적 정보를 포함한다.
+- 작품 품질/snapshot 후보 mock에는 NANT 분류 필드(`nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status`)와 제외 사유(`nant_learning_excluded`, `nant_unmapped`) 케이스를 포함한다.
 - success, empty, error, conflict, forbidden, stale 상태를 모두 가진다.
 - id 값은 화면 decision path parameter와 일치해야 한다.
 - 페이지 목록 응답은 표준 envelope `{items, page, page_size, total}`를, 검색 등 비페이지 목록은 `{items, total}`를 따른다(API 기획 응답 예시 기준).
@@ -51,6 +55,14 @@ fixtures/art-price-data-platform/
     review_new_artists_queue.json
     snapshots_candidates_summary.json
     snapshots_candidates_items.json
+    nant_mapping_versions.json
+    nant_mappings_draft.json
+    nant_unmapped_materials.json
+    model_training_jobs.json
+    model_training_job_detail.json
+    model_versions.json
+    model_version_detail_candidate.json
+    model_version_decision_approved.json
     model_deployments_current.json
     audit_logs_success.json
   errors/

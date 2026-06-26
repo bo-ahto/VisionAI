@@ -21,6 +21,14 @@
 - 위험 액션은 confirmation modal을 거친다.
 - 사용자 화면은 원천 추적 정보를 노출하지 않는다.
 
+구현 기준:
+
+- UI는 `service-web`과 `admin-web`에서 공유 가능한 `packages/ui` 컴포넌트와 앱별 화면 컴포넌트로 나눈다.
+- Styling은 Tailwind CSS를 기본으로 한다.
+- 접근성/overlay primitive는 Radix UI를 사용한다.
+- 버튼/상태/액션 아이콘은 lucide-react를 우선 사용한다.
+- MUI/Ant Design 같은 풀 컴포넌트 프레임워크를 병행 도입하지 않는다.
+
 ## 3. 공통 컴포넌트
 
 | 컴포넌트 | 사용처 |
@@ -202,7 +210,7 @@ artwork_snapshot의 "생성 중"은 `building`이다(`generating`은 snapshot_re
 
 - 예측 결과 화면
 - 1차 시장 가격 카드
-- 모델 배포 화면
+- 모델 운영 화면
 - snapshot 화면
 
 ## 11. MetricTile 기준
@@ -211,7 +219,7 @@ artwork_snapshot의 "생성 중"은 `building`이다(`generating`은 snapshot_re
 
 - 수집 대시보드
 - snapshot 후보 요약
-- 모델 배포 요약
+- 모델 운영 요약
 
 구성:
 

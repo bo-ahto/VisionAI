@@ -29,6 +29,9 @@
 | 수집 run 재수집 요청(5.4 `request_retry`) | 운영 담당자 |
 | 원천 등록/수정(6.x) | 데이터 관리자 |
 | 수동 CSV 업로드/매핑 확정(6.3/6.5) | 데이터 분석가 |
+| NANT mapping version/row 조회 | 운영 담당자 |
+| NANT CSV import 및 draft row 편집 | 데이터 분석가 |
+| NANT active version 전환 | 데이터 관리자 |
 | 작품 품질 검수(8.2 approve/patch/hold/exclude) | 운영 담당자 |
 | 작가명 검수(8.4 approve/add_alias/hold/reject) | 운영 담당자 |
 | artist identity 연결 검수(8.6 `reject_candidate`/`hold`/`move_to_new_artist_candidate`) | 운영 담당자 |
@@ -116,12 +119,34 @@
 
 ---
 
-## H. API 기타 기본값
+## H. NANT 분류 / API 기타 기본값
 
 | 키 | 항목 | 기본값 | 상태 | 근거 / 사용처 |
 |----|------|--------|------|---------------|
+| `NANT-SEED-FILE` | 초기 NANT seed CSV 위치 | `projects/art-price-data-platform/docs/k-artmarket 1차 데이터 정제 - 실험데이터분류(데이터 수정).csv` | 기준 | 최초 DB mapping version import 원본. 운영 SoT는 DB active version |
+| `NANT-INITIAL-VERSION-KEY` | 초기 NANT mapping version key | `nant_material_classification_20260626_01` | 기준 | 최초 import version. snapshot/export/model artifact에는 DB `mapping_version_id`/`version_key`를 기록 |
+| `NANT-SEED-SHA256` | 초기 seed CSV SHA-256 | `d3349cb0be41aa78ecec5a1047b6b17b06dac727e0ac4aa6da2fa0d79c3c02fe` | 기준 | 최초 import 검증 |
+| `NANT-CATEGORY-COUNT` | 허용 NANT support/medium 조합 수 | 95 | 기준 | CSV 왼쪽 `재료(지지체)` + `도구(매체)` 기준. NANT 기준 문서 |
+| `NANT-IMPORT-EXCLUSION-PATTERN` | CSV import 시 학습 제외 변환 | `TRIM(비고2) LIKE '학습 제외%'` | 기준 | CSV seed/import 값을 DB `learning_excluded=true`로 변환 |
+| `NANT-ACTIVE-VERSION-POLICY` | active version 정책 | active는 1개, active row 직접 수정 금지, draft 수정 후 activate | 기준 | 재현성과 어드민 관리 충돌 방지 |
 | `RETRY-SCOPE-DEFAULT` | `request_retry`의 `scope` 미지정 기본 | `failed_only` | 기준 | 운영 비용상 실패분만. user_admin_api §5.4 |
 | `SUMMARY-DENOM` | 보유율 분모(모집단) | normalized 기준 | 기준 | user_admin_api §5.1 |
+
+---
+
+## I. 모델 학습 / 운영 모델 변경 기본값
+
+| 키 | 항목 | 기본값 | 상태 | 근거 / 사용처 |
+|----|------|--------|------|---------------|
+| `MODEL-ROUTES` | 운영 모델 route | `warm,cold` | 기준 | Warm/Cold 고정. route 추가는 별도 개발 작업 |
+| `MODEL-FAMILY-CHANGE-POLICY` | model family/알고리즘 변경 | 별도 개발 작업 | 기준 | 운영 학습은 같은 family의 version bump만 허용 |
+| `MODEL-FEATURE-CONTRACT-CHANGE-POLICY` | feature/serving contract 변경 | 별도 개발 작업 | 기준 | schema 변경은 routine training 승인 불가 |
+| `MODEL-TRAIN-SNAPSHOT-STATUS` | 신규 학습 입력 snapshot 상태 | `approved` only | 기준 | `generated` snapshot은 신규 학습 입력 금지. legacy joblib import는 manifest cutoff 필수 |
+| `MODEL-AUTO-PROMOTE` | 학습 성공 후 자동 운영 승격 | `false` | 기준 | candidate 승인과 deployment promote 분리 |
+| `MODEL-REQUIRE-FIXED-PARITY` | fixed-test parity gate | `true` | 기준 | M1 joblib import와 재학습 후보 검증 |
+| `MODEL-REQUIRE-API-SMOKE` | promote 전/후 API smoke | `true` | 기준 | artifact load, prediction log 확인 |
+| `MODEL-ARTIFACT-HASH-CHECK` | artifact SHA-256 검증 | `true` | 기준 | startup loader와 registry 무결성 검증 |
+| `MODEL-ROUTE-ACTIVE-LIMIT` | route별 active deployment 수 | `1` | 기준 | `price_model_deployment.uq_active_route` |
 
 ---
 
@@ -130,3 +155,5 @@
 | 일자 | 변경 | 비고 |
 |------|------|------|
 | 2026-06-25 | 초기 기본값 일괄 확정 | 잠정 항목은 운영 실측 후 갱신 |
+| 2026-06-26 | NANT 분류 기준 DB active version/seed/import 정책 추가 | CSV는 seed, 운영 SoT는 DB mapping version |
+| 2026-06-26 | 모델 학습/import와 운영 모델 변경 gate 기본값 추가 | 자동 승격 금지, approved snapshot, parity/smoke/hash gate |

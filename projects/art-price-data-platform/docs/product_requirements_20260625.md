@@ -21,6 +21,7 @@
 - [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
 - [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 - [운영 파라미터](operational_parameters_20260625.md)
 
 ## 2. 문제 정의
@@ -43,7 +44,7 @@
 - 4개 원천(Artsy, Saatchi, Print Bakery, Art1)의 데이터를 주기적으로 수집한다.
 - raw, interpreted, normalized, artist identity, snapshot, model deployment가 끊기지 않게 연결된다.
 - 사용자 가격 예측 화면에서 예측 가격, 신뢰도, 데이터 기준일, 1차 시장 가격 카드를 제공한다.
-- 어드민 화면에서 수집 상태, 검수 큐, snapshot, 모델 배포 상태를 운영할 수 있다.
+- 어드민 화면에서 수집 상태, 검수 큐, snapshot, 모델 운영 상태를 운영할 수 있다.
 - 수집 장애가 사용자 예측 API 장애로 번지지 않게 한다.
 - 모든 주요 운영 결정은 actor, 시각, 사유, 변경 전/후 상태를 추적할 수 있게 한다.
 
@@ -79,6 +80,7 @@
 - `source_*_interpreted_staging` 생성
 - `normalized_*_staging` 생성
 - 가격/통화/환율/크기/재료/판매상태 표준화
+- 표준화 이후 DB active NANT 재료(지지체/매체) 95분류와 `learning_excluded` 학습 제외 플래그 생성
 - unmapped/quality flag 생성
 - source별 품질 지표 산출
 
@@ -90,6 +92,7 @@
 - alias + 고신뢰 생년 기반 자동 확정
 - 동명이인/충돌/메타 부족 후보 검수 큐
 - 신규 artist_key 후보 큐
+- 확정 artist_key의 작가 프로필/메타는 `artist_profile_item`으로 항목 단위 관리하고, `artist_profile_current`는 현재 표시/검색/feature 후보용 요약으로 identity와 분리
 - identity 결정 append-only 이력
 - merge/un-merge 영향 추적
 
@@ -99,7 +102,8 @@
 - snapshot 확정요청, 생성승인, 서빙승인 3단계
 - `generated`와 `approved` 상태 분리
 - parquet export와 manifest
-- 모델 registry와 deployment 관리
+- 모델 학습/import job 추적
+- 모델 registry, candidate 승인, deployment 관리
 - prediction log 적재
 - active deployment 기준 `as_of` 산정
 
@@ -123,6 +127,7 @@
 - artist_key 연결 검수 큐
 - 신규 작가 후보 큐
 - snapshot 후보 확인과 승인
+- NANT mapping version/import/draft/activate 관리
 - 모델 버전/배포 관리
 - 운영 로그/알림
 
@@ -210,7 +215,7 @@
 성공 기준:
 
 - `generated` snapshot은 사용자 기준 데이터가 되지 않는다.
-- `approved` snapshot만 freshness와 as_of 기준이 된다.
+- `approved` snapshot만 서빙·freshness 비교 기준이 되고(`generated`는 비서빙), 사용자 as_of는 active deployment가 학습/import에 쓴 cutoff로 산정한다.
 
 ## 8. 기능 요구사항
 
@@ -219,15 +224,17 @@
 | FR-01 | 4개 원천을 주기 수집하고 run 단위로 추적한다. | MySQL, 주기 수집 운영 | E1-T02, E2, E8-T01 |
 | FR-02 | raw payload는 object storage에 저장하고 DB에는 hash/path/size만 저장한다. | MySQL | E1-T08 |
 | FR-03 | raw -> interpreted -> normalized 단계를 분리한다. | MySQL, 로드맵 | E1-T04, E3 |
-| FR-04 | 작가 identity는 이름만으로 자동 확정하지 않는다. | artist_key 표준화 | E4-T05 |
-| FR-05 | 신규 작가 후보는 승인 전 artist_key를 생성하지 않는다. | artist_key 표준화, API | E4-T06 |
-| FR-06 | 어드민 검수 decision은 actor, 시각, 사유를 남긴다. | API, MySQL | E6-T01, E6-T07, E6-T10 |
-| FR-07 | snapshot은 확정요청/생성승인/서빙승인 3단계로 처리한다. | API, MySQL | E5-T02~T04, E6-T08 |
-| FR-08 | 사용자 API는 원천 URL/source/internal ID를 노출하지 않는다. | API, 화면 | E6-T04, E6-T05, E7-T02, E9-T04 |
-| FR-09 | 예측 응답은 model_version, deployment_id, as_of를 포함한다. | API | E6-T05 |
-| FR-10 | 1차 시장 가격 카드는 집계값만 사용자에게 노출한다. | 시나리오, API | E0-T06, E6-T05 |
-| FR-11 | 개인정보/삭제 요청은 서비스 노출과 학습 반영을 차단할 수 있어야 한다. | 로드맵, 운영 | E0-T05, E1-T09, E8-T09 |
-| FR-12 | run 미생성/stuck/blocked/품질 하락은 알림으로 감지한다. | 주기 수집 운영 | E2-T09, E8-T02~T05 |
+| FR-04 | 표준화 이후 DB active NANT 재료(지지체/매체) 95분류를 적용하고 `learning_excluded=true` 기준으로 학습 제외를 고정한다. 어드민은 draft mapping을 관리하고 데이터 관리자가 active version을 전환한다. | NANT 분류 기준, MySQL | E0-T09, E1-T10, E3-T08~T09, E6-T12, E7-T13 |
+| FR-05 | 작가 identity는 이름만으로 자동 확정하지 않는다. | artist_key 표준화 | E4-T05 |
+| FR-06 | 신규 작가 후보는 승인 전 artist_key를 생성하지 않는다. | artist_key 표준화, API | E4-T06 |
+| FR-07 | 어드민 검수 decision은 actor, 시각, 사유를 남긴다. | API, MySQL | E6-T01, E6-T07, E6-T10 |
+| FR-08 | snapshot은 확정요청/생성승인/서빙승인 3단계로 처리한다. | API, MySQL | E5-T02~T04, E6-T08 |
+| FR-09 | 사용자 API는 원천 URL/source/internal ID를 노출하지 않는다. | API, 화면 | E6-T04, E6-T05, E7-T02, E9-T04 |
+| FR-10 | 예측 응답은 model_version, deployment_id, as_of를 포함한다. | API | E6-T05 |
+| FR-11 | 1차 시장 가격 카드는 집계값만 사용자에게 노출한다. | 시나리오, API | E0-T06, E6-T05 |
+| FR-12 | 개인정보/삭제 요청은 서비스 노출과 학습 반영을 차단할 수 있어야 한다. | 로드맵, 운영 | E0-T05, E1-T09, E8-T09 |
+| FR-13 | run 미생성/stuck/blocked/품질 하락은 알림으로 감지한다. | 주기 수집 운영 | E2-T09, E8-T02~T05 |
+| FR-14 | 모델 학습/import job, candidate 승인, active deployment 승격/롤백을 분리해 관리한다. 새 snapshot이나 candidate 생성만으로 운영 모델이 자동 변경되지 않는다. | 모델 학습/배포 수명주기, API | E1-T07, E5-T07~T11, E6-T09, E7-T10 |
 
 ## 9. 비기능 요구사항
 
@@ -246,11 +253,13 @@
 1차 개발 성공 기준:
 
 - 4개 원천의 첫 full run이 raw/interpreted/normalized까지 완료된다.
+- 표준화 이후 DB active NANT 분류와 `learning_excluded` 학습 제외 플래그가 snapshot 후보에 반영된다.
 - 작가명/alias/artist_key 후보 큐가 생성되고 어드민이 처리할 수 있다.
 - snapshot 후보를 만들고, generated/approved 전이를 완료할 수 있다.
+- 모델 학습/import 결과가 candidate로 등록되고, approved 모델만 active deployment로 승격된다.
 - active deployment 기준으로 사용자 예측 API가 응답한다.
 - 사용자 화면에서 예측 가격, 신뢰도, 기준일, 1차 시장 가격 카드가 표시된다.
-- 어드민 화면에서 수집 상태, 검수 큐, snapshot, 모델 배포 상태를 처리할 수 있다.
+- 어드민 화면에서 수집 상태, 검수 큐, snapshot, 모델 운영 상태를 처리할 수 있다.
 - 원천 추적 정보가 사용자 API/화면에 노출되지 않는다.
 - stuck run, run 미생성, 품질 하락, blocked source가 알림으로 잡힌다.
 - 개인정보/삭제 요청이 서비스 노출과 snapshot 후보에 반영된다.
@@ -283,8 +292,9 @@
 | 어드민 계정 | 제공 이메일/비밀번호 기반 admin user + JWT + 역할 claim. 초기 superuser는 개인 식별 가능한 계정으로 seed/CLI 생성. SSO는 후속 도입 | 조직 IdP/SSO를 M1부터 강제해야 하면 외부 IdP 우선안 선택 | Phase 0 |
 | suppression 스키마 | 별도 `suppression_rule` 테이블을 SoT로 두고 service display/model training/raw scope를 분리 | 컬럼-only 단순화가 필요하면 audit/범위 확장 리스크 승인 필요 | Phase 0 |
 | 1차 시장 가격 카드 계산 | 기존 가격 예측 `estimated_ho` nearest mapping, 최소 N=5, 매체별 N>=3, q05~q95 winsorized median/q25/q75 | 표본 부족 시 카드 숨김 기준을 더 강하게 둘지 정책 선택 | Phase 0 |
-| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 집계 테이블 생성. API는 active deployment training snapshot 기준 조회 | 실시간 feature store 계산을 원하면 latency/재현성 리스크 승인 필요 | Phase 0 |
+| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 집계 테이블 생성. API는 active deployment training snapshot 또는 import manifest cutoff 기준 조회 | 실시간 feature store 계산을 원하면 latency/재현성 리스크 승인 필요 | Phase 0 |
 | 예측 API 연결 방식 | 기존 예측 API를 호출하지 않고 데이터 수집 서비스 내부 joblib serving adapter가 active deployment의 joblib artifact를 직접 로드 | 기존 가격 예측 API를 직접 확장/호출하려면 회귀 테스트 범위 확대 필요 | Phase 0 |
 | 신규 작가 후보 저장 방식 | 사용자 후보 제출을 M1에 포함하므로 물리 후보 큐 테이블을 1차 DDL에 포함 | 후보 제출을 M1에서 제외하면 SQL view/export로 축소 가능 | Phase 0/1 |
 | object storage | local dev backend + S3-compatible adapter/path convention. DB에는 URI/hash/size만 저장 | 특정 cloud provider/IAM을 M1부터 고정해야 하면 provider 직접 고정 | Phase 1 |
+| 모델 학습/변경 흐름 | Warm/Cold route와 model family는 고정한다. M1은 기존 joblib import/seed + fixed-test parity + active deployment. 이후 재학습은 같은 family 안에서 `model_training_job -> registry candidate -> approved -> deployment`로 `model_version`만 올린다 | model family/알고리즘/feature contract 변경은 별도 개발 작업으로 분리 | Phase 5 |
 | M1 모델 연결 | Warm은 `warm_lite_unified_current_joblib_v0.1_candidate`, Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `cold_k80_conservative_official_v0.1_candidate` joblib bundle로 freeze해 registry/deployment에 등록 | Cold k80 joblib freeze/parity가 막히면 M1 cold route는 보류하고 fallback은 별도 승인 필요. `cold_prediction_v0.5_operational`은 과거 raw-input p95 방어 참고 산출물 | Phase 5 |

@@ -24,6 +24,7 @@
 - [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 
 ## 1. 문서 역할
 
@@ -104,6 +105,8 @@ MySQL 스키마 문서
 | `POST /api/v1/admin/collection-runs/{run_id}/actions` | 수집 run 재수집 (5.4) | 운영 담당자 |
 | `POST /api/v1/admin/sources` · `PATCH /api/v1/admin/sources/{source}` | 원천 등록/수정 (6.x) | 데이터 관리자 |
 | `POST /api/v1/admin/manual-imports` 계열 | 수동 CSV 업로드/매핑 (6.3/6.5) | 데이터 분석가 |
+| `POST /api/v1/admin/model-training/jobs` | 모델 학습/import job 생성 (7.0) | 데이터 분석가 |
+| `POST /api/v1/admin/model-versions/{model_version}/decision` | 후보 모델 승인/반려 (7.2.1) | 데이터 관리자 |
 | `POST /api/v1/admin/model-deployments` (`promote`/`rollback`/`retire`) | 모델 승격/롤백 (7.3) | 데이터 관리자 |
 | `POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision` | 작품 품질 검수 (8.2) | 운영 담당자 |
 | `POST /api/v1/admin/review/artist-names/{alias_id}/decision` | 작가명 검수 (8.4) | 운영 담당자 |
@@ -117,7 +120,7 @@ MySQL 스키마 문서
 | `GET /api/v1/admin/audit-logs` | audit-logs 조회 (10.1) | 데이터 관리자 |
 
 - 역할 위계는 개발자 < 운영 담당자 < 데이터 분석가 < 데이터 관리자이며, `required_role`은 해당 역할 "이상"을 의미한다(상위 역할은 하위 권한 포함). 1차는 이 상속형 RBAC로 구현하고, 직무별 capability matrix는 후속으로 분리한다.
-- 모델 승격/롤백(7.3), artist identity 최종 확정(8.6 `approve_existing_artist_key`), 신규 artist_key 생성(8.8 `approve`), snapshot 생성승인(9.3.2) 및 snapshot 서빙승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영 담당자는 후보 보류/반려/재검토를 처리할 수 있지만 최종 artist_key 확정, 모델 롤백, snapshot 서빙승인은 할 수 없다.
+- 후보 모델 승인/반려(7.2.1), 모델 승격/롤백(7.3), artist identity 최종 확정(8.6 `approve_existing_artist_key`), 신규 artist_key 생성(8.8 `approve`), snapshot 생성승인(9.3.2) 및 snapshot 서빙승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영 담당자는 후보 보류/반려/재검토를 처리할 수 있지만 최종 artist_key 확정, 모델 승인/롤백, snapshot 서빙승인은 할 수 없다.
 - 운영 초기 슈퍼유저는 위 역할을 모두 수행할 수 있으나, 실제 처리자 식별과 사유 기록 의무는 동일하게 적용된다.
 - 전체 역할 매핑의 단일 기준은 [운영 파라미터](operational_parameters_20260625.md) §A-1.
 
@@ -201,27 +204,27 @@ source 등록
 
 서빙(정상) snapshot 정의:
 
-- 사용자 서빙/freshness 기준이 되는 snapshot은 `status=approved`(운영 사용 승인 완료)이고 보존기간 내에 있는 snapshot뿐이다. 사용자 노출 `as_of`/freshness는 이 `approved` snapshot 기준으로만 산정한다.
+- 사용자 서빙/freshness 비교 대상이 되는 최신 데이터 snapshot은 `status=approved`(운영 사용 승인 완료)이고 보존기간 내에 있는 snapshot뿐이다. 사용자 노출 `as_of`는 active deployment가 기록한 학습/import cutoff를 기준으로 하고, 최신 `approved` snapshot은 freshness 괴리 비교에 사용한다.
 - `status=generated`는 빌드는 완료됐지만 운영 승인 전(비서빙) 상태다. 빌드 완료 snapshot이라도 데이터 관리자의 운영 승인을 받기 전에는 사용자 기준데이터로 쓰지 않는다.
 - 그 외(만료·폐기·미승인 또는 `generated`) snapshot은 사용자 응답의 기준으로 쓰지 않는다.
 - snapshot 생성 흐름과의 연결: `snapshot_request` 승인 → `generating` → `generated`(비서빙) → 데이터 관리자가 운영 승인하면 `artwork_snapshot.status=approved`(서빙 가능)로 전이한다(9.3). 미승인 `generated` snapshot이 사용자 기준데이터가 되지 않도록 서빙은 `approved`만 본다.
 
 as_of 기준(모델이 실제 쓴 값):
 
-- 사용자에게 노출하는 `as_of`는 "현재 active deployment가 학습에 사용한 snapshot의 `source_cutoff_at`"이다(모델이 실제 쓴 값이며, 단순 최신 snapshot이 아니다). 9.3 / 7.3 참조.
+- 사용자에게 노출하는 `as_of`는 "현재 active deployment가 학습에 사용한 데이터 cutoff"이다. 일반 재학습 모델은 training snapshot의 `source_cutoff_at`, legacy joblib import는 registry/import manifest의 `source_cutoff_at`을 사용한다(모델이 실제 쓴 값이며, 단순 최신 snapshot이 아니다). 7.0 / 7.3 / 9.3 참조.
 - 예측/가격 카드는 이 active deployment 기준 snapshot을 참조한다. 응답에 `as_of`와 데이터 기준일을 표기한다.
 
 지연 임계와 차단:
 
-- SLA 문구: "최신 snapshot 기준, 최대 `N`일." 참조 snapshot의 `as_of`가 `N`=10일([운영 파라미터](operational_parameters_20260625.md) §E `FRESH-WARN-N`)을 초과하면 화면에 최신성 경고를 표시한다(카드는 계속 노출).
+- SLA 문구: "운영 모델 기준, 최대 `N`일." active deployment의 `as_of`가 `N`=10일([운영 파라미터](operational_parameters_20260625.md) §E `FRESH-WARN-N`)을 초과하면 화면에 최신성 경고를 표시한다(카드는 계속 노출).
 - 완전 차단 임계 `M`=21일(`M>N`, §E `FRESH-HIDE-M`)을 초과하면 구데이터의 무한 노출을 막기 위해 카드 자체를 숨긴다.
 - 따라서 응답에는 기준일(`as_of`/`data_reference_date`)을 항상 포함해 화면이 경고/차단을 판단할 수 있게 한다.
 
 deployment freshness vs 데이터 freshness 불일치:
 
-- 두 snapshot의 역할을 구분한다: 사용자에게 노출하는 `as_of`/기준은 "현재 active deployment가 학습에 사용한 `approved` snapshot의 `source_cutoff_at`"가 1차 기준이고, "마지막(최신) `approved` snapshot"은 그 1차 기준과 비교해 신선도 괴리를 판단하는 비교 대상일 뿐 사용자 `as_of`로 노출하지 않는다.
-- `as_of`는 모델이 실제 학습에 쓴 snapshot 기준이므로, 그 후 더 최신 `approved` snapshot이 생성·승인됐어도 운영 모델이 갱신되지 않았으면 `as_of`는 옛 값으로 남는다.
-- active deployment의 학습 snapshot과 현재 최신 `approved` snapshot의 `source_cutoff_at` 괴리가 임계 14일(§E `FRESH-MODEL-GAP`)을 초과하면, 데이터는 신선해도 모델이 옛 데이터를 쓰고 있다는 뜻이므로 신선도 경고를 띄운다.
+- 두 snapshot의 역할을 구분한다: 사용자에게 노출하는 `as_of`/기준은 "현재 active deployment가 학습 또는 import 기준으로 기록한 `source_cutoff_at`"가 1차 기준이고, "마지막(최신) `approved` snapshot"은 그 1차 기준과 비교해 신선도 괴리를 판단하는 비교 대상일 뿐 사용자 `as_of`로 노출하지 않는다.
+- `as_of`는 모델이 실제 학습/import 기준으로 기록한 cutoff이므로, 그 후 더 최신 `approved` snapshot이 생성·승인됐어도 운영 모델이 갱신되지 않았으면 `as_of`는 옛 값으로 남는다.
+- active deployment의 학습/import cutoff와 현재 최신 `approved` snapshot의 `source_cutoff_at` 괴리가 임계 14일(§E `FRESH-MODEL-GAP`)을 초과하면, 데이터는 신선해도 모델이 옛 데이터를 쓰고 있다는 뜻이므로 신선도 경고를 띄운다.
 
 ### 2.7 동시성과 멱등(idempotency)
 
@@ -248,8 +251,12 @@ deployment freshness vs 데이터 freshness 불일치:
 | 수동 CSV 업로드 | `POST /api/v1/admin/manual-imports` |
 | 수동 CSV 업로드 상세 | `GET /api/v1/admin/manual-imports/{import_id}` |
 | 수동 CSV 컬럼 매핑 확정 | `POST /api/v1/admin/manual-imports/{import_id}/mapping` |
+| 모델 학습/import job 생성 | `POST /api/v1/admin/model-training/jobs` |
+| 모델 학습/import job 목록 | `GET /api/v1/admin/model-training/jobs` |
+| 모델 학습/import job 상세 | `GET /api/v1/admin/model-training/jobs/{training_job_id}` |
 | 모델 버전 목록 | `GET /api/v1/admin/model-versions` |
 | 모델 버전 상세 | `GET /api/v1/admin/model-versions/{model_version}` |
+| 후보 모델 승인/반려 | `POST /api/v1/admin/model-versions/{model_version}/decision` |
 | 모델 승격/롤백 | `POST /api/v1/admin/model-deployments` |
 | 현재 운영 모델 확인 | `GET /api/v1/admin/model-deployments/current` |
 | 작품 품질 검수 큐 | `GET /api/v1/admin/review/artworks` |
@@ -312,7 +319,7 @@ query:
 
 참조:
 
-- 읽기: `artist_identity`, `artist_name_alias`
+- 읽기: `artist_identity`, `artist_name_alias`, `artist_profile_current`
 - 필요 시 읽기: `normalized_artist_staging`
 - 상태 기준: `artist_identity.identity_status=active`
 
@@ -392,7 +399,7 @@ request:
 - `width_cm`, `height_cm`는 필수다.
 - `artist_key`가 있으면 확정 작가 기준으로 예측한다.
 - `artist_candidate_id`만 있으면 작가 미확정 상태로 처리하고 검수 필요 표시를 반환한다.
-- 조각, 설치, 영상, 혼합매체 후보는 예측 불가 또는 검수 필요로 분리한다.
+- 재료/지지체가 DB active NANT mapping 기준으로 매핑되지 않거나 학습 제외 기준에 걸리면 예측 불가 또는 검수 필요로 분리한다.
 
 response:
 
@@ -434,7 +441,7 @@ response:
 주의:
 
 - `primary_market_summary`에는 원천 사이트명, 원천 URL, 원천 작품 ID를 넣지 않는다.
-- `as_of`/`data_reference_date`는 active deployment가 학습에 쓴 snapshot 기준 최신성 표기다(2.6 / 4.4).
+- `as_of`/`data_reference_date`는 active deployment가 학습/import 기준으로 기록한 cutoff 표기다(2.6 / 4.4).
 - 예측 API는 수집 DB를 직접 조회하지 않고, 승인된 snapshot과 운영 feature store를 참조한다.
 - 예측 응답에는 사용된 `model_version`, `model_route`, `deployment_id`를 남긴다. 모델이 중간에 바뀌어도 특정 예측이 어느 모델에서 나온 값인지 추적하기 위함이다.
 - 응답의 `model_route`는 `price_prediction_log.route`(MySQL 문서 5.19)와 동일 값이며 표시 필드명만 다르다.
@@ -457,7 +464,7 @@ GET /api/v1/public/artists/{artist_key}/primary-market-summary
   "artist_key": "artist_123",
   "as_of": "2026-06-25T00:00:00Z",
   "data_reference_date": "2026-06-25",
-  "freshness_label": "최신 snapshot 기준, 최대 10일",
+  "freshness_label": "운영 모델 기준, 최대 10일",
   "summary": {
     "title": "1차 시장 가격",
     "hodang_median_krw": 350000,
@@ -473,7 +480,7 @@ GET /api/v1/public/artists/{artist_key}/primary-market-summary
 
 주의:
 
-- `as_of`는 현재 active deployment가 학습에 사용한 snapshot의 `source_cutoff_at`(2.6 / 9.3 / 7.3)이며, `data_reference_date`는 화면 표시용 기준일이다.
+- `as_of`는 현재 active deployment가 학습/import 기준으로 기록한 `source_cutoff_at`(2.6 / 7.0 / 7.3 / 9.3)이며, `data_reference_date`는 화면 표시용 기준일이다.
 - `freshness_label`의 `N`(경고 임계, 허용 지연 상한)은 10일이다. `N`=10일 초과 시 경고, 완전 차단 임계 `M`=21일(M>N) 초과 시 카드를 숨긴다. 최신성 정책은 2.6을 따른다.
 
 ## 5. 어드민 수집 API
@@ -763,6 +770,47 @@ request 예:
 
 ## 7. 모델 버전 / 배포 API
 
+모델 학습과 운영 모델 변경 수명주기는 [모델 학습과 운영 모델 변경 수명주기](model_training_deployment_lifecycle_20260626.md)를 기준으로 한다. API는 학습/import job, candidate 승인, active deployment 전환을 분리한다.
+
+### 7.0 모델 학습/import job
+
+```text
+POST /api/v1/admin/model-training/jobs
+GET /api/v1/admin/model-training/jobs
+GET /api/v1/admin/model-training/jobs/{training_job_id}
+```
+
+목적:
+
+- approved snapshot parquet export를 입력으로 모델 학습 job을 만든다.
+- 기존 joblib bundle을 import할 때도 같은 job 이력으로 남긴다.
+- job 상태와 artifact, metric, gate 결과를 조회한다.
+
+POST request 예:
+
+```json
+{
+  "route": "cold",
+  "training_profile": "cold_k80_conservative",
+  "training_snapshot_id": "snapshot_2026_06_25",
+  "snapshot_export_id": "export_2026_06_25_parquet",
+  "source_cutoff_at": "2026-06-25T00:00:00+09:00",
+  "feature_generation_version": "feature_gen_20260625_01",
+  "baseline_model_version": "cold_k80_conservative_official_v0.1",
+  "reason": "approved snapshot 기준 cold route 재학습 후보 생성"
+}
+```
+
+주의:
+
+- `training_snapshot_id`는 `approved` snapshot만 허용한다.
+- `generated` snapshot은 학습 입력으로 사용할 수 없다.
+- 기존 legacy joblib import는 `training_snapshot_id` 없이도 가능하지만, `source_cutoff_at`, `source_manifest_uri`, artifact SHA-256을 반드시 제공한다.
+- route는 `warm`/`cold`로 고정한다.
+- model family, feature schema, serving input/output contract 변경은 이 API의 routine training/import로 처리하지 않고 별도 개발 작업으로 처리한다.
+- job 생성은 운영 배포가 아니다.
+- job이 `succeeded`가 된 뒤에만 `price_model_registry(candidate)` 등록이 가능하다.
+
 ### 7.1 모델 버전 목록
 
 ```text
@@ -778,7 +826,7 @@ query:
 
 | 파라미터 | 설명 |
 |---|---|
-| `route` | `warm`, `cold`, `unified` 등 모델 경로 |
+| `route` | `warm`, `cold` 모델 경로 |
 | `status` | `candidate`, `approved`, `retired`, `rejected` |
 | `page` / `page_size` | 페이지 |
 
@@ -786,11 +834,14 @@ query:
 
 - 모델 버전
 - 모델 경로
+- training job ID
 - 학습 snapshot ID
 - feature generation 버전
 - 학습 코드 버전
 - artifact 경로
+- feature schema hash
 - 주요 성능 지표
+- gate 결과
 - parity 검증 상태
 - 현재 배포 여부
 
@@ -804,16 +855,53 @@ GET /api/v1/admin/model-versions/{model_version}
 
 - 모델 버전
 - 모델 경로
+- training job ID
 - 학습 snapshot ID
 - train/validation/test split ID
 - feature generation 버전
 - 학습 코드 git SHA
+- feature schema hash
 - model artifact URI
 - feature store URI
 - 성능 지표 JSON
+- gate 결과 JSON
 - 검증 리포트 URI
 - parity 검증 결과
 - 승인자/승인시각/승인 사유
+
+### 7.2.1 후보 모델 승인/반려
+
+```text
+POST /api/v1/admin/model-versions/{model_version}/decision
+```
+
+목적:
+
+- `candidate` 모델을 `approved` 또는 `rejected`로 전환한다.
+- 운영 배포 전 검증 gate 확인과 승인 사유를 남긴다.
+
+request 예:
+
+```json
+{
+  "decision": "approve",
+  "reason": "validation/test, fixed-test parity, API smoke 통과",
+  "known_limitations": "Art1 M1 범위 기준"
+}
+```
+
+허용 decision:
+
+| decision | 의미 | required_role |
+|---|---|---|
+| `approve` | 운영 배포 가능 모델로 승인 | 데이터 관리자 |
+| `reject` | 후보 모델 반려 | 데이터 관리자 |
+
+주의:
+
+- approval은 운영 active 전환이 아니다.
+- `approved` 모델만 7.3의 `promote` 대상이 될 수 있다.
+- 승인자/승인시각은 인증 컨텍스트에서 채우며 request body로 받지 않는다.
 
 ### 7.3 모델 승격/롤백
 
@@ -841,7 +929,7 @@ request 예:
 
 | action | 의미 |
 |---|---|
-| `promote` | 후보 모델을 운영 모델로 승격 |
+| `promote` | approved 모델을 운영 active deployment로 승격 |
 | `rollback` | 지정한 이전 모델로 운영 배포 전환 |
 | `retire` | 더 이상 운영 후보로 쓰지 않음 |
 
@@ -850,6 +938,7 @@ request 예:
 - `candidate` 모델은 바로 배포하지 않는다.
 - validation/test 성능, parity 검증, API smoke test를 통과한 `approved` 모델만 운영 승격할 수 있다.
 - 모델 승격은 수집 snapshot 생성과 별도 단계다. 새 데이터가 수집되어도 자동으로 운영 모델이 바뀌지 않는다.
+- 승격 후 serving adapter가 artifact SHA-256을 검증하고, prediction log에 새 `deployment_id`가 남는지 확인한다.
 
 ### 7.4 현재 운영 모델 확인
 
@@ -922,7 +1011,7 @@ query:
 | `source` | 원천 사이트 |
 | `price_status` | 가격 있음/없음/문의 |
 | `size_status` | 크기 파싱 성공/실패 |
-| `medium_status` | 재료 분류 성공/실패 |
+| `medium_status` | NANT 재료(지지체/매체) 분류 성공/실패/학습 제외 |
 | `review_status` | 검수 상태 |
 | `page` / `page_size` | 페이지 |
 
@@ -934,12 +1023,13 @@ query:
 - 원천값
 - 분해/정리값
 - 표준화 후보값
+- NANT 분류값(`nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status`)
 - 품질 플래그
 - 처리 상태
 
 참조:
 
-- 읽기: `source_artwork_raw`, `source_artwork_interpreted_staging`, `normalized_artwork_staging`
+- 읽기: `source_artwork_raw`, `source_artwork_interpreted_staging`, `normalized_artwork_staging`, `artwork_nant_classification`
 
 ### 8.2 작품 품질 검수 처리
 
@@ -956,7 +1046,7 @@ request:
   "patch": {
     "width_cm": 60.0,
     "height_cm": 72.7,
-    "medium_category_candidate": "painting"
+    "medium_raw": "Oil on canvas"
   },
   "reason": "원천 상세 페이지 확인 후 크기 수정"
 }
@@ -1194,7 +1284,7 @@ response(`decision=approve`):
 
 쓰기:
 
-- `approve` 시: `artist_identity`, 필요 시 `artist_name_alias.artist_key`
+- `approve` 시: `artist_identity`, `artist_profile_item`, `artist_profile_current`, 필요 시 `artist_name_alias.artist_key`
 - `hold`/`reject` 시: 신규 작가 후보의 `review_status`, 처리자/시각/사유(2.2.1)
 
 권한/주의:
@@ -1203,7 +1293,73 @@ response(`decision=approve`):
 - `decision=approve`만 신규 `artist_key`를 생성할 수 있다. `recheck`/`hold`/`reject`는 키를 만들지 않는다.
 - 일반 사용자 API에서는 호출할 수 없다.
 - `approve`는 `idempotency_key`로 중복 생성을 막는다. 같은 키의 재요청은 이미 생성된 `artist_key`를 그대로 반환한다(2.7).
+- 신규 `artist_key` 생성 시 원천에서 분해 가능한 작가 소개/학력/전시/팔로워 같은 프로필성 메타는 `artist_profile_item`에 항목 단위로 만들고, `artist_profile_current` 최소 요약도 갱신한다. 프로필성 메타는 `artist_identity`에 쓰지 않는다.
 - `approve`/`hold`/`reject`는 `expected_review_status`가 서버 현재 상태와 다르면 처리하지 않고 `CONFLICT`를 반환한다(2.7). `recheck`는 상태 전이가 아니므로 충돌 검사 대상이 아니다(8.4 `recheck_candidates`와 동일 원칙).
+
+### 8.9 NANT mapping 관리
+
+NANT 재료(지지체/매체) mapping은 DB version으로 관리한다. CSV는 draft version import 원본이며, active version은 직접 수정하지 않는다.
+
+Endpoints:
+
+```text
+GET  /api/v1/admin/nant/mapping-versions
+POST /api/v1/admin/nant/mapping-versions/import
+POST /api/v1/admin/nant/mapping-versions/{mapping_version_id}/validate
+POST /api/v1/admin/nant/mapping-versions/{mapping_version_id}/activate
+GET  /api/v1/admin/nant/mappings
+POST /api/v1/admin/nant/mappings
+PATCH /api/v1/admin/nant/mappings/{material_mapping_id}
+DELETE /api/v1/admin/nant/mappings/{material_mapping_id}
+GET  /api/v1/admin/nant/unmapped-materials
+```
+
+권한:
+
+| 액션 | required_role |
+|---|---|
+| version/mapping/unmapped 조회 | 운영 담당자 |
+| CSV import, draft row 추가/수정/삭제 | 데이터 분석가 |
+| validate | 데이터 분석가 |
+| activate | 데이터 관리자 |
+
+version 응답 항목:
+
+- `mapping_version_id`
+- `version_key`
+- `status`: `draft`/`active`/`archived`
+- `source_file_sha256`
+- `allowed_category_count`
+- `mapping_row_count`
+- `learning_excluded_count`
+- `validation_status`
+- `created_by`/`created_at`
+- `activated_by`/`activated_at`
+
+mapping row 응답 항목:
+
+- `material_mapping_id`
+- `mapping_version_id`
+- `source_material_text`
+- `nant_support`
+- `nant_medium`
+- `nant_category_key`
+- `learning_excluded`
+- `learning_exclusion_reason`
+- `raw_note`/`raw_note2`/`raw_note3`
+- `updated_by`/`updated_at`
+
+처리 원칙:
+
+- `POST /mapping-versions/import`는 새 `draft` version을 만든다. 기존 active version을 덮어쓰지 않는다.
+- `PATCH`/`DELETE`는 `draft` version row에만 허용한다. active/archived row 수정은 `CONFLICT`로 거부한다.
+- `activate`는 validation passed 상태에서만 허용한다. 성공 시 기존 active는 `archived`, 대상 draft는 `active`가 된다.
+- snapshot 후보 query와 `artwork_nant_classification`은 active version을 사용한다. 과거 snapshot은 당시 `mapping_version_id`를 고정한다.
+
+참조:
+
+- 읽기/쓰기: `nant_mapping_version`, `nant_allowed_category`, `nant_material_mapping`
+- 읽기: `artwork_nant_classification`
 
 ## 9. Snapshot API
 
@@ -1222,12 +1378,13 @@ GET /api/v1/admin/snapshots/candidates/summary
 - 사이트별 row 수
 - 가격 보유율
 - 크기 파싱 성공률
+- NANT 분류 성공/학습 제외/unmapped 수
 - 작가 확정률
 - 직전 snapshot 대비 변화량
 
 참조:
 
-- 읽기: `normalized_artwork_staging`, `normalized_artist_staging`, `artist_identity`, `fx_rate_daily`
+- 읽기: `normalized_artwork_staging`, `artwork_nant_classification`, `normalized_artist_staging`, `artist_identity`, `fx_rate_daily`
 
 ### 9.2 snapshot 후보 목록
 
@@ -1241,7 +1398,7 @@ query:
 |---|---|
 | `source` | 원천 사이트 |
 | `include_status` | 포함/제외 후보 |
-| `exclude_reason` | 제외 사유 |
+| `exclude_reason` | 제외 사유. NANT 제외는 `nant_learning_excluded`, 매핑 실패는 `nant_unmapped` |
 | `artist_identity_status` | 작가 확정 상태 |
 | `page` / `page_size` | 페이지 |
 
@@ -1330,6 +1487,7 @@ response:
 - `collector_run.status=failed` 또는 `collector_run.quality_status=blocked`인 run은 자동 포함하지 않는다.
 - `blocked`는 수집 결과 삭제가 아니라 snapshot 자동 반영 차단 상태다. 운영자 override 사유가 있을 때만 후보에 포함할 수 있다.
 - 환율이 없어 `price_krw_normalized`를 만들 수 없는 row는 snapshot 포함 대상에서 제외한다.
+- DB active NANT mapping 기준 `learning_excluded=true` row는 `exclude_reason=nant_learning_excluded`, 매핑 실패 row는 `exclude_reason=nant_unmapped`로 제외 또는 보류한다. 기존 재료/지지체 하드코딩 학습 필터는 사용하지 않는다.
 
 #### 9.3.3 서빙승인 (데이터 관리자)
 
@@ -1340,7 +1498,7 @@ POST /api/v1/admin/snapshots/{snapshot_id}/approve
 목적:
 
 - `generated`(빌드 완료·비서빙) snapshot을 운영 사용 승인해 서빙 대상으로 올린다.
-- 생성승인(9.3.2)과 별개 액션이다. 생성은 snapshot을 만들 뿐이고, 서빙 노출은 이 액션으로만 일어난다.
+- 생성승인(9.3.2)과 별개 액션이다. 생성은 snapshot을 만들 뿐이고, 서빙 대상 전환은 이 액션으로만 일어난다(실제 사용자 노출은 이 snapshot으로 학습·승격된 모델이 배포된 뒤).
 
 request:
 
@@ -1398,7 +1556,7 @@ GET /api/v1/admin/normalized-artworks/{normalized_artwork_id}/impact
 
 참조:
 
-- 읽기: `artwork_snapshot_item`, `artwork_snapshot`, 모델 학습 snapshot 매핑(7.1/7.2), `price_model_deployment`
+- 읽기: `artwork_snapshot_item`, `artwork_snapshot`, 모델 학습 job/registry 매핑(7.0~7.2), `price_model_deployment`
 
 주의:
 
@@ -1452,10 +1610,10 @@ API 구현 시 반드시 지켜야 할 기준:
 - 모든 어드민 쓰기 API는 처리자, 처리시각, 처리 사유를 남긴다.
 - `actor_id`는 request body로 받지 않고 인증 컨텍스트에서 주입한다(2.2.1). 인증은 본 설계의 전제다(12.0).
 - 검수 decision API는 `expected_review_status`로 충돌을 검사하고, 생성 계열은 `idempotency_key`로 중복 생성을 막는다(2.7).
-- 사용자 예측/가격 카드 응답에는 참조 snapshot 기준 `as_of`/기준일을 표기한다(2.6).
+- 사용자 예측/가격 카드 응답에는 active deployment가 기록한 `as_of`/기준일을 표기한다(2.6).
 - 수집 DB 장애가 가격 예측 API 장애로 번지지 않게 예측 API는 운영 feature store와 모델 번들을 우선한다.
-- snapshot 생성은 `artwork_snapshot`과 `artwork_snapshot_item`에 남기고, 모델 학습은 snapshot export를 기준으로 한다.
-- 모델 버전 등록, 승인, 운영 승격, 롤백은 API와 DB에 이력으로 남긴다.
+- snapshot 생성은 `artwork_snapshot`과 `artwork_snapshot_item`에 남기고, 모델 학습/import는 approved snapshot export를 기준으로 `model_training_job`에 남긴다.
+- 모델 candidate 등록, 승인/반려, 운영 승격, 롤백은 API와 DB에 이력으로 남긴다.
 - 예측 응답과 예측 로그에는 `model_version`과 `deployment_id`를 남긴다.
 
 ## 12. 정책 확정/조정 항목 (운영 파라미터 참조)
@@ -1482,4 +1640,4 @@ API 구현 시 반드시 지켜야 할 기준:
 | 수동 CSV 업로드 파일 저장 위치 | `manual_import_file.file_uri`는 `manual/{env}/source={source}/dt={YYYY-MM-DD}/import={import_id}/original.csv` 규칙을 기본값으로 둔다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). row 처리 구조는 MySQL 문서 5.3.1의 `manual_import_file` + `collector_run` 기준으로 확정 |
 | 운영 로그 저장 방식 | 비가역 작가 identity 결정은 `identity_event_log`(MySQL 5.12.1)에 append-only로 남기고, 그 외 엔티티는 각 테이블 승인/반려 컬럼을 사용한다. 검수 큐 claim/lock TTL 등 동시성 수치 → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신. 전체 필드 변경 audit 테이블 확대는 고도화 |
 | 예측 API 연결 방식 | 기존 예측 API를 호출하지 않고, 데이터 수집 서비스 내부 joblib serving adapter가 active deployment의 joblib artifact를 직접 로드한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.6). |
-| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 집계 테이블을 만들고, API는 active deployment의 training snapshot 기준 row를 조회한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). |
+| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 집계 테이블을 만들고, API는 active deployment의 training snapshot 또는 import manifest cutoff 기준 row를 조회한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). |

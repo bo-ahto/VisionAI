@@ -23,6 +23,7 @@
 - [주기 수집 운영 문서](weekly_crawler_mysql_operation_plan_20260624.md)
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [4개 원천 사이트 주기 수집 및 MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 
 ## 문서 세트에서의 위치
 
@@ -54,6 +55,7 @@
   -> 작가 정보 분해/정리 staging 기준
   -> 작품 정보 분해/정리 staging 기준
   -> 공통 표준화 매핑
+  -> NANT 재료(지지체/매체) 분류
   -> 학습에 바로 쓰지 않는 항목
   -> 데이터 분석/관리 검토 기준
 ```
@@ -80,6 +82,7 @@
 - `source_*_raw`: 원천 응답과 원천 필드를 최대한 그대로 보존한 테이블
 - `source_*_interpreted_staging`: 한 컬럼에 섞인 값을 분해하고, 같은 의미의 다른 명칭을 정리한 중간 테이블
 - `normalized_*_staging`: 공통 컬럼/단위/상태값으로 맞춘 1차 표준화 테이블
+- `artwork_nant_classification`: 표준화 이후 NANT 지지체/매체 95분류와 학습 제외 플래그를 붙이는 파생 테이블
 - `artist_source_id`: 각 원천 사이트 안에서만 의미가 있는 작가 ID/slug
 - `normalized_artist_id_candidate`: 기존 artist_key 연결 후보 또는 신규 작가 후보를 검토할 때 쓰는 내부 후보 ID
 - `artist_key`: 운영자 검수를 거쳐 데이터 관리자가 승인/확정한 뒤 모델과 서비스에서 사용할 최종 작가 키
@@ -622,6 +625,18 @@ artist_identity_candidate
 artist_identity
   - 기존 artist_key 연결 확정 또는 신규 artist_key 생성(운영자 검수 후 데이터 관리자 승인)
   - artist_key는 최종 운영 키만 의미
+        |
+        v
+artist_profile_item
+  - 확정 artist_key의 작가 프로필/메타를 항목 단위로 관리
+        |
+        v
+artist_profile_current
+  - artist_profile_item에서 현재 표시/검색/feature 후보용 요약 생성
+  - artist_identity에 bio/학력/전시/팔로워 등 프로필을 몰아넣지 않음
+        |
+        v
+serving/model feature
   - Warm 경로와 작가 이력 feature는 artist_key가 확정된 작가만 사용
   - artist_key가 없는 미확정 작가는 Cold 경로로만 예측하고 검수 필요 표시를 강제한다
 ```
@@ -704,7 +719,7 @@ artist_identity
 
 최종적으로 4개 사이트의 수집 결과는 아래 공통 컬럼으로 맞춘다.
 
-> 라벨 주: 3~6장 원천별 표의 "표준화 대상"은 목표/후보 라벨이다. `normalized_artwork_staging`의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.8이며, 공통 컬럼에 없는 값(갤러리명/유형/도시, subject, style 등)은 공통 컬럼이 아니라 `metadata_json`에 보존한다. 모델 피처 승격은 별도 검증 후에 한다(§9.1·10장). 작가 메타 라벨의 단일 기준 컬럼 대응은 §7.3을 따른다.
+> 라벨 주: 3~6장 원천별 표의 "표준화 대상"은 목표/후보 라벨이다. `normalized_artwork_staging`의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.8이며, 공통 컬럼에 없는 값(갤러리명/유형/도시, subject, style 등)은 공통 컬럼이 아니라 `metadata_json`에 보존한다. 모델 피처 승격은 별도 검증 후에 한다(§9.2·10장). 작가 메타 라벨의 단일 기준 컬럼 대응은 §7.3을 따른다.
 
 | 공통 컬럼 | Artsy | Saatchi | Print Bakery | Art1 |
 |---|---|---|---|---|
@@ -731,9 +746,26 @@ artist_identity
 | `artwork_year` | year | year | product_name/material에서 후보 추출 가능 | year_detail |
 | `metadata_json` | 갤러리/태그/작가메타 | 작가메타/태그 | edition/code/tag/description | frame/shipping/profile |
 
-### 9.1 표준화가 안 된 컬럼 처리
+### 9.1 NANT 재료(지지체/매체) 분류
+
+재료/지지체의 학습 포함 기준은 `normalized_artwork_staging` 생성 다음 단계에서 DB active NANT mapping version으로 확정한다. CSV는 초기 import 원본이며, 운영 기준과 어드민 관리는 [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)을 따른다.
+
+처리 기준:
+
+- `medium_raw`, `medium_text_candidate`, `support_text_candidate` 등 표준화 단계에서 보존한 재료 표현을 active `nant_material_mapping.source_material_text_normalized`와 매칭한다.
+- 매칭 결과의 `난트 기준 재료(지지체)`와 `난트 기준 도구(매체)`를 각각 `nant_support`, `nant_medium`으로 둔다.
+- `재료(지지체)` + `도구(매체)` 기준 95개 조합을 허용 분류로 검증한다.
+- 매칭 row의 `learning_excluded=true`이면 학습 snapshot/export/model feature 생성에서 제외한다.
+- 기존 재료/지지체/입체/혼합매체 하드코딩 학습 필터는 사용하지 않는다.
+- 매핑 실패는 임의 보정하지 않고 `nant_unmapped`로 보류 또는 제외한다.
+
+이 분류는 raw나 normalized row를 삭제하는 단계가 아니다. 원천값은 보존하고, 학습 사용 여부만 snapshot에서 고정한다.
+
+### 9.2 표준화가 안 된 컬럼 처리
 
 원천별로만 존재하거나 의미가 확정되지 않은 컬럼은 아래처럼 처리한다.
+
+중요한 원칙은 "표준화 실패 = 데이터 폐기"가 아니라는 점이다. 표준화 공통 컬럼으로 올리지 못한 값도 raw와 interpreted staging에 남겨야 하며, 다음 parser 개선이나 feature 승격 검토 때 다시 사용할 수 있어야 한다.
 
 | 경우 | 처리 |
 |---|---|
@@ -750,7 +782,17 @@ artist_identity
 |---|---|---|
 | 작품 부가 정보 | `source_artwork_raw.metadata_json` | 호수, 액자 정보, 배송비, edition, 작품 설명, product tag, HTML class |
 | 작가 부가 정보 | `source_artist_raw.metadata_json` | 작가 소개문, 학력, 전시 이력, 수상, 프로젝트, 소장처, 홈페이지, 인스타그램 |
+| 확정 작가 프로필 항목 | `artist_profile_item` | 학력, 개인전, 단체전, 아트페어, 수상, 프로젝트, 소장처, 소개문, 홈페이지/SNS, 팔로워 등 항목 단위 검수 |
+| 확정 작가 현재 프로필 | `artist_profile_current` | 활동지, 갤러리, 전시/활동량, 소개문, 홈페이지/SNS, 원천 우선순위 요약/cache |
 | 작품/작가가 섞인 원문 | raw에는 원문 그대로 저장, interpreted staging에서 후보 분리 | Print Bakery description, Art1 artist profile 주변 텍스트 |
+
+중복 방지 기준:
+
+- `source_artist_raw.metadata_json`은 원천 작가 메타의 raw 보존 위치다.
+- `normalized_artist_staging`은 raw/interpreted에서 만든 표준화 후보와 중간 산출이다.
+- `artist_profile_item`은 확정 `artist_key`에 연결된 검수 가능한 작가 메타 항목 SoT다.
+- `artist_profile_current`는 조회 편의를 위한 현재 요약/cache다.
+- 별도 `artist_metadata_raw` 테이블은 만들지 않는다. raw, 후보, 확정 항목, 조회 요약의 역할이 다를 때만 테이블을 둔다.
 
 예시:
 
@@ -838,7 +880,7 @@ artist_identity
 
 - raw payload는 재현성과 감사 목적을 위해 파일/object storage에 보관한다.
 - MySQL에는 payload 경로, hash, 파싱 결과, 품질 지표를 저장한다.
-- 학습에 사용한 snapshot은 삭제하지 않고 모델 버전과 연결한다.
+- 학습에 사용한 snapshot 또는 legacy import manifest는 삭제하지 않고 모델 버전과 연결한다.
 - 수동 검수 결과는 현재 승인/반려 상태(승인자/시각/사유)로 남긴다. 변경 전체 audit 이력은 별도 고도화 항목으로 두되, 신규 생성·연결 확정·병합·un-merge 같은 비가역 작가 identity 결정은 `identity_event_log`([MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) 5.12.1)에 append-only로 남긴다.
 
 ## 12. 정리
@@ -852,4 +894,4 @@ artist_identity
 
 따라서 운영 DB에서는 원천별 raw를 먼저 보존하고, 이후 `source_artwork_interpreted_staging`에서 원천별 값을 분해/정리한 뒤, 마지막으로 `normalized_artwork_staging`에서 공통 컬럼으로 맞추는 구조를 사용한다.
 
-작가 정보도 동일하게 `source_artist_raw`를 먼저 보존하고, `source_artist_interpreted_staging`에서 이름/국적/출생연도/활동지/전시 이력 등을 분해한 뒤, `normalized_artist_staging`에서 공통 컬럼으로 맞춘다. 이후 `artist_name_alias`에서 한글명/영문명 보강 후보를 검수한다. 같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 `artist_identity_candidate`에서 검수 가능한 구조로 관리하고, 기존 후보가 없으면 신규 작가 후보 큐로 둔다. 신규 작가는 운영자 검수를 거쳐 데이터 관리자가 승인한 뒤에만 `artist_identity`에 최종 `artist_key`를 생성한다. Warm 경로와 작가 이력 feature는 확정된 `artist_key`만 사용하며, 미확정 작가는 Cold 경로로만 예측하고 검수 필요 표시를 강제한다.
+작가 정보도 동일하게 `source_artist_raw`를 먼저 보존하고, `source_artist_interpreted_staging`에서 이름/국적/출생연도/활동지/전시 이력 등을 분해한 뒤, `normalized_artist_staging`에서 공통 컬럼으로 맞춘다. 이후 `artist_name_alias`에서 한글명/영문명 보강 후보를 검수한다. 같은 alias 또는 승인 alias에 연결된 기존 `artist_key` 후보가 있을 때만 `artist_identity_candidate`에서 검수 가능한 구조로 관리하고, 기존 후보가 없으면 신규 작가 후보 큐로 둔다. 신규 작가는 운영자 검수를 거쳐 데이터 관리자가 승인한 뒤에만 `artist_identity`에 최종 `artist_key`를 생성한다. 확정된 `artist_key`의 소개/학력/전시/활동지/팔로워 같은 프로필 메타는 `artist_profile_item`에 항목 단위로 관리하고, `artist_profile_current`는 현재 표시/검색/feature 후보용 요약으로 갱신한다. Warm 경로와 작가 이력 feature는 확정된 `artist_key`만 사용하며, 미확정 작가는 Cold 경로로만 예측하고 검수 필요 표시를 강제한다.

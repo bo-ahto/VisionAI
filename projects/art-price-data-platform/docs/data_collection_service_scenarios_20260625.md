@@ -23,6 +23,7 @@
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
 - [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 
 > 모델 버전 표기 규칙: 이 문서 세트는 official 라인 기준이다. `model_version`/`deployment_id`는 official 라인 표기(예: `official_v0_1_warm_20260625_01`)를 쓴다. operational 라인은 다른 트랙 문서에 존재하며 이 문서의 시나리오 대상이 아니다.
 
@@ -79,7 +80,7 @@
 - 호당 가격은 계산 기준이 아니라 표시용 참고값이다.
 - 사용자가 입력한 작가명이 최종 `artist_key`로 확정되지 않았으면, 운영 검수 상태에 따라 예측 신뢰도 또는 검수 필요 표시를 함께 보여준다.
 - 사용자 화면에는 수집 원천 사이트명, 원천 URL, 원천 작가 ID를 노출하지 않는다. 이 정보는 어드민 검수와 운영 추적용으로만 쓴다.
-- 예측 결과에는 데이터 기준일(as_of, = 참조 snapshot의 `source_cutoff_at`)을 함께 노출한다. 수집이 주 1회이므로 사용자가 보는 값은 최신 snapshot 기준이며 실제 시장 대비 최대 10일(운영 파라미터 §E `FRESH-WARN-N`) 과거일 수 있다.
+- 예측 결과에는 데이터 기준일(as_of, = active deployment가 기록한 `source_cutoff_at`)을 함께 노출한다. 일반 재학습 모델은 training snapshot 기준이고, legacy joblib import는 import manifest 기준이다. 수집이 주 1회이므로 사용자가 보는 값은 운영 모델이 실제 사용한 데이터 기준일이며 실제 시장 대비 과거일 수 있다.
 - 예측 처리 결과는 `price_prediction_log`에 적재한다(`model_version`/`deployment_id`/`route` 포함). 특정 예측이 어느 모델·배포에서 나온 값인지 사후에 추적할 수 있어야 한다.
 
 ### 2.1 사용자 시나리오: 확정 작가로 예측
@@ -110,13 +111,13 @@
 - 예측 가격의 참고 범위 또는 신뢰도 표시
 - 호당 환산 표시가 필요한 경우 “표시용 참고값”으로만 노출
 - 1차 시장 가격 참고 카드. 예: 호당가 중앙값, 호당가 범위, 매체별 분포, 표본 수
-- 데이터 기준일(as_of)/최신성 표시. 예측이 참조한 운영 snapshot의 `source_cutoff_at`를 사용자에게 그대로 보여준다.
+- 데이터 기준일(as_of)/최신성 표시. 예측이 참조한 active deployment의 `source_cutoff_at`를 사용자에게 그대로 보여준다.
 
 데이터 최신성(freshness) 원칙:
 
-- 수집은 주 1회이고 사용자 예측은 운영 중인 승인 snapshot을 참조하므로, 사용자가 보는 값은 항상 최신 snapshot 기준이며 실제 시장 대비 최대 10일 과거일 수 있다.
-- 예측 응답의 `as_of`는 참조 snapshot의 `source_cutoff_at`와 같은 값이다. 화면에는 이 기준일을 “데이터 기준일”로 노출한다.
-- freshness SLA: 운영 중인 snapshot의 `as_of`가 현재 시각 기준 10일을 초과하면 신선도 경고를 표시한다.
+- 수집은 주 1회이고 사용자 예측은 운영 중 active deployment가 실제 학습/import에 쓴 데이터를 기준으로 하므로, 사용자가 보는 값은 최신 수집 snapshot이 아니라 운영 모델 기준 데이터 cutoff이며 실제 시장 대비 과거일 수 있다.
+- 예측 응답의 `as_of`는 active deployment가 기록한 `source_cutoff_at`와 같은 값이다. 화면에는 이 기준일을 “데이터 기준일”로 노출한다.
+- freshness SLA: active deployment의 `as_of`가 현재 시각 기준 10일(운영 파라미터 §E `FRESH-WARN-N`)을 초과하면 신선도 경고를 표시한다.
 
 ### 2.2 사용자 시나리오: 작가 검색 결과가 여러 명인 경우
 
@@ -167,7 +168,7 @@
 
 - 가로 또는 세로 cm가 없다.
 - 가격 예측에 필요한 작품 유형 또는 재료/지지체 입력이 없다.
-- 작품이 입체/설치/영상/혼합매체 제외 후보로 판단된다.
+- 작품 재료/지지체가 DB active NANT mapping 기준으로 매핑되지 않았거나 `learning_excluded=true`에 해당한다.
 
 흐름:
 
@@ -239,22 +240,22 @@
 | 범위 | 28만 - 46만원/호 | 참고 표본의 가격 범위 |
 | 매체별 분포 | 회화 33만, 드로잉 28만 | 매체별 참고 호당가 |
 | 표본 수 | N=24건 | 계산에 사용한 참고 작품 수 |
-| 데이터 기준일 | as_of 2026-06-25 | 카드가 참조한 snapshot의 `source_cutoff_at` |
+| 데이터 기준일 | as_of 2026-06-25 | active deployment가 기록한 `source_cutoff_at` |
 
 표시 원칙:
 
 - 원천 사이트명은 보여주지 않는다.
 - 표본 개별 작품 링크나 원천 URL은 사용자에게 노출하지 않는다.
 - 카드의 값은 최종 예측 가격이 아니라 사용자가 가격대를 이해하기 위한 참고 정보다.
-- 카드에도 데이터 기준일(as_of, = 참조 snapshot의 `source_cutoff_at`)을 함께 표시한다. 주간 수집 특성상 카드 값은 최신 snapshot 기준이며 실제 시장 대비 최대 10일 과거일 수 있다.
-- freshness SLA: 카드가 참조한 snapshot의 `as_of`가 현재 시각 기준 10일을 초과하면 신선도 경고를 함께 표시한다.
+- 카드에도 데이터 기준일(as_of, = active deployment가 기록한 `source_cutoff_at`)을 함께 표시한다. 주간 수집 특성상 카드 값은 운영 모델 기준 데이터 cutoff를 따르며 실제 시장 대비 과거일 수 있다.
+- freshness SLA: active deployment의 `as_of`가 현재 시각 기준 10일을 초과하면 신선도 경고를 함께 표시한다.
 
 ### 2.7 사용자 시나리오: 예측/데이터 장애 시 화면 폴백
 
 조건:
 
 - 예측 서버 또는 운영 모델(active deployment)이 응답하지 못한다.
-- 또는 참조할 운영 snapshot이 없거나, snapshot의 `as_of`가 freshness SLA(10일)를 초과했다.
+- 또는 참조할 active deployment가 없거나, 노출 기준 `as_of`가 신선도 임계를 초과해 경고·숨김 단계 처리가 필요하다(단계별 기준은 아래 폴백 표).
 
 흐름:
 
@@ -276,9 +277,9 @@
 | 상황 | 화면 처리 |
 |---|---|
 | 예측 서버/모델 응답 불가 | 가격 카드/예측 결과를 비노출하고 “일시적으로 가격을 제공할 수 없음” 안내 |
-| snapshot 신선도 SLA(10일) 이내 | 정상 노출. 데이터 기준일(as_of)만 표기하고 신선도 경고는 표시하지 않음 |
-| snapshot 신선도 10일 초과 ~ 21일(운영 파라미터 §E `FRESH-HIDE-M`, M>N) 이내 | 마지막 정상 snapshot 기준 값(구데이터)을 제공하되 데이터 기준일(as_of)과 신선도 경고를 함께 노출 |
-| snapshot 신선도 21일 초과 | 가격 카드/예측 결과 자체를 숨김(구데이터 무한 노출 금지). “현재 기준 데이터로 가격을 제공할 수 없음” 안내 |
+| `as_of` 신선도 SLA(10일) 이내 | 정상 노출. 데이터 기준일(as_of)만 표기하고 신선도 경고는 표시하지 않음 |
+| `as_of` 신선도 10일 초과 ~ 21일(운영 파라미터 §E `FRESH-HIDE-M`, M>N) 이내 | 운영 모델(active deployment) 기준 값(구데이터)을 제공하되 데이터 기준일(as_of)과 신선도 경고를 함께 노출. 모델이 응답 불가한 폴백 상황에서는 마지막 정상 `approved` snapshot 기준 값을 같은 임계로 노출 |
+| `as_of` 신선도 21일 초과 | 가격 카드/예측 결과 자체를 숨김(구데이터 무한 노출 금지). “현재 기준 데이터로 가격을 제공할 수 없음” 안내 |
 
 단계적 처리 기준:
 
@@ -288,9 +289,9 @@
 
 데이터 freshness와 모델/deployment freshness 불일치:
 
-- 사용자에게 보이는 as_of는 “현재 active deployment가 학습에 사용한 snapshot의 `source_cutoff_at`”이다(최신 수집 snapshot이 아니라, 운영 중인 모델이 실제로 학습에 쓴 snapshot 기준).
+- 사용자에게 보이는 as_of는 “현재 active deployment가 학습/import 기준으로 기록한 `source_cutoff_at`”이다. 일반 재학습 모델은 training snapshot 기준이고, legacy joblib import는 import manifest 기준이다(최신 수집 snapshot이 아니라, 운영 중인 모델이 실제로 쓴 데이터 기준).
 - 그 snapshot과 최신 정상 snapshot의 괴리가 임계 14일(운영 파라미터 §E `FRESH-MODEL-GAP`)을 넘으면, 데이터는 새로 들어왔지만 모델이 아직 반영하지 못한 상태이므로 신선도 경고를 표시한다.
-- 즉 데이터 freshness(최신 snapshot)와 모델/deployment freshness(active deployment가 학습에 쓴 snapshot)가 어긋날 때는, 사용자에게 보이는 as_of를 deployment 기준으로 고정하고 괴리가 14일을 넘으면 경고로 처리한다.
+- 즉 데이터 freshness(최신 snapshot)와 모델/deployment freshness(active deployment의 학습/import cutoff)가 어긋날 때는, 사용자에게 보이는 as_of를 deployment 기준으로 고정하고 괴리가 14일을 넘으면 경고로 처리한다.
 
 표시 원칙:
 
@@ -393,6 +394,7 @@
 조건:
 
 - 가격, 크기, 재료/지지체, 작품 유형, 중복 여부 중 하나 이상이 자동 확정되지 않았다.
+- 재료/지지체의 학습 제외 여부는 기존 하드코딩 매체 필터가 아니라 NANT 분류 결과(`nant_learning_excluded`, `nant_unmapped`)로 판단한다.
 
 흐름:
 
@@ -521,8 +523,11 @@ snapshot 후보 확인
 
 ```text
 snapshot 생성 승인
-  -> (별도 단계) 모델 학습
-  -> (별도 단계) 모델 검증
+  -> snapshot 서빙 승인(approved)
+  -> (별도 단계) model_training_job 생성
+  -> 모델 학습 또는 기존 joblib import
+  -> price_model_registry(candidate) 등록
+  -> candidate 검증/승인(approved)
   -> price_model_deployment의 active row 교체(승격)
   -> 사용자 예측에 반영
 ```
@@ -530,7 +535,8 @@ snapshot 생성 승인
 처리 원칙:
 
 - snapshot 승인은 곧바로 사용자 예측에 반영되지 않는다. 수집 snapshot 생성, 모델 학습, 모델 운영 승격은 서로 다른 단계다.
-- 새 snapshot이 사용자에게 보이려면, 그 snapshot으로 학습·검증한 모델을 `price_model_deployment`의 해당 route active row로 교체(승격)해야 한다. route별 active deployment는 하나만 허용한다.
+- 새 snapshot이 사용자에게 보이려면, 그 snapshot으로 학습·검증한 모델이 `candidate -> approved`를 거친 뒤 `price_model_deployment`의 해당 route active row로 교체(승격)되어야 한다. route별 active deployment는 하나만 허용한다.
+- `candidate` 모델은 운영 모델이 아니며, 운영 API는 `approved` + active deployment 모델만 사용한다.
 - 따라서 snapshot이 갱신된 시점과 사용자가 체감하는 시점 사이에는 정상적인 시차가 있다. 운영자는 “snapshot은 승인됐는데 예측 값이 안 바뀐다”를 장애로 오인하지 않는다. 사용자 예측이 어느 모델·배포를 쓰는지는 예측 응답의 `model_version`/`deployment_id`(2장 `price_prediction_log` 적재)로 확인한다.
 
 ## 4. 수집 운영 시나리오
@@ -606,8 +612,8 @@ cron 시작
 - 가격 숫자 없음
 - 판매문의/가격문의/placeholder 가격
 - 가로/세로 cm 없음
-- 재료 분류 실패
-- 입체/설치/영상/혼합매체 제외 후보
+- NANT 재료(지지체/매체) 분류 실패(`nant_unmapped`)
+- DB active NANT mapping 기준 `learning_excluded=true` 학습 제외 row
 - 중복 후보
 - 작가명 누락
 
@@ -702,7 +708,7 @@ cron 시작
 - 가격 숫자가 있다.
 - 통화가 있다.
 - 가로/세로 cm가 있다.
-- 입체/설치/영상/혼합매체 제외 조건에 걸리지 않는다.
+- NANT 재료(지지체/매체) 분류가 성공했고 DB mapping row의 `learning_excluded=true`에 걸리지 않는다.
 - 중복 제거 기준을 통과한다.
 - 작가 정보가 확정되었거나, 해당 모델 경로에서 작가 확정 없이 사용할 수 있는 입력으로 분류된다.
 
@@ -718,13 +724,14 @@ cron 시작
 
 - 가격 없음 또는 가격문의
 - placeholder 가격
-- 명백한 입체/설치/영상/혼합매체 제외 대상
+- NANT 기준 `nant_learning_excluded`
+- NANT 매핑 실패(`nant_unmapped`) 후 검수에서도 보정되지 않은 row
 - 필수 크기 누락
 - 중복으로 판단된 row
 
 point-in-time 규칙:
 
-- snapshot은 `source_cutoff_at` 이전 수집분만 포함한다(point-in-time). cutoff 이후 수집/변경분은 해당 snapshot에 섞이지 않고 다음 snapshot으로 넘어간다. 이 값이 사용자 화면의 데이터 기준일(as_of)이 된다. 컬럼·환산 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)을 따른다.
+- snapshot은 `source_cutoff_at` 이전 수집분만 포함한다(point-in-time). cutoff 이후 수집/변경분은 해당 snapshot에 섞이지 않고 다음 snapshot으로 넘어간다. active deployment가 이 snapshot으로 학습/import하면 그 `source_cutoff_at`이 사용자 화면의 데이터 기준일(as_of)이 된다. 컬럼·환산 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)을 따른다.
 
 ## 7. 시나리오 검토 기준
 

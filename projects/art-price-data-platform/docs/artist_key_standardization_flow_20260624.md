@@ -91,6 +91,15 @@ artist_identity
   - 기존 artist_key 연결 확정
   - 또는 데이터 관리자 승인 후 신규 artist_key 생성 확정
   - 승인/반려/자동 확정 이력 보존
+        |
+        v
+artist_profile_item
+  - 확정 artist_key의 작가 프로필/메타를 항목 단위로 관리
+        |
+        v
+artist_profile_current
+  - 현재 표시/검색/feature 후보용 요약/cache
+  - artist_identity에 소개/학력/전시/팔로워/활동지 등 프로필 정보를 몰아넣지 않음
 ```
 
 ## 2. 이름 컬럼 분리 기준
@@ -115,6 +124,7 @@ artist_identity
 - 자동 변환값은 `*_candidate` 또는 `*_display`에만 넣는다.
 - 서비스는 `artist_name_ko_display`를 우선 사용한다.
 - `artist_key` 확정은 이름 하나만으로 하지 않는다.
+- 작가 소개, 학력, 전시, 활동지, 팔로워 같은 프로필 메타는 `artist_identity`가 아니라 `artist_profile_item`에서 항목 단위로 관리하고, `artist_profile_current`는 현재 요약/cache로 둔다.
 
 ## 3. artist_name_alias 역할
 

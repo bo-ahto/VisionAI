@@ -29,6 +29,7 @@
 - [artist_key 및 작가명 표준화 흐름](artist_key_standardization_flow_20260624.md)
 - [원천 사이트별 수집 항목 정리](source_site_collected_fields_20260624.md)
 - [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)
+- [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)
 
 ## 1. 문서 역할
 
@@ -69,6 +70,8 @@ API 기획
   - artist_key 연결 검수 큐
   - 신규 작가 후보 큐
   - snapshot 후보 확인
+  - NANT mapping 관리
+  - 모델 운영
   - 운영 로그/알림
 ```
 
@@ -95,7 +98,7 @@ API 기획
 
 - 가로 cm와 세로 cm는 양수여야 한다.
 - 깊이 cm는 입체 작품 판단에 쓰므로 값이 있으면 함께 검증한다.
-- 작품 유형이 조각, 설치, 영상, 혼합매체 제외 후보이면 예측 전 확인 메시지를 보여준다.
+- 재료/지지체가 DB active NANT mapping 기준에서 매핑되지 않거나 학습 제외 기준에 해당하면 예측 전 확인 메시지를 보여준다.
 - 작가가 확정되지 않은 경우 예측 가능 여부와 검수 필요 상태를 분리해서 보여준다.
 
 화면 표시 원칙:
@@ -208,7 +211,7 @@ API 기획
 | 가로/세로 누락 | 작품 크기를 cm 단위로 입력해야 함 |
 | 재료 누락 | 재료 또는 매체를 선택해야 함 |
 | 작가 미선택 | 작가 검색 후 후보를 선택해야 함 |
-| 입체/설치/영상 후보 | 현재 가격 예측 범위에서 제외될 수 있음 |
+| NANT 매핑 불가/학습 제외 | 현재 가격 예측 범위에서 제외될 수 있음 |
 | 신규 작가 후보 | 운영 검수 후 작가 확정 가능 |
 
 ## 4. 어드민 화면
@@ -292,8 +295,8 @@ API 기획
 - 원천 사이트
 - 가격 있음/없음
 - 크기 파싱 성공/실패
-- 재료 분류 성공/실패
-- 제외 후보
+- NANT 재료 분류 성공/실패/학습 제외
+- 제외 후보(`nant_learning_excluded`, `nant_unmapped` 포함)
 - 중복 후보
 - 검수 상태(검수 중 포함)
 
@@ -306,7 +309,8 @@ API 기획
 | 원천값 | 사이트에서 받은 원문 값 |
 | 분해/정리값 | 원천 문자열을 분해한 값 |
 | 표준화 후보값 | 공통 컬럼에 들어갈 후보값 |
-| 품질 플래그 | 가격 없음, 크기 없음, 제외 후보 등 |
+| NANT 분류 | `nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status` |
+| 품질 플래그 | 가격 없음, 크기 없음, NANT 제외 후보 등 |
 | 원천 링크 | 원문 확인용 URL |
 | 처리 버튼 | 승인, 수정 후 승인, 보류, 제외 |
 
@@ -441,6 +445,7 @@ API 기획
 - 사이트별 row 수
 - 가격 보유율
 - 크기 파싱 성공률
+- NANT 분류 성공/학습 제외/unmapped 수
 - 작가 확정률
 - 제외 row 수
 - 보류 row 수
@@ -457,7 +462,7 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 
 ```text
 확정 요청(운영자)          생성 승인(데이터 관리자)        서빙 승인(데이터 관리자)
-  snapshot_request   ->   generated(비서빙/빌드 완료)  ->   approved(서빙/사용자 노출)
+  snapshot_request   ->   generated(비서빙/빌드 완료)  ->   approved(서빙 대상)
 ```
 
 | 화면 액션 | 권한 | API 액션 |
@@ -471,13 +476,83 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 
 - 운영자의 "확정 요청", 데이터 관리자의 "생성 승인", 데이터 관리자의 "서빙 승인"은 모두 별도 액션이며, 한 사람이 여러 단계를 동시에 끝내지 않는다. 화면의 세 버튼은 API의 세 액션(확정 요청, 생성 승인, 서빙 승인)과 1:1로 대응한다.
 - "생성 승인"은 빌드만 완료한 `generated`(비서빙) snapshot을 만든다. `generated`는 빌드 완료 상태일 뿐 사용자 서빙/노출 기준이 아니다.
-- "서빙 승인"은 `generated` snapshot을 `approved`(서빙 가능)로 올리는 액션이며, `POST /snapshots/{snapshot_id}/approve`에 매핑된다. 사용자 서빙·노출 기준(freshness/`as_of` 산정)은 `approved` snapshot만 본다. 화면에서는 `generated` snapshot에 "서빙 승인" 버튼을 노출하고, 승인 전까지 비서빙으로 표시한다.
+- "서빙 승인"은 `generated` snapshot을 `approved`(서빙 가능)로 올리는 액션이며, `POST /snapshots/{snapshot_id}/approve`에 매핑된다. 사용자 서빙·freshness 비교 대상은 `approved` snapshot만이며, 사용자 노출 `as_of`는 active deployment 기준으로 산정한다(§4.9 모델 운영). 화면에서는 `generated` snapshot에 "서빙 승인" 버튼을 노출하고, 승인 전까지 비서빙으로 표시한다.
 
-### 4.8 운영 로그/알림 화면
+### 4.8 NANT mapping 관리 화면
 
 목적:
 
-- 수집 실패, 검수 처리, snapshot 생성, artist_key 변경 이력을 추적한다.
+- NANT 지지체/매체 mapping을 DB version으로 관리한다.
+- unmapped 재료를 draft mapping에 반영하고, 검증 후 데이터 관리자가 active version으로 전환한다.
+
+주요 영역:
+
+- active version 요약
+- draft/import version 목록
+- validation 결과
+- mapping row 검색/수정
+- unmapped 재료 목록
+- active 전환 영향 안내
+
+표시 항목:
+
+- `version_key`, `status`, `source_file_sha256`
+- category 수, mapping row 수, 학습 제외 row 수
+- `source_material_text`
+- `nant_support`, `nant_medium`, `nant_category_key`
+- `learning_excluded`, `learning_exclusion_reason`
+- 수정자/수정시각
+
+액션:
+
+| 액션 | 권한 | 설명 |
+|---|---|---|
+| version 조회 | 운영 담당자 | active/draft/archived 확인 |
+| CSV import | 데이터 분석가 | 새 draft version 생성 |
+| draft row 추가/수정/삭제 | 데이터 분석가 | active row 직접 수정 금지 |
+| validation 실행 | 데이터 분석가 | 95개 category, 중복, 잘못된 category key 검증 |
+| active 전환 | 데이터 관리자 | validation passed draft만 active 가능 |
+
+### 4.9 모델 운영 화면
+
+목적:
+
+- 모델 학습/import job, candidate 승인, active deployment 전환, rollback을 처리한다.
+- 새 snapshot이 승인되어도 운영 모델이 자동으로 바뀌지 않는다는 점을 화면에서 명확히 보여준다.
+
+표시 항목:
+
+- 현재 active deployment
+- active 모델의 `model_version`, `deployment_id`, route
+- active 모델이 학습에 사용한 `training_snapshot_id`, `source_cutoff_at`
+- 학습/import job 목록과 상태
+- candidate/approved/rejected/retired 모델 목록
+- validation/test metric 요약
+- fixed-test parity, API smoke, data contract gate 결과
+- artifact URI/SHA-256, feature schema hash
+
+처리 버튼:
+
+| 버튼 | 의미 | API | 권한 |
+|---|---|---|---|
+| 학습/import job 생성 | approved snapshot 기준 job 생성 | `POST /api/v1/admin/model-training/jobs` | 데이터 분석가 |
+| 후보 승인 | candidate를 approved로 전환 | `POST /api/v1/admin/model-versions/{model_version}/decision` | 데이터 관리자 |
+| 후보 반려 | candidate를 rejected로 전환 | `POST /api/v1/admin/model-versions/{model_version}/decision` | 데이터 관리자 |
+| 운영 승격 | approved 모델을 active deployment로 전환 | `POST /api/v1/admin/model-deployments` | 데이터 관리자 |
+| 롤백 | 이전 approved 모델로 active deployment 전환 | `POST /api/v1/admin/model-deployments` | 데이터 관리자 |
+
+화면 규칙:
+
+- `candidate` 모델에는 운영 승격 버튼을 노출하지 않는다.
+- `approved` 모델에만 운영 승격 버튼을 노출한다.
+- 현재 운영 중 여부는 model status가 아니라 deployment active 상태로 표시한다.
+- job 재실행은 기존 job을 덮어쓰지 않고 새 job을 만든다.
+
+### 4.10 운영 로그/알림 화면
+
+목적:
+
+- 수집 실패, 검수 처리, snapshot 생성, 모델 변경, artist_key 변경 이력을 추적한다.
 
 표시 항목:
 
@@ -498,6 +573,8 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 - 크기 파싱 성공률 급감
 - 신규 검수 큐 급증
 - snapshot 생성 실패
+- 모델 학습/import job 실패
+- 모델 승격 후 API smoke 실패
 - 동일 작가 후보 충돌 증가
 
 ## 5. 권한 기준
@@ -505,9 +582,9 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 | 역할 | 가능 작업 |
 |---|---|
 | 일반 사용자 | 가격 예측 입력, 작가 검색/선택, 신규 작가 후보 제출 |
-| 운영 담당자 | 수집 run 확인/재수집 요청, 검수 큐 처리, 보류/제외, snapshot 후보 확인 |
-| 데이터 분석가 | 수동 CSV 업로드/매핑, snapshot 품질/분포 검토, 학습 피처 승격 판단 |
-| 데이터 관리자 | 원천 등록/수정, 신규 artist_key 생성 승인, 기존 artist_key 연결 확정, alias 정책 관리, snapshot 생성/서빙 승인, 모델 승격/롤백 |
+| 운영 담당자 | 수집 run 확인/재수집 요청, 검수 큐 처리, 보류/제외, snapshot 후보 확인, NANT mapping 조회 |
+| 데이터 분석가 | 수동 CSV 업로드/매핑, NANT draft import/편집/validation, snapshot 품질/분포 검토, 학습 피처 승격 판단, 모델 학습/import job 생성 |
+| 데이터 관리자 | 원천 등록/수정, 신규 artist_key 생성 승인, 기존 artist_key 연결 확정, alias 정책 관리, NANT active 전환, snapshot 생성/서빙 승인, 모델 승인/승격/롤백 |
 | 개발자 | crawler/parser 장애 확인, migration/배포 점검, 기술 로그 확인 |
 | 슈퍼유저 | 운영 초기 전용 관리자. 운영 담당자, 데이터 분석가, 데이터 관리자, 개발자 화면 기능을 모두 사용 |
 
@@ -531,7 +608,7 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 | 제외 | 예측 불가 또는 제외 안내 | 제외 사유 표시 |
 | 수집 실패 | 사용자에게 직접 노출하지 않음 | 운영 알림 표시 |
 | snapshot generated(비서빙) | 서빙 대상 아님(노출하지 않음) | 빌드 완료/서빙 승인 대기로 표시, "서빙 승인" 버튼 노출 |
-| snapshot approved(서빙) | 서빙·노출 기준(`as_of`/freshness 산정 대상) | 서빙 가능으로 표시 |
+| snapshot approved(서빙) | 서빙·freshness 비교 대상(`as_of`는 active deployment 기준) | 서빙 가능으로 표시 |
 
 상태 표시 원칙:
 
@@ -539,7 +616,7 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 - “실패”와 “검수 필요”를 섞지 않는다.
 - 사용자가 해결할 수 있는 문제와 운영자가 해결해야 하는 문제를 분리한다.
 - "검수 중(처리 중)"은 "검수 필요"와 다른 상태다. 검수 필요는 아직 아무도 잡지 않은 큐 대기 상태이고, 검수 중은 특정 검수자가 claim해 처리하고 있는 상태다. 검수 큐(§4.3~§4.6)는 이 둘을 구분해 동시 작업 충돌을 화면에서 드러낸다.
-- snapshot의 `generated`(비서빙)와 `approved`(서빙)는 다른 상태다. `generated`는 빌드만 완료된 상태로 사용자 서빙·노출 기준이 아니며, 데이터 관리자의 "서빙 승인"(§4.7)을 거쳐 `approved`가 된 snapshot만 서빙·노출 기준(`as_of`/freshness 산정)이 된다. 화면 상태 표기는 이 둘을 섞지 않는다.
+- snapshot의 `generated`(비서빙)와 `approved`(서빙)는 다른 상태다. `generated`는 빌드만 완료된 상태로 사용자 서빙·노출 기준이 아니며, 데이터 관리자의 "서빙 승인"(§4.7)을 거쳐 `approved`가 된 snapshot만 서빙·freshness 비교 대상이 되며, 사용자 노출 `as_of`는 active deployment 기준으로 산정한다. 화면 상태 표기는 이 둘을 섞지 않는다.
 
 ## 7. 화면 설계 검토 기준
 
