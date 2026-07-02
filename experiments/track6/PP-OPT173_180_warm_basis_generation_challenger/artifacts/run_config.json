@@ -1,0 +1,114 @@
+{
+  "experiment_id": "PP-OPT173-180",
+  "experiment_slug": "PP-OPT173_180_warm_basis_generation_challenger",
+  "created_at": "2026-06-10T10:04:30",
+  "base_candidate": "hcoef_stable",
+  "previous_experiment": "experiments/track6/PP-OPT167_172_warm_pp166_second_stage_tail_calibration",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 402,
+  "prediction_rows": 452652,
+  "support_candidates": {
+    "pp166_operational": "ppopt166_operational_pp157_negative_gate_challenger__source=ppopt163_segment_outcome__target_pp157_price_qwidth_q084_s100_cap008__seg_price_conf__hw_1p2__thr_0p0__s_1p0__cap_0p006",
+    "pp166_p95": "ppopt166_p95_pp157_negative_gate_challenger__source=reference_pp148_p95",
+    "pp148_operational": "reference_pp148_operational",
+    "pp148_p95": "reference_pp148_p95",
+    "pp161_p95_guard": "ppopt161_harm_rollback__target=pp157_price_qwidth_q084_s100_cap008__hthr=0p3__w=0p14__rb=1p0__s=1p0__cap=0p006",
+    "pp162_p95_gate": "ppopt162_gain_harm_adopt__target=pp157_price_qwidth_q084_s100_cap008__thr=0p18__w=0p1__hpen=0p5__s=1p0__cap=0p006",
+    "pp164_p95_block": "ppopt164_hard_block__target=pp157_price_qwidth_q084_s100_cap008__hthr=0p45__gthr=0p12__s=1p0__cap=0p006",
+    "pp172_operational": "ppopt172_operational_pp166_tail_calibration_challenger__source=ppopt169_segment_router__source_pp162_p95_gate__seg_price_conf__thr_m0p04__s_0p5__cap_0p004",
+    "pp172_p95": "ppopt172_p95_pp166_tail_calibration_challenger__source=reference_pp148_p95"
+  },
+  "selection_decision": {
+    "operational_label": "candidate_ppopt174_direct_basis__source_stack_huber_weighted__thr_0p08__s_0p3__cap_0p004__498cc8e0d8",
+    "operational_candidate": "ppopt174_direct_basis__source=stack_huber_weighted__thr=0p08__s=0p3__cap=0p004",
+    "operational_fixed_test_MAPE": 0.26993262658778844,
+    "operational_fixed_test_p95_APE": 0.807325504659139,
+    "operational_delta_vs_pp64_MAPE": -0.0006314153278719203,
+    "operational_delta_vs_pp64_p95_APE": -0.00017334764697085614,
+    "operational_delta_vs_pp126_MAPE": -0.00018177016206338825,
+    "operational_delta_vs_pp126_p95_APE": -0.00016455623870892389,
+    "operational_delta_vs_pp148_MAPE": -0.00020736178479097145,
+    "operational_delta_vs_pp148_p95_APE": 9.459312044068913e-05,
+    "operational_delta_vs_pp166_MAPE": -6.435907745017122e-05,
+    "operational_delta_vs_pp166_p95_APE": 9.459312044068913e-05,
+    "operational_delta_vs_pp172_MAPE": -6.478807336213199e-05,
+    "operational_delta_vs_pp172_p95_APE": 9.459312044068913e-05,
+    "operational_avg_pp64_MAPE_win_rate": 0.9522435897435897,
+    "operational_avg_pp64_p95_win_rate": 0.7544871794871795,
+    "operational_replacement_score": -0.01872115891761551,
+    "p95_label": "pp148_p95_reference",
+    "p95_candidate": "reference_pp148_p95",
+    "p95_fixed_test_MAPE": 0.27026892590910795,
+    "p95_fixed_test_p95_APE": 0.8059493758221674,
+    "p95_delta_vs_pp64_MAPE": -0.00029511600655240944,
+    "p95_delta_vs_pp64_p95_APE": -0.0015494764839424358,
+    "p95_delta_vs_pp126_MAPE": 0.00015452915925612265,
+    "p95_delta_vs_pp126_p95_APE": -0.0015406850756805035,
+    "p95_delta_vs_pp148_MAPE": 0.00012893753652853945,
+    "p95_delta_vs_pp148_p95_APE": -0.0012815357165308905,
+    "p95_delta_vs_pp166_MAPE": 0.0002719402438693397,
+    "p95_delta_vs_pp166_p95_APE": -0.0012815357165308905,
+    "p95_delta_vs_pp172_MAPE": 0.0002715112479573789,
+    "p95_delta_vs_pp172_p95_APE": -0.0012815357165308905,
+    "p95_avg_pp64_MAPE_win_rate": 0.5983974358974359,
+    "p95_avg_pp64_p95_win_rate": 0.5009615384615385,
+    "p95_replacement_score": -0.0040792899192624915,
+    "operational_protocol_candidate": "ppopt180_operational_basis_generation_challenger__source=ppopt174_direct_basis__source_stack_huber_weighted__thr_0p08__s_0p3__cap_0p004",
+    "p95_protocol_candidate": "ppopt180_p95_basis_generation_challenger__source=reference_pp148_p95"
+  },
+  "items": [
+    {
+      "item_id": "PP-OPT173",
+      "priority": "1",
+      "title": "segment residual basis",
+      "description": "validation OOF residual을 가격대/신뢰도/작품 메타 구간별로 집계해 새 기준 로그가격을 만든다."
+    },
+    {
+      "item_id": "PP-OPT174",
+      "priority": "2",
+      "title": "direct model basis routing",
+      "description": "LightGBM/CatBoost/XGBoost/Huber 직접 예측을 기준가 후보로 두고 구간별 우세 구간에서만 적용한다."
+    },
+    {
+      "item_id": "PP-OPT175",
+      "priority": "3",
+      "title": "quantile basis with uncertainty guard",
+      "description": "LightGBM quantile 기준가의 폭이 좁은 구간에서만 q50/huber 기준가 이동분을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT176",
+      "priority": "4",
+      "title": "model consensus basis",
+      "description": "여러 direct basis가 같은 방향으로 움직일 때만 평균 기준가 이동을 허용한다."
+    },
+    {
+      "item_id": "PP-OPT177",
+      "priority": "5",
+      "title": "basis-to-PP172 correction",
+      "description": "새 기준가를 중심으로 두고 PP172를 안정 보정 후보로 되돌리는 구조를 검증한다."
+    },
+    {
+      "item_id": "PP-OPT178",
+      "priority": "6",
+      "title": "basis family router",
+      "description": "segment residual basis, direct basis, PP172 중 validation 구간 성과가 좋은 family를 라우팅한다."
+    },
+    {
+      "item_id": "PP-OPT179",
+      "priority": "7",
+      "title": "basis micro calibration",
+      "description": "상위 basis 후보의 threshold/cap 주변만 좁게 재검증한다."
+    },
+    {
+      "item_id": "PP-OPT180",
+      "priority": "8",
+      "title": "final basis-generation decision",
+      "description": "PP172와 새 basis-generation 후보를 fixed/repeated 기준으로 비교해 최종 판단한다."
+    }
+  ],
+  "sources": {
+    "pp167_helper": "scripts/track6/run_pp_opt167_172_warm_pp166_second_stage_tail_calibration.py",
+    "direct_meta_detail": "experiments/track6/PP-OPT161_166_warm_pp157_negative_gate_rollback/artifacts/direct_meta_prediction_detail.csv"
+  }
+}

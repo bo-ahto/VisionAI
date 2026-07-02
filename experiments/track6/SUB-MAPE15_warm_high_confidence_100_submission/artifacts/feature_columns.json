@@ -1,0 +1,33 @@
+{
+  "feature_columns": [
+    "quantile_width",
+    "l10_price_range_ratio",
+    "svc_group_n_log",
+    "log_area",
+    "component_prediction_spread",
+    "current_vs_stable_gap_abs",
+    "current_minus_stable_log",
+    "ppv8_minus_stable_log",
+    "svc_minus_stable_log",
+    "l10_minus_stable_log"
+  ],
+  "feature_descriptions": {
+    "quantile_width": "Warm L10 quantile 모델의 q90_log - q10_log. 예측 범위가 좁을수록 가격 불확실성이 낮다는 신호로 사용한다.",
+    "l10_price_range_ratio": "Warm L10 가격 범위를 중앙 예측 가격으로 나눈 비율. 가격 범위가 과도하게 넓은 케이스를 위험 신호로 본다.",
+    "svc_group_n_log": "유사작품 기반 표본 수 svc_group_n에 log1p를 적용한 값. 표본 수 신뢰도를 완만하게 반영한다.",
+    "log_area": "작품 면적의 로그값. 크기에 따른 가격 잔차 패턴을 보정하기 위한 보조 피처다.",
+    "component_prediction_spread": "hcoef_stable, current_70_30, ppv8_service_proxy, svc_numeric_seed_mean, l10_seq_pred_log 간 로그 예측 표준편차. 모델 컴포넌트들이 서로 비슷하게 예측하는지 측정한다.",
+    "current_vs_stable_gap_abs": "abs(current_70_30 - hcoef_stable). 운영 기준가와 안정 Warm 기준가의 차이가 작을수록 안정 구간으로 본다.",
+    "current_minus_stable_log": "current_70_30 - hcoef_stable. 운영 70:30 기준가가 안정 기준가보다 높은지 낮은지 방향성을 제공한다.",
+    "ppv8_minus_stable_log": "ppv8_service_proxy - hcoef_stable. 방어형 PP-V8 컴포넌트와 안정 기준가의 차이를 제공한다.",
+    "svc_minus_stable_log": "svc_numeric_seed_mean - hcoef_stable. 유사작품 기반 가격과 안정 기준가의 차이를 제공한다.",
+    "l10_minus_stable_log": "l10_seq_pred_log - hcoef_stable. Warm L10 순차 컴포넌트와 안정 기준가의 차이를 제공한다."
+  },
+  "test_selection_feature_descriptions": {
+    "quantile_width": "테스트셋 고신뢰 조건: 1.20 이하",
+    "component_prediction_spread": "테스트셋 고신뢰 조건: 0.10 이하",
+    "l10_price_range_ratio": "테스트셋 고신뢰 조건: 2.00 이하",
+    "svc_group_n": "테스트셋 고신뢰 조건: 5 이상",
+    "current_vs_stable_gap_abs": "테스트셋 고신뢰 조건: 0.025 이하"
+  }
+}

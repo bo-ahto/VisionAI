@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-ROUTE-CF1 Same-Row History Exposure Counterfactual</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#pp-route-cf1-same-row-history-exposure-counterfactual">PP-ROUTE-CF1 Same-Row History Exposure Counterfactual</a>
+<a class="toc-level-2" href="#1.-목적">1. 목적</a>
+<a class="toc-level-2" href="#2.-해석-범위">2. 해석 범위</a>
+<a class="toc-level-2" href="#3.-same-n-metrics">3. Same-n metrics</a>
+<a class="toc-level-2" href="#4.-observed-interpretation">4. Observed interpretation</a>
+<a class="toc-level-2" href="#5.-warm-lite-repeated-condition-metrics">5. Warm-lite repeated condition metrics</a>
+<a class="toc-level-2" href="#6.-paired-row-level-comparisons">6. Paired row-level comparisons</a>
+<a class="toc-level-2" href="#7.-주요-해석">7. 주요 해석</a>
+<a class="toc-level-2" href="#8.-config">8. Config</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>experiments/track6/PP-ROUTE-CF1_same_row_history_exposure_counterfactual/reports/result_report.md</code></div>
+      <h1 id="pp-route-cf1-same-row-history-exposure-counterfactual">PP-ROUTE-CF1 Same-Row History Exposure Counterfactual</h1>
+<h2 id="1.-목적">1. 목적</h2>
+<p>Warm fixed-test 607개 동일 작품에 대해 작가 가격 이력 노출량만 바꿔 Warm, Warm-lite, Cold 경로를 비교한다.</p>
+<h2 id="2.-해석-범위">2. 해석 범위</h2>
+<ul>
+<li>같은 작품·같은 n 기준이므로 경로별 native benchmark보다 직접 비교성이 높다.</li>
+<li>Warm-lite는 같은 작품에서 같은 작가 train 이력을 k=1~4로 제한한 강제 시나리오다.</li>
+<li>Cold는 같은 작품에서 같은 작가 가격 이력을 숨긴 강제 시나리오다.</li>
+<li>이 결과는 라우팅 경계 설명용이며, 실제 Warm-lite/Cold 운영 분포의 성능표를 대체하지 않는다.</li>
+</ul>
+<h2 id="3.-same-n-metrics">3. Same-n metrics</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">candidate</th>
+<th class="align-left">n</th>
+<th class="align-left">MdAPE</th>
+<th class="align-left">MAPE</th>
+<th class="align-left">p95_APE</th>
+<th class="align-left">RMSE_log</th>
+<th class="align-left">rank_MAPE</th>
+<th class="align-left">rank_p95_APE</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm-lite forced k=4</td>
+<td class="align-left">607</td>
+<td class="align-left">0.118152</td>
+<td class="align-left">0.233539</td>
+<td class="align-left">0.811938</td>
+<td class="align-left">0.378648</td>
+<td class="align-left">1</td>
+<td class="align-left">2</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8, 5+ history</td>
+<td class="align-left">607</td>
+<td class="align-left">0.104326</td>
+<td class="align-left">0.235814</td>
+<td class="align-left">0.739416</td>
+<td class="align-left">0.377190</td>
+<td class="align-left">2</td>
+<td class="align-left">1</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced k=3</td>
+<td class="align-left">607</td>
+<td class="align-left">0.129779</td>
+<td class="align-left">0.245549</td>
+<td class="align-left">0.893261</td>
+<td class="align-left">0.403622</td>
+<td class="align-left">3</td>
+<td class="align-left">3</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced k=2</td>
+<td class="align-left">607</td>
+<td class="align-left">0.159686</td>
+<td class="align-left">0.273277</td>
+<td class="align-left">0.908304</td>
+<td class="align-left">0.417175</td>
+<td class="align-left">4</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced k=1</td>
+<td class="align-left">607</td>
+<td class="align-left">0.181202</td>
+<td class="align-left">0.300843</td>
+<td class="align-left">0.907625</td>
+<td class="align-left">0.503364</td>
+<td class="align-left">5</td>
+<td class="align-left">4</td>
+</tr>
+<tr>
+<td class="align-left">Cold forced, no same-artist price history</td>
+<td class="align-left">607</td>
+<td class="align-left">0.441059</td>
+<td class="align-left">0.707066</td>
+<td class="align-left">2.258632</td>
+<td class="align-left">0.909298</td>
+<td class="align-left">6</td>
+<td class="align-left">6</td>
+</tr>
+</tbody></table></div>
+<h2 id="4.-observed-interpretation">4. Observed interpretation</h2>
+<ul>
+<li>Best by MdAPE: <code>Warm WMIN8, 5+ history</code>.</li>
+<li>Best by MAPE: <code>Warm-lite forced k=4</code>.</li>
+<li>Best by p95 APE: <code>Warm WMIN8, 5+ history</code>.</li>
+<li>Best by RMSE log: <code>Warm WMIN8, 5+ history</code>.</li>
+<li>Warm WMIN8 vs Warm-lite k=4: MdAPE <code>0.104326</code> vs <code>0.118152</code>, MAPE <code>0.235814</code> vs <code>0.233539</code>, p95 <code>0.739416</code> vs <code>0.811938</code>.</li>
+<li>Warm-lite improves as k increases: k=1 MAPE <code>0.300843</code> -&gt; k=4 MAPE <code>0.233539</code>.</li>
+<li>Cold forced is much harder on the same rows: Cold MAPE <code>0.707066</code>, p95 <code>2.258632</code>.</li>
+</ul>
+<p>Interpretation: the same-row test supports keeping Cold separate. It also supports that more same-artist history improves prediction stability. Warm WMIN8 remains stronger on median/tail/log-error stability, while Warm-lite k=4 is very close and slightly better on mean APE in this counterfactual. Therefore this result is evidence for route separation, but not a claim that Warm dominates Warm-lite on every metric.</p>
+<h2 id="5.-warm-lite-repeated-condition-metrics">5. Warm-lite repeated condition metrics</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">trunc_seed</th>
+<th class="align-left">k</th>
+<th class="align-left">n</th>
+<th class="align-left">MdAPE</th>
+<th class="align-left">MAPE</th>
+<th class="align-left">p95_APE</th>
+<th class="align-left">RMSE_log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">1</td>
+<td class="align-left">607</td>
+<td class="align-left">0.190179</td>
+<td class="align-left">0.344228</td>
+<td class="align-left">1.359756</td>
+<td class="align-left">0.545369</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">1</td>
+<td class="align-left">607</td>
+<td class="align-left">0.207117</td>
+<td class="align-left">0.356917</td>
+<td class="align-left">1.088423</td>
+<td class="align-left">0.600675</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">1</td>
+<td class="align-left">607</td>
+<td class="align-left">0.205979</td>
+<td class="align-left">0.339769</td>
+<td class="align-left">1.004328</td>
+<td class="align-left">0.570472</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">2</td>
+<td class="align-left">607</td>
+<td class="align-left">0.166149</td>
+<td class="align-left">0.276601</td>
+<td class="align-left">0.940233</td>
+<td class="align-left">0.418964</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">2</td>
+<td class="align-left">607</td>
+<td class="align-left">0.157133</td>
+<td class="align-left">0.360916</td>
+<td class="align-left">1.180819</td>
+<td class="align-left">0.502614</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">2</td>
+<td class="align-left">607</td>
+<td class="align-left">0.163389</td>
+<td class="align-left">0.320041</td>
+<td class="align-left">0.990520</td>
+<td class="align-left">0.502487</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">3</td>
+<td class="align-left">607</td>
+<td class="align-left">0.124682</td>
+<td class="align-left">0.270892</td>
+<td class="align-left">0.885141</td>
+<td class="align-left">0.434739</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">3</td>
+<td class="align-left">607</td>
+<td class="align-left">0.137974</td>
+<td class="align-left">0.305346</td>
+<td class="align-left">0.948040</td>
+<td class="align-left">0.476240</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">3</td>
+<td class="align-left">607</td>
+<td class="align-left">0.143844</td>
+<td class="align-left">0.283334</td>
+<td class="align-left">0.987984</td>
+<td class="align-left">0.433309</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">4</td>
+<td class="align-left">607</td>
+<td class="align-left">0.135742</td>
+<td class="align-left">0.258572</td>
+<td class="align-left">0.933404</td>
+<td class="align-left">0.402799</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">4</td>
+<td class="align-left">607</td>
+<td class="align-left">0.129216</td>
+<td class="align-left">0.263700</td>
+<td class="align-left">0.967694</td>
+<td class="align-left">0.404315</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">4</td>
+<td class="align-left">607</td>
+<td class="align-left">0.124010</td>
+<td class="align-left">0.260902</td>
+<td class="align-left">0.929473</td>
+<td class="align-left">0.441882</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-paired-row-level-comparisons">6. Paired row-level comparisons</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">candidate_a</th>
+<th class="align-left">candidate_b</th>
+<th class="align-left">n</th>
+<th class="align-left">a_better_share</th>
+<th class="align-left">b_better_share</th>
+<th class="align-left">median_ape_delta_a_minus_b</th>
+<th class="align-left">mean_ape_delta_a_minus_b</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm WMIN8</td>
+<td class="align-left">Cold forced</td>
+<td class="align-left">607</td>
+<td class="align-left">0.797364</td>
+<td class="align-left">0.202636</td>
+<td class="align-left">-0.275258</td>
+<td class="align-left">-0.471252</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8</td>
+<td class="align-left">Warm-lite k=1</td>
+<td class="align-left">607</td>
+<td class="align-left">0.635914</td>
+<td class="align-left">0.364086</td>
+<td class="align-left">-0.043829</td>
+<td class="align-left">-0.065029</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite k=1</td>
+<td class="align-left">Cold forced</td>
+<td class="align-left">607</td>
+<td class="align-left">0.721582</td>
+<td class="align-left">0.278418</td>
+<td class="align-left">-0.203543</td>
+<td class="align-left">-0.406222</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8</td>
+<td class="align-left">Warm-lite k=2</td>
+<td class="align-left">607</td>
+<td class="align-left">0.589786</td>
+<td class="align-left">0.410214</td>
+<td class="align-left">-0.015395</td>
+<td class="align-left">-0.037463</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite k=2</td>
+<td class="align-left">Cold forced</td>
+<td class="align-left">607</td>
+<td class="align-left">0.751236</td>
+<td class="align-left">0.248764</td>
+<td class="align-left">-0.223729</td>
+<td class="align-left">-0.433789</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8</td>
+<td class="align-left">Warm-lite k=3</td>
+<td class="align-left">607</td>
+<td class="align-left">0.522241</td>
+<td class="align-left">0.477759</td>
+<td class="align-left">-0.002957</td>
+<td class="align-left">-0.009735</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite k=3</td>
+<td class="align-left">Cold forced</td>
+<td class="align-left">607</td>
+<td class="align-left">0.797364</td>
+<td class="align-left">0.202636</td>
+<td class="align-left">-0.237590</td>
+<td class="align-left">-0.461517</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8</td>
+<td class="align-left">Warm-lite k=4</td>
+<td class="align-left">607</td>
+<td class="align-left">0.509061</td>
+<td class="align-left">0.490939</td>
+<td class="align-left">-0.000618</td>
+<td class="align-left">0.002275</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite k=4</td>
+<td class="align-left">Cold forced</td>
+<td class="align-left">607</td>
+<td class="align-left">0.777595</td>
+<td class="align-left">0.222405</td>
+<td class="align-left">-0.272412</td>
+<td class="align-left">-0.473526</td>
+</tr>
+</tbody></table></div>
+<h2 id="7.-주요-해석">7. 주요 해석</h2>
+<ul>
+<li>5건 이상 이력이 있는 동일 작품에서는 Warm WMIN8이 Warm-lite 강제 k=1~4보다 전체적으로 낮은 오차를 보이는지 확인한다.</li>
+<li>Warm-lite k가 커질수록 성능이 개선되는지 확인해, 이력 수 증가가 가격 예측 안정성에 주는 효과를 본다.</li>
+<li>Cold forced 결과는 같은 작가 가격 이력을 숨겼을 때 난이도가 얼마나 올라가는지 보여주는 하한 비교다.</li>
+</ul>
+<h2 id="8.-config">8. Config</h2>
+<pre><code>{
+  &quot;created_at&quot;: &quot;2026-06-16T12:30:24&quot;,
+  &quot;experiment_id&quot;: &quot;PP-ROUTE-CF1&quot;,
+  &quot;experiment_slug&quot;: &quot;PP-ROUTE-CF1_same_row_history_exposure_counterfactual&quot;,
+  &quot;evaluation_rows&quot;: 607,
+  &quot;base_eval_set&quot;: &quot;Warm fixed-test rows&quot;,
+  &quot;warm_source&quot;: &quot;models/track6/warm_wmin8_operational_candidate/artifacts/wmin8_selected_candidate_predictions.csv&quot;,
+  &quot;warm_candidate&quot;: &quot;min1_route_w850_risk_q50_altlower_gap005&quot;,
+  &quot;warm_lite_source&quot;: &quot;experiments/track6/PP-WLITE-Q4_quantile_final_comparison/outputs/q2_final_comparison_rows.csv&quot;,
+  &quot;warm_lite_candidate&quot;: &quot;residual_lgb_s05_cap010&quot;,
+  &quot;warm_lite_design&quot;: &quot;same Warm fixed-test rows, same-artist train history truncated to k=1..4, three truncation seeds, seed-mean for same-n table&quot;,
+  &quot;cold_source&quot;: &quot;models/track6/cold_prediction_v0.5_operational/predict/predict_cold_operational_v0_5.py&quot;,
+  &quot;cold_design&quot;: &quot;same Warm fixed-test rows, no same-artist price history, cold-train bucket generation basis, frozen Cold v0.5&quot;,
+  &quot;scope_overlap_audit&quot;: {
+    &quot;warm_test_n&quot;: 607,
+    &quot;warm_test_vs_cold_train_overlap&quot;: 0,
+    &quot;warm_test_vs_cold_val_overlap&quot;: 0,
+    &quot;warm_test_vs_cold_test_overlap&quot;: 0
+  },
+  &quot;limitations&quot;: [
+    &quot;Counterfactual on Warm fixed-test distribution; does not replace native Warm-lite/Cold operating benchmark.&quot;,
+    &quot;Warm-lite same-n table averages three truncation seeds per row/k.&quot;,
+    &quot;Cold forced comparison hides same-artist price history but still evaluates on Warm fixed-test artwork distribution.&quot;
+  ]
+}</code></pre>
+    </main>
+  </div>
+</body>
+</html>

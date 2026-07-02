@@ -1,0 +1,95 @@
+{
+  "experiment_id": "PP-OPT167-172",
+  "experiment_slug": "PP-OPT167_172_warm_pp166_second_stage_tail_calibration",
+  "created_at": "2026-06-10T09:41:20",
+  "base_candidate": "hcoef_stable",
+  "previous_experiment": "experiments/track6/PP-OPT161_166_warm_pp157_negative_gate_rollback",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 219,
+  "prediction_rows": 246594,
+  "support_candidates": {
+    "pp166_operational": "ppopt166_operational_pp157_negative_gate_challenger__source=ppopt163_segment_outcome__target_pp157_price_qwidth_q084_s100_cap008__seg_price_conf__hw_1p2__thr_0p0__s_1p0__cap_0p006",
+    "pp166_p95": "ppopt166_p95_pp157_negative_gate_challenger__source=reference_pp148_p95",
+    "pp148_operational": "reference_pp148_operational",
+    "pp148_p95": "reference_pp148_p95",
+    "pp161_p95_guard": "ppopt161_harm_rollback__target=pp157_price_qwidth_q084_s100_cap008__hthr=0p3__w=0p14__rb=1p0__s=1p0__cap=0p006",
+    "pp162_p95_gate": "ppopt162_gain_harm_adopt__target=pp157_price_qwidth_q084_s100_cap008__thr=0p18__w=0p1__hpen=0p5__s=1p0__cap=0p006",
+    "pp164_p95_block": "ppopt164_hard_block__target=pp157_price_qwidth_q084_s100_cap008__hthr=0p45__gthr=0p12__s=1p0__cap=0p006"
+  },
+  "selection_decision": {
+    "operational_label": "candidate_ppopt169_segment_router__source_pp162_p95_gate__seg_price_conf__thr_m0p04__s_0p5__cap_0p004__dff857b316",
+    "operational_candidate": "ppopt169_segment_router__source=pp162_p95_gate__seg=price_conf__thr=m0p04__s=0p5__cap=0p004",
+    "operational_fixed_test_MAPE": 0.2699974146611506,
+    "operational_fixed_test_p95_APE": 0.8072309115386983,
+    "operational_delta_vs_pp64_MAPE": -0.0005666272545097328,
+    "operational_delta_vs_pp64_p95_APE": -0.00026794076741154527,
+    "operational_delta_vs_pp126_MAPE": -0.00011698208870120075,
+    "operational_delta_vs_pp126_p95_APE": -0.000259149359149613,
+    "operational_delta_vs_pp148_MAPE": -0.00014257371142878394,
+    "operational_delta_vs_pp148_p95_APE": 0.0,
+    "operational_delta_vs_pp166_MAPE": 4.289959120162834e-07,
+    "operational_delta_vs_pp166_p95_APE": 0.0,
+    "operational_avg_pp64_MAPE_win_rate": 0.9471153846153846,
+    "operational_avg_pp64_p95_win_rate": 0.6054487179487179,
+    "operational_replacement_score": -0.018451242639125117,
+    "p95_label": "pp148_p95_reference",
+    "p95_candidate": "reference_pp148_p95",
+    "p95_fixed_test_MAPE": 0.27026892590910795,
+    "p95_fixed_test_p95_APE": 0.8059493758221674,
+    "p95_delta_vs_pp64_MAPE": -0.00029511600655240944,
+    "p95_delta_vs_pp64_p95_APE": -0.0015494764839424358,
+    "p95_delta_vs_pp126_MAPE": 0.00015452915925612265,
+    "p95_delta_vs_pp126_p95_APE": -0.0015406850756805035,
+    "p95_delta_vs_pp148_MAPE": 0.00012893753652853945,
+    "p95_delta_vs_pp148_p95_APE": -0.0012815357165308905,
+    "p95_delta_vs_pp166_MAPE": 0.0002719402438693397,
+    "p95_delta_vs_pp166_p95_APE": -0.0012815357165308905,
+    "p95_avg_pp64_MAPE_win_rate": 0.5983974358974359,
+    "p95_avg_pp64_p95_win_rate": 0.5009615384615385,
+    "p95_replacement_score": -0.0040792899192624915,
+    "operational_protocol_candidate": "ppopt172_operational_pp166_tail_calibration_challenger__source=ppopt169_segment_router__source_pp162_p95_gate__seg_price_conf__thr_m0p04__s_0p5__cap_0p004",
+    "p95_protocol_candidate": "ppopt172_p95_pp166_tail_calibration_challenger__source=reference_pp148_p95"
+  },
+  "items": [
+    {
+      "item_id": "PP-OPT167",
+      "priority": "1",
+      "title": "PP166 tail-only p95 blend",
+      "description": "PP166을 기준값으로 두고 p95가 낮은 후보의 이동분을 tail-risk row에만 약하게 얹는다."
+    },
+    {
+      "item_id": "PP-OPT168",
+      "priority": "2",
+      "title": "PP166 second-stage rollback",
+      "description": "validation에서 PP166이 PP148보다 손해를 보인 구간은 PP148 쪽으로 일부 되돌린다."
+    },
+    {
+      "item_id": "PP-OPT169",
+      "priority": "3",
+      "title": "segment p95 candidate router",
+      "description": "가격대/불확실성 구간별로 p95 후보가 PP166보다 우세했던 곳에만 후보 이동분을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT170",
+      "priority": "4",
+      "title": "tail-aware dynamic cap",
+      "description": "tail-risk가 큰 row는 보정 cap을 조금 열고, 손해 가능성이 큰 row는 cap을 줄인다."
+    },
+    {
+      "item_id": "PP-OPT171",
+      "priority": "5",
+      "title": "consensus correction ensemble",
+      "description": "여러 p95 후보가 같은 방향으로 움직일 때만 제한적으로 평균 보정을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT172",
+      "priority": "6",
+      "title": "final PP166 tail calibration decision",
+      "description": "PP166과 신규 second-stage 후보를 fixed/repeated 기준으로 비교해 운영/p95 후보를 선택한다."
+    }
+  ],
+  "sources": {
+    "pp161_helper": "scripts/track6/run_pp_opt161_166_warm_pp157_negative_gate_rollback.py"
+  }
+}

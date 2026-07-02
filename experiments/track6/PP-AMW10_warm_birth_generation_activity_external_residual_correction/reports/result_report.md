@@ -1,0 +1,129 @@
+# PP-AMW10 Warm 생년/세대 + 활동/갤러리 잔차 보정
+
+- 작성일: 2026-06-08 15:03
+- 기준 후보: `blend_svcnum_ppv8_wsvc_0.70`
+- 목적: 생년+세대 조합을 중심으로 활동량, 판매 노출, 팔로워, 전시, 갤러리 신호를 추가했을 때 잔차 보정 개선이 유지되는지 확인
+- validation: 작가 키 기준 5-fold OOF
+- test: validation 전체 학습 후 고정 test 1회 적용
+- gate: 피처 결측/외부 피처 미보유 구간에 보정 적용을 제한하는 진단 옵션
+
+## 1. 기준 성능
+
+| split | RMSE_log | MdAPE | MAPE | p95_APE | Within_30 | Within_50 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| validation | 0.3292 | 0.1305 | 0.2110 | 0.6580 | 0.7746 | 0.9075 |
+| test | 0.3996 | 0.1405 | 0.2748 | 0.8331 | 0.7628 | 0.8781 |
+
+## 2. 피처 세트별 test 최선 요약
+
+| feature_set | best_test_delta_MdAPE | best_test_delta_MAPE | best_test_delta_p95_APE | best_test_candidate |
+| --- | --- | --- | --- | --- |
+| birth_generation_followers | -0.0030 | -0.0005 | -0.0196 | huber_birth_generation_followers_gatenone_alpha0p01_cap0p03_s0p5 |
+| birth_generation_for_sale | -0.0019 | -0.0004 | -0.0212 | huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5 |
+| birth_generation | -0.0028 | -0.0001 | -0.0195 | ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p5 |
+| birth_generation_gallery | 0.0005 | 0.0000 | -0.0179 | huber_birth_generation_gallery_gatenone_alpha0p01_cap0p03_s0p5 |
+| birth_generation_market_gap | 0.0005 | 0.0000 | -0.0179 | huber_birth_generation_market_gap_gatenone_alpha0p01_cap0p03_s0p5 |
+| birth_generation_total_works | -0.0020 | 0.0002 | -0.0056 | huber_birth_generation_total_works_gatenone_alpha0p01_cap0p03_s0p5 |
+| birth_generation_exhibition | 0.0005 | 0.0002 | -0.0209 | huber_birth_generation_exhibition_gatenone_alpha0p01_cap0p03_s0p5 |
+| birth_generation_activity_bundle | -0.0014 | 0.0008 | 0.0014 | huber_birth_generation_activity_bundle_gateactivity_available_alpha0p01_cap0p03_s0p5 |
+| birth_generation_activity_external | -0.0068 | 0.0014 | 0.0079 | ridge_birth_generation_activity_external_gateexternal_available_alpha0p1_cap0p05_s0p75 |
+| birth_generation_career_activity | -0.0031 | 0.0014 | 0.0024 | ridge_birth_generation_career_activity_gateactivity_available_alpha0p1_cap0p03_s0p75 |
+
+## 3. test 3지표 모두 개선 후보
+
+| candidate | feature_set | gate | family | validation_delta_MdAPE | validation_delta_MAPE | validation_delta_p95_APE | test_MdAPE | test_MAPE | test_p95_APE | test_delta_MdAPE | test_delta_MAPE | test_delta_p95_APE | test_mean_abs_correction |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation | none | huber_gated_residual | -0.0041 | -0.0016 | -0.0104 | 0.1386 | 0.2742 | 0.8129 | -0.0019 | -0.0006 | -0.0202 | 0.0084 |
+| huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p75 | birth_generation_for_sale | none | huber_gated_residual | -0.0042 | -0.0020 | -0.0131 | 0.1402 | 0.2743 | 0.8140 | -0.0003 | -0.0005 | -0.0191 | 0.0124 |
+| huber_birth_generation_followers_gateactivity_available_alpha0p01_cap0p03_s0p75 | birth_generation_followers | activity_available | huber_gated_residual | -0.0011 | -0.0011 | -0.0159 | 0.1395 | 0.2743 | 0.8140 | -0.0010 | -0.0005 | -0.0191 | 0.0103 |
+| huber_birth_generation_followers_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation_followers | none | huber_gated_residual | -0.0039 | -0.0014 | -0.0115 | 0.1375 | 0.2743 | 0.8135 | -0.0030 | -0.0005 | -0.0196 | 0.0085 |
+| huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation_for_sale | none | huber_gated_residual | -0.0048 | -0.0015 | -0.0096 | 0.1386 | 0.2744 | 0.8119 | -0.0019 | -0.0004 | -0.0212 | 0.0083 |
+| huber_birth_generation_followers_gateactivity_available_alpha0p01_cap0p03_s0p5 | birth_generation_followers | activity_available | huber_gated_residual | -0.0033 | -0.0008 | -0.0104 | 0.1386 | 0.2744 | 0.8135 | -0.0019 | -0.0004 | -0.0196 | 0.0069 |
+| ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p5 | birth_generation | none | ridge_gated_residual | -0.0051 | -0.0010 | -0.0096 | 0.1377 | 0.2747 | 0.8136 | -0.0028 | -0.0001 | -0.0195 | 0.0058 |
+| huber_birth_generation_gatenone_alpha0p01_cap0p05_s0p5 | birth_generation | none | huber_gated_residual | -0.0027 | -0.0018 | -0.0137 | 0.1370 | 0.2747 | 0.8194 | -0.0035 | -0.0001 | -0.0137 | 0.0109 |
+| ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p75 | birth_generation | none | ridge_gated_residual | -0.0037 | -0.0013 | -0.0155 | 0.1375 | 0.2747 | 0.8153 | -0.0030 | -0.0001 | -0.0178 | 0.0087 |
+
+## 4. validation 기준 상위 후보
+
+| candidate | feature_set | gate | family | validation_delta_MdAPE | validation_delta_MAPE | validation_delta_p95_APE | test_MdAPE | test_MAPE | test_p95_APE | test_delta_MdAPE | test_delta_MAPE | test_delta_p95_APE | test_mean_abs_correction |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| huber_birth_generation_activity_external_gatenone_alpha0p01_cap0p05_s0p75 | birth_generation_activity_external | none | huber_gated_residual | -0.0050 | -0.0027 | -0.0240 | 0.1427 | 0.2769 | 0.8449 | 0.0022 | 0.0021 | 0.0118 | 0.0274 |
+| ridge_birth_generation_activity_bundle_gatenone_alpha0p1_cap0p05_s0p75 | birth_generation_activity_bundle | none | ridge_gated_residual | -0.0064 | -0.0022 | -0.0185 | 0.1427 | 0.2784 | 0.8438 | 0.0022 | 0.0036 | 0.0108 | 0.0303 |
+| huber_birth_generation_activity_external_gatenone_alpha0p01_cap0p03_s0p75 | birth_generation_activity_external | none | huber_gated_residual | -0.0050 | -0.0025 | -0.0211 | 0.1395 | 0.2758 | 0.8364 | -0.0010 | 0.0010 | 0.0033 | 0.0195 |
+| ridge_birth_generation_activity_external_gatenone_alpha0p1_cap0p05_s0p75 | birth_generation_activity_external | none | ridge_gated_residual | -0.0032 | -0.0023 | -0.0280 | 0.1424 | 0.2774 | 0.8437 | 0.0019 | 0.0026 | 0.0107 | 0.0311 |
+| huber_birth_generation_career_activity_gatenone_alpha0p01_cap0p05_s0p75 | birth_generation_career_activity | none | huber_gated_residual | -0.0031 | -0.0023 | -0.0280 | 0.1423 | 0.2768 | 0.8451 | 0.0018 | 0.0020 | 0.0120 | 0.0263 |
+| ridge_birth_generation_activity_bundle_gatenone_alpha0p1_cap0p03_s0p75 | birth_generation_activity_bundle | none | ridge_gated_residual | -0.0061 | -0.0022 | -0.0124 | 0.1396 | 0.2766 | 0.8356 | -0.0009 | 0.0018 | 0.0025 | 0.0197 |
+| ridge_birth_generation_activity_external_gatenone_alpha0p1_cap0p05_s0p5 | birth_generation_activity_external | none | ridge_gated_residual | -0.0036 | -0.0020 | -0.0234 | 0.1384 | 0.2761 | 0.8362 | -0.0020 | 0.0013 | 0.0032 | 0.0207 |
+| huber_birth_generation_activity_external_gateactivity_available_alpha0p01_cap0p05_s0p75 | birth_generation_activity_external | activity_available | huber_gated_residual | -0.0047 | -0.0018 | -0.0180 | 0.1424 | 0.2770 | 0.8449 | 0.0019 | 0.0022 | 0.0118 | 0.0238 |
+| ridge_birth_generation_activity_bundle_gatenone_alpha0p1_cap0p05_s0p5 | birth_generation_activity_bundle | none | ridge_gated_residual | -0.0053 | -0.0021 | -0.0128 | 0.1388 | 0.2768 | 0.8364 | -0.0017 | 0.0020 | 0.0033 | 0.0202 |
+| ridge_birth_generation_career_activity_gatenone_alpha0p1_cap0p05_s0p5 | birth_generation_career_activity | none | ridge_gated_residual | -0.0034 | -0.0017 | -0.0234 | 0.1388 | 0.2764 | 0.8363 | -0.0017 | 0.0016 | 0.0033 | 0.0203 |
+| huber_birth_generation_career_activity_gatenone_alpha0p01_cap0p03_s0p75 | birth_generation_career_activity | none | huber_gated_residual | -0.0031 | -0.0023 | -0.0211 | 0.1409 | 0.2758 | 0.8364 | 0.0005 | 0.0010 | 0.0033 | 0.0191 |
+| ridge_birth_generation_activity_bundle_gateactivity_available_alpha0p1_cap0p05_s0p75 | birth_generation_activity_bundle | activity_available | ridge_gated_residual | -0.0054 | -0.0010 | -0.0160 | 0.1423 | 0.2784 | 0.8438 | 0.0018 | 0.0036 | 0.0108 | 0.0254 |
+| ridge_birth_generation_activity_external_gatenone_alpha0p1_cap0p03_s0p75 | birth_generation_activity_external | none | ridge_gated_residual | -0.0032 | -0.0021 | -0.0211 | 0.1390 | 0.2760 | 0.8353 | -0.0015 | 0.0012 | 0.0023 | 0.0203 |
+| huber_birth_generation_total_works_gatenone_alpha0p01_cap0p05_s0p75 | birth_generation_total_works | none | huber_gated_residual | -0.0042 | -0.0020 | -0.0164 | 0.1424 | 0.2763 | 0.8380 | 0.0019 | 0.0015 | 0.0049 | 0.0178 |
+| huber_birth_generation_activity_external_gatenone_alpha0p01_cap0p05_s0p5 | birth_generation_activity_external | none | huber_gated_residual | -0.0037 | -0.0022 | -0.0163 | 0.1402 | 0.2758 | 0.8371 | -0.0002 | 0.0010 | 0.0041 | 0.0182 |
+| huber_birth_generation_activity_bundle_gatenone_alpha0p01_cap0p05_s0p75 | birth_generation_activity_bundle | none | huber_gated_residual | -0.0028 | -0.0027 | -0.0182 | 0.1427 | 0.2771 | 0.8451 | 0.0022 | 0.0023 | 0.0120 | 0.0267 |
+| huber_birth_generation_followers_gatenone_alpha0p01_cap0p05_s0p75 | birth_generation_followers | none | huber_gated_residual | -0.0016 | -0.0018 | -0.0280 | 0.1424 | 0.2753 | 0.8340 | 0.0019 | 0.0005 | 0.0010 | 0.0163 |
+| huber_birth_generation_career_activity_gateactivity_available_alpha0p01_cap0p05_s0p75 | birth_generation_career_activity | activity_available | huber_gated_residual | -0.0038 | -0.0016 | -0.0182 | 0.1419 | 0.2769 | 0.8451 | 0.0014 | 0.0021 | 0.0120 | 0.0232 |
+| huber_birth_generation_followers_gatenone_alpha0p01_cap0p05_s0p5 | birth_generation_followers | none | huber_gated_residual | -0.0033 | -0.0014 | -0.0213 | 0.1375 | 0.2749 | 0.8195 | -0.0030 | 0.0001 | -0.0136 | 0.0109 |
+| huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p75 | birth_generation_for_sale | none | huber_gated_residual | -0.0042 | -0.0020 | -0.0131 | 0.1402 | 0.2743 | 0.8140 | -0.0003 | -0.0005 | -0.0191 | 0.0124 |
+
+## 5. test 기준 상위 후보
+
+| candidate | feature_set | gate | family | validation_delta_MdAPE | validation_delta_MAPE | validation_delta_p95_APE | test_MdAPE | test_MAPE | test_p95_APE | test_delta_MdAPE | test_delta_MAPE | test_delta_p95_APE | test_mean_abs_correction |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| huber_birth_generation_followers_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation_followers | none | huber_gated_residual | -0.0039 | -0.0014 | -0.0115 | 0.1375 | 0.2743 | 0.8135 | -0.0030 | -0.0005 | -0.0196 | 0.0085 |
+| ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p5 | birth_generation | none | ridge_gated_residual | -0.0051 | -0.0010 | -0.0096 | 0.1377 | 0.2747 | 0.8136 | -0.0028 | -0.0001 | -0.0195 | 0.0058 |
+| ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p75 | birth_generation | none | ridge_gated_residual | -0.0037 | -0.0013 | -0.0155 | 0.1375 | 0.2747 | 0.8153 | -0.0030 | -0.0001 | -0.0178 | 0.0087 |
+| huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation_for_sale | none | huber_gated_residual | -0.0048 | -0.0015 | -0.0096 | 0.1386 | 0.2744 | 0.8119 | -0.0019 | -0.0004 | -0.0212 | 0.0083 |
+| huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation | none | huber_gated_residual | -0.0041 | -0.0016 | -0.0104 | 0.1386 | 0.2742 | 0.8129 | -0.0019 | -0.0006 | -0.0202 | 0.0084 |
+| huber_birth_generation_gatenone_alpha0p01_cap0p05_s0p5 | birth_generation | none | huber_gated_residual | -0.0027 | -0.0018 | -0.0137 | 0.1370 | 0.2747 | 0.8194 | -0.0035 | -0.0001 | -0.0137 | 0.0109 |
+| huber_birth_generation_followers_gateactivity_available_alpha0p01_cap0p03_s0p5 | birth_generation_followers | activity_available | huber_gated_residual | -0.0033 | -0.0008 | -0.0104 | 0.1386 | 0.2744 | 0.8135 | -0.0019 | -0.0004 | -0.0196 | 0.0069 |
+| ridge_birth_generation_gatenone_alpha0p1_cap0p05_s0p5 | birth_generation | none | ridge_gated_residual | -0.0014 | -0.0011 | -0.0135 | 0.1374 | 0.2751 | 0.8189 | -0.0031 | 0.0003 | -0.0142 | 0.0083 |
+| huber_birth_generation_followers_gatenone_alpha0p01_cap0p05_s0p5 | birth_generation_followers | none | huber_gated_residual | -0.0033 | -0.0014 | -0.0213 | 0.1375 | 0.2749 | 0.8195 | -0.0030 | 0.0001 | -0.0136 | 0.0109 |
+| huber_birth_generation_followers_gateactivity_available_alpha0p01_cap0p05_s0p5 | birth_generation_followers | activity_available | huber_gated_residual | -0.0024 | -0.0009 | -0.0138 | 0.1375 | 0.2750 | 0.8195 | -0.0030 | 0.0002 | -0.0136 | 0.0093 |
+| huber_birth_generation_followers_gateactivity_available_alpha0p01_cap0p03_s0p75 | birth_generation_followers | activity_available | huber_gated_residual | -0.0011 | -0.0011 | -0.0159 | 0.1395 | 0.2743 | 0.8140 | -0.0010 | -0.0005 | -0.0191 | 0.0103 |
+| huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p75 | birth_generation_for_sale | none | huber_gated_residual | -0.0042 | -0.0020 | -0.0131 | 0.1402 | 0.2743 | 0.8140 | -0.0003 | -0.0005 | -0.0191 | 0.0124 |
+| huber_birth_generation_for_sale_gateactivity_available_alpha0p01_cap0p03_s0p5 | birth_generation_for_sale | activity_available | huber_gated_residual | -0.0029 | -0.0012 | -0.0096 | 0.1407 | 0.2744 | 0.8119 | 0.0003 | -0.0004 | -0.0212 | 0.0077 |
+| ridge_birth_generation_activity_external_gateexternal_available_alpha0p1_cap0p05_s0p75 | birth_generation_activity_external | external_available | ridge_gated_residual | -0.0038 | -0.0012 | 0.0060 | 0.1337 | 0.2762 | 0.8410 | -0.0068 | 0.0014 | 0.0079 | 0.0133 |
+| huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p75 | birth_generation | none | huber_gated_residual | -0.0020 | -0.0022 | -0.0164 | 0.1416 | 0.2740 | 0.8140 | 0.0011 | -0.0008 | -0.0191 | 0.0126 |
+| huber_birth_generation_exhibition_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation_exhibition | none | huber_gated_residual | -0.0025 | -0.0016 | -0.0104 | 0.1410 | 0.2750 | 0.8121 | 0.0005 | 0.0002 | -0.0209 | 0.0097 |
+| huber_birth_generation_followers_gatenone_alpha0p01_cap0p03_s0p75 | birth_generation_followers | none | huber_gated_residual | -0.0016 | -0.0018 | -0.0214 | 0.1417 | 0.2742 | 0.8140 | 0.0013 | -0.0006 | -0.0191 | 0.0127 |
+| huber_birth_generation_gallery_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation_gallery | none | huber_gated_residual | -0.0025 | -0.0019 | -0.0092 | 0.1410 | 0.2748 | 0.8152 | 0.0005 | 0.0000 | -0.0179 | 0.0082 |
+| huber_birth_generation_market_gap_gatenone_alpha0p01_cap0p03_s0p5 | birth_generation_market_gap | none | huber_gated_residual | -0.0025 | -0.0019 | -0.0092 | 0.1410 | 0.2748 | 0.8151 | 0.0005 | 0.0000 | -0.0179 | 0.0082 |
+| huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p05_s0p5 | birth_generation_for_sale | none | huber_gated_residual | -0.0037 | -0.0017 | -0.0113 | 0.1405 | 0.2748 | 0.8177 | 0.0000 | 0.0000 | -0.0154 | 0.0119 |
+
+## 6. bootstrap 안정성
+
+| sample_type | candidate | mean_delta_MdAPE | improvement_probability_MdAPE | mean_delta_MAPE | improvement_probability_MAPE | mean_delta_p95_APE | improvement_probability_p95_APE |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| artist_bootstrap | huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5 | -0.0006 | 0.5675 | -0.0007 | 0.8575 | -0.0057 | 0.7900 |
+| artist_bootstrap | huber_birth_generation_followers_gatenone_alpha0p01_cap0p03_s0p5 | -0.0001 | 0.5250 | -0.0005 | 0.7700 | -0.0050 | 0.7900 |
+| artist_bootstrap | huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5 | 0.0001 | 0.4900 | -0.0005 | 0.7525 | -0.0058 | 0.7800 |
+| artist_bootstrap | ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p5 | -0.0008 | 0.6050 | -0.0001 | 0.5875 | -0.0031 | 0.7675 |
+| artist_bootstrap | ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p75 | -0.0012 | 0.6050 | -0.0001 | 0.5625 | -0.0044 | 0.7825 |
+| artist_bootstrap | huber_birth_generation_activity_external_gatenone_alpha0p01_cap0p03_s0p75 | -0.0005 | 0.5525 | 0.0010 | 0.2350 | 0.0041 | 0.4100 |
+| artist_bootstrap | huber_birth_generation_career_activity_gatenone_alpha0p01_cap0p05_s0p75 | 0.0011 | 0.4150 | 0.0020 | 0.1500 | 0.0076 | 0.4150 |
+| artist_bootstrap | huber_birth_generation_activity_external_gatenone_alpha0p01_cap0p05_s0p75 | 0.0011 | 0.4200 | 0.0021 | 0.1400 | 0.0066 | 0.4100 |
+| artist_bootstrap | ridge_birth_generation_activity_external_gatenone_alpha0p1_cap0p05_s0p75 | 0.0013 | 0.4150 | 0.0027 | 0.1150 | 0.0094 | 0.3775 |
+| artist_bootstrap | ridge_birth_generation_activity_bundle_gatenone_alpha0p1_cap0p05_s0p75 | 0.0019 | 0.3600 | 0.0037 | 0.0375 | 0.0146 | 0.3575 |
+| row_bootstrap | huber_birth_generation_gatenone_alpha0p01_cap0p03_s0p5 | -0.0007 | 0.6325 | -0.0006 | 0.8900 | -0.0057 | 0.7950 |
+| row_bootstrap | huber_birth_generation_followers_gatenone_alpha0p01_cap0p03_s0p5 | -0.0002 | 0.5550 | -0.0005 | 0.8125 | -0.0051 | 0.7975 |
+| row_bootstrap | huber_birth_generation_for_sale_gatenone_alpha0p01_cap0p03_s0p5 | 0.0000 | 0.4850 | -0.0005 | 0.8100 | -0.0057 | 0.7875 |
+| row_bootstrap | ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p5 | -0.0011 | 0.6400 | -0.0001 | 0.5825 | -0.0036 | 0.7550 |
+| row_bootstrap | ridge_birth_generation_gatenone_alpha0p1_cap0p03_s0p75 | -0.0012 | 0.6350 | -0.0001 | 0.5625 | -0.0050 | 0.7850 |
+| row_bootstrap | huber_birth_generation_activity_external_gatenone_alpha0p01_cap0p03_s0p75 | -0.0008 | 0.5975 | 0.0010 | 0.1775 | 0.0043 | 0.4250 |
+| row_bootstrap | huber_birth_generation_career_activity_gatenone_alpha0p01_cap0p05_s0p75 | 0.0009 | 0.4000 | 0.0019 | 0.0725 | 0.0071 | 0.3875 |
+| row_bootstrap | huber_birth_generation_activity_external_gatenone_alpha0p01_cap0p05_s0p75 | 0.0008 | 0.4125 | 0.0020 | 0.0750 | 0.0065 | 0.4050 |
+| row_bootstrap | ridge_birth_generation_activity_external_gatenone_alpha0p1_cap0p05_s0p75 | 0.0006 | 0.4300 | 0.0026 | 0.0675 | 0.0108 | 0.3375 |
+| row_bootstrap | ridge_birth_generation_activity_bundle_gatenone_alpha0p1_cap0p05_s0p75 | 0.0017 | 0.3175 | 0.0036 | 0.0175 | 0.0133 | 0.3100 |
+
+## 7. 산출물
+
+- `outputs/candidate_metrics.csv`
+- `outputs/candidate_predictions.csv`
+- `outputs/feature_set_summary.csv`
+- `outputs/bootstrap_summary.csv`
+- `outputs/bootstrap_samples.csv`
+- `outputs/coefficients_top.csv`
+- `outputs/experiment_manifest.json`

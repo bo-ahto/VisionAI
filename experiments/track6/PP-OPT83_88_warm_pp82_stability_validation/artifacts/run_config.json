@@ -1,0 +1,100 @@
+{
+  "experiment_id": "PP-OPT83-88",
+  "experiment_slug": "PP-OPT83_88_warm_pp82_stability_validation",
+  "created_at": "2026-06-09T13:56:52",
+  "seed": 20260609,
+  "repeats_per_resample_scenario": 260,
+  "sample_fraction": 0.72,
+  "selected_candidates": {
+    "hcoef_stable_source": "hcoef_stable",
+    "incumbent_pp7": "incumbent_operational_pp_opt7",
+    "pp20_p95_reference": "previous_challenger_pp20",
+    "pp30_p95_reference": "reference_pp30_best",
+    "pp48_stability_reference": "reference_pp48_score",
+    "pp52_quantile_reference": "reference_pp52_challenger",
+    "pp58_mape_reference": "reference_pp58_challenger",
+    "pp64_current_best": "reference_pp64_current_best",
+    "pp70_refinement_candidate": "reference_pp70_refinement",
+    "pp82_operational_tail_routing": "ppopt82_operational_tail_routing_challenger__source=ppopt80_hard_tail__anchor_pp70__helper_pp20__score_p95_prob__thr_0p62__width_0p24__s_1p0",
+    "pp82_p95_tail_routing": "ppopt82_p95_tail_routing_challenger__source=ppopt77_clf_tail__anchor_pp70__helper_pp20__prob_tail85_only__thr_0p26__width_0p18__s_0p64",
+    "pp_opt77_best": "ppopt77_clf_tail__anchor=pp70__helper=pp48__prob=tail85_only__thr=0p1__width=0p18__s=0p64",
+    "pp_opt77_p95_best": "ppopt77_clf_tail__anchor=pp70__helper=pp20__prob=tail85_only__thr=0p26__width=0p18__s=0p64",
+    "pp_opt78_best": "ppopt78_helper_prob__anchor=pp70__helper=pp48_bias__thr=0p2__width=0p34__s=0p52",
+    "pp_opt78_p95_best": "ppopt78_helper_prob__anchor=pp70__helper=p95_bias__thr=0p12__width=0p2__s=0p52",
+    "pp_opt80_best": "ppopt80_hard_tail__anchor=pp70__helper=p95_weighted__score=risk_prob__thr=0p7__width=0p14__s=1p0",
+    "pp_opt80_p95_best": "ppopt80_hard_tail__anchor=pp70__helper=pp20__score=p95_prob__thr=0p62__width=0p14__s=1p0",
+    "pp_opt81_best": "ppopt81_tail_ensemble__anchor=pp70__helper=pp48_p95_mix__thr=0p48__width=0p22__s=0p56",
+    "top_mape_in_pp76_82": "ppopt80_hard_tail__anchor=pp70__helper=pp20__score=p95_prob__thr=0p62__width=0p24__s=1p0"
+  },
+  "candidate_count": 19,
+  "validation_rows": 519,
+  "test_rows": 607,
+  "decision": {
+    "operational_verdict": "PP64/PP70을 운영 기준으로 유지하고 PP82 운영형은 후보로 보류",
+    "p95_mode_verdict": "PP82 p95형은 tail 안정성 우선 모드로 유지할 가치가 있음",
+    "pp82_operational_fixed_test_MAPE": 0.2705565870369284,
+    "pp82_operational_fixed_test_p95_APE": 0.807450308348755,
+    "pp82_operational_delta_vs_pp64_MAPE": -7.454878731938397e-06,
+    "pp82_operational_delta_vs_pp64_p95_APE": -4.8543957354874046e-05,
+    "pp82_operational_delta_vs_pp70_MAPE": -4.388340047900563e-06,
+    "pp82_operational_delta_vs_pp70_p95_APE": -3.975254909294179e-05,
+    "pp82_operational_avg_pp64_MAPE_win_rate": 0.36217948717948717,
+    "pp82_operational_avg_pp64_p95_win_rate": 0.47724358974358977,
+    "pp82_operational_avg_pp64_all3_win_rate": 0.03717948717948718,
+    "pp82_p95_fixed_test_MAPE": 0.2706512801714569,
+    "pp82_p95_fixed_test_p95_APE": 0.8068395739408173,
+    "pp82_p95_delta_vs_pp64_MAPE": 8.72382557965401e-05,
+    "pp82_p95_delta_vs_pp64_p95_APE": -0.0006592783652925593,
+    "pp82_p95_avg_incumbent_MAPE_win_rate": 0.9955128205128205,
+    "pp82_p95_avg_incumbent_p95_win_rate": 0.5791666666666667,
+    "reference_pp64_MAPE": 0.27056404191566036,
+    "reference_pp64_p95_APE": 0.8074988523061098,
+    "reference_pp70_MAPE": 0.2705609753769763,
+    "reference_pp70_p95_APE": 0.8074900608978479
+  },
+  "items": [
+    {
+      "item_id": "PP-OPT83",
+      "priority": "1",
+      "title": "fixed validation/test PP82 comparison",
+      "description": "PP64, PP70, PP82 운영형, PP82 p95형을 fixed validation/test에서 비교한다."
+    },
+    {
+      "item_id": "PP-OPT84",
+      "priority": "2",
+      "title": "validation repeated stability",
+      "description": "validation OOF에서 confidence, price, artist, risk 기반 반복 부분표본 승률을 계산한다."
+    },
+    {
+      "item_id": "PP-OPT85",
+      "priority": "3",
+      "title": "test bootstrap stress stability",
+      "description": "fixed test를 bootstrap/stratified resample하여 후보 간 승률을 계산한다."
+    },
+    {
+      "item_id": "PP-OPT86",
+      "priority": "4",
+      "title": "PP82 operational replacement decision",
+      "description": "PP82 운영형을 PP64/PP70의 운영 기준으로 교체할 수 있는지 판단한다."
+    },
+    {
+      "item_id": "PP-OPT87",
+      "priority": "5",
+      "title": "PP82 p95 mode decision",
+      "description": "PP82 p95형을 운영 기본값이 아닌 tail 안정성 우선 모드로 둘지 판단한다."
+    },
+    {
+      "item_id": "PP-OPT88",
+      "priority": "6",
+      "title": "next experiment recommendation",
+      "description": "PP82 검증 결과를 바탕으로 다음 실험 방향을 정리한다."
+    }
+  ],
+  "sources": {
+    "pp76_config": "experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/artifacts/run_config.json",
+    "pp76_predictions": "experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/outputs/candidate_predictions.csv",
+    "pp76_aggregate": "experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/outputs/aggregate_candidate_stability.csv",
+    "pp76_item_summary": "experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/outputs/experiment_item_summary.csv",
+    "pp71_validation_helper": "scripts/track6/run_pp_opt71_75_warm_pp70_stability_validation.py"
+  }
+}

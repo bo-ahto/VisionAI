@@ -1,0 +1,29 @@
+{
+  "experiment_id": "PP-WMIN5",
+  "experiment_slug": "PP-WMIN5_warm_min1_0604_stress",
+  "created_at": "2026-06-12T22:38:36",
+  "selection_policy": "0604 stress only; no candidate or threshold selection from 0604",
+  "baseline": "pp258_report_layer_proxy",
+  "candidate": "wmin4_min1_huber_refit_partial",
+  "stress_p95_tolerance": 0.01,
+  "stress_mape_tolerance": 0.005,
+  "decision": {
+    "status": "pass_continue",
+    "reason": "WMIN4 0604 stress가 PP258 proxy 대비 명확한 악화를 보이지 않음 (MAPE delta -0.057663, p95 delta -0.084486). PP-WMIN6 이후 진행 가능.",
+    "delta_MAPE": -0.05766267495264682,
+    "delta_p95_APE": -0.08448582613186217
+  },
+  "inputs": {
+    "ops_labels": "models/track6/price_prediction_v0.1/operational/outputs/0604_evaluation/operational_predictions_with_actual.csv",
+    "ops_warm_features": "models/track6/price_prediction_v0.1/data/evaluation/test_new_artworks_test_noprice_0604_features/warm_features_v0_1.csv",
+    "pp258_script": "experiments/track6/SUB-WARM-PP258_operational_fixed_test_submission/scripts/pp258_reproduce_fixed_test.py",
+    "warm_refreeze_dir": "models/track6/warm_pp252_upstream_refreeze_candidate/artifacts",
+    "wmin2_script": "scripts/track6/run_pp_wmin2_warm_artist_min1_svc_numeric.py",
+    "wmin3_script": "scripts/track6/run_pp_wmin3_warm_min1_hcoef_refit.py"
+  },
+  "notes": [
+    "PP258 exact upstream raw adapter is not available; use the same raw-compatible PP258 proxy mapping exposed by the v0.1 service adapter.",
+    "WMIN4 partial Huber model is fitted on validation only and applied once to 0604.",
+    "0604 is not used to tune any threshold or candidate."
+  ]
+}

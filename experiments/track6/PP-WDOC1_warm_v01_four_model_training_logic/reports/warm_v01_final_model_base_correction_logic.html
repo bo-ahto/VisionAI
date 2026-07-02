@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm 최종 70:30 모델 기준가 생성 + 보정값 적용 로직</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #536270;
+      --line: #d8dee6;
+      --soft: #f6f8fb;
+      --soft2: #edf2f7;
+      --blue: #1f5fbf;
+      --green: #18705a;
+      --amber: #8a5a00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+      line-height: 1.58;
+      letter-spacing: 0;
+    }
+    main { max-width: 1160px; margin: 0 auto; padding: 32px 24px 56px; }
+    header { border-bottom: 3px solid var(--ink); padding-bottom: 18px; margin-bottom: 24px; }
+    h1 { margin: 0 0 10px; font-size: 30px; line-height: 1.25; letter-spacing: 0; }
+    h2 { margin: 34px 0 14px; font-size: 22px; border-left: 5px solid var(--blue); padding-left: 10px; letter-spacing: 0; }
+    h3 { margin: 22px 0 10px; font-size: 17px; letter-spacing: 0; }
+    p { margin: 8px 0 12px; }
+    .meta { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
+    .tag { border: 1px solid var(--line); background: var(--soft); border-radius: 6px; padding: 4px 8px; }
+    .summary {
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--green);
+      background: var(--soft);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin: 18px 0 24px;
+    }
+    .formula {
+      background: #101820;
+      color: #f7fafc;
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre;
+      margin: 12px 0 18px;
+    }
+    .formula.light {
+      background: #f4f7fb;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 14px;
+    }
+    th, td { border: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--soft2); font-weight: 700; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      background: #eef2f7;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 0.95em;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0 22px;
+    }
+    .step {
+      position: relative;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 112px;
+    }
+    .step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      right: -9px;
+      top: 40%;
+      color: var(--muted);
+      font-weight: 700;
+      background: #fff;
+      padding: 0 2px;
+    }
+    .step-title { font-weight: 700; margin-bottom: 6px; }
+    .step-body { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .note {
+      border-left: 4px solid var(--amber);
+      background: #fff8e6;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin: 14px 0 20px;
+    }
+    .metric {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0 20px;
+    }
+    .metric div { background: var(--soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .metric strong { display: block; font-size: 20px; }
+    .small { color: var(--muted); font-size: 13px; }
+    @media (max-width: 900px) {
+      main { padding: 22px 14px 40px; }
+      h1 { font-size: 24px; }
+      .flow, .metric { grid-template-columns: 1fr; }
+      .step:not(:last-child)::after { content: "v"; right: 50%; top: auto; bottom: -12px; }
+      table { font-size: 13px; }
+      th, td { padding: 7px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Warm 최종 70:30 모델: 기준가 생성 + 보정값 적용 로직</h1>
+    <div class="meta">
+      <span class="tag">작성일 2026-06-08</span>
+      <span class="tag">최종 Warm 모델 전용 문서</span>
+      <span class="tag">기준가 + 보정값 구조</span>
+      <span class="tag">단위 로그 KRW</span>
+    </div>
+  </header>
+
+  <section class="summary">
+    <strong>핵심 설명</strong>
+    <p>최종 Warm 모델은 먼저 작가/유사작품 통계 기반 Huber 모델로 <code>기준_로그가격</code>을 만든다. 그 다음 기준 로그가격 70%와 PPV8 안정 블렌드 로그가격 30%를 섞어 최종 로그가격을 만든다.</p>
+    <div class="formula">최종_Warm_로그가격
+  = 0.70 * 기준_로그가격
+  + 0.30 * PPV8_안정블렌드_로그가격</div>
+
+    <p>같은 식을 기준가 보정 관점으로 다시 쓰면 아래와 같다. 이 표현은 해석용 동치식이다.</p>
+    <div class="formula light">최종_Warm_로그가격
+  = 기준_로그가격 + 적용_보정_로그값
+
+적용_보정_로그값
+  = 0.30 * (PPV8_안정블렌드_로그가격 - 기준_로그가격)</div>
+    <p class="small">즉 기준 로그가격에 1.0을 곱하고 보정값에만 0.3을 곱한다는 뜻이 아니다. 보정값 안에 <code>-0.30 * 기준_로그가격</code>이 포함되어 있어 전체 전개 결과는 기준 70%, PPV8 30%다.</p>
+  </section>
+
+  <section>
+    <h2>전체 순서</h2>
+    <div class="flow">
+      <div class="step"><div class="step-title">1. Warm 라우팅</div><div class="step-body">학습 데이터에 작가 키가 있는 작품만 Warm 최종 모델을 사용한다.</div></div>
+      <div class="step"><div class="step-title">2. 기준가 생성</div><div class="step-body">작가/유사작품 통계와 작품 피쳐로 Huber 기준 로그가격을 만든다.</div></div>
+      <div class="step"><div class="step-title">3. 안정 블렌드 생성</div><div class="step-body">V2 방어형 후보와 L10 생성버킷 후보를 75:25로 섞는다.</div></div>
+      <div class="step"><div class="step-title">4. 보정값 계산</div><div class="step-body">PPV8과 기준가 차이의 30%만 적용한다.</div></div>
+      <div class="step"><div class="step-title">5. 가격 변환</div><div class="step-body">최종 로그가격에 exp()를 적용해 KRW 가격으로 변환한다.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>변수 정의</h2>
+    <table>
+      <thead><tr><th>문서 변수명</th><th>코드/후보명</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td>기준_로그가격</td><td><code>svc_numeric_seed_mean</code></td><td>유사작품 숫자 통계를 넣은 Huber seed 평균 예측 로그가격</td></tr>
+        <tr><td>PPV8_안정블렌드_로그가격</td><td><code>pp_v8_compact_blend_mape_guarded</code></td><td>V2 방어형 후보와 L10 생성버킷 후보를 75:25로 섞은 로그가격</td></tr>
+        <tr><td>보정전_차이_로그값</td><td>PPV8 minus 기준</td><td>PPV8이 기준가보다 높게 보는지 낮게 보는지의 차이</td></tr>
+        <tr><td>적용_보정_로그값</td><td><code>0.30 * 차이</code></td><td>최종 모델이 실제 적용하는 보정량</td></tr>
+        <tr><td>최종_Warm_로그가격</td><td><code>blend_svcnum_ppv8_wsvc_0.70</code></td><td>최종 Warm 예측 로그가격</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>1단계: 기준가 생성</h2>
+    <p>기준가는 <code>유사작품통계 Huber seed 평균</code>으로 만든다. 이 값이 최종식의 70% 축이다.</p>
+    <table>
+      <thead><tr><th>피쳐 묶음</th><th>사용 피쳐</th></tr></thead>
+      <tbody>
+        <tr><td>작품 크기/형태</td><td><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>has_depth</code>, <code>is_3d_candidate</code>, <code>is_extreme_aspect_ratio</code></td></tr>
+        <tr><td>재료/지지체</td><td><code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code></td></tr>
+        <tr><td>작가 식별</td><td><code>artist_key</code></td></tr>
+        <tr><td>유사작품 숫자 통계</td><td><code>svc_group_log_price_median</code>, <code>svc_group_log_price_q25</code>, <code>svc_group_log_price_q75</code>, <code>svc_group_log_price_iqr</code>, <code>svc_group_log_unit_area_median</code>, <code>svc_group_log_unit_area_iqr</code>, <code>svc_group_n_log</code></td></tr>
+      </tbody>
+    </table>
+    <h3>유사작품그룹 선택 순서</h3>
+    <table>
+      <thead><tr><th>우선순위</th><th>그룹 키</th><th>최소 표본 수</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>artist_key + medium_support_bucket + size_bucket</code></td><td>5</td><td>같은 작가, 비슷한 재료/지지체, 비슷한 크기</td></tr>
+        <tr><td>2</td><td><code>artist_key + size_bucket</code></td><td>5</td><td>같은 작가, 비슷한 크기</td></tr>
+        <tr><td>3</td><td><code>artist_key</code></td><td>5</td><td>같은 작가 전체 이력</td></tr>
+        <tr><td>4</td><td><code>medium_support_bucket + size_bucket</code></td><td>30</td><td>비슷한 재료/지지체와 크기</td></tr>
+        <tr><td>5</td><td><code>medium_category + support_category + size_bucket</code></td><td>30</td><td>재료, 지지체, 크기</td></tr>
+        <tr><td>6</td><td><code>medium_category + size_bucket</code></td><td>50</td><td>재료와 크기</td></tr>
+        <tr><td>7</td><td>전체 train</td><td>제한 없음</td><td>fallback</td></tr>
+      </tbody>
+    </table>
+    <div class="formula light">유사작품그룹_중앙값_로그가격 = median(log(price_krw))
+유사작품그룹_가격범위폭 = Q75(log(price_krw)) - Q25(log(price_krw))
+유사작품그룹_표본수_로그 = log(1 + 유사작품그룹_표본수)</div>
+    <h3>Huber 기준가 수식</h3>
+    <div class="formula light">각 seed s에 대해:
+  seed별_기준_로그가격_s = Huber_s(작품피쳐, 유사작품숫자통계)
+
+기준_로그가격
+  = average(seed별_기준_로그가격_202606030 ... seed별_기준_로그가격_202606039)</div>
+  </section>
+
+  <section>
+    <h2>2단계: PPV8 안정 블렌드 생성</h2>
+    <p>PPV8 안정 블렌드는 단일 모델 하나가 아니라, 두 하위 후보 예측값을 로그가격에서 75:25로 섞은 값이다.</p>
+    <div class="formula">PPV8_안정블렌드_로그가격
+  = 0.75 * V2_방어형후보_로그가격
+  + 0.25 * L10_생성버킷_순차보정_로그가격</div>
+    <table>
+      <thead><tr><th>하위 후보</th><th>역할</th><th>최종 weight</th></tr></thead>
+      <tbody>
+        <tr><td>V1 대표후보</td><td>대표 단일 후보</td><td>0.00</td></tr>
+        <tr><td>V2 방어형 후보</td><td>Huber meta-stacking 기반 방어형 후보</td><td>0.75</td></tr>
+        <tr><td>L10 생성버킷 순차보정</td><td>Quantile-Huber-CatBoost 순차보정 후보</td><td>0.25</td></tr>
+        <tr><td>L10 작가메타/외부검색 순차보정</td><td>작가 메타/외부 검색 피쳐 포함 후보</td><td>0.00</td></tr>
+      </tbody>
+    </table>
+
+    <h3>V2 방어형 후보</h3>
+    <p>V2는 여러 기존 Warm 후보의 예측 로그가격을 입력으로 받아 Huber meta-model로 다시 안정화하고, 하위 후보 범위를 크게 벗어나지 않게 clipping한 값이다.</p>
+    <div class="formula light">V2_raw_로그가격
+  = HuberMetaModel(하위후보_예측로그가격들, 예측값_평균, 예측값_표준편차, 예측값_범위, 기준후보와의_차이들, routing_width)
+
+V2_방어형후보_로그가격
+  = clip(V2_raw_로그가격, 하위후보_최소값 - 0.03, 하위후보_최대값 + 0.03)</div>
+
+    <h3>L10 생성버킷 순차보정 후보</h3>
+    <p>L10은 가격대 불확실성을 먼저 보고, Huber로 중심 가격을 잡고, 남은 잔차를 CatBoost로 보정한다.</p>
+    <div class="formula light">q10_log, q50_log, q90_log = CatBoostQuantile(작품피쳐, 생성bucket피쳐)
+quantile_width = q90_log - q10_log
+price_range_ratio = exp(clip(quantile_width, -10, 10))
+
+L10_Huber_중심선_로그가격
+  = Huber(작품피쳐, 생성bucket피쳐, q10_log, q50_log, q90_log, quantile_width, price_range_ratio)
+
+CatBoost_잔차보정
+  = CatBoostRegressor(실제_로그가격 - L10_Huber_OOF_중심선_로그가격)
+
+L10_생성버킷_순차보정_로그가격
+  = L10_Huber_중심선_로그가격 + CatBoost_잔차보정</div>
+  </section>
+
+  <section>
+    <h2>3단계: 기준가에 보정값 적용</h2>
+    <p>기준_로그가격과 PPV8_안정블렌드_로그가격이 만들어지면, 최종 모델은 두 값을 70:30으로 섞는다.</p>
+    <div class="formula">최종_Warm_로그가격
+  = 0.70 * 기준_로그가격
+  + 0.30 * PPV8_안정블렌드_로그가격</div>
+    <p>이 값을 기준가에서 PPV8 방향으로 30% 이동한다는 관점으로 다시 쓰면 아래와 같다.</p>
+    <div class="formula light">보정전_차이_로그값
+  = PPV8_안정블렌드_로그가격 - 기준_로그가격
+
+적용_보정_로그값
+  = 0.30 * 보정전_차이_로그값
+
+최종_Warm_로그가격
+  = 기준_로그가격 + 적용_보정_로그값</div>
+    <div class="note">보정형 해석에서 로그가격은 기준가에 보정값을 더하는 구조지만, KRW 가격에서는 기준가에 보정계수를 곱하는 구조다.</div>
+    <div class="formula light">기준_KRW가격 = exp(기준_로그가격)
+보정계수 = exp(적용_보정_로그값)
+최종_Warm_KRW가격 = 기준_KRW가격 * 보정계수</div>
+  </section>
+
+  <section>
+    <h2>성능과 역할</h2>
+    <table>
+      <thead><tr><th>항목</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th></tr></thead>
+      <tbody>
+        <tr><td>기준가 단독</td><td>0.1520</td><td>0.2942</td><td>0.9381</td><td>0.4179</td></tr>
+        <tr><td>PPV8 보정축 단독</td><td>0.1632</td><td>0.2816</td><td>0.9311</td><td>0.4028</td></tr>
+        <tr><td><strong>최종 Warm 70:30</strong></td><td><strong>0.1405</strong></td><td><strong>0.2748</strong></td><td><strong>0.8331</strong></td><td><strong>0.3996</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="metric">
+      <div><strong>기준가</strong><span>중앙 오차 MdAPE가 강한 축</span></div>
+      <div><strong>PPV8</strong><span>MAPE와 p95 방어 보정축</span></div>
+      <div><strong>30%</strong><span>PPV8 방향으로 이동하는 비율</span></div>
+      <div><strong>exp()</strong><span>로그가격을 KRW 가격으로 변환</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>전체 수식 모음</h2>
+    <div class="formula">기준_로그가격
+  = average(Huber_seed별_예측로그가격_s)
+
+PPV8_안정블렌드_로그가격
+  = 0.75 * V2_방어형후보_로그가격
+  + 0.25 * L10_생성버킷_순차보정_로그가격
+
+적용_보정_로그값
+  = 0.30 * (PPV8_안정블렌드_로그가격 - 기준_로그가격)
+
+최종_Warm_로그가격
+  = 기준_로그가격 + 적용_보정_로그값
+
+최종_Warm_KRW가격
+  = exp(최종_Warm_로그가격)</div>
+  </section>
+</main>
+</body>
+</html>

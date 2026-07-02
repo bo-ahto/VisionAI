@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm 최종 운영 모델 개념 심화 설명서</title>
+  <style>
+    body { margin:0; background:#f4f6f8; color:#17202a; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.68; }
+    main { max-width:1120px; margin:0 auto; background:white; padding:42px 34px 80px; }
+    h1 { margin:0 0 8px; font-size:31px; }
+    h2 { margin:38px 0 12px; padding-top:20px; border-top:1px solid #d8dee6; font-size:23px; }
+    h3 { margin:24px 0 8px; font-size:18px; }
+    p { margin:10px 0; }
+    ul, ol { padding-left:24px; }
+    li { margin:4px 0; }
+    table { width:100%; border-collapse:collapse; font-size:14px; margin:14px 0 24px; }
+    th, td { border:1px solid #d8dee6; padding:9px 10px; vertical-align:top; }
+    th { background:#f1f3f5; text-align:left; }
+    code, pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    code { background:#f3f4f6; padding:2px 5px; border-radius:4px; }
+    pre { background:#111827; color:#f9fafb; padding:15px 17px; border-radius:8px; overflow-x:auto; font-size:13px; white-space:pre-wrap; }
+    blockquote { border-left:4px solid #2563eb; background:#eff6ff; margin:18px 0; padding:12px 16px; }
+    .meta { color:#596579; margin-bottom:20px; }
+    .callout { border-left:4px solid #2563eb; background:#eff6ff; padding:14px 16px; margin:18px 0 22px; }
+    .warn { border-left:4px solid #d97706; background:#fff7ed; padding:14px 16px; margin:18px 0 22px; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .card { border:1px solid #d8dee6; border-radius:8px; padding:14px; background:#fafafa; }
+    .card strong { display:block; margin-bottom:6px; }
+    @media (max-width:800px) { main { padding:28px 18px 56px; } .grid { grid-template-columns:1fr; } table { font-size:12px; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Warm 최종 운영 모델 개념 심화 설명서</h1>
+  <div class="meta">작성일: 2026-06-10 · 목적: 꼬리 질문 대비 개념 학습</div>
+
+  <div class="callout">
+    이 문서는 발표 스크립트를 외우기 위한 자료가 아니라, 질문을 받았을 때 왜 그런 구조와 지표를 썼는지 설명하기 위한 보조 자료다.
+  </div>
+
+  <h2>1. 전체 구조</h2>
+  <pre>1층. 기존 Warm 기준가격 생성
+  - 작품 정보와 유사작품 기반 정보를 사용해 기본 가격 생성
+
+2층. 미세 보정 전 기준가격 생성
+  - 기존 기준가격 위에 방향 조건부 잔차 보정과 p95 관련 보조 이동 적용
+
+3층. 최종 운영 미세 보정
+  - 방향 분류 모델과 Huber 잔차 모델이 같은 방향을 가리킬 때만 아주 작게 보정</pre>
+  <blockquote>이 모델은 가격을 처음부터 새로 만드는 구조가 아니라, 기존 Warm 기준가격을 만든 뒤 마지막 단계에서 방향이 맞는 보정만 아주 작게 적용하는 구조입니다.</blockquote>
+
+  <h2>2. 기준가격과 보정값</h2>
+  <pre>최종로그가격 = 기준로그가격 + 보정값</pre>
+  <ul>
+    <li>기준가격: 모델이 먼저 잡는 중심 예측가격</li>
+    <li>보정값: 기준가격에 더하는 작은 조정값</li>
+    <li>최종 모델의 출발점: <code>미세보정전_기준로그가격</code></li>
+  </ul>
+  <h3>질문 대응</h3>
+  <blockquote>그냥 더 강한 모델로 한 번에 예측할 수도 있지만, 운영 후보에서는 평균 오차와 p95 안정성을 동시에 봐야 합니다. 현재는 안정적인 기준가격을 유지하면서 방향이 확인된 row만 작게 보정하는 구조가 더 적합했습니다.</blockquote>
+
+  <h2>3. 로그가격</h2>
+  <pre>로그가격 = log(원가격)
+원가격 = exp(로그가격)
+
+가격 변화율 = exp(로그보정값) - 1</pre>
+  <p>미술품 가격은 저가와 고가 차이가 크기 때문에 원 가격으로 바로 계산하면 고가 작품이 전체 모델을 흔들 수 있다. 로그가격은 가격 차이를 상대적인 비율 관점으로 다루게 해준다.</p>
+  <table>
+    <thead><tr><th>로그보정값</th><th>가격 변화율 해석</th></tr></thead>
+    <tbody>
+      <tr><td>0.00005</td><td>약 0.005%</td></tr>
+      <tr><td>0.00010</td><td>약 0.010%</td></tr>
+    </tbody>
+  </table>
+  <h3>질문 대응</h3>
+  <blockquote>0.00005는 큰 가격 이동을 만들기 위한 값이 아닙니다. 마지막 단계는 이미 안정화된 기준가격을 흔들지 않으면서 방향이 명확한 row만 아주 작게 보정하는 목적입니다.</blockquote>
+
+  <h2>4. 잔차와 Huber</h2>
+  <pre>잔차 = 실제로그가격 - 기준로그가격</pre>
+  <div class="grid">
+    <div class="card"><strong>잔차 양수</strong>실제가격이 기준가격보다 높다. 기준가격이 낮게 잡힌 상태다.</div>
+    <div class="card"><strong>잔차 음수</strong>실제가격이 기준가격보다 낮다. 기준가격이 높게 잡힌 상태다.</div>
+  </div>
+  <p>Huber 방식은 큰 이상치에 덜 민감한 회귀 방식이다. 미술품 가격 데이터처럼 특이 고가 작품이나 큰 오차 row가 있을 수 있는 데이터에서 보수적인 잔차 보정에 적합하다.</p>
+  <h3>질문 대응</h3>
+  <blockquote>가격 전체를 다시 예측하는 것이 아니라 이미 만들어진 기준가격에서 남은 오차만 예측하는 구조입니다. Huber는 큰 이상치에 덜 흔들려 운영 보정층에 더 적합했습니다.</blockquote>
+
+  <h2>5. 방향 분류 모델</h2>
+  <pre>미세보정전_상향확률 = 방향분류모델(파생피처)
+
+방향확신도 = abs(상향확률 - 0.5) * 2</pre>
+  <table>
+    <thead><tr><th>상향확률</th><th>방향확신도</th><th>해석</th></tr></thead>
+    <tbody>
+      <tr><td>0.50</td><td>0.00</td><td>방향 모름</td></tr>
+      <tr><td>0.60</td><td>0.20</td><td>약한 상향 신호</td></tr>
+      <tr><td>0.80</td><td>0.60</td><td>강한 상향 신호</td></tr>
+      <tr><td>0.20</td><td>0.60</td><td>강한 하향 신호</td></tr>
+    </tbody>
+  </table>
+  <p>잔차 모델은 보정 크기를 제안하고, 방향 분류 모델은 올릴지 내릴지 방향을 검증한다. 최종 보정은 두 모델이 같은 방향일 때만 적용한다.</p>
+  <h3>질문 대응</h3>
+  <blockquote>상향확률이 0.5 근처면 모델도 방향을 확신하지 못하는 상태입니다. 이런 row까지 보정하면 오히려 오차가 커질 수 있어서 방향확신도 임계값을 둡니다.</blockquote>
+
+  <h2>6. Quantile width와 row 위험도</h2>
+  <p>Quantile width는 예측 가능한 가격 범위의 폭이다. 폭이 넓으면 모델이 해당 작품 가격을 불확실하게 본다는 의미다.</p>
+  <pre>quantile_width가 큼
+  -> 예측 불확실성 큼
+  -> 보정 상한 축소</pre>
+  <p>row 위험도는 각 작품 row가 얼마나 조심스럽게 다뤄져야 하는지를 나타낸다. 유사작품 수가 적거나, 예측 후보들 간 차이가 크거나, 예측 구간 폭이 큰 row는 위험도가 높다.</p>
+  <pre>최종보정_적용상한
+  = 기본상한
+    * (1 - 0.55 * 불확실성순위)
+    * (1 - 0.80 * row위험도)</pre>
+  <h3>질문 대응</h3>
+  <blockquote>위험도가 높은 row를 예측에서 제외할 수는 없습니다. 대신 보정 폭을 줄여 기준가격을 크게 흔들지 않도록 했습니다.</blockquote>
+
+  <h2>7. 보정 상한과 clipping</h2>
+  <pre>적용보정값 = clip(원시보정값, -상한, +상한)
+
+상향 기본 상한 = 0.00005
+하향 기본 상한 = 0.000035</pre>
+  <p>원시 보정값이 크게 계산돼도 최종 적용값은 상한 안으로 제한된다. 이 장치가 운영 안정성을 지키는 핵심 방어막이다.</p>
+
+  <h2>8. 성능 지표</h2>
+  <table>
+    <thead><tr><th>지표</th><th>의미</th><th>주의점</th></tr></thead>
+    <tbody>
+      <tr><td>MAPE</td><td>평균 절대 퍼센트 오차</td><td>전체 평균 성능. 큰 오차에 영향 받을 수 있음</td></tr>
+      <tr><td>MdAPE</td><td>절대 퍼센트 오차의 중앙값</td><td>전형적인 row 성능. 이상치 영향이 작음</td></tr>
+      <tr><td>p95 APE</td><td>상위 5% 큰 오차 구간</td><td>운영 리스크와 관련</td></tr>
+      <tr><td>RMSE log</td><td>로그가격 기준 평균제곱근 오차</td><td>로그 공간에서 큰 오차에 민감</td></tr>
+    </tbody>
+  </table>
+  <h3>질문 대응</h3>
+  <blockquote>이번 선택은 단일 지표만 본 것이 아니라 MAPE, p95 APE, repeated win rate, replacement score를 함께 본 결과입니다. 그래서 큰 개선 모델이 아니라 운영 1순위 후보로 표현하는 것이 맞습니다.</blockquote>
+
+  <h2>9. Repeated win rate와 replacement score</h2>
+  <p>Repeated win rate는 반복 검증에서 기준 모델보다 더 자주 이겼는지를 보는 지표다. 일회성 개선인지, 반복적으로 안정적인 개선인지 확인하기 위해 사용한다.</p>
+  <p>Replacement score는 기존 운영 예측가격을 새 예측가격으로 바꿔도 되는지를 판단하기 위한 내부 종합 점수다. 이 문서에서는 낮을수록 유리한 점수로 해석한다.</p>
+  <h3>질문 대응</h3>
+  <blockquote>MAPE만 보고 선택하지 않았습니다. p95 반복 안정성이 유지되는지, replacement score가 개선되는지도 함께 봤습니다. 개선 폭은 작지만 안정성을 해치지 않는 범위에서 종합 점수가 가장 좋아 운영 1순위 후보로 둔 것입니다.</blockquote>
+
+  <h2>10. CatBoost가 최종 경로에 없는 이유</h2>
+  <ul>
+    <li>CatBoost 방향 분류 후보 테스트 완료</li>
+    <li>CatBoost 잔차 보정 후보 테스트 완료</li>
+    <li>일부 지표에서는 장점 존재</li>
+    <li>최종 운영 조건 전체에서는 선택된 조합이 더 균형적</li>
+  </ul>
+  <blockquote>CatBoost를 안 해본 것이 아닙니다. 일부 구간에서는 장점이 있었지만, MAPE, p95 APE, 반복 안정성, replacement score를 동시에 보면 최종 선택된 히스토그램 기반 방향 분류와 Huber 잔차 조합이 더 균형적이었습니다.</blockquote>
+
+  <h2>11. 집요한 질문 대응용 짧은 답변</h2>
+  <table>
+    <thead><tr><th>질문</th><th>답변</th></tr></thead>
+    <tbody>
+      <tr><td>핵심 한 줄은?</td><td>안정적인 기준가격 위에 방향이 확인된 잔차만 아주 작게 보정하는 모델입니다.</td></tr>
+      <tr><td>가장 중요한 방어 장치는?</td><td>방향 일치 조건과 보정 상한입니다.</td></tr>
+      <tr><td>왜 복잡한가?</td><td>위험한 row는 덜 움직이고 확신이 있는 row만 보정하기 위해서입니다.</td></tr>
+      <tr><td>성능 개선이 작은데 의미가 있나?</td><td>큰 개선은 아니지만 MAPE와 replacement score가 개선됐고 p95 반복 안정성이 유지됐습니다.</td></tr>
+      <tr><td>바로 운영 가능한가?</td><td>운영 1순위 후보이지만 bootstrap과 row별 개선 분석을 추가 확인하는 것이 안전합니다.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>12. 피해야 할 표현과 권장 표현</h2>
+  <div class="warn">
+    <strong>피해야 할 표현</strong>
+    <ul>
+      <li>성능이 크게 개선됐다</li>
+      <li>완전히 새로운 가격 예측 모델이다</li>
+      <li>CatBoost는 안 해봤다</li>
+      <li>p95도 확실히 좋아졌다</li>
+      <li>이 모델이면 바로 운영해도 문제없다</li>
+    </ul>
+  </div>
+  <div class="callout">
+    <strong>권장 표현</strong>
+    <ul>
+      <li>현재 Warm 계열에서 운영 1순위 후보</li>
+      <li>기준가격을 크게 흔들지 않는 안정성 중심 미세 보정</li>
+      <li>MAPE와 replacement score는 개선, repeated p95 안정성은 유지</li>
+      <li>CatBoost도 비교했지만 최종 운영 조건에서는 현재 조합이 더 균형적</li>
+      <li>운영 전 추가 검증 필요</li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>

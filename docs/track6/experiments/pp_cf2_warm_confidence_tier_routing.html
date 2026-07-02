@@ -1,0 +1,114 @@
+<!doctype html><html><head><meta charset='utf-8'><title>PP-CF2 Warm Confidence Routing</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.55;margin:32px;color:#1f2937}pre{white-space:pre-wrap;background:#f8fafc;border:1px solid #d8dee9;padding:16px;border-radius:6px}</style></head><body><h1>PP-CF2 Warm 신뢰도별 라우팅 실험</h1><pre># PP-CF2 Warm 신뢰도별 라우팅 실험
+
+- 실험 ID: `PP-CF2`
+- 실행 시각: 2026-06-08T13:45:03
+- 목적: PP-CF1에서 만든 신뢰도 필터 학습 후보를 실제 운영 후보처럼 신뢰도 등급별로 조합한다.
+- 원천 예측: `experiments/track6/PP-CF1_warm_confidence_filtered_training/outputs/candidate_predictions.csv`
+- 선택 원칙: 일반 운영 후보는 `validation_oof/all` 기준, 고신뢰 전용 후보는 `validation_oof/high_confidence` 기준으로 본다. test는 진단용이다.
+
+## 신뢰도 기준
+
+PP-CF1 기준을 그대로 사용한다.
+
+- 고신뢰: `{&quot;quantile_width_max&quot;: 1.2, &quot;component_prediction_spread_max&quot;: 0.1, &quot;l10_price_range_ratio_max&quot;: 2.0, &quot;svc_group_n_min&quot;: 5, &quot;current_vs_stable_gap_abs_max&quot;: 0.025}`
+- 저신뢰: `{&quot;quantile_width_min&quot;: 1.6, &quot;component_prediction_spread_min&quot;: 0.18, &quot;l10_price_range_ratio_min&quot;: 2.5, &quot;svc_group_n_max&quot;: 4, &quot;current_vs_stable_gap_abs_min&quot;: 0.05}`
+- 그 외: 중신뢰
+
+## 라우팅 후보 정의
+
+| candidate | description | high_confidence_source | medium_confidence_source | low_confidence_source | selection_note |
+| --- | --- | --- | --- | --- | --- |
+| cf2_base_hcoef_stable | 전체 구간에서 HCOEF 안정 기준가만 사용 | hcoef_stable | hcoef_stable | hcoef_stable | baseline |
+| cf2_global_catboost_all_rows | 전체 구간에서 validation 전체 MAPE 1위 CatBoost 후보 사용 | catboost_all_rows_cap0p08 | catboost_all_rows_cap0p08 | catboost_all_rows_cap0p08 | PP-CF1 validation_oof/all MAPE 1위 |
+| cf2_global_confidence_weighted_catboost | 전체 구간에서 신뢰도 가중 CatBoost 후보 사용 | catboost_confidence_weighted_cap0p08 | catboost_confidence_weighted_cap0p08 | catboost_confidence_weighted_cap0p08 | PP-CF1 validation_oof/all MAPE 2위 및 test 전체 진단 1위 |
+| cf2_high_huber_else_base | 고신뢰 구간만 Huber high-only로 보정하고 중/저신뢰는 기준가 유지 | huber_high_only_cap0p03 | hcoef_stable | hcoef_stable | PP-CF1 validation_oof/high_confidence MAPE 1위 |
+| cf2_high_huber_mid_weighted_low_base | 고신뢰는 Huber high-only, 중신뢰는 가중 CatBoost, 저신뢰는 기준가 유지 | huber_high_only_cap0p03 | catboost_confidence_weighted_cap0p08 | hcoef_stable | 저신뢰 보정을 피하는 보수형 라우팅 |
+| cf2_high_huber_mid_weighted_low_xgb | 고신뢰는 Huber high-only, 중신뢰는 가중 CatBoost, 저신뢰는 low-only XGBoost | huber_high_only_cap0p03 | catboost_confidence_weighted_cap0p08 | xgboost_low_only_diagnostic_cap0p08 | 각 구간별 validation 상위 후보를 반영한 공격형 라우팅 |
+| cf2_high_mid_catboost_low_base | 고/중신뢰는 high-mid 학습 CatBoost, 저신뢰는 기준가 유지 | catboost_high_mid_only_cap0p05 | catboost_high_mid_only_cap0p05 | hcoef_stable | 저신뢰 제외 학습 후보를 고/중신뢰에만 적용 |
+| cf2_validation_slice_best | validation slice별 MAPE 1위 후보를 각 신뢰도 구간에 적용 | huber_high_only_cap0p03 | huber_low_only_diagnostic_cap0p02 | xgboost_low_only_diagnostic_cap0p08 | validation slice별 1위 조합. 과적합 가능성이 있어 진단용으로 해석 |
+
+## 핵심 결과
+
+| summary | candidate | eval_split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate | route_sources |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 일반 운영 validation 1위 | cf2_validation_slice_best | validation_oof | all | 519 | 0.1196 | 0.2024 | 0.6250 | 0.3185 | 0.7726 | 0.0809 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;xgboost_low_only_diagnostic_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;huber_low_only_diagnostic_cap0p02&quot;} |
+| 일반 운영 validation 1위 test | cf2_validation_slice_best | test | all | 607 | 0.1476 | 0.2755 | 0.8750 | 0.4001 | 0.7776 | 0.1170 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;xgboost_low_only_diagnostic_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;huber_low_only_diagnostic_cap0p02&quot;} |
+| 고신뢰 운영 validation 1위 | cf2_high_huber_else_base | validation_oof | high_confidence | 91 | 0.0823 | 0.1351 | 0.4720 | 0.2517 | 0.8462 | 0.0549 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| 고신뢰 운영 validation 1위 test | cf2_high_huber_else_base | test | high_confidence | 100 | 0.0892 | 0.1252 | 0.3215 | 0.1638 | 0.9200 | 0.0100 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| 기준가 validation 전체 | cf2_base_hcoef_stable | validation_oof | all | 519 | 0.1260 | 0.2082 | 0.6479 | 0.3252 | 0.7784 | 0.0886 | {&quot;high_confidence&quot;: &quot;hcoef_stable&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;hcoef_stable&quot;} |
+| 기준가 test 전체 | cf2_base_hcoef_stable | test | all | 607 | 0.1388 | 0.2730 | 0.8064 | 0.3988 | 0.7743 | 0.1186 | {&quot;high_confidence&quot;: &quot;hcoef_stable&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;hcoef_stable&quot;} |
+| 기준가 validation 고신뢰 | cf2_base_hcoef_stable | validation_oof | high_confidence | 91 | 0.0722 | 0.1387 | 0.4876 | 0.2598 | 0.8352 | 0.0549 | {&quot;high_confidence&quot;: &quot;hcoef_stable&quot;} |
+| 기준가 test 고신뢰 | cf2_base_hcoef_stable | test | high_confidence | 100 | 0.0950 | 0.1272 | 0.3187 | 0.1675 | 0.9300 | 0.0200 | {&quot;high_confidence&quot;: &quot;hcoef_stable&quot;} |
+
+## Validation 전체 기준 라우팅 순위
+
+| candidate | eval_split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate | route_sources |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cf2_validation_slice_best | validation_oof | all | 519 | 0.1196 | 0.2024 | 0.6250 | 0.3185 | 0.7726 | 0.0809 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;xgboost_low_only_diagnostic_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;huber_low_only_diagnostic_cap0p02&quot;} |
+| cf2_high_huber_mid_weighted_low_xgb | validation_oof | all | 519 | 0.1213 | 0.2044 | 0.6267 | 0.3202 | 0.7707 | 0.0867 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;xgboost_low_only_diagnostic_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;} |
+| cf2_global_catboost_all_rows | validation_oof | all | 519 | 0.1226 | 0.2052 | 0.6532 | 0.3217 | 0.7803 | 0.0886 | {&quot;high_confidence&quot;: &quot;catboost_all_rows_cap0p08&quot;, &quot;low_confidence&quot;: &quot;catboost_all_rows_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;catboost_all_rows_cap0p08&quot;} |
+| cf2_global_confidence_weighted_catboost | validation_oof | all | 519 | 0.1269 | 0.2054 | 0.6579 | 0.3229 | 0.7803 | 0.0886 | {&quot;high_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;, &quot;low_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;} |
+| cf2_high_huber_else_base | validation_oof | all | 519 | 0.1259 | 0.2076 | 0.6479 | 0.3241 | 0.7803 | 0.0886 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;hcoef_stable&quot;} |
+| cf2_base_hcoef_stable | validation_oof | all | 519 | 0.1260 | 0.2082 | 0.6479 | 0.3252 | 0.7784 | 0.0886 | {&quot;high_confidence&quot;: &quot;hcoef_stable&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;hcoef_stable&quot;} |
+| cf2_high_mid_catboost_low_base | validation_oof | all | 519 | 0.1281 | 0.2092 | 0.6536 | 0.3241 | 0.7823 | 0.0944 | {&quot;high_confidence&quot;: &quot;catboost_high_mid_only_cap0p05&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;catboost_high_mid_only_cap0p05&quot;} |
+| cf2_high_huber_mid_weighted_low_base | validation_oof | all | 519 | 0.1260 | 0.2093 | 0.6506 | 0.3254 | 0.7765 | 0.0925 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;} |
+
+## Validation 고신뢰 기준 라우팅 순위
+
+| candidate | eval_split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate | route_sources |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cf2_high_huber_else_base | validation_oof | high_confidence | 91 | 0.0823 | 0.1351 | 0.4720 | 0.2517 | 0.8462 | 0.0549 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| cf2_high_huber_mid_weighted_low_base | validation_oof | high_confidence | 91 | 0.0823 | 0.1351 | 0.4720 | 0.2517 | 0.8462 | 0.0549 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| cf2_high_huber_mid_weighted_low_xgb | validation_oof | high_confidence | 91 | 0.0823 | 0.1351 | 0.4720 | 0.2517 | 0.8462 | 0.0549 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| cf2_validation_slice_best | validation_oof | high_confidence | 91 | 0.0823 | 0.1351 | 0.4720 | 0.2517 | 0.8462 | 0.0549 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| cf2_global_confidence_weighted_catboost | validation_oof | high_confidence | 91 | 0.0779 | 0.1366 | 0.4814 | 0.2496 | 0.8681 | 0.0549 | {&quot;high_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;} |
+| cf2_global_catboost_all_rows | validation_oof | high_confidence | 91 | 0.0742 | 0.1379 | 0.4767 | 0.2526 | 0.8571 | 0.0549 | {&quot;high_confidence&quot;: &quot;catboost_all_rows_cap0p08&quot;} |
+| cf2_high_mid_catboost_low_base | validation_oof | high_confidence | 91 | 0.0727 | 0.1380 | 0.4840 | 0.2530 | 0.8462 | 0.0549 | {&quot;high_confidence&quot;: &quot;catboost_high_mid_only_cap0p05&quot;} |
+| cf2_base_hcoef_stable | validation_oof | high_confidence | 91 | 0.0722 | 0.1387 | 0.4876 | 0.2598 | 0.8352 | 0.0549 | {&quot;high_confidence&quot;: &quot;hcoef_stable&quot;} |
+
+## Test 전체 순위
+
+진단용이다. 후보 선택에는 사용하지 않는다.
+
+| candidate | eval_split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate | route_sources |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cf2_global_confidence_weighted_catboost | test | all | 607 | 0.1425 | 0.2681 | 0.8675 | 0.3983 | 0.7842 | 0.1137 | {&quot;high_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;, &quot;low_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;} |
+| cf2_high_mid_catboost_low_base | test | all | 607 | 0.1448 | 0.2693 | 0.8340 | 0.3967 | 0.7776 | 0.1153 | {&quot;high_confidence&quot;: &quot;catboost_high_mid_only_cap0p05&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;catboost_high_mid_only_cap0p05&quot;} |
+| cf2_high_huber_mid_weighted_low_base | test | all | 607 | 0.1450 | 0.2700 | 0.8337 | 0.3962 | 0.7809 | 0.1120 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;} |
+| cf2_global_catboost_all_rows | test | all | 607 | 0.1464 | 0.2701 | 0.8742 | 0.3993 | 0.7759 | 0.1120 | {&quot;high_confidence&quot;: &quot;catboost_all_rows_cap0p08&quot;, &quot;low_confidence&quot;: &quot;catboost_all_rows_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;catboost_all_rows_cap0p08&quot;} |
+| cf2_high_huber_mid_weighted_low_xgb | test | all | 607 | 0.1466 | 0.2720 | 0.8750 | 0.3975 | 0.7875 | 0.1120 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;xgboost_low_only_diagnostic_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;} |
+| cf2_high_huber_else_base | test | all | 607 | 0.1403 | 0.2727 | 0.8064 | 0.3986 | 0.7727 | 0.1170 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;hcoef_stable&quot;} |
+| cf2_base_hcoef_stable | test | all | 607 | 0.1388 | 0.2730 | 0.8064 | 0.3988 | 0.7743 | 0.1186 | {&quot;high_confidence&quot;: &quot;hcoef_stable&quot;, &quot;low_confidence&quot;: &quot;hcoef_stable&quot;, &quot;medium_confidence&quot;: &quot;hcoef_stable&quot;} |
+| cf2_validation_slice_best | test | all | 607 | 0.1476 | 0.2755 | 0.8750 | 0.4001 | 0.7776 | 0.1170 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;, &quot;low_confidence&quot;: &quot;xgboost_low_only_diagnostic_cap0p08&quot;, &quot;medium_confidence&quot;: &quot;huber_low_only_diagnostic_cap0p02&quot;} |
+
+## Test 고신뢰 순위
+
+진단용이다. 후보 선택에는 사용하지 않는다.
+
+| candidate | eval_split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate | route_sources |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cf2_high_mid_catboost_low_base | test | high_confidence | 100 | 0.0926 | 0.1214 | 0.3327 | 0.1634 | 0.9100 | 0.0000 | {&quot;high_confidence&quot;: &quot;catboost_high_mid_only_cap0p05&quot;} |
+| cf2_global_confidence_weighted_catboost | test | high_confidence | 100 | 0.0894 | 0.1216 | 0.3506 | 0.1655 | 0.9000 | 0.0100 | {&quot;high_confidence&quot;: &quot;catboost_confidence_weighted_cap0p08&quot;} |
+| cf2_global_catboost_all_rows | test | high_confidence | 100 | 0.0823 | 0.1219 | 0.3417 | 0.1642 | 0.8900 | 0.0000 | {&quot;high_confidence&quot;: &quot;catboost_all_rows_cap0p08&quot;} |
+| cf2_high_huber_else_base | test | high_confidence | 100 | 0.0892 | 0.1252 | 0.3215 | 0.1638 | 0.9200 | 0.0100 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| cf2_high_huber_mid_weighted_low_base | test | high_confidence | 100 | 0.0892 | 0.1252 | 0.3215 | 0.1638 | 0.9200 | 0.0100 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| cf2_high_huber_mid_weighted_low_xgb | test | high_confidence | 100 | 0.0892 | 0.1252 | 0.3215 | 0.1638 | 0.9200 | 0.0100 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| cf2_validation_slice_best | test | high_confidence | 100 | 0.0892 | 0.1252 | 0.3215 | 0.1638 | 0.9200 | 0.0100 | {&quot;high_confidence&quot;: &quot;huber_high_only_cap0p03&quot;} |
+| cf2_base_hcoef_stable | test | high_confidence | 100 | 0.0950 | 0.1272 | 0.3187 | 0.1675 | 0.9300 | 0.0200 | {&quot;high_confidence&quot;: &quot;hcoef_stable&quot;} |
+
+## 해석
+
+- `cf2_validation_slice_best`는 validation 전체 MAPE 1위지만 test 전체에서 기준가보다 나빠진다. slice별 1위 조합은 과적합 위험이 있으므로 운영 후보로 바로 쓰기 어렵다.
+- 전체 운영 기준의 보수적 후보는 `cf2_global_confidence_weighted_catboost`다. validation 전체 2위권이고 test 전체 진단에서도 기준가보다 낮은 MAPE를 보인다.
+- 고신뢰 전용 기준에서는 `cf2_high_huber_else_base`가 validation 기준으로 가장 안정적이다. test 고신뢰에서도 기준가보다 MAPE가 낮아진다.
+- 저신뢰 구간은 별도 후보로 보정해도 test에서 안정적으로 개선된다고 보기 어렵다. 운영에서는 저신뢰를 가격 보정 대상으로 삼기보다 범위/주의 표시/리뷰 대상으로 라우팅하는 편이 방어적이다.
+
+## 산출물
+
+- `outputs/metrics.csv`
+- `outputs/route_predictions.csv`
+- `outputs/route_configs.csv`
+- `outputs/validation_all_ranking.csv`
+- `outputs/validation_high_confidence_ranking.csv`
+- `artifacts/run_config.json`
+</pre></body></html>

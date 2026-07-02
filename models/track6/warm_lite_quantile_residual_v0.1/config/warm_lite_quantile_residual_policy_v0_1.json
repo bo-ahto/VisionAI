@@ -1,0 +1,35 @@
+{
+  "version": "v0.1",
+  "name": "warm_lite_quantile_residual_v0.1",
+  "status": "adopted_after_api_bundle_freeze",
+  "selected_candidate": "qavg_lgbres_s05_cap010",
+  "candidate_formula": "lgbq_full_lean_avg + clip(0.50 * LightGBMHuberResidual, -0.10, +0.10)",
+  "q4_summary": {
+    "recommended_candidate": "residual_lgb_s05_cap010",
+    "candidate_formula": "lgbq_full_lean_avg + clip(0.50 * LightGBMHuberResidual, -0.10, +0.10)",
+    "reason": [
+      "Q2-like 운영 절단 검증에서 simple_qavg_q2보다 MdAPE/MAPE/p95가 모두 개선됨",
+      "Q1-like에서는 simple_all6_q50_blend가 MdAPE/MAPE 우세이나 residual 후보가 p95를 크게 개선함",
+      "운영 후보는 중앙오차만이 아니라 저이력 tail 안정성이 중요하므로 residual 후보를 우선 권장"
+    ],
+    "q1_tradeoff_vs_simple_all6_q50_blend": {
+      "MdAPE_delta": 0.003235999999999989,
+      "MAPE_delta": 0.0036069999999999713,
+      "p95_delta": -0.018855000000000066
+    },
+    "q2_gain_vs_simple_qavg": {
+      "MdAPE_delta": -0.0029990000000000017,
+      "MAPE_delta": -0.00418099999999999,
+      "p95_delta": -0.027336999999999945
+    }
+  },
+  "route_rule": "artist_match_score >= 0.80 AND same_artist_training_price_count 1~4",
+  "display_policy": {
+    "k1": "warm_lite_low, wide_range_with_review_flag",
+    "k2_to_k4": "warm_lite_standard, point_estimate_with_standard_range"
+  },
+  "requires": [
+    "bundle replay parity",
+    "official v0.1 HTTP API parity"
+  ]
+}

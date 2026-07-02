@@ -1,0 +1,167 @@
+{
+  "experiment_id": "PP-OPT8",
+  "experiment_slug": "PP-OPT8_warm_extended_correction_experiments",
+  "created_at": "2026-06-09T10:56:36",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__guard=risk_strict_cap0p020",
+  "incumbent_label": "incumbent_operational_pp_opt7",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 176,
+  "prediction_rows": 198176,
+  "repeat_count_per_scenario": 80,
+  "sample_frac": 0.72,
+  "items": [
+    {
+      "item_id": "A01",
+      "priority": "1",
+      "theme": "quantile_width_strength",
+      "title": "퀀타일 폭 기반 보정 강도 세분화",
+      "description": "예측 불확실성 폭을 연속/구간 계수로 바꾸어 보정 강도를 줄인다."
+    },
+    {
+      "item_id": "A02",
+      "priority": "2",
+      "theme": "catboost_segment_cap",
+      "title": "CatBoost 보정값 구간별 cap 최적화",
+      "description": "가격대, 유사작품 수, 예측 불확실성별로 CatBoost 보정 상한을 다르게 둔다."
+    },
+    {
+      "item_id": "A03",
+      "priority": "3",
+      "theme": "direction_guard",
+      "title": "과대예측/과소예측 방향 분류 후 보정",
+      "description": "기준가가 높게/낮게 잡혔는지 먼저 분류하고 방향 확신이 있을 때만 보정한다."
+    },
+    {
+      "item_id": "A04",
+      "priority": "4",
+      "theme": "catboost_price_band",
+      "title": "CatBoost 잔차 모델 price band별 보정",
+      "description": "가격대별로 보정 강도와 상한을 다르게 적용한다."
+    },
+    {
+      "item_id": "A05",
+      "priority": "5",
+      "theme": "quantile_residual",
+      "title": "퀀타일 회귀 잔차 중앙값과 위험폭 동시 예측",
+      "description": "중앙 잔차와 하단/상단 잔차 폭을 같이 사용해 불안정 row를 방어한다."
+    },
+    {
+      "item_id": "A06",
+      "priority": "6",
+      "theme": "tail_guard",
+      "title": "p95 위험 전용 tail guard 모델",
+      "description": "큰 오차 가능성이 높은 row를 탐지해 보정값을 축소한다."
+    },
+    {
+      "item_id": "A07",
+      "priority": "7",
+      "theme": "gap_routing",
+      "title": "모델 간 예측 gap 기반 라우팅",
+      "description": "주요 가격 후보 간 불일치에 따라 기준가/보정가/보조 후보를 선택한다."
+    },
+    {
+      "item_id": "A08",
+      "priority": "8",
+      "theme": "artist_meta_hierarchy",
+      "title": "작가 메타 보정 계층화",
+      "description": "생년/세대 외 활동/판매/갤러리 관련 작가 메타 후보를 약하게 반영한다."
+    },
+    {
+      "item_id": "A09",
+      "priority": "9",
+      "theme": "artwork_combo",
+      "title": "작품 피쳐 조합 보정",
+      "description": "크기, 가격대, 재료/지지체, 예측 불확실성 조합으로 잔차를 보정한다."
+    },
+    {
+      "item_id": "A10",
+      "priority": "10",
+      "theme": "linear_huber_recalibration",
+      "title": "Huber/Ridge 선형 계수 재보정",
+      "description": "해석 가능한 선형/Huber 2차 잔차 보정 계수를 학습한다."
+    },
+    {
+      "item_id": "A11",
+      "priority": "11",
+      "theme": "xgboost_routing",
+      "title": "XGBoost 보조 후보 라우팅",
+      "description": "과거 p95가 좋았던 XGBoost 보조 후보를 특정 안정 구간에서만 선택한다."
+    },
+    {
+      "item_id": "A12",
+      "priority": "12",
+      "theme": "correction_ensemble",
+      "title": "보정값 앙상블",
+      "description": "CatBoost, Huber, XGBoost, LightGBM 보정값을 평균/가중 평균한다."
+    },
+    {
+      "item_id": "B01",
+      "priority": "L1",
+      "theme": "lightgbm_residual",
+      "title": "LightGBM 잔차 보정",
+      "description": "현재 기준 로그가격의 잔차를 LightGBM으로 예측한다."
+    },
+    {
+      "item_id": "B02",
+      "priority": "L2",
+      "theme": "catboost_vs_lightgbm",
+      "title": "CatBoost vs LightGBM 동일 피쳐 비교",
+      "description": "같은 입력 피쳐, cap, guard 기준으로 CatBoost와 LightGBM을 비교한다."
+    },
+    {
+      "item_id": "B03",
+      "priority": "L3",
+      "theme": "lightgbm_qwidth_cap",
+      "title": "LightGBM + 퀀타일 폭 기반 cap",
+      "description": "예측 불확실성 폭에 따라 LightGBM 보정 상한을 조절한다."
+    },
+    {
+      "item_id": "B04",
+      "priority": "L4",
+      "theme": "lightgbm_segment",
+      "title": "LightGBM 구간별 보정",
+      "description": "가격대별로 LightGBM 잔차 보정을 분리하거나 구간별 강도를 적용한다."
+    },
+    {
+      "item_id": "B05",
+      "priority": "L5",
+      "theme": "catboost_lightgbm_routing",
+      "title": "CatBoost/LightGBM 라우팅",
+      "description": "특정 row는 CatBoost, 특정 row는 LightGBM 보정을 선택한다."
+    },
+    {
+      "item_id": "B06",
+      "priority": "L6",
+      "theme": "catboost_lightgbm_ensemble",
+      "title": "CatBoost + LightGBM 보정 앙상블",
+      "description": "두 보정값을 평균 또는 신뢰도 가중 평균한다."
+    },
+    {
+      "item_id": "B07",
+      "priority": "L7",
+      "theme": "lightgbm_quantile",
+      "title": "LightGBM quantile 잔차 모델",
+      "description": "평균 잔차가 아니라 중앙값/하위/상위 잔차를 학습한다."
+    },
+    {
+      "item_id": "B08",
+      "priority": "L8",
+      "theme": "lightgbm_tail_guard",
+      "title": "LightGBM tail-risk guard",
+      "description": "큰 오차 가능성이 높은 row를 LightGBM 분류기로 탐지한다."
+    }
+  ],
+  "sources": {
+    "hcoef20": "experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv",
+    "cf1": "experiments/track6/PP-CF1_warm_confidence_filtered_training/outputs/candidate_predictions.csv",
+    "cf3_raw": "experiments/track6/PP-CF3_warm_catboost_correction_strength_tuning/outputs/raw_catboost_corrections.csv",
+    "amw10": "experiments/track6/PP-AMW10_warm_birth_generation_activity_external_residual_correction/outputs/candidate_predictions.csv",
+    "opt5_predictions": "experiments/track6/PP-OPT5_warm_focused_repeated_validation/outputs/focused_candidate_predictions.csv",
+    "opt5_aggregate": "experiments/track6/PP-OPT5_warm_focused_repeated_validation/outputs/aggregate_candidate_stability.csv",
+    "opt6_predictions": "experiments/track6/PP-OPT6_warm_p95_guard_refinement/outputs/selected_guard_predictions.csv",
+    "opt7_predictions": "experiments/track6/PP-OPT7_warm_final_operational_freeze/outputs/final_candidate_predictions.csv"
+  }
+}

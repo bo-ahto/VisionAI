@@ -1,0 +1,42 @@
+{
+  "created_at": "2026-06-16T14:47:12",
+  "experiment_id": "PP-ROUTE-CF5",
+  "experiment_slug": "PP-ROUTE-CF5_unified_warm_lite_operational_comparison",
+  "seeds": [
+    20260612,
+    20260613,
+    20260614
+  ],
+  "k_values_for_stress_test": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "base_eval_set": "Warm fixed-test rows",
+  "eligibility_audit": {
+    "warm_fixed_test_rows_total": 607,
+    "k1_to_k6_eligible_rows": 519,
+    "excluded_rows_with_less_than_6_history": 88,
+    "full_history_min": 5,
+    "full_history_max": 573
+  },
+  "unified_warm_lite_training": {
+    "train_distribution": "actual full Warm train distribution",
+    "group_stats": "5-fold internal stats for train, full train stats for full-history test",
+    "model": "LightGBM Quantile full/lean + LightGBM objective=huber residual",
+    "candidate": "lgbq_full_lean_avg + clip(0.50 * lgb_huber_residual, -0.10, +0.10)"
+  },
+  "comparators": {
+    "full_history": "Warm WMIN8 operational",
+    "capped_k1_to_k6": "CF3 Warm retrained clean stack"
+  },
+  "limitations": [
+    "This experiment covers same-artist-history warm rows only; Cold/no-history routing remains separate.",
+    "The k=1~6 capped table is a stress test; the full-history table is the primary operational simplification comparison.",
+    "CF3 Warm clean stack is not exact historical WMIN8/PPV8 full artifact rebuild."
+  ],
+  "seconds": 416.63
+}

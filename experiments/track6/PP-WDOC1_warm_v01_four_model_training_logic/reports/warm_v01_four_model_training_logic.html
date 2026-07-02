@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm v0.1 네 가지 예측 축의 학습 방식과 조합 수식</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #52606d;
+      --line: #d8dee6;
+      --panel: #f7f9fb;
+      --panel-strong: #edf2f7;
+      --blue: #1f5fbf;
+      --green: #18705a;
+      --amber: #8a5a00;
+      --red: #9a2f2f;
+      --white: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+      line-height: 1.58;
+      letter-spacing: 0;
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+    }
+    header {
+      border-bottom: 3px solid var(--ink);
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 34px 0 14px;
+      font-size: 22px;
+      line-height: 1.35;
+      border-left: 5px solid var(--blue);
+      padding-left: 10px;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 17px;
+      line-height: 1.35;
+      letter-spacing: 0;
+    }
+    p { margin: 8px 0 12px; }
+    .meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .tag {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      padding: 4px 8px;
+    }
+    .summary {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--green);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin: 18px 0 26px;
+    }
+    .formula {
+      background: #101820;
+      color: #f7fafc;
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre;
+    }
+    .formula.light {
+      background: #f4f7fb;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: var(--panel-strong);
+      font-weight: 700;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      background: #eef2f7;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 0.95em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 12px 0 20px;
+    }
+    .box {
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 8px;
+      padding: 14px 15px;
+    }
+    .box h3 { margin-top: 0; }
+    .box.blue { border-top: 4px solid var(--blue); }
+    .box.green { border-top: 4px solid var(--green); }
+    .box.amber { border-top: 4px solid var(--amber); }
+    .box.red { border-top: 4px solid var(--red); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+      margin: 14px 0 22px;
+    }
+    .step {
+      position: relative;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 12px 12px 14px;
+      min-height: 106px;
+    }
+    .step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      right: -9px;
+      top: 40%;
+      color: var(--muted);
+      font-weight: 700;
+      background: #fff;
+      padding: 0 2px;
+    }
+    .step-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+    .step-body {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .metric {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0 20px;
+    }
+    .metric div {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      margin-bottom: 3px;
+    }
+    .note {
+      border-left: 4px solid var(--amber);
+      background: #fff8e6;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin: 14px 0 20px;
+    }
+    .small { font-size: 13px; color: var(--muted); }
+    ul { padding-left: 20px; }
+    li { margin: 4px 0; }
+    @media (max-width: 900px) {
+      main { padding: 22px 14px 40px; }
+      h1 { font-size: 24px; }
+      .grid, .metric { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .step:not(:last-child)::after {
+        content: "v";
+        right: 50%;
+        top: auto;
+        bottom: -12px;
+      }
+      table { font-size: 13px; }
+      th, td { padding: 7px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Warm v0.1 네 가지 예측 축의 학습 방식과 조합 수식</h1>
+    <div class="meta">
+      <span class="tag">작성일 2026-06-08</span>
+      <span class="tag">대상 Warm 작가 가격 예측</span>
+      <span class="tag">최종 기준 blend_svcnum_ppv8_wsvc_0.70</span>
+      <span class="tag">단위 로그 KRW</span>
+    </div>
+  </header>
+
+  <section class="summary">
+    <strong>핵심 결론</strong>
+    <p>Warm v0.1은 네 가지 후보 예측 축을 만든다. 이 HTML은 후보 1, 2, 3, 4가 각각 어떤 피쳐와 어떤 순서로 예측 로그가격을 만드는지 먼저 설명하고, 마지막에 네 후보를 비교한 뒤 최종 70:30 선택식을 정리한다.</p>
+  </section>
+
+  <section>
+    <h2>후보별 문서 구성</h2>
+    <table>
+      <thead>
+        <tr><th>후보 축</th><th>자체 예측을 만드는 방식</th><th>비교 단계에서의 역할</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>유사작품통계 Huber seed 평균</td><td>유사작품 숫자 통계를 넣은 Huber 모델 10개 seed 평균</td><td>유사작품계열 후보</td></tr>
+        <tr><td>유사작품통계+신뢰피쳐 Huber seed 평균</td><td>숫자 통계에 그룹 수준/신뢰도 범주까지 넣은 Huber 모델 10개 seed 평균</td><td>유사작품계열 비교 후보</td></tr>
+        <tr><td>PPV6 다중후보 안정 블렌드</td><td>여러 Warm 후보 예측값을 validation 기준으로 가중 결합</td><td>PP계열 비교 후보</td></tr>
+        <tr><td>PPV8 compact 안정 블렌드</td><td>V2 방어형 후보와 L10 생성버킷 후보를 75:25로 결합</td><td>PP계열 후보</td></tr>
+      </tbody>
+    </table>
+    <div class="formula light">1단계: 네 후보가 각각 자기 방식으로 예측 로그가격을 만든다.
+  후보1 = 유사작품통계_Huber_seed평균_로그가격
+  후보2 = 유사작품통계_신뢰피쳐포함_Huber_seed평균_로그가격
+  후보3 = PPV6_다중후보_안정블렌드_로그가격
+  후보4 = PPV8_안정블렌드_로그가격
+
+2단계: 마지막 비교 섹션에서 네 후보를 성능 기준으로 비교하고 최종 조합을 선택한다.</div>
+  </section>
+
+  <section>
+    <h2>전체 흐름</h2>
+    <div class="flow" aria-label="Warm v0.1 전체 순서도">
+      <div class="step">
+        <div class="step-title">1. Warm 라우팅</div>
+        <div class="step-body">작가가 학습 registry에 있으면 Warm 경로로 보낸다.</div>
+      </div>
+      <div class="step">
+        <div class="step-title">2. 작품 피쳐 생성</div>
+        <div class="step-body">크기, 면적, 형태, 재료, 지지체, 작가 키, 크기 버킷을 만든다.</div>
+      </div>
+      <div class="step">
+        <div class="step-title">3. 유사작품 통계</div>
+        <div class="step-body">같은 작가/재료/크기 순서로 가장 신뢰 가능한 비교군 통계를 찾는다.</div>
+      </div>
+      <div class="step">
+        <div class="step-title">4. 네 후보 예측</div>
+        <div class="step-body">SVC numeric, SVC full, PPV6, PPV8 네 축의 로그가격을 만든다.</div>
+      </div>
+      <div class="step">
+        <div class="step-title">5. 최종 70:30</div>
+        <div class="step-body">검증에서 선택된 조합으로 최종 로그가격과 KRW 가격을 계산한다.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>변수명 대응표</h2>
+    <table>
+      <thead>
+        <tr><th>문서 변수명</th><th>코드 컬럼명 또는 후보명</th><th>의미</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>유사작품그룹_중앙값_로그가격</td><td><code>svc_group_log_price_median</code></td><td>조건이 비슷한 학습 작품 그룹의 로그가격 중앙값</td></tr>
+        <tr><td>유사작품통계_Huber_seed평균_로그가격</td><td><code>svc_numeric_seed_mean</code></td><td>유사작품 숫자 통계 피쳐를 넣은 Huber 모델 10개 seed 평균</td></tr>
+        <tr><td>유사작품통계_신뢰피쳐포함_Huber_seed평균_로그가격</td><td><code>svc_full_seed_mean</code></td><td>숫자 통계에 그룹 수준/신뢰도 범주까지 넣은 Huber seed 평균</td></tr>
+        <tr><td>PPV6_다중후보_안정블렌드_로그가격</td><td><code>pp_v6_fine_blend_mape_guarded</code></td><td>여러 Warm 후보의 예측 로그가격을 validation 기준으로 가중 결합</td></tr>
+        <tr><td>PPV8_안정블렌드_로그가격</td><td><code>pp_v8_compact_blend_mape_guarded</code></td><td>배포 단순화를 위해 적은 후보만 사용한 안정 블렌드</td></tr>
+        <tr><td>최종_Warm_로그가격</td><td><code>blend_svcnum_ppv8_wsvc_0.70</code>, <code>WARM_BASE_RAW_V1</code></td><td>Warm v0.1 최종 기준 로그가격</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>학습 데이터와 split</h2>
+    <table>
+      <thead>
+        <tr><th>구분</th><th>역할</th><th>확인된 행 수</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Train</td><td>Huber 학습과 유사작품 통계 산출</td><td>Warm Huber manifest 기준 27,433건</td></tr>
+        <tr><td>Validation</td><td>후보 선택과 블렌드 weight 선택</td><td>519건</td></tr>
+        <tr><td>Test</td><td>선택된 후보의 최종 확인</td><td>607건</td></tr>
+      </tbody>
+    </table>
+    <p class="small">원칙: validation에서 후보와 가중치를 고르고, test는 선택 후 확인에만 사용한다.</p>
+  </section>
+
+  <section>
+    <h2>사용 피쳐 요약</h2>
+    <table>
+      <thead>
+        <tr><th>피쳐 묶음</th><th>사용 피쳐</th><th>쓰이는 위치</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>크기/형태</td>
+          <td><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>has_depth</code>, <code>is_3d_candidate</code>, <code>is_extreme_aspect_ratio</code></td>
+          <td>Huber 기본 피쳐, 유사작품 통계, PPV8 증류 feature</td>
+        </tr>
+        <tr>
+          <td>재료/지지체</td>
+          <td><code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code></td>
+          <td>Huber 기본 피쳐, 유사작품 그룹 키</td>
+        </tr>
+        <tr>
+          <td>작가 식별</td>
+          <td><code>artist_key</code></td>
+          <td>Warm 라우팅, Huber 기본 피쳐, 유사작품 그룹 키</td>
+        </tr>
+        <tr>
+          <td>생성 버킷</td>
+          <td><code>size_bucket</code>, <code>shape_bucket</code>, <code>medium_size_bucket</code>, <code>support_size_bucket</code>, <code>medium_shape_bucket</code>, <code>is_large_2d</code>, <code>is_large_3d</code></td>
+          <td>유사작품 통계 계산, PPV8 증류 feature</td>
+        </tr>
+        <tr>
+          <td>유사작품 숫자 통계</td>
+          <td><code>svc_group_log_price_median</code>, <code>svc_group_log_price_q25</code>, <code>svc_group_log_price_q75</code>, <code>svc_group_log_price_iqr</code>, <code>svc_group_log_unit_area_median</code>, <code>svc_group_log_unit_area_iqr</code>, <code>svc_group_n_log</code></td>
+          <td>SVC numeric, SVC full, PPV8 증류 feature</td>
+        </tr>
+        <tr>
+          <td>유사작품 신뢰 범주</td>
+          <td><code>svc_group_level</code>, <code>svc_coverage_tier</code>, <code>svc_has_artist_level</code></td>
+          <td>SVC full, PPV8 증류 feature, 후보 라우팅 진단</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>유사작품 통계 로직</h2>
+    <div class="flow" aria-label="유사작품 통계 순서도">
+      <div class="step">
+        <div class="step-title">작가+재료/지지체+크기</div>
+        <div class="step-body">표본 5건 이상이면 사용</div>
+      </div>
+      <div class="step">
+        <div class="step-title">작가+크기</div>
+        <div class="step-body">표본 5건 이상이면 사용</div>
+      </div>
+      <div class="step">
+        <div class="step-title">작가 전체</div>
+        <div class="step-body">표본 5건 이상이면 사용</div>
+      </div>
+      <div class="step">
+        <div class="step-title">재료/지지체+크기</div>
+        <div class="step-body">표본 30건 이상이면 사용</div>
+      </div>
+      <div class="step">
+        <div class="step-title">전체 fallback</div>
+        <div class="step-body">위 조건이 없으면 전체 train 통계 사용</div>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>우선순위</th><th>그룹 키</th><th>최소 표본 수</th><th>의미</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><code>artist_key + medium_support_bucket + size_bucket</code></td><td>5</td><td>같은 작가, 비슷한 재료/지지체, 비슷한 크기</td></tr>
+        <tr><td>2</td><td><code>artist_key + size_bucket</code></td><td>5</td><td>같은 작가, 비슷한 크기</td></tr>
+        <tr><td>3</td><td><code>artist_key</code></td><td>5</td><td>같은 작가 전체 이력</td></tr>
+        <tr><td>4</td><td><code>medium_support_bucket + size_bucket</code></td><td>30</td><td>비슷한 재료/지지체와 크기</td></tr>
+        <tr><td>5</td><td><code>medium_category + support_category + size_bucket</code></td><td>30</td><td>재료, 지지체, 크기</td></tr>
+        <tr><td>6</td><td><code>medium_category + size_bucket</code></td><td>50</td><td>재료와 크기</td></tr>
+        <tr><td>7</td><td>전체 train</td><td>제한 없음</td><td>위 조건이 모두 실패할 때의 fallback</td></tr>
+      </tbody>
+    </table>
+    <div class="formula light">유사작품그룹_중앙값_로그가격 = median(log(price_krw))
+유사작품그룹_가격범위폭 = Q75(log(price_krw)) - Q25(log(price_krw))
+
+작품_로그면적단가 = log(price_krw) - log(max(area_cm2, 1))
+유사작품그룹_면적단가_중앙값 = median(작품_로그면적단가)
+유사작품그룹_표본수_로그 = log(1 + 유사작품그룹_표본수)</div>
+  </section>
+
+  <section>
+    <h2>후보 1: 유사작품통계 Huber seed 평균</h2>
+    <p><code>svc_numeric_seed_mean</code>이다. 기본 Warm 피쳐에 유사작품 숫자 통계를 추가하고, HuberRegressor를 seed 10개로 반복 학습한 뒤 예측 로그가격을 평균한다.</p>
+    <table>
+      <thead><tr><th>구분</th><th>사용 피쳐</th></tr></thead>
+      <tbody>
+        <tr><td>기본 작품/작가 피쳐</td><td><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>has_depth</code>, <code>is_3d_candidate</code>, <code>is_extreme_aspect_ratio</code>, <code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code>, <code>artist_key</code></td></tr>
+        <tr><td>유사작품 숫자 통계</td><td><code>svc_group_log_price_median</code>, <code>svc_group_log_price_q25</code>, <code>svc_group_log_price_q75</code>, <code>svc_group_log_price_iqr</code>, <code>svc_group_log_unit_area_median</code>, <code>svc_group_log_unit_area_iqr</code>, <code>svc_group_n_log</code></td></tr>
+      </tbody>
+    </table>
+    <div class="flow" aria-label="후보 1 순서도">
+      <div class="step"><div class="step-title">1. Crossfit 통계</div><div class="step-body">train 내부 비교군 통계를 자기 fold 제외 방식으로 계산한다.</div></div>
+      <div class="step"><div class="step-title">2. 피쳐 전처리</div><div class="step-body">숫자는 median impute와 표준화, 범주는 missing 처리와 one-hot encoding.</div></div>
+      <div class="step"><div class="step-title">3. Huber 학습</div><div class="step-body">target은 <code>log(price_krw)</code>, epsilon 1.35, alpha 0.0001.</div></div>
+      <div class="step"><div class="step-title">4. Seed 반복</div><div class="step-body">seed 10개로 fold 구성을 바꿔 반복 학습한다.</div></div>
+      <div class="step"><div class="step-title">5. 평균 예측</div><div class="step-body">10개 seed 예측 로그가격을 평균한다.</div></div>
+    </div>
+    <div class="formula light">유사작품통계_Huber_seed평균_로그가격
+  = average(Huber_seed별_예측로그가격_s)</div>
+    <p class="small">Test: MdAPE 0.1520, MAPE 0.2942, p95 0.9381. 최종 조합의 70% 축으로 선택됐다.</p>
+  </section>
+
+  <section>
+    <h2>후보 2: 유사작품통계+신뢰피쳐 Huber seed 평균</h2>
+    <p><code>svc_full_seed_mean</code>이다. 후보 1의 숫자 통계에 유사작품그룹 수준과 신뢰도 범주를 추가한다.</p>
+    <table>
+      <thead><tr><th>구분</th><th>사용 피쳐</th></tr></thead>
+      <tbody>
+        <tr><td>후보 1 전체 피쳐</td><td>기본 작품/작가 피쳐 + 유사작품 숫자 통계</td></tr>
+        <tr><td>유사작품 신뢰 범주</td><td><code>svc_group_level</code>, <code>svc_coverage_tier</code>, <code>svc_has_artist_level</code></td></tr>
+      </tbody>
+    </table>
+    <div class="flow" aria-label="후보 2 순서도">
+      <div class="step"><div class="step-title">1. Crossfit 통계</div><div class="step-body">숫자 통계와 신뢰 범주를 누수 없이 계산한다.</div></div>
+      <div class="step"><div class="step-title">2. 신뢰피쳐 추가</div><div class="step-body">그룹 수준, 표본수 tier, 작가수준 여부를 범주 피쳐로 넣는다.</div></div>
+      <div class="step"><div class="step-title">3. Huber 학습</div><div class="step-body">후보 1과 같은 Huber 설정으로 학습한다.</div></div>
+      <div class="step"><div class="step-title">4. Seed 반복</div><div class="step-body">seed 10개를 반복한다.</div></div>
+      <div class="step"><div class="step-title">5. 평균 예측</div><div class="step-body">10개 seed 예측 로그가격을 평균한다.</div></div>
+    </div>
+    <div class="formula light">유사작품통계_신뢰피쳐포함_Huber_seed평균_로그가격
+  = average(신뢰피쳐포함_Huber_seed별_예측로그가격_s)</div>
+    <p class="small">Test: MdAPE 0.1533, MAPE 0.2956, p95 0.9190. 최종식에는 들어가지 않고 비교 후보로 사용됐다.</p>
+  </section>
+
+  <section>
+    <h2>후보 3: PPV6 다중후보 안정 블렌드</h2>
+    <p><code>pp_v6_fine_blend_mape_guarded</code>이다. 원본 작품 피쳐를 직접 쓰는 모델이 아니라, 이미 만들어진 여러 Warm 후보의 예측 로그가격을 입력으로 쓰는 블렌드다.</p>
+    <table>
+      <thead><tr><th>입력 예측값</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td><code>L9_Huber_Quantile_Residual_로그가격</code></td><td>Huber, quantile, residual 보정을 순차 적용한 후보</td></tr>
+        <tr><td><code>작가이력_라우팅_로그가격</code></td><td>작가 이력 구간에 따라 후보를 라우팅한 예측값</td></tr>
+        <tr><td><code>유사작품_Fallback_로그가격</code></td><td>유사작품 기반 fallback 후보</td></tr>
+        <tr><td><code>L10_작가메타_외부검색_순차보정_로그가격</code></td><td>작가 메타/외부 검색 피쳐 반영 후보</td></tr>
+        <tr><td><code>L10_생성버킷_순차보정_로그가격</code></td><td>생성 버킷 피쳐 반영 후보</td></tr>
+      </tbody>
+    </table>
+    <div class="flow" aria-label="후보 3 순서도">
+      <div class="step"><div class="step-title">1. 후보 예측 병합</div><div class="step-body">하위 후보 예측값을 같은 작품 row 기준으로 맞춘다.</div></div>
+      <div class="step"><div class="step-title">2. Weight 탐색</div><div class="step-body">validation에서 0.10 단위 weight grid를 탐색한다.</div></div>
+      <div class="step"><div class="step-title">3. MdAPE guard</div><div class="step-body">최저 단일 MdAPE의 1.08배 이내 조합만 허용한다.</div></div>
+      <div class="step"><div class="step-title">4. MAPE 선택</div><div class="step-body">허용 조합 중 MAPE가 가장 낮은 조합을 선택한다.</div></div>
+      <div class="step"><div class="step-title">5. Test 적용</div><div class="step-body">선택된 weight를 그대로 test에 적용한다.</div></div>
+    </div>
+    <div class="formula light">PPV6_다중후보_안정블렌드_로그가격
+  = 0.10 * L9_Huber_Quantile_Residual
+  + 0.30 * 작가이력_라우팅
+  + 0.20 * 유사작품_Fallback
+  + 0.20 * L10_작가메타_외부검색
+  + 0.20 * L10_생성버킷</div>
+    <p class="small">Test: MdAPE 0.1613, MAPE 0.2889, p95 0.9314. 최종식에는 들어가지 않고 비교 후보로 사용됐다.</p>
+  </section>
+
+  <section>
+    <h2>후보 4: PPV8 compact 안정 블렌드</h2>
+    <p><code>pp_v8_compact_blend_mape_guarded</code>이다. 후보 3보다 배포 구조를 단순화하기 위해 네 개 하위 후보만 비교하고, 최종적으로 두 후보를 75:25로 섞는다.</p>
+    <table>
+      <thead><tr><th>입력 예측값</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td><code>V1_대표후보_로그가격</code></td><td>대표 단일 후보</td></tr>
+        <tr><td><code>V2_방어형후보_로그가격</code></td><td>평균오차 방어 성격이 강한 후보</td></tr>
+        <tr><td><code>L10_생성버킷_순차보정_로그가격</code></td><td>생성 버킷 피쳐 반영 후보</td></tr>
+        <tr><td><code>L10_작가메타_외부검색_순차보정_로그가격</code></td><td>작가 메타/외부 검색 피쳐 반영 후보</td></tr>
+      </tbody>
+    </table>
+
+    <h3>V2 방어형 후보 내부 구조</h3>
+    <p><code>V2_방어형후보_로그가격</code>은 <code>PP-V2</code>의 <code>huber_component_range_clipped</code> 후보이다. 여러 기존 Warm 후보의 예측 로그가격을 다시 입력으로 넣고, Huber meta-model로 한 번 더 안정화한 값이다.</p>
+    <table>
+      <thead><tr><th>V2 입력</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td>기존 Warm 후보 예측 로그가격들</td><td>기본 Huber, L8/L9 순차 후보, D4 블렌드, R5 p95/MAPE 방어 후보, 작가이력 라우팅, 유사작품 fallback, U1 확장 후보 등</td></tr>
+        <tr><td>예측값 요약 피쳐</td><td>하위 후보 예측값의 평균, 표준편차, 범위</td></tr>
+        <tr><td>기준후보와의 차이</td><td>각 하위 후보 예측값 minus 기준 후보 예측값</td></tr>
+        <tr><td>불확실성 폭</td><td><code>routing_width</code></td></tr>
+      </tbody>
+    </table>
+    <div class="formula light">V2_raw_로그가격
+  = HuberMetaModel(하위후보_예측로그가격들, 예측값_평균, 예측값_표준편차, 예측값_범위, 기준후보와의_차이들, routing_width)
+
+V2_방어형후보_로그가격
+  = clip(V2_raw_로그가격, 하위후보_최소값 - 0.03, 하위후보_최대값 + 0.03)</div>
+
+    <h3>L10 생성버킷 순차보정 후보 내부 구조</h3>
+    <p><code>L10_생성버킷_순차보정_로그가격</code>은 <code>PP-L10</code>의 <code>l8_seq__full_plus_generated_buckets</code> 후보이다. 가격대 불확실성을 먼저 추정하고, Huber 중심선과 CatBoost 잔차 보정을 순서대로 적용한다.</p>
+    <table>
+      <thead><tr><th>L10 피쳐 묶음</th><th>사용 피쳐</th></tr></thead>
+      <tbody>
+        <tr><td>Warm 기본 피쳐</td><td><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code>, <code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code>, <code>artist_key</code> 등</td></tr>
+        <tr><td>작가 학습량</td><td><code>artist_works_log</code>, <code>artist_works_count_train</code></td></tr>
+        <tr><td>생성 bucket</td><td><code>size_bucket</code>, <code>shape_bucket</code>, <code>support_size_bucket</code>, <code>medium_shape_bucket</code>, <code>is_large_2d</code>, <code>is_large_3d</code></td></tr>
+        <tr><td>Quantile 피쳐</td><td><code>q10_log</code>, <code>q50_log</code>, <code>q90_log</code>, <code>quantile_width</code>, <code>price_range_ratio</code></td></tr>
+      </tbody>
+    </table>
+    <div class="formula light">q10_log, q50_log, q90_log = CatBoostQuantile(작품피쳐, 생성bucket피쳐)
+quantile_width = q90_log - q10_log
+price_range_ratio = exp(clip(quantile_width, -10, 10))
+
+L10_Huber_중심선_로그가격
+  = Huber(작품피쳐, 생성bucket피쳐, quantile피쳐들)
+
+CatBoost_잔차보정
+  = CatBoostRegressor(실제_로그가격 - L10_Huber_OOF_중심선_로그가격)
+
+L10_생성버킷_순차보정_로그가격
+  = L10_Huber_중심선_로그가격 + CatBoost_잔차보정</div>
+
+    <div class="flow" aria-label="후보 4 순서도">
+      <div class="step"><div class="step-title">1. 후보 예측 병합</div><div class="step-body">네 하위 후보 예측값을 같은 작품 row 기준으로 맞춘다.</div></div>
+      <div class="step"><div class="step-title">2. Weight 탐색</div><div class="step-body">validation에서 0.25 단위 weight grid를 탐색한다.</div></div>
+      <div class="step"><div class="step-title">3. MdAPE guard</div><div class="step-body">최저 단일 MdAPE의 1.08배 이내 조합만 허용한다.</div></div>
+      <div class="step"><div class="step-title">4. MAPE 선택</div><div class="step-body">허용 조합 중 MAPE가 가장 낮은 조합을 선택한다.</div></div>
+      <div class="step"><div class="step-title">5. Test 적용</div><div class="step-body">선택된 weight를 그대로 test와 최종 비교에 적용한다.</div></div>
+    </div>
+    <table>
+      <thead><tr><th>하위 후보</th><th>최종 PPV8 weight</th></tr></thead>
+      <tbody>
+        <tr><td><code>V1_대표후보_로그가격</code></td><td>0.00</td></tr>
+        <tr><td><code>V2_방어형후보_로그가격</code></td><td>0.75</td></tr>
+        <tr><td><code>L10_생성버킷_순차보정_로그가격</code></td><td>0.25</td></tr>
+        <tr><td><code>L10_작가메타_외부검색_순차보정_로그가격</code></td><td>0.00</td></tr>
+      </tbody>
+    </table>
+    <div class="formula light">PPV8_안정블렌드_로그가격
+  = 0.75 * V2_방어형후보_로그가격
+  + 0.25 * L10_생성버킷_순차보정_로그가격</div>
+    <p class="small">Test: MdAPE 0.1632, MAPE 0.2816, p95 0.9311. 최종 조합의 30% 축으로 선택됐다.</p>
+  </section>
+
+  <section>
+    <h2>후보 1-4 종합 비교와 최종 선택</h2>
+    <p>네 후보를 모두 같은 validation/test row 기준으로 맞춘 뒤 먼저 후보별 성능을 비교한다.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>후보 축</th>
+          <th>Validation MdAPE</th>
+          <th>Validation MAPE</th>
+          <th>Validation p95</th>
+          <th>Test MdAPE</th>
+          <th>Test MAPE</th>
+          <th>Test p95</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>후보 1. 유사작품통계 Huber seed 평균</td><td>0.1272</td><td>0.2177</td><td>0.6504</td><td>0.1520</td><td>0.2942</td><td>0.9381</td></tr>
+        <tr><td>후보 2. 유사작품통계+신뢰피쳐 Huber seed 평균</td><td>0.1274</td><td>0.2186</td><td>0.6495</td><td>0.1533</td><td>0.2956</td><td>0.9190</td></tr>
+        <tr><td>후보 3. PPV6 다중후보 안정 블렌드</td><td>0.1530</td><td>0.2566</td><td>0.7935</td><td>0.1613</td><td>0.2889</td><td>0.9314</td></tr>
+        <tr><td>후보 4. PPV8 compact 안정 블렌드</td><td>0.1544</td><td>0.2544</td><td>0.8084</td><td>0.1632</td><td>0.2816</td><td>0.9311</td></tr>
+        <tr><td><strong>최종 Warm 70:30</strong></td><td><strong>0.1305</strong></td><td><strong>0.2110</strong></td><td><strong>0.6580</strong></td><td><strong>0.1405</strong></td><td><strong>0.2748</strong></td><td><strong>0.8331</strong></td></tr>
+      </tbody>
+    </table>
+    <p>조합 탐색은 유사작품계열 후보와 PP계열 후보를 로그가격 공간에서 0.05 단위로 섞어 validation에서 선택하고 test에서 확인하는 방식이다.</p>
+    <div class="formula light">조합로그가격(weight)
+  = weight * 유사작품계열_로그가격
+  + (1 - weight) * PP계열_로그가격
+
+weight 후보 = 0.00, 0.05, 0.10, ..., 1.00</div>
+    <p>최종 선택은 MAPE 방어 목적에서 validation으로 고른 <code>유사작품통계 Huber seed 평균 70% + PPV8 안정 블렌드 30%</code>이다.</p>
+    <div class="formula">최종_Warm_로그가격
+  = 0.70 * 유사작품통계_Huber_seed평균_로그가격
+  + 0.30 * PPV8_안정블렌드_로그가격
+
+최종_Warm_KRW가격 = exp(최종_Warm_로그가격)</div>
+    <div class="metric">
+      <div><strong>0.1405</strong><span>Test MdAPE</span></div>
+      <div><strong>0.2748</strong><span>Test MAPE</span></div>
+      <div><strong>0.8331</strong><span>Test p95_APE</span></div>
+      <div><strong>0.3996</strong><span>Test RMSE_log</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>운영 재예측 artifact 상태</h2>
+    <div class="note">
+      Warm v0.1 정책식은 고정되어 있지만, 모든 내부 후보가 단일 inference artifact로 완전히 저장된 상태는 아니다. 운영 재예측에서는 유사작품통계 Huber seed 평균은 직접 재학습하고, PPV8 30% 축은 CatBoost로 기존 PPV8 예측값을 모사해 사용했다.
+    </div>
+    <div class="formula light">운영재예측_최종_Warm_로그가격
+  = 0.70 * 운영재학습_유사작품통계_Huber_seed평균_로그가격
+  + 0.30 * CatBoost로_증류한_PPV8_안정블렌드_로그가격</div>
+    <table>
+      <thead>
+        <tr><th>항목</th><th>내용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>증류 target</td><td>기존 PPV8 <code>compact_blend_mape_guarded</code> validation/test 예측 로그가격</td></tr>
+        <tr><td>증류 모델</td><td>CatBoostRegressor, iterations 450, learning_rate 0.035, depth 6</td></tr>
+        <tr><td>증류 학습 행 수</td><td>1,126건</td></tr>
+        <tr><td>증류 feature</td><td>기본 Warm 피쳐, 생성 버킷, 작가 train 작품 수, 유사작품 숫자/범주 통계</td></tr>
+        <tr><td>fidelity</td><td>test-from-validation 기준 RMSE_log 0.3427, MdAE_log 0.1521</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>재현 경로</h2>
+    <table>
+      <thead>
+        <tr><th>목적</th><th>파일</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Warm v0.1 정책</td><td><code>models/track6/price_prediction_v0.1/config/model_policy_v0.1.json</code></td></tr>
+        <tr><td>유사작품 통계와 Huber seed 반복</td><td><code>scripts/track6/run_pp_svc2_warm_comparable_stats_stability.py</code></td></tr>
+        <tr><td>네 후보 결합과 최종 70:30 선택</td><td><code>scripts/track6/run_pp_svc3_warm_svc_blend_routing.py</code></td></tr>
+        <tr><td>PPV6/PPV8 내부 블렌드 생성</td><td><code>scripts/track6/run_pp_v6_v8_warm_gap_experiments.py</code></td></tr>
+        <tr><td>운영 신규 데이터 재예측</td><td><code>experiments/track6/OP-0605_v01_70_30_reprediction/scripts/02_predict_v01_70_30.py</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

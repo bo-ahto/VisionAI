@@ -1,0 +1,42 @@
+{
+  "experiment_id": "PP-PCOLD1",
+  "purpose": "pseudo-cold 평가셋 (0604 대체 외부 검증 축, 후보 선택 사용 금지)",
+  "mask_rule": "train 작가 중 행수 3~10 작가를 seed별 무작위 마스킹 (목표 1200행 또는 최대 250작가)",
+  "seeds": [
+    20260610,
+    20260611,
+    20260612
+  ],
+  "pipeline": "v0.2 search-free LGB Quantile (q10/q40/q50/q90) + label-free guard 재산정",
+  "limitation": "v0.3/PP-Y18 체인은 상류 search 피처 의존으로 pseudo-cold 재학습 불가 — 검색 lookup 커버리지만 감사",
+  "seed_summaries": [
+    {
+      "seed": 20260610,
+      "masked_artists": 212,
+      "pseudo_rows": 1207,
+      "train_rows_remaining": 25707,
+      "search_lookup_coverage_pseudo": 0.0,
+      "guard_width_q67": 1.7809204701507735,
+      "guard_gap_q50": 0.12195837293848832
+    },
+    {
+      "seed": 20260611,
+      "masked_artists": 222,
+      "pseudo_rows": 1206,
+      "train_rows_remaining": 25708,
+      "search_lookup_coverage_pseudo": 0.0,
+      "guard_width_q67": 1.7938042283580735,
+      "guard_gap_q50": 0.12372556893851083
+    },
+    {
+      "seed": 20260612,
+      "masked_artists": 206,
+      "pseudo_rows": 1206,
+      "train_rows_remaining": 25708,
+      "search_lookup_coverage_pseudo": 0.0,
+      "guard_width_q67": 1.758416335246686,
+      "guard_gap_q50": 0.12721442345040934
+    }
+  ],
+  "base_reference": "experiments/track6/PP-CBASE1_cold_base_lock/outputs/cold_base_performance_summary.csv"
+}

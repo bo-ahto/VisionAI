@@ -1,0 +1,127 @@
+{
+  "experiment_id": "PP-OPT89-95",
+  "experiment_slug": "PP-OPT89_95_warm_tail_guarded_stability_experiments",
+  "created_at": "2026-06-09T14:04:21",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 1590,
+  "prediction_rows": 1790340,
+  "selected_references": {
+    "pp20": "previous_challenger_pp20",
+    "pp30": "reference_pp30_best",
+    "pp48": "reference_pp48_score",
+    "pp64": "reference_pp64_current_best",
+    "pp70": "reference_pp70_refinement",
+    "pp82_op": "ppopt82_operational_tail_routing_challenger__source=ppopt80_hard_tail__anchor_pp70__helper_pp20__score_p95_prob__thr_0p62__width_0p24__s_1p0",
+    "pp82_p95": "ppopt82_p95_tail_routing_challenger__source=ppopt77_clf_tail__anchor_pp70__helper_pp20__prob_tail85_only__thr_0p26__width_0p18__s_0p64",
+    "pp81_best": "ppopt81_tail_ensemble__anchor=pp70__helper=pp48_p95_mix__thr=0p48__width=0p22__s=0p56"
+  },
+  "stability_labels": {
+    "hcoef_stable_source": "hcoef_stable",
+    "incumbent_pp7": "incumbent_operational_pp_opt7",
+    "pp64_current_best": "reference_pp64_current_best",
+    "pp70_refinement_candidate": "reference_pp70_refinement",
+    "pp81_stable_reference": "reference_pp81_best",
+    "pp82_operational_reference": "reference_pp82_operational",
+    "pp82_p95_reference": "reference_pp82_p95",
+    "pp95_operational_guarded_tail": "ppopt95_operational_guarded_tail_challenger__source=ppopt93_pp81_tail_boost__target_pp82op__score_risk_prob__thr_0p76__width_0p18__s_0p1",
+    "pp95_p95_guarded_tail": "ppopt95_p95_guarded_tail_challenger__source=ppopt94_p95_guard__target_pp82op__score_risk_focus__thr_0p7__width_0p32__s_0p2"
+  },
+  "selection_decision": {
+    "reference_pp64_test_MAPE": 0.27056404191566036,
+    "reference_pp64_test_p95_APE": 0.8074988523061098,
+    "reference_pp70_test_MAPE": 0.2705609753769763,
+    "reference_pp70_test_p95_APE": 0.8074900608978479,
+    "operational_source_candidate": "ppopt93_pp81_tail_boost__target=pp82op__score=risk_prob__thr=0p76__width=0p18__s=0p1",
+    "operational_source_item_id": "PP-OPT93",
+    "operational_source_family": "pp81_stable_tail_boost",
+    "operational_test_MAPE": 0.27055890188066634,
+    "operational_test_p95_APE": 0.8074900608978479,
+    "operational_delta_vs_pp64_MAPE": -5.140034994022269e-06,
+    "operational_delta_vs_pp64_p95_APE": -8.791408261932254e-06,
+    "p95_source_candidate": "ppopt94_p95_guard__target=pp82op__score=risk_focus__thr=0p7__width=0p32__s=0p2",
+    "p95_source_item_id": "PP-OPT94",
+    "p95_source_family": "p95_mode_mape_guard",
+    "p95_test_MAPE": 0.27065114574415167,
+    "p95_test_p95_APE": 0.8068399400330787,
+    "p95_delta_vs_pp64_MAPE": 8.710382849130838e-05,
+    "p95_delta_vs_pp64_p95_APE": -0.0006589122730311647,
+    "selection_reason": "select stable operational candidate first; keep a separate p95-focused candidate if MAPE still beats incumbent",
+    "operational_protocol_candidate": "ppopt95_operational_guarded_tail_challenger__source=ppopt93_pp81_tail_boost__target_pp82op__score_risk_prob__thr_0p76__width_0p18__s_0p1",
+    "p95_protocol_candidate": "ppopt95_p95_guarded_tail_challenger__source=ppopt94_p95_guard__target_pp82op__score_risk_focus__thr_0p7__width_0p32__s_0p2"
+  },
+  "stability_decision": {
+    "operational_verdict": "PP95 운영형도 운영 교체는 보류",
+    "p95_verdict": "PP95 p95형은 tail 안정성 우선 옵션으로 유지",
+    "pp95_operational_fixed_test_MAPE": 0.27055890188066634,
+    "pp95_operational_fixed_test_p95_APE": 0.8074900608978479,
+    "pp95_operational_delta_vs_pp64_MAPE": -5.140034994022269e-06,
+    "pp95_operational_delta_vs_pp64_p95_APE": -8.791408261932254e-06,
+    "pp95_operational_avg_pp64_MAPE_win_rate": 0.8907051282051283,
+    "pp95_operational_avg_pp64_p95_win_rate": 0.4102564102564103,
+    "pp95_operational_avg_pp64_all3_win_rate": 0.0625,
+    "pp95_p95_fixed_test_MAPE": 0.27065114574415167,
+    "pp95_p95_fixed_test_p95_APE": 0.8068399400330787,
+    "pp95_p95_delta_vs_pp64_MAPE": 8.710382849130838e-05,
+    "pp95_p95_delta_vs_pp64_p95_APE": -0.0006589122730311647,
+    "pp95_p95_avg_pp64_MAPE_win_rate": 0.05512820512820513,
+    "pp95_p95_avg_pp64_p95_win_rate": 0.6038461538461538
+  },
+  "items": [
+    {
+      "item_id": "PP-OPT89",
+      "priority": "1",
+      "title": "PP82 risk-focus rollback shrink",
+      "description": "risk-focus에서 PP82 fallback을 PP70 쪽으로 되돌려 MAPE 악화를 줄인다."
+    },
+    {
+      "item_id": "PP-OPT90",
+      "priority": "2",
+      "title": "weaker hard-tail fallback local grid",
+      "description": "PP80/PP82와 같은 구조에서 threshold, width, strength를 보수적으로 재탐색한다."
+    },
+    {
+      "item_id": "PP-OPT91",
+      "priority": "3",
+      "title": "soft helper tail fallback",
+      "description": "PP20 단독 대신 PP20/PP30/PP48 혼합 helper로 fallback 방향을 부드럽게 만든다."
+    },
+    {
+      "item_id": "PP-OPT92",
+      "priority": "4",
+      "title": "quantile-direction guarded fallback",
+      "description": "잔차 quantile 방향과 fallback 이동 방향이 맞지 않으면 fallback 강도를 줄인다."
+    },
+    {
+      "item_id": "PP-OPT93",
+      "priority": "5",
+      "title": "PP81 stable route plus PP82 tail boost",
+      "description": "반복 안정성이 좋았던 PP81 계열을 기준으로 tail에서만 PP82를 일부 반영한다."
+    },
+    {
+      "item_id": "PP-OPT94",
+      "priority": "6",
+      "title": "p95 mode guard",
+      "description": "PP82 p95형을 PP70/PP82 운영형 쪽으로 되돌려 MAPE 손실을 줄인다."
+    },
+    {
+      "item_id": "PP-OPT95",
+      "priority": "7",
+      "title": "final guarded tail-routing challenger",
+      "description": "운영형과 p95 목적형 후보를 분리해 최종 선택한다."
+    }
+  ],
+  "sources": {
+    "pp76_config": "experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/artifacts/run_config.json",
+    "pp76_predictions": "experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/outputs/candidate_predictions.csv",
+    "pp76_tail_probability": "experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/artifacts/tail_classifier_detail.csv",
+    "pp76_tail_score": "experiments/track6/PP-OPT76_82_warm_tail_routing_experiments/artifacts/tail_risk_scores.csv",
+    "pp47_quantile": "experiments/track6/PP-OPT47_52_warm_residual_finetune_experiments/artifacts/quantile_residual_predictions.csv",
+    "pp76_helper": "scripts/track6/run_pp_opt76_82_warm_tail_routing_experiments.py",
+    "pp71_validation_helper": "scripts/track6/run_pp_opt71_75_warm_pp70_stability_validation.py"
+  }
+}

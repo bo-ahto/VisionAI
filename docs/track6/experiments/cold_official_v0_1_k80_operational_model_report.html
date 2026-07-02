@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cold official 0.1v k80 운영 모델 설명서</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#cold-official-0.1v-k80-운영-모델-설명서">Cold official 0.1v k80 운영 모델 설명서</a>
+<a class="toc-level-2" href="#1.-운영-결론">1. 운영 결론</a>
+<a class="toc-level-2" href="#2.-cold-모델의-역할">2. Cold 모델의 역할</a>
+<a class="toc-level-2" href="#3.-모델-이름과-구성-요소">3. 모델 이름과 구성 요소</a>
+<a class="toc-level-2" href="#4.-학습-검증-단계">4. 학습/검증 단계</a>
+<a class="toc-level-2" href="#5.-사용-단계">5. 사용 단계</a>
+<a class="toc-level-2" href="#6.-계산-예시">6. 계산 예시</a>
+<a class="toc-level-2" href="#7.-성능-비교">7. 성능 비교</a>
+<a class="toc-level-3" href="#7.1-base-대비-k80-운영-기준안">7.1 base 대비 k80 운영 기준안</a>
+<a class="toc-level-3" href="#7.2-k40-후보와의-비교">7.2 k40 후보와의 비교</a>
+<a class="toc-level-3" href="#7.3-paired-bootstrap-요약">7.3 paired bootstrap 요약</a>
+<a class="toc-level-2" href="#8.-strict-cold-조건-확인">8. strict Cold 조건 확인</a>
+<a class="toc-level-2" href="#9.-운영-구현-시-필요한-산출물">9. 운영 구현 시 필요한 산출물</a>
+<a class="toc-level-2" href="#10.-운영-모니터링">10. 운영 모니터링</a>
+<a class="toc-level-2" href="#11.-현재-한계와-후속-작업">11. 현재 한계와 후속 작업</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/cold_official_v0_1_k80_operational_model_report.md</code></div>
+      <h1 id="cold-official-0.1v-k80-운영-모델-설명서">Cold official 0.1v k80 운영 모델 설명서</h1>
+<ul>
+<li>작성일: 2026-06-22</li>
+<li>문서 목적: Cold 가격 예측 운영 기준안을 <code>k80 보수적 운영</code> 후보로 고정하고, 모델의 목적, 입력, 학습/검증 흐름, 사용 단계, 성능, 운영 주의사항을 한 문서에서 설명한다.</li>
+<li>기준 후보: <code>resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05</code></li>
+<li>기준 실험: <code>PP-CSIM24</code>, <code>PP-CSIM25</code>, <code>PP-CSIM26</code></li>
+<li>기준 버전 표기: official 0.1v</li>
+</ul>
+<h2 id="1.-운영-결론">1. 운영 결론</h2>
+<p>Cold 운영 모델은 같은 작가 가격 이력을 직접 사용할 수 없는 경우에 쓰는 가격 예측 경로다. 따라서 입력 작가를 내부 <code>artist_key</code>에 매칭한 뒤 같은 작가의 과거 가격을 가져오면 안 된다. 이번 기준안은 이 조건을 지키기 위해 <code>artist_key</code>, 동일 작가 가격 이력, 검색 캐시, 외부 live 검색, artist_key 기반 lookup 후처리를 쓰지 않는다.</p>
+<p>현재 운영 기준안은 <code>k80 보수적 운영</code> 후보로 둔다. 이 후보는 validation에서 가장 안정적으로 우세했고, test에서도 base 대비 MAPE, p95 APE, APE &gt; 5를 모두 줄였다. test 성능만 보면 k40 후보가 더 좋지만, validation과 test에서 우위가 바뀌었기 때문에 운영 기준안은 validation 선택 논리가 더 방어 가능한 k80 후보로 둔다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">split</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">APE &gt; 5</th>
+<th class="align-right">선택 비율</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">base</td>
+<td class="align-left">validation</td>
+<td class="align-right">0.424537</td>
+<td class="align-right">0.606746</td>
+<td class="align-right">1.808312</td>
+<td class="align-right">10</td>
+<td class="align-right">0.00%</td>
+</tr>
+<tr>
+<td class="align-left">k80 보수적 운영</td>
+<td class="align-left">validation</td>
+<td class="align-right">0.404411</td>
+<td class="align-right">0.565875</td>
+<td class="align-right">1.638585</td>
+<td class="align-right">8</td>
+<td class="align-right">52.85%</td>
+</tr>
+<tr>
+<td class="align-left">base</td>
+<td class="align-left">test</td>
+<td class="align-right">0.481850</td>
+<td class="align-right">0.746296</td>
+<td class="align-right">2.398009</td>
+<td class="align-right">35</td>
+<td class="align-right">0.00%</td>
+</tr>
+<tr>
+<td class="align-left">k80 보수적 운영</td>
+<td class="align-left">test</td>
+<td class="align-right">0.479052</td>
+<td class="align-right">0.720187</td>
+<td class="align-right">2.231840</td>
+<td class="align-right">33</td>
+<td class="align-right">46.10%</td>
+</tr>
+</tbody></table></div>
+<p>해석은 다음과 같다.</p>
+<ul>
+<li>validation: k80 후보가 base보다 MdAPE, MAPE, p95 APE, APE &gt; 5 모두 개선됐다.</li>
+<li>test: k80 후보도 base보다 개선된다. MAPE는 <code>0.746296 -&gt; 0.720187</code>, p95 APE는 <code>2.398009 -&gt; 2.231840</code>, APE &gt; 5는 <code>35 -&gt; 33</code>으로 줄었다.</li>
+<li>k40 후보는 test에서 더 좋지만, validation에서는 k80보다 약하다. 운영 모델 설명과 배포 기준은 검증셋 선택 논리가 더 명확한 k80을 우선한다.</li>
+</ul>
+<h2 id="2.-cold-모델의-역할">2. Cold 모델의 역할</h2>
+<p>Cold는 “같은 작가 가격 이력을 직접 쓸 수 없는 입력”을 위한 모델이다. Warm은 같은 작가의 과거 거래/판매 가격 통계를 기준가격으로 사용할 수 있지만, Cold는 그럴 수 없다. 그래서 Cold는 아래 정보를 이용해 가격을 예측한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">정보 그룹</th>
+<th class="align-left">사용 여부</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작품 크기/형태</td>
+<td class="align-left">사용</td>
+<td class="align-left">가로, 세로, 깊이, 면적, 로그면적, 비율, 입체 여부</td>
+</tr>
+<tr>
+<td class="align-left">작품 조건</td>
+<td class="align-left">사용</td>
+<td class="align-left">매체, 지지체, 매체+지지체 조합</td>
+</tr>
+<tr>
+<td class="align-left">사용자 입력 가능 작가 메타</td>
+<td class="align-left">사용</td>
+<td class="align-left">출생연도, 경력단계, 국적 등 비가격성 작가 정보</td>
+</tr>
+<tr>
+<td class="align-left">유사 이웃 통계</td>
+<td class="align-left">사용</td>
+<td class="align-left">비슷한 작품/작가 메타를 가진 학습 데이터의 예측 잔차 경향</td>
+</tr>
+<tr>
+<td class="align-left">입력 작가의 artist_key</td>
+<td class="align-left">미사용</td>
+<td class="align-left">Cold에서는 입력 작가를 내부 artist_key에 매칭해 가격 이력을 가져오지 않음</td>
+</tr>
+<tr>
+<td class="align-left">같은 작가 가격 이력</td>
+<td class="align-left">미사용</td>
+<td class="align-left">Warm 전용 정보이므로 Cold에서는 금지</td>
+</tr>
+<tr>
+<td class="align-left">검색 캐시/live 검색</td>
+<td class="align-left">미사용</td>
+<td class="align-left">운영 안정성과 재현성을 위해 이번 기준안에서는 제외</td>
+</tr>
+</tbody></table></div>
+<p>여기서 중요한 점은 “작가 메타를 쓴다”와 “artist_key로 같은 작가 가격 이력을 쓴다”는 서로 다르다는 점이다. Cold에서 허용되는 작가 메타는 사용자가 입력할 수 있거나 운영에서 독립적으로 검수 가능한 비가격성 정보다. 반대로 <code>artist_key</code>로 과거 가격을 조회하는 순간 Cold가 아니라 Warm 방식이 된다.</p>
+<h2 id="3.-모델-이름과-구성-요소">3. 모델 이름과 구성 요소</h2>
+<p>기준 후보명은 다음과 같다.</p>
+<pre><code>resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05</code></pre>
+<p>각 부분의 의미는 다음과 같다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">이름 부분</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>resid</code></td>
+<td class="align-left">기준 예측값에서 남은 오차, 즉 residual을 보정에 사용</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_meta</code></td>
+<td class="align-left">유사 이웃을 찾을 때 작가 메타 기반 유사도를 사용</td>
+</tr>
+<tr>
+<td class="align-left"><code>k80</code></td>
+<td class="align-left">예측 대상과 유사한 학습 데이터 80건을 참고</td>
+</tr>
+<tr>
+<td class="align-left"><code>s1p0</code></td>
+<td class="align-left">이웃 잔차 중앙값을 1.0배로 반영</td>
+</tr>
+<tr>
+<td class="align-left"><code>cap0p25</code></td>
+<td class="align-left">보정값은 최대 ±0.25 log 안으로 제한</td>
+</tr>
+<tr>
+<td class="align-left"><code>route_neg_corr_ge_0p05</code></td>
+<td class="align-left">하향 보정값이 0.05 log 이상일 때만 보정 후보를 선택</td>
+</tr>
+</tbody></table></div>
+<p><code>k80</code>은 “가장 비슷한 이웃 80건”이라는 뜻이다. k가 작으면 가까운 사례만 보므로 민감하고, k가 크면 더 넓은 사례를 보므로 안정적이다. 이번 검증에서는 k40이 test에서 더 강했지만, k80이 validation에서 더 안정적이었다.</p>
+<h2 id="4.-학습-검증-단계">4. 학습/검증 단계</h2>
+<p>Cold k80 운영 기준안은 한 번에 만든 단일 모델이 아니라, 여러 단계의 후보를 검증하면서 선택한 운영 규칙이다. 핵심 흐름은 다음과 같다.</p>
+<pre><code>[학습 데이터 준비]
+  - 가격 라벨이 있는 과거 작품
+  - 작품 크기/매체/지지체 피처
+  - 사용자가 입력 가능하거나 운영 검수 가능한 작가 메타
+  - artist_key는 식별/분리 관리용으로만 존재할 수 있으나 모델 피처로 쓰지 않음
+        |
+        v
+[base Cold 모델 학습]
+  - LightGBM Quantile 기반 기준 예측
+  - 작품 피처 + 사용자 입력 가능 작가 메타 + 유사 작품 통계 사용
+  - 같은 작가 가격 이력은 사용하지 않음
+        |
+        v
+[OOF 잔차 생성]
+  - train 내부에서 fold를 나눔
+  - 각 hold-out row는 자신을 학습하지 않은 모델의 예측값을 받음
+  - residual = 실제 로그가격 - OOF 예측 로그가격
+        |
+        v
+[유사 이웃 잔차 후보 생성]
+  - 예측 대상과 작가 메타가 비슷한 train 이웃 80건을 찾음
+  - 그 이웃들의 OOF residual 중앙값을 계산
+  - 보정 후보 = base 예측 + clip(1.0 * 이웃 residual 중앙값, -0.25, +0.25)
+        |
+        v
+[규칙 라우터 검증]
+  - 모든 row에 보정을 적용하지 않음
+  - 하향 보정값이 0.05 log 이상일 때만 보정 후보를 선택
+  - 그 외에는 base 예측 유지
+        |
+        v
+[운영 후보 선택]
+  - validation 안정성 우선
+  - test에서 base 대비 개선 유지 확인
+  - strict Cold 조건 통과 여부 확인</code></pre>
+<p>OOF는 out-of-fold의 약자다. 쉽게 말하면 “각 학습 row를 직접 학습한 모델로 다시 맞히지 않고, 그 row를 잠시 빼고 만든 예측값으로 잔차를 계산한다”는 뜻이다. 이렇게 해야 train 내부에서도 자기 가격을 본 예측값이 보정 통계에 섞이지 않는다.</p>
+<h2 id="5.-사용-단계">5. 사용 단계</h2>
+<p>운영에서 Cold 입력이 들어오면 다음 순서로 계산한다.</p>
+<pre><code>[Cold 입력]
+  - 작품 크기: width_cm, height_cm, depth_cm
+  - 작품 조건: medium_category, support_category
+  - 작가 메타: 출생연도, 경력단계, 국적 등 입력 가능한 비가격 정보
+  - 같은 작가 가격 이력은 없음
+        |
+        v
+[기본 피처 생성]
+  - area_cm2 = width_cm * height_cm
+  - log_area = log(area_cm2)
+  - aspect_ratio = width_cm / height_cm
+  - has_depth, is_3d_candidate
+  - size_bucket, medium_support_bucket 등 구간 피처
+        |
+        v
+[base Cold 예측]
+  - 작품 피처와 작가 메타를 모델에 입력
+  - base_pred_log 생성
+        |
+        v
+[유사 이웃 80건 찾기]
+  - artist_key가 아니라 작가 메타/작품 조건 유사도 기준으로 찾음
+  - train reference pool에서 가장 비슷한 80건 선택
+        |
+        v
+[이웃 잔차 중앙값 계산]
+  - 선택된 80건의 OOF residual 중앙값 계산
+  - residual_median_log 생성
+        |
+        v
+[보정 후보 계산]
+  - correction_log = clip(1.0 * residual_median_log, -0.25, +0.25)
+  - corrected_pred_log = base_pred_log + correction_log
+        |
+        v
+[라우터 선택]
+  - correction_log &lt;= -0.05이면 corrected_pred_log 사용
+  - 그 외에는 base_pred_log 유지
+        |
+        v
+[최종 가격]
+  - final_price = exp(final_pred_log)</code></pre>
+<p>라우터가 하향 보정만 적용하는 이유는 Cold에서 큰 오차가 주로 과대 예측 구간에서 문제가 되었기 때문이다. 이 후보는 “비슷한 이웃들이 base보다 낮아져야 한다는 신호를 줄 때만” 보수적으로 가격을 낮춘다. 상향 보정이나 작은 보정은 운영 기준안에서는 적용하지 않는다.</p>
+<h2 id="6.-계산-예시">6. 계산 예시</h2>
+<p>아래 숫자는 계산 흐름을 설명하기 위한 예시다.</p>
+<pre><code>[입력]
+  width_cm = 60
+  height_cm = 72
+  depth_cm = 0
+  medium_category = painting
+  support_category = canvas
+  artist_meta_birth_year = 1981
+  artist_meta_career_stage = 15
+
+[base Cold 예측]
+  base_pred_log = 15.40
+  base_price = exp(15.40) = 약 4,872,000원
+
+[유사 이웃 80건]
+  artist_meta/작품 조건이 비슷한 train 이웃 80건 선택
+  이웃들의 OOF residual 중앙값 = -0.08 log
+
+[보정 후보]
+  correction_log = clip(1.0 * -0.08, -0.25, +0.25)
+                 = -0.08
+  corrected_pred_log = 15.40 + (-0.08)
+                     = 15.32
+  corrected_price = exp(15.32) = 약 4,500,000원
+
+[라우터]
+  correction_log = -0.08
+  -0.08 &lt;= -0.05 이므로 하향 보정 신호가 충분함
+  최종 로그가격 = corrected_pred_log = 15.32
+  최종 가격 = 약 4,500,000원</code></pre>
+<p>반대로 이웃 잔차 중앙값이 <code>-0.02 log</code>라면 보정값이 너무 작으므로 base 예측을 유지한다. 이 경우 최종 로그가격은 <code>15.40</code>이다.</p>
+<h2 id="7.-성능-비교">7. 성능 비교</h2>
+<h3 id="7.1-base-대비-k80-운영-기준안">7.1 base 대비 k80 운영 기준안</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">split</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">APE &gt; 2</th>
+<th class="align-right">APE &gt; 5</th>
+<th class="align-right">APE &gt; 10</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">base</td>
+<td class="align-left">validation</td>
+<td class="align-right">0.424537</td>
+<td class="align-right">0.606746</td>
+<td class="align-right">1.808312</td>
+<td class="align-right">97</td>
+<td class="align-right">10</td>
+<td class="align-right">1</td>
+</tr>
+<tr>
+<td class="align-left">k80 보수적 운영</td>
+<td class="align-left">validation</td>
+<td class="align-right">0.404411</td>
+<td class="align-right">0.565875</td>
+<td class="align-right">1.638585</td>
+<td class="align-right">77</td>
+<td class="align-right">8</td>
+<td class="align-right">1</td>
+</tr>
+<tr>
+<td class="align-left">base</td>
+<td class="align-left">test</td>
+<td class="align-right">0.481850</td>
+<td class="align-right">0.746296</td>
+<td class="align-right">2.398009</td>
+<td class="align-right">212</td>
+<td class="align-right">35</td>
+<td class="align-right">8</td>
+</tr>
+<tr>
+<td class="align-left">k80 보수적 운영</td>
+<td class="align-left">test</td>
+<td class="align-right">0.479052</td>
+<td class="align-right">0.720187</td>
+<td class="align-right">2.231840</td>
+<td class="align-right">200</td>
+<td class="align-right">33</td>
+<td class="align-right">8</td>
+</tr>
+</tbody></table></div>
+<h3 id="7.2-k40-후보와의-비교">7.2 k40 후보와의 비교</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">split</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">APE &gt; 5</th>
+<th class="align-right">선택 비율</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">k40 성능 우선</td>
+<td class="align-left">validation</td>
+<td class="align-right">0.414052</td>
+<td class="align-right">0.591879</td>
+<td class="align-right">1.771392</td>
+<td class="align-right">8</td>
+<td class="align-right">28.35%</td>
+</tr>
+<tr>
+<td class="align-left">k80 보수적 운영</td>
+<td class="align-left">validation</td>
+<td class="align-right">0.404411</td>
+<td class="align-right">0.565875</td>
+<td class="align-right">1.638585</td>
+<td class="align-right">8</td>
+<td class="align-right">52.85%</td>
+</tr>
+<tr>
+<td class="align-left">k40 성능 우선</td>
+<td class="align-left">test</td>
+<td class="align-right">0.474181</td>
+<td class="align-right">0.711229</td>
+<td class="align-right">2.161091</td>
+<td class="align-right">30</td>
+<td class="align-right">25.67%</td>
+</tr>
+<tr>
+<td class="align-left">k80 보수적 운영</td>
+<td class="align-left">test</td>
+<td class="align-right">0.479052</td>
+<td class="align-right">0.720187</td>
+<td class="align-right">2.231840</td>
+<td class="align-right">33</td>
+<td class="align-right">46.10%</td>
+</tr>
+</tbody></table></div>
+<p>k40은 test에서 더 좋다. 그러나 validation에서는 k80이 더 강하다. 운영 모델은 test 최상위 하나를 고르는 것보다 validation에서 선택된 규칙이 test에서도 개선을 유지하는지가 중요하므로, 현재 기준안은 k80으로 둔다.</p>
+<h3 id="7.3-paired-bootstrap-요약">7.3 paired bootstrap 요약</h3>
+<p><code>PP-CSIM26</code>에서 base와 paired bootstrap을 수행했다. k80 후보는 validation에서 base 대비 MdAPE, MAPE, p95 APE가 모두 안정적으로 개선됐다. test에서도 MAPE와 p95 APE는 안정적으로 개선됐고, MdAPE 개선은 작지만 방향은 개선이다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">비교</th>
+<th class="align-left">split</th>
+<th class="align-right">delta MdAPE</th>
+<th class="align-right">delta MAPE</th>
+<th class="align-right">delta p95 APE</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">k80 운영 후보 - base</td>
+<td class="align-left">validation</td>
+<td class="align-right">-0.020488</td>
+<td class="align-right">-0.040809</td>
+<td class="align-right">-0.157453</td>
+</tr>
+<tr>
+<td class="align-left">k80 운영 후보 - base</td>
+<td class="align-left">test</td>
+<td class="align-right">-0.001118</td>
+<td class="align-right">-0.026117</td>
+<td class="align-right">-0.132280</td>
+</tr>
+</tbody></table></div>
+<p>음수는 후보가 base보다 낮은 오차를 냈다는 뜻이다.</p>
+<h2 id="8.-strict-cold-조건-확인">8. strict Cold 조건 확인</h2>
+<p><code>PP-CSIM26</code> run summary 기준 strict Cold 조건은 다음과 같이 기록되어 있다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-right">값</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>strict_cold_compliant</code></td>
+<td class="align-right">1</td>
+<td class="align-left">strict Cold 조건 충족</td>
+</tr>
+<tr>
+<td class="align-left"><code>uses_search_features</code></td>
+<td class="align-right">0</td>
+<td class="align-left">검색 피처 미사용</td>
+</tr>
+<tr>
+<td class="align-left"><code>uses_external_live_search</code></td>
+<td class="align-right">0</td>
+<td class="align-left">외부 live 검색 미사용</td>
+</tr>
+<tr>
+<td class="align-left"><code>uses_artist_key_lookup_postprocess</code></td>
+<td class="align-right">0</td>
+<td class="align-left">artist_key 기반 후처리 lookup 미사용</td>
+</tr>
+<tr>
+<td class="align-left"><code>uses_rule_router</code></td>
+<td class="align-right">1</td>
+<td class="align-left">규칙 라우터 사용</td>
+</tr>
+<tr>
+<td class="align-left"><code>router_uses_actual_price</code></td>
+<td class="align-right">0</td>
+<td class="align-left">라우터가 실제 가격을 보지 않음</td>
+</tr>
+</tbody></table></div>
+<p>주의할 점은 원본 데이터 안에 <code>artist_key</code> 컬럼이 존재할 수 있다는 것이다. 이것은 split 관리, 데이터 추적, Warm/Cold 구분을 위한 식별자일 수 있다. 하지만 이번 Cold 기준안에서는 <code>artist_key</code>를 모델 피처, 유사도 계산, 보정 lookup, 라우터 조건에 사용하지 않는다.</p>
+<h2 id="9.-운영-구현-시-필요한-산출물">9. 운영 구현 시 필요한 산출물</h2>
+<p>현재 문서 기준 후보는 실험적으로 운영 기준안으로 정한 상태다. 실제 API 운영에 올리려면 Warm처럼 독립 번들로 구성해야 한다.</p>
+<p>필요한 구성은 다음과 같다.</p>
+<pre><code>models/track6/cold_k80_conservative_official_v0.1_candidate/
+  artifacts/
+    runtime_store.joblib
+      - base Cold 모델
+      - train reference pool
+      - OOF residual 배열
+      - 유사도 전처리기
+      - size/shape bucket 규칙
+      - feature schema
+      - 라우터 정책
+  config/
+    cold_k80_conservative_policy_v0_1.json
+  predict/
+    predict_cold_k80_conservative_v0_1.py
+  test_data/
+    track6_test_cold.csv
+  test_outputs/
+    fixed_test/
+      summary.json
+      predictions.csv
+      predictions_with_diagnostics.csv
+  README.md</code></pre>
+<p>운영 predictor는 DB, 외부 CSV, 검색 API 없이 <code>runtime_store.joblib</code> 내부 산출물만으로 아래 값을 반환해야 한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">반환값</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>predicted_price</code></td>
+<td class="align-left">최종 예측 가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>predicted_log_price</code></td>
+<td class="align-left">최종 로그가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>route</code></td>
+<td class="align-left"><code>base</code> 또는 <code>residual_correction</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>base_log_price</code></td>
+<td class="align-left">base Cold 예측 로그가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>correction_log</code></td>
+<td class="align-left">적용된 보정값</td>
+</tr>
+<tr>
+<td class="align-left"><code>neighbor_k</code></td>
+<td class="align-left">80</td>
+</tr>
+<tr>
+<td class="align-left"><code>selected_neighbor_count</code></td>
+<td class="align-left">실제 참고한 이웃 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>strict_cold_compliant</code></td>
+<td class="align-left">true</td>
+</tr>
+<tr>
+<td class="align-left"><code>diagnostics</code></td>
+<td class="align-left">유사도, 보정 여부, 입력 결측 상태 등</td>
+</tr>
+</tbody></table></div>
+<h2 id="10.-운영-모니터링">10. 운영 모니터링</h2>
+<p>Cold는 Warm보다 불확실성이 크다. 따라서 최종 가격만 저장하면 안 되고, 다음 진단값을 함께 저장해야 한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">진단값</th>
+<th class="align-left">이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>route</code></td>
+<td class="align-left">base를 썼는지 보정 후보를 썼는지 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>correction_log</code></td>
+<td class="align-left">하향 보정이 얼마나 컸는지 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>neighbor_k</code></td>
+<td class="align-left">k80 정책이 적용됐는지 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>neighbor_similarity_mean</code></td>
+<td class="align-left">이웃이 충분히 비슷했는지 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_meta_missing_count</code></td>
+<td class="align-left">작가 메타 입력 품질 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>base_pred_price</code></td>
+<td class="align-left">보정 전 가격 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>final_pred_price</code></td>
+<td class="align-left">최종 가격 확인</td>
+</tr>
+<tr>
+<td class="align-left"><code>price_band</code></td>
+<td class="align-left">저가/중가/고가 구간별 성능 모니터링</td>
+</tr>
+</tbody></table></div>
+<p>운영 중 재학습이나 정책 변경을 할 때는 임계값과 k를 매번 재최적화하지 말고, 새 학습 데이터로 동일한 hold-out 검증과 parity 검증을 통과한 뒤 버전업해야 한다.</p>
+<h2 id="11.-현재-한계와-후속-작업">11. 현재 한계와 후속 작업</h2>
+<p>현재 k80 보수적 운영 기준안은 운영 후보로 설명 가능하지만, 아직 Warm joblib 번들처럼 완전 독립 배포 형태로 잠긴 것은 아니다.</p>
+<p>남은 작업은 다음과 같다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">작업</th>
+<th class="align-left">필요성</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">독립 joblib runtime store 생성</td>
+<td class="align-left">실험 CSV 없이 API에서 재현 가능해야 함</td>
+</tr>
+<tr>
+<td class="align-left">predictor 작성</td>
+<td class="align-left">입력 JSON/CSV에서 바로 Cold 예측 가능해야 함</td>
+</tr>
+<tr>
+<td class="align-left">fixed test parity 검증</td>
+<td class="align-left">실험 산출값과 predictor 산출값 일치 확인</td>
+</tr>
+<tr>
+<td class="align-left">API adapter 연결</td>
+<td class="align-left">Warm/Cold 라우팅에서 Cold 경로로 연결</td>
+</tr>
+<tr>
+<td class="align-left">운영 로그 스키마 확정</td>
+<td class="align-left">route, correction, neighbor 진단값 저장</td>
+</tr>
+<tr>
+<td class="align-left">k40 후보 후속 검증</td>
+<td class="align-left">test 성능 우위가 재현되는지 추가 split 또는 bootstrap 확장</td>
+</tr>
+</tbody></table></div>
+<p>따라서 현재 결론은 다음과 같다.</p>
+<pre><code>Cold official 0.1v 운영 기준안:
+  k80 보수적 운영 후보를 기준으로 문서화한다.
+
+운영 적용 조건:
+  독립 joblib bundle, predictor, fixed test parity, API 연결 검증을 완료한 뒤 배포한다.
+
+후속 연구 후보:
+  k40 성능 우선 후보는 별도 실험에서 재검증한다.</code></pre>
+    </main>
+  </div>
+</body>
+</html>

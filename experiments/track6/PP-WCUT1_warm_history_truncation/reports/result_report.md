@@ -1,0 +1,24 @@
+# PP-WCUT1 Warm 이력 절단 실험
+
+   k                  candidate  artist_match_rate  MdAPE   MAPE  p95_APE
+   1                 warm_proxy                0.0 0.4943 0.8164   3.1816
+   1         cold_proxy_defense                NaN 0.5148 0.8098   2.7376
+   1 cold_proxy_serving(+const)                NaN 0.4983 0.7824   2.6224
+   2                 warm_proxy                0.0 0.5001 0.8238   2.9922
+   2         cold_proxy_defense                NaN 0.5087 0.7655   2.7699
+   2 cold_proxy_serving(+const)                NaN 0.4860 0.7389   2.6537
+   3                 warm_proxy                0.0 0.4838 0.8116   3.1602
+   3         cold_proxy_defense                NaN 0.5043 0.7961   2.8908
+   3 cold_proxy_serving(+const)                NaN 0.4835 0.7687   2.7709
+   4                 warm_proxy                0.0 0.4896 0.8048   3.0961
+   4         cold_proxy_defense                NaN 0.4764 0.7707   2.8032
+   4 cold_proxy_serving(+const)                NaN 0.4654 0.7441   2.6860
+   5                 warm_proxy                1.0 0.1798 0.3169   1.0433
+   5         cold_proxy_defense                NaN 0.4760 0.7697   2.5430
+   5 cold_proxy_serving(+const)                NaN 0.4607 0.7435   2.4338
+   8                 warm_proxy                1.0 0.1864 0.3206   1.2109
+   8         cold_proxy_defense                NaN 0.4770 0.7455   2.5227
+   8 cold_proxy_serving(+const)                NaN 0.4605 0.7203   2.4142
+full                 warm_proxy                1.0 0.1533 0.2829   1.0552
+full         cold_proxy_defense                NaN 0.4355 0.6979   2.2676
+full cold_proxy_serving(+const)                NaN 0.4133 0.6746   2.1669

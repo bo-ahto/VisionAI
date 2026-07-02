@@ -1,0 +1,100 @@
+{
+  "experiment_id": "PP-COLD-QF1",
+  "purpose": "Warm-lite style full/lean Quantile, clipped residual, and disagreement guard tests for Cold",
+  "full_features": [
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "area_cm2",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "medium_category",
+    "support_category",
+    "size_bucket",
+    "support_size_bucket",
+    "medium_support_bucket",
+    "grp_log_price_median",
+    "grp_log_price_q25",
+    "grp_log_price_q75",
+    "grp_log_price_iqr",
+    "grp_unit_area_median",
+    "grp_unit_area_iqr",
+    "grp_n_log",
+    "grp_match_level",
+    "grp_price_proxy"
+  ],
+  "lean_features": [
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "medium_category",
+    "support_category",
+    "size_bucket",
+    "grp_log_price_median",
+    "grp_log_price_iqr",
+    "grp_n_log",
+    "grp_match_level",
+    "grp_price_proxy"
+  ],
+  "seeds": [
+    20260616,
+    20260617,
+    20260618
+  ],
+  "quantiles": {
+    "q10": 0.1,
+    "q40": 0.4,
+    "q50": 0.5,
+    "q90": 0.9
+  },
+  "residual": {
+    "target": "OOF actual_log - full_lean_avg",
+    "model": "HuberRegressor",
+    "features": [
+      "width_cm",
+      "height_cm",
+      "depth_cm",
+      "area_cm2",
+      "log_area",
+      "aspect_ratio",
+      "has_depth",
+      "is_3d_candidate",
+      "medium_category",
+      "support_category",
+      "size_bucket",
+      "support_size_bucket",
+      "medium_support_bucket",
+      "grp_log_price_median",
+      "grp_log_price_q25",
+      "grp_log_price_q75",
+      "grp_log_price_iqr",
+      "grp_unit_area_median",
+      "grp_unit_area_iqr",
+      "grp_n_log",
+      "grp_match_level",
+      "grp_price_proxy",
+      "full_q50",
+      "lean_q50",
+      "full_lean_avg",
+      "full_qwidth",
+      "full_lean_gap_abs",
+      "full_lean_gap_signed"
+    ]
+  },
+  "v03_hybrid_thresholds": {
+    "qwidth_q50": 1.0924550438252805,
+    "qwidth_q67": 1.4612207078910142,
+    "qwidth_q80": 1.860734436269961,
+    "gap_to_qf1_q50": 0.0,
+    "gap_to_qf1_q67": 0.02306869870003913,
+    "gap_to_qf1_q80": 0.1563254601539057
+  },
+  "selection": "validation ranking only; fixed test reported for selected candidates",
+  "prohibitions": [
+    "0604 사용 금지",
+    "test로 후보 선택 금지"
+  ]
+}

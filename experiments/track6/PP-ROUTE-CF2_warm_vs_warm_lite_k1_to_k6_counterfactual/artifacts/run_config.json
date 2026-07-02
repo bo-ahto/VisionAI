@@ -1,0 +1,42 @@
+{
+  "created_at": "2026-06-16T12:52:30",
+  "experiment_id": "PP-ROUTE-CF2",
+  "experiment_slug": "PP-ROUTE-CF2_warm_vs_warm_lite_k1_to_k6_counterfactual",
+  "trunc_seeds": [
+    20260612,
+    20260613,
+    20260614
+  ],
+  "k_values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "base_eval_set": "Warm fixed-test rows with >=6 same-artist train history rows",
+  "eligibility_audit": {
+    "warm_fixed_test_rows_total": 607,
+    "exact_k1_to_k6_eligible_rows": 519,
+    "excluded_rows_with_only_5_train_history": 88,
+    "min_full_train_artist_history_n": 6,
+    "max_full_train_artist_history_n": 573
+  },
+  "warm_lite_source": "models/track6/warm_lite_quantile_residual_v0.1/predict/predict_warm_lite_quantile_residual_v0_1.py",
+  "warm_lite_design": "frozen official v0.1 Warm-lite Quantile + LightGBM Huber residual bundle, forced to k=1..6; k=5..6 are out-of-route stress cases",
+  "warm_shell_sources": {
+    "fixed_feature_store": "models/track6/warm_wmin8_exact_runtime_candidate/artifacts/fixed_test_feature_store.csv",
+    "runtime": "models/track6/warm_wmin8_exact_runtime_candidate/artifacts/wmin8_huber_runtime.json",
+    "operational_baseline": "models/track6/warm_wmin8_operational_candidate/artifacts/wmin8_selected_candidate_predictions.csv"
+  },
+  "warm_shell_design": "SVC comparable-stat Huber axis retrained after k-truncating target artists; PPV8/shrinkage stable context held fixed; WMIN8 Huber refit and risk router applied",
+  "route_threshold": 0.2534165869100283,
+  "route_gap": 0.005,
+  "limitations": [
+    "Warm WMIN8-shell forced k=1..6 is not full upstream WMIN8 retraining.",
+    "Warm-lite forced k=5..6 is outside the official Warm-lite route and is used only for route-boundary stress comparison.",
+    "Main same-n table excludes 88 Warm fixed-test rows with only 5 available same-artist train-history rows so every k=1..6 condition has exactly the same rows."
+  ],
+  "seconds": 428.6
+}

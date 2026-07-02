@@ -1,0 +1,46 @@
+{
+  "created_at": "2026-06-13T10:15:44+09:00",
+  "experiment_id": "PP-WMIN9",
+  "decision_status": "candidate_artifact_connected_api_parity_passed",
+  "checks": {
+    "wmin8_outputs_exist": true,
+    "wmin8_selected_candidate_packaged": true,
+    "warm_lite_artifact_ready": true,
+    "routing_policy_artifact_ready": true,
+    "current_service_has_warm_5plus_route": true,
+    "current_service_has_warm_lite_route": true,
+    "current_service_mentions_wmin8": true,
+    "current_service_threshold_matches_recommended_policy": true,
+    "exact_raw_adapter_ready": true,
+    "fixed_test_parity_through_api_ready": true
+  },
+  "route_matrix": [
+    {
+      "history_count": "0",
+      "current_official_v0_1_route": "Cold",
+      "target_route_after_integration": "Cold",
+      "target_artifact": "cold v0.3/v0.4 policy layer",
+      "condition": "match_score < 0.8 또는 usable_history = 0"
+    },
+    {
+      "history_count": "1~4",
+      "current_official_v0_1_route": "Warm-lite",
+      "target_route_after_integration": "Warm-lite",
+      "target_artifact": "models/track6/warm_lite_v0.1",
+      "condition": "match_score >= 0.8 AND 1 <= usable_history <= 4"
+    },
+    {
+      "history_count": "5+",
+      "current_official_v0_1_route": "Warm / WMIN8 exact adapter",
+      "target_route_after_integration": "Warm",
+      "target_artifact": "models/track6/warm_wmin8_operational_candidate",
+      "condition": "match_score >= 0.8 AND usable_history >= 5"
+    }
+  ],
+  "blocking_items": [],
+  "next_actions": [
+    "Keep WMIN8 5+ Warm route as the current official v0.1 target",
+    "Keep PP-WMIN10 API parity and route-boundary checks in the release audit",
+    "Monitor production logs for artist-match score, usable history count, and WMIN8 route-gate hit rate"
+  ]
+}

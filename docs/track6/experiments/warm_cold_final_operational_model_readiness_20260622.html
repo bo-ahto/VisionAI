@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm/Cold 최종 모델 운영 정리</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#warm-cold-최종-모델-운영-정리">Warm/Cold 최종 모델 운영 정리</a>
+<a class="toc-level-2" href="#1.-운영-결론">1. 운영 결론</a>
+<a class="toc-level-2" href="#2.-warm-최종-모델-운영-정리">2. Warm 최종 모델 운영 정리</a>
+<a class="toc-level-3" href="#2.1-모델-역할">2.1 모델 역할</a>
+<a class="toc-level-3" href="#2.2-운영-입력">2.2 운영 입력</a>
+<a class="toc-level-3" href="#2.3-실행-단계">2.3 실행 단계</a>
+<a class="toc-level-3" href="#2.4-사용-피처">2.4 사용 피처</a>
+<a class="toc-level-3" href="#2.5-운영-번들-구조">2.5 운영 번들 구조</a>
+<a class="toc-level-3" href="#2.6-warm-성능-기준">2.6 Warm 성능 기준</a>
+<a class="toc-level-3" href="#2.7-warm-운영-체크리스트">2.7 Warm 운영 체크리스트</a>
+<a class="toc-level-2" href="#3.-cold-최종-모델-운영-정리">3. Cold 최종 모델 운영 정리</a>
+<a class="toc-level-3" href="#3.1-모델-역할">3.1 모델 역할</a>
+<a class="toc-level-3" href="#3.2-운영-입력">3.2 운영 입력</a>
+<a class="toc-level-3" href="#3.3-실행-단계">3.3 실행 단계</a>
+<a class="toc-level-3" href="#3.4-사용-피처">3.4 사용 피처</a>
+<a class="toc-level-3" href="#3.5-cold-성능-기준">3.5 Cold 성능 기준</a>
+<a class="toc-level-3" href="#3.6-cold-운영-번들-구조">3.6 Cold 운영 번들 구조</a>
+<a class="toc-level-3" href="#3.7-cold-운영-체크리스트">3.7 Cold 운영 체크리스트</a>
+<a class="toc-level-2" href="#4.-warm과-cold-운영-차이">4. Warm과 Cold 운영 차이</a>
+<a class="toc-level-2" href="#5.-서비스-라우팅-권장안">5. 서비스 라우팅 권장안</a>
+<a class="toc-level-2" href="#6.-cold를-warm-수준으로-운영화하기-위한-작업">6. Cold를 Warm 수준으로 운영화하기 위한 작업</a>
+<a class="toc-level-3" href="#6.1-cold-운영-정책-확정">6.1 Cold 운영 정책 확정</a>
+<a class="toc-level-3" href="#6.2-cold-bundle-재동결">6.2 Cold bundle 재동결</a>
+<a class="toc-level-3" href="#6.3-cold-parity-검증">6.3 Cold parity 검증</a>
+<a class="toc-level-2" href="#7.-api-운영-방식-권장안">7. API 운영 방식 권장안</a>
+<a class="toc-level-3" href="#7.1-번들-로딩">7.1 번들 로딩</a>
+<a class="toc-level-3" href="#7.2-요청-처리">7.2 요청 처리</a>
+<a class="toc-level-3" href="#7.3-버전-관리">7.3 버전 관리</a>
+<a class="toc-level-2" href="#8.-운영-모니터링-항목">8. 운영 모니터링 항목</a>
+<a class="toc-level-2" href="#9.-최종-권장-작업-순서">9. 최종 권장 작업 순서</a>
+<a class="toc-level-2" href="#10.-현재-기준-한-줄-정리">10. 현재 기준 한 줄 정리</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/warm_cold_final_operational_model_readiness_20260622.md</code></div>
+      <h1 id="warm-cold-최종-모델-운영-정리">Warm/Cold 최종 모델 운영 정리</h1>
+<ul>
+<li>작성일: 2026-06-22</li>
+<li>목적: 현재 운영 후보인 Warm 모델과 Cold 모델을 실제 서비스에 올리기 위해 필요한 모델 방식, 입력 조건, 번들 구조, 검증 기준, 남은 작업을 같은 기준으로 정리한다.</li>
+<li>기준 버전 표기: official 0.1v</li>
+<li>Warm 기준 산출물: <code>models/track6/warm_lite_unified_current_joblib_v0.1_candidate</code></li>
+<li>Cold 기준안: <code>resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05</code></li>
+<li>Cold 상세 문서: <code>docs/track6/experiments/cold_official_v0_1_k80_operational_model_report.md</code></li>
+</ul>
+<h2 id="1.-운영-결론">1. 운영 결론</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">현재 판단</th>
+<th class="align-left">운영 상태</th>
+<th class="align-left">핵심 이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">운영 후보로 가장 앞서 있음</td>
+<td class="align-left">joblib-only 독립 번들 후보</td>
+<td class="align-left">DB, 외부 CSV lookup, fixed replay CSV 없이 <code>runtime_store.joblib</code> 하나와 predictor로 예측 가능</td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">k80 보수적 운영 기준안으로 확정</td>
+<td class="align-left">strict Cold 유사 이웃 잔차 라우터 기준</td>
+<td class="align-left">artist_key, 동일 작가 가격 이력, 검색 lookup 없이 validation 안정성이 가장 좋은 k80 후보를 기준으로 문서화</td>
+</tr>
+</tbody></table></div>
+<p>현재 Warm은 운영 배포 형식이 비교적 명확하다. 모델 객체, 작가 registry, alias, 같은 작가 학습 이력, feature 생성 규칙이 <code>runtime_store.joblib</code> 안에 들어 있고, 예측 코드는 이 파일만 읽도록 정리되어 있다.</p>
+<p>Cold는 기존 <code>cold_prediction_v0.5_operational</code> 대신 <code>k80 보수적 운영</code> 기준안을 운영 설명 기준으로 둔다. 이 기준안은 <code>artist_key</code>, 동일 작가 가격 이력, 검색 캐시, 외부 live 검색, artist_key 기반 lookup 후처리를 쓰지 않는 strict Cold 후보이며, 세부 로직과 수치는 <code>cold_official_v0_1_k80_operational_model_report.md</code>를 기준으로 한다. 아직 Warm처럼 독립 <code>runtime_store.joblib</code> 번들로 잠긴 상태는 아니므로, 실제 API 배포 전에는 bundle 생성과 parity 검증이 필요하다.</p>
+<h2 id="2.-warm-최종-모델-운영-정리">2. Warm 최종 모델 운영 정리</h2>
+<h3 id="2.1-모델-역할">2.1 모델 역할</h3>
+<p>Warm은 같은 작가의 과거 가격 이력을 사용할 수 있는 경우의 가격 예측 모델이다. 사용자가 입력한 작가명 또는 내부 artist_key를 frozen registry/alias 기준으로 확인하고, 같은 작가의 학습 이력이 존재할 때만 Warm 예측을 수행한다.</p>
+<p>현재 운영 후보는 기존의 복잡한 Warm/Warm-lite 분기를 단순화한 <code>Warm-lite unified current joblib-only</code> 모델이다. 이 모델은 같은 작가 가격 이력 통계와 작품 피처를 함께 사용해 기준가격을 만들고, LightGBM Huber residual 보정으로 최종 로그가격을 산출한다.</p>
+<h3 id="2.2-운영-입력">2.2 운영 입력</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">입력</th>
+<th class="align-left">필수 여부</th>
+<th class="align-left">사용 목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>artist_key</code> 또는 작가명</td>
+<td class="align-left">필수</td>
+<td class="align-left">같은 작가 학습 이력 조회 및 Warm 가능 여부 판단</td>
+</tr>
+<tr>
+<td class="align-left"><code>width_cm</code></td>
+<td class="align-left">필수</td>
+<td class="align-left">면적, 로그면적, 크기 구간 생성</td>
+</tr>
+<tr>
+<td class="align-left"><code>height_cm</code></td>
+<td class="align-left">필수</td>
+<td class="align-left">면적, 로그면적, 크기 구간 생성</td>
+</tr>
+<tr>
+<td class="align-left"><code>depth_cm</code></td>
+<td class="align-left">선택</td>
+<td class="align-left">입체 작품 여부 판단. 없으면 0으로 처리</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_category</code></td>
+<td class="align-left">필수</td>
+<td class="align-left">매체/재료 조건, 유사 이력 통계 매칭</td>
+</tr>
+<tr>
+<td class="align-left"><code>support_category</code></td>
+<td class="align-left">필수</td>
+<td class="align-left">지지체 조건, 유사 이력 통계 매칭</td>
+</tr>
+</tbody></table></div>
+<p>Warm 예측은 호당 가격으로 직접 계산하지 않는다. cm 단위 크기와 작품 조건, 같은 작가 가격 이력을 바탕으로 로그가격을 예측한 뒤 <code>exp()</code>로 원 가격을 산출한다.</p>
+<h3 id="2.3-실행-단계">2.3 실행 단계</h3>
+<pre><code>[사용자 입력]
+  - 작가명 또는 artist_key
+  - 가로/세로/깊이 cm
+  - 매체, 지지체
+        |
+        v
+[작가 확인]
+  - artist_key 직접 입력 확인
+  - alias 테이블 매칭
+  - registry 한글명/영문명 매칭
+  - 동명이인 또는 학습 이력 없음이면 Warm 차단
+        |
+        v
+[작품 피처 생성]
+  - area_cm2
+  - log_area
+  - aspect_ratio
+  - has_depth
+  - is_3d_candidate
+  - size_bucket, shape_bucket
+  - medium_support_bucket
+        |
+        v
+[같은 작가 가격 이력 통계 생성]
+  - 같은 작가 + 매체/지지체 + 크기 구간
+  - 없으면 같은 작가 + 크기 구간
+  - 없으면 같은 작가 전체
+  - median, q25, q75, IQR, 면적단가 통계, 표본 수 생성
+        |
+        v
+[LightGBM Quantile 기준가격 계산]
+  - full 피처 q10/q50/q90 예측
+  - lean 피처 q50 예측
+  - full q50과 lean q50 평균을 기준 로그가격으로 사용
+        |
+        v
+[LightGBM Huber residual 보정]
+  - 기준 로그가격에서 남은 오차를 예측
+  - 0.50 * residual을 -0.10~+0.10 log 범위로 제한
+        |
+        v
+[seed 평균]
+  - 3개 seed 모델 결과 평균
+        |
+        v
+[최종 Warm 가격]
+  - 최종 로그가격 = 기준 로그가격 + 제한된 residual 보정
+  - 최종 가격 = exp(최종 로그가격)</code></pre>
+<h3 id="2.4-사용-피처">2.4 사용 피처</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처 그룹</th>
+<th class="align-left">예시</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작품 크기</td>
+<td class="align-left"><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code></td>
+<td class="align-left">작품 물리 크기와 형태</td>
+</tr>
+<tr>
+<td class="align-left">작품 조건</td>
+<td class="align-left"><code>medium_category</code>, <code>support_category</code>, <code>has_depth</code>, <code>is_3d_candidate</code></td>
+<td class="align-left">매체, 지지체, 입체 여부</td>
+</tr>
+<tr>
+<td class="align-left">버킷</td>
+<td class="align-left"><code>size_bucket</code>, <code>shape_bucket</code>, <code>medium_support_bucket</code></td>
+<td class="align-left">학습 당시 고정한 구간화 기준</td>
+</tr>
+<tr>
+<td class="align-left">같은 작가 가격 통계</td>
+<td class="align-left"><code>grp_log_price_median</code>, <code>grp_log_price_q25</code>, <code>grp_log_price_q75</code>, <code>grp_log_price_iqr</code></td>
+<td class="align-left">같은 작가 과거 가격 분포</td>
+</tr>
+<tr>
+<td class="align-left">같은 작가 면적단가 통계</td>
+<td class="align-left"><code>grp_unit_area_median</code>, <code>grp_unit_area_iqr</code></td>
+<td class="align-left">크기를 감안한 같은 작가 가격 수준</td>
+</tr>
+<tr>
+<td class="align-left">통계 신뢰 보조</td>
+<td class="align-left"><code>grp_n_log</code>, <code>grp_match_level</code></td>
+<td class="align-left">참고한 이력 수와 비교군 매칭 단계</td>
+</tr>
+<tr>
+<td class="align-left">Quantile 출력</td>
+<td class="align-left"><code>lgbq_full_q10</code>, <code>lgbq_full_q50</code>, <code>lgbq_full_q90</code>, <code>lgbq_lean_q50</code></td>
+<td class="align-left">모델이 예측한 가격 분포와 기준가격</td>
+</tr>
+<tr>
+<td class="align-left">residual 출력</td>
+<td class="align-left"><code>lgb_huber_residual_log</code>, <code>current_residual_correction_log</code></td>
+<td class="align-left">기준가격 위에 더하는 제한된 보정값</td>
+</tr>
+</tbody></table></div>
+<h3 id="2.5-운영-번들-구조">2.5 운영 번들 구조</h3>
+<pre><code>models/track6/warm_lite_unified_current_joblib_v0.1_candidate/
+  artifacts/
+    runtime_store.joblib
+  config/
+    warm_lite_unified_current_joblib_policy_v0_1.json
+  predict/
+    predict_warm_lite_unified_current_joblib_v0_1.py
+  test_data/
+    track6_test_warm.csv
+  test_outputs/
+    fixed_test/
+      summary.json
+      joblib_predictions.csv
+      joblib_predictions_with_diagnostics.csv
+  manifest.json
+  README.md</code></pre>
+<p><code>runtime_store.joblib</code> 안에는 아래 내용이 함께 들어 있다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">내용</th>
+<th class="align-right">현재 수량 또는 상태</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가 registry</td>
+<td class="align-right">1,773 rows</td>
+</tr>
+<tr>
+<td class="align-left">작가 alias</td>
+<td class="align-right">3,600 rows</td>
+</tr>
+<tr>
+<td class="align-left">같은 작가 학습 이력</td>
+<td class="align-right">26,914 rows</td>
+</tr>
+<tr>
+<td class="align-left">학습 이력 작가 수</td>
+<td class="align-right">1,773 artists</td>
+</tr>
+<tr>
+<td class="align-left">seed 수</td>
+<td class="align-right">3</td>
+</tr>
+<tr>
+<td class="align-left">feature 생성 규칙 내장</td>
+<td class="align-right">true</td>
+</tr>
+</tbody></table></div>
+<h3 id="2.6-warm-성능-기준">2.6 Warm 성능 기준</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">평가셋</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+<th class="align-left">비고</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm fixed test</td>
+<td class="align-right">607</td>
+<td class="align-right">0.086970</td>
+<td class="align-right">0.223682</td>
+<td class="align-right">0.820366</td>
+<td class="align-right">0.382823</td>
+<td class="align-left">joblib-only 번들 실행 결과</td>
+</tr>
+</tbody></table></div>
+<p>이 607건은 전체 운영 입력이 아니라, 같은 작가 학습 이력을 사용할 수 있는 Warm 평가셋이다. 따라서 Cold와 직접 난이도 비교를 하면 안 되고, Warm 경로 안에서의 운영 성능 기준으로 사용한다.</p>
+<h3 id="2.7-warm-운영-체크리스트">2.7 Warm 운영 체크리스트</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">상태</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">DB 없이 실행</td>
+<td class="align-left">완료</td>
+<td class="align-left">SQLite DB를 읽지 않음</td>
+</tr>
+<tr>
+<td class="align-left">외부 CSV lookup 없이 실행</td>
+<td class="align-left">완료</td>
+<td class="align-left">CSV history/lookup 파일을 읽지 않음</td>
+</tr>
+<tr>
+<td class="align-left">fixed replay CSV 없이 실행</td>
+<td class="align-left">완료</td>
+<td class="align-left"><code>fixed_replay_feature_store.csv</code> 미사용</td>
+</tr>
+<tr>
+<td class="align-left">feature 생성 규칙 번들 내장</td>
+<td class="align-left">완료</td>
+<td class="align-left">size/shape bucket 기준을 <code>runtime_store.joblib</code>에 포함</td>
+</tr>
+<tr>
+<td class="align-left">작가명 alias/동명이인 처리</td>
+<td class="align-left">완료</td>
+<td class="align-left">predictor 안에서 작가 매칭 및 검수 필요 상태 반환</td>
+</tr>
+<tr>
+<td class="align-left">학습 이력 row id 중복 점검</td>
+<td class="align-left">완료</td>
+<td class="align-left">최신 joblib store 기준 중복 없음</td>
+</tr>
+<tr>
+<td class="align-left">API 연결</td>
+<td class="align-left">필요</td>
+<td class="align-left">현재 predictor를 서비스 API adapter로 연결하고 parity 검증 필요</td>
+</tr>
+<tr>
+<td class="align-left">모니터링</td>
+<td class="align-left">필요</td>
+<td class="align-left">예측 가격, qwidth, residual 보정량, 작가 매칭 상태 저장 필요</td>
+</tr>
+</tbody></table></div>
+<h2 id="3.-cold-최종-모델-운영-정리">3. Cold 최종 모델 운영 정리</h2>
+<h3 id="3.1-모델-역할">3.1 모델 역할</h3>
+<p>Cold는 같은 작가 가격 이력을 직접 사용할 수 없는 경우의 가격 예측 모델이다. Warm과 달리 특정 작가의 과거 가격을 기준가로 삼지 않는다. 대신 작품 크기, 매체, 지지체, 비작가 그룹 가격 통계, Quantile 예측 구간을 이용해 가격을 추정한다.</p>
+<p>현재 Cold 운영 설명 기준은 <code>k80 보수적 운영</code> 후보이다. 이 모델은 base Cold 예측 위에 유사 작가 메타 이웃 80건의 out-of-fold 잔차 중앙값을 이용한 보정 후보를 만들고, 하향 보정 신호가 충분할 때만 보정 후보를 선택한다. 검색 피처 없이 실행 가능했던 v0.5는 이전 후보로 보관하고, 현재 운영 설명과 후속 번들화 기준은 k80 기준안으로 둔다.</p>
+<h3 id="3.2-운영-입력">3.2 운영 입력</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">입력</th>
+<th class="align-left">필수 여부</th>
+<th class="align-left">사용 목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>width_cm</code></td>
+<td class="align-left">필수</td>
+<td class="align-left">면적, 로그면적, 크기 구간 생성</td>
+</tr>
+<tr>
+<td class="align-left"><code>height_cm</code></td>
+<td class="align-left">필수</td>
+<td class="align-left">면적, 로그면적, 크기 구간 생성</td>
+</tr>
+<tr>
+<td class="align-left"><code>depth_cm</code></td>
+<td class="align-left">선택</td>
+<td class="align-left">입체 작품 여부 판단</td>
+</tr>
+<tr>
+<td class="align-left"><code>area_cm2</code></td>
+<td class="align-left">선택</td>
+<td class="align-left">없으면 <code>width_cm * height_cm</code>로 계산</td>
+</tr>
+<tr>
+<td class="align-left"><code>log_area</code></td>
+<td class="align-left">선택</td>
+<td class="align-left">없으면 면적에서 계산</td>
+</tr>
+<tr>
+<td class="align-left"><code>aspect_ratio</code></td>
+<td class="align-left">선택</td>
+<td class="align-left">없으면 가로/세로에서 계산</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_category</code></td>
+<td class="align-left">필수</td>
+<td class="align-left">매체별 가격 차이 반영</td>
+</tr>
+<tr>
+<td class="align-left"><code>support_category</code></td>
+<td class="align-left">필수</td>
+<td class="align-left">지지체별 가격 차이 반영</td>
+</tr>
+<tr>
+<td class="align-left"><code>size_bucket</code></td>
+<td class="align-left">실행 방식에 따라 선택</td>
+<td class="align-left">운영 predictor가 직접 생성하거나 입력에서 받음</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_support_bucket</code></td>
+<td class="align-left">실행 방식에 따라 선택</td>
+<td class="align-left">운영 predictor가 직접 생성하거나 입력에서 받음</td>
+</tr>
+</tbody></table></div>
+<p>Cold 운영 원칙은 <code>예측 대상 작가의 artist_key 매칭을 필요로 하지 않는 것</code>이다. Cold는 원래 같은 작가 가격 이력을 확정해서 쓸 수 없을 때 사용하는 경로이므로, 운영 입력에서 artist_key가 매칭되어야만 가격이 나오는 구조라면 Cold 로직으로 성립하지 않는다.</p>
+<p>따라서 Cold 가격 산식에서는 <code>입력 작가의 artist_key로 같은 작가 가격 이력을 lookup</code>하면 안 된다. k80 보수적 운영 기준안의 유사 이웃과 보정 라우터도 입력 작가의 artist_key가 아니라 작가 메타/작품 조건/보정 신호를 기준으로 동작한다. 즉 학습 데이터 안에 artist_key가 존재하더라도, 그것은 train/test 분리와 데이터 관리용 식별자일 뿐이며, Cold 사용 단계에서 입력 작가를 특정 artist_key로 매칭해 가격 이력을 가져오는 용도가 아니다.</p>
+<p>작가 메타를 쓰는 별도 Cold 모델을 만들 경우에도 기준은 같다. 사용자가 입력 가능하거나 운영 DB에서 검수된 작가 정보는 사용할 수 있지만, 그 정보가 hidden artist_key 가격 이력 lookup으로 이어지면 안 된다. 예를 들어 사용자가 입력한 출생연도, 국적, 학력, 소속 갤러리, 활동 지역 같은 메타로 유사 그룹을 만들거나 모델 피처로 쓰는 것은 가능하다. 반면 입력 작가명을 내부 artist_key에 매칭한 뒤 그 artist_key의 과거 가격 통계를 가져오는 것은 Warm 방식이므로 Cold에서는 금지한다.</p>
+<h3 id="3.3-실행-단계">3.3 실행 단계</h3>
+<pre><code>[Cold 입력 작품]
+  - 가로/세로/깊이 cm
+  - 매체, 지지체
+  - 같은 작가 가격 이력은 사용하지 않음
+        |
+        v
+[Cold 기본 피처 생성]
+  - area_cm2
+  - log_area
+  - aspect_ratio
+  - has_depth
+  - is_3d_candidate
+  - size_bucket
+  - support_size_bucket
+  - medium_support_bucket
+        |
+        v
+[LightGBM Quantile 예측]
+  - q10 로그가격
+  - q40 로그가격
+  - q50 로그가격
+  - q90 로그가격
+  - 5개 seed 평균
+        |
+        v
+[비작가 그룹 통계 생성]
+  - 입력 작가의 artist_key 매칭 없이 계산
+  - 매체/지지체/크기 조건별 과거 가격 통계
+  - 조건이 희소하면 더 넓은 그룹으로 fallback
+  - 입력 작가의 artist_key별 가격 이력 lookup은 사용하지 않음
+        |
+        v
+[Huber 그룹통계 예측]
+  - 작품 피처 + 비작가 그룹 통계
+  - 6개 Huber 구성 평균
+        |
+        v
+[대표 Cold 로그가격]
+  - 0.70 * LightGBM q50
+  - 0.30 * Huber 그룹통계 예측
+        |
+        v
+[p95 방어 조건 판단]
+  - q90 - q10이 임계값 이상인지 확인
+  - 대표 로그가격이 q40보다 충분히 높은지 확인
+        |
+        v
+[방어 Cold 로그가격]
+  - 조건 미충족: 대표 로그가격 유지
+  - 조건 충족: 0.50 * 대표 로그가격 + 0.50 * q40 로그가격
+        |
+        v
+[최종 Cold 가격]
+  - 최종 가격 = exp(방어 Cold 로그가격)</code></pre>
+<h3 id="3.4-사용-피처">3.4 사용 피처</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처 그룹</th>
+<th class="align-left">예시</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작품 크기</td>
+<td class="align-left"><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code></td>
+<td class="align-left">물리 크기와 형태</td>
+</tr>
+<tr>
+<td class="align-left">작품 조건</td>
+<td class="align-left"><code>medium_category</code>, <code>support_category</code>, <code>has_depth</code>, <code>is_3d_candidate</code></td>
+<td class="align-left">매체, 지지체, 입체 여부</td>
+</tr>
+<tr>
+<td class="align-left">버킷</td>
+<td class="align-left"><code>size_bucket</code>, <code>support_size_bucket</code>, <code>medium_support_bucket</code></td>
+<td class="align-left">비작가 그룹 통계와 Quantile 모델 입력</td>
+</tr>
+<tr>
+<td class="align-left">비작가 그룹 통계</td>
+<td class="align-left"><code>grp_log_price_median</code>, <code>grp_log_price_q25</code>, <code>grp_log_price_q75</code>, <code>grp_log_price_iqr</code></td>
+<td class="align-left">같은 작가가 아니라 같은 조건 그룹의 가격 분포</td>
+</tr>
+<tr>
+<td class="align-left">비작가 면적단가 통계</td>
+<td class="align-left"><code>grp_unit_area_median</code>, <code>grp_unit_area_iqr</code></td>
+<td class="align-left">크기를 감안한 조건별 가격 수준</td>
+</tr>
+<tr>
+<td class="align-left">통계 보조</td>
+<td class="align-left"><code>grp_n_log</code>, <code>grp_match_level</code>, <code>grp_price_proxy</code></td>
+<td class="align-left">그룹 표본 수, fallback 단계, 면적 기반 가격 proxy</td>
+</tr>
+<tr>
+<td class="align-left">Quantile 출력</td>
+<td class="align-left"><code>q10_pred_log</code>, <code>q40_pred_log</code>, <code>q50_pred_log</code>, <code>q90_pred_log</code></td>
+<td class="align-left">낮은/보수/중앙/높은 로그가격</td>
+</tr>
+<tr>
+<td class="align-left">방어 판단</td>
+<td class="align-left"><code>qwidth_log</code>, <code>representative_pred_log - q40_pred_log</code></td>
+<td class="align-left">큰 오차 위험이 높은지 판단</td>
+</tr>
+</tbody></table></div>
+<h3 id="3.5-cold-성능-기준">3.5 Cold 성능 기준</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-left">평가셋</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">APE &gt; 5</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">base Cold similarity</td>
+<td class="align-left">validation</td>
+<td class="align-right">2,575</td>
+<td class="align-right">0.424537</td>
+<td class="align-right">0.606746</td>
+<td class="align-right">1.808312</td>
+<td class="align-right">10</td>
+<td class="align-left">보정 전 기준</td>
+</tr>
+<tr>
+<td class="align-left">k80 보수적 운영</td>
+<td class="align-left">validation</td>
+<td class="align-right">2,575</td>
+<td class="align-right">0.404411</td>
+<td class="align-right">0.565875</td>
+<td class="align-right">1.638585</td>
+<td class="align-right">8</td>
+<td class="align-left">운영 설명 기준안</td>
+</tr>
+<tr>
+<td class="align-left">base Cold similarity</td>
+<td class="align-left">test</td>
+<td class="align-right">3,000</td>
+<td class="align-right">0.481850</td>
+<td class="align-right">0.746296</td>
+<td class="align-right">2.398009</td>
+<td class="align-right">35</td>
+<td class="align-left">보정 전 기준</td>
+</tr>
+<tr>
+<td class="align-left">k80 보수적 운영</td>
+<td class="align-left">test</td>
+<td class="align-right">3,000</td>
+<td class="align-right">0.479052</td>
+<td class="align-right">0.720187</td>
+<td class="align-right">2.231840</td>
+<td class="align-right">33</td>
+<td class="align-left">운영 설명 기준안</td>
+</tr>
+</tbody></table></div>
+<p>k80 보수적 운영 후보는 validation에서 base 대비 MdAPE, MAPE, p95 APE, APE &gt; 5가 모두 개선됐고, test에서도 MAPE와 p95 APE 및 APE &gt; 5가 개선됐다. test 단일 수치만 보면 k40 후보가 더 좋지만, validation 선택 안정성을 기준으로 운영 설명 기준안은 k80으로 둔다.</p>
+<h3 id="3.6-cold-운영-번들-구조">3.6 Cold 운영 번들 구조</h3>
+<pre><code>models/track6/cold_k80_conservative_official_v0.1_candidate/
+  artifacts/
+    runtime_store.joblib
+      - base Cold 모델
+      - train reference pool
+      - OOF residual 배열
+      - 유사도 전처리기
+      - feature schema
+      - 라우터 정책
+  config/
+    cold_k80_conservative_policy_v0_1.json
+  predict/
+    predict_cold_k80_conservative_v0_1.py
+  test_outputs/
+    fixed_test/
+      summary.json
+      predictions.csv</code></pre>
+<p>현재 k80 기준안은 실험 산출물로 검증된 운영 기준안이며, 아직 Warm처럼 단일 <code>runtime_store.joblib</code> 방식으로 묶인 배포 번들은 아니다. 실제 운영 배포 전에는 위 구조로 재동결해야 한다.</p>
+<h3 id="3.7-cold-운영-체크리스트">3.7 Cold 운영 체크리스트</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">현재 상태</th>
+<th class="align-left">운영 전 권장 조치</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">검색 피처 없이 실행</td>
+<td class="align-left">검증됨</td>
+<td class="align-left">k80 기준안은 검색 피처와 외부 live 검색 미사용</td>
+</tr>
+<tr>
+<td class="align-left">DB 없이 실행</td>
+<td class="align-left">부분 확인 필요</td>
+<td class="align-left">predictor가 모델/config 외부 경로를 읽지 않는지 parity 검증 필요</td>
+</tr>
+<tr>
+<td class="align-left">artist_key 가격 이력 미사용</td>
+<td class="align-left">검증됨</td>
+<td class="align-left">CSIM26 run summary 기준 <code>uses_artist_key_lookup_postprocess=0</code></td>
+</tr>
+<tr>
+<td class="align-left">feature 생성 규칙 내장</td>
+<td class="align-left">부분</td>
+<td class="align-left">size bucket 생성 기준을 config/store에 명시적으로 동결</td>
+</tr>
+<tr>
+<td class="align-left">단일 번들</td>
+<td class="align-left">미완료</td>
+<td class="align-left">Warm처럼 <code>runtime_store.joblib</code>로 재동결</td>
+</tr>
+<tr>
+<td class="align-left">API adapter</td>
+<td class="align-left">필요</td>
+<td class="align-left">Cold input schema, output schema, error handling 확정</td>
+</tr>
+<tr>
+<td class="align-left">성능 parity</td>
+<td class="align-left">필요</td>
+<td class="align-left">freeze 전후 3,099 fixed test 예측 diff 0 검증</td>
+</tr>
+<tr>
+<td class="align-left">모니터링</td>
+<td class="align-left">필요</td>
+<td class="align-left">qwidth, guard 적용 여부, group match level, 가격 범위 저장</td>
+</tr>
+</tbody></table></div>
+<h2 id="4.-warm과-cold-운영-차이">4. Warm과 Cold 운영 차이</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">Warm</th>
+<th class="align-left">Cold</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">사용 조건</td>
+<td class="align-left">같은 작가 가격 이력이 있음</td>
+<td class="align-left">같은 작가 가격 이력을 직접 쓰기 어려움</td>
+</tr>
+<tr>
+<td class="align-left">작가키 사용</td>
+<td class="align-left">내부 artist_key를 확정해 같은 작가 이력 조회</td>
+<td class="align-left">가격 산식에서 artist_key별 가격 이력 lookup 금지</td>
+</tr>
+<tr>
+<td class="align-left">기준가격</td>
+<td class="align-left">같은 작가 가격 통계 + 작품 피처</td>
+<td class="align-left">작품 피처 + 비작가 그룹 통계 + Quantile</td>
+</tr>
+<tr>
+<td class="align-left">보정</td>
+<td class="align-left">LightGBM Huber residual 보정</td>
+<td class="align-left">q40 방어 guard</td>
+</tr>
+<tr>
+<td class="align-left">출력</td>
+<td class="align-left">단일 가격 + q10/q50/q90 진단값</td>
+<td class="align-left">단일 가격 + 가격 범위 + 방어 적용 여부</td>
+</tr>
+<tr>
+<td class="align-left">현재 운영화 수준</td>
+<td class="align-left">높음</td>
+<td class="align-left">모델 후보는 있으나 운영 계약 보강 필요</td>
+</tr>
+</tbody></table></div>
+<h2 id="5.-서비스-라우팅-권장안">5. 서비스 라우팅 권장안</h2>
+<pre><code>[사용자 입력]
+        |
+        v
+[작가 매칭]
+  - artist_key 직접 확인 또는 작가명 alias/registry 매칭
+  - 동명이인/저신뢰 매칭이면 Warm 자동 사용 금지
+        |
+        v
+[Warm 가능 여부]
+  - 내부 artist_key 확정
+  - 같은 작가 학습 이력 존재
+  - 동명이인 검수 필요 없음
+        |
+        +--------------------------+
+        |                          |
+        v                          v
+[Warm 예측]                  [Cold 예측]
+  - 같은 작가 이력 사용        - 같은 작가 이력 미사용
+  - joblib runtime store       - 작품 조건/비작가 그룹 통계
+        |                          |
+        +------------+-------------+
+                     |
+                     v
+[결과 반환]
+  - 예측 가격
+  - 가격 범위 또는 진단값
+  - 모델 경로
+  - 작가 매칭 상태
+  - 검수 필요 여부</code></pre>
+<p>운영에서 가장 중요한 기준은 <code>모르는 작가를 Warm으로 보내지 않는 것</code>이다. 작가명이 매칭되지 않거나 동명이인 위험이 있거나 같은 작가 학습 이력이 없으면 Cold로 보내야 한다. 반대로 Warm에 들어온 경우에는 모델이 같은 작가 가격 이력을 직접 쓰므로, 작가 매칭 품질이 가격 품질의 핵심 전제다.</p>
+<h2 id="6.-cold를-warm-수준으로-운영화하기-위한-작업">6. Cold를 Warm 수준으로 운영화하기 위한 작업</h2>
+<p>Cold는 다음 순서로 정리하는 것이 좋다.</p>
+<h3 id="6.1-cold-운영-정책-확정">6.1 Cold 운영 정책 확정</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">결정 항목</th>
+<th class="align-left">권장안</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기본 Cold 후보</td>
+<td class="align-left">k80 보수적 운영</td>
+</tr>
+<tr>
+<td class="align-left">검색 피처 포함 연구 기준</td>
+<td class="align-left">운영 기본에서는 제외. <code>artist_key</code> 기반 search delta lookup을 포함하는 기존 연구 수치는 strict Cold 운영 기준에서는 그대로 사용 금지</td>
+</tr>
+<tr>
+<td class="align-left">artist_key 사용</td>
+<td class="align-left">운영 입력 작가의 artist_key 매칭을 요구하지 않음. 가격 이력 lookup에는 사용 금지</td>
+</tr>
+<tr>
+<td class="align-left">작가 메타 사용</td>
+<td class="align-left">사용자가 입력 가능하거나 운영 DB에서 검수된 메타만 사용</td>
+</tr>
+<tr>
+<td class="align-left">결과 표시</td>
+<td class="align-left">가격 단일값 + 가격 범위 + 낮은 신뢰도/검수 필요 표시</td>
+</tr>
+</tbody></table></div>
+<h3 id="6.2-cold-bundle-재동결">6.2 Cold bundle 재동결</h3>
+<p>Warm과 같은 방향으로 아래를 하나의 bundle contract로 고정한다.</p>
+<pre><code>cold_operational_joblib_v0.1_candidate/
+  artifacts/
+    runtime_store.joblib
+  config/
+    cold_operational_policy_v0_1.json
+  predict/
+    predict_cold_operational_joblib_v0_1.py
+  test_data/
+    track6_test_cold.csv
+  test_outputs/
+    fixed_test/
+      summary.json
+      predictions.csv
+      predictions_with_diagnostics.csv
+  manifest.json
+  README.md</code></pre>
+<p><code>runtime_store.joblib</code>에는 LightGBM Quantile 모델, Huber 모델, 비작가 그룹통계 ladder, global fallback, feature 생성 규칙, guard 기준을 모두 포함한다.</p>
+<h3 id="6.3-cold-parity-검증">6.3 Cold parity 검증</h3>
+<p>Cold 운영 번들을 만들면 아래를 반드시 검증한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">검증</th>
+<th class="align-left">통과 기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">CSIM26 실험 산출값 vs 신규 joblib store predictor</td>
+<td class="align-left">validation/test 예측 로그가격 diff 0 또는 부동소수 허용오차 이내</td>
+</tr>
+<tr>
+<td class="align-left">DB/CSV 차단</td>
+<td class="align-left">실행 로그와 코드상 외부 DB/CSV lookup 없음</td>
+</tr>
+<tr>
+<td class="align-left">artist_key 차단</td>
+<td class="align-left">입력에 artist_key가 있어도 예측 대상 작가의 가격 이력 lookup에 사용하지 않음</td>
+</tr>
+<tr>
+<td class="align-left">성능 재현</td>
+<td class="align-left">MdAPE 0.482170, MAPE 1.179011, p95 APE 3.649028 재현</td>
+</tr>
+<tr>
+<td class="align-left">output schema</td>
+<td class="align-left">가격, 가격 범위, qwidth, guard 적용 여부, group match level 포함</td>
+</tr>
+</tbody></table></div>
+<h2 id="7.-api-운영-방식-권장안">7. API 운영 방식 권장안</h2>
+<h3 id="7.1-번들-로딩">7.1 번들 로딩</h3>
+<p>서비스 시작 시점에 Warm bundle과 Cold bundle을 각각 한 번 로드한다.</p>
+<pre><code>API startup
+  -&gt; Warm runtime_store.joblib load
+  -&gt; Cold runtime_store.joblib load
+  -&gt; model_version registry 생성</code></pre>
+<p>요청마다 joblib 파일을 다시 읽지 않는다. 모델 객체는 메모리에 올려두고, API 요청은 입력 검증, route 판단, predictor 호출만 수행한다.</p>
+<h3 id="7.2-요청-처리">7.2 요청 처리</h3>
+<pre><code>POST /price-predictions
+        |
+        v
+[입력 검증]
+  - cm 크기
+  - 매체/지지체
+  - 작가명 또는 artist_key
+        |
+        v
+[route 결정]
+  - Warm 가능하면 Warm
+  - 아니면 Cold
+        |
+        v
+[모델 호출]
+  - Warm predictor 또는 Cold predictor
+        |
+        v
+[응답]
+  - predicted_price_krw
+  - model_route
+  - model_version
+  - confidence/review flags
+  - diagnostics</code></pre>
+<h3 id="7.3-버전-관리">7.3 버전 관리</h3>
+<p>운영 모델은 아래처럼 버전형 artifact로 관리한다.</p>
+<pre><code>model_registry/
+  official_0.1v/
+    warm/
+      artifact_id
+      created_at
+      sha256 manifest
+      fixed_test_metrics
+    cold/
+      artifact_id
+      created_at
+      sha256 manifest
+      fixed_test_metrics</code></pre>
+<p>새 학습 데이터가 쌓이면 기존 모델을 덮어쓰지 않고 새 버전으로 학습한다. 신규 버전은 fixed test, hold-out, parity 검증, shadow run을 통과한 뒤 운영 포인터만 바꾼다.</p>
+<h2 id="8.-운영-모니터링-항목">8. 운영 모니터링 항목</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">경로</th>
+<th class="align-left">저장할 항목</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">artist match basis, match score, homonym risk, artist_history_n</td>
+<td class="align-left">작가 매칭 오류와 학습 이력 품질 감시</td>
+</tr>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">q10/q50/q90, qwidth, residual 보정량</td>
+<td class="align-left">예측 불확실성 및 보정 과다 감시</td>
+</tr>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">group match level, grp_n_log</td>
+<td class="align-left">같은 작가 비교군 품질 감시</td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">q10/q40/q50/q90, qwidth</td>
+<td class="align-left">Cold 예측 범위와 불확실성 감시</td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">guard 적용 여부</td>
+<td class="align-left">p95 방어가 어느 구간에서 발동되는지 확인</td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">group match level, grp_n_log</td>
+<td class="align-left">비작가 그룹 통계 fallback 품질 감시</td>
+</tr>
+<tr>
+<td class="align-left">공통</td>
+<td class="align-left">predicted_price_krw, actual_price_krw 후속 입력</td>
+<td class="align-left">재학습 후보 데이터 구축</td>
+</tr>
+<tr>
+<td class="align-left">공통</td>
+<td class="align-left">model version, artifact sha</td>
+<td class="align-left">결과 재현성 확보</td>
+</tr>
+</tbody></table></div>
+<h2 id="9.-최종-권장-작업-순서">9. 최종 권장 작업 순서</h2>
+<p>1. Warm joblib bundle을 official 0.1v Warm 운영 후보로 고정한다. 2. Warm predictor를 API adapter에 연결하고 fixed test parity를 다시 확인한다. 3. Cold k80 보수적 운영 기준안으로 <code>Cold 운영 정책</code>을 확정한다. 4. Cold를 Warm과 같은 방식의 독립 bundle로 재동결한다. 5. Cold validation/test parity와 외부 DB/CSV 미사용 검증을 수행한다. 6. Warm/Cold 통합 route 테스트를 만든다. 7. 운영 응답 schema와 모니터링 로그 schema를 확정한다. 8. 신규 학습 데이터가 쌓이면 재학습은 새 버전 artifact로 만들고, 기존 official 0.1v는 덮어쓰지 않는다.</p>
+<h2 id="10.-현재-기준-한-줄-정리">10. 현재 기준 한 줄 정리</h2>
+<p>Warm은 <code>운영 가능한 joblib-only 후보</code>까지 정리되어 있다. Cold는 <code>k80 보수적 운영</code> 기준안으로 설명 기준을 갱신했으며, 실제 운영 모델로 확정하려면 Warm처럼 단일 번들 계약, artist_key 미사용 보장, API parity 검증, 모니터링 schema를 추가로 고정해야 한다.</p>
+    </main>
+  </div>
+</body>
+</html>

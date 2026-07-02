@@ -1,0 +1,40 @@
+# PP-ROUTE-CF11 official v0.1 default unified route_gap_q50 API parity
+
+```json
+{
+  "experiment_id": "PP-ROUTE-CF11",
+  "check": "official_v0_1_default_unified_route_gap_q50_http_api_parity",
+  "base_url": "http://127.0.0.1:8031",
+  "server_policy": "default unified or PRICE_PREDICTION_OFFICIAL_V01_WARM_ROUTE_POLICY=warm_lite_unified_route_gap_q50",
+  "actual_env": null,
+  "split": "both",
+  "n_cases": 1126,
+  "max_abs_api_direct_log_diff": 0.0,
+  "max_abs_direct_cf9_log_diff": 5.329070518200751e-15,
+  "n_route_mismatch": 0,
+  "n_adapter_mismatch": 0,
+  "n_unified_output_missing": 0,
+  "n_cf9_route_mismatch": 0,
+  "passed": true,
+  "by_split": [
+    {
+      "split": "test",
+      "n": 607,
+      "max_abs_api_direct_log_diff": 0.0,
+      "max_abs_direct_cf9_log_diff": 3.552713678800501e-15,
+      "n_route_mismatch": 0,
+      "n_adapter_mismatch": 0,
+      "n_cf9_route_mismatch": 0
+    },
+    {
+      "split": "validation",
+      "n": 519,
+      "max_abs_api_direct_log_diff": 0.0,
+      "max_abs_direct_cf9_log_diff": 5.329070518200751e-15,
+      "n_route_mismatch": 0,
+      "n_adapter_mismatch": 0,
+      "n_cf9_route_mismatch": 0
+    }
+  ]
+}
+```

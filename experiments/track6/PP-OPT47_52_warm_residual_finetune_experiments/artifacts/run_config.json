@@ -1,0 +1,83 @@
+{
+  "experiment_id": "PP-OPT47-52",
+  "experiment_slug": "PP-OPT47_52_warm_residual_finetune_experiments",
+  "created_at": "2026-06-09T12:21:09",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 3836,
+  "prediction_rows": 4319336,
+  "items": [
+    {
+      "item_id": "PP-OPT47",
+      "priority": "1",
+      "title": "PP45 very-high fallback 세밀화",
+      "description": "PP45의 초고가 fallback 강도와 적용 마스크를 더 촘촘히 탐색한다."
+    },
+    {
+      "item_id": "PP-OPT48",
+      "priority": "2",
+      "title": "p95-safe segment median micro 보정",
+      "description": "구간 중앙 잔차 보정을 더 작은 cap과 강한 shrinkage로 제한한다."
+    },
+    {
+      "item_id": "PP-OPT49",
+      "priority": "3",
+      "title": "quantile consensus micro 보정",
+      "description": "q25/q50/q75가 같은 방향을 가리킬 때만 작은 잔차 보정을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT50",
+      "priority": "4",
+      "title": "low-risk q50 residual 보정",
+      "description": "공격적인 q50 잔차 보정을 신뢰도 높은 row에만 축소 적용한다."
+    },
+    {
+      "item_id": "PP-OPT51",
+      "priority": "5",
+      "title": "PP45와 보정 후보의 p95-aware micro blend",
+      "description": "PP45를 중심으로 PP43/PP44/PP46 후보를 5~30% 범위에서만 혼합한다."
+    },
+    {
+      "item_id": "PP-OPT52",
+      "priority": "6",
+      "title": "최종 fine-tune challenger 선택",
+      "description": "PP45 대비 MAPE 개선과 p95 방어를 함께 만족하는 후보를 선택한다."
+    }
+  ],
+  "selected_references": {
+    "pp20": "previous_challenger_pp20",
+    "pp23": "reference_pp23",
+    "pp30": "reference_pp30_best",
+    "pp36": "reference_pp36_challenger",
+    "pp38": "reference_pp38_best",
+    "pp41": "reference_pp41_challenger",
+    "pp45": "ppopt45_high_price_fallback__base=pp23__fallback=pp30__mode=all_very_high__s=0p8",
+    "pp43_score": "ppopt43_segment_median__center=pp23__group=price_conf__shrink=55p0__s=0p35__cap=0p008",
+    "pp44_safe": "ppopt44_quantile_residual__center=pp38_score__src=q50_width__s=0p25__cap=0p02",
+    "pp46_safe": "ppopt46_monotonic_cap__center=pp38_score__src=segment__s=0p25__cap=0p012"
+  },
+  "selection_decision": {
+    "selected_source_candidate": "ppopt49_quantile_consensus_micro__center=pp45__wlim=0p22__guard=medium__s=0p42__cap=0p01",
+    "selected_source_item_id": "PP-OPT49",
+    "selected_source_family": "quantile_consensus_micro",
+    "selection_reason": "prefer PP45 MAPE improvement with p95 not worse than PP7 and small p95 give-back versus PP45",
+    "test_MdAPE": 0.13787846966744394,
+    "test_MAPE": 0.2705982707897427,
+    "test_p95_APE": 0.8076599439149326,
+    "test_delta_vs_incumbent_MdAPE": 0.000985903768827734,
+    "test_delta_vs_incumbent_MAPE": -0.00079661722232377,
+    "test_delta_vs_incumbent_p95_APE": -0.00047003879853613206,
+    "recommendation_score_vs_incumbent": -0.0013195993882742596,
+    "protocol_candidate": "ppopt52_finetune_challenger__source=ppopt49_quantile_consensus_micro__center_pp45__wlim_0p22__guard_medium__s_0p42__cap_0p01"
+  },
+  "sources": {
+    "pp_opt42_config": "PP-OPT42_46_warm_residual_correction_experiments",
+    "pp_opt42_predictions": "experiments/track6/PP-OPT42_46_warm_residual_correction_experiments/outputs/candidate_predictions.csv",
+    "pp_opt42_aggregate": "experiments/track6/PP-OPT42_46_warm_residual_correction_experiments/outputs/aggregate_candidate_stability.csv",
+    "pp_opt42_helper": "scripts/track6/run_pp_opt42_46_warm_residual_correction_experiments.py"
+  }
+}

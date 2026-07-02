@@ -1,0 +1,44 @@
+{
+  "created_at": "2026-06-16T14:59:41",
+  "experiment_id": "PP-ROUTE-CF6",
+  "experiment_slug": "PP-ROUTE-CF6_full_history_retrained_warm_vs_unified_warm_lite",
+  "seeds": [
+    20260612,
+    20260613,
+    20260614
+  ],
+  "base_eval_set": "Warm fixed-test 607 rows",
+  "warm_eligibility_audit": {
+    "warm_fixed_test_rows_total": 607,
+    "exact_k1_to_k6_eligible_rows": 607,
+    "excluded_rows_with_less_than_max_k_history": 0,
+    "min_full_train_artist_history_n": 5,
+    "max_full_train_artist_history_n": 573,
+    "validation_rows_for_refit_and_router": 519
+  },
+  "warm_lite_eligibility_audit": {
+    "warm_fixed_test_rows_total": 607,
+    "k1_to_k6_eligible_rows": 519,
+    "excluded_rows_with_less_than_6_history": 88,
+    "full_history_min": 5,
+    "full_history_max": 573
+  },
+  "warm_training": {
+    "train_distribution": "actual full Warm train distribution",
+    "validation": "Warm validation split for Huber refit and router",
+    "stack": "SVC comparable Huber + L10 generated-bucket sequential + Huber refit + risk router",
+    "caveat": "clean stack, not exact historical WMIN8/PPV8 full artifact rebuild"
+  },
+  "warm_lite_training": {
+    "train_distribution": "actual full Warm train distribution",
+    "group_stats": "5-fold internal stats for train, full train stats for test",
+    "stack": "LightGBM Quantile full/lean + LightGBM objective=huber residual",
+    "aggregation": "seed-mean over three retrained seeds"
+  },
+  "limitations": [
+    "This is a full-history retrained clean-stack comparison, not exact Warm WMIN8 operational artifact reproduction.",
+    "Use CF5 for direct comparison against current Warm WMIN8 operational.",
+    "Cold/no-history route remains separate."
+  ],
+  "seconds": 362.56
+}

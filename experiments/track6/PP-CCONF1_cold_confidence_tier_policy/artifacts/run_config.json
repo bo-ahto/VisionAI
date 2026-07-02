@@ -1,0 +1,40 @@
+{
+  "experiment_id": "PP-CCONF1",
+  "purpose": "Cold 신뢰도 tier 정책 (점 예측 변경 없음, 표시/검수 정책 근거)",
+  "tier_bounds_frozen_from_validation": {
+    "qw_q33": 0.7349424254094605,
+    "qw_q90": 2.1572852836013667,
+    "gap_q50": 0.15320873993739603,
+    "gap_q90": 0.42534619182266353,
+    "v02_qw_q33": 1.299826669155304,
+    "v02_qw_q90": 2.180595379328374
+  },
+  "tier_rules": {
+    "research": "low: qwidth>=val_q90 OR model_gap>=val_q90; high: qwidth<=val_q33 AND model_gap<=val_q50 AND search_covered; else medium",
+    "operational": "low: v02_qwidth>=val_q90; high: v02_qwidth<=val_q33; else medium"
+  },
+  "v03_review_flag_rule": "qwidth >= 1.4612207078910142 OR not search_covered",
+  "pseudo_cold_direction_check": [
+    {
+      "seed": 20260610,
+      "high_lt_medium_lt_low_MdAPE": true
+    },
+    {
+      "seed": 20260611,
+      "high_lt_medium_lt_low_MdAPE": true
+    },
+    {
+      "seed": 20260612,
+      "high_lt_medium_lt_low_MdAPE": true
+    }
+  ],
+  "sources": {
+    "base_rows": "experiments/track6/PP-CBASE1_cold_base_lock/outputs/fixed_cold_base_rows.csv",
+    "pseudo_cold_rows": "experiments/track6/PP-PCOLD1_pseudo_cold_eval_set/outputs/pseudo_cold_rows.csv",
+    "v0_2_predictor": "models/track6/cold_prediction_v0.2_operational/predict/predict_cold_operational_v0_2.py"
+  },
+  "prohibitions": [
+    "0604 사용 금지",
+    "tier 경계의 test/pseudo-cold 기반 조정 금지"
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "experiment_id": "PP-WMIN7",
+  "experiment_slug": "PP-WMIN7_warm_min1_weight_retuning",
+  "created_at": "2026-06-12T23:07:01",
+  "selection_policy": "validation repeated stability and validation replacement score only; fixed test is confirmation; 0604 is not used",
+  "reference_candidate_label": "current_pp258_operational_reference",
+  "wmin4_selected_candidate_label": "min1_huber_refit_partial",
+  "svc_weights": [
+    0.5,
+    0.55,
+    0.6,
+    0.625,
+    0.65,
+    0.675,
+    0.7,
+    0.725,
+    0.75,
+    0.775,
+    0.8,
+    0.85,
+    0.9
+  ],
+  "basis_formula": "weight * min1_svc_numeric_seed_mean + (1-weight) * pp_v8_compact_blend_mape_guarded",
+  "huber_refit": {
+    "mode": "WMIN3 partial",
+    "current_70_30": "weight-retuned basis",
+    "svc_fallback": "WMIN2 min1 SVC seed mean",
+    "stable_config": {
+      "candidate": "hcoef2_size_reliability_cap005_s050",
+      "source_candidate": "residual_huber_resid_basis_size_reliability_alpha0.01_cap0.05_s0.50",
+      "feature_key": "resid_basis_size_reliability",
+      "alpha": 0.01,
+      "cap": 0.05,
+      "strength": 0.5,
+      "purpose": "작은 폭 MAPE/p95 안정화 대안"
+    }
+  },
+  "decision": {
+    "decision_status": "adopt_candidate",
+    "selected_candidate_label": "min1_w800_huber_refit_partial",
+    "reason": "validation gate를 통과했고 fixed test 확인에서도 기존 PP258 운영 후보보다 MdAPE/MAPE/p95가 모두 낮다.",
+    "selected_fixed_validation_MdAPE": 0.09532721279946713,
+    "selected_fixed_validation_MAPE": 0.17735387101830122,
+    "selected_fixed_validation_p95_APE": 0.5761968681437315,
+    "selected_fixed_test_MdAPE": 0.1051779972895374,
+    "selected_fixed_test_MAPE": 0.24063655775815587,
+    "selected_fixed_test_p95_APE": 0.7614173838278141,
+    "selected_validation_MAPE_win_rate": 0.9967948717948718,
+    "selected_validation_p95_win_rate": 0.9628205128205128,
+    "selected_validation_replacement_score": -0.028274688961340333
+  }
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PP-WMIN9B Warm-lite 경계 비교</title>
+<style>
+body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f5f6f8; color:#17202a; line-height:1.58; }
+main { max-width:1240px; margin:0 auto; background:#fff; min-height:100vh; padding:40px 28px 72px; }
+h1 { margin:0 0 10px; font-size:30px; } h2 { margin:34px 0 12px; padding-top:18px; border-top:1px solid #d8dee6; font-size:22px; }
+.callout { border-left:4px solid #2563eb; background:#eff6ff; padding:14px 16px; margin:20px 0; }
+table { width:100%; border-collapse:collapse; font-size:13px; margin:14px 0 22px; } th,td { border:1px solid #d8dee6; padding:8px 10px; vertical-align:top; } th { background:#f1f3f5; text-align:left; }
+pre { background:#111827; color:#f9fafb; padding:14px; border-radius:8px; overflow-x:auto; }
+</style></head><body><main>
+<h1>PP-WMIN9B Warm-lite 경계 비교 및 라우팅 정책 감사</h1>
+<div class="callout">1~4건은 Warm-lite, 5건 이상은 WMIN8 조건부 라우팅으로 분리하는 경계가 현재 검증 결과와 일치한다. 저이력 행에 WMIN8을 강제 적용하는 비교는 운영 라우팅 조건을 깨기 때문에 채택 근거로 사용하지 않는다.</div>
+<h2>1. 라우팅 경계 판단</h2><table><thead><tr><th>history_count</th><th>route</th><th>status</th><th>evidence</th></tr></thead><tbody><tr><td>0</td><td>Cold</td><td>keep</td><td>동일 작가 이력이 없으면 Warm 계열의 작가 이력 통계가 계산되지 않음</td></tr><tr><td>1~4</td><td>Warm-lite</td><td>validated</td><td>실존 저이력 leave-one-out n=1947, Warm-lite MAPE 0.2866 vs Cold 0.9946, bootstrap gate {&#x27;p_MdAPE&#x27;: 1.0, &#x27;p_MAPE&#x27;: 1.0, &#x27;p_p95&#x27;: 1.0, &#x27;gate_pass&#x27;: True}</td></tr><tr><td>5+</td><td>Warm WMIN8</td><td>validated</td><td>fixed test n=607, MdAPE/MAPE/p95 0.1043/0.2358/0.7394; WMIN8 conditional route가 WMIN4와 PP258을 모두 개선</td></tr></tbody></table>
+<h2>2. 저이력 1~4건 Warm-lite 검증</h2><table><thead><tr><th>route</th><th>n</th><th>artist_count</th><th>warm_lite_MdAPE</th><th>warm_lite_MAPE</th><th>warm_lite_p95_APE</th><th>cold_MdAPE</th><th>cold_MAPE</th><th>cold_p95_APE</th><th>delta_MAPE_vs_cold</th><th>delta_p95_APE_vs_cold</th></tr></thead><tbody><tr><td>Warm-lite 1~4 history</td><td>1947</td><td>649</td><td>0.109227</td><td>0.286566</td><td>0.876470</td><td>0.542931</td><td>0.994585</td><td>2.535820</td><td>-0.708019</td><td>-1.659350</td></tr></tbody></table>
+<h2>3. 이력 수별 Warm-lite 검증</h2><table><thead><tr><th>history_k</th><th>n</th><th>warm_lite_MdAPE</th><th>warm_lite_MAPE</th><th>warm_lite_p95_APE</th><th>cold_MdAPE</th><th>cold_MAPE</th><th>cold_p95_APE</th><th>delta_MAPE_vs_cold</th><th>delta_p95_APE_vs_cold</th></tr></thead><tbody><tr><td>1</td><td>621</td><td>0.120677</td><td>0.341476</td><td>0.955881</td><td>0.560817</td><td>0.846008</td><td>2.236897</td><td>-0.504532</td><td>-1.281016</td></tr><tr><td>2</td><td>489</td><td>0.118375</td><td>0.270704</td><td>0.877912</td><td>0.569159</td><td>1.382894</td><td>3.222387</td><td>-1.112190</td><td>-2.344475</td></tr><tr><td>3</td><td>324</td><td>0.105981</td><td>0.254102</td><td>0.714172</td><td>0.507388</td><td>0.883915</td><td>2.727458</td><td>-0.629812</td><td>-2.013287</td></tr><tr><td>4</td><td>513</td><td>0.092263</td><td>0.255719</td><td>0.788372</td><td>0.512221</td><td>0.874196</td><td>3.084911</td><td>-0.618477</td><td>-2.296539</td></tr></tbody></table>
+<h2>4. Warm 5건 이상 WMIN8 검증</h2><table><thead><tr><th>route</th><th>candidate_label</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th></tr></thead><tbody><tr><td>Warm WMIN8 5+ history</td><td>min1_route_w850_risk_q50_altlower_gap005</td><td>607</td><td>0.104326</td><td>0.235814</td><td>0.739416</td><td>0.377190</td></tr><tr><td>min1_base_before_router</td><td>min1_huber_refit_partial</td><td>607</td><td>0.106598</td><td>0.239302</td><td>0.779196</td><td>0.376884</td></tr><tr><td>previous_operational_reference</td><td>current_pp258_operational_reference</td><td>607</td><td>0.140976</td><td>0.269888</td><td>0.807325</td><td>0.397454</td></tr></tbody></table>
+<h2>5. 검증 상태</h2><table><thead><tr><th>check</th><th>status</th><th>detail</th></tr></thead><tbody><tr><td>warm_lite_low_history_evidence</td><td>pass</td><td>PP-WCUT4 real low-history leave-one-out gate pass</td></tr><tr><td>wmin8_5plus_evidence</td><td>pass</td><td>PP-WMIN8 fixed test confirmation and packaged artifact available</td></tr><tr><td>direct_same_row_wmin8_vs_warm_lite_low_history</td><td>not_adopted</td><td>WMIN8 is a 5+ same-artist-history route. Forcing it onto 1~4 history rows would break the production route invariant, so the same-row comparison is not used as an operating decision.</td></tr><tr><td>warm_lite_artifact</td><td>pass</td><td>models/track6/warm_lite_v0.1/config/warm_lite_policy_v0_1.json</td></tr><tr><td>wmin8_exact_raw_adapter</td><td>pass</td><td>api_fixed_test_parity_pass=True, blocking_items=[]</td></tr><tr><td>official_service_route_boundary</td><td>pass</td><td>official v0.1 route boundary: 0 history -&gt; Cold, 1~4 -&gt; Warm-lite, 5+ -&gt; WMIN8 Warm</td></tr></tbody></table>
+<h2>6. 실행 설정</h2><pre>{
+  &quot;experiment_id&quot;: &quot;PP-WMIN9B&quot;,
+  &quot;experiment_slug&quot;: &quot;PP-WMIN9B_warm_lite_boundary_comparison&quot;,
+  &quot;created_at&quot;: &quot;2026-06-13T10:16:49&quot;,
+  &quot;selection_policy&quot;: &quot;no new candidate selection; routing boundary and adapter-gap audit only&quot;,
+  &quot;source_experiments&quot;: {
+    &quot;low_history&quot;: &quot;experiments/track6/PP-WCUT4_real_low_history_validation&quot;,
+    &quot;warm_5plus&quot;: &quot;experiments/track6/PP-WMIN8_warm_min1_weight_router&quot;,
+    &quot;warm_5plus_artifact&quot;: &quot;models/track6/warm_wmin8_operational_candidate&quot;
+  },
+  &quot;direct_same_row_low_history_wmin8_comparison&quot;: &quot;not_adopted_because_wmin8_is_5plus_history_route&quot;,
+  &quot;prohibitions&quot;: [
+    &quot;0604 not used&quot;
+  ]
+}</pre>
+</main></body></html>

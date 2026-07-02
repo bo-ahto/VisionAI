@@ -1,0 +1,84 @@
+{
+  "experiment_id": "PP-OPT59-64",
+  "experiment_slug": "PP-OPT59_64_warm_p95_guard_experiments",
+  "created_at": "2026-06-09T12:40:13",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 1216,
+  "prediction_rows": 1369216,
+  "items": [
+    {
+      "item_id": "PP-OPT59",
+      "priority": "1",
+      "title": "PP58 rollback threshold/strength fine grid",
+      "description": "PP58 근처의 classifier rollback threshold, width, strength를 더 촘촘히 탐색한다."
+    },
+    {
+      "item_id": "PP-OPT60",
+      "priority": "2",
+      "title": "PP58 tail-risk guard",
+      "description": "tail risk가 높은 row에서 PP58을 PP52/PP48/PP20 쪽으로 되돌린다."
+    },
+    {
+      "item_id": "PP-OPT61",
+      "priority": "3",
+      "title": "rollback classifier probability calibration",
+      "description": "rollback 확률을 OOF bin calibration한 뒤 classifier rollback을 다시 적용한다."
+    },
+    {
+      "item_id": "PP-OPT62",
+      "priority": "4",
+      "title": "segment별 rollback threshold",
+      "description": "가격대/신뢰도/불확실성 구간별로 rollback threshold를 조정한다."
+    },
+    {
+      "item_id": "PP-OPT63",
+      "priority": "5",
+      "title": "MAPE 후보와 안정 후보 2단계 router",
+      "description": "먼저 PP52/PP58 계열을 고르고, tail 위험 row만 안정 후보로 override한다."
+    },
+    {
+      "item_id": "PP-OPT64",
+      "priority": "6",
+      "title": "최종 p95 guard challenger 선택",
+      "description": "PP58 대비 p95 회복과 MAPE 유지 조건을 함께 고려해 최종 후보를 선택한다."
+    }
+  ],
+  "selected_references": {
+    "pp20": "previous_challenger_pp20",
+    "pp23": "reference_pp23",
+    "pp30": "reference_pp30_best",
+    "pp38": "reference_pp38_best",
+    "pp45": "reference_pp45_challenger",
+    "pp48_score": "reference_pp48_score",
+    "pp52": "reference_pp52_challenger",
+    "pp58": "ppopt58_rollback_router_challenger__source=ppopt54_classifier_rollback__helper_pp48_mape__thr_0p44__width_0p4__rel_none__s_0p85",
+    "pp48_mape": "ppopt48_segment_micro__center=pp45__group=price_conf__shrink=160p0__guard=medium__s=0p32__cap=0p008"
+  },
+  "selection_decision": {
+    "selected_source_candidate": "ppopt62_segment_threshold__helper=pp48_score__base=0p36__vh=0p08__lowconf=0p06__s=0p85",
+    "selected_source_item_id": "PP-OPT62",
+    "selected_source_family": "segment_rollback_threshold",
+    "selection_reason": "prefer PP58 p95 recovery while preserving PP58 MAPE within 0.000015; fallback to PP52 MAPE improvement with p95 safe",
+    "test_MdAPE": 0.13787846966744394,
+    "test_MAPE": 0.2705640419156603,
+    "test_p95_APE": 0.8074988523061101,
+    "test_delta_vs_incumbent_MdAPE": 0.000985903768827734,
+    "test_delta_vs_incumbent_MAPE": -0.000830846096406157,
+    "test_delta_vs_incumbent_p95_APE": -0.0006311304073586266,
+    "recommendation_score_vs_incumbent": -0.0013242489630431898,
+    "protocol_candidate": "ppopt64_p95_guard_challenger__source=ppopt62_segment_threshold__helper_pp48_score__base_0p36__vh_0p08__lowconf_0p06__s_0p85"
+  },
+  "sources": {
+    "pp_opt53_config": "PP-OPT53_58_warm_rollback_router_experiments",
+    "pp_opt53_predictions": "experiments/track6/PP-OPT53_58_warm_rollback_router_experiments/outputs/candidate_predictions.csv",
+    "pp_opt53_aggregate": "experiments/track6/PP-OPT53_58_warm_rollback_router_experiments/outputs/aggregate_candidate_stability.csv",
+    "pp_opt53_rollback": "experiments/track6/PP-OPT53_58_warm_rollback_router_experiments/artifacts/rollback_probability_detail.csv",
+    "pp_opt47_quantile": "experiments/track6/PP-OPT47_52_warm_residual_finetune_experiments/artifacts/quantile_residual_predictions.csv",
+    "pp_opt53_helper": "scripts/track6/run_pp_opt53_58_warm_rollback_router_experiments.py"
+  }
+}

@@ -1,0 +1,164 @@
+# PP-OPT6 Warm p95 Guard Refinement
+
+- 작성일: 2026-06-08 21:27
+- 기준 후보: `hcoef_stable`
+- seed 후보 수: 67
+- 반복 검증: validation OOF 내부 3개 시나리오 x 80회
+- 목적: PP-OPT5 후보에 p95 guard를 얹어 MAPE 개선과 p95 방어를 동시에 만족하는 후보를 찾는다.
+
+## 1. 기준 성능
+
+| eval_split | n | MdAPE | MAPE | p95_APE | RMSE_log |
+| --- | --- | --- | --- | --- | --- |
+| test | 607 | 0.1388 | 0.2730 | 0.8064 | 0.3988 |
+| validation_oof | 519 | 0.1260 | 0.2082 | 0.6479 | 0.3252 |
+
+## 2. 후보군 요약
+
+| family | candidates | stable_p95_validation_pass | test_guarded_pass | test_strict_all3 | operational_pass | best_test_MAPE | best_test_p95_APE |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| p95_guard_refinement | 396 | 212 | 36 | 33 | 3 | 0.2695 | 0.8034 |
+| seed_original | 36 | 14 | 3 | 3 | 0 | 0.2681 | 0.8008 |
+| source | 1 | 0 | 0 | 0 | 0 | 0.2748 | 0.8331 |
+
+## 3. 운영 후보
+
+| candidate | family | mean_delta_MAPE | mean_delta_p95_APE | mean_MAPE_improve_rate | mean_p95_not_worse_rate | mean_strict_all3_rate | validation_delta_MAPE | validation_delta_p95_APE | test_delta_MdAPE | test_delta_MAPE | test_delta_p95_APE | stable_p95_validation_pass | test_guarded_pass | test_strict_all3 | operational_pass |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=0p75__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=risk_strict_cap0p020 | p95_guard_refinement | -0.0010 | -0.0039 | 1.0000 | 0.6792 | 0.4458 | -0.0010 | -0.0119 | -0.0009 | -0.0014 | 0.0019 | True | True | False | True |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__guard=risk_strict_cap0p020 | p95_guard_refinement | -0.0012 | -0.0038 | 1.0000 | 0.6500 | 0.4000 | -0.0012 | -0.0114 | -0.0019 | -0.0016 | 0.0018 | True | True | False | True |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s07__guard=risk_strict_cap0p020 | p95_guard_refinement | -0.0012 | -0.0037 | 1.0000 | 0.6375 | 0.3875 | -0.0012 | -0.0114 | -0.0011 | -0.0016 | 0.0018 | True | True | False | True |
+
+## 4. Test에서 세 지표 모두 개선된 후보
+
+| candidate | family | mean_delta_MAPE | mean_delta_p95_APE | mean_MAPE_improve_rate | mean_p95_not_worse_rate | mean_strict_all3_rate | validation_delta_MAPE | validation_delta_p95_APE | test_delta_MdAPE | test_delta_MAPE | test_delta_p95_APE | stable_p95_validation_pass | test_guarded_pass | test_strict_all3 | operational_pass |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=qwidth_guard_cap_dynamic | p95_guard_refinement | 0.0001 | 0.0122 | 0.3792 | 0.2208 | 0.0458 | 0.0001 | 0.0206 | -0.0016 | -0.0009 | -0.0024 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=qwidth_guard_cap_dynamic | p95_guard_refinement | 0.0001 | 0.0122 | 0.3792 | 0.2208 | 0.0458 | 0.0001 | 0.0206 | -0.0016 | -0.0009 | -0.0024 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | 0.0000 | 0.0091 | 0.5000 | 0.2250 | 0.0708 | 0.0000 | 0.0041 | -0.0012 | -0.0009 | -0.0013 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | 0.0000 | 0.0079 | 0.4875 | 0.2250 | 0.0667 | 0.0000 | 0.0034 | -0.0014 | -0.0009 | -0.0008 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=qwidth_guard_cap_dynamic | p95_guard_refinement | 0.0001 | 0.0096 | 0.4417 | 0.2208 | 0.0333 | 0.0001 | 0.0138 | -0.0006 | -0.0008 | -0.0019 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=orig | seed_original | 0.0003 | 0.0121 | 0.3042 | 0.2167 | 0.0417 | 0.0003 | 0.0178 | -0.0014 | -0.0008 | -0.0027 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | 0.0003 | 0.0132 | 0.3042 | 0.2167 | 0.0417 | 0.0003 | 0.0211 | -0.0014 | -0.0008 | -0.0030 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | 0.0003 | 0.0132 | 0.3042 | 0.2167 | 0.0417 | 0.0003 | 0.0211 | -0.0014 | -0.0008 | -0.0030 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=orig | seed_original | 0.0004 | 0.0178 | 0.2792 | 0.1333 | 0.0250 | 0.0004 | 0.0343 | -0.0016 | -0.0008 | -0.0041 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=low_off_qwidth_guard_cap0p020 | p95_guard_refinement | 0.0003 | 0.0120 | 0.3042 | 0.2167 | 0.0417 | 0.0002 | 0.0178 | -0.0014 | -0.0008 | -0.0027 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=low_off_qwidth_guard_cap0p020 | p95_guard_refinement | 0.0003 | 0.0120 | 0.3042 | 0.2167 | 0.0417 | 0.0002 | 0.0178 | -0.0014 | -0.0008 | -0.0027 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=confidence_low_off_cap0p022 | p95_guard_refinement | 0.0003 | 0.0132 | 0.3125 | 0.2208 | 0.0417 | 0.0003 | 0.0211 | -0.0014 | -0.0008 | -0.0030 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=confidence_low_off_cap0p022 | p95_guard_refinement | 0.0003 | 0.0132 | 0.3125 | 0.2208 | 0.0417 | 0.0003 | 0.0211 | -0.0014 | -0.0008 | -0.0030 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=global_scale_0p80_cap0p020 | p95_guard_refinement | 0.0002 | 0.0120 | 0.3125 | 0.2167 | 0.0417 | 0.0002 | 0.0178 | -0.0014 | -0.0008 | -0.0027 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=global_scale_0p80_cap0p020 | p95_guard_refinement | 0.0002 | 0.0120 | 0.3125 | 0.2167 | 0.0417 | 0.0002 | 0.0178 | -0.0014 | -0.0008 | -0.0027 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | 0.0002 | 0.0108 | 0.3125 | 0.2167 | 0.0375 | 0.0002 | 0.0145 | -0.0014 | -0.0008 | -0.0024 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | 0.0000 | 0.0067 | 0.4917 | 0.2208 | 0.0625 | 0.0000 | 0.0031 | -0.0014 | -0.0008 | -0.0005 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=low_off_qwidth_guard_cap0p020 | p95_guard_refinement | 0.0002 | 0.0102 | 0.3292 | 0.2125 | 0.0333 | 0.0002 | 0.0128 | -0.0014 | -0.0008 | -0.0023 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=tail_clamp_highrisk_cap_dynamic | p95_guard_refinement | 0.0003 | 0.0106 | 0.2667 | 0.2083 | 0.0375 | 0.0003 | 0.0060 | -0.0008 | -0.0008 | -0.0030 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=risk_balanced_cap0p022 | p95_guard_refinement | 0.0002 | 0.0119 | 0.3250 | 0.2167 | 0.0458 | 0.0002 | 0.0144 | -0.0014 | -0.0008 | -0.0030 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=global_scale_0p70_cap0p018 | p95_guard_refinement | 0.0002 | 0.0107 | 0.3375 | 0.2208 | 0.0375 | 0.0002 | 0.0145 | -0.0014 | -0.0008 | -0.0024 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=global_scale_0p70_cap0p018 | p95_guard_refinement | 0.0002 | 0.0107 | 0.3375 | 0.2208 | 0.0375 | 0.0002 | 0.0145 | -0.0014 | -0.0008 | -0.0024 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=confidence_low_off_cap0p022 | p95_guard_refinement | 0.0002 | 0.0096 | 0.3417 | 0.2167 | 0.0292 | 0.0002 | 0.0111 | -0.0014 | -0.0007 | -0.0022 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=global_scale_0p80_cap0p020 | p95_guard_refinement | 0.0002 | 0.0096 | 0.3417 | 0.2167 | 0.0292 | 0.0002 | 0.0111 | -0.0014 | -0.0007 | -0.0022 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=tail_clamp_highrisk_cap_dynamic | p95_guard_refinement | 0.0003 | 0.0097 | 0.2625 | 0.2167 | 0.0375 | 0.0003 | 0.0039 | -0.0014 | -0.0007 | -0.0030 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=mid__guard=risk_balanced_cap0p022 | p95_guard_refinement | 0.0002 | 0.0100 | 0.2917 | 0.2125 | 0.0417 | 0.0002 | 0.0042 | -0.0008 | -0.0007 | -0.0030 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=tail_clamp_highrisk_cap_dynamic | p95_guard_refinement | 0.0002 | 0.0072 | 0.2917 | 0.2167 | 0.0333 | 0.0002 | 0.0034 | -0.0014 | -0.0007 | -0.0023 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=global_scale_0p70_cap0p018 | p95_guard_refinement | 0.0001 | 0.0083 | 0.3750 | 0.2167 | 0.0417 | 0.0001 | 0.0078 | -0.0006 | -0.0007 | -0.0019 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p02__route=mid__guard=risk_balanced_cap0p022 | p95_guard_refinement | 0.0001 | 0.0068 | 0.3375 | 0.2333 | 0.0333 | 0.0001 | 0.0034 | -0.0012 | -0.0007 | -0.0020 | False | True | True | False |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=mid__guard=disagreement_guard_cap_dynamic | p95_guard_refinement | 0.0002 | 0.0096 | 0.2875 | 0.2083 | 0.0292 | 0.0002 | 0.0041 | -0.0014 | -0.0006 | -0.0024 | False | True | True | False |
+
+## 5. Test MAPE 상위 후보
+
+| candidate | family | mean_delta_MAPE | mean_delta_p95_APE | mean_MAPE_improve_rate | mean_p95_not_worse_rate | mean_strict_all3_rate | validation_delta_MAPE | validation_delta_p95_APE | test_delta_MdAPE | test_delta_MAPE | test_delta_p95_APE | stable_p95_validation_pass | test_guarded_pass | test_strict_all3 | operational_pass |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__guard=orig | seed_original | -0.0037 | -0.0021 | 1.0000 | 0.5917 | 0.4958 | -0.0040 | -0.0057 | 0.0000 | -0.0049 | 0.0098 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=0p75__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=orig | seed_original | -0.0034 | -0.0027 | 1.0000 | 0.6125 | 0.5208 | -0.0037 | -0.0058 | 0.0014 | -0.0047 | 0.0098 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p0__artist=am_h_birth_gen_sale_gn_a01_c03_s075__c__guard=orig | seed_original | -0.0035 | 0.0001 | 0.9958 | 0.5625 | 0.4958 | -0.0038 | -0.0053 | -0.0012 | -0.0046 | 0.0098 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=orig | seed_original | -0.0034 | -0.0024 | 1.0000 | 0.6000 | 0.5042 | -0.0039 | -0.0045 | -0.0006 | -0.0045 | 0.0098 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p__guard=orig | seed_original | -0.0037 | -0.0051 | 1.0000 | 0.6292 | 0.5333 | -0.0040 | -0.0066 | 0.0027 | -0.0045 | 0.0098 | True | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=orig | seed_original | -0.0035 | -0.0029 | 1.0000 | 0.6042 | 0.5625 | -0.0038 | -0.0052 | -0.0014 | -0.0045 | 0.0098 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p8__guard=orig | seed_original | -0.0036 | -0.0052 | 1.0000 | 0.6292 | 0.5250 | -0.0039 | -0.0063 | 0.0028 | -0.0044 | 0.0098 | True | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=0p75__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=orig | seed_original | -0.0033 | -0.0005 | 0.9958 | 0.5792 | 0.5042 | -0.0035 | -0.0055 | -0.0003 | -0.0044 | 0.0098 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p0__guard=orig | seed_original | -0.0033 | 0.0001 | 0.9958 | 0.5625 | 0.4542 | -0.0033 | -0.0065 | -0.0006 | -0.0044 | 0.0071 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p__guard=orig | seed_original | -0.0039 | -0.0025 | 1.0000 | 0.6333 | 0.5792 | -0.0040 | -0.0100 | -0.0002 | -0.0044 | 0.0072 | True | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=orig | seed_original | -0.0036 | -0.0046 | 1.0000 | 0.6083 | 0.5250 | -0.0040 | -0.0080 | 0.0020 | -0.0042 | 0.0080 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__guard=orig | seed_original | -0.0031 | -0.0024 | 1.0000 | 0.5833 | 0.4375 | -0.0037 | -0.0060 | 0.0016 | -0.0040 | 0.0070 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s07__guard=orig | seed_original | -0.0028 | -0.0022 | 1.0000 | 0.5708 | 0.4750 | -0.0028 | -0.0054 | -0.0000 | -0.0035 | 0.0040 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__guard=orig | seed_original | -0.0027 | -0.0025 | 1.0000 | 0.5833 | 0.4708 | -0.0028 | -0.0051 | -0.0006 | -0.0035 | 0.0040 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0028 | -0.0023 | 1.0000 | 0.5917 | 0.4250 | -0.0032 | -0.0057 | 0.0013 | -0.0035 | 0.0065 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0032 | -0.0043 | 1.0000 | 0.6125 | 0.4917 | -0.0034 | -0.0073 | 0.0016 | -0.0035 | 0.0065 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0030 | -0.0033 | 1.0000 | 0.6250 | 0.4875 | -0.0032 | -0.0062 | 0.0016 | -0.0034 | 0.0065 | True | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=orig | seed_original | -0.0028 | -0.0028 | 1.0000 | 0.5750 | 0.4708 | -0.0029 | -0.0053 | -0.0015 | -0.0034 | 0.0046 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0031 | -0.0025 | 1.0000 | 0.6125 | 0.4792 | -0.0031 | -0.0042 | -0.0008 | -0.0034 | 0.0065 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0028 | -0.0009 | 0.9958 | 0.5875 | 0.4083 | -0.0030 | -0.0050 | 0.0010 | -0.0034 | 0.0065 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p8__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0029 | -0.0035 | 1.0000 | 0.6250 | 0.4833 | -0.0031 | -0.0059 | 0.0019 | -0.0034 | 0.0065 | True | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p0__artist=am_h_birth_gen_sale_gn_a01_c03_s075__c__guard=orig | seed_original | -0.0028 | -0.0030 | 1.0000 | 0.5958 | 0.4875 | -0.0028 | -0.0050 | -0.0015 | -0.0034 | 0.0046 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | -0.0023 | -0.0052 | 1.0000 | 0.7042 | 0.4833 | -0.0024 | -0.0081 | -0.0009 | -0.0033 | 0.0061 | True | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s07__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0026 | -0.0021 | 1.0000 | 0.5833 | 0.4583 | -0.0026 | -0.0050 | -0.0004 | -0.0033 | 0.0035 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=global_scale_0p80_cap0p020 | p95_guard_refinement | -0.0030 | -0.0042 | 1.0000 | 0.6167 | 0.4833 | -0.0031 | -0.0068 | 0.0015 | -0.0033 | 0.0061 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__guard=global_scale_0p80_cap0p020 | p95_guard_refinement | -0.0026 | -0.0024 | 1.0000 | 0.5917 | 0.4000 | -0.0029 | -0.0063 | 0.0009 | -0.0033 | 0.0061 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_gallery_gn_a01_c03_s07__guard=orig | seed_original | -0.0031 | -0.0012 | 1.0000 | 0.5667 | 0.4958 | -0.0032 | -0.0048 | -0.0003 | -0.0033 | 0.0046 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0025 | -0.0024 | 1.0000 | 0.5917 | 0.4375 | -0.0026 | -0.0047 | -0.0010 | -0.0033 | 0.0035 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=0p75__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=orig | seed_original | -0.0026 | -0.0032 | 1.0000 | 0.6167 | 0.5083 | -0.0027 | -0.0045 | -0.0012 | -0.0033 | 0.0046 | False | False | False | False |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=0p75__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=global_scale_0p90_cap0p022 | p95_guard_refinement | -0.0027 | -0.0017 | 1.0000 | 0.5875 | 0.4500 | -0.0029 | -0.0052 | 0.0014 | -0.0033 | 0.0065 | False | False | False | False |
+
+## 6. 반복 검증 시나리오 상위 후보
+
+| candidate | family | scenario | mean_delta_MAPE | mean_delta_p95_APE | p90_delta_p95_APE | improve_MAPE_rate | p95_not_worse_rate | strict_all3_rate | stability_score |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p08__route=low__guard=orig | seed_original | artist_group_holdout | -0.0050 | -0.0139 | -0.0047 | 1.0000 | 0.9750 | 0.9250 | -0.0087 |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p08__route=low__guard=orig | seed_original | confidence_stratified_rows | -0.0049 | -0.0111 | -0.0012 | 1.0000 | 0.9375 | 0.8625 | -0.0083 |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p08__route=low__guard=orig | seed_original | row_bootstrap | -0.0051 | -0.0142 | 0.0000 | 0.9750 | 0.9375 | 0.5875 | -0.0074 |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=low__guard=orig | seed_original | artist_group_holdout | -0.0036 | -0.0121 | -0.0039 | 1.0000 | 0.9750 | 0.8125 | -0.0068 |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=low__guard=orig | seed_original | confidence_stratified_rows | -0.0035 | -0.0095 | 0.0000 | 1.0000 | 0.9250 | 0.7375 | -0.0065 |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p05__route=low__guard=orig | seed_original | row_bootstrap | -0.0036 | -0.0089 | 0.0000 | 0.9750 | 0.9125 | 0.5125 | -0.0057 |
+| p95guard__seed=xgb_xgboost_all_rows_cap0p08__route=low__guard=orig | seed_original | artist_group_holdout | -0.0044 | -0.0055 | 0.0019 | 0.9875 | 0.7250 | 0.4000 | -0.0055 |
+| p95guard__seed=xgb_xgboost_all_rows_cap0p05__route=low__guard=orig | seed_original | artist_group_holdout | -0.0034 | -0.0049 | 0.0019 | 1.0000 | 0.7250 | 0.4250 | -0.0047 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=0p75__artist=am_h_birth_gen_sale_gn_a01_c05_s075____guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0019 | -0.0061 | 0.0017 | 1.0000 | 0.8375 | 0.8000 | -0.0046 |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=low__guard=orig | seed_original | artist_group_holdout | -0.0024 | -0.0083 | 0.0003 | 1.0000 | 0.8500 | 0.5750 | -0.0046 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_works_gn_a01_c05_s075___guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0022 | -0.0087 | 0.0014 | 1.0000 | 0.7375 | 0.6750 | -0.0045 |
+| p95guard__seed=xgb_xgboost_all_rows_cap0p08__route=low__guard=orig | seed_original | confidence_stratified_rows | -0.0043 | -0.0031 | 0.0055 | 1.0000 | 0.7125 | 0.4000 | -0.0045 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p15__artist=am_h_birth_gen_works_gn_a01_c__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0020 | -0.0083 | 0.0010 | 1.0000 | 0.7625 | 0.7000 | -0.0045 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p0__artist=am_h_birth_gen_works_gn_a01_c0__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0020 | -0.0084 | 0.0009 | 1.0000 | 0.7625 | 0.6875 | -0.0045 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p0__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p8__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0022 | -0.0068 | 0.0021 | 1.0000 | 0.8250 | 0.6875 | -0.0044 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0023 | -0.0069 | 0.0016 | 1.0000 | 0.7250 | 0.6125 | -0.0043 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0023 | -0.0068 | 0.0022 | 1.0000 | 0.8125 | 0.6375 | -0.0043 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=0p75__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0022 | -0.0056 | 0.0035 | 1.0000 | 0.8250 | 0.7250 | -0.0042 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p0__artist=am_h_birth_gen_works_gn_a01_c03_s075____guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0019 | -0.0071 | 0.0010 | 1.0000 | 0.7125 | 0.6500 | -0.0042 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_works_gn_a01_c03_s075___guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0019 | -0.0070 | 0.0013 | 1.0000 | 0.7125 | 0.6500 | -0.0042 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=0p75__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0022 | -0.0065 | 0.0026 | 1.0000 | 0.8250 | 0.6500 | -0.0041 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p0__artist=am_h_birth_gen_works_gn_a01_c05_s075____guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0020 | -0.0076 | 0.0015 | 1.0000 | 0.7125 | 0.6250 | -0.0041 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0022 | -0.0069 | 0.0031 | 1.0000 | 0.8125 | 0.6750 | -0.0041 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0019 | -0.0057 | 0.0018 | 1.0000 | 0.7250 | 0.6500 | -0.0041 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p0__artist=am_h_birth_gen_sale_gn_a01_c03_s075__c__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0019 | -0.0058 | 0.0017 | 1.0000 | 0.7250 | 0.6500 | -0.0041 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=0p75__artist=am_h_birth_gen_gallery_gn_a01_c03_s07__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0024 | -0.0053 | 0.0033 | 1.0000 | 0.7125 | 0.6125 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p__guard=risk_balanced_cap0p022 | p95_guard_refinement | artist_group_holdout | -0.0022 | -0.0064 | 0.0042 | 1.0000 | 0.8250 | 0.7250 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0023 | -0.0058 | 0.0032 | 1.0000 | 0.7375 | 0.6375 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p0__artist=am_h_birth_gen_works_gn_a01_c0__guard=disagreement_guard_cap_dynamic | p95_guard_refinement | artist_group_holdout | -0.0017 | -0.0076 | 0.0015 | 1.0000 | 0.8625 | 0.6750 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_works_gn_a01_c05_s075___guard=disagreement_guard_cap_dynamic | p95_guard_refinement | artist_group_holdout | -0.0019 | -0.0077 | 0.0022 | 1.0000 | 0.8500 | 0.6500 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p15__artist=am_h_birth_gen_works_gn_a01_c__guard=disagreement_guard_cap_dynamic | p95_guard_refinement | artist_group_holdout | -0.0017 | -0.0075 | 0.0015 | 1.0000 | 0.8625 | 0.6625 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=0p75__artist=am_h_birth_gen_sale_gn_a01_c03_s075____guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0018 | -0.0060 | 0.0017 | 1.0000 | 0.7500 | 0.6500 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c05_s075__cw=1p__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | artist_group_holdout | -0.0023 | -0.0064 | 0.0034 | 1.0000 | 0.8125 | 0.6250 | -0.0040 |
+| p95guard__seed=xgb_xgboost_lowdiag_cap0p03__route=low__guard=orig | seed_original | confidence_stratified_rows | -0.0023 | -0.0059 | 0.0010 | 1.0000 | 0.8000 | 0.4750 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | confidence_stratified_rows | -0.0022 | -0.0056 | 0.0030 | 1.0000 | 0.7250 | 0.6125 | -0.0040 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_works_gn_a01_c05_s075___guard=risk_balanced_cap0p022 | p95_guard_refinement | artist_group_holdout | -0.0020 | -0.0068 | 0.0031 | 1.0000 | 0.7250 | 0.6875 | -0.0039 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=fixed__s=1p15__artist=am_h_birth_gen_works_gn_a01_c05_s075___guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | confidence_stratified_rows | -0.0022 | -0.0068 | 0.0027 | 1.0000 | 0.6875 | 0.6000 | -0.0039 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p__guard=positive_highrisk_guard_cap0p020 | p95_guard_refinement | confidence_stratified_rows | -0.0023 | -0.0054 | 0.0028 | 1.0000 | 0.7250 | 0.5875 | -0.0039 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p03__caprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=0p__guard=tail_clamp_highrisk_cap_dynamic | p95_guard_refinement | artist_group_holdout | -0.0020 | -0.0064 | 0.0033 | 1.0000 | 0.8125 | 0.6875 | -0.0039 |
+| p95guard__seed=combo_cat=cb_tier=same__qmult=same__cap=0p02__caprof=qcap_balanced__s=1p15__artist=am_h_birth_gen_works_gn_a01_c__guard=tail_clamp_highrisk_cap_dynamic | p95_guard_refinement | artist_group_holdout | -0.0017 | -0.0072 | 0.0016 | 1.0000 | 0.7375 | 0.6625 | -0.0039 |
+
+## 7. 해석 기준
+
+- `stable_p95_validation_pass`: 반복 validation에서 MAPE 개선률 70% 이상, p95 비악화율 62% 이상, 전체 validation MAPE 개선 및 p95 악화 0.002 이하.
+- `test_guarded_pass`: fixed test에서 MdAPE/MAPE 개선, p95 악화 0.002 이하.
+- `test_strict_all3`: fixed test에서 MdAPE/MAPE/p95 모두 개선.
+- `operational_pass`: stable_p95_validation_pass와 test_guarded_pass를 동시에 만족.
+
+## 8. 산출물
+
+- `outputs/full_guard_metrics.csv`
+- `outputs/repeated_validation_detail.csv`
+- `outputs/repeated_validation_summary.csv`
+- `outputs/aggregate_guard_stability.csv`
+- `outputs/selected_guard_predictions.csv`
+- `outputs/candidate_predictions_sample.csv`
+- `reports/result_report.md`
+- `reports/result_report.html`
+- `artifacts/run_config.json`

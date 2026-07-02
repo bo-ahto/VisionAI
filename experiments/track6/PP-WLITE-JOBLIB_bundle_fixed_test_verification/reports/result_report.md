@@ -1,0 +1,33 @@
+# PP-WLITE-JOBLIB bundle verification
+
+## Summary
+
+```json
+{
+  "experiment_id": "PP-WLITE-JOBLIB",
+  "created_at": "2026-06-19T17:59:28",
+  "bundle": "models/track6/warm_lite_unified_current_joblib_v0.1_candidate",
+  "db_used": false,
+  "csv_lookup_history_used": false,
+  "fixed_replay_feature_store_used": false,
+  "runtime_store": "artifacts/runtime_store.joblib",
+  "test_csv_used_only_as_input_and_label": "models/track6/price_prediction_v0.1/data/training/track6_split/track6_test_warm.csv",
+  "input_rows": 607,
+  "predicted_rows": 607,
+  "error_rows": 0,
+  "metrics": {
+    "n": 607,
+    "MdAPE": 0.08697002277019135,
+    "MAPE": 0.22368207891309544,
+    "p95_APE": 0.8203661800254315,
+    "RMSE_log": 0.38282311543666864,
+    "APE_gt_1": 21,
+    "APE_gt_5": 2
+  },
+  "artifact_rows": {
+    "artist_registry": 1773,
+    "artist_aliases": 3600,
+    "artist_train_history": 26914
+  }
+}
+```

@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-ROUTE-CF4 Pooled Warm-lite vs Warm k1~k6</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#pp-route-cf4-pooled-warm-lite-vs-warm-k-1-6">PP-ROUTE-CF4 Pooled Warm-lite vs Warm k=1~6</a>
+<a class="toc-level-2" href="#1.-목적">1. 목적</a>
+<a class="toc-level-2" href="#2.-설계">2. 설계</a>
+<a class="toc-level-2" href="#3.-same-n-seed-mean-metrics">3. Same-n seed-mean metrics</a>
+<a class="toc-level-2" href="#4.-관찰-요약">4. 관찰 요약</a>
+<a class="toc-level-2" href="#5.-paired-row-level-comparison">5. Paired row-level comparison</a>
+<a class="toc-level-2" href="#6.-repeated-seed-metrics">6. Repeated seed metrics</a>
+<a class="toc-level-2" href="#7.-pooled-training-audit">7. Pooled training audit</a>
+<a class="toc-level-2" href="#8.-해석-주의">8. 해석 주의</a>
+<a class="toc-level-2" href="#9.-config">9. Config</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>experiments/track6/PP-ROUTE-CF4_pooled_warm_lite_vs_warm_k1_to_k6/reports/result_report.md</code></div>
+      <h1 id="pp-route-cf4-pooled-warm-lite-vs-warm-k-1-6">PP-ROUTE-CF4 Pooled Warm-lite vs Warm k=1~6</h1>
+<h2 id="1.-목적">1. 목적</h2>
+<p>Warm-lite를 k=1~6 전체 저이력 조건으로 한 번에 학습한 단일 모델로 만들고, 같은 seed/k/row에서 CF3 Warm retrained clean stack과 비교한다.</p>
+<h2 id="2.-설계">2. 설계</h2>
+<ul>
+<li>Warm-lite pooled는 seed별 1개 모델이다. k=1~6 노출 조건을 합친 augmented train으로 학습한다.</li>
+<li>학습용 각 k 조건은 작가당 최대 k+1개 행을 남긴다. train 행 하나를 예측할 때 자기 행을 제외하고 대략 k개 같은작가 이력을 볼 수 있게 하기 위한 구성이다.</li>
+<li>평가 시에는 같은 작가 이력을 정확히 k개만 보이도록 test 작가 train history를 자른다.</li>
+<li>Warm 비교값은 CF3에서 같은 조건으로 재학습한 <code>Warm retrained clean stack</code>을 재사용한다.</li>
+</ul>
+<h2 id="3.-same-n-seed-mean-metrics">3. Same-n seed-mean metrics</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">candidate</th>
+<th class="align-left">condition</th>
+<th class="align-left">n</th>
+<th class="align-left">MdAPE</th>
+<th class="align-left">MAPE</th>
+<th class="align-left">p95_APE</th>
+<th class="align-left">RMSE_log</th>
+<th class="align-left">rank_MAPE</th>
+<th class="align-left">rank_p95_APE</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">k=1 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.228377</td>
+<td class="align-left">0.349077</td>
+<td class="align-left">0.940275</td>
+<td class="align-left">0.470595</td>
+<td class="align-left">12</td>
+<td class="align-left">12</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">k=1 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.166687</td>
+<td class="align-left">0.307110</td>
+<td class="align-left">0.928624</td>
+<td class="align-left">0.435073</td>
+<td class="align-left">11</td>
+<td class="align-left">10</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">k=2 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.201354</td>
+<td class="align-left">0.293245</td>
+<td class="align-left">0.936806</td>
+<td class="align-left">0.431259</td>
+<td class="align-left">9</td>
+<td class="align-left">11</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">k=2 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.145009</td>
+<td class="align-left">0.296213</td>
+<td class="align-left">0.855157</td>
+<td class="align-left">0.413805</td>
+<td class="align-left">10</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">k=3 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.170056</td>
+<td class="align-left">0.291045</td>
+<td class="align-left">0.887342</td>
+<td class="align-left">0.446368</td>
+<td class="align-left">8</td>
+<td class="align-left">8</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">k=3 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.142388</td>
+<td class="align-left">0.252386</td>
+<td class="align-left">0.874414</td>
+<td class="align-left">0.421577</td>
+<td class="align-left">3</td>
+<td class="align-left">7</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">k=4 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.164994</td>
+<td class="align-left">0.271088</td>
+<td class="align-left">0.854571</td>
+<td class="align-left">0.426418</td>
+<td class="align-left">7</td>
+<td class="align-left">4</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">k=4 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.109619</td>
+<td class="align-left">0.255846</td>
+<td class="align-left">0.914329</td>
+<td class="align-left">0.397638</td>
+<td class="align-left">4</td>
+<td class="align-left">9</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">k=5 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.156848</td>
+<td class="align-left">0.257445</td>
+<td class="align-left">0.800696</td>
+<td class="align-left">0.410500</td>
+<td class="align-left">5</td>
+<td class="align-left">3</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">k=5 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.115575</td>
+<td class="align-left">0.227508</td>
+<td class="align-left">0.631320</td>
+<td class="align-left">0.368213</td>
+<td class="align-left">2</td>
+<td class="align-left">1</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">k=6 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.139844</td>
+<td class="align-left">0.261411</td>
+<td class="align-left">0.856599</td>
+<td class="align-left">0.425187</td>
+<td class="align-left">6</td>
+<td class="align-left">6</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">k=6 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.108227</td>
+<td class="align-left">0.225703</td>
+<td class="align-left">0.714609</td>
+<td class="align-left">0.367700</td>
+<td class="align-left">1</td>
+<td class="align-left">2</td>
+</tr>
+</tbody></table></div>
+<h2 id="4.-관찰-요약">4. 관찰 요약</h2>
+<ul>
+<li>Best by MdAPE: <code>Warm-lite pooled retrained k=6 seed-mean</code>.</li>
+<li>Best by MAPE: <code>Warm-lite pooled retrained k=6 seed-mean</code>.</li>
+<li>Best by p95 APE: <code>Warm-lite pooled retrained k=5 seed-mean</code>.</li>
+<li>Best by RMSE log: <code>Warm-lite pooled retrained k=6 seed-mean</code>.</li>
+</ul>
+<h2 id="5.-paired-row-level-comparison">5. Paired row-level comparison</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">k</th>
+<th class="align-left">n</th>
+<th class="align-left">warm_better_share</th>
+<th class="align-left">warm_lite_pooled_better_share</th>
+<th class="align-left">median_ape_delta_warm_minus_warm_lite_pooled</th>
+<th class="align-left">mean_ape_delta_warm_minus_warm_lite_pooled</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.387283</td>
+<td class="align-left">0.612717</td>
+<td class="align-left">0.052096</td>
+<td class="align-left">0.041967</td>
+</tr>
+<tr>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.394990</td>
+<td class="align-left">0.605010</td>
+<td class="align-left">0.032670</td>
+<td class="align-left">-0.002968</td>
+</tr>
+<tr>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.443160</td>
+<td class="align-left">0.556840</td>
+<td class="align-left">0.020540</td>
+<td class="align-left">0.038658</td>
+</tr>
+<tr>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.402697</td>
+<td class="align-left">0.597303</td>
+<td class="align-left">0.022611</td>
+<td class="align-left">0.015242</td>
+</tr>
+<tr>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.377649</td>
+<td class="align-left">0.622351</td>
+<td class="align-left">0.026129</td>
+<td class="align-left">0.029937</td>
+</tr>
+<tr>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.362235</td>
+<td class="align-left">0.637765</td>
+<td class="align-left">0.032818</td>
+<td class="align-left">0.035708</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-repeated-seed-metrics">6. Repeated seed metrics</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">candidate</th>
+<th class="align-left">trunc_seed</th>
+<th class="align-left">k</th>
+<th class="align-left">n</th>
+<th class="align-left">MdAPE</th>
+<th class="align-left">MAPE</th>
+<th class="align-left">p95_APE</th>
+<th class="align-left">RMSE_log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260612</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.252714</td>
+<td class="align-left">0.486424</td>
+<td class="align-left">1.009002</td>
+<td class="align-left">0.590389</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260613</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.235105</td>
+<td class="align-left">0.458775</td>
+<td class="align-left">1.032753</td>
+<td class="align-left">0.551263</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260614</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.261232</td>
+<td class="align-left">0.378492</td>
+<td class="align-left">1.060145</td>
+<td class="align-left">0.501292</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260612</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.195067</td>
+<td class="align-left">0.319867</td>
+<td class="align-left">0.945271</td>
+<td class="align-left">0.535685</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260613</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.195964</td>
+<td class="align-left">0.357871</td>
+<td class="align-left">1.181684</td>
+<td class="align-left">0.484558</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260614</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.170493</td>
+<td class="align-left">0.417603</td>
+<td class="align-left">1.552412</td>
+<td class="align-left">0.525524</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260612</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.211482</td>
+<td class="align-left">0.302689</td>
+<td class="align-left">0.885020</td>
+<td class="align-left">0.431543</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260613</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.214275</td>
+<td class="align-left">0.335475</td>
+<td class="align-left">0.968765</td>
+<td class="align-left">0.490139</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260614</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.205461</td>
+<td class="align-left">0.347145</td>
+<td class="align-left">1.227138</td>
+<td class="align-left">0.498124</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260612</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.146665</td>
+<td class="align-left">0.360288</td>
+<td class="align-left">0.899050</td>
+<td class="align-left">0.434216</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260613</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.145931</td>
+<td class="align-left">0.364193</td>
+<td class="align-left">1.022079</td>
+<td class="align-left">0.492103</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260614</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.152690</td>
+<td class="align-left">0.318526</td>
+<td class="align-left">0.955552</td>
+<td class="align-left">0.481860</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260612</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.166380</td>
+<td class="align-left">0.288041</td>
+<td class="align-left">0.942673</td>
+<td class="align-left">0.445064</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260613</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.193540</td>
+<td class="align-left">0.333175</td>
+<td class="align-left">1.059539</td>
+<td class="align-left">0.494816</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260614</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.188062</td>
+<td class="align-left">0.326521</td>
+<td class="align-left">0.966217</td>
+<td class="align-left">0.498678</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260612</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.135285</td>
+<td class="align-left">0.366170</td>
+<td class="align-left">0.978116</td>
+<td class="align-left">0.537278</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260613</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.148307</td>
+<td class="align-left">0.249883</td>
+<td class="align-left">0.866563</td>
+<td class="align-left">0.457504</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260614</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.141662</td>
+<td class="align-left">0.277670</td>
+<td class="align-left">0.889349</td>
+<td class="align-left">0.469171</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260612</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.164870</td>
+<td class="align-left">0.277032</td>
+<td class="align-left">0.897712</td>
+<td class="align-left">0.411816</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260613</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.180833</td>
+<td class="align-left">0.294969</td>
+<td class="align-left">0.946168</td>
+<td class="align-left">0.470200</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260614</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.159921</td>
+<td class="align-left">0.307590</td>
+<td class="align-left">0.972059</td>
+<td class="align-left">0.487217</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260612</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.120774</td>
+<td class="align-left">0.334383</td>
+<td class="align-left">0.948176</td>
+<td class="align-left">0.429930</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260613</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.120602</td>
+<td class="align-left">0.260932</td>
+<td class="align-left">0.799938</td>
+<td class="align-left">0.430070</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260614</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.123862</td>
+<td class="align-left">0.312859</td>
+<td class="align-left">0.956709</td>
+<td class="align-left">0.499924</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260612</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.144418</td>
+<td class="align-left">0.275957</td>
+<td class="align-left">0.949081</td>
+<td class="align-left">0.486594</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260613</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.165847</td>
+<td class="align-left">0.283371</td>
+<td class="align-left">0.901034</td>
+<td class="align-left">0.435927</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260614</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.160842</td>
+<td class="align-left">0.266226</td>
+<td class="align-left">0.798898</td>
+<td class="align-left">0.392213</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260612</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.123503</td>
+<td class="align-left">0.275160</td>
+<td class="align-left">0.753974</td>
+<td class="align-left">0.390417</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260613</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.123379</td>
+<td class="align-left">0.258394</td>
+<td class="align-left">0.727348</td>
+<td class="align-left">0.407114</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260614</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.114439</td>
+<td class="align-left">0.229786</td>
+<td class="align-left">0.798824</td>
+<td class="align-left">0.422839</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260612</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.147661</td>
+<td class="align-left">0.279228</td>
+<td class="align-left">0.906718</td>
+<td class="align-left">0.443931</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260613</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.153196</td>
+<td class="align-left">0.280718</td>
+<td class="align-left">0.969392</td>
+<td class="align-left">0.479967</td>
+</tr>
+<tr>
+<td class="align-left">Warm retrained clean stack</td>
+<td class="align-left">20260614</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.151194</td>
+<td class="align-left">0.279116</td>
+<td class="align-left">0.884200</td>
+<td class="align-left">0.416424</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260612</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.115180</td>
+<td class="align-left">0.241141</td>
+<td class="align-left">0.804666</td>
+<td class="align-left">0.359110</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260613</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.123203</td>
+<td class="align-left">0.304381</td>
+<td class="align-left">0.947796</td>
+<td class="align-left">0.437774</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite pooled retrained</td>
+<td class="align-left">20260614</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.114439</td>
+<td class="align-left">0.241930</td>
+<td class="align-left">0.767560</td>
+<td class="align-left">0.408194</td>
+</tr>
+</tbody></table></div>
+<h2 id="7.-pooled-training-audit">7. Pooled training audit</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">seed</th>
+<th class="align-left">training_exposure_k</th>
+<th class="align-left">rows</th>
+<th class="align-left">artists</th>
+<th class="align-left">median_rows_per_artist</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">1</td>
+<td class="align-left">3301</td>
+<td class="align-left">1773</td>
+<td class="align-left">2</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">2</td>
+<td class="align-left">4622</td>
+<td class="align-left">1773</td>
+<td class="align-left">3</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">3</td>
+<td class="align-left">5780</td>
+<td class="align-left">1773</td>
+<td class="align-left">4</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">4</td>
+<td class="align-left">6830</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">5</td>
+<td class="align-left">7709</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">6</td>
+<td class="align-left">8487</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">1</td>
+<td class="align-left">3301</td>
+<td class="align-left">1773</td>
+<td class="align-left">2</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">2</td>
+<td class="align-left">4622</td>
+<td class="align-left">1773</td>
+<td class="align-left">3</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">3</td>
+<td class="align-left">5780</td>
+<td class="align-left">1773</td>
+<td class="align-left">4</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">4</td>
+<td class="align-left">6830</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">5</td>
+<td class="align-left">7709</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">6</td>
+<td class="align-left">8487</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">1</td>
+<td class="align-left">3301</td>
+<td class="align-left">1773</td>
+<td class="align-left">2</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">2</td>
+<td class="align-left">4622</td>
+<td class="align-left">1773</td>
+<td class="align-left">3</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">3</td>
+<td class="align-left">5780</td>
+<td class="align-left">1773</td>
+<td class="align-left">4</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">4</td>
+<td class="align-left">6830</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">5</td>
+<td class="align-left">7709</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">6</td>
+<td class="align-left">8487</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+</tbody></table></div>
+<h2 id="8.-해석-주의">8. 해석 주의</h2>
+<ul>
+<li>이 실험은 Warm-lite를 전체 k 조건으로 학습한 단일 모델의 가능성을 보는 실험이다.</li>
+<li>Warm 비교값은 CF3 clean stack 기준이며, 운영 WMIN8 artifact 전체 재생성 결과와 동일한 이름으로 부르면 안 된다.</li>
+<li>k=5~6 Warm-lite는 여전히 공식 라우팅 범위 밖의 정책 스트레스 비교다.</li>
+</ul>
+<h2 id="9.-config">9. Config</h2>
+<pre><code>{
+  &quot;created_at&quot;: &quot;2026-06-16T14:34:09&quot;,
+  &quot;experiment_id&quot;: &quot;PP-ROUTE-CF4&quot;,
+  &quot;experiment_slug&quot;: &quot;PP-ROUTE-CF4_pooled_warm_lite_vs_warm_k1_to_k6&quot;,
+  &quot;seeds&quot;: [
+    20260612,
+    20260613,
+    20260614
+  ],
+  &quot;k_values&quot;: [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  &quot;base_eval_set&quot;: &quot;Warm fixed-test rows with at least 6 same-artist train-history rows&quot;,
+  &quot;eligibility_audit&quot;: {
+    &quot;warm_fixed_test_rows_total&quot;: 607,
+    &quot;exact_k1_to_k6_eligible_rows&quot;: 519,
+    &quot;excluded_rows_with_less_than_6_history&quot;: 88,
+    &quot;min_full_train_artist_history_n&quot;: 6,
+    &quot;max_full_train_artist_history_n&quot;: 573
+  },
+  &quot;warm_lite_pooled_training&quot;: {
+    &quot;training_exposures&quot;: &quot;k=1..6 pooled per seed&quot;,
+    &quot;artist_cap_rule&quot;: &quot;training exposure k keeps at most k+1 rows per artist&quot;,
+    &quot;group_stats&quot;: &quot;5-fold internal stats on each capped exposure frame, then pooled&quot;,
+    &quot;model&quot;: &quot;LightGBM Quantile full/lean + LightGBM objective=huber residual&quot;,
+    &quot;candidate&quot;: &quot;lgbq_full_lean_avg + clip(0.50 * lgb_huber_residual, -0.10, +0.10)&quot;
+  },
+  &quot;warm_comparator&quot;: {
+    &quot;source&quot;: &quot;experiments/track6/PP-ROUTE-CF3_retrained_warm_vs_warm_lite_k1_to_k6/outputs/predictions_all_conditions.csv&quot;,
+    &quot;candidate&quot;: &quot;Warm retrained clean stack&quot;
+  },
+  &quot;limitations&quot;: [
+    &quot;Warm comparator is CF3 clean stack, not exact historical WMIN8/PPV8 full artifact rebuild.&quot;,
+    &quot;Warm-lite k=5~6 remains outside the official Warm-lite route and is included as a stress comparison.&quot;,
+    &quot;Pooled training intentionally augments repeated low-history exposure conditions, so it should be treated as a new candidate family.&quot;
+  ],
+  &quot;seconds&quot;: 731.65
+}</code></pre>
+    </main>
+  </div>
+</body>
+</html>

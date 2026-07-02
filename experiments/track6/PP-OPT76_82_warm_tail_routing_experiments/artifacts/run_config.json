@@ -1,0 +1,96 @@
+{
+  "experiment_id": "PP-OPT76-82",
+  "experiment_slug": "PP-OPT76_82_warm_tail_routing_experiments",
+  "created_at": "2026-06-09T13:50:07",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 4228,
+  "prediction_rows": 4760728,
+  "selected_references": {
+    "pp20": "previous_challenger_pp20",
+    "pp30": "reference_pp30_best",
+    "pp45": "reference_pp45_challenger",
+    "pp48": "reference_pp48_score",
+    "pp52": "reference_pp52_challenger",
+    "pp58": "reference_pp58_challenger",
+    "pp64": "reference_pp64_current_best",
+    "pp70": "ppopt70_pp64_refinement_challenger__source=ppopt68_shrinkage__global_1p04__risk_0p7__vh_0p82__lowconf_0p78"
+  },
+  "selection_decision": {
+    "reference_pp64_test_MAPE": 0.27056404191566036,
+    "reference_pp64_test_p95_APE": 0.8074988523061098,
+    "reference_pp70_test_MAPE": 0.2705609753769763,
+    "reference_pp70_test_p95_APE": 0.8074900608978479,
+    "operational_source_candidate": "ppopt80_hard_tail__anchor=pp70__helper=pp20__score=p95_prob__thr=0p62__width=0p24__s=1p0",
+    "operational_source_item_id": "PP-OPT80",
+    "operational_source_family": "p95_first_hard_tail_fallback",
+    "operational_test_MAPE": 0.2705565870369285,
+    "operational_test_p95_APE": 0.807450308348755,
+    "operational_delta_vs_pp64_MAPE": -7.454878731882886e-06,
+    "operational_delta_vs_pp64_p95_APE": -4.8543957354874046e-05,
+    "p95_source_candidate": "ppopt77_clf_tail__anchor=pp70__helper=pp20__prob=tail85_only__thr=0p26__width=0p18__s=0p64",
+    "p95_source_item_id": "PP-OPT77",
+    "p95_source_family": "classifier_tail_routing",
+    "p95_test_MAPE": 0.2706512801714569,
+    "p95_test_p95_APE": 0.8068395739408173,
+    "p95_delta_vs_pp64_MAPE": 8.72382557965401e-05,
+    "p95_delta_vs_pp64_p95_APE": -0.0006592783652925593,
+    "selection_reason": "operational candidate prioritizes p95 improvement within small MAPE loss; p95 candidate allows slightly more MAPE for tail reduction",
+    "operational_protocol_candidate": "ppopt82_operational_tail_routing_challenger__source=ppopt80_hard_tail__anchor_pp70__helper_pp20__score_p95_prob__thr_0p62__width_0p24__s_1p0",
+    "p95_protocol_candidate": "ppopt82_p95_tail_routing_challenger__source=ppopt77_clf_tail__anchor_pp70__helper_pp20__prob_tail85_only__thr_0p26__width_0p18__s_0p64"
+  },
+  "items": [
+    {
+      "item_id": "PP-OPT76",
+      "priority": "1",
+      "title": "deterministic tail-risk score routing",
+      "description": "퀀타일 폭, 모델 간 spread, 저신뢰, 고가 구간으로 tail 위험도를 만들고 위험 row만 안정 후보로 이동한다."
+    },
+    {
+      "item_id": "PP-OPT77",
+      "priority": "2",
+      "title": "validation-trained tail classifier routing",
+      "description": "validation OOF에서 안정 후보가 PP64보다 좋아지는 tail row를 학습해 routing 확률로 사용한다."
+    },
+    {
+      "item_id": "PP-OPT78",
+      "priority": "3",
+      "title": "helper-specific better-probability routing",
+      "description": "PP20, PP30, PP48이 각각 PP64보다 나아지는 확률을 따로 학습해 helper를 가중 평균한다."
+    },
+    {
+      "item_id": "PP-OPT79",
+      "priority": "4",
+      "title": "quantile-direction aligned tail routing",
+      "description": "잔차 quantile 방향과 안정 후보 이동 방향이 맞는 row에서만 tail routing을 허용한다."
+    },
+    {
+      "item_id": "PP-OPT80",
+      "priority": "5",
+      "title": "p95-first hard tail fallback",
+      "description": "p95를 직접 낮추기 위해 매우 높은 위험 row에서 더 강한 fallback을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT81",
+      "priority": "6",
+      "title": "tail routing ensemble",
+      "description": "deterministic risk, classifier probability, helper-specific probability를 함께 써서 routing 강도를 정한다."
+    },
+    {
+      "item_id": "PP-OPT82",
+      "priority": "7",
+      "title": "최종 tail-routing challenger 선택",
+      "description": "운영형 후보와 p95 목적형 후보를 분리해 최종 판단한다."
+    }
+  ],
+  "sources": {
+    "pp65_config": "experiments/track6/PP-OPT65_70_warm_pp64_refinement_experiments/artifacts/run_config.json",
+    "pp65_predictions": "experiments/track6/PP-OPT65_70_warm_pp64_refinement_experiments/outputs/candidate_predictions.csv",
+    "pp47_quantile": "experiments/track6/PP-OPT47_52_warm_residual_finetune_experiments/artifacts/quantile_residual_predictions.csv",
+    "pp65_helper": "scripts/track6/run_pp_opt65_70_warm_pp64_refinement_experiments.py"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "similar_artist": {
+    "candidate_pool": "학습 데이터에서 낙찰 이력이 5건 이상 있는 작가. 같은 작가는 유사 작가 후보에서 제외한다.",
+    "history_basis": "대상 작가가 학습 이력이 있으면 가격대, 면적당 가격, 주 사용 재료/지지체/크기, 생년, 국적, 활동 단계, 팔로워/작품 수를 함께 사용한다.",
+    "metadata_basis": "대상 작가 학습 이력이 없으면 생년, 국적, 활동 단계, P1 여부, 팔로워/작품 수, 입력 작품의 재료/지지체/크기를 사용한다.",
+    "selection": "유사도 점수 상위 12명 중 점수 0.45 이상을 유사 작가로 채택한다. 없으면 상위 5명을 fallback으로 사용한다."
+  },
+  "similar_artwork": [
+    {
+      "level": "similar_artist_medium_support_size",
+      "label": "유사 작가 + 같은 재료/지지체 + 비슷한 크기",
+      "min_n": 8
+    },
+    {
+      "level": "similar_artist_medium_size",
+      "label": "유사 작가 + 같은 재료 대분류 + 비슷한 크기",
+      "min_n": 10
+    },
+    {
+      "level": "similar_artist_size",
+      "label": "유사 작가 + 비슷한 크기",
+      "min_n": 15
+    },
+    {
+      "level": "similar_artist_all",
+      "label": "유사 작가 전체",
+      "min_n": 20
+    }
+  ],
+  "features": {
+    "numeric": [
+      "sa_group_log_price_median",
+      "sa_group_log_price_q25",
+      "sa_group_log_price_q75",
+      "sa_group_log_price_iqr",
+      "sa_group_log_unit_area_median",
+      "sa_group_log_unit_area_iqr",
+      "sa_group_n_log",
+      "sa_artist_count_log",
+      "sa_similarity_score_mean",
+      "sa_similarity_score_max",
+      "sa_artwork_match_score"
+    ],
+    "categorical": [
+      "sa_group_level",
+      "sa_coverage_tier",
+      "sa_similarity_basis"
+    ]
+  }
+}

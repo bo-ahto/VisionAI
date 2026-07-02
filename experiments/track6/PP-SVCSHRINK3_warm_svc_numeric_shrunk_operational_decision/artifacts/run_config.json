@@ -1,0 +1,48 @@
+{
+  "experiment_id": "PP-SVCSHRINK3",
+  "experiment_slug": "PP-SVCSHRINK3_warm_svc_numeric_shrunk_operational_decision",
+  "features": [
+    "width_cm",
+    "height_cm",
+    "depth_cm",
+    "area_cm2",
+    "log_area",
+    "aspect_ratio",
+    "has_depth",
+    "is_3d_candidate",
+    "medium_category",
+    "support_category",
+    "medium_support_bucket",
+    "is_extreme_aspect_ratio",
+    "artist_key",
+    "svc_group_log_price_median",
+    "svc_group_log_price_q25",
+    "svc_group_log_price_q75",
+    "svc_group_log_price_iqr",
+    "svc_group_log_unit_area_median",
+    "svc_group_log_unit_area_iqr",
+    "svc_group_n_log"
+  ],
+  "k": 5,
+  "n_oof": 5,
+  "n_repeats": 8,
+  "n_folds": 5,
+  "improvement_prob": {
+    "MdAPE_improve": 0.45,
+    "MAPE_improve": 0.525,
+    "p95_improve": 0.5125
+  },
+  "prob_by_scheme": {
+    "artist": {
+      "MdAPE": 0.475,
+      "MAPE": 0.625,
+      "p95": 0.575
+    },
+    "row": {
+      "MdAPE": 0.425,
+      "MAPE": 0.425,
+      "p95": 0.45
+    }
+  },
+  "decision": "조건부 채택: shrunk가 held-out test_warm+0604 전 지표 지배(test_warm MAPE 0.296→0.281, 0604 raw→shrunk MAPE 0.451→0.434/p95 1.000→0.999/std 1.640→1.379). 단 validation MdAPE 소폭 악화(예) + 반복 holdout 중립(MAPE 0.53/p95 0.51, artist scheme는 우세) = center-vs-tail 트레이드오프. 운영 반영 전 svc_numeric_seed_mean 전체 재현 + 고정 split 최종 확인 권고."
+}

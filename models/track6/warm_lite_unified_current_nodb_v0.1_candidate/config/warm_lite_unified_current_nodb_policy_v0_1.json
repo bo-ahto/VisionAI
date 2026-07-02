@@ -1,0 +1,35 @@
+{
+  "version": "v0.1-candidate",
+  "name": "warm_lite_unified_current_nodb",
+  "status": "candidate_no_db_runtime",
+  "base_model_bundle": "models/track6/warm_lite_unified_route_gap_q50_v0.1_candidate",
+  "selected_candidate": "current",
+  "formula": "seed_mean(qavg + clip(0.50 * LightGBMHuberResidual, -0.10, +0.10))",
+  "routing_precondition": "artist_match_score >= 0.80 AND same_artist_training_price_count >= 1",
+  "runtime_dependency": "no sqlite db; uses frozen CSV lookup/history artifacts",
+  "frozen_tables": {
+    "artist_registry_rows": 1773,
+    "artist_alias_rows": 3600,
+    "train_history_rows": 26914,
+    "train_history_unique_track6_row_ids": 26914,
+    "train_history_duplicate_track6_row_ids_before_remap": 1,
+    "train_history_duplicate_track6_row_ids_after_remap": 0,
+    "track6_row_id_source": "models/track6/price_prediction_v0.1/data/training/track6_split/track6_train.csv",
+    "train_history_artists": 1773,
+    "train_only": true
+  },
+  "copied_model_artifacts": [
+    {
+      "source": "models/track6/warm_lite_unified_route_gap_q50_v0.1_candidate/config/warm_lite_unified_route_gap_q50_params_v0_1.json",
+      "target": "models/track6/warm_lite_unified_current_nodb_v0.1_candidate/config/warm_lite_unified_route_gap_q50_params_v0_1.json"
+    },
+    {
+      "source": "models/track6/warm_lite_unified_route_gap_q50_v0.1_candidate/config/warm_lite_unified_route_gap_q50_policy_v0_1.json",
+      "target": "models/track6/warm_lite_unified_current_nodb_v0.1_candidate/config/warm_lite_unified_route_gap_q50_policy_v0_1.json"
+    },
+    {
+      "source": "models/track6/warm_lite_unified_route_gap_q50_v0.1_candidate/models",
+      "target": "models/track6/warm_lite_unified_current_nodb_v0.1_candidate/models"
+    }
+  ]
+}

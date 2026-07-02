@@ -1,0 +1,67 @@
+{
+  "experiment_id": "PP-CGRP1",
+  "purpose": "작가 미사용 비교군 그룹 가격 통계의 Cold base 투입 (PP-Y 라인 미검증 갭)",
+  "ladder": [
+    {
+      "keys": [
+        "medium_support_bucket",
+        "size_bucket"
+      ],
+      "min_n": 30
+    },
+    {
+      "keys": [
+        "medium_category",
+        "support_category",
+        "size_bucket"
+      ],
+      "min_n": 30
+    },
+    {
+      "keys": [
+        "medium_category",
+        "size_bucket"
+      ],
+      "min_n": 50
+    }
+  ],
+  "leakage_control": "train 통계는 5-fold 자기 fold 제외, val/test/pseudo는 학습 train 전체 기준",
+  "candidates": {
+    "base12": 12,
+    "base12_grp_full": 20,
+    "base12_grp_lean": 16
+  },
+  "seeds": [
+    20260610,
+    20260611,
+    20260612
+  ],
+  "n_boot_artist_cluster": 400,
+  "val_match_level_share": {
+    "1.0": 0.9353432618961133,
+    "3.0": 0.048674173628768615,
+    "4.0": 0.015982564475118054
+  },
+  "gate": "validation 3지표 + artist-cluster bootstrap MAPE/p95>=0.90 + pseudo-cold 3seed 방향 일치 + fixed test 1회",
+  "pseudo_cold_direction": [
+    {
+      "pcold_seed": 20260610,
+      "lean_improves_MAPE": true,
+      "full_improves_MAPE": false
+    },
+    {
+      "pcold_seed": 20260611,
+      "lean_improves_MAPE": false,
+      "full_improves_MAPE": false
+    },
+    {
+      "pcold_seed": 20260612,
+      "lean_improves_MAPE": false,
+      "full_improves_MAPE": false
+    }
+  ],
+  "prohibitions": [
+    "0604 사용 금지",
+    "test 후보 선택 금지(최종 확인 1회)"
+  ]
+}

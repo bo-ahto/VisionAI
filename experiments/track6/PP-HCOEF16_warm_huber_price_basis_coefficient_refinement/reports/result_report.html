@@ -1,0 +1,261 @@
+<!doctype html><html><head><meta charset='utf-8'>
+    <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 28px; color: #1f2933; }
+    h1, h2, h3 { color: #17202a; }
+    table { border-collapse: collapse; width: 100%; margin: 14px 0 24px; font-size: 13px; }
+    th, td { border: 1px solid #d7dee8; padding: 7px 9px; text-align: left; vertical-align: top; }
+    th { background: #eef3f8; }
+    p { line-height: 1.55; }
+    </style>
+    </head><body><h1>PP-HCOEF16 Warm PP-V8/service component OOF 재검증</h1>
+
+<p>- 작성일: 2026-06-08 01:45</p>
+<p>- 목적: HCOEF15에서 0604 성능이 좋았던 PP-V8/service component를 validation OOF 기준 Huber 입력 피처로 재검증</p>
+<p>- 기준 후보: `hcoef2_size_reliability_cap005_s050`</p>
+<p>- 0604 라벨은 stress test로만 사용하고 후보 선택에는 사용하지 않음</p>
+<p>- PP-V8 component는 validation/test에서 `PP-SVC3`와 `PP-V8` 산출물이 동일함을 감사함</p>
+<p>  - validation/test PP-V8 proxy 일치율: `1.0000`</p>
+<p>  - validation/test PP-V8 proxy 최대 차이: `0.000000`</p>
+
+<h2>1. 실행 결론</h2>
+
+<p>- PP-V8/service component 단독은 0604에서는 강하지만 validation/test에서는 HCOEF 안정 후보보다 약함.</p>
+<p>- HCOEF 안정 후보에 PP-V8을 작은 비율로 섞거나 Huber residual 피처로 넣는 후보를 반복 OOF로 검증함.</p>
+<p>- 채택 여부는 0604가 아니라 row OOF, artist OOF, fixed test p95 guard로 판단함.</p>
+
+<h2>2. fixed validation/test/0604 주요 후보</h2>
+
+<table>
+<tr><th>split</th><th>candidate</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_MdAPE_vs_stable</th><th>delta_MAPE_vs_stable</th><th>delta_p95_APE_vs_stable</th></tr>
+<tr><td>validation</td><td>current_70_30</td><td>519</td><td>0.1305</td><td>0.2110</td><td>0.6580</td><td>0.3292</td><td>0.0045</td><td>0.0028</td><td>0.0101</td></tr>
+<tr><td>validation</td><td>hcoef_stable</td><td>519</td><td>0.1260</td><td>0.2082</td><td>0.6479</td><td>0.3252</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td>validation</td><td>ppv8_service_proxy</td><td>519</td><td>0.1544</td><td>0.2544</td><td>0.8084</td><td>0.3721</td><td>0.0284</td><td>0.0462</td><td>0.1604</td></tr>
+<tr><td>test</td><td>current_70_30</td><td>607</td><td>0.1405</td><td>0.2748</td><td>0.8331</td><td>0.3996</td><td>0.0017</td><td>0.0018</td><td>0.0267</td></tr>
+<tr><td>test</td><td>hcoef_stable</td><td>607</td><td>0.1388</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td>test</td><td>ppv8_service_proxy</td><td>607</td><td>0.1632</td><td>0.2816</td><td>0.9311</td><td>0.4028</td><td>0.0244</td><td>0.0086</td><td>0.1247</td></tr>
+<tr><td>0604_ex50</td><td>current_70_30</td><td>829</td><td>0.2779</td><td>0.3774</td><td>0.9871</td><td>1.3117</td><td>0.0049</td><td>0.0030</td><td>0.0036</td></tr>
+<tr><td>0604_ex50</td><td>hcoef_stable</td><td>829</td><td>0.2731</td><td>0.3744</td><td>0.9835</td><td>1.3078</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td>0604_ex50</td><td>ppv8_service_proxy</td><td>829</td><td>0.2298</td><td>0.3359</td><td>0.9273</td><td>0.7124</td><td>-0.0433</td><td>-0.0385</td><td>-0.0561</td></tr>
+<tr><td>validation</td><td>hcoef16_stable_ppv8_blend_w010</td><td>519</td><td>0.1272</td><td>0.2094</td><td>0.6567</td><td>0.3260</td><td>0.0012</td><td>0.0012</td><td>0.0087</td></tr>
+<tr><td>test</td><td>hcoef16_stable_ppv8_blend_w010</td><td>607</td><td>0.1415</td><td>0.2707</td><td>0.8308</td><td>0.3961</td><td>0.0027</td><td>-0.0023</td><td>0.0245</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_stable_ppv8_blend_w010</td><td>829</td><td>0.2582</td><td>0.3638</td><td>0.9784</td><td>1.2247</td><td>-0.0148</td><td>-0.0106</td><td>-0.0051</td></tr>
+<tr><td>validation</td><td>hcoef16_stable_ppv8_blend_w025</td><td>519</td><td>0.1319</td><td>0.2125</td><td>0.6723</td><td>0.3289</td><td>0.0059</td><td>0.0043</td><td>0.0244</td></tr>
+<tr><td>test</td><td>hcoef16_stable_ppv8_blend_w025</td><td>607</td><td>0.1436</td><td>0.2691</td><td>0.8392</td><td>0.3934</td><td>0.0048</td><td>-0.0039</td><td>0.0328</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_stable_ppv8_blend_w025</td><td>829</td><td>0.2542</td><td>0.3507</td><td>0.9669</td><td>1.1054</td><td>-0.0189</td><td>-0.0237</td><td>-0.0165</td></tr>
+</table>
+
+<h2>3. fixed test 상위 후보</h2>
+
+<table>
+<tr><th>candidate</th><th>method</th><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_MdAPE_vs_stable</th><th>delta_MAPE_vs_stable</th><th>delta_p95_APE_vs_stable</th></tr>
+<tr><td>hcoef_stable</td><td>baseline_stable</td><td>607</td><td>0.1388</td><td>0.2730</td><td>0.8064</td><td>0.3988</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p25</td><td>residual_huber</td><td>607</td><td>0.1394</td><td>0.2728</td><td>0.8091</td><td>0.3987</td><td>0.0006</td><td>-0.0002</td><td>0.0027</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p02_s0p25</td><td>residual_huber</td><td>607</td><td>0.1394</td><td>0.2728</td><td>0.8091</td><td>0.3987</td><td>0.0006</td><td>-0.0002</td><td>0.0027</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p25</td><td>residual_huber</td><td>607</td><td>0.1394</td><td>0.2730</td><td>0.8091</td><td>0.3989</td><td>0.0006</td><td>-0.0000</td><td>0.0027</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p25</td><td>residual_huber</td><td>607</td><td>0.1394</td><td>0.2730</td><td>0.8091</td><td>0.3989</td><td>0.0006</td><td>-0.0000</td><td>0.0027</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>residual_huber</td><td>607</td><td>0.1394</td><td>0.2730</td><td>0.8091</td><td>0.3989</td><td>0.0006</td><td>0.0000</td><td>0.0027</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>residual_huber</td><td>607</td><td>0.1394</td><td>0.2730</td><td>0.8091</td><td>0.3989</td><td>0.0006</td><td>0.0000</td><td>0.0027</td></tr>
+<tr><td>current_70_30</td><td>baseline_reference</td><td>607</td><td>0.1405</td><td>0.2748</td><td>0.8331</td><td>0.3996</td><td>0.0017</td><td>0.0018</td><td>0.0267</td></tr>
+<tr><td>hcoef16_stable_ppv8_blend_w010</td><td>direct</td><td>607</td><td>0.1415</td><td>0.2707</td><td>0.8308</td><td>0.3961</td><td>0.0027</td><td>-0.0023</td><td>0.0245</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p03_s0p25</td><td>residual_huber</td><td>607</td><td>0.1417</td><td>0.2726</td><td>0.8117</td><td>0.3987</td><td>0.0029</td><td>-0.0004</td><td>0.0053</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p03_s0p25</td><td>residual_huber</td><td>607</td><td>0.1417</td><td>0.2726</td><td>0.8117</td><td>0.3987</td><td>0.0029</td><td>-0.0004</td><td>0.0053</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p03_s0p25</td><td>residual_huber</td><td>607</td><td>0.1417</td><td>0.2729</td><td>0.8117</td><td>0.3989</td><td>0.0029</td><td>-0.0001</td><td>0.0053</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p03_s0p25</td><td>residual_huber</td><td>607</td><td>0.1417</td><td>0.2729</td><td>0.8117</td><td>0.3989</td><td>0.0029</td><td>-0.0001</td><td>0.0053</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25</td><td>residual_huber</td><td>607</td><td>0.1422</td><td>0.2729</td><td>0.8117</td><td>0.3989</td><td>0.0034</td><td>-0.0001</td><td>0.0053</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p25</td><td>residual_huber</td><td>607</td><td>0.1422</td><td>0.2729</td><td>0.8117</td><td>0.3989</td><td>0.0034</td><td>-0.0001</td><td>0.0053</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p05_s0p25</td><td>residual_huber</td><td>607</td><td>0.1432</td><td>0.2728</td><td>0.8147</td><td>0.3988</td><td>0.0044</td><td>-0.0002</td><td>0.0083</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p5</td><td>residual_huber</td><td>607</td><td>0.1433</td><td>0.2731</td><td>0.8150</td><td>0.3990</td><td>0.0045</td><td>0.0001</td><td>0.0086</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p5</td><td>residual_huber</td><td>607</td><td>0.1433</td><td>0.2731</td><td>0.8150</td><td>0.3990</td><td>0.0045</td><td>0.0001</td><td>0.0086</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>residual_huber</td><td>607</td><td>0.1434</td><td>0.2727</td><td>0.8149</td><td>0.3988</td><td>0.0046</td><td>-0.0002</td><td>0.0086</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p5</td><td>residual_huber</td><td>607</td><td>0.1436</td><td>0.2731</td><td>0.8313</td><td>0.3990</td><td>0.0048</td><td>0.0001</td><td>0.0249</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p25</td><td>residual_huber</td><td>607</td><td>0.1436</td><td>0.2728</td><td>0.8170</td><td>0.3988</td><td>0.0048</td><td>-0.0002</td><td>0.0107</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p5</td><td>residual_huber</td><td>607</td><td>0.1436</td><td>0.2731</td><td>0.8313</td><td>0.3990</td><td>0.0048</td><td>0.0001</td><td>0.0249</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p25</td><td>residual_huber</td><td>607</td><td>0.1436</td><td>0.2728</td><td>0.8170</td><td>0.3988</td><td>0.0048</td><td>-0.0002</td><td>0.0107</td></tr>
+<tr><td>hcoef16_stable_ppv8_blend_w025</td><td>direct</td><td>607</td><td>0.1436</td><td>0.2691</td><td>0.8392</td><td>0.3934</td><td>0.0048</td><td>-0.0039</td><td>0.0328</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p05_s0p25</td><td>residual_huber</td><td>607</td><td>0.1437</td><td>0.2723</td><td>0.8124</td><td>0.3985</td><td>0.0049</td><td>-0.0006</td><td>0.0060</td></tr>
+</table>
+
+<p>_Only first 25 of 44 rows shown._</p>
+
+<h2>4. 반복 OOF 요약</h2>
+
+<table>
+<tr><th>candidate</th><th>validation_scheme</th><th>n_repeats</th><th>mean_MdAPE</th><th>mean_MAPE</th><th>mean_p95_APE</th><th>mean_delta_MdAPE_vs_stable</th><th>mean_delta_MAPE_vs_stable</th><th>mean_delta_p95_APE_vs_stable</th><th>all3_improve_prob</th><th>row_all3_improve_prob</th><th>artist_all3_improve_prob</th></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>row_oof</td><td>20</td><td>0.1259</td><td>0.2078</td><td>0.6407</td><td>-0.0001</td><td>-0.0004</td><td>-0.0073</td><td>0.9500</td><td>0.9500</td><td>0.7500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>row_oof</td><td>20</td><td>0.1259</td><td>0.2078</td><td>0.6407</td><td>-0.0001</td><td>-0.0004</td><td>-0.0073</td><td>0.9500</td><td>0.9500</td><td>0.7500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>artist_oof</td><td>20</td><td>0.1260</td><td>0.2078</td><td>0.6408</td><td>-0.0000</td><td>-0.0004</td><td>-0.0072</td><td>0.7500</td><td>0.9500</td><td>0.7500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>artist_oof</td><td>20</td><td>0.1260</td><td>0.2078</td><td>0.6408</td><td>-0.0000</td><td>-0.0004</td><td>-0.0072</td><td>0.7500</td><td>0.9500</td><td>0.7500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p5</td><td>row_oof</td><td>20</td><td>0.1232</td><td>0.2072</td><td>0.6452</td><td>-0.0028</td><td>-0.0010</td><td>-0.0027</td><td>0.9000</td><td>0.9000</td><td>0.7000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p05_s0p5</td><td>row_oof</td><td>20</td><td>0.1232</td><td>0.2072</td><td>0.6453</td><td>-0.0027</td><td>-0.0010</td><td>-0.0027</td><td>0.9000</td><td>0.9000</td><td>0.7000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p5</td><td>artist_oof</td><td>20</td><td>0.1238</td><td>0.2075</td><td>0.6465</td><td>-0.0022</td><td>-0.0007</td><td>-0.0015</td><td>0.7000</td><td>0.9000</td><td>0.7000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p05_s0p5</td><td>artist_oof</td><td>20</td><td>0.1238</td><td>0.2075</td><td>0.6466</td><td>-0.0022</td><td>-0.0007</td><td>-0.0014</td><td>0.7000</td><td>0.9000</td><td>0.7000</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p02_s0p25</td><td>row_oof</td><td>20</td><td>0.1259</td><td>0.2079</td><td>0.6412</td><td>-0.0001</td><td>-0.0003</td><td>-0.0067</td><td>0.8500</td><td>0.8500</td><td>0.4500</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p25</td><td>row_oof</td><td>20</td><td>0.1259</td><td>0.2079</td><td>0.6412</td><td>-0.0001</td><td>-0.0003</td><td>-0.0067</td><td>0.8500</td><td>0.8500</td><td>0.4500</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p02_s0p25</td><td>artist_oof</td><td>20</td><td>0.1261</td><td>0.2079</td><td>0.6411</td><td>0.0001</td><td>-0.0003</td><td>-0.0068</td><td>0.4500</td><td>0.8500</td><td>0.4500</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p25</td><td>artist_oof</td><td>20</td><td>0.1261</td><td>0.2079</td><td>0.6411</td><td>0.0001</td><td>-0.0003</td><td>-0.0068</td><td>0.4500</td><td>0.8500</td><td>0.4500</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p25</td><td>row_oof</td><td>20</td><td>0.1260</td><td>0.2079</td><td>0.6408</td><td>-0.0000</td><td>-0.0003</td><td>-0.0072</td><td>0.8000</td><td>0.8000</td><td>0.6500</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p25</td><td>row_oof</td><td>20</td><td>0.1260</td><td>0.2079</td><td>0.6408</td><td>-0.0000</td><td>-0.0003</td><td>-0.0072</td><td>0.8000</td><td>0.8000</td><td>0.6500</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p25</td><td>artist_oof</td><td>20</td><td>0.1260</td><td>0.2080</td><td>0.6409</td><td>0.0000</td><td>-0.0003</td><td>-0.0071</td><td>0.6500</td><td>0.8000</td><td>0.6500</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p25</td><td>artist_oof</td><td>20</td><td>0.1260</td><td>0.2080</td><td>0.6409</td><td>0.0000</td><td>-0.0003</td><td>-0.0071</td><td>0.6500</td><td>0.8000</td><td>0.6500</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p05_s0p5</td><td>row_oof</td><td>20</td><td>0.1237</td><td>0.2074</td><td>0.6460</td><td>-0.0023</td><td>-0.0008</td><td>-0.0019</td><td>0.8000</td><td>0.8000</td><td>0.4500</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p05_s0p5</td><td>row_oof</td><td>20</td><td>0.1237</td><td>0.2074</td><td>0.6460</td><td>-0.0023</td><td>-0.0008</td><td>-0.0019</td><td>0.8000</td><td>0.8000</td><td>0.4500</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p05_s0p5</td><td>artist_oof</td><td>20</td><td>0.1243</td><td>0.2077</td><td>0.6473</td><td>-0.0016</td><td>-0.0005</td><td>-0.0006</td><td>0.4500</td><td>0.8000</td><td>0.4500</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p05_s0p5</td><td>artist_oof</td><td>20</td><td>0.1243</td><td>0.2077</td><td>0.6473</td><td>-0.0016</td><td>-0.0005</td><td>-0.0006</td><td>0.4500</td><td>0.8000</td><td>0.4500</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p5</td><td>row_oof</td><td>20</td><td>0.1241</td><td>0.2075</td><td>0.6472</td><td>-0.0019</td><td>-0.0007</td><td>-0.0008</td><td>0.6500</td><td>0.6500</td><td>0.4000</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p5</td><td>row_oof</td><td>20</td><td>0.1241</td><td>0.2075</td><td>0.6472</td><td>-0.0019</td><td>-0.0007</td><td>-0.0008</td><td>0.6500</td><td>0.6500</td><td>0.4000</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p5</td><td>artist_oof</td><td>20</td><td>0.1251</td><td>0.2079</td><td>0.6485</td><td>-0.0008</td><td>-0.0003</td><td>0.0006</td><td>0.4000</td><td>0.6500</td><td>0.4000</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p5</td><td>artist_oof</td><td>20</td><td>0.1251</td><td>0.2079</td><td>0.6485</td><td>-0.0008</td><td>-0.0003</td><td>0.0006</td><td>0.4000</td><td>0.6500</td><td>0.4000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p5</td><td>row_oof</td><td>20</td><td>0.1259</td><td>0.2072</td><td>0.6410</td><td>-0.0001</td><td>-0.0010</td><td>-0.0070</td><td>0.5500</td><td>0.5500</td><td>0.1500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p5</td><td>artist_oof</td><td>20</td><td>0.1264</td><td>0.2074</td><td>0.6422</td><td>0.0004</td><td>-0.0008</td><td>-0.0057</td><td>0.1500</td><td>0.5500</td><td>0.1500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p5</td><td>row_oof</td><td>20</td><td>0.1260</td><td>0.2073</td><td>0.6410</td><td>-0.0000</td><td>-0.0010</td><td>-0.0070</td><td>0.4500</td><td>0.4500</td><td>0.1500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p5</td><td>artist_oof</td><td>20</td><td>0.1265</td><td>0.2074</td><td>0.6423</td><td>0.0005</td><td>-0.0008</td><td>-0.0057</td><td>0.1500</td><td>0.4500</td><td>0.1500</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p05_s0p25</td><td>row_oof</td><td>20</td><td>0.1263</td><td>0.2076</td><td>0.6458</td><td>0.0003</td><td>-0.0006</td><td>-0.0021</td><td>0.3500</td><td>0.3500</td><td>0.2000</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p05_s0p25</td><td>row_oof</td><td>20</td><td>0.1263</td><td>0.2076</td><td>0.6458</td><td>0.0003</td><td>-0.0006</td><td>-0.0021</td><td>0.3500</td><td>0.3500</td><td>0.2000</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p05_s0p25</td><td>artist_oof</td><td>20</td><td>0.1269</td><td>0.2078</td><td>0.6458</td><td>0.0009</td><td>-0.0004</td><td>-0.0022</td><td>0.2000</td><td>0.3500</td><td>0.2000</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p05_s0p25</td><td>artist_oof</td><td>20</td><td>0.1269</td><td>0.2078</td><td>0.6458</td><td>0.0009</td><td>-0.0004</td><td>-0.0022</td><td>0.2000</td><td>0.3500</td><td>0.2000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>artist_oof</td><td>20</td><td>0.1266</td><td>0.2077</td><td>0.6446</td><td>0.0006</td><td>-0.0005</td><td>-0.0034</td><td>0.2500</td><td>0.3000</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>row_oof</td><td>20</td><td>0.1267</td><td>0.2075</td><td>0.6430</td><td>0.0007</td><td>-0.0007</td><td>-0.0050</td><td>0.3000</td><td>0.3000</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25</td><td>artist_oof</td><td>20</td><td>0.1264</td><td>0.2077</td><td>0.6437</td><td>0.0004</td><td>-0.0005</td><td>-0.0042</td><td>0.3000</td><td>0.2500</td><td>0.3000</td></tr>
+</table>
+
+<p>_Only first 35 of 80 rows shown._</p>
+
+<h2>5. 후보 선택 판단</h2>
+
+<table>
+<tr><th>candidate</th><th>row_all3_improve_prob</th><th>artist_all3_improve_prob</th><th>test_MdAPE</th><th>test_MAPE</th><th>test_p95_APE</th><th>test_RMSE_log</th><th>delta_MdAPE_vs_stable</th><th>delta_MAPE_vs_stable</th><th>delta_p95_APE_vs_stable</th><th>passes_repeat_gate</th><th>passes_fixed_p95_guard</th><th>passes_fixed_all3</th><th>decision</th></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p25</td><td>0.8500</td><td>0.4500</td><td>0.1394</td><td>0.2728</td><td>0.8091</td><td>0.3987</td><td>0.0006</td><td>-0.0002</td><td>0.0027</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p02_s0p25</td><td>0.8500</td><td>0.4500</td><td>0.1394</td><td>0.2728</td><td>0.8091</td><td>0.3987</td><td>0.0006</td><td>-0.0002</td><td>0.0027</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p25</td><td>0.8000</td><td>0.6500</td><td>0.1394</td><td>0.2730</td><td>0.8091</td><td>0.3989</td><td>0.0006</td><td>-0.0000</td><td>0.0027</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p25</td><td>0.8000</td><td>0.6500</td><td>0.1394</td><td>0.2730</td><td>0.8091</td><td>0.3989</td><td>0.0006</td><td>-0.0000</td><td>0.0027</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>0.9500</td><td>0.7500</td><td>0.1394</td><td>0.2730</td><td>0.8091</td><td>0.3989</td><td>0.0006</td><td>0.0000</td><td>0.0027</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>0.9500</td><td>0.7500</td><td>0.1394</td><td>0.2730</td><td>0.8091</td><td>0.3989</td><td>0.0006</td><td>0.0000</td><td>0.0027</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_stable_ppv8_blend_w010</td><td>0.0000</td><td>0.0000</td><td>0.1415</td><td>0.2707</td><td>0.8308</td><td>0.3961</td><td>0.0027</td><td>-0.0023</td><td>0.0245</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p03_s0p25</td><td>0.0000</td><td>0.1000</td><td>0.1417</td><td>0.2726</td><td>0.8117</td><td>0.3987</td><td>0.0029</td><td>-0.0004</td><td>0.0053</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p03_s0p25</td><td>0.0000</td><td>0.1000</td><td>0.1417</td><td>0.2726</td><td>0.8117</td><td>0.3987</td><td>0.0029</td><td>-0.0004</td><td>0.0053</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p03_s0p25</td><td>0.0000</td><td>0.1000</td><td>0.1417</td><td>0.2729</td><td>0.8117</td><td>0.3989</td><td>0.0029</td><td>-0.0001</td><td>0.0053</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p03_s0p25</td><td>0.0000</td><td>0.1000</td><td>0.1417</td><td>0.2729</td><td>0.8117</td><td>0.3989</td><td>0.0029</td><td>-0.0001</td><td>0.0053</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25</td><td>0.2500</td><td>0.3000</td><td>0.1422</td><td>0.2729</td><td>0.8117</td><td>0.3989</td><td>0.0034</td><td>-0.0001</td><td>0.0053</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p25</td><td>0.2500</td><td>0.2500</td><td>0.1422</td><td>0.2729</td><td>0.8117</td><td>0.3989</td><td>0.0034</td><td>-0.0001</td><td>0.0053</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p05_s0p25</td><td>0.2500</td><td>0.2500</td><td>0.1432</td><td>0.2728</td><td>0.8147</td><td>0.3988</td><td>0.0044</td><td>-0.0002</td><td>0.0083</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p5</td><td>0.0000</td><td>0.0000</td><td>0.1433</td><td>0.2731</td><td>0.8150</td><td>0.3990</td><td>0.0045</td><td>0.0001</td><td>0.0086</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p5</td><td>0.0000</td><td>0.0000</td><td>0.1433</td><td>0.2731</td><td>0.8150</td><td>0.3990</td><td>0.0045</td><td>0.0001</td><td>0.0086</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>0.3000</td><td>0.2500</td><td>0.1434</td><td>0.2727</td><td>0.8149</td><td>0.3988</td><td>0.0046</td><td>-0.0002</td><td>0.0086</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p5</td><td>0.6500</td><td>0.4000</td><td>0.1436</td><td>0.2731</td><td>0.8313</td><td>0.3990</td><td>0.0048</td><td>0.0001</td><td>0.0249</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p25</td><td>0.1000</td><td>0.0500</td><td>0.1436</td><td>0.2728</td><td>0.8170</td><td>0.3988</td><td>0.0048</td><td>-0.0002</td><td>0.0107</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p5</td><td>0.6500</td><td>0.4000</td><td>0.1436</td><td>0.2731</td><td>0.8313</td><td>0.3990</td><td>0.0048</td><td>0.0001</td><td>0.0249</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p25</td><td>0.1000</td><td>0.0500</td><td>0.1436</td><td>0.2728</td><td>0.8170</td><td>0.3988</td><td>0.0048</td><td>-0.0002</td><td>0.0107</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_stable_ppv8_blend_w025</td><td>0.0000</td><td>0.0000</td><td>0.1436</td><td>0.2691</td><td>0.8392</td><td>0.3934</td><td>0.0048</td><td>-0.0039</td><td>0.0328</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p05_s0p25</td><td>0.3500</td><td>0.2000</td><td>0.1437</td><td>0.2723</td><td>0.8124</td><td>0.3985</td><td>0.0049</td><td>-0.0006</td><td>0.0060</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p05_s0p25</td><td>0.3500</td><td>0.2000</td><td>0.1437</td><td>0.2723</td><td>0.8124</td><td>0.3985</td><td>0.0049</td><td>-0.0006</td><td>0.0060</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p03_s0p5</td><td>0.1500</td><td>0.0000</td><td>0.1444</td><td>0.2731</td><td>0.8216</td><td>0.3990</td><td>0.0056</td><td>0.0001</td><td>0.0153</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p03_s0p5</td><td>0.1500</td><td>0.0000</td><td>0.1444</td><td>0.2731</td><td>0.8216</td><td>0.3990</td><td>0.0056</td><td>0.0001</td><td>0.0153</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p01_cap0p02_s0p5</td><td>0.0000</td><td>0.0000</td><td>0.1445</td><td>0.2727</td><td>0.8150</td><td>0.3987</td><td>0.0057</td><td>-0.0003</td><td>0.0086</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p02_s0p5</td><td>0.0000</td><td>0.0000</td><td>0.1445</td><td>0.2727</td><td>0.8150</td><td>0.3987</td><td>0.0057</td><td>-0.0003</td><td>0.0086</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p5</td><td>0.0000</td><td>0.0000</td><td>0.1445</td><td>0.2732</td><td>0.8150</td><td>0.3991</td><td>0.0057</td><td>0.0002</td><td>0.0086</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p5</td><td>0.0000</td><td>0.0000</td><td>0.1445</td><td>0.2732</td><td>0.8150</td><td>0.3991</td><td>0.0057</td><td>0.0002</td><td>0.0086</td><td>False</td><td>False</td><td>False</td><td>보류</td></tr>
+</table>
+
+<p>_Only first 30 of 40 rows shown._</p>
+
+<h2>6. 잔차 요약</h2>
+
+<table>
+<tr><th>split</th><th>candidate</th><th>method</th><th>n</th><th>median_residual_log</th><th>ape_median</th><th>ape_mean</th><th>ape_p95</th><th>over_2x_n</th><th>under_half_n</th></tr>
+<tr><td>0604_ex50</td><td>ppv8_service_proxy</td><td>component</td><td>829</td><td>0.0703</td><td>0.2298</td><td>0.3359</td><td>0.9273</td><td>31</td><td>89</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_ppv8_proxy_direct</td><td>direct</td><td>829</td><td>0.0703</td><td>0.2298</td><td>0.3359</td><td>0.9273</td><td>31</td><td>89</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_stable_ppv8_blend_w050</td><td>direct</td><td>829</td><td>0.0589</td><td>0.2424</td><td>0.3376</td><td>0.9195</td><td>16</td><td>118</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_stable_ppv8_blend_w025</td><td>direct</td><td>829</td><td>0.0591</td><td>0.2542</td><td>0.3507</td><td>0.9669</td><td>20</td><td>131</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_stable_ppv8_blend_w010</td><td>direct</td><td>829</td><td>0.0614</td><td>0.2582</td><td>0.3638</td><td>0.9784</td><td>26</td><td>144</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p05_s0p5</td><td>residual_huber</td><td>829</td><td>0.0574</td><td>0.2647</td><td>0.3734</td><td>0.9793</td><td>22</td><td>150</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p5</td><td>residual_huber</td><td>829</td><td>0.0566</td><td>0.2648</td><td>0.3734</td><td>0.9760</td><td>22</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p5</td><td>residual_huber</td><td>829</td><td>0.0566</td><td>0.2648</td><td>0.3734</td><td>0.9760</td><td>22</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p03_s0p5</td><td>residual_huber</td><td>829</td><td>0.0612</td><td>0.2651</td><td>0.3734</td><td>0.9792</td><td>24</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p5</td><td>residual_huber</td><td>829</td><td>0.0572</td><td>0.2651</td><td>0.3734</td><td>0.9793</td><td>22</td><td>150</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p03_s0p5</td><td>residual_huber</td><td>829</td><td>0.0612</td><td>0.2651</td><td>0.3734</td><td>0.9792</td><td>24</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p5</td><td>residual_huber</td><td>829</td><td>0.0586</td><td>0.2661</td><td>0.3737</td><td>0.9791</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p5</td><td>residual_huber</td><td>829</td><td>0.0586</td><td>0.2661</td><td>0.3737</td><td>0.9791</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p5</td><td>residual_huber</td><td>829</td><td>0.0609</td><td>0.2661</td><td>0.3736</td><td>0.9792</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p5</td><td>residual_huber</td><td>829</td><td>0.0609</td><td>0.2661</td><td>0.3736</td><td>0.9792</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p05_s0p25</td><td>residual_huber</td><td>829</td><td>0.0592</td><td>0.2677</td><td>0.3737</td><td>0.9792</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p05_s0p25</td><td>residual_huber</td><td>829</td><td>0.0592</td><td>0.2677</td><td>0.3737</td><td>0.9792</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>residual_huber</td><td>829</td><td>0.0592</td><td>0.2679</td><td>0.3737</td><td>0.9792</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p5</td><td>residual_huber</td><td>829</td><td>0.0579</td><td>0.2679</td><td>0.3734</td><td>0.9792</td><td>24</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p5</td><td>residual_huber</td><td>829</td><td>0.0574</td><td>0.2679</td><td>0.3734</td><td>0.9792</td><td>24</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p25</td><td>residual_huber</td><td>829</td><td>0.0587</td><td>0.2679</td><td>0.3738</td><td>0.9808</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p03_s0p25</td><td>residual_huber</td><td>829</td><td>0.0587</td><td>0.2679</td><td>0.3738</td><td>0.9808</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p03_s0p25</td><td>residual_huber</td><td>829</td><td>0.0587</td><td>0.2679</td><td>0.3738</td><td>0.9808</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25</td><td>residual_huber</td><td>829</td><td>0.0589</td><td>0.2681</td><td>0.3738</td><td>0.9808</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p05_s0p25</td><td>residual_huber</td><td>829</td><td>0.0592</td><td>0.2681</td><td>0.3737</td><td>0.9792</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>residual_huber</td><td>829</td><td>0.0591</td><td>0.2694</td><td>0.3740</td><td>0.9835</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>residual_huber</td><td>829</td><td>0.0591</td><td>0.2694</td><td>0.3740</td><td>0.9835</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p001_cap0p02_s0p25</td><td>residual_huber</td><td>829</td><td>0.0591</td><td>0.2698</td><td>0.3740</td><td>0.9835</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_core_reliability_alpha0p01_cap0p02_s0p25</td><td>residual_huber</td><td>829</td><td>0.0591</td><td>0.2698</td><td>0.3740</td><td>0.9835</td><td>26</td><td>151</td></tr>
+<tr><td>0604_ex50</td><td>hcoef16_resid_ppv8_gap_reliability_alpha0p001_cap0p02_s0p5</td><td>residual_huber</td><td>829</td><td>0.0612</td><td>0.2698</td><td>0.3734</td><td>0.9792</td><td>26</td><td>152</td></tr>
+</table>
+
+<p>_Only first 30 of 88 rows shown._</p>
+
+<h2>7. 계수 해석</h2>
+
+<table>
+<tr><th>candidate</th><th>feature_set</th><th>feature</th><th>coefficient_on_scaled_feature</th><th>abs_coefficient</th><th>direction</th><th>alpha</th><th>cap</th><th>strength</th></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.2452</td><td>2.2452</td><td>가격 보정값을 올리는 방향</td><td>0.0010</td><td>0.0200</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9904</td><td>0.9904</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0200</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8260</td><td>0.8260</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0200</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p25</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4224</td><td>0.4224</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0200</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p5</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.2452</td><td>2.2452</td><td>가격 보정값을 올리는 방향</td><td>0.0010</td><td>0.0200</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p5</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9904</td><td>0.9904</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0200</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p5</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8260</td><td>0.8260</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0200</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p02_s0p5</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4224</td><td>0.4224</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0200</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p25</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.2452</td><td>2.2452</td><td>가격 보정값을 올리는 방향</td><td>0.0010</td><td>0.0300</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p25</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9904</td><td>0.9904</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0300</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p25</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8260</td><td>0.8260</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0300</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p25</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4224</td><td>0.4224</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0300</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p5</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.2452</td><td>2.2452</td><td>가격 보정값을 올리는 방향</td><td>0.0010</td><td>0.0300</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p5</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9904</td><td>0.9904</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0300</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p5</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8260</td><td>0.8260</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0300</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p03_s0p5</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4224</td><td>0.4224</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0300</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.2452</td><td>2.2452</td><td>가격 보정값을 올리는 방향</td><td>0.0010</td><td>0.0500</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9904</td><td>0.9904</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0500</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8260</td><td>0.8260</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0500</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p25</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4224</td><td>0.4224</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0500</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p5</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.2452</td><td>2.2452</td><td>가격 보정값을 올리는 방향</td><td>0.0010</td><td>0.0500</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p5</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9904</td><td>0.9904</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0500</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p5</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8260</td><td>0.8260</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0500</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p001_cap0p05_s0p5</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4224</td><td>0.4224</td><td>가격 보정값을 낮추는 방향</td><td>0.0010</td><td>0.0500</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.1987</td><td>2.1987</td><td>가격 보정값을 올리는 방향</td><td>0.0100</td><td>0.0200</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9696</td><td>0.9696</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0200</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8087</td><td>0.8087</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0200</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p25</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4139</td><td>0.4139</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0200</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p5</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.1987</td><td>2.1987</td><td>가격 보정값을 올리는 방향</td><td>0.0100</td><td>0.0200</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p5</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9696</td><td>0.9696</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0200</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p5</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8087</td><td>0.8087</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0200</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p02_s0p5</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4139</td><td>0.4139</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0200</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.1987</td><td>2.1987</td><td>가격 보정값을 올리는 방향</td><td>0.0100</td><td>0.0300</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9696</td><td>0.9696</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0300</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8087</td><td>0.8087</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0300</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p25</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4139</td><td>0.4139</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0300</td><td>0.2500</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p5</td><td>ppv8_pred_stack</td><td>hcoef_stable</td><td>2.1987</td><td>2.1987</td><td>가격 보정값을 올리는 방향</td><td>0.0100</td><td>0.0300</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p5</td><td>ppv8_pred_stack</td><td>svc_numeric_seed_mean</td><td>-0.9696</td><td>0.9696</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0300</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p5</td><td>ppv8_pred_stack</td><td>current_70_30</td><td>-0.8087</td><td>0.8087</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0300</td><td>0.5000</td></tr>
+<tr><td>hcoef16_resid_ppv8_pred_stack_alpha0p01_cap0p03_s0p5</td><td>ppv8_pred_stack</td><td>ppv8_service_proxy</td><td>-0.4139</td><td>0.4139</td><td>가격 보정값을 낮추는 방향</td><td>0.0100</td><td>0.0300</td><td>0.5000</td></tr>
+</table>
+
+<h2>8. 해석</h2>
+
+<p>- PP-V8/service component는 0604 최신 라벨에서 HCOEF 안정 후보보다 낮은 MdAPE/MAPE/p95를 보였음.</p>
+<p>- 그러나 validation/test의 기존 고정 split에서는 PP-V8 단독이 HCOEF 안정 후보보다 약함.</p>
+<p>- 따라서 PP-V8을 전체 대체 모델로 쓰는 것보다, gap/coverage를 이용한 제한적 Huber 입력으로 검증하는 접근이 맞음.</p>
+<p>- row OOF와 artist OOF gate를 통과하지 못한 후보는 0604 성능이 좋아도 운영 후보로 채택하지 않음.</p>
+<p>- PP-V8 관련 계수는 service component를 얼마나 신뢰할지보다, stable 후보와 PP-V8의 차이가 남은 residual을 설명하는지를 확인하는 용도로 해석해야 함.</p>
+
+<h2>9. 산출물</h2>
+
+<p>- `outputs/metrics.csv`</p>
+<p>- `outputs/candidate_predictions.csv`</p>
+<p>- `outputs/feature_coefficients.csv`</p>
+<p>- `outputs/residual_analysis.csv`</p>
+<p>- `outputs/bootstrap_or_repeated_split_summary.csv`</p>
+<p>- `outputs/selected_candidates.csv`</p>
+<p>- `outputs/input_component_audit.csv`</p></body></html>

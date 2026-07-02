@@ -1,0 +1,56 @@
+{
+  "version": "v0.1",
+  "frozen_at": "2026-06-12T18:00:00",
+  "decision": "라우팅 재검증(PP-WCUT4/MCAL1/RMAP1/E2E1) 완료 — 3-경로 + 임계 0.80 권고안 동결",
+  "routes": {
+    "warm": {
+      "condition": "match_score >= threshold AND usable_history >= 5",
+      "artifact": "기존 Warm 운영 파이프라인"
+    },
+    "warm_lite": {
+      "condition": "match_score >= threshold AND 1 <= usable_history <= 4",
+      "artifact": "models/track6/warm_lite_v0.1",
+      "k1_grade": "warm_lite_low (넓은 범위 + 검수 플래그)"
+    },
+    "cold": {
+      "condition": "그 외",
+      "artifact": "models/track6/cold_prediction_v0.3 + v0.4 (raw-input 환경은 v0.5)"
+    }
+  },
+  "match_threshold": {
+    "recommended": 0.8,
+    "current_operational": 0.9,
+    "comparison_tolerance": 1e-06,
+    "evidence": "E2E1 v2(codex P1 수정판) — 0.90: 자격 누수 61~72%/기대 MAPE 0.92 vs 0.80: 누수 3.7~24%/0.80~0.85, 정확도 0.988(clean), Cold 오유입 0~0.5%",
+    "condition_for_adoption": "PP-RHO1 proxy로 사전 밖 동명이인율 5.0%(유효 ≤4.4%) 확인 — 허용 30% 대비 마진 커 0.80 확정. 운영 로그로 최종 추인(모니터링 R5). 보조정보 무 통과 구간은 검수 플래그 동반",
+    "known_pitfall": "점수 0.7+0.1 부동소수점 — 경계 비교에 tolerance 필수"
+  },
+  "independent_thresholds_justified": "RMAP1 수정판 — 허용 ρ: k<5 28~30%, k>=5 16.7%(모집단별 cold 비용 분리). ρ proxy 5.0% < 16.7% → 0.80 권고 유지(마진 3.3배)",
+  "performance_evidence": {
+    "warm_lite_real_low_history": {
+      "MdAPE_k1_4": [
+        0.1195,
+        0.1194,
+        0.1049,
+        0.0948
+      ],
+      "vs_cold": "0.51~0.56",
+      "gate": "bootstrap 1.0/1.0/1.0 (PP-WCUT4)"
+    },
+    "mismatch_cost": {
+      "MAPE": 2.69,
+      "p95": "9.3~9.7",
+      "source": "PP-WMATCH1"
+    }
+  },
+  "prohibitions": [
+    "0604 사용 금지",
+    "동명이인(사전 내) 후보 보조정보 확인 전 상위 경로 금지"
+  ],
+  "remaining_ops_tasks": [
+    "운영 매칭 로그로 ρ 최종 추인 (proxy 5.0%, PP-RHO1)",
+    "Warm-lite 실트래픽 모니터링 — scripts/track6/monitor_warm_lite_routing.py 연동"
+  ],
+  "monitoring_harness": "scripts/track6/monitor_warm_lite_routing.py",
+  "codex_review": "2026-06-12 P1 5건/P2 3건 전부 수정 반영 (E2E LOO 누수·임계 하드코딩·동명이인 선택·MCAL1 음성 부재·RMAP1 cold 비용 혼용)"
+}

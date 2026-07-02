@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm-lite Unified / Cold 가격 예측 모델 권장 리포트</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#warm-lite-unified-cold-가격-예측-모델-권장-리포트">Warm-lite Unified / Cold 가격 예측 모델 권장 리포트</a>
+<a class="toc-level-2" href="#1.-결론-요약">1. 결론 요약</a>
+<a class="toc-level-2" href="#2.-최종-권장-라우팅">2. 최종 권장 라우팅</a>
+<a class="toc-level-2" href="#3.-성능-요약">3. 성능 요약</a>
+<a class="toc-level-3" href="#3.1-warm-fixed-test-607건-동일-조건-비교">3.1 Warm fixed-test 607건 동일 조건 비교</a>
+<a class="toc-level-3" href="#3.2-current-대비-권장안-개선폭">3.2 current 대비 권장안 개선폭</a>
+<a class="toc-level-3" href="#3.3-기존-warm-wmin8-대비-권장안">3.3 기존 Warm WMIN8 대비 권장안</a>
+<a class="toc-level-2" href="#4.-라우팅-변경-근거">4. 라우팅 변경 근거</a>
+<a class="toc-level-3" href="#4.1-왜-5건-이상-warm-고정이-약해졌나">4.1 왜 5건 이상 Warm 고정이 약해졌나</a>
+<a class="toc-level-3" href="#4.2-왜-cold는-그대로-유지하나">4.2 왜 Cold는 그대로 유지하나</a>
+<a class="toc-level-2" href="#5.-warm-lite-unified-계산-구조">5. Warm-lite Unified 계산 구조</a>
+<a class="toc-level-3" href="#5.1-기본-계산식">5.1 기본 계산식</a>
+<a class="toc-level-3" href="#5.2-cf7-tail-guard-계산식">5.2 CF7 tail guard 계산식</a>
+<a class="toc-level-3" href="#5.3-조건부-라우터-route_gap_q50">5.3 조건부 라우터 route_gap_q50</a>
+<a class="toc-level-2" href="#6.-학습-단계와-사용-단계">6. 학습 단계와 사용 단계</a>
+<a class="toc-level-3" href="#6.1-학습-단계">6.1 학습 단계</a>
+<a class="toc-level-3" href="#6.2-사용-단계">6.2 사용 단계</a>
+<a class="toc-level-2" href="#7.-피처와-로직-설명">7. 피처와 로직 설명</a>
+<a class="toc-level-3" href="#7.1-공통-작품-피처">7.1 공통 작품 피처</a>
+<a class="toc-level-3" href="#7.2-작가-이력-통계-피처">7.2 작가 이력 통계 피처</a>
+<a class="toc-level-3" href="#7.3-full-lean-quantile-축">7.3 full/lean Quantile 축</a>
+<a class="toc-level-2" href="#8.-실험-근거">8. 실험 근거</a>
+<a class="toc-level-3" href="#8.1-cf5-warm-lite-unified-가능성">8.1 CF5: Warm-lite unified 가능성</a>
+<a class="toc-level-3" href="#8.2-cf6-full-history-재학습-비교">8.2 CF6: full-history 재학습 비교</a>
+<a class="toc-level-3" href="#8.3-cf7-tail-guard-후보">8.3 CF7: tail guard 후보</a>
+<a class="toc-level-3" href="#8.4-cf8-bootstrap-및-k-1-6-stress">8.4 CF8: bootstrap 및 k=1~6 stress</a>
+<a class="toc-level-3" href="#8.5-q6-warm-lite-native-정확-검증">8.5 Q6: Warm-lite native 정확 검증</a>
+<a class="toc-level-3" href="#8.6-cf9-조건부-cf7-라우터">8.6 CF9: 조건부 CF7 라우터</a>
+<a class="toc-level-2" href="#9.-k-1-6-stress-상세">9. k=1~6 stress 상세</a>
+<a class="toc-level-2" href="#10.-보수-대안-residual_down-라우터">10. 보수 대안: residual_down 라우터</a>
+<a class="toc-level-2" href="#11.-권장-구현안">11. 권장 구현안</a>
+<a class="toc-level-3" href="#11.1-라우팅-정책">11.1 라우팅 정책</a>
+<a class="toc-level-3" href="#11.2-k-1-보수-옵션">11.2 k=1 보수 옵션</a>
+<a class="toc-level-2" href="#12.-기존-0.1v-api와의-차이">12. 기존 0.1v API와의 차이</a>
+<a class="toc-level-2" href="#13.-운영-모니터링-기준">13. 운영 모니터링 기준</a>
+<a class="toc-level-2" href="#14.-남은-작업">14. 남은 작업</a>
+<a class="toc-level-2" href="#15.-최종-판단">15. 최종 판단</a>
+<a class="toc-level-2" href="#16.-근거-파일">16. 근거 파일</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/partner_warm_cold_best_model_report_v2_unified_router.md</code></div>
+      <h1 id="warm-lite-unified-cold-가격-예측-모델-권장-리포트">Warm-lite Unified / Cold 가격 예측 모델 권장 리포트</h1>
+<ul>
+<li>작성일: 2026-06-16</li>
+<li>문서 목적: 기존 Warm/Warm-lite/Cold 3분기 구조 이후 추가 실험을 반영한 차기 권장 라우팅과 성능 근거 정리</li>
+<li>기준 문서: <code>partner_warm_cold_best_model_report.html</code></li>
+<li>문서 상태: 현재 0.1v API 구현값이 아니라, CF5~CF9 및 Q6 검증 이후의 권장안</li>
+<li>핵심 결론: 같은 작가 가격 이력이 1건 이상이면 Warm-lite unified 계열로 통합하고, 0건이면 Cold를 유지한다. Warm-lite 내부에서는 기본 current 보정을 쓰되, tail 위험 조건에서는 CF7 tail guard를 조건부 적용한다.</li>
+</ul>
+<h2 id="1.-결론-요약">1. 결론 요약</h2>
+<p>기존 라우팅은 같은 작가 가격 이력 수를 기준으로 세 경로를 나눴다.</p>
+<pre><code>5건 이상 → Warm
+1~4건   → Warm-lite
+0건     → Cold</code></pre>
+<p>추가 실험 이후 권장 라우팅은 아래와 같다.</p>
+<pre><code>1건 이상 → Warm-lite unified
+0건     → Cold</code></pre>
+<p>그리고 Warm-lite unified 내부에서는 아래처럼 한 번 더 나눈다.</p>
+<pre><code>기본 조건        → Warm-lite current
+tail 위험 조건   → Warm-lite CF7 tail guard</code></pre>
+<p>최종 권장안은 다음 형태다.</p>
+<pre><code>if same_artist_history_n == 0:
+    Cold
+else:
+    if abs(q50_full_log - q50_lean_log) &gt;= 0.0252975:
+        Warm-lite CF7 tail guard
+    else:
+        Warm-lite current</code></pre>
+<p>이 조건부 라우터의 내부 실험명은 <code>route_gap_q50</code>이다. <code>0.0252975 log</code>는 validation에서 full/lean Quantile 중앙 예측값 차이의 중앙값으로 산출된 threshold다.</p>
+<h2 id="2.-최종-권장-라우팅">2. 최종 권장 라우팅</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">라우팅 경로</th>
+<th class="align-left">적용 조건</th>
+<th class="align-left">모델 역할</th>
+<th class="align-left">최종 상태</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">같은 작가 가격 이력 0건</td>
+<td class="align-left">작가 본인 가격 이력이 없을 때 작품/작가/검색 문맥 기반 예측</td>
+<td class="align-left">유지</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite current</td>
+<td class="align-left">같은 작가 가격 이력 1건 이상, full/lean 중앙 예측 차이 &lt; 0.0252975 log</td>
+<td class="align-left">중앙값 정확도 우선 기본 예측</td>
+<td class="align-left">권장 기본</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite CF7 tail guard</td>
+<td class="align-left">같은 작가 가격 이력 1건 이상, full/lean 중앙 예측 차이 &gt;= 0.0252975 log</td>
+<td class="align-left">큰 오차 방어를 위해 잔차 보정을 더 강하게 적용</td>
+<td class="align-left">조건부 권장</td>
+</tr>
+<tr>
+<td class="align-left">기존 Warm WMIN8</td>
+<td class="align-left">기존 5건 이상 Warm 경로</td>
+<td class="align-left">기존 운영 성능 비교 기준</td>
+<td class="align-left">차기 권장 라우팅에서는 기본 경로에서 제외 후보</td>
+</tr>
+</tbody></table></div>
+<p>중요한 해석은 다음과 같다.</p>
+<ul>
+<li>Warm WMIN8이 모든 지표에서 나쁜 모델이라는 뜻은 아니다. p95/RMSE log는 여전히 강하다.</li>
+<li>다만 같은 fixed-test 조건에서 Warm-lite unified가 MdAPE/MAPE 기준으로 더 강했고, CF7 또는 조건부 라우터를 붙이면 tail 약점도 크게 줄었다.</li>
+<li>따라서 5건 이상이라는 경계로 Warm과 Warm-lite를 나누는 근거는 약해졌다.</li>
+<li>Cold는 같은 작가 가격 이력이 없는 경우의 난이도가 다르므로 계속 별도 경로로 유지한다.</li>
+</ul>
+<h2 id="3.-성능-요약">3. 성능 요약</h2>
+<h3 id="3.1-warm-fixed-test-607건-동일-조건-비교">3.1 Warm fixed-test 607건 동일 조건 비교</h3>
+<p>아래 표는 Warm fixed-test 607건에서 기존 Warm WMIN8, Warm-lite current, CF7 전체 적용, 조건부 라우터를 같은 행 기준으로 비교한 결과다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기존 Warm WMIN8 operational</td>
+<td class="align-right">607</td>
+<td class="align-right">0.104326</td>
+<td class="align-right">0.235814</td>
+<td class="align-right">0.739416</td>
+<td class="align-right">0.377190</td>
+<td class="align-left">기존 5건 이상 Warm 기준. p95/RMSE가 가장 낮음</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite current</td>
+<td class="align-right">607</td>
+<td class="align-right">0.084485</td>
+<td class="align-right">0.225214</td>
+<td class="align-right">0.803203</td>
+<td class="align-right">0.382171</td>
+<td class="align-left">MdAPE 최저. tail은 약함</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite CF7 전체 적용</td>
+<td class="align-right">607</td>
+<td class="align-right">0.089227</td>
+<td class="align-right">0.223920</td>
+<td class="align-right">0.745513</td>
+<td class="align-right">0.379962</td>
+<td class="align-left">MAPE 최저에 가깝고 p95를 크게 개선. MdAPE는 current보다 악화</td>
+</tr>
+<tr>
+<td class="align-left">권장안 route_gap_q50</td>
+<td class="align-right">607</td>
+<td class="align-right">0.086405</td>
+<td class="align-right">0.223590</td>
+<td class="align-right">0.758056</td>
+<td class="align-right">0.380030</td>
+<td class="align-left">current 대비 MAPE/p95/RMSE 개선, MdAPE 손실은 제한적</td>
+</tr>
+</tbody></table></div>
+<h3 id="3.2-current-대비-권장안-개선폭">3.2 current 대비 권장안 개선폭</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">비교</th>
+<th class="align-right">MdAPE 변화</th>
+<th class="align-right">MAPE 변화</th>
+<th class="align-right">p95 APE 변화</th>
+<th class="align-right">RMSE log 변화</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">route_gap_q50 - Warm-lite current</td>
+<td class="align-right">+0.001920</td>
+<td class="align-right">-0.001624</td>
+<td class="align-right">-0.045147</td>
+<td class="align-right">-0.002141</td>
+</tr>
+<tr>
+<td class="align-left">CF7 전체 적용 - Warm-lite current</td>
+<td class="align-right">+0.004742</td>
+<td class="align-right">-0.001294</td>
+<td class="align-right">-0.057690</td>
+<td class="align-right">-0.002209</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>CF7 전체 적용은 p95를 가장 크게 낮추지만 MdAPE 손실도 더 크다.</li>
+<li>route_gap_q50은 CF7의 tail 개선 일부를 가져오면서 MdAPE 손실을 줄인다.</li>
+<li>최종 권장안은 성능 균형상 route_gap_q50이다.</li>
+</ul>
+<h3 id="3.3-기존-warm-wmin8-대비-권장안">3.3 기존 Warm WMIN8 대비 권장안</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">비교</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기존 Warm WMIN8</td>
+<td class="align-right">0.104326</td>
+<td class="align-right">0.235814</td>
+<td class="align-right">0.739416</td>
+<td class="align-right">0.377190</td>
+</tr>
+<tr>
+<td class="align-left">route_gap_q50</td>
+<td class="align-right">0.086405</td>
+<td class="align-right">0.223590</td>
+<td class="align-right">0.758056</td>
+<td class="align-right">0.380030</td>
+</tr>
+<tr>
+<td class="align-left">차이(route - Warm)</td>
+<td class="align-right">-0.017921</td>
+<td class="align-right">-0.012224</td>
+<td class="align-right">+0.018640</td>
+<td class="align-right">+0.002840</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>route_gap_q50은 Warm WMIN8보다 MdAPE/MAPE가 좋다.</li>
+<li>p95/RMSE log는 Warm WMIN8이 아직 약간 더 좋다.</li>
+<li>그러나 기존 Warm-lite current의 가장 큰 약점이었던 p95 <code>0.803203</code>을 <code>0.758056</code>까지 낮췄기 때문에, 통합 라우팅 후보로 실용성이 생겼다.</li>
+</ul>
+<h2 id="4.-라우팅-변경-근거">4. 라우팅 변경 근거</h2>
+<h3 id="4.1-왜-5건-이상-warm-고정이-약해졌나">4.1 왜 5건 이상 Warm 고정이 약해졌나</h3>
+<p>추가 비교 실험은 같은 작품 행 또는 같은 학습 조건에서 Warm과 Warm-lite 계열을 다시 비교했다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">실험</th>
+<th class="align-left">목적</th>
+<th class="align-left">핵심 결과</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">PP-ROUTE-CF3</td>
+<td class="align-left">k=1~6 조건별 Warm clean stack과 Warm-lite를 각각 재학습해 비교</td>
+<td class="align-left">Warm-lite가 k=1~6 대부분 지표에서 Warm clean stack보다 우세</td>
+</tr>
+<tr>
+<td class="align-left">PP-ROUTE-CF4</td>
+<td class="align-left">k=1~6 전체 조건을 한 Warm-lite 모델로 학습</td>
+<td class="align-left">단일 Warm-lite pooled 후보가 다수 k에서 Warm clean stack보다 우세</td>
+</tr>
+<tr>
+<td class="align-left">PP-ROUTE-CF5</td>
+<td class="align-left">full Warm train distribution으로 Warm-lite unified를 학습해 현재 Warm WMIN8과 비교</td>
+<td class="align-left">Warm-lite unified가 MdAPE/MAPE 우세, p95/RMSE는 Warm WMIN8 우세</td>
+</tr>
+<tr>
+<td class="align-left">PP-ROUTE-CF6</td>
+<td class="align-left">full-history 조건에서 Warm clean stack과 Warm-lite unified를 모두 재학습</td>
+<td class="align-left">Warm-lite unified가 Warm clean full-history retrained보다 모든 주요 지표 우세</td>
+</tr>
+</tbody></table></div>
+<p>이 결과는 기존 5건 경계가 “작가 이력이 5건 이상이면 반드시 Warm이 더 좋다”는 실험 근거로는 더 이상 충분하지 않다는 뜻이다.</p>
+<h3 id="4.2-왜-cold는-그대로-유지하나">4.2 왜 Cold는 그대로 유지하나</h3>
+<p>Cold는 같은 작가 가격 이력이 없는 상황이다. Warm-lite unified는 같은 작가의 가격 이력이 최소 1건은 있어야 작가 통계와 residual 보정이 의미를 가진다.</p>
+<p>따라서 라우팅 통합 범위는 아래로 제한한다.</p>
+<pre><code>같은 작가 가격 이력 1건 이상: Warm-lite unified 계열
+같은 작가 가격 이력 0건: Cold</code></pre>
+<p>Cold까지 Warm-lite로 통합하지 않는다.</p>
+<h2 id="5.-warm-lite-unified-계산-구조">5. Warm-lite Unified 계산 구조</h2>
+<h3 id="5.1-기본-계산식">5.1 기본 계산식</h3>
+<p>Warm-lite unified current는 두 Quantile 중앙 예측값의 평균 위에 LightGBM Huber residual 보정을 더한다.</p>
+<pre><code>qavg_log =
+    0.50 * q50_full_log
+  + 0.50 * q50_lean_log
+
+Warm-lite current 로그가격 =
+    qavg_log
+  + clip(0.50 * LightGBM_Huber_residual_log, -0.10, +0.10)</code></pre>
+<p>여기서:</p>
+<ul>
+<li><code>q50_full_log</code>: 전체 피처 기반 LightGBM Quantile 중앙값 예측</li>
+<li><code>q50_lean_log</code>: 흔들림을 줄인 축소 피처 기반 LightGBM Quantile 중앙값 예측</li>
+<li><code>qavg_log</code>: 두 중앙값 예측의 평균 기준 로그가격</li>
+<li><code>LightGBM_Huber_residual_log</code>: 기준 로그가격에서 남은 오차를 예측한 값</li>
+<li><code>clip(x, -0.10, +0.10)</code>: 보정값이 -0.10보다 작으면 -0.10, +0.10보다 크면 +0.10으로 제한</li>
+</ul>
+<h3 id="5.2-cf7-tail-guard-계산식">5.2 CF7 tail guard 계산식</h3>
+<p>CF7은 같은 residual을 더 강하게 반영하되, 과도한 보정을 막기 위해 clip 상한을 둔다.</p>
+<pre><code>Warm-lite CF7 로그가격 =
+    qavg_log
+  + clip(1.00 * LightGBM_Huber_residual_log, -0.15, +0.15)</code></pre>
+<p>CF7의 목적은 중앙값을 더 맞히는 것이 아니라 큰 오차를 줄이는 것이다.</p>
+<h3 id="5.3-조건부-라우터-route_gap_q50">5.3 조건부 라우터 route_gap_q50</h3>
+<p>route_gap_q50은 full/lean 두 중앙 예측이 충분히 다를 때만 CF7을 적용한다.</p>
+<pre><code>gap_log = abs(q50_full_log - q50_lean_log)
+
+if gap_log &gt;= 0.0252975:
+    final_log = Warm-lite CF7 로그가격
+else:
+    final_log = Warm-lite current 로그가격</code></pre>
+<p>이 threshold는 validation에서 <code>gap_log</code>의 중앙값(q50)으로 산출됐다.</p>
+<p>의미:</p>
+<ul>
+<li>full/lean 두 예측축이 거의 같으면 모델이 비교적 안정적이라고 보고 current를 유지한다.</li>
+<li>두 예측축이 갈라지면 불확실성이 있다고 보고 CF7 tail guard를 켠다.</li>
+<li>이 방식은 CF7 전체 적용보다 보수적이며, MdAPE 손실을 줄이려는 균형형 라우터다.</li>
+</ul>
+<h2 id="6.-학습-단계와-사용-단계">6. 학습 단계와 사용 단계</h2>
+<h3 id="6.1-학습-단계">6.1 학습 단계</h3>
+<p>학습 단계에서는 실제 가격이 있는 과거 데이터를 사용한다.</p>
+<pre><code>[Warm train 데이터]
+  - 작품 크기/면적/비율
+  - 매체/지지체
+  - 같은 작가 가격 이력 통계
+  - 실제 로그가격
+        |
+        v
+[작가 이력 통계 생성]
+  - fold 내부 통계로 자기 가격 누수 차단
+  - 같은 작가 + 매체/지지체 + 크기 구간
+  - 같은 작가 + 크기 구간
+  - 같은 작가 전체
+        |
+        v
+[LightGBM Quantile 학습]
+  - q10/q50/q90 full 축
+  - q50 lean 축
+        |
+        v
+[OOF residual 생성]
+  - residual = 실제 로그가격 - OOF(qavg_log)
+        |
+        v
+[LightGBM Huber residual 학습]
+  - 작품 피처 + 작가 이력 통계 + Quantile 예측값으로 residual 예측
+        |
+        v
+[라우터 threshold 산출]
+  - gap_log = abs(q50_full_log - q50_lean_log)
+  - validation gap_log q50 = 0.0252975</code></pre>
+<p>학습 단계에서 실제 가격은 모델과 threshold를 만들기 위해 사용된다. 사용 단계에서는 실제 가격을 알 수 없으므로 쓰지 않는다.</p>
+<h3 id="6.2-사용-단계">6.2 사용 단계</h3>
+<p>새 작품이 들어오면 동결된 통계, 모델, threshold만 사용한다.</p>
+<pre><code>[새 작품 입력]
+  - 작가명/작가 식별 결과
+  - 작품 크기
+  - 매체/지지체
+  - 작품 메타
+        |
+        v
+[같은 작가 가격 이력 확인]
+  - 0건이면 Cold
+  - 1건 이상이면 Warm-lite unified
+        |
+        v
+[Warm-lite unified]
+  - 작가 이력 통계 생성
+  - q50_full_log 계산
+  - q50_lean_log 계산
+  - qavg_log 계산
+  - LightGBM_Huber_residual_log 계산
+        |
+        v
+[조건부 tail guard]
+  - gap_log = abs(q50_full_log - q50_lean_log)
+  - gap_log &gt;= 0.0252975이면 CF7
+  - 아니면 current
+        |
+        v
+[최종 가격]
+  - final_price_krw = exp(final_log)</code></pre>
+<h2 id="7.-피처와-로직-설명">7. 피처와 로직 설명</h2>
+<h3 id="7.1-공통-작품-피처">7.1 공통 작품 피처</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처</th>
+<th class="align-left">사용 이유</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">width_cm, height_cm, depth_cm</td>
+<td class="align-left">작품 물리 크기</td>
+</tr>
+<tr>
+<td class="align-left">area_cm2, log_area</td>
+<td class="align-left">가격과 강하게 연결되는 면적 신호</td>
+</tr>
+<tr>
+<td class="align-left">aspect_ratio</td>
+<td class="align-left">세로형/가로형/극단 비율 구분</td>
+</tr>
+<tr>
+<td class="align-left">has_depth, is_3d_candidate</td>
+<td class="align-left">입체 작품 여부</td>
+</tr>
+<tr>
+<td class="align-left">medium_category</td>
+<td class="align-left">재료/매체 계열</td>
+</tr>
+<tr>
+<td class="align-left">support_category</td>
+<td class="align-left">지지체 계열</td>
+</tr>
+<tr>
+<td class="align-left">size_bucket</td>
+<td class="align-left">크기 구간화</td>
+</tr>
+</tbody></table></div>
+<h3 id="7.2-작가-이력-통계-피처">7.2 작가 이력 통계 피처</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">피처</th>
+<th class="align-left">의미</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">grp_log_price_median</td>
+<td class="align-left">같은 작가 비교군의 로그가격 중앙값</td>
+</tr>
+<tr>
+<td class="align-left">grp_log_price_q25/q75</td>
+<td class="align-left">같은 작가 비교군 가격 분포의 하위/상위 분위</td>
+</tr>
+<tr>
+<td class="align-left">grp_log_price_iqr</td>
+<td class="align-left">q75 - q25, 가격 분산 정도</td>
+</tr>
+<tr>
+<td class="align-left">grp_unit_area_median</td>
+<td class="align-left">면적당 가격 중앙값</td>
+</tr>
+<tr>
+<td class="align-left">grp_unit_area_iqr</td>
+<td class="align-left">면적당 가격 변동 폭</td>
+</tr>
+<tr>
+<td class="align-left">grp_n_log</td>
+<td class="align-left">비교군 표본 수를 log1p로 변환한 값</td>
+</tr>
+<tr>
+<td class="align-left">grp_match_level</td>
+<td class="align-left">어떤 단계의 비교군이 매칭됐는지 나타내는 값</td>
+</tr>
+</tbody></table></div>
+<p>비교군 매칭은 좁은 조건부터 넓은 조건으로 찾는다.</p>
+<pre><code>1. 같은 작가 + 같은 매체/지지체 + 같은 크기 구간
+2. 같은 작가 + 같은 크기 구간
+3. 같은 작가 전체
+4. 통계 생성 실패 시 fallback 통계</code></pre>
+<h3 id="7.3-full-lean-quantile-축">7.3 full/lean Quantile 축</h3>
+<p>full 축은 정보를 넓게 사용한다.</p>
+<pre><code>작품 피처 + 작가 이력 통계 + 매체/지지체/크기 구간
+  → q10_log, q50_full_log, q90_log</code></pre>
+<p>lean 축은 흔들림을 줄인 피처 구성이다.</p>
+<pre><code>핵심 작품 피처 + 핵심 작가 이력 통계
+  → q50_lean_log</code></pre>
+<p>두 축을 같이 쓰는 이유:</p>
+<ul>
+<li>full 축은 정보량이 많아 평균 성능에 유리할 수 있다.</li>
+<li>lean 축은 저표본/잡음 상황에서 안정적일 수 있다.</li>
+<li>두 축의 차이가 크면 예측 불확실성이 커진 것으로 해석한다.</li>
+</ul>
+<h2 id="8.-실험-근거">8. 실험 근거</h2>
+<h3 id="8.1-cf5-warm-lite-unified-가능성">8.1 CF5: Warm-lite unified 가능성</h3>
+<p>CF5는 Warm-lite unified를 full Warm train distribution으로 학습하고, Warm fixed-test 607건에서 현재 Warm WMIN8과 비교했다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm WMIN8 operational</td>
+<td class="align-right">607</td>
+<td class="align-right">0.104326</td>
+<td class="align-right">0.235814</td>
+<td class="align-right">0.739416</td>
+<td class="align-right">0.377190</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite unified full-history retrained</td>
+<td class="align-right">607</td>
+<td class="align-right">0.084485</td>
+<td class="align-right">0.225214</td>
+<td class="align-right">0.803203</td>
+<td class="align-right">0.382171</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>Warm-lite unified는 MdAPE/MAPE에서 개선됐다.</li>
+<li>p95/RMSE는 Warm WMIN8이 더 좋았다.</li>
+<li>따라서 통합 가능성은 생겼지만 tail guard가 필요했다.</li>
+</ul>
+<h3 id="8.2-cf6-full-history-재학습-비교">8.2 CF6: full-history 재학습 비교</h3>
+<p>CF6는 Warm clean stack과 Warm-lite unified를 모두 full-history 조건으로 재학습해 비교했다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm clean full-history retrained</td>
+<td class="align-right">607</td>
+<td class="align-right">0.114838</td>
+<td class="align-right">0.244538</td>
+<td class="align-right">0.816909</td>
+<td class="align-right">0.387520</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite unified full-history retrained</td>
+<td class="align-right">607</td>
+<td class="align-right">0.084485</td>
+<td class="align-right">0.225214</td>
+<td class="align-right">0.803203</td>
+<td class="align-right">0.382171</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>같은 full-history 재학습 조건에서는 Warm-lite unified가 Warm clean stack보다 전 지표 우세했다.</li>
+<li>기존 Warm WMIN8 artifact와 완전히 같은 재현은 아니므로 CF5와 함께 해석한다.</li>
+</ul>
+<h3 id="8.3-cf7-tail-guard-후보">8.3 CF7: tail guard 후보</h3>
+<p>CF7은 residual 보정 강도와 clip 상한을 검증했다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm-lite current</td>
+<td class="align-right">607</td>
+<td class="align-right">0.084485</td>
+<td class="align-right">0.225214</td>
+<td class="align-right">0.803203</td>
+<td class="align-right">0.382171</td>
+</tr>
+<tr>
+<td class="align-left">CF7 tail guard</td>
+<td class="align-right">607</td>
+<td class="align-right">0.089227</td>
+<td class="align-right">0.223920</td>
+<td class="align-right">0.745513</td>
+<td class="align-right">0.379962</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>CF7은 p95/RMSE를 크게 개선했다.</li>
+<li>MdAPE는 악화됐다.</li>
+<li>따라서 전체 적용보다는 조건부 적용이 더 적합하다.</li>
+</ul>
+<h3 id="8.4-cf8-bootstrap-및-k-1-6-stress">8.4 CF8: bootstrap 및 k=1~6 stress</h3>
+<p>CF8은 CF7 후보를 artist-cluster bootstrap과 k=1~6 capped-history stress로 검증했다.</p>
+<p>Bootstrap에서 CF7이 current보다 좋을 확률:</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">지표</th>
+<th class="align-right">CF7이 current보다 좋은 비율</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">MdAPE</td>
+<td class="align-right">0.1945</td>
+</tr>
+<tr>
+<td class="align-left">MAPE</td>
+<td class="align-right">0.7835</td>
+</tr>
+<tr>
+<td class="align-left">p95 APE</td>
+<td class="align-right">0.8305</td>
+</tr>
+<tr>
+<td class="align-left">RMSE log</td>
+<td class="align-right">0.9550</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>CF7은 MdAPE 개선 후보가 아니다.</li>
+<li>CF7은 MAPE/p95/RMSE 개선 후보다.</li>
+<li>특히 RMSE log 개선은 bootstrap에서 안정적이었다.</li>
+</ul>
+<p>k=1~6 stress에서 CF7 전체 적용은 p95 기준으로 current보다 모든 k에서 좋았다. 다만 k=1/3에서는 MAPE/RMSE가 아주 작게 흔들렸다.</p>
+<h3 id="8.5-q6-warm-lite-native-정확-검증">8.5 Q6: Warm-lite native 정확 검증</h3>
+<p>Q6는 기존 Warm-lite native 검증 구조에서 CF7 후보를 정확히 재평가했다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">검증</th>
+<th class="align-left">후보</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Q1 native</td>
+<td class="align-left">current</td>
+<td class="align-right">1,947</td>
+<td class="align-right">0.107246</td>
+<td class="align-right">0.275773</td>
+<td class="align-right">0.852026</td>
+<td class="align-right">0.423003</td>
+</tr>
+<tr>
+<td class="align-left">Q1 native</td>
+<td class="align-left">CF7 전체 적용</td>
+<td class="align-right">1,947</td>
+<td class="align-right">0.112221</td>
+<td class="align-right">0.275745</td>
+<td class="align-right">0.851658</td>
+<td class="align-right">0.419824</td>
+</tr>
+<tr>
+<td class="align-left">Q2 native</td>
+<td class="align-left">current</td>
+<td class="align-right">7,284</td>
+<td class="align-right">0.154475</td>
+<td class="align-right">0.303435</td>
+<td class="align-right">1.000528</td>
+<td class="align-right">0.482084</td>
+</tr>
+<tr>
+<td class="align-left">Q2 native</td>
+<td class="align-left">CF7 전체 적용</td>
+<td class="align-right">7,284</td>
+<td class="align-right">0.159414</td>
+<td class="align-right">0.301687</td>
+<td class="align-right">0.988525</td>
+<td class="align-right">0.480387</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>CF7 전체 적용은 native 검증에서도 MAPE/p95/RMSE를 개선했다.</li>
+<li>MdAPE 악화가 반복 확인됐다.</li>
+<li>조건부 라우터가 필요하다는 판단이 강화됐다.</li>
+</ul>
+<h3 id="8.6-cf9-조건부-cf7-라우터">8.6 CF9: 조건부 CF7 라우터</h3>
+<p>CF9는 validation에서 조건부 라우터 후보를 고르고 test에 적용했다.</p>
+<p>선택된 후보:</p>
+<pre><code>route_gap_q50
+조건: abs(q50_full_log - q50_lean_log) &gt;= 0.0252975
+validation route share: 0.500963
+test route share: 0.565074</code></pre>
+<p>Test 결과:</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">후보</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm-lite current</td>
+<td class="align-right">607</td>
+<td class="align-right">0.084485</td>
+<td class="align-right">0.225214</td>
+<td class="align-right">0.803203</td>
+<td class="align-right">0.382171</td>
+</tr>
+<tr>
+<td class="align-left">route_gap_q50</td>
+<td class="align-right">607</td>
+<td class="align-right">0.086405</td>
+<td class="align-right">0.223590</td>
+<td class="align-right">0.758056</td>
+<td class="align-right">0.380030</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>current 대비 MAPE/p95/RMSE 모두 개선됐다.</li>
+<li>MdAPE 손실은 CF7 전체 적용보다 작다.</li>
+<li>따라서 최종 권장 라우터는 route_gap_q50이다.</li>
+</ul>
+<h2 id="9.-k-1-6-stress-상세">9. k=1~6 stress 상세</h2>
+<p>CF9의 k=1~6 capped-history stress 결과는 아래와 같다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">k</th>
+<th class="align-left">후보</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+<th class="align-left">해석</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left">current</td>
+<td class="align-right">519</td>
+<td class="align-right">0.172755</td>
+<td class="align-right">0.311118</td>
+<td class="align-right">0.890055</td>
+<td class="align-right">0.446076</td>
+<td class="align-left">current가 MdAPE/MAPE/RMSE 우세</td>
+</tr>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left">route_gap_q50</td>
+<td class="align-right">519</td>
+<td class="align-right">0.174032</td>
+<td class="align-right">0.311709</td>
+<td class="align-right">0.897335</td>
+<td class="align-right">0.447839</td>
+<td class="align-left">k=1에서는 route_gap_q50 비권장 신호</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left">current</td>
+<td class="align-right">519</td>
+<td class="align-right">0.161448</td>
+<td class="align-right">0.304920</td>
+<td class="align-right">0.889889</td>
+<td class="align-right">0.423878</td>
+<td class="align-left">current보다 route가 평균/tail 개선</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left">route_gap_q50</td>
+<td class="align-right">519</td>
+<td class="align-right">0.158753</td>
+<td class="align-right">0.302751</td>
+<td class="align-right">0.869473</td>
+<td class="align-right">0.423962</td>
+<td class="align-left">RMSE는 거의 동일</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left">current</td>
+<td class="align-right">519</td>
+<td class="align-right">0.142914</td>
+<td class="align-right">0.257082</td>
+<td class="align-right">0.877410</td>
+<td class="align-right">0.430237</td>
+<td class="align-left">route가 전 지표 소폭 개선</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left">route_gap_q50</td>
+<td class="align-right">519</td>
+<td class="align-right">0.141770</td>
+<td class="align-right">0.256938</td>
+<td class="align-right">0.876824</td>
+<td class="align-right">0.430150</td>
+<td class="align-left">균형 양호</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left">current</td>
+<td class="align-right">519</td>
+<td class="align-right">0.111142</td>
+<td class="align-right">0.255190</td>
+<td class="align-right">0.841395</td>
+<td class="align-right">0.397345</td>
+<td class="align-left">route가 MAPE/p95/RMSE 개선</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left">route_gap_q50</td>
+<td class="align-right">519</td>
+<td class="align-right">0.112640</td>
+<td class="align-right">0.252787</td>
+<td class="align-right">0.816695</td>
+<td class="align-right">0.395484</td>
+<td class="align-left">MdAPE 소폭 악화</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left">current</td>
+<td class="align-right">519</td>
+<td class="align-right">0.119911</td>
+<td class="align-right">0.230864</td>
+<td class="align-right">0.676274</td>
+<td class="align-right">0.369027</td>
+<td class="align-left">route가 p95/RMSE 개선</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left">route_gap_q50</td>
+<td class="align-right">519</td>
+<td class="align-right">0.121648</td>
+<td class="align-right">0.230832</td>
+<td class="align-right">0.660076</td>
+<td class="align-right">0.368844</td>
+<td class="align-left">MdAPE 악화</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left">current</td>
+<td class="align-right">519</td>
+<td class="align-right">0.114118</td>
+<td class="align-right">0.226295</td>
+<td class="align-right">0.764952</td>
+<td class="align-right">0.370710</td>
+<td class="align-left">route가 MAPE/p95 개선</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left">route_gap_q50</td>
+<td class="align-right">519</td>
+<td class="align-right">0.114295</td>
+<td class="align-right">0.225356</td>
+<td class="align-right">0.756899</td>
+<td class="align-right">0.370603</td>
+<td class="align-left">거의 동일한 MdAPE</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>route_gap_q50은 k=2~6에서 대체로 유효하다.</li>
+<li>k=1에서는 current가 더 안정적이다.</li>
+<li>운영 라우터를 더 보수적으로 만들려면 <code>same_artist_history_n == 1</code>에서는 current를 유지하는 추가 조건을 검토할 수 있다.</li>
+</ul>
+<h2 id="10.-보수-대안-residual_down-라우터">10. 보수 대안: residual_down 라우터</h2>
+<p>native Warm-lite 검증에서는 <code>residual_down</code> 라우터가 안정적인 대안으로 확인됐다.</p>
+<pre><code>if LightGBM_Huber_residual_log &lt; 0:
+    CF7 tail guard
+else:
+    current</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">검증</th>
+<th class="align-left">후보</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">RMSE log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Q1 native</td>
+<td class="align-left">current</td>
+<td class="align-right">1,947</td>
+<td class="align-right">0.107246</td>
+<td class="align-right">0.275773</td>
+<td class="align-right">0.852026</td>
+<td class="align-right">0.423003</td>
+</tr>
+<tr>
+<td class="align-left">Q1 native</td>
+<td class="align-left">residual_down</td>
+<td class="align-right">1,947</td>
+<td class="align-right">0.108689</td>
+<td class="align-right">0.272493</td>
+<td class="align-right">0.834596</td>
+<td class="align-right">0.422073</td>
+</tr>
+<tr>
+<td class="align-left">Q2 native</td>
+<td class="align-left">current</td>
+<td class="align-right">7,284</td>
+<td class="align-right">0.154475</td>
+<td class="align-right">0.303435</td>
+<td class="align-right">1.000528</td>
+<td class="align-right">0.482084</td>
+</tr>
+<tr>
+<td class="align-left">Q2 native</td>
+<td class="align-left">residual_down</td>
+<td class="align-right">7,284</td>
+<td class="align-right">0.157698</td>
+<td class="align-right">0.298540</td>
+<td class="align-right">0.978524</td>
+<td class="align-right">0.481631</td>
+</tr>
+</tbody></table></div>
+<p>해석:</p>
+<ul>
+<li>residual_down은 저이력 native 검증에서 MAPE/p95/RMSE를 개선했다.</li>
+<li>MdAPE는 소폭 나빠진다.</li>
+<li>route_gap_q50이 full-history 운영 후보라면, residual_down은 저이력 안정성 중심의 보수 대안이다.</li>
+</ul>
+<p>최종 리포트 권장안은 route_gap_q50을 1순위로 둔다. 다만 API 반영 전 마지막 acceptance gate에서는 k=1 구간을 current 유지로 둘지 함께 검토한다.</p>
+<h2 id="11.-권장-구현안">11. 권장 구현안</h2>
+<h3 id="11.1-라우팅-정책">11.1 라우팅 정책</h3>
+<pre><code>1. 작가 매칭 결과와 같은 작가 가격 이력 수를 확인한다.
+
+2. 같은 작가 가격 이력이 0건이면 Cold로 보낸다.
+
+3. 같은 작가 가격 이력이 1건 이상이면 Warm-lite unified로 보낸다.
+
+4. Warm-lite unified 안에서:
+   gap_log = abs(q50_full_log - q50_lean_log)
+
+   if gap_log &gt;= 0.0252975:
+       final_log = qavg_log + clip(1.00 * LightGBM_Huber_residual_log, -0.15, +0.15)
+   else:
+       final_log = qavg_log + clip(0.50 * LightGBM_Huber_residual_log, -0.10, +0.10)
+
+5. 최종 가격:
+   final_price_krw = exp(final_log)</code></pre>
+<h3 id="11.2-k-1-보수-옵션">11.2 k=1 보수 옵션</h3>
+<p>k=1 stress에서는 route_gap_q50이 current보다 불리했다. 따라서 API 반영 시 아래 보수 옵션을 검토할 수 있다.</p>
+<pre><code>if same_artist_history_n == 1:
+    Warm-lite current
+else:
+    route_gap_q50</code></pre>
+<p>이 옵션은 k=1 안정성을 우선할 때 사용한다. 다만 full-history 607건 기준의 route_gap_q50 test 성능은 위 옵션 없이 계산된 값이다.</p>
+<h2 id="12.-기존-0.1v-api와의-차이">12. 기존 0.1v API와의 차이</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">현재 0.1v API 구현</th>
+<th class="align-left">새 권장안</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm 경로</td>
+<td class="align-left">매칭점수 0.80 이상 + 이력 5건 이상</td>
+<td class="align-left">기본 라우팅에서 제거 후보</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite 경로</td>
+<td class="align-left">매칭점수 0.80 이상 + 이력 1~4건</td>
+<td class="align-left">이력 1건 이상 전체로 확장</td>
+</tr>
+<tr>
+<td class="align-left">Cold 경로</td>
+<td class="align-left">이력 0건, 매칭 실패, 검수 필요</td>
+<td class="align-left">유지</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite 보정</td>
+<td class="align-left">current 보정</td>
+<td class="align-left">current + 조건부 CF7 tail guard</td>
+</tr>
+<tr>
+<td class="align-left">tail guard</td>
+<td class="align-left">없음</td>
+<td class="align-left">full/lean q50 gap 기준으로 조건부 적용</td>
+</tr>
+</tbody></table></div>
+<p>새 권장안은 현재 0.1v API 동작과 동일하지 않다. API 반영 전에는 번들 동결, API parity, 모니터링 기준 업데이트가 필요하다.</p>
+<h2 id="13.-운영-모니터링-기준">13. 운영 모니터링 기준</h2>
+<p>권장안 반영 시 최소한 아래 항목을 모니터링한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">확인 내용</th>
+<th class="align-left">경고 기준 예시</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">route share</td>
+<td class="align-left">Warm-lite 중 CF7 tail guard가 켜지는 비율</td>
+<td class="align-left">validation/test 기준 50~57%에서 크게 벗어나면 점검</td>
+</tr>
+<tr>
+<td class="align-left">k=1 구간 성능</td>
+<td class="align-left">이력 1건 작가에서 route가 current보다 악화되는지</td>
+<td class="align-left">k=1 MAPE/RMSE 악화 지속 시 current 강제</td>
+</tr>
+<tr>
+<td class="align-left">p95 APE</td>
+<td class="align-left">tail 개선이 유지되는지</td>
+<td class="align-left">current 대비 p95 개선폭이 사라지면 점검</td>
+</tr>
+<tr>
+<td class="align-left">RMSE log</td>
+<td class="align-left">로그가격 큰 오차가 줄어드는지</td>
+<td class="align-left">current 대비 RMSE 악화 시 점검</td>
+</tr>
+<tr>
+<td class="align-left">residual 방향</td>
+<td class="align-left">양수/음수 residual에서 각각 성능이 어떻게 달라지는지</td>
+<td class="align-left">양수 방향에서 과보정 발생 시 residual_down 대안 검토</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭 신뢰도</td>
+<td class="align-left">동명이인/오매칭이 라우팅에 섞이는지</td>
+<td class="align-left">매칭 신뢰도 0.80 미만 또는 충돌 정보 존재 시 Cold/검수대기</td>
+</tr>
+</tbody></table></div>
+<h2 id="14.-남은-작업">14. 남은 작업</h2>
+<p>최종 API 반영 전 필요한 작업은 아래다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">단계</th>
+<th class="align-left">필요 작업</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">1</td>
+<td class="align-left">Warm-lite unified + route_gap_q50 번들 동결</td>
+<td class="align-left">실험 코드를 운영 artifact로 고정</td>
+</tr>
+<tr>
+<td class="align-left">2</td>
+<td class="align-left">API adapter 연결</td>
+<td class="align-left">0.1v 또는 차기 API에서 같은 계산이 나오게 연결</td>
+</tr>
+<tr>
+<td class="align-left">3</td>
+<td class="align-left">parity 검증</td>
+<td class="align-left">실험 산출값과 API 응답 로그가격 차이 확인</td>
+</tr>
+<tr>
+<td class="align-left">4</td>
+<td class="align-left">k=1 보수 옵션 검토</td>
+<td class="align-left">저이력 1건 구간에서 current 유지 여부 결정</td>
+</tr>
+<tr>
+<td class="align-left">5</td>
+<td class="align-left">문서/발표자료 갱신</td>
+<td class="align-left">기존 Warm/Warm-lite/Cold 3분기 설명을 새 권장안으로 정리</td>
+</tr>
+</tbody></table></div>
+<h2 id="15.-최종-판단">15. 최종 판단</h2>
+<p>최종 권장안은 다음과 같다.</p>
+<pre><code>Cold:
+  same_artist_history_n == 0
+
+Warm-lite unified current:
+  same_artist_history_n &gt;= 1
+  AND abs(q50_full_log - q50_lean_log) &lt; 0.0252975
+
+Warm-lite CF7 tail guard:
+  same_artist_history_n &gt;= 1
+  AND abs(q50_full_log - q50_lean_log) &gt;= 0.0252975</code></pre>
+<p>이 구조는 기존 <code>Warm / Warm-lite / Cold</code> 3분기보다 단순하다.</p>
+<pre><code>기존: 5건 이상 Warm, 1~4건 Warm-lite, 0건 Cold
+권장: 1건 이상 Warm-lite unified, 0건 Cold</code></pre>
+<p>단, Warm-lite unified 내부에서는 current와 CF7 tail guard를 조건부로 나눠 중앙값 정확도와 tail 안정성을 함께 관리한다.</p>
+<p>현재 실험 기준으로 가장 균형 잡힌 선택은 <code>route_gap_q50</code>이며, 저이력 1건 구간 보수 운영이 필요하면 <code>same_artist_history_n == 1</code>에서 current를 유지하는 옵션을 추가 검토한다.</p>
+<h2 id="16.-근거-파일">16. 근거 파일</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">근거</th>
+<th class="align-left">파일</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">기존 종합 리포트</td>
+<td class="align-left"><code>docs/track6/experiments/partner_warm_cold_best_model_report.html</code></td>
+</tr>
+<tr>
+<td class="align-left">CF5 Warm-lite unified operational comparison</td>
+<td class="align-left"><code>experiments/track6/PP-ROUTE-CF5_unified_warm_lite_operational_comparison/reports/result_report.md</code></td>
+</tr>
+<tr>
+<td class="align-left">CF6 full-history retrained comparison</td>
+<td class="align-left"><code>experiments/track6/PP-ROUTE-CF6_full_history_retrained_warm_vs_unified_warm_lite/reports/result_report.md</code></td>
+</tr>
+<tr>
+<td class="align-left">CF7 tail guard 실험</td>
+<td class="align-left"><code>experiments/track6/PP-ROUTE-CF7_warm_lite_tail_guard/reports/result_report.md</code></td>
+</tr>
+<tr>
+<td class="align-left">CF8 CF7 후보 bootstrap/k stress/segment 검증</td>
+<td class="align-left"><code>experiments/track6/PP-ROUTE-CF8_cf7_candidate_validation/reports/result_report.md</code></td>
+</tr>
+<tr>
+<td class="align-left">Q6 Warm-lite native 정확 검증</td>
+<td class="align-left"><code>experiments/track6/PP-WLITE-Q6_cf7_candidate_native_validation/reports/result_report.md</code></td>
+</tr>
+<tr>
+<td class="align-left">CF9 조건부 CF7 라우터</td>
+<td class="align-left"><code>experiments/track6/PP-ROUTE-CF9_conditional_cf7_router/reports/result_report.md</code></td>
+</tr>
+</tbody></table></div>
+    </main>
+  </div>
+</body>
+</html>

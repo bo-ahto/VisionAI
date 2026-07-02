@@ -1,0 +1,47 @@
+{
+  "experiment_id": "PP-WLITE-Q2",
+  "experiment_slug": "PP-WLITE-Q2_quantile_followup_truncation_validation",
+  "eval_design": "PP-WCUT6-equivalent frozen Warm-lite k-truncation follow-up.",
+  "model_seeds": [
+    20260612,
+    20260613,
+    20260614
+  ],
+  "truncation_seeds": [
+    20260612,
+    20260613,
+    20260614
+  ],
+  "ks": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "rows_per_condition": 607,
+  "total_rows": 7284,
+  "baseline": "frozen warm_lite_v0.1 all6_current",
+  "quantile_model": "LightGBM objective=quantile, q10/q50/q90 full features, q50 lean features, seed-averaged",
+  "candidates": [
+    "all6_current",
+    "lgbq_full_q50",
+    "lgbq_lean_q50",
+    "lgbq_full_lean_avg",
+    "all6_75_lgbq_full_25",
+    "all6_50_lgbq_full_50"
+  ],
+  "all6_current_metrics": {
+    "MdAPE": 0.170119,
+    "MAPE": 0.344418,
+    "p95_APE": 1.160823
+  },
+  "best_candidate_by_metric": {
+    "MdAPE": "lgbq_lean_q50",
+    "MAPE": "lgbq_full_lean_avg",
+    "p95_APE": "lgbq_full_lean_avg"
+  },
+  "n_boot": 400,
+  "prohibitions": [
+    "0604 사용 금지"
+  ]
+}

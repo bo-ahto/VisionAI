@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Official 0.1v Warm 가격 예측 모델 3페이지 요약</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #526273;
+      --line: #d9e2ec;
+      --soft: #f5f8fb;
+      --blue: #1f6feb;
+      --green: #0f766e;
+      --orange: #b45309;
+      --red: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #eef3f8;
+    }
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .page {
+      min-height: 1320px;
+      margin: 0 0 24px;
+      padding: 42px 48px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    }
+    .page.compact {
+      min-height: auto;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    h1 { font-size: 34px; }
+    h2 { font-size: 28px; margin-bottom: 18px; }
+    h3 { font-size: 18px; margin: 24px 0 8px; }
+    p { margin: 8px 0 12px; }
+    ul { margin: 8px 0 16px 20px; padding: 0; }
+    li { margin: 5px 0; }
+    code {
+      padding: 1px 5px;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      background: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+    pre {
+      overflow-x: auto;
+      margin: 12px 0 16px;
+      padding: 16px 18px;
+      color: #e5e7eb;
+      background: #111827;
+      border-radius: 8px;
+      font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+    }
+    pre code {
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      color: inherit;
+      background: transparent;
+      font: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      background: #edf3f8;
+      text-align: left;
+      font-weight: 800;
+    }
+    .right { text-align: right; }
+    .lead {
+      margin: 16px 0 18px;
+      color: #263445;
+      font-size: 18px;
+      line-height: 1.7;
+    }
+    .note {
+      margin: 16px 0;
+      padding: 14px 16px;
+      border-left: 5px solid var(--blue);
+      background: #eff6ff;
+      border-radius: 6px;
+    }
+    .warn {
+      border-left-color: var(--orange);
+      background: #fff7ed;
+    }
+    .metric-good { color: var(--green); font-weight: 800; }
+    .metric-watch { color: var(--orange); font-weight: 800; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 14px 0;
+    }
+    .box {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+    }
+    .box strong { display: block; margin-bottom: 4px; }
+    .muted { color: var(--muted); }
+    @media print {
+      body { background: #fff; }
+      main { max-width: none; padding: 0; }
+      .page {
+        min-height: auto;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        page-break-after: always;
+      }
+      .page:last-child { page-break-after: auto; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="page compact">
+    <p class="eyebrow">Official 0.1v API · Warm 모델 전용 요약</p>
+    <h1>Warm 가격 예측 모델 핵심 설명</h1>
+    <p class="lead">
+      이 문서는 <code>partner_warm_cold_official_v0_1_unified_model_report.html</code>에서
+      Warm 모델만 따로 설명하기 위한 3페이지 요약본이다.
+      현재 Warm 모델이 언제 쓰이고, 기존 WMIN8 대비 성능이 어떻게 달라졌으며,
+      가격이 어떤 순서로 계산되는지만 정리한다.
+    </p>
+
+    <div class="note">
+      <strong>Warm의 의미</strong><br />
+      Warm은 입력 작가가 기존 작가로 신뢰 가능하게 매칭되고, 같은 작가의 가격 이력을 1건 이상 사용할 수 있는 경우의 가격 예측 경로다.
+      현재 official 0.1v 기본 Warm은 예전처럼 <code>1~4건</code>과 <code>5건 이상</code>을 서로 다른 모델로 나누지 않고,
+      같은 작가 이력이 1건 이상이면 통합 Warm current 후보를 사용한다.
+    </div>
+
+    <h3>1. 성능 기준</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>모델</th>
+          <th>평가 기준</th>
+          <th class="right">n</th>
+          <th class="right">MdAPE</th>
+          <th class="right">MAPE</th>
+          <th class="right">p95 APE</th>
+          <th class="right">RMSE log</th>
+          <th>해석</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Warm current</td>
+          <td>fixed test</td>
+          <td class="right">607</td>
+          <td class="right">0.084485</td>
+          <td class="right">0.225214</td>
+          <td class="right">0.803203</td>
+          <td class="right">0.382171</td>
+          <td>기본 Warm 후보</td>
+        </tr>
+        <tr>
+          <td>Warm 기존 WMIN8</td>
+          <td>fixed test</td>
+          <td class="right">607</td>
+          <td class="right">0.104326</td>
+          <td class="right">0.235814</td>
+          <td class="right">0.739416</td>
+          <td class="right">0.377190</td>
+          <td>이전 Warm 운영 후보</td>
+        </tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><code>n=607</code>은 학습 작품 수가 아니라 Track6에서 고정한 Stable Warm fixed test 평가 행 수다.</li>
+      <li>두 모델은 같은 607개 작품에서 평가되므로 Warm current와 기존 WMIN8의 성능 비교는 같은 조건 비교다.</li>
+      <li>Warm current는 기존 WMIN8 대비 MdAPE가 <span class="metric-good">0.104326 → 0.084485</span>로 개선됐다.</li>
+      <li>MAPE도 <span class="metric-good">0.235814 → 0.225214</span>로 개선됐다.</li>
+      <li>p95 APE는 <span class="metric-watch">0.739416 → 0.803203</span>로 높아졌으므로 큰 오차 구간은 운영 모니터링 대상이다.</li>
+    </ul>
+
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">Page 2 · 학습 단계와 사용 단계</p>
+    <h2>Warm은 기준가격을 만들고, 모델 보정으로 다듬는다</h2>
+    <p>
+      Warm current는 단일 산식 하나가 아니라, 같은 작가의 가격 이력 통계와 작품 피처를 함께 사용하는 예측 파이프라인이다.
+      학습 단계에서는 과거 작품의 실제 로그가격을 정답으로 두고 두 q50 평균 기준가격과 잔차 보정 구조를 학습한다.
+      사용 단계에서는 입력 작품의 같은 작가 이력과 작품 정보를 같은 방식으로 피처화해 최종 로그가격을 만든다.
+    </p>
+
+    <h3>1. 학습 단계</h3>
+    <pre><code>[Warm 학습 데이터]
+  - 실제 가격이 있는 과거 작품
+  - 같은 작가 가격 이력 1건 이상을 재현할 수 있는 행
+  - 자기 가격이 자기 통계에 들어가지 않도록 fold/hold-out 기준으로 차단
+        |
+        v
+[작품 피처 생성]
+  - width_cm, height_cm, depth_cm
+  - area_cm2, log_area, aspect_ratio
+  - has_depth, is_3d_candidate
+  - medium_category, support_category, size_bucket
+        |
+        v
+[같은 작가 가격 이력 통계 생성]
+  - 같은 작가 + 매체/지지체 + 크기 구간
+  - 없으면 같은 작가 + 크기 구간
+  - 없으면 같은 작가 전체
+  - 중앙값, q25/q75, IQR, 표본 수, 면적단가 통계 생성
+        |
+        v
+[LightGBM Quantile 기준가격 학습]
+  - 전체 피처로 q10, q50, q90을 출력하도록 학습
+  - 안정 피처로 q50을 출력하도록 학습
+  - 두 q50 평균을 대표 기준가격으로 쓰는 구조를 학습/검증
+  - q90 - q10은 사용 단계에서 예측 불확실성 폭으로 계산
+    (최종 가격 산식에 직접 더하지 않고, 예측 범위·신뢰도·검수 필요성 표시용 보조값으로 사용)
+        |
+        v
+[LightGBM Huber residual 모델 학습]
+  - 학습 target: 실제 로그가격 - 두 q50 평균 기준가격
+  - residual 보정값을 출력하도록 학습
+  - clip 상·하한은 검증 단계에서 고정해 과도한 보정을 제한
+        |
+        v
+[동결 산출물]
+  - Quantile 모델
+  - LightGBM Huber residual 모델
+  - 피처 생성 규칙
+  - fixed test/API parity 검증 결과</code></pre>
+
+    <h3>2. 사용 단계</h3>
+    <pre><code>[입력 작품]
+  - 작가명/작가키가 기존 작가로 신뢰 가능하게 매칭됨
+  - 같은 작가 가격 이력 1건 이상 확인
+        |
+        v
+[같은 작가 이력 통계 조회]
+  - 동일 작가의 과거 가격 분포
+  - 크기/매체/지지체 조건이 맞으면 더 좁은 비교군 사용
+  - 부족하면 같은 작가 전체 통계로 fallback
+        |
+        v
+[작품 피처 생성]
+  - 크기, 면적, 비율, 3D 여부
+  - 매체, 지지체, 크기 bucket
+        |
+        v
+[LightGBM Quantile 기준가격 계산]
+  - 전체 피처 기반 q10/q50/q90 로그가격 예측
+  - 흔들림을 줄인 안정 피처 기반 q50 로그가격 예측
+  - 두 q50 평균을 기본 대표 로그가격으로 사용
+        |
+        v
+[LightGBM Huber residual 보정값 계산]
+  - 두 q50 평균 기준가격에서 남은 오차를 예측
+  - clip으로 보정 폭 제한
+        |
+        v
+[최종 Warm 로그가격]
+  - 두 q50 평균 기준 로그가격 + 제한된 residual 보정
+        |
+        v
+[최종 Warm 가격]
+  - exp(최종 Warm 로그가격)</code></pre>
+
+    <h3>3. 가격 계산 예제</h3>
+    <p>
+      같은 작가 가격 이력이 있는 작품 1점이 사용 단계 순서대로 가격이 나오는 과정이다.
+      로그가격은 자연로그 기준이다. <code>(고정값)</code>은 학습·검증 때 정해져 운영 입력마다 바뀌지 않는 값이고,
+      표시가 없는 값은 입력 작품마다 모델이 예측하거나 계산하는 값이다.
+    </p>
+    <pre><code>[1] LightGBM Quantile 기준가격 계산
+    두 방식으로 '한가운데 예상가'를 각각 내고 평균 내 기준가격을 만든다.
+
+    전체 피처 기반 q50 = 14.22
+    안정 피처 기반 q50 = 14.08
+    기준 로그가격 = 평균(14.22, 14.08) = 14.15
+        |
+        v
+[2] LightGBM Huber residual 보정값 계산
+    기준가격에서 남은 오차를 모델이 예측하고, 절반만 제한된 폭 안에서 반영한다.
+
+    Huber residual 예측값 = +0.30
+    0.50 (검증 실험에서 선택해 동결한 residual 반영 비율) * 0.30 = +0.15
+    clip(+0.15, -0.10, +0.10) = +0.10
+      - -0.10, +0.10은 검증 실험에서 선택해 동결한 보정 폭 하한/상한
+      - +0.15는 상한 +0.10을 넘으므로 +0.10으로 잘림
+
+    보정 후 로그가격 = 14.15 + 0.10 = 14.25
+        |
+        v
+[3] 최종 Warm 가격 변환
+    최종 Warm 로그가격 = 14.25
+    최종 Warm 가격 = exp(14.25) ≈ 1,544,000원</code></pre>
+    <p>
+      <code>clip</code>은 보정값이 하한보다 작으면 하한으로, 상한보다 크면 상한으로 잘라내는 함수다.
+      위 예제에서는 모델이 <code>+0.15</code> 보정을 만들었지만 상한 <code>+0.10</code>으로 잘려,
+      운영 가격이 한 번에 과도하게 움직이지 않는다.
+    </p>
+
+    <h3>4. 왜 이렇게 계산하는가</h3>
+    <div class="grid">
+      <div class="box">
+        <strong>같은 작가 가격 이력</strong>
+        Warm의 가장 강한 근거다. 같은 작가의 실제 과거 가격 분포를 기준가격으로 사용하므로, 작가별 가격 수준을 직접적으로 잡을 수 있다.
+      </div>
+      <div class="box">
+        <strong>작품 피처</strong>
+        같은 작가라도 크기, 매체, 지지체, 입체 여부에 따라 가격이 달라진다. 작품 피처는 같은 작가 기준가격을 작품 단위로 조정하는 역할을 한다.
+      </div>
+      <div class="box">
+        <strong>Quantile 기준가격</strong>
+        전체 피처 q50과 안정 피처 q50의 평균은 대표 예측값이고, q10/q90은 가격 범위와 불확실성 폭을 보여준다. 단일 가격만 내는 것보다 위험도를 설명하기 쉽다.
+      </div>
+      <div class="box">
+        <strong>LightGBM Huber residual 보정</strong>
+        기준가격이 놓친 반복 오차를 LightGBM Huber residual 모델로 보정한다. Huber objective는 큰 이상치에 덜 민감하고, clip은 보정이 과도하게 튀는 것을 막는다.
+      </div>
+    </div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">Page 3 · 피처, 검증, 운영 해석</p>
+    <h2>Warm current를 운영 기본 후보로 보는 이유</h2>
+
+    <h3>1. 사용 피처</h3>
+    <table>
+      <thead>
+        <tr><th>구분</th><th>피처</th><th>역할</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>작품 크기</td>
+          <td><code>width_cm</code>, <code>height_cm</code>, <code>depth_cm</code>, <code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code></td>
+          <td>작품 단위 가격 차이를 설명한다. 면적과 로그 면적은 가격 분포가 한쪽으로 치우치는 현상을 완화한다.</td>
+        </tr>
+        <tr>
+          <td>작품 형태</td>
+          <td><code>has_depth</code>, <code>is_3d_candidate</code>, 크기 bucket</td>
+          <td>2D/3D 여부와 크기 구간 차이를 반영한다.</td>
+        </tr>
+        <tr>
+          <td>재료/지지체</td>
+          <td><code>medium_category</code>, <code>support_category</code>, 조합 bucket</td>
+          <td>캔버스, 종이, 패널, 혼합재료처럼 가격 차이를 만드는 매체 조건을 반영한다.</td>
+        </tr>
+        <tr>
+          <td>같은 작가 가격 통계</td>
+          <td>가격 중앙값, q25/q75, IQR, 면적단가, 표본 수, 매칭 단계</td>
+          <td>Warm의 핵심 근거다. 같은 작가의 실제 가격 이력을 작품 조건과 결합해 기준가격을 만든다.</td>
+        </tr>
+        <tr>
+          <td>모델 파생값</td>
+          <td>전체 피처 q10/q50/q90, 안정 피처 q50, 예측 불확실성 폭, residual 보정값</td>
+          <td>대표 가격, 가격 범위, 남은 오차 보정을 계산한다.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2. 검증 근거</h3>
+    <table>
+      <thead>
+        <tr><th>검증 항목</th><th>결과</th><th>해석</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>fixed test 성능</td>
+          <td>607행, MdAPE 0.084485, MAPE 0.225214, p95 0.803203, RMSE log 0.382171</td>
+          <td>현재 Warm 기본 후보의 고정 평가셋 결과</td>
+        </tr>
+        <tr>
+          <td>기존 WMIN8 대비</td>
+          <td>MdAPE -0.019841, MAPE -0.010600</td>
+          <td>대표 오차와 평균 오차는 개선</td>
+        </tr>
+        <tr>
+          <td>p95 비교</td>
+          <td>기존 WMIN8 0.739416, Warm current 0.803203</td>
+          <td>큰 오차 tail은 악화되어 운영 모니터링 대상</td>
+        </tr>
+        <tr>
+          <td>API/동결 산출물 검증</td>
+          <td>Warm bundle replay parity와 HTTP API parity를 별도 검증</td>
+          <td>문서 수치와 운영 adapter 계산이 같은 산출물을 재현하는지 확인</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>3. 학습 데이터 증가 효과</h3>
+    <p>
+      별도 learning curve 실험에서는 fixed test split을 고정하고 Warm train split만
+      <code>25%</code>, <code>50%</code>, <code>75%</code>, <code>100%</code>로 늘렸다.
+      모든 비율에서 Warm 처리가 가능한 동일 test cohort 기준으로 비교했기 때문에,
+      단순히 평가 대상이 바뀌어서 좋아진 것이 아니라 학습 데이터 증가 효과를 본 실험이다.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>train 비율</th>
+          <th class="right">n 평균</th>
+          <th class="right">MdAPE 평균</th>
+          <th class="right">MAPE 평균</th>
+          <th class="right">p95 APE 평균</th>
+          <th class="right">RMSE log 평균</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>25%</td>
+          <td class="right">550</td>
+          <td class="right">0.153252</td>
+          <td class="right">0.363610</td>
+          <td class="right">0.990130</td>
+          <td class="right">0.487094</td>
+        </tr>
+        <tr>
+          <td>50%</td>
+          <td class="right">550</td>
+          <td class="right">0.114222</td>
+          <td class="right">0.256292</td>
+          <td class="right">0.908345</td>
+          <td class="right">0.425109</td>
+        </tr>
+        <tr>
+          <td>75%</td>
+          <td class="right">550</td>
+          <td class="right">0.102419</td>
+          <td class="right">0.234519</td>
+          <td class="right">0.815625</td>
+          <td class="right">0.404022</td>
+        </tr>
+        <tr>
+          <td>100%</td>
+          <td class="right">550</td>
+          <td class="right">0.088637</td>
+          <td class="right">0.229596</td>
+          <td class="right">0.806068</td>
+          <td class="right">0.379168</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      25%에서 100%로 늘렸을 때 fixed cohort 평균 변화는
+      MdAPE <code>-0.064615</code>, MAPE <code>-0.134014</code>,
+      p95 APE <code>-0.184062</code>, RMSE log <code>-0.107926</code>이다.
+      따라서 품질 관리된 학습 데이터가 늘면 Warm 정확도가 좋아질 근거가 있다.
+      다만 신규 운영 데이터도 가격 라벨, 작가 매칭, 작품 피처 품질 검수를 통과해야 같은 개선을 기대할 수 있다.
+      이 학습곡선 100% 행은 학습곡선 전용으로 재학습한 별도 실험이므로,
+      Page 1의 배포 Warm current 수치와 셋업이 정확히 같지는 않다. 핵심은 절대 수치가 아니라 데이터가 늘수록 좋아지는 추세다.
+    </div>
+
+    <h3>4. 운영 설명 문장</h3>
+    <pre><code>Official 0.1v Warm 가격 예측은 먼저 작가가 기존 작가로 신뢰 가능하게 매칭되는지 확인한다.
+같은 작가 가격 이력이 1건 이상 있으면 Warm current 모델을 사용한다.
+
+Warm current는 같은 작가의 과거 가격 통계와 입력 작품의 크기·매체·지지체 피처를 함께 사용한다.
+먼저 LightGBM Quantile이 두 종류의 중앙 로그가격을 계산한다.
+첫 번째는 전체 피처를 사용한 중앙 로그가격(q50)이고,
+두 번째는 흔들림을 줄인 안정 피처만 사용한 중앙 로그가격(q50)이다.
+두 중앙 로그가격의 평균을 대표 기준가격으로 두고,
+그 다음 LightGBM Huber residual 모델이 기준가격에서 남은 오차를 제한된 폭으로 보정한다.
+
+같은 607개 Stable Warm fixed test 기준에서 Warm current는 기존 WMIN8보다
+MdAPE와 MAPE가 개선됐다. 다만 p95 APE는 기존 WMIN8보다 높으므로,
+큰 오차 구간은 운영 모니터링과 검수 표시를 유지한다.</code></pre>
+
+    <h3>5. 최종 해석</h3>
+    <ul>
+      <li>Warm current는 같은 작가 가격 이력을 쓸 수 있는 입력의 official 0.1v 기본 Warm 후보다.</li>
+      <li>기존 WMIN8과 같은 607개 fixed test에서 비교했을 때 중앙 오차와 평균 오차가 개선됐다.</li>
+      <li>p95는 악화됐으므로 “모든 지표에서 완전 우세”가 아니라 “대표 정확도 중심 기본 후보”로 설명해야 한다.</li>
+      <li>운영에서는 가격만 반환하지 않고 q10/q90 범위, 불확실성 폭, 신뢰도/검수 표시를 함께 유지하는 것이 안전하다.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{
+  "version": "v0.1",
+  "name": "cold_prediction_v0.1",
+  "status": "validated_policy_freeze",
+  "created_at": "2026-06-07T00:00:00",
+  "purpose": "PP-QR4가 반복검증한 Cold guard 방어 후보 + PP-Y18 대표 점예측 + fallback/신뢰도·범위 정책 고정",
+  "target": "ln_price_krw",
+  "price_unit": "KRW",
+  "representative_policy": {
+    "name": "Cold representative point prediction",
+    "candidate": "component_pp_y18_qwidth_bin",
+    "model_family": "LightGBM Quantile + qwidth bin OOF 보정 (PP-Y18)",
+    "metrics_test": {
+      "MdAPE": 0.4246626073887792,
+      "MAPE": 0.991041533611196,
+      "p95_APE": 3.3052975828185316,
+      "RMSE_log": NaN
+    },
+    "note": "대표 점예측은 PP-Y18 유지(교체하지 않음)."
+  },
+  "defense_policy": {
+    "name": "Cold MAPE/p95 defense layer",
+    "candidate": "guard_y18_lgb_q40_qwidth67_gap50_down_w0p50",
+    "params_ref": "config/cold_postprocess_params_v0_1.json",
+    "metrics_test": {
+      "MdAPE": 0.4177645009335748,
+      "MAPE": 0.9639625775134394,
+      "p95_APE": 2.537707619420415,
+      "RMSE_log": NaN
+    },
+    "validation_evidence": {
+      "source": "PP-QR4",
+      "MAPE_improve_prob_row_artist": [
+        1.0,
+        0.98
+      ],
+      "p95_improve_prob_row_artist": [
+        0.98,
+        0.85
+      ],
+      "mdape_not_worse_vs_pp_y18": true
+    },
+    "note": "고위험 구간(qwidth 높음 + gap 큼)에서 lgb_q40 쪽으로 하향 결합. 대표 점예측을 대체하지 않는 방어층."
+  },
+  "fallback_policy": {
+    "candidate": "component_pp_y2_baseline",
+    "metrics_test": {
+      "MdAPE": 0.44214745036112113,
+      "MAPE": 1.0484047531277627,
+      "p95_APE": 3.353732420489309,
+      "RMSE_log": NaN
+    },
+    "note": "guard/representative 산출 불가 시 PP-Y2 baseline."
+  },
+  "confidence_range_policy": {
+    "display": "확정 가격 아님. 참고 예측가 + 넓은 가격 범위 + 낮은 신뢰도로 표시.",
+    "range_basis": "quantile_width_log 기반 범위, qwidth 높을수록 신뢰도 하향."
+  },
+  "operational_note": "후처리 파라미터층(predict/apply_cold_postprocess_v0_1.py)은 component 예측 입력 시 실행 가능. 하부 LightGBM Quantile 모델은 상류 OOF 예측(PP-Y18/PP-QR1)을 참조하며 별도 직렬화 필요. 0604 평가는 전부 warm(6873 warm/0 cold)이라 cold 운영 트래픽 확보 후 재평가 필요.",
+  "reproduced_pp_qr4_guard_mdape": true,
+  "shipped_postprocessor_max_abs_diff_vs_qr2": 0.0
+}

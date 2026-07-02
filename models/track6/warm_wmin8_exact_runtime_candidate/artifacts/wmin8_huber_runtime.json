@@ -1,0 +1,95 @@
+{
+  "stable_config": {
+    "candidate": "hcoef2_size_reliability_cap005_s050",
+    "source_candidate": "residual_huber_resid_basis_size_reliability_alpha0.01_cap0.05_s0.50",
+    "feature_key": "resid_basis_size_reliability",
+    "alpha": 0.01,
+    "cap": 0.05,
+    "strength": 0.5,
+    "purpose": "작은 폭 MAPE/p95 안정화 대안"
+  },
+  "feature_columns": [
+    "ppv8_defensive",
+    "svc_fallback",
+    "shrunk_huber_refit",
+    "shrunk_svc_prior",
+    "log_area",
+    "svc_group_n_log",
+    "svc_prior_iqr",
+    "current_ppv8_gap",
+    "current_shrunk_huber_gap",
+    "raw_shrunk_prior_gap"
+  ],
+  "models": {
+    "base_w700": {
+      "weight": 0.7,
+      "candidate_label": "min1_w700_huber_refit_partial",
+      "role": "WMIN8 base candidate equivalent to WMIN4 min1_huber_refit_partial",
+      "model_file": "artifacts/base_w700_huber_refit_pipeline.joblib",
+      "feature_columns": [
+        "ppv8_defensive",
+        "svc_fallback",
+        "shrunk_huber_refit",
+        "shrunk_svc_prior",
+        "log_area",
+        "svc_group_n_log",
+        "svc_prior_iqr",
+        "current_ppv8_gap",
+        "current_shrunk_huber_gap",
+        "raw_shrunk_prior_gap"
+      ]
+    },
+    "alternative_w850": {
+      "weight": 0.85,
+      "candidate_label": "min1_w850_huber_refit_partial",
+      "role": "WMIN8 p95 defensive alternative candidate",
+      "model_file": "artifacts/alternative_w850_huber_refit_pipeline.joblib",
+      "feature_columns": [
+        "ppv8_defensive",
+        "svc_fallback",
+        "shrunk_huber_refit",
+        "shrunk_svc_prior",
+        "log_area",
+        "svc_group_n_log",
+        "svc_prior_iqr",
+        "current_ppv8_gap",
+        "current_shrunk_huber_gap",
+        "raw_shrunk_prior_gap"
+      ]
+    }
+  },
+  "parity_rows": [
+    {
+      "role": "base_w700",
+      "candidate_label": "min1_w700_huber_refit_partial",
+      "eval_split": "validation_oof",
+      "n": 519,
+      "max_abs_log_diff": 3.552713678800501e-15,
+      "mean_abs_log_diff": 4.107183443700001e-16
+    },
+    {
+      "role": "base_w700",
+      "candidate_label": "min1_w700_huber_refit_partial",
+      "eval_split": "test",
+      "n": 607,
+      "max_abs_log_diff": 3.552713678800501e-15,
+      "mean_abs_log_diff": 4.536001813954511e-16
+    },
+    {
+      "role": "alternative_w850",
+      "candidate_label": "min1_w850_huber_refit_partial",
+      "eval_split": "validation_oof",
+      "n": 519,
+      "max_abs_log_diff": 1.7763568394002505e-15,
+      "mean_abs_log_diff": 3.696465099330001e-16
+    },
+    {
+      "role": "alternative_w850",
+      "candidate_label": "min1_w850_huber_refit_partial",
+      "eval_split": "test",
+      "n": 607,
+      "max_abs_log_diff": 3.552713678800501e-15,
+      "mean_abs_log_diff": 3.9507112573152193e-16
+    }
+  ]
+}

@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VisionAI v0.3 guard+search 테스트</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182230;
+      --muted: #667085;
+      --line: #d0d5dd;
+      --panel: #f8fafc;
+      --surface: #ffffff;
+      --soft: #eef4ff;
+      --accent: #175cd3;
+      --warn: #b54708;
+      --ok: #027a48;
+      --bad: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #f8fafc;
+    }
+    header {
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 20px;
+      padding: 20px 28px 36px;
+    }
+    section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: visible;
+    }
+    section h2 {
+      margin: 0;
+      padding: 14px 16px;
+      font-size: 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-body {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 14px;
+      background: #fff;
+      color: var(--ink);
+    }
+    button {
+      border: 1px solid #164caa;
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 8px 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    button.secondary {
+      border-color: var(--line);
+      background: #fff;
+      color: var(--ink);
+    }
+    .notice {
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      background: var(--soft);
+      font-size: 13px;
+      color: #1d2939;
+      line-height: 1.55;
+    }
+    .warning {
+      border-left-color: var(--warn);
+      background: #fffcf5;
+      color: #7a2e0e;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface);
+      min-height: 86px;
+    }
+    .kpi .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+    .kpi .value {
+      font-weight: 850;
+      font-size: 16px;
+      overflow-wrap: anywhere;
+    }
+    .sample-list {
+      display: grid;
+      gap: 8px;
+      max-height: calc(100vh - 380px);
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .sample-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--panel);
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .sample-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .sample-title {
+      font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+    .sample-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .sample-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .result {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+    .hero {
+      border: 1px solid #84caff;
+      border-radius: 8px;
+      padding: 16px;
+      background: linear-gradient(180deg, #fff, #f5fbff);
+      display: grid;
+      gap: 12px;
+    }
+    .hero-title {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .hero-price {
+      font-size: 34px;
+      line-height: 1.1;
+      font-weight: 850;
+    }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .compare {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      min-height: 78px;
+    }
+    .compare .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .compare .value {
+      font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: var(--soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .pill.ok { background: #ecfdf3; color: var(--ok); }
+    .pill.warn { background: #fffaeb; color: var(--warn); }
+    .pill.bad { background: #fef3f2; color: var(--bad); }
+    .flow {
+      display: grid;
+      gap: 10px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+    .step-index {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .step-title {
+      font-weight: 850;
+      margin-bottom: 4px;
+    }
+    .step-desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .formula {
+      margin-top: 8px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: #f2f4f7;
+      color: #344054;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .value-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .mini-value {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mini-value strong {
+      color: var(--ink);
+      font-weight: 850;
+    }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: visible;
+    }
+    details > summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      font-weight: 850;
+      background: var(--panel);
+      list-style: none;
+    }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::after {
+      content: "+";
+      float: right;
+      color: var(--muted);
+    }
+    details[open] > summary::after { content: "-"; }
+    .details-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    pre {
+      margin: 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #101828;
+      color: #e4e7ec;
+      overflow: auto;
+      max-height: 360px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .empty {
+      padding: 18px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .loading {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(248, 250, 252, 0.72);
+      backdrop-filter: blur(2px);
+    }
+    .loading.hidden { display: none; }
+    .loading-card {
+      width: min(340px, 90vw);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: #fff;
+      box-shadow: 0 16px 44px rgba(16, 24, 40, 0.18);
+      display: grid;
+      gap: 10px;
+      text-align: center;
+    }
+    .spinner {
+      width: 28px;
+      height: 28px;
+      margin: 0 auto;
+      border: 3px solid #d1e9ff;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 850ms linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; padding: 16px; }
+      header { padding: 20px 16px 14px; }
+      .kpi-grid, .compare-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .sample-list { max-height: none; }
+    }
+    @media (max-width: 560px) {
+      .controls, .kpi-grid, .compare-grid { grid-template-columns: 1fr; }
+      .hero-price { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VisionAI v0.3 guard+search 테스트</h1>
+    <p class="sub">최고 성능 Cold 연구 기준 모델의 fixed test/validation row를 선택해 대표가, guard, search 보정, 최종 가격 계산 과정을 재현합니다.</p>
+  </header>
+  <main>
+    <section>
+      <h2>테스트 row 선택</h2>
+      <div class="panel-body">
+        <div class="notice">
+          이 페이지는 현재 최고 성능으로 확인된 v0.3 guard+search 계산 경로만 보여줍니다.
+          임의 작품 입력 추론이 아니라 기존 fixed split 재현 모드입니다.
+        </div>
+        <div class="controls">
+          <label>평가 split
+            <select id="split">
+              <option value="test">test</option>
+              <option value="validation">validation</option>
+            </select>
+          </label>
+          <label>표시 샘플 수
+            <select id="limit">
+              <option value="10">10건</option>
+              <option value="20" selected>20건</option>
+              <option value="50">50건</option>
+            </select>
+          </label>
+        </div>
+        <div class="actions">
+          <button type="button" id="loadSamples">샘플 불러오기</button>
+          <button type="button" class="secondary" id="loadValidation">validation 확인</button>
+        </div>
+        <div class="kpi-grid" id="metrics">
+          <div class="kpi"><div class="label">모드</div><div class="value">fixed split 재현</div></div>
+          <div class="kpi"><div class="label">최종 로직</div><div class="value">guard + search</div></div>
+          <div class="kpi"><div class="label">test MAPE</div><div class="value">-</div></div>
+          <div class="kpi"><div class="label">p95 APE</div><div class="value">-</div></div>
+        </div>
+        <div class="sample-list" id="samples">
+          <div class="empty">샘플을 불러오면 v0.3 계산을 재현할 row를 선택할 수 있습니다.</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>v0.3 계산 결과</h2>
+      <div class="result">
+        <div class="hero" id="hero">
+          <div class="hero-title">선택 row의 최종 guard+search 가격</div>
+          <div class="hero-price">-</div>
+          <div class="pill-row">
+            <span class="pill">대표가 → guard → search 보정</span>
+            <span class="pill">row 선택 전</span>
+          </div>
+        </div>
+
+        <div class="compare-grid" id="compare">
+          <div class="compare"><div class="label">실제 가격</div><div class="value">-</div></div>
+          <div class="compare"><div class="label">대표 기준 가격</div><div class="value">-</div></div>
+          <div class="compare"><div class="label">guard-only 가격</div><div class="value">-</div></div>
+          <div class="compare"><div class="label">최종 APE</div><div class="value">-</div></div>
+        </div>
+
+        <details open>
+          <summary>최고 성능 계산 과정 상세</summary>
+          <div class="details-body">
+            <div class="flow" id="flow">
+              <div class="empty">row를 선택하면 최고 성능 v0.3 계산식이 순서대로 표시됩니다.</div>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>모델 입력값과 보정값</summary>
+          <div class="details-body" id="inputs">
+            <div class="empty">row를 선택하면 로그가격, quantile width, search delta가 표시됩니다.</div>
+          </div>
+        </details>
+
+        <details>
+          <summary>개발자 응답 데이터</summary>
+          <div class="details-body">
+            <pre id="rawJson">{}</pre>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <div class="loading hidden" id="loading" aria-hidden="true">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <strong id="loadingTitle">처리 중</strong>
+      <span class="sub" id="loadingDesc">v0.3 재현 데이터를 불러오고 있습니다.</span>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8020" : "";
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function numberText(value, digits = 3) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+      return Number(value).toLocaleString(undefined, {maximumFractionDigits: digits});
+    }
+
+    function percentText(value, digits = 1) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+      return `${(Number(value) * 100).toFixed(digits)}%`;
+    }
+
+    function setLoading(active, title = "처리 중", desc = "v0.3 재현 데이터를 불러오고 있습니다.") {
+      $("loading").classList.toggle("hidden", !active);
+      $("loading").setAttribute("aria-hidden", active ? "false" : "true");
+      $("loadingTitle").textContent = title;
+      $("loadingDesc").textContent = desc;
+    }
+
+    async function getJson(url) {
+      const response = await fetch(`${API_BASE}${url}`);
+      const json = await response.json();
+      if (!response.ok) throw new Error(JSON.stringify(json, null, 2));
+      return json;
+    }
+
+    function renderMetrics(json) {
+      const metrics = json.metrics || {};
+      const final = metrics.guard_search_test || {};
+      const guard = metrics.guard_only_test || {};
+      const rep = metrics.representative_test || {};
+      $("metrics").innerHTML = `
+        <div class="kpi"><div class="label">선택 split</div><div class="value">${escapeHtml(json.split || "-")} · ${Number(json.available_rows || 0).toLocaleString()}행</div></div>
+        <div class="kpi"><div class="label">대표가 MAPE</div><div class="value">${percentText(rep.MAPE)}</div></div>
+        <div class="kpi"><div class="label">guard-only MAPE</div><div class="value">${percentText(guard.MAPE)}</div></div>
+        <div class="kpi"><div class="label">최종 guard+search MAPE</div><div class="value">${percentText(final.MAPE)}</div></div>
+        <div class="kpi"><div class="label">최종 MdAPE</div><div class="value">${percentText(final.MdAPE)}</div></div>
+        <div class="kpi"><div class="label">최종 p95 APE</div><div class="value">${percentText(final.p95_APE)}</div></div>
+        <div class="kpi"><div class="label">search coverage</div><div class="value">${percentText(metrics.search_coverage_test)}</div></div>
+        <div class="kpi"><div class="label">검수 flag 비율</div><div class="value">${percentText(metrics.review_rate_test)}</div></div>
+      `;
+    }
+
+    function renderSamples(json) {
+      renderMetrics(json);
+      const rows = json.rows || [];
+      if (!rows.length) {
+        $("samples").innerHTML = `<div class="empty">표시할 row가 없습니다.</div>`;
+        return;
+      }
+      $("samples").innerHTML = rows.map((row) => `
+        <div class="sample-item">
+          <div class="sample-top">
+            <div>
+              <div class="sample-title">row ${row.row_id} · ${escapeHtml(row.artist_search_name || row.artist_key || "작가명 없음")}</div>
+              <div class="sample-meta">실제 ${escapeHtml(row.actual_price_display || "-")} · 최종 ${escapeHtml(row.final_price_display || "-")} · APE ${percentText(row.final_ape)}</div>
+              <div class="sample-meta">대표 ${escapeHtml(row.representative_price_display || "-")} → guard ${escapeHtml(row.guard_only_price_display || "-")} → search delta ${numberText(row.search_delta_log, 5)}</div>
+              <div class="sample-meta">qwidth ${numberText(row.quantile_width_log, 5)} · guard ${row.guard_applied ? "적용" : "미적용"} · search ${row.search_covered ? "적용" : "fallback"} · ${escapeHtml(row.confidence_tier || "-")}</div>
+            </div>
+          </div>
+          <div class="sample-actions">
+            <button type="button" class="secondary replay-button" data-row-id="${row.row_id}">계산 과정 보기</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function stepMarkup(index, step) {
+      const values = [
+        step.result_log !== undefined ? ["결과 로그값", numberText(step.result_log, 6)] : null,
+        step.result_display ? ["결과 가격", step.result_display] : null,
+        step.applied !== undefined ? ["guard", step.applied ? "적용" : "미적용"] : null,
+        step.search_delta_log !== undefined ? ["search delta", numberText(step.search_delta_log, 5)] : null,
+        step.covered !== undefined ? ["search lookup", step.covered ? "보유" : "미보유"] : null,
+      ].filter(Boolean);
+      return `
+        <div class="step">
+          <div class="step-index">${index}</div>
+          <div>
+            <div class="step-title">${escapeHtml(step.name || "-")}</div>
+            <div class="step-desc">${escapeHtml([step.role, step.condition ? `조건: ${step.condition}` : ""].filter(Boolean).join(" "))}</div>
+            <div class="formula">${escapeHtml(step.formula || "-")}</div>
+            <div class="value-row">
+              ${values.map(([label, value]) => `<span class="mini-value">${escapeHtml(label)} <strong>${escapeHtml(value)}</strong></span>`).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderReplay(json) {
+      const row = json.row || {};
+      const actual = row.actual || {};
+      const rep = row.representative || {};
+      const guard = row.guard_only || {};
+      const final = row.guard_search_final || {};
+      const search = row.search || {};
+      const inputs = json.calculation?.inputs || {};
+      const steps = json.calculation?.steps || [];
+      $("hero").innerHTML = `
+        <div class="hero-title">row ${escapeHtml(row.row_id || "-")} · ${escapeHtml(row.artist_search_name || row.artist_key || "작가명 없음")}</div>
+        <div class="hero-price">${escapeHtml(final.price_display || row.final_price_display || "-")}</div>
+        <div class="pill-row">
+          <span class="pill ${row.guard_applied ? "warn" : "ok"}">guard ${row.guard_applied ? "적용" : "미적용"}</span>
+          <span class="pill ${search.covered ? "ok" : "bad"}">search ${search.covered ? "lookup 적용" : "fallback"}</span>
+          <span class="pill">confidence ${escapeHtml(row.confidence_tier || "-")}</span>
+          <span class="pill ${row.review_flag ? "warn" : "ok"}">${row.review_flag ? "검수 flag" : "검수 flag 없음"}</span>
+        </div>
+      `;
+      $("compare").innerHTML = `
+        <div class="compare"><div class="label">실제 가격</div><div class="value">${escapeHtml(actual.price_display || row.actual_price_display || "-")}</div></div>
+        <div class="compare"><div class="label">대표 기준 가격</div><div class="value">${escapeHtml(rep.price_display || "-")}</div></div>
+        <div class="compare"><div class="label">guard-only 가격</div><div class="value">${escapeHtml(guard.price_display || "-")}</div></div>
+        <div class="compare"><div class="label">최종 APE</div><div class="value">${percentText(final.ape ?? row.final_ape)}</div></div>
+      `;
+      $("flow").innerHTML = steps.map((step, index) => stepMarkup(index + 1, step)).join("");
+      $("inputs").innerHTML = `
+        <div class="compare-grid">
+          <div class="compare"><div class="label">artist_key</div><div class="value">${escapeHtml(inputs.artist_key || "-")}</div></div>
+          <div class="compare"><div class="label">대표 로그가격</div><div class="value">${numberText(inputs.y18_representative_log_price, 6)}</div></div>
+          <div class="compare"><div class="label">LightGBM q40 로그가격</div><div class="value">${numberText(inputs.lightgbm_q40_log_price, 6)}</div></div>
+          <div class="compare"><div class="label">quantile width</div><div class="value">${numberText(inputs.quantile_width_log, 6)}</div></div>
+          <div class="compare"><div class="label">price range ratio</div><div class="value">${numberText(inputs.price_range_ratio, 4)}</div></div>
+          <div class="compare"><div class="label">search source</div><div class="value">${escapeHtml(search.source || "-")}</div></div>
+          <div class="compare"><div class="label">source delta</div><div class="value">${numberText(search.delta_from_source_log, 6)}</div></div>
+          <div class="compare"><div class="label">applied delta</div><div class="value">${numberText(search.delta_applied_log, 6)}</div></div>
+        </div>
+      `;
+      $("rawJson").textContent = JSON.stringify(json, null, 2);
+    }
+
+    async function loadSamples() {
+      const split = $("split").value;
+      const limit = $("limit").value;
+      setLoading(true, "샘플 로드 중", "최고 성능 v0.3 fixed split row를 불러오고 있습니다.");
+      try {
+        const json = await getJson(`/api/v2/research/cold-v0.3/samples?split=${encodeURIComponent(split)}&limit=${encodeURIComponent(limit)}`);
+        renderSamples(json);
+        $("rawJson").textContent = JSON.stringify(json, null, 2);
+      } catch (error) {
+        $("samples").innerHTML = `<div class="empty">${escapeHtml(String(error.message || error))}</div>`;
+        $("rawJson").textContent = String(error.message || error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function replayRow(rowId) {
+      const split = $("split").value;
+      setLoading(true, "계산 과정 재현 중", "대표가, guard, search 보정, 최종 가격을 계산하고 있습니다.");
+      try {
+        const json = await getJson(`/api/v2/research/cold-v0.3/replay/${encodeURIComponent(rowId)}?split=${encodeURIComponent(split)}`);
+        renderReplay(json);
+      } catch (error) {
+        $("flow").innerHTML = `<div class="empty">${escapeHtml(String(error.message || error))}</div>`;
+        $("rawJson").textContent = String(error.message || error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    $("loadSamples").addEventListener("click", loadSamples);
+    $("loadValidation").addEventListener("click", () => {
+      $("split").value = "validation";
+      loadSamples();
+    });
+    $("samples").addEventListener("click", (event) => {
+      const button = event.target.closest(".replay-button");
+      if (button) replayRow(button.dataset.rowId);
+    });
+    window.addEventListener("load", loadSamples);
+  </script>
+</body>
+</html>

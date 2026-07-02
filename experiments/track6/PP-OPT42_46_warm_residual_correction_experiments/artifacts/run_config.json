@@ -1,0 +1,75 @@
+{
+  "experiment_id": "PP-OPT42-46",
+  "experiment_slug": "PP-OPT42_46_warm_residual_correction_experiments",
+  "created_at": "2026-06-09T12:13:06",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "previous_challenger": "previous_challenger_pp20",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 1005,
+  "prediction_rows": 1131630,
+  "items": [
+    {
+      "item_id": "PP-OPT42",
+      "priority": "1",
+      "title": "잔차 방향 분류 후 비대칭 cap 보정",
+      "description": "과대/과소예측 방향 확신이 있을 때만 서로 다른 상한으로 보정한다."
+    },
+    {
+      "item_id": "PP-OPT43",
+      "priority": "2",
+      "title": "구간별 residual median shrinkage",
+      "description": "가격대/신뢰도/불확실성 구간의 잔차 중앙값을 표본 수 기반으로 축소해 적용한다."
+    },
+    {
+      "item_id": "PP-OPT44",
+      "priority": "3",
+      "title": "LightGBM quantile residual correction",
+      "description": "잔차 q25/q50/q75를 학습하고 예측구간 폭이 넓으면 보정 강도를 줄인다."
+    },
+    {
+      "item_id": "PP-OPT45",
+      "priority": "4",
+      "title": "very-high-price 전용 PP30/PP38 fallback",
+      "description": "대부분은 PP23/PP41을 유지하고 초고가 구간에서만 안정 후보로 부분 fallback한다."
+    },
+    {
+      "item_id": "PP-OPT46",
+      "priority": "5",
+      "title": "monotonic correction cap 재설계",
+      "description": "유사작품 수가 적고 불확실성이 클수록 보정 상한을 단조적으로 줄인다."
+    }
+  ],
+  "selected_references": {
+    "pp20": "previous_challenger_pp20",
+    "pp23": "reference_pp23",
+    "pp30": "reference_pp30_best",
+    "pp36": "reference_pp36_challenger",
+    "pp41": "ppopt41_followup_challenger__source=ppopt40_p95_penalty_stack__pen_0p75__p20_0p0__p23_0p9__p30_0p1__p31_0p0__p36_0p0",
+    "pp38_score": "ppopt38_router_shrink__router=pp35_guarded__anchor=pp30_score__max=0p8__floor=0p3",
+    "pp38_mape": "ppopt38_router_shrink__router=pp35_mape__anchor=pp36__max=0p8__floor=0p3",
+    "pp39_score": "ppopt39_calibrated_selector__prob=raw_calibrated_geomean__thr=0p1__width=0p45__sharp=1p25",
+    "pp40_score": "ppopt40_p95_penalty_stack__pen=0p75__p20=0p0__p23=0p30000000000000004__p30=0p7000000000000001__p31=0p0__p36=0p0"
+  },
+  "selection_decision": {
+    "selected_candidate": "ppopt45_high_price_fallback__base=pp23__fallback=pp30__mode=all_very_high__s=0p8",
+    "selected_item_id": "PP-OPT45",
+    "selected_family": "very_high_price_fallback",
+    "selection_reason": "operational pass first; prefer PP41 MAPE improvement with p95 not worse than PP7; fallback to p95-safe recommendation score",
+    "test_MdAPE": 0.13787846966744394,
+    "test_MAPE": 0.2706816816114496,
+    "test_p95_APE": 0.8076599439149326,
+    "test_delta_vs_incumbent_MdAPE": 0.000985903768827734,
+    "test_delta_vs_incumbent_MAPE": -0.0007132064006168393,
+    "test_delta_vs_incumbent_p95_APE": -0.00047003879853613206,
+    "recommendation_score_vs_incumbent": -0.0012935511527570828
+  },
+  "sources": {
+    "pp_opt37_config": "PP-OPT37_41_warm_followup_refinement_experiments",
+    "pp_opt37_predictions": "experiments/track6/PP-OPT37_41_warm_followup_refinement_experiments/outputs/candidate_predictions.csv",
+    "pp_opt37_aggregate": "experiments/track6/PP-OPT37_41_warm_followup_refinement_experiments/outputs/aggregate_candidate_stability.csv",
+    "pp_opt37_helper": "scripts/track6/run_pp_opt37_41_warm_followup_refinement_experiments.py"
+  }
+}

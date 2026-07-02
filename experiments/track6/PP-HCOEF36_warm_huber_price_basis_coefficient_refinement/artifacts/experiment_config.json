@@ -1,0 +1,204 @@
+{
+  "experiment_id": "PP-HCOEF36",
+  "created_at": "2026-06-08T08:22:55",
+  "reference": "current_70_30",
+  "stable_alias": "hcoef_stable",
+  "n_repeats": 24,
+  "seed": 20260608,
+  "improvers": [
+    {
+      "candidate": "hcoef35_best_mdape_basis_resid_all_a0p01_cap0p01_s0p35",
+      "kind": "residual_huber",
+      "feature_key": "basis_resid_all",
+      "alpha": 0.01,
+      "cap": 0.01,
+      "strength": 0.35,
+      "basis_col": null,
+      "max_weight": null,
+      "k": null,
+      "clip_margin": null,
+      "description": "HCOEF35 계열 low-risk routing 입력 후보"
+    },
+    {
+      "candidate": "hcoef35_p95_near_basis_resid_all_a0p001_cap0p0075_s0p2",
+      "kind": "residual_huber",
+      "feature_key": "basis_resid_all",
+      "alpha": 0.001,
+      "cap": 0.0075,
+      "strength": 0.2,
+      "basis_col": null,
+      "max_weight": null,
+      "k": null,
+      "clip_margin": null,
+      "description": "HCOEF35 계열 low-risk routing 입력 후보"
+    },
+    {
+      "candidate": "hcoef35_basis_balanced_basis_resid_all_a0p001_cap0p005_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "basis_resid_all",
+      "alpha": 0.001,
+      "cap": 0.005,
+      "strength": 0.5,
+      "basis_col": null,
+      "max_weight": null,
+      "k": null,
+      "clip_margin": null,
+      "description": "HCOEF35 계열 low-risk routing 입력 후보"
+    },
+    {
+      "candidate": "hcoef35_core_oof_basis_resid_core_a0p01_cap0p0075_s0p35",
+      "kind": "residual_huber",
+      "feature_key": "basis_resid_core",
+      "alpha": 0.01,
+      "cap": 0.0075,
+      "strength": 0.35,
+      "basis_col": null,
+      "max_weight": null,
+      "k": null,
+      "clip_margin": null,
+      "description": "HCOEF35 계열 low-risk routing 입력 후보"
+    },
+    {
+      "candidate": "hcoef35_core_balanced_basis_resid_core_a0p001_cap0p005_s0p5",
+      "kind": "residual_huber",
+      "feature_key": "basis_resid_core",
+      "alpha": 0.001,
+      "cap": 0.005,
+      "strength": 0.5,
+      "basis_col": null,
+      "max_weight": null,
+      "k": null,
+      "clip_margin": null,
+      "description": "HCOEF35 계열 low-risk routing 입력 후보"
+    }
+  ],
+  "routing_rules": [
+    {
+      "rule_key": "all_rows",
+      "description": "전체 행에 개선 후보 적용",
+      "spread_q": null,
+      "abs_gap_q": null,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge5",
+      "description": "fallback 기준가 표본 수가 5개 이상인 행",
+      "spread_q": null,
+      "abs_gap_q": null,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "spread_q50",
+      "description": "기준가 컴포넌트 간 차이가 validation 하위 50%인 행",
+      "spread_q": 0.5,
+      "abs_gap_q": null,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "spread_q66",
+      "description": "기준가 컴포넌트 간 차이가 validation 하위 66%인 행",
+      "spread_q": 0.66,
+      "abs_gap_q": null,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "spread_q75",
+      "description": "기준가 컴포넌트 간 차이가 validation 하위 75%인 행",
+      "spread_q": 0.75,
+      "abs_gap_q": null,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "gap_q50",
+      "description": "fallback 기준가와 stable 후보 차이가 validation 하위 50%인 행",
+      "spread_q": null,
+      "abs_gap_q": 0.5,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "gap_q66",
+      "description": "fallback 기준가와 stable 후보 차이가 validation 하위 66%인 행",
+      "spread_q": null,
+      "abs_gap_q": 0.66,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "gap_q75",
+      "description": "fallback 기준가와 stable 후보 차이가 validation 하위 75%인 행",
+      "spread_q": null,
+      "abs_gap_q": 0.75,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge5_spread_q66",
+      "description": "표본 수 5개 이상이고 기준가 컴포넌트 차이가 하위 66%인 행",
+      "spread_q": 0.66,
+      "abs_gap_q": null,
+      "min_n": 5,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge5_gap_q66",
+      "description": "표본 수 5개 이상이고 fallback-stable 차이가 하위 66%인 행",
+      "spread_q": null,
+      "abs_gap_q": 0.66,
+      "min_n": 5,
+      "area_mid_q": null,
+      "levels": null
+    },
+    {
+      "rule_key": "n_ge5_spread_q66_area90",
+      "description": "표본 수 5개 이상, 기준가 차이 하위 66%, 면적 중앙 90% 행",
+      "spread_q": 0.66,
+      "abs_gap_q": null,
+      "min_n": 5,
+      "area_mid_q": 0.9,
+      "levels": null
+    },
+    {
+      "rule_key": "precise_level_spread_q75",
+      "description": "작가+재료 또는 작가+크기+재료 기준가가 잡히고 기준가 차이가 하위 75%인 행",
+      "spread_q": 0.75,
+      "abs_gap_q": null,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": [
+        "artist_medium_support",
+        "artist_size_medium_support"
+      ]
+    },
+    {
+      "rule_key": "coarse_artist_gap_q66",
+      "description": "작가 전체 기준 fallback이면서 fallback-stable 차이가 하위 66%인 행",
+      "spread_q": null,
+      "abs_gap_q": 0.66,
+      "min_n": null,
+      "area_mid_q": null,
+      "levels": [
+        "artist_overall"
+      ]
+    }
+  ],
+  "selection_principle": [
+    "validation/OOF first",
+    "fixed test and 0604 confirmation only",
+    "no test residual based routing"
+  ]
+}

@@ -1,0 +1,296 @@
+{
+  "experiment_id": "PP-HCOEF14",
+  "experiment_slug": "PP-HCOEF14_warm_huber_price_basis_coefficient_refinement",
+  "created_at": "2026-06-08T01:01:32",
+  "reference_candidate": "current_70_30",
+  "stable_candidate": "hcoef2_size_reliability_cap005_s050",
+  "n_repeats": 20,
+  "n_folds": 5,
+  "seed": 20260608,
+  "candidates": [
+    {
+      "candidate": "hcoef14_route_ppv8_pos_ref_w025",
+      "method": "route_reference",
+      "risk_mask": "ppv8_pos",
+      "route_weight": 0.25,
+      "keep_weight": 1.0,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "ppv8 gap 양수 구간을 70:30 기준으로 일부 되돌림"
+    },
+    {
+      "candidate": "hcoef14_route_ppv8_pos_ref_w050",
+      "method": "route_reference",
+      "risk_mask": "ppv8_pos",
+      "route_weight": 0.5,
+      "keep_weight": 1.0,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "ppv8 gap 양수 구간을 70:30 기준으로 절반 되돌림"
+    },
+    {
+      "candidate": "hcoef14_route_basis_disagree_ref_w025",
+      "method": "route_reference",
+      "risk_mask": "basis_disagreement",
+      "route_weight": 0.25,
+      "keep_weight": 1.0,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "기준가와 현재 후보 불일치 구간 보수 routing"
+    },
+    {
+      "candidate": "hcoef14_route_basis_disagree_ref_w050",
+      "method": "route_reference",
+      "risk_mask": "basis_disagreement",
+      "route_weight": 0.5,
+      "keep_weight": 1.0,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "기준가와 현재 후보 불일치 구간 강한 보수 routing"
+    },
+    {
+      "candidate": "hcoef14_route_artist_overall_ref_w025",
+      "method": "route_reference",
+      "risk_mask": "artist_overall",
+      "route_weight": 0.25,
+      "keep_weight": 1.0,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "작가 전체 fallback 구간 일부 보수 routing"
+    },
+    {
+      "candidate": "hcoef14_route_artist_overall_ref_w050",
+      "method": "route_reference",
+      "risk_mask": "artist_overall",
+      "route_weight": 0.5,
+      "keep_weight": 1.0,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "작가 전체 fallback 구간 절반 보수 routing"
+    },
+    {
+      "candidate": "hcoef14_route_core_gap_ref_w025",
+      "method": "route_reference",
+      "risk_mask": "core_gap_risk",
+      "route_weight": 0.25,
+      "keep_weight": 1.0,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "후보 gap 위험 구간 보수 routing"
+    },
+    {
+      "candidate": "hcoef14_route_core_gap_ref_w050",
+      "method": "route_reference",
+      "risk_mask": "core_gap_risk",
+      "route_weight": 0.5,
+      "keep_weight": 1.0,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "후보 gap 위험 구간 강한 보수 routing"
+    },
+    {
+      "candidate": "hcoef14_shrink_n1019_keep050",
+      "method": "shrink_hcoef",
+      "risk_mask": "n_10_19",
+      "route_weight": 0.0,
+      "keep_weight": 0.5,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "표본 수 10~19 구간 Huber 잔차 보정 절반 축소"
+    },
+    {
+      "candidate": "hcoef14_shrink_n1019_keep075",
+      "method": "shrink_hcoef",
+      "risk_mask": "n_10_19",
+      "route_weight": 0.0,
+      "keep_weight": 0.75,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "표본 수 10~19 구간 Huber 잔차 보정 약한 축소"
+    },
+    {
+      "candidate": "hcoef14_shrink_iqr_mid_high_keep050",
+      "method": "shrink_hcoef",
+      "risk_mask": "iqr_mid_high",
+      "route_weight": 0.0,
+      "keep_weight": 0.5,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "IQR 중간/높음 구간 Huber 잔차 보정 절반 축소"
+    },
+    {
+      "candidate": "hcoef14_shrink_iqr_mid_high_keep075",
+      "method": "shrink_hcoef",
+      "risk_mask": "iqr_mid_high",
+      "route_weight": 0.0,
+      "keep_weight": 0.75,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "IQR 중간/높음 구간 Huber 잔차 보정 약한 축소"
+    },
+    {
+      "candidate": "hcoef14_shrink_core_risk_keep050",
+      "method": "shrink_hcoef",
+      "risk_mask": "core_risk",
+      "route_weight": 0.0,
+      "keep_weight": 0.5,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "HCOEF13 핵심 위험 구간 Huber 잔차 보정 절반 축소"
+    },
+    {
+      "candidate": "hcoef14_shrink_core_risk_keep075",
+      "method": "shrink_hcoef",
+      "risk_mask": "core_risk",
+      "route_weight": 0.0,
+      "keep_weight": 0.75,
+      "keys": [],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "HCOEF13 핵심 위험 구간 Huber 잔차 보정 약한 축소"
+    },
+    {
+      "candidate": "hcoef14_seg_n1019_cap002_s025",
+      "method": "segment_residual",
+      "risk_mask": "n_10_19",
+      "route_weight": 0.0,
+      "keep_weight": 1.0,
+      "keys": [
+        "basis_n_bucket"
+      ],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "표본 수 10~19 구간 segment median residual 보정"
+    },
+    {
+      "candidate": "hcoef14_seg_n1019_cap002_s050",
+      "method": "segment_residual",
+      "risk_mask": "n_10_19",
+      "route_weight": 0.0,
+      "keep_weight": 1.0,
+      "keys": [
+        "basis_n_bucket"
+      ],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.5,
+      "purpose": "표본 수 10~19 구간 segment median residual 보정 강화"
+    },
+    {
+      "candidate": "hcoef14_seg_iqr_cap002_s025",
+      "method": "segment_residual",
+      "risk_mask": "iqr_mid_high",
+      "route_weight": 0.0,
+      "keep_weight": 1.0,
+      "keys": [
+        "basis_iqr_bucket"
+      ],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "IQR 위험 구간 segment median residual 보정"
+    },
+    {
+      "candidate": "hcoef14_seg_gap_cap002_s025",
+      "method": "segment_residual",
+      "risk_mask": "core_gap_risk",
+      "route_weight": 0.0,
+      "keep_weight": 1.0,
+      "keys": [
+        "ppv8_gap_sign",
+        "basis_gap_sign"
+      ],
+      "min_n": 15,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "후보 gap 구간 segment median residual 보정"
+    },
+    {
+      "candidate": "hcoef14_seg_pred_basis_cap002_s025",
+      "method": "segment_residual",
+      "risk_mask": "n_10_19",
+      "route_weight": 0.0,
+      "keep_weight": 1.0,
+      "keys": [
+        "pred_bin",
+        "basis_n_bucket"
+      ],
+      "min_n": 12,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "예측 가격대 x 표본 수 구간 residual 보정"
+    },
+    {
+      "candidate": "hcoef14_seg_size_basis_cap002_s025",
+      "method": "segment_residual",
+      "risk_mask": "n_10_19",
+      "route_weight": 0.0,
+      "keep_weight": 1.0,
+      "keys": [
+        "size_bin",
+        "basis_n_bucket"
+      ],
+      "min_n": 12,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "크기 x 표본 수 구간 residual 보정"
+    },
+    {
+      "candidate": "hcoef14_seg_core_risk_cap002_s025",
+      "method": "segment_residual",
+      "risk_mask": "core_risk",
+      "route_weight": 0.0,
+      "keep_weight": 1.0,
+      "keys": [
+        "risk_cause"
+      ],
+      "min_n": 20,
+      "cap": 0.02,
+      "strength": 0.25,
+      "purpose": "HCOEF13 핵심 위험 cause별 residual 보정"
+    },
+    {
+      "candidate": "hcoef14_seg_core_risk_cap003_s025",
+      "method": "segment_residual",
+      "risk_mask": "core_risk",
+      "route_weight": 0.0,
+      "keep_weight": 1.0,
+      "keys": [
+        "risk_cause"
+      ],
+      "min_n": 20,
+      "cap": 0.03,
+      "strength": 0.25,
+      "purpose": "HCOEF13 핵심 위험 cause별 residual 보정 cap 확대"
+    }
+  ],
+  "selection_policy": "OOF first. Fixed test and 0604 are confirmation only."
+}

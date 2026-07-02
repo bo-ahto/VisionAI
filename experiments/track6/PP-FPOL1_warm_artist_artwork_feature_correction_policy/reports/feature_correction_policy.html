@@ -1,0 +1,507 @@
+<html><head><meta charset='utf-8'><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.45;margin:32px;}table{border-collapse:collapse;width:100%;font-size:13px;}th,td{border:1px solid #ddd;padding:6px;vertical-align:top;}th{background:#f4f6f8;}code{background:#f6f8fa;padding:1px 3px;border-radius:3px;}</style></head><body><h1>PP-FPOL1 Warm 작가+작품 피처 계수 보정 정책</h1><p>- 작성일: 2026-06-08 15:15</p><p>- 목적: 지금까지의 Warm/Huber/작품/작가 실험 결과를 종합해 다음 Huber residual 보정 실험의 피처군과 보정값 후보를 고정</p><p>- 기준: 현재 Warm 1순위 `blend_svcnum_ppv8_wsvc_0.70` 위에 잔차 보정을 얹는 정책</p><h2>1. 채택 피처군</h2><h2>2. 보류/보조 피처군</h2><h2>3. 피처별 근거</h2><h2>4. 다음 실험 후보 grid</h2><h2>5. 결정 요약</h2><p>- 크기/면적은 작품 피처의 핵심 보정축으로 유지한다.</p><p>- 재료/지지체는 단독 계수 보정 금지, 크기와 결합한 Huber residual 보정에서만 허용한다.</p><p>- 작가 생년/세대와 팔로워/판매중 작품 수는 작가 메타의 안정 보정축으로 유지한다.</p><p>- 갤러리/전시/에디션/깊이/제작연도는 메인 계수 보정보다 guard 또는 진단 피처로 우선 사용한다.</p><p>- 다음 실험은 `artist_artwork_core`와 `artwork_size_material_support`를 중심으로 cap 0.06, strength 0.25~0.35, pred-bin tail guard를 검증한다.</p><h2>6. 산출물</h2><p>- `outputs/feature_group_correction_policy.csv`</p><p>- `outputs/candidate_correction_grid.csv`</p><p>- `outputs/policy_manifest.json`</p><h2>채택 피처군</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>feature_group</th>
+      <th>korean_name</th>
+      <th>columns</th>
+      <th>decision</th>
+      <th>role</th>
+      <th>evidence</th>
+      <th>correction_policy</th>
+      <th>recommended_cap</th>
+      <th>recommended_strength</th>
+      <th>risk</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>artwork_size_shape</td>
+      <td>작품 크기/형태</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio</td>
+      <td>adopt_core</td>
+      <td>모든 Warm residual Huber 보정의 기본 작품 축</td>
+      <td>크기 추가 MdAPE delta -0.0145; 작가명+전체크기 MdAPE delta -0.2783; size 제거 test MdAPE/MAPE/p95 delta 0.3233/0.8025/3.2143; 기여도 rank 1</td>
+      <td>include_in_residual_model; pred_price_bin tail guard 적용</td>
+      <td>0.06 또는 0.08</td>
+      <td>0.25 또는 0.35</td>
+      <td>면적 단독 구간 보정은 MdAPE 악화 가능. Huber residual 안에서만 사용.</td>
+    </tr>
+    <tr>
+      <td>artwork_medium_support</td>
+      <td>작품 재료/지지체</td>
+      <td>medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>adopt_conditional</td>
+      <td>크기 피처와 결합할 때만 작품 보정축으로 사용</td>
+      <td>크기+재료+지지체 MdAPE delta -0.0155; medium_support 제거 test MdAPE/MAPE/p95 delta -0.0021/0.0035/-0.0202; medium_support 기여도 rank 2</td>
+      <td>size/SVC/artist 신호와 함께 약한 residual 보정에만 포함</td>
+      <td>0.03 또는 0.06</td>
+      <td>0.25 또는 0.35</td>
+      <td>단독 재료/지지체는 악화. 범주 수가 많아 과보정 방지 필요.</td>
+    </tr>
+    <tr>
+      <td>artist_birth_generation</td>
+      <td>작가 생년/세대</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin</td>
+      <td>adopt_core_artist</td>
+      <td>작가 가격대 내부의 시대/세대 편향 보정</td>
+      <td>PP-AMW10 생년+세대 best test delta MdAPE/MAPE/p95 -0.0028/-0.0001/-0.0195</td>
+      <td>작품 보정축과 별도 후보 및 결합 후보 모두 유지</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>career/activity까지 전부 묶으면 test MAPE 악화 가능.</td>
+    </tr>
+    <tr>
+      <td>artist_followers_for_sale</td>
+      <td>작가 팔로워/판매중 작품 수</td>
+      <td>artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing</td>
+      <td>adopt_light</td>
+      <td>작가 활동/노출의 작은 잔차 편향 보정</td>
+      <td>팔로워 best test delta MdAPE/MAPE/p95 -0.0030/-0.0005/-0.0196; 판매중 작품 수 best test delta MdAPE/MAPE/p95 -0.0019/-0.0004/-0.0212</td>
+      <td>생년/세대와 함께 소규모 Huber 보정</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>activity bundle 전체는 test에서 MAPE/p95 악화.</td>
+    </tr>
+    <tr>
+      <td>svc_comparable_reliability</td>
+      <td>유사작품/비교군 신뢰도</td>
+      <td>svc_group_n,svc_spread,quantile_width,l10_price_range_ratio,model_prediction_gap</td>
+      <td>adopt_gate</td>
+      <td>작품 보정값 적용 강도와 tail guard 결정</td>
+      <td>PP-WCOEF/PP-WHUBER7에서 pred_size_svc 또는 pred_size_material_svc_artist 후보가 p95/MAPE 방어에 반복적으로 유효</td>
+      <td>보정 모델 피처 또는 reliability shrink/gate로 사용</td>
+      <td>0.06 또는 0.08</td>
+      <td>0.25 또는 0.35</td>
+      <td>비교군 품질이 낮은 구간은 큰 보정 금지.</td>
+    </tr>
+  </tbody>
+</table><h2>전체 정책</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>feature_group</th>
+      <th>korean_name</th>
+      <th>columns</th>
+      <th>decision</th>
+      <th>role</th>
+      <th>evidence</th>
+      <th>correction_policy</th>
+      <th>recommended_cap</th>
+      <th>recommended_strength</th>
+      <th>risk</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>artwork_size_shape</td>
+      <td>작품 크기/형태</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio</td>
+      <td>adopt_core</td>
+      <td>모든 Warm residual Huber 보정의 기본 작품 축</td>
+      <td>크기 추가 MdAPE delta -0.0145; 작가명+전체크기 MdAPE delta -0.2783; size 제거 test MdAPE/MAPE/p95 delta 0.3233/0.8025/3.2143; 기여도 rank 1</td>
+      <td>include_in_residual_model; pred_price_bin tail guard 적용</td>
+      <td>0.06 또는 0.08</td>
+      <td>0.25 또는 0.35</td>
+      <td>면적 단독 구간 보정은 MdAPE 악화 가능. Huber residual 안에서만 사용.</td>
+    </tr>
+    <tr>
+      <td>artwork_medium_support</td>
+      <td>작품 재료/지지체</td>
+      <td>medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>adopt_conditional</td>
+      <td>크기 피처와 결합할 때만 작품 보정축으로 사용</td>
+      <td>크기+재료+지지체 MdAPE delta -0.0155; medium_support 제거 test MdAPE/MAPE/p95 delta -0.0021/0.0035/-0.0202; medium_support 기여도 rank 2</td>
+      <td>size/SVC/artist 신호와 함께 약한 residual 보정에만 포함</td>
+      <td>0.03 또는 0.06</td>
+      <td>0.25 또는 0.35</td>
+      <td>단독 재료/지지체는 악화. 범주 수가 많아 과보정 방지 필요.</td>
+    </tr>
+    <tr>
+      <td>artist_birth_generation</td>
+      <td>작가 생년/세대</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin</td>
+      <td>adopt_core_artist</td>
+      <td>작가 가격대 내부의 시대/세대 편향 보정</td>
+      <td>PP-AMW10 생년+세대 best test delta MdAPE/MAPE/p95 -0.0028/-0.0001/-0.0195</td>
+      <td>작품 보정축과 별도 후보 및 결합 후보 모두 유지</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>career/activity까지 전부 묶으면 test MAPE 악화 가능.</td>
+    </tr>
+    <tr>
+      <td>artist_followers_for_sale</td>
+      <td>작가 팔로워/판매중 작품 수</td>
+      <td>artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing</td>
+      <td>adopt_light</td>
+      <td>작가 활동/노출의 작은 잔차 편향 보정</td>
+      <td>팔로워 best test delta MdAPE/MAPE/p95 -0.0030/-0.0005/-0.0196; 판매중 작품 수 best test delta MdAPE/MAPE/p95 -0.0019/-0.0004/-0.0212</td>
+      <td>생년/세대와 함께 소규모 Huber 보정</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>activity bundle 전체는 test에서 MAPE/p95 악화.</td>
+    </tr>
+    <tr>
+      <td>artwork_year_age</td>
+      <td>작품 제작연도/연식</td>
+      <td>artwork_year,has_artwork_year,artwork_year_missing,artwork_year_source,artwork_year_match_method</td>
+      <td>diagnostic_or_guard</td>
+      <td>작품 시기 신호 및 신뢰도 gate</td>
+      <td>작가명+제작연도 MdAPE delta -0.0052</td>
+      <td>직접 보정값보다 year availability/source guard로 우선 사용</td>
+      <td>0.02 또는 0.03</td>
+      <td>0.25</td>
+      <td>제작연도 입력 신뢰도에 민감하고 개선 폭이 작음.</td>
+    </tr>
+    <tr>
+      <td>artwork_depth_3d</td>
+      <td>작품 깊이/3D</td>
+      <td>depth_cm,has_depth,is_3d_candidate</td>
+      <td>guard_only</td>
+      <td>3D/깊이 특수 케이스의 tail guard</td>
+      <td>depth_3d 제거 test MdAPE/MAPE/p95 delta 0.0001/0.0021/0.0128; 기여도 rank 6</td>
+      <td>보정 모델 핵심 피처 제외. 큰 오차 원인 분류/gate로 사용.</td>
+      <td>0.02</td>
+      <td>0.25</td>
+      <td>Warm에서는 평균 효과 작고 tail 악화 위험.</td>
+    </tr>
+    <tr>
+      <td>edition</td>
+      <td>에디션 정보</td>
+      <td>edition_class,is_edition,is_limited_edition,is_open_edition,is_unknown_edition,edition_info_available</td>
+      <td>holdout_diagnostic</td>
+      <td>에디션 작품 slice 진단</td>
+      <td>C8+limited edition Huber MdAPE delta -0.0033; MAPE delta 0.0323</td>
+      <td>메인 계수 보정 후보에서 제외. 충분 표본 확보 후 slice 보정 재검증.</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>에디션 표본이 작고 MAPE 악화 신호.</td>
+    </tr>
+    <tr>
+      <td>gallery_exhibition</td>
+      <td>갤러리/전시 외부 메타</td>
+      <td>gallery_tier_raw_numeric,gallery_feature_source,gallery_city_count_log,artist_exhibition_total_count_log,artist_exhibition_available_count</td>
+      <td>guard_or_auxiliary</td>
+      <td>외부 메타 보유 여부와 신뢰도 gate</td>
+      <td>갤러리 best test delta MdAPE/MAPE/p95 0.0005/0.0000/-0.0179; 전시 best test delta MdAPE/MAPE/p95 0.0005/0.0002/-0.0209</td>
+      <td>메인 보정 계수에서 제외. 외부 신뢰도 gate나 리포팅 설명 피처로 사용.</td>
+      <td>0.00 또는 0.02</td>
+      <td>0.00 또는 0.25</td>
+      <td>커버리지가 낮고 gate 적용 시 효과가 거의 사라짐.</td>
+    </tr>
+    <tr>
+      <td>svc_comparable_reliability</td>
+      <td>유사작품/비교군 신뢰도</td>
+      <td>svc_group_n,svc_spread,quantile_width,l10_price_range_ratio,model_prediction_gap</td>
+      <td>adopt_gate</td>
+      <td>작품 보정값 적용 강도와 tail guard 결정</td>
+      <td>PP-WCOEF/PP-WHUBER7에서 pred_size_svc 또는 pred_size_material_svc_artist 후보가 p95/MAPE 방어에 반복적으로 유효</td>
+      <td>보정 모델 피처 또는 reliability shrink/gate로 사용</td>
+      <td>0.06 또는 0.08</td>
+      <td>0.25 또는 0.35</td>
+      <td>비교군 품질이 낮은 구간은 큰 보정 금지.</td>
+    </tr>
+  </tbody>
+</table><h2>다음 실험 후보 grid</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>candidate_family</th>
+      <th>feature_set</th>
+      <th>features</th>
+      <th>model_kind</th>
+      <th>alpha</th>
+      <th>epsilon</th>
+      <th>correction_policy</th>
+      <th>correction_cap</th>
+      <th>correction_strength</th>
+      <th>guard</th>
+      <th>expected_role</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_core</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.05</td>
+      <td>hard_clip</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>small_global</td>
+      <td>안정 baseline 보정 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_core_activity_light</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.05</td>
+      <td>hard_clip</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>small_global</td>
+      <td>작가 메타 약한 추가 보정 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_shape</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>hard_clip</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>small_global</td>
+      <td>작품 크기 중심 p95/MAPE 방어 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_shape</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>hard_clip</td>
+      <td>0.06</td>
+      <td>0.25</td>
+      <td>medium_global</td>
+      <td>작품 크기 중심 p95/MAPE 방어 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_shape</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>soft_tanh_cap</td>
+      <td>0.06</td>
+      <td>0.35</td>
+      <td>medium_soft</td>
+      <td>작품 크기 중심 p95/MAPE 방어 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_shape</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>pred_bin_tail_guard</td>
+      <td>0.06</td>
+      <td>0.35</td>
+      <td>mid_open_tail_guard</td>
+      <td>작품 크기 중심 p95/MAPE 방어 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_shape</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>pred_bin_tail_guard</td>
+      <td>0.08</td>
+      <td>0.25</td>
+      <td>wide_low_strength</td>
+      <td>작품 크기 중심 p95/MAPE 방어 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_material_support</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>hard_clip</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>small_global</td>
+      <td>작품 크기+재료/지지체 결합 보정 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_material_support</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>hard_clip</td>
+      <td>0.06</td>
+      <td>0.25</td>
+      <td>medium_global</td>
+      <td>작품 크기+재료/지지체 결합 보정 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_material_support</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>soft_tanh_cap</td>
+      <td>0.06</td>
+      <td>0.35</td>
+      <td>medium_soft</td>
+      <td>작품 크기+재료/지지체 결합 보정 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_material_support</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>pred_bin_tail_guard</td>
+      <td>0.06</td>
+      <td>0.35</td>
+      <td>mid_open_tail_guard</td>
+      <td>작품 크기+재료/지지체 결합 보정 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artwork_size_material_support</td>
+      <td>width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>pred_bin_tail_guard</td>
+      <td>0.08</td>
+      <td>0.25</td>
+      <td>wide_low_strength</td>
+      <td>작품 크기+재료/지지체 결합 보정 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>hard_clip</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>small_global</td>
+      <td>작가+작품 통합 잔차 보정 주 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>hard_clip</td>
+      <td>0.06</td>
+      <td>0.25</td>
+      <td>medium_global</td>
+      <td>작가+작품 통합 잔차 보정 주 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>soft_tanh_cap</td>
+      <td>0.06</td>
+      <td>0.35</td>
+      <td>medium_soft</td>
+      <td>작가+작품 통합 잔차 보정 주 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>pred_bin_tail_guard</td>
+      <td>0.06</td>
+      <td>0.35</td>
+      <td>mid_open_tail_guard</td>
+      <td>작가+작품 통합 잔차 보정 주 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>pred_bin_tail_guard</td>
+      <td>0.08</td>
+      <td>0.25</td>
+      <td>wide_low_strength</td>
+      <td>작가+작품 통합 잔차 보정 주 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core_year_guard</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support,artwork_year,has_artwork_year,artwork_year_missing</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>hard_clip</td>
+      <td>0.03</td>
+      <td>0.50</td>
+      <td>small_global</td>
+      <td>제작연도 신뢰도 guard 포함 진단 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core_year_guard</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support,artwork_year,has_artwork_year,artwork_year_missing</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>hard_clip</td>
+      <td>0.06</td>
+      <td>0.25</td>
+      <td>medium_global</td>
+      <td>제작연도 신뢰도 guard 포함 진단 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core_year_guard</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support,artwork_year,has_artwork_year,artwork_year_missing</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>soft_tanh_cap</td>
+      <td>0.06</td>
+      <td>0.35</td>
+      <td>medium_soft</td>
+      <td>제작연도 신뢰도 guard 포함 진단 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core_year_guard</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support,artwork_year,has_artwork_year,artwork_year_missing</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>pred_bin_tail_guard</td>
+      <td>0.06</td>
+      <td>0.35</td>
+      <td>mid_open_tail_guard</td>
+      <td>제작연도 신뢰도 guard 포함 진단 후보</td>
+    </tr>
+    <tr>
+      <td>warm_huber_residual_feature_policy</td>
+      <td>artist_artwork_core_year_guard</td>
+      <td>artist_meta_birth_year,artist_birth_generation_bin,artist_meta_followers_log1p,artist_meta_followers_missing,artist_meta_for_sale_works_log1p,artist_meta_for_sale_works_missing,width_cm,height_cm,area_cm2,log_area,aspect_ratio,is_extreme_aspect_ratio,medium_category,support_category,medium_support_bucket,nant_support,artwork_year,has_artwork_year,artwork_year_missing</td>
+      <td>huber</td>
+      <td>0.01</td>
+      <td>1.35</td>
+      <td>pred_bin_tail_guard</td>
+      <td>0.08</td>
+      <td>0.25</td>
+      <td>wide_low_strength</td>
+      <td>제작연도 신뢰도 guard 포함 진단 후보</td>
+    </tr>
+  </tbody>
+</table></body></html>

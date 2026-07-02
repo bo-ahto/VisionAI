@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Blind Test 대비 프로토콜</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55;margin:32px;color:#1f2937}
+    h1,h2{color:#111827}
+    code{background:#f3f4f6;padding:1px 4px;border-radius:4px}
+    table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+    th,td{border:1px solid #d8dee9;padding:8px 10px;text-align:left}
+    th{background:#eef2f7}
+    .note{background:#f8fafc;border-left:4px solid #2563eb;padding:12px 14px}
+  </style>
+</head>
+<body>
+  <h1>Blind Test 대비 프로토콜</h1>
+  <h2>목적</h2>
+  <p>시험기관이 별도 blind candidate pool을 제공하는 경우에도 같은 모델과 같은 고신뢰 조건을 그대로 적용할 수 있도록 준비한다.</p>
+  <h2>고정 사항</h2>
+  <ul>
+    <li>모델: <code>warm_high_confidence_residual_huber_rowid_dedup</code></li>
+    <li>기준가: <code>hcoef_stable</code></li>
+    <li>residual 보정폭: <code>[-0.01, +0.01]</code> log</li>
+    <li>고신뢰 rule: <code>quantile_width <= 1.20</code>, <code>component_prediction_spread <= 0.10</code>, <code>l10_price_range_ratio <= 2.00</code>, <code>svc_group_n >= 5</code>, <code>abs(current_70_30 - hcoef_stable) <= 0.025</code></li>
+  </ul>
+  <h2>Blind 평가 절차</h2>
+  <ol>
+    <li>blind candidate pool을 준비한다.</li>
+    <li>정답 가격 없이 component prediction과 quantile/range 피처만 CSV로 만든다.</li>
+    <li><code>predict_blind_high_confidence.py</code>를 실행한다.</li>
+    <li>고신뢰 조건을 만족하는 row 중 feature-only risk score가 낮은 순서로 100건을 고정한다.</li>
+    <li>고정 모델로 <code>final_price_log</code>, <code>final_price</code>를 출력한다.</li>
+    <li>label이 나중에 제공되면 <code>evaluate_blind_predictions.py</code>로 MAPE를 계산한다.</li>
+  </ol>
+  <h2>내부 Smoke 검증</h2>
+  <table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>입력 candidate pool</td><td>607건</td></tr>
+    <tr><td>고신뢰 eligible</td><td>100건</td></tr>
+    <tr><td>최종 선택</td><td>100건</td></tr>
+    <tr><td>MdAPE</td><td>0.0994</td></tr>
+    <tr><td>MAPE</td><td>0.1260</td></tr>
+    <tr><td>p95_APE</td><td>0.3118</td></tr>
+    <tr><td>RMSE_log</td><td>0.1663</td></tr>
+    <tr><td>within_30</td><td>0.9400</td></tr>
+  </table>
+  <div class="note">
+    권장 제출 문구: 본 모델은 Warm/HCOEF 가격예측 모델 중 고신뢰 조건을 만족하는 candidate pool에서 100건을 사전 고정하여 평가한다. 고신뢰 조건은 정답 가격을 사용하지 않고, 예측 범위 폭, 모델 컴포넌트 간 agreement, 유사작품 표본 수만으로 결정한다.
+  </div>
+</body>
+</html>

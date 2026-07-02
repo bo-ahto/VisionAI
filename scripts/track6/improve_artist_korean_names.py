@@ -32,16 +32,22 @@ ARTIST_COLS = [
 
 
 def norm_key(value: object) -> str:
+    # CSV override와 데이터셋의 artist_key를 같은 방식으로 비교하기 위한 key.
+    # 대소문자, 기호, 중복 공백 차이는 무시한다.
     text = str(value or "").strip().lower()
     text = re.sub(r"[^a-z0-9]+", " ", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
 def hangul_len(value: object) -> int:
+    # 검토 후보 판정에는 기호/공백을 제외한
+    # 순수 한글 음절 수만 사용한다.
     return len(re.sub(r"[^가-힣]", "", str(value or "")))
 
 
 def load_overrides() -> pd.DataFrame:
+    # 현재 Track6 보정은 자동 음역을 다시 돌리지 않고,
+    # 사람이 검수한 override CSV만 확정값으로 적용한다.
     overrides = pd.read_csv(OVERRIDES, dtype="string", keep_default_na=False)
     required = {"artist_key", "artist_name_ko", "reason"}
     missing = required - set(overrides.columns)
@@ -56,11 +62,16 @@ def load_overrides() -> pd.DataFrame:
 
 def build_review_candidates(df: pd.DataFrame, applied_keys: set[str]) -> pd.DataFrame:
     work = df.copy()
+    # 보정 전 원본명이 있으면 원본 기준으로 검토한다.
+    # 이미 붙어 있는 동명이인 suffix(_A, _B 등)는
+    # 표시명 품질 판단에서 제외한다.
     base = work["artist_name_ko_orig"].where(work["artist_name_ko_orig"].astype(str).str.strip().ne(""), work["artist_name_ko"])
     work["_base_ko"] = base.astype(str).str.replace(r"_[A-Z]+$", "", regex=True).str.strip()
     work["_hangul_len"] = work["_base_ko"].map(hangul_len)
     work["_artist_key_norm"] = work["artist_key"].map(norm_key)
 
+    # override로 확정하지 않은 4글자 이상 한글명은
+    # 자동 수정하지 않고 검토 목록으로 남긴다.
     candidates = work.loc[
         (work["_hangul_len"] >= 4)
         & (~work["_artist_key_norm"].isin(applied_keys))
@@ -156,15 +167,20 @@ def main() -> None:
         if col not in df.columns:
             raise ValueError(f"input missing column: {col}")
 
+    # 1) 검수된 override를 artist_key_norm 기준 dict로 만든다.
     overrides = load_overrides()
     override_map = dict(zip(overrides["artist_key_norm"], overrides["artist_name_ko"], strict=False))
     reason_map = dict(zip(overrides["artist_key_norm"], overrides["reason"], strict=False))
 
+    # 2) override가 있는 row만 artist_name_ko를 교체한다.
+    #    보정 전 값은 감사 리포트 생성을 위해 임시 컬럼에 보존한다.
     df["artist_key_norm"] = df["artist_key"].map(norm_key)
     df["_old_artist_name_ko_for_audit"] = df["artist_name_ko"]
     apply_mask = df["artist_key_norm"].isin(override_map)
     df.loc[apply_mask, "artist_name_ko"] = df.loc[apply_mask, "artist_key_norm"].map(override_map)
 
+    # 3) 어떤 값이 몇 row에 적용됐는지
+    #    사람이 확인할 수 있는 감사 테이블을 만든다.
     applied = (
         df.loc[apply_mask]
         .groupby(["artist_key", "_old_artist_name_ko_for_audit", "artist_name_ko"], dropna=False)
@@ -178,9 +194,11 @@ def main() -> None:
     )
     applied["reason"] = applied["artist_key"].map(lambda x: reason_map.get(norm_key(x), "manual_override"))
 
+    # 4) 확정 override가 없는 위험 후보는 review CSV로 남긴다.
     applied_keys = set(overrides["artist_key_norm"])
     review = build_review_candidates(df, applied_keys)
 
+    # 5) 보정 결과, 적용 내역, 검토 후보, 요약 리포트를 함께 저장한다.
     df = df.drop(columns=["artist_key_norm", "_old_artist_name_ko_for_audit"])
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     OUT_APPLIED.parent.mkdir(parents=True, exist_ok=True)

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Track6_Postprocessing_Experiment_Matrix</title>
+  <title>후처리 실험 매트릭스</title>
   <style>
 :root {
   color-scheme: light;
@@ -698,6 +698,34 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <td class="align-left">기존 Cold 작품 피처에 작가 메타 피처를 추가하고 CatBoost/LightGBM Quantile/Huber residual 순서를 재검증</td>
 <td class="align-left">서비스 적용이 어려운 Cold 성능을 작가 메타와 모델 특성 기반 순차 학습으로 개선할 수 있는가?</td>
 <td class="align-left">신규 추가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-AMW</td>
+<td class="align-left">Warm 작가 메타/전시·갤러리 잔차 보정</td>
+<td class="align-left">현재 Warm 1순위 후보를 고정하고 작가 생년, 활동량, 판매중 작품 수, 전시 횟수, 갤러리 tier로 남은 오차만 작게 보정</td>
+<td class="align-left">Warm에서도 작가 메타/전시·갤러리 정보가 잔차를 설명해 추가 개선되는가?</td>
+<td class="align-left">PP-AMW5~PP-AMW6 실행 완료</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">Warm Huber 손실/규제 특성 튜닝</td>
+<td class="align-left">Huber의 <code>epsilon</code>, <code>alpha</code>, 표본 가중치, 이상치 재가중, 구간별 Huber 학습, residual 보정 적용 방식, 반복 OOF 안정성, 목적별 추가 검증, 작품별 오차 원인 기반 보정을 수행</td>
+<td class="align-left">Huber가 큰 오차를 다루는 방식을 더 세밀하게 조정하면 Warm 후보 성능이 개선되고 목적별 운영 정책으로 쓸 수 있는가?</td>
+<td class="align-left">실행 완료</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WCOEF</td>
+<td class="align-left">Warm Huber 계수 세분화/잔차 보정</td>
+<td class="align-left">Huber 선형 모델의 피처별 계수 구조를 크기, 재료/지지체, 유사 작품 기반 가격 피처 신뢰도, 작가 기준선 구간으로 세분화</td>
+<td class="align-left">피처별 세부 계수 또는 약한 잔차 보정이 현재 Warm 1순위 후보보다 안정적으로 개선되는가?</td>
+<td class="align-left">실행 완료</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">Warm Huber 기준가/계수 잔차 보정 고도화</td>
+<td class="align-left">현재 Warm 1순위 후보를 기준으로 유사 작품 기반 가격 피처, 완화된 기준가, 오차 안정화 후보, 크기/신뢰도 피처를 저차원 Huber 잔차 보정으로 결합</td>
+<td class="align-left">Huber의 선형 계수 해석 가능성을 유지하면서 남은 반복 오차를 작게 줄여 현재 Warm 1순위보다 안정적으로 개선할 수 있는가?</td>
+<td class="align-left">PP-HCOEF1~PP-HCOEF38 실행 완료</td>
 </tr>
 <tr>
 <td class="align-left">Group PP-X</td>
@@ -2194,6 +2222,45 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <td class="align-left"><code>0.575~0.600</code>은 test 관찰값으로는 좋지만 반복 선택 안정성이 부족. Warm 서비스 후보는 기존 <code>PP-SVC3 blend_svcnum_ppv8_wsvc_0.70</code> 유지</td>
 </tr>
 <tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC7</td>
+<td class="align-left">Warm 70:30 vs 운영 pp_v8 조건부 라우팅 + 0604 동시 검증</td>
+<td class="align-left">대상: <code>PP-SVC3 70:30</code>(=v01_operational), <code>pp_v8</code>(=service_primary)</td>
+<td class="align-left">사용 정책: <code>w * svc_numeric + (1-w) * pp_v8</code>, weight grid <code>{0.0,0.3,0.5,0.7}</code>를 svc_coverage_tier/svc_group_level/disagreement 구간별로 validation에서만 선택. 고정 test와 0604(&lt;$50 제외 829행)는 확인 전용</td>
+<td class="align-left">70:30(고정 test 우위)과 pp_v8(0604 우위)을 운영 신호로 라우팅해 두 영역을 동시에 잡을 수 있는가?</td>
+<td class="align-left">validation segment별 best weight 선택 후 고정 test + 0604 동시 확인, 전역 weight tradeoff 곡선 산출</td>
+<td class="align-left">라우터가 고정 test ≤ 70:30 + 0604 ≤ pp_v8 동시 만족</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">기각. 영역별 최적 svc weight 정반대(validation 0.8 / 고정 test 0.6 / 0604 0.0), 0604는 svc 비중↑일수록 단조 악화. validation 라우터 3종 모두 고정 test는 통과하나 0604 열위(최선 svc_group_level <code>0.2682</code> vs pp_v8 <code>0.2298</code>)</td>
+<td class="align-left">70:30 vs pp_v8 차이는 라우팅 불가한 distribution shift. 운영 기본값 <code>pp_v8</code> 유지, 70:30은 보고/과거 test 후보로 한정. 후속: svc prior staleness 원인 분석</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC8</td>
+<td class="align-left">svc 비교가격 prior의 0604 악화 원인 분해</td>
+<td class="align-left">대상: <code>svc_numeric</code> vs <code>pp_v8</code>, 고정 test vs 0604(&lt;$50 제외)</td>
+<td class="align-left">분석: residual_log 편향/IQR/std, oracle bias 제거(상한 진단·비배포), svc_group_level/coverage_tier mix 이동, 레벨 통제 분산, fixed-mix 재표본(seed 고정) mix/within 분해</td>
+<td class="align-left">svc 0604 악화가 편향인가, 그룹내 분산인가, 매칭 이동인가?</td>
+<td class="align-left">영역×모델 residual 요약 + 분해표 + 레벨별 강건성 산출</td>
+<td class="align-left">원인 귀속 + 배포 가능 보정 여부 판단</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">편향 아님(전역 bias 제거가 0604 악화 0.3072→0.3399). 악화 0.1552 = 매칭이동 53% + 그룹내 분산 47%. svc std 0.42→1.64(4배). svc는 최정밀 매칭에서만 pp_v8보다 강건(0604 0.143&lt;0.171)이나 그 비율 40.7%→11%, 거친 레벨 svc std는 pp_v8의 2.3~3배</td>
+<td class="align-left">단순 bias 보정 불가. 운영 기본값 pp_v8 유지. 후속 후보: svc를 최정밀 매칭으로 게이트(fine-match-only) + 비교군 prior 최근 거래 갱신, 최근-라벨 holdout으로 검증</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVC9</td>
+<td class="align-left">svc 최정밀 매칭 게이트 (fine-match-only)</td>
+<td class="align-left">대상: <code>svc</code>, <code>pp_v8</code>. 게이트 레벨 = <code>artist_medium_support_size</code>(구조적, PP-SVC8)</td>
+<td class="align-left">정책: 최정밀 레벨 → <code>w_fine*svc+(1-w_fine)*pp_v8</code>, 그 외 → pp_v8. w_fine은 고정 validation 최정밀 subset에서만 선택(=1.0). 고정 test/0604 확인 전용</td>
+<td class="align-left">최정밀 게이트가 운영 기본값 pp_v8을 두 영역에서 모두 이기는가(순지배)?</td>
+<td class="align-left">영역별 게이트 vs pp_v8 MdAPE/MAPE + 게이트 적용 구간 직접 비교</td>
+<td class="align-left">두 영역 pp_v8 비악화 + 최소 한 영역 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">기각. 고정 test는 pp_v8 대비 개선(ΔMdAPE -0.0083/ΔMAPE -0.0070)이나 0604는 악화(ΔMdAPE +0.0075/ΔMAPE +0.0062). 0604 최정밀 subset에서 svc는 MdAPE 개선/MAPE 악화 = staleness가 최정밀에서도 tail 위험으로 잔존, 어떤 weight도 0604 동시지배 불가</td>
+<td class="align-left">게이트 순지배 실패. 운영 기본값 pp_v8 유지. svc 개선은 tail 안정화가 필요 → 비교군 prior 최근거래 갱신이 본질, 게이트만으로는 부족</td>
+</tr>
+<tr>
 <td class="align-left">Group PP-Q</td>
 <td class="align-left">PP-Q1</td>
 <td class="align-left">Cold Quantile width 라우팅 + CatBoost Quantile 추가</td>
@@ -2268,8 +2335,125 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <td class="align-left">holdout 평균/개선확률로 후보 선택 후 full validation으로 보정값 재계산, test 1회 확인</td>
 <td class="align-left">PP-Y18 대비 holdout 개선이 높고 test에서도 MdAPE 또는 MAPE/p95 개선</td>
 <td class="align-left">실행 완료</td>
-<td class="align-left">holdout 1위 Ridge residual은 test MdAPE <code>0.4345</code>로 악화. test 확인 최상위는 segment 후보 MdAPE <code>0.4175</code>, MAPE/p95 방어 후보 <code>0.4178/0.9640/2.5377</code></td>
+<td class="align-left">holdout 1위 Ridge residual은 test MdAPE <code>0.4345</code>로 악화. test 확인 최상위는 <code>segment_y18_qwidth_pred_gap_min30_cap0.15_s0.50</code> MdAPE <code>0.4175</code>, MAPE/p95 방어 후보는 <code>guard_y18_lgb_q40_qwidth67_gap50_down_w0.50</code> <code>0.4178/0.9640/2.5377</code></td>
 <td class="align-left">복잡한 meta 보정은 보류. qwidth+pred_gap guard/segment 보정은 Cold 최종 후보 추가 검증축으로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-QR4</td>
+<td class="align-left">Cold qwidth/guard 생존 후보 반복 split·artist holdout 재검증</td>
+<td class="align-left">대상: <code>segment_y18_qwidth_pred_gap_min30_cap0.15_s0.50</code>(대표), <code>guard_y18_lgb_q40_qwidth67_gap50_down_w0.50</code>(방어), 기준선 <code>PP-Y18 qwidth_bin</code></td>
+<td class="align-left">프로토콜: row 5fold×12 seeds + artist GroupKFold 5fold×12 seeds + test bootstrap 400회. 보정맵은 fold calibration에서만 재학습. 목적별 평가(대표=MdAPE, 방어=MAPE/p95)</td>
+<td class="align-left">PP-QR3 생존 후보가 반복 split/artist holdout에서도 PP-Y18을 견고히 이기는가?</td>
+<td class="align-left">scheme별 개선확률 + test bootstrap CI 산출, 목적별 채택 판정</td>
+<td class="align-left">대표는 row+artist MdAPE 개선확률 ≥0.7, 방어는 MAPE/p95 개선확률 ≥0.7 + MdAPE 비악화</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">segment(대표) 보류 — MdAPE 개선확률 row 0.97/artist 0.22로 artist holdout 붕괴(작가 구성 의존). guard(방어) **채택** — MAPE 개선확률 1.00/0.98, p95 0.98/0.85 양 holdout 견고 + test MdAPE 비악화(0.4178), test p95 3.31→2.54, MAPE 0.991→0.964</td>
+<td class="align-left">segment는 기각. guard는 Cold MAPE/p95 방어 후보로 승급 → PP-COLD-ARTIFACT1(artifact 고정) 진행 가능. 대표 점예측은 PP-Y18 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-COLD-ARTIFACT1</td>
+<td class="align-left">Cold 예측 정책 artifact 고정</td>
+<td class="align-left">대상: PP-Y18 대표 + PP-QR4 guard 방어 + PP-Y2 fallback</td>
+<td class="align-left">작업: 직렬화 guard 파라미터(qwidth_q67/gap_q50/weight) + 독립 후처리기 + 정책 JSON + manifest를 <code>models/track6/cold_prediction_v0.1/</code>로 고정. Warm v0.1 freeze 패턴 미러링</td>
+<td class="align-left">PP-QR4 검증 후보를 재현 가능한 운영 artifact로 고정할 수 있는가?</td>
+<td class="align-left">후처리기가 PP-QR4 guard 지표를 정확 재현하는지 검증 후 freeze</td>
+<td class="align-left">후처리기 재현 1e-6 이내 + manifest checksum</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">후처리기 vs QR2 guard diff 0.0, PP-QR4 guard test MdAPE 재현 True. 대표 0.4247/0.991/3.305, 방어 0.4178/0.964/2.538, fallback PP-Y2. 번들 10파일+checksum</td>
+<td class="align-left">Cold 정책 고정 완료(보류→고정). 정직한 범위: 후처리층만 실행 가능, 하부 Quantile 모델 직렬화·cold 운영 트래픽 확보는 별도 후속</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-COLD-ARTIFACT2</td>
+<td class="align-left">Cold 하부 Quantile 모델 직렬화 (search-free 운영 변형)</td>
+<td class="align-left">대상: 운영 피처 12개(search/external 제외) LightGBM Quantile q10/q40/q50/q90</td>
+<td class="align-left">작업: 모델 학습·joblib 직렬화 + q50 대표 + q40 guard 방어 + q10/q90 범위 + raw-input 예측기를 <code>models/track6/cold_prediction_v0.2_operational/</code>로 구축</td>
+<td class="align-left">v0.1 대표 PP-Y18(search 의존)을 외부 API 없이 raw-input 실행 가능 artifact로 만들 수 있는가?</td>
+<td class="align-left">예측기 raw-input 재현 검증 + 정직한 test 지표 재측정</td>
+<td class="align-left">예측기 재현 1e-9 이내 + 외부 의존 0</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">raw-input 추론 diff 0.0. 대표 q50 0.4823/1.242/4.381, 방어 guard 0.4852/1.177/4.122. search 기반 v0.1(0.4247/0.991/3.305)보다 확연히 약함 — 검색 신호 기여분이 큼</td>
+<td class="align-left">search-free 운영 artifact 확보. 검색 신호 손실이 커서, cold 정확도 회복하려면 검색 피처를 운영 안전 형태로 만들거나(provider agreement 게이트) 비교군 prior 갱신 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-H</td>
+<td class="align-left">PP-H28</td>
+<td class="align-left">Cold 검색 provider agreement 기반 제한 보정 검증</td>
+<td class="align-left">대상: base pp_y2 + h23 검색 보정(gallery_museum/social_blog/exhibition/art_general × cap0.1/0.2), provider agreement gate</td>
+<td class="align-left">작업: precomputed 검색 보정+agreement 병합, validation 반복 subsample 안정성 + agreement grade별 분해 + test 확인. gate=not_risk/medium</td>
+<td class="align-left">검색 보정을 agreement로 제한 적용하면 안전하게 Cold를 개선하는가?</td>
+<td class="align-left">반복 subsample 개선확률 + grade별 효과 + test, 게이팅 실행가능성 판정</td>
+<td class="align-left">검색 보정 방어 유효 + 게이팅이 저신뢰 악화를 줄임</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">검색 보정 방어 유효(gallery_museum/social_blog cap0.2 test 3지표 개선 0.4313/0.929/3.139 vs base 0.4421/1.048/3.354). 그러나 agreement 게이팅 비현실: high 등급 0(max 0.648&lt;0.70), cold 커버리지 18작가, gate가 test 0행 변경(no-op)</td>
+<td class="align-left">검색 보정은 cap 기반 방어층 + 저신뢰 검수 플래그로 활용. provider agreement 게이팅은 현 데이터로 불가 → 검색 수집 커버리지 확대(전 작가 dual-provider, high 등급 확보)를 별도 데이터 과제로</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-COLD-DEFENSE1</td>
+<td class="align-left">Cold guard + 검색 방어층 결합</td>
+<td class="align-left">대상: PP-Y18 base + PP-QR4 guard + PP-H28 검색 보정(gallery_museum/social_blog)</td>
+<td class="align-left">작업: 두 방어를 PP-Y18 base에 결합, 가산성 분해 + validation 반복 subsample + test. 검색 delta=h23−pp_y2</td>
+<td class="align-left">두 방어가 가산적인가 중복인가?</td>
+<td class="align-left">후보별 test + redundancy gap + 개선확률, 결합 채택 판정</td>
+<td class="align-left">guard_search가 guard 단독 대비 MAPE/p95 추가 개선 + redundancy gap≈0</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">**가산적(중복 아님)**: redundancy gap +0.0006≈0. guard_search_gm test 0.4098/0.849/2.347 = Cold 최고(base 0.4247/0.991/3.305 대비 MdAPE -3.5%/MAPE -14%/p95 -29%), guard 단독 대비 ΔMdAPE -0.008/ΔMAPE -0.115/Δp95 -0.191. 두 방어 거의 직교(guard=qwidth/gap tail, search=작가맥락 잔차)</td>
+<td class="align-left">검색 보정이 PP-Y18 search 피처와 중복 아님 확인. 단 검색층은 분산 추가(val fold 개선확률 guard 1.00 vs 결합 0.72) + 커버리지 주의 → cold artifact 2단 방어(guard+search) 통합 시 검색 커버리지 fallback·저신뢰 플래그 필수</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-Q</td>
+<td class="align-left">PP-COLD-ARTIFACT3</td>
+<td class="align-left">Cold guard+search 2단 방어 artifact 고정</td>
+<td class="align-left">대상: PP-Y18 대표 + guard(PP-QR4) + 검색 delta(PP-H28)</td>
+<td class="align-left">작업: 작가 단위 검색 delta lookup(372작가) + fallback(미커버→guard) + 검수 플래그 + 독립 후처리기를 <code>models/track6/cold_prediction_v0.3/</code>로 고정</td>
+<td class="align-left">DEFENSE1 검증 2단 방어를 재현 가능 artifact로 고정할 수 있는가?</td>
+<td class="align-left">후처리기가 DEFENSE1 guard_search 지표 정확 재현 검증 후 freeze</td>
+<td class="align-left">후처리기 재현 1e-6 이내 + manifest</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">후처리기 diff 3.6e-15, DEFENSE1 guard_search MdAPE 재현 True. 대표 0.4247/0.991/3.305, 방어 0.4098/0.849/2.347, guard-only 0.4178/0.964/2.538. 372작가 lookup, test 커버리지 1.0, 검수 플래그율 0.45</td>
+<td class="align-left">Cold artifact 3종 완성(v0.1 guard / v0.2 search-free raw-input / v0.3 guard+search 최고). 정직한 범위: 후처리층만 실행, PP-Y18 상류 search 의존, 검색 delta 작가 frozen snapshot. cold 운영 트래픽·검색 커버리지 확대 후속</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVCSHRINK1</td>
+<td class="align-left">Warm 비교군 prior shrinkage 갱신</td>
+<td class="align-left">대상: Warm svc 비교군 raw prior (artist/medium/support/size 계층)</td>
+<td class="align-left">작업: 거래 시점 부재로 recency 갱신 불가 → EB 계층 shrinkage(작은/거친 그룹 상위 수축, k validation 선택)로 PP-SVC8 staleness(분산) 완화. raw vs shrunk를 test_warm + 0604에서 비교</td>
+<td class="align-left">shrinkage가 prior staleness(분산)를 줄여 0604를 개선하는가?</td>
+<td class="align-left">영역별 MdAPE/MAPE/p95 + residual std, 레벨 커버리지, k 선택</td>
+<td class="align-left">0604 shrunk가 raw 대비 std↓ + MAPE/p95 개선, MdAPE 비악화</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">채택. k=5. 0604 raw→shrunk: residual std 1.097→0.949, MAPE 0.955→0.812, p95 4.017→3.358, MdAPE 0.394→0.384(test 비악화, validation/test도 개선). 커버리지: 0604 L3최정밀 11.6% vs test 41%(매칭이동 재확인)</td>
+<td class="align-left">shrinkage가 staleness 분산 해소에 유효. 거래시점 데이터 없이도 적용 가능. 단 raw prior 컴포넌트 수준 → svc 비교군 feature를 shrunk median으로 교체해 Warm Huber 재학습+반복검증(PP-SVC 계열) 후 운영 후보 검토</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVCSHRINK2</td>
+<td class="align-left">Warm Huber + shrunk 비교군 median 재학습</td>
+<td class="align-left">대상: Warm Huber(svc1 재현, 공통 9피처 base) + 비교군 median raw vs shrunk</td>
+<td class="align-left">작업: train OOF(KFold5) median, eval full-train. base/+raw/+shrunk Huber 학습 후 test_warm+0604 비교 + artist GroupKFold 반복</td>
+<td class="align-left">shrinkage 효과가 모델 투입 시에도 유지되는가?</td>
+<td class="align-left">영역별 모델 지표 + artist holdout 개선확률</td>
+<td class="align-left">shrunk가 held-out warm에서 raw 지배</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">채택. shrunk가 held-out warm 전 지표에서 raw 지배: test_warm MAPE 0.429→0.371/p95 1.764→1.291, 0604 MAPE 0.784→0.565/p95 1.179→1.000/std 2.108→1.447, MdAPE도 비악화. artist GroupKFold(cold-like, 작가 제거)는 중립—작가기반 비교군 피처엔 부적합 검증</td>
+<td class="align-left">SVCSHRINK1 효과가 모델에서도 유지 확인. 다음: svc1 전체 피처셋+seed 평균에 shrunk median 반영해 전체 재현 + PP-SVC4식 반복 holdout → 운영 svc_numeric 교체</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-SVC</td>
+<td class="align-left">PP-SVCSHRINK3</td>
+<td class="align-left">svc_numeric 전체 재현 + shrunk median 운영 교체 결정</td>
+<td class="align-left">대상: svc1 svc_numeric(warm base 13 + 비교군 stats) + median raw vs EB-shrunk</td>
+<td class="align-left">작업: svc1 full 파이프라인 재현, median만 shrunk 교체. PP-SVC4식 validation 반복 holdout(고정 예측 subsample) + test_warm + 0604</td>
+<td class="align-left">shrunk median이 전체 svc_numeric에서 운영 교체 가치가 있는가?</td>
+<td class="align-left">영역 지표 + 반복 holdout 개선확률 + 결정</td>
+<td class="align-left">held-out 지배 + holdout 우세</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">조건부 채택. held-out test_warm+0604 전 지표 shrunk 지배(test_warm 0.1528/0.296/0.969→0.1464/0.281/0.933; 0604 0.3574/0.451/1.000/std1.640→0.3427/0.434/0.999/std1.379). 단 validation MdAPE 소폭 악화 + 반복 holdout 중립(MAPE 0.53, artist 0.625/row 0.43)=center-vs-tail 트레이드오프</td>
+<td class="align-left">일반화·recency엔 shrunk 우세, validation center는 raw 우세. 운영 반영 전 svc_numeric_seed_mean 다중 seed 전체 재현 + 고정 split 최종 확인 후 교체 결정. 한계: median만 교체(다른 svc stats raw), crossfit single-seed</td>
 </tr>
 <tr>
 <td class="align-left">Group PP-R</td>
@@ -2559,6 +2743,591 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <td class="align-left">실행 완료</td>
 <td class="align-left">정책 갱신</td>
 <td class="align-left">대표/범위 후보 분리 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER1</td>
+<td class="align-left">Huber <code>epsilon</code>/<code>alpha</code> 그리드</td>
+<td class="align-left">대상: Warm Huber 직접 재학습 후보</td>
+<td class="align-left">사용 피처: 유사 작품 기반 가격 피처 신뢰도 세트와 작가 기준선/메타 세트. 조정값: <code>epsilon</code>, <code>alpha</code></td>
+<td class="align-left">Huber가 정상 오차와 이상치를 나누는 기준을 바꾸면 성능이 개선되는지 확인</td>
+<td class="align-left">같은 Warm split에서 grid 학습 후 validation/test 비교</td>
+<td class="align-left">현재 Huber 후보 또는 현재 Warm 1순위 대비 개선 신호</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">직접 Huber grid 최선 test MdAPE <code>0.1464</code>, MAPE <code>0.2833</code>, p95_APE <code>1.0034</code>로 현재 Warm 1순위 <code>0.1405/0.2748/0.8331</code> 미달</td>
+<td class="align-left">직접 Huber 설정 대체는 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER2</td>
+<td class="align-left">표본 가중치 Huber</td>
+<td class="align-left">대상: Warm Huber 직접 재학습 후보</td>
+<td class="align-left">가중 기준: 유사 작품 신뢰도, 작가 이력량, target tail. 신뢰도 높은 행은 더 반영하고 불안정 행은 완만하게 반영</td>
+<td class="align-left">모든 학습 샘플을 같은 비중으로 두는 방식보다 안정적인지 확인</td>
+<td class="align-left">sample_weight별 Huber 재학습</td>
+<td class="align-left">MAPE/p95 악화 없이 MdAPE 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">유사 작품 신뢰도 가중이 직접 Huber 내부에서는 상대적으로 낫지만 현재 Warm 1순위는 대체하지 못함</td>
+<td class="align-left">가중치 단독 적용은 보류, residual 보정 입력으로만 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER3</td>
+<td class="align-left">2-pass 이상치 재가중 Huber</td>
+<td class="align-left">대상: Warm Huber 직접 재학습 후보</td>
+<td class="align-left">1차 Huber가 outlier로 본 train row를 2차 학습에서 낮은 가중치로 재학습</td>
+<td class="align-left">Huber가 찾은 이상치 정보를 학습 단계에 다시 반영하면 중심 예측이 안정화되는지 확인</td>
+<td class="align-left">1차 Huber outlier mask -&gt; 2차 downweight fit</td>
+<td class="align-left">p95 악화 없이 MdAPE/MAPE 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">2-pass 최선 test MdAPE <code>0.1483</code>, MAPE <code>0.2815</code>, p95_APE <code>1.0099</code>로 직접 대체 불가</td>
+<td class="align-left">Huber outlier 재가중 단독 실험은 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER4</td>
+<td class="align-left">구간별 Huber 라우팅</td>
+<td class="align-left">대상: Warm Huber 직접 재학습 후보</td>
+<td class="align-left">구분 기준: 유사 작품 신뢰도, 작가 이력량, 크기 구간. 표본 부족 구간은 global Huber fallback</td>
+<td class="align-left">구간마다 오차 구조가 다르면 하나의 Huber보다 별도 Huber가 나은지 확인</td>
+<td class="align-left">segment별 Huber 학습 후 validation/test 라우팅</td>
+<td class="align-left">전체 성능 개선 또는 p95 안정화</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">validation MdAPE는 좋았지만 test에서 p95_APE가 <code>1.0596</code>까지 악화되어 구간 과적합 위험 확인</td>
+<td class="align-left">구간별 Huber 라우팅은 추가 split 전 채택 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER5</td>
+<td class="align-left">Huber 잔차 보정 <code>epsilon</code> 튜닝</td>
+<td class="align-left">대상: 현재 Warm 1순위 <code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">PP-WCOEF5의 약한 잔차 보정을 확장해 residual Huber의 <code>epsilon</code>, <code>alpha</code>, cap, strength를 세분화</td>
+<td class="align-left">현재 후보 위 사후 보정에서 Huber 손실 민감도를 바꾸면 안정성이 높아지는지 확인</td>
+<td class="align-left">validation 내부 cross-fit residual, test는 validation 전체 보정식 적용</td>
+<td class="align-left">PP-WCOEF5보다 안정적인 MdAPE/MAPE/p95 균형</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">MdAPE 우선 후보 test <code>0.1346/0.2745/0.8387</code>, 균형 후보 test <code>0.1353/0.2747/0.8291</code>로 현재 Warm 1순위보다 개선 신호</td>
+<td class="align-left">후속 반복 split/OOF 재검증 대상으로 승격</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER6</td>
+<td class="align-left">Huber 튜닝 후보 안정성 검증</td>
+<td class="align-left">대상: PP-WHUBER1~5 상위 후보와 현재 Warm 1순위 후보</td>
+<td class="align-left">검증 기준: row/artist bootstrap</td>
+<td class="align-left">단일 split 개선이 우연인지 확인</td>
+<td class="align-left">후보별 개선 확률과 평균 차이 계산</td>
+<td class="align-left">개선 확률과 지표 균형을 보고 후속 split 검증 여부 결정</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">MdAPE 우선 후보의 MdAPE 개선 확률은 artist <code>0.777</code>, row <code>0.807</code>; 균형 후보는 p95 개선 확률이 artist <code>0.787</code>, row <code>0.763</code></td>
+<td class="align-left">바로 운영 반영하지 않고 안정성 재검증 후 반영 여부 판단</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER7</td>
+<td class="align-left">Huber 잔차 보정 적용 방식 세분화</td>
+<td class="align-left">대상: 현재 Warm 1순위 <code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">residual Huber 원천 보정값은 유지하고 적용 방식을 hard clip, soft tanh cap, 신뢰도별 축소, 과소/과대 방향별 강도, 예측 가격 구간별 cap, 혼합 정책으로 분리</td>
+<td class="align-left">보정값을 어떻게 제한하고 줄여서 적용해야 MdAPE, MAPE, p95_APE 균형이 좋아지는지 확인</td>
+<td class="align-left">validation 내부 cross-fit residual, test는 validation 전체 보정식 1회 적용, row/artist bootstrap과 구간별 진단 병행</td>
+<td class="align-left">현재 Warm 1순위 대비 MdAPE/MAPE/p95 개선 또는 목적별 후보 분리</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">MdAPE 우선 test <code>0.1328/0.2743/0.8447</code>, 균형 후보 test <code>0.1334/0.2745/0.8288</code>, 큰 오차 방어 후보 test <code>0.1396/0.2733/0.8018</code>; 세 지표 모두 개선 후보 495개 확인</td>
+<td class="align-left">운영 반영 전 반복 split/OOF 재검증 후보로 유지. 목적별로 MdAPE 후보와 p95 방어 후보를 분리 판단</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER8</td>
+<td class="align-left">Huber 잔차 보정 반복 split/OOF 재검증</td>
+<td class="align-left">대상: PP-WHUBER7 목적별 후보 5개와 현재 Warm 1순위 <code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">validation 내부 <code>8</code>회 반복 x <code>5</code>fold OOF로 보정식을 재학습하고, test에는 validation 전체로 학습한 보정식을 1회 적용</td>
+<td class="align-left">PP-WHUBER7의 단일 split 개선이 반복 검증에서도 유지되는지 확인</td>
+<td class="align-left">각 반복/fold에서 holdout은 자기 자신을 학습하지 않은 residual Huber 보정값만 적용</td>
+<td class="align-left">목적별 후보의 안정성, test 1회 성능, 운영 반영 전 추가 검증 필요 여부</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">반복 OOF 1순위 <code>validation_balanced</code> 평균 delta MdAPE/MAPE/p95 <code>-0.00641/-0.00209/-0.00797</code>, 개선 확률 <code>1.000/1.000/1.000</code>; test 균형 후보 <code>0.1334/0.2745/0.8288</code>; 큰 오차 방어 후보 <code>0.1396/0.2733/0.8016</code></td>
+<td class="align-left">후보를 하나로 교체하지 않고 목적별로 분리. test 균형 후보는 artist-level split 또는 추가 holdout 후 반영 판단</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER9</td>
+<td class="align-left">Huber 잔차 보정 목적별 추가 검증</td>
+<td class="align-left">대상: 대표 정확도, 보수형 안정성, 큰 오차 방어, MdAPE 연구 후보</td>
+<td class="align-left">validation 작가 단위 holdout <code>12</code>회 x <code>5</code>fold, test row/artist bootstrap <code>400</code>회, segment 진단</td>
+<td class="align-left">목적별 후보가 작가 단위로 봐도 안정적인지, 운영 보조 정책으로 쓸 후보가 있는지 확인</td>
+<td class="align-left">같은 후보 보정식을 작가 단위 holdout에서 재학습/적용하고, test 예측은 고정한 뒤 bootstrap으로 안정성 확인</td>
+<td class="align-left">목적별 채택/조건부/보류 판단</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">큰 오차 방어 후보 test <code>0.1396/0.2733/0.8016</code>, artist holdout 개선 확률 MdAPE/MAPE/p95 <code>1.000/1.000/1.000</code>, test artist bootstrap MAPE/p95 개선 확률 <code>0.910/0.728</code>로 가장 유망. 대표 정확도 후보 test <code>0.1334/0.2745/0.8288</code>이나 artist bootstrap MAPE <code>0.573</code>, 악화 segment <code>10</code>개로 조건부. MdAPE 연구 후보는 p95 악화로 운영 보류</td>
+<td class="align-left">기본 모델 교체는 보류. 큰 오차 방어 목적의 보조 정책 후보로 우선 검토</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER10</td>
+<td class="align-left">Warm 작품별 오차 원인 기반 보정</td>
+<td class="align-left">대상: 현재 Warm 1순위 <code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">작품별 test 오차는 진단용으로만 사용. 보정값은 validation 작가 단위 holdout에서 <code>risk_cause</code>, <code>pred_log_bin</code>, <code>svc_reliability_bin</code>, <code>size_bin</code>, <code>artist_works_bin</code> 조합별 <code>median(residual_log)</code>로 계산하고 cap/strength 적용</td>
+<td class="align-left">작품별로 왜 틀렸는지 원인을 나눈 뒤, 같은 원인군의 반복 오차를 작은 로그 보정값으로 줄일 수 있는지 확인</td>
+<td class="align-left">validation 작가 holdout <code>8</code>회 x <code>5</code>fold로 원인 기반 보정 후보 선택, test에는 선택 후보만 1회 적용. 상세 작품별 오차/개선/악화 표 생성</td>
+<td class="align-left">MdAPE 또는 p95_APE 개선 여부와 MAPE 악화 여부를 함께 판단</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">validation 선택 후보는 p95_APE를 소폭 개선했지만 test MAPE가 악화. test MdAPE 최상위 후보는 <code>0.1374/0.2774/0.8292</code>로 MdAPE/p95 개선, MAPE 악화</td>
+<td class="align-left">현재 v0.1 기본 모델 대체는 보류. 큰 오차 방어/원인 진단/후속 보정 설계 근거로 사용</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WHUBER</td>
+<td class="align-left">PP-WHUBER11</td>
+<td class="align-left">Warm 원인 보정 + MAPE guard + 과대예측 전용 cap</td>
+<td class="align-left">대상: 현재 Warm 1순위 <code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">PP-WHUBER10 보정에 (1) 과대예측 위험 segment(작가 기준선 약함) 한정 적용, (2) 하향 방향 전용 cap, (3) global fallback 제거, (4) validation MAPE 비악화 guard를 추가</td>
+<td class="align-left">PP-WHUBER10의 MdAPE/p95 개선을 살리되 동반된 MAPE 악화를 제거할 수 있는지 확인</td>
+<td class="align-left">validation 작가 holdout <code>8</code>회 x <code>5</code>fold로 MAPE guard 통과 후보를 하이어라키별 선택, test 1회 확인</td>
+<td class="align-left">MAPE 비악화를 전제로 MdAPE/p95 개선 여부와 개선 크기 판단</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">36/36 후보가 MAPE guard 통과(MAPE 악화 해소). 대표 <code>risk_pred</code> test <code>0.1403/0.2744/0.8312</code>(MdAPE -0.14%/p95 -0.23%), test 최저는 <code>pred_svc</code> <code>0.1392/0.2744/0.8292</code>. 세 후보 모두 3지표 개선이나 폭이 marginal</td>
+<td class="align-left">MAPE 악화는 해소됐으나 순개선 폭이 noise 수준. 보조 방어 후보로만 유지, paired bootstrap 유의성 확인 전 대표 교체 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WCOEF</td>
+<td class="align-left">PP-WCOEF1</td>
+<td class="align-left">Warm Huber 크기 구간별 계수 세분화</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">사용 피처: <code>base_existing_combo</code> + <code>log_area</code>/<code>aspect_ratio</code>와 크기 구간 상호작용. 크기 구간은 train 기준 분위수로 고정</td>
+<td class="align-left">Huber가 하나의 크기 계수로만 설명하지 못한 소형/중형/대형 차이를 선형 계수로 분리</td>
+<td class="align-left">같은 Warm split에서 Huber 재학습 후 기준 Huber와 현재 Warm 1순위 후보 비교</td>
+<td class="align-left">Huber 기준선 대비 MdAPE/MAPE/p95 개선, 현재 후보와의 격차 축소</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Huber 기준선 대비 개선됐지만 test MdAPE <code>0.2178</code>로 현재 Warm 1순위 후보 미달</td>
+<td class="align-left">현재 v0.1 후보 대체 불가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WCOEF</td>
+<td class="align-left">PP-WCOEF2</td>
+<td class="align-left">Warm Huber 재료/지지체 조합 계수 세분화</td>
+<td class="align-left">대상: Warm <code>Huber(base_existing_combo)</code></td>
+<td class="align-left">사용 피처: <code>medium_category</code>, <code>support_category</code>, <code>medium_support_bucket</code>과 크기 구간 조합. 희소 조합은 기타 묶음으로 처리</td>
+<td class="align-left">재료/지지체별 가격 효과가 크기와 함께 달라지는지 확인</td>
+<td class="align-left">같은 Warm split에서 Huber 재학습 후 계수/성능 비교</td>
+<td class="align-left">재료/지지체 조합 추가가 과적합 없이 MdAPE 또는 p95 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">Huber 기준선 대비 소폭 개선됐지만 test MdAPE <code>0.2229</code>로 현재 후보 미달</td>
+<td class="align-left">현재 v0.1 후보 대체 불가</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WCOEF</td>
+<td class="align-left">PP-WCOEF3</td>
+<td class="align-left">유사 작품 기반 가격 피처 신뢰도별 계수 조정</td>
+<td class="align-left">대상: Warm Huber + 유사 작품 기반 가격 피처</td>
+<td class="align-left">사용 피처: 유사 작품 기반 가격 중앙값, 표본 수, 가격 분산, 신뢰도 구간별 상호작용</td>
+<td class="align-left">유사 작품 표본이 충분할 때와 부족할 때 Huber가 다른 계수를 주는지 확인</td>
+<td class="align-left">PP-SVC5의 OOF 유사 작품 기반 가격 피처를 사용해 재학습</td>
+<td class="align-left">현재 70:30 결합 후보와 비교해 성능/안정성 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">직접 Huber 후보 중 최선. test MdAPE <code>0.1532</code>로 기준 Huber보다 크게 개선됐지만 현재 후보 <code>0.1405</code> 미달</td>
+<td class="align-left">유사 작품 기반 가격 피처는 유지, 직접 Huber 대체는 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WCOEF</td>
+<td class="align-left">PP-WCOEF4</td>
+<td class="align-left">작가 기준선/작가 메타 구간별 계수 조정</td>
+<td class="align-left">대상: Warm Huber + 작가 기준선/메타 피처</td>
+<td class="align-left">사용 피처: 작가별 과거 가격 기준선, 학습 작품 수, 작가 메타 수치/범주, 구간별 상호작용. train은 OOF 기준선, validation/test는 train-only 기준선 사용</td>
+<td class="align-left">작가명 자체만 쓰는 것보다 작가의 가격 수준과 이력량을 계수로 분리하면 좋아지는지 확인</td>
+<td class="align-left">누수 방지 작가 기준선으로 Huber 재학습</td>
+<td class="align-left">Huber 기준선 대비 개선, 현재 Warm 1순위 후보와 비교</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">작가 기준선/메타 계수는 test MdAPE <code>0.1789~0.1814</code> 수준으로 현재 후보 미달</td>
+<td class="align-left">단독 대체는 보류, 해석 보조 피처로만 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WCOEF</td>
+<td class="align-left">PP-WCOEF5</td>
+<td class="align-left">현재 Warm 1순위 후보 위 약한 Huber 잔차 보정</td>
+<td class="align-left">대상: 현재 Warm 1순위 <code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">보정 기준: validation 내부 교차검증으로 <code>actual_log - pred_log</code> 잔차를 Huber가 학습. 보정값은 cap/strength로 제한</td>
+<td class="align-left">이미 강한 70:30 결합 후보에서 남은 반복 오차만 작게 줄일 수 있는지 확인</td>
+<td class="align-left">validation OOF 잔차 보정, test는 validation 전체로 학습한 보정식 적용</td>
+<td class="align-left">MdAPE/MAPE/p95 중 하나 이상 개선하고 다른 지표 악화 제한</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">test 일부 후보는 MdAPE <code>0.1353</code>, p95 <code>0.8291</code>까지 개선. 다만 validation 선택 후보와 test 최상위 후보가 완전히 일치하지 않음</td>
+<td class="align-left">추가 split/OOF 재검증 후보</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-WCOEF</td>
+<td class="align-left">PP-WCOEF6</td>
+<td class="align-left">PP-WCOEF 후보 안정성 검증</td>
+<td class="align-left">대상: PP-WCOEF1~5 상위 후보와 현재 Warm 1순위 후보</td>
+<td class="align-left">검증 기준: test row bootstrap과 artist bootstrap으로 기준 후보 대비 개선 확률 산출</td>
+<td class="align-left">단일 test 상위 후보가 우연한 개선인지 확인</td>
+<td class="align-left">후보별 MdAPE/MAPE/p95 개선 확률과 평균 차이 계산</td>
+<td class="align-left">개선 확률이 충분히 높고 p95 악화가 제한될 때 후속 후보로 승격</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">test 상위 잔차 보정 후보의 MdAPE 개선 확률은 row/artist bootstrap 약 <code>0.74~0.78</code>, MAPE 개선 확률은 낮음</td>
+<td class="align-left">대표 후보 즉시 교체보다는 p95 안정화 보조 후보로 재검증</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF1</td>
+<td class="align-left">Warm 기준가/계수 후보 저차원 탐색</td>
+<td class="align-left">대상: 현재 Warm 1순위 <code>current_70_30</code></td>
+<td class="align-left">사용 피처: <code>current_70_30</code>, <code>ppv8_defensive</code>, <code>svc_fallback</code>, <code>shrunk_huber_refit</code>, <code>shrunk_svc_prior</code>, 기준가 gap, <code>log_area</code>, <code>svc_group_n_log</code>, <code>svc_prior_iqr</code>. 보정 기준: validation 내부 OOF Huber/Ridge meta 및 잔차 Huber cap/strength</td>
+<td class="align-left">좋은 기준가를 만든 뒤 Huber가 소수의 기준가/신뢰도 피처 계수만 조정하면 현재 후보를 넘는지 확인</td>
+<td class="align-left">validation cross-fit 후보 선택, fixed test/0604 확인, bootstrap, 계수표 산출</td>
+<td class="align-left">validation 선택 후보가 test에서도 MdAPE/MAPE/p95 중 2개 이상 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">test 상위 <code>blend_ppv8_svc_shrunk_0.4_0.6_0.0</code>는 <code>0.1362/0.2717/0.8329</code>로 개선했지만 validation 선택 후보는 아님. 보수 잔차 보정 후보군은 validation/test/0604 동시 개선 신호</td>
+<td class="align-left">test-only 후보는 배제. 보수 후보를 PP-HCOEF2로 분리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF2</td>
+<td class="align-left">보수적 Huber 잔차 보정 선택 검증</td>
+<td class="align-left">대상: PP-HCOEF1 후보와 현재 Warm 1순위</td>
+<td class="align-left">선택 기준: Huber 잔차 보정, validation MdAPE/MAPE/p95 모두 개선, cap <code>&lt;=0.05</code>, strength <code>&lt;=0.75</code></td>
+<td class="align-left">test만 좋은 후보를 배제하고 validation에서 명확히 개선된 작은 보정만 남길 수 있는지 확인</td>
+<td class="align-left">PP-HCOEF1 metrics/predictions를 재검수하고 선택 후보 validation/test/0604 확인 + bootstrap</td>
+<td class="align-left">validation/test/0604에서 3지표 개선, bootstrap에서 개선 확률 확인</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">1순위 <code>residual_huber_resid_basis_size_reliability_alpha0.0001_cap0.03_s0.75</code>는 validation <code>0.1263/0.2090/0.6376</code>, test <code>0.1392/0.2735/0.8059</code>, 0604 <code>0.2749/0.3746/0.9834</code>로 모두 개선. bootstrap은 MAPE 강함, MdAPE/p95는 중립</td>
+<td class="align-left">반복 OOF 재검증 후보로 PP-HCOEF3 실행</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF3</td>
+<td class="align-left">보수 잔차 보정 반복 OOF/artist split 검증</td>
+<td class="align-left">대상: PP-HCOEF2 상위 후보와 현재 Warm 1순위</td>
+<td class="align-left">사용 피처: <code>svc_fallback</code>, <code>shrunk_svc_prior</code>, <code>current_shrunk_huber_gap</code>, <code>ppv8_defensive</code>, <code>shrunk_huber_refit</code>, <code>raw_shrunk_prior_gap</code>, <code>log_area</code>, <code>current_ppv8_gap</code>, <code>svc_group_n_log</code>, <code>svc_prior_iqr</code>. 최종 후보 cap <code>0.05</code>, strength <code>0.50</code></td>
+<td class="align-left">PP-HCOEF2 후보가 row/artist 반복 OOF에서도 유지되는지 확인</td>
+<td class="align-left">validation row OOF 20회, artist OOF 20회, 각 5 folds. fixed validation/test/0604 확인, 계수표/잔차표 산출</td>
+<td class="align-left">row/artist OOF에서 개선확률 높고 fixed test/0604도 3지표 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">반복 검증 통과 후보 <code>hcoef2_size_reliability_cap005_s050</code>: row/artist OOF 모두 MdAPE/MAPE/p95 개선확률 <code>1.0</code>; fixed test <code>0.1388/0.2730/0.8064</code>, 0604 <code>0.2731/0.3744/0.9835</code>로 기준 <code>0.1405/0.2748/0.8331</code>, 0604 <code>0.2779/0.3774/0.9871</code> 대비 모두 개선</td>
+<td class="align-left">Warm 개선 후보로 승격. v0.1 반영 전 운영 패키징/전체 재현 스크립트와 최신 데이터 스트레스 테스트 필요</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF4</td>
+<td class="align-left">Warm 기준가 생성 방식별 Huber 재학습</td>
+<td class="align-left">대상: <code>current_70_30</code> 및 HCOEF3 개선 후보</td>
+<td class="align-left">기준가: 작가+재료/지지체+크기, 작가+크기, 작가 전체, 재료/지지체+크기, 재료+지지체+크기, 재료+크기, global fallback. 정책: loose/default/strict 최소 표본 수. 사용 피처: 완화 기준가, 면적단가 기준가, 표본 수, IQR, 현재 후보와의 gap</td>
+<td class="align-left">유사 작품 기준가를 더 세밀하게 만들고 Huber가 계수로 조정하면 MdAPE/MAPE를 더 줄일 수 있는지 확인</td>
+<td class="align-left">train-only 기준가를 validation/test/0604에 적용, validation cross-fit Huber/Ridge 후보 선택, fixed test/0604 확인</td>
+<td class="align-left">validation 선택 후보가 현재 기준 대비 2개 이상 지표 개선하고 p95 악화가 제한될 때 반복 검증 후보</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>loose_huber_basis_core_alpha0.1</code>은 validation <code>0.1224/0.2077/0.6441</code>, fixed test <code>0.1346/0.2618/0.8916</code>, 0604 <code>0.2304/0.3447/0.9514</code>. MdAPE/MAPE는 크게 개선됐지만 fixed test p95가 HCOEF3 후보 <code>0.8064</code>보다 악화</td>
+<td class="align-left">기준가 고도화는 성능 잠재력 확인. p95 방어를 위해 HCOEF5에서 HCOEF3 안정 후보와 capped blend로 재검증</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF5</td>
+<td class="align-left">Warm 기준가-HCOEF 안정 결합 반복 검증</td>
+<td class="align-left">대상: HCOEF3 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code>와 HCOEF4 loose basis-Huber 후보</td>
+<td class="align-left">방식: HCOEF3 안정 후보 위에 HCOEF4 basis-Huber 예측 차이를 cap <code>0.03/0.05/0.08</code>, strength <code>0.25~1.00</code>로 제한 결합. 기준 후보도 같은 fold에서 재학습</td>
+<td class="align-left">HCOEF4의 MdAPE/MAPE 장점을 살리면서 p95 악화를 막을 수 있는지 확인</td>
+<td class="align-left">validation row OOF <code>12</code>회, artist OOF <code>12</code>회, 각 <code>5</code> folds. fixed test/0604 확인, 계수/잔차 분석</td>
+<td class="align-left">row/artist OOF all3 개선확률 <code>&gt;=0.90</code>과 fixed test p95 guard 동시 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">반복 OOF 최상위 <code>loose_basis_gap_huber_alpha0p1_on_hcoef2_cap0.03_s0.25</code>는 row all3 <code>1.0</code>, artist all3 <code>0.9167</code>이나 fixed test MdAPE가 <code>+0.0012</code> 악화. fixed test 상위 basis-Huber는 <code>0.1346/0.2618~0.2628</code>이나 p95 <code>0.8916~0.9110</code> 악화. capped 후보는 MAPE 개선이나 repeat/fixed guard 동시 미통과</td>
+<td class="align-left">새 기본 후보 채택 없음. HCOEF3 안정 후보 유지. basis-Huber는 MAPE 개선 목적의 보류 후보로 기록</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF6</td>
+<td class="align-left">Warm Huber 조건부 기준가 routing</td>
+<td class="align-left">대상: HCOEF3 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code>와 HCOEF4 loose basis-Huber 후보</td>
+<td class="align-left">방식: 표본 수, IQR, 기준가 level, HCOEF3와의 gap, 완화 weight 조건을 만족한 샘플에만 basis-Huber 차이를 cap/strength로 제한 적용. 기본값은 HCOEF3 안정 후보 유지</td>
+<td class="align-left">HCOEF4의 MdAPE/MAPE 장점을 신뢰도 높은 구간에만 적용하면 p95 악화 없이 성능을 올릴 수 있는지 확인</td>
+<td class="align-left">validation row OOF <code>12</code>회, artist OOF <code>12</code>회, 각 <code>5</code> folds. fixed test/0604 확인, routing 적용률/계수/잔차 분석</td>
+<td class="align-left">row/artist OOF all3 개선확률 <code>&gt;=0.90</code>과 fixed test p95 guard 동시 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">full basis-Huber는 fixed test MdAPE/MAPE <code>0.1346/0.2618~0.2628</code>이나 p95 <code>0.8916~0.9110</code>으로 악화. 조건부 routing 최상위는 fixed test <code>0.1384/0.2728/0.8064</code>로 p95는 방어했지만 반복 OOF all3 <code>0.0</code>이고 개선폭이 매우 작음</td>
+<td class="align-left">새 기본 후보 채택 없음. basis-Huber를 안전하게 제한하면 성능 이득이 거의 사라짐. 다음은 basis-Huber 전체 적용보다 면적단가 기준가/신뢰도 피처를 HCOEF3 residual 피처로 직접 넣는 저차원 실험이 적절</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF7</td>
+<td class="align-left">면적단가 기준가 직접 잔차 피처 실험</td>
+<td class="align-left">대상: HCOEF3 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-left">사용 피처: HCOEF3 잔차 피처 + <code>basis_relaxed_unit_area_log</code>, 기준가 표본 수, IQR, gap, shrink weight, 기준가 level/risk flags. 보정값은 cap <code>0.03/0.05</code>, strength <code>0.25/0.50/0.75</code>로 제한</td>
+<td class="align-left">HCOEF6처럼 사람이 routing 조건을 고정하지 않고 Huber가 면적단가/신뢰도 피처 계수를 직접 조정하면 안정적으로 개선되는지 확인</td>
+<td class="align-left">validation row OOF <code>12</code>회, artist OOF <code>12</code>회, 각 <code>5</code> folds. fixed test/0604 확인, 계수/잔차 분석</td>
+<td class="align-left">row/artist OOF all3 개선확률 <code>&gt;=0.90</code>과 fixed test p95 guard 동시 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">반복 OOF 상위 <code>unit_area_reliability cap0.05 s0.75</code>는 row all3 <code>0.8333</code>, artist all3 <code>0.5000</code>. fixed test 상위 <code>shrunk_basis_gap cap0.03 s0.50</code>은 <code>0.1361/0.2718/0.8298</code>로 MdAPE/MAPE 개선이나 p95가 HCOEF3보다 <code>+0.0235</code> 악화</td>
+<td class="align-left">새 기본 후보 채택 없음. 면적단가/기준가 신뢰도는 평균 오차 개선 피처로 유효하지만 큰 오차 방어가 부족해 p95 방어형 segmented 보정 또는 별도 목적 후보로만 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF8</td>
+<td class="align-left">p95 방어형 segmented Huber 보정</td>
+<td class="align-left">대상: HCOEF3 안정 후보와 HCOEF7 raw residual 후보</td>
+<td class="align-left">방식: HCOEF7의 raw residual을 기준가 신뢰도 low/mid/high 구간으로 나누고 구간별 cap/strength를 다르게 적용. high risk 구간은 약한 보정 또는 무보정</td>
+<td class="align-left">면적단가/기준가 신뢰도 피처의 MdAPE/MAPE 개선 신호를 유지하면서 p95 악화를 막을 수 있는지 확인</td>
+<td class="align-left">validation row OOF <code>12</code>회, artist OOF <code>12</code>회, 각 <code>5</code> folds. fixed test/0604 확인, segment 적용률/계수/잔차 분석</td>
+<td class="align-left">row/artist OOF all3 개선확률 <code>&gt;=0.90</code>과 fixed test p95 guard 동시 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">모든 segmented 후보가 HCOEF3보다 악화. fixed test 최상위는 HCOEF3 자체 <code>0.1388/0.2730/0.8064</code>; segmented 상위도 <code>0.1395/0.2744/0.8340</code> 수준으로 MdAPE/MAPE/p95 모두 악화</td>
+<td class="align-left">HCOEF3 안정 후보 유지. 면적단가 계열은 segmented 방식으로도 기본 후보 개선 실패. HCOEF 계열 다음 단계는 더 복잡한 basis 보정보다 HCOEF3 패키징 또는 별도 p95 risk 모델 결합 검토</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF9</td>
+<td class="align-left">위험도 기반 loose 기준가 결합 실험</td>
+<td class="align-left">대상: HCOEF3 안정 후보와 HCOEF4 loose basis-Huber 후보</td>
+<td class="align-left">방식: 유사 작품 기준가 표본 수, 기준가 IQR, 현재 후보와 기준가 gap, HCOEF3와 HCOEF4 예측 차이를 이용해 low/mid/high 위험 구간을 나누고, low/mid 구간에서만 basis-Huber 방향으로 제한 이동</td>
+<td class="align-left">HCOEF4의 MdAPE/MAPE 개선 신호를 살리면서 HCOEF3의 p95 안정성을 유지할 수 있는지 확인</td>
+<td class="align-left">validation row OOF <code>20</code>회, artist OOF <code>20</code>회, 각 <code>5</code> folds. fixed test/0604 확인, risk segment 적용률/계수/잔차 분석</td>
+<td class="align-left">row/artist OOF all3 개선확률 <code>&gt;=0.90</code>과 fixed test p95 guard 동시 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">best risk-gated 후보 <code>hcoef9_loose_basis_core_huber_alpha0p1_model_agreement_only</code>는 fixed test <code>0.1356/0.2670/0.8308</code>로 MdAPE/MAPE는 개선했지만 p95가 HCOEF3보다 <code>+0.0244</code> 악화. row/artist all3도 <code>0.50/0.35</code>로 미달</td>
+<td class="align-left">새 기본 후보 채택 없음. loose basis-Huber의 평균 오차 개선 신호는 유지되지만 p95 위험을 운영 기준까지 방어하지 못함. HCOEF3 안정 후보 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF10</td>
+<td class="align-left">원인 구간 기반 약한 잔차 보정</td>
+<td class="align-left">대상: HCOEF3 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-left">방식: 예측 가격대, 기준가 표본 수/분산, 기준가 fallback level, 크기, 재료/지지체, 기준가 gap sign별 validation residual 중앙값을 만들고 cap/strength로 작은 보정만 적용</td>
+<td class="align-left">HCOEF3의 남은 큰 오차가 특정 원인 구간에서 반복되는지 확인하고, 해당 구간만 약하게 보정하면 p95 또는 전체 성능을 안정적으로 개선할 수 있는지 확인</td>
+<td class="align-left">validation row OOF <code>20</code>회, artist OOF <code>20</code>회, 각 <code>5</code> folds. fixed test/0604 확인, segment correction map/적용 규모/잔차 분석</td>
+<td class="align-left">row/artist OOF all3 개선확률 <code>&gt;=0.90</code>과 fixed test p95 guard 동시 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">fixed test에서 <code>hcoef10_pred_reliability_cap0.02_s0.25</code>는 <code>0.1383/0.2729/0.8062</code>로 HCOEF3 대비 세 지표를 아주 작게 개선했지만 row/artist all3 <code>0.00/0.10</code>으로 반복 안정성 부족. p95 상위 medium/size 후보는 p95만 낮추고 MdAPE/MAPE 악화</td>
+<td class="align-left">새 기본 후보 채택 없음. 원인 구간 median 보정은 test-only 소폭 신호 또는 p95 목적 후보에 그치며 운영 후보 기준 미달. HCOEF3 안정 후보 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF11</td>
+<td class="align-left">HCOEF3 안정 후보 확장 반복 검증</td>
+<td class="align-left">대상: <code>current_70_30</code> 기준 후보와 HCOEF3 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-left">방식: 새 보정을 추가하지 않고 HCOEF3 안정 후보를 row OOF/artist OOF <code>80</code>회와 split별 row/artist paired bootstrap <code>2000</code>회로 재검증. 사용 피처와 cap/strength는 HCOEF3 후보와 동일</td>
+<td class="align-left">현재 Warm 개선 후보가 단일 split 우연이 아니라 반복 검증에서도 안정적인지 확인하고 운영 패키징 전 근거를 강화</td>
+<td class="align-left">validation row OOF <code>80</code>회, artist OOF <code>80</code>회, 각 <code>5</code> folds. validation/test/0604 fixed 확인, bootstrap CI/개선확률, 계수/잔차 분석</td>
+<td class="align-left">row/artist OOF all3 개선확률 <code>&gt;=0.95</code>, fixed test에서 MdAPE/MAPE/p95 모두 기준 후보보다 개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">row/artist OOF all3 개선확률 모두 <code>1.0</code>. fixed test <code>0.1388/0.2730/0.8064</code>로 기준 <code>0.1405/0.2748/0.8331</code> 대비 3지표 개선, 0604도 <code>0.2731/0.3744/0.9835</code>로 기준 대비 개선. Bootstrap은 MAPE/RMSE 개선은 강하고 MdAPE/p95는 split별 중립~개선 신호</td>
+<td class="align-left">HCOEF3 안정 후보를 Warm 개선 후보로 유지. 새 후보 추가보다 운영 패키징/최신 라벨 스트레스 테스트/작품별 큰 오차 원인 진단이 다음 우선순위</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF12</td>
+<td class="align-left">HCOEF3 안정 후보 운영 패키징 감사</td>
+<td class="align-left">대상: HCOEF11에서 검증된 <code>hcoef2_size_reliability_cap005_s050</code></td>
+<td class="align-left">방식: validation split으로 선택된 residual Huber 보정 모델을 저장 가능한 joblib 패키지로 만들고, 저장 모델을 재로딩해 validation/test/0604 예측이 direct rebuild와 동일한지 검증. HCOEF11 반복/부트스트랩 근거를 carry-forward</td>
+<td class="align-left">Warm 개선 후보가 운영 반영 전 재현 가능한 artifact로 관리될 수 있는지 확인</td>
+<td class="align-left">package manifest/sha256, readiness check, fixed validation/test/0604 재현, HCOEF11 반복 검증 근거 연결</td>
+<td class="align-left">패키지 파일 존재, 재로딩 예측 동일성, fixed test/0604 3지표 개선, row/artist OOF guard 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">readiness check 전부 <code>pass</code>. 저장 모델과 direct rebuild 예측 차이 validation/test/0604 모두 <code>0.0</code>. fixed test <code>0.1388/0.2730/0.8064</code>, 0604 <code>0.2731/0.3744/0.9835</code> 재현</td>
+<td class="align-left">운영 후보 패키징 감사 통과. production artifact를 덮어쓰지 않았으며, 반영 여부는 최신 라벨 stress test/API/운영 정책에서 결정</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF13</td>
+<td class="align-left">Warm Huber 잔차 위험 원인 진단</td>
+<td class="align-left">대상: HCOEF3 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code>와 기준 후보 <code>current_70_30</code></td>
+<td class="align-left">방식: 완화 기준가가 포함된 HCOEF5 프레임을 사용해 기준가 표본 수, IQR, basis level, 예측 가격대, 크기 구간, 재료/지지체, 후보 간 gap별 잔차/APE를 정량화. 실제 가격 구간은 진단용으로만 사용</td>
+<td class="align-left">새 보정을 바로 선택하지 않고 현재 최고 후보가 남기는 큰 오차 원인을 찾아 다음 Huber 계수/기준가 보정 실험을 설계</td>
+<td class="align-left">validation/test/0604 fixed 비교, HCOEF11 반복 검증 근거 carry-forward, 위험 segment summary, 큰 오차 작품표, 다음 실험 후보표 작성</td>
+<td class="align-left">validation 위험 구간을 기준으로 다음 후보를 정하되 fixed test로 보정 규칙을 만들지 않음</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">현재 후보는 validation/test/0604 모두 <code>current_70_30</code> 대비 3지표 개선 유지. validation 위험 구간은 <code>size00 + n_10_19</code>, <code>basis_iqr=iqr_mid</code>, <code>ppv8_pos</code>, <code>basis_current_disagreement</code>, <code>artist_overall</code> 등으로 확인</td>
+<td class="align-left">새 후보 채택 없음. 다음은 표본 수 <code>10~19</code>, 기준가 IQR 중간/높음, 후보 gap 양수/음수 구간에 한정한 shrinkage/fallback/routing/cap-strength OOF 실험</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF14</td>
+<td class="align-left">Warm Huber 위험 구간 한정 shrinkage/routing OOF</td>
+<td class="align-left">대상: HCOEF3 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code>와 기준 후보 <code>current_70_30</code></td>
+<td class="align-left">방식: HCOEF13 위험 구간에 한정해 Huber 잔차 보정폭 축소, <code>current_70_30</code> 기준으로 일부 되돌림, segment residual 중앙값의 작은 보정을 적용. 보정값은 train fold에서만 계산</td>
+<td class="align-left">HCOEF13에서 찾은 위험 구간을 실제 보정 후보로 바꾸면 현재 안정 후보를 넘을 수 있는지 확인</td>
+<td class="align-left">validation row OOF <code>20</code>회, artist OOF <code>20</code>회, 각 <code>5</code> folds. fixed test/0604는 확인용. segment 적용 규모와 보정맵 산출</td>
+<td class="align-left">row/artist OOF all3 개선 gate와 fixed p95 guard 동시 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">반복 OOF gate 통과 후보 <code>0</code>개. fixed test p95는 일부 후보에서 <code>0.8047~0.8062</code>로 HCOEF3 <code>0.8064</code>보다 아주 작게 개선됐지만 반복 안정성이 부족</td>
+<td class="align-left">새 후보 채택 없음. fixed test 소폭 개선만으로는 운영 후보를 바꾸지 않음. 다음은 최신 라벨 stress test 또는 service feature pipeline 통합 검증을 우선</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF15</td>
+<td class="align-left">Warm 최신 라벨 stress test</td>
+<td class="align-left">대상: HCOEF 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code>, 기준 후보 <code>current_70_30</code>, 운영 v0.1 component</td>
+<td class="align-left">방식: 0604 최신 라벨 829건을 외부 stress test로만 사용하고, 새 보정값/가중치는 만들지 않음. HCOEF 연구 후보와 운영 <code>service_primary</code>/PP-V8 component를 같은 metric으로 비교</td>
+<td class="align-left">현재 HCOEF 후보가 최신 라벨에서도 기존 70:30보다 유지 개선되는지, 운영 PP-V8 component가 다음 HCOEF 입력 후보가 될 수 있는지 확인</td>
+<td class="align-left">actual price join 감사, 후보별 0604 metrics, row/artist bootstrap, service vs HCOEF 개선 구간 분석</td>
+<td class="align-left">0604는 후보 선택 기준이 아니라 OOF 재검증 우선순위 결정용 stress test</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF 안정 후보는 0604에서 <code>current_70_30</code> 대비 <code>0.2731/0.3744/0.9835</code> vs <code>0.2779/0.3774/0.9871</code>로 3지표 개선 유지. 운영 PP-V8/service primary는 <code>0.2298/0.3359/0.9273</code>으로 0604에서 MdAPE/MAPE/p95 균형이 가장 좋음. actual price join 일치율 <code>1.0</code></td>
+<td class="align-left">운영 PP-V8 component는 0604에서 강하지만 HCOEF OOF/fixed test 후보가 아니므로 바로 채택하지 않음. 해당 신호는 PP-HCOEF16에서 validation OOF 기준으로 재검증 완료</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF16</td>
+<td class="align-left">PP-V8 운영 component OOF 재검증</td>
+<td class="align-left">대상: HCOEF 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code>, PP-V8/service component proxy, 기존 70:30 기준</td>
+<td class="align-left">방식: PP-SVC3/PP-V8의 validation/test component 일치성을 감사한 뒤 PP-V8 pred_log, stable pred_log, gap, coverage, 표본 수를 저차원 Huber residual 피처로 사용. 0604는 stress test로만 사용</td>
+<td class="align-left">0604에서 강했던 PP-V8 운영 component가 validation OOF와 artist OOF에서도 안정적으로 HCOEF 후보를 넘는지 확인</td>
+<td class="align-left">validation row OOF <code>20</code>회, artist OOF <code>20</code>회, fixed validation/test/0604 확인, component 일치 감사, 계수표/후보 선택표 산출</td>
+<td class="align-left">row/artist OOF all3 개선확률 <code>&gt;=0.90</code>, fixed test p95 <code>&lt;=0.8064</code>, fixed test 3지표 동등/개선</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">PP-V8 proxy는 0604에서 <code>0.2298/0.3359/0.9273</code>로 강하지만 fixed test는 <code>0.1632/0.2816/0.9311</code>로 HCOEF 안정 후보 <code>0.1388/0.2730/0.8064</code>보다 약함. PP-V8 gap Huber 후보는 test MAPE/RMSE만 극소 개선하고 MdAPE/p95가 악화. row/artist OOF gate 통과 후보 <code>0</code>개</td>
+<td class="align-left">새 후보 채택 없음. 0604 단독 개선 신호를 운영 후보로 즉시 승격하지 않는다는 기준을 재확인. 다음은 PP-V8 전체 반영보다 안정 후보 유지, 또는 별도 최신 라벨/서비스 pipeline 원인 분석</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF17</td>
+<td class="align-left">PP-V8 제한 이동 정책 검증</td>
+<td class="align-left">대상: HCOEF 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code>, PP-V8/service component proxy</td>
+<td class="align-left">방식: HCOEF 안정 후보를 기본으로 두고 PP-V8과의 예측 차이가 작거나 비교군 coverage/표본 수가 높은 구간에서만 PP-V8 방향으로 cap/weight 제한 이동. threshold/weight는 사전 후보로 고정하고 validation 기준으로만 판단</td>
+<td class="align-left">PP-V8 전체 반영이 아니라 신뢰 가능한 구간에만 제한 반영하면 MdAPE/MAPE를 개선하면서 p95를 방어할 수 있는가?</td>
+<td class="align-left">fixed validation/test/0604, row/artist bootstrap <code>300</code>회, 0604 PP-V8/HCOEF 승패 구간 감사, policy map/segment summary 산출</td>
+<td class="align-left">validation 2-of-3 개선, bootstrap all3 개선확률, fixed test p95 guard 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">fixed test 상위 <code>hcoef17_guard_agree_gap0p05_cap0p03_w0p5</code>는 <code>0.1374/0.2735/0.8064</code>로 MdAPE만 개선, MAPE 악화. coverage 제한 후보는 test <code>0.1384/0.2729/0.8064</code>로 매우 작게 개선하지만 validation/bootstrap gate 미통과. 전체 후보 100개 모두 decision <code>보류</code></td>
+<td class="align-left">새 후보 채택 없음. PP-V8은 0604에서 52.2% 샘플을 더 잘 맞췄지만, 현재 신뢰도/gap 규칙만으로 안정적으로 선택하기 어려움. 다음은 점 예측 이동보다 risk/quantile 신뢰도 모델 또는 서비스 피처 원인 분석</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF18</td>
+<td class="align-left">Quantile width risk guard 검증</td>
+<td class="align-left">대상: HCOEF 안정 후보, PP-V8/service component, PP-L10 quantile width</td>
+<td class="align-left">방식: validation 기준 quantile width 구간과 PP-V8 gap/coverage 조건으로 HCOEF 안정 후보에서 제한 이동 또는 shrink 적용</td>
+<td class="align-left">quantile width가 큰 오차 위험을 알려주므로 점 예측 이동 기준으로 쓸 수 있는지 확인</td>
+<td class="align-left">validation/test/0604, row/artist bootstrap, quantile feature audit</td>
+<td class="align-left">validation/bootstrap gate와 fixed p95 guard 동시 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">fixed test MdAPE 개선 후보는 있었지만 MAPE 또는 p95가 악화되고 bootstrap gate 미통과</td>
+<td class="align-left">새 기본 후보 채택 없음. quantile width는 점 예측 이동보다 가격 범위/신뢰도 표시 피처로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF19</td>
+<td class="align-left">운영 피처 파이프라인 재현성 감사</td>
+<td class="align-left">대상: HCOEF16~18에서 사용한 연구 component와 운영 v0.1 Warm 산출물</td>
+<td class="align-left">방식: 0604 Warm 공통 행에서 <code>svc/current_70_30/ppv8/l10/quantile_width/price_range_ratio</code> 대응 column과 운영 공식 일치 여부 확인</td>
+<td class="align-left">연구 실험과 운영 산출물이 같은 값을 보고 있는지 확인</td>
+<td class="align-left">component reconciliation, formula check, feature schema audit</td>
+<td class="align-left">로그 차이 <code>0.0</code>, 공식 통과, 필수 피처 누락 없음</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">0604 공통 829건에서 핵심 component와 공식이 모두 일치</td>
+<td class="align-left">새 후보 생성 실험은 아니며, 이후 HCOEF20~21에서 운영 component를 그대로 사용 가능한 근거 확보</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF20</td>
+<td class="align-left">운영 component 기반 저차원 Huber/Ridge 재탐색</td>
+<td class="align-left">대상: HCOEF 안정 후보와 운영 component <code>current_70_30</code>, PP-V8, SVC, L10, quantile width</td>
+<td class="align-left">방식: component gap, 표본 수, coverage, quantile width를 Huber/Ridge residual 또는 direct stack 피처로 사용</td>
+<td class="align-left">운영 재현 가능한 저차원 계수만으로 현재 안정 후보를 넘을 수 있는지 확인</td>
+<td class="align-left">row/artist OOF, fixed test, 0604 stress, bootstrap, 계수표, 가격 범위 신뢰도 정책</td>
+<td class="align-left">fixed p95 guard와 bootstrap all3 gate 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">상위 OOF 후보는 MAPE/p95 개선 신호가 있으나 fixed test p95 <code>0.8089</code>로 기준 <code>0.8064</code>보다 악화, bootstrap all3 최대 약 <code>0.43</code></td>
+<td class="align-left">새 운영 후보 채택 없음. quantile width는 가격 범위/신뢰도 정책 후보로 분리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF21</td>
+<td class="align-left">가변 기준가 신뢰도별 Huber 보정</td>
+<td class="align-left">대상: HCOEF 안정 후보, 고정 <code>70:30</code> 기준가, SVC, PP-V8, quantile width</td>
+<td class="align-left">방식: 표본 수/coverage/quantile width로 SVC:PP-V8 비율을 가변화하고, 해당 가변 기준가와 신뢰도 피처를 Huber/Ridge residual에 투입</td>
+<td class="align-left">단일 70:30보다 신뢰도별 가변 기준가가 Warm Huber 성능과 설명력을 개선하는지 확인</td>
+<td class="align-left">row/artist OOF, fixed test, 0604 stress, bootstrap, adaptive weight summary, feature coefficients</td>
+<td class="align-left">fixed p95 guard와 bootstrap all3 gate 통과</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">상위 후보는 row/artist OOF에서 MAPE/p95 개선 신호가 있으나 fixed test p95 <code>0.8099</code>로 기준 <code>0.8064</code>보다 악화, bootstrap all3 최대 약 <code>0.33</code></td>
+<td class="align-left">새 운영 후보 채택 없음. 가변 기준가와 신뢰도 피처는 설명 가능한 연구 후보로 유지, 점 예측 기본값은 HCOEF 안정 후보 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF22</td>
+<td class="align-left">목적별 라우팅/신뢰도 정책 검증</td>
+<td class="align-left">대상: HCOEF20~21의 OOF 개선 후보와 HCOEF 안정 후보</td>
+<td class="align-left">방식: validation row/artist OOF에서 동시에 개선되는 구간에만 MAPE/p95/2-of-3 후보를 제한 적용하고, quantile width+표본 수 기반 가격 범위/신뢰도 tier를 재정의</td>
+<td class="align-left">OOF 개선 후보를 전체 교체가 아니라 목적별 구간 라우팅으로 쓰면 p95를 방어하면서 MAPE를 개선할 수 있는지 확인</td>
+<td class="align-left">validation row/artist OOF, fixed test, 0604 stress, bootstrap, segment policy map, range confidence policy</td>
+<td class="align-left">fixed p95 guard와 bootstrap all3 gate 통과. 점 예측 후보와 신뢰도 표시 정책 분리</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left"><code>hcoef22_route_mape_guard</code>는 validation row/artist <code>0.1250/0.2068/0.6394</code>, <code>0.1250/0.2068/0.6397</code>로 개선됐지만 fixed test <code>0.1448/0.2726/0.8164</code>로 MdAPE/p95 악화. 0604는 <code>0.2672/0.3694/0.9790</code>로 개선 신호</td>
+<td class="align-left">새 운영 점 예측 후보 채택 없음. 목적별 라우팅은 validation/0604 신호가 있으나 fixed test 안정성 부족. Quantile width+표본 수 tier는 서비스 신뢰도/범위 표시 정책 후보로 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF23</td>
+<td class="align-left">Warm Huber 남은 오차 원인 분석</td>
+<td class="align-left">대상: HCOEF 안정 후보 <code>hcoef2_size_reliability_cap005_s050</code>와 <code>current_70_30</code>, HCOEF22 목적별 후보</td>
+<td class="align-left">방식: HCOEF22 예측 산출물을 사용해 validation row/artist OOF 기준으로 quantile width, 후보 간 gap, 표본 수, coverage, 크기, 재료/지지체 bucket별 잔차를 분해하고, 잔차 방향/오차 크기 계수를 감사</td>
+<td class="align-left">다음 기준가 생성/Huber 계수 조정 실험에서 어떤 구간을 우선 다뤄야 하는지 확인</td>
+<td class="align-left">validation row/artist OOF 위험 구간 선택, fixed test/0604 확인, bootstrap, 잔차 계수 감사</td>
+<td class="align-left">새 보정값을 test/0604에서 고르지 않고 반복 위험 구간을 근거화</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">validation 위험 구간은 <code>qwidth_extreme</code>, <code>gap_020_plus</code>, <code>svc_group_n_band=n_10_19</code>, <code>svc_group_level=artist</code>, <code>pred_spread_band=spread_extreme</code>. <code>quantile_width</code>, <code>stable_ppv8_gap_abs</code>, <code>gap_020_plus</code>가 잔차 크기 증가 방향 계수</td>
+<td class="align-left">새 점 예측 후보 채택 없음. 해당 위험 구간은 HCOEF24~38에서 기준가/fallback/저차원 Huber 계수 재설계, 반복 split 재검증, risk Huber shrinkage, OOF Huber meta 계수 결합, validation-consensus segment gate, p95-neutral 방향 일치 미세 보정, ultra-micro p95-first 보정, 기준가 재탐색, low-risk routing, 확장 반복 검증, stricter routing까지 후속 확인 완료</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF24</td>
+<td class="align-left">Warm Huber 위험 완화 기준가 생성</td>
+<td class="align-left">대상: HCOEF 안정 후보 <code>hcoef_stable</code>, 기준 후보 <code>current_70_30</code>, HCOEF4 loose/default/strict 기준가, HCOEF23 위험 구간</td>
+<td class="align-left">방식: <code>qwidth_extreme</code>, <code>gap_020_plus</code>, <code>n_10_19</code>, <code>spread_extreme</code> 위험 구간에서 유사 작품 기준가 이동을 줄인 risk-shrunk basis를 만들고, basis component/residual Huber/direct Huber capped 후보 155개를 검증</td>
+<td class="align-left">HCOEF4의 MdAPE/MAPE 개선 신호를 유지하면서 p95 악화를 막을 수 있는지 확인</td>
+<td class="align-left">validation row/artist OOF, fixed test, 0604 stress, bootstrap, 기준가 coverage, 계수/잔차 분석</td>
+<td class="align-left">fixed test/0604 residual로 기준가나 cap을 고르지 않고 validation 기반 위험 구간만 사용</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">상위 목적별 후보 <code>hcoef24_default_risk_basis_k8_cap0p05_s0p75</code> fixed test <code>0.1383/0.2729/0.8079</code>, 0604 <code>0.2734/0.3736/0.9835</code>. MdAPE/MAPE는 소폭 개선됐지만 p95가 HCOEF 안정 후보 <code>0.8064</code>보다 악화</td>
+<td class="align-left">새 운영 후보 채택 없음. MAPE 특화 후보로만 유지. 다음 HCOEF25는 더 작은 cap/strength와 p95-aware guard로 재검증</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF25</td>
+<td class="align-left">Warm Huber 보수적 계수/기준가 보정</td>
+<td class="align-left">대상: HCOEF 안정 후보 <code>hcoef_stable</code>, HCOEF24 risk-shrunk basis 후보, HCOEF23 위험 구간</td>
+<td class="align-left">방식: <code>lowrisk_only</code>, <code>no_extreme</code>, <code>conservative</code>, <code>soft</code> guard를 만들어 기준가 이동을 더 작게 제한하고, cap <code>0.01~0.03</code>, strength <code>0.10~0.50</code>의 basis component/residual Huber/direct Huber 후보를 검증</td>
+<td class="align-left">HCOEF24의 MAPE 개선 신호를 p95 guard를 깨지 않는 수준으로 안정화할 수 있는지 확인</td>
+<td class="align-left">validation row/artist OOF, fixed test, 0604 stress, bootstrap, guard 계수/잔차 분석</td>
+<td class="align-left">HCOEF24와 같은 split/평가 기준을 유지하고 fixed test는 확인용으로만 사용</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">상위 목적별 후보 <code>hcoef25_resid_huber_strict_conservative_guard_core_a0p001_cap0p01_s0p25</code> fixed test <code>0.1366/0.2727/0.8080</code>, 0604 <code>0.2726/0.3743/0.9835</code>. MdAPE/MAPE는 개선됐지만 p95가 <code>+0.0016</code> 악화, bootstrap all3 gate 미통과</td>
+<td class="align-left">새 운영 후보 채택 없음. MAPE 특화 후보로만 유지. p95 병목이 계속 남아 기본 후보는 <code>hcoef_stable</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-HCOEF</td>
+<td class="align-left">PP-HCOEF26</td>
+<td class="align-left">Warm Huber low-risk 적용/p95 fallback</td>
+<td class="align-left">대상: HCOEF 안정 후보 <code>hcoef_stable</code>, HCOEF25 validation OOF 상위 후보 14개, HCOEF23 위험 구간</td>
+<td class="align-left">방식: HCOEF25 후보 이동분을 전체 적용하지 않고 <code>lowrisk_only</code>, <code>reliable_lowrisk</code>, <code>no_extreme_reliable</code>, <code>confidence_medium_plus</code>, <code>qwidth_gap_safe</code>, <code>p95_defense_core</code> 구간에만 적용. 나머지는 <code>hcoef_stable</code>로 hard fallback</td>
+<td class="align-left">HCOEF25의 MdAPE/MAPE 개선 신호를 p95 악화 없이 제한적으로 살릴 수 있는지 확인</td>
+<td class="align-left">validation row/artist OOF, fixed test, 0604 stress, bootstrap, mask coverage, 정책 적용률</td>
+<td class="align-left">HCOEF25 source 후보는 validation OOF 기준으로 고르고 fixed test/0604 residual은 경계값 선택에 사용하지 않음</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">상위 후보 <code>hcoef26_h25_rh_strict_conservative_guard_core_a0p01_cap0p03_s0p25_no_extreme_reliable_cap0p0075_s1</code> fixed test <code>0.1371/0.2727/0.8064</code>, 0604 <code>0.2731/0.3745/0.9835</code>. p95는 기준 후보와 동일하게 방어하고 MdAPE/MAPE는 소폭 개선</td>
+<td class="align-left">운영 후보 즉시 채택은 보류. bootstrap all3 gate 미통과로 MAPE/MdAPE 개선 신호가 있는 반복 검증 후보로 관리</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-AMW</td>
+<td class="align-left">PP-AMW5</td>
+<td class="align-left">Warm 작가 메타/전시·갤러리 계수형 잔차 보정</td>
+<td class="align-left">대상: 현재 Warm 1순위 <code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">사용 피처: 작가 생년, 작품 수, 판매중 작품 수, 팔로워, 작가 메타 완성도, 전시 횟수, 갤러리 raw/validated tier, 현재 예측값 차이. 검증 tier는 test 커버리지 0으로 보조 진단만 가능</td>
+<td class="align-left">Warm에서도 작가 정보와 전시/갤러리 정보가 남은 예측 오차를 설명하는지 확인</td>
+<td class="align-left">validation은 작가 단위 교차검증으로 잔차 Huber 보정값을 생성, test는 validation 전체로 만든 보정식 적용. segment median 보정도 함께 비교</td>
+<td class="align-left">현재 Warm 1순위 대비 MdAPE/MAPE/p95 중 하나 이상 개선하고 p95 악화 제한</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">작가 메타 핵심 Huber 보정 후보 test <code>0.1368/0.2746/0.8323</code>으로 현재 후보 <code>0.1405/0.2748/0.8331</code> 대비 세 지표 소폭 개선. 전시·갤러리 단독은 MdAPE 개선이나 MAPE/p95 일부 악화</td>
+<td class="align-left">작가 메타 잔차 보정은 후속 반복 split 검증 후보. 전시·갤러리는 커버리지/품질 보강 전 기본 보정축 채택 보류</td>
+</tr>
+<tr>
+<td class="align-left">Group PP-AMW</td>
+<td class="align-left">PP-AMW6</td>
+<td class="align-left">Warm 작가 메타 잔차 보정 반복 재검증</td>
+<td class="align-left">대상: PP-AMW5 상위 후보와 현재 Warm 1순위 <code>blend_svcnum_ppv8_wsvc_0.70</code></td>
+<td class="align-left">후보: 작가 메타 Huber 보정 3종, 생년 구간 median 보정 1종, 전시/갤러리 진단 후보 1종. 보정값은 validation에서만 학습</td>
+<td class="align-left">PP-AMW5의 단일 test 개선이 작가 단위 반복 holdout에서도 유지되는지 확인</td>
+<td class="align-left">validation 작가 단위 <code>12</code>회 x <code>5</code>fold 반복 OOF, test 1회 적용, row/artist bootstrap <code>400</code>회</td>
+<td class="align-left">반복 validation 개선 확률과 test bootstrap 개선 확률이 함께 높을 때 운영 후보로 승격</td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">작가 메타 Huber 후보 test <code>0.1368/0.2746/0.8323</code>로 대표 정확도 개선. 생년 구간 median 후보 test <code>0.1381/0.2740/0.8191</code>로 MAPE/p95 방어가 더 안정적. 전시/갤러리 후보는 test 악화</td>
+<td class="align-left">기본 모델 즉시 교체는 보류. 대표 가격 후보는 작가 메타 Huber, 큰 오차 방어 후보는 생년 구간 median으로 목적 분리해 0604/운영 artifact 검증</td>
 </tr>
 <tr>
 <td class="align-left">Group PP-X</td>
@@ -3073,21 +3842,42 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <td class="align-left">Warm 최종 후보 유지/교체 판단, Cold형 피처 확장 보류 근거</td>
 </tr>
 <tr>
-<td class="align-right">25</td>
+<td class="align-right">26</td>
+<td class="align-left"><code>PP-WHUBER1~PP-WHUBER10</code></td>
+<td class="align-left">Warm Huber 손실/규제 특성 튜닝</td>
+<td class="align-left">Huber의 <code>epsilon</code>, <code>alpha</code>, 표본 가중치, 이상치 재가중, 구간별 Huber 학습, residual 보정 적용 방식, 반복 split/OOF 안정성, 목적별 추가 검증, 작품별 원인 기반 보정을 조정/검증</td>
+<td class="align-left">Huber 설정/가중치/구간 학습 후보, residual 보정 방식, bootstrap/반복 OOF/작가 holdout 기반 목적별 판단, 작품별 원인 진단표</td>
+</tr>
+<tr>
+<td class="align-right">27</td>
+<td class="align-left"><code>PP-WCOEF1~PP-WCOEF6</code></td>
+<td class="align-left">Warm Huber 계수 세분화/잔차 보정</td>
+<td class="align-left">Warm 현 1순위 후보를 기준으로 Huber 선형 계수 구조를 더 쪼개거나 약한 잔차 보정이 가능한지 확인</td>
+<td class="align-left">세부 계수 후보, 잔차 보정 후보, bootstrap 안정성 판단</td>
+</tr>
+<tr>
+<td class="align-right">28</td>
+<td class="align-left"><code>PP-HCOEF1~PP-HCOEF38</code></td>
+<td class="align-left">Warm Huber 기준가/계수 잔차 보정 고도화</td>
+<td class="align-left">현재 Warm 1순위 후보 위에 유사 작품 기반 가격 피처, 완화 기준가, 크기/신뢰도 피처를 이용한 저차원 Huber 잔차 보정을 적용하고 반복 OOF로 검증. 이후 기준가 생성 방식을 loose/default/strict로 세분화하고 HCOEF3 안정 후보와 capped blend/조건부 routing/면적단가 직접 잔차 피처/segmented 보정/위험도 기반 basis 결합/원인 구간 median 보정/확장 반복 검증/운영 패키징 감사/잔차 위험 원인 진단/위험 구간 한정 shrinkage-routing/최신 라벨 stress test/PP-V8 운영 component OOF 재검증/PP-V8 제한 이동 정책/quantile width risk guard/운영 피처 파이프라인 재현성 감사/운영 component 기반 저차원 Huber 계수 재탐색/quantile 가격 범위 신뢰도 정책/가변 기준가 신뢰도별 Huber 보정/목적별 라우팅과 신뢰도 정책/남은 오차 원인 분석/위험 완화 기준가 생성/보수적 p95-aware 계수 보정/low-risk hard fallback/반복 split 및 artist holdout 재검증/risk Huber shrinkage/OOF Huber meta residual 계수 결합/validation-consensus segment gate/p95-neutral 방향 일치 미세 보정/ultra-micro p95-first 보정/HCOEF32 후보 확장 반복 검증/기준가 생성 방식 재탐색/기준가 잔차 p95 방어 fine grid/low-risk routing/확장 반복 검증/stricter routing까지 확인</td>
+<td class="align-left">Warm 개선 후보 <code>hcoef2_size_reliability_cap005_s050</code>, 기준가 고도화 보류 후보, 조건부 routing/면적단가/segmented/risk-gated/원인 구간 보정 보류 근거, 위험 구간 shrinkage/routing 보류 근거, 0604 최신 라벨 PP-V8 component의 OOF 및 제한 이동 미통과 근거, quantile width risk guard 보류 근거, 운영 component/formula/feature schema 일치 검증, HCOEF20 저차원 계수 후보 보류 근거, HCOEF21 가변 기준가/Huber residual 보류 근거, HCOEF22 목적별 라우팅 보류 근거, HCOEF23 잔차 위험 구간, HCOEF24 risk-shrunk basis 보류 근거, HCOEF25 보수적 cap/guard 보류 근거, HCOEF26 low-risk fallback fixed 확인 후보, HCOEF27 반복 split/artist holdout 미통과 근거, HCOEF28 risk Huber shrinkage 보류 근거, HCOEF29 OOF meta 계수 결합 보류 근거, HCOEF30 validation-consensus segment gate 보류 근거, HCOEF31 방향 일치 미세 보정 보류 근거, HCOEF32 ultra-micro fixed 확인 후보, HCOEF33 확장 반복 검증 미통과 근거, HCOEF34 기준가 잔차 Huber 개선 후보, HCOEF35 p95 방어 fine grid 미통과 근거, HCOEF36 low-risk routing fixed 개선 후보, HCOEF37 any2 반복 안정성 확인 및 all3 미통과 근거, HCOEF38 stricter routing 보류 근거, 가격 범위/신뢰도 정책 후보, 계수/보정맵, fixed test/0604/반복 OOF/bootstrap/패키징 재현 근거</td>
+</tr>
+<tr>
+<td class="align-right">29</td>
 <td class="align-left"><code>PP-F1~PP-F4</code></td>
 <td class="align-left">최종 후보 모델과 보정 후보</td>
 <td class="align-left">단일 가격 대신 가격 범위/신뢰도 표시가 필요한지 확인</td>
 <td class="align-left">가격 범위 기준, 신뢰도 등급 기준</td>
 </tr>
 <tr>
-<td class="align-right">26</td>
+<td class="align-right">30</td>
 <td class="align-left">조건부 <code>PP-G1~PP-G5</code>, <code>PP-H1~PP-H6</code> + 실행 <code>PP-H7~PP-H27</code></td>
 <td class="align-left">Cold 모델 중심</td>
 <td class="align-left">외부 작가 DB, 검색/소셜 지표를 추가 수집할 가치가 있는지 확인</td>
 <td class="align-left">검색 파일럿/운영형 수집/provider 일치도 결과, 신규 데이터 수집 필요성, 외부 피처 후보</td>
 </tr>
 <tr>
-<td class="align-right">27</td>
+<td class="align-right">31</td>
 <td class="align-left"><code>PP-I1~PP-I7</code></td>
 <td class="align-left">최종 후보 모델 + 채택 후처리</td>
 <td class="align-left">설정값, 보정 강도, 라우팅 기준을 최종 조정하고 최신 후보를 다시 통합 감사</td>
@@ -3266,6 +4056,234 @@ tbody tr:nth-child(even) { background: var(--soft); }
 <td class="align-left">실행 완료</td>
 <td class="align-left">고정 test에서는 <code>w=0.575~0.600</code>이 PP-SVC3보다 MdAPE/MAPE 소폭 개선. 반복 holdout 선택 중심은 <code>0.725</code> 또는 <code>0.850~0.875</code></td>
 <td class="align-left">test 관찰값만으로 0.575~0.600을 채택하기에는 안정성이 부족. 서비스 1순위는 기존 PP-SVC3 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF1</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">기준가/계수 저차원 탐색. test 상위 후보는 개선했으나 validation 선택과 불일치</td>
+<td class="align-left">test-only 후보는 배제하고 보수 잔차 보정 후보를 PP-HCOEF2로 분리</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF2</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">보수 선택 후보 <code>cap=0.03, strength=0.75</code>가 validation/test/0604에서 3지표 개선</td>
+<td class="align-left">bootstrap 개선확률이 충분히 강하지 않아 반복 OOF 검증으로 이동</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF3</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">반복 검증 통과 후보 <code>hcoef2_size_reliability_cap005_s050</code>: row/artist OOF 개선확률 1.0, fixed test <code>0.1388/0.2730/0.8064</code>, 0604 <code>0.2731/0.3744/0.9835</code></td>
+<td class="align-left">Warm 개선 후보로 승격. 운영 반영 전 패키징/전체 재현 및 최신 데이터 스트레스 테스트 필요</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF4</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">loose 기준가 Huber 후보가 fixed test MdAPE/MAPE를 <code>0.1346/0.2618</code>까지 개선했지만 p95가 <code>0.8916</code>으로 악화</td>
+<td class="align-left">기준가 생성 방식 고도화는 유효하지만 단독 채택은 보류. p95 방어형 capped blend 검증으로 이동</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF5</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">capped blend 반복 검증에서 일부 후보는 row/artist OOF 개선 신호가 있었지만 fixed test guard를 동시 통과하지 못함</td>
+<td class="align-left">새 기본 후보 채택 없음. 현재 Warm 개선 후보 <code>hcoef2_size_reliability_cap005_s050</code> 유지. basis-Huber는 MAPE 개선 목적 보류 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF6</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">조건부 routing은 p95를 HCOEF3 수준 <code>0.8064</code>로 방어했지만 fixed test 최상위 <code>0.1384/0.2728/0.8064</code>로 개선폭이 작고 반복 OOF all3 gate를 통과하지 못함</td>
+<td class="align-left">새 기본 후보 채택 없음. basis-Huber는 전체 적용 시 p95 위험, 제한 적용 시 이득 축소. 다음은 면적단가 기준가/신뢰도 피처를 직접 잔차 피처로 넣는 저차원 Huber 검증</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF7</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">면적단가/기준가 신뢰도 피처를 HCOEF3 잔차 Huber에 직접 추가. fixed test 상위는 <code>0.1361/0.2718/0.8298</code>로 MdAPE/MAPE 개선이나 p95 <code>+0.0235</code> 악화. 반복 OOF all3도 row <code>0.8333</code>, artist <code>0.5000</code> 미달</td>
+<td class="align-left">새 기본 후보 채택 없음. 면적단가 기준가는 MAPE/MdAPE 개선 신호가 있으나 p95 방어가 부족. 목적별 후보 또는 segmented p95 방어 실험으로만 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF8</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">segmented cap/strength로 p95 방어를 시도했지만 모든 후보가 HCOEF3보다 악화. fixed test 최상위는 HCOEF3 자체 <code>0.1388/0.2730/0.8064</code>; segmented 상위는 <code>0.1395/0.2744/0.8340</code> 수준</td>
+<td class="align-left">새 기본 후보 채택 없음. 면적단가 계열 보정은 p95 방어형 segment 방식에서도 실패. HCOEF3 안정 후보 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF9</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF4 loose basis-Huber를 기준가 신뢰도/모델 일치도 기반으로 제한 결합. best risk-gated fixed test 후보는 <code>0.1356/0.2670/0.8308</code>로 MdAPE/MAPE 개선이나 p95가 HCOEF3 대비 <code>+0.0244</code> 악화. row/artist all3도 <code>0.50/0.35</code></td>
+<td class="align-left">새 기본 후보 채택 없음. basis-Huber는 평균 오차 개선 신호가 강하지만 p95 방어 기준을 통과하지 못함. HCOEF3 안정 후보 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF10</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">원인 구간별 residual 중앙값 보정. fixed test에서 <code>pred_reliability cap0.02 s0.25</code>는 <code>0.1383/0.2729/0.8062</code>로 소폭 3지표 개선이나 row/artist all3 <code>0.00/0.10</code>. medium/size 후보는 p95만 개선하고 MdAPE/MAPE 악화</td>
+<td class="align-left">새 기본 후보 채택 없음. test-only 소폭 개선은 채택하지 않음. 구간 median 보정은 해석/진단 자료로 유지하고 HCOEF3 안정 후보 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF11</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF3 안정 후보 확장 검증. row/artist OOF 80회 all3 개선확률 모두 <code>1.0</code>, fixed test <code>0.1388/0.2730/0.8064</code>, 0604 <code>0.2731/0.3744/0.9835</code>로 기준 대비 모두 개선</td>
+<td class="align-left">HCOEF3 안정 후보를 Warm 개선 후보로 유지. Bootstrap은 MAPE/RMSE 개선은 강하지만 MdAPE/p95 CI는 넓어 운영 반영 전 패키징과 최신 라벨 스트레스 테스트 필요</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF12</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF3 안정 후보를 joblib 패키지로 저장하고 재로딩 예측 동일성 검증. readiness check 전부 <code>pass</code>, packaged vs direct 예측 차이 <code>0.0</code></td>
+<td class="align-left">Warm 개선 후보의 재현 가능한 실험 패키징 근거 확보. production 반영은 별도 운영 artifact 업데이트와 최신 라벨 stress test 이후 결정</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF13</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">현재 후보의 남은 오차를 기준가 표본 수/IQR/level, 예측 가격대, 크기, 재료/지지체, 후보 간 gap별로 진단. fixed test <code>0.1388/0.2730/0.8064</code>, 0604 <code>0.2731/0.3744/0.9835</code> 개선 유지</td>
+<td class="align-left">새 후보 채택 없음. validation 위험 구간 기반으로 다음 HCOEF 실험은 <code>n_10_19</code>, <code>iqr_mid/high</code>, <code>ppv8_pos</code>, <code>basis_current_disagreement</code> 구간의 shrinkage/fallback/routing/cap-strength를 OOF로 검증</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF14</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF13 위험 구간에 shrinkage, 70:30 기준 routing, segment residual 중앙값 보정을 적용. fixed test p95는 일부 후보가 <code>0.8047~0.8062</code>로 HCOEF3 <code>0.8064</code>보다 소폭 개선</td>
+<td class="align-left">반복 OOF gate 통과 후보가 없어 새 후보 채택 없음. 위험 구간 보정은 test-only 개선 가능성이 크므로 다음은 최신 라벨 stress test/서비스 feature pipeline 통합 검증 또는 더 강한 외부 검증 기준을 우선</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF15</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">0604 최신 라벨 829건에서 HCOEF 안정 후보는 <code>0.2731/0.3744/0.9835</code>로 <code>current_70_30</code>의 <code>0.2779/0.3774/0.9871</code> 대비 개선 유지. 운영 PP-V8/service primary는 <code>0.2298/0.3359/0.9273</code>으로 MdAPE/MAPE/p95 균형이 가장 좋음</td>
+<td class="align-left">0604 라벨은 새 보정값 선택에 쓰지 않았으므로 운영 PP-V8을 즉시 채택하지 않음. 해당 신호는 PP-HCOEF16에서 validation OOF 기준으로 재검증 완료</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF16</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">PP-V8/service component를 OOF 기준으로 재검증. fixed test에서 PP-V8 proxy는 <code>0.1632/0.2816/0.9311</code>로 HCOEF 안정 후보 <code>0.1388/0.2730/0.8064</code>보다 약함. PP-V8 gap Huber 후보는 MAPE/RMSE만 극소 개선하고 MdAPE/p95 악화</td>
+<td class="align-left">새 후보 채택 없음. 0604에서 좋아 보인 component라도 row/artist OOF와 fixed test p95 guard를 통과하지 못하면 운영 후보로 승격하지 않음</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF17</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">PP-V8 제한 이동 정책 96개와 baseline/component 4개 비교. fixed test 상위는 MdAPE <code>0.1374</code>까지 낮췄지만 validation에서는 MAPE/p95가 악화. coverage 제한 후보는 test <code>0.1384/0.2729/0.8064</code>로 소폭 개선</td>
+<td class="align-left">전체 후보 100개 모두 보류. 0604에서는 PP-V8이 52.2% 샘플에서 HCOEF보다 좋지만, 현재 gap/coverage 규칙만으로 안정적 선택 불가</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF18</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">PP-L10 quantile width를 validation 기준 risk gate로 붙여 101개 후보를 비교. fixed test 상위 low-qwidth PP-V8 제한 이동 후보는 MdAPE <code>0.1361</code>까지 개선했지만 MAPE가 <code>0.2731~0.2732</code>로 HCOEF 안정 후보 <code>0.2730</code>보다 소폭 악화. high-qwidth shrink 후보는 validation MdAPE만 소폭 개선하고 MAPE/p95가 악화</td>
+<td class="align-left">새 기본 후보 채택 없음. quantile width는 점 예측 이동 기준으로는 bootstrap/validation gate가 약하지만, 가격 범위/신뢰도/risk 표시 후보로 유지 가치가 있음</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF19</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">운영 v0.1 Warm 피처 파이프라인 재현성 감사. 0604 공통 Warm 829건에서 연구 산출물 <code>svc/current_70_30/ppv8/l10/quantile_width/price_range_ratio</code>와 운영 산출물의 대응 column이 모두 로그 차이 <code>0.0</code>으로 일치. 운영 <code>ppv8 = 0.75*pp_v2 + 0.25*l10</code>, <code>v01 = 0.70*svc + 0.30*ppv8</code>, <code>service_primary=ppv8</code> 공식도 통과. 운영 입력 필수 피처 누락 <code>0</code>개</td>
+<td class="align-left">새 성능 후보는 채택하지 않음. 연구 후보와 운영 산출물이 같은 component를 보고 있음을 확인했으므로, 이후 HCOEF20~HCOEF38에서 column mismatch 걱정 없이 저차원 Huber 계수 재탐색, quantile width 가격 범위 정책, 가변 기준가 신뢰도 보정, 목적별 라우팅, 위험 완화 기준가/보수적 cap, low-risk fallback, 반복 split/artist holdout 재검증, risk Huber shrinkage, OOF Huber meta 계수 결합, validation-consensus segment gate, p95-neutral 방향 일치 미세 보정, ultra-micro p95-first 보정, 기준가 재탐색, low-risk routing, 확장 반복 검증, stricter routing을 진행</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF20</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">운영 component 기반 저차원 Huber/Ridge 잔차 후보와 direct stack 후보를 검증. 상위 OOF 후보 <code>hcoef20_resid_huber_component_gaps_qwidth_a0p001_cap0p02_s0p25</code>는 row/artist OOF에서 <code>0.1263/0.2081/0.6409</code>, <code>0.1263/0.2080/0.6408</code>로 HCOEF 안정 후보보다 p95를 낮췄으나 fixed test는 <code>0.1388/0.2727/0.8089</code>로 MAPE만 소폭 개선하고 p95가 <code>0.8064</code>보다 악화. Bootstrap all3 최대도 <code>0.43</code> 수준</td>
+<td class="align-left">새 운영 후보 채택 없음. HCOEF 안정 후보 유지. Quantile width는 점 예측 이동보다 가격 범위/신뢰도 표시 정책으로 유지. 신뢰도 high tier는 validation/test에서 MdAPE와 큰 오차율이 낮아 서비스 표시 정책 후보로 관리</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF21</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">고정 <code>70:30</code> 기준가가 실제 <code>0.7*SVC + 0.3*PP-V8</code>임을 확인한 뒤, 표본 수/coverage/quantile width 기반 가변 SVC:PP-V8 비율과 Huber/Ridge residual 후보를 검증. 상위 후보 <code>hcoef21_resid_huber_adaptive_interactions_a0p001_cap0p02_s0p25</code>는 row/artist OOF에서 <code>0.1263/0.2077/0.6409</code>, <code>0.1261/0.2078/0.6409</code>로 MAPE/p95 개선 신호가 있으나 fixed test는 <code>0.1388/0.2727/0.8099</code>로 p95가 HCOEF 안정 후보 <code>0.8064</code>보다 악화. Bootstrap all3 최대도 약 <code>0.33</code> 수준</td>
+<td class="align-left">새 운영 후보 채택 없음. 가변 기준가와 신뢰도 피처는 설명 가능한 계수/정책 후보로 유지하되, 현재 데이터에서는 점 예측 기본값을 HCOEF 안정 후보에서 바꿀 근거가 부족함. MAPE 특화 후보는 목적별 보류 후보로만 관리</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF22</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF20~21 후보를 validation row/artist OOF 구간별로 제한 적용하는 목적별 라우팅과 quantile width+표본 수 기반 신뢰도 tier를 검증. <code>hcoef22_route_mape_guard</code>는 validation row/artist에서 <code>0.1250/0.2068/0.6394</code>, <code>0.1250/0.2068/0.6397</code>로 HCOEF 안정 후보보다 개선되고 0604도 <code>0.2672/0.3694/0.9790</code>로 개선됐지만 fixed test는 <code>0.1448/0.2726/0.8164</code>로 MdAPE/p95 악화</td>
+<td class="align-left">새 운영 점 예측 후보 채택 없음. 라우팅은 validation/0604에 과하게 맞을 위험이 있어 기본 후보로 쓰지 않음. 다만 low tier fixed test p95 <code>1.7126</code>, high tier p95 <code>0.4927</code>로 신뢰도/범위 표시 정책은 분리력이 있어 서비스 표시 후보로 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF23</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF 안정 후보의 남은 오차를 validation row/artist OOF 기준으로 분해. 위험 구간은 <code>qwidth_extreme</code>(validation MAPE +<code>0.0874</code>, p95 +<code>0.3066</code>), <code>gap_020_plus</code>(MAPE +<code>0.0825</code>, p95 +<code>0.2198</code>), <code>n_10_19</code>, <code>svc_group_level=artist</code>, <code>spread_extreme</code>. 잔차 크기 계수는 <code>quantile_width</code>, <code>stable_ppv8_gap_abs</code>, <code>gap_020_plus</code>가 증가 방향</td>
+<td class="align-left">새 점 예측 후보 채택 없음. 이 위험 구간은 HCOEF24~38에서 기준가/fallback/Huber 계수 재설계, 반복 split 재검증, risk Huber shrinkage, OOF Huber meta 계수 결합, validation-consensus segment gate, p95-neutral 방향 일치 미세 보정, ultra-micro p95-first 보정, 기준가 재탐색, low-risk routing, 확장 반복 검증, stricter routing으로 후속 확인 완료</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF24</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF23 위험 구간을 기준으로 risk-shrunk basis와 Huber 후보 155개를 검증. 상위 목적별 후보 <code>hcoef24_default_risk_basis_k8_cap0p05_s0p75</code> fixed test <code>0.1383/0.2729/0.8079</code></td>
+<td class="align-left">새 운영 후보 채택 없음. MdAPE/MAPE는 소폭 개선됐지만 p95 guard 미통과로 MAPE 특화 후보만 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF25</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF24 신호를 더 작은 cap/strength와 위험 guard로 안정화. 상위 목적별 후보 <code>hcoef25_resid_huber_strict_conservative_guard_core_a0p001_cap0p01_s0p25</code> fixed test <code>0.1366/0.2727/0.8080</code>, 0604 <code>0.2726/0.3743/0.9835</code></td>
+<td class="align-left">새 운영 후보 채택 없음. p95가 <code>hcoef_stable</code> 대비 <code>+0.0016</code> 악화하고 bootstrap all3 gate 미통과. 기본 후보는 <code>hcoef_stable</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF26</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF25 후보 이동분을 validation 정의 low-risk/reliable 구간에만 적용하고 나머지는 <code>hcoef_stable</code>로 fallback. 상위 후보 fixed test <code>0.1371/0.2727/0.8064</code>, 0604 <code>0.2731/0.3745/0.9835</code></td>
+<td class="align-left">p95는 기준 후보와 동일하게 방어했고 MdAPE/MAPE는 fixed test에서 소폭 개선. 다만 bootstrap all3 gate 미통과로 운영 후보 즉시 채택은 보류하고 반복 검증 후보로 관리</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF27</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF26 후보 25개를 validation row OOF와 artist OOF에서 500회 row 80% subsample, artist 80% holdout으로 반복 재검증. 상위 fixed 확인 후보 fixed test <code>0.1371/0.2727/0.8064</code>, 0604 <code>0.2731/0.3745/0.9835</code>, repeated min any2 <code>0.480</code>, min all3 <code>0.108</code></td>
+<td class="align-left">새 운영 후보 채택 없음. HCOEF26 상위 후보는 fixed test 확인 후보로 유지하되 반복 검증 기준은 미통과. direct Huber guarded 후보는 repeated any2 최대 <code>0.832</code>, all3 <code>0.406</code> 신호가 있으나 fixed MdAPE가 <code>0.1410</code>으로 악화되어 연구 후보로만 보류</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF28</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF27 후보 위에 Huber risk model을 학습해 큰 오차 위험도가 높은 구간의 후보 이동폭을 축소. 대표 fixed 후보 <code>hcoef28_h26_lowrisk_fixed_a0p25_f0p5_q80zero_boost0</code> fixed test <code>0.1372/0.2727/0.8064</code>, 0604 <code>0.2731/0.3745/0.9835</code>, repeated min any2/all3 <code>0.394/0.086</code>. direct guarded shrink 후보는 repeated min any2 최대 <code>0.764</code>이나 fixed MdAPE <code>0.1410</code></td>
+<td class="align-left">새 운영 후보 채택 없음. risk Huber 계수에서 <code>quantile_width</code>, <code>ppv8_svc_gap_abs</code>, <code>pred_spread_numeric</code>, <code>risk_gap_020_plus</code>, <code>risk_artist_fallback</code>이 위험 증가 방향으로 확인됐지만, 이를 이용한 점 예측 shrinkage는 반복 검증 기준을 통과하지 못함. 해당 피처는 점 예측 이동보다 가격 범위/신뢰도 정책 축으로 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF29</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF28 component를 이용해 <code>actual_log - hcoef_stable</code> 잔차를 OOF Huber meta model로 재학습. 적용식은 <code>hcoef_stable + clip(strength * HuberResidual, -cap, cap)</code>. 반복 신호 최상위 <code>hcoef29_risk_guarded_component_s0p5_cap0p08</code>은 row OOF <code>0.1242/0.2071/0.6347</code>, artist OOF <code>0.1239/0.2071/0.6392</code>, repeated min any2/all3 <code>0.928/0.548</code></td>
+<td class="align-left">새 운영 후보 채택 없음. 같은 후보의 fixed test가 <code>0.1442/0.2718/0.8081</code>로 MAPE는 개선되지만 MdAPE와 p95가 악화됨. Huber meta 계수 결합은 OOF에서는 강한 신호가 있으나 fixed confirmation을 통과하지 못해 연구 후보로만 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF30</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF29 source 후보를 전체에 적용하지 않고 validation row OOF와 validation artist OOF가 동시에 개선된 segment에만 제한 적용. 적용식은 <code>hcoef_stable + weight * (source_candidate - hcoef_stable)</code>. 반복 신호 최상위 <code>hcoef30_s01_all3_top5_w1</code>은 row OOF <code>0.1214/0.2057/0.6245</code>, artist OOF <code>0.1213/0.2053/0.6321</code>, repeated min any2/all3 <code>1.000/0.960</code>, fixed test <code>0.1402/0.2700/0.8081</code>. p95 근접 후보 <code>hcoef30_s01_all3_top5_w0p5</code>는 fixed test <code>0.1387/0.2713/0.8072</code>, repeated min any2/all3 <code>0.998/0.892</code></td>
+<td class="align-left">새 운영 후보 채택 없음. Segment gate로 OOF/repeated 안정성은 강해졌지만 fixed p95 guard를 통과하지 못함. MAPE 개선 목적 후보는 남기되 기본 Warm 후보는 <code>hcoef_stable</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF31</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF30의 fixed p95 병목을 줄이기 위해 <code>actual_log - hcoef_stable</code> 잔차 방향과 source 후보 이동 방향이 validation row/artist OOF 양쪽에서 일치하는 segment에만 미세 보정 적용. 적용식은 <code>hcoef_stable + clip(weight * (source_candidate - hcoef_stable), -cap, cap)</code>. 상위 MAPE 후보 <code>hcoef31_s06_mape_dir_top3_w0p1_cap0p005</code>는 fixed test <code>0.1382/0.2729/0.8070</code>, 0604 <code>0.2720/0.3744/0.9834</code>, repeated min any2/all3 <code>0.882/0.388</code>. 상위 p95 근접 후보 <code>hcoef31_s06_any2_dir_top3_w0p1_cap0p005</code>는 fixed test <code>0.1382/0.2730/0.8066</code>, repeated min any2/all3 <code>0.898/0.410</code></td>
+<td class="align-left">새 운영 후보 채택 없음. 방향 일치와 작은 cap으로 MdAPE/MAPE는 소폭 개선됐지만 fixed p95가 기준 <code>0.8064</code>보다 근소하게 높고 반복 all3도 부족함. 기본 Warm 후보는 <code>hcoef_stable</code> 유지, HCOEF31은 p95-neutral 미세 보정 연구 후보로만 관리</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF32</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF31보다 더 작은 weight <code>0.025/0.050</code>와 cap <code>0.001/0.0025/0.005</code>로 p95-first 방향 일치 보정을 검증. 상위 후보 <code>hcoef32_s03_all3_dir_top2_w0p025_cap0p001</code>은 fixed test <code>0.1388/0.2729/0.8062</code>, 0604 <code>0.2727/0.3744/0.9834</code>, repeated min any2/all3 <code>0.828/0.306</code></td>
+<td class="align-left">fixed test와 0604에서 MAPE/p95/RMSE가 아주 작게 개선됐지만 반복 all3가 부족하고 MdAPE 개선폭도 사실상 0에 가까움. 운영 후보 즉시 채택은 보류하고 fixed 확인 후보로 관리</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF33</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF32 주요 후보 8개를 새 후보 생성 없이 확장 반복 검증. row 80/70% subsample, artist 80/70% holdout을 각 2,000회 수행. 핵심 후보 <code>hcoef32_s03_all3_dir_top2_w0p025_cap0p001</code>은 fixed <code>0.1388/0.2729/0.8062</code>, 0604 <code>0.2727/0.3744/0.9834</code>, 확장 repeated min any2/all3 <code>0.8085/0.2785</code></td>
+<td class="align-left">HCOEF32의 fixed/0604 tiny p95 개선은 확인됐지만 repeated all3가 운영 후보 기준 <code>0.90</code>에 크게 못 미침. <code>hcoef_stable</code>을 현재 안정 후보로 유지하고, 다음 개선은 점 예측 초미세 이동보다 기준가 생성 재탐색/Huber 저차원 계수 재학습 또는 가격 범위/신뢰도 정책으로 이동</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF34</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">train-only 기준으로 작가 전체, 작가+크기, 작가+재료/지지체, 작가+크기+재료/지지체, fallback, shrink 기준가를 새로 만들고 Huber가 기준가 gap/표본 수/IQR/크기 피처의 잔차 계수를 학습하도록 검증. 상위 후보 <code>hcoef34_resid_basis_resid_all_a0p001_cap0p005_s0p5</code>은 fixed test <code>0.1373/0.2729/0.8074</code>, 0604 <code>0.2749/0.3746/0.9835</code></td>
+<td class="align-left">기존 70:30 대비 MdAPE/MAPE/p95는 모두 개선. 다만 <code>hcoef_stable</code> 대비 p95가 <code>+0.0010</code> 악화되어 운영 후보 미승격. 기준가 gap Huber 잔차 피처는 MdAPE/MAPE 개선 신호가 강하므로 p95 방어 fine grid를 HCOEF35에서 진행</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF35</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF34의 <code>basis_resid_all/core</code> 구조를 유지하고 cap <code>0.001~0.010</code>, strength <code>0.10~0.50</code>로 더 촘촘하게 낮춰 p95 방어 여부를 검증. 최고 MdAPE 후보 <code>hcoef35_resid_basis_resid_all_a0p01_cap0p01_s0p35</code> fixed test <code>0.1365/0.2729/0.8078</code>. p95 최접근 후보는 fixed p95 <code>0.806407</code>로 <code>hcoef_stable</code>보다 <code>+0.000041</code></td>
+<td class="align-left">MdAPE는 HCOEF34보다 더 개선됐지만 p95 guard를 정확히 넘는 후보는 없음. <code>current_70_30</code> 대비 개선 후보 또는 MdAPE 목적 후보로 보류하고, 운영 기본 후보는 <code>hcoef_stable</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF36</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF35 개선 후보를 전체에 적용하지 않고 기준가 신뢰도가 높은 행에만 적용하는 low-risk routing 검증. 상위 후보 <code>hcoef36_route_basis_balanced_all_cap0p005_s0p5__spread_q66</code> fixed test <code>0.1383/0.2729/0.8060</code>, 0604 <code>0.2734/0.3744/0.9835</code>, 적용률 test <code>62.1%</code></td>
+<td class="align-left">fixed test는 <code>hcoef_stable</code> 대비 MdAPE/MAPE/p95 모두 소폭 개선했지만 row/artist stable all3 <code>0.375/0.375</code>로 약해 운영 후보가 아니라 반복 검증 후보로 분리</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF37</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF36 상위 라우팅 후보 8개를 row OOF 60회와 artist OOF 60회로 확장 반복 검증. 최상위 <code>hcoef36_route_basis_balanced_all_cap0p005_s0p5__n_ge5_spread_q66_area90</code> fixed test <code>0.1383/0.2729/0.8060</code>, 0604 <code>0.2734/0.3743/0.9835</code>, min stable any2/all3 <code>0.9333/0.4333</code></td>
+<td class="align-left">any2 반복 안정성은 확인됐지만 all3 운영 기준에는 부족. Warm 안정 반복 검증 후보로 유지하고 운영 기본 후보는 <code>hcoef_stable</code> 유지</td>
+</tr>
+<tr>
+<td class="align-left"><code>PP-HCOEF38</code></td>
+<td class="align-left">실행 완료</td>
+<td class="align-left">HCOEF37의 all3 부족을 보완하기 위해 <code>spread_q50</code>, <code>n_ge10</code>, 면적 중앙 80%, fallback-stable gap 하위 50% 등 더 엄격한 low-risk routing 27개를 검증. 최상위 <code>hcoef38_route_best_mdape_all_cap0p01_s0p35__n_ge10_spread_q66_area80</code> fixed test <code>0.1388/0.2728/0.8064</code>, 0604 <code>0.2731/0.3744/0.9835</code>, min stable any2/all3 <code>0.7167/0.2167</code>, 적용률 test <code>23.1%</code></td>
+<td class="align-left">p95는 방어했지만 적용 구간을 좁힐수록 stable 대비 개선확률이 낮아짐. HCOEF36/37보다 운영 후보 가능성이 낮아 보류하고, 다음은 라우팅 추가 강화가 아니라 기준가 생성/계수 구조 재탐색으로 이동</td>
 </tr>
 </tbody></table></div>
 <h3 id="보류-실험">보류 실험</h3>

@@ -1,0 +1,110 @@
+{
+  "experiment_id": "PP-OPT14-20",
+  "experiment_slug": "PP-OPT14_20_warm_gate_refinement_experiments",
+  "created_at": "2026-06-09T11:22:46",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 823,
+  "prediction_rows": 926698,
+  "items": [
+    {
+      "item_id": "PP-OPT14",
+      "priority": "1",
+      "title": "PP-OPT9 gate threshold 정밀 탐색",
+      "description": "안전구간 gate, tail-risk gate, 보정 강도, cap을 촘촘히 탐색한다."
+    },
+    {
+      "item_id": "PP-OPT15",
+      "priority": "2",
+      "title": "PP-OPT12 MAPE 신호의 안정 흡수",
+      "description": "PP-OPT12의 평균오차 개선 신호를 PP-OPT9 구조 안에서 약하게 사용한다."
+    },
+    {
+      "item_id": "PP-OPT16",
+      "priority": "3",
+      "title": "tail-risk label 재정의",
+      "description": "p95, p90, p85, soft risk label로 큰 오차 위험 gate를 다시 학습한다."
+    },
+    {
+      "item_id": "PP-OPT17",
+      "priority": "4",
+      "title": "MdAPE 악화 방지 guard",
+      "description": "중앙 오차를 악화시킬 가능성이 있는 row에서 보정 강도를 줄인다."
+    },
+    {
+      "item_id": "PP-OPT18",
+      "priority": "5",
+      "title": "제약 조건 기반 보정값 앙상블",
+      "description": "비음수 가중치와 log cap을 둔 평균오차/tail 보정값 가중합을 탐색한다."
+    },
+    {
+      "item_id": "PP-OPT19",
+      "priority": "6",
+      "title": "구간별 PP-OPT9 분리 튜닝",
+      "description": "가격대, 유사작품 수, 퀀타일 폭, 신뢰도 구간별 보정 강도를 다르게 적용한다."
+    },
+    {
+      "item_id": "PP-OPT20",
+      "priority": "7",
+      "title": "최종 후보 selection protocol",
+      "description": "반복 검증 안정성과 fixed test 확인을 함께 쓰는 최종 후보 선택 기준을 적용한다."
+    }
+  ],
+  "pp_opt8_components": {
+    "artist_mape": "existing_opt5__combo_focus__cat=cb_tier=same__qmult=same__cap=0p03__capprof=fixed__s=1p15__artist=am_h_birth_gen_gn_a01_c03_s075__cw=1p0__aw=1p0__totalcap=0p04",
+    "artist_stable": "existing_opt5__combo_focus__cat=cb_tier=same__qmult=same__cap=0p02__capprof=fixed__s=1p15__artist=am_h_birth_gen_total_works_gn_a01_c03_s075__cw=0p8__aw=0p75__totalcap=0p025",
+    "cat_price_band": "catboost_price_band__cap_strength",
+    "qwidth_mild": "qwidth_strength__continuous_mild",
+    "qwidth_strict": "qwidth_strength__continuous_strict",
+    "xgb_tail": "gap_routing__xgb_tail_else_incumbent__existing_opt5__xgb_xgboost_low_only_diagnostic_cap0p05__rout",
+    "tail_guard": "tail_guard__logistic",
+    "lightgbm_tail_guard": "lightgbm_tail_guard__classifier",
+    "cat_lgb_equal": "correction_ensemble__cat_lgb_equal"
+  },
+  "pp_opt9_components": {
+    "pp9_best_operational": "ppopt9_hybrid__artist=cat_price_band__tail=xgb_tail__as=0p3__ts=0p75",
+    "pp9_best_mape": "ppopt9_hybrid__artist=artist_mape__tail=xgb_tail__as=0p6__ts=0p55",
+    "pp11_best_operational": "ppopt11_tail_router__src=xgb_tail__gate=lgbm__s=0p75",
+    "pp12_best_mape": "ppopt12_multiobjective_grid__aw=0p45__cw=0p35__tw=0p3__cap=0p022",
+    "pp13_best_p95": "ppopt13_artwork_shrinkage__group=medium_price__prior=8p0__s=0p7__cap=0p018"
+  },
+  "label_info": {
+    "incumbent_validation_p90_ape": 0.4636774710873784,
+    "incumbent_validation_p95_ape": 0.6365947866362616,
+    "artist_safety_positive_rate": 0.35452793834296725,
+    "tail_risk_positive_rate": 0.1001926782273603,
+    "median_guard_threshold": 0.14292885078886003,
+    "median_guard_positive_rate": 0.5337186897880539
+  },
+  "tail_thresholds": {
+    "p95": 0.6365947866362616,
+    "p90": 0.4636774710873784,
+    "p85": 0.38339160296436176
+  },
+  "selection_decision": {
+    "selected_source_candidate": "ppopt19_segment_tuning__profile=low_support_tail__artist=cat_artist_mean__as=0p25__ts=0p55",
+    "protocol_candidate": "ppopt20_protocol_selected__source=ppopt19_segment_tuning__profile_low_support_tail__artist_cat_artist_mean__as_0p25__ts_0p55",
+    "selected_source_item_id": "PP-OPT19",
+    "selected_source_family": "segment_specific_gate_tuning",
+    "selection_reason": "operational pass candidates sorted by repeated validation improve rates, p95 not-worse rate, all3 rate, recommendation score, then fixed test MAPE",
+    "test_MdAPE": 0.13683480909611148,
+    "test_MAPE": 0.27118155989915116,
+    "test_p95_APE": 0.8064724784402645,
+    "test_delta_vs_incumbent_MdAPE": -5.775680250472148e-05,
+    "test_delta_vs_incumbent_MAPE": -0.00021332811291530085,
+    "test_delta_vs_incumbent_p95_APE": -0.0016575042732042133,
+    "incumbent_MAPE_improve_rate": 1.0,
+    "incumbent_p95_not_worse_rate": 0.5541666666666667,
+    "incumbent_all3_rate": 0.31666666666666665,
+    "recommendation_score_vs_incumbent": -0.0008832651179173228
+  },
+  "sources": {
+    "pp_opt9_predictions": "experiments/track6/PP-OPT9_13_warm_followup_improvement_experiments/outputs/candidate_predictions.csv",
+    "pp_opt9_aggregate": "experiments/track6/PP-OPT9_13_warm_followup_improvement_experiments/outputs/aggregate_candidate_stability.csv",
+    "pp_opt8_helper": "scripts/track6/run_pp_opt8_warm_extended_correction_experiments.py",
+    "pp_opt9_helper": "scripts/track6/run_pp_opt9_13_warm_followup_improvement_experiments.py"
+  }
+}

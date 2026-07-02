@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Cold 운영형 작가 메타/인터넷 검색 피처 검증</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #17202a; }
+    table { border-collapse: collapse; margin: 16px 0; width: 100%; font-size: 13px; }
+    th, td { border: 1px solid #d8dee9; padding: 7px 9px; text-align: left; vertical-align: top; }
+    th { background: #edf2f7; }
+    code { background: #eef2f7; padding: 1px 4px; border-radius: 4px; }
+    .note { border-left: 4px solid #2563eb; background: #eff6ff; padding: 12px 16px; margin: 18px 0; }
+  </style>
+</head>
+<body>
+  <h1>Cold 운영형 작가 메타/인터넷 검색 피처 검증</h1>
+  <div class="note">
+    같은 작가 가격 이력, <code>artist_key</code> 모델 피처, 작가별 lookup 후처리를 제외하고
+    작품 정보와 운영 수집 가능한 작가 메타/검색 피처만 검증했다.
+  </div>
+  <h2>Test 결과</h2>
+  <table><thead><tr><th>candidate</th><th>split</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>n_features</th><th>feature_strategy</th></tr></thead><tbody><tr><td>artwork_artist_meta_search_external_lgbq</td><td>test</td><td>0.442147</td><td>1.048405</td><td>3.353732</td><td>0.856668</td><td>87</td><td>작품 정보 + 작가 메타 + 검색 + 전시/갤러리</td></tr><tr><td>artwork_artist_meta_external_core_lgbq</td><td>test</td><td>0.444391</td><td>1.129475</td><td>3.849633</td><td>0.892502</td><td>56</td><td>작품 정보 + 작가 메타 + 전시/갤러리 구조화 피처</td></tr><tr><td>artwork_artist_meta_search_context_lgbq</td><td>test</td><td>0.474061</td><td>1.048328</td><td>3.353192</td><td>0.874039</td><td>50</td><td>작품 정보 + 작가 메타 + 검색 문맥</td></tr><tr><td>artwork_artist_meta_lgbq</td><td>test</td><td>0.477150</td><td>1.081916</td><td>3.030531</td><td>0.890215</td><td>32</td><td>작품 정보 + 비가격성 작가 메타</td></tr><tr><td>artwork_only_lgbq</td><td>test</td><td>0.482312</td><td>1.242417</td><td>4.380572</td><td>0.941084</td><td>12</td><td>작품 정보만 사용</td></tr></tbody></table>
+  <h2>Validation 결과</h2>
+  <table><thead><tr><th>candidate</th><th>split</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>n_features</th><th>feature_strategy</th></tr></thead><tbody><tr><td>artwork_artist_meta_lgbq</td><td>validation</td><td>0.382133</td><td>0.547061</td><td>1.453648</td><td>0.657704</td><td>32</td><td>작품 정보 + 비가격성 작가 메타</td></tr><tr><td>artwork_artist_meta_search_context_lgbq</td><td>validation</td><td>0.385326</td><td>0.556472</td><td>1.430343</td><td>0.664056</td><td>50</td><td>작품 정보 + 작가 메타 + 검색 문맥</td></tr><tr><td>artwork_only_lgbq</td><td>validation</td><td>0.396190</td><td>0.663304</td><td>1.791011</td><td>0.678909</td><td>12</td><td>작품 정보만 사용</td></tr><tr><td>artwork_artist_meta_search_external_lgbq</td><td>validation</td><td>0.412904</td><td>0.588742</td><td>1.504212</td><td>0.655553</td><td>87</td><td>작품 정보 + 작가 메타 + 검색 + 전시/갤러리</td></tr><tr><td>artwork_artist_meta_external_core_lgbq</td><td>validation</td><td>0.420587</td><td>0.652333</td><td>1.990710</td><td>0.692781</td><td>56</td><td>작품 정보 + 작가 메타 + 전시/갤러리 구조화 피처</td></tr></tbody></table>
+  <h2>외부 피처 커버리지</h2>
+  <table><thead><tr><th>split</th><th>feature</th><th>covered_rows</th><th>n</th><th>coverage_rate</th></tr></thead><tbody><tr><td>train</td><td>artist_meta_birth_year</td><td>4366</td><td>26914</td><td>0.162220</td></tr><tr><td>train</td><td>artist_meta_followers</td><td>19744</td><td>26914</td><td>0.733596</td></tr><tr><td>train</td><td>artist_meta_total_works</td><td>19744</td><td>26914</td><td>0.733596</td></tr><tr><td>train</td><td>search_success_flag</td><td>11962</td><td>26914</td><td>0.444453</td></tr><tr><td>train</td><td>search_quality_score</td><td>26914</td><td>26914</td><td>1.000000</td></tr><tr><td>train</td><td>artist_exhibition_total_count</td><td>16284</td><td>26914</td><td>0.605038</td></tr><tr><td>train</td><td>gallery_tier_any_available_flag</td><td>16304</td><td>26914</td><td>0.605781</td></tr><tr><td>validation</td><td>artist_meta_birth_year</td><td>209</td><td>2753</td><td>0.075917</td></tr><tr><td>validation</td><td>artist_meta_followers</td><td>2129</td><td>2753</td><td>0.773338</td></tr><tr><td>validation</td><td>artist_meta_total_works</td><td>2129</td><td>2753</td><td>0.773338</td></tr><tr><td>validation</td><td>search_success_flag</td><td>1573</td><td>2753</td><td>0.571377</td></tr><tr><td>validation</td><td>search_quality_score</td><td>2753</td><td>2753</td><td>1.000000</td></tr><tr><td>validation</td><td>artist_exhibition_total_count</td><td>1902</td><td>2753</td><td>0.690883</td></tr><tr><td>validation</td><td>gallery_tier_any_available_flag</td><td>1902</td><td>2753</td><td>0.690883</td></tr><tr><td>test</td><td>artist_meta_birth_year</td><td>767</td><td>3099</td><td>0.247499</td></tr><tr><td>test</td><td>artist_meta_followers</td><td>2322</td><td>3099</td><td>0.749274</td></tr><tr><td>test</td><td>artist_meta_total_works</td><td>2322</td><td>3099</td><td>0.749274</td></tr><tr><td>test</td><td>search_success_flag</td><td>1449</td><td>3099</td><td>0.467570</td></tr><tr><td>test</td><td>search_quality_score</td><td>3099</td><td>3099</td><td>1.000000</td></tr><tr><td>test</td><td>artist_exhibition_total_count</td><td>1693</td><td>3099</td><td>0.546305</td></tr><tr><td>test</td><td>gallery_tier_any_available_flag</td><td>1734</td><td>3099</td><td>0.559535</td></tr></tbody></table>
+  <h2>후보별 피처 설계</h2>
+  <table><thead><tr><th>candidate</th><th>n_features</th><th>feature_strategy</th><th>hypothesis</th></tr></thead><tbody><tr><td>artwork_only_lgbq</td><td>12</td><td>작품 정보만 사용</td><td>작가 외부 정보가 전혀 없을 때의 운영 최저 기준</td></tr><tr><td>artwork_artist_meta_lgbq</td><td>32</td><td>작품 정보 + 비가격성 작가 메타</td><td>학습 작가의 메타 패턴을 배워 신규 작가 메타와 작품 정보로 예측</td></tr><tr><td>artwork_artist_meta_search_context_lgbq</td><td>50</td><td>작품 정보 + 작가 메타 + 검색 문맥</td><td>인터넷 검색에서 얻은 미술/전시/갤러리 문맥이 Cold 예측을 보완하는지 확인</td></tr><tr><td>artwork_artist_meta_external_core_lgbq</td><td>56</td><td>작품 정보 + 작가 메타 + 전시/갤러리 구조화 피처</td><td>검색 결과를 구조화한 전시/갤러리 피처가 예측력을 갖는지 확인</td></tr><tr><td>artwork_artist_meta_search_external_lgbq</td><td>87</td><td>작품 정보 + 작가 메타 + 검색 + 전시/갤러리</td><td>운영 수집 가능한 외부 정보를 모두 사용한 Cold 후보</td></tr></tbody></table>
+</body>
+</html>

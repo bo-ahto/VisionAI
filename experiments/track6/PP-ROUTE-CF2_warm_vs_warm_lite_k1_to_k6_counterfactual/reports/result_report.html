@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-ROUTE-CF2 Warm vs Warm-lite k1~k6 Counterfactual</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#pp-route-cf2-warm-vs-warm-lite-k-1-6-same-row-counterfactual">PP-ROUTE-CF2 Warm vs Warm-lite k=1~6 Same-Row Counterfactual</a>
+<a class="toc-level-2" href="#1.-목적">1. 목적</a>
+<a class="toc-level-2" href="#2.-해석-범위">2. 해석 범위</a>
+<a class="toc-level-2" href="#3.-same-n-seed-mean-metrics">3. Same-n seed-mean metrics</a>
+<a class="toc-level-2" href="#4.-관찰-요약">4. 관찰 요약</a>
+<a class="toc-level-2" href="#5.-paired-row-level-comparison">5. Paired row-level comparison</a>
+<a class="toc-level-2" href="#6.-repeated-seed-metrics">6. Repeated seed metrics</a>
+<a class="toc-level-2" href="#7.-warm-shell-route-audit">7. Warm shell route audit</a>
+<a class="toc-level-2" href="#8.-결론-사용법">8. 결론 사용법</a>
+<a class="toc-level-2" href="#9.-config">9. Config</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>experiments/track6/PP-ROUTE-CF2_warm_vs_warm_lite_k1_to_k6_counterfactual/reports/result_report.md</code></div>
+      <h1 id="pp-route-cf2-warm-vs-warm-lite-k-1-6-same-row-counterfactual">PP-ROUTE-CF2 Warm vs Warm-lite k=1~6 Same-Row Counterfactual</h1>
+<h2 id="1.-목적">1. 목적</h2>
+<p>Warm fixed-test 작품 중 같은 작가 train 이력이 6건 이상 있는 동일 작품만 사용해, Warm과 Warm-lite를 각각 k=1~6 이력 노출 조건으로 비교한다.</p>
+<h2 id="2.-해석-범위">2. 해석 범위</h2>
+<ul>
+<li>주 비교 n은 519개다. Warm fixed-test 607개 중 88개는 train 이력이 정확히 6건까지 없어서 k=1~6 동일 n 비교에서 제외했다.</li>
+<li>Warm-lite forced k=1~6은 최신 Warm-lite Quantile + LightGBM Huber residual 번들을 강제 적용한 값이다. k=5~6은 실제 라우팅 범위 밖의 스트레스 비교다.</li>
+<li>Warm WMIN8-shell forced k=1~6은 같은작가 비교군 Huber 축을 k건 이력으로 재학습하고, WMIN8의 Huber/refit/router shell에 통과시킨 비교용 값이다.</li>
+<li>Warm WMIN8-shell은 PPV8/V2 등 상류 Warm stack 전체를 k별로 재학습한 완전한 full WMIN8이 아니다. 따라서 운영 확정 기준선은 <code>Warm WMIN8 operational</code>을 별도로 본다.</li>
+</ul>
+<h2 id="3.-same-n-seed-mean-metrics">3. Same-n seed-mean metrics</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">candidate</th>
+<th class="align-left">condition</th>
+<th class="align-left">n</th>
+<th class="align-left">MdAPE</th>
+<th class="align-left">MAPE</th>
+<th class="align-left">p95_APE</th>
+<th class="align-left">RMSE_log</th>
+<th class="align-left">rank_MAPE</th>
+<th class="align-left">rank_p95_APE</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm WMIN8 operational</td>
+<td class="align-left">current 5+ route baseline</td>
+<td class="align-left">519</td>
+<td class="align-left">0.101759</td>
+<td class="align-left">0.232914</td>
+<td class="align-left">0.721263</td>
+<td class="align-left">0.360312</td>
+<td class="align-left">3</td>
+<td class="align-left">3</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">k=1 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.179373</td>
+<td class="align-left">0.314265</td>
+<td class="align-left">0.948419</td>
+<td class="align-left">0.429333</td>
+<td class="align-left">13</td>
+<td class="align-left">13</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">k=1 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.175953</td>
+<td class="align-left">0.310822</td>
+<td class="align-left">0.835598</td>
+<td class="align-left">0.446967</td>
+<td class="align-left">12</td>
+<td class="align-left">9</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">k=2 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.169095</td>
+<td class="align-left">0.290692</td>
+<td class="align-left">0.820199</td>
+<td class="align-left">0.402740</td>
+<td class="align-left">10</td>
+<td class="align-left">8</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">k=2 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.153789</td>
+<td class="align-left">0.302417</td>
+<td class="align-left">0.900039</td>
+<td class="align-left">0.421684</td>
+<td class="align-left">11</td>
+<td class="align-left">12</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">k=3 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.153660</td>
+<td class="align-left">0.257849</td>
+<td class="align-left">0.819434</td>
+<td class="align-left">0.407907</td>
+<td class="align-left">9</td>
+<td class="align-left">7</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">k=3 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.137825</td>
+<td class="align-left">0.255224</td>
+<td class="align-left">0.867408</td>
+<td class="align-left">0.429379</td>
+<td class="align-left">8</td>
+<td class="align-left">11</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">k=4 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.133112</td>
+<td class="align-left">0.252850</td>
+<td class="align-left">0.808804</td>
+<td class="align-left">0.386698</td>
+<td class="align-left">6</td>
+<td class="align-left">6</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">k=4 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.107963</td>
+<td class="align-left">0.254272</td>
+<td class="align-left">0.864770</td>
+<td class="align-left">0.397774</td>
+<td class="align-left">7</td>
+<td class="align-left">10</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">k=5 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.134460</td>
+<td class="align-left">0.240955</td>
+<td class="align-left">0.667401</td>
+<td class="align-left">0.369261</td>
+<td class="align-left">5</td>
+<td class="align-left">1</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">k=5 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.117423</td>
+<td class="align-left">0.230043</td>
+<td class="align-left">0.670049</td>
+<td class="align-left">0.368827</td>
+<td class="align-left">2</td>
+<td class="align-left">2</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">k=6 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.129591</td>
+<td class="align-left">0.237755</td>
+<td class="align-left">0.763263</td>
+<td class="align-left">0.372354</td>
+<td class="align-left">4</td>
+<td class="align-left">4</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">k=6 seed-mean</td>
+<td class="align-left">519</td>
+<td class="align-left">0.114197</td>
+<td class="align-left">0.225359</td>
+<td class="align-left">0.777724</td>
+<td class="align-left">0.369350</td>
+<td class="align-left">1</td>
+<td class="align-left">5</td>
+</tr>
+</tbody></table></div>
+<h2 id="4.-관찰-요약">4. 관찰 요약</h2>
+<ul>
+<li>Best by MdAPE: <code>Warm-lite forced k=4 seed-mean</code>.</li>
+<li>Best by MAPE: <code>Warm-lite forced k=6 seed-mean</code>.</li>
+<li>Best by p95 APE: <code>Warm WMIN8-shell forced k=5 seed-mean</code>.</li>
+<li>Best by RMSE log: <code>Warm-lite forced k=5 seed-mean</code>.</li>
+<li>k=6에서 Warm WMIN8-shell vs Warm-lite: MdAPE <code>0.129591</code> vs <code>0.114197</code>, MAPE <code>0.237755</code> vs <code>0.225359</code>, p95 <code>0.763263</code> vs <code>0.777724</code>.</li>
+</ul>
+<h2 id="5.-paired-row-level-comparison">5. Paired row-level comparison</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">k</th>
+<th class="align-left">n</th>
+<th class="align-left">warm_better_share</th>
+<th class="align-left">warm_lite_better_share</th>
+<th class="align-left">median_ape_delta_warm_minus_warm_lite</th>
+<th class="align-left">mean_ape_delta_warm_minus_warm_lite</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.535645</td>
+<td class="align-left">0.464355</td>
+<td class="align-left">-0.007154</td>
+<td class="align-left">0.003443</td>
+</tr>
+<tr>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.477842</td>
+<td class="align-left">0.522158</td>
+<td class="align-left">0.003051</td>
+<td class="align-left">-0.011725</td>
+</tr>
+<tr>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.470135</td>
+<td class="align-left">0.529865</td>
+<td class="align-left">0.004780</td>
+<td class="align-left">0.002625</td>
+</tr>
+<tr>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.458574</td>
+<td class="align-left">0.541426</td>
+<td class="align-left">0.008544</td>
+<td class="align-left">-0.001422</td>
+</tr>
+<tr>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.452794</td>
+<td class="align-left">0.547206</td>
+<td class="align-left">0.007284</td>
+<td class="align-left">0.010912</td>
+</tr>
+<tr>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.452794</td>
+<td class="align-left">0.547206</td>
+<td class="align-left">0.006184</td>
+<td class="align-left">0.012397</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-repeated-seed-metrics">6. Repeated seed metrics</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">candidate</th>
+<th class="align-left">trunc_seed</th>
+<th class="align-left">k</th>
+<th class="align-left">n</th>
+<th class="align-left">MdAPE</th>
+<th class="align-left">MAPE</th>
+<th class="align-left">p95_APE</th>
+<th class="align-left">RMSE_log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.216482</td>
+<td class="align-left">0.327553</td>
+<td class="align-left">0.971022</td>
+<td class="align-left">0.511036</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.195565</td>
+<td class="align-left">0.367269</td>
+<td class="align-left">1.157705</td>
+<td class="align-left">0.469295</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.188712</td>
+<td class="align-left">0.395175</td>
+<td class="align-left">1.466763</td>
+<td class="align-left">0.504020</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.206123</td>
+<td class="align-left">0.329033</td>
+<td class="align-left">0.984585</td>
+<td class="align-left">0.568903</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.184115</td>
+<td class="align-left">0.352429</td>
+<td class="align-left">1.094092</td>
+<td class="align-left">0.484663</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">1</td>
+<td class="align-left">519</td>
+<td class="align-left">0.192879</td>
+<td class="align-left">0.451213</td>
+<td class="align-left">1.303123</td>
+<td class="align-left">0.546323</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.168323</td>
+<td class="align-left">0.325295</td>
+<td class="align-left">0.953102</td>
+<td class="align-left">0.414787</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.164066</td>
+<td class="align-left">0.312499</td>
+<td class="align-left">0.932611</td>
+<td class="align-left">0.446169</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.177515</td>
+<td class="align-left">0.323566</td>
+<td class="align-left">0.931944</td>
+<td class="align-left">0.458877</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.152662</td>
+<td class="align-left">0.360629</td>
+<td class="align-left">1.029033</td>
+<td class="align-left">0.441771</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.158024</td>
+<td class="align-left">0.351857</td>
+<td class="align-left">0.980961</td>
+<td class="align-left">0.495035</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">2</td>
+<td class="align-left">519</td>
+<td class="align-left">0.162810</td>
+<td class="align-left">0.332990</td>
+<td class="align-left">0.979828</td>
+<td class="align-left">0.492604</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.153374</td>
+<td class="align-left">0.317162</td>
+<td class="align-left">0.916935</td>
+<td class="align-left">0.487078</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.155306</td>
+<td class="align-left">0.248852</td>
+<td class="align-left">0.823968</td>
+<td class="align-left">0.424820</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.170217</td>
+<td class="align-left">0.284667</td>
+<td class="align-left">0.802081</td>
+<td class="align-left">0.448041</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.141822</td>
+<td class="align-left">0.359081</td>
+<td class="align-left">0.990953</td>
+<td class="align-left">0.539184</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.153394</td>
+<td class="align-left">0.248753</td>
+<td class="align-left">0.836199</td>
+<td class="align-left">0.467616</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">3</td>
+<td class="align-left">519</td>
+<td class="align-left">0.142625</td>
+<td class="align-left">0.285971</td>
+<td class="align-left">0.884058</td>
+<td class="align-left">0.476848</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.134773</td>
+<td class="align-left">0.289825</td>
+<td class="align-left">0.930241</td>
+<td class="align-left">0.403335</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.143574</td>
+<td class="align-left">0.256715</td>
+<td class="align-left">0.796257</td>
+<td class="align-left">0.414836</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.136671</td>
+<td class="align-left">0.282519</td>
+<td class="align-left">0.946802</td>
+<td class="align-left">0.456369</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.121152</td>
+<td class="align-left">0.328125</td>
+<td class="align-left">1.060020</td>
+<td class="align-left">0.428977</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.121384</td>
+<td class="align-left">0.260814</td>
+<td class="align-left">0.809309</td>
+<td class="align-left">0.430498</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">4</td>
+<td class="align-left">519</td>
+<td class="align-left">0.123960</td>
+<td class="align-left">0.306579</td>
+<td class="align-left">0.904083</td>
+<td class="align-left">0.501981</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.144047</td>
+<td class="align-left">0.276706</td>
+<td class="align-left">0.717035</td>
+<td class="align-left">0.377767</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.129737</td>
+<td class="align-left">0.264240</td>
+<td class="align-left">0.757170</td>
+<td class="align-left">0.408517</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.136349</td>
+<td class="align-left">0.239518</td>
+<td class="align-left">0.746276</td>
+<td class="align-left">0.400390</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.128457</td>
+<td class="align-left">0.283220</td>
+<td class="align-left">0.904091</td>
+<td class="align-left">0.394540</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.127560</td>
+<td class="align-left">0.258460</td>
+<td class="align-left">0.731229</td>
+<td class="align-left">0.411954</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">5</td>
+<td class="align-left">519</td>
+<td class="align-left">0.110590</td>
+<td class="align-left">0.236255</td>
+<td class="align-left">0.818764</td>
+<td class="align-left">0.420932</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.137965</td>
+<td class="align-left">0.252064</td>
+<td class="align-left">0.754297</td>
+<td class="align-left">0.366467</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.130287</td>
+<td class="align-left">0.263364</td>
+<td class="align-left">0.820207</td>
+<td class="align-left">0.407383</td>
+</tr>
+<tr>
+<td class="align-left">Warm WMIN8-shell forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.121865</td>
+<td class="align-left">0.250859</td>
+<td class="align-left">0.795117</td>
+<td class="align-left">0.407192</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260612</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.123039</td>
+<td class="align-left">0.241613</td>
+<td class="align-left">0.863950</td>
+<td class="align-left">0.364981</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260613</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.121524</td>
+<td class="align-left">0.290088</td>
+<td class="align-left">0.880467</td>
+<td class="align-left">0.430896</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite forced</td>
+<td class="align-left">20260614</td>
+<td class="align-left">6</td>
+<td class="align-left">519</td>
+<td class="align-left">0.121836</td>
+<td class="align-left">0.249229</td>
+<td class="align-left">0.789778</td>
+<td class="align-left">0.412772</td>
+</tr>
+</tbody></table></div>
+<h2 id="7.-warm-shell-route-audit">7. Warm shell route audit</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">trunc_seed</th>
+<th class="align-left">k</th>
+<th class="align-left">route_to_alt_share</th>
+<th class="align-left">median_risk_score</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">1</td>
+<td class="align-left">0.452794</td>
+<td class="align-left">0.428536</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">1</td>
+<td class="align-left">0.369942</td>
+<td class="align-left">0.421446</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">1</td>
+<td class="align-left">0.360308</td>
+<td class="align-left">0.416052</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">2</td>
+<td class="align-left">0.373796</td>
+<td class="align-left">0.421446</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">2</td>
+<td class="align-left">0.387283</td>
+<td class="align-left">0.421446</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">2</td>
+<td class="align-left">0.408478</td>
+<td class="align-left">0.412294</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">3</td>
+<td class="align-left">0.400771</td>
+<td class="align-left">0.413120</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">3</td>
+<td class="align-left">0.393064</td>
+<td class="align-left">0.415325</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">3</td>
+<td class="align-left">0.373796</td>
+<td class="align-left">0.400703</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">4</td>
+<td class="align-left">0.373796</td>
+<td class="align-left">0.411874</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">4</td>
+<td class="align-left">0.385356</td>
+<td class="align-left">0.401197</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">4</td>
+<td class="align-left">0.360308</td>
+<td class="align-left">0.407861</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">5</td>
+<td class="align-left">0.371869</td>
+<td class="align-left">0.420232</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">5</td>
+<td class="align-left">0.375723</td>
+<td class="align-left">0.413552</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">5</td>
+<td class="align-left">0.387283</td>
+<td class="align-left">0.406659</td>
+</tr>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">6</td>
+<td class="align-left">0.341040</td>
+<td class="align-left">0.413901</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">6</td>
+<td class="align-left">0.346821</td>
+<td class="align-left">0.411210</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">6</td>
+<td class="align-left">0.368015</td>
+<td class="align-left">0.407976</td>
+</tr>
+</tbody></table></div>
+<h2 id="8.-결론-사용법">8. 결론 사용법</h2>
+<ul>
+<li>이 표는 Warm/Warm-lite 라우팅 경계 설명용 same-n 실험이다.</li>
+<li>Warm-lite k=5~6이 좋아 보이더라도 실제 운영에서 5건 이상을 Warm-lite로 보내자는 결론으로 바로 연결하면 안 된다. k=5~6은 out-of-route 강제 적용이기 때문이다.</li>
+<li>Warm WMIN8-shell이 좋아 보이더라도 full WMIN8 전체 재학습 결과는 아니다. 운영 모델 설명에서는 현행 Warm WMIN8 operational 성능과 함께 보조 근거로 사용한다.</li>
+</ul>
+<h2 id="9.-config">9. Config</h2>
+<pre><code>{
+  &quot;created_at&quot;: &quot;2026-06-16T12:52:30&quot;,
+  &quot;experiment_id&quot;: &quot;PP-ROUTE-CF2&quot;,
+  &quot;experiment_slug&quot;: &quot;PP-ROUTE-CF2_warm_vs_warm_lite_k1_to_k6_counterfactual&quot;,
+  &quot;trunc_seeds&quot;: [
+    20260612,
+    20260613,
+    20260614
+  ],
+  &quot;k_values&quot;: [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  &quot;base_eval_set&quot;: &quot;Warm fixed-test rows with &gt;=6 same-artist train history rows&quot;,
+  &quot;eligibility_audit&quot;: {
+    &quot;warm_fixed_test_rows_total&quot;: 607,
+    &quot;exact_k1_to_k6_eligible_rows&quot;: 519,
+    &quot;excluded_rows_with_only_5_train_history&quot;: 88,
+    &quot;min_full_train_artist_history_n&quot;: 6,
+    &quot;max_full_train_artist_history_n&quot;: 573
+  },
+  &quot;warm_lite_source&quot;: &quot;models/track6/warm_lite_quantile_residual_v0.1/predict/predict_warm_lite_quantile_residual_v0_1.py&quot;,
+  &quot;warm_lite_design&quot;: &quot;frozen official v0.1 Warm-lite Quantile + LightGBM Huber residual bundle, forced to k=1..6; k=5..6 are out-of-route stress cases&quot;,
+  &quot;warm_shell_sources&quot;: {
+    &quot;fixed_feature_store&quot;: &quot;models/track6/warm_wmin8_exact_runtime_candidate/artifacts/fixed_test_feature_store.csv&quot;,
+    &quot;runtime&quot;: &quot;models/track6/warm_wmin8_exact_runtime_candidate/artifacts/wmin8_huber_runtime.json&quot;,
+    &quot;operational_baseline&quot;: &quot;models/track6/warm_wmin8_operational_candidate/artifacts/wmin8_selected_candidate_predictions.csv&quot;
+  },
+  &quot;warm_shell_design&quot;: &quot;SVC comparable-stat Huber axis retrained after k-truncating target artists; PPV8/shrinkage stable context held fixed; WMIN8 Huber refit and risk router applied&quot;,
+  &quot;route_threshold&quot;: 0.2534165869100283,
+  &quot;route_gap&quot;: 0.005,
+  &quot;limitations&quot;: [
+    &quot;Warm WMIN8-shell forced k=1..6 is not full upstream WMIN8 retraining.&quot;,
+    &quot;Warm-lite forced k=5..6 is outside the official Warm-lite route and is used only for route-boundary stress comparison.&quot;,
+    &quot;Main same-n table excludes 88 Warm fixed-test rows with only 5 available same-artist train-history rows so every k=1..6 condition has exactly the same rows.&quot;
+  ],
+  &quot;seconds&quot;: 428.6
+}</code></pre>
+    </main>
+  </div>
+</body>
+</html>

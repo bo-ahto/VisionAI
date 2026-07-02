@@ -1,0 +1,39 @@
+{
+  "experiment_id": "PP-WLITE-Q3",
+  "experiment_slug": "PP-WLITE-Q3_quantile_residual_correction_validation",
+  "model_seed": 20260612,
+  "q1_design": "PP-WCUT5-equivalent real low-history leave-one-out, seeds [20260612, 20260613, 20260614]",
+  "q2_design": "PP-WCUT6-equivalent frozen Warm-lite k-truncation follow-up",
+  "residual_target": "actual_log - OOF(lgbq_full_lean_avg)",
+  "residual_models": [
+    "CatBoostRegressor",
+    "LightGBMRegressor objective=huber"
+  ],
+  "residual_candidate_rule": "qavg + clip(strength * residual_pred, -cap, +cap)",
+  "candidates": [
+    "all6_current",
+    "lgbq_full_q50",
+    "lgbq_lean_q50",
+    "lgbq_full_lean_avg",
+    "qavg_cbres_s05_cap005",
+    "qavg_cbres_s05_cap010",
+    "qavg_cbres_s10_cap005",
+    "qavg_lgbres_s05_cap005",
+    "qavg_lgbres_s05_cap010",
+    "qavg_lgbres_s10_cap005"
+  ],
+  "q1_best_by_metric": {
+    "MdAPE": "lgbq_full_q50",
+    "MAPE": "qavg_lgbres_s05_cap010",
+    "p95_APE": "qavg_lgbres_s05_cap010"
+  },
+  "q2_best_by_metric": {
+    "MdAPE": "qavg_lgbres_s05_cap010",
+    "MAPE": "qavg_lgbres_s05_cap010",
+    "p95_APE": "qavg_lgbres_s05_cap010"
+  },
+  "n_boot": 400,
+  "prohibitions": [
+    "0604 사용 금지"
+  ]
+}

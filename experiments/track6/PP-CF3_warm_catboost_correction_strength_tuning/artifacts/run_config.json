@@ -1,0 +1,111 @@
+{
+  "experiment_id": "PP-CF3",
+  "experiment_slug": "PP-CF3_warm_catboost_correction_strength_tuning",
+  "run_at": "2026-06-08T14:03:14",
+  "source_predictions": "experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv",
+  "base_candidate": "hcoef_stable",
+  "reference_candidate": "current_70_30",
+  "seed": 20260608,
+  "n_folds": 5,
+  "caps": [
+    0.015,
+    0.02,
+    0.03,
+    0.05,
+    0.08,
+    0.12
+  ],
+  "strengths": [
+    0.25,
+    0.4,
+    0.5,
+    0.65,
+    0.75,
+    0.9,
+    1.0,
+    1.15
+  ],
+  "tier_profiles": {
+    "same": {
+      "high_confidence": 1.0,
+      "medium_confidence": 1.0,
+      "low_confidence": 1.0
+    },
+    "confidence_weighted_apply": {
+      "high_confidence": 1.0,
+      "medium_confidence": 0.45,
+      "low_confidence": 0.15
+    },
+    "low_guarded": {
+      "high_confidence": 1.0,
+      "medium_confidence": 0.6,
+      "low_confidence": 0.25
+    },
+    "low_off": {
+      "high_confidence": 1.0,
+      "medium_confidence": 1.0,
+      "low_confidence": 0.0
+    },
+    "high_mid_guarded_low_off": {
+      "high_confidence": 1.0,
+      "medium_confidence": 0.5,
+      "low_confidence": 0.0
+    },
+    "high_only": {
+      "high_confidence": 1.0,
+      "medium_confidence": 0.0,
+      "low_confidence": 0.0
+    }
+  },
+  "train_policies": [
+    {
+      "policy": "all_rows",
+      "description": "validation 전체 row로 CatBoost residual 학습",
+      "allowed_tiers": null,
+      "weighted": false
+    },
+    {
+      "policy": "confidence_weighted",
+      "description": "전체 row 학습 + 신뢰도별 sample weight",
+      "allowed_tiers": null,
+      "weighted": true
+    },
+    {
+      "policy": "high_mid_only",
+      "description": "저신뢰 row 제외 후 고신뢰+중신뢰로 학습",
+      "allowed_tiers": [
+        "high_confidence",
+        "medium_confidence"
+      ],
+      "weighted": false
+    }
+  ],
+  "high_confidence_rule": {
+    "quantile_width_max": 1.2,
+    "component_prediction_spread_max": 0.1,
+    "l10_price_range_ratio_max": 2.0,
+    "svc_group_n_min": 5,
+    "current_vs_stable_gap_abs_max": 0.025
+  },
+  "low_confidence_rule": {
+    "quantile_width_min": 1.6,
+    "component_prediction_spread_min": 0.18,
+    "l10_price_range_ratio_min": 2.5,
+    "svc_group_n_max": 4,
+    "current_vs_stable_gap_abs_min": 0.05
+  },
+  "source_audit": {
+    "source_rows_by_split": {
+      "test": 607,
+      "validation": 1038
+    },
+    "source_unique_row_ids_by_split": {
+      "test": 607,
+      "validation": 519
+    },
+    "deduplicated_rows_by_split": {
+      "test": 607,
+      "validation": 519
+    }
+  }
+}

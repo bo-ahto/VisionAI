@@ -664,6 +664,19 @@ def build_snapshot(standard_df: pd.DataFrame, artist_df: pd.DataFrame) -> pd.Dat
     rows = []
     for artist_name, group in standard_df.groupby("artist_search_name", dropna=False):
         result_group = group[group["has_result"]].copy()
+        # PP-H11D: 같은 기사가 여러 query template/provider 결과로 중복 수집되면
+        # 문맥 카운트가 부풀려진다. 작가 내 동일 URL은 1건으로 집계한다
+        # (빈 URL은 식별 불가하므로 보존). provider/query 커버리지는 dedup 전
+        # group 기준으로 따로 계산하므로 영향받지 않는다.
+        if "url" in result_group.columns:
+            url_series = result_group["url"].astype("string").fillna("")
+            has_url = url_series.str.len() > 0
+            result_group = pd.concat(
+                [
+                    result_group[has_url].drop_duplicates(subset=["url"], keep="first"),
+                    result_group[~has_url],
+                ]
+            )
         total = float(len(result_group))
         provider_success = group.groupby("provider")["has_result"].max()
         query_success = group.groupby(["provider", "query_template_id"])["has_result"].max()

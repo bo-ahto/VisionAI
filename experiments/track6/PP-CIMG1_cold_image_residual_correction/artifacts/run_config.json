@@ -1,0 +1,64 @@
+{
+  "experiment_id": "PP-CIMG1",
+  "purpose": "CLIP 임베딩 PCA 저차원 Huber residual의 위험 구간 한정 보정 검증",
+  "embeddings": "data/track6/image_multimodal/track6_clip_cold_full_saatchi_artsy_embeddings.npy",
+  "pca_dim": 32,
+  "pca_fit": "train-scope 임베딩 동결 (라벨/validation 작가 무관)",
+  "image_coverage": {
+    "validation": 0.9208136578278242,
+    "test": 0.9312681510164569
+  },
+  "mask_bounds_frozen_from_validation": {
+    "research_qwidth_q67": 1.4612207078910142,
+    "research_qwidth_q90": 2.1572852836013667,
+    "operational_qwidth_q67": 1.826874633739992,
+    "operational_qwidth_q90": 2.180595379328374
+  },
+  "grid": {
+    "caps": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "strengths": [
+      0.25,
+      0.5,
+      1.0
+    ],
+    "masks": {
+      "research": [
+        "all",
+        "qwidth_extreme",
+        "qwidth_high_plus",
+        "low_tier",
+        "low_tier_or_qwx"
+      ],
+      "operational": [
+        "all",
+        "qwidth_extreme",
+        "qwidth_high_plus"
+      ]
+    }
+  },
+  "selection": "validation OOF p95 비악화 + MAPE 개선, 상위 2/target",
+  "gate": "artist [0.8, 0.7] holdout 각 200회, MAPE/p95 >=0.90, MdAPE >=0.50",
+  "seed": 20260610,
+  "signal_audit_validation_oof": {
+    "research": {
+      "oof_corr_pred_vs_actual_residual": 0.08293787844707164,
+      "corr_std_over_resid_std": 0.4178221470510678
+    },
+    "operational": {
+      "oof_corr_pred_vs_actual_residual": 0.06005828703703987,
+      "corr_std_over_resid_std": 0.39009792236269697
+    }
+  },
+  "sources": {
+    "base_rows": "experiments/track6/PP-CBASE1_cold_base_lock/outputs/fixed_cold_base_rows.csv",
+    "tiers": "experiments/track6/PP-CCONF1_cold_confidence_tier_policy/outputs/tier_assignments.csv"
+  },
+  "prohibitions": [
+    "0604 사용 금지",
+    "test 후보 선택 금지(최종 확인 1회)"
+  ]
+}

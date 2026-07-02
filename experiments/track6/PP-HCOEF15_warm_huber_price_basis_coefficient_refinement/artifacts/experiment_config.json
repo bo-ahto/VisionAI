@@ -1,0 +1,62 @@
+{
+  "experiment_id": "PP-HCOEF15",
+  "created_at": "2026-06-08T01:26:53",
+  "purpose": "0604 latest label stress test only; no candidate selection from 0604 labels",
+  "reference": "current_70_30",
+  "stable": "hcoef2_size_reliability_cap005_s050",
+  "n_bootstrap": 1000,
+  "inputs": {
+    "hcoef14_predictions": "experiments/track6/PP-HCOEF14_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv",
+    "operational_0604": "models/track6/price_prediction_v0.1/operational/outputs/0604_evaluation/operational_predictions_with_actual.csv"
+  },
+  "operational_candidates": [
+    {
+      "candidate": "service_primary_ppv8_operational",
+      "method": "operational_service_primary",
+      "pred_log_col": "service_primary_pred_log",
+      "pred_price_col": "service_primary_pred_price_krw",
+      "description": "운영 v0.1 서비스 기본 출력. 현재 파일에서는 pp_v8_compact_blend_mape_guarded와 동일."
+    },
+    {
+      "candidate": "pp_v8_compact_blend_mape_guarded_operational",
+      "method": "operational_component",
+      "pred_log_col": "pp_v8_compact_blend_mape_guarded_pred_log",
+      "pred_price_col": "pp_v8_compact_blend_mape_guarded_pred_price_krw",
+      "description": "운영 0604에서 가장 낮은 외부 MdAPE/MAPE/p95를 보인 PP-V8 계열 component."
+    },
+    {
+      "candidate": "v01_operational_70_30",
+      "method": "operational_reference_70_30",
+      "pred_log_col": "v01_operational_pred_log",
+      "pred_price_col": "v01_operational_pred_price_krw",
+      "description": "운영 feature pipeline에서 생성된 v0.1 70:30 후보."
+    },
+    {
+      "candidate": "svc_numeric_seed_mean",
+      "method": "operational_component",
+      "pred_log_col": "svc_numeric_seed_mean_pred_log",
+      "pred_price_col": "svc_numeric_seed_mean_pred_price_krw",
+      "description": "유사 작품 기반 가격 피처 단독 component."
+    },
+    {
+      "candidate": "pp_v2_defensive",
+      "method": "operational_component",
+      "pred_log_col": "pp_v2_defensive_pred_log",
+      "pred_price_col": "pp_v2_defensive_pred_price_krw",
+      "description": "운영 artifact에 포함된 방어형 Warm component."
+    },
+    {
+      "candidate": "l10_generated_bucket_seq",
+      "method": "operational_component",
+      "pred_log_col": "l10_generated_bucket_seq_pred_log",
+      "pred_price_col": "l10_generated_bucket_seq_pred_price_krw",
+      "description": "Quantile/Huber/CatBoost 순차 후보 계열 운영 component."
+    }
+  ],
+  "research_candidates": [
+    "current_70_30",
+    "hcoef2_size_reliability_cap005_s050",
+    "hcoef14_shrink_iqr_mid_high_keep050",
+    "hcoef14_seg_iqr_cap002_s025"
+  ]
+}

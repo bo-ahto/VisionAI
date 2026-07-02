@@ -14,7 +14,7 @@
 
 | split | rows | artist_key 수 | 한글명 수 | 동명이인 rows | artist_works_log 범위 | 파일 |
 |---|---:|---:|---:|---:|---:|---|
-| `train` | `28,905` | `1,834` | `1,785` | `1,075` | `0.69~6.55` | `data/track4_split/track4_train.csv` |
+| `train` | `28,905` | `1,834` | `1,783` | `972` | `0.69~6.55` | `data/track4_split/track4_train.csv` |
 | `val_warm` | `67` | `67` | `66` | `2` | `1.10~5.51` | `data/track4_split/track4_val_warm.csv` |
 | `val_cold` | `1,814` | `108` | `108` | `44` | `0.00~0.00` | `data/track4_split/track4_val_cold.csv` |
 | `test_warm` | `137` | `137` | `137` | `4` | `0.69~5.54` | `data/track4_split/track4_test_warm.csv` |

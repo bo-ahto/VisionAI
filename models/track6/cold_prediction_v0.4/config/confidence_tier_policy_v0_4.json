@@ -1,0 +1,24 @@
+{
+  "version": "v0.4",
+  "frozen_at": "2026-06-10T00:00:00",
+  "tier_bounds": {
+    "qw_q33": 0.7349424254094605,
+    "qw_q90": 2.1572852836013667,
+    "gap_q50": 0.15320873993739603,
+    "gap_q90": 0.42534619182266353
+  },
+  "tier_rule": "low: qwidth>=val_q90 OR model_gap>=val_q90; high: qwidth<=val_q33 AND model_gap<=val_q50 AND search_covered; else medium",
+  "prohibition": "v0.2 qwidth 단독 tier 제공 금지 (PP-CCONF1: test 역전/과신 확인)",
+  "review_flag_v03": {
+    "qwidth_q67": 1.4612207078910142,
+    "rule": "qwidth >= q67 OR not covered"
+  },
+  "review_two_stage": "review_flag_v03(재현율) OR priority_review(low tier, 정밀)",
+  "uncovered_constant_delta": {
+    "enabled": true,
+    "delta": -0.03129536658906122,
+    "cap": 0.2,
+    "evidence": "PP-CSRCH1: holdout MAPE/p95 개선확률 0.97~1.0, MdAPE 0.41~0.46 게이트 미통과",
+    "note": "미커버 작가 p95 방어 모드. 2026-06-10 서비스 목적(큰 오차 회피) 우선 결정으로 활성화. 대가: 미커버 작가 MdAPE 소폭 악화(test 시나리오 0.4178→0.4262)"
+  }
+}

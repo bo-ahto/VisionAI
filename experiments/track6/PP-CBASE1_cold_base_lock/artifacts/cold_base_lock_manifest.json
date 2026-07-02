@@ -1,0 +1,78 @@
+{
+  "experiment_id": "PP-CBASE1",
+  "purpose": "Cold 이중 base lock: 이후 Cold 실험의 고정 기준(base/residual target/게이트)",
+  "bases": {
+    "COLD_BASE_RESEARCH_V1": {
+      "column": "research_base_pred_log",
+      "definition": "v0.3 체인 = PP-Y18 대표 + guard(PP-QR4) + 작가단위 검색 delta(PP-H28, 미커버→guard)",
+      "bundle": "models/track6/cold_prediction_v0.3",
+      "residual_target": "actual_log - research_base_pred_log"
+    },
+    "COLD_BASE_OPERATIONAL_V1": {
+      "column": "v02_defense_pred_log",
+      "definition": "v0.2 search-free 직렬화 파이프라인의 guard 적용 서빙값 (raw-input 실행 가능)",
+      "bundle": "models/track6/cold_prediction_v0.2_operational",
+      "residual_target": "actual_log - v02_defense_pred_log"
+    }
+  },
+  "gates": {
+    "artist_repeated_holdout": "validation cold 작가 80%/70% holdout 각 >=200회: base 대비 MAPE 개선확률 >=0.90 AND p95 개선확률 >=0.90, MdAPE >=0.50",
+    "row_repeated_subsample": "row 80% subsample >=200회 (보조; artist 게이트 미통과 시 기각)",
+    "fixed_test": "최종 확인 1회: 3지표 비악화 + 목적 지표 개선. bootstrap >=400회는 보고용",
+    "prohibitions": [
+      "0604 데이터 사용 금지 (Warm 시험 제출 전용)",
+      "test로 후보/경계값 선택 금지",
+      "운영 입력 불가 피처를 보정 입력 기준으로 사용 금지"
+    ]
+  },
+  "artist_stats": {
+    "test": {
+      "rows": 3099,
+      "artists": 200,
+      "rows_per_artist_median": 6.0,
+      "rows_per_artist_max": 275,
+      "search_covered_rate": 1.0
+    },
+    "validation": {
+      "rows": 2753,
+      "artists": 172,
+      "rows_per_artist_median": 5.0,
+      "rows_per_artist_max": 366,
+      "search_covered_rate": 1.0
+    }
+  },
+  "verification_abs_diff_vs_policy_json": {
+    "v0_3_representative": {
+      "MdAPE": 0.0,
+      "MAPE": 0.0,
+      "p95_APE": 0.0
+    },
+    "v0_3_guard_only": {
+      "MdAPE": 0.0,
+      "MAPE": 0.0,
+      "p95_APE": 0.0
+    },
+    "v0_3_defense": {
+      "MdAPE": 0.0,
+      "MAPE": 0.0,
+      "p95_APE": 0.0
+    },
+    "v0_2_representative": {
+      "MdAPE": 0.0,
+      "MAPE": 0.0,
+      "p95_APE": 0.0
+    },
+    "v0_2_defense": {
+      "MdAPE": 0.0,
+      "MAPE": 0.0,
+      "p95_APE": 0.0
+    }
+  },
+  "sources": {
+    "pp_y18_predictions": "experiments/track6/PP-Y18_cold_y16_top_candidate_stability/outputs/predictions.csv",
+    "pp_qr1_predictions": "experiments/track6/PP-QR1_cold_quantile_regression_alpha_grid/outputs/predictions.csv",
+    "v0_3_postprocessor": "models/track6/cold_prediction_v0.3/predict/apply_cold_postprocess_v0_3.py",
+    "v0_2_predictor": "models/track6/cold_prediction_v0.2_operational/predict/predict_cold_operational_v0_2.py"
+  },
+  "roadmap": "docs/track6/experiments/cold_improvement_roadmap.md"
+}

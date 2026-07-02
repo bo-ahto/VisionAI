@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Warm 원인 기반 보정 + MAPE guard + 과대예측 전용 cap</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 32px; color: #1f2937; line-height: 1.55; }
+    h1 { font-size: 28px; margin-bottom: 12px; }
+    h2 { margin-top: 32px; border-bottom: 1px solid #d8dee9; padding-bottom: 8px; }
+    h3 { margin-top: 24px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0 24px; font-size: 13px; }
+    th, td { border: 1px solid #d8dee9; padding: 7px 9px; vertical-align: top; }
+    th { background: #f3f4f6; text-align: left; }
+    code { background: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
+    .bullet { margin: 3px 0; }
+  </style>
+</head>
+<body>
+<h1>PP-WHUBER11 Warm 원인 기반 보정 + MAPE guard + 과대예측 전용 cap</h1>
+
+<p class='bullet'>- 작성일: 2026-06-07 14:00</p>
+<p class='bullet'>- 기준 Warm 후보: `blend_svcnum_ppv8_wsvc_0.70`</p>
+<p class='bullet'>- 가설: 과대예측 segment 한정 + 하향 전용 cap + MAPE guard로 MdAPE/p95를 낮추면서 MAPE를 악화시키지 않는 후보를 찾는다</p>
+<p class='bullet'>- 누수 방지: 보정값은 validation 작가 holdout에서만 산출, test는 최종 확인 1회</p>
+
+<h2>1. 실행 결론</h2>
+
+<p class='bullet'>- 기준 후보 test MdAPE/MAPE/p95: `0.1405` / `0.2748` / `0.8331`</p>
+<p class='bullet'>- MAPE guard 통과 validation 후보 수: 36 / 전체 36</p>
+<p class='bullet'>- 채택 후보 test MdAPE/MAPE/p95: `0.1403` / `0.2744` / `0.8312`</p>
+<p class='bullet'>- 채택 판정 후보: `PP-WHUBER11_guard_risk_pred_min20_cap0p05_s0p25_smooth20` → **보조 방어 후보 (MAPE 비악화 + 개선이 marginal, 단독 대표 교체는 보류)**</p>
+<p class='bullet'>- MAPE 비악화: True / MdAPE 비악화: True / p95 개선: True</p>
+<p class='bullet'>- 상대 개선: MdAPE -0.14% / p95 -0.23% (음수가 개선). 절대 개선폭이 작아 paired bootstrap 유의성 확인 전 대표 교체는 보류 권장</p>
+
+<h2>2. 설계 변경 요소 (PP-WHUBER10 대비)</h2>
+
+<p class='bullet'>- 과대예측 위험 segment(작가 기준선 약함)에만 보정 적용, 정상·과소예측 행 미접촉</p>
+<p class='bullet'>- 하향 방향 보정만 적용(`clip(-cap, 0) * strength`)</p>
+<p class='bullet'>- global fallback 제거(`risk_cause` level까지만), 표본 부족 segment는 보정 0</p>
+<p class='bullet'>- validation MAPE 비악화 후보만 채택(MAPE guard)</p>
+
+<h2>3. 채택(MAPE guard 통과) 후보</h2>
+
+<table><tr><th>candidate</th><th>hierarchy</th><th>min_rows</th><th>cap</th><th>strength</th></tr>
+<tr><td>PP-WHUBER11_guard_risk_pred_min20_cap0p05_s0p25_smooth20</td><td>risk_cause+pred_log_bin &gt; risk_cause</td><td>20</td><td>0.05</td><td>0.25</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min20_cap0p05_s0p5_smooth20</td><td>pred_log_bin+svc_reliability_bin &gt; svc_reliability_bin</td><td>20</td><td>0.05</td><td>0.5</td></tr>
+<tr><td>PP-WHUBER11_guard_works_pred_min8_cap0p05_s0p5_smooth20</td><td>artist_works_bin+pred_log_bin &gt; artist_works_bin</td><td>8</td><td>0.05</td><td>0.5</td></tr></table>
+
+<h2>4. Validation 작가 holdout 후보 요약</h2>
+
+<table><tr><th>candidate</th><th>hierarchy_name</th><th>cap</th><th>strength</th><th>mape_guard_pass</th><th>mean_delta_MdAPE</th><th>mean_delta_MAPE</th><th>mean_delta_p95_APE</th><th>improvement_probability_MdAPE</th><th>nonworse_probability_MAPE</th><th>improvement_probability_p95_APE</th><th>balanced_score</th></tr>
+<tr><td>PP-WHUBER11_guard_risk_pred_min20_cap0p05_s0p25_smooth20</td><td>risk_pred</td><td>0.05</td><td>0.25</td><td>True</td><td>0.00010737</td><td>-0.00040002</td><td>-0.0018949</td><td>0.125</td><td>1</td><td>1</td><td>-0.00056637</td></tr>
+<tr><td>PP-WHUBER11_guard_risk_pred_min20_cap0p08_s0p25_smooth20</td><td>risk_pred</td><td>0.08</td><td>0.25</td><td>True</td><td>0.00011678</td><td>-0.00041208</td><td>-0.0018949</td><td>0.125</td><td>1</td><td>1</td><td>-0.00056299</td></tr>
+<tr><td>PP-WHUBER11_guard_risk_pred_min20_cap0p12_s0p25_smooth20</td><td>risk_pred</td><td>0.12</td><td>0.25</td><td>True</td><td>0.00011678</td><td>-0.00041208</td><td>-0.0018949</td><td>0.125</td><td>1</td><td>1</td><td>-0.00056299</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min20_cap0p05_s0p5_smooth20</td><td>pred_svc</td><td>0.05</td><td>0.5</td><td>True</td><td>4.5668e-05</td><td>-0.00020403</td><td>-0.0017256</td><td>0.125</td><td>0.75</td><td>0.875</td><td>-0.00048775</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min8_cap0p05_s0p5_smooth20</td><td>pred_svc</td><td>0.05</td><td>0.5</td><td>True</td><td>4.5668e-05</td><td>-0.00020403</td><td>-0.0017256</td><td>0.125</td><td>0.75</td><td>0.875</td><td>-0.00048775</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min20_cap0p08_s0p5_smooth20</td><td>pred_svc</td><td>0.08</td><td>0.5</td><td>True</td><td>4.5668e-05</td><td>-0.00019921</td><td>-0.0017256</td><td>0.125</td><td>0.75</td><td>0.875</td><td>-0.00048534</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min20_cap0p12_s0p5_smooth20</td><td>pred_svc</td><td>0.12</td><td>0.5</td><td>True</td><td>4.5668e-05</td><td>-0.00019921</td><td>-0.0017256</td><td>0.125</td><td>0.75</td><td>0.875</td><td>-0.00048534</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min8_cap0p08_s0p5_smooth20</td><td>pred_svc</td><td>0.08</td><td>0.5</td><td>True</td><td>4.5668e-05</td><td>-0.00019921</td><td>-0.0017256</td><td>0.125</td><td>0.75</td><td>0.875</td><td>-0.00048534</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min8_cap0p12_s0p5_smooth20</td><td>pred_svc</td><td>0.12</td><td>0.5</td><td>True</td><td>4.5668e-05</td><td>-0.00019921</td><td>-0.0017256</td><td>0.125</td><td>0.75</td><td>0.875</td><td>-0.00048534</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min20_cap0p05_s0p25_smooth20</td><td>pred_svc</td><td>0.05</td><td>0.25</td><td>True</td><td>2.5092e-05</td><td>-0.00011731</td><td>-0.001407</td><td>0.125</td><td>0.875</td><td>0.875</td><td>-0.00038531</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min8_cap0p05_s0p25_smooth20</td><td>pred_svc</td><td>0.05</td><td>0.25</td><td>True</td><td>2.5092e-05</td><td>-0.00011731</td><td>-0.001407</td><td>0.125</td><td>0.875</td><td>0.875</td><td>-0.00038531</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min20_cap0p08_s0p25_smooth20</td><td>pred_svc</td><td>0.08</td><td>0.25</td><td>True</td><td>2.5092e-05</td><td>-0.00011694</td><td>-0.001407</td><td>0.125</td><td>0.875</td><td>0.875</td><td>-0.00038512</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min20_cap0p12_s0p25_smooth20</td><td>pred_svc</td><td>0.12</td><td>0.25</td><td>True</td><td>2.5092e-05</td><td>-0.00011694</td><td>-0.001407</td><td>0.125</td><td>0.875</td><td>0.875</td><td>-0.00038512</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min8_cap0p08_s0p25_smooth20</td><td>pred_svc</td><td>0.08</td><td>0.25</td><td>True</td><td>2.5092e-05</td><td>-0.00011694</td><td>-0.001407</td><td>0.125</td><td>0.875</td><td>0.875</td><td>-0.00038512</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min8_cap0p12_s0p25_smooth20</td><td>pred_svc</td><td>0.12</td><td>0.25</td><td>True</td><td>2.5092e-05</td><td>-0.00011694</td><td>-0.001407</td><td>0.125</td><td>0.875</td><td>0.875</td><td>-0.00038512</td></tr></table>
+
+<h2>5. Test 성능 비교</h2>
+
+<table><tr><th>candidate</th><th>role</th><th>MdAPE</th><th>MAPE</th><th>p95_APE</th><th>RMSE_log</th><th>delta_MdAPE</th><th>delta_MAPE</th><th>delta_p95_APE</th><th>corrected_row_rate</th></tr>
+<tr><td>blend_svcnum_ppv8_wsvc_0.70</td><td>현재 Warm 기준 조합</td><td>0.14048</td><td>0.2748</td><td>0.83307</td><td>0.39961</td><td>0</td><td>0</td><td>0</td><td></td></tr>
+<tr><td>PP-WHUBER11_guard_risk_pred_min20_cap0p05_s0p25_smooth20</td><td>p95/MAPE 방어 [risk_pred]</td><td>0.14029</td><td>0.27444</td><td>0.83119</td><td>0.39942</td><td>-0.00019361</td><td>-0.00036137</td><td>-0.0018833</td><td>0.43822</td></tr>
+<tr><td>PP-WHUBER11_guard_pred_svc_min20_cap0p05_s0p5_smooth20</td><td>p95/MAPE 방어 [pred_svc]</td><td>0.13918</td><td>0.2744</td><td>0.82915</td><td>0.39951</td><td>-0.0013039</td><td>-0.0003941</td><td>-0.0039203</td><td>0.28501</td></tr>
+<tr><td>PP-WHUBER11_guard_works_pred_min8_cap0p05_s0p5_smooth20</td><td>p95/MAPE 방어 [works_pred]</td><td>0.13979</td><td>0.27449</td><td>0.82905</td><td>0.39961</td><td>-0.00069132</td><td>-0.00030522</td><td>-0.004023</td><td>0.37232</td></tr></table>
+
+<h2>6. 원인군별 보정 효과 (test 진단)</h2>
+
+<table><tr><th>risk_cause</th><th>error_direction</th><th>error_severity</th><th>n</th><th>current_MdAPE</th><th>current_MAPE</th><th>current_p95_APE</th><th>median_residual_log</th><th>adjusted_MdAPE</th><th>adjusted_MAPE</th><th>adjusted_p95_APE</th><th>improved_row_rate</th><th>worsened_row_rate</th></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과대예측</td><td>극단오차</td><td>14</td><td>1.733</td><td>2.1691</td><td>4.3127</td><td>-1.0044</td><td>1.733</td><td>2.168</td><td>4.3127</td><td>0</td><td>0</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과대예측</td><td>극단오차</td><td>6</td><td>2.7577</td><td>2.6224</td><td>3.4958</td><td>-1.3238</td><td>2.7444</td><td>2.5957</td><td>3.4471</td><td>0.83333</td><td>0</td></tr>
+<tr><td>유사작품_표본_부족</td><td>과대예측</td><td>극단오차</td><td>3</td><td>1.559</td><td>1.8721</td><td>2.4327</td><td>-0.93961</td><td>1.559</td><td>1.8721</td><td>2.4327</td><td>0</td><td>0</td></tr>
+<tr><td>비교군_가격분산_큼</td><td>과대예측</td><td>극단오차</td><td>1</td><td>1.6488</td><td>1.6488</td><td>1.6488</td><td>-0.97409</td><td>1.6488</td><td>1.6488</td><td>1.6488</td><td>0</td><td>0</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과대예측</td><td>큰오차</td><td>2</td><td>0.81979</td><td>0.81979</td><td>0.95363</td><td>-0.59537</td><td>0.80253</td><td>0.80253</td><td>0.93272</td><td>1</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과소예측</td><td>큰오차</td><td>13</td><td>0.59515</td><td>0.66114</td><td>0.93384</td><td>0.90424</td><td>0.5954</td><td>0.6613</td><td>0.93384</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과대예측</td><td>큰오차</td><td>27</td><td>0.63831</td><td>0.67493</td><td>0.91218</td><td>-0.49366</td><td>0.63831</td><td>0.67423</td><td>0.91162</td><td>0</td><td>0</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과소예측</td><td>큰오차</td><td>2</td><td>0.7621</td><td>0.7621</td><td>0.79269</td><td>1.4462</td><td>0.76294</td><td>0.76294</td><td>0.79342</td><td>0</td><td>0</td></tr>
+<tr><td>재료지지체_불확실</td><td>과대예측</td><td>큰오차</td><td>1</td><td>0.77602</td><td>0.77602</td><td>0.77602</td><td>-0.57437</td><td>0.77602</td><td>0.77602</td><td>0.77602</td><td>0</td><td>0</td></tr>
+<tr><td>비교군_가격분산_큼</td><td>과대예측</td><td>큰오차</td><td>1</td><td>0.65954</td><td>0.65954</td><td>0.65954</td><td>-0.50654</td><td>0.65954</td><td>0.65954</td><td>0.65954</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_표본_부족</td><td>과소예측</td><td>큰오차</td><td>1</td><td>0.64995</td><td>0.64995</td><td>0.64995</td><td>1.0497</td><td>0.64995</td><td>0.64995</td><td>0.64995</td><td>0</td><td>0</td></tr>
+<tr><td>고가대형_꼬리구간</td><td>과소예측</td><td>큰오차</td><td>1</td><td>0.55868</td><td>0.55868</td><td>0.55868</td><td>0.81799</td><td>0.55868</td><td>0.55868</td><td>0.55868</td><td>0</td><td>0</td></tr>
+<tr><td>중간_안정구간</td><td>과대예측</td><td>큰오차</td><td>1</td><td>0.53696</td><td>0.53696</td><td>0.53696</td><td>-0.4298</td><td>0.53696</td><td>0.53696</td><td>0.53696</td><td>0</td><td>0</td></tr>
+<tr><td>저가소형_꼬리구간</td><td>과대예측</td><td>큰오차</td><td>1</td><td>0.51043</td><td>0.51043</td><td>0.51043</td><td>-0.4124</td><td>0.51043</td><td>0.51043</td><td>0.51043</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과대예측</td><td>중간오차</td><td>22</td><td>0.36346</td><td>0.37968</td><td>0.48456</td><td>-0.31002</td><td>0.36304</td><td>0.37925</td><td>0.48307</td><td>0</td><td>0</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과대예측</td><td>중간오차</td><td>4</td><td>0.39272</td><td>0.40841</td><td>0.48237</td><td>-0.33109</td><td>0.38865</td><td>0.40222</td><td>0.47183</td><td>0.25</td><td>0</td></tr>
+<tr><td>중간_안정구간</td><td>과소예측</td><td>중간오차</td><td>2</td><td>0.39358</td><td>0.39358</td><td>0.47587</td><td>0.51169</td><td>0.39358</td><td>0.39358</td><td>0.47587</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_적음+작가이력_적음</td><td>과소예측</td><td>중간오차</td><td>27</td><td>0.35019</td><td>0.36871</td><td>0.46721</td><td>0.43108</td><td>0.35019</td><td>0.36896</td><td>0.46754</td><td>0</td><td>0</td></tr>
+<tr><td>유사작품_표본_부족</td><td>과소예측</td><td>중간오차</td><td>3</td><td>0.45839</td><td>0.4289</td><td>0.46076</td><td>0.6132</td><td>0.45839</td><td>0.4289</td><td>0.46076</td><td>0</td><td>0</td></tr>
+<tr><td>고가대형_꼬리구간</td><td>과대예측</td><td>중간오차</td><td>2</td><td>0.41322</td><td>0.41322</td><td>0.44612</td><td>-0.34554</td><td>0.41322</td><td>0.41322</td><td>0.44612</td><td>0</td><td>0</td></tr>
+<tr><td>고가_예측구간</td><td>과대예측</td><td>중간오차</td><td>1</td><td>0.42224</td><td>0.42224</td><td>0.42224</td><td>-0.35223</td><td>0.42224</td><td>0.42224</td><td>0.42224</td><td>0</td><td>0</td></tr>
+<tr><td>저가소형_꼬리구간</td><td>과소예측</td><td>중간오차</td><td>1</td><td>0.41379</td><td>0.41379</td><td>0.41379</td><td>0.53408</td><td>0.41379</td><td>0.41379</td><td>0.41379</td><td>0</td><td>0</td></tr>
+<tr><td>작가이력_표본_부족</td><td>과소예측</td><td>중간오차</td><td>1</td><td>0.4117</td><td>0.4117</td><td>0.4117</td><td>0.53051</td><td>0.41635</td><td>0.41635</td><td>0.41635</td><td>0</td><td>0</td></tr>
+<tr><td>비교군_가격분산_큼</td><td>과소예측</td><td>중간오차</td><td>3</td><td>0.3654</td><td>0.35776</td><td>0.37664</td><td>0.45477</td><td>0.3654</td><td>0.35776</td><td>0.37664</td><td>0</td><td>0</td></tr></table>
+
+<h2>7. 산출물</h2>
+
+<p class='bullet'>- `outputs/validation_artist_holdout_summary.csv`: validation 후보별 안정성 + MAPE guard 통과 여부</p>
+<p class='bullet'>- `outputs/test_once_metrics.csv`: test 성능 비교</p>
+<p class='bullet'>- `outputs/test_artwork_error_diagnostics.csv`: 작품별 보정 전/후 변화</p>
+<p class='bullet'>- `outputs/test_cause_summary.csv`: 원인군별 개선·악화 요약</p>
+<p class='bullet'>- `artifacts/run_config.json`: seed/grid/mask 정의(재현용)</p>
+</body>
+</html>

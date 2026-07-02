@@ -1,0 +1,104 @@
+{
+  "experiment_id": "PP-OPT111-118",
+  "experiment_slug": "PP-OPT111_118_warm_next_dimension_experiments",
+  "created_at": "2026-06-09T14:50:14",
+  "seed": 20260609,
+  "base_candidate": "hcoef_stable",
+  "incumbent_candidate": "incumbent_operational_pp_opt7",
+  "validation_rows": 519,
+  "test_rows": 607,
+  "candidate_count": 475,
+  "prediction_rows": 534850,
+  "selected_references": {
+    "pp64": "reference_pp64_current_best",
+    "pp70": "reference_pp70_refinement",
+    "pp81": "reference_pp81_best",
+    "pp82_op": "reference_pp82_operational",
+    "pp82_p95": "reference_pp82_p95",
+    "pp95_op": "reference_pp95_operational",
+    "pp95_p95": "reference_pp95_p95",
+    "pp102_op": "reference_pp102_operational",
+    "pp110_op": "ppopt110_operational_guarded_pp102_challenger__source=ppopt104_margin_gate__gain_gain_any__hpen_1p05__rpen_0p0__thr_0p14__s_1p0",
+    "pp110_p95": "ppopt110_p95_guarded_pp102_challenger__source=ppopt108_tail_hybrid__target_pp82_p95__opthr_0p02__tailthr_0p08__tails_0p4"
+  },
+  "selection_decision": {
+    "operational_label": "candidate_ppopt116_hybrid_stack_router__target_huber_stack_weighted__thr_0p12__s_0p75",
+    "operational_candidate": "ppopt116_hybrid_stack_router__target=huber_stack_weighted__thr=0p12__s=0p75",
+    "operational_fixed_test_MAPE": 0.2701392253366791,
+    "operational_fixed_test_p95_APE": 0.8074900608978479,
+    "operational_delta_vs_pp64_MAPE": -0.00042481657898124636,
+    "operational_delta_vs_pp64_p95_APE": -8.791408261932254e-06,
+    "operational_avg_pp64_MAPE_win_rate": 0.9092948717948718,
+    "operational_avg_pp64_p95_win_rate": 0.49455128205128207,
+    "operational_replacement_score": -0.016796611450776117,
+    "p95_label": "candidate_ppopt111_meta_router__set_tail_mix__thr_0p22__s_1p0",
+    "p95_candidate": "ppopt111_meta_router__set=tail_mix__thr=0p22__s=1p0",
+    "p95_fixed_test_MAPE": 0.27059264572313707,
+    "p95_fixed_test_p95_APE": 0.8073173847115374,
+    "p95_delta_vs_pp64_MAPE": 2.860380747671254e-05,
+    "p95_delta_vs_pp64_p95_APE": -0.00018146759457249306,
+    "p95_avg_pp64_MAPE_win_rate": 0.07532051282051282,
+    "p95_avg_pp64_p95_win_rate": 0.6301282051282051,
+    "p95_replacement_score": 0.017050017068165464,
+    "operational_protocol_candidate": "ppopt118_operational_next_dimension_challenger__source=ppopt116_hybrid_stack_router__target_huber_stack_weighted__thr_0p12__s_0p75",
+    "p95_protocol_candidate": "ppopt118_p95_next_dimension_challenger__source=ppopt111_meta_router__set_tail_mix__thr_0p22__s_1p0"
+  },
+  "items": [
+    {
+      "item_id": "PP-OPT111",
+      "priority": "1",
+      "title": "candidate meta-router",
+      "description": "PP81/PP95/PP110/p95 후보 중 row별로 이길 후보를 학습해 선택 또는 가중 평균한다."
+    },
+    {
+      "item_id": "PP-OPT112",
+      "priority": "2",
+      "title": "basis regeneration regressors",
+      "description": "LightGBM, CatBoost, XGBoost로 로그가격 기준가를 직접 재생성하고 안정 후보와 제한적으로 결합한다."
+    },
+    {
+      "item_id": "PP-OPT113",
+      "priority": "3",
+      "title": "over/under direction correction",
+      "description": "기준가가 과대/과소인지 먼저 분류하고 방향 확신이 있을 때만 작은 보정을 적용한다."
+    },
+    {
+      "item_id": "PP-OPT114",
+      "priority": "4",
+      "title": "confidence weighted residual model",
+      "description": "고신뢰 row에 더 큰 sample weight를 주어 남은 잔차를 학습한다."
+    },
+    {
+      "item_id": "PP-OPT115",
+      "priority": "5",
+      "title": "comparable proxy basis stack",
+      "description": "SVC/PPV8/L10/PP110 등 기존 유사작품 proxy 예측값을 선형/Huber 스택킹으로 다시 결합한다."
+    },
+    {
+      "item_id": "PP-OPT116",
+      "priority": "6",
+      "title": "hybrid model stack router",
+      "description": "재생성 기준가와 기존 후보 사이의 gap, risk, gain 확률을 보고 제한적으로 채택한다."
+    },
+    {
+      "item_id": "PP-OPT117",
+      "priority": "7",
+      "title": "stability-selected next candidate",
+      "description": "고정 test뿐 아니라 반복 안정성 점수까지 사용해 후보를 선별한다."
+    },
+    {
+      "item_id": "PP-OPT118",
+      "priority": "8",
+      "title": "final next-dimension decision",
+      "description": "선택 후보를 운영형/p95형으로 복제하고 PP81/PP95/PP110과 비교한다."
+    }
+  ],
+  "sources": {
+    "pp103_config": "experiments/track6/PP-OPT103_110_warm_pp102_guard_refinement_experiments/artifacts/run_config.json",
+    "pp103_predictions": "experiments/track6/PP-OPT103_110_warm_pp102_guard_refinement_experiments/outputs/candidate_predictions.csv",
+    "pp96_label_probabilities": "experiments/track6/PP-OPT96_102_warm_tail_label_refinement_experiments/artifacts/tail_label_probability_detail.csv",
+    "pp96_helper": "scripts/track6/run_pp_opt96_102_warm_tail_label_refinement_experiments.py",
+    "pp103_helper": "scripts/track6/run_pp_opt103_110_warm_pp102_guard_refinement_experiments.py",
+    "pp71_validation_helper": "scripts/track6/run_pp_opt71_75_warm_pp70_stability_validation.py"
+  }
+}

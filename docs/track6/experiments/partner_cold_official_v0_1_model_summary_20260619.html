@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cold 모델 단독 정리 - official 0.1v 후보</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5f6b7a;
+      --line: #d7e0ea;
+      --panel: #f7fafc;
+      --panel-2: #eef5fb;
+      --accent: #2563eb;
+      --good: #047857;
+      --warn: #b45309;
+      --bad: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #eaf1f7;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.62;
+      letter-spacing: 0;
+    }
+    main {
+      max-width: 1180px;
+      margin: 28px auto;
+      padding: 42px 46px 56px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(31, 45, 61, 0.08);
+    }
+    h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.18; }
+    h2 {
+      margin: 42px 0 14px;
+      font-size: 24px;
+      padding-top: 8px;
+      border-top: 2px solid #edf2f7;
+    }
+    h3 { margin: 28px 0 10px; font-size: 19px; }
+    p { margin: 8px 0 12px; }
+    ul { margin: 8px 0 16px; padding-left: 22px; }
+    li { margin: 4px 0; }
+    code {
+      background: #eef2f7;
+      color: #111827;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 0.94em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #edf3f9; font-weight: 700; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 18px;
+      margin: 20px 0 28px;
+      padding: 16px 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+    }
+    .meta strong { color: var(--ink); }
+    .note {
+      margin: 16px 0;
+      padding: 15px 17px;
+      background: #f0f7ff;
+      border-left: 5px solid var(--accent);
+      border-radius: 6px;
+    }
+    .warn { background: #fff7ed; border-left-color: var(--warn); }
+    .good { color: var(--good); font-weight: 700; }
+    .bad { color: var(--bad); font-weight: 700; }
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 14px 0 24px;
+    }
+    .panel {
+      padding: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .panel h3 { margin-top: 0; }
+    .flow {
+      margin: 16px 0 22px;
+      padding: 18px;
+      background: #fbfdff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .flow-title {
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #0f172a;
+    }
+    .steps { display: grid; gap: 10px; }
+    .step {
+      position: relative;
+      padding: 13px 14px;
+      background: #fff;
+      border: 1px solid #cfd9e4;
+      border-radius: 8px;
+    }
+    .step:not(:last-child)::after {
+      content: "↓";
+      display: block;
+      text-align: center;
+      color: var(--accent);
+      font-weight: 800;
+      margin: 8px 0 -2px;
+    }
+    .step strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #0f172a;
+    }
+    .example {
+      background: #111827;
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 18px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.72;
+      white-space: pre-wrap;
+    }
+    .small { color: var(--muted); font-size: 13px; }
+    @media (max-width: 820px) {
+      main { margin: 0; padding: 24px 18px; border-radius: 0; }
+      .meta, .grid-2 { grid-template-columns: 1fr; }
+      table { font-size: 13px; }
+      th, td { padding: 7px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Cold 모델 단독 정리 - official 0.1v 후보</h1>
+  <p>
+    이 문서는 Warm과 분리해서 Cold 모델만 설명한다. Cold는 같은 작가의 가격 이력을 직접 쓸 수 없거나,
+    작가 식별이 충분히 신뢰되지 않을 때 쓰는 경로다. 따라서 <code>artist_key</code>나 같은 작가 과거 거래가는
+    예측 피처로 쓰지 않고, 작품 정보와 사용자가 입력 가능한 작가 메타, 그리고 비슷한 작품 그룹의 가격 분포를 사용한다.
+  </p>
+
+  <div class="meta">
+    <div><strong>작성일</strong><br>2026-06-19</div>
+    <div><strong>기준 실험</strong><br>PP-CSIM15, PP-CSIM16, PP-CSIM17, PP-CSIM21</div>
+    <div><strong>공통 검증 조건</strong><br><code>artist_key</code>, 같은 작가 가격 이력, artist-key lookup, <code>search_*</code>, 외부 live 검색 미사용</div>
+    <div><strong>현재 정리 대상</strong><br>Cold q35 k160 기본 후보와 k320 규칙 라우터 후보</div>
+  </div>
+
+  <h2>1. 결론 요약</h2>
+  <div class="note">
+    <p>
+      현재 Cold 기본 후보는 <code>base_k160</code>이다. 구조는 단순하고 중앙 오차가 가장 낮다.
+      극단 오차 방어를 더 중시하면 <code>pred_or_ref_lt_800w_gap0p0</code> 규칙 라우터를 후보로 둘 수 있다.
+      이 라우터는 일부 입력에서 k160 대신 k320 후보를 선택해 MAPE, p95 APE, APE &gt; 5를 줄인다.
+    </p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>후보</th>
+        <th>역할</th>
+        <th>평가 기준</th>
+        <th class="num">n</th>
+        <th class="num">MdAPE</th>
+        <th class="num">MAPE</th>
+        <th class="num">p95 APE</th>
+        <th class="num">RMSE log</th>
+        <th class="num">APE &gt; 5</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>base_k160</code></td>
+        <td>기본 Cold 후보</td>
+        <td>fixed test</td>
+        <td class="num">3,099</td>
+        <td class="num">0.495018</td>
+        <td class="num">0.971691</td>
+        <td class="num">2.090436</td>
+        <td class="num">0.943144</td>
+        <td class="num">58</td>
+      </tr>
+      <tr>
+        <td><code>pred_or_ref_lt_800w_gap0p0</code></td>
+        <td>tail 방어용 규칙 라우터 후보</td>
+        <td>fixed test</td>
+        <td class="num">3,099</td>
+        <td class="num">0.501657</td>
+        <td class="num">0.906423</td>
+        <td class="num">1.997548</td>
+        <td class="num">0.940272</td>
+        <td class="num">52</td>
+      </tr>
+      <tr>
+        <td><code>q45_current</code></td>
+        <td>이전 기준 비교 후보</td>
+        <td>fixed test</td>
+        <td class="num">3,099</td>
+        <td class="num">0.496699</td>
+        <td class="num">1.086514</td>
+        <td class="num">2.452153</td>
+        <td class="num">0.909771</td>
+        <td class="num">66</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><code>base_k160</code>은 MdAPE가 더 낮아 일반적인 중앙 오차 기준에서 설명하기 쉽다.</li>
+    <li><code>pred_or_ref_lt_800w_gap0p0</code>은 MAPE, p95 APE, APE &gt; 5가 더 낮아 큰 오차 방어에 유리하다.</li>
+    <li>둘 다 같은 strict Cold 조건에서 검증했으며, test 가격 라벨을 보고 선택하지 않는다.</li>
+  </ul>
+
+  <h2>2. Cold 입력과 사용 피처</h2>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>사용하는 정보</h3>
+      <ul>
+        <li>작품 크기: 가로 cm, 세로 cm, 깊이 cm, 면적, 로그 면적, 종횡비</li>
+        <li>작품 속성: 매체, 지지체, 매체-지지체 조합, 크기 구간, 입체 여부</li>
+        <li>사용자 입력 작가 메타: 출생연도, 경력 단계, 국적/활동권 등 입력 가능한 정보</li>
+        <li>메타 bucket: 출생연대, 경력 단계, 매체 x 출생연대, 경력 단계 x 크기 구간</li>
+        <li>유사작품 통계: 비슷한 작품 k160 또는 k320의 가격 분포 요약값</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>쓰지 않는 정보</h3>
+      <ul>
+        <li><code>artist_key</code>로 같은 작가를 직접 찾지 않는다.</li>
+        <li>같은 작가의 과거 가격 이력을 직접 쓰지 않는다.</li>
+        <li>작가 이름 lookup 후처리로 가격을 보정하지 않는다.</li>
+        <li><code>search_*</code> 피처와 외부 live 검색 결과를 쓰지 않는다.</li>
+        <li>검증/테스트 행의 실제 가격은 라우터 선택에 쓰지 않는다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>3. 학습 단계</h2>
+  <div class="flow">
+    <div class="flow-title">Cold q35 k160 기본 후보 학습 흐름</div>
+    <div class="steps">
+      <div class="step">
+        <strong>1. strict Cold 학습 데이터 구성</strong>
+        실제 가격 라벨이 있는 과거 작품을 사용하되, 같은 작가 식별자와 같은 작가 가격 이력은 제거한다.
+        <br><small>목적: 운영에서 작가 가격 이력을 모르는 Cold 상황을 재현한다.</small>
+      </div>
+      <div class="step">
+        <strong>2. 작품 피처와 사용자 입력 가능 작가 메타 생성</strong>
+        크기, 면적, 매체, 지지체, 크기 구간, 출생연도, 경력 단계, 국적/활동권, 메타 bucket을 만든다.
+        <br><small>목적: 운영 사용자가 입력할 수 있는 정보만 모델에 남긴다.</small>
+      </div>
+      <div class="step">
+        <strong>3. 유사작품 k160 통계 생성</strong>
+        각 학습 작품과 작품 조건이 비슷한 과거 작품 160건을 찾고, 그 그룹의 로그가격 중앙값, q25, q75, IQR, 평균, 표준편차, 면적당 가격 통계를 만든다.
+        <br><small>목적: 같은 작가 이력 대신 비슷한 작품들의 시장 가격 분포를 기준 정보로 제공한다.</small>
+      </div>
+      <div class="step">
+        <strong>4. 자기 가격 누수 차단</strong>
+        학습 행의 유사작품 통계를 만들 때 자기 자신이 비교군에 들어가지 않도록 fold/out-of-fold 방식으로 만든다.
+        <br><small>목적: 학습 중 자기 가격을 본 통계로 자기 가격을 맞히는 누수를 막는다.</small>
+      </div>
+      <div class="step">
+        <strong>5. LightGBM Quantile alpha=0.35 학습</strong>
+        작품 피처, 작가 메타, 메타 bucket, 유사작품 k160 통계를 입력으로 넣고 실제 로그가격을 맞히도록 학습한다.
+        <br><small>목적: 중앙값보다 약간 낮은 q35 기준으로 학습해 Cold에서 자주 발생하는 과대예측 tail을 줄인다.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-title">k320 규칙 라우터 후보 학습/검증 흐름</div>
+    <div class="steps">
+      <div class="step">
+        <strong>1. base k160 후보 학습</strong>
+        k160 비가중 유사작품 통계와 LightGBM Quantile alpha=0.35 모델을 학습한다.
+      </div>
+      <div class="step">
+        <strong>2. k320 후보 학습</strong>
+        k320 비가중 통계와 거리 가중 통계를 함께 사용해 더 넓은 비교군 기반 후보를 학습한다.
+      </div>
+      <div class="step">
+        <strong>3. 사용 가능한 신호만으로 라우터 규칙 탐색</strong>
+        k160 예측가, k320 예측가, k160 유사작품 기준가만 사용해 k320을 선택할 조건을 validation에서 고른다.
+      </div>
+      <div class="step">
+        <strong>4. 선택 규칙 동결 후 test 확인</strong>
+        선택된 규칙은 <code>k160 예측가 또는 유사작품 기준가가 800만원 미만이고, k320 후보가 k160 후보보다 낮으면 k320</code>이다.
+      </div>
+    </div>
+  </div>
+
+  <h2>4. 사용 단계</h2>
+  <div class="flow">
+    <div class="flow-title">base_k160 사용 흐름</div>
+    <div class="steps">
+      <div class="step">
+        <strong>1. 입력값 수집</strong>
+        사용자가 작품 크기, 매체, 지지체, 입체 여부, 입력 가능한 작가 메타를 넣는다.
+      </div>
+      <div class="step">
+        <strong>2. 작품 피처와 메타 bucket 생성</strong>
+        cm 기준 크기에서 면적, 로그 면적, 종횡비, 크기 구간을 만들고, 작가 메타를 구간화한다.
+      </div>
+      <div class="step">
+        <strong>3. 유사작품 160건 찾기</strong>
+        같은 작가가 아니라, 작품 크기/형태/매체/지지체 조건이 유사한 학습 작품 160건을 찾는다.
+        작가 메타는 유사작품 검색 조건이 아니라 이후 LightGBM 예측 모델의 입력 피처로 사용한다.
+      </div>
+      <div class="step">
+        <strong>4. 유사작품 가격 통계 계산</strong>
+        160건의 로그가격 중앙값, q25, q75, IQR, 평균, 표준편차, 면적당 가격 통계를 만든다.
+      </div>
+      <div class="step">
+        <strong>5. LightGBM Quantile q35 예측</strong>
+        작품 피처, 작가 메타, 유사작품 통계를 학습된 모델에 넣어 q35 로그가격을 출력한다.
+      </div>
+      <div class="step">
+        <strong>6. 원화 가격 변환</strong>
+        최종 가격은 <code>exp(예측 로그가격)</code>으로 변환한다.
+      </div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-title">규칙 라우터 사용 흐름</div>
+    <div class="steps">
+      <div class="step">
+        <strong>1. base k160 예측값 계산</strong>
+        먼저 기본 Cold 후보의 로그가격과 원화 가격을 계산한다.
+      </div>
+      <div class="step">
+        <strong>2. k320 후보 예측값 계산</strong>
+        같은 입력으로 k320 비교군 기반 후보 가격도 계산한다.
+      </div>
+      <div class="step">
+        <strong>3. 라우터 조건 판단</strong>
+        <code>k160 예측가 또는 k160 유사작품 기준가가 800만원 미만</code>이고,
+        <code>k320 예측 로그가격이 k160 예측 로그가격보다 낮으면</code> k320을 선택한다.
+      </div>
+      <div class="step">
+        <strong>4. 조건 미충족 시 base 유지</strong>
+        위 조건을 만족하지 않으면 base k160 예측값을 그대로 사용한다.
+      </div>
+    </div>
+  </div>
+
+  <h2>5. 계산 예제</h2>
+  <p>
+    아래 숫자는 계산 흐름을 설명하기 위한 예시다. LightGBM Quantile 예측값은 고정 산식으로 사람이 직접 계산하는 값이 아니라,
+    학습된 모델에 입력 피처를 넣었을 때 나오는 출력값이다.
+  </p>
+
+  <div class="example">[입력 작품]
+가로 80cm, 세로 100cm, 면적 8,000cm2
+매체 oil, 지지체 canvas, 크기 구간 large
+작가 메타: 1980년대 출생, mid-career, 한국 활동권
+
+[유사작품 k160 통계]
+비슷한 작품 160건의 로그가격 중앙값 = 17.90
+q25 = 17.30
+q75 = 18.45
+IQR = 1.15
+면적당 로그가격 중앙값 = 9.05
+
+[base_k160 LightGBM Quantile q35 출력]
+예측 로그가격 = 18.10
+예측 가격 = exp(18.10) = 약 72,500,000원
+
+[k320 후보 출력]
+k320 예측 로그가격 = 18.02
+k320 예측 가격 = exp(18.02) = 약 66,900,000원
+
+[라우터 판단]
+k160 예측가 72,500,000원: 800만원 이상
+k160 유사작품 기준가 exp(17.90) = 약 59,400,000원: 800만원 이상
+조건 미충족 → base_k160 유지
+
+[최종 Cold 가격]
+약 72,500,000원</div>
+
+  <h3>저가 후보에서 라우터가 작동하는 예</h3>
+  <div class="example">[입력 작품]
+작은 크기, paper 계열, 작가 메타가 낮은 가격대와 가까운 입력
+
+[base_k160 출력]
+k160 예측 로그가격 = 15.70
+k160 예측 가격 = exp(15.70) = 약 6,590,000원
+k160 유사작품 기준가 = 약 5,800,000원
+
+[k320 후보 출력]
+k320 예측 로그가격 = 15.55
+k320 예측 가격 = exp(15.55) = 약 5,680,000원
+
+[라우터 판단]
+k160 예측가 또는 유사작품 기준가가 800만원 미만: 예
+k320 로그가격이 k160 로그가격보다 낮음: 15.55 &lt; 15.70, 예
+조건 충족 → k320 후보 선택
+
+[최종 Cold 가격]
+약 5,680,000원</div>
+
+  <h2>6. 해석과 운영 선택</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>운영 기준</th>
+        <th>권장 후보</th>
+        <th>이유</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>구조 단순성, 중앙 오차, 설명 용이성</td>
+        <td><code>base_k160</code></td>
+        <td>MdAPE가 낮고 라우터 없이 한 모델 출력만 사용한다.</td>
+      </tr>
+      <tr>
+        <td>큰 오차 방어, p95, APE &gt; 5 감소</td>
+        <td><code>pred_or_ref_lt_800w_gap0p0</code></td>
+        <td>MdAPE는 약간 나빠지지만 MAPE, p95 APE, APE &gt; 5가 개선된다.</td>
+      </tr>
+      <tr>
+        <td>엄격한 출시 안정성</td>
+        <td>base 우선, 라우터는 후속 후보</td>
+        <td>라우터는 투명하지만 운영 로직이 하나 늘어나므로 모니터링과 parity 검증이 추가로 필요하다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>7. 재현 경로</h2>
+  <ul>
+    <li>기본 후보 강건성 검증: <code>experiments/track6/PP-CSIM15_cold_q35_robustness_validation</code></li>
+    <li>개선 후보 종합 검증: <code>experiments/track6/PP-CSIM16_cold_improvement_suite</code></li>
+    <li>k/k320 유사작품 그룹 검증: <code>experiments/track6/PP-CSIM17_cold_similarity_grouping_grid</code></li>
+    <li>규칙 라우터 검증: <code>experiments/track6/PP-CSIM21_cold_rule_router_grid</code></li>
+    <li>라우터 실행 스크립트: <code>scripts/track6/run_pp_csim21_cold_rule_router_grid.py</code></li>
+  </ul>
+
+  <div class="note warn">
+    <p>
+      주의: 이 문서의 Cold 성능은 Warm과 직접 우열 비교하는 수치가 아니다. Cold는 같은 작가 가격 이력을 쓰지 못하는 더 어려운 입력 조건이다.
+      따라서 Cold 내부 후보끼리 비교해야 한다.
+    </p>
+  </div>
+</main>
+</body>
+</html>

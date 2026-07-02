@@ -1,0 +1,190 @@
+<!doctype html><html><head><meta charset='utf-8'><title>PP-CF1 Warm Confidence Filtered Training</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.55;margin:32px;color:#1f2937}pre{white-space:pre-wrap;background:#f8fafc;border:1px solid #d8dee9;padding:16px;border-radius:6px}</style></head><body><h1>PP-CF1 Warm 신뢰도 필터 학습 실험</h1><pre># PP-CF1 Warm 신뢰도 필터 학습 실험
+
+- 실험 ID: `PP-CF1`
+- 실행 시각: 2026-06-08T13:13:14
+- 목적: 저신뢰 데이터가 residual 보정 모델 학습 안정성을 떨어뜨리는지 확인하고, 고신뢰/저신뢰 학습 기준을 명확히 정의한다.
+- 원천: `experiments/track6/PP-HCOEF20_warm_huber_price_basis_coefficient_refinement/outputs/candidate_predictions.csv`
+- 선택 원칙: 후보 선택은 `validation_oof/all` MAPE 기준이며, test는 최종 확인용으로만 본다.
+
+## 신뢰도 등급 정의
+
+정답 가격, residual, APE는 등급 산정에 사용하지 않는다.
+
+### 고신뢰
+
+아래 조건을 모두 만족한다.
+
+- `quantile_width &lt;= 1.2`
+- `component_prediction_spread &lt;= 0.1`
+- `l10_price_range_ratio &lt;= 2.0`
+- `svc_group_n &gt;= 5`
+- `abs(current_70_30 - hcoef_stable) &lt;= 0.025`
+
+### 저신뢰
+
+아래 위험 조건 중 하나라도 만족하면 저신뢰로 둔다.
+
+- `quantile_width &gt; 1.6`
+- `component_prediction_spread &gt; 0.18`
+- `l10_price_range_ratio &gt; 2.5`
+- `svc_group_n &lt; 5`
+- `abs(current_70_30 - hcoef_stable) &gt; 0.05`
+
+그 외는 중신뢰다.
+
+## 핵심 결과
+
+| summary | candidate | model_family | train_policy | residual_cap_log | train_n | split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 기준가 validation 전체 | hcoef_stable | source | none | 0.0000 | 0 | validation_oof | all | 519 | 0.1260 | 0.2082 | 0.6479 | 0.3252 | 0.7784 | 0.0886 |
+| 기준가 validation 고신뢰 | hcoef_stable | source | none | 0.0000 | 0 | validation_oof | high_confidence | 91 | 0.0722 | 0.1387 | 0.4876 | 0.2598 | 0.8352 | 0.0549 |
+| 기준가 validation 저신뢰 | hcoef_stable | source | none | 0.0000 | 0 | validation_oof | low_confidence | 172 | 0.1525 | 0.2658 | 0.9520 | 0.4210 | 0.7384 | 0.1337 |
+| 기준가 test 전체 | hcoef_stable | source | none | 0.0000 | 0 | test | all | 607 | 0.1388 | 0.2730 | 0.8064 | 0.3988 | 0.7743 | 0.1186 |
+| 기준가 test 고신뢰 | hcoef_stable | source | none | 0.0000 | 0 | test | high_confidence | 100 | 0.0950 | 0.1272 | 0.3187 | 0.1675 | 0.9300 | 0.0200 |
+| 기준가 test 저신뢰 | hcoef_stable | source | none | 0.0000 | 0 | test | low_confidence | 221 | 0.2104 | 0.3998 | 1.5476 | 0.5385 | 0.6561 | 0.1810 |
+| validation 전체 선택 1위 | catboost_all_rows_cap0p08 | catboost | all_rows | 0.0800 | 519 | validation_oof | all | 519 | 0.1226 | 0.2052 | 0.6532 | 0.3217 | 0.7803 | 0.0886 |
+| validation 전체 선택 1위 test | catboost_all_rows_cap0p08 | catboost | all_rows | 0.0800 | 519 | test | all | 607 | 0.1464 | 0.2701 | 0.8742 | 0.3993 | 0.7759 | 0.1120 |
+| validation 고신뢰 선택 1위 | huber_high_only_cap0p03 | huber | high_only | 0.0300 | 91 | validation_oof | high_confidence | 91 | 0.0823 | 0.1351 | 0.4720 | 0.2517 | 0.8462 | 0.0549 |
+| validation 고신뢰 선택 1위 test | huber_high_only_cap0p03 | huber | high_only | 0.0300 | 91 | test | high_confidence | 100 | 0.0892 | 0.1252 | 0.3215 | 0.1638 | 0.9200 | 0.0100 |
+
+- `validation_oof/all` 기준 1위는 전체 운영 구간 평균을 낮추는 후보다. 이 기준에서는 저신뢰 구간도 함께 최적화하므로 전체 학습 또는 가중 학습이 유리하다.
+- `validation_oof/high_confidence` 기준 1위는 고신뢰 구간 전용 보정 후보다. 이 기준에서는 고신뢰만 학습한 Huber가 가장 안정적으로 나왔다.
+- test 고신뢰 100건만 보면 CatBoost의 `high_mid_only` 또는 `confidence_weighted`가 가장 낮은 MAPE를 냈지만, 이는 test 진단값이므로 후보 선택 기준으로 쓰면 안 된다.
+
+## 신뢰도 구간별 원본 기준가 성능
+
+| split | confidence_tier | n | quantile_width_median | quantile_width_max | component_spread_median | component_spread_max | l10_range_ratio_median | svc_group_n_median | gap_abs_median | base_MdAPE | base_MAPE | base_p95_APE |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| test | high_confidence | 100 | 1.0117 | 1.1993 | 0.0400 | 0.0993 | 1.1221 | 13.0000 | 0.0118 | 0.0950 | 0.1272 | 0.3187 |
+| test | low_confidence | 221 | 1.7812 | 2.8234 | 0.1489 | 0.4665 | 2.3379 | 7.0000 | 0.0250 | 0.2104 | 0.3998 | 1.5476 |
+| test | medium_confidence | 286 | 1.3629 | 1.5989 | 0.0659 | 0.1792 | 1.5582 | 8.0000 | 0.0247 | 0.1168 | 0.2260 | 0.7309 |
+| validation | high_confidence | 91 | 1.0582 | 1.1997 | 0.0420 | 0.0983 | 1.1390 | 10.0000 | 0.0139 | 0.0722 | 0.1387 | 0.4876 |
+| validation | low_confidence | 172 | 1.7710 | 2.6845 | 0.1374 | 0.8903 | 2.3479 | 7.0000 | 0.0250 | 0.1525 | 0.2658 | 0.9520 |
+| validation | medium_confidence | 256 | 1.3206 | 1.5941 | 0.0685 | 0.1799 | 1.5129 | 8.0000 | 0.0250 | 0.1273 | 0.1942 | 0.5801 |
+
+## 학습 정책
+
+| policy | description | weighted | train_n | unique_row_ids | duplicate_row_ids | high_confidence_n | medium_confidence_n | low_confidence_n |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| all_rows | validation 전체 row로 학습 | False | 519 | 519 | 0 | 91 | 256 | 172 |
+| high_only | 고신뢰 row만 학습 | False | 91 | 91 | 0 | 91 | 0 | 0 |
+| high_mid_only | 고신뢰 + 중신뢰 row만 학습 | False | 347 | 347 | 0 | 91 | 256 | 0 |
+| confidence_weighted | 전체 row를 쓰되 신뢰도별 sample weight 적용 | True | 519 | 519 | 0 | 91 | 256 | 172 |
+| low_only_diagnostic | 저신뢰 row만 학습하는 진단 대조군 | False | 172 | 172 | 0 | 0 | 0 | 172 |
+
+## 기준 후보 성능
+
+| candidate | model_family | train_policy | residual_cap_log | train_n | split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| hcoef_stable | source | none | 0.0000 | 0 | test | all | 607 | 0.1388 | 0.2730 | 0.8064 | 0.3988 | 0.7743 | 0.1186 |
+| current_70_30 | source | none | 0.0000 | 0 | test | all | 607 | 0.1405 | 0.2748 | 0.8331 | 0.3996 | 0.7628 | 0.1219 |
+| hcoef_stable | source | none | 0.0000 | 0 | validation_oof | all | 519 | 0.1260 | 0.2082 | 0.6479 | 0.3252 | 0.7784 | 0.0886 |
+| current_70_30 | source | none | 0.0000 | 0 | validation_oof | all | 519 | 0.1305 | 0.2110 | 0.6580 | 0.3292 | 0.7746 | 0.0925 |
+
+## Validation OOF 상위 후보
+
+| candidate | model_family | train_policy | residual_cap_log | train_n | split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| catboost_all_rows_cap0p08 | catboost | all_rows | 0.0800 | 519 | validation_oof | all | 519 | 0.1226 | 0.2052 | 0.6532 | 0.3217 | 0.7803 | 0.0886 |
+| catboost_confidence_weighted_cap0p08 | catboost | confidence_weighted | 0.0800 | 519 | validation_oof | all | 519 | 0.1269 | 0.2054 | 0.6579 | 0.3229 | 0.7803 | 0.0886 |
+| xgboost_all_rows_cap0p03 | xgboost | all_rows | 0.0300 | 519 | validation_oof | all | 519 | 0.1261 | 0.2061 | 0.6626 | 0.3212 | 0.7784 | 0.0925 |
+| xgboost_all_rows_cap0p05 | xgboost | all_rows | 0.0500 | 519 | validation_oof | all | 519 | 0.1218 | 0.2062 | 0.6558 | 0.3193 | 0.7803 | 0.0925 |
+| catboost_confidence_weighted_cap0p05 | catboost | confidence_weighted | 0.0500 | 519 | validation_oof | all | 519 | 0.1269 | 0.2063 | 0.6519 | 0.3234 | 0.7861 | 0.0906 |
+| catboost_all_rows_cap0p05 | catboost | all_rows | 0.0500 | 519 | validation_oof | all | 519 | 0.1222 | 0.2064 | 0.6497 | 0.3225 | 0.7842 | 0.0925 |
+| xgboost_all_rows_cap0p02 | xgboost | all_rows | 0.0200 | 519 | validation_oof | all | 519 | 0.1282 | 0.2064 | 0.6653 | 0.3223 | 0.7803 | 0.0906 |
+| xgboost_low_only_diagnostic_cap0p08 | xgboost | low_only_diagnostic | 0.0800 | 172 | validation_oof | all | 519 | 0.1217 | 0.2066 | 0.6714 | 0.3211 | 0.7726 | 0.0867 |
+| catboost_confidence_weighted_cap0p03 | catboost | confidence_weighted | 0.0300 | 519 | validation_oof | all | 519 | 0.1283 | 0.2067 | 0.6519 | 0.3237 | 0.7803 | 0.0906 |
+| ridge_low_only_diagnostic_cap0p03 | ridge | low_only_diagnostic | 0.0300 | 172 | validation_oof | all | 519 | 0.1200 | 0.2067 | 0.6388 | 0.3223 | 0.7765 | 0.0886 |
+| xgboost_low_only_diagnostic_cap0p05 | xgboost | low_only_diagnostic | 0.0500 | 172 | validation_oof | all | 519 | 0.1232 | 0.2068 | 0.6562 | 0.3222 | 0.7803 | 0.0906 |
+| ridge_low_only_diagnostic_cap0p02 | ridge | low_only_diagnostic | 0.0200 | 172 | validation_oof | all | 519 | 0.1229 | 0.2069 | 0.6368 | 0.3228 | 0.7765 | 0.0886 |
+| xgboost_all_rows_cap0p08 | xgboost | all_rows | 0.0800 | 519 | validation_oof | all | 519 | 0.1230 | 0.2070 | 0.6558 | 0.3178 | 0.7726 | 0.0906 |
+| xgboost_all_rows_cap0p01 | xgboost | all_rows | 0.0100 | 519 | validation_oof | all | 519 | 0.1292 | 0.2070 | 0.6556 | 0.3236 | 0.7823 | 0.0867 |
+| catboost_all_rows_cap0p03 | catboost | all_rows | 0.0300 | 519 | validation_oof | all | 519 | 0.1259 | 0.2071 | 0.6496 | 0.3231 | 0.7823 | 0.0925 |
+
+## Validation OOF 고신뢰 구간 상위 후보
+
+| candidate | model_family | train_policy | residual_cap_log | train_n | split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| huber_high_only_cap0p03 | huber | high_only | 0.0300 | 91 | validation_oof | high_confidence | 91 | 0.0823 | 0.1351 | 0.4720 | 0.2517 | 0.8462 | 0.0549 |
+| huber_high_only_cap0p02 | huber | high_only | 0.0200 | 91 | validation_oof | high_confidence | 91 | 0.0746 | 0.1354 | 0.4773 | 0.2541 | 0.8462 | 0.0549 |
+| huber_high_mid_only_cap0p05 | huber | high_mid_only | 0.0500 | 347 | validation_oof | high_confidence | 91 | 0.0747 | 0.1363 | 0.4772 | 0.2501 | 0.8681 | 0.0549 |
+| huber_high_mid_only_cap0p08 | huber | high_mid_only | 0.0800 | 347 | validation_oof | high_confidence | 91 | 0.0747 | 0.1363 | 0.4674 | 0.2478 | 0.8901 | 0.0549 |
+| catboost_confidence_weighted_cap0p05 | catboost | confidence_weighted | 0.0500 | 519 | validation_oof | high_confidence | 91 | 0.0779 | 0.1364 | 0.4814 | 0.2503 | 0.8571 | 0.0549 |
+| huber_high_only_cap0p01 | huber | high_only | 0.0100 | 91 | validation_oof | high_confidence | 91 | 0.0725 | 0.1365 | 0.4825 | 0.2568 | 0.8462 | 0.0549 |
+| catboost_confidence_weighted_cap0p08 | catboost | confidence_weighted | 0.0800 | 519 | validation_oof | high_confidence | 91 | 0.0779 | 0.1366 | 0.4814 | 0.2496 | 0.8681 | 0.0549 |
+| catboost_confidence_weighted_cap0p03 | catboost | confidence_weighted | 0.0300 | 519 | validation_oof | high_confidence | 91 | 0.0793 | 0.1367 | 0.4814 | 0.2531 | 0.8462 | 0.0549 |
+| catboost_high_only_cap0p02 | catboost | high_only | 0.0200 | 91 | validation_oof | high_confidence | 91 | 0.0709 | 0.1368 | 0.4773 | 0.2538 | 0.8462 | 0.0549 |
+| huber_high_mid_only_cap0p03 | huber | high_mid_only | 0.0300 | 347 | validation_oof | high_confidence | 91 | 0.0707 | 0.1368 | 0.4859 | 0.2536 | 0.8571 | 0.0549 |
+| huber_high_only_cap0p05 | huber | high_only | 0.0500 | 91 | validation_oof | high_confidence | 91 | 0.0867 | 0.1369 | 0.4644 | 0.2479 | 0.8571 | 0.0549 |
+| huber_confidence_weighted_cap0p02 | huber | confidence_weighted | 0.0200 | 519 | validation_oof | high_confidence | 91 | 0.0709 | 0.1369 | 0.4773 | 0.2539 | 0.8352 | 0.0549 |
+| ridge_high_only_cap0p02 | ridge | high_only | 0.0200 | 91 | validation_oof | high_confidence | 91 | 0.0630 | 0.1370 | 0.4773 | 0.2541 | 0.8462 | 0.0549 |
+| huber_high_mid_only_cap0p02 | huber | high_mid_only | 0.0200 | 347 | validation_oof | high_confidence | 91 | 0.0662 | 0.1371 | 0.4865 | 0.2553 | 0.8462 | 0.0549 |
+| huber_confidence_weighted_cap0p03 | huber | confidence_weighted | 0.0300 | 519 | validation_oof | high_confidence | 91 | 0.0690 | 0.1372 | 0.4720 | 0.2518 | 0.8462 | 0.0549 |
+
+## Validation 1위 후보의 Test 확인
+
+| candidate | model_family | train_policy | residual_cap_log | train_n | split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| catboost_all_rows_cap0p08 | catboost | all_rows | 0.0800 | 519 | test | all | 607 | 0.1464 | 0.2701 | 0.8742 | 0.3993 | 0.7759 | 0.1120 |
+
+## Validation 고신뢰 1위 후보의 Test 고신뢰 확인
+
+| candidate | model_family | train_policy | residual_cap_log | train_n | split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| huber_high_only_cap0p03 | huber | high_only | 0.0300 | 91 | test | high_confidence | 100 | 0.0892 | 0.1252 | 0.3215 | 0.1638 | 0.9200 | 0.0100 |
+
+## Test 상위 후보
+
+아래 표는 진단용이다. 후보 선택에는 사용하지 않는다.
+
+| candidate | model_family | train_policy | residual_cap_log | train_n | split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| catboost_confidence_weighted_cap0p08 | catboost | confidence_weighted | 0.0800 | 519 | test | all | 607 | 0.1425 | 0.2681 | 0.8675 | 0.3983 | 0.7842 | 0.1137 |
+| catboost_confidence_weighted_cap0p05 | catboost | confidence_weighted | 0.0500 | 519 | test | all | 607 | 0.1433 | 0.2689 | 0.8598 | 0.3982 | 0.7858 | 0.1153 |
+| huber_confidence_weighted_cap0p08 | huber | confidence_weighted | 0.0800 | 519 | test | all | 607 | 0.1497 | 0.2698 | 0.8288 | 0.3949 | 0.7743 | 0.1104 |
+| catboost_high_mid_only_cap0p05 | catboost | high_mid_only | 0.0500 | 347 | test | all | 607 | 0.1448 | 0.2699 | 0.8435 | 0.3962 | 0.7677 | 0.1137 |
+| catboost_confidence_weighted_cap0p03 | catboost | confidence_weighted | 0.0300 | 519 | test | all | 607 | 0.1404 | 0.2700 | 0.8506 | 0.3983 | 0.7825 | 0.1170 |
+| catboost_high_mid_only_cap0p08 | catboost | high_mid_only | 0.0800 | 347 | test | all | 607 | 0.1448 | 0.2701 | 0.8435 | 0.3961 | 0.7661 | 0.1120 |
+| catboost_all_rows_cap0p08 | catboost | all_rows | 0.0800 | 519 | test | all | 607 | 0.1464 | 0.2701 | 0.8742 | 0.3993 | 0.7759 | 0.1120 |
+| catboost_high_mid_only_cap0p03 | catboost | high_mid_only | 0.0300 | 347 | test | all | 607 | 0.1436 | 0.2704 | 0.8430 | 0.3967 | 0.7710 | 0.1170 |
+| huber_confidence_weighted_cap0p05 | huber | confidence_weighted | 0.0500 | 519 | test | all | 607 | 0.1493 | 0.2705 | 0.8288 | 0.3959 | 0.7743 | 0.1170 |
+| catboost_all_rows_cap0p05 | catboost | all_rows | 0.0500 | 519 | test | all | 607 | 0.1486 | 0.2705 | 0.8726 | 0.3990 | 0.7759 | 0.1137 |
+| catboost_confidence_weighted_cap0p02 | catboost | confidence_weighted | 0.0200 | 519 | test | all | 607 | 0.1428 | 0.2706 | 0.8365 | 0.3984 | 0.7809 | 0.1186 |
+| catboost_all_rows_cap0p03 | catboost | all_rows | 0.0300 | 519 | test | all | 607 | 0.1465 | 0.2708 | 0.8509 | 0.3987 | 0.7743 | 0.1170 |
+| catboost_high_mid_only_cap0p02 | catboost | high_mid_only | 0.0200 | 347 | test | all | 607 | 0.1436 | 0.2711 | 0.8365 | 0.3974 | 0.7727 | 0.1170 |
+| huber_confidence_weighted_cap0p03 | huber | confidence_weighted | 0.0300 | 519 | test | all | 607 | 0.1451 | 0.2712 | 0.8290 | 0.3970 | 0.7727 | 0.1203 |
+| catboost_all_rows_cap0p02 | catboost | all_rows | 0.0200 | 519 | test | all | 607 | 0.1455 | 0.2712 | 0.8365 | 0.3987 | 0.7743 | 0.1186 |
+
+## Test 고신뢰 상위 후보
+
+아래 표도 진단용이다. 후보 선택에는 사용하지 않는다.
+
+| candidate | model_family | train_policy | residual_cap_log | train_n | split | slice | n | MdAPE | MAPE | p95_APE | RMSE_log | within_30 | over_50pct_error_rate |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| catboost_high_mid_only_cap0p05 | catboost | high_mid_only | 0.0500 | 347 | test | high_confidence | 100 | 0.0926 | 0.1214 | 0.3327 | 0.1634 | 0.9100 | 0.0000 |
+| catboost_confidence_weighted_cap0p08 | catboost | confidence_weighted | 0.0800 | 519 | test | high_confidence | 100 | 0.0894 | 0.1216 | 0.3506 | 0.1655 | 0.9000 | 0.0100 |
+| catboost_all_rows_cap0p08 | catboost | all_rows | 0.0800 | 519 | test | high_confidence | 100 | 0.0823 | 0.1219 | 0.3417 | 0.1642 | 0.8900 | 0.0000 |
+| catboost_confidence_weighted_cap0p05 | catboost | confidence_weighted | 0.0500 | 519 | test | high_confidence | 100 | 0.0894 | 0.1221 | 0.3476 | 0.1653 | 0.9100 | 0.0100 |
+| catboost_high_mid_only_cap0p08 | catboost | high_mid_only | 0.0800 | 347 | test | high_confidence | 100 | 0.0934 | 0.1221 | 0.3327 | 0.1640 | 0.9000 | 0.0000 |
+| catboost_all_rows_cap0p05 | catboost | all_rows | 0.0500 | 519 | test | high_confidence | 100 | 0.0837 | 0.1223 | 0.3417 | 0.1648 | 0.8900 | 0.0000 |
+| catboost_high_mid_only_cap0p03 | catboost | high_mid_only | 0.0300 | 347 | test | high_confidence | 100 | 0.0940 | 0.1227 | 0.3327 | 0.1643 | 0.9100 | 0.0100 |
+| catboost_all_rows_cap0p03 | catboost | all_rows | 0.0300 | 519 | test | high_confidence | 100 | 0.0897 | 0.1235 | 0.3222 | 0.1653 | 0.8900 | 0.0100 |
+| catboost_confidence_weighted_cap0p03 | catboost | confidence_weighted | 0.0300 | 519 | test | high_confidence | 100 | 0.0952 | 0.1238 | 0.3222 | 0.1660 | 0.9100 | 0.0100 |
+| catboost_high_mid_only_cap0p02 | catboost | high_mid_only | 0.0200 | 347 | test | high_confidence | 100 | 0.0949 | 0.1239 | 0.3327 | 0.1654 | 0.9100 | 0.0100 |
+
+## 해석
+
+- 과거 PP-L, PP-WMAPE, HCOEF 계열 다수는 신뢰도를 학습 row 제외 기준보다 피처, cap, routing, guard로 사용했다.
+- 이 실험은 같은 residual feature와 같은 OOF 방식에서 `전체 학습`, `고신뢰 학습`, `고+중신뢰 학습`, `신뢰도 가중 학습`, `저신뢰만 학습`을 직접 비교한다.
+- 고신뢰 hard filter가 validation OOF와 test에서 동시에 안정적이면, 후속 Warm/HCOEF 보정 실험은 train filter 또는 sample weight를 기본 옵션으로 두는 것이 맞다.
+
+## 산출물
+
+- `outputs/metrics.csv`
+- `outputs/candidate_predictions.csv`
+- `outputs/confidence_tier_summary.csv`
+- `outputs/training_policy_audit.csv`
+- `outputs/top_validation_oof_candidates.csv`
+- `outputs/top_test_candidates_diagnostic.csv`
+- `artifacts/run_config.json`
+</pre></body></html>

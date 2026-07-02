@@ -1,6 +1,6 @@
 # T6-E001 strict split 생성 및 검증
 
-- 날짜: 2026-05-18
+- 날짜: 2026-06-19
 - 관련 가설: T6-H1
 - 상태: 검증 완료
 - 사용 데이터: `data/track6/track6_feature_candidates_name_corrected.csv`
@@ -14,11 +14,11 @@
 
 ## 핵심 결과
 
-- train rows: `26,914`
-- val_warm rows/artists: `519` / `178`
-- test_warm rows/artists: `607` / `207`
-- val_cold rows/artists: `2,753` / `172`
-- test_cold rows/artists: `3,099` / `200`
+- train rows: `27,238`
+- val_warm rows/artists: `517` / `176`
+- test_warm rows/artists: `612` / `208`
+- val_cold rows/artists: `2,575` / `160`
+- test_cold rows/artists: `3,000` / `245`
 - Cold train 이름 중복: val `0`, test `0`
 - Stable Warm 평가 작가 최소 train 작품 수: val `5`, test `5`
 - 주의: `5작품` 기준은 Warm/Cold 구분 기준이 아니라 Stable Warm 평가 안정성 기준
