@@ -80,7 +80,6 @@ USER_META_CORE = [
     "artist_meta_is_p1_flag",
     "artist_meta_has_international_flag",
     "artist_meta_nationality",
-    "artist_meta_nationality_ko",
 ]
 
 PROFILE_CONTEXT = unique(

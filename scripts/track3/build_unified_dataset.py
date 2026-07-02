@@ -697,6 +697,8 @@ def build_artist_ko_map(data_dir: Path) -> dict[str, str]:
         total_rows += len(sub)
         for _, row in sub.iterrows():
             en, ko = str(row[en_col]), str(row[ko_col])
+            # 같은 영문 이름이라도 "Lee Ufan" / "Ufan Lee" 순서 차이가 있어
+            # 정방향과 역방향 variant를 모두 같은 한글명에 연결한다.
             for variant in _norm_en_variants(en):
                 if variant and variant not in mapping:
                     mapping[variant] = ko
@@ -741,6 +743,9 @@ def _romanize_to_hangul(text: str) -> str:
     한국 이름 first name + 외국인 이름 한국어 발음 표기 cover.
     예: "soyun" → "소윤", "yeji" → "예지", "smith" → "스미스"
     정확하지 않을 수 있으나 user 의도 "최대한 한글로 표기" 정합.
+
+    주의: Track3 legacy 확정 로직이다. 신규 운영 표준화에서는 이 결과를
+    canonical 한글명으로 바로 쓰지 말고 후보/검수 큐로만 보내야 한다.
     """
     s = re.sub(r"[^a-z]", "", str(text).lower())
     if not s:
@@ -750,6 +755,8 @@ def _romanize_to_hangul(text: str) -> str:
     while i < len(s):
         matched = False
         # 6-char까지 검사: kyeong=경, byeong=병, myoung=명, hyoung=형 등.
+        # 가장 긴 chunk부터 맞추는 greedy 방식이라 사전에 없는 이름은
+        # 어색하게 쪼개질 수 있다. 예: 일부 로마자 한국 이름 오표기.
         for length in (6, 5, 4, 3, 2, 1):
             chunk = s[i : i + length]
             if chunk in HANGUL_SYLLABLE_MAP:
@@ -796,6 +803,8 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
         return None
 
     # Stage 1: dict lookup
+    # 검수/외부 매핑에 이미 등록된 이름이면
+    # 자동 음역보다 항상 우선한다.
     for variant in _norm_en_variants(name_str):
         if variant in ko_map:
             return ko_map[variant]
@@ -817,6 +826,8 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
 
     if len(tokens) == 1:
         # 단일 토큰 — 한국 성 → 영어 사전 → 음역 순
+        # 단일 토큰은 동명이인/브랜드명 가능성이 높아
+        # 신규 시스템에서는 검수 대상으로 보는 편이 안전하다.
         ko = _korean_surname_from_token(tokens[0])
         if ko:
             return ko
@@ -847,8 +858,10 @@ def lookup_artist_name_ko(name: str, ko_map: dict[str, str]) -> str | None:
         for tok in tokens_part:
             tok_norm = re.sub(r"[^a-z]", "", tok.lower())
             if tok_norm in ENGLISH_FIRSTNAME_TO_KO:
+                # Matthew, John처럼 흔한 영어 이름은 사전 표기를 우선한다.
                 out.append(ENGLISH_FIRSTNAME_TO_KO[tok_norm])
             else:
+                # 사전에 없으면 legacy 음절표로 후보를 만든다.
                 out.append(_romanize_to_hangul(tok))
         return "".join(out)
 

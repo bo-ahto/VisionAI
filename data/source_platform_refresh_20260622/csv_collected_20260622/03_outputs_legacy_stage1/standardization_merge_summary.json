@@ -1,0 +1,170 @@
+{
+  "stage": "stage1_source_merge_dedupe_2d_cleaning",
+  "source_scope": "legacy",
+  "stage_description": "기존 원본 데이터와 추가 수집 데이터를 합친 뒤 중복, 가격 숫자 없음, placeholder 가격, 입체 작품, 명백한 크기 오류를 제거한 1차 정리 단계. 환율 변환, 가격 보정, 모델 피처 생성은 수행하지 않는다.",
+  "input_dir": "/Users/bo/VisionAI/data/source_platform_refresh_20260622/csv_collected_20260622/01_source_raw",
+  "output_csv": "/Users/bo/VisionAI/data/source_platform_refresh_20260622/csv_collected_20260622/03_outputs_legacy_stage1/standardized_artworks_merged_deduped.csv",
+  "removed_csv": "/Users/bo/VisionAI/data/source_platform_refresh_20260622/csv_collected_20260622/03_outputs_legacy_stage1/standardized_artworks_removed_by_filter.csv",
+  "raw_standardized_rows_before_dedupe": 54842,
+  "deduped_rows_before_price_filter": 54842,
+  "final_rows_after_price_filter": 34771,
+  "removed_duplicate_rows": 0,
+  "removed_no_price_rows": 18926,
+  "removed_no_price_by_source_family": {
+    "artsy": 18926
+  },
+  "removed_no_price_by_source_variant": {
+    "legacy_artsy": 18926
+  },
+  "removed_placeholder_price_rows": 1,
+  "removed_placeholder_price_values": {},
+  "removed_placeholder_price_by_source_family": {
+    "artsy": 1
+  },
+  "removed_placeholder_price_by_source_variant": {
+    "legacy_artsy": 1
+  },
+  "removed_3d_artwork_rows": 1131,
+  "removed_3d_artwork_by_category": {
+    "sculpture": 779,
+    "mixed media": 95,
+    "painting": 65,
+    "installation": 52,
+    "photography": 14,
+    "acrylic": 12,
+    "other": 10,
+    "glass, acrylic on canvas": 9,
+    "ceramic": 9,
+    "video/film/animation": 8,
+    "acrylic on sculpture": 8,
+    "glass, gold leaf, acrylic on canvas": 7,
+    "print": 6,
+    "design/decorative art": 6,
+    "archival pigment printed digital drawing on digital sculpture": 6,
+    "uv print on glass, copper, solder, lead, resin, zinc hardware": 5,
+    "architecture": 4,
+    "oil": 4,
+    "ink": 4,
+    "2 pieces of glass, hanji and acrylic": 3,
+    "drawing, collage or other work on paper": 2,
+    "mixed media on ceramic": 2,
+    "digital collage, silkscreen print on ceramic, acrylic box": 2,
+    "photograph, glass, copper, solder, lead, resin, zinc hardware": 2,
+    "glazed ceramic, glass, and brass frame": 2,
+    "textile arts": 1,
+    "color plaster on sculpture": 1,
+    "oil and cold wax on wood / aluminum sculpture": 1,
+    "silkscreen on glassine": 1,
+    "installation / painting": 1,
+    "nylon, stainlesss teel, urethanecoating,glass": 1,
+    "korean paper between two sheets of glass and color": 1,
+    "softcover, wrapped in glassine paper, cardboard clamshell box": 1,
+    "slumped glass, pencil on wood, silver gilt": 1,
+    "listing photographs from online auctions, glass, copper, solder,lead, resin, zinc hardware": 1,
+    "listing photograph from online auction, glass, copper, solder, lead, resin, zinc hardware": 1,
+    "uv print on glass glass, copper, solder, lead, resin, zinc hardware": 1,
+    "oil, acrylic, dried flowers and glass beads on linen": 1,
+    "oil paint and glass beads on stretched canvas": 1,
+    "pastel": 1
+  },
+  "removed_3d_artwork_by_source_family": {
+    "artsy": 1022,
+    "artue": 71,
+    "saatchi": 24,
+    "gallery_primary": 14
+  },
+  "removed_3d_artwork_by_source_variant": {
+    "legacy_artsy": 1022,
+    "legacy_artue": 71,
+    "legacy_saatchi": 24,
+    "legacy_gallery_primary": 14
+  },
+  "removed_obvious_size_error_rows": 13,
+  "removed_obvious_size_error_by_category": {
+    "painting": 9,
+    "other": 1,
+    "mixed media": 1,
+    "woven tapestry": 1,
+    "acrylic": 1
+  },
+  "removed_obvious_size_error_by_source_family": {
+    "artsy": 11,
+    "gallery_primary": 1,
+    "saatchi": 1
+  },
+  "removed_obvious_size_error_by_source_variant": {
+    "legacy_artsy": 11,
+    "legacy_gallery_primary": 1,
+    "legacy_saatchi": 1
+  },
+  "by_source_before_dedupe": {
+    "legacy_artsy": 30046,
+    "legacy_saatchi": 21721,
+    "legacy_artue": 2783,
+    "legacy_gallery_primary": 292
+  },
+  "by_source_after_dedupe": {
+    "legacy_saatchi": 21696,
+    "legacy_artsy": 10086,
+    "legacy_artue": 2712,
+    "legacy_gallery_primary": 277
+  },
+  "by_source_family_after_dedupe": {
+    "saatchi": 21696,
+    "artsy": 10086,
+    "artue": 2712,
+    "gallery_primary": 277
+  },
+  "dedupe_rule": "source_family + source_artwork_id 우선, 없으면 source_family + artwork_url, 둘 다 없으면 artist/title/size/price fallback",
+  "source_priority": {
+    "source_platform_saatchi_split": 10,
+    "ahto_saatchi": 30,
+    "source_platform_artsy": 10,
+    "ahto_artsy": 20,
+    "artue": 10,
+    "legacy_artsy": 50,
+    "legacy_saatchi": 50,
+    "legacy_artue": 50,
+    "legacy_gallery_primary": 60
+  },
+  "outlier_audit": {
+    "output_csv": "/Users/bo/VisionAI/data/source_platform_refresh_20260622/csv_collected_20260622/03_outputs_legacy_stage1/standardized_artworks_outlier_audit.csv",
+    "total_rows_checked": 34771,
+    "flagged_rows": 44,
+    "flagged_ratio": 0.0012654223347042075,
+    "thresholds": {
+      "price_krw_q001": 47844.0,
+      "price_krw_q999": 120773257.2000049,
+      "area_cm2_q999": 99497.08000000002,
+      "unit_price_krw_per_cm2_q001": 36.17551451713065,
+      "unit_price_krw_per_cm2_q999": 417108.115186458,
+      "size_cm_manual_extreme": {
+        "width_cm_gt": 1000,
+        "height_cm_gt": 1000,
+        "depth_cm_gt": 500
+      }
+    },
+    "flag_counts": {
+      "flag_price_non_positive": 0,
+      "flag_price_krw_extreme_high": 3,
+      "flag_price_krw_extreme_low": 3,
+      "flag_price_placeholder_repeating_9": 1,
+      "flag_size_non_positive": 0,
+      "flag_size_cm_extreme": 0,
+      "flag_area_extreme_high": 32,
+      "flag_unit_price_extreme_high": 3,
+      "flag_unit_price_extreme_low": 3
+    },
+    "by_source_family": {
+      "artsy": 20,
+      "artue": 13,
+      "saatchi": 11
+    },
+    "by_source_variant": {
+      "legacy_artsy": 20,
+      "legacy_artue": 13,
+      "legacy_saatchi": 11
+    },
+    "note": "이상치 후보만 표시한다. 최종 CSV에서 자동 삭제하지 않는다."
+  }
+}

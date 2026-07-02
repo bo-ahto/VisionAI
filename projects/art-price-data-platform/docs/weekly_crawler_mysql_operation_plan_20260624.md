@@ -94,36 +94,37 @@
   - 전시/갤러리 원문은 자동 artist_key 판단 근거로 쓰지 않고 보존
         |
         v
-[1차 표준화]
+[표준화 gate / 검수 큐]
   - 분해/정리된 후보값을 공통 컬럼으로 변환
-  - 통화, cm 단위, 공통 판매상태 적용
+  - cm 단위, 공통 판매상태 적용
   - 공통 작가 메타 컬럼 생성
-  - 기존 artist_key 후보가 있을 때만 작가 identity 검수 후보 생성
+  - 작가명 한글화, artist_key, FX, NANT, 작품 필드 검수 필요 항목을 standardization_review_item에 등록
+  - 승인된 검수 결과는 artist_name_alias, artist_identity, fx_rate_daily, NANT mapping 등 도메인 SoT에 반영
         |
         v
-[NANT 지지체/매체 분류]
-  - 표준화된 재료 표현을 NANT 95개 support/medium 조합으로 매핑
-  - DB active mapping row의 `learning_excluded`를 학습 제외 플래그로 복사
+[표준화 완료 row 생성]
+  - 확정된 active artist_key가 있는 작품만 normalized_artwork_staging에 생성
+  - fx_rate_daily 기준 price_conversion으로 KRW 환산값 생성
+  - DB active NANT mapping version으로 NANT 95개 support/medium 조합 매핑
+  - 학습 제외 여부는 classification row에 복사하지 않고 DB active mapping row 조인으로 판단
+  - artist_key/FX/NANT 미해결 row는 완료 row로 만들지 않고 검수 큐에 보류
         |
         v
-[품질 점검]
+[완료 row 품질 / snapshot readiness 점검]
   - 수집 성공률
   - 가격 보유율
   - 크기 파싱 성공률
   - 중복률
+  - 표준화 검수 큐 미해결 건수
   - 전주 대비 신규/삭제/변경 건수
         |
         v
-[가격 통화 통일(price_conversion)]
-  - snapshot 기준일 환율(fx_rate_daily)로 원천 통화를 KRW로 환산
-  - 원천 KRW(price_krw_source)는 환산하지 않고 그대로 사용
-  - price_krw_normalized 생성
-        |
-        v
-[학습 snapshot export]
+[D1 학습 snapshot/export]
   - 승인 가능한 row만 학습 snapshot export 대상으로 고정
+  - 가격/NANT/artist_key는 normalized_artwork_staging에 저장된 값을 사용
   - parquet 우선 export
   - 외부 공유/수동 검수/제출이 필요하면 CSV export 추가 생성
+  - 모델 학습/import와 운영 승격은 후속 D2~D4에서 처리
 ```
 
 저장 포맷 운영 원칙:
@@ -578,15 +579,14 @@ Print Bakery
 | `rejected_at` | 매칭 반려 시각 |
 | `reject_reason` | 매칭 반려 사유 |
 
-### 3.11 artist_identity / artist_profile_item / artist_profile_current
+### 3.11 artist_identity / artist_profile_meta
 
-작가 최종 키와 프로필 메타 테이블이다. 운영 참조용 요약만 둔다. 전체 컬럼·enum 정의의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.12(artist_identity), §5.12.0(artist_profile_item), §5.12.0.1(artist_profile_current)이며, 정의가 어긋나면 그 문서를 기준으로 맞춘다(§3 도입부 참조 원칙과 동일).
+작가 최종 키와 프로필 메타 테이블이다. 전체 컬럼·enum 정의의 단일 기준은 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md) §5.12(artist_identity), §5.12.0(artist_profile_meta), §5.12.0.1(현재값 조회 정책)이며, 정의가 어긋나면 그 문서를 기준으로 맞춘다(§3 도입부 참조 원칙과 동일).
 
 - `artist_identity`: 운영에서 쓰는 최종 작가 키 테이블. 같은 작가로 확정된 여러 원천 작가 row를 하나의 `artist_key`에 연결한다. 작가 프로필 전체를 담지 않고, 동명이인 판단과 병합 이력에 필요한 identity 필드(대표명, `birth_year`, `nationality`, `identity_status` 등)만 둔다.
-- `artist_profile_item`: 확정 `artist_key`의 프로필/메타를 `item_type`별 항목 단위로 적재하는 검수 가능 SoT(학력, 전시, 수상, 프로젝트, 소장처, 소개문, 홈페이지/SNS, 팔로워 등). 긴 문자열 한 컬럼으로 몰아넣지 않는다.
-- `artist_profile_current`: 사용자/관리자 화면과 feature 후보 산출용 현재 요약/cache. 항목 SoT는 `artist_profile_item`, 원천 원본 메타는 `source_artist_raw.metadata_json`, 표준화 후보는 `normalized_artist_staging`에 둔다.
+- `artist_profile_meta`: 확정 `artist_key`의 프로필/메타를 `item_type`별 항목 단위로 적재하는 검수 가능 SoT(학력, 전시, 수상, 프로젝트, 소장처, 소개문, 홈페이지/SNS, 팔로워, 현재 표시값 등). 긴 문자열 한 컬럼으로 몰아넣지 않고, 현재 표시/검색/feature 후보용 값도 `is_current`/`display_rank`로 관리한다.
 
-프로필성 메타(소개/학력/전시/팔로워/활동지/SNS)는 `artist_identity`가 아니라 `artist_profile_item`에 저장하고, `artist_profile_current`로 현재 요약을 갱신한다. `birth_year`와 `nationality`는 동명이인 판단에 쓰이는 핵심 식별 필드라 `artist_identity`에 둔다. 화면/API에서 프로필처럼 보여줄 때는 `artist_identity`와 `artist_profile_current`를 조인한다.
+프로필성 메타(소개/학력/전시/팔로워/활동지/SNS)는 `artist_identity`가 아니라 `artist_profile_meta`에 저장한다. `birth_year`와 `nationality`는 동명이인 판단에 쓰이는 핵심 식별 필드라 `artist_identity`에 둔다. 화면/API에서 프로필처럼 보여줄 때는 `artist_identity`와 `artist_profile_meta` 현재값 조회 결과를 조합한다.
 
 ## 4. 크론잡 운영 방식
 
@@ -619,8 +619,8 @@ Print Bakery
 12. 기존 artist_key 자동 연결 가능 건 연결
 13. 자동 확정/반려 기준을 충족하지 못한 후보와 신규 작가 후보는 운영자 검수 큐에 등록
 14. 운영자 검수 후 데이터 관리자 승인이 있을 때만 신규 artist_key 생성
-15. 확정 artist_key 기준으로 artist_profile_item 생성/갱신
-16. artist_profile_current 현재 요약 갱신
+15. 확정 artist_key 기준으로 artist_profile_meta 생성/갱신
+16. artist_profile_meta의 `is_current`/`display_rank` 기준으로 현재 표시값 선택
 17. 품질 점검 결과 저장
 18. 알림 발송
 ```
@@ -712,7 +712,7 @@ LIMIT 20;
 - `raw_artist_rows`는 원천에서 수집/추출된 작가 수
 - `normalized_artwork_rows`는 1차 표준화까지 통과한 작품 수
 - `normalized_artist_rows`는 1차 표준화까지 통과한 작가 수
-- 작가 수집은 `source_artist_raw`, `normalized_artist_staging`, `artist_name_alias`, `artist_identity_candidate`, `artist_profile_item`, `artist_profile_current` 건수를 함께 본다.
+- 작가 수집은 `source_artist_raw`, `normalized_artist_staging`, `artist_name_alias`, `artist_identity_candidate`, `artist_profile_meta` 건수를 함께 본다.
 
 ### 5.2 사이트별 수집 품질 확인
 
@@ -990,7 +990,7 @@ Print Bakery `cafe24_app_key`(페이지에 노출되는 키)와 Art1 내부 AJAX
 - 주요 실패 유형: 가격/크기/재료/작가명/작가 이력 분해 실패
 - 대표 원문: {sample_raw_values}
 - 자동 조치: raw는 보존, 실패 row는 normalized로 넘기지 않음
-- 운영자 확인: 새 가격 문구, 새 크기 표기, NANT unmapped 재료명, UI 문구 혼입 여부
+- 운영자 확인: 새 가격 문구, 새 크기 표기, `standardization_review_item(review_type=nant_mapping)` 보류 재료명, UI 문구 혼입 여부
 - 권장 조치: parser 규칙 또는 NANT 매핑 기준 보강 후 raw에서 재처리
 ```
 
@@ -1120,12 +1120,12 @@ Print Bakery `cafe24_app_key`(페이지에 노출되는 키)와 Art1 내부 AJAX
    - 기존 artist_key 연결 확정 또는 신규 artist_key 생성
    - 생년/국적처럼 동명이인 판단에 필요한 identity 필드만 관리
 
-8. artist_profile_item
+8. artist_profile_meta
    - 확정 artist_key의 작가 프로필/메타를 항목 단위로 관리
    - 학력/전시/수상/프로젝트/소장처/팔로워 등 반복·충돌 가능 값을 개별 검수 가능하게 저장
 
-9. artist_profile_current
-   - `artist_profile_item`에서 현재 표시/검색/feature 후보용 요약 생성
+9. artist_profile_meta 현재값 선택
+   - `artist_profile_meta.is_current`/`display_rank`로 현재 표시/검색/feature 후보용 값을 선택
    - 소개/학력/전시/팔로워/활동지 등 프로필성 메타를 identity와 분리
 
 10. artwork_snapshot / snapshot export
@@ -1172,8 +1172,7 @@ raw에서 바로 `normalized_artwork_staging`으로 가지 않는 이유:
 |---|---|---|
 | 작품 부가 정보 | `source_artwork_raw.metadata_json` | 작품 단위 검수 대상 |
 | 작가 부가 정보 | `source_artist_raw.metadata_json` | 작가 identity/메타 검수 대상 |
-| 확정 작가 프로필 항목 | `artist_profile_item` | 학력/전시/수상/프로젝트/소장처/홈페이지/SNS/팔로워 등 항목 단위 검수 |
-| 확정 작가 현재 프로필 | `artist_profile_current` | 서비스 표시/검색 보조 정보용 요약/cache. identity와 분리 관리 |
+| 확정 작가 프로필/현재 표시값 | `artist_profile_meta` | 학력/전시/수상/프로젝트/소장처/홈페이지/SNS/팔로워 및 현재 표시값을 항목 단위로 검수 |
 | 작품/작가가 섞인 원문 | raw에 원문 보존 후 interpreted staging에서 후보 분리 | 확정 전 학습 반영 금지 |
 
 예를 들어 Print Bakery의 description에 작품 설명과 작가 소개가 함께 있으면, raw에는 원문 전체를 보존한다. 이후 `source_artwork_interpreted_staging`에서는 `artwork_description_candidate`를 만들고, `source_artist_interpreted_staging`에서는 `bio_text_candidate`(작가 소개문 후보, §3.6)를 만든다. 분리 기준이 불확실하면 두 후보 모두 확정하지 않고 `quality_flags_json`에 검수 필요 사유를 남긴다.
@@ -1238,8 +1237,8 @@ price_krw_source
 중요:
 
 - raw 수집 단계에서 외화를 원화로 변환하지 않는다.
-- 환율 변환은 별도 단계에서 기준일 환율과 함께 수행한다.
-- 학습용 단일 통화(KRW) 환산은 snapshot export 직전 `price_conversion` 단계에서 `fx_rate_daily` 기준으로 수행하고, 결과는 `price_krw_normalized`로 둔다. 원천이 직접 KRW를 제공한 `price_krw_source`는 환산하지 않고 그대로 사용한다. 자세한 설계는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)의 `fx_rate_daily`/`price_conversion`을 따른다.
+- 환율 변환은 `normalized_artwork_staging` row 생성 중 기준일 환율과 함께 수행한다.
+- 학습용 단일 통화(KRW) 환산은 artwork normalizer 내부 `price_conversion` 단계에서 `fx_rate_daily` 기준으로 수행하고, 결과는 `price_krw_normalized`로 둔다. snapshot export 직전에 재계산하거나 후속 UPDATE하지 않는다. 원천이 직접 KRW를 제공한 `price_krw_source`는 환산하지 않고 그대로 사용한다. 자세한 설계는 [MySQL 적재 기획](periodic_raw_collection_mysql_plan_20260623.md)의 `fx_rate_daily`/`price_conversion`을 따른다.
 - 가격 문의/판매완료/가격 없음은 가격 숫자와 구분한다.
 
 ### 7.4 크기 평준화
@@ -1263,7 +1262,7 @@ area_cm2 = width_cm * height_cm
 
 ### 7.5 재료/매체 평준화와 NANT 분류
 
-재료는 원문을 보존하고, 표준화 이후 [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)의 DB active mapping version으로 지지체/매체 분류와 학습 제외 플래그를 만든다.
+재료는 원문을 보존하고, `normalized_artwork_staging` row 생성 중 [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)의 DB active mapping version으로 지지체/매체를 분류한다. 분류 결과는 `normalized_artwork_staging.nant_*` 컬럼에 저장하고, 학습 제외 여부는 작품 row에 중복 저장하지 않고 mapping row 조인으로 판단한다.
 
 예:
 
@@ -1277,10 +1276,10 @@ nant_category_key = "캔버스|유채"
 주의:
 
 - 원천의 재료명을 삭제하지 않는다.
-- 자동 분류가 실패하면 `nant_mapping_status=unmapped`와 `exclude_reason=nant_unmapped` 후보로 남긴다.
+- 자동 분류가 실패하면 `standardization_review_item(review_type=nant_mapping)`에 보류하고, 완료 표준화 row와 snapshot 후보에는 올리지 않는다.
 - active mapping row의 `learning_excluded=true`는 `nant_learning_excluded`로 학습 snapshot에서 제외한다.
 - 기존 재료/지지체/입체/혼합매체 하드코딩 학습 필터는 사용하지 않는다.
-- 학습 반영 전에는 NANT unmapped 목록을 사람이 검토한다.
+- 학습 반영 전에는 `standardization_review_item(review_type=nant_mapping)` 보류 목록을 사람이 검토한다.
 
 ### 7.6 작가 평준화
 
@@ -1381,7 +1380,7 @@ nant_category_key = "캔버스|유채"
 보류 조건:
 
 - 기존 artist_key 연결 후보가 있는데 `alias_exact`/`alias_approved`가 아니고 `alias_fuzzy_only`만 있는 경우
-- NANT 분류 실패(`nant_unmapped`)
+- NANT 분류 실패(`standardization_review_item.review_type=nant_mapping` 보류)
 - 환율 데이터 없음 등으로 학습용 단일 통화 가격(price_krw_normalized)을 확정하지 못함
 - 크기 이상치: `width_cm <= 0`, `height_cm <= 0`, `width_cm > 500`, `height_cm > 500`, `aspect_ratio > 20`, `aspect_ratio < 0.05` 중 하나에 해당. 여기서 `aspect_ratio`는 저장 컬럼이 아니라 snapshot 단계에서 `max(width_cm, height_cm) / min(width_cm, height_cm)`로 계산한 값이다
 - 가격이 0 이하이거나, placeholder 가격 목록에 있음
@@ -1455,7 +1454,7 @@ Art1
 | 표준화 작가 row | normalized까지 통과한 작가 수 | normalized/raw 비율이 직전 정상 run 대비 10%p 이상 감소하거나 70% 미만이면 작가 staging 확인 |
 | 가격 보유율 | 가격 숫자가 있는 작품 비율 | 직전 정상 run 대비 10%p 이상 감소하면 경고, 20% 미만이면 차단 검토 |
 | 크기 파싱 성공률 | 가로/세로 cm 추출 성공률 | 90% 미만이면 크기 파서 점검 |
-| NANT unmapped 수 | active NANT mapping version에 없는 재료 표현 | NANT draft mapping 보강 후보 |
+| NANT mapping 보류 수 | active NANT mapping version에 없는 재료 표현이 `standardization_review_item(review_type=nant_mapping)`에 보류된 건수 | NANT draft mapping 보강 후보 |
 | 이름 alias 검수 대기 수 | 한글명/영문명 보강 수동 확인 필요 건수 | 운영자가 이름 alias 큐에서 처리 |
 | 동명이인 alias 수 | 같은 alias가 여러 artist_key 후보에 걸린 건수 | 자동 병합 금지, 운영자가 후보 비교 |
 | identity 검수 대기 수 | 작가 매칭 수동 확인 필요 건수 | 운영자가 검수 큐에서 처리 |
@@ -1597,16 +1596,22 @@ MySQL raw
   - 먼저 source + artist_source_id 기존 연결을 확인한다.
   - 같은 alias 또는 승인 alias에 연결된 기존 후보가 있을 때만 동명이인 가능성과 기존 artist_key 연결 가능성을 검토한다.
 
+표준화 검수 큐
+  - 작가명 한글화, artist_key, FX, NANT, 작품 필드 보류 항목을 standardization_review_item에서 처리한다.
+  - 승인된 검수 결과는 도메인 SoT에 반영하고 normalizer를 재실행한다.
+  - 미해결 항목은 완료 표준화 row와 snapshot export에 넣지 않는다.
+
 품질 점검
   - 이번 주 수집 결과를 사용할 수 있는지 판단한다.
 
-학습 snapshot export
+D1 학습 snapshot/export
   - 모델 학습에 실제로 사용할 데이터를 고정한다.
+  - D1에서는 snapshot과 parquet/export manifest까지만 고정한다.
 
-모델 학습/import와 운영 승격
+후속 D2~D4 모델 학습/import와 운영 승격
   - approved snapshot export로 model_training_job을 만들거나 기존 joblib를 import한다.
   - 결과 모델은 먼저 registry candidate로 등록한다.
   - 검증 gate 통과 후 approved로 전환하고, 별도 promote 단계에서만 active deployment가 바뀐다.
 ```
 
-따라서 1차 수집이 실패해도 기존 학습 데이터나 운영 모델이 바로 오염되지 않는다. 또한 사이트별 데이터 구조가 달라도 raw 보존 후 staging에서 작품 컬럼과 작가 컬럼을 각각 공통 기준으로 맞추기 때문에, Artsy / Saatchi / Print Bakery / Art1 데이터를 같은 학습 snapshot export 대상으로 관리할 수 있다.
+따라서 1차 수집이나 D1 표준화가 실패해도 기존 학습 데이터나 운영 모델이 바로 오염되지 않는다. 또한 사이트별 데이터 구조가 달라도 raw 보존 후 staging에서 작품 컬럼과 작가 컬럼을 각각 공통 기준으로 맞추기 때문에, Artsy / Saatchi / Print Bakery / Art1 데이터를 같은 학습 snapshot export 대상으로 관리할 수 있다.

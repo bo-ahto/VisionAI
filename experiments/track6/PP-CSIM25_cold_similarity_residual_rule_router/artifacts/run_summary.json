@@ -1,0 +1,34 @@
+{
+  "cold_harness_policy": "strict_unresolved_artist_cold",
+  "uses_artist_identity_feature": 0,
+  "uses_same_artist_price_history": 0,
+  "uses_artist_key_lookup_postprocess": 0,
+  "allowed_artist_information": [
+    "non-price artist_meta_* fields",
+    "internet/search-derived context features",
+    "exhibition/gallery features if collected independently of same-artist prices"
+  ],
+  "forbidden_artist_information": [
+    "artist_key",
+    "artist_works_count_train",
+    "artist_works_log"
+  ],
+  "forbidden_postprocess": [
+    "search_delta_lookup[artist_key]",
+    "any frozen per-artist correction keyed by artist identity"
+  ],
+  "experiment_id": "PP-CSIM25",
+  "slug": "PP-CSIM25_cold_similarity_residual_rule_router",
+  "created_at": "2026-06-22T15:50:51",
+  "source_experiment": "PP-CSIM24",
+  "strict_cold_compliant": 1,
+  "uses_search_features": 0,
+  "uses_external_live_search": 0,
+  "uses_rule_router": 1,
+  "router_uses_actual_price": 0,
+  "router_signals": [
+    "base_pred_price",
+    "candidate_pred_price",
+    "correction_log"
+  ]
+}

@@ -1,7 +1,7 @@
 # PP-WMIN10 Warm WMIN8 API Fixed-Test Parity
 
-- 작성일: 2026-06-13 10:18:06
-- 실행 시간: 13.4s
+- 작성일: 2026-06-16 16:42:08
+- 실행 시간: 9.3s
 - 비교 후보: `min1_route_w850_risk_q50_altlower_gap005`
 - 목적: WMIN8 fixed test 607건을 official v0.1 HTTP API로 재생해 endpoint 출력과 실험 산출물의 row-level parity를 확인한다.
 

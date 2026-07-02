@@ -24,9 +24,12 @@
 ```text
 MySQL 8.0 + 명시 SQL migration
   -> private object storage에 raw payload 저장
-  -> Art1 수직 슬라이스(M1)
-  -> approved snapshot 기반 feature/export
-  -> 표준화 다음 DB active NANT 지지체/매체 95분류 + `learning_excluded` 학습 제외
+  -> local-first 개발 적용(dev compose + MySQL + MinIO + fixture)
+  -> D1: Art1 raw 수집부터 interpreted/normalized, NANT, snapshot/export까지 구현
+  -> D2: approved snapshot export 기반 feature generation spec/dataset build
+  -> D3: 모델 학습/import job
+  -> D4: registry candidate 승인과 deployment version 적용
+  -> 표준화 다음 DB active NANT 지지체/매체 95분류 + mapping row 기준 `learning_excluded` 학습 제외 판단
   -> 데이터 수집 서비스 내부 joblib serving adapter
   -> Warm joblib + Cold k80 보수적 운영 joblib 번들을 model training/import job + registry/deployment에 연결
   -> 사용자 API는 로그인 없이 익명 세션 + rate limit
@@ -40,7 +43,7 @@ MySQL 8.0 + 명시 SQL migration
 이 조합을 추천하는 이유:
 
 - 기존 문서의 핵심 원칙(raw object storage, 수집 DB 실시간 조회 금지, approved snapshot만 서빙, actor body 금지)과 충돌하지 않는다.
-- 새 ORM/SSO/회원 시스템을 동시에 도입하지 않아 M1의 불확실성을 줄인다.
+- 새 ORM/SSO/회원 시스템/feature generation/model deployment를 한 번에 묶지 않아 첫 구현 컷의 불확실성을 줄인다.
 - DDL/OpenAPI/프론트 mock/E2E를 병렬로 작성하기 쉽다.
 
 ## 2. 개발 착수 기준으로 확정할 항목
@@ -60,14 +63,16 @@ MySQL 8.0 + 명시 SQL migration
 | NANT 재료 분류 | 표준화 이후 DB active NANT mapping version으로 지지체/매체 95분류를 수행한다. CSV는 seed/import 원본이고, 어드민은 draft mapping을 관리하며 데이터 관리자가 active 전환한다. 학습 제외는 `learning_excluded=true`로 고정하고, 기존 재료/지지체 하드코딩 학습 필터는 쓰지 않는다. | NANT import/validator, mapping 관리 DDL, admin API/screen fixture, snapshot exclusion test |
 | raw object storage | 1차부터 private object storage 사용. DB에는 `payload_path`, `payload_hash`, `payload_size`만 저장한다. | object key convention, storage adapter |
 | object path | raw는 `raw/{env}/source={source}/dt={YYYY-MM-DD}/run={run_id}/{raw_fetch_id}-{sha16}.{ext}.gz`, CSV는 `manual/{env}/source={source}/dt={YYYY-MM-DD}/import={import_id}/original.csv`. | `payload_path`, `manual_import_file.file_uri` 규칙 |
-| 1차 시장 카드 저장 위치 | feature store 실시간 계산이 아니라 approved snapshot 생성 시 집계 테이블을 만든다. API는 active deployment의 training snapshot 기준 row를 조회한다. | `primary_market_artist_summary` 또는 동등 테이블 |
+| 첫 구현 컷(D1) | 학습/모델 적용 전에 Art1 기준 raw 수집, interpreted/normalized staging, NANT 분류/학습 제외, 품질 플래그, snapshot 후보/생성/승인, parquet export/manifest까지 닫는다. | local dev E2E, deterministic export test |
+| feature generation 컷(D2) | D1 export를 입력으로 Warm/Cold feature column, target/label, split, 결측/encoding, feature schema hash, feature artifact manifest를 별도 설계/구현한다. | feature contract spec, feature dataset build test |
+| 1차 시장 카드 저장 위치 | feature store 실시간 계산이 아니라 approved snapshot 생성 시 `primary_market_artist_summary`를 만든다. API는 active deployment의 training snapshot 기준 row를 조회한다. | `primary_market_artist_summary` |
 | 1차 시장 카드 계산 | 기존 가격 예측 `estimated_ho` 기준을 사용한다. `estimated_ho = argmin_h |area_cm2 - HO_TABLE_F[h]|`, `unit_price_per_ho = price_krw / estimated_ho`. | summary build job, API fixture |
 | 1차 시장 카드 표본 | 승인 snapshot의 정상화 row 중 가격/크기/작가키/품질/suppression 조건을 통과한 row만 사용한다. 전체 표본 최소 N=5, 매체별 분포는 매체 그룹 N>=3만 표시한다. | aggregation test |
 | 1차 시장 카드 이상치 | artist+medium 그룹 내 `unit_price_per_ho`의 q05~q95 winsorized 값을 기준으로 median/q25/q75를 계산한다. 표본이 20개 미만이면 winsorize 없이 median/q25/q75만 계산하고 low_sample flag를 붙인다. | calculation spec/test |
-| prediction API 연결 | 기존 가격 예측 API를 호출하지 않고, 데이터 수집 서비스 안에 joblib serving adapter를 둔다. adapter는 active deployment/model registry에서 joblib artifact를 읽고 직접 예측한다. | joblib serving adapter, parity smoke |
-| M1 모델 | Warm은 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`를 active deployment 후보로 둔다. Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 뒤 active deployment에 올린다. `cold_prediction_v0.5_operational`은 M1 적용 후보가 아니라 과거 raw-input p95 방어 참고 산출물로만 둔다. | model training/import seed, registry seed, deployment seed, cold k80 joblib freeze/parity |
-| 모델 학습/교체 lifecycle | Warm/Cold route와 model family는 고정한다. M1은 기존 joblib import/seed + fixed-test parity + active deployment로 닫는다. 이후 재학습은 같은 family 안에서 `model_training_job -> registry candidate -> candidate 승인 -> deployment promote/rollback` 흐름으로 `model_version`만 올린다. 새 snapshot 또는 candidate 생성만으로 운영 모델은 자동 변경되지 않는다. | model family/알고리즘/feature contract 변경은 별도 개발 작업 |
-| 신규 작가 후보 | 사용자 신규 작가 후보 제출을 M1에 포함한다. 따라서 SQL view/export만으로 시작하지 않고 물리 후보 큐 테이블을 1차 DDL에 포함한다. | physical candidate queue table, public submit API |
+| prediction API 연결 | 기존 가격 예측 API를 호출하지 않고, 데이터 수집 서비스 안에 joblib serving adapter를 둔다. adapter는 D4에서 active deployment/model registry의 joblib artifact를 읽고 직접 예측한다. | joblib serving adapter, parity smoke |
+| D3/D4 모델 연결 | Warm은 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`를 active deployment 후보로 둔다. Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 뒤 active deployment에 올린다. `cold_prediction_v0.5_operational`은 적용 후보가 아니라 과거 raw-input p95 방어 참고 산출물로만 둔다. | model training/import seed, registry seed, deployment seed, cold k80 joblib freeze/parity |
+| 모델 학습/교체 lifecycle | Warm/Cold route와 model family는 고정한다. D1 snapshot/export와 D2 feature generation 이후, D3는 기존 joblib import/seed 또는 신규 학습을 만들고 D4는 fixed-test parity + candidate 승인 + active deployment로 버전을 적용한다. 이후 재학습도 같은 family 안에서 `model_training_job -> registry candidate -> candidate 승인 -> deployment promote/rollback` 흐름으로 `model_version`만 올린다. 새 snapshot 또는 candidate 생성만으로 운영 모델은 자동 변경되지 않는다. | model family/알고리즘/feature contract 변경은 별도 개발 작업 |
+| 신규 작가 후보 | 사용자 신규 작가 후보 제출을 M1에 포함한다. 따라서 SQL view/export만으로 시작하지 않고 `standardization_review_item(review_type=new_artist)`를 물리 큐로 1차 DDL에 포함한다. 별도 `new_artist_candidate` 테이블은 만들지 않는다. | 공통 검수 큐 row, public submit API |
 | 서버 이미지 / 모델 전달 | 모델 artifact는 이미지에 굽지 않고 object storage/registry에서 런타임 pull한다(§3.11). API 이미지는 `python:3.11-slim`(모델/데이터 미포함), 서비스 화면은 Next.js standalone Node runtime, 어드민 화면은 정적 SPA nginx로 배포한다. 모델 교체는 deployment 행으로 하고 이미지 rebuild를 요구하지 않는다. | Dockerfile.api, Dockerfile.service-web, Dockerfile.admin-web, docker-compose, startup artifact loader, `.dockerignore` |
 
 ## 3. 선택이 필요한 항목
@@ -138,19 +143,19 @@ MySQL 8.0 + 명시 SQL migration
 
 | 선택지 | 장점 | 단점 | 판단 |
 |---|---|---|---|
-| joblib serving adapter | 기존 API 서버에 의존하지 않고 M1에서 실제 모델을 로드해 동작 검증 가능. `model_version`/`deployment_id`/`as_of` 로그 주입도 서비스 내부에서 통제할 수 있다. | 모델 artifact 입출력 스키마를 adapter가 직접 맞춰야 한다. | 확정 |
+| joblib serving adapter | 기존 API 서버에 의존하지 않고 D4에서 실제 모델을 로드해 동작 검증 가능. `model_version`/`deployment_id`/`as_of` 로그 주입도 서비스 내부에서 통제할 수 있다. | 모델 artifact 입출력 스키마를 adapter가 직접 맞춰야 한다. | 확정 |
 | 기존 가격 예측 API wrapper | 기존 API 동작을 재사용할 수 있다. | 기존 API 계약과 data_collection 계약이 얽히고, 사용자가 원하는 "joblib로 직접 작동" 조건과 다르다. | 제외 |
 | 기존 가격 예측 API 직접 확장 | 레이어가 적다. | 기존 API 회귀 위험이 크고 data_collection 요구사항이 가격 엔진 내부로 번진다. | 비권장 |
 
 ### 3.7 Cold 모델 적용 후보
 
-확정: M1 Cold 기본 후보는 `k80 보수적 운영` 모델을 joblib runtime bundle로 freeze한 산출물이다.
+확정: D3/D4 Cold 기본 후보는 `k80 보수적 운영` 모델을 joblib runtime bundle로 freeze한 산출물이다.
 
 선택 이유:
 
 - `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)는 validation 기준 선택 논리가 가장 방어적이다. k40은 fixed test 일부 지표가 더 좋아도 validation 안정성이 약해 운영 기본값으로는 사후 과적합 리스크가 더 크다.
-- v0.3 guard+search는 search/lookup 포함 조건의 연구 성능 후보라서, M1의 "서비스 내부 joblib 직접 로드" 기본 경로와 결합하기 전에 별도 feature/lookup 계약이 필요하다.
-- `cold_prediction_v0.5_operational`은 즉시 참조 가능한 과거 raw-input p95 방어 산출물이지만, M1 Cold 기본 적용 후보는 아니다.
+- v0.3 guard+search는 search/lookup 포함 조건의 연구 성능 후보라서, D4의 "서비스 내부 joblib 직접 로드" 기본 경로와 결합하기 전에 별도 feature/lookup 계약이 필요하다.
+- `cold_prediction_v0.5_operational`은 즉시 참조 가능한 과거 raw-input p95 방어 산출물이지만, D3/D4 Cold 기본 적용 후보는 아니다.
 
 Cold k80 joblib 적용 산출물:
 
@@ -164,7 +169,7 @@ Cold k80 joblib 적용 산출물:
 적용 규칙:
 
 - Cold k80 joblib freeze/parity가 실패하면 `cold_prediction_v0.5_operational`로 자동 fallback하지 않는다.
-- 이 경우 M1 cold route를 보류하거나, 별도 승인 후 fallback 후보를 다시 선택한다.
+- 이 경우 D4 cold route를 보류하거나, 별도 승인 후 fallback 후보를 다시 선택한다.
 
 ### 3.8 공유 상태 저장소 (rate limit / idempotency / 익명 세션)
 
@@ -220,6 +225,19 @@ Cold k80 joblib 적용 산출물:
 | Styling/UI | Tailwind CSS + Radix UI primitives + lucide-react icons. 공통 컴포넌트는 `frontend_component_guidelines_20260625.md`를 우선한다 |
 | Lint/format | ESLint + Prettier + TypeScript strict |
 
+프론트 배포 origin/auth 기준(M1):
+
+| 항목 | 확정 |
+|---|---|
+| 권장 origin 구성 | 같은 site의 subdomain 분리: `service.{base_domain}`, `admin.{base_domain}`, `api.{base_domain}` |
+| local dev origin | `service-web`, `admin-web`, `api`는 docker-compose service name과 dev port를 분리하되, 허용 origin allowlist에 명시한다 |
+| 브라우저 API 호출 | `service-web`/`admin-web` 모두 FastAPI `api.{base_domain}`을 호출한다. Next.js route handler나 admin dev proxy에 비즈니스 쓰기 로직을 두지 않는다 |
+| API base env | 브라우저 노출값은 앱별 `*_PUBLIC_API_BASE_URL` 또는 동등한 public env로 둔다. 서버 전용 내부 URL이 필요한 경우 `INTERNAL_API_BASE_URL`처럼 public env와 분리한다 |
+| admin token 저장 | 어드민 refresh token은 `HttpOnly; Secure; SameSite=Lax; Domain=.base_domain` 쿠키, access token은 서버 발급 후 짧은 TTL로 사용한다. local/dev에서는 Secure 예외를 dev profile에만 허용한다 |
+| CORS | API는 `service.{base_domain}`과 `admin.{base_domain}` 및 local dev origin만 allowlist에 둔다. wildcard origin 금지 |
+| CSRF | 쿠키 기반 refresh/logout 같은 상태 변경 endpoint는 CSRF token 또는 double-submit 검증을 적용한다. Bearer access token API라도 refresh cookie가 끼는 endpoint는 CSRF 예외로 두지 않는다 |
+| 사용자 익명 세션 | 사용자 로그인은 없지만 first-party 익명 세션 쿠키를 발급한다. abuse 방어의 주 기준은 IP rate limit이며 세션 한도는 UX 가드다 |
+
 | 선택지 | 장점 | 단점 | 판단 |
 |---|---|---|---|
 | 서비스 Next.js + 어드민 React SPA | 서비스 화면은 SEO/metadata 여지를 확보하고, 어드민은 정적 SPA로 단순하고 최신 상태 중심으로 운영한다. 배포 장애 범위도 분리된다. | 앱 2개와 shared package 관리가 필요하다. | 확정 |
@@ -259,7 +277,26 @@ Cold k80 joblib 적용 산출물:
 - root 실행 → non-root user 지정
 - 모델 선택을 이미지 env 기본값(예: `SOURCE_ROUTER_MODE`)에 섞기 → deployment 테이블 밖의 숨은 런타임 동작. 작품 가격 데이터 플랫폼은 모델 선택을 env가 아니라 deployment 행으로만 통제
 
-## 4. Phase 0에서 바로 만들어야 할 산출물
+### 3.12 개발 적용 / 배포 전략
+
+확정: **local-first 개발 후 staging/preview 검증, 그 다음 production 배포**로 간다. DB migration, object storage, parser/normalizer, NANT seed, snapshot/export가 함께 움직이므로 production에 바로 배포하면서 맞추지 않는다.
+
+| 단계 | 목적 | 완료 기준 |
+|---|---|---|
+| local dev | schema, seed, parser/normalizer, NANT, snapshot/export 결정성 검증 | `docker-compose`로 MySQL+MinIO+API가 뜨고 Art1 fixture가 D1 끝까지 통과 |
+| staging/preview | 실제와 유사한 환경에서 migration/rebuild/rollback 경로 검증 | migration up/down, seed 재실행, artifact/object path, admin 권한 smoke 통과 |
+| production | 검증된 migration/image/config만 반영 | 백업/rollback 절차 확인 후 배포, D1은 모델 deployment 변경 없이 데이터 파이프라인부터 활성화 |
+
+원칙:
+
+- D1에서는 production 모델/예측 route를 바꾸지 않는다. 수집/표준화/snapshot/export 산출물을 먼저 검증한다.
+- D2 feature generation spec이 닫히기 전에는 신규 모델 학습을 구현하지 않는다.
+- D3 학습/import와 D4 registry/deployment는 별도 PR/배포 단위로 나눈다.
+- emergency patch가 아니면 production에서 직접 schema나 mapping을 실험하지 않는다.
+
+## 4. 개발 적용 컷별 산출물
+
+D1(우선 구현: 학습 전 데이터 플랫폼):
 
 1. `projects/art-price-data-platform/docs/openapi/art_price_data_platform_v1.yaml`
 2. `projects/art-price-data-platform/docs/mysql/001_art_price_data_platform_core.up.sql`
@@ -271,13 +308,22 @@ Cold k80 joblib 적용 산출물:
 8. suppression query/snapshot exclusion test fixture
 9. NANT DB mapping DDL + CSV import/validator + 95개 조합/`비고2 -> learning_excluded` 변환 fixture
 10. primary market summary calculation fixture
-11. `model_training_job` DDL + model training/import + registry/deployment seed for Warm joblib + Cold k80 joblib M1
-12. public artist candidate submit queue fixture
-13. Warm joblib + Cold k80 joblib serving smoke/parity fixture
-14. API Dockerfile(non-root, 모델 미포함) / service-web Dockerfile(Next.js standalone) / admin-web Dockerfile(Vite build→nginx) / docker-compose(api+service-web+admin-web+mysql+minio) / `.dockerignore`
-15. startup artifact loader(active deployment → object storage joblib pull + `artifact_sha256` 검증) smoke fixture
-16. `rate_limit_counter` / `idempotency_key` / `anonymous_session` 테이블 DDL(§3.8) + `price_model_registry.artifact_sha256`/`feature_schema_hash` 컬럼(§3.11)
-17. admin NANT mapping 관리 API/screen fixture(draft edit, unmapped 처리, validation, activate)
+11. public artist candidate submit queue fixture
+12. API Dockerfile(non-root, 모델 미포함) / service-web Dockerfile(Next.js standalone) / admin-web Dockerfile(Vite build→nginx) / docker-compose(api+service-web+admin-web+mysql+minio) / `.dockerignore`
+13. `rate_limit_counter` / `idempotency_key` / `anonymous_session` 테이블 DDL(§3.8)
+14. admin NANT mapping 관리 API/screen fixture(draft edit, unmapped 처리, validation, activate)
+
+D2(후속: feature generation):
+
+15. Warm/Cold feature generation spec(feature column list, target/label, split, 결측/encoding, leakage 방지)
+16. feature dataset build job + feature manifest + `feature_schema_hash` 검증 fixture
+
+D3/D4(후속: 모델 학습/import와 버전 적용):
+
+17. `model_training_job` DDL/service + registry/deployment seed for Warm joblib + Cold k80 joblib
+18. Warm joblib + Cold k80 joblib serving smoke/parity fixture
+19. startup artifact loader(active deployment → object storage joblib pull + `artifact_sha256` 검증) smoke fixture
+20. model registry candidate 승인/반려 + deployment promote/rollback/retire API/screen fixture
 
 ## 5. 개발 착수 전 확인 질문
 
@@ -287,7 +333,7 @@ Cold k80 joblib 적용 산출물:
 |---|---|
 | 사용자 API를 로그인 필수로 둘 것인가? | 아니오. M1은 로그인 없음 + 익명 세션 + rate limit |
 | admin 인증을 외부 IdP로 시작할 것인가? | 아니오. M1은 제공 이메일/비밀번호 + JWT. SSO는 후속 |
-| 신규 작가 후보 제출을 M1에 포함할 것인가? | 예. 물리 후보 큐 테이블을 M1 DDL에 포함 |
+| 신규 작가 후보 제출을 M1에 포함할 것인가? | 예. `standardization_review_item(review_type=new_artist)`를 M1 DDL에 포함 |
 | object storage provider를 지금 특정 cloud로 고정할 것인가? | 아직 미정. adapter + local dev + S3-compatible path |
 | 기존 예측 API를 직접 수정/호출할 것인가? | 아니오. joblib serving adapter 우선 |
 | rate limit/idempotency 저장을 별도 Redis로 둘 것인가? | 아니오. M1은 단일 인스턴스 + MySQL. 확장 시 Redis |

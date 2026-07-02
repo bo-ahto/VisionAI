@@ -57,7 +57,7 @@
 
 검증:
 
-- `POST /review/artist-names/{alias_id}/decision`
+- `POST /standardization-review-items/{review_item_id}/decision`
 - payload에 `decision=approve`, `expected_review_status`, `reason` 포함
 - 성공 후 row 상태 갱신
 
@@ -151,7 +151,7 @@
 - approved만 사용자 기준
 - 각 단계 actor/reason 기록
 
-### E2E-S-02 모델 승격/롤백
+### E2E-S-02 모델 승격/롤백/retire
 
 검증:
 

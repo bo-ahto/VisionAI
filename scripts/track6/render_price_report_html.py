@@ -15,7 +15,8 @@ DEFAULT_TARGET = REPO / "docs" / "track6" / "experiments" / "price_prediction_ac
 
 def inline(text: str) -> str:
     escaped = html.escape(text)
-    return re.sub(r"`([^`]+)`", r"<code>\1</code>", escaped)
+    escaped = re.sub(r"`([^`]+)`", r"<code>\1</code>", escaped)
+    return re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", escaped)
 
 
 def slugify(text: str) -> str:

@@ -57,7 +57,6 @@ BASE_NUMERIC = [
 META_RAW = [
     "artist_meta_source",
     "artist_meta_nationality",
-    "artist_meta_nationality_ko",
     "artist_meta_birth_year",
     "artist_meta_total_works",
     "artist_meta_for_sale_works",
@@ -92,7 +91,6 @@ META_NUMERIC = [
 META_CATEGORICAL = [
     "artist_meta_source",
     "artist_meta_nationality",
-    "artist_meta_nationality_ko",
 ]
 
 META_ALL = META_NUMERIC + META_CATEGORICAL

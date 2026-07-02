@@ -1,0 +1,32 @@
+{
+  "artifact_id": "official_v0_1_warm_target_wmin4_min1_huber_refit_partial",
+  "display_name": "history_based_minimum_one_comparable_huber_correction",
+  "internal_trace_id": "WMIN4 min1 Huber refit partial",
+  "raw_adapter_readiness": {
+    "blocking_items": [
+      "serialize and connect the min1 comparable-stat SVC payload for raw service input",
+      "serialize and connect the WMIN3 partial Huber refit path for raw service input",
+      "run fixed-test parity and deterministic-repeat checks through the official v0.1 API"
+    ],
+    "exact_raw_adapter_ready": false,
+    "proxy_adapter_ready": true,
+    "target_candidate_artifact_ready": true
+  },
+  "selected_candidate_label": "min1_huber_refit_partial",
+  "selected_logic": {
+    "base_price": "Use the Warm min1 comparable-stat numeric seed mean and combine it with the existing stable blend candidate to form the 70:30 log-price basis.",
+    "correction": "Apply the Huber residual coefficient refit in partial mode.  Partial mode swaps the 70:30 basis to the min1 basis while keeping the prior SVC residual context stable, then clips the residual correction by the same HCOEF stable policy used in the WMIN3 validation.",
+    "selected_candidate_formula_name": "min1 comparable-stat basis + partial Huber residual refit"
+  },
+  "selection_policy": {
+    "fixed_test_usage": "final_confirmation_only",
+    "previous_reference": "PP258 operational Warm candidate",
+    "primary_selection_basis": "validation_oof_repeated_stability_and_replacement_score"
+  },
+  "service_version": "price_prediction_v0.1",
+  "warm_route_policy": {
+    "artist_match_score_min": 0.9,
+    "note": "Service routing remains at 5 same-artist prices for Warm eligibility. The selected WMIN4 internal comparable-stat ladder can fall back to minimum one comparable row after the request is routed to Warm.",
+    "same_artist_training_price_count_min": 5
+  }
+}

@@ -26,7 +26,7 @@
 | `medium_raw` | `28` | `5,319` | `28` | missing_required=28 |
 | `depth_cm` | `24,324` | `418` | `15` | above_max_1000=15 |
 | `aspect_ratio` | `97` | `6,186` | `2` | above_max_100=2 |
-| `artist_name_ko` | `2` | `2,871` | `2` | missing_required=2 |
+| `artist_name_ko` | `2` | `2,869` | `2` | missing_required=2 |
 
 ## 3. 파생값 계산 검증
 

@@ -296,7 +296,7 @@ API 기획
 - 가격 있음/없음
 - 크기 파싱 성공/실패
 - NANT 재료 분류 성공/실패/학습 제외
-- 제외 후보(`nant_learning_excluded`, `nant_unmapped` 포함)
+- 제외 후보(`nant_learning_excluded`)와 NANT 검수 보류(`review_type=nant_mapping`)
 - 중복 후보
 - 검수 상태(검수 중 포함)
 
@@ -309,7 +309,7 @@ API 기획
 | 원천값 | 사이트에서 받은 원문 값 |
 | 분해/정리값 | 원천 문자열을 분해한 값 |
 | 표준화 후보값 | 공통 컬럼에 들어갈 후보값 |
-| NANT 분류 | `nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status` |
+| NANT 분류 | `nant_support`, `nant_medium`, `nant_category_key` 또는 NANT 검수 보류 사유 |
 | 품질 플래그 | 가격 없음, 크기 없음, NANT 제외 후보 등 |
 | 원천 링크 | 원문 확인용 URL |
 | 처리 버튼 | 승인, 수정 후 승인, 보류, 제외 |
@@ -347,12 +347,12 @@ API 기획
 |---|---|
 | 표시명 승인 | `decision=approve` |
 | 표시명 수정 후 승인 | `decision=approve_with_edit` |
-| override 등록(확정 한글명을 `artist_ko_overrides.csv`에 등록, 4.6) | `decision=register_override` |
+| override 등록(확정 한글명을 `artist_name_alias` DB에 승인 alias/override row로 등록, 4.6) | `decision=register_override` |
 | alias 추가 | `decision=add_alias` |
 | 보류 | `decision=hold` |
 | 반려 | `decision=reject` |
 
-처리는 작가명 검수 처리 API(`POST /api/v1/admin/review/artist-names/{alias_id}/decision`)에 매핑된다. 각 버튼은 decision 동사와 1:1로 대응한다: 표시명 승인=`approve`, 표시명 수정 후 승인=`approve_with_edit`, alias 추가=`add_alias`, 보류=`hold`, 반려=`reject`. "alias 추가"는 별도 `decision=add_alias`로 보내며, `approve`/`approve_with_edit`와 겹치지 않는다(표시명 승인이 alias를 추가하지 않고, alias 추가가 표시명을 확정하지 않는다).
+처리는 공통 표준화 검수 API(`POST /api/v1/admin/standardization-review-items/{review_item_id}/decision`)에 매핑된다. 작가명 한글화는 `review_type=artist_name_ko`다. 각 버튼은 decision 동사와 1:1로 대응한다: 표시명 승인=`approve`, 표시명 수정 후 승인=`approve_with_edit`, alias 추가=`add_alias`, 보류=`hold`, 반려=`reject`. "alias 추가"는 별도 `decision=add_alias`로 보내며, `approve`/`approve_with_edit`와 겹치지 않는다(표시명 승인이 alias를 추가하지 않고, alias 추가가 표시명을 확정하지 않는다).
 
 ### 4.5 artist_key 연결 검수 큐
 
@@ -422,7 +422,7 @@ API 기획
 
 처리:
 
-처리는 신규 작가 후보 결정 API(`POST /api/v1/admin/review/new-artists/{candidate_id}/decision`)에 매핑된다.
+처리는 공통 표준화 검수 API(`POST /api/v1/admin/standardization-review-items/{review_item_id}/decision`)에 매핑된다.
 
 | 버튼 | 결과 | API 매핑 | 최소 권한 |
 |---|---|---|---|
@@ -540,6 +540,7 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 | 후보 반려 | candidate를 rejected로 전환 | `POST /api/v1/admin/model-versions/{model_version}/decision` | 데이터 관리자 |
 | 운영 승격 | approved 모델을 active deployment로 전환 | `POST /api/v1/admin/model-deployments` | 데이터 관리자 |
 | 롤백 | 이전 approved 모델로 active deployment 전환 | `POST /api/v1/admin/model-deployments` | 데이터 관리자 |
+| retired 처리 | 더 이상 운영 후보로 쓰지 않을 모델을 retired로 전환 | `POST /api/v1/admin/model-deployments` | 데이터 관리자 |
 
 화면 규칙:
 
@@ -584,7 +585,7 @@ snapshot 반영은 3단계 권한 흐름(확정 요청 → 생성 승인 → 서
 | 일반 사용자 | 가격 예측 입력, 작가 검색/선택, 신규 작가 후보 제출 |
 | 운영 담당자 | 수집 run 확인/재수집 요청, 검수 큐 처리, 보류/제외, snapshot 후보 확인, NANT mapping 조회 |
 | 데이터 분석가 | 수동 CSV 업로드/매핑, NANT draft import/편집/validation, snapshot 품질/분포 검토, 학습 피처 승격 판단, 모델 학습/import job 생성 |
-| 데이터 관리자 | 원천 등록/수정, 신규 artist_key 생성 승인, 기존 artist_key 연결 확정, alias 정책 관리, NANT active 전환, snapshot 생성/서빙 승인, 모델 승인/승격/롤백 |
+| 데이터 관리자 | 원천 등록/수정, 신규 artist_key 생성 승인, 기존 artist_key 연결 확정, alias 정책 관리, NANT active 전환, snapshot 생성/서빙 승인, 모델 승인/승격/롤백/retire |
 | 개발자 | crawler/parser 장애 확인, migration/배포 점검, 기술 로그 확인 |
 | 슈퍼유저 | 운영 초기 전용 관리자. 운영 담당자, 데이터 분석가, 데이터 관리자, 개발자 화면 기능을 모두 사용 |
 

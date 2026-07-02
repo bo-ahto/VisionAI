@@ -50,6 +50,8 @@
 
 P0는 "중요"가 아니라 "차단"으로만 부여한다. 한 Epic의 모든 Task가 P0가 되면 우선순위 신호가 사라지므로, 스프린트 계획 시 실제 cross-track 차단 Task만 P0로 유지한다.
 
+P0/P1/P2는 전체 1차 백로그 안의 차단 관계를 표시하는 축이고, D1/D2~D4는 개발 적용 순서를 표시하는 축이다. 따라서 D4에 속한 P0 Task는 D4 단계의 차단 작업일 수 있지만, D1 즉시 구현 범위에는 포함되지 않는다. D1/D2~D4 구성은 §14를 따른다.
+
 **`(gate)` 표기**: 출시에는 반드시 필요하지만 **P0 빌드 트랙을 막지는 않는** 작업(사용자/어드민 화면, 통합 검증)은 `P1 (gate)`로 표기한다. 스케줄 우선순위는 P1(빌드 이후)이지만 1차 완료 정의(§13 Epic 9 / PRD §10)에는 필수다. 이들에 의존하는 후행은 운영 runbook(E8-T06)·통합 검증(E9)뿐이고 그 작업들도 gate/P1이라, gate를 미루어도 어떤 P0 빌드 트랙도 멈추지 않는다.
 
 **`(M1-gate)` 표기**: P0 빌드 트랙은 아니지만 M1 완료 판정에 필요한 화면/흐름이다. 예를 들어 사용자 신규 작가 후보 제출 화면과 신규 후보 최소 큐는 M1-gate다.
@@ -89,11 +91,11 @@ P0는 "중요"가 아니라 "차단"으로만 부여한다. 한 Epic의 모든 T
 | E1-T03 | raw structured 테이블 구현 | P0 | E1-T02 | `source_artwork_raw`, `source_artist_raw` | run/source/id 유니크 반영 | insert idempotency test |
 | E1-T04 | interpreted/normalized 테이블 구현 | P0 | E1-T03 | 4개 staging 테이블 | quality flag/parsed json 포함 | migration test |
 | E1-T05 | artist identity 테이블 구현 | P0 | E1-T04 | alias/candidate/identity/event/version/history | identity event append-only 기준 반영 | DB test |
-| E1-T06 | snapshot 테이블 구현 | P0 | E1-T05 | snapshot/request/item | generated/approved 분리, active request lock 반영 | transition test |
+| E1-T06 | snapshot/export 테이블 구현 | P0 | E1-T05 | snapshot/request/item/export | generated/approved 분리, active request lock, `snapshot_export` manifest/hash 구조 반영 | transition test + export FK test |
 | E1-T07 | model training/registry/deployment/log 테이블 구현 | P1 | E1-T06 | `model_training_job`, registry/deployment/log 테이블 | active deployment route lock, training job 상태, registry candidate/approved 상태 반영 | DB test |
 | E1-T08 | object storage payload store 구현 | P0 | E1-T03 | payload writer/reader | DB에는 path/hash/size만 저장 | unit/integration test |
-| E1-T09 | suppression 저장 구조 구현 | P0 | E0-T05 | 컬럼 또는 테이블 | 서비스 노출/snapshot 제외에 쓸 수 있음 | DB/query test |
-| E1-T10 | NANT mapping 관리 테이블 구현 | P0 | E0-T09, E1-T01 | `nant_mapping_version`, `nant_allowed_category`, `nant_material_mapping`, `artwork_nant_classification` | active version 단일성, draft-only edit, category/mapping unique 제약 반영 | migration/constraint test |
+| E1-T09 | suppression_rule 테이블 구현 | P0 | E0-T05 | `suppression_rule` table | service display/snapshot export/model training/raw retention scope별 필터 가능 | DB/query test |
+| E1-T10 | NANT mapping 관리 테이블 구현 | P0 | E0-T09, E1-T01 | `nant_mapping_version`, `nant_allowed_category`, `nant_material_mapping`, `normalized_artwork_staging.nant_*` 컬럼 | active version 단일성, draft-only edit, category/mapping unique 제약, 작품 staging NANT 컬럼 반영 | migration/constraint test |
 
 ## 6. Epic 2. Collector 공통 인터페이스와 raw 적재
 
@@ -129,7 +131,7 @@ P0는 "중요"가 아니라 "차단"으로만 부여한다. 한 Epic의 모든 T
 | E3-T06 | unmapped 리포트 구현 | P1 | E3-T03 | material/support report | 미매핑 항목 집계 | report test |
 | E3-T07 | run 품질 감사 구현 | P1 | E3-T03/E3-T04 | quality audit job | 보유율/성공률/차단 기준 산출 | audit test |
 | E3-T08 | NANT 지지체/매체 95분류 구현 | P0 | E1-T10, E3-T03 | NANT classification job | active DB mapping version으로 normalized 작품 row에 `nant_support`/`nant_medium`/`nant_category_key`/mapping version/status가 생성됨 | 95 category fixture + mapping test |
-| E3-T09 | NANT 학습 제외 필터 구현 | P0 | E3-T08 | snapshot exclusion flag | DB mapping row의 `learning_excluded=true` row는 학습 snapshot/export/model feature 생성에서 제외되고 raw/staging은 보존됨 | exclusion test + 기존 hard-code filter 미사용 test |
+| E3-T09 | NANT 학습 제외 필터 구현 | P0 | E3-T08 | mapping join exclusion query | DB mapping row의 `learning_excluded=true` row는 학습 snapshot/export/model feature 생성에서 제외되고 raw/staging/classification row에는 중복 플래그를 만들지 않음 | exclusion test + 기존 hard-code filter 미사용 test |
 | E3-T10 | 레이어 수정/재처리 정책 가드 | P0 | E3-T03, E3-T04 | mutation policy tests + service guards | raw/source raw 직접 수정 금지, normalized 직접 patch 금지, override/change_event 경로 사용, snapshot 참조 row 보존, current cache rebuild 경로 검증 | DB constraint/service test |
 
 ## 8. Epic 4. 작가명/artist_key 표준화와 검수 큐
@@ -145,10 +147,10 @@ P0는 "중요"가 아니라 "차단"으로만 부여한다. 한 Epic의 모든 T
 | E4-T03 | 기존 source artist 연결 확인 | P0 | E4-T01 | identity matching job | 같은 source+artist_source_id 자동 연결 | integration test |
 | E4-T04 | identity candidate 생성 | P0 | E4-T01 | candidate job | alias 기반 후보 생성 | integration test |
 | E4-T05 | 자동 확정 규칙 구현 | P0 | E4-T04 | auto approval logic | 승인 alias+고신뢰 생년+충돌 없음만 자동 확정 | rule test |
-| E4-T06 | 신규 작가 후보 큐 생성 | P0 | E4-T04 | physical new artist candidate queue | 사용자 후보 제출을 받고 승인 전 artist_key 미생성 | query/API test |
+| E4-T06 | 신규 작가 후보 큐 생성 | P0 | E4-T04 | `standardization_review_item(review_type=new_artist)` facade/query | 사용자 후보 제출을 받고 승인 전 artist_key 미생성. 별도 `new_artist_candidate` 테이블은 만들지 않음 | query/API test |
 | E4-T07 | identity_event_log 기록 | P0 | E4-T05 | event writer | 연결/생성/merge/un-merge append-only | event test |
 | E4-T08 | 영향 범위 조회 구현 | P1 | E4-T07 | impact query | row -> snapshot -> model/deployment 추적 | query test |
-| E4-T09 | artist_profile_item/current 구현 | P0 | E4-T05, E4-T06 | profile item table + current summary build job | 확정 artist_key의 프로필/메타를 `artist_profile_item`에 항목 단위 저장하고 `artist_profile_current`는 현재 요약/cache로 생성. `artist_identity`에 bio/학력/전시/팔로워를 몰아넣지 않음 | DB/query test |
+| E4-T09 | artist_profile_meta 구현 | P0 | E4-T05, E4-T06 | 프로필 메타 테이블 + `is_current`/`display_rank` 조회 | 확정 artist_key의 프로필/메타와 현재 표시값을 `artist_profile_meta`에 항목 단위 저장. `artist_identity`에 bio/학력/전시/팔로워를 몰아넣지 않음 | DB/query test |
 
 ## 9. Epic 5. Snapshot/export/model deployment
 
@@ -158,17 +160,19 @@ P0는 "중요"가 아니라 "차단"으로만 부여한다. 한 Epic의 모든 T
 
 | ID | Task | 우선순위 | 선행 조건 | 산출물 | 완료 기준 | 검증 |
 |---|---|---|---|---|---|---|
-| E5-T01 | snapshot 후보 summary/items query | P0 | E3-T03, E3-T04, E3-T09, E4-T05 | query/service | 포함/제외/보류/품질 요약 제공. NANT 제외 사유(`nant_learning_excluded`, `nant_unmapped`) 포함(상세 품질감사는 E3-T07로 보강) | query test |
+| E5-T01 | snapshot 후보 summary/items query | P0 | E3-T03, E3-T04, E3-T09, E4-T05 | query/service | 포함/제외/보류/품질 요약 제공. NANT 제외 사유(`nant_learning_excluded`)와 `standardization_review_item(review_type=nant_mapping)` 보류 수 포함(상세 품질감사는 E3-T07로 보강) | query test |
 | E5-T02 | snapshot 확정요청 구현 | P0 | E5-T01 | request API/job | 운영자 요청 생성, 멱등 처리 | API test |
 | E5-T03 | snapshot 생성승인 구현 | P0 | E5-T02 | create job/API | generated snapshot 생성 | transition test |
 | E5-T04 | snapshot 서빙승인 구현 | P0 | E5-T03 | approve API | approved 상태 전이 | transition test |
-| E5-T05 | parquet export/manifest 구현 | P0 | E5-T03 | export files | 같은 입력/규칙이면 재현 가능 | deterministic test |
+| E5-T05 | parquet export/manifest 구현 | P0 | E5-T03 | `snapshot_export` row + export files | 같은 입력/규칙이면 재현 가능하고 manifest/hash/row_count가 DB에 남음 | deterministic test + hash test |
+| E5-T05A | 1차 시장 가격 카드 summary 생성 | P0 | E5-T04, E0-T06 | `primary_market_artist_summary` builder | approved snapshot 기준 artist/medium 집계 생성. 원천 URL/ID 없이 sample_count, median/q25/q75, low_sample 저장 | calculation fixture test |
 | E5-T06 | CSV export 구현 | P2 | E5-T05 | review/share CSV | 검수/공유/호환용 생성 | export test |
-| E5-T07 | model training/import job 구현 | P1 | E5-T05, E1-T07 | `model_training_job` service | approved snapshot/export 기준으로 학습/import job 생성, 상태 추적, artifact/hash/metric 기록 가능 | job state/API test |
+| E5-T06A | feature generation spec/dataset build | P1 | E5-T05 | feature contract + feature dataset builder | Warm/Cold feature column list, target/label, split, 결측/encoding, leakage 방지, feature manifest, `feature_schema_hash`가 고정됨 | feature contract test + deterministic build test |
+| E5-T07 | model training/import job 구현 | P1 | E5-T05, E5-T06A, E1-T07 | `model_training_job` service | approved snapshot/export 기준으로 학습/import job 생성, 상태 추적, artifact/hash/metric 기록 가능. legacy joblib import는 feature dataset build를 생략할 수 있지만 feature contract/manifest를 반드시 참조 | job state/API test |
 | E5-T08 | model registry + candidate 승인 구현 | P0 | E5-T05, E1-T07 | model registration/approval | job 또는 seed/import 결과를 `candidate`로 등록하고, 같은 Warm/Cold model family/contract 안에서 gate 통과 모델만 `approved` 전환 가능. family/contract 변경은 승인 불가 | API/DB/permission test |
 | E5-T09 | model deployment 구현 | P0 | E5-T08 | deployment service | `approved` 모델만 active/rollback 전이, candidate 직접 배포 금지 | transition test |
 | E5-T10 | prediction log 구현 | P0 | E5-T09 | log writer | model/deployment/route 추적 가능 | API test |
-| E5-T11 | M1 joblib 모델 번들/feature store 연결 | P0 | E5-T05, E5-T08, E5-T09 | Warm joblib + Cold k80 joblib freeze/parity + serving adapter + active deployment seed | Art1 M1 예측 API가 Warm joblib와 Cold k80 joblib active deployment 기준으로 응답하고 `model_version`/`deployment_id`/`route`를 남김 | Warm/Cold joblib smoke + fixed-test parity + prediction log test |
+| E5-T11 | D3/D4 joblib 모델 번들/feature store 연결 | P0 | E5-T05, E5-T06A, E5-T08, E5-T09 | Warm joblib + Cold k80 joblib freeze/parity + serving adapter + active deployment seed | Art1 예측 API가 Warm joblib와 Cold k80 joblib active deployment 기준으로 응답하고 `model_version`/`deployment_id`/`route`를 남김 | Warm/Cold joblib smoke + fixed-test parity + prediction log test |
 
 E5-T11 세부 산출물:
 
@@ -274,26 +278,44 @@ E5-T11 세부 산출물:
 
 로드맵 §5.5에 따라 Epic 1~7 구현은 1원천(Art1) end-to-end **수직 슬라이스(M1)** 를 먼저 완성하고 폭으로 확장(M2)한다. M1은 별도 완화 기준이 아니라 1차 완료의 **부분집합을 조기 검증**하는 단계다.
 
-### M1 구성 Task (Art1 1원천 · 작가명/신규 후보 최소 검수 큐 · 최소 화면)
+### D1 구성 Task (우선 구현: 학습 전 데이터 플랫폼)
 
-- 기반: E0-T01~T04, E0-T06, E0-T07, E0-T08, E0-T09, E1-T01~T08, E1-T10
+D1은 첫 개발 목표다. 모델 학습/import, registry/deployment, prediction API는 포함하지 않는다.
+
+- 기반: E0-T01~T09, E1-T01~T06, E1-T08, E1-T09, E1-T10
 - 수집: E2-T01, E2-T02, E2-T03, E2-T04 (Art1만)
 - 표준화: E3-T01~T04, E3-T08~T10 (Art1만)
-- 작가 identity/profile: E4-T01~T06 (최소 identity 후보/자동 확정 경로 + 사용자 신규 작가 후보 제출 큐), E4-T07은 M1에서 "연결 확정 이벤트 1종"만 기록, E4-T09는 Art1 기준 최소 `artist_profile_item` 생성 + `artist_profile_current` 요약 갱신
-- snapshot/model: E5-T01~T05, E5-T08~T11
+- 작가 identity/profile 최소 경로: E4-T01~T06, E4-T09 최소 생성
+- snapshot/export: E5-T01~T05, E5-T05A
+
+D1 완료 = local dev에서 Art1 raw 수집부터 normalized/NANT/suppression/snapshot/parquet export manifest/1차 시장 summary까지 deterministic test가 통과한다. `model_training_job`, `price_model_registry`, `price_model_deployment`는 D1 완료 조건이 아니다.
+
+### D2~D4 구성 Task (후속: feature/model/version)
+
+- D2 feature generation: E5-T06A
+- D3 model training/import: E1-T07, E5-T07
+- D4 registry/deployment/version 적용: E5-T08~T11, E6-T09~T11, E7-T10~T12
+
+### M1 구성 Task (Art1 1원천 · 작가명/신규 후보 최소 검수 큐 · 최소 화면)
+
+- 기반: E0-T01~T09, E1-T01~T08, E1-T09, E1-T10
+- 수집: E2-T01, E2-T02, E2-T03, E2-T04 (Art1만)
+- 표준화: E3-T01~T04, E3-T08~T10 (Art1만)
+- 작가 identity/profile: E4-T01~T06 (최소 identity 후보/자동 확정 경로 + 사용자 신규 작가 후보 제출 큐), E4-T07은 M1에서 "연결 확정 이벤트 1종"만 기록, E4-T09는 Art1 기준 최소 `artist_profile_meta` 생성 + `is_current`/`display_rank` 조회
+- snapshot/model: D1(E5-T01~T05, E5-T05A) 이후 D2(E5-T06A), D3(E5-T07), D4(E5-T08~T11)
 - API: E6-T01~T05, E6-T06(수집 대시보드), E6-T07(작가명 큐/신규 작가 후보 최소 큐), E6-T08. E6-T04는 M1에서 artist search와 신규 작가 후보 제출을 모두 구현
 - 화면: E7-T01, E7-T02, E7-T03(M1 제출 폼), E7-T04, E7-T07, E7-T09(M1 최소 신규 후보 큐)
 
 **M1 의존 닫힘 규칙**: 위 목록은 M1 spine이다. (1) 여기 나열된 Task의 **직접 선행 Task는 M1에 함께 포함**된다(예: E2-T03, E0-T03). (2) 다중 원천 Task(E3-T01~T04 parser, E6-T06 대시보드)는 **Art1 경로로만 구현·검증**하고, 그 Task의 Epic 단위 선행(`E2/E3`)은 M1에서는 Art1 관련 Task로만 해석한다. 나머지 원천 확장은 M2에서 같은 Task로 완성한다. (3) 따라서 M1에는 M2 전용 Task(E3-T07 등)에 대한 의존이 없다. (4) 집계 품질감사(E3-T07)는 M2다. M1의 수집 대시보드(E7-T04)·snapshot 요약(E5-T01)은 normalized quality flag 기반 **기본 표시**까지로 한정하고, 보유율/성공률 등 집계 지표는 M2에서 보강한다. (5) full merge/un-merge event 범위와 영향 범위 조회(E4-T08)는 M2다. M1은 작가명 alias, 사용자 신규 작가 후보 제출, 최소 identity 후보 연결을 통해 예측 경로를 닫는 데 집중한다.
 
-M1 완료 = Art1 데이터로 사용자 예측 화면이 active deployment 기준 응답(가격/신뢰도/as_of/1차 시장 카드)을 표시하고, 사용자가 신규 작가 후보를 제출할 수 있으며, 어드민이 화면에서 작가명 검수 1건과 신규 후보 최소 큐 1건을 처리한다(로드맵 §5.5 M1 완료 기준). freshness 경고/카드 숨김은 M2.
+M1 완료 = D1~D4가 모두 끝난 뒤 Art1 데이터로 사용자 예측 화면이 active deployment 기준 응답(가격/신뢰도/as_of/1차 시장 카드)을 표시하고, 사용자가 신규 작가 후보를 제출할 수 있으며, 어드민이 화면에서 작가명 검수 1건과 신규 후보 최소 큐 1건을 처리한다(로드맵 §5.5 M1 완료 기준). freshness 경고/카드 숨김은 M2.
 
 ### M2 구성 Task (폭 확장)
 
 - 나머지 원천: E2-T05~T08, E3-T05~T09
 - identity 확장: E4-T07 full event coverage, E4-T08(영향 범위)
 - 검수 큐/freshness/NANT/model 운영 전체: E5-T06, E5-T07, E6-T09/T10/T11/T12, E7-T05/T06/T08/T10/T11/T12/T13
-- M1 화면 보강: E7-T03/E7-T09은 M1에서 최소 경로를 닫고, M2에서는 필터/상세 상태/대량 처리/전체 E2E fixture를 보강한다(새 Task로 중복 산정하지 않음). E4-T09는 M1에서 최소 profile item/current summary 생성, M2에서 원천 우선순위/충돌 검수/프로필 품질 플래그를 보강한다
+- M1 화면 보강: E7-T03/E7-T09은 M1에서 최소 경로를 닫고, M2에서는 필터/상세 상태/대량 처리/전체 E2E fixture를 보강한다(새 Task로 중복 산정하지 않음). E4-T09는 M1에서 최소 profile meta `is_current`/`display_rank` 생성, M2에서 원천 우선순위/충돌 검수/프로필 품질 플래그를 보강한다
 - 운영 자동화/runbook: E8 전체
 - 통합 검증/운영 전환: E9 전체
 

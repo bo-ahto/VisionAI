@@ -186,7 +186,7 @@ artwork_snapshot의 "생성 중"은 `building`이다(`generating`은 snapshot_re
 - 신규 artist_key 생성
 - snapshot 생성승인
 - snapshot 서빙승인
-- 모델 승격/롤백
+- 모델 승격/롤백/retire
 - run 전체 재수집
 - source 일시 중지/재개
 

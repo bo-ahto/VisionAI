@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>가격 예측 모델 100건 제출 패키지</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 36px; line-height: 1.55; color: #111827; }
+    h1 { font-size: 28px; border-bottom: 4px solid #333; padding-bottom: 8px; }
+    h2 { margin-top: 34px; font-size: 22px; }
+    h3 { margin-top: 24px; }
+    table { border-collapse: collapse; width: 100%; margin: 14px 0 26px; }
+    th, td { border: 1px solid #222; padding: 10px 12px; vertical-align: middle; }
+    th { background: #e5e7eb; text-align: center; }
+    code { background: #f3f4f6; padding: 2px 5px; border-radius: 4px; }
+    .metric th { background: #1f4e9e; color: white; }
+  </style>
+</head>
+<body>
+  <h1>가격 예측 모델 100건 제출 패키지</h1>
+  <p>생성 시각: <code>2026-06-22T13:15:55</code></p>
+  <h2>성능 결과</h2>
+  <table class="metric">
+    <tr><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95 APE</th><th>RMSE log</th><th>목표</th></tr>
+    <tr><td>100</td><td>0.018259</td><td>0.046893</td><td>0.164429</td><td>0.113631</td><td>MAPE 15% 이하</td></tr>
+  </table>
+  <h2>5. 시험도구</h2>
+  <table>
+<tr><th>No.</th><th>도구명</th><th>용도</th></tr>
+<tr><td>1</td><td>Python 3.9 이상</td><td>시험 스크립트를 실행하여 가격 예측 모델의 예측가격, 작품별 절대백분율오차, MAPE를 계산하고 결과 파일을 출력하는 데 사용한다.</td></tr>
+<tr><td>2</td><td>Python 패키지 numpy, pandas, joblib, lightgbm</td><td>CSV 데이터 로딩, 수치 계산, 로그가격 변환, 모델 로딩, 예측가격 산출, MAPE 계산에 사용한다.</td></tr>
+<tr><td>3</td><td>Visual Studio Code 또는 터미널</td><td>제출 패키지 폴더에서 사전 확인 스크립트와 가격 예측 성능 시험 스크립트를 실행하는 데 사용한다.</td></tr>
+<tr><td>4</td><td>ZIP 압축 해제 도구</td><td>제출 압축 파일을 시험용 PC에 압축 해제하는 데 사용한다.</td></tr>
+</table>
+  <h2>6. 의뢰자가 제시한 사항</h2>
+  <h3>6.1 의뢰자가 제시한 데이터</h3>
+<table>
+<tr><th>No.</th><th>데이터명</th><th>용량</th><th>확장자</th><th>설명</th></tr>
+<tr><td>1</td><td>`price_test_features_100`</td><td>5 KB</td><td>csv</td><td>가격 예측 모델 성능 평가에 사용하는 학습에 활용되지 않은 서로 다른 작품 100건 시험 입력 데이터다. 작품 크기, 매체, 지지체, 작가 식별키 등 예측 실행에 필요한 입력값으로 구성된다.</td></tr>
+<tr><td>2</td><td>`price_test_labels_100`</td><td>3 KB</td><td>csv</td><td>작품 100건의 실제 가격 정답 데이터다. 예측가격과 비교하여 작품별 절대백분율오차와 MAPE를 산출하는 데 사용한다.</td></tr>
+<tr><td>3</td><td>`model_bundle`</td><td>6.1 MB</td><td>folder</td><td>100건 시험 데이터에 대해 가격 예측을 수행하는 데 필요한 모델 파일, 예측 코드, 모델 설정 파일을 포함한다.</td></tr>
+<tr><td>4</td><td>`warm_joblib_100_metrics`</td><td>2 KB</td><td>json/csv</td><td>시험 조건, 시험 결과, MAPE, p95 APE 등 성능 지표를 기록한 결과 파일이다.</td></tr>
+<tr><td>5</td><td>`train_test_leakage_audit`</td><td>3 KB</td><td>json/csv</td><td>시험 데이터 100건의 row id가 모델 학습 이력에 포함되어 있지 않은지 확인한 검증 결과 파일이다.</td></tr>
+</table>
+<h3>6.2 의뢰자가 제시한 스크립트</h3>
+<table>
+<tr><th>No.</th><th>스크립트명</th><th>설명</th></tr>
+<tr><td>1</td><td>`01_check_test_data_not_trained.py`</td><td>시험 데이터 100건의 row id가 모델 학습 이력에 포함되어 있지 않은지 먼저 확인한다.</td></tr>
+<tr><td>2</td><td>`02_run_price_mape_test.py`</td><td>학습에 활용되지 않은 작품 100건 입력 데이터와 정답 데이터를 읽고, 가격 예측 모델로 예측가격을 산출한 뒤 MAPE와 p95 APE 등 성능 지표를 출력한다.</td></tr>
+</table>
+<h3>6.3 의뢰자가 제시한 용어</h3>
+<table>
+<tr><th>No.</th><th>데이터명</th><th>설명</th></tr>
+<tr><td>1</td><td>학습에 활용되지 않은 작품 100건</td><td>모델 학습에 사용하지 않고 시험용으로 분리한 가격 예측 평가 데이터 100건이다.</td></tr>
+<tr><td>2</td><td>로그가격</td><td>가격에 자연로그를 적용한 값이다. 모델은 로그가격을 예측하고, 최종 가격은 `exp(최종로그가격)`으로 원 가격 단위로 환산한다.</td></tr>
+<tr><td>3</td><td>가격 예측 모델</td><td>작품 크기, 매체, 지지체, 작가 가격 통계 등을 사용하여 작품 가격을 예측하는 모델이다.</td></tr>
+<tr><td>4</td><td>작품별 절대백분율오차(APE)</td><td>한 작품에 대해 `abs(실제가격 - 예측가격) / 실제가격`으로 계산한 오차율이다. 예를 들어 실제가격이 100만 원이고 예측가격이 90만 원이면 APE는 0.10, 즉 10%다.</td></tr>
+<tr><td>5</td><td>MAPE</td><td>Mean Absolute Percentage Error. 작품별 절대백분율오차(APE)를 100건 전체에 대해 평균낸 값이다. 본 시험의 목표 기준은 15% 이하다.</td></tr>
+<tr><td>6</td><td>p95 APE</td><td>작품별 절대백분율오차(APE)의 95퍼센타일 값이다. 큰 오차 구간의 안정성을 확인하기 위한 보조 성능 지표다.</td></tr>
+<tr><td>7</td><td>train/test row id overlap 검증</td><td>시험 데이터 100건의 `_track6_row_id`와 모델 학습 이력 테이블의 `track6_row_id`를 비교하여 교집합이 0건인지 확인하는 검증이다.</td></tr>
+</table>
+  <h2>7. 시험항목 평가 기준/방법 제시 및 시험 절차</h2>
+  <h3>7.1 시험항목 1</h3>
+<table>
+<tr><th>구분</th><th>내용</th></tr>
+<tr><td>시험항목 명</td><td>가격 예측 모델 성능</td></tr>
+<tr><td>시험목적</td><td>가격 예측 모델이 학습에 활용되지 않은 작품 100건에 대해 예측가격을 산출하고, 실제 가격 대비 MAPE가 15% 이하인지 확인한다.</td></tr>
+<tr><td>개발목표</td><td>MAPE 15% 이하</td></tr>
+<tr><td>시험구성</td><td>학습에 활용되지 않은 작품 100건 가격 예측 성능 평가</td></tr>
+<tr><td>시험도구</td><td>시험도구 1~4</td></tr>
+<tr><td>시험 데이터</td><td>의뢰자가 제시한 데이터 1~4, 의뢰자가 제시한 스크립트 1~2</td></tr>
+</table>
+<h3>시험절차 및 방법</h3>
+<p>1. 시험용 PC에서 제출 압축 파일 `Warm_Joblib_100_MAPE15_Submission.zip`을 압축 해제한다.</p>
+<p>2. VS Code 또는 터미널에서 압축 해제한 폴더를 연다.</p>
+<p>3. Python 3.9 이상과 numpy, pandas, joblib, lightgbm 설치 여부를 확인한다.</p>
+<p>4. 터미널에서 `python3 scripts/01_check_test_data_not_trained.py`를 실행한다.</p>
+<p>5. `outputs/precheck_not_trained/summary.json`에서 시험 데이터 100건과 모델 학습 이력의 row id 교집합이 0건인지 확인한다.</p>
+<p>6. 사전 확인 결과의 `passes_not_trained_100_check` 값이 `true`이면 다음 단계로 진행한다.</p>
+<p>7. 터미널에서 `python3 scripts/02_run_price_mape_test.py`를 실행한다.</p>
+<p>8. 스크립트는 `data/price_test_features_100.csv`의 학습에 활용되지 않은 작품 100건 입력 데이터를 읽는다.</p>
+<p>9. 각 row에 대해 가격 예측 모델을 실행하여 최종 로그가격과 최종 예측가격을 산출한다.</p>
+<p>10. 최종 예측가격은 `exp(최종로그가격)`으로 원 가격 단위로 환산한다.</p>
+<p>11. 스크립트는 `data/price_test_labels_100.csv`의 실제 가격을 읽고, 각 작품별 절대백분율오차(`APE = abs(실제가격 - 예측가격) / 실제가격`)를 계산한다.</p>
+<p>12. 100건의 작품별 절대백분율오차 평균을 계산하여 MAPE를 산출한다.</p>
+<p>13. `outputs/rerun_100/summary.json`과 `outputs/rerun_100/predictions.csv`에서 결과를 확인한다.</p>
+<p>14. MAPE <= 0.150이면 가격 예측 모델 성능 목표를 만족한 것으로 판정한다.</p>
+<h3>시험 결과 요약</h3>
+<table>
+<tr><th>n</th><th>MdAPE</th><th>MAPE</th><th>p95 APE</th><th>RMSE log</th><th>목표 통과</th></tr>
+<tr><td>100</td><td>0.018259</td><td>0.046893</td><td>0.164429</td><td>0.113631</td><td>True</td></tr>
+</table>
+<h3>학습 미사용 100건 확인 결과</h3>
+<table>
+<tr><th>항목</th><th>값</th></tr>
+<tr><td>시험 데이터 row 수</td><td>100</td></tr>
+<tr><td>시험 데이터 고유 row id 수</td><td>100</td></tr>
+<tr><td>시험 100건과 학습 이력 row id 교집합</td><td>0</td></tr>
+<tr><td>학습 미사용 100건 검증 통과</td><td>True</td></tr>
+</table>
+</body>
+</html>

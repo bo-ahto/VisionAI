@@ -21,15 +21,18 @@
 - route별 active deployment는 1개만 허용한다.
 - 롤백을 위해 직전 active 모델 artifact와 feature store는 삭제하지 않는다.
 
-M1 최초 연결은 재학습 자동화가 아니라 기존 Warm joblib와 Cold k80 joblib 번들을 registry/deployment에 등록해 active deployment로 두는 방식이다. 이후 routine training job도 같은 Warm/Cold model family 안에서 성능이 더 좋은 버전을 만들고, 검증 후 model version을 올리는 절차만 담당한다.
+첫 구현 컷(D1)은 이 문서의 학습/배포 절차에 들어오기 전 단계다. D1은 raw 수집, interpreted/normalized, NANT, snapshot/export까지 닫고 멈춘다. feature generation은 D2에서 별도 spec/dataset build로 닫고, 그 다음 D3(model training/import), D4(registry/deployment version 적용)로 넘어간다.
+
+D3/D4 최초 모델 연결은 재학습 자동화가 아니라 기존 Warm joblib와 Cold k80 joblib 번들을 registry/deployment에 등록해 active deployment로 두는 방식이다. 이후 routine training job도 같은 Warm/Cold model family 안에서 성능이 더 좋은 버전을 만들고, 검증 후 model version을 올리는 절차만 담당한다.
 
 ## 3. 전체 흐름
 
 ```text
 approved snapshot
   -> snapshot parquet export + manifest
+  -> D2 feature generation spec/dataset build
   -> model_training_job 생성
-  -> 고정된 Warm/Cold feature contract로 feature generation
+  -> 고정된 Warm/Cold feature contract로 학습 입력 로드
   -> 같은 model family 재학습 및 train/validation/test 평가
   -> artifact/joblib bundle 생성
   -> price_model_registry(candidate) 등록
@@ -60,7 +63,7 @@ approved snapshot 또는 기준 manifest
 | 항목 | 기준 |
 |---|---|
 | `training_snapshot_id` | 신규 학습은 `artwork_snapshot.status=approved`인 snapshot. 기존 legacy joblib import는 NULL 가능하되 `source_cutoff_at`과 import manifest 필수 |
-| `snapshot_export_id` | parquet export와 manifest가 생성된 export ID |
+| `snapshot_export_id` | `snapshot_export.snapshot_export_id`. approved snapshot에서 생성된 `succeeded` parquet export와 manifest row |
 | `source_cutoff_at` | snapshot 또는 import manifest의 원천 데이터 기준일 |
 | `rules_version` | snapshot 생성에 사용한 정규화/필터 규칙 버전 |
 | `nant_mapping_version_id` | snapshot에 적용된 NANT active mapping version |
@@ -99,7 +102,7 @@ routine training에서 `route`, `model_family`, serving input/output schema를 �
 
 ### 4.3 Feature generation
 
-feature 생성은 학습 job 안에서 snapshot parquet를 입력으로 수행한다.
+feature generation은 D2에서 독립 산출물로 먼저 구현한다. D3 학습 job은 D2의 feature dataset/manifest를 읽거나, 같은 builder를 호출해 동일한 `feature_schema_hash`를 재현해야 한다. 이 단계가 닫히기 전에는 신규 모델 학습을 시작하지 않는다.
 
 반드시 기록할 값:
 
@@ -146,7 +149,7 @@ M1 기준:
 - `model_contract_version`
 - `training_job_id`
 - `training_snapshot_id`
-- `snapshot_export_id`
+- `snapshot_export_id`(`snapshot_export.snapshot_export_id`)
 - `feature_generation_version`
 - `training_code_version`
 - `artifact_uri`
@@ -234,7 +237,7 @@ M1 기준:
 | `model_family` | route별 고정 model family. routine training에서는 변경 금지 |
 | `model_contract_version` | serving input/output 및 feature contract 버전 |
 | `training_snapshot_id` | 신규 학습에 사용할 approved snapshot. legacy import는 NULL 가능 |
-| `snapshot_export_id` | parquet export ID |
+| `snapshot_export_id` | `snapshot_export.snapshot_export_id`. 신규 학습은 approved snapshot에서 생성된 succeeded export만 허용 |
 | `source_cutoff_at` | snapshot 또는 import manifest의 원천 데이터 기준일 |
 | `source_manifest_uri` | legacy import 또는 외부 artifact의 원 학습 데이터/모델 manifest |
 | `baseline_model_version` | 비교 기준 모델 |
@@ -295,6 +298,7 @@ M1 기준:
 - candidate 승인/반려 버튼
 - approved 모델 승격 버튼
 - rollback 대상 선택
+- retired 처리 버튼
 - active deployment의 training snapshot 또는 import manifest cutoff/as_of 표시
 
 ## 8. 테스트 기준
@@ -310,24 +314,40 @@ M1 기준:
 - promote 후 prediction log에 새 `deployment_id` 기록
 - rollback 후 current deployment가 이전 모델로 돌아감
 - artifact SHA-256 mismatch 시 serving adapter 로드 실패
-- M1 Warm/Cold joblib smoke와 fixed-test parity 통과
+- D3/D4 Warm/Cold joblib smoke와 fixed-test parity 통과
 
 ## 9. 개발 범위
 
-M1:
+D1(우선 구현, 이 문서 밖):
 
+- raw 수집부터 interpreted/normalized, NANT, snapshot/export까지 구현
+- 모델 학습/import, registry/deployment, prediction API 변경 없음
+
+D2(feature generation):
+
+- Warm/Cold feature column list, target/label, split, 결측/encoding, leakage 방지 기준 확정
+- feature dataset build와 feature manifest 생성
+- `feature_schema_hash` 재현성 검증
+
+D3(model training/import):
+
+- approved snapshot export와 D2 feature contract 기준으로 `model_training_job` 생성
 - 기존 Warm joblib와 Cold k80 joblib를 import/seed 방식으로 registry에 등록
 - fixed-test parity와 serving smoke 통과
+
+D4(version 적용/deployment):
+
+- registry candidate 승인/반려
 - active deployment seed 생성
 - public prediction API가 active deployment 기준으로 응답
 - prediction log에 `model_version`, `deployment_id`, `route` 기록
 
-M2:
+M2(운영 UI 확장):
 
 - admin에서 training/import job 생성
 - candidate 승인/반려
 - model operation 화면에서 metric/gate/parity report 확인
-- 운영 승격/롤백 전체 UI 제공
+- 운영 승격/롤백/retire 전체 UI 제공
 
 범위 밖:
 

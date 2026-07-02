@@ -93,12 +93,9 @@ artist_identity
   - 승인/반려/자동 확정 이력 보존
         |
         v
-artist_profile_item
+artist_profile_meta
   - 확정 artist_key의 작가 프로필/메타를 항목 단위로 관리
-        |
-        v
-artist_profile_current
-  - 현재 표시/검색/feature 후보용 요약/cache
+  - 현재 표시/검색/feature 후보용 값도 is_current/display_rank로 관리
   - artist_identity에 소개/학력/전시/팔로워/활동지 등 프로필 정보를 몰아넣지 않음
 ```
 
@@ -124,7 +121,7 @@ artist_profile_current
 - 자동 변환값은 `*_candidate` 또는 `*_display`에만 넣는다.
 - 서비스는 `artist_name_ko_display`를 우선 사용한다.
 - `artist_key` 확정은 이름 하나만으로 하지 않는다.
-- 작가 소개, 학력, 전시, 활동지, 팔로워 같은 프로필 메타는 `artist_identity`가 아니라 `artist_profile_item`에서 항목 단위로 관리하고, `artist_profile_current`는 현재 요약/cache로 둔다.
+- 작가 소개, 학력, 전시, 활동지, 팔로워 같은 프로필 메타와 현재 표시값은 `artist_identity`가 아니라 `artist_profile_meta`에서 항목 단위로 관리한다.
 
 ## 3. artist_name_alias 역할
 
@@ -155,6 +152,10 @@ Kim Hwan-ki
 | `ambiguity_status` | `unique`, `ambiguous`, `needs_review` |
 | `conflict_group_id` | 같은 alias가 여러 작가 후보에 걸릴 때의 충돌 그룹 ID |
 | `review_status` | `auto_approved`, `approved`, `needs_review`, `match_rejected` |
+| `source_name_normalized` | override/alias 매칭에 쓰는 정규화된 원문 이름 key |
+| `reason_code` | 한글화/alias 등록 사유 코드 |
+| `seed_source` | 최초 등록 출처: `source_hangul`, `legacy_override_csv`, `source_alias`, `manual_review`, `admin_override` |
+| `seed_batch_id` | 초기 seed/import batch 식별자 |
 | `approved_by` | 수동 승인 관리자 ID |
 | `approved_at` | 수동 승인 시각 |
 
@@ -231,7 +232,7 @@ artist_name_alias 저장 + reason code 기록
 
 ### 4.4 한글화 reason code (표준 분류)
 
-각 한글명 후보는 `artist_name_ko_reason`에 아래 코드를 기록하고, 코드에 따라 자동/검수 게이트가 정해진다. 코드 체계는 `projects/art-price-data-platform/config/artist_ko_overrides.csv`와 프로젝트 내 작가 한글명 품질 기준으로 관리한다.
+각 한글명 후보는 `artist_name_ko_reason`에 아래 코드를 기록하고, 코드에 따라 자동/검수 게이트가 정해진다. 코드 체계는 DB의 `artist_name_alias.reason_code`와 프로젝트 내 작가 한글명 품질 기준으로 관리한다. 기존 `artist_ko_overrides.csv`가 있으면 최초 import 입력으로만 사용하고, import 후 운영 SoT는 DB다.
 
 | reason code | 의미 | 게이트 |
 |---|---|---|
@@ -253,31 +254,111 @@ artist_name_alias 저장 + reason code 기록
 - 로마자 역복원: RR/MR 로마자 표기를 가정하되 **한국 성씨 사전을 우선** 적용한다.
 - 단체명 띄어쓰기: 종별어를 분리한다(`gallery hexagon` → `갤러리 헥사곤`, `stepper studio` → `스테퍼 스튜디오`).
 
-### 4.6 override 우선 적용
+### 4.6 DB seed와 override 우선 적용
 
-확정 한글명의 단일 기준 파일은 `projects/art-price-data-platform/config/artist_ko_overrides.csv`다. 한글화 파이프라인은 다음 순서로 적용한다.
+확정 한글명/alias/override의 단일 기준은 `artist_name_alias` DB다. 기존 `scripts/track6/artist_ko_overrides.csv` 또는 동등 CSV가 있으면 최초 seed/migration 입력으로만 사용한다.
 
 ```text
-1) override 적용  -> 등록된 artist_key는 override 한글명으로 확정
-2) 미등록 자동 후보 -> 4.1~4.4 기준으로 ko_candidate 생성
-3) 잔여            -> 한글명 검수 큐(7장)로 이동
+1) 원천 직접 한글명 seed
+   -> artist_name_alias(auto_approved, seed_source=source_hangul)
+
+2) 기존 수동 override CSV seed
+   -> artist_name_alias(approved, seed_source=legacy_override_csv)
+
+3) 원천 영문명/원문명/slug seed
+   -> artist_name_alias(matching_only 또는 en_display)
+
+4) DB 승인 alias/override 우선 적용
+   -> 등록된 artist_key/source_name_normalized는 DB 확정 한글명으로 표시
+
+5) 미등록 자동 후보
+   -> 4.1~4.4 기준으로 ko_candidate 생성
+   -> standardization_review_item(review_type=artist_name_ko)
 ```
 
-override 행 스키마:
+초기 seed 대상:
+
+| seed 대상 | DB 반영 | 상태 | 비고 |
+|---|---|---|---|
+| 원천 직접 한글명 | `artist_name_alias(alias_language='ko')` | `auto_approved` | 원천에 명시된 값만. 충돌 시 검수 큐 |
+| 기존 수동 override CSV | `artist_name_alias(alias_language='ko')` | `approved` | `seed_source='legacy_override_csv'`, `approved_by='seed_import'` |
+| 원천 영문명/원문명/slug | `artist_name_alias(alias_language='en'/'other')` | `review_status='auto_approved'`, `alias_type='source'` | 한글 확정값이 아니라 검색/매칭용 |
+| 자동 한글화 후보 | `normalized_artist_staging.artist_name_ko_candidate` + 검수 큐 | `needs_review` | 승인 전에는 `artist_name_alias.approved`로 넣지 않음 |
+| 위험 패턴 후보 | `standardization_review_item` | `open`/`hold` | 긴 한글명, 어색한 기계 음역, 브랜드명 가능성, alias 충돌 |
+
+대표 override seed 예시는 아래와 같다. 전체 205건 목록은 [작가 한글명 override seed 목록](artist_name_override_seed_list_20260626.md)에서 별도로 확인한다.
+
+| source_name | artist_name_ko | reason_code | 의미 |
+|---|---|---|---|
+| `choonjae kim` | 김춘재 | `obvious_bad_romanization` | 로마자 한국 이름 오표기 복원 |
+| `matthew anderson` | 매튜 앤더슨 | `readable_foreign_name_transliteration` | 외국 작가명 음역 |
+| `gallery hexagon` | 갤러리 헥사곤 | `readable_gallery_name_transliteration` | 갤러리명 음역 |
+| `hagley art` | 해글리 아트 | `readable_studio_name_transliteration` | 스튜디오/단체명 음역 |
+| `weedong yoon b 1982` | 윤위동 | `metadata_removed_and_romanization_fixed` | 생년 메타 제거 후 복원 |
+| `g sim seyeon` | 지심세연 | `alias_spacing_fixed` | alias 공백/표기 정리 |
+| `pogoby official` | 포고비 오피셜 | `readable_alias_transliteration` | 예명/브랜드형 alias 음역 |
+
+`artist_name_alias`에 남길 import/override 필드:
 
 | 컬럼 | 의미 |
 |---|---|
-| `artist_key` | 대상 작가 키 |
-| `artist_name_ko` | 확정 한글명 |
-| `reason` | 4.4의 reason code |
+| `artist_key` | 대상 작가 키. 신규/미확정이면 NULL 가능 |
+| `normalized_artist_id` | 표준화 작가 row 참조 |
+| `alias_name` | 확정 한글명, 원천 영문명, 원문명, 검색용 alias |
+| `source_name_normalized` | 원문 이름을 정규화한 매칭 key |
+| `reason_code` | 4.4의 reason code |
+| `seed_source` | `source_hangul`, `legacy_override_csv`, `source_alias`, `manual_review`, `admin_override` |
+| `seed_batch_id` | seed/import batch 식별자 |
 | `approved_by` / `approved_at` | 승인자 / 승인 시각 |
+
+운영 기준:
+
+- CSV는 운영 SoT가 아니다. CSV를 import한 뒤에는 DB의 `artist_name_alias`를 읽는다.
+- 관리자 화면의 `register_override`는 CSV를 수정하지 않고 `artist_name_alias`에 승인 alias/override row를 추가한다.
+- 확정 한글명을 바꾸려면 기존 alias를 덮어쓰지 않고 새 승인 row 또는 상태 변경 이력으로 남긴다.
 
 ### 4.7 작가 한글명 복원에 자동 음역기 사용 금지
 
 과거 track3 데이터셋 생성기(`scripts/track3/build_unified_dataset.py`의 `_romanize_to_hangul`, `lookup_artist_name_ko`)는 로마자를 greedy longest-match 음절표로 글자 단위 음역했고, 이것이 `choonjae kim` → `김초온재` 같은 오표기를 **생성한 원인**이다. 이 음역기는 아직 코드에 살아 있다.
 
-- 작가 한글명 복원(유형 ③)에는 이 음역기를 사용하지 않는다. 신규 작가가 들어와도 자동 음역으로 한글명을 만들지 않고, override(4.6) 또는 검수 큐로 보낸다.
+- 작가 한글명 복원(유형 ③)에는 이 음역기를 사용하지 않는다. 신규 작가가 들어와도 자동 음역으로 한글명을 만들지 않고, DB 승인 alias/override(4.6) 또는 검수 큐로 보낸다.
 - track3/track4 경로에서 생성된 기존 한글명은 그대로 신뢰하지 않고, 4.8의 자동 플래그로 위험도를 재산정한다.
+
+자동 음역이 필요한 경우는 한글 복원이 아니라 **외국 작가명/단체명/표시명 후보**를 만들 때다. 이 경우에도 결과는 확정값이 아니라 `artist_name_ko_candidate`다.
+
+```text
+artist_name_raw / artist_name_en_source
+  |
+  +-- DB 승인 alias/override 있음
+  |     -> 승인값 적용, 자동 음역 중단
+  |
+  +-- 원천 한글명 있음
+  |     -> source_hangul로 보존, 자동 음역 중단
+  |
+  v
+자동 음역 후보 생성
+  - 소문자 통일
+  - 괄호 메타/출생연도/suffix 제거
+  - 기호 제거 후 공백/하이픈 기준 토큰화
+  - 성씨 사전, 영어 이름 사전, 한글 음절표 순서로 후보 생성
+  |
+  v
+artist_name_ko_candidate + review_status=needs_review
+```
+
+내부 변환 원리:
+
+| 순서 | 처리 | 설명 |
+|---:|---|---|
+| 1 | 검수값 우선 | `artist_name_alias`나 legacy override seed에 값이 있으면 그 값을 쓰고 자동 음역하지 않는다 |
+| 2 | 한글 원천 우선 | 원문에 한글이 있으면 그 값을 source로 보존하고 새로 추정하지 않는다 |
+| 3 | 입력 정리 | 영문명을 소문자로 통일하고 괄호 메타, 출생연도, 기호를 제거한다 |
+| 4 | 성씨 사전 | `kim`, `lee`, `park`, `choi`, `jung` 등 한국 성씨 후보를 찾는다 |
+| 5 | 이름 사전 | `matthew -> 매튜`, `john -> 존`처럼 알려진 영어 이름 표기를 우선 적용한다 |
+| 6 | 음절표 매칭 | 사전에 없는 토큰은 6글자부터 1글자까지 가장 긴 음절표 매칭을 적용한다 |
+| 7 | 후보 저장 | 조합 결과는 확정하지 않고 후보/검수 큐로 보낸다 |
+
+예를 들어 `Hongbin Kim`은 `Kim=김`, `Hongbin=홍빈`으로 조합해 `김홍빈` 후보를 만들 수 있다. 반대로 `choonjae kim`처럼 한국 이름 복원 대상은 자동 음역으로 확정하지 않고, `김춘재` 같은 승인 override가 있어야 확정한다.
 
 ### 4.8 한글명 자동 플래그 (파이프라인 단계)
 
@@ -296,14 +377,14 @@ override 행 스키마:
 
 ```text
 input_type=source_hangul              -> review_status=auto_approved (자동 음역 아님)
-override 등록됨                        -> override 값 확정, override_status=registered
+DB 승인 alias/override 등록됨          -> DB 값 확정, override_status=registered
 reason=obvious_bad_romanization / pen_name_official 인데 override 없음
                                        -> review_status=needs_review (자동 음역 금지)
 risk_score>0 또는 roundtrip 낮음        -> review_status=needs_review
 그 외 음역 후보                        -> ko_candidate 생성, review_status=needs_review
 ```
 
-자동 확정은 `source_hangul`과 override 등록분에만 적용한다. 나머지는 모두 한글명 검수 큐(7장)로 보내 사람이 확인한다.
+자동 확정은 `source_hangul`과 DB 승인 alias/override 등록분에만 적용한다. 나머지는 모두 한글명 검수 큐(7장)로 보내 사람이 확인한다.
 
 ## 5. 동명이인 처리
 
@@ -645,7 +726,7 @@ alias 일치 분류(`alias_match_type`, `artist_identity_candidate`에 저장)�
 - override 등록 여부 및 등록 시 확정 한글명
 - 자동/검수 게이트 사유(reason code는 4.4, 게이트 규칙은 4.8)
 
-한글명 검수(이름 alias / 한글명 검수 큐의 한글명 탭)는 동명이인·artist identity 큐와 분리해 운영한다. 한글명 검수에서 확정한 값은 `projects/art-price-data-platform/config/artist_ko_overrides.csv`(4.6)에 등록하고, 등록 결과는 다음 snapshot부터 반영한다.
+한글명 검수(이름 alias / 한글명 검수 큐의 한글명 탭)는 동명이인·artist identity 큐와 분리해 운영한다. 한글명 검수에서 확정한 값은 `artist_name_alias`에 승인 alias/override row로 등록하고, 등록 결과는 다음 snapshot부터 반영한다. 기존 CSV override가 있으면 4.6 기준으로 최초 seed 입력으로만 사용한다.
 
 검수 트리아지(우선순위): 잔여 검수 후보가 누적되므로 큐를 무한정 쌓지 않도록 정렬·필터한다.
 

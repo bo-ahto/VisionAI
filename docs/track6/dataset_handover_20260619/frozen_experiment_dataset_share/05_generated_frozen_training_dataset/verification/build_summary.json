@@ -1,0 +1,341 @@
+{
+  "created_at": "2026-06-19T13:51:54",
+  "status": "pass",
+  "repo_root": "/Users/bo/VisionAI",
+  "source_dir": "/Users/bo/VisionAI/docs/track6/dataset_handover_20260619/frozen_experiment_dataset_share",
+  "frozen_output_dir": "/Users/bo/VisionAI/docs/track6/dataset_handover_20260619/frozen_experiment_dataset_share/05_generated_frozen_training_dataset/track6_split",
+  "source_files": [
+    {
+      "source": "/Users/bo/VisionAI/docs/track6/dataset_handover_20260619/frozen_experiment_dataset_share/01_source_files/saatchi_cleaned.csv",
+      "destination": "/Users/bo/VisionAI/data/saatchi_cleaned.csv",
+      "bytes": 12551671,
+      "sha256": "e8ba0d545ee43c0bc3449085c948c1641a84fae6d94445a9ab43e9fa3692f3d7"
+    },
+    {
+      "source": "/Users/bo/VisionAI/docs/track6/dataset_handover_20260619/frozen_experiment_dataset_share/01_source_files/artsy_kr_artworks.csv",
+      "destination": "/Users/bo/VisionAI/data/artsy_kr_artworks.csv",
+      "bytes": 11749057,
+      "sha256": "b3ca65992975afed49f8cf9936b6975fcbb8c208a559ca51be0b0efcc569b583"
+    },
+    {
+      "source": "/Users/bo/VisionAI/docs/track6/dataset_handover_20260619/frozen_experiment_dataset_share/01_source_files/artue_테스트_가격포함.csv",
+      "destination": "/Users/bo/VisionAI/data/artue_테스트_가격포함.csv",
+      "bytes": 488469,
+      "sha256": "7bb51da9f7b0dff8a6d30d811d5f425a8e76afb46d42511b13d6fb8e6e005682"
+    },
+    {
+      "source": "/Users/bo/VisionAI/docs/track6/dataset_handover_20260619/frozen_experiment_dataset_share/01_source_files/1차 시장 데이터 - 전달본_260504.csv",
+      "destination": "/Users/bo/VisionAI/data/1차 시장 데이터 - 전달본_260504.csv",
+      "bytes": 83592,
+      "sha256": "89b6779331a80c67aa61bd5995136b2cf6eb3f939eec32e2442f9d7b91e7b7e4"
+    },
+    {
+      "source": "/Users/bo/VisionAI/docs/track6/dataset_handover_20260619/frozen_experiment_dataset_share/01_source_files/track6_reference/k-artmarket 1차 데이터 정제 - 실험데이터분류.csv",
+      "destination": "/Users/bo/VisionAI/data/track6/k-artmarket 1차 데이터 정제 - 실험데이터분류.csv",
+      "bytes": 426782,
+      "sha256": "1b9608fe483c3c4d18f491e918faa71033a1775c17ee0ab05cca336d7369fd03"
+    }
+  ],
+  "steps": [
+    {
+      "name": "track4_cleaning_pipeline",
+      "script": "scripts/track4/run_cleaning_pipeline.py",
+      "return_code": 0,
+      "description": "원본 CSV를 통합하고 가격/크기/재료/중복 감사를 거쳐 Track4 feature candidate를 만든다."
+    },
+    {
+      "name": "track6_artist_korean_name_correction",
+      "script": "scripts/track6/improve_artist_korean_names.py",
+      "return_code": 0,
+      "description": "검수된 override 기준으로 작가 한글명을 보정하고 원래 이름을 보존한다."
+    },
+    {
+      "name": "track6_artist_metadata_enrichment",
+      "script": "scripts/track6/enrich_track6_artist_metadata.py",
+      "return_code": 0,
+      "description": "raw 수집 row에서 작가 메타 정보를 Track6 후보 데이터에 row 단위로 붙인다."
+    },
+    {
+      "name": "track6_nant_material_enrichment",
+      "script": "scripts/track6/enrich_track6_nant_material.py",
+      "return_code": 0,
+      "description": "난트 기준 재료/지지체 보강 컬럼을 후보 데이터에 붙인다."
+    },
+    {
+      "name": "track6_feature_label_export",
+      "script": "scripts/track6/export_feature_label_splits.py",
+      "return_code": 0,
+      "description": "full split에서 모델 입력 feature와 평가 label을 물리적으로 분리한다."
+    }
+  ],
+  "manifest_file": "/Users/bo/VisionAI/docs/track6/dataset_handover_20260619/frozen_experiment_dataset_share/05_generated_frozen_training_dataset/verification/files_manifest.csv",
+  "audit": {
+    "status": "pass",
+    "checks": [
+      {
+        "path": "track6_train.csv",
+        "passed": true,
+        "actual": {
+          "rows": 26914,
+          "columns": 50
+        },
+        "expected": {
+          "rows": 26914,
+          "columns": 50
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "track6_val_warm.csv",
+        "passed": true,
+        "actual": {
+          "rows": 519,
+          "columns": 50
+        },
+        "expected": {
+          "rows": 519,
+          "columns": 50
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "track6_test_warm.csv",
+        "passed": true,
+        "actual": {
+          "rows": 607,
+          "columns": 50
+        },
+        "expected": {
+          "rows": 607,
+          "columns": 50
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "track6_val_cold.csv",
+        "passed": true,
+        "actual": {
+          "rows": 2753,
+          "columns": 50
+        },
+        "expected": {
+          "rows": 2753,
+          "columns": 50
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "track6_test_cold.csv",
+        "passed": true,
+        "actual": {
+          "rows": 3099,
+          "columns": 50
+        },
+        "expected": {
+          "rows": 3099,
+          "columns": 50
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "features/warm/track6_train_warm_features.csv",
+        "passed": true,
+        "actual": {
+          "rows": 26914,
+          "columns": 23
+        },
+        "expected": {
+          "rows": 26914,
+          "columns": 23
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "features/warm/track6_val_warm_warm_features.csv",
+        "passed": true,
+        "actual": {
+          "rows": 519,
+          "columns": 23
+        },
+        "expected": {
+          "rows": 519,
+          "columns": 23
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "features/warm/track6_test_warm_warm_features.csv",
+        "passed": true,
+        "actual": {
+          "rows": 607,
+          "columns": 23
+        },
+        "expected": {
+          "rows": 607,
+          "columns": 23
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "features/cold/track6_train_cold_features.csv",
+        "passed": true,
+        "actual": {
+          "rows": 26914,
+          "columns": 20
+        },
+        "expected": {
+          "rows": 26914,
+          "columns": 20
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "features/cold/track6_val_cold_cold_features.csv",
+        "passed": true,
+        "actual": {
+          "rows": 2753,
+          "columns": 20
+        },
+        "expected": {
+          "rows": 2753,
+          "columns": 20
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "features/cold/track6_test_cold_cold_features.csv",
+        "passed": true,
+        "actual": {
+          "rows": 3099,
+          "columns": 20
+        },
+        "expected": {
+          "rows": 3099,
+          "columns": 20
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "labels/track6_train_labels.csv",
+        "passed": true,
+        "actual": {
+          "rows": 26914,
+          "columns": 12
+        },
+        "expected": {
+          "rows": 26914,
+          "columns": 12
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "labels/track6_val_warm_labels.csv",
+        "passed": true,
+        "actual": {
+          "rows": 519,
+          "columns": 12
+        },
+        "expected": {
+          "rows": 519,
+          "columns": 12
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "labels/track6_test_warm_labels.csv",
+        "passed": true,
+        "actual": {
+          "rows": 607,
+          "columns": 12
+        },
+        "expected": {
+          "rows": 607,
+          "columns": 12
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "labels/track6_val_cold_labels.csv",
+        "passed": true,
+        "actual": {
+          "rows": 2753,
+          "columns": 12
+        },
+        "expected": {
+          "rows": 2753,
+          "columns": 12
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "labels/track6_test_cold_labels.csv",
+        "passed": true,
+        "actual": {
+          "rows": 3099,
+          "columns": 12
+        },
+        "expected": {
+          "rows": 3099,
+          "columns": 12
+        },
+        "reason": "ok"
+      },
+      {
+        "path": "track6_val_warm.csv",
+        "passed": true,
+        "actual": {
+          "min_train_history": 5
+        },
+        "expected": {
+          "min_train_history_gte": 5
+        },
+        "reason": "warm_train_history_check"
+      },
+      {
+        "path": "track6_test_warm.csv",
+        "passed": true,
+        "actual": {
+          "min_train_history": 5
+        },
+        "expected": {
+          "min_train_history_gte": 5
+        },
+        "reason": "warm_train_history_check"
+      },
+      {
+        "path": "track6_val_cold.csv",
+        "passed": true,
+        "actual": {
+          "artist_key_overlap": 0,
+          "artist_name_ko_overlap": 0,
+          "artist_name_ko_orig_overlap": 0,
+          "artist_works_log_nonzero_rows": 0
+        },
+        "expected": {
+          "artist_key_overlap": 0,
+          "artist_name_ko_overlap": 0,
+          "artist_name_ko_orig_overlap": 0,
+          "artist_works_log_nonzero_rows": 0
+        },
+        "reason": "cold_no_train_overlap_check"
+      },
+      {
+        "path": "track6_test_cold.csv",
+        "passed": true,
+        "actual": {
+          "artist_key_overlap": 0,
+          "artist_name_ko_overlap": 0,
+          "artist_name_ko_orig_overlap": 0,
+          "artist_works_log_nonzero_rows": 0
+        },
+        "expected": {
+          "artist_key_overlap": 0,
+          "artist_name_ko_overlap": 0,
+          "artist_name_ko_orig_overlap": 0,
+          "artist_works_log_nonzero_rows": 0
+        },
+        "reason": "cold_no_train_overlap_check"
+      }
+    ]
+  }
+}

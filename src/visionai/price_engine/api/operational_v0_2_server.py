@@ -135,9 +135,34 @@ async def operational_test_page() -> HTMLResponse:
     return HTMLResponse(page.read_text(encoding="utf-8"))
 
 
+@app.get("/test/v0.3", response_class=HTMLResponse)
+@app.get("/test/v0.3/result", response_class=HTMLResponse)
+async def cold_v03_test_page() -> HTMLResponse:
+    page = STATIC_DIR / "cold_v0_3_guard_search_test.html"
+    if not page.exists():
+        raise HTTPException(status_code=404, detail="TEST_PAGE_NOT_FOUND")
+    return HTMLResponse(page.read_text(encoding="utf-8"))
+
+
 @app.get("/api/v2/price-models/current", response_model=CurrentModelResponse)
 async def current_model() -> CurrentModelResponse:
     return service().current_model(request_id())
+
+
+@app.get("/api/v2/research/cold-v0.3/samples")
+async def cold_v03_research_samples(split: str = "test", limit: int = 20) -> dict[str, object]:
+    try:
+        return service().cold_v03_research_samples(request_id(), split=split, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/v2/research/cold-v0.3/replay/{row_id}")
+async def cold_v03_research_replay(row_id: int, split: str = "test") -> dict[str, object]:
+    try:
+        return service().cold_v03_research_replay(request_id(), row_id=row_id, split=split)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/v2/artists:resolve", response_model=ResolveArtistResponse)

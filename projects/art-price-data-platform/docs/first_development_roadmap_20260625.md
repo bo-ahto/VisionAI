@@ -17,9 +17,9 @@
   -> 4개 원천 raw 수집 및 payload 보존
   -> 원천별 interpreted staging
   -> 공통 normalized staging
-  -> NANT 재료(지지체/매체) 95분류와 학습 제외 플래그
+  -> NANT 재료(지지체/매체) 95분류와 mapping row 기준 학습 제외 판단
   -> 작가명/alias/artist_key 표준화
-  -> 검수 큐와 어드민 처리
+  -> standardization_review_item 공통 검수 큐와 어드민 처리
   -> snapshot 확정요청/생성/서빙승인
   -> 모델 버전/배포 관리
   -> 사용자 가격 예측 화면/API
@@ -63,7 +63,7 @@
 
 ## 4. 1차 개발 기준 결정
 
-아래 항목은 구현 착수 전에 선택지로 남기지 않고 1차 기준으로 고정한다. 이 절은 **확정된 설계 결정(원칙)**이고, Phase 0(§6)은 그 결정을 개발 가능한 산출물(OpenAPI/DDL/seed)로 내리는 작업이다. PRD §12 오픈 이슈는 이 결정 위에 남은 세부값/스키마만 다룬다.
+아래 항목은 구현 착수 전에 선택지로 남기지 않고 1차 기준으로 고정한다. 이 절은 **확정된 설계 결정(원칙)**이고, Phase 0(§6)은 그 결정을 개발 가능한 산출물(OpenAPI/DDL/seed)로 내리는 작업이다. PRD §12는 이 결정 위에 얹는 개발 전 확정 기본값과 정책 선택 항목을 다룬다.
 
 | 항목 | 1차 개발 기준 |
 |---|---|
@@ -84,7 +84,7 @@ Phase 0. API/DB/운영 기준 확정
 Phase 1. DB/migration/object storage 기반
 Phase 2. collector 공통 인터페이스와 raw 적재
 Phase 3. 4개 원천별 interpreted/normalized 파이프라인
-Phase 3.5. NANT 재료(지지체/매체) 분류와 학습 제외 플래그
+Phase 3.5. NANT 재료(지지체/매체) 분류와 학습 제외 기준 적용
 Phase 4. 작가명/artist_key 표준화와 검수 큐
 Phase 5. snapshot/export/model training/registry/deployment
 Phase 6. API 구현
@@ -97,17 +97,31 @@ Phase 9. 통합 검증과 운영 전환
 
 Phase는 "레이어 완성" 순서지만, 모든 레이어를 4원천·전체 UI·전체 운영까지 폭으로 채운 뒤에야 첫 동작을 확인하면 통합 리스크가 끝에 몰린다(§11 범위 과대). 이를 막기 위해 Phase 1~7 구현은 **먼저 1원천을 끝까지 관통하는 얇은 수직 슬라이스(M1)** 를 완성한 뒤 **폭으로 확장(M2)** 한다.
 
+구현 적용은 M1을 한 번에 만들지 않고 아래 컷으로 나눈다.
+
+| 컷 | 범위 | 완료 의미 |
+|---|---|---|
+| D1 | Art1 raw 수집 -> interpreted -> standardization_review_item 보류/승인 -> normalized -> NANT/FX/artist_key resolve -> snapshot 후보/생성/승인 -> parquet export/manifest | 학습 전 데이터 플랫폼 완성. 모델 학습/배포는 아직 하지 않음 |
+| D2 | approved snapshot export -> Warm/Cold feature generation spec/dataset build | feature column, target, split, 결측/encoding, schema hash가 닫힘 |
+| D3 | model training/import job + 평가/parity | 모델 artifact 또는 imported joblib 후보 생성 |
+| D4 | registry candidate 승인/반려 + deployment promote/rollback/retire + prediction log | 모델 version 적용과 운영 route 반영 |
+
+D1이 첫 개발 목표다. 기존 M1 완료 기준("사용자가 예측을 본다")은 D1~D4가 모두 통과된 뒤에 충족된다.
+
 ### M1. 수직 슬라이스 (1원천 end-to-end)
 
 대상 원천은 `Art1`(§17 최우선 착수의 첫 원천). 아래를 **하나의 흐름으로 관통**해 "사용자가 예측을 본다"를 조기 검증한다.
 
 ```text
-Art1 raw 적재
+D1: Art1 raw 적재
   -> interpreted/normalized (Art1만)
-  -> NANT 지지체/매체 분류 + 학습 제외 플래그 (Art1만)
-  -> 작가명 alias + 사용자 신규 작가 후보 제출 + 최소 identity 후보 + 검수 큐 최소 2경로(작가명 1건 + 신규 후보 1건)
+  -> NANT 지지체/매체 분류 + mapping row 기준 학습 제외 판단 (Art1만)
+  -> standardization_review_item 공통 큐 최소 타입 3개(artist_name_ko 1건 + artist_key/new_artist 1건 + nant_mapping 또는 fx_rate 1건)
+  -> 작가명 alias + 사용자 신규 작가 후보 제출 + 최소 identity 후보
   -> snapshot 확정요청 -> 생성승인 -> 서빙승인
-  -> joblib 모델 번들/feature store 연결 -> model training/import + registry/deployment active
+D2: feature generation spec/dataset build
+D3: joblib 모델 번들 import 또는 모델 학습 job
+D4: registry/deployment active
   -> 사용자 예측 API + 예측 결과 화면
   -> 어드민 수집 대시보드 + 작가명 검수 큐 + 신규 작가 후보 최소 큐 화면
 ```
@@ -118,16 +132,16 @@ M1 완료 기준:
 - 예측 결과 화면에 가격/신뢰도/as_of/1차 시장 카드가 표시된다(freshness 경고/카드 숨김은 M2).
 - 어드민이 화면에서 Art1 run 상태를 보고 작가명 검수 1건을 처리할 수 있다.
 - 사용자가 신규 작가 후보를 제출할 수 있고, 어드민이 신규 후보 최소 큐 1건을 처리할 수 있다. `approve`로 최종 artist_key를 생성하는 경로는 데이터 관리자 권한으로만 통과한다.
-- M1 모델 경로는 기존 예측 API 호출이 아니라 joblib 모델 번들을 training/import 이력과 registry/deployment에 등록해 active deployment로 둔다. Warm 기본 후보는 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`이고, Cold 기본 후보는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 산출물이다. Cold k80은 fixed test parity/joblib smoke 통과 후 active deployment에 등록한다. `projects/art-price-data-platform/models/cold_prediction_v0.5_operational`은 M1 적용 fallback이 아니라 과거 raw-input p95 방어 참고 산출물이다. 어떤 방식을 쓰든 prediction log가 `model_version`/`deployment_id`/`route`를 남겨야 한다.
+- D3/D4 모델 경로는 기존 예측 API 호출이 아니라 joblib 모델 번들을 training/import 이력과 registry/deployment에 등록해 active deployment로 둔다. Warm 기본 후보는 `projects/art-price-data-platform/models/warm_lite_unified_current_joblib_v0.1_candidate`이고, Cold 기본 후보는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `projects/art-price-data-platform/models/cold_k80_conservative_official_v0.1_candidate/` joblib runtime bundle로 freeze한 산출물이다. Cold k80은 fixed test parity/joblib smoke 통과 후 active deployment에 등록한다. `projects/art-price-data-platform/models/cold_prediction_v0.5_operational`은 적용 fallback이 아니라 과거 raw-input p95 방어 참고 산출물이다. 어떤 방식을 쓰든 prediction log가 `model_version`/`deployment_id`/`route`를 남겨야 한다.
 - 스키마/상태값/합성키 정합성이 실데이터로 한 번 깨져보고 고정된다.
-- M1 범위는 **원천 1개·사용자 예측 최소 경로·작가명 큐 1건·신규 작가 후보 큐 1건**으로 한정한다. 작품 품질/artist_key 연결/freshness/나머지 원천/전체 검수 큐는 M2에서 확장한다.
+- M1 범위는 **원천 1개·사용자 예측 최소 경로·공통 표준화 검수 큐 최소 타입 3개(`artist_name_ko`, `artist_key`/`new_artist`, `nant_mapping` 또는 `fx_rate`)**로 한정한다. 작품 품질/freshness/나머지 원천/전체 검수 큐는 M2에서 확장한다.
 
 ### M2. 폭 확장 (운영 가능한 1차 완성)
 
 M1 흐름이 고정되면 폭을 채운다.
 
 - 나머지 3원천(Saatchi/Print Bakery/Artsy) interpreted/normalized/identity 연결
-- 작품 품질·artist_key 연결·신규 작가 검수 큐 전체
+- 작품 품질·artist_key 연결·신규 작가 검수 큐 전체(`standardization_review_item` 타입 확장)
 - freshness 경고/카드 숨김(1차 시장 카드 자체는 M1)
 - 운영 자동화 전체(cron/watchdog/canary/알림)와 runbook 4종
 - Phase 9 통합 검증과 운영 전환
@@ -170,13 +184,14 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 1. `source_registry`, `collector_run`, `raw_fetch`, `manual_import_file`
 2. `source_artwork_raw`, `source_artist_raw`
 3. `source_artwork_interpreted_staging`, `source_artist_interpreted_staging`
-4. `normalized_artwork_staging`, `normalized_artist_staging`
-5. `artist_name_alias`, `artist_identity_candidate`, `artist_identity`, `artist_profile_item`, `artist_profile_current`
-6. `identity_event_log`, `artist_identity_version`, `artist_key_membership_history`
-7. `artwork_snapshot`, `artwork_snapshot_item`, `snapshot_request`
-8. `fx_rate_daily`
-9. `price_model_registry`, `price_model_deployment`, `price_prediction_log`
-10. suppression/do-not-train/do-not-show 상태 또는 동등한 정책 컬럼
+4. `fx_rate_daily`, `nant_mapping_version`, `nant_allowed_category`, `nant_material_mapping`
+5. `standardization_review_item`
+6. `normalized_artwork_staging`(확정 `artist_key`/NANT resolve 컬럼 포함), `normalized_artist_staging`
+7. `artist_name_alias`, `artist_identity_candidate`, `artist_identity`, `artist_profile_meta`
+8. `identity_event_log`, `artist_identity_version`, `artist_key_membership_history`
+9. `artwork_snapshot`, `artwork_snapshot_item`, `snapshot_request`
+10. `price_model_registry`, `price_model_deployment`, `price_prediction_log`
+11. suppression/do-not-train/do-not-show 상태 또는 동등한 정책 컬럼
 
 완료 기준:
 
@@ -220,19 +235,22 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 
 1. 작품 interpreted job: 가격/크기/재료/판매상태/title/year 후보 추출
 2. 작가 interpreted job: 원천명, 한글/영문 후보, 생년/국적/활동지 후보 추출
-3. 작품 normalized job: 공통 컬럼, KRW 환산 후보, quality flag 생성
-4. 작가 normalized job: 표시명 후보, source artist key, 후보 상태 생성
-5. 가격 환율 처리: `fx_rate_daily` 기반 point-in-time KRW 환산
-6. DB active NANT mapping version 조회
-7. NANT 재료(지지체/매체) 95분류와 `learning_excluded` 플래그 적용
-8. unmapped medium/support/material 및 NANT unmapped 리포트 생성
-9. parser/normalizer/NANT fixture integration test 추가
+3. 작가 normalized job: 표시명 후보, source artist key, 후보 상태 생성
+4. 자동 표준화 gate: 작가명 한글화 위험, artist_key 미확정, NANT 미매핑, FX 누락/이상치를 `standardization_review_item`에 등록
+5. artist_key resolve: 기존 확정 키 자동 연결, 후보 생성, 승인된 키만 작품 row에 사용
+6. 작품 normalized job: 확정된 active `artist_key`, 적용 가능한 `fx_rate_daily`, 매핑된 DB active NANT 95분류가 모두 있는 작품만 공통 컬럼과 quality flag를 함께 생성
+7. NANT mapping row 기준 `learning_excluded` 판단은 작품 row에 복사하지 않고 snapshot 후보 query에서 조인
+8. 미매핑 medium/support/material 리포트는 `standardization_review_item(review_type=nant_mapping)`에서 조회
+9. parser/normalizer/NANT/review queue fixture integration test 추가
 
 완료 기준:
 
 - 4개 source 모두 raw -> interpreted -> normalized row 수 추적이 가능하다.
 - 가격/크기/작가명 보유율이 source별로 집계되고, `QUAL-PRICE-MIN`/`QUAL-SIZE-MIN`/`QUAL-ARTIST-MIN` 임계 미달 시 parser 점검/snapshot 보류 신호가 산출된다.
 - 분해 실패와 표준화 실패가 별도 flag로 남는다.
+- `artist_key` 미확정 작품은 `normalized_artwork_staging`에 올리지 않고 `standardization_review_item(review_type=artist_key)`에 보류된다.
+- 작가명 한글화 검수는 `standardization_review_item.review_type=artist_name_ko`로 등록된다.
+- NANT 미매핑과 환율 누락/이상치는 `standardization_review_item`에 보류되고, 승인/apply 후 영향 row만 normalizer 재실행 대상이 된다.
 - NANT 기준 조합 95개와 CSV import -> DB `learning_excluded` 변환이 fixture로 검증된다.
 - snapshot 후보에서 제외해야 할 row의 사유가 NANT 제외 사유를 포함해 계산된다.
 
@@ -246,10 +264,10 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 구현 기준:
 
 - 기준 파일은 [NANT 재료(지지체/매체) 분류 기준](nant_material_classification_criteria_20260626.md)을 따른다.
-- 결과는 `nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status`, `mapping_version_id`, `learning_excluded`를 포함해야 한다.
+- 결과는 `nant_support`, `nant_medium`, `nant_category_key`, `mapping_version_id`, `material_mapping_id`를 포함해야 한다. `learning_excluded`는 classification row에 중복 저장하지 않고 mapping row 조인으로 판단한다.
 - NANT mapping은 DB에서 `draft`를 편집하고 데이터 관리자가 `active`로 전환한다. active version은 직접 수정하지 않는다.
 - 기존 코드에 있던 재료/지지체/작품 유형 하드코딩 학습 필터는 새 snapshot 후보 query에서 사용하지 않는다.
-- 매핑 실패 row는 임의 분류하지 않고 `nant_unmapped` 사유로 제외 또는 보류한다.
+- 매핑 실패 row는 임의 분류하지 않고 `standardization_review_item(review_type=nant_mapping)`에 보류한다.
 
 완료 기준:
 
@@ -287,34 +305,37 @@ M2 완료 기준은 §18 완료 정의 및 PRD §10 성공 기준과 동일하�
 
 목표:
 
-- 학습/운영 반영 가능한 고정 데이터, 모델 학습/import 이력, 모델 배포 이력을 만든다.
+- 학습 전 고정 데이터(snapshot/export)를 먼저 만들고, feature generation, 모델 학습/import, 모델 배포 이력을 별도 컷으로 연결한다.
 
 구현 순서:
 
 1. snapshot 후보 summary/items query
 2. snapshot 확정요청 API/job
 3. snapshot 생성승인 job
-4. `artwork_snapshot_item` 포함/제외 고정(`nant_learning_excluded`, `nant_unmapped` 포함)
+4. `artwork_snapshot_item` 포함/제외 고정(`nant_learning_excluded` 포함)
 5. parquet export와 manifest 생성
 6. 검수/공유/호환용 CSV export 생성
-7. `model_training_job` 생성 또는 기존 joblib import 이력 생성
-8. model registry에 `candidate` 등록
-9. validation/test, fixed-test parity, API smoke gate 확인
-10. candidate 승인/반려(`approved`/`rejected`)
-11. model deployment active/rollback 전이
-12. prediction log 적재
+7. Warm/Cold feature generation spec 작성
+8. feature dataset build + feature manifest/schema hash 생성
+9. `model_training_job` 생성 또는 기존 joblib import 이력 생성
+10. model registry에 `candidate` 등록
+11. validation/test, fixed-test parity, API smoke gate 확인
+12. candidate 승인/반려(`approved`/`rejected`)
+13. model deployment active/rollback/retire 전이
+14. prediction log 적재
 
-M1 적용:
+D1 적용:
 
-- M1은 새 학습 자동화가 아니라 기존 Warm joblib와 Cold k80 joblib bundle을 import/seed로 registry에 등록한다.
-- Warm/Cold joblib smoke와 fixed-test parity를 통과한 모델만 active deployment seed에 넣는다.
-- 이후 재학습 job과 candidate 승인/반려/운영 승격 UI는 [모델 학습과 운영 모델 변경 수명주기](model_training_deployment_lifecycle_20260626.md)를 기준으로 확장한다.
+- 첫 구현 컷은 1~6까지만 닫는다. 즉 모델 학습/import, registry/deployment, prediction log는 D1 범위가 아니다.
+- D1 완료 후 D2에서 feature generation spec/dataset build를 별도로 닫는다.
+- 기존 Warm joblib와 Cold k80 joblib bundle 적용은 D3(import/parity)와 D4(registry/deployment)에서 처리한다.
 
 완료 기준:
 
 - 같은 입력과 같은 `rules_version`이면 같은 snapshot export가 생성된다.
 - `generated` snapshot은 사용자 기준 데이터가 되지 않는다.
 - `approved` snapshot만 서빙·freshness 비교 기준이 되고, 사용자 `as_of`는 active deployment가 학습/import에 쓴 cutoff로 산정한다.
+- feature generation은 column/target/split/schema hash가 정해진 뒤에만 학습으로 넘어간다.
 - 모델 학습/import job에서 registry candidate까지 추적할 수 있다.
 - `candidate` 모델은 운영 승격되지 않는다.
 - active deployment가 사용한 학습 snapshot 또는 legacy import manifest를 역추적할 수 있다.
@@ -472,15 +493,18 @@ M1 적용:
 3. `source_registry` seed와 운영 파라미터 seed 작성
 4. Art1 -> Print Bakery -> Artsy -> Saatchi 순으로 raw 적재 연결
 5. interpreted/normalized physical table 기준으로 parser/normalizer job 작성
-6. artist_name_alias와 identity candidate 생성
-7. admin collection dashboard와 review queue API mock 구현
-8. snapshot request/create/approve skeleton 구현
+6. Art1 기준 NANT 분류와 snapshot/export까지 local dev에서 D1 E2E 검증
+
+개발 적용은 local-first다. D1은 `docker-compose`의 MySQL+MinIO+API에서 fixture와 소량 실데이터로 검증한 뒤 staging/preview에 올리고, production은 migration/seed/export 재현성과 rollback이 확인된 뒤 반영한다.
+7. artist_name_alias와 identity candidate 생성
+8. admin collection dashboard와 review queue API mock 구현
+9. snapshot request/create/approve skeleton 구현
 
 이 순서의 이유:
 
 - DB 기준이 먼저 없으면 collector/API/UI가 서로 다른 상태값과 키를 만들 가능성이 크다.
 - raw 적재가 먼저 되어야 parser/normalizer와 검수 큐를 실제 데이터로 검증할 수 있다.
-- snapshot과 deployment 기준이 잡혀야 사용자 화면의 `as_of`, freshness, 가격 카드가 흔들리지 않는다.
+- snapshot/export 기준이 잡혀야 이후 feature generation, 모델 version 적용, 사용자 화면의 `as_of`, freshness, 가격 카드가 흔들리지 않는다.
 
 ## 18. 완료 정의
 

@@ -1,0 +1,291 @@
+{
+  "meta_feature_columns_used": [
+    "artist_meta_birth_year",
+    "artist_meta_total_works",
+    "artist_meta_for_sale_works",
+    "artist_meta_followers",
+    "artist_meta_for_sale_ratio",
+    "artist_meta_career_stage",
+    "artist_meta_total_works_log",
+    "artist_meta_for_sale_works_log",
+    "artist_meta_followers_log",
+    "artist_meta_birth_year_missing",
+    "artist_meta_total_works_missing",
+    "artist_meta_for_sale_works_missing",
+    "artist_meta_followers_missing",
+    "artist_meta_career_stage_missing",
+    "artist_meta_is_p1_flag",
+    "artist_meta_has_international_flag",
+    "artist_meta_source",
+    "artist_meta_nationality",
+    "artist_meta_nationality_ko",
+    "artist_exhibition_solo_count",
+    "artist_exhibition_group_count",
+    "artist_exhibition_fair_count",
+    "artist_exhibition_total_count",
+    "artist_exhibition_available_count",
+    "artist_exhibition_solo_count_missing",
+    "artist_exhibition_group_count_missing",
+    "artist_exhibition_fair_count_missing",
+    "artist_exhibition_solo_count_log",
+    "artist_exhibition_group_count_log",
+    "artist_exhibition_fair_count_log",
+    "artist_exhibition_total_count_log",
+    "gallery_tier_raw_numeric",
+    "gallery_tier_raw_available_flag",
+    "gallery_tier_validated_score",
+    "gallery_tier_validated_available_flag",
+    "gallery_tier_any_available_flag",
+    "gallery_city_count",
+    "gallery_city_count_log",
+    "gallery_tier_raw_bucket",
+    "gallery_tier_validated",
+    "gallery_ref_type",
+    "gallery_audit_status",
+    "gallery_feature_source",
+    "gallery_validated_x_followers_log",
+    "gallery_tier_x_exhibition_total_log",
+    "gallery_exhibition_bucket"
+  ],
+  "baseline_test": {
+    "n": 3099,
+    "MdAPE": 0.4627,
+    "MAPE": 1.1669,
+    "p95_APE": 3.0336
+  },
+  "A_present_absent": {
+    "생년": {
+      "present_rate": 0.247,
+      "present": {
+        "n": 767,
+        "MdAPE": 0.483,
+        "MAPE": 0.6449,
+        "p95_APE": 1.6087
+      },
+      "absent": {
+        "n": 2332,
+        "MdAPE": 0.459,
+        "MAPE": 1.3386,
+        "p95_APE": 4.5211
+      },
+      "MdAPE_gap_absent_minus_present": -0.024
+    },
+    "경력": {
+      "present_rate": 0.523,
+      "present": {
+        "n": 1622,
+        "MdAPE": 0.4153,
+        "MAPE": 1.5943,
+        "p95_APE": 4.5211
+      },
+      "absent": {
+        "n": 1477,
+        "MdAPE": 0.4983,
+        "MAPE": 0.6976,
+        "p95_APE": 1.8881
+      },
+      "MdAPE_gap_absent_minus_present": 0.083
+    },
+    "팔로워": {
+      "present_rate": 0.689,
+      "present": {
+        "n": 2135,
+        "MdAPE": 0.4377,
+        "MAPE": 1.3775,
+        "p95_APE": 4.5211
+      },
+      "absent": {
+        "n": 964,
+        "MdAPE": 0.4974,
+        "MAPE": 0.7005,
+        "p95_APE": 1.9547
+      },
+      "MdAPE_gap_absent_minus_present": 0.0597
+    },
+    "작품수": {
+      "present_rate": 0.741,
+      "present": {
+        "n": 2295,
+        "MdAPE": 0.4446,
+        "MAPE": 1.324,
+        "p95_APE": 4.5211
+      },
+      "absent": {
+        "n": 804,
+        "MdAPE": 0.483,
+        "MAPE": 0.7185,
+        "p95_APE": 2.042
+      },
+      "MdAPE_gap_absent_minus_present": 0.0384
+    },
+    "전시": {
+      "present_rate": 0.371,
+      "present": {
+        "n": 1151,
+        "MdAPE": 0.3478,
+        "MAPE": 0.5479,
+        "p95_APE": 1.7587
+      },
+      "absent": {
+        "n": 1948,
+        "MdAPE": 0.5219,
+        "MAPE": 1.5327,
+        "p95_APE": 4.5211
+      },
+      "MdAPE_gap_absent_minus_present": 0.1741
+    },
+    "갤러리": {
+      "present_rate": 0.56,
+      "present": {
+        "n": 1734,
+        "MdAPE": 0.4212,
+        "MAPE": 1.5286,
+        "p95_APE": 4.5211
+      },
+      "absent": {
+        "n": 1365,
+        "MdAPE": 0.4945,
+        "MAPE": 0.7075,
+        "p95_APE": 1.9245
+      },
+      "MdAPE_gap_absent_minus_present": 0.0733
+    }
+  },
+  "B_ablation": {
+    "팔로워": {
+      "ablated_columns": [
+        "artist_meta_followers",
+        "artist_meta_followers_log",
+        "artist_meta_followers_missing",
+        "gallery_validated_x_followers_log"
+      ],
+      "n": 3099,
+      "MdAPE": 0.4888,
+      "MAPE": 1.2312,
+      "p95_APE": 3.3417,
+      "MdAPE_delta_vs_baseline": 0.0261
+    },
+    "경력": {
+      "ablated_columns": [
+        "artist_meta_career_stage",
+        "artist_meta_career_stage_missing"
+      ],
+      "n": 3099,
+      "MdAPE": 0.485,
+      "MAPE": 1.3108,
+      "p95_APE": 3.8837,
+      "MdAPE_delta_vs_baseline": 0.0223
+    },
+    "전시": {
+      "ablated_columns": [
+        "artist_exhibition_solo_count",
+        "artist_exhibition_group_count",
+        "artist_exhibition_fair_count",
+        "artist_exhibition_total_count",
+        "artist_exhibition_available_count",
+        "artist_exhibition_solo_count_missing",
+        "artist_exhibition_group_count_missing",
+        "artist_exhibition_fair_count_missing",
+        "artist_exhibition_solo_count_log",
+        "artist_exhibition_group_count_log",
+        "artist_exhibition_fair_count_log",
+        "artist_exhibition_total_count_log",
+        "gallery_tier_x_exhibition_total_log",
+        "gallery_exhibition_bucket"
+      ],
+      "n": 3099,
+      "MdAPE": 0.4764,
+      "MAPE": 1.1054,
+      "p95_APE": 3.0304,
+      "MdAPE_delta_vs_baseline": 0.0137
+    },
+    "작품수": {
+      "ablated_columns": [
+        "artist_meta_total_works",
+        "artist_meta_total_works_log",
+        "artist_meta_total_works_missing"
+      ],
+      "n": 3099,
+      "MdAPE": 0.4677,
+      "MAPE": 1.0172,
+      "p95_APE": 3.4321,
+      "MdAPE_delta_vs_baseline": 0.005
+    },
+    "갤러리": {
+      "ablated_columns": [
+        "gallery_tier_raw_numeric",
+        "gallery_tier_raw_available_flag",
+        "gallery_tier_validated_score",
+        "gallery_tier_validated_available_flag",
+        "gallery_tier_any_available_flag",
+        "gallery_city_count",
+        "gallery_city_count_log",
+        "gallery_tier_raw_bucket",
+        "gallery_tier_validated",
+        "gallery_ref_type",
+        "gallery_audit_status",
+        "gallery_feature_source",
+        "gallery_validated_x_followers_log",
+        "gallery_tier_x_exhibition_total_log",
+        "gallery_exhibition_bucket"
+      ],
+      "n": 3099,
+      "MdAPE": 0.4627,
+      "MAPE": 1.1668,
+      "p95_APE": 3.0336,
+      "MdAPE_delta_vs_baseline": 0.0
+    },
+    "생년": {
+      "ablated_columns": [
+        "artist_meta_birth_year",
+        "artist_meta_birth_year_missing"
+      ],
+      "n": 3099,
+      "MdAPE": 0.4621,
+      "MAPE": 1.163,
+      "p95_APE": 3.0606,
+      "MdAPE_delta_vs_baseline": -0.0006
+    }
+  },
+  "C_tier_anatomy": {
+    "빈약(0-2)": {
+      "n": 962,
+      "median_price_krw": 4140000,
+      "share_ape_over_2": 0.049,
+      "field_present_rate": {
+        "생년": 0.04,
+        "경력": 0.0,
+        "팔로워": 0.06,
+        "작품수": 0.16,
+        "전시": 0.0,
+        "갤러리": 0.12
+      }
+    },
+    "보통(3-4)": {
+      "n": 984,
+      "median_price_krw": 3172620,
+      "share_ape_over_2": 0.158,
+      "field_present_rate": {
+        "생년": 0.52,
+        "경력": 0.48,
+        "팔로워": 0.94,
+        "작품수": 1.0,
+        "전시": 0.04,
+        "갤러리": 0.48
+      }
+    },
+    "풍부(5-6)": {
+      "n": 1153,
+      "median_price_krw": 2932500,
+      "share_ape_over_2": 0.037,
+      "field_present_rate": {
+        "생년": 0.19,
+        "경력": 1.0,
+        "팔로워": 1.0,
+        "작품수": 1.0,
+        "전시": 0.96,
+        "갤러리": 1.0
+      }
+    }
+  }
+}

@@ -1,0 +1,1357 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm/Cold v0.2 운영 학습 루프 기획서</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#warm-cold-v0.2-운영-학습-루프-기획서">Warm/Cold v0.2 운영 학습 루프 기획서</a>
+<a class="toc-level-2" href="#1.-결론">1. 결론</a>
+<a class="toc-level-2" href="#2.-버전-범위">2. 버전 범위</a>
+<a class="toc-level-2" href="#3.-운영-학습-루프-전체-구조">3. 운영 학습 루프 전체 구조</a>
+<a class="toc-level-2" href="#4.-핵심-원칙">4. 핵심 원칙</a>
+<a class="toc-level-2" href="#5.-데이터-수집-종류">5. 데이터 수집 종류</a>
+<a class="toc-level-3" href="#5.1-예측-이벤트-데이터">5.1 예측 이벤트 데이터</a>
+<a class="toc-level-3" href="#5.2-사용자-보완-입력-데이터">5.2 사용자 보완 입력 데이터</a>
+<a class="toc-level-3" href="#5.3-실제-판매가-데이터">5.3 실제 판매가 데이터</a>
+<a class="toc-level-2" href="#6.-데이터-품질-등급">6. 데이터 품질 등급</a>
+<a class="toc-level-3" href="#6.1-품질-점수-계산">6.1 품질 점수 계산</a>
+<a class="toc-level-3" href="#6.2-학습-후보-승격-기준">6.2 학습 후보 승격 기준</a>
+<a class="toc-level-2" href="#7.-warm-cold별-학습-반영-방식">7. Warm/Cold별 학습 반영 방식</a>
+<a class="toc-level-3" href="#7.1-warm-데이터">7.1 Warm 데이터</a>
+<a class="toc-level-3" href="#7.2-cold-데이터">7.2 Cold 데이터</a>
+<a class="toc-level-2" href="#8.-데이터베이스-테이블-기획">8. 데이터베이스 테이블 기획</a>
+<a class="toc-level-3" href="#8.1-price_prediction_events">8.1 `price_prediction_events`</a>
+<a class="toc-level-3" href="#8.2-price_prediction_feedback">8.2 `price_prediction_feedback`</a>
+<a class="toc-level-3" href="#8.3-training_candidate_labels">8.3 `training_candidate_labels`</a>
+<a class="toc-level-3" href="#8.4-model_training_runs">8.4 `model_training_runs`</a>
+<a class="toc-level-2" href="#9.-api-기획">9. API 기획</a>
+<a class="toc-level-3" href="#9.1-예측-api-응답에-포함할-피드백-토큰">9.1 예측 API 응답에 포함할 피드백 토큰</a>
+<a class="toc-level-3" href="#9.2-실제-판매가-입력-api">9.2 실제 판매가 입력 API</a>
+<a class="toc-level-3" href="#9.3-보완-입력-api">9.3 보완 입력 API</a>
+<a class="toc-level-2" href="#10.-오차-계산과-운영-성능-추적">10. 오차 계산과 운영 성능 추적</a>
+<a class="toc-level-2" href="#11.-재학습-주기">11. 재학습 주기</a>
+<a class="toc-level-3" href="#11.1-v0.2-권장-운영-주기">11.1 v0.2 권장 운영 주기</a>
+<a class="toc-level-3" href="#11.2-재학습-실행-조건">11.2 재학습 실행 조건</a>
+<a class="toc-level-2" href="#12.-재학습-검증-절차">12. 재학습 검증 절차</a>
+<a class="toc-level-3" href="#12.1-승격-기준">12.1 승격 기준</a>
+<a class="toc-level-3" href="#12.2-배포-보류-조건">12.2 배포 보류 조건</a>
+<a class="toc-level-2" href="#13.-프론트-화면-반영">13. 프론트 화면 반영</a>
+<a class="toc-level-3" href="#13.1-예측-결과-화면">13.1 예측 결과 화면</a>
+<a class="toc-level-3" href="#13.2-cold-화면-문구">13.2 Cold 화면 문구</a>
+<a class="toc-level-3" href="#13.3-실제-판매가-입력-문구">13.3 실제 판매가 입력 문구</a>
+<a class="toc-level-2" href="#14.-운영자-검수-화면">14. 운영자 검수 화면</a>
+<a class="toc-level-2" href="#15.-v0.2-구현-단계">15. v0.2 구현 단계</a>
+<a class="toc-level-2" href="#16.-v0.2에서-바로-해야-할-것과-나중에-할-것">16. v0.2에서 바로 해야 할 것과 나중에 할 것</a>
+<a class="toc-level-3" href="#16.1-v0.2에서-바로-포함">16.1 v0.2에서 바로 포함</a>
+<a class="toc-level-3" href="#16.2-v0.2-이후-단계">16.2 v0.2 이후 단계</a>
+<a class="toc-level-2" href="#17.-최종-운영-정의">17. 최종 운영 정의</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/warm_cold_v0_2_operational_learning_loop_plan.md</code></div>
+      <h1 id="warm-cold-v0.2-운영-학습-루프-기획서">Warm/Cold v0.2 운영 학습 루프 기획서</h1>
+<ul>
+<li>작성일: 2026-06-11</li>
+<li>적용 버전: <code>price_prediction_v0.2</code></li>
+<li>문서 목적: 실제 서비스 운영 중 새로 들어오는 작품 정보, 예측 결과, 실제 판매가를 안전하게 축적하고 다음 모델 학습에 반영하는 구조를 정의</li>
+<li>관련 문서: <code>warm_cold_service_operationalization_plan_next_version.md</code>, <code>partner_warm_cold_best_model_report.md</code></li>
+</ul>
+<h2 id="1.-결론">1. 결론</h2>
+<ul>
+<li>v0.2에서는 예측 API만 만드는 것이 아니라, 운영 중 생성되는 데이터를 다음 학습에 연결하는 구조까지 포함해야 함</li>
+<li>사용자가 입력한 작품 정보는 즉시 모델 학습에 쓰지 않고, 예측 요청 기록과 피처 스냅샷으로 먼저 저장</li>
+<li>실제 판매가, 거래일, 판매 채널, 증빙 정보가 들어온 경우에만 학습 후보 라벨로 승격</li>
+<li>검수 전 데이터는 학습에 반영하지 않음</li>
+<li>검수 완료 데이터도 곧바로 운영 모델에 반영하지 않고, 정해진 주기마다 재학습 후보 데이터셋으로 묶어 검증</li>
+<li>새 모델은 기존 fixed test, 신규 운영 holdout, route별 성능, 큰 오차 지표를 모두 통과한 뒤에만 다음 버전으로 승격</li>
+<li>v0.2의 핵심은 &quot;운영 예측&quot;과 &quot;운영 학습 데이터 축적&quot;을 같은 서비스 안에서 연결하되, 모델 오염을 막는 검수 단계를 두는 것</li>
+</ul>
+<h2 id="2.-버전-범위">2. 버전 범위</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">이전 버전(v0.1)</th>
+<th class="align-left">다음 버전(v0.2)</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예측 기능</td>
+<td class="align-left">Warm 중심 예측, Cold는 참고 범위 중심</td>
+<td class="align-left">Warm/Cold 라우팅, Cold 예상 가격, 계산 설명 제공</td>
+</tr>
+<tr>
+<td class="align-left">사용자 입력</td>
+<td class="align-left">작품 정보 입력과 작가 후보 확인</td>
+<td class="align-left">동일 구조 유지, 부족 정보 안내 추가</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 입력</td>
+<td class="align-left">별도 구조 필요</td>
+<td class="align-left">예측 결과와 연결된 피드백 입력 구조 추가</td>
+</tr>
+<tr>
+<td class="align-left">학습 데이터 축적</td>
+<td class="align-left">수동 수집 중심</td>
+<td class="align-left">예측 이벤트, 피처, 실제 판매가, 검수 상태를 구조화 저장</td>
+</tr>
+<tr>
+<td class="align-left">학습 반영</td>
+<td class="align-left">실험 단위 수동 반영</td>
+<td class="align-left">검수 완료 데이터만 주기적 재학습 후보로 반영</td>
+</tr>
+<tr>
+<td class="align-left">모델 배포</td>
+<td class="align-left">수동 교체</td>
+<td class="align-left">후보 모델 검증 후 버전 승격</td>
+</tr>
+</tbody></table></div>
+<h2 id="3.-운영-학습-루프-전체-구조">3. 운영 학습 루프 전체 구조</h2>
+<pre><code>[사용자 작품 입력]
+  - 작가명
+  - 작품 크기
+  - 매체/지지체
+  - 제작연도
+  - 작품 URL 또는 이미지
+        |
+        v
+[v0.2 가격 예측]
+  - 작가 매칭
+  - Warm/Cold 라우팅
+  - 예측가격/가격범위/신뢰도 산출
+  - 사용 피처와 계산 요약 저장
+        |
+        v
+[예측 이벤트 저장]
+  - prediction_id
+  - 입력 스냅샷
+  - 피처 스냅샷
+  - 예측 결과
+  - 모델 버전
+        |
+        +------------------------------+
+        |                              |
+        v                              v
+[사용자 보완 입력]              [실제 판매가 입력]
+  - 누락된 제작연도              - 실제 판매가
+  - 매체/지지체 정정             - 통화
+  - 작가 정보 정정               - 판매일
+  - 작품 이미지/URL              - 판매 채널
+        |                              - 증빙 상태
+        |                              |
+        +---------------+--------------+
+                        |
+                        v
+              [운영 데이터 검수]
+                - 작가 매칭 검수
+                - 작품 중복 검수
+                - 가격 이상치 검수
+                - 판매 증빙 검수
+                - 학습 동의 확인
+                        |
+                        v
+              [학습 후보 데이터셋]
+                - training_eligible=true
+                - route별 후보 분리
+                - holdout 후보 분리
+                        |
+                        v
+              [주기적 재학습/검증]
+                - Warm 재학습 후보
+                - Cold 재학습 후보
+                - 보정값 재산출
+                - 성능 회귀 검증
+                        |
+                        v
+              [모델 버전 승격]
+                - v0.2.x 실험 후보
+                - v0.3 운영 후보</code></pre>
+<h2 id="4.-핵심-원칙">4. 핵심 원칙</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">원칙</th>
+<th class="align-left">내용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">즉시 학습 금지</td>
+<td class="align-left">사용자가 입력한 판매가를 바로 운영 모델에 반영하지 않음</td>
+</tr>
+<tr>
+<td class="align-left">예측 당시 상태 저장</td>
+<td class="align-left">입력값, 파생 피처, 모델 버전, 예측 결과를 함께 저장</td>
+</tr>
+<tr>
+<td class="align-left">검수 후 학습 반영</td>
+<td class="align-left">실제 판매가와 증빙이 검수된 데이터만 학습 후보로 사용</td>
+</tr>
+<tr>
+<td class="align-left">route별 분리 관리</td>
+<td class="align-left">Warm 데이터와 Cold 데이터는 성격이 다르므로 별도 지표로 관리</td>
+</tr>
+<tr>
+<td class="align-left">중복 방지</td>
+<td class="align-left">동일 작품이 여러 번 입력되면 병합 또는 대표 라벨 하나만 사용</td>
+</tr>
+<tr>
+<td class="align-left">동의 기반 학습</td>
+<td class="align-left">사용자가 학습 활용에 동의한 데이터만 학습 후보로 승격</td>
+</tr>
+<tr>
+<td class="align-left">재현 가능성 유지</td>
+<td class="align-left">학습에 사용된 입력 스냅샷과 피처 생성 버전을 항상 저장</td>
+</tr>
+<tr>
+<td class="align-left">기존 성능 보호</td>
+<td class="align-left">신규 데이터 반영 모델이 기존 fixed test를 크게 악화시키면 배포하지 않음</td>
+</tr>
+</tbody></table></div>
+<h2 id="5.-데이터-수집-종류">5. 데이터 수집 종류</h2>
+<h3 id="5.1-예측-이벤트-데이터">5.1 예측 이벤트 데이터</h3>
+<p>예측 이벤트 데이터는 사용자가 가격 예측을 요청할 때마다 저장한다. 이 데이터는 정답 가격이 없기 때문에 즉시 학습 라벨은 아니다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">설명</th>
+<th class="align-left">학습 사용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">입력 작품 정보</td>
+<td class="align-left">작가명, 작품명, 제작연도, 크기, 매체, 지지체, 작품 유형</td>
+<td class="align-left">라벨 없음. 피처 분석용</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭 결과</td>
+<td class="align-left">artist_key, 매칭 점수, 후보 수, 동명이인 위험</td>
+<td class="align-left">라우팅/매칭 품질 개선용</td>
+</tr>
+<tr>
+<td class="align-left">Warm/Cold route</td>
+<td class="align-left">어떤 경로로 예측했는지</td>
+<td class="align-left">route 분포 모니터링</td>
+</tr>
+<tr>
+<td class="align-left">예측 결과</td>
+<td class="align-left">예측가격, 가격범위, 신뢰도</td>
+<td class="align-left">실제 판매가 입력 시 오차 계산 기준</td>
+</tr>
+<tr>
+<td class="align-left">피처 스냅샷</td>
+<td class="align-left">면적, 크기 구간, 매체 구간, Quantile 폭 등</td>
+<td class="align-left">재현 및 원인 분석</td>
+</tr>
+<tr>
+<td class="align-left">모델 버전</td>
+<td class="align-left"><code>price_prediction_v0.2</code>, 내부 Warm/Cold 구성 버전</td>
+<td class="align-left">버전별 성능 추적</td>
+</tr>
+</tbody></table></div>
+<h3 id="5.2-사용자-보완-입력-데이터">5.2 사용자 보완 입력 데이터</h3>
+<p>보완 입력은 예측 정확도를 높이기 위해 사용자가 나중에 추가하는 정보다. 가격 라벨이 아니므로 단독으로 supervised learning에는 사용하지 않는다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">보완 입력</th>
+<th class="align-left">활용 방식</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">제작연도 추가</td>
+<td class="align-left">다음 예측 시 작품 시기 피처 개선</td>
+</tr>
+<tr>
+<td class="align-left">매체/지지체 정정</td>
+<td class="align-left">재료 구간 피처 개선</td>
+</tr>
+<tr>
+<td class="align-left">작품 이미지/URL 추가</td>
+<td class="align-left">중복 검수, 이미지 피처 후속 실험 후보</td>
+</tr>
+<tr>
+<td class="align-left">작가 생년/국적 보완</td>
+<td class="align-left">Cold 작가 메타 피처 개선</td>
+</tr>
+<tr>
+<td class="align-left">전시/갤러리 이력 보완</td>
+<td class="align-left">Cold 검색/활동성 피처 후보</td>
+</tr>
+</tbody></table></div>
+<h3 id="5.3-실제-판매가-데이터">5.3 실제 판매가 데이터</h3>
+<p>실제 판매가는 모델 학습에 직접적인 정답 라벨이 될 수 있다. 다만 검수 조건을 통과해야 한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실제 판매가</td>
+<td class="align-left">사용자가 입력한 실제 거래 가격</td>
+</tr>
+<tr>
+<td class="align-left">통화</td>
+<td class="align-left">KRW, USD, EUR 등</td>
+</tr>
+<tr>
+<td class="align-left">원화 환산 가격</td>
+<td class="align-left">판매일 기준 또는 서비스 기준 환율로 환산</td>
+</tr>
+<tr>
+<td class="align-left">판매일</td>
+<td class="align-left">거래가 발생한 날짜</td>
+</tr>
+<tr>
+<td class="align-left">판매 채널</td>
+<td class="align-left">갤러리, 개인 거래, 경매, 온라인 플랫폼 등</td>
+</tr>
+<tr>
+<td class="align-left">거래 유형</td>
+<td class="align-left">실제 판매, 제안가, 호가, 감정가 구분</td>
+</tr>
+<tr>
+<td class="align-left">증빙 상태</td>
+<td class="align-left">영수증, 계약서, 플랫폼 기록, 운영자 확인 등</td>
+</tr>
+<tr>
+<td class="align-left">학습 활용 동의</td>
+<td class="align-left">모델 학습에 사용할 수 있는지 여부</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-데이터-품질-등급">6. 데이터 품질 등급</h2>
+<h3 id="6.1-품질-점수-계산">6.1 품질 점수 계산</h3>
+<p>운영 데이터는 품질이 섞여 들어오므로 학습 반영 전에 점수화한다.</p>
+<pre><code>운영데이터품질점수 =
+  0.30 * 판매가격증빙점수
++ 0.25 * 작가매칭신뢰도점수
++ 0.20 * 작품정보완성도점수
++ 0.15 * 판매채널신뢰도점수
++ 0.10 * 중복검수통과점수</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">점수 항목</th>
+<th class="align-left">계산 기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">판매가격증빙점수</td>
+<td class="align-left">증빙 있음 1.0, 부분 증빙 0.6, 자기 신고만 있음 0.3, 없음 0.0</td>
+</tr>
+<tr>
+<td class="align-left">작가매칭신뢰도점수</td>
+<td class="align-left">v0.2 작가 매칭 점수 사용</td>
+</tr>
+<tr>
+<td class="align-left">작품정보완성도점수</td>
+<td class="align-left">필수 입력과 권장 입력의 충족률</td>
+</tr>
+<tr>
+<td class="align-left">판매채널신뢰도점수</td>
+<td class="align-left">검증 가능한 채널 1.0, 제한 검증 0.6, 불명확 0.2</td>
+</tr>
+<tr>
+<td class="align-left">중복검수통과점수</td>
+<td class="align-left">중복 없음 1.0, 병합 필요 0.5, 중복 제외 0.0</td>
+</tr>
+</tbody></table></div>
+<h3 id="6.2-학습-후보-승격-기준">6.2 학습 후보 승격 기준</h3>
+<pre><code>학습후보승격 =
+  (실제판매가_원화 &gt; 0)
+  AND (학습활용동의 = true)
+  AND (검수상태 = approved)
+  AND (운영데이터품질점수 &gt;= 0.80)
+  AND (중복상태 != duplicate_excluded)</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">상태</th>
+<th class="align-left">의미</th>
+<th class="align-left">학습 반영</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>raw_collected</code></td>
+<td class="align-left">입력만 수집됨</td>
+<td class="align-left">불가</td>
+</tr>
+<tr>
+<td class="align-left"><code>needs_review</code></td>
+<td class="align-left">검수 필요</td>
+<td class="align-left">불가</td>
+</tr>
+<tr>
+<td class="align-left"><code>approved</code></td>
+<td class="align-left">검수 완료</td>
+<td class="align-left">조건 충족 시 가능</td>
+</tr>
+<tr>
+<td class="align-left"><code>rejected</code></td>
+<td class="align-left">신뢰 불가</td>
+<td class="align-left">불가</td>
+</tr>
+<tr>
+<td class="align-left"><code>duplicate_merged</code></td>
+<td class="align-left">중복 병합됨</td>
+<td class="align-left">대표 row만 가능</td>
+</tr>
+<tr>
+<td class="align-left"><code>training_candidate</code></td>
+<td class="align-left">학습 후보 확정</td>
+<td class="align-left">다음 재학습 후보</td>
+</tr>
+<tr>
+<td class="align-left"><code>training_holdout_candidate</code></td>
+<td class="align-left">검증용 후보 확정</td>
+<td class="align-left">학습에는 넣지 않고 신규 holdout으로 보관</td>
+</tr>
+</tbody></table></div>
+<h2 id="7.-warm-cold별-학습-반영-방식">7. Warm/Cold별 학습 반영 방식</h2>
+<h3 id="7.1-warm-데이터">7.1 Warm 데이터</h3>
+<p>Warm은 같은 작가의 가격 이력이 충분한 경우에 사용된다. 따라서 신규 실제 판매가가 들어오면 같은 작가 기준가격과 유사작품 통계 품질을 개선하는 데 효과가 크다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">반영 대상</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">같은 작가 가격 이력</td>
+<td class="align-left">artist_key별 가격 이력 수 증가</td>
+</tr>
+<tr>
+<td class="align-left">유사작품 통계</td>
+<td class="align-left">같은 작가/매체/크기 구간의 중앙값, 사분위수, 표본 수 갱신</td>
+</tr>
+<tr>
+<td class="align-left">기준가격 생성</td>
+<td class="align-left">Warm 기준 로그가격 생성 근거 강화</td>
+</tr>
+<tr>
+<td class="align-left">보정 위험도</td>
+<td class="align-left">Quantile 폭, 유사작품 가격 분산, 표본 수 기반 위험도 재계산</td>
+</tr>
+</tbody></table></div>
+<p>Warm 재학습 후보는 아래 조건을 우선으로 한다.</p>
+<pre><code>Warm학습후보 =
+  학습후보승격
+  AND (작가매칭신뢰도점수 &gt;= 0.90)
+  AND (artist_key 존재)
+  AND (작품정보완성도점수 &gt;= 0.80)</code></pre>
+<h3 id="7.2-cold-데이터">7.2 Cold 데이터</h3>
+<p>Cold는 같은 작가 가격 이력이 부족하거나 작가 매칭이 불확실한 작품에 적용된다. Cold 운영 데이터는 신규/저이력 작가의 가격 패턴을 보강하는 데 중요하다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">반영 대상</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작품 물리 피처</td>
+<td class="align-left">크기, 면적, 가로세로비, 깊이, 3D 여부</td>
+</tr>
+<tr>
+<td class="align-left">매체/지지체 피처</td>
+<td class="align-left">medium/support 조합별 가격 패턴</td>
+</tr>
+<tr>
+<td class="align-left">작가 메타</td>
+<td class="align-left">생년, 국적, 활동성, 작품 수, 팔로워 수</td>
+</tr>
+<tr>
+<td class="align-left">검색/활동성 피처</td>
+<td class="align-left">전시, 갤러리, 미술관, 작가명 검색 문맥</td>
+</tr>
+<tr>
+<td class="align-left">과대예측 방어</td>
+<td class="align-left">실제 오차를 보고 Quantile 폭/낮은쪽 40% 기준 방어 조건 재검증</td>
+</tr>
+</tbody></table></div>
+<p>Cold 재학습 후보는 아래 조건을 우선으로 한다.</p>
+<pre><code>Cold학습후보 =
+  학습후보승격
+  AND (가로_cm 존재)
+  AND (세로_cm 존재)
+  AND (매체 존재)
+  AND (지지체 존재)</code></pre>
+<h2 id="8.-데이터베이스-테이블-기획">8. 데이터베이스 테이블 기획</h2>
+<h3 id="8.1-price_prediction_events">8.1 <code>price_prediction_events</code></h3>
+<p>예측 요청 1건마다 생성되는 기본 로그 테이블이다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입 예시</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>prediction_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">예측 요청 고유 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>created_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">예측 시각</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_version</code></td>
+<td class="align-left">string</td>
+<td class="align-left"><code>price_prediction_v0.2</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>warm_model_version</code></td>
+<td class="align-left">string</td>
+<td class="align-left">Warm 내부 모델 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>cold_model_version</code></td>
+<td class="align-left">string</td>
+<td class="align-left">Cold 내부 모델 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>route</code></td>
+<td class="align-left">string</td>
+<td class="align-left">warm/cold/review_required</td>
+</tr>
+<tr>
+<td class="align-left"><code>display_policy</code></td>
+<td class="align-left">string</td>
+<td class="align-left">price_with_range/reference_range_only</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">string/null</td>
+<td class="align-left">내부 작가 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_match_score</code></td>
+<td class="align-left">float</td>
+<td class="align-left">작가 매칭 신뢰도</td>
+</tr>
+<tr>
+<td class="align-left"><code>same_artist_training_price_count</code></td>
+<td class="align-left">int</td>
+<td class="align-left">같은 작가 사용 가능 가격 이력 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>input_snapshot_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">사용자 입력 원본</td>
+</tr>
+<tr>
+<td class="align-left"><code>feature_snapshot_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">예측에 사용한 파생 피처</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_price_krw</code></td>
+<td class="align-left">int/null</td>
+<td class="align-left">예측 가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>range_low_krw</code></td>
+<td class="align-left">int/null</td>
+<td class="align-left">가격 범위 하단</td>
+</tr>
+<tr>
+<td class="align-left"><code>range_high_krw</code></td>
+<td class="align-left">int/null</td>
+<td class="align-left">가격 범위 상단</td>
+</tr>
+<tr>
+<td class="align-left"><code>confidence_level</code></td>
+<td class="align-left">string</td>
+<td class="align-left">high/medium/low</td>
+</tr>
+<tr>
+<td class="align-left"><code>calculation_summary_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">사용자 설명용 계산 요약</td>
+</tr>
+</tbody></table></div>
+<h3 id="8.2-price_prediction_feedback">8.2 <code>price_prediction_feedback</code></h3>
+<p>예측 이후 사용자가 입력한 실제 판매가와 보완 정보를 저장한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입 예시</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>feedback_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">피드백 고유 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">연결된 예측 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>submitted_at</code></td>
+<td class="align-left">datetime</td>
+<td class="align-left">입력 시각</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_price</code></td>
+<td class="align-left">float/null</td>
+<td class="align-left">입력 통화 기준 판매가</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_currency</code></td>
+<td class="align-left">string/null</td>
+<td class="align-left">판매 통화</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_price_krw</code></td>
+<td class="align-left">int/null</td>
+<td class="align-left">원화 환산 판매가</td>
+</tr>
+<tr>
+<td class="align-left"><code>sale_date</code></td>
+<td class="align-left">date/null</td>
+<td class="align-left">판매일</td>
+</tr>
+<tr>
+<td class="align-left"><code>sale_channel</code></td>
+<td class="align-left">string/null</td>
+<td class="align-left">판매 채널</td>
+</tr>
+<tr>
+<td class="align-left"><code>sale_type</code></td>
+<td class="align-left">string</td>
+<td class="align-left">actual_sale/offer_price/listing_price/appraisal</td>
+</tr>
+<tr>
+<td class="align-left"><code>evidence_status</code></td>
+<td class="align-left">string</td>
+<td class="align-left">none/partial/verified</td>
+</tr>
+<tr>
+<td class="align-left"><code>additional_input_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">추가 입력/정정 정보</td>
+</tr>
+<tr>
+<td class="align-left"><code>user_consent_for_training</code></td>
+<td class="align-left">bool</td>
+<td class="align-left">학습 활용 동의</td>
+</tr>
+<tr>
+<td class="align-left"><code>review_status</code></td>
+<td class="align-left">string</td>
+<td class="align-left">raw_collected/needs_review/approved/rejected</td>
+</tr>
+<tr>
+<td class="align-left"><code>reviewer_note</code></td>
+<td class="align-left">text/null</td>
+<td class="align-left">운영 검수 메모</td>
+</tr>
+</tbody></table></div>
+<h3 id="8.3-training_candidate_labels">8.3 <code>training_candidate_labels</code></h3>
+<p>검수 완료 후 학습 후보로 승격된 라벨 테이블이다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">타입 예시</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>candidate_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">학습 후보 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">원 예측 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>feedback_id</code></td>
+<td class="align-left">string</td>
+<td class="align-left">원 피드백 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>route_at_prediction</code></td>
+<td class="align-left">string</td>
+<td class="align-left">예측 당시 warm/cold</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_key</code></td>
+<td class="align-left">string/null</td>
+<td class="align-left">작가 식별자</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_price_krw</code></td>
+<td class="align-left">int</td>
+<td class="align-left">학습 라벨</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_log_price</code></td>
+<td class="align-left">float</td>
+<td class="align-left"><code>log(actual_price_krw)</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>quality_score</code></td>
+<td class="align-left">float</td>
+<td class="align-left">운영데이터품질점수</td>
+</tr>
+<tr>
+<td class="align-left"><code>training_eligible</code></td>
+<td class="align-left">bool</td>
+<td class="align-left">학습 사용 가능 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>holdout_reserved</code></td>
+<td class="align-left">bool</td>
+<td class="align-left">신규 holdout 보관 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>feature_snapshot_json</code></td>
+<td class="align-left">json</td>
+<td class="align-left">당시 피처</td>
+</tr>
+<tr>
+<td class="align-left"><code>source_model_version</code></td>
+<td class="align-left">string</td>
+<td class="align-left">예측 당시 모델 버전</td>
+</tr>
+</tbody></table></div>
+<h3 id="8.4-model_training_runs">8.4 <code>model_training_runs</code></h3>
+<p>재학습 실행 단위의 메타데이터를 저장한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>training_run_id</code></td>
+<td class="align-left">재학습 실행 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>started_at</code>, <code>finished_at</code></td>
+<td class="align-left">실행 시간</td>
+</tr>
+<tr>
+<td class="align-left"><code>base_model_version</code></td>
+<td class="align-left">기준 모델</td>
+</tr>
+<tr>
+<td class="align-left"><code>candidate_model_version</code></td>
+<td class="align-left">후보 모델</td>
+</tr>
+<tr>
+<td class="align-left"><code>training_dataset_version</code></td>
+<td class="align-left">학습 데이터셋 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>new_training_candidate_count</code></td>
+<td class="align-left">신규 학습 후보 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>holdout_count</code></td>
+<td class="align-left">신규 holdout 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>warm_metrics_json</code></td>
+<td class="align-left">Warm 검증 지표</td>
+</tr>
+<tr>
+<td class="align-left"><code>cold_metrics_json</code></td>
+<td class="align-left">Cold 검증 지표</td>
+</tr>
+<tr>
+<td class="align-left"><code>release_decision</code></td>
+<td class="align-left">promote/reject/needs_review</td>
+</tr>
+<tr>
+<td class="align-left"><code>decision_reason</code></td>
+<td class="align-left">승격 또는 보류 사유</td>
+</tr>
+</tbody></table></div>
+<h2 id="9.-api-기획">9. API 기획</h2>
+<h3 id="9.1-예측-api-응답에-포함할-피드백-토큰">9.1 예측 API 응답에 포함할 피드백 토큰</h3>
+<p><code>POST /api/v2/artworks/price-estimate</code> 응답에는 실제 판매가 입력을 연결할 수 있는 정보를 포함한다.</p>
+<pre><code>{
+  &quot;prediction_id&quot;: &quot;pred_20260611_000001&quot;,
+  &quot;model_version&quot;: &quot;price_prediction_v0.2&quot;,
+  &quot;route&quot;: &quot;cold&quot;,
+  &quot;feedback&quot;: {
+    &quot;can_submit_actual_sale_price&quot;: true,
+    &quot;feedback_endpoint&quot;: &quot;/api/v2/feedback/sale-price&quot;,
+    &quot;required_fields&quot;: [
+      &quot;actual_sale_price&quot;,
+      &quot;actual_sale_currency&quot;,
+      &quot;sale_date&quot;,
+      &quot;sale_channel&quot;,
+      &quot;user_consent_for_training&quot;
+    ]
+  }
+}</code></pre>
+<h3 id="9.2-실제-판매가-입력-api">9.2 실제 판매가 입력 API</h3>
+<pre><code>POST /api/v2/feedback/sale-price</code></pre>
+<p>요청 예시:</p>
+<pre><code>{
+  &quot;prediction_id&quot;: &quot;pred_20260611_000001&quot;,
+  &quot;actual_sale_price&quot;: 12000000,
+  &quot;actual_sale_currency&quot;: &quot;KRW&quot;,
+  &quot;sale_date&quot;: &quot;2026-06-11&quot;,
+  &quot;sale_channel&quot;: &quot;gallery&quot;,
+  &quot;sale_type&quot;: &quot;actual_sale&quot;,
+  &quot;evidence_status&quot;: &quot;partial&quot;,
+  &quot;user_consent_for_training&quot;: true,
+  &quot;additional_input&quot;: {
+    &quot;year&quot;: 2024,
+    &quot;medium_category&quot;: &quot;acrylic&quot;,
+    &quot;support_category&quot;: &quot;canvas&quot;
+  }
+}</code></pre>
+<p>응답 예시:</p>
+<pre><code>{
+  &quot;feedback_id&quot;: &quot;fb_20260611_000001&quot;,
+  &quot;prediction_id&quot;: &quot;pred_20260611_000001&quot;,
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;review_status&quot;: &quot;needs_review&quot;,
+  &quot;message&quot;: &quot;실제 판매가가 접수되었습니다. 운영 검수 후 학습 후보 데이터로 반영될 수 있습니다.&quot;
+}</code></pre>
+<h3 id="9.3-보완-입력-api">9.3 보완 입력 API</h3>
+<pre><code>PATCH /api/v2/predictions/{prediction_id}/additional-input</code></pre>
+<p>역할:</p>
+<ul>
+<li>예측 이후 사용자가 누락 정보를 보완</li>
+<li>같은 prediction_id에 입력 스냅샷을 추가 저장</li>
+<li>실제 판매가가 없으면 학습 라벨로는 사용하지 않음</li>
+<li>다음 예측 재계산 또는 운영 검수에 사용</li>
+</ul>
+<h2 id="10.-오차-계산과-운영-성능-추적">10. 오차 계산과 운영 성능 추적</h2>
+<p>실제 판매가가 들어오면 예측 당시 결과와 비교해 운영 오차를 계산한다.</p>
+<pre><code>실제로그가격 = log(실제판매가_KRW)
+
+로그오차 = 실제로그가격 - 예측로그가격
+
+절대비율오차_APE =
+  abs(실제판매가_KRW - 예측가격_KRW) / 실제판매가_KRW</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">지표</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>APE</code></td>
+<td class="align-left">개별 예측의 실제 판매가 대비 오차율</td>
+</tr>
+<tr>
+<td class="align-left"><code>MdAPE</code></td>
+<td class="align-left">여러 예측의 APE 중앙값</td>
+</tr>
+<tr>
+<td class="align-left"><code>MAPE</code></td>
+<td class="align-left">여러 예측의 APE 평균값</td>
+</tr>
+<tr>
+<td class="align-left"><code>p95 APE</code></td>
+<td class="align-left">큰 오차 상위 5% 지점</td>
+</tr>
+<tr>
+<td class="align-left"><code>log_error</code></td>
+<td class="align-left">로그가격 기준 오차 방향</td>
+</tr>
+<tr>
+<td class="align-left"><code>coverage</code></td>
+<td class="align-left">실제 판매가가 예측 범위 안에 들어왔는지</td>
+</tr>
+</tbody></table></div>
+<p>운영 모니터링은 route별로 나눠야 한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">확인 지표</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">APE, 범위 적중률, 같은 작가 이력 수별 오차</td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">APE, p95 APE, 낮은 신뢰도 비율, 최소 입력 누락률</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭</td>
+<td class="align-left">매칭 실패율, 동명이인 후보율, 수동 검수율</td>
+</tr>
+<tr>
+<td class="align-left">사용자 입력</td>
+<td class="align-left">보완 입력률, 실제 판매가 입력률, 학습 동의율</td>
+</tr>
+</tbody></table></div>
+<h2 id="11.-재학습-주기">11. 재학습 주기</h2>
+<h3 id="11.1-v0.2-권장-운영-주기">11.1 v0.2 권장 운영 주기</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">주기</th>
+<th class="align-left">작업</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실시간</td>
+<td class="align-left">예측 이벤트 저장, 입력 품질 검사, 피드백 접수</td>
+</tr>
+<tr>
+<td class="align-left">매일</td>
+<td class="align-left">중복 후보, 이상 가격, 작가 매칭 실패 목록 생성</td>
+</tr>
+<tr>
+<td class="align-left">매주</td>
+<td class="align-left">운영자 검수, 학습 후보 승격, 데이터 품질 리포트</td>
+</tr>
+<tr>
+<td class="align-left">매월</td>
+<td class="align-left">신규 학습 후보가 충분하면 재학습 후보 실험 실행</td>
+</tr>
+<tr>
+<td class="align-left">분기</td>
+<td class="align-left">모델 버전 승격 여부 판단</td>
+</tr>
+</tbody></table></div>
+<h3 id="11.2-재학습-실행-조건">11.2 재학습 실행 조건</h3>
+<p>재학습은 일정 기간마다 무조건 실행하기보다 데이터가 충분히 쌓였을 때 실행한다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">조건</th>
+<th class="align-left">권장 기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">전체 신규 학습 후보</td>
+<td class="align-left">300건 이상</td>
+</tr>
+<tr>
+<td class="align-left">Warm 신규 후보</td>
+<td class="align-left">같은 작가 가격 이력 보강 데이터 100건 이상</td>
+</tr>
+<tr>
+<td class="align-left">Cold 신규 후보</td>
+<td class="align-left">신규/저이력 작가 데이터 200건 이상</td>
+</tr>
+<tr>
+<td class="align-left">신규 holdout 후보</td>
+<td class="align-left">최소 50건 이상</td>
+</tr>
+<tr>
+<td class="align-left">특정 구간 큰 오차 누적</td>
+<td class="align-left">같은 원인 구간에서 p95 APE 악화 반복</td>
+</tr>
+</tbody></table></div>
+<h2 id="12.-재학습-검증-절차">12. 재학습 검증 절차</h2>
+<p>새 데이터가 들어와도 기존 모델을 바로 교체하지 않는다. 아래 순서로 검증한다.</p>
+<pre><code>[학습 후보 데이터셋 생성]
+        |
+        v
+[중복/이상치 제거]
+        |
+        v
+[train / validation / 신규 holdout 분리]
+        |
+        v
+[기준 모델 재현]
+        |
+        v
+[후보 모델 재학습]
+        |
+        v
+[기존 fixed test 평가]
+        |
+        v
+[신규 운영 holdout 평가]
+        |
+        v
+[route별 성능 비교]
+        |
+        v
+[배포 여부 결정]</code></pre>
+<h3 id="12.1-승격-기준">12.1 승격 기준</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">기준</th>
+<th class="align-left">통과 조건</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">재현성</td>
+<td class="align-left">기존 기준 모델 지표가 저장값과 동일하게 재현</td>
+</tr>
+<tr>
+<td class="align-left">기존 fixed test</td>
+<td class="align-left">기존 Warm/Cold 주요 지표를 심하게 악화시키지 않음</td>
+</tr>
+<tr>
+<td class="align-left">신규 운영 holdout</td>
+<td class="align-left">신규 데이터에서 MAPE 또는 p95 APE 개선</td>
+</tr>
+<tr>
+<td class="align-left">Warm 안정성</td>
+<td class="align-left">같은 작가 이력 수가 적은 구간에서 p95 악화 없음</td>
+</tr>
+<tr>
+<td class="align-left">Cold 안정성</td>
+<td class="align-left">Cold low-confidence 구간에서 과신 증가 없음</td>
+</tr>
+<tr>
+<td class="align-left">라우팅 안정성</td>
+<td class="align-left">Warm/Cold route 비율 급변 없음</td>
+</tr>
+<tr>
+<td class="align-left">설명 가능성</td>
+<td class="align-left">계산 설명과 사용 피처가 API 응답에 유지됨</td>
+</tr>
+</tbody></table></div>
+<h3 id="12.2-배포-보류-조건">12.2 배포 보류 조건</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">조건</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">신규 데이터에서는 좋아졌지만 기존 fixed test가 크게 악화</td>
+<td class="align-left">보류</td>
+</tr>
+<tr>
+<td class="align-left">전체 MAPE는 좋아졌지만 p95 APE가 악화</td>
+<td class="align-left">목적별 후보로만 보류</td>
+</tr>
+<tr>
+<td class="align-left">Cold high confidence가 실제로 더 틀림</td>
+<td class="align-left">신뢰도 정책 배포 금지</td>
+</tr>
+<tr>
+<td class="align-left">특정 작가/채널 데이터가 과도하게 많음</td>
+<td class="align-left">가중치 조정 또는 샘플링 필요</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 증빙이 부족함</td>
+<td class="align-left">학습 제외</td>
+</tr>
+</tbody></table></div>
+<h2 id="13.-프론트-화면-반영">13. 프론트 화면 반영</h2>
+<h3 id="13.1-예측-결과-화면">13.1 예측 결과 화면</h3>
+<p>예측 결과 화면에는 학습 루프와 연결되는 입력 유도 문구를 넣는다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">화면 요소</th>
+<th class="align-left">내용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예측가격</td>
+<td class="align-left">Warm/Cold 경로별 가격 또는 범위</td>
+</tr>
+<tr>
+<td class="align-left">계산 설명</td>
+<td class="align-left">어떤 입력과 피처가 사용됐는지 표시</td>
+</tr>
+<tr>
+<td class="align-left">부족 정보</td>
+<td class="align-left">제작연도, 매체, 지지체, 작가 정보 등 누락 항목</td>
+</tr>
+<tr>
+<td class="align-left">정보 추가 버튼</td>
+<td class="align-left">보완 입력 API로 연결</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 입력 버튼</td>
+<td class="align-left">피드백 API로 연결</td>
+</tr>
+<tr>
+<td class="align-left">학습 활용 동의</td>
+<td class="align-left">실제 판매가 입력 시 별도 체크</td>
+</tr>
+</tbody></table></div>
+<h3 id="13.2-cold-화면-문구">13.2 Cold 화면 문구</h3>
+<p>Cold는 정확도 보장 모델이 아니므로 화면에서 아래처럼 안내한다.</p>
+<pre><code>이 가격은 입력 정보 기반 예상 가격입니다.
+같은 작가의 충분한 가격 이력이 없거나 작가 정보가 제한적인 경우,
+작품 크기, 매체, 지지체, 작가 정보, 검색 문맥을 이용해 계산합니다.
+정확 감정가 또는 판매 보장 가격은 아닙니다.</code></pre>
+<h3 id="13.3-실제-판매가-입력-문구">13.3 실제 판매가 입력 문구</h3>
+<pre><code>이 작품의 실제 판매가를 알고 있다면 입력해 주세요.
+입력된 판매가는 운영 검수 후 향후 가격 예측 모델 개선에 활용될 수 있습니다.
+학습 활용에 동의하지 않아도 예측 기록 관리에는 사용할 수 있습니다.</code></pre>
+<h2 id="14.-운영자-검수-화면">14. 운영자 검수 화면</h2>
+<p>운영자 검수 화면은 학습 후보 승격을 결정하는 내부 화면이다.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">기능</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예측 기록 조회</td>
+<td class="align-left">prediction_id 기준 입력값, 피처, 예측 결과 확인</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 확인</td>
+<td class="align-left">판매가, 통화, 판매일, 판매 채널 확인</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭 확인</td>
+<td class="align-left">artist_key, 후보, 매칭 점수, 동명이인 여부 확인</td>
+</tr>
+<tr>
+<td class="align-left">중복 검사</td>
+<td class="align-left">작품명, 작가, 크기, 이미지/URL 기반 중복 확인</td>
+</tr>
+<tr>
+<td class="align-left">가격 이상치 표시</td>
+<td class="align-left">예측가 대비 실제가 차이가 큰 row 표시</td>
+</tr>
+<tr>
+<td class="align-left">학습 후보 승인</td>
+<td class="align-left"><code>training_eligible=true</code> 전환</td>
+</tr>
+<tr>
+<td class="align-left">holdout 지정</td>
+<td class="align-left">일부 신규 검수 데이터를 학습하지 않고 평가용으로 보관</td>
+</tr>
+</tbody></table></div>
+<h2 id="15.-v0.2-구현-단계">15. v0.2 구현 단계</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">순서</th>
+<th class="align-left">작업</th>
+<th class="align-left">산출물</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left">예측 이벤트 저장 스키마 정의</td>
+<td class="align-left"><code>price_prediction_events</code></td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left">v0.2 예측 API에 <code>prediction_id</code>, <code>feedback</code> 응답 추가</td>
+<td class="align-left">API 응답 확장</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left">실제 판매가 입력 API 추가</td>
+<td class="align-left"><code>/api/v2/feedback/sale-price</code></td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left">보완 입력 API 추가</td>
+<td class="align-left"><code>/api/v2/predictions/{prediction_id}/additional-input</code></td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left">운영자 검수 상태 모델 정의</td>
+<td class="align-left">review status enum</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left">학습 후보 승격 배치 작성</td>
+<td class="align-left"><code>training_candidate_labels</code> 생성 job</td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left">운영 성능 집계 배치 작성</td>
+<td class="align-left">route별 APE/MAPE/p95 리포트</td>
+</tr>
+<tr>
+<td class="align-right">8</td>
+<td class="align-left">재학습 후보 데이터셋 export 작성</td>
+<td class="align-left">train/validation/holdout split export</td>
+</tr>
+<tr>
+<td class="align-right">9</td>
+<td class="align-left">재학습 검증 리포트 템플릿 작성</td>
+<td class="align-left">후보 모델 비교 리포트</td>
+</tr>
+<tr>
+<td class="align-right">10</td>
+<td class="align-left">모델 버전 승격 체크리스트 작성</td>
+<td class="align-left">promote/reject decision record</td>
+</tr>
+</tbody></table></div>
+<h2 id="16.-v0.2에서-바로-해야-할-것과-나중에-할-것">16. v0.2에서 바로 해야 할 것과 나중에 할 것</h2>
+<h3 id="16.1-v0.2에서-바로-포함">16.1 v0.2에서 바로 포함</h3>
+<ul>
+<li>예측 이벤트 저장</li>
+<li>입력 스냅샷 저장</li>
+<li>피처 스냅샷 저장</li>
+<li>실제 판매가 입력 API</li>
+<li>학습 활용 동의</li>
+<li>운영자 검수 상태</li>
+<li>학습 후보 승격 기준</li>
+<li>route별 운영 성능 집계</li>
+<li>재학습 후보 export</li>
+</ul>
+<h3 id="16.2-v0.2-이후-단계">16.2 v0.2 이후 단계</h3>
+<ul>
+<li>자동 재학습 실행</li>
+<li>자동 모델 승격</li>
+<li>이미지 피처 기반 재학습</li>
+<li>외부 검색 자동 수집과 동명이인 검수 자동화</li>
+<li>작가/작품 지식베이스 자동 확장</li>
+</ul>
+<p>v0.2에서는 자동 재학습보다 안전한 데이터 축적 구조를 먼저 완성하는 것이 우선이다.</p>
+<h2 id="17.-최종-운영-정의">17. 최종 운영 정의</h2>
+<p>v0.2의 운영 학습 구조는 아래 한 문장으로 정의한다.</p>
+<pre><code>price_prediction_v0.2는 예측 결과를 제공하는 동시에,
+예측 당시의 입력값·피처·모델 버전·결과를 저장하고,
+검수된 실제 판매가만 학습 후보 데이터로 승격하여
+다음 모델 재학습과 검증에 사용할 수 있게 하는 운영형 가격 예측 구조다.</code></pre>
+    </main>
+  </div>
+</body>
+</html>

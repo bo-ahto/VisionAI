@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-06-16T12:30:24",
+  "experiment_id": "PP-ROUTE-CF1",
+  "experiment_slug": "PP-ROUTE-CF1_same_row_history_exposure_counterfactual",
+  "evaluation_rows": 607,
+  "base_eval_set": "Warm fixed-test rows",
+  "warm_source": "models/track6/warm_wmin8_operational_candidate/artifacts/wmin8_selected_candidate_predictions.csv",
+  "warm_candidate": "min1_route_w850_risk_q50_altlower_gap005",
+  "warm_lite_source": "experiments/track6/PP-WLITE-Q4_quantile_final_comparison/outputs/q2_final_comparison_rows.csv",
+  "warm_lite_candidate": "residual_lgb_s05_cap010",
+  "warm_lite_design": "same Warm fixed-test rows, same-artist train history truncated to k=1..4, three truncation seeds, seed-mean for same-n table",
+  "cold_source": "models/track6/cold_prediction_v0.5_operational/predict/predict_cold_operational_v0_5.py",
+  "cold_design": "same Warm fixed-test rows, no same-artist price history, cold-train bucket generation basis, frozen Cold v0.5",
+  "scope_overlap_audit": {
+    "warm_test_n": 607,
+    "warm_test_vs_cold_train_overlap": 0,
+    "warm_test_vs_cold_val_overlap": 0,
+    "warm_test_vs_cold_test_overlap": 0
+  },
+  "limitations": [
+    "Counterfactual on Warm fixed-test distribution; does not replace native Warm-lite/Cold operating benchmark.",
+    "Warm-lite same-n table averages three truncation seeds per row/k.",
+    "Cold forced comparison hides same-artist price history but still evaluates on Warm fixed-test artwork distribution."
+  ]
+}

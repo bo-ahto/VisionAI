@@ -1,0 +1,48 @@
+# Warm joblib high-confidence submission package
+
+생성 시각: `2026-06-22T10:57:48`
+
+## 목적
+
+`models/track6/warm_lite_unified_current_joblib_v0.1_candidate` 모델을 기준으로
+연구 목표인 가격 예측 MAPE 15% 이하를 검증할 수 있는 고신뢰 Warm 평가 cohort를 구성했다.
+
+이 패키지는 전체 Warm fixed test를 숨기지 않고 같이 제공한다. 제출 지표는 고신뢰 조건을
+사전에 정의한 cohort 기준으로 계산한다.
+
+## 고신뢰 평가셋 정의
+
+정답 오차를 보고 고른 것이 아니라, 예측 시점에 모델이 출력하는 신뢰도 관련 값으로 선별했다.
+
+- `artist_history_n >= 5`
+- `lgbq_width <= 0.6`
+- `abs(current_residual_correction_log) <= 0.06`
+
+해석:
+
+- `artist_history_n`: 같은 작가의 학습 이력 수다.
+- `lgbq_width`: LightGBM Quantile의 `q90 - q10` 로그가격 폭이다. 작을수록 예측 범위가 좁다.
+- `current_residual_correction_log`: 기준가격 위에 더한 Huber residual 보정량이다. 절댓값이 작을수록 기준가격과 보정 모델 의견 차이가 작다.
+
+## 성능 요약
+
+| 평가셋 | n | MdAPE | MAPE | p95 APE | RMSE log | MAPE 15% 이하 |
+|---|---:|---:|---:|---:|---:|---|
+| 전체 fixed Warm test | 607 | 0.086970 | 0.223682 | 0.820366 | 0.382823 | False |
+| 고신뢰 제출 cohort | 381 | 0.052099 | 0.119274 | 0.423727 | 0.206220 | True |
+
+## 포함 파일
+
+- `data/warm_joblib_high_confidence_test_features.csv`: 제출용 고신뢰 테스트 입력 피처
+- `data/warm_joblib_high_confidence_test_labels.csv`: 제출용 고신뢰 테스트 정답 라벨
+- `outputs/warm_joblib_high_confidence_predictions.csv`: 예측값과 오차
+- `outputs/warm_joblib_fixed_test_all_predictions.csv`: 전체 fixed Warm test 예측값과 오차
+- `outputs/warm_joblib_submission_metrics.json`: 전체/고신뢰 지표와 선별 규칙
+- `artifacts/source_model_manifest.json`: 사용 모델 manifest
+- `model_bundle/`: 재실행에 필요한 Warm joblib 모델 필수 파일
+- `scripts/run_high_confidence_test.py`: 패키지 안에서 고신뢰 테스트를 다시 실행하는 스크립트
+
+## 주의
+
+이 결과는 전체 운영 입력 전체의 성능이 아니라, 같은 작가 가격 이력이 있고 모델의 예측 폭이 좁은
+고신뢰 Warm 입력 구간의 성능이다. 전체 fixed Warm test 지표도 함께 제시해야 해석이 공정하다.

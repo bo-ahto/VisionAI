@@ -1,0 +1,9 @@
+{
+  "experiment_id": "PP-WMIN9E",
+  "question": "Can the 1~4 history band use Warm-only instead of Warm-lite?",
+  "usable_evidence": "PP-WMIN9C same-row Warm-lite vs WMIN8 svc-core proxy by k, plus PP-WMIN9B Warm-lite vs Cold by k.",
+  "full_wmin8_direct_test_status": "blocked_without_upstream_retraining",
+  "full_wmin8_blocker": "The 1~4 LOO rows are held out from training rows. Calling the frozen full WMIN8 artifact would reuse PPV8/upstream models trained with those rows, so the result would be label-leaky. A clean full-WMIN8 low-history test requires retraining the PPV8/upstream Warm stack per hold-out.",
+  "warm_only_1to4_supported_by_current_valid_evidence": false,
+  "reason": "Overall 1~4 Warm-lite beats WMIN8 svc-core proxy on MdAPE/MAPE/p95. By k, Warm-lite wins all metrics for k=2 and k=3; k=1 and k=4 are mixed, but Warm-lite wins representative error and the overall 1~4 decision."
+}

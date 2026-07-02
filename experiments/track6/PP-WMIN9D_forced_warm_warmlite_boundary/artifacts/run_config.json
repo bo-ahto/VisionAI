@@ -1,0 +1,16 @@
+{
+  "experiment_id": "PP-WMIN9D",
+  "purpose": "Counterfactual boundary check for Warm/Warm-lite split.",
+  "forced_warm_lite_scope": "607-row Warm fixed test where all artists have 5+ train histories.",
+  "forced_warm_lite_note": "Production Warm-lite API remains 1..4 only; this script bypasses only for measurement.",
+  "k1_warm_like_source": "experiments/track6/PP-WMIN9C_warm_lite_vs_wmin8_lowhistory/outputs/comparison.csv",
+  "k1_warm_like_note": "WMIN9C uses WMIN8 svc-core proxy, not full WMIN8 router.",
+  "decision": {
+    "five_plus_forced_warm_lite_worse_than_wmin8_all_primary_metrics": true,
+    "five_plus_interpretation": "5+ same-row fixed-test shows forced Warm-lite is worse than WMIN8 on MdAPE, MAPE, and p95_APE.",
+    "k1_warm_lite_wins_MdAPE": true,
+    "k1_warm_lite_wins_MAPE": false,
+    "k1_warm_lite_wins_p95_APE": true,
+    "k1_interpretation": "For k=1, Warm-lite beats WMIN8 svc-core proxy on MdAPE and p95_APE; MAPE is checked separately because the two are nearly tied."
+  }
+}

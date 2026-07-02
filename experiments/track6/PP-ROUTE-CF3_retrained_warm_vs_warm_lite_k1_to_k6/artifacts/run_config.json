@@ -1,0 +1,46 @@
+{
+  "created_at": "2026-06-16T14:16:26",
+  "experiment_id": "PP-ROUTE-CF3",
+  "experiment_slug": "PP-ROUTE-CF3_retrained_warm_vs_warm_lite_k1_to_k6",
+  "seeds": [
+    20260612,
+    20260613,
+    20260614
+  ],
+  "k_values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "base_eval_set": "Warm fixed-test rows with at least max(k) same-artist train-history rows",
+  "eligibility_audit": {
+    "warm_fixed_test_rows_total": 607,
+    "exact_k1_to_k6_eligible_rows": 519,
+    "excluded_rows_with_less_than_max_k_history": 88,
+    "min_full_train_artist_history_n": 6,
+    "max_full_train_artist_history_n": 573,
+    "validation_rows_for_refit_and_router": 519
+  },
+  "warm_lite_training": {
+    "group_stats": "k-truncated train, 5-fold internal stats for train rows, full train_k stats for test rows",
+    "quantile_models": "LightGBM Quantile q10/q50/q90 full + q50 lean retrained per seed/k",
+    "residual_model": "LightGBM objective=huber residual retrained per seed/k from OOF Quantile residual",
+    "candidate": "lgbq_full_lean_avg + clip(0.50 * lgb_huber_residual, -0.10, +0.10)"
+  },
+  "warm_training": {
+    "svc_axis": "comparable-stat Huber retrained per seed/k with artist min_n=1",
+    "sequential_axis": "CatBoost Quantile -> Huber -> CatBoost residual generated-bucket stack retrained per seed/k",
+    "refit": "Huber residual refit trained on warm validation per seed/k",
+    "router": "risk threshold q50 learned from warm validation per seed/k, gap=0.005",
+    "candidate": "validation-routed 0.70/0.30 base vs 0.85/0.15 alternative"
+  },
+  "limitations": [
+    "This is a condition-retrained clean stack comparison, not an exact historical WMIN8/PPV8 full artifact rebuild.",
+    "Warm-lite k=5~6 remains outside the official Warm-lite route and is included as a stress comparison.",
+    "The same-n main table excludes rows that cannot support all k values."
+  ],
+  "seconds": 2425.7
+}

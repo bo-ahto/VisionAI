@@ -103,7 +103,7 @@ UX:
 - 신규 artist_key 생성
 - snapshot 확정요청/생성승인/서빙승인
 
-모델 승격/롤백은 `idempotency_key`를 받지 않는다([API 기획](user_admin_api_plan_20260625.md) §7.3). 중복 제출은 확인 dialog + 진행 중 버튼 disabled로 방지한다.
+모델 승격/롤백/retire는 `idempotency_key`를 받지 않는다([API 기획](user_admin_api_plan_20260625.md) §7.3). 중복 제출은 확인 dialog + 진행 중 버튼 disabled로 방지한다.
 
 UX:
 
@@ -188,5 +188,5 @@ Modal confirmation:
 - 신규 artist_key 생성
 - snapshot 생성승인
 - snapshot 서빙승인
-- 모델 승격/롤백
+- 모델 승격/롤백/retire
 - run 전체 재수집

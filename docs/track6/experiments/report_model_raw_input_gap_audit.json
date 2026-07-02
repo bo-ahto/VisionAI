@@ -1,0 +1,190 @@
+{
+  "created_at": "2026-06-12T13:17:50",
+  "report_reference": "docs/track6/experiments/partner_warm_cold_best_model_report.md",
+  "summary": {
+    "warm_report_model": "Warm 기준가격 기반 미세 보정 모델",
+    "warm_package_type": "fixed_test_reproduction_submission_candidate",
+    "warm_scope_note": "This package reproduces the report model on the existing Warm fixed test split. It is not a raw blind-test inference API package.",
+    "cold_report_model": "Cold 검색 피처 포함 Quantile 예측 + 과대예측 방어 + 작가 검색 보정",
+    "cold_status": "validated_two_layer_defense_freeze",
+    "cold_operational_note": "후처리층만 실행 가능(component 예측 + artist_key 입력). 하부 Quantile/PP-Y18은 상류 참조. 검색 delta는 작가 단위 frozen snapshot(372 작가) — 신규 작가는 fallback(guard). 0604는 전부 warm(0 cold)이라 cold 운영 트래픽 확보 후 재평가 필요.",
+    "decision": "보고서 모델 raw-input 서비스 적용에는 상류 feature/model adapter와 DB/cache가 필요"
+  },
+  "artifacts": {
+    "warm_pp258_reproduce_script": {
+      "path": "experiments/track6/SUB-WARM-PP258_operational_fixed_test_submission/scripts/pp258_reproduce_fixed_test.py",
+      "exists": true,
+      "type": "file"
+    },
+    "warm_pp258_fixed_test_input": {
+      "path": "experiments/track6/SUB-WARM-PP258_operational_fixed_test_submission/data/pp258_model_input_validation_test.csv",
+      "exists": true,
+      "type": "file"
+    },
+    "warm_v01_raw_operational_root": {
+      "path": "models/track6/price_prediction_v0.1/operational",
+      "exists": true,
+      "type": "dir"
+    },
+    "cold_v03_postprocessor": {
+      "path": "models/track6/cold_prediction_v0.3/predict/apply_cold_postprocess_v0_3.py",
+      "exists": true,
+      "type": "file"
+    },
+    "cold_v03_search_delta_lookup": {
+      "path": "models/track6/cold_prediction_v0.3/config/search_delta_lookup_v0_3.json",
+      "exists": true,
+      "type": "file"
+    },
+    "cold_v02_raw_operational_root": {
+      "path": "models/track6/cold_prediction_v0.2_operational",
+      "exists": true,
+      "type": "dir"
+    },
+    "cold_v05_raw_operational_root_excluded": {
+      "path": "models/track6/cold_prediction_v0.5_operational",
+      "exists": true,
+      "type": "dir"
+    }
+  },
+  "warm_required_columns": [
+    {
+      "column": "pp252_log",
+      "meaning": "미세 보정 전 기준 로그가격",
+      "raw_input_dependency": "PP252 기준가격 생성 모델/로직",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "pp252_stability_log",
+      "meaning": "안정성 우선 기준 로그가격",
+      "raw_input_dependency": "안정성 후보 생성 모델/로직",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "prob_hist35_pp252",
+      "meaning": "기준가 대비 실제가격 상승 방향 확률",
+      "raw_input_dependency": "방향 분류 모델",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "resid_huber_pp252",
+      "meaning": "Huber 잔차 보정 후보",
+      "raw_input_dependency": "Huber 잔차 모델",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "quantile_width",
+      "meaning": "예측 불확실성 폭",
+      "raw_input_dependency": "Quantile 범위 모델",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "l10_price_range_ratio",
+      "meaning": "가격 범위 비율",
+      "raw_input_dependency": "Quantile 하단/상단 기반 계산",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "svc_group_n",
+      "meaning": "유사작품 통계 표본 수",
+      "raw_input_dependency": "유사작품 통계 DB/cache",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "component_prediction_spread",
+      "meaning": "후보 모델 간 예측 차이",
+      "raw_input_dependency": "Warm 후보 예측값 생성기",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "confidence_tier",
+      "meaning": "신뢰도 구간",
+      "raw_input_dependency": "표본 수/예측 폭/매칭 신뢰도 정책",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    },
+    {
+      "column": "stable_price_band",
+      "meaning": "안정 가격대 구간",
+      "raw_input_dependency": "기준가격 bucket 정책",
+      "present_in_fixed_test_package": true,
+      "raw_input_runnable_now": false,
+      "required_action": "상류 feature/model adapter 구축 필요"
+    }
+  ],
+  "cold_required_columns": [
+    {
+      "column": "y18_qwidth_pred_log",
+      "meaning": "검색 피처 포함 대표 로그가격",
+      "raw_input_dependency": "검색 포함 LightGBM Quantile 대표 후보",
+      "present_in_v0_3_postprocessor_or_lookup": false,
+      "raw_input_runnable_now": false,
+      "required_action": "검색 포함 Quantile 상류 생성기 구축 필요"
+    },
+    {
+      "column": "lgb_q40_pred_log",
+      "meaning": "낮은쪽 40% 지점 로그가격",
+      "raw_input_dependency": "LightGBM 40분위 모델",
+      "present_in_v0_3_postprocessor_or_lookup": false,
+      "raw_input_runnable_now": false,
+      "required_action": "검색 포함 Quantile 상류 생성기 구축 필요"
+    },
+    {
+      "column": "quantile_width_log",
+      "meaning": "예측구간폭 로그값",
+      "raw_input_dependency": "LightGBM q10/q90 또는 상류 보강값",
+      "present_in_v0_3_postprocessor_or_lookup": false,
+      "raw_input_runnable_now": false,
+      "required_action": "검색 포함 Quantile 상류 생성기 구축 필요"
+    },
+    {
+      "column": "artist_key",
+      "meaning": "작가 검색 보정 lookup key",
+      "raw_input_dependency": "작가 매칭/검색 기반 식별",
+      "present_in_v0_3_postprocessor_or_lookup": false,
+      "raw_input_runnable_now": false,
+      "required_action": "검색 포함 Quantile 상류 생성기 구축 필요"
+    },
+    {
+      "column": "search_delta_lookup",
+      "meaning": "작가별 검색 기반 보정값",
+      "raw_input_dependency": "frozen lookup 또는 DB snapshot",
+      "present_in_v0_3_postprocessor_or_lookup": true,
+      "raw_input_runnable_now": false,
+      "required_action": "DB/cache fallback 정책 연결 필요"
+    }
+  ],
+  "cold_upstream_sources": {
+    "pp_y18_predictions": "experiments/track6/PP-Y18_cold_y16_top_candidate_stability/outputs/predictions.csv",
+    "pp_qr1_predictions": "experiments/track6/PP-QR1_cold_quantile_regression_alpha_grid/outputs/predictions.csv",
+    "h28_search_predictions": "experiments/track6/PP-H20_H26_search_feature_expansion/outputs/candidate_predictions.csv",
+    "search_source": "h23_gallery_museum_median_cap0.2",
+    "freeze_command": "python3 scripts/track6/freeze_cold_prediction_artifact_v0_3.py",
+    "validation_evidence": "experiments/track6/PP-COLD-DEFENSE1_cold_guard_search_layer_combination"
+  },
+  "implementation_order": [
+    "Warm/Cold required column dependency 확정",
+    "local DB/cache schema 생성",
+    "Warm PP258 상류 feature/model adapter 구현",
+    "Cold 검색 포함 Quantile 상류 adapter 구현",
+    "공식 테스트 v0.1 API와 테스트 화면 추가",
+    "fixed-test parity 및 deterministic repeat 검증"
+  ]
+}

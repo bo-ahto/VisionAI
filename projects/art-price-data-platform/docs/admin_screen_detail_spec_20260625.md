@@ -54,7 +54,7 @@
 | 신규 작가 후보 | `/admin/art-price-data/review/new-artists` | 운영 담당자(조회/triage), 키 생성은 데이터 관리자 |
 | snapshot 후보/승인 | `/admin/art-price-data/snapshots` | 운영 담당자 |
 | NANT mapping 관리 | `/admin/art-price-data/nant-mapping` | 운영 담당자(조회), 편집은 데이터 분석가, active 전환은 데이터 관리자 |
-| 모델 운영 | `/admin/art-price-data/model-deployments` | 데이터 분석가(학습/import job), 데이터 관리자(승인/승격/롤백) |
+| 모델 운영 | `/admin/art-price-data/model-deployments` | 데이터 분석가(학습/import job), 데이터 관리자(승인/승격/롤백/retire) |
 | 운영 로그/알림 | `/admin/art-price-data/audit-logs` | 데이터 관리자 |
 
 ## 3. 수집 대시보드
@@ -135,30 +135,33 @@ Route:
 API:
 
 - `GET /api/v1/admin/review/artworks`
-- `POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision`
+- `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision`
+
+이 화면은 `standardization_review_item`의 작품 관련 타입(`artwork_field`, `nant_mapping`, `fx_rate`)을 작품 raw/interpreted/normalized 정보와 조인해 보여주는 화면이다.
 
 목록 필터:
 
 - source
 - price_status
 - size_status
-- medium_status(NANT mapped/unmapped/learning_excluded)
+- medium_status(파생 필터: NANT mapped/learning_excluded/review_required)
 - review_status
 - claim 상태
 
-작품 품질 큐의 `review_status`는 저장된 컬럼이 아니라 `quality_flags_json` + `artwork_snapshot_item.include_status`에서 파생한 필터값이다(MySQL 5.0.2). 작가명/identity 큐의 `review_status`와 값 집합이 다르다.
+작품 품질 큐의 `review_status`는 `standardization_review_item.status`를 기준으로 하고, snapshot 포함/제외는 `artwork_snapshot_item.include_status`에서 별도로 판단한다(MySQL 5.0.2, 5.0.3.1).
 
 테이블 컬럼:
 
 | 컬럼 | 설명 |
 |---|---|
-| normalized_artwork_id | decision path parameter |
+| review_item_id | decision path parameter |
+| review_type | `artwork_field`, `nant_mapping`, `fx_rate` |
 | source | 원천 |
 | title_raw / title_candidate | 원천명과 후보명 |
 | artist_name_raw | 원천 작가명 |
 | price_raw / price_krw_normalized | 원천 가격과 환산 후보 |
 | size | width/height/depth 후보 |
-| NANT 분류 | `nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status` |
+| NANT 분류 | `nant_support`, `nant_medium`, `nant_category_key` 또는 `nant_mapping` 보류 사유 |
 | quality_flags | 가격 없음, 크기 실패, NANT 제외 후보 등 |
 | claim | 담당자/만료 |
 
@@ -194,7 +197,9 @@ Route:
 API:
 
 - `GET /api/v1/admin/review/artist-names`
-- `POST /api/v1/admin/review/artist-names/{alias_id}/decision`
+- `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision`
+
+이 화면은 `standardization_review_item.review_type=artist_name_ko` 또는 `artist_name_en`을 `artist_name_alias`/`normalized_artist_staging`과 조인해 보여주는 화면이다. 작가명 한글화 검수는 `artist_name_ko` 타입으로 등록한다.
 
 정렬:
 
@@ -205,7 +210,9 @@ API:
 
 | 컬럼 | 설명 |
 |---|---|
-| alias_id | decision path parameter |
+| review_item_id | decision path parameter |
+| alias_id | 대상 alias row |
+| review_type | `artist_name_ko` 또는 `artist_name_en` |
 | source | 원천 |
 | artist_name_raw | 원천 작가명 |
 | display_name_ko/en 후보 | 서비스 표시 후보 |
@@ -243,7 +250,9 @@ Route:
 API:
 
 - `GET /api/v1/admin/review/artist-identities`
-- `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision`
+- `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision`
+
+이 화면은 `standardization_review_item.review_type=artist_key`를 `artist_identity_candidate`/`artist_identity`와 조인해 보여주는 화면이다.
 
 권한:
 
@@ -269,6 +278,8 @@ API:
 | 보류 | `hold` | reason | 운영 담당자 |
 | 신규 작가 후보로 전환 | `move_to_new_artist_candidate` | reason | 운영 담당자 |
 
+`move_to_new_artist_candidate`는 별도 `new_artist_candidate` 테이블을 뜻하지 않는다. 공통 검수 큐의 `standardization_review_item(review_type=new_artist)` 일감을 열거나 기존 열린 일감에 연결하는 화면 동작이다.
+
 ## 8. 신규 작가 후보 큐
 
 Route:
@@ -280,7 +291,7 @@ Route:
 API:
 
 - `GET /api/v1/admin/review/new-artists`
-- `POST /api/v1/admin/review/new-artists/{candidate_id}/decision`
+- `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision`
 
 권한:
 
@@ -391,7 +402,7 @@ API:
 목록 필터:
 
 - version status: draft/active/archived
-- mapping status: mapped/learning_excluded/unmapped
+- mapping filter: mapped/learning_excluded/unmapped. `learning_excluded`는 mapping row의 값이며 `normalized_artwork_staging` 저장 컬럼이 아님
 - source material 검색
 - NANT support/medium
 - learning_excluded 여부
@@ -489,7 +500,7 @@ API:
 필터:
 
 - actor
-- entity_type
+- entity_type(`collection_run`, `artwork`, `artist_name`, `artist_identity`, `snapshot`, `model_training_job`, `model_version`, `model_deployment`, `nant_mapping_version`, `nant_material_mapping`)
 - action
 - source
 - 기간
@@ -505,6 +516,10 @@ API:
 - before/after 요약
 - reason
 - request_id
+
+주의:
+
+- 운영 로그 화면은 별도 audit 테이블을 전제로 하지 않는다. API `10.1`이 도메인별 SoT 테이블의 처리자/시각/사유를 합쳐 제공하며, 모델 운영과 NANT mapping 변경도 동일 화면에서 조회 가능해야 한다.
 
 ## 13. 공통 완료 기준
 

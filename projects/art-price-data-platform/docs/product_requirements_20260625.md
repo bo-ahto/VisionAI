@@ -54,7 +54,7 @@
 |---|---|---|
 | 일반 사용자 | 작품 가격 예측과 참고 시장 정보를 확인 | 작가 검색, 작품 입력, 예측 요청, 1차 시장 가격 카드 확인 |
 | 운영 담당자 | 수집 결과와 검수 큐를 처리 | 수집 대시보드, run 상세, 작품/작가명 검수, 보류/제외 |
-| 데이터 관리자 | 비가역 데이터 결정을 승인 | artist_key 생성/연결 확정, snapshot 생성/서빙 승인, 모델 승격/롤백 |
+| 데이터 관리자 | 비가역 데이터 결정을 승인 | artist_key 생성/연결 확정, snapshot 생성/서빙 승인, 모델 승인/승격/롤백/retire |
 | 개발자 | 수집/파서/API 장애를 진단 | run 로그, raw_fetch, parser error, watchdog/알림 확인 |
 | 데이터 분석가 | 학습 snapshot과 품질을 검토 | snapshot 후보, export, 품질 지표, 모델 학습 데이터 추적 |
 
@@ -80,7 +80,7 @@
 - `source_*_interpreted_staging` 생성
 - `normalized_*_staging` 생성
 - 가격/통화/환율/크기/재료/판매상태 표준화
-- 표준화 이후 DB active NANT 재료(지지체/매체) 95분류와 `learning_excluded` 학습 제외 플래그 생성
+- 표준화 이후 DB active NANT 재료(지지체/매체) 95분류와 mapping row 기준 `learning_excluded` 학습 제외 판단
 - unmapped/quality flag 생성
 - source별 품질 지표 산출
 
@@ -92,7 +92,7 @@
 - alias + 고신뢰 생년 기반 자동 확정
 - 동명이인/충돌/메타 부족 후보 검수 큐
 - 신규 artist_key 후보 큐
-- 확정 artist_key의 작가 프로필/메타는 `artist_profile_item`으로 항목 단위 관리하고, `artist_profile_current`는 현재 표시/검색/feature 후보용 요약으로 identity와 분리
+- 확정 artist_key의 작가 프로필/메타와 현재 표시값은 `artist_profile_meta`로 항목 단위 관리하고, identity와 분리
 - identity 결정 append-only 이력
 - merge/un-merge 영향 추적
 
@@ -148,7 +148,7 @@
 범위 과대(§11)를 통제하기 위해 아래 항목은 1차에서 **명시적으로 하지 않는다.** 1차 완료 기준 판정에서 제외한다.
 
 - 4개 외 원천 추가 및 자동 온보딩 UI
-- 모델 자동 재학습/스케줄 재배포 (1차는 수동 승격/롤백만)
+- 모델 자동 재학습/스케줄 재배포 (1차는 수동 승인/승격/롤백/retire만)
 - canonical artwork 단위 merge (1차는 작가 identity 단위까지만)
 - 조직 SSO 연동과 세분화된 capability RBAC (1차는 §4 상속형 역할 위계만)
 - 고급 대시보드 시각화/BI (1차는 운영 처리에 필요한 표/상태 표시까지만)
@@ -234,7 +234,7 @@
 | FR-11 | 1차 시장 가격 카드는 집계값만 사용자에게 노출한다. | 시나리오, API | E0-T06, E6-T05 |
 | FR-12 | 개인정보/삭제 요청은 서비스 노출과 학습 반영을 차단할 수 있어야 한다. | 로드맵, 운영 | E0-T05, E1-T09, E8-T09 |
 | FR-13 | run 미생성/stuck/blocked/품질 하락은 알림으로 감지한다. | 주기 수집 운영 | E2-T09, E8-T02~T05 |
-| FR-14 | 모델 학습/import job, candidate 승인, active deployment 승격/롤백을 분리해 관리한다. 새 snapshot이나 candidate 생성만으로 운영 모델이 자동 변경되지 않는다. | 모델 학습/배포 수명주기, API | E1-T07, E5-T07~T11, E6-T09, E7-T10 |
+| FR-14 | 모델 학습/import job, candidate 승인, active deployment 승격/롤백/retire를 분리해 관리한다. 새 snapshot이나 candidate 생성만으로 운영 모델이 자동 변경되지 않는다. | 모델 학습/배포 수명주기, API | E1-T07, E5-T07~T11, E6-T09, E7-T10 |
 
 ## 9. 비기능 요구사항
 
@@ -253,7 +253,7 @@
 1차 개발 성공 기준:
 
 - 4개 원천의 첫 full run이 raw/interpreted/normalized까지 완료된다.
-- 표준화 이후 DB active NANT 분류와 `learning_excluded` 학습 제외 플래그가 snapshot 후보에 반영된다.
+- 표준화 이후 DB active NANT 분류와 mapping row 기준 `learning_excluded` 판단이 snapshot 후보에 반영된다.
 - 작가명/alias/artist_key 후보 큐가 생성되고 어드민이 처리할 수 있다.
 - snapshot 후보를 만들고, generated/approved 전이를 완료할 수 있다.
 - 모델 학습/import 결과가 candidate로 등록되고, approved 모델만 active deployment로 승격된다.
@@ -282,9 +282,9 @@
 | 개인정보 삭제 요청 미흡 | 서비스/정책 리스크 | 1차부터 suppression/do-not-train/do-not-show 구현 |
 | 범위 과대 | 일정 지연, 통합 리스크 후반 집중 | 1원천 end-to-end 수직 슬라이스(로드맵 §5.5 M1)로 조기 검증 후 폭 확장(M2), §5.8 비범위 고정, 백로그 의존성/완료 기준 추적 |
 
-## 12. 오픈 이슈
+## 12. 개발 전 확정 기본값과 정책 선택 항목
 
-아래 항목은 **구현 원칙(1차 포함 여부)이 아니라 세부 파라미터/스키마 결정**이다. 2026-06-25 기준 기본 선택은 [개발 착수 전 결정안](development_prestart_decisions_20260625.md)을 따른다. 사용자가 별도 선택하지 않으면 아래 "권장 기본값"으로 Phase 0 산출물(DDL/OpenAPI/seed/test)을 작성한다.
+아래 항목은 미정 기능 목록이 아니라, **구현 원칙(1차 포함 여부) 위에 얹는 세부 파라미터/스키마 기본값**이다. 2026-06-25 기준 기본 선택은 [개발 착수 전 결정안](development_prestart_decisions_20260625.md)을 따른다. 사용자가 별도 선택하지 않으면 아래 "권장 기본값"으로 Phase 0 산출물(DDL/OpenAPI/seed/test)을 작성한다.
 
 | 항목 | 권장 기본값 | 사용자 선택이 필요한 경우 | 결정 시점 |
 |---|---|---|---|
@@ -292,9 +292,9 @@
 | 어드민 계정 | 제공 이메일/비밀번호 기반 admin user + JWT + 역할 claim. 초기 superuser는 개인 식별 가능한 계정으로 seed/CLI 생성. SSO는 후속 도입 | 조직 IdP/SSO를 M1부터 강제해야 하면 외부 IdP 우선안 선택 | Phase 0 |
 | suppression 스키마 | 별도 `suppression_rule` 테이블을 SoT로 두고 service display/model training/raw scope를 분리 | 컬럼-only 단순화가 필요하면 audit/범위 확장 리스크 승인 필요 | Phase 0 |
 | 1차 시장 가격 카드 계산 | 기존 가격 예측 `estimated_ho` nearest mapping, 최소 N=5, 매체별 N>=3, q05~q95 winsorized median/q25/q75 | 표본 부족 시 카드 숨김 기준을 더 강하게 둘지 정책 선택 | Phase 0 |
-| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 집계 테이블 생성. API는 active deployment training snapshot 또는 import manifest cutoff 기준 조회 | 실시간 feature store 계산을 원하면 latency/재현성 리스크 승인 필요 | Phase 0 |
+| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 `primary_market_artist_summary` 생성. API는 active deployment training snapshot 또는 import manifest cutoff 기준 조회 | 실시간 feature store 계산을 원하면 latency/재현성 리스크 승인 필요 | Phase 0 |
 | 예측 API 연결 방식 | 기존 예측 API를 호출하지 않고 데이터 수집 서비스 내부 joblib serving adapter가 active deployment의 joblib artifact를 직접 로드 | 기존 가격 예측 API를 직접 확장/호출하려면 회귀 테스트 범위 확대 필요 | Phase 0 |
-| 신규 작가 후보 저장 방식 | 사용자 후보 제출을 M1에 포함하므로 물리 후보 큐 테이블을 1차 DDL에 포함 | 후보 제출을 M1에서 제외하면 SQL view/export로 축소 가능 | Phase 0/1 |
+| 신규 작가 후보 저장 방식 | 사용자 후보 제출을 M1에 포함하므로 `standardization_review_item(review_type=new_artist)`를 물리 큐로 1차 DDL에 포함. 별도 `new_artist_candidate` 테이블은 만들지 않음 | 후보 제출을 M1에서 제외하면 SQL view/export로 축소 가능 | Phase 0/1 |
 | object storage | local dev backend + S3-compatible adapter/path convention. DB에는 URI/hash/size만 저장 | 특정 cloud provider/IAM을 M1부터 고정해야 하면 provider 직접 고정 | Phase 1 |
-| 모델 학습/변경 흐름 | Warm/Cold route와 model family는 고정한다. M1은 기존 joblib import/seed + fixed-test parity + active deployment. 이후 재학습은 같은 family 안에서 `model_training_job -> registry candidate -> approved -> deployment`로 `model_version`만 올린다 | model family/알고리즘/feature contract 변경은 별도 개발 작업으로 분리 | Phase 5 |
-| M1 모델 연결 | Warm은 `warm_lite_unified_current_joblib_v0.1_candidate`, Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `cold_k80_conservative_official_v0.1_candidate` joblib bundle로 freeze해 registry/deployment에 등록 | Cold k80 joblib freeze/parity가 막히면 M1 cold route는 보류하고 fallback은 별도 승인 필요. `cold_prediction_v0.5_operational`은 과거 raw-input p95 방어 참고 산출물 | Phase 5 |
+| 모델 학습/변경 흐름 | Warm/Cold route와 model family는 고정한다. D1은 학습 전 데이터 플랫폼(snapshot/export)까지만 닫고, D2에서 feature generation을 확정한 뒤 D3는 기존 joblib import/seed 또는 신규 학습, D4는 fixed-test parity + active deployment를 수행한다. 이후 재학습은 같은 family 안에서 `model_training_job -> registry candidate -> approved -> deployment`로 `model_version`만 올린다 | model family/알고리즘/feature contract 변경은 별도 개발 작업으로 분리 | Phase 5 |
+| D3/D4 모델 연결 | Warm은 `warm_lite_unified_current_joblib_v0.1_candidate`, Cold는 `k80 보수적 운영` 후보(`resid_artist_meta_k80_s1p0_cap0p25__route_neg_corr_ge_0p05`)를 `cold_k80_conservative_official_v0.1_candidate` joblib bundle로 freeze해 registry/deployment에 등록 | Cold k80 joblib freeze/parity가 막히면 cold route는 보류하고 fallback은 별도 승인 필요. `cold_prediction_v0.5_operational`은 과거 raw-input p95 방어 참고 산출물 | Phase 5 |

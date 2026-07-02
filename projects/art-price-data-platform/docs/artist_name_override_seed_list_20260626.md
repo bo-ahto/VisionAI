@@ -1,0 +1,234 @@
+# 작가 한글명 override seed 목록 - 2026-06-26
+
+이 문서는 기존 수동 override CSV를 DB seed로 이관할 때 참고하는 전체 목록이다. 운영 SoT는 CSV가 아니라 `artist_name_alias` DB이며, 이 목록은 최초 seed/migration 입력의 스냅샷으로 본다.
+
+## 요약
+
+- 총 override row: `205`
+- DB seed 대상: `artist_name_alias`
+- seed 기본값: `review_status='approved'`, `seed_source='legacy_override_csv'`, `approved_by='seed_import'`
+- 운영 기준: import 후 CSV를 직접 참조하지 않고 DB의 승인 alias/override row를 읽는다.
+
+## reason code별 건수
+
+| reason_code | rows |
+|---|---:|
+| `obvious_bad_romanization` | `122` |
+| `readable_foreign_name_transliteration` | `45` |
+| `readable_alias_transliteration` | `28` |
+| `readable_studio_name_transliteration` | `3` |
+| `alias_spacing_fixed` | `2` |
+| `metadata_removed_and_romanization_fixed` | `2` |
+| `alias_or_stage_name_simplified` | `1` |
+| `readable_gallery_name_transliteration` | `1` |
+| `track3_manual_override` | `1` |
+
+## 전체 override seed 목록
+
+| source_name | artist_name_ko | reason_code |
+|---|---|---|
+| `myunggyun you` | 유명균 | `obvious_bad_romanization` |
+| `sang wooc rhee` | 이상욱 | `obvious_bad_romanization` |
+| `hyungjun suh` | 서형준 | `obvious_bad_romanization` |
+| `seung yean cho` | 조승연 | `obvious_bad_romanization` |
+| `choonjae kim` | 김춘재 | `obvious_bad_romanization` |
+| `jihyeon choi` | 최지현 | `obvious_bad_romanization` |
+| `kim deasung` | 김대성 | `obvious_bad_romanization` |
+| `kwon neung` | 권능 | `obvious_bad_romanization` |
+| `kim deok han` | 김덕한 | `obvious_bad_romanization` |
+| `hyegyun kim` | 김혜균 | `obvious_bad_romanization` |
+| `deokhwan yoon` | 윤덕환 | `obvious_bad_romanization` |
+| `gwanhee lee` | 이관희 | `obvious_bad_romanization` |
+| `sungone jung` | 정성원 | `obvious_bad_romanization` |
+| `choongmok yoo` | 유충목 | `obvious_bad_romanization` |
+| `kwang bum jang` | 장광범 | `obvious_bad_romanization` |
+| `keem jiyoung` | 김지영 | `obvious_bad_romanization` |
+| `soon yeal yang` | 양순열 | `obvious_bad_romanization` |
+| `jihyung nam` | 남지형 | `obvious_bad_romanization` |
+| `bomyee kim` | 김봄이 | `obvious_bad_romanization` |
+| `sangik seo` | 서상익 | `obvious_bad_romanization` |
+| `aedam kim donghyung` | 애담 김동형 | `track3_manual_override` |
+| `seo hyun sohn` | 손서현 | `obvious_bad_romanization` |
+| `cheong hyeong yeol` | 정형열 | `obvious_bad_romanization` |
+| `yoon sang yuel` | 윤상열 | `obvious_bad_romanization` |
+| `jungwon phee` | 피정원 | `obvious_bad_romanization` |
+| `sook ja rho` | 노숙자 | `obvious_bad_romanization` |
+| `gyunghwa roh` | 노경화 | `obvious_bad_romanization` |
+| `jungkee son` | 손정기 | `obvious_bad_romanization` |
+| `sukhyung kang` | 강석형 | `obvious_bad_romanization` |
+| `bahk younghoon` | 박영훈 | `obvious_bad_romanization` |
+| `woongjoo seo` | 서웅주 | `obvious_bad_romanization` |
+| `seim shon` | 손세임 | `obvious_bad_romanization` |
+| `kim sookang` | 김수강 | `obvious_bad_romanization` |
+| `kee tae kim` | 김기태 | `obvious_bad_romanization` |
+| `bae hyung kyung` | 배형경 | `obvious_bad_romanization` |
+| `sangdeok ra` | 라상덕 | `obvious_bad_romanization` |
+| `ingee chung` | 정인지 | `obvious_bad_romanization` |
+| `eunphil cho` | 조은필 | `obvious_bad_romanization` |
+| `jeayeon hong` | 홍재연 | `obvious_bad_romanization` |
+| `siwol park` | 박시월 | `obvious_bad_romanization` |
+| `hoh woo jung` | 정호우 | `obvious_bad_romanization` |
+| `jeehui hong` | 홍지희 | `obvious_bad_romanization` |
+| `eunbyeol choi` | 최은별 | `obvious_bad_romanization` |
+| `byeolhee jeon` | 전별희 | `obvious_bad_romanization` |
+| `sanggyun lee` | 이상균 | `obvious_bad_romanization` |
+| `choong yeul yoo` | 유충열 | `obvious_bad_romanization` |
+| `youn miock` | 윤미옥 | `obvious_bad_romanization` |
+| `hwallam moon` | 문화람 | `obvious_bad_romanization` |
+| `jaebum joo` | 주재범 | `obvious_bad_romanization` |
+| `seol min yi` | 이설민 | `obvious_bad_romanization` |
+| `um hyo yong` | 엄효용 | `obvious_bad_romanization` |
+| `kai ax` | 카이 액스 | `readable_foreign_name_transliteration` |
+| `ivie ives` | 아이비 아이브스 | `readable_foreign_name_transliteration` |
+| `ouchul hwang` | 황오철 | `obvious_bad_romanization` |
+| `hagley art` | 해글리 아트 | `readable_studio_name_transliteration` |
+| `gallery hexagon` | 갤러리 헥사곤 | `readable_gallery_name_transliteration` |
+| `jinho kee` | 기진호 | `obvious_bad_romanization` |
+| `yohahn diko` | 디코 요한 | `readable_foreign_name_transliteration` |
+| `weedong yoon b 1982` | 윤위동 | `metadata_removed_and_romanization_fixed` |
+| `leysan khasan` | 레이산 카산 | `readable_foreign_name_transliteration` |
+| `marina ogai` | 마리나 오가이 | `readable_foreign_name_transliteration` |
+| `yoo suzy` | 유수지 | `obvious_bad_romanization` |
+| `suzy yoo` | 유수지 | `obvious_bad_romanization` |
+| `erica choi` | 최에리카 | `obvious_bad_romanization` |
+| `hazzi eunjeong kim` | 김은정 | `obvious_bad_romanization` |
+| `lookha bark` | 박루카 | `obvious_bad_romanization` |
+| `wang yeul` | 왕열 | `obvious_bad_romanization` |
+| `chanoo park` | 박찬우 | `obvious_bad_romanization` |
+| `mihei her` | 허미혜 | `obvious_bad_romanization` |
+| `minjeong guem` | 금민정 | `obvious_bad_romanization` |
+| `matthew anderson` | 매튜 앤더슨 | `readable_foreign_name_transliteration` |
+| `valeriia kapitulska park lia` | 발레리아 카피툴스카 박리아 | `readable_foreign_name_transliteration` |
+| `zhanna kan` | 잔나 칸 | `readable_foreign_name_transliteration` |
+| `diego rodarte` | 디에고 로다르테 | `readable_foreign_name_transliteration` |
+| `haneyl choi` | 최한일 | `obvious_bad_romanization` |
+| `sophie an` | 안소피 | `obvious_bad_romanization` |
+| `jenny seongryung lee` | 이성령 | `obvious_bad_romanization` |
+| `lee yimchoon` | 이임춘 | `obvious_bad_romanization` |
+| `pogoby official` | 포고비 오피셜 | `readable_alias_transliteration` |
+| `g sim seyeon` | 지심세연 | `alias_spacing_fixed` |
+| `kim greem` | 김그림 | `obvious_bad_romanization` |
+| `junesuk park` | 박준석 | `obvious_bad_romanization` |
+| `david surman` | 데이비드 서먼 | `readable_foreign_name_transliteration` |
+| `michelle sakhai` | 미셸 사카이 | `readable_foreign_name_transliteration` |
+| `gisele park` | 박지젤 | `obvious_bad_romanization` |
+| `clara baik` | 백클라라 | `obvious_bad_romanization` |
+| `ccreatt` | 씨크리에이트 | `readable_alias_transliteration` |
+| `doezny` | 도즈니 | `readable_alias_transliteration` |
+| `ubatsat` | 우밧샛 | `readable_alias_transliteration` |
+| `andy h jung` | 정앤디 | `obvious_bad_romanization` |
+| `jiieh g hur` | 허지혜 | `obvious_bad_romanization` |
+| `isaac oz` | 아이작 오즈 | `readable_foreign_name_transliteration` |
+| `jane nee` | 제인 니 | `readable_foreign_name_transliteration` |
+| `faozee` | 파오지 | `readable_alias_transliteration` |
+| `phichai keawvichit` | 피차이 케아위칫 | `readable_foreign_name_transliteration` |
+| `samuel almansa` | 사무엘 알만사 | `readable_foreign_name_transliteration` |
+| `yiyi jeong eun` | 정은 | `alias_or_stage_name_simplified` |
+| `ruis luiz` | 루이스 루이즈 | `readable_foreign_name_transliteration` |
+| `theresia massawe` | 테레시아 마사웨 | `readable_foreign_name_transliteration` |
+| `wichuda khuntijit` | 위추다 쿤티짓 | `readable_foreign_name_transliteration` |
+| `evi pangestu` | 에비 팡에스투 | `readable_foreign_name_transliteration` |
+| `insane park` | 박인세인 | `readable_alias_transliteration` |
+| `jojo anavim` | 조조 아나빔 | `readable_foreign_name_transliteration` |
+| `mekyeoung lee` | 이미경 | `obvious_bad_romanization` |
+| `paul gadd` | 폴 개드 | `readable_foreign_name_transliteration` |
+| `etaehoon art` | 이태훈 아트 | `readable_alias_transliteration` |
+| `farzana ahmed urmi` | 파르자나 아메드 우르미 | `readable_foreign_name_transliteration` |
+| `jinhyung lee` | 이진형 | `obvious_bad_romanization` |
+| `kwangik song` | 송광익 | `obvious_bad_romanization` |
+| `sang oktabu kim` | 김상옥타부 | `readable_alias_transliteration` |
+| `seon wha jo` | 조선화 | `obvious_bad_romanization` |
+| `seonggwang yun` | 윤성광 | `obvious_bad_romanization` |
+| `soilart jo dojoong` | 소일아트 조도중 | `alias_spacing_fixed` |
+| `yeon gyeong seo` | 서연경 | `obvious_bad_romanization` |
+| `alexandra grant` | 알렉산드라 그랜트 | `readable_foreign_name_transliteration` |
+| `donghwi dongza` | 동휘 동자 | `readable_alias_transliteration` |
+| `gwondo back` | 백권도 | `obvious_bad_romanization` |
+| `gyeore lee` | 이겨레 | `obvious_bad_romanization` |
+| `jeongkeun nam` | 남정근 | `obvious_bad_romanization` |
+| `jueon im` | 임주언 | `obvious_bad_romanization` |
+| `shin ki ock` | 신기옥 | `obvious_bad_romanization` |
+| `chasoong koo` | 구차순 | `obvious_bad_romanization` |
+| `greg haberny` | 그레그 하버니 | `readable_foreign_name_transliteration` |
+| `hyun nahm` | 남현 | `obvious_bad_romanization` |
+| `jeimin kim` | 김재민 | `obvious_bad_romanization` |
+| `jeong min suh` | 서정민 | `obvious_bad_romanization` |
+| `jessup choi` | 최제섭 | `obvious_bad_romanization` |
+| `joy rock` | 조이 록 | `readable_alias_transliteration` |
+| `kim hyung gwan` | 김형관 | `obvious_bad_romanization` |
+| `minhui jeong` | 정민희 | `obvious_bad_romanization` |
+| `nature haan` | 네이처 한 | `readable_alias_transliteration` |
+| `roger shepherd` | 로저 셰퍼드 | `readable_foreign_name_transliteration` |
+| `sangjune won` | 원상준 | `obvious_bad_romanization` |
+| `tomotoshi hoshino` | 호시노 토모토시 | `readable_foreign_name_transliteration` |
+| `ttodoa` | 또도아 | `readable_alias_transliteration` |
+| `wheedong kim` | 김휘동 | `obvious_bad_romanization` |
+| `zingylabel` | 징이레이블 | `readable_alias_transliteration` |
+| `art jeeno` | 아트 지노 | `readable_alias_transliteration` |
+| `hey sook yoo` | 유혜숙 | `obvious_bad_romanization` |
+| `jaehui jeong` | 정재희 | `obvious_bad_romanization` |
+| `jeenee lee` | 이지니 | `obvious_bad_romanization` |
+| `jeongwoong lee` | 이정웅 | `obvious_bad_romanization` |
+| `juli baker and summer` | 줄리 베이커 앤 썸머 | `readable_alias_transliteration` |
+| `laila lee` | 이라일라 | `readable_foreign_name_transliteration` |
+| `stepper studio` | 스테퍼 스튜디오 | `readable_studio_name_transliteration` |
+| `stepper` | 스테퍼 | `readable_alias_transliteration` |
+| `studioartech` | 스튜디오 아르테크 | `readable_studio_name_transliteration` |
+| `gbday` | 지비데이 | `readable_alias_transliteration` |
+| `yislow` | 이슬로우 | `readable_alias_transliteration` |
+| `ryu hoimin` | 류호민 | `obvious_bad_romanization` |
+| `kim inbai` | 김인배 | `obvious_bad_romanization` |
+| `park jiemin` | 박지민 | `obvious_bad_romanization` |
+| `sungkuen lee` | 이성근 | `obvious_bad_romanization` |
+| `yun hee toh` | 도윤희 | `obvious_bad_romanization` |
+| `hyungsub choi` | 최형섭 | `obvious_bad_romanization` |
+| `park hyun woong` | 박현웅 | `obvious_bad_romanization` |
+| `jaiyoung cho` | 조재영 | `obvious_bad_romanization` |
+| `jione choi` | 최지온 | `obvious_bad_romanization` |
+| `seounghee lee` | 이성희 | `obvious_bad_romanization` |
+| `sookhyeung yoo` | 유숙형 | `obvious_bad_romanization` |
+| `yeounwoo yang` | 양연우 | `obvious_bad_romanization` |
+| `dagyeong yun` | 윤다경 | `obvious_bad_romanization` |
+| `ohsamchil` | 오삼칠 | `readable_alias_transliteration` |
+| `lee jung woong b 1963` | 이정웅 | `metadata_removed_and_romanization_fixed` |
+| `seoul kim` | 김서울 | `obvious_bad_romanization` |
+| `hyevin namgoong` | 남궁혜빈 | `obvious_bad_romanization` |
+| `sang yeoul kim` | 김상열 | `obvious_bad_romanization` |
+| `lee seoung ku` | 이성구 | `obvious_bad_romanization` |
+| `nam han wool` | 남한울 | `obvious_bad_romanization` |
+| `sangyeul oh` | 오상열 | `obvious_bad_romanization` |
+| `yoo choong yeul` | 유충열 | `obvious_bad_romanization` |
+| `amber park` | 박앰버 | `readable_foreign_name_transliteration` |
+| `chloe park` | 박클로이 | `readable_foreign_name_transliteration` |
+| `jo nury` | 조누리 | `obvious_bad_romanization` |
+| `prach pimarnman` | 프라치 피만만 | `readable_foreign_name_transliteration` |
+| `evgeniya tuchkova` | 예브게니야 투치코바 | `readable_foreign_name_transliteration` |
+| `kowit wattanarach` | 코윗 와타나라치 | `readable_foreign_name_transliteration` |
+| `thomas sch tte` | 토마스 슈테 | `readable_foreign_name_transliteration` |
+| `wal chirachaisakul` | 왈 치라차이사쿨 | `readable_foreign_name_transliteration` |
+| `elle rosenfeld` | 엘 로젠펠드 | `readable_foreign_name_transliteration` |
+| `phatcharaphan raiva` | 파차라판 라이바 | `readable_foreign_name_transliteration` |
+| `spencer brockley` | 스펜서 브로클리 | `readable_foreign_name_transliteration` |
+| `lightground myungkyu kang` | 라이트그라운드 강명규 | `readable_alias_transliteration` |
+| `daniel henrich` | 다니엘 헨리히 | `readable_foreign_name_transliteration` |
+| `kingscribbler kingscribbler` | 킹스크리블러 | `readable_alias_transliteration` |
+| `mahdi abdullah` | 마흐디 압둘라 | `readable_foreign_name_transliteration` |
+| `boonhlue yangsouy` | 분루 양수이 | `readable_foreign_name_transliteration` |
+| `rachata siriyakul` | 라차타 시리야쿨 | `readable_foreign_name_transliteration` |
+| `semi yh` | 세미 YH | `readable_alias_transliteration` |
+| `leeyunh ee` | 이윤희 | `obvious_bad_romanization` |
+| `amonmazdah` | 아몬마즈다 | `readable_alias_transliteration` |
+| `artist aeun` | 아티스트 애은 | `readable_alias_transliteration` |
+| `dongzadonghwi` | 동자동휘 | `readable_alias_transliteration` |
+| `doppel kim` | 김도펠 | `readable_alias_transliteration` |
+| `hwartist` | 화티스트 | `readable_alias_transliteration` |
+| `guem eye` | 금아이 | `obvious_bad_romanization` |
+| `mothfly` | 모스플라이 | `readable_alias_transliteration` |
+| `zeyah ren` | 제야 렌 | `readable_foreign_name_transliteration` |
+| `nahwoe park` | 박나회 | `obvious_bad_romanization` |
+| `rahm parc` | 람 파크 | `readable_foreign_name_transliteration` |
+| `sarah soh` | 사라 소 | `readable_foreign_name_transliteration` |
+| `uah young` | 우아영 | `obvious_bad_romanization` |
+| `april bohm yang` | 에이프릴 봄 양 | `readable_foreign_name_transliteration` |
+| `buhm hong` | 홍범 | `obvious_bad_romanization` |
+| `ha sunwooh` | 하선우 | `obvious_bad_romanization` |

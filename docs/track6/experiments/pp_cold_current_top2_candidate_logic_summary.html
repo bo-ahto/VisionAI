@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cold 모델 후보 1, 2위 정리</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5f6b7a;
+      --line: #d7e0ea;
+      --panel: #f7fafc;
+      --panel-2: #eef5fb;
+      --accent: #2563eb;
+      --accent-2: #0f766e;
+      --warn: #b45309;
+      --bad: #b91c1c;
+      --good: #047857;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #eaf1f7;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.62;
+      letter-spacing: 0;
+    }
+    main {
+      max-width: 1180px;
+      margin: 28px auto;
+      padding: 42px 46px 56px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(31, 45, 61, 0.08);
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.18;
+    }
+    h2 {
+      margin: 42px 0 14px;
+      font-size: 24px;
+      padding-top: 8px;
+      border-top: 2px solid #edf2f7;
+    }
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 19px;
+    }
+    p { margin: 8px 0 12px; }
+    ul { margin: 8px 0 16px; padding-left: 22px; }
+    li { margin: 4px 0; }
+    code {
+      background: #eef2f7;
+      color: #111827;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 0.94em;
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 18px;
+      margin: 20px 0 28px;
+      padding: 16px 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+    }
+    .meta strong { color: var(--ink); }
+    .note {
+      margin: 16px 0;
+      padding: 15px 17px;
+      background: #f0f7ff;
+      border-left: 5px solid var(--accent);
+      border-radius: 6px;
+    }
+    .warn {
+      background: #fff7ed;
+      border-left-color: var(--warn);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #edf3f9;
+      font-weight: 700;
+    }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .rank-1 { background: #ecfdf5; }
+    .rank-2 { background: #f8fafc; }
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+    .tag.good { border-color: #bbf7d0; background: #ecfdf5; color: var(--good); }
+    .tag.warn { border-color: #fed7aa; background: #fff7ed; color: var(--warn); }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 14px 0 24px;
+    }
+    .panel {
+      padding: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .panel h3 { margin-top: 0; }
+    .flow {
+      margin: 16px 0 22px;
+      padding: 18px;
+      background: #fbfdff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .flow-title {
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #0f172a;
+    }
+    .steps {
+      display: grid;
+      gap: 10px;
+    }
+    .step {
+      position: relative;
+      padding: 13px 14px;
+      background: #fff;
+      border: 1px solid #cfd9e4;
+      border-radius: 8px;
+    }
+    .step:not(:last-child)::after {
+      content: "↓";
+      display: block;
+      text-align: center;
+      color: var(--accent);
+      font-weight: 800;
+      margin: 8px 0 -2px;
+    }
+    .step strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #0f172a;
+    }
+    .step small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .split-flow {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+    .metric-delta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .metric {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .metric b {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 2px;
+    }
+    .metric span { color: var(--muted); font-size: 13px; }
+    .ok { color: var(--good); font-weight: 700; }
+    .risk { color: var(--bad); font-weight: 700; }
+    @media (max-width: 820px) {
+      main { margin: 0; padding: 24px 18px; border-radius: 0; }
+      .meta, .grid-2, .split-flow, .metric-delta { grid-template-columns: 1fr; }
+      table { font-size: 13px; }
+      th, td { padding: 7px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Cold 모델 후보 1, 2위 정리</h1>
+  <p>
+    현재 Cold 모델 후보를 운영 관점에서 정리한 문서다. 핵심은
+    <code>k160_alpha45</code>를 성능 균형형 1위 후보로 두되,
+    극단 오차 안정성 기준에서는 <code>user_meta_core_bucket</code>을 2위 보수 후보로 유지하는 것이다.
+  </p>
+
+  <div class="meta">
+    <div><strong>작성일</strong><br>2026-06-18</div>
+    <div><strong>기준 실험</strong><br>PP-CMETA5, PP-CSIM2~8</div>
+    <div><strong>공통 제외 조건</strong><br><code>artist_key</code>, 같은 작가 가격 이력, lookup, <code>search_*</code>, 외부 live 검색</div>
+    <div><strong>목적</strong><br>후보 1, 2위의 학습/사용 로직과 선택 근거 정리</div>
+  </div>
+
+  <h2>1. 현재 후보 순위</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>순위</th>
+        <th>후보</th>
+        <th>성격</th>
+        <th class="num">MdAPE</th>
+        <th class="num">MAPE</th>
+        <th class="num">p95 APE</th>
+        <th class="num">RMSE log</th>
+        <th class="num">APE &gt; 5</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="rank-1">
+        <td>1</td>
+        <td><code>k160_alpha45</code></td>
+        <td><span class="tag good">균형형 개선 후보</span></td>
+        <td class="num">0.471031</td>
+        <td class="num">0.999148</td>
+        <td class="num">2.569218</td>
+        <td class="num">0.880774</td>
+        <td class="num">74</td>
+      </tr>
+      <tr class="rank-2">
+        <td>2</td>
+        <td><code>user_meta_core_bucket</code></td>
+        <td><span class="tag warn">보수형 안정 후보</span></td>
+        <td class="num">0.473483</td>
+        <td class="num">1.100452</td>
+        <td class="num">2.942330</td>
+        <td class="num">0.887405</td>
+        <td class="num">72</td>
+      </tr>
+      <tr>
+        <td>참고</td>
+        <td><code>k160_alpha50</code></td>
+        <td>공격적 성능 후보</td>
+        <td class="num">0.467623</td>
+        <td class="num">1.068718</td>
+        <td class="num">2.920315</td>
+        <td class="num">0.876089</td>
+        <td class="num">76</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <p>
+      <code>k160_alpha45</code>는 기존 후보보다 MdAPE, MAPE, p95 APE, RMSE log를 모두 개선한다.
+      다만 <code>APE &gt; 5</code>는 기존보다 2건 증가한다. 따라서 평균 성능과 tail 안정성 사이의 선택이 필요하다.
+    </p>
+  </div>
+
+  <h2>2. 후보 1: k160_alpha45</h2>
+  <p>
+    Cold 입력에서 같은 작가의 가격 이력을 직접 쓰지 못하는 문제를 보완하기 위해,
+    입력 작품과 비슷한 과거 작품 160건의 가격 분포를 모델 피처로 추가한 후보다.
+    같은 작가를 찾는 방식이 아니며, <code>artist_key</code>는 사용하지 않는다.
+  </p>
+
+  <div class="split-flow">
+    <div class="flow">
+      <div class="flow-title">k160_alpha45 학습 단계 순서도</div>
+      <div class="steps">
+        <div class="step">
+          <strong>1. 학습 데이터 준비</strong>
+          <small>가격 라벨이 있는 과거 작품 사용. artist_key, 같은 작가 가격 이력, lookup, search/live 검색 제외.</small>
+        </div>
+        <div class="step">
+          <strong>2. 작품 피처 생성</strong>
+          <small>가로/세로/깊이 cm, 면적, 로그 면적, 종횡비, 매체, 지지체, 크기 bucket, 입체 여부, 극단 비율 여부.</small>
+        </div>
+        <div class="step">
+          <strong>3. 유사작품 비교군 생성</strong>
+          <small>train 내부는 KFold out-of-fold로 자기 가격 누수를 차단하고, 작품 조건이 가까운 비교군을 만든다.</small>
+        </div>
+        <div class="step">
+          <strong>4. k160 통계 생성</strong>
+          <small>가장 가까운 160건의 로그가격 중앙값, q25/q75, IQR, 평균, 표준편차, 면적당 가격, 유사도 통계 생성.</small>
+        </div>
+        <div class="step">
+          <strong>5. LightGBM Quantile q45 학습</strong>
+          <small>목표값은 실제 로그가격. q50보다 약간 보수적인 q45를 학습해 과대평가 tail을 완화한다.</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-title">k160_alpha45 사용 단계 순서도</div>
+      <div class="steps">
+        <div class="step">
+          <strong>1. 작품 정보 입력</strong>
+          <small>cm 기준 크기, 매체, 지지체, 깊이/입체 여부를 입력한다.</small>
+        </div>
+        <div class="step">
+          <strong>2. 작가 메타 입력</strong>
+          <small>출생연도, 작품 수, 팔로워/인지도성 지표, 경력 단계, 국적/활동권 등 입력 가능한 메타를 받는다.</small>
+        </div>
+        <div class="step">
+          <strong>3. 유사작품 160건 검색</strong>
+          <small>artist_key가 아니라 작품 조건 기준으로 학습 작품 중 가까운 160건을 찾는다.</small>
+        </div>
+        <div class="step">
+          <strong>4. 유사작품 통계 계산</strong>
+          <small>로그가격 중앙값, q25/q75, IQR, 면적당 가격, 유사도 평균/최대/최소를 만든다.</small>
+        </div>
+        <div class="step">
+          <strong>5. q45 모델 예측</strong>
+          <small>작품 피처 + 작가 메타 + 유사작품 통계를 LightGBM Quantile q45 모델에 넣는다.</small>
+        </div>
+        <div class="step">
+          <strong>6. 가격 변환</strong>
+          <small>최종 가격 = exp(예측 로그가격).</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>선택 근거</h3>
+  <div class="metric-delta">
+    <div class="metric"><b class="ok">0.473483 → 0.471031</b><span>MdAPE 개선</span></div>
+    <div class="metric"><b class="ok">1.100452 → 0.999148</b><span>MAPE 개선</span></div>
+    <div class="metric"><b class="ok">2.942330 → 2.569218</b><span>p95 APE 개선</span></div>
+    <div class="metric"><b class="risk">72 → 74</b><span>APE &gt; 5는 2건 증가</span></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Bootstrap 항목</th>
+        <th class="num">개선 확률</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>MAPE</td><td class="num">1.0000</td></tr>
+      <tr><td>p95 APE</td><td class="num">1.0000</td></tr>
+      <tr><td>RMSE log</td><td class="num">0.9875</td></tr>
+      <tr><td>MdAPE</td><td class="num">0.7250</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note warn">
+    <p>
+      <code>followers</code>, <code>total works</code> 계열 메타가 빠질 때 성능이 약해진다.
+      따라서 q45 후보를 운영 후보로 볼 경우, 팔로워/인지도성 지표와 작품 수 계열은 권장 또는 필수 입력으로 관리해야 한다.
+    </p>
+  </div>
+
+  <h2>3. 후보 2: user_meta_core_bucket</h2>
+  <p>
+    현재 가장 보수적인 Cold 후보다. 유사작품 비교군을 쓰지 않고, 작품 정보와 사용자가 입력 가능한 작가 메타 bucket만 사용한다.
+    평균 성능은 q45보다 낮지만 <code>APE &gt; 5</code>가 더 적어 극단오차 안정성 기준으로 중요하다.
+  </p>
+
+  <div class="split-flow">
+    <div class="flow">
+      <div class="flow-title">user_meta_core_bucket 학습 단계 순서도</div>
+      <div class="steps">
+        <div class="step">
+          <strong>1. 학습 데이터 준비</strong>
+          <small>가격 라벨이 있는 과거 작품 사용. artist_key, 같은 작가 가격 이력, artist-key lookup 제외.</small>
+        </div>
+        <div class="step">
+          <strong>2. 작품 피처 생성</strong>
+          <small>가로/세로/깊이 cm, 면적, 로그 면적, 종횡비, 매체, 지지체, 매체-지지체 조합, 크기 bucket.</small>
+        </div>
+        <div class="step">
+          <strong>3. 작가 메타 피처 생성</strong>
+          <small>출생연도, 총 작품 수, 팔로워/인지도성 지표, 경력 단계, P1/국제 활동 여부, 국적, missing flag.</small>
+        </div>
+        <div class="step">
+          <strong>4. 메타 bucket 생성</strong>
+          <small>출생연대, 작품 수, 팔로워, 경력 단계, 메타 완성도, 매체 x 출생연대, 지지체 x 메타 완성도, 경력 x 크기.</small>
+        </div>
+        <div class="step">
+          <strong>5. LightGBM Quantile q50 학습</strong>
+          <small>실제 로그가격을 목표값으로 중앙값 예측 모델을 학습한다.</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-title">user_meta_core_bucket 사용 단계 순서도</div>
+      <div class="steps">
+        <div class="step">
+          <strong>1. 작품 정보 입력</strong>
+          <small>cm 기준 크기, 면적, 매체, 지지체 등 작품 피처를 만든다.</small>
+        </div>
+        <div class="step">
+          <strong>2. 작가 메타 입력</strong>
+          <small>출생연도, 작품 수, 팔로워, 경력 단계, 국적 등 사용자가 입력 가능한 메타를 받는다.</small>
+        </div>
+        <div class="step">
+          <strong>3. 메타 bucket 생성</strong>
+          <small>작가 메타를 안정적인 구간형 피처로 변환한다.</small>
+        </div>
+        <div class="step">
+          <strong>4. q50 모델 예측</strong>
+          <small>작품 피처와 작가 메타 bucket을 LightGBM Quantile q50 모델에 넣는다.</small>
+        </div>
+        <div class="step">
+          <strong>5. 가격 변환</strong>
+          <small>최종 가격 = exp(예측 로그가격).</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>선택 근거</h3>
+  <ul>
+    <li><code>APE &gt; 5</code>가 72건으로 현재 후보군 중 가장 낮다.</li>
+    <li><code>k160_alpha45</code>보다 평균 성능은 낮지만, 극단오차 최소화 기준에서는 안정적이다.</li>
+    <li>유사작품 통계를 만들지 않아 구조가 단순하고 운영 구현 난이도가 낮다.</li>
+  </ul>
+
+  <h2>4. APE &gt; 5를 더 줄이는 방향</h2>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>이미 시도한 방법</h3>
+      <ul>
+        <li><strong>유사작품 기준가격 + residual clip</strong><br>MdAPE와 p95가 악화되어 운영 후보로 부적합.</li>
+        <li><strong>유사작품 가격 상단 기준 output cap</strong><br>MdAPE/MAPE는 소폭 개선했지만 APE &gt; 5는 줄이지 못함.</li>
+        <li><strong>저가 가중치 + 낮은 quantile</strong><br>APE &gt; 5는 줄었지만 MdAPE 손실이 커짐.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>다음 실험 우선순위</h3>
+      <ul>
+        <li><strong>q45 + 약한 저가 가중치 세밀 grid</strong><br><code>low_weight=1.2~1.8</code>, <code>alpha=0.43~0.47</code>.</li>
+        <li><strong>과대평가 전용 asymmetric loss</strong><br>전체 예측을 낮추지 않고 과대평가 오차만 더 강하게 벌점.</li>
+        <li><strong>APE &gt; 5 위험 검수 모델</strong><br>가격을 바꾸지 않고 저신뢰/검수 필요 표시.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>5. 현재 권장안</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>운영 선택지</th>
+        <th>권장 후보</th>
+        <th>이유</th>
+        <th>주의점</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>기본 개선 후보</td>
+        <td><code>k160_alpha45</code></td>
+        <td>MAPE/p95 개선이 명확하고 전체 균형이 가장 좋다.</td>
+        <td>APE &gt; 5가 2건 증가하므로 검수/신뢰도 표시 필요.</td>
+      </tr>
+      <tr>
+        <td>보수 후보</td>
+        <td><code>user_meta_core_bucket</code></td>
+        <td>극단오차가 가장 낮고 구조가 단순하다.</td>
+        <td>평균 성능과 p95는 q45보다 낮다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <p>
+      최종 결정 전에는 q45 + 약한 저가 가중치 세밀 grid, APE &gt; 5 발생 행의 원인 분석,
+      저가 구간 검수 표시 기준, 작가 메타 필수/권장 입력 정책을 추가로 확인하는 것이 좋다.
+    </p>
+  </div>
+</main>
+</body>
+</html>

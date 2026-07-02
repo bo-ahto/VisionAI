@@ -1,0 +1,43 @@
+{
+  "created_at": "2026-06-16T14:34:09",
+  "experiment_id": "PP-ROUTE-CF4",
+  "experiment_slug": "PP-ROUTE-CF4_pooled_warm_lite_vs_warm_k1_to_k6",
+  "seeds": [
+    20260612,
+    20260613,
+    20260614
+  ],
+  "k_values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "base_eval_set": "Warm fixed-test rows with at least 6 same-artist train-history rows",
+  "eligibility_audit": {
+    "warm_fixed_test_rows_total": 607,
+    "exact_k1_to_k6_eligible_rows": 519,
+    "excluded_rows_with_less_than_6_history": 88,
+    "min_full_train_artist_history_n": 6,
+    "max_full_train_artist_history_n": 573
+  },
+  "warm_lite_pooled_training": {
+    "training_exposures": "k=1..6 pooled per seed",
+    "artist_cap_rule": "training exposure k keeps at most k+1 rows per artist",
+    "group_stats": "5-fold internal stats on each capped exposure frame, then pooled",
+    "model": "LightGBM Quantile full/lean + LightGBM objective=huber residual",
+    "candidate": "lgbq_full_lean_avg + clip(0.50 * lgb_huber_residual, -0.10, +0.10)"
+  },
+  "warm_comparator": {
+    "source": "experiments/track6/PP-ROUTE-CF3_retrained_warm_vs_warm_lite_k1_to_k6/outputs/predictions_all_conditions.csv",
+    "candidate": "Warm retrained clean stack"
+  },
+  "limitations": [
+    "Warm comparator is CF3 clean stack, not exact historical WMIN8/PPV8 full artifact rebuild.",
+    "Warm-lite k=5~6 remains outside the official Warm-lite route and is included as a stress comparison.",
+    "Pooled training intentionally augments repeated low-history exposure conditions, so it should be treated as a new candidate family."
+  ],
+  "seconds": 731.65
+}

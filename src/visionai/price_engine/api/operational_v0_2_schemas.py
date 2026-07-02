@@ -51,6 +51,19 @@ class ResolveArtistRequest(BaseModel):
     options: ResolveArtistOptions = Field(default_factory=ResolveArtistOptions)
 
 
+class RepresentativeArtwork(BaseModel):
+    artwork_id: str | None = None
+    title: str | None = None
+    artist_name: str | None = None
+    sale_price_krw: int | None = None
+    width_cm: float | None = None
+    height_cm: float | None = None
+    medium_category: str | None = None
+    support_category: str | None = None
+    ho_size: int | None = None
+    ho_size_display: str | None = None
+
+
 class ResolvedArtist(BaseModel):
     artist_key: str
     name_ko: str | None = None
@@ -67,6 +80,7 @@ class ResolvedArtist(BaseModel):
     warm_available: bool
     same_artist_training_price_count: int | None = None
     route_recommendation: Route | None = None
+    representative_artworks: list[RepresentativeArtwork] = Field(default_factory=list)
 
 
 class ResolveArtistResponse(BaseModel):
@@ -152,6 +166,20 @@ class MarketPriceCard(BaseModel):
     sample_count_display: str
 
 
+class SimilarArtistReference(BaseModel):
+    artist_key: str
+    name_ko: str | None = None
+    birth_year: int | None = None
+    nationality: str | None = None
+    similarity_score: float = Field(..., ge=0.0, le=1.0)
+    price_history_count: int
+    primary_medium: str | None = None
+    primary_support: str | None = None
+    median_price_display: str | None = None
+    similarity_basis: str
+    match_reasons: list[str] = Field(default_factory=list)
+
+
 class FeedbackGuide(BaseModel):
     can_submit_actual_sale_price: bool
     feedback_endpoint: str
@@ -172,6 +200,7 @@ class PriceEstimateResponse(BaseModel):
     basis: PredictionBasis
     market_price_card: MarketPriceCard
     comparable_samples: list[ComparableSample] = Field(default_factory=list)
+    similar_artists: list[SimilarArtistReference] = Field(default_factory=list)
     input_quality: InputQuality
     calculation_summary: CalculationSummary | None = None
     feedback: FeedbackGuide | None = None

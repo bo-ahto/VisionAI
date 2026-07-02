@@ -1,0 +1,2433 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm/Warm-lite/Cold 최종 모델 상세 발표자료</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #17202a;
+  --muted: #667085;
+  --line: #d6dde7;
+  --soft: #f7f9fc;
+  --head: #eef3f8;
+  --accent: #255f85;
+  --paper: #ffffff;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #e9eef4;
+  line-height: 1.45;
+}
+.deck-shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
+nav {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  background: #f8fafc;
+  border-right: 1px solid var(--line);
+  padding: 20px 16px;
+}
+nav h2 { margin: 0 0 12px; font-size: 15px; }
+nav .links { display: grid; gap: 6px; margin: 14px 0 18px; }
+nav .links a { color: var(--accent); text-decoration: none; font-size: 13px; }
+nav .toc { display: grid; gap: 3px; }
+nav .toc a {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 6px;
+  align-items: baseline;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 7px;
+  font-size: 12px;
+}
+nav .toc a:hover { background: #eef4ff; color: var(--accent); }
+nav .toc span { color: var(--muted); font-variant-numeric: tabular-nums; }
+main { padding: 28px 0 60px; }
+.slide {
+  position: relative;
+  width: min(1280px, calc(100vw - 360px));
+  min-height: 720px;
+  margin: 0 auto 28px;
+  padding: 46px 56px 56px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 32px rgba(31, 41, 51, .10);
+  page-break-after: always;
+}
+.title-slide {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffffff 0%, #f3f7fb 100%);
+}
+.slide-count { position: absolute; right: 28px; bottom: 20px; color: var(--muted); font-size: 13px; }
+h1 { margin: 0 0 22px; font-size: 42px; line-height: 1.18; letter-spacing: 0; }
+h2 { margin: 0 0 24px; font-size: 34px; line-height: 1.2; letter-spacing: 0; }
+h3 { margin: 18px 0 10px; font-size: 24px; }
+p { margin: 0 0 14px; font-size: 22px; }
+ul, ol { margin: 0 0 18px; padding-left: 28px; }
+li { margin: 8px 0; font-size: 22px; }
+strong { color: #111827; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #e4e7ec;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em;
+}
+pre {
+  margin: 8px 0 20px;
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 18px 20px;
+  font-size: 19px;
+  white-space: pre-wrap;
+}
+pre code { background: transparent; border: 0; color: inherit; padding: 0; }
+.table-wrap { overflow-x: auto; margin: 8px 0 22px; border: 1px solid var(--line); border-radius: 8px; }
+table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 18px; }
+th, td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 10px 12px; vertical-align: top; text-align: left; }
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th { background: var(--head); font-weight: 700; }
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+blockquote { margin: 10px 0 20px; border-left: 7px solid var(--accent); background: #f2f7fa; padding: 14px 18px; font-size: 22px; font-weight: 650; }
+@media (max-width: 1100px) {
+  .deck-shell { display: block; }
+  nav { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 18px 0 40px; }
+  .slide { width: calc(100vw - 28px); min-height: auto; padding: 34px 24px 48px; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 27px; }
+  p, li { font-size: 18px; }
+  table { font-size: 15px; }
+  pre { font-size: 15px; }
+}
+@media print {
+  body { background: #fff; }
+  nav { display: none; }
+  .deck-shell { display: block; }
+  main { padding: 0; }
+  .slide { width: 100%; min-height: 100vh; margin: 0; border: 0; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+  <div class="deck-shell">
+    <nav>
+      <h2>Warm/Warm-lite/Cold 최종 모델 상세 발표자료</h2>
+      <div class="links">
+        <a href="partner_warm_cold_final_model_deep_dive_script.md">발표 스크립트</a><a href="partner_warm_cold_best_model_report.html">기준 리포트</a>
+      </div>
+      <div class="toc">
+        <a href="#slide-1"><span>01</span>Warm / Warm-lite / Cold 최종 가격 예측 모델 상세 설명</a><a href="#slide-2"><span>02</span>1. 리포트 검토 결과</a><a href="#slide-3"><span>03</span>2. 오늘 설명할 질문</a><a href="#slide-4"><span>04</span>3. 전체 라우팅 구조</a><a href="#slide-5"><span>05</span>3.1 작가매칭신뢰도점수 계산 흐름</a><a href="#slide-6"><span>06</span>3.2 작가매칭신뢰도점수 구현과 예시</a><a href="#slide-7"><span>07</span>4. 성능 기준 요약</a><a href="#slide-8"><span>08</span>5. 지표를 읽는 방법</a><a href="#slide-9"><span>09</span>6. 학습 단계와 사용 단계</a><a href="#slide-10"><span>10</span>7. 공통 피처 그룹</a><a href="#slide-11"><span>11</span>8. Warm/Warm-lite 분리 근거</a><a href="#slide-12"><span>12</span>9. Warm 모델 목적</a><a href="#slide-13"><span>13</span>10. Warm 학습 단계 순서</a><a href="#slide-14"><span>14</span>11. Warm 사용 단계 순서</a><a href="#slide-15"><span>15</span>12. Warm 피처와 사용처</a><a href="#slide-16"><span>16</span>13. Warm 유사작품 비교군</a><a href="#slide-17"><span>17</span>14. Warm 보조안정 예측값</a><a href="#slide-18"><span>18</span>15. 버킷순차보정 Warm 예측값</a><a href="#slide-19"><span>19</span>16. Warm Huber 잔차 보정</a><a href="#slide-20"><span>20</span>17. Warm 위험도 조건부 라우터</a><a href="#slide-21"><span>21</span>18. Warm 계산 예시</a><a href="#slide-22"><span>22</span>19. Warm 계산 예시: 후보와 보정</a><a href="#slide-23"><span>23</span>20. Warm 계산 예시: 위험도 라우팅</a><a href="#slide-24"><span>24</span>21. Warm 성능과 재현</a><a href="#slide-25"><span>25</span>22. Warm-lite 모델 목적</a><a href="#slide-26"><span>26</span>23. Warm-lite 학습 단계 순서</a><a href="#slide-27"><span>27</span>24. Warm-lite 사용 단계 순서</a><a href="#slide-28"><span>28</span>25. Warm-lite 피처와 사용처</a><a href="#slide-29"><span>29</span>26. Warm-lite 이력 찾기 단계</a><a href="#slide-30"><span>30</span>27. Warm-lite 기준가격: 두 중앙값 예측의 평균</a><a href="#slide-31"><span>31</span>28. Warm-lite Huber 잔차 제한 보정</a><a href="#slide-32"><span>32</span>29. Warm-lite 신뢰도 표시 정책</a><a href="#slide-33"><span>33</span>30. Warm-lite 계산 예시</a><a href="#slide-34"><span>34</span>31. Warm-lite 계산 예시: 통계와 예측</a><a href="#slide-35"><span>35</span>32. Warm-lite 성능과 재현</a><a href="#slide-36"><span>36</span>33. Cold 모델 목적</a><a href="#slide-37"><span>37</span>34. Cold 학습 단계 순서</a><a href="#slide-38"><span>38</span>35. Cold 사용 단계 순서</a><a href="#slide-39"><span>39</span>36. Cold 피처와 사용처</a><a href="#slide-40"><span>40</span>37. Cold 검색 피처</a><a href="#slide-41"><span>41</span>38. Cold 대표 로그가격 안정화</a><a href="#slide-42"><span>42</span>39. Cold 과대예측 방어 guard</a><a href="#slide-43"><span>43</span>40. Cold 작가 검색 보정 조회표</a><a href="#slide-44"><span>44</span>41. Cold 계산 예시</a><a href="#slide-45"><span>45</span>42. Cold 계산 예시: 최종값</a><a href="#slide-46"><span>46</span>43. Cold 성능과 재현</a><a href="#slide-47"><span>47</span>44. 세 경로는 단일 모델인가</a><a href="#slide-48"><span>48</span>45. 세 경로의 핵심 차이</a><a href="#slide-49"><span>49</span>46. 운영 모니터링 포인트</a><a href="#slide-50"><span>50</span>47. 최종 설명 문장</a><a href="#slide-51"><span>51</span>48. 재현 근거 요약</a>
+      </div>
+    </nav>
+    <main>
+      <section class="slide title-slide" id="slide-1" data-slide="1">
+<div class="slide-count">01 / 51</div>
+<h1>Warm / Warm-lite / Cold 최종 가격 예측 모델 상세 설명</h1>
+<ul>
+<li>기준 리포트: <code>partner_warm_cold_best_model_report.html</code></li>
+<li>발표 목적: 최종 모델이 어떤 조건에서 선택되고, 학습/사용 단계에서 어떤 피처와 로직으로 가격을 계산하는지 설명</li>
+<li>권장 시간: 발표 280~340분 + 질의 30~45분</li>
+<li>기준 API 표기: <code>0.1v API</code></li>
+<li>핵심 메시지: 세 모델은 성능 순서가 아니라 입력 정보 조건별 전용 경로다</li>
+</ul>
+</section><section class="slide" id="slide-2" data-slide="2">
+<div class="slide-count">02 / 51</div>
+<h2>1. 리포트 검토 결과</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">점검 항목</th>
+<th class="align-left">결과</th>
+<th class="align-left">발표 자료 반영 방식</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">핵심 성능 수치</td>
+<td class="align-left">Warm, Warm-lite, Cold 모두 근거 artifact에서 재확인</td>
+<td class="align-left">슬라이드 성능표에 최신 채택값만 사용</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite RMSE</td>
+<td class="align-left">최신 “Quantile 예측 + 잔차 보정” <code>0.423003</code> 재계산 확인</td>
+<td class="align-left">과거 PP-WCUT4 RMSE <code>0.447586</code>은 발표 기준 성능에서 제외</td>
+</tr>
+<tr>
+<td class="align-left">라우팅 기준</td>
+<td class="align-left">0.80, 5건 이상 Warm, 1~4건 Warm-lite, 0건/불확실 Cold</td>
+<td class="align-left">모든 슬라이드에서 0.1v API 기준으로 통일</td>
+</tr>
+<tr>
+<td class="align-left">내부 artifact 버전명</td>
+<td class="align-left">API 버전과 다른 내부 이름 존재</td>
+<td class="align-left"><code>cold_prediction_v0.2_operational</code>은 API v0.2가 아니라고 명시</td>
+</tr>
+<tr>
+<td class="align-left">모순 가능성</td>
+<td class="align-left">과거 Warm-lite 경로 수치와 최신 채택 수치가 같이 보일 수 있음</td>
+<td class="align-left">최종 모델 설명에는 <code>warm_lite_quantile_residual_v0.1</code>만 사용</td>
+</tr>
+</tbody></table></div>
+<blockquote>결론: 리포트의 핵심 성능 수치는 재현 가능하다. 발표 자료는 혼선을 막기 위해 최신 채택 경로와 경계 판단 근거를 분리해서 설명한다.</blockquote>
+<blockquote>주의: 성능표와 검증표의 숫자는 근거 artifact에서 확인한 값이다. 뒤쪽의 <code>계산 예시</code> 숫자는 산식 이해를 위한 가상 입력값이며, 실제 평가 행의 결과값으로 사용하지 않는다.</blockquote>
+</section><section class="slide" id="slide-3" data-slide="3">
+<div class="slide-count">03 / 51</div>
+<h2>2. 오늘 설명할 질문</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">질문</th>
+<th class="align-left">답변 방식</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">작품이 어떤 모델로 라우팅되는가</td>
+<td class="align-left">작가 매칭 신뢰도와 같은 작가 가격 이력 수로 결정</td>
+</tr>
+<tr>
+<td class="align-left">학습 단계와 사용 단계는 어떻게 다른가</td>
+<td class="align-left">학습 때는 실제 가격으로 모델/보정값을 만들고, 사용 때는 동결 모델만 적용</td>
+</tr>
+<tr>
+<td class="align-left">Warm은 왜 5건 이상인가</td>
+<td class="align-left">5건 이상 WMIN8이 강제 Warm-lite보다 전 지표 우세</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite는 왜 따로 있는가</td>
+<td class="align-left">1~4건은 Cold보다 훨씬 낫고, Warm 계열 대체 후보보다도 전체 우세</td>
+</tr>
+<tr>
+<td class="align-left">Cold는 왜 검색 피처와 guard가 필요한가</td>
+<td class="align-left">같은 작가 가격 기준이 없어서 작가 문맥과 불확실성 방어가 핵심</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-4" data-slide="4">
+<div class="slide-count">04 / 51</div>
+<h2>3. 전체 라우팅 구조</h2>
+<pre><code>[작품 입력]
+  - 작가명 또는 artist_key
+  - 작품 크기, 면적, 깊이
+  - 매체, 지지체, 작품 카테고리
+  - 작가 메타, 검색 문맥
+        |
+        v
+[라우팅 판단]
+  - 작가매칭신뢰도점수 &gt;= 0.80 ?
+  - 같은작가_사용가능가격이력수는 몇 건인가?
+        |
+        +-- 0.80 이상 AND 5건 이상  -&gt; Warm
+        +-- 0.80 이상 AND 1~4건     -&gt; Warm-lite
+        +-- 그 외                    -&gt; Cold 또는 검수대기</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">경로</th>
+<th class="align-left">입력 조건</th>
+<th class="align-left">가격 판단의 중심</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">고신뢰 작가 매칭 + 이력 5건 이상</td>
+<td class="align-left">같은 작가 유사작품 기준가격</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite</td>
+<td class="align-left">고신뢰 작가 매칭 + 이력 1~4건</td>
+<td class="align-left">저이력 작가 통계 + 두 중앙값 예측 + 잔차 제한 보정</td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">이력 0건, 매칭 불확실, 동명이인 위험</td>
+<td class="align-left">작품 피처 + 작가 메타 + 검색 문맥</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-5" data-slide="5">
+<div class="slide-count">05 / 51</div>
+<h2>3.1 작가매칭신뢰도점수 계산 흐름</h2>
+<p><code>작가매칭신뢰도점수</code>는 입력 작가가 학습 작가 사전의 특정 <code>artist_key</code>와 같은 사람인지 0~1로 환산한 값이다.</p>
+<pre><code>[입력 작가 정보]
+  - artist_key 또는 selected_artist_key
+  - 한글명, 영문명
+  - 생년
+  - 국적/외부 식별자는 후속 검증 보조정보
+        |
+        v
+[작가명 정규화]
+  - 소문자 변환, 공백/기호 정리
+  - 정규화된 입력 이름을 alias 사전과 비교
+        |
+        v
+[학습 작가 사전 후보 검색]
+  - artist_key 직접 일치
+  - 정규화 alias 완전 일치
+  - 부분 이름 후보
+        |
+        v
+[후보 검증]
+  - 후보가 1명인가?
+  - 생년이 충돌하지 않는가?
+  - 같은 이름의 다른 artist_key가 있는가?
+        |
+        v
+[작가매칭신뢰도점수 + 동명이인위험점수]</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">구성 요소</th>
+<th class="align-left">점수에 미치는 영향</th>
+<th class="align-left">해석</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>artist_key</code> 직접 일치</td>
+<td class="align-left"><code>1.00</code></td>
+<td class="align-left">사용자가 이미 작가 고유키를 지정한 경우</td>
+</tr>
+<tr>
+<td class="align-left">이름 완전 일치</td>
+<td class="align-left">크게 상승</td>
+<td class="align-left">정규화된 한글명/영문 alias가 학습 사전에 있음</td>
+</tr>
+<tr>
+<td class="align-left">생년 일치</td>
+<td class="align-left">상승</td>
+<td class="align-left">같은 이름 후보 중 같은 사람임을 보강</td>
+</tr>
+<tr>
+<td class="align-left">생년 불일치</td>
+<td class="align-left">하락</td>
+<td class="align-left">같은 작가로 보기 어려운 반대 근거</td>
+</tr>
+<tr>
+<td class="align-left">후보 여러 명/동명이인</td>
+<td class="align-left">하락 또는 검수대기</td>
+<td class="align-left">잘못된 작가 이력을 쓰는 위험 차단</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-6" data-slide="6">
+<div class="slide-count">06 / 51</div>
+<h2>3.2 작가매칭신뢰도점수 구현과 예시</h2>
+<p>현재 0.1v API는 하위점수 5개를 그대로 합산하지 않는다. 실제 구현은 매칭 상태와 생년 보정, 동명이인 위험을 직접 계산한다.</p>
+<pre><code>artist_key 직접 일치:
+  작가매칭신뢰도점수 = 1.00
+  동명이인위험점수 = 0.00
+
+정규화 alias 완전 일치:
+  기본 점수 = 1.00
+  생년 일치 +0.05, 생년 불일치 -0.15
+  최종 점수는 최대 1.00
+
+부분 이름 후보:
+  기본 점수 = 0.78
+  생년 일치 +0.05, 생년 불일치 -0.15
+  최종 점수는 최대 0.95
+
+동명이인위험점수 =
+  clip((후보 수 - 1)*0.35 + is_homonym*0.25, 0.00, 1.00)</code></pre>
+<p>따라서 작가 매칭은 현재 운영 구현 기준으로 <code>직접 key</code>, <code>alias 완전 일치</code>, <code>부분 이름 후보</code>, <code>생년 보정</code>, <code>동명이인 위험</code> 순서로 설명한다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">상황</th>
+<th class="align-left">계산/판단</th>
+<th class="align-right">점수</th>
+<th class="align-left">라우팅 해석</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>artist_key</code> 직접 일치</td>
+<td class="align-left">고유키가 학습 작가 사전과 동일</td>
+<td class="align-right"><code>1.00</code></td>
+<td class="align-left">이력 수만 확인</td>
+</tr>
+<tr>
+<td class="align-left">정규화 alias 완전 일치</td>
+<td class="align-left">alias 기본 점수</td>
+<td class="align-right"><code>1.00</code></td>
+<td class="align-left">동명이인 위험이 낮으면 이력 수 확인</td>
+</tr>
+<tr>
+<td class="align-left">alias 완전 일치 + 생년 일치</td>
+<td class="align-left"><code>1.00 + 0.05</code>, 최대 1.00 제한</td>
+<td class="align-right"><code>1.00</code></td>
+<td class="align-left">동명이인 위험이 낮으면 이력 수 확인</td>
+</tr>
+<tr>
+<td class="align-left">부분 이름 후보 + 생년 일치</td>
+<td class="align-left"><code>0.78 + 0.05</code></td>
+<td class="align-right"><code>0.83</code></td>
+<td class="align-left">이력 수와 동명이인 위험 추가 확인</td>
+</tr>
+<tr>
+<td class="align-left">부분 이름 후보 + 생년 없음</td>
+<td class="align-left">기본 점수</td>
+<td class="align-right"><code>0.78</code></td>
+<td class="align-left">0.80 미만이므로 Cold/검수대기</td>
+</tr>
+<tr>
+<td class="align-left">후보 여러 명/동명이인 위험 높음</td>
+<td class="align-left"><code>동명이인위험점수 &gt;= 0.60</code></td>
+<td class="align-right">점수와 별개</td>
+<td class="align-left">검수대기</td>
+</tr>
+</tbody></table></div>
+<p>라우팅은 점수만으로 끝나지 않는다. <code>작가매칭신뢰도점수 &gt;= 0.80</code>을 통과한 뒤에도 같은 작가 가격 이력 수가 <code>5건 이상</code>이면 Warm, <code>1~4건</code>이면 Warm-lite, <code>0건</code>이면 Cold/검수대기다.</p>
+</section><section class="slide" id="slide-7" data-slide="7">
+<div class="slide-count">07 / 51</div>
+<h2>4. 성능 기준 요약</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">경로</th>
+<th class="align-left">평가 기준</th>
+<th class="align-right">n</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-right">보조 RMSE log</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">fixed test</td>
+<td class="align-right">607</td>
+<td class="align-right">0.104326</td>
+<td class="align-right">0.235814</td>
+<td class="align-right">0.739416</td>
+<td class="align-right">0.377190</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite</td>
+<td class="align-left">실존 저이력 LOO x3</td>
+<td class="align-right">1,947</td>
+<td class="align-right">0.107246</td>
+<td class="align-right">0.275773</td>
+<td class="align-right">0.852026</td>
+<td class="align-right">0.423003</td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">fixed test</td>
+<td class="align-right">3,099</td>
+<td class="align-right">0.409820</td>
+<td class="align-right">0.849260</td>
+<td class="align-right">2.346465</td>
+<td class="align-right">비교값 없음</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><code>n</code>은 학습 작품 수가 아니라 평가 행 수다.</li>
+<li>Cold는 같은 작가 가격 이력을 직접 쓰지 못하므로 Warm/Warm-lite와 절대 난이도가 다르다.</li>
+<li>세 경로 비교의 주 지표는 MdAPE, MAPE, p95 APE이고, RMSE log는 경로 내부 보조 검증값이다.</li>
+</ul>
+</section><section class="slide" id="slide-8" data-slide="8">
+<div class="slide-count">08 / 51</div>
+<h2>5. 지표를 읽는 방법</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">지표</th>
+<th class="align-left">계산 단위</th>
+<th class="align-left">의미</th>
+<th class="align-left">발표에서의 해석</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">MdAPE</td>
+<td class="align-left">원화 가격</td>
+<td class="align-left">작품별 APE의 중앙값</td>
+<td class="align-left">일반적인 작품에서 체감되는 대표 오차</td>
+</tr>
+<tr>
+<td class="align-left">MAPE</td>
+<td class="align-left">원화 가격</td>
+<td class="align-left">작품별 APE의 평균</td>
+<td class="align-left">전체 평균 오차</td>
+</tr>
+<tr>
+<td class="align-left">p95 APE</td>
+<td class="align-left">원화 가격</td>
+<td class="align-left">APE 상위 5% 경계</td>
+<td class="align-left">크게 틀리는 tail risk</td>
+</tr>
+<tr>
+<td class="align-left">RMSE log</td>
+<td class="align-left">로그가격</td>
+<td class="align-left">로그 예측값과 실제 로그값 차이</td>
+<td class="align-left">모델 내부 로그 공간 흔들림</td>
+</tr>
+</tbody></table></div>
+<pre><code>예측가격_KRW = exp(최종_로그가격)
+APE = abs(예측가격_KRW - 실제가격_KRW) / 실제가격_KRW</code></pre>
+</section><section class="slide" id="slide-9" data-slide="9">
+<div class="slide-count">09 / 51</div>
+<h2>6. 학습 단계와 사용 단계</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">학습 단계</th>
+<th class="align-left">사용 단계</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">실제 가격</td>
+<td class="align-left">target, 잔차, 평가에 사용</td>
+<td class="align-left">입력으로 사용하지 않음</td>
+</tr>
+<tr>
+<td class="align-left">목적</td>
+<td class="align-left">모델, 계수, 보정표, 임계값을 산출</td>
+<td class="align-left">새 작품의 예측가격 계산</td>
+</tr>
+<tr>
+<td class="align-left">누수 차단</td>
+<td class="align-left">fold, leave-one-out, hold-out 사용</td>
+<td class="align-left">동결 store와 동결 모델만 사용</td>
+</tr>
+<tr>
+<td class="align-left">산출물</td>
+<td class="align-left">모델 파일, policy/config, 조회표, 임계값</td>
+<td class="align-left">최종 로그가격, 원화 가격, 신뢰도/검수 플래그</td>
+</tr>
+</tbody></table></div>
+<blockquote>잔차 보정은 학습 때 실제 가격으로 “오차를 학습”하고, 사용 때는 실제 가격 없이 피처만으로 “예상 잔차”를 예측한다.</blockquote>
+</section><section class="slide" id="slide-10" data-slide="10">
+<div class="slide-count">10 / 51</div>
+<h2>7. 공통 피처 그룹</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">피처 그룹</th>
+<th class="align-left">예시</th>
+<th class="align-right">Warm</th>
+<th class="align-right">Warm-lite</th>
+<th class="align-right">Cold</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">작가 식별</td>
+<td class="align-left">artist_key, 정규화 작가명, 매칭 점수</td>
+<td class="align-right">사용</td>
+<td class="align-right">사용</td>
+<td class="align-right">사용</td>
+</tr>
+<tr>
+<td class="align-left">작가 가격 이력</td>
+<td class="align-left">같은 작가 과거 가격, 표본 수, q25/q75/IQR</td>
+<td class="align-right">핵심</td>
+<td class="align-right">핵심</td>
+<td class="align-right">직접 사용 불가</td>
+</tr>
+<tr>
+<td class="align-left">작품 크기</td>
+<td class="align-left">width, height, depth, area, log_area, aspect_ratio</td>
+<td class="align-right">사용</td>
+<td class="align-right">사용</td>
+<td class="align-right">핵심</td>
+</tr>
+<tr>
+<td class="align-left">매체/지지체</td>
+<td class="align-left">medium, support, material bucket</td>
+<td class="align-right">사용</td>
+<td class="align-right">사용</td>
+<td class="align-right">사용</td>
+</tr>
+<tr>
+<td class="align-left">작가 메타</td>
+<td class="align-left">국적, 생년, 작품 수, 팔로워 등</td>
+<td class="align-right">보조</td>
+<td class="align-right">제한적</td>
+<td class="align-right">핵심</td>
+</tr>
+<tr>
+<td class="align-left">검색 문맥</td>
+<td class="align-left">검색 결과 수, 갤러리/미술관/시장 문맥</td>
+<td class="align-right">보조 또는 검수</td>
+<td class="align-right">거의 없음</td>
+<td class="align-right">핵심</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-11" data-slide="11">
+<div class="slide-count">11 / 51</div>
+<h2>8. Warm/Warm-lite 분리 근거</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">질문</th>
+<th class="align-left">검증</th>
+<th class="align-left">결과</th>
+<th class="align-left">판단</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">1~4건을 Cold로 보내도 되는가</td>
+<td class="align-left">PP-WCUT4</td>
+<td class="align-left">Warm-lite <code>0.1092/0.2866/0.8765</code>, Cold <code>0.5429/0.9946/2.5358</code></td>
+<td class="align-left">Cold로 보내면 작가 가격 신호를 버림</td>
+</tr>
+<tr>
+<td class="align-left">1~4건을 Warm 계열로 통일해도 되는가</td>
+<td class="align-left">PP-WMIN9C/E</td>
+<td class="align-left">Warm-lite <code>0.1092/0.2866/0.8765</code>, Warm 계열 대체 후보 <code>0.1291/0.2932/0.9163</code></td>
+<td class="align-left">Warm-lite 유지</td>
+</tr>
+<tr>
+<td class="align-left">1~4건에 WMIN8 전체 구조를 직접 비교했는가</td>
+<td class="align-left">PP-WMIN11</td>
+<td class="align-left">부분 재학습 후보 <code>0.1480/0.2931/0.8716</code></td>
+<td class="align-left">전체 구조 완전 재학습은 아니나 Warm-lite 대체 근거 부족</td>
+</tr>
+<tr>
+<td class="align-left">5건 이상을 Warm-lite로 보내도 되는가</td>
+<td class="align-left">PP-WMIN9D</td>
+<td class="align-left">WMIN8 <code>0.104326/0.235814/0.739416</code>, 강제 Warm-lite <code>0.108722/0.248054/0.837824</code></td>
+<td class="align-left">5건 이상 Warm 유지</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-12" data-slide="12">
+<div class="slide-count">12 / 51</div>
+<h2>9. Warm 모델 목적</h2>
+<p><strong>적용 대상</strong></p>
+<ul>
+<li><code>작가매칭신뢰도점수 &gt;= 0.80</code></li>
+<li><code>같은작가_사용가능가격이력수 &gt;= 5</code></li>
+</ul>
+<p><strong>핵심 아이디어</strong></p>
+<pre><code>같은 작가 유사작품 기준가격
+  + 제한된 잔차 보정
+  + 위험도 조건부 보수 라우터
+  -&gt; 최종 Warm 로그가격</code></pre>
+<p>Warm은 가격을 처음부터 새로 맞히는 모델이 아니다. 같은 작가의 과거 가격대를 기준가격으로 만들고, 그 기준가격을 작게 보정하며, 위험한 경우에만 더 보수적인 후보로 바꾼다.</p>
+</section><section class="slide" id="slide-13" data-slide="13">
+<div class="slide-count">13 / 51</div>
+<h2>10. Warm 학습 단계 순서</h2>
+<pre><code>[Warm 학습 데이터]
+  - 실제 가격이 있는 과거 Warm 작품
+  - 작가 이력 5건 이상 조건
+        |
+        v
+[유사작품 찾기 단계 학습/검증]
+  - 작가+재료/지지체+크기
+  - 작가+크기
+  - 작가 전체
+        |
+        v
+[보조 Warm 예측축 생성]
+  [축 A: 큰오차방어 Warm 예측값 학습]
+    - 여러 Warm 후보 로그가격을 같은 행 단위로 모음
+    - 후보 평균/표준편차/범위/기준후보와의 차이/불확실성 폭 생성
+    - Huber meta-model이 큰 오차에 덜 흔들리는 방어형 중심 로그가격을 학습
+    - 하위 후보 범위에서 과도하게 벗어나지 않도록 clip
+
+  [축 B: 버킷순차보정 Warm 예측값 학습]
+    - 작품 크기/형태/매체/지지체/작가 식별 피처 생성
+    - size_bucket, shape_bucket, support_size_bucket, medium_shape_bucket 생성
+    - CatBoost Quantile로 낮은값(q10)/중앙값(q50)/높은값(q90)과 Quantile 예측의 불확실성 폭 생성
+    - Huber 중심선이 중심 로그가격을 학습
+    - CatBoost 잔차 모델이 중심선에서 남은 오차를 학습
+
+  [보조안정 가중식 동결]
+    - 0.75 * 큰오차방어 Warm 예측값
+    - 0.25 * 버킷순차보정 Warm 예측값
+        |
+        v
+[Huber 잔차 보정 학습]
+  - target = 실제 로그가격 - 후보 기준 로그가격
+        |
+        v
+[위험도 조건부 라우터 검증/동결]
+  - 위험도임계값 = 0.2534165869
+    * 근거: PP-WMIN8 validation risk_score q50, 즉 validation 위험도 중앙값
+  - 대안교체최소차이 = 0.005 log
+    * 근거: PP-WMIN8 후보 비교에서 선택된 altlower_gap005 조건</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">보조축</th>
+<th class="align-left">학습 때 만드는 것</th>
+<th class="align-left">사용 때 쓰는 것</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">큰오차방어</td>
+<td class="align-left">여러 Warm 후보를 입력으로 한 Huber meta-model</td>
+<td class="align-left">후보들이 서로 흔들릴 때 방어형 중심값</td>
+</tr>
+<tr>
+<td class="align-left">버킷순차보정</td>
+<td class="align-left">bucket + Quantile + Huber 중심선 + CatBoost 잔차 모델</td>
+<td class="align-left">크기/형태/매체 조건을 반영한 보조 예측값</td>
+</tr>
+<tr>
+<td class="align-left">보조안정</td>
+<td class="align-left">두 축의 75:25 가중식</td>
+<td class="align-left">기본/대안 후보를 만들 때 섞는 안정화 기준</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-14" data-slide="14">
+<div class="slide-count">14 / 51</div>
+<h2>11. Warm 사용 단계 순서</h2>
+<pre><code>[Warm 입력 작품]
+  - 고신뢰 artist_key
+  - 같은 작가 가격 이력 5건 이상
+  - 크기/매체/지지체
+        |
+        v
+[1. 같은 작가 유사작품 기준가격 생성]
+  - 1순위: 작가 + 재료/지지체 + 크기
+  - 2순위: 작가 + 크기
+  - 3순위: 작가 전체
+  - 검증 때는 자기 작품 제외, 0건이면 다음 단계로 fallback
+        |
+        v
+[2. 보조안정 Warm 예측값 계산]
+  - 큰오차방어 Warm 예측값 적용
+  - 버킷순차보정 Warm 예측값 적용
+  - 보조안정 = 0.75*큰오차방어 + 0.25*버킷순차보정
+        |
+        v
+[3. 기본 후보와 대안 후보 생성]
+  - 기본 후보 w700 = 0.70*유사작품기준 + 0.30*보조안정
+  - 대안 후보 w850 = 0.85*유사작품기준 + 0.15*보조안정
+  - 근거: w700은 WMIN4 기본 후보, w850은 WMIN7 가중 후보 중 WMIN8 라우터에서 선택된 대안
+        |
+        v
+[4. 각 후보에 Huber 잔차 보정 적용]
+  - 동결된 Huber 잔차 모델이 예상 잔차를 계산
+  - 후보별 보정값 = 0.50*clip(잔차예측, -0.05, +0.05)
+  - 근거: HCOEF3 안정 후보 hcoef2_size_reliability_cap005_s050
+        |
+        v
+[5. 작품단위 위험도 계산]
+  - Quantile 예측의 불확실성 폭, 후보 분산, 기준-안정 차이, 신뢰도, 가격대 사용
+        |
+        v
+[6. 위험도 조건부 라우터]
+  - 작품단위위험도 &gt;= 위험도임계값(0.2534165869)
+  - 기본후보_보정로그가격 - 대안후보_보정로그가격 &gt;= 대안교체최소차이(0.005 log)
+  - 두 조건이 모두 통과하면 대안 후보, 아니면 기본 후보
+        |
+        v
+[7. 최종 Warm 로그가격 -&gt; exp() -&gt; 원화 가격]</code></pre>
+<blockquote>사용 단계에서는 실제 가격을 모른다. 새로 학습하지 않고, 동결된 비교군 규칙·보조 예측축·Huber 잔차 모델·라우터 조건만 순서대로 적용한다.</blockquote>
+</section><section class="slide" id="slide-15" data-slide="15">
+<div class="slide-count">15 / 51</div>
+<h2>12. Warm 피처와 사용처</h2>
+<pre><code>[원천 입력]
+  artist_key, 작가매칭신뢰도점수, 같은작가_사용가능가격이력수
+  width/height/depth/area/log_area/aspect_ratio
+  medium_category, support_category, size_bucket
+        |
+        v
+[Warm 내부 피처 생성]
+  - 같은작가 유사작품 비교군 통계
+  - 큰오차방어 Warm 예측값
+  - 버킷순차보정 Warm 예측값
+  - 후보 간 차이/분산/불확실성 피처
+        |
+        v
+[계산에 사용]
+  비교군 기준가격 -&gt; 보조안정값 -&gt; 기본/대안 후보
+  -&gt; Huber 잔차 보정 -&gt; 위험도 라우터 -&gt; 최종 Warm 가격</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">단계</th>
+<th class="align-left">사용하는 피처</th>
+<th class="align-left">계산 결과</th>
+<th class="align-left">역할</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">라우팅</td>
+<td class="align-left">작가매칭신뢰도점수, 같은작가_사용가능가격이력수</td>
+<td class="align-left">Warm 진입 여부</td>
+<td class="align-left">0.80 이상 + 5건 이상만 Warm</td>
+</tr>
+<tr>
+<td class="align-left">비교군 매칭</td>
+<td class="align-left"><code>artist_key</code>, 재료/지지체, 크기 구간</td>
+<td class="align-left">비교군 행 집합</td>
+<td class="align-left">같은 작가 안에서 가장 가까운 과거 작품 선택</td>
+</tr>
+<tr>
+<td class="align-left">기준가격</td>
+<td class="align-left">비교군 로그가격 median/q25/q75/IQR, 표본 수</td>
+<td class="align-left">같은작가_유사작품기준로그가격</td>
+<td class="align-left">Warm의 주 가격 신호</td>
+</tr>
+<tr>
+<td class="align-left">보조안정</td>
+<td class="align-left">큰오차방어 축, 버킷순차보정 축</td>
+<td class="align-left">보조안정_Warm예측로그가격</td>
+<td class="align-left">소표본 비교군의 흔들림 완충</td>
+</tr>
+<tr>
+<td class="align-left">후보 생성</td>
+<td class="align-left">기준가격, 보조안정값</td>
+<td class="align-left">w700 기본 후보, w850 대안 후보</td>
+<td class="align-left">기본/보수 후보를 둘 다 준비</td>
+</tr>
+<tr>
+<td class="align-left">잔차 보정</td>
+<td class="align-left">후보 기준가, 로그면적, 표본 수, 후보 차이, 수축 prior</td>
+<td class="align-left">후보별 보정로그가격</td>
+<td class="align-left">반복 오차를 작은 폭으로 보정</td>
+</tr>
+<tr>
+<td class="align-left">위험도 라우터</td>
+<td class="align-left">Quantile 예측의 불확실성 폭, 후보 분산, 기준-안정 차이, 신뢰도 tier, 가격대</td>
+<td class="align-left">최종 후보 선택</td>
+<td class="align-left">위험 구간만 대안 후보로 교체</td>
+</tr>
+</tbody></table></div>
+<p>Warm을 설명할 때는 아래 네 기준을 분리해서 말한다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">기준</th>
+<th class="align-left">Warm에서의 의미</th>
+<th class="align-left">최종 가격에 미치는 영향</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">유사작품을 묶는 기준</td>
+<td class="align-left">같은 작가 안에서 재료/지지체와 크기 구간이 가까운 과거 작품부터 선택</td>
+<td class="align-left">어떤 과거 가격을 기준가격의 원천으로 쓸지 결정</td>
+</tr>
+<tr>
+<td class="align-left">기준가 생성 기준</td>
+<td class="align-left">선택된 비교군의 로그가격 중앙값과 분산 통계, 보조안정 예측값을 결합</td>
+<td class="align-left"><code>w700</code>, <code>w850</code> 후보의 출발점 결정</td>
+</tr>
+<tr>
+<td class="align-left">보정 기준</td>
+<td class="align-left">Huber 잔차 모델이 후보별 남은 오차를 예측하되 최대 ±0.025 log만 반영</td>
+<td class="align-left">기준가가 반복적으로 높거나 낮게 잡히는 패턴을 제한적으로 보정</td>
+</tr>
+<tr>
+<td class="align-left">최종 선택 기준</td>
+<td class="align-left">작품단위위험도가 위험도임계값 이상이고 대안 후보가 기본 후보보다 대안교체최소차이 이상 낮을 때만 대안 선택</td>
+<td class="align-left">보통은 기본 후보 유지, 조건을 만족한 위험 구간만 보수 후보로 교체</td>
+</tr>
+</tbody></table></div>
+<blockquote>사용 단계에서 실제 가격은 피처로 들어가지 않는다. 실제 가격은 학습 단계에서 target과 검증 지표를 만들 때만 사용한다.</blockquote>
+</section><section class="slide" id="slide-16" data-slide="16">
+<div class="slide-count">16 / 51</div>
+<h2>13. Warm 유사작품 비교군</h2>
+<pre><code>[Warm 대상 작품]
+  - 작가 매칭 신뢰도 &gt;= 0.80
+  - 같은 작가 사용 가능 가격 이력 &gt;= 5건
+        |
+        v
+[유사작품 찾기 단계]
+  1순위: 같은 작가 + 같은 재료/지지체 + 같은 크기 구간
+  2순위: 같은 작가 + 같은 크기 구간
+  3순위: 같은 작가 전체
+        |
+        v
+[비교군 통계]
+  - 로그가격 중앙값
+  - 로그가격 q25/q75/IQR
+  - 표본 수, 표본 수 로그값
+  - 비교군 단계
+        |
+        v
+[같은작가_유사작품기준로그가격]</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">질문</th>
+<th class="align-left">답</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>min1</code>의 의미</td>
+<td class="align-left">Warm 진입 조건을 1건으로 낮추는 것이 아니라, 이미 5건 이상인 Warm 작가 안에서 좁은 하위 비교군을 1건부터 인정한다는 뜻</td>
+</tr>
+<tr>
+<td class="align-left">왜 1건 비교군도 쓰는가</td>
+<td class="align-left">같은 작가 + 같은 재료/크기처럼 가까운 1건은 넓은 작가 전체 통계보다 더 직접적인 가격 신호일 수 있음</td>
+</tr>
+<tr>
+<td class="align-left">누수 차단</td>
+<td class="align-left">학습/검증 때는 자기 fold를 제외하고 비교군 통계를 만든다</td>
+</tr>
+<tr>
+<td class="align-left">fallback</td>
+<td class="align-left">자기 fold 제외 후 0건이면 2순위, 그래도 없으면 3순위로 내려간다</td>
+</tr>
+</tbody></table></div>
+<p>비교군 선택 기준:</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">기준</th>
+<th class="align-left">설명</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">작가 기준</td>
+<td class="align-left">정규화된 <code>artist_key</code>가 같은 과거 작품만 비교군 후보가 된다</td>
+</tr>
+<tr>
+<td class="align-left">재료/지지체 기준</td>
+<td class="align-left">매체와 지지체가 대상 작품과 같은 그룹이면 1순위 후보가 된다</td>
+</tr>
+<tr>
+<td class="align-left">크기 기준</td>
+<td class="align-left">동결된 크기 구간이 대상 작품과 같은 작품을 먼저 본다</td>
+</tr>
+<tr>
+<td class="align-left">표본 기준</td>
+<td class="align-left">Warm 진입은 작가 전체 5건 이상이지만, 진입 후 좁은 비교군은 1건부터 인정한다</td>
+</tr>
+<tr>
+<td class="align-left">선택 방식</td>
+<td class="align-left">1순위에 1건 이상 있으면 1순위를 사용하고, 없을 때만 2순위/3순위로 내려간다</td>
+</tr>
+</tbody></table></div>
+<p>예시:</p>
+<pre><code>작가 전체 이력 18건
+같은 재료/지지체 + 같은 크기 구간 3건 발견
+-&gt; 1순위 비교군 사용
+-&gt; 3건 로그가격 중앙값이 18.300이면
+   같은작가_유사작품기준로그가격 = 18.300</code></pre>
+</section><section class="slide" id="slide-17" data-slide="17">
+<div class="slide-count">17 / 51</div>
+<h2>14. Warm 보조안정 예측값</h2>
+<pre><code>[비교군 기준가격만 사용하면 생길 수 있는 문제]
+  - 가까운 비교군 표본이 적음
+  - 특정 작품 1~2건 가격에 기준가격이 흔들림
+  - 작가 전체 가격대와 작품 조건 신호가 덜 반영될 수 있음
+        |
+        v
+보조안정_Warm예측로그가격 =
+  0.75 * 큰오차방어_Warm예측로그가격
+  + 0.25 * 버킷순차보정_Warm예측로그가격</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">축</th>
+<th class="align-left">입력</th>
+<th class="align-left">처리</th>
+<th class="align-left">출력</th>
+<th class="align-left">역할</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">큰오차방어 Warm 예측값</td>
+<td class="align-left">여러 Warm 후보 예측값, 후보 평균/표준편차/범위, 불확실성 폭</td>
+<td class="align-left">Huber meta-model + 후보 범위 clip</td>
+<td class="align-left">방어형 중심 로그가격</td>
+<td class="align-left">하위 후보 하나가 크게 빗나가는 위험 완화</td>
+</tr>
+<tr>
+<td class="align-left">버킷순차보정 Warm 예측값</td>
+<td class="align-left">작품 크기/형태/매체/지지체/작가 피처</td>
+<td class="align-left">bucket -&gt; CatBoost Quantile -&gt; Huber 중심선 -&gt; CatBoost 잔차 보정</td>
+<td class="align-left">조건 기반 보조 로그가격</td>
+<td class="align-left">작품 조건에 따른 가격 패턴 보완</td>
+</tr>
+</tbody></table></div>
+<p>사용 방식:</p>
+<pre><code>기본후보_기준가 = 0.70*유사작품기준 + 0.30*보조안정
+대안후보_기준가 = 0.85*유사작품기준 + 0.15*보조안정</code></pre>
+<blockquote>보조안정값은 최종 가격을 혼자 결정하지 않는다. 같은 작가 유사작품 기준가격 옆에 섞여 기준가격의 흔들림을 줄이는 보조축이다.</blockquote>
+</section><section class="slide" id="slide-18" data-slide="18">
+<div class="slide-count">18 / 51</div>
+<h2>15. 버킷순차보정 Warm 예측값</h2>
+<pre><code>[작품 피처]
+  width, height, depth, area, log_area, aspect_ratio,
+  medium, support, artist_key, has_depth
+        |
+        v
+[4개 bucket 피처 생성]
+  size_bucket, shape_bucket,
+  support_size_bucket, medium_shape_bucket
+        |
+        v
+[처리 단계 1: CatBoost Quantile]
+  입력: 작품 피처 + 4개 bucket 피처
+  낮은값(q10), 중앙값(q50), 높은값(q90)
+  Quantile 예측의 불확실성 폭 = 높은값(q90) - 낮은값(q10)
+        |
+        v
+[처리 단계 2: Huber 중심선]
+  입력: 작품 피처 + 4개 bucket 피처 + Quantile 피처
+  중심 로그가격
+        |
+        v
+[처리 단계 3: CatBoost 잔차 보정]
+  입력: 작품 피처 + 4개 bucket 피처 + Quantile 피처 + 중심 로그가격
+  남은 오차 예측
+        |
+        v
+버킷순차보정_Warm예측로그가격 =
+  Huber 중심 로그가격 + CatBoost 잔차보정</code></pre>
+<p>정리:</p>
+<ul>
+<li><code>4개 bucket 피처</code>는 생성되는 피처의 종류다.</li>
+<li><code>처리 단계 3개</code>는 그 bucket 피처를 사용하는 모델 흐름이다.</li>
+<li>따라서 &quot;bucket은 4개인데 사용은 3번&quot;이라는 표현은 모순이 아니다.</li>
+<li>같은 100호라도 세로형/가로형, canvas/paper, 평면/입체 조건이 다르면 bucket 피처가 다른 가격 패턴을 전달한다.</li>
+</ul>
+</section><section class="slide" id="slide-19" data-slide="19">
+<div class="slide-count">19 / 51</div>
+<h2>16. Warm Huber 잔차 보정</h2>
+<pre><code>[학습 단계]
+잔차 target =
+  실제_로그가격 - 후보_기준로그가격
+Huber잔차모델이 이 잔차를 예측하도록 계수/절편을 산출
+
+[사용 단계]
+잔차예측 =
+  동결된 Huber잔차모델(후보 기준가, 로그면적, 표본 수, 후보 차이, 수축 prior 등)
+
+보정후보_로그가격 =
+  후보_기준로그가격
+  + 0.50 * clip(잔차예측, -0.05, +0.05)</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">설명</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Huber의 의미</td>
+<td class="align-left">큰 오차에 덜 끌려가는 강건 회귀 방식</td>
+</tr>
+<tr>
+<td class="align-left">학습 때 실제 가격 사용</td>
+<td class="align-left">실제 로그가격으로 잔차 target을 만들 때만 사용</td>
+</tr>
+<tr>
+<td class="align-left">사용 때 실제 가격 사용</td>
+<td class="align-left">사용하지 않음. 동결 모델이 입력 피처로 잔차예측만 계산</td>
+</tr>
+<tr>
+<td class="align-left"><code>cap=0.05</code></td>
+<td class="align-left">잔차예측을 먼저 ±0.05 log로 제한</td>
+</tr>
+<tr>
+<td class="align-left"><code>strength=0.50</code></td>
+<td class="align-left">제한된 잔차예측의 절반만 반영</td>
+</tr>
+<tr>
+<td class="align-left">최종 보정폭</td>
+<td class="align-left">최대 ±0.025 log</td>
+</tr>
+</tbody></table></div>
+<blockquote>근거 설정: PP-HCOEF3 반복 검증 통과 후보 <code>hcoef2_size_reliability_cap005_s050</code>.</blockquote>
+</section><section class="slide" id="slide-20" data-slide="20">
+<div class="slide-count">20 / 51</div>
+<h2>17. Warm 위험도 조건부 라우터</h2>
+<pre><code>기본 후보:
+  0.70 * 같은작가_유사작품기준로그가격
+  + 0.30 * 보조안정_Warm예측로그가격
+
+대안 후보:
+  0.85 * 같은작가_유사작품기준로그가격
+  + 0.15 * 보조안정_Warm예측로그가격
+
+동결 라우터 기준:
+  위험도임계값 = 0.2534165869
+  대안교체최소차이 = 0.005 log
+
+대안 선택 조건:
+  작품단위위험도 &gt;= 위험도임계값
+  AND 기본후보_보정로그가격 - 대안후보_보정로그가격 &gt;= 대안교체최소차이</code></pre>
+<p>작품단위위험도:</p>
+<pre><code>risk_score =
+  0.38 * clip((Quantile예측_불확실성폭 - 1.20) / 0.95, 0, 1)
+  + 0.22 * clip(후보예측분산 / 0.18, 0, 1)
+  + 0.14 * clip(현재-안정기준차이 / 0.06, 0, 1)
+  + 0.16 * (신뢰도구간 == 저신뢰)
+  + 0.10 * (안정기준가격대 == 초고가)</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">라우터 기준</th>
+<th class="align-left">값</th>
+<th class="align-left">의미</th>
+<th class="align-left">근거</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">위험도임계값</td>
+<td class="align-left"><code>0.2534165869</code></td>
+<td class="align-left">이 값 이상이면 위험 구간으로 보고 대안 후보를 검토</td>
+<td class="align-left">PP-WMIN8 validation <code>risk_score</code> q50</td>
+</tr>
+<tr>
+<td class="align-left">대안교체최소차이</td>
+<td class="align-left"><code>0.005 log</code></td>
+<td class="align-left">대안 후보가 기본 후보보다 이 값 이상 낮을 때만 교체</td>
+<td class="align-left">PP-WMIN8 <code>altlower_gap005</code></td>
+</tr>
+<tr>
+<td class="align-left">보수 대안 후보</td>
+<td class="align-left"><code>w850</code></td>
+<td class="align-left">위험 구간에서 검토하는 보수 대안</td>
+<td class="align-left">WMIN7 가중 후보 중 WMIN8에서 선택</td>
+</tr>
+</tbody></table></div>
+<p>보수 대안은 항상 쓰지 않는다. 작품단위위험도가 위험도임계값 이상이고, 대안 후보가 기본 후보보다 대안교체최소차이 이상 낮을 때만 쓴다.</p>
+<blockquote>근거: PP-WMIN8 <code>min1_route_w850_risk_q50_altlower_gap005</code> 후보가 validation-only gate 비교에서 선택됐다. <code>risk_q50</code>은 validation <code>risk_score</code> 중앙값이고, <code>altlower_gap005</code>는 대안 후보가 기본 후보보다 최소 <code>0.005 log</code> 낮아야 한다는 조건이다.</blockquote>
+</section><section class="slide" id="slide-21" data-slide="21">
+<div class="slide-count">21 / 51</div>
+<h2>18. Warm 계산 예시</h2>
+<pre><code>가상 예시:
+  아래 숫자는 산식 이해를 위한 예시값이며 평가 성능 수치가 아님
+
+[1. 입력]
+  작가 매칭 신뢰도 = 0.92
+  같은 작가 이력 = 18건
+  작품 = acrylic/canvas, 100cm x 80cm
+
+[2. 라우팅]
+  0.92 &gt;= 0.80
+  18건 &gt;= 5건
+  -&gt; Warm
+
+[3. 유사작품 찾기]
+  같은 작가 + acrylic/canvas + 대형 비교군 3건
+  -&gt; 1순위 비교군 사용
+
+[4. 비교군 통계]
+  비교군 로그가격 = 18.10, 18.30, 18.55
+  같은작가_유사작품기준로그가격 = 18.300
+  비교군표본수로그 = log1p(3)
+
+[5. 보조안정]
+  큰오차방어 18.360
+  버킷순차보정 18.420
+  보조안정 = 0.75*18.360 + 0.25*18.420 = 18.375</code></pre>
+<p>이 시점에서 최종 가격은 아직 정해지지 않았다. 기준가격과 보조안정값을 만든 뒤 기본 후보와 대안 후보를 동시에 계산한다.</p>
+</section><section class="slide" id="slide-22" data-slide="22">
+<div class="slide-count">22 / 51</div>
+<h2>19. Warm 계산 예시: 후보와 보정</h2>
+<pre><code>[6. 기준 후보 2개 생성]
+기본후보_기준로그가격 =
+  0.70*18.300 + 0.30*18.375
+  = 18.323
+
+대안후보_기준로그가격 =
+  0.85*18.300 + 0.15*18.375
+  = 18.311
+
+[7. 후보별 Huber 잔차 보정]
+기본후보 잔차예측 = +0.020
+기본후보 보정값 = 0.50*clip(+0.020, -0.05, +0.05) = +0.010
+기본후보_보정로그가격 = 18.333
+
+대안후보 잔차예측 = +0.016
+대안후보 보정값 = 0.50*clip(+0.016, -0.05, +0.05) = +0.008
+대안후보_보정로그가격 = 18.319</code></pre>
+<p>해석:</p>
+<ul>
+<li>기본 후보는 보조안정값을 더 많이 섞어 기준가격을 완충한다.</li>
+<li>대안 후보는 같은 작가 유사작품 기준가격을 더 강하게 반영한다.</li>
+<li>두 후보 모두 Huber 잔차 보정을 같은 방식으로 받는다.</li>
+<li>아직 최종 후보 선택 전이다. 다음 단계에서 위험도 라우터가 둘 중 하나를 고른다.</li>
+</ul>
+</section><section class="slide" id="slide-23" data-slide="23">
+<div class="slide-count">23 / 51</div>
+<h2>20. Warm 계산 예시: 위험도 라우팅</h2>
+<pre><code>[8. 작품단위위험도 계산]
+Quantile 예측의 불확실성 폭 = 1.65
+후보예측분산 = 0.08
+현재-안정기준차이 = 0.03
+신뢰도구간 = 보통
+안정기준가격대 = 일반
+
+불확실성 폭 기여 = 0.38*clip((1.65-1.20)/0.95, 0, 1) = 0.180
+후보 분산 기여 = 0.22*clip(0.08/0.18, 0, 1) = 0.098
+기준 차이 기여 = 0.14*clip(0.03/0.06, 0, 1) = 0.070
+저신뢰 기여 = 0.000
+초고가 기여 = 0.000
+
+작품단위위험도 = 0.348
+위험도임계값 = 0.2534165869
+대안교체최소차이 = 0.005 log
+
+[9. 라우팅 조건 A: 위험도]
+  0.348 &gt;= 위험도임계값(0.2534165869)  -&gt; 통과
+
+[10. 라우팅 조건 B: 대안교체최소차이]
+  기본후보_보정로그가격 - 대안후보_보정로그가격
+  = 18.333 - 18.319
+  = 0.014 &gt;= 대안교체최소차이(0.005 log)       -&gt; 통과
+
+[11. 최종 선택]
+최종 Warm 로그가격 = 18.319
+최종 Warm 가격 = exp(18.319)</code></pre>
+<p>조건 A와 B가 모두 통과했기 때문에 보수 대안 후보를 선택한다. 둘 중 하나라도 실패하면 기본 후보를 유지한다.</p>
+</section><section class="slide" id="slide-24" data-slide="24">
+<div class="slide-count">24 / 51</div>
+<h2>21. Warm 성능과 재현</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">항목</th>
+<th class="align-right">값</th>
+<th class="align-left">의미</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">fixed test n</td>
+<td class="align-right">607</td>
+<td class="align-left">Warm 경로 평가 행 수</td>
+</tr>
+<tr>
+<td class="align-left">MdAPE</td>
+<td class="align-right">0.104326</td>
+<td class="align-left">중앙 상대오차 약 10.4%</td>
+</tr>
+<tr>
+<td class="align-left">MAPE</td>
+<td class="align-right">0.235814</td>
+<td class="align-left">평균 상대오차</td>
+</tr>
+<tr>
+<td class="align-left">p95 APE</td>
+<td class="align-right">0.739416</td>
+<td class="align-left">큰 오차 상위 5% 경계</td>
+</tr>
+<tr>
+<td class="align-left">RMSE log</td>
+<td class="align-right">0.377190</td>
+<td class="align-left">로그가격 보조 검증값</td>
+</tr>
+<tr>
+<td class="align-left">API parity max log diff</td>
+<td class="align-right">5.33e-15</td>
+<td class="align-left">동결 번들과 API 출력이 사실상 동일</td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">비교</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-left">해석</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">WMIN4 기본 후보</td>
+<td class="align-right">0.106598</td>
+<td class="align-right">0.239302</td>
+<td class="align-right">0.779196</td>
+<td class="align-left">min1 + Huber 기본 후보</td>
+</tr>
+<tr>
+<td class="align-left">WMIN8 최종 후보</td>
+<td class="align-right">0.104326</td>
+<td class="align-right">0.235814</td>
+<td class="align-right">0.739416</td>
+<td class="align-left">위험도 조건부 w850 라우터 추가</td>
+</tr>
+</tbody></table></div>
+<p>재현 근거:</p>
+<ul>
+<li>정책/성능 파일: <code>models/track6/warm_wmin8_operational_candidate/config/warm_model_policy_wmin8.json</code></li>
+<li>선택 실험: <code>experiments/track6/PP-WMIN8_warm_min1_weight_router</code></li>
+<li>parity: <code>PP-WMIN10_warm_wmin8_api_fixed_test_parity</code></li>
+<li>해석: 기준가격을 크게 흔들지 않고, 위험한 작품만 조건부로 방어한다.</li>
+</ul>
+</section><section class="slide" id="slide-25" data-slide="25">
+<div class="slide-count">25 / 51</div>
+<h2>22. Warm-lite 모델 목적</h2>
+<p><strong>적용 대상</strong></p>
+<ul>
+<li><code>작가매칭신뢰도점수 &gt;= 0.80</code></li>
+<li><code>같은작가_사용가능가격이력수 = 1~4건</code></li>
+</ul>
+<pre><code>[왜 별도 경로인가]
+  Cold로 보내기에는 같은 작가 실제 가격 이력이 있음
+  Warm 5건 이상 본체를 쓰기에는 이력 표본이 작음
+        |
+        v
+[Warm-lite 핵심 계산]
+  작가 이력 1~4건 통계
+  + 작품 크기/매체/지지체 피처
+        |
+        v
+  두 가지 중앙값 예측을 평균
+  - 전체 피처 기반 LightGBM Quantile 예측
+  - 저표본 안정화 LightGBM Quantile 예측
+        |
+        v
+  LightGBM Huber 잔차 제한 보정
+        |
+        v
+  최종 Warm-lite 로그가격 -&gt; exp() -&gt; 원화 가격</code></pre>
+<p>경계 근거:</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">질문</th>
+<th class="align-left">검증</th>
+<th class="align-left">결론</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">1~4건을 Cold로 보내도 되는가</td>
+<td class="align-left">PP-WCUT4</td>
+<td class="align-left">Warm-lite MdAPE 0.1092 vs Cold 0.5429</td>
+</tr>
+<tr>
+<td class="align-left">1~4건을 Warm 계열로 통일해도 되는가</td>
+<td class="align-left">PP-WMIN9E / PP-WMIN11</td>
+<td class="align-left">전체 기준 Warm-lite 유지</td>
+</tr>
+<tr>
+<td class="align-left">5건 이상도 Warm-lite로 보내도 되는가</td>
+<td class="align-left">PP-WMIN9D</td>
+<td class="align-left">5건 이상은 WMIN8 Warm 우세</td>
+</tr>
+</tbody></table></div>
+<blockquote>Warm-lite는 “간단한 fallback”이 아니라 1~4건 저이력 구간을 위해 별도로 검증된 최종 경로다.</blockquote>
+<p>Warm-lite도 Warm처럼 <code>이력 그룹 -&gt; 기준가 -&gt; 보정</code> 순서로 계산하지만, 기준이 더 보수적이다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">기준</th>
+<th class="align-left">Warm-lite에서의 의미</th>
+<th class="align-left">최종 가격에 미치는 영향</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">이력 묶는 기준</td>
+<td class="align-left">같은 작가 이력 1~4건 안에서 매체/지지체와 크기가 가까운 과거 작품부터 선택</td>
+<td class="align-left">적은 이력 중 어떤 가격 통계를 쓸지 결정</td>
+</tr>
+<tr>
+<td class="align-left">기준가 생성 기준</td>
+<td class="align-left">이력 로그가격 통계, 면적단가 통계, 대상 작품 크기에 맞춰 환산한 작가 기준가격, 작품 피처를 모델에 입력</td>
+<td class="align-left">두 가지 중앙값 예측의 평균 기준가격 생성</td>
+</tr>
+<tr>
+<td class="align-left">보정 기준</td>
+<td class="align-left">LightGBM Huber 잔차 예측값을 <code>clip(0.50*잔차예측, -0.10, +0.10)</code> 범위에서 더함</td>
+<td class="align-left">두 중앙값 예측의 평균이 남긴 반복 오차만 제한적으로 보정</td>
+</tr>
+<tr>
+<td class="align-left">표시 기준</td>
+<td class="align-left">이력 1건은 넓은 범위와 검수 플래그, 2~4건은 표준 Warm-lite 표시</td>
+<td class="align-left">점 예측 산식은 같고 운영 해석만 달라짐</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-26" data-slide="26">
+<div class="slide-count">26 / 51</div>
+<h2>23. Warm-lite 학습 단계 순서</h2>
+<pre><code>[저이력 상황 재현]
+  - 실제 가격이 있는 과거 작품
+  - 같은 작가 이력을 1~4건만 볼 수 있게 구성
+  - fold/leave-one-out으로 자기 가격 누수 차단
+        |
+        v
+[작가 이력 통계 피처 생성]
+  - 로그가격 median(중앙값)
+  - 로그가격 q25/q75/IQR(이력 가격 분포)
+  - 면적단가 median/IQR
+  - 대상 작품 크기에 맞춰 환산한 작가 기준 로그가격
+      = 면적단가 median + 대상작품 log_area
+  - 표본 수 로그값, 이력 찾기 단계
+        |
+        v
+[LightGBM Quantile 예측 학습]
+  - 전체 피처 기반 LightGBM Quantile 예측: 낮은값/중앙값/높은값
+  - 저표본 안정화 LightGBM Quantile 예측: 중앙값
+  - 두 중앙값 예측의 평균 기준가격 생성
+        |
+        v
+[검증 대상 작품을 제외한 기준가격으로 잔차 생성]
+  actual_log - 두 중앙값 예측의 평균 기준가격
+        |
+        v
+[LightGBM Huber 잔차 보정 학습]
+  - 두 중앙값 예측의 평균에서 남은 반복 오차를 예측
+  - strength=0.50, cap=0.10 후보 검증
+        |
+        v
+[bundle 동결과 parity]
+  - 선택된 내부 후보명: qavg_lgbres_s05_cap010
+  - replay/API parity 확인</code></pre>
+<p>학습 단계에서 실제 가격은 학습 목표값과 잔차를 만들기 위해 사용한다. 사용 단계에서는 실제 가격을 쓰지 않고, 동결된 Quantile 예측 모델과 잔차 보정 모델만 적용한다.</p>
+<p>용어 구분:</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">용어</th>
+<th class="align-left">뜻</th>
+<th class="align-left">여기서의 출처</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>median</code></td>
+<td class="align-left">중앙값. 이력 가격을 정렬했을 때 가운데 값</td>
+<td class="align-left">같은 작가 이력 통계</td>
+</tr>
+<tr>
+<td class="align-left"><code>q25</code>, <code>q75</code></td>
+<td class="align-left">하위 25%, 상위 75% 지점 값</td>
+<td class="align-left">같은 작가 이력 통계</td>
+</tr>
+<tr>
+<td class="align-left"><code>IQR</code></td>
+<td class="align-left"><code>q75 - q25</code>, 이력 가격이 퍼진 정도</td>
+<td class="align-left">같은 작가 이력 통계</td>
+</tr>
+<tr>
+<td class="align-left">대상 작품 크기에 맞춰 환산한 작가 기준 로그가격</td>
+<td class="align-left">이 작가의 면적단가를 대상 작품 크기에 맞춰 환산한 기준 로그가격 후보. 내부 필드명은 <code>grp_price_proxy</code></td>
+<td class="align-left">같은 작가 이력 + 대상 작품 <code>log_area</code></td>
+</tr>
+</tbody></table></div>
+<p>여기서 <code>q25/q75/IQR</code>은 LightGBM이 새 작품에 대해 예측한 값이 아니다. 과거 같은 작가 이력 그룹에서 먼저 계산한 통계값이다. LightGBM의 <code>q10/q50/q90</code>은 그 다음 단계에서 모델이 새 작품에 대해 예측하는 낮은값/중앙값/높은값이다.</p>
+</section><section class="slide" id="slide-27" data-slide="27">
+<div class="slide-count">27 / 51</div>
+<h2>24. Warm-lite 사용 단계 순서</h2>
+<pre><code>[Warm-lite 입력 작품]
+  - 고신뢰 작가 매칭
+  - 같은 작가 가격 이력 1~4건
+  - 작품 크기/매체/지지체
+        |
+        v
+[작가 이력 통계 생성]
+  - 같은 작가 이력에서 가장 가까운 이력 그룹 선택
+  - 로그가격/면적단가/표본 수/매칭 단계 계산
+        |
+        v
+[전체 피처 기반 LightGBM Quantile 예측]
+  낮은값, 중앙값, 높은값, Quantile 예측의 불확실성 폭
+        |
+        v
+[저표본 안정화 LightGBM Quantile 예측]
+  중앙값
+        |
+        v
+[두 중앙값 예측의 평균]
+  0.50*전체 피처 기반 중앙값
+  + 0.50*저표본 안정화 중앙값
+        |
+        v
+[Huber 잔차 제한 보정]
+  clip(0.50*잔차예측, -0.10, +0.10)
+        |
+        v
+[신뢰도 표시 정책 + exp()]
+  - 이력 1건: wide_range_with_review_flag
+  - 이력 2~4건: standard range</code></pre>
+<p>출력:</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">출력값</th>
+<th class="align-left">의미</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>warm_lite_pred_log</code></td>
+<td class="align-left">최종 Warm-lite 로그가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>warm_lite_pred_price_krw</code></td>
+<td class="align-left"><code>exp(warm_lite_pred_log)</code> 후 원화 가격</td>
+</tr>
+<tr>
+<td class="align-left">Quantile 예측의 불확실성 폭</td>
+<td class="align-left">전체 피처 기반 예측의 높은값(q90) - 낮은값(q10), 불확실성 참고값</td>
+</tr>
+<tr>
+<td class="align-left">실제 더해진 잔차 보정값</td>
+<td class="align-left">내부 필드명 <code>applied_residual_correction_log</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>confidence_grade</code></td>
+<td class="align-left">이력 수 기반 표시 신뢰도</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-28" data-slide="28">
+<div class="slide-count">28 / 51</div>
+<h2>25. Warm-lite 피처와 사용처</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">설명할 이름</th>
+<th class="align-left">내부 필드/생성 방식</th>
+<th class="align-left">사용하는 단계</th>
+<th class="align-left">의미</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">같은 작가 가격 이력 수</td>
+<td class="align-left"><code>artist_history_n</code></td>
+<td class="align-left">라우팅, 모델 입력, 신뢰도 표시</td>
+<td class="align-left">표본 수 신뢰도</td>
+</tr>
+<tr>
+<td class="align-left">같은 작가 이력의 로그가격 중앙값</td>
+<td class="align-left"><code>grp_log_price_median</code></td>
+<td class="align-left">기준가격 예측/잔차 보정</td>
+<td class="align-left">작가 직접 가격 수준</td>
+</tr>
+<tr>
+<td class="align-left">같은 작가 이력의 가격 분포</td>
+<td class="align-left"><code>grp_log_price_q25/q75/IQR</code></td>
+<td class="align-left">전체 피처 기반 예측/잔차 보정</td>
+<td class="align-left">저이력 가격 분산</td>
+</tr>
+<tr>
+<td class="align-left">같은 작가 이력의 면적단가 중앙값</td>
+<td class="align-left"><code>grp_unit_area_median = median(log_price - log_area)</code></td>
+<td class="align-left">기준가격 예측/잔차 보정</td>
+<td class="align-left">이력 작품과 대상 작품의 크기 차이 보정</td>
+</tr>
+<tr>
+<td class="align-left">대상 작품 크기에 맞춰 환산한 작가 기준 로그가격</td>
+<td class="align-left"><code>grp_unit_area_median + 대상작품 log_area</code></td>
+<td class="align-left">기준가격 예측/잔차 보정</td>
+<td class="align-left">대상 작품 크기에 맞춘 작가 기준가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>area_cm2</code>, <code>log_area</code>, <code>aspect_ratio</code></td>
+<td class="align-left">작품 크기 원천값에서 파생</td>
+<td class="align-left">기준가격 예측/잔차 보정</td>
+<td class="align-left">대상 작품 크기/형태</td>
+</tr>
+<tr>
+<td class="align-left"><code>medium_category</code>, <code>support_category</code>, <code>size_bucket</code></td>
+<td class="align-left">정규화/구간화</td>
+<td class="align-left">이력 찾기 단계, LightGBM</td>
+<td class="align-left">재료/지지체/크기 조합</td>
+</tr>
+<tr>
+<td class="align-left">이력을 찾은 단계</td>
+<td class="align-left">내부 필드명 <code>grp_match_level</code></td>
+<td class="align-left">기준가격 예측/잔차 보정</td>
+<td class="align-left">비교 이력의 가까움</td>
+</tr>
+<tr>
+<td class="align-left">전체 피처 기반 예측의 낮은값/중앙값/높은값</td>
+<td class="align-left">내부 필드명 <code>lgbq_full_q10/q50/q90</code></td>
+<td class="align-left">잔차 보정</td>
+<td class="align-left">가격 분포와 불확실성</td>
+</tr>
+<tr>
+<td class="align-left">두 중앙값 예측의 평균</td>
+<td class="align-left">내부 필드명 <code>lgbq_full_lean_avg</code></td>
+<td class="align-left">잔차 보정/최종 기준</td>
+<td class="align-left">Warm-lite 기준 로그가격</td>
+</tr>
+</tbody></table></div>
+<p>피처 연결:</p>
+<pre><code>작가 이력 통계 + 작품 피처
+  -&gt; 두 가지 중앙값 예측으로 기준가격 생성
+  -&gt; Quantile 예측의 불확실성 폭과 기준가격을 잔차 보정 모델에 추가
+  -&gt; 남은 오차 보정</code></pre>
+</section><section class="slide" id="slide-29" data-slide="29">
+<div class="slide-count">29 / 51</div>
+<h2>26. Warm-lite 이력 찾기 단계</h2>
+<pre><code>[Warm-lite 입력]
+  같은 작가 이력 1~4건
+        |
+        v
+[이력 찾기 단계]
+  1순위: 같은 작가 + 같은 매체/지지체 + 같은 크기 구간
+  2순위: 같은 작가 + 같은 크기 구간
+  3순위: 같은 작가 전체 1~4건 이력
+  4순위: 동결된 대체 통계
+        |
+        v
+[선택된 이력 그룹 통계]
+  이력 로그가격 중앙값/q25/q75/IQR
+  면적단가 중앙값/IQR
+  이력 수 로그값, 이력을 찾은 단계</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">단계</th>
+<th class="align-left">사용하는 이유</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">1순위</td>
+<td class="align-left">이력 수가 적어도 조건이 가까우면 가장 직접적인 가격 신호</td>
+</tr>
+<tr>
+<td class="align-left">2순위</td>
+<td class="align-left">재료/지지체까지는 다르지만 크기가 비슷한 작가 가격 신호</td>
+</tr>
+<tr>
+<td class="align-left">3순위</td>
+<td class="align-left">저이력 작가의 전체 가격대</td>
+</tr>
+<tr>
+<td class="align-left">4순위</td>
+<td class="align-left">결측 방어. 작가 이력 없이 Warm-lite를 쓰겠다는 의미가 아님</td>
+</tr>
+</tbody></table></div>
+<p>이력 그룹 선택 기준:</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">기준</th>
+<th class="align-left">설명</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">같은 작가 제한</td>
+<td class="align-left">Warm-lite의 모든 이력 통계는 같은 작가 가격 이력 1~4건에서 출발한다</td>
+</tr>
+<tr>
+<td class="align-left">가까운 조건 우선</td>
+<td class="align-left">매체/지지체와 크기 구간이 모두 가까운 그룹을 먼저 쓴다</td>
+</tr>
+<tr>
+<td class="align-left">혼합 금지</td>
+<td class="align-left">1순위 그룹이 있으면 2순위/3순위와 섞어 평균내지 않는다</td>
+</tr>
+<tr>
+<td class="align-left">이력을 찾은 단계</td>
+<td class="align-left">어떤 단계에서 이력을 찾았는지 모델 입력으로 남겨 신뢰도 차이를 반영한다. 내부 필드명은 <code>grp_match_level</code></td>
+</tr>
+<tr>
+<td class="align-left">대체 통계 의미</td>
+<td class="align-left">통계 생성 실패 방어용이며, 작가 이력 0건을 Warm-lite로 보내는 정책이 아니다</td>
+</tr>
+</tbody></table></div>
+<blockquote>Warm-lite 라우팅 자체는 같은 작가 이력 1~4건이 있을 때만 들어온다. 대체 통계는 통계 생성 실패를 막는 안전장치다.</blockquote>
+</section><section class="slide" id="slide-30" data-slide="30">
+<div class="slide-count">30 / 51</div>
+<h2>27. Warm-lite 기준가격: 두 중앙값 예측의 평균</h2>
+<pre><code>전체 피처 기반 중앙값 예측 =
+  이력 가격 분포 피처까지 포함해 예측한 중앙 로그가격
+
+저표본 안정화 중앙값 예측 =
+  저표본 흔들림 피처를 줄인 중앙 로그가격
+
+두 중앙값 예측의 평균 기준가격 =
+  0.50 * 전체 피처 기반 중앙값 예측
+  + 0.50 * 저표본 안정화 중앙값 예측</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">구성</th>
+<th class="align-left">포함 피처</th>
+<th class="align-left">출력</th>
+<th class="align-left">역할</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">전체 피처 기반 예측</td>
+<td class="align-left">q25/q75, IQR, 면적단가 IQR까지 포함</td>
+<td class="align-left">낮은값/중앙값/높은값과 Quantile 예측의 불확실성 폭</td>
+<td class="align-left">사용 가능한 이력 통계를 최대한 반영</td>
+</tr>
+<tr>
+<td class="align-left">저표본 안정화 예측</td>
+<td class="align-left">흔들릴 수 있는 q25/q75/IQR 같은 분포 피처 일부 제외</td>
+<td class="align-left">안정 중앙값</td>
+<td class="align-left">1~4건 저표본의 과도한 흔들림 완화</td>
+</tr>
+<tr>
+<td class="align-left">50:50 평균</td>
+<td class="align-left">두 중앙값 예측</td>
+<td class="align-left">Warm-lite 기준 로그가격</td>
+<td class="align-left">정보량과 안정성 절충</td>
+</tr>
+</tbody></table></div>
+<p>두 예측을 나누는 이유:</p>
+<pre><code>전체 피처 기반 예측 = 정보량은 많지만 저표본 q25/q75/IQR 흔들림 가능
+저표본 안정화 예측 = 안정적이지만 세부 분포 반영은 약함
+평균 = 두 위험을 절충한 기준 로그가격</code></pre>
+</section><section class="slide" id="slide-31" data-slide="31">
+<div class="slide-count">31 / 51</div>
+<h2>28. Warm-lite Huber 잔차 제한 보정</h2>
+<pre><code>LightGBM_Huber_잔차 =
+  Huber 잔차 보정 model(
+    기본 피처
+    + 전체 피처 기반 예측의 낮은값/중앙값/높은값
+    + Quantile 예측의 불확실성 폭
+    + 두 중앙값 예측의 평균 기준가격
+  )
+
+최종_Warm-lite_로그가격 =
+  두 중앙값 예측의 평균 기준가격
+  + clip(0.50 * LightGBM_Huber_잔차, -0.10, +0.10)</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">설명</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">잔차 보정 학습 목표</td>
+<td class="align-left">학습 때 <code>actual_log - 두 중앙값 예측의 평균 기준가격</code></td>
+</tr>
+<tr>
+<td class="align-left">잔차 보정 입력</td>
+<td class="align-left">원본 피처 + 작가 이력 통계 + Quantile 예측 출력값</td>
+</tr>
+<tr>
+<td class="align-left"><code>0.50</code></td>
+<td class="align-left">잔차 예측값의 절반만 반영하는 비율</td>
+</tr>
+<tr>
+<td class="align-left"><code>±0.10</code></td>
+<td class="align-left">최종 잔차 보정 상한</td>
+</tr>
+<tr>
+<td class="align-left">선택된 내부 후보명</td>
+<td class="align-left"><code>qavg_lgbres_s05_cap010</code></td>
+</tr>
+</tbody></table></div>
+<p>잔차 보정은 두 중앙값 예측의 평균이 남긴 반복 오차만 보정한다. 기준가격을 완전히 다시 만드는 단계가 아니다.</p>
+</section><section class="slide" id="slide-32" data-slide="32">
+<div class="slide-count">32 / 51</div>
+<h2>29. Warm-lite 신뢰도 표시 정책</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-right">이력 수</th>
+<th class="align-left">점 예측 산식</th>
+<th class="align-left">표시 정책</th>
+<th class="align-left">해석</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-right">1건</td>
+<td class="align-left">동일 산식 사용</td>
+<td class="align-left"><code>warm_lite_low</code>, <code>wide_range_with_review_flag</code></td>
+<td class="align-left">점 예측은 내지만 넓은 범위와 검수 플래그</td>
+</tr>
+<tr>
+<td class="align-right">2~4건</td>
+<td class="align-left">동일 산식 사용</td>
+<td class="align-left"><code>warm_lite_standard</code>, <code>point_estimate_with_standard_range</code></td>
+<td class="align-left">표준 Warm-lite 표시</td>
+</tr>
+</tbody></table></div>
+<p>신뢰도 정책은 최종 로그가격을 바꾸는 보정이 아니다. 같은 점 예측값을 운영 화면에서 어떻게 해석하고 검수할지 정하는 출력 정책이다.</p>
+<pre><code>최종 가격 산식은 동일
+표시 정책만 이력 수에 따라 달라짐</code></pre>
+</section><section class="slide" id="slide-33" data-slide="33">
+<div class="slide-count">33 / 51</div>
+<h2>30. Warm-lite 계산 예시</h2>
+<pre><code>가상 예시:
+  아래 숫자는 산식 이해를 위한 예시값이며 평가 성능 수치가 아님
+
+[1. 입력]
+  작가 매칭 신뢰도 = 0.87
+  같은 작가 가격 이력 = 2건
+  작품 = acrylic/paper, 72cm x 60cm
+
+[2. 라우팅]
+  0.87 &gt;= 0.80
+  1 &lt;= 2 &lt;= 4
+  -&gt; Warm-lite
+
+[3. 작품 피처]
+  area_cm2 = 4,320
+  log_area = 8.371
+  aspect_ratio = 1.200
+  medium_category = acrylic
+  support_category = paper</code></pre>
+<p>이 단계에서는 아직 가격을 계산하지 않았다. 라우팅과 원천 피처 생성만 끝난 상태다.</p>
+</section><section class="slide" id="slide-34" data-slide="34">
+<div class="slide-count">34 / 51</div>
+<h2>31. Warm-lite 계산 예시: 통계와 예측</h2>
+<pre><code>[4. 작가 이력 통계]
+이력 로그가격:
+  17.450, 17.600
+
+작가로그가격중앙값 = 17.525
+작가로그가격IQR = 0.075
+작가면적단가로그중앙값 = 9.150
+면적보정작가기준로그가격 = 9.150 + 8.371 = 17.521
+
+[5. 기준가격]
+전체 피처 기반 중앙값 예측 = 17.540
+저표본 안정화 중앙값 예측 = 17.500
+두 중앙값 예측의 평균 기준가격 =
+  0.50*17.540 + 0.50*17.500 = 17.520
+
+[6. 잔차 제한 보정]
+LightGBM_Huber_잔차 = 0.060
+적용보정값 = clip(0.50*0.060, -0.10, +0.10) = 0.030
+
+[7. 최종 출력]
+최종 Warm-lite 로그가격 = 17.550
+최종 Warm-lite 가격 = exp(17.550)
+confidence_grade = warm_lite_standard</code></pre>
+</section><section class="slide" id="slide-35" data-slide="35">
+<div class="slide-count">35 / 51</div>
+<h2>32. Warm-lite 성능과 재현</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">항목</th>
+<th class="align-right">값</th>
+<th class="align-left">의미</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">평가 행 수</td>
+<td class="align-right">1,947</td>
+<td class="align-left">실존 저이력 작가 LOO x3</td>
+</tr>
+<tr>
+<td class="align-left">MdAPE</td>
+<td class="align-right">0.107246</td>
+<td class="align-left">중앙 상대오차</td>
+</tr>
+<tr>
+<td class="align-left">MAPE</td>
+<td class="align-right">0.275773</td>
+<td class="align-left">평균 상대오차</td>
+</tr>
+<tr>
+<td class="align-left">p95 APE</td>
+<td class="align-right">0.852026</td>
+<td class="align-left">큰 오차 상위 5% 경계</td>
+</tr>
+<tr>
+<td class="align-left">RMSE log</td>
+<td class="align-right">0.423003</td>
+<td class="align-left">로그가격 보조 검증값</td>
+</tr>
+<tr>
+<td class="align-left">bundle replay parity max log diff</td>
+<td class="align-right">3.55e-15</td>
+<td class="align-left">동결 bundle replay 일치</td>
+</tr>
+<tr>
+<td class="align-left">0.1v HTTP API parity max log diff</td>
+<td class="align-right">0.0</td>
+<td class="align-left">0.1v API 출력 일치</td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">비교</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-left">결론</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Warm-lite 저이력 경로</td>
+<td class="align-right">0.1092</td>
+<td class="align-right">0.2866</td>
+<td class="align-right">0.8765</td>
+<td class="align-left">Cold 대비 큰 우위</td>
+</tr>
+<tr>
+<td class="align-left">동일 행 Cold</td>
+<td class="align-right">0.5429</td>
+<td class="align-right">0.9946</td>
+<td class="align-right">2.5358</td>
+<td class="align-left">1~4건을 Cold로 보내면 손실 큼</td>
+</tr>
+<tr>
+<td class="align-left">최신 Quantile+잔차 보정</td>
+<td class="align-right">0.107246</td>
+<td class="align-right">0.275773</td>
+<td class="align-right">0.852026</td>
+<td class="align-left">현재 채택 모델</td>
+</tr>
+</tbody></table></div>
+<p>근거:</p>
+<ul>
+<li>성능 검증: <code>PP-WLITE-Q3</code>, <code>PP-WLITE-Q4</code></li>
+<li>동결/parity: <code>PP-WLITE-Q5</code></li>
+<li>bundle: <code>models/track6/warm_lite_quantile_residual_v0.1</code></li>
+</ul>
+</section><section class="slide" id="slide-36" data-slide="36">
+<div class="slide-count">36 / 51</div>
+<h2>33. Cold 모델 목적</h2>
+<p><strong>적용 대상</strong></p>
+<ul>
+<li>같은 작가 가격 이력이 0건</li>
+<li>작가 매칭이 불확실</li>
+<li>입력 부족 또는 동명이인 위험</li>
+</ul>
+<pre><code>[왜 Cold가 필요한가]
+  같은 작가 가격 기준가격을 만들 수 없음
+  작가 매칭이 불확실하면 Warm/Warm-lite 사용이 위험
+        |
+        v
+[Cold 핵심 계산]
+작품 피처 + 작가 메타 + 검색 문맥
+  -&gt; LightGBM Quantile 후보
+  -&gt; Quantile 예측의 불확실성 폭별 잔차 안정화
+  -&gt; 과대예측 방어 guard
+  -&gt; 작가 검색 보정 조회표
+  -&gt; 최종 Cold 로그가격</code></pre>
+<p>Cold의 역할:</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">Warm/Warm-lite와 다른 점</th>
+<th class="align-left">Cold에서 보완하는 방식</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">같은 작가 기준가격 없음</td>
+<td class="align-left">작품 피처, 작가 메타, 검색 문맥으로 추정</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭 불확실 가능</td>
+<td class="align-left">검색 피처와 검수/보수 조건 활용</td>
+</tr>
+<tr>
+<td class="align-left">예측 불확실성 큼</td>
+<td class="align-left">Quantile 예측의 불확실성 폭, guard, 잔차 안정화 사용</td>
+</tr>
+<tr>
+<td class="align-left">과대예측 위험 큼</td>
+<td class="align-left">낮은쪽 q40 후보와 50:50 혼합 방어</td>
+</tr>
+</tbody></table></div>
+<blockquote>Cold는 “정보가 없어서 대충 예측하는 경로”가 아니라, 같은 작가 가격 기준이 없는 상황을 검색 문맥과 불확실성 방어로 처리하는 전용 경로다.</blockquote>
+<p>Cold는 Warm/Warm-lite처럼 같은 작가 유사작품 그룹을 만들 수 없다. 대신 <code>작품/작가/검색 문맥이 비슷한 패턴</code>을 모델과 보정표가 사용한다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">기준</th>
+<th class="align-left">Cold에서의 의미</th>
+<th class="align-left">최종 가격에 미치는 영향</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">묶는 기준</td>
+<td class="align-left">같은 작가 가격 비교군이 아니라 작품 피처, 작가 메타, 검색 문맥, Quantile 예측의 불확실성 폭 구간으로 묶는다</td>
+<td class="align-left">LightGBM 후보와 잔차 안정화 구간 결정</td>
+</tr>
+<tr>
+<td class="align-left">기준가 생성 기준</td>
+<td class="align-left">작품/작가/검색 피처를 LightGBM Quantile에 넣어 q10/q40/q50/q90 생성</td>
+<td class="align-left">q50 계열 대표가격과 q40 보수 후보 생성</td>
+</tr>
+<tr>
+<td class="align-left">보정 기준</td>
+<td class="align-left">Quantile 예측의 불확실성 폭 구간별 잔차 중앙값을 더하고, 작가 검색 보정 조회표의 값을 추가</td>
+<td class="align-left">반복 편향과 검색 문맥 효과를 반영</td>
+</tr>
+<tr>
+<td class="align-left">방어 기준</td>
+<td class="align-left">Quantile 예측의 불확실성 폭이 높고 대표가격이 q40보다 충분히 높을 때만 50:50 guard 적용</td>
+<td class="align-left">불확실한 고가 예측의 과대평가를 낮춤</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-37" data-slide="37">
+<div class="slide-count">37 / 51</div>
+<h2>34. Cold 학습 단계 순서</h2>
+<pre><code>[Cold 학습 데이터]
+  - 같은 작가 이력이 없거나 매칭이 불확실한 조건
+  - 작품 피처, 작가 메타, 검색 피처
+        |
+        v
+[LightGBM Quantile 학습]
+  - q10/q40/q50/q90 후보 로그가격
+  - Quantile 예측의 불확실성 폭 = 높은값(q90) - 낮은값(q10)
+        |
+        v
+[검증 잔차 기반 안정화표 생성]
+  - Quantile 예측의 불확실성 폭 구간별 잔차 중앙값
+  - clip(구간별 보정값, -0.25, +0.25)
+        |
+        v
+[guard 임계값 산출]
+  - Quantile 예측의 불확실성 폭 q67 = 1.4612207078910142
+  - gap_q50 = 0.07715547281151025
+  - weight = 0.50
+        |
+        v
+[작가 검색 보정 조회표 생성]
+  - 정규화 작가명/artist_key별 search_delta
+  - 과도한 보정 방지를 위한 cap
+        |
+        v
+[동결 산출물]
+  Quantile 모델, 잔차 안정화표, guard 조건, 작가 검색 보정 조회표</code></pre>
+<p>학습 단계에서 실제 가격은 Quantile 모델 학습, 잔차 중앙값, guard 임계값, 조회표 보정값을 만들 때 사용한다. 사용 단계에서는 실제 가격 없이 동결 산출물만 적용한다.</p>
+<p>Cold의 “묶음”은 세 가지다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">묶음</th>
+<th class="align-left">생성 기준</th>
+<th class="align-left">사용하는 곳</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">모델 내부 패턴 묶음</td>
+<td class="align-left">작품 크기/매체/지지체, 작가 메타, 검색 문맥이 비슷한 행을 tree가 나눔</td>
+<td class="align-left">q10/q40/q50/q90 후보 예측</td>
+</tr>
+<tr>
+<td class="align-left">Quantile 예측의 불확실성 폭 묶음</td>
+<td class="align-left">높은값(q90) - 낮은값(q10)이 비슷한 작품을 같은 구간으로 묶음</td>
+<td class="align-left">구간별 잔차 중앙값 안정화</td>
+</tr>
+<tr>
+<td class="align-left">검색 보정 조회표 묶음</td>
+<td class="align-left">정규화 작가명 또는 artist_key와 검색 문맥</td>
+<td class="align-left">작가 검색 보정값 조회</td>
+</tr>
+</tbody></table></div>
+<p>따라서 Cold의 기준가는 “같은 작가 과거 가격의 중앙값”이 아니라, 동결된 Quantile 모델이 피처 패턴으로 만든 대표 로그가격이다.</p>
+</section><section class="slide" id="slide-38" data-slide="38">
+<div class="slide-count">38 / 51</div>
+<h2>35. Cold 사용 단계 순서</h2>
+<pre><code>[Cold 입력 작품]
+  - 작품 크기/매체/지지체
+  - 작가 메타
+  - 작가명 검색 문맥
+        |
+        v
+[LightGBM Quantile 후보 예측]
+  낮은값(q10)/q40/중앙값(q50)/높은값(q90)
+  Quantile 예측의 불확실성 폭
+        |
+        v
+[Quantile 예측의 불확실성 폭별 잔차 안정화]
+  대표 로그가격 = q50 + clip(구간별 잔차 중앙값, -0.25, +0.25)
+        |
+        v
+[과대예측 방어 guard 검사]
+  Quantile 예측의 불확실성 폭과 q50-q40 gap 조건 확인
+  조건 통과 시 대표가격과 q40을 50:50 혼합
+        |
+        v
+[작가 검색 보정 조회표]
+  미리 만든 조회표에서 작가별 보정값 조회
+        |
+        v
+[최종 Cold 로그가격 -&gt; exp() -&gt; 원화 가격]</code></pre>
+<p>출력:</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">출력값</th>
+<th class="align-left">의미</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>검색포함_대표로그가격</code></td>
+<td class="align-left">Quantile 후보에 구간별 잔차 안정화를 더한 기준값</td>
+</tr>
+<tr>
+<td class="align-left"><code>과대예측방어_로그가격</code></td>
+<td class="align-left">guard 적용 후 검색 보정 전 로그가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>작가검색보정_로그값</code></td>
+<td class="align-left">조회표에서 찾은 작가 검색 문맥 보정값</td>
+</tr>
+<tr>
+<td class="align-left"><code>최종_Cold_로그가격</code></td>
+<td class="align-left">exp() 전 최종 로그가격</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-39" data-slide="39">
+<div class="slide-count">39 / 51</div>
+<h2>36. Cold 피처와 사용처</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">피처 그룹</th>
+<th class="align-left">예시</th>
+<th class="align-left">사용 단계</th>
+<th class="align-left">계산에 미치는 역할</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">작품 크기</td>
+<td class="align-left">width, height, depth, area, log_area, aspect_ratio</td>
+<td class="align-left">Quantile</td>
+<td class="align-left">작품의 물리적 가격 기준선</td>
+</tr>
+<tr>
+<td class="align-left">매체/지지체</td>
+<td class="align-left">medium_category, support_category, material bucket</td>
+<td class="align-left">Quantile</td>
+<td class="align-left">재료별 가격 차이</td>
+</tr>
+<tr>
+<td class="align-left">작품 메타</td>
+<td class="align-left">제작연도, 작품 유형, edition 여부</td>
+<td class="align-left">Quantile</td>
+<td class="align-left">시기/희소성 보조</td>
+</tr>
+<tr>
+<td class="align-left">작가 메타</td>
+<td class="align-left">생년, 국적, 작품 수, 팔로워, 판매작 수</td>
+<td class="align-left">Quantile</td>
+<td class="align-left">작가 시장 위치</td>
+</tr>
+<tr>
+<td class="align-left">검색 문맥</td>
+<td class="align-left">검색 결과 수, 갤러리/미술관 비율, 시장 문맥</td>
+<td class="align-left">Quantile, 조회표 보정</td>
+<td class="align-left">작가 활동성/시장 노출/검색 품질</td>
+</tr>
+<tr>
+<td class="align-left">동명이인 위험</td>
+<td class="align-left">이름 충돌, 무관 검색 결과 비율</td>
+<td class="align-left">라우팅/검수/Cold 피처</td>
+<td class="align-left">잘못된 작가 문맥 사용 방지</td>
+</tr>
+<tr>
+<td class="align-left">Quantile 산출값</td>
+<td class="align-left">낮은값(q10), q40, 중앙값(q50), 높은값(q90), Quantile 예측의 불확실성 폭</td>
+<td class="align-left">안정화, guard</td>
+<td class="align-left">불확실성 판단</td>
+</tr>
+</tbody></table></div>
+<p>피처 흐름:</p>
+<pre><code>작품/작가/검색 피처
+  -&gt; LightGBM Quantile 후보
+  -&gt; Quantile 예측의 불확실성 폭으로 불확실성 판단
+  -&gt; q40과 대표가격 차이로 guard 판단
+  -&gt; 검색 보정 조회표로 최종 보정</code></pre>
+</section><section class="slide" id="slide-40" data-slide="40">
+<div class="slide-count">40 / 51</div>
+<h2>37. Cold 검색 피처</h2>
+<pre><code>[검색 원천]
+  작가명 검색 결과 title/snippet/url
+        |
+        v
+[문맥 분류]
+  - 미술 문맥 비율
+  - 갤러리/미술관 문맥 비율
+  - 시장/거래 문맥 비율
+  - 동명이인 의심 문맥 비율
+        |
+        v
+[검색 피처]
+  검색 결과 수
+  검색 품질 점수
+  search_art_match_ratio
+  search_gallery_ratio
+  search_market_ratio
+  search_homonym_risk_ratio</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">피처</th>
+<th class="align-left">의미</th>
+<th class="align-left">사용</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>search_art_match_ratio</code></td>
+<td class="align-left">검색 결과가 미술 문맥과 맞는 비율</td>
+<td class="align-left">Quantile</td>
+</tr>
+<tr>
+<td class="align-left"><code>search_gallery_ratio</code></td>
+<td class="align-left">갤러리/미술관 문맥 비율</td>
+<td class="align-left">Quantile, 조회표 보정</td>
+</tr>
+<tr>
+<td class="align-left"><code>search_market_ratio</code></td>
+<td class="align-left">거래/시장 문맥 비율</td>
+<td class="align-left">Quantile, 조회표 보정</td>
+</tr>
+<tr>
+<td class="align-left"><code>search_homonym_risk_ratio</code></td>
+<td class="align-left">동명이인 또는 무관 결과 위험</td>
+<td class="align-left">라우팅/검수/Quantile</td>
+</tr>
+<tr>
+<td class="align-left"><code>search_quality_score</code></td>
+<td class="align-left">검색 결과 품질 요약</td>
+<td class="align-left">Quantile</td>
+</tr>
+</tbody></table></div>
+<p>검색 보정 조회표는 학습된 작가별 검색 문맥 효과를 최종 로그가격에 더하는 단계다.</p>
+</section><section class="slide" id="slide-41" data-slide="41">
+<div class="slide-count">41 / 51</div>
+<h2>38. Cold 대표 로그가격 안정화</h2>
+<pre><code>검색피처포함_기초Quantile후보_로그가격 =
+  LightGBM Quantile(작품 피처 + 작가 메타 + 검색 피처)
+
+구간별_보정값 =
+  Quantile 예측의 불확실성 폭 구간의 검증 잔차 중앙값
+
+검색포함_대표로그가격 =
+  검색피처포함_기초Quantile후보_로그가격
+  + clip(구간별_보정값, -0.25, +0.25)</code></pre>
+<p>작동 방식:</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">단계</th>
+<th class="align-left">설명</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Quantile 후보</td>
+<td class="align-left">검색 피처 포함 LightGBM이 대표 로그가격 후보를 만든다</td>
+</tr>
+<tr>
+<td class="align-left">Quantile 예측의 불확실성 폭 구간화</td>
+<td class="align-left">높은값(q90)-낮은값(q10) 폭이 비슷한 작품끼리 묶는다</td>
+</tr>
+<tr>
+<td class="align-left">잔차 중앙값</td>
+<td class="align-left">검증 데이터에서 같은 폭 구간의 반복 편향을 계산한다</td>
+</tr>
+<tr>
+<td class="align-left">clip</td>
+<td class="align-left">구간별 보정이 과도하게 움직이지 않도록 ±0.25 log로 제한</td>
+</tr>
+</tbody></table></div>
+<p>Quantile 예측의 불확실성 폭이 넓은 작품은 불확실성이 큰 작품이다. 이 구간에서 반복적으로 생기는 편향을 검증 잔차로 안정화한다.</p>
+</section><section class="slide" id="slide-42" data-slide="42">
+<div class="slide-count">42 / 51</div>
+<h2>39. Cold 과대예측 방어 guard</h2>
+<pre><code>방어조건 =
+  Quantile 예측의 불확실성 폭 &gt;= 1.4612207078910142
+  AND
+  검색포함_대표로그가격 - 낮은쪽40퍼센트기준_로그가격
+    &gt;= 0.07715547281151025
+
+방어조건 통과 시:
+  과대예측방어_로그가격 =
+    0.50 * 검색포함_대표로그가격
+    + 0.50 * 낮은쪽40퍼센트기준_로그가격</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">값</th>
+<th class="align-left">의미</th>
+<th class="align-left">근거</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>1.4612207078910142</code></td>
+<td class="align-left">Quantile 예측의 불확실성 폭 q67</td>
+<td class="align-left">검증 데이터에서 산출</td>
+</tr>
+<tr>
+<td class="align-left"><code>0.07715547281151025</code></td>
+<td class="align-left">대표가격 - q40 gap q50</td>
+<td class="align-left">검증 데이터에서 산출</td>
+</tr>
+<tr>
+<td class="align-left"><code>0.50</code></td>
+<td class="align-left">대표가격과 q40을 반반 섞는 guard weight</td>
+<td class="align-left">동결 guard 설정</td>
+</tr>
+</tbody></table></div>
+<p>guard는 학습 모델이 아니라 고정 조건부 방어 규칙이다. 불확실성이 크고 대표가격이 낮은쪽 후보보다 충분히 높을 때만 하향한다. 조건이 통과하지 않으면 대표 로그가격을 그대로 유지한다.</p>
+</section><section class="slide" id="slide-43" data-slide="43">
+<div class="slide-count">43 / 51</div>
+<h2>40. Cold 작가 검색 보정 조회표</h2>
+<pre><code>작가검색보정_로그값 =
+  작가검색보정조회표[정규화작가명]
+
+최종_Cold_로그가격 =
+  과대예측방어_로그가격
+  + 작가검색보정_로그값</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">의미</th>
+<th class="align-left">왜 필요한가</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">조회표</td>
+<td class="align-left">미리 만든 표에서 값을 찾는 방식</td>
+<td class="align-left">운영 사용 때 새로 학습하지 않고 고정 보정값 적용</td>
+</tr>
+<tr>
+<td class="align-left">search_delta</td>
+<td class="align-left">작가 검색 문맥이 검증 데이터에서 반복적으로 만든 로그가격 보정값</td>
+<td class="align-left">검색 문맥이 설명하는 작가별 잔차 반영</td>
+</tr>
+<tr>
+<td class="align-left">clip/cap</td>
+<td class="align-left">과도한 작가별 보정 방지</td>
+<td class="align-left">검색 결과 품질 변동에 따른 과보정 방어</td>
+</tr>
+</tbody></table></div>
+<p>작동 흐름:</p>
+<pre><code>정규화작가명 또는 artist_key
+  -&gt; 작가 검색 보정 조회표에서 값 확인
+  -&gt; 보정값을 cap 범위 안에서 적용
+  -&gt; 과대예측방어_로그가격에 더함</code></pre>
+</section><section class="slide" id="slide-44" data-slide="44">
+<div class="slide-count">44 / 51</div>
+<h2>41. Cold 계산 예시</h2>
+<pre><code>가상 예시:
+  아래 숫자는 산식 이해를 위한 예시값이며 평가 성능 수치가 아님
+
+[1. 입력]
+  작가 매칭 신뢰도 = 0.62
+  같은 작가 가격 이력 = 0건
+  작품 = mixed media/panel, 65cm x 53cm
+
+[2. 라우팅]
+  0.62 &lt; 0.80
+  -&gt; Cold
+
+[3. 작품 피처]
+  area_cm2 = 3,445
+  log_area = 8.145
+  medium_category = mixed_media
+  support_category = panel
+
+[4. 검색 피처]
+  search_art_match_ratio = 0.667
+  search_gallery_ratio = 0.250
+  search_market_ratio = 0.167
+  search_quality_score = 0.620</code></pre>
+<p>이 단계에서는 Cold로 들어갈 입력 피처를 만든 상태다. 가격 계산은 다음 단계에서 Quantile 후보부터 시작한다.</p>
+</section><section class="slide" id="slide-45" data-slide="45">
+<div class="slide-count">45 / 51</div>
+<h2>42. Cold 계산 예시: 최종값</h2>
+<pre><code>[5. Quantile 후보]
+LightGBM 기초 후보 = 17.800
+낮은쪽40퍼센트기준 = 17.550
+Quantile 예측의 불확실성 폭 = 1.700
+
+[6. 구간별 잔차 안정화]
+구간별 보정값 = +0.040
+
+검색포함_대표로그가격 = 17.840
+
+[7. guard 조건]
+대표 - 낮은쪽 = 0.290
+
+guard:
+  1.700 &gt;= 1.4612207078910142
+  0.290 &gt;= 0.07715547281151025
+  -&gt; 방어 작동
+
+과대예측방어_로그가격 =
+  0.50*17.840 + 0.50*17.550 = 17.695
+
+[8. 검색 조회표 보정]
+작가검색보정 = +0.060
+최종 Cold 로그가격 = 17.755
+최종 Cold 가격 = exp(17.755)</code></pre>
+</section><section class="slide" id="slide-46" data-slide="46">
+<div class="slide-count">46 / 51</div>
+<h2>43. Cold 성능과 재현</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">단계</th>
+<th class="align-right">MdAPE</th>
+<th class="align-right">MAPE</th>
+<th class="align-right">p95 APE</th>
+<th class="align-left">해석</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">검색포함 대표 로그가격</td>
+<td class="align-right">0.424663</td>
+<td class="align-right">0.991042</td>
+<td class="align-right">3.305298</td>
+<td class="align-left">검색 피처 포함 기준 예측</td>
+</tr>
+<tr>
+<td class="align-left">과대예측 방어</td>
+<td class="align-right">0.417765</td>
+<td class="align-right">0.963963</td>
+<td class="align-right">2.537708</td>
+<td class="align-left">큰 오차 구간 방어</td>
+</tr>
+<tr>
+<td class="align-left">과대예측 방어 + 검색 보정</td>
+<td class="align-right">0.409820</td>
+<td class="align-right">0.849260</td>
+<td class="align-right">2.346465</td>
+<td class="align-left">평균 오차와 큰 오차 동시 개선</td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">재현 항목</th>
+<th class="align-right">값</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">fixed test n</td>
+<td class="align-right">3,099</td>
+</tr>
+<tr>
+<td class="align-left">검색 보정 조회표 작가 수</td>
+<td class="align-right">372</td>
+</tr>
+<tr>
+<td class="align-left">test 검색 커버리지</td>
+<td class="align-right">1.000000</td>
+</tr>
+<tr>
+<td class="align-left">후처리기와 독립 계산식 차이</td>
+<td class="align-right">0.000e+00</td>
+</tr>
+<tr>
+<td class="align-left">기록 지표와 재계산 차이</td>
+<td class="align-right">1.110e-16</td>
+</tr>
+</tbody></table></div>
+<p>재현 근거:</p>
+<ul>
+<li>재현 스크립트: <code>scripts/track6/verify_cold_best_research_reproducibility.py</code></li>
+<li>재현 결과: <code>models/track6/cold_prediction_v0.3/reproduction/best_research_reproducibility_check.json</code></li>
+<li>해석: 검색 피처, guard, 조회표 후처리까지 독립 재계산과 일치한다.</li>
+</ul>
+</section><section class="slide" id="slide-47" data-slide="47">
+<div class="slide-count">47 / 51</div>
+<h2>44. 세 경로는 단일 모델인가</h2>
+<p>세 경로는 하나의 단일 모델이 아니라, <code>학습된 모델 + 고정 통계/규칙 + 후처리</code>를 결합한 앙상블형 하이브리드 구조다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">경로</th>
+<th class="align-left">학습된 모델/계수</th>
+<th class="align-left">고정 통계/규칙</th>
+<th class="align-left">사용 단계에서 하는 일</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">Huber 잔차 회귀, 큰오차방어 Huber meta-model, 버킷순차보정의 CatBoost/Huber 모델</td>
+<td class="align-left">유사작품 찾기 단계, 70:30/85:15 후보 가중, 75:25 보조안정, clip, 위험도임계값, 대안교체최소차이</td>
+<td class="align-left">같은 작가 기준가격 위에 동결 모델과 규칙을 순서대로 적용</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite</td>
+<td class="align-left">전체 피처 기반 LightGBM Quantile 예측, 저표본 안정화 LightGBM Quantile 예측, LightGBM Huber 잔차 보정</td>
+<td class="align-left">1~4건 작가 이력 통계, 이력 찾기 단계, 두 중앙값 예측의 평균, 제한된 잔차 보정, 신뢰도 표시</td>
+<td class="align-left">저이력 통계와 작품 피처를 동결 모델에 넣어 로그가격 계산</td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">LightGBM Quantile 후보 모델</td>
+<td class="align-left">검색 피처 생성 규칙, 구간별 잔차 안정화표, guard, 검색 보정 조회표, clip/cap</td>
+<td class="align-left">작품/작가/검색 피처로 후보를 만들고 고정 방어 규칙을 적용</td>
+</tr>
+</tbody></table></div>
+<p><strong>Huber 설명</strong></p>
+<ul>
+<li>Huber 자체는 “학습이 필요 없는 모델명”이 아니라 큰 오차에 덜 끌리는 손실/강건 회귀 방식이다.</li>
+<li>문서에서 <code>Huber 모델</code>이라고 부르는 것은 과거 데이터로 Huber 기준 계수/절편을 산출해 동결한 회귀 예측기다.</li>
+<li>운영 사용 단계에서는 Huber나 CatBoost를 새로 학습하지 않고, 이미 동결된 계수와 tree에 새 작품 피처를 넣어 결과만 계산한다.</li>
+</ul>
+</section><section class="slide" id="slide-48" data-slide="48">
+<div class="slide-count">48 / 51</div>
+<h2>45. 세 경로의 핵심 차이</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">Warm</th>
+<th class="align-left">Warm-lite</th>
+<th class="align-left">Cold</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">적용 조건</td>
+<td class="align-left">고신뢰 작가 + 이력 5건 이상</td>
+<td class="align-left">고신뢰 작가 + 이력 1~4건</td>
+<td class="align-left">이력 0건 또는 매칭 불확실</td>
+</tr>
+<tr>
+<td class="align-left">기준가격</td>
+<td class="align-left">같은 작가 유사작품</td>
+<td class="align-left">저이력 작가 통계 + 두 중앙값 예측의 평균</td>
+<td class="align-left">작품/작가/검색 피처</td>
+</tr>
+<tr>
+<td class="align-left">보정</td>
+<td class="align-left">Huber 잔차 보정</td>
+<td class="align-left">Huber 잔차 제한 보정</td>
+<td class="align-left">구간별 잔차 안정화</td>
+</tr>
+<tr>
+<td class="align-left">방어</td>
+<td class="align-left">위험도 조건부 보수 후보</td>
+<td class="align-left">이력 1건 표시 정책</td>
+<td class="align-left">과대예측 guard</td>
+</tr>
+<tr>
+<td class="align-left">최종 변환</td>
+<td class="align-left"><code>exp(로그가격)</code></td>
+<td class="align-left"><code>exp(로그가격)</code></td>
+<td class="align-left"><code>exp(로그가격)</code></td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-49" data-slide="49">
+<div class="slide-count">49 / 51</div>
+<h2>46. 운영 모니터링 포인트</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">항목</th>
+<th class="align-left">확인 내용</th>
+<th class="align-left">이유</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">R1 라우팅 규칙 위반</td>
+<td class="align-left">0.80 임계와 이력 조건이 지켜지는지</td>
+<td class="align-left">잘못된 경로 배정 방지</td>
+</tr>
+<tr>
+<td class="align-left">R2 경로별 트래픽</td>
+<td class="align-left">Warm/Warm-lite/Cold 비중</td>
+<td class="align-left">운영 데이터가 특정 경로에 쏠리는지 확인</td>
+</tr>
+<tr>
+<td class="align-left">R3 보조정보 없이 통과</td>
+<td class="align-left">이름만으로 상위 경로에 간 비중</td>
+<td class="align-left">동명이인 위험 관리</td>
+</tr>
+<tr>
+<td class="align-left">R4 Warm-lite 실측 성능</td>
+<td class="align-left">라벨 50건 이상부터 측정</td>
+<td class="align-left">저이력 경로 운영 성능 확인</td>
+</tr>
+<tr>
+<td class="align-left">R5 동명이인율</td>
+<td class="align-left">검수 결정 누적 후 측정</td>
+<td class="align-left">작가 매칭 임계 재검토</td>
+</tr>
+</tbody></table></div>
+</section><section class="slide" id="slide-50" data-slide="50">
+<div class="slide-count">50 / 51</div>
+<h2>47. 최종 설명 문장</h2>
+<pre><code>이 가격 예측 시스템은 하나의 모델이 모든 작품을 맞히는 구조가 아니다.
+
+작가가 확실하고 이력이 5건 이상이면 Warm이 같은 작가 유사작품을 기준으로 계산한다.
+작가가 확실하지만 이력이 1~4건이면 Warm-lite가 저이력 통계와 두 중앙값 예측, 제한된 잔차 보정으로 계산한다.
+작가 이력이 없거나 매칭이 불확실하면 Cold가 작품 피처, 작가 메타, 검색 문맥과 과대예측 방어로 계산한다.
+
+세 경로 모두 로그가격에서 계산하고, 마지막에 exp()로 원화 가격을 만든다.
+학습 때는 실제 가격으로 모델과 보정값을 만들지만, 사용 때는 실제 가격 없이 동결 모델과 입력 피처만 사용한다.</code></pre>
+</section><section class="slide" id="slide-51" data-slide="51">
+<div class="slide-count">51 / 51</div>
+<h2>48. 재현 근거 요약</h2>
+<div class="table-wrap"><table><thead><tr>
+<th class="align-left">모델</th>
+<th class="align-left">주요 근거</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left"><code>warm_model_policy_wmin8.json</code>, PP-WMIN10 API parity, max log diff <code>5.33e-15</code></td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite</td>
+<td class="align-left"><code>warm_lite_quantile_residual_v0.1</code>, PP-WLITE-Q3/Q4/Q5, bundle replay <code>3.55e-15</code>, API parity <code>0.0</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left"><code>cold_prediction_v0.3</code>, independent reproduction, max metric diff <code>1.110e-16</code></td>
+</tr>
+</tbody></table></div>
+<blockquote>발표 후 질의에서는 먼저 “라우팅 조건”, 그 다음 “학습/사용 단계 구분”, 마지막으로 “각 모델의 보정과 방어가 왜 필요한지” 순서로 답하면 된다.</blockquote>
+</section>
+    </main>
+  </div>
+</body>
+</html>

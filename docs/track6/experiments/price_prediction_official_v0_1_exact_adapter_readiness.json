@@ -1,0 +1,172 @@
+{
+  "created_at": "2026-06-12T16:49:08",
+  "service_version": "price_prediction_v0.1",
+  "adapter_level_now": "report_final_layer_proxy",
+  "warm": {
+    "final_layer": {
+      "script": "experiments/track6/SUB-WARM-PP258_operational_fixed_test_submission/scripts/pp258_reproduce_fixed_test.py",
+      "input": "experiments/track6/SUB-WARM-PP258_operational_fixed_test_submission/data/pp258_model_input_validation_test.csv",
+      "stored_metrics": "experiments/track6/SUB-WARM-PP258_operational_fixed_test_submission/outputs/pp258_test_metrics.json",
+      "script_exists": true,
+      "input_exists": true,
+      "stored_metrics_exists": true,
+      "final_layer_replay_ready": true,
+      "max_price_abs_diff_vs_stored": 1.4901161193847656e-08,
+      "metrics_match": true,
+      "metric_diffs": {
+        "MdAPE": 0.0,
+        "MAPE": 0.0,
+        "p95_APE": 0.0,
+        "RMSE_log": 0.0
+      }
+    },
+    "exact_raw": {
+      "source_experiment": "experiments/track6/PP-OPT253_258_warm_pp252_narrow_direction_residual_refinement",
+      "feature_detail_exists": true,
+      "run_config_exists": true,
+      "serialized_model_files": [],
+      "partial_upstream_refreeze_ready": true,
+      "partial_upstream_refreeze_manifest": "models/track6/warm_pp252_upstream_refreeze_candidate/manifest.json",
+      "partial_upstream_refreeze_status": "partial_upstream_refreeze_candidate",
+      "partial_upstream_refreeze_components": [
+        "prob_hist35_pp252 direction classifier",
+        "resid_huber_pp252 residual regressor"
+      ],
+      "partial_upstream_refreeze_metric_summary": {
+        "n": 607,
+        "MdAPE": 0.14097640062652927,
+        "MAPE": 0.26988819577914586,
+        "p95_APE": 0.8073247072914463,
+        "RMSE_log": 0.3974538295512704,
+        "within_15": 0.5271828665568369,
+        "within_30": 0.7808896210873146,
+        "within_50": 0.8830313014827018,
+        "over_50pct_error_rate": 0.11696869851729819
+      },
+      "exact_raw_adapter_ready": false,
+      "blockers": [
+        "방향 분류와 Huber 잔차는 refreeze 후보로 저장되었습니다.",
+        "다만 PP252 기준 후보와 PP252 안정 후보를 원시 입력에서 만드는 직전 후보 생성 adapter가 아직 남아 있습니다.",
+        "따라서 현재 산출물만으로는 신규 사용자 입력에 대해 PP252 원 상류 컬럼 전체를 exact parity로 생성할 수 없습니다."
+      ]
+    }
+  },
+  "cold": {
+    "final_layer": {
+      "postprocessor": "models/track6/cold_prediction_v0.3/predict/apply_cold_postprocess_v0_3.py",
+      "policy": "models/track6/cold_prediction_v0.3/config/cold_model_policy_v0_3.json",
+      "params": "models/track6/cold_prediction_v0.3/config/cold_postprocess_params_v0_3.json",
+      "lookup": "models/track6/cold_prediction_v0.3/config/search_delta_lookup_v0_3.json",
+      "repro_check": "models/track6/cold_prediction_v0.3/reproduction/best_research_reproducibility_check.json",
+      "postprocessor_exists": true,
+      "policy_exists": true,
+      "params_exists": true,
+      "lookup_exists": true,
+      "final_layer_replay_ready": true,
+      "repro_check_payload": {
+        "model_name": "검색 피처 포함 연구 기준 예측가격",
+        "internal_id": "COLD_BASE_RESEARCH_V1 / v0.3 guard+search / guard_search_gm",
+        "upstream_files": {
+          "pp_y18_predictions": "experiments/track6/PP-Y18_cold_y16_top_candidate_stability/outputs/predictions.csv",
+          "qr1_quantile_predictions": "experiments/track6/PP-QR1_cold_quantile_regression_alpha_grid/outputs/predictions.csv",
+          "h28_search_predictions": "experiments/track6/PP-H20_H26_search_feature_expansion/outputs/candidate_predictions.csv",
+          "recorded_defense_metrics": "experiments/track6/PP-COLD-DEFENSE1_cold_guard_search_layer_combination/outputs/test_metrics.csv"
+        },
+        "test_rows": 3099,
+        "validation_rows": 2753,
+        "search_lookup_artists": 372,
+        "test_search_coverage": 1.0,
+        "guard_params_from_bundle": {
+          "qwidth_q67": 1.4612207078910142,
+          "gap_q50": 0.07715547281151025,
+          "weight": 0.5
+        },
+        "guard_params_recalculated_from_validation": {
+          "qwidth_q67": 1.4612207078910142,
+          "gap_q50": 0.07715547281151025
+        },
+        "max_threshold_abs_diff": 0.0,
+        "max_postprocessor_vs_independent_lookup_log_diff": 0.0,
+        "max_lookup_delta_vs_source_delta_log_diff_on_test": 2.6645352591003757e-15,
+        "max_metric_abs_diff_vs_recorded": 1.1102230246251565e-16,
+        "metric_abs_diff_vs_recorded": {
+          "y18_base": 0.0,
+          "guard": 0.0,
+          "guard_search_gm": 1.1102230246251565e-16
+        },
+        "checks": {
+          "thresholds_reproduced": true,
+          "postprocessor_matches_independent_formula": true,
+          "frozen_lookup_matches_h28_source_delta_on_test": true,
+          "recorded_metrics_reproduced": true,
+          "all_passed": true
+        }
+      }
+    },
+    "exact_raw": {
+      "upstream_sources": {
+        "pp_y18_predictions": "experiments/track6/PP-Y18_cold_y16_top_candidate_stability/outputs/predictions.csv",
+        "pp_qr1_predictions": "experiments/track6/PP-QR1_cold_quantile_regression_alpha_grid/outputs/predictions.csv",
+        "h28_search_predictions": "experiments/track6/PP-H20_H26_search_feature_expansion/outputs/candidate_predictions.csv",
+        "search_source": "h23_gallery_museum_median_cap0.2",
+        "validation_evidence": "experiments/track6/PP-COLD-DEFENSE1_cold_guard_search_layer_combination"
+      },
+      "upstream_source_exists": {
+        "pp_y18_predictions": true,
+        "pp_qr1_predictions": true,
+        "h28_search_predictions": true,
+        "search_source": false,
+        "validation_evidence": true
+      },
+      "raw_v02_predictor_exists": true,
+      "partial_upstream_refreeze_ready": true,
+      "partial_upstream_refreeze_manifest": "models/track6/cold_v03_research_upstream_refreeze_candidate/manifest.json",
+      "partial_upstream_refreeze_status": "research_upstream_refreeze_candidate",
+      "partial_upstream_refreeze_components": [
+        "PP-Y2 search/external LightGBM Quantile q10/q50/q90",
+        "QR1 LightGBM Quantile q40",
+        "PP-Y16 qwidth segment correction map"
+      ],
+      "partial_upstream_refreeze_metric_summary": {
+        "n": 3099,
+        "MdAPE": 0.4098199778610642,
+        "MAPE": 0.8492600086568257,
+        "p95_APE": 2.3464651715770604,
+        "RMSE_log": 0.8502585129078742
+      },
+      "row_feature_store_exists": true,
+      "row_feature_store_rows": 32766,
+      "fixed_test_feature_store_replay_ready": true,
+      "fixed_test_feature_store_hit_rate": 1.0,
+      "feature_parity_audit": {
+        "audit_markdown": "docs/track6/experiments/price_prediction_official_v0_1_cold_feature_parity_audit.md",
+        "audit_json": "docs/track6/experiments/price_prediction_official_v0_1_cold_feature_parity_audit.json",
+        "fixed_test_rows": 3099,
+        "exact_feature_parity_passed": true,
+        "exact_prediction_parity_passed": true,
+        "service_feature_metrics": {
+          "n": 3099,
+          "MdAPE": 0.4098199778610642,
+          "MAPE": 0.8492600086568257,
+          "p95_APE": 2.3464651715770604,
+          "RMSE_log": 0.8502585129078742
+        }
+      },
+      "new_input_cache_feature_pipeline_ready": true,
+      "new_input_pipeline_audit": {
+        "audit_markdown": "docs/track6/experiments/price_prediction_official_v0_1_cold_new_input_pipeline_audit.md",
+        "audit_json": "docs/track6/experiments/price_prediction_official_v0_1_cold_new_input_pipeline_audit.json",
+        "all_deterministic": true,
+        "all_modes_matched": true
+      },
+      "exact_raw_adapter_ready": false,
+      "blockers": [
+        "PP-Y2/PP-Y16/QR1 주요 상류 모델은 refreeze 후보로 저장되었습니다.",
+        "fixed-test 행은 row-level feature store와 source_artwork_id/artwork_url lookup으로 exact parity를 통과했습니다.",
+        "신규 입력은 search snapshot, 전시/갤러리 cache, missing/default fallback 순서로 deterministic하게 피처를 생성합니다.",
+        "다만 feature cache에 없는 신규 작가의 검색/전시/갤러리 정보를 실시간 수집하고 검수해 같은 스키마로 저장하는 live collection pipeline은 아직 남아 있습니다.",
+        "raw 실행 가능한 v0.2 predictor는 검색 피처를 제거한 별도 운영 변형이라 v0.3 fixed-test parity와 동일하지 않습니다."
+      ]
+    }
+  }
+}

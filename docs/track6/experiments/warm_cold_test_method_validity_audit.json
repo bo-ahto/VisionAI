@@ -1,0 +1,215 @@
+{
+  "created_at": "2026-06-11 10:54:31",
+  "tolerance": 1e-09,
+  "shuffle_seeds": [
+    17,
+    42,
+    123,
+    20260611,
+    777001
+  ],
+  "warm": {
+    "model": "Warm PP258 기준가격 기반 미세 보정 모델",
+    "rows": {
+      "all": 1126,
+      "test": 607,
+      "validation_oof": 519
+    },
+    "metric_diffs": {
+      "test": {
+        "MdAPE": 0.0,
+        "MAPE": 0.0,
+        "p95_APE": 0.0,
+        "RMSE_log": 0.0
+      },
+      "validation_oof": {
+        "MdAPE": 0.0,
+        "MAPE": 0.0,
+        "p95_APE": 0.0,
+        "RMSE_log": 0.0
+      }
+    },
+    "max_test_metric_abs_diff": 0.0,
+    "max_validation_metric_abs_diff": 0.0,
+    "shuffle_order_diffs": [
+      {
+        "seed": 17,
+        "max_final_log_abs_diff": 0.0
+      },
+      {
+        "seed": 42,
+        "max_final_log_abs_diff": 0.0
+      },
+      {
+        "seed": 123,
+        "max_final_log_abs_diff": 0.0
+      },
+      {
+        "seed": 20260611,
+        "max_final_log_abs_diff": 0.0
+      },
+      {
+        "seed": 777001,
+        "max_final_log_abs_diff": 0.0
+      }
+    ],
+    "max_shuffle_order_final_log_abs_diff": 0.0,
+    "label_independence_max_final_log_abs_diff": 0.0,
+    "split_check": {
+      "splits": [
+        "test",
+        "validation_oof"
+      ],
+      "overlap_row_ids": {
+        "test__validation_oof": 0
+      },
+      "duplicate_row_ids_by_split": {
+        "test": 0,
+        "validation_oof": 0
+      },
+      "passed": true
+    },
+    "repeated_oof_or_holdout_evidence": {
+      "available": true,
+      "source": "experiments/track6/PP-OPT253_258_warm_pp252_narrow_direction_residual_refinement/outputs/selected_stability_repeated_summary.csv",
+      "rows": 12,
+      "scenarios": [
+        "artist_group_holdout",
+        "confidence_stratified_rows",
+        "full_split",
+        "price_band_stratified_rows",
+        "risk_focus_bootstrap",
+        "row_bootstrap"
+      ],
+      "repeated_rows_excluding_full_split": 10,
+      "min_incumbent_MAPE_win_rate_excluding_full_split": 0.7884615384615384,
+      "min_incumbent_p95_win_rate_excluding_full_split": 0.5,
+      "max_incumbent_p95_win_rate_excluding_full_split": 0.8576923076923076,
+      "mean_MAPE_range": [
+        0.2054149795342548,
+        0.3704752316292032
+      ]
+    },
+    "checks": {
+      "fixed_test_metrics_reproduced": true,
+      "validation_oof_metrics_reproduced": true,
+      "same_input_same_output_under_row_shuffle": true,
+      "prediction_does_not_use_labels": true,
+      "split_row_ids_are_disjoint_and_unique": true,
+      "all_passed": true
+    }
+  },
+  "cold": {
+    "model": "Cold 검색 피처 포함 Quantile 예측 + 과대예측 방어 + 작가 검색 보정 모델",
+    "rows": {
+      "all": 5852,
+      "test": 3099,
+      "validation": 2753
+    },
+    "recorded_reproducibility": {
+      "source": "models/track6/cold_prediction_v0.3/reproduction/best_research_reproducibility_check.json",
+      "max_metric_abs_diff_vs_recorded": 1.1102230246251565e-16,
+      "max_threshold_abs_diff": 0.0,
+      "checks": {
+        "thresholds_reproduced": true,
+        "postprocessor_matches_independent_formula": true,
+        "frozen_lookup_matches_h28_source_delta_on_test": true,
+        "recorded_metrics_reproduced": true,
+        "all_passed": true
+      }
+    },
+    "independent_formula_max_final_log_abs_diff": 0.0,
+    "shuffle_order_diffs": [
+      {
+        "seed": 17,
+        "max_final_log_abs_diff": 0.0
+      },
+      {
+        "seed": 42,
+        "max_final_log_abs_diff": 0.0
+      },
+      {
+        "seed": 123,
+        "max_final_log_abs_diff": 0.0
+      },
+      {
+        "seed": 20260611,
+        "max_final_log_abs_diff": 0.0
+      },
+      {
+        "seed": 777001,
+        "max_final_log_abs_diff": 0.0
+      }
+    ],
+    "max_shuffle_order_final_log_abs_diff": 0.0,
+    "label_independence_max_final_log_abs_diff": 0.0,
+    "split_check": {
+      "splits": [
+        "test",
+        "validation"
+      ],
+      "overlap_row_ids": {
+        "test__validation": 0
+      },
+      "duplicate_row_ids_by_split": {
+        "test": 0,
+        "validation": 0
+      },
+      "passed": true
+    },
+    "repeated_oof_or_holdout_evidence": {
+      "available": true,
+      "source": "experiments/track6/PP-QR4_cold_qwidth_repeated_split_revalidation/outputs/holdout_summary.csv",
+      "guard_rows": 2,
+      "row_5fold": [
+        {
+          "scheme": "row_5fold",
+          "candidate": "guard_y18_lgb_q40_qwidth67_gap50_down_w0p50",
+          "folds": 60,
+          "mean_MdAPE": 0.3664688751311482,
+          "std_MdAPE": 0.0115723990360024,
+          "mean_MAPE": 0.5181789528691249,
+          "mean_p95_APE": 1.3218899423703132,
+          "prob_MdAPE_improve": 0.4333333333333333,
+          "prob_MAPE_improve": 1.0,
+          "prob_p95_improve": 0.9833333333333332
+        }
+      ],
+      "artist_5fold": [
+        {
+          "scheme": "artist_5fold",
+          "candidate": "guard_y18_lgb_q40_qwidth67_gap50_down_w0p50",
+          "folds": 60,
+          "mean_MdAPE": 0.3741883595486458,
+          "std_MdAPE": 0.0472988531180653,
+          "mean_MAPE": 0.5360138084665151,
+          "mean_p95_APE": 1.4332172744375062,
+          "prob_MdAPE_improve": 0.5166666666666667,
+          "prob_MAPE_improve": 0.9833333333333332,
+          "prob_p95_improve": 0.85
+        }
+      ],
+      "test_bootstrap_guard": {
+        "candidate": "guard_y18_lgb_q40_qwidth67_gap50_down_w0p50",
+        "boot_MdAPE_mean": 0.4191737564387553,
+        "boot_MdAPE_ci_low": 0.4050541598981098,
+        "boot_MdAPE_ci_high": 0.4363747609609836,
+        "boot_MAPE_mean": 0.963636697993964,
+        "boot_p95_mean": 2.6168667466306816,
+        "prob_MdAPE_beats_baseline": 0.9075,
+        "ci_high_le_baseline_ref": false
+      }
+    },
+    "checks": {
+      "recorded_reproducibility_all_passed": true,
+      "recorded_metric_diff_is_zero": true,
+      "recorded_threshold_diff_is_zero": true,
+      "postprocessor_matches_independent_formula": true,
+      "same_input_same_output_under_row_shuffle": true,
+      "prediction_does_not_use_labels": true,
+      "split_row_ids_are_disjoint_and_unique": true,
+      "all_passed": true
+    }
+  },
+  "all_passed": true
+}

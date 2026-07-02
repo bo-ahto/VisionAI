@@ -4,10 +4,10 @@
 - 입력: `data/track4_primary_market_feature_candidates_v1.csv`
 - 출력: `data/track6/track6_feature_candidates_name_corrected.csv`
 - override 파일: `scripts/track6/artist_ko_overrides.csv`
-- 적용 작가 key 수: `144`
-- 적용 rows: `4,454`
-- 잔여 검토 후보 작가 key 수: `506`
-- 잔여 검토 후보 rows: `3,109`
+- 적용 작가 key 수: `205`
+- 적용 rows: `5,018`
+- 잔여 검토 후보 작가 key 수: `445`
+- 잔여 검토 후보 rows: `2,545`
 
 ## 1. 처리 원칙
 
@@ -45,6 +45,7 @@
 | `yoo suzy` | 유수즈이 | 유수지 | `47` | `obvious_bad_romanization` |
 | `deokhwan yoon` | 윤더크환 | 윤덕환 | `46` | `obvious_bad_romanization` |
 | `erica choi` | 최어이카 | 최에리카 | `45` | `obvious_bad_romanization` |
+| `stepper studio` | 스테퍼스튜디오 | 스테퍼 스튜디오 | `45` | `readable_studio_name_transliteration` |
 | `hazzi eunjeong kim` | 김하즈지은정 | 김은정 | `44` | `obvious_bad_romanization` |
 | `lookha bark` | 루크하바르크 | 박루카 | `44` | `obvious_bad_romanization` |
 | `wang yeul` | 왕예우르 | 왕열 | `43` | `obvious_bad_romanization` |
@@ -54,13 +55,12 @@
 | `mihei her` | 미헤이헤르 | 허미혜 | `39` | `obvious_bad_romanization` |
 | `minjeong guem` | 민정구에므 | 금민정 | `39` | `obvious_bad_romanization` |
 | `matthew anderson` | 매튜안데르선 | 매튜 앤더슨 | `38` | `readable_foreign_name_transliteration` |
+| `ryu hoimin` | 류호이민 | 류호민 | `38` | `obvious_bad_romanization` |
 | `keem jiyoung` | 케에므지영 | 김지영 | `37` | `obvious_bad_romanization` |
 | `kwang bum jang` | 장광부므 | 장광범 | `37` | `obvious_bad_romanization` |
 | `soon yeal yang` | 양순예아르 | 양순열 | `35` | `obvious_bad_romanization` |
 | `valeriia kapitulska park lia` | 바레리이아캅이툴스카박리아 | 발레리아 카피툴스카 박리아 | `34` | `readable_foreign_name_transliteration` |
 | `zhanna kan` | 즈한나칸 | 잔나 칸 | `34` | `readable_foreign_name_transliteration` |
-| `diego rodarte` | 디에고로다르테 | 디에고 로다르테 | `33` | `readable_foreign_name_transliteration` |
-| `jihyung nam` | 남지현그 | 남지형 | `33` | `obvious_bad_romanization` |
 
 ## 3. 잔여 검토 후보 상위
 
@@ -71,41 +71,41 @@
 | `121` | `lydia lee` | 이리디아 | `saatchi` |
 | `79` | `jennifer lee` | 이제니퍼 | `saatchi` |
 | `64` | `kris kim` | 김크리스 | `saatchi` |
-| `45` | `stepper studio` | 스테퍼스튜디오 | `saatchi` |
 | `39` | `jeremy yong` | 용제레미 | `saatchi` |
-| `38` | `ryu hoimin` | 류호이민 | `saatchi` |
 | `38` | `stella sujin` | 스텔라수진 | `artsy` |
-| `28` | `gbday` | 그브다이 | `artsy,artue` |
 | `27` | `melody park` | 박멜로디 | `saatchi` |
 | `27` | `sambypen` | 샘바이펜 | `artsy,artue` |
 | `25` | `denis lee` | 이데니스 | `saatchi` |
 | `25` | `woori bai` | 우리바이 | `saatchi` |
 | `24` | `min jung key` | 민정케이 | `artsy` |
-| `24` | `yislow` | 이스로우 | `artue` |
 | `20` | `aira choi` | 최아이라 | `saatchi` |
-| `18` | `semi yh` | 세미이흐 | `saatchi` |
 | `16` | `daniel kim` | 김다니엘 | `saatchi` |
 | `14` | `hyosy hyosy` | 효시효시 | `saatchi` |
 | `14` | `rosie park` | 박로시에 | `saatchi` |
 | `13` | `duenchayphoochana phooprasert` | 두엔차이프후찬아프후프라세르트 | `artue` |
-| `13` | `kim inbai` | 김인바이 | `artsy` |
-| `12` | `prach pimarnman` | 프라크흐핌아느만 | `artue` |
-| `12` | `wal chirachaisakul` | 왈치라차이삭우르 | `artue` |
 | `12` | `가이 야나이` | 가이 야나이 | `gallery_primary` |
 | `11` | `chonnapas yokyai` | 초느납아스욕야이 | `artue` |
-| `11` | `leeyunh ee` | 이윤흐이 | `saatchi` |
-| `11` | `park jiemin` | 박지에민 | `artsy` |
-| `11` | `sungkuen lee` | 이성쿠엔 | `artsy` |
-| `11` | `yun hee toh` | 윤희토흐 | `artsy` |
-| `10` | `amonmazdah` | 아몬마즈다흐 | `artsy` |
-| `10` | `artist aeun` | 아티스트애운 | `saatchi` |
 | `10` | `bareu kim` | 김바레우 | `artsy` |
-| `10` | `dagyeong yun` | 윤다그영 | `saatchi` |
-| `10` | `dongzadonghwi` | 동자동흐위 | `artsy` |
-| `10` | `doppel kim` | 김돕페르 | `artsy` |
-| `10` | `elle rosenfeld` | 에르레로센페르드 | `saatchi` |
 | `10` | `gabby chu` | 주갑브이 | `artsy` |
 | `10` | `huieun oh` | 오후이은 | `saatchi` |
+| `10` | `jennifer hur` | 허제니퍼 | `artsy` |
+| `10` | `kaia kim` | 김카이아 | `artsy` |
+| `10` | `keunhyung park` | 박케운현그 | `artsy` |
+| `10` | `kipum bae` | 배킵우므 | `saatchi` |
+| `10` | `la kitki` | 라기트기 | `saatchi` |
+| `10` | `minjung key` | 민정케이 | `artue` |
+| `10` | `seoun gang kim` | 김서운강 | `artsy` |
+| `10` | `stella park` | 박스텔라 | `artsy` |
+| `10` | `teresia huwon yoo` | 유테레시아후원 | `saatchi` |
+| `10` | `엠버 토플리세크` | 엠버 토플리세크 | `gallery_primary` |
+| `10` | `코린 폰 레부자` | 코린 폰 레부자 | `gallery_primary` |
+| `9` | `alice yaelin yang` | 양앨리스얘린 | `artsy` |
+| `9` | `digital d` | 디기탈드 | `saatchi` |
+| `9` | `gwaxng` | 그와엑스응 | `artsy` |
+| `9` | `jack kabangu` | 잭카방우 | `artue` |
+| `9` | `jason ha` | 하제이슨 | `artsy` |
+| `9` | `jinhui lee` | 이진후이 | `saatchi` |
+| `9` | `jinyoup chris park` | 박진유프크리스 | `saatchi` |
 
 ## 4. 다음 작업
 

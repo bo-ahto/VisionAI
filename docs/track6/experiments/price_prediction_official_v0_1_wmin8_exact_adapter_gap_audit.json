@@ -1,0 +1,210 @@
+{
+  "created_at": "2026-06-13T09:11:42",
+  "decision": "exact_wmin8_runtime_candidate_connected",
+  "reason": "WMIN8 missing upstream values are now supplied by the packaged exact runtime candidate. The remaining validation item is fixed-test parity through the official API endpoint.",
+  "selected_candidate": "min1_route_w850_risk_q50_altlower_gap005",
+  "source_experiment": "experiments/track6/PP-WMIN8_warm_min1_weight_router",
+  "artifact_files": {
+    "manifest": {
+      "path": "models/track6/warm_wmin8_operational_candidate/manifest.json",
+      "exists": true,
+      "size_bytes": 6024
+    },
+    "policy": {
+      "path": "models/track6/warm_wmin8_operational_candidate/config/warm_model_policy_wmin8.json",
+      "exists": true,
+      "size_bytes": 5916
+    },
+    "wmin7_coefficients": {
+      "path": "experiments/track6/PP-WMIN7_warm_min1_weight_retuning/outputs/huber_refit_coefficients.csv",
+      "exists": true,
+      "size_bytes": 30510
+    },
+    "wmin8_gate_audit": {
+      "path": "experiments/track6/PP-WMIN8_warm_min1_weight_router/outputs/gate_audit.csv",
+      "exists": true,
+      "size_bytes": 100670
+    },
+    "wmin8_exact_runtime": {
+      "path": "models/track6/warm_wmin8_exact_runtime_candidate/manifest.json",
+      "exists": true,
+      "size_bytes": 3237
+    }
+  },
+  "exact_runtime_ready": true,
+  "exact_runtime_parity": {
+    "max_abs_log_diff": 3.552713678800501e-15,
+    "rows": [
+      {
+        "role": "base_w700",
+        "candidate_label": "min1_w700_huber_refit_partial",
+        "eval_split": "validation_oof",
+        "n": 519,
+        "max_abs_log_diff": 3.552713678800501e-15,
+        "mean_abs_log_diff": 4.107183443700001e-16
+      },
+      {
+        "role": "base_w700",
+        "candidate_label": "min1_w700_huber_refit_partial",
+        "eval_split": "test",
+        "n": 607,
+        "max_abs_log_diff": 3.552713678800501e-15,
+        "mean_abs_log_diff": 4.536001813954511e-16
+      },
+      {
+        "role": "alternative_w850",
+        "candidate_label": "min1_w850_huber_refit_partial",
+        "eval_split": "validation_oof",
+        "n": 519,
+        "max_abs_log_diff": 1.7763568394002505e-15,
+        "mean_abs_log_diff": 3.696465099330001e-16
+      },
+      {
+        "role": "alternative_w850",
+        "candidate_label": "min1_w850_huber_refit_partial",
+        "eval_split": "test",
+        "n": 607,
+        "max_abs_log_diff": 3.552713678800501e-15,
+        "mean_abs_log_diff": 3.9507112573152193e-16
+      }
+    ],
+    "passes_prediction_csv_replay": true
+  },
+  "route_policy": {
+    "recommended_artist_match_score_min": 0.8,
+    "current_official_v0_1_artist_match_score_min": 0.8,
+    "warm_lite_history_count": "1~4",
+    "warm_full_history_count": "5+",
+    "cold_condition": "no reliable artist match or usable history count 0"
+  },
+  "selected_gate": {
+    "candidate_label": "min1_route_w850_risk_q50_altlower_gap005",
+    "base_candidate": "min1_huber_refit_partial",
+    "alternative_candidate": "min1_w850_huber_refit_partial",
+    "gate_kind": "risk_ge_altlower_gap",
+    "threshold": 0.2534165869100283,
+    "gap": 0.005,
+    "validation_route_share": 0.210019267822736,
+    "test_route_share": 0.1976935749588138
+  },
+  "service_feature_status": [
+    {
+      "feature": "ppv8_defensive",
+      "service_runtime_status": "available",
+      "service_source": "pp_v8_compact_blend_mape_guarded_pred_log",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "svc_fallback",
+      "service_runtime_status": "available",
+      "service_source": "svc_numeric_seed_mean_pred_log",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "shrunk_huber_refit",
+      "service_runtime_status": "resolved_by_runtime_artifact",
+      "service_source": "models/track6/warm_wmin8_exact_runtime_candidate",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "shrunk_svc_prior",
+      "service_runtime_status": "resolved_by_runtime_artifact",
+      "service_source": "models/track6/warm_wmin8_exact_runtime_candidate",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "log_area",
+      "service_runtime_status": "available",
+      "service_source": "log_area",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "svc_group_n_log",
+      "service_runtime_status": "available",
+      "service_source": "svc_group_n_log",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "svc_prior_iqr",
+      "service_runtime_status": "available",
+      "service_source": "svc_group_log_price_iqr",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "current_ppv8_gap",
+      "service_runtime_status": "computable",
+      "service_source": "current_70_30 - ppv8_defensive",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "current_shrunk_huber_gap",
+      "service_runtime_status": "resolved_by_runtime_artifact",
+      "service_source": "models/track6/warm_wmin8_exact_runtime_candidate",
+      "exact_adapter_gap": ""
+    },
+    {
+      "feature": "raw_shrunk_prior_gap",
+      "service_runtime_status": "resolved_by_runtime_artifact",
+      "service_source": "models/track6/warm_wmin8_exact_runtime_candidate",
+      "exact_adapter_gap": ""
+    }
+  ],
+  "missing_exact_feature_count": 0,
+  "missing_exact_features": [],
+  "coefficient_status": {
+    "exists": true,
+    "path": "experiments/track6/PP-WMIN7_warm_min1_weight_retuning/outputs/huber_refit_coefficients.csv",
+    "candidate_status": {
+      "min1_w700_huber_refit_partial": {
+        "coefficient_rows": 10,
+        "features": [
+          "current_ppv8_gap",
+          "current_shrunk_huber_gap",
+          "log_area",
+          "ppv8_defensive",
+          "raw_shrunk_prior_gap",
+          "shrunk_huber_refit",
+          "shrunk_svc_prior",
+          "svc_fallback",
+          "svc_group_n_log",
+          "svc_prior_iqr"
+        ],
+        "has_scaled_coefficients": true,
+        "has_intercept": false,
+        "has_imputer_median": false,
+        "has_scaler_mean_std": false,
+        "exact_replay_status": "resolved_by_serialized_pipeline"
+      },
+      "min1_w850_huber_refit_partial": {
+        "coefficient_rows": 10,
+        "features": [
+          "current_ppv8_gap",
+          "current_shrunk_huber_gap",
+          "log_area",
+          "ppv8_defensive",
+          "raw_shrunk_prior_gap",
+          "shrunk_huber_refit",
+          "shrunk_svc_prior",
+          "svc_fallback",
+          "svc_group_n_log",
+          "svc_prior_iqr"
+        ],
+        "has_scaled_coefficients": true,
+        "has_intercept": false,
+        "has_imputer_median": false,
+        "has_scaler_mean_std": false,
+        "exact_replay_status": "resolved_by_serialized_pipeline"
+      }
+    }
+  },
+  "can_validate_now": {
+    "warm_lite_api_boundary": true,
+    "wmin8_artifact_status_endpoint": true,
+    "wmin8_gate_rule_definition": true,
+    "wmin8_exact_fixed_test_parity": false
+  },
+  "next_required_artifacts": [
+    "Fixed-test parity script comparing API exact WMIN8 predictions with experiments/track6/PP-WMIN8 outputs.",
+    "If row-level differences remain, align service feature construction with the original WMIN8 candidate_predictions columns."
+  ]
+}

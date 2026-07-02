@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm/Cold 테스트 방식 검증 감사</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#warm-cold-테스트-방식-검증-감사">Warm/Cold 테스트 방식 검증 감사</a>
+<a class="toc-level-2" href="#1.-결론">1. 결론</a>
+<a class="toc-level-2" href="#2.-warm-검증-결과">2. Warm 검증 결과</a>
+<a class="toc-level-3" href="#2.1-warm-반복-oof-holdout-근거">2.1 Warm 반복 OOF/holdout 근거</a>
+<a class="toc-level-2" href="#3.-cold-검증-결과">3. Cold 검증 결과</a>
+<a class="toc-level-3" href="#3.1-cold-반복-oof-holdout-근거">3.1 Cold 반복 OOF/holdout 근거</a>
+<a class="toc-level-2" href="#4.-의심-항목별-판단">4. 의심 항목별 판단</a>
+<a class="toc-level-2" href="#5.-운영-권고">5. 운영 권고</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/warm_cold_test_method_validity_audit.md</code></div>
+      <h1 id="warm-cold-테스트-방식-검증-감사">Warm/Cold 테스트 방식 검증 감사</h1>
+<ul>
+<li>작성일: 2026-06-11 10:54:31</li>
+<li>목적: 같은 입력에 대한 결과 변동, 재현 실패, row 순서 영향, label 누수, split 중복, 반복 OOF/holdout 안정성 의심 항목 점검</li>
+</ul>
+<h2 id="1.-결론">1. 결론</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">결론</th>
+<th class="align-left">핵심 근거</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm</td>
+<td class="align-left">통과</td>
+<td class="align-left">fixed test/validation OOF 지표 재현, row shuffle diff <code>0.000e+00</code>, label 독립성 diff <code>0.000e+00</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold</td>
+<td class="align-left">통과</td>
+<td class="align-left">기존 재현 all_passed <code>True</code>, row shuffle diff <code>0.000e+00</code>, label 독립성 diff <code>0.000e+00</code></td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>현재 감사 기준: 같은 입력을 반복하거나 row 순서를 바꿔도 예측 로그가격은 변하지 않음</li>
+<li>현재 감사 기준: 실제 가격 label을 임의 값으로 바꿔도 예측 로그가격은 변하지 않음</li>
+<li>현재 감사 기준: validation/test row id 중복은 확인되지 않음</li>
+<li>남는 주의점: 이 검증은 현재 고정된 artifact와 저장된 OOF/holdout 산출물 기준의 감사이며, 원천 데이터가 바뀌거나 재학습 정책이 바뀌면 같은 감사를 다시 수행해야 함</li>
+</ul>
+<h2 id="2.-warm-검증-결과">2. Warm 검증 결과</h2>
+<ul>
+<li>대상 모델: Warm PP258 기준가격 기반 미세 보정 모델</li>
+<li>row 수: 전체 <code>1126</code>, fixed test <code>607</code>, validation OOF <code>519</code></li>
+<li>fixed test 지표 최대 재현 차이: <code>0.000e+00</code></li>
+<li>validation OOF 지표 최대 재현 차이: <code>0.000e+00</code></li>
+<li>row 순서 셔플 최대 예측 로그가격 차이: <code>0.000e+00</code></li>
+<li>label 독립성 최대 예측 로그가격 차이: <code>0.000e+00</code></li>
+<li>split 중복/중복 row id 점검: 통과</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">점검 항목</th>
+<th class="align-left">결과</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>fixed_test_metrics_reproduced</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>validation_oof_metrics_reproduced</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>same_input_same_output_under_row_shuffle</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_does_not_use_labels</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>split_row_ids_are_disjoint_and_unique</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>all_passed</code></td>
+<td class="align-left">통과</td>
+</tr>
+</tbody></table></div>
+<h3 id="2.1-warm-반복-oof-holdout-근거">2.1 Warm 반복 OOF/holdout 근거</h3>
+<ul>
+<li>근거 파일: <code>experiments/track6/PP-OPT253_258_warm_pp252_narrow_direction_residual_refinement/outputs/selected_stability_repeated_summary.csv</code></li>
+<li>확인 시나리오: artist_group_holdout, confidence_stratified_rows, full_split, price_band_stratified_rows, risk_focus_bootstrap, row_bootstrap</li>
+<li>반복 holdout/bootstrap 행 수: <code>10</code> (단일 full split 행 제외)</li>
+<li>최종 후보의 incumbent MAPE win rate 최소값(full split 제외): <code>0.788462</code></li>
+<li>최종 후보의 incumbent p95 win rate 범위(full split 제외): <code>0.500000</code> ~ <code>0.857692</code></li>
+<li>반복 시나리오 평균 MAPE 범위: <code>0.205415</code> ~ <code>0.370475</code></li>
+<li>해석: Warm 최종 후보는 MAPE 안정성 중심 후보이며, p95는 fixed test 재현과 별도 안정성 후보 비교로 함께 관리</li>
+</ul>
+<h2 id="3.-cold-검증-결과">3. Cold 검증 결과</h2>
+<ul>
+<li>대상 모델: Cold 검색 피처 포함 Quantile 예측 + 과대예측 방어 + 작가 검색 보정 모델</li>
+<li>row 수: 전체 <code>5852</code>, fixed test <code>3099</code>, validation <code>2753</code></li>
+<li>기록 지표와 재계산 지표 최대 차이: <code>1.110e-16</code></li>
+<li>validation에서 재계산한 guard 임계값 최대 차이: <code>0.000e+00</code></li>
+<li>후처리기와 독립 계산식의 최대 예측 로그가격 차이: <code>0.000e+00</code></li>
+<li>row 순서 셔플 최대 예측 로그가격 차이: <code>0.000e+00</code></li>
+<li>label 독립성 최대 예측 로그가격 차이: <code>0.000e+00</code></li>
+<li>split 중복/중복 row id 점검: 통과</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">점검 항목</th>
+<th class="align-left">결과</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>recorded_reproducibility_all_passed</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>recorded_metric_diff_is_zero</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>recorded_threshold_diff_is_zero</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>postprocessor_matches_independent_formula</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>same_input_same_output_under_row_shuffle</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_does_not_use_labels</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>split_row_ids_are_disjoint_and_unique</code></td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left"><code>all_passed</code></td>
+<td class="align-left">통과</td>
+</tr>
+</tbody></table></div>
+<h3 id="3.1-cold-반복-oof-holdout-근거">3.1 Cold 반복 OOF/holdout 근거</h3>
+<ul>
+<li>근거 파일: <code>experiments/track6/PP-QR4_cold_qwidth_repeated_split_revalidation/outputs/holdout_summary.csv</code></li>
+<li><code>row_5fold</code> guard 후보: folds <code>60</code>, mean MdAPE <code>0.366469</code>, MAPE 개선확률 <code>1.000000</code>, p95 개선확률 <code>0.983333</code></li>
+<li><code>artist_5fold</code> guard 후보: folds <code>60</code>, mean MdAPE <code>0.374188</code>, MAPE 개선확률 <code>0.983333</code>, p95 개선확률 <code>0.850000</code></li>
+<li>test bootstrap guard 후보: MdAPE 평균 <code>0.419174</code>, 95% CI <code>0.405054</code> ~ <code>0.436375</code>, baseline 대비 MdAPE 개선확률 <code>0.907500</code></li>
+</ul>
+<h2 id="4.-의심-항목별-판단">4. 의심 항목별 판단</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">의심 항목</th>
+<th class="align-left">확인 방법</th>
+<th class="align-left">판단</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">같은 입력인데 결과가 매번 달라지는가</td>
+<td class="align-left">같은 artifact 계산식을 여러 번 적용하고 row 순서도 셔플</td>
+<td class="align-left">Warm/Cold 모두 차이 0 수준으로 통과</td>
+</tr>
+<tr>
+<td class="align-left">row 순서가 바뀌면 결과가 바뀌는가</td>
+<td class="align-left">5개 seed로 입력 row 순서 랜덤 셔플 후 row id 기준 재정렬 비교</td>
+<td class="align-left">Warm/Cold 모두 차이 0 수준으로 통과</td>
+</tr>
+<tr>
+<td class="align-left">실제 가격 label이 예측에 섞였는가</td>
+<td class="align-left">actual_price/actual_log를 임의 값으로 바꾼 뒤 예측 로그가격 비교</td>
+<td class="align-left">Warm/Cold 모두 예측값 변화 없음</td>
+</tr>
+<tr>
+<td class="align-left">validation/test가 섞였는가</td>
+<td class="align-left">split별 row id 중복과 split 간 overlap 확인</td>
+<td class="align-left">Warm/Cold 모두 중복 없음</td>
+</tr>
+<tr>
+<td class="align-left">재현 지표가 기록과 맞는가</td>
+<td class="align-left">저장된 metrics와 재계산 metrics 비교</td>
+<td class="align-left">Warm은 fixed test/validation OOF 재현, Cold는 기록 지표와 최대 차이 1e-16 수준</td>
+</tr>
+<tr>
+<td class="align-left">랜덤 OOF/holdout에서 값이 튀는가</td>
+<td class="align-left">기존 반복 holdout/OOF 산출물 확인</td>
+<td class="align-left">Warm은 반복 시나리오에서 최종 후보 win rate 유지, Cold guard는 row/artist holdout에서 MAPE/p95 개선확률 유지</td>
+</tr>
+</tbody></table></div>
+<h2 id="5.-운영-권고">5. 운영 권고</h2>
+<ul>
+<li>현재 고정 artifact 기준 테스트 방식은 재현성과 결정성 관점에서 통과</li>
+<li>외부 공유 시 fixed test 지표와 validation/OOF 지표를 구분해서 설명</li>
+<li>새 데이터 수집, split 변경, 재학습, 검색 피처 재생성 시 동일 감사 스크립트를 다시 실행</li>
+<li>최종 성능 주장에는 fixed test 기준 수치를 사용하고, OOF/holdout은 안정성 근거로 별도 표기</li>
+</ul>
+    </main>
+  </div>
+</body>
+</html>

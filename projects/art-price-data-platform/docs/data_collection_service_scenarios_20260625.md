@@ -394,7 +394,7 @@
 조건:
 
 - 가격, 크기, 재료/지지체, 작품 유형, 중복 여부 중 하나 이상이 자동 확정되지 않았다.
-- 재료/지지체의 학습 제외 여부는 기존 하드코딩 매체 필터가 아니라 NANT 분류 결과(`nant_learning_excluded`, `nant_unmapped`)로 판단한다.
+- 재료/지지체의 학습 제외 여부는 기존 하드코딩 매체 필터가 아니라 NANT mapping row의 `learning_excluded=true`로 판단한다. NANT 매핑 실패는 snapshot 제외 사유가 아니라 `standardization_review_item(review_type=nant_mapping)` 보류 사유다.
 
 흐름:
 
@@ -612,7 +612,7 @@ cron 시작
 - 가격 숫자 없음
 - 판매문의/가격문의/placeholder 가격
 - 가로/세로 cm 없음
-- NANT 재료(지지체/매체) 분류 실패(`nant_unmapped`)
+- NANT 재료(지지체/매체) 분류 실패(`standardization_review_item.review_type=nant_mapping` 보류)
 - DB active NANT mapping 기준 `learning_excluded=true` 학습 제외 row
 - 중복 후보
 - 작가명 누락
@@ -725,7 +725,7 @@ cron 시작
 - 가격 없음 또는 가격문의
 - placeholder 가격
 - NANT 기준 `nant_learning_excluded`
-- NANT 매핑 실패(`nant_unmapped`) 후 검수에서도 보정되지 않은 row
+- NANT 매핑 실패 후 `standardization_review_item(review_type=nant_mapping)`에서 보정되지 않은 row
 - 필수 크기 누락
 - 중복으로 판단된 row
 

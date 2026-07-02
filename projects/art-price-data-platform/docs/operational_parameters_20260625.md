@@ -17,11 +17,17 @@
 |----|------|--------|------|---------------|
 | `AUTH-METHOD` | 어드민 인증 방식 | JWT 액세스 토큰 + 역할 claim | 정책 | stateless API에 표준적. `actor_id`는 토큰 claim에서 서버가 주입. user_admin_api §12 |
 | `AUTH-TOKEN-TTL` | 액세스 토큰 만료 | 60분(액세스) / 14일(리프레시) | 정책 | 일반적 어드민 세션 수명. user_admin_api §12 |
+| `AUTH-ORIGIN-POLICY` | 프론트/API origin 구성 | 같은 site의 subdomain 분리: `service.{base_domain}`, `admin.{base_domain}`, `api.{base_domain}` | 정책 | service/admin 앱 분리 배포 기준. development_prestart §3.10, user_admin_api §2.2.1 |
+| `AUTH-CORS-POLICY` | API CORS allowlist | service/admin origin + local dev origin만 허용, wildcard origin 금지 | 정책 | 분리 배포 시 cross-origin 호출을 명시 allowlist로 제한. development_prestart §3.10 |
+| `AUTH-ADMIN-REFRESH-COOKIE` | 어드민 refresh token 쿠키 | `HttpOnly; Secure; SameSite=Lax; Domain=.base_domain` | 정책 | admin session 탈취/CSRF 위험 축소. local/dev Secure 예외는 dev profile에만 허용 |
+| `AUTH-CSRF-POLICY` | 쿠키 기반 상태 변경 CSRF 방어 | refresh/logout 등 쿠키가 개입되는 상태 변경 endpoint는 CSRF token 또는 double-submit 검증 | 정책 | Bearer API라도 refresh cookie가 끼면 CSRF 예외로 두지 않음. user_admin_api §2.2.1 |
 
 ### A-1. required_role 매핑 (엔드포인트 최소 권한)
 
 역할 위계: 개발자 < 운영 담당자(운영자) < 데이터 분석가 < 데이터 관리자.
 "최소 권한"은 해당 역할 **이상**을 의미한다(데이터 관리자는 하위 권한 포함). 1차는 이 상속형 RBAC만 구현하고, 직무별 capability matrix는 후속으로 분리한다.
+
+D1 운영 화면/API는 수집, 표준화 검수, snapshot/export 승인까지를 우선 개방한다. 모델 학습/import, 후보 모델 승인, 운영 승격/롤백/retire 권한은 D3/D4 모델 운영 기능이 구현된 뒤 같은 RBAC 기준으로 개방한다.
 
 | 엔드포인트/액션(절) | 최소 권한 |
 |----------------------|-----------|
@@ -32,6 +38,9 @@
 | NANT mapping version/row 조회 | 운영 담당자 |
 | NANT CSV import 및 draft row 편집 | 데이터 분석가 |
 | NANT active version 전환 | 데이터 관리자 |
+| 모델 학습/import job 생성(7.0, D3/D4) | 데이터 분석가 |
+| 후보 모델 승인/반려(7.2.1, D4) | 데이터 관리자 |
+| 모델 승격/롤백/retire(7.3, D4) | 데이터 관리자 |
 | 작품 품질 검수(8.2 approve/patch/hold/exclude) | 운영 담당자 |
 | 작가명 검수(8.4 approve/add_alias/hold/reject) | 운영 담당자 |
 | artist identity 연결 검수(8.6 `reject_candidate`/`hold`/`move_to_new_artist_candidate`) | 운영 담당자 |
@@ -41,7 +50,6 @@
 | snapshot 확정요청(9.3.1) | 운영 담당자 |
 | snapshot 생성승인(9.3.2) | 데이터 관리자 |
 | snapshot 서빙승인(9.3.3) | 데이터 관리자 |
-| 모델 승격/롤백(7.3) | 데이터 관리자 |
 | audit-logs 조회(10.1) | 데이터 관리자 |
 
 ---
@@ -143,7 +151,7 @@
 | `MODEL-FEATURE-CONTRACT-CHANGE-POLICY` | feature/serving contract 변경 | 별도 개발 작업 | 기준 | schema 변경은 routine training 승인 불가 |
 | `MODEL-TRAIN-SNAPSHOT-STATUS` | 신규 학습 입력 snapshot 상태 | `approved` only | 기준 | `generated` snapshot은 신규 학습 입력 금지. legacy joblib import는 manifest cutoff 필수 |
 | `MODEL-AUTO-PROMOTE` | 학습 성공 후 자동 운영 승격 | `false` | 기준 | candidate 승인과 deployment promote 분리 |
-| `MODEL-REQUIRE-FIXED-PARITY` | fixed-test parity gate | `true` | 기준 | M1 joblib import와 재학습 후보 검증 |
+| `MODEL-REQUIRE-FIXED-PARITY` | fixed-test parity gate | `true` | 기준 | D3/D4 joblib import와 재학습 후보 검증 |
 | `MODEL-REQUIRE-API-SMOKE` | promote 전/후 API smoke | `true` | 기준 | artifact load, prediction log 확인 |
 | `MODEL-ARTIFACT-HASH-CHECK` | artifact SHA-256 검증 | `true` | 기준 | startup loader와 registry 무결성 검증 |
 | `MODEL-ROUTE-ACTIVE-LIMIT` | route별 active deployment 수 | `1` | 기준 | `price_model_deployment.uq_active_route` |
@@ -157,3 +165,5 @@
 | 2026-06-25 | 초기 기본값 일괄 확정 | 잠정 항목은 운영 실측 후 갱신 |
 | 2026-06-26 | NANT 분류 기준 DB active version/seed/import 정책 추가 | CSV는 seed, 운영 SoT는 DB mapping version |
 | 2026-06-26 | 모델 학습/import와 운영 모델 변경 gate 기본값 추가 | 자동 승격 금지, approved snapshot, parity/smoke/hash gate |
+| 2026-06-26 | required_role 표에 모델 학습/import job과 후보 모델 승인/반려 항목 추가 | API 문서 §2.2.1과 권한 단일 기준 정합화. D1에서는 미개방, D3/D4에서 적용 |
+| 2026-06-26 | 프론트 분리 배포 origin/CORS/refresh cookie/CSRF 정책 추가 | service-web/admin-web 분리 배포 시 인증 경계 명확화 |

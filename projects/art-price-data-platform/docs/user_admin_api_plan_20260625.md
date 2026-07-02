@@ -76,7 +76,7 @@ MySQL 스키마 문서
 | 일반 사용자 | 작가 검색, 신규 작가 후보 제출, 가격 예측 요청 |
 | 운영 담당자 | 수집 run 확인, 재수집 요청, 검수 큐 처리, 보류/제외 처리 |
 | 데이터 분석가 | 수동 CSV 업로드/매핑, snapshot 품질/분포 검토, 학습 피처 승격 판단 |
-| 데이터 관리자 | 원천 등록/수정, 신규 `artist_key` 생성 승인, 기존 `artist_key` 연결 확정, snapshot 생성/서빙 승인, 모델 승격/롤백 |
+| 데이터 관리자 | 원천 등록/수정, 신규 `artist_key` 생성 승인, 기존 `artist_key` 연결 확정, snapshot 생성/서빙 승인, 모델 승인/승격/롤백/retire |
 | 개발자 | crawler/parser 장애 확인, migration/배포 점검, 기술 로그 확인 |
 | 슈퍼유저 | 운영 초기 전용 역할. 운영 담당자, 데이터 분석가, 데이터 관리자, 개발자 권한을 모두 수행 |
 
@@ -97,6 +97,14 @@ MySQL 스키마 문서
 - 인증된 주체 식별자는 감사 로그(`10.1`)에 `request_id`와 함께 남긴다.
 - 공용/공유 계정으로 어드민 쓰기 API를 호출하지 않는다. 처리자를 1인으로 특정할 수 없는 계정은 감사 추적을 깨뜨린다.
 
+프론트 앱 분리 배포 기준:
+
+- `service-web`과 `admin-web`은 별도 앱/배포 단위지만, 둘 다 이 API의 인증/권한 정책을 따른다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.10).
+- 기본 origin은 `service.{base_domain}`, `admin.{base_domain}`, `api.{base_domain}`처럼 같은 site의 subdomain 분리를 권장한다.
+- API CORS allowlist는 service/admin origin과 local dev origin만 허용한다. wildcard origin은 금지한다.
+- 어드민 refresh token은 `HttpOnly; Secure; SameSite=Lax; Domain=.base_domain` 쿠키를 기본으로 하고, refresh/logout 등 쿠키가 개입되는 상태 변경 endpoint는 CSRF token 또는 double-submit 검증을 적용한다.
+- browser public env와 서버 내부 env는 분리한다. 예: 앱별 public API base URL과 `INTERNAL_API_BASE_URL`을 섞지 않는다.
+
 쓰기 엔드포인트 최소 권한(`required_role`):
 
 | 엔드포인트 | 동작 | required_role |
@@ -107,20 +115,19 @@ MySQL 스키마 문서
 | `POST /api/v1/admin/manual-imports` 계열 | 수동 CSV 업로드/매핑 (6.3/6.5) | 데이터 분석가 |
 | `POST /api/v1/admin/model-training/jobs` | 모델 학습/import job 생성 (7.0) | 데이터 분석가 |
 | `POST /api/v1/admin/model-versions/{model_version}/decision` | 후보 모델 승인/반려 (7.2.1) | 데이터 관리자 |
-| `POST /api/v1/admin/model-deployments` (`promote`/`rollback`/`retire`) | 모델 승격/롤백 (7.3) | 데이터 관리자 |
-| `POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision` | 작품 품질 검수 (8.2) | 운영 담당자 |
-| `POST /api/v1/admin/review/artist-names/{alias_id}/decision` | 작가명 검수 (8.4) | 운영 담당자 |
-| `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | artist identity 후보 검토(8.6 `reject_candidate`/`hold`/`move_to_new_artist_candidate`) | 운영 담당자 |
-| `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` | 기존 artist_key 연결 확정(8.6 `approve_existing_artist_key`) | 데이터 관리자 |
-| `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 작가 후보 검토(8.8 `recheck`/`hold`/`reject`) | 운영 담당자 |
-| `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` | 신규 artist_key 생성(8.8 `approve`) | 데이터 관리자 |
+| `POST /api/v1/admin/model-deployments` (`promote`/`rollback`/`retire`) | 모델 승격/롤백/retire (7.3) | 데이터 관리자 |
+| `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` | 작품 품질/작가명 검수(8.2/8.4) | 운영 담당자 |
+| `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` | artist identity 후보 검토(8.6 `reject_candidate`/`hold`/`move_to_new_artist_candidate`) | 운영 담당자 |
+| `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` | 기존 artist_key 연결 확정(8.6 `approve_existing_artist_key`) | 데이터 관리자 |
+| `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` | 신규 작가 후보 검토(8.8 `recheck`/`hold`/`reject`) | 운영 담당자 |
+| `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` | 신규 artist_key 생성(8.8 `approve`) | 데이터 관리자 |
 | `POST /api/v1/admin/snapshots/requests` | snapshot 확정요청 (9.3.1) | 운영 담당자 |
 | `POST /api/v1/admin/snapshots` | snapshot 생성승인 (9.3.2) | 데이터 관리자 |
 | `POST /api/v1/admin/snapshots/{snapshot_id}/approve` | snapshot 서빙승인 (9.3.3) | 데이터 관리자 |
 | `GET /api/v1/admin/audit-logs` | audit-logs 조회 (10.1) | 데이터 관리자 |
 
 - 역할 위계는 개발자 < 운영 담당자 < 데이터 분석가 < 데이터 관리자이며, `required_role`은 해당 역할 "이상"을 의미한다(상위 역할은 하위 권한 포함). 1차는 이 상속형 RBAC로 구현하고, 직무별 capability matrix는 후속으로 분리한다.
-- 후보 모델 승인/반려(7.2.1), 모델 승격/롤백(7.3), artist identity 최종 확정(8.6 `approve_existing_artist_key`), 신규 artist_key 생성(8.8 `approve`), snapshot 생성승인(9.3.2) 및 snapshot 서빙승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영 담당자는 후보 보류/반려/재검토를 처리할 수 있지만 최종 artist_key 확정, 모델 승인/롤백, snapshot 서빙승인은 할 수 없다.
+- 후보 모델 승인/반려(7.2.1), 모델 승격/롤백/retire(7.3), artist identity 최종 확정(8.6 `approve_existing_artist_key`), 신규 artist_key 생성(8.8 `approve`), snapshot 생성승인(9.3.2) 및 snapshot 서빙승인(9.3.3)은 데이터 관리자 권한으로 게이트한다. 운영 담당자는 후보 보류/반려/재검토를 처리할 수 있지만 최종 artist_key 확정, 모델 승인/승격/롤백/retire, snapshot 서빙승인은 할 수 없다.
 - 운영 초기 슈퍼유저는 위 역할을 모두 수행할 수 있으나, 실제 처리자 식별과 사유 기록 의무는 동일하게 적용된다.
 - 전체 역할 매핑의 단일 기준은 [운영 파라미터](operational_parameters_20260625.md) §A-1.
 
@@ -232,7 +239,7 @@ deployment freshness vs 데이터 freshness 불일치:
 
 - 검수 decision API(8.2/8.4/8.6/8.8)는 request에 `expected_review_status`(또는 리소스 version)를 받는다. 서버 상태와 불일치하면 처리하지 않고 `CONFLICT`를 반환한다. 마지막 호출이 무조건 이긴다(last-write-wins)면 이미 다른 담당자가 끝낸 결정을 덮어쓴다.
 - 생성 계열(8.8 신규 `artist_key` 생성, 9.3 snapshot 생성, 6.1 원천 등록)은 `idempotency_key`를 받는다. 같은 키의 재요청은 새로 만들지 않고 직전 결과를 반환한다(네트워크 재시도/더블클릭 중복 생성 방지).
-- 검수 큐 항목은 claim/lock(담당자 + 만료시간) 또는 "검수 중" 상태를 둔다. 같은 항목을 두 사람이 동시에 처리하지 않게 한다. claim/lock 만료시간 기본값은 30분이며 방치 시 자동 해제한다([운영 파라미터](operational_parameters_20260625.md) §F `REVIEW-CLAIM-TTL`).
+- 검수 큐 항목은 `standardization_review_item`의 claim/lock(담당자 + 만료시간) 또는 "검수 중" 상태를 둔다. 같은 항목을 두 사람이 동시에 처리하지 않게 한다. claim/lock 만료시간 기본값은 30분이며 방치 시 자동 해제한다([운영 파라미터](operational_parameters_20260625.md) §F `REVIEW-CLAIM-TTL`).
 
 ## 3. API 목록 요약
 
@@ -251,22 +258,24 @@ deployment freshness vs 데이터 freshness 불일치:
 | 수동 CSV 업로드 | `POST /api/v1/admin/manual-imports` |
 | 수동 CSV 업로드 상세 | `GET /api/v1/admin/manual-imports/{import_id}` |
 | 수동 CSV 컬럼 매핑 확정 | `POST /api/v1/admin/manual-imports/{import_id}/mapping` |
+| 표준화 검수 공통 큐 | `GET /api/v1/admin/standardization-review-items` |
+| 표준화 검수 공통 처리 | `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` |
 | 모델 학습/import job 생성 | `POST /api/v1/admin/model-training/jobs` |
 | 모델 학습/import job 목록 | `GET /api/v1/admin/model-training/jobs` |
 | 모델 학습/import job 상세 | `GET /api/v1/admin/model-training/jobs/{training_job_id}` |
 | 모델 버전 목록 | `GET /api/v1/admin/model-versions` |
 | 모델 버전 상세 | `GET /api/v1/admin/model-versions/{model_version}` |
 | 후보 모델 승인/반려 | `POST /api/v1/admin/model-versions/{model_version}/decision` |
-| 모델 승격/롤백 | `POST /api/v1/admin/model-deployments` |
+| 모델 승격/롤백/retire | `POST /api/v1/admin/model-deployments` |
 | 현재 운영 모델 확인 | `GET /api/v1/admin/model-deployments/current` |
-| 작품 품질 검수 큐 | `GET /api/v1/admin/review/artworks` |
-| 작품 품질 검수 처리 | `POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision` |
-| 작가명 검수 큐 | `GET /api/v1/admin/review/artist-names` |
-| 작가명 검수 처리 | `POST /api/v1/admin/review/artist-names/{alias_id}/decision` |
-| artist_key 연결 검수 큐 | `GET /api/v1/admin/review/artist-identities` |
-| artist_key 연결 검수 처리 | `POST /api/v1/admin/review/artist-identities/{candidate_id}/decision` |
-| 신규 작가 후보 큐 | `GET /api/v1/admin/review/new-artists` |
-| 신규 작가 후보 결정 | `POST /api/v1/admin/review/new-artists/{candidate_id}/decision` |
+| 작품 품질 검수 큐 | `GET /api/v1/admin/review/artworks` 또는 공통 큐 `review_type=artwork_field` |
+| 작품 품질 검수 처리 | `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` |
+| 작가명 검수 큐 | `GET /api/v1/admin/review/artist-names` 또는 공통 큐 `review_type=artist_name_ko/artist_name_en` |
+| 작가명 검수 처리 | `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` |
+| artist_key 연결 검수 큐 | `GET /api/v1/admin/review/artist-identities` 또는 공통 큐 `review_type=artist_key` |
+| artist_key 연결 검수 처리 | `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` |
+| 신규 작가 후보 큐 | `GET /api/v1/admin/review/new-artists` 또는 공통 큐 `review_type=new_artist` |
+| 신규 작가 후보 결정 | `POST /api/v1/admin/standardization-review-items/{review_item_id}/decision` |
 | snapshot 후보 요약 | `GET /api/v1/admin/snapshots/candidates/summary` |
 | snapshot 후보 목록 | `GET /api/v1/admin/snapshots/candidates/items` |
 | snapshot 확정요청(운영자) | `POST /api/v1/admin/snapshots/requests` |
@@ -319,7 +328,7 @@ query:
 
 참조:
 
-- 읽기: `artist_identity`, `artist_name_alias`, `artist_profile_current`
+- 읽기: `artist_identity`, `artist_name_alias`, `artist_profile_meta` 현재값 조회
 - 필요 시 읽기: `normalized_artist_staging`
 - 상태 기준: `artist_identity.identity_status=active`
 
@@ -354,7 +363,7 @@ response:
 
 ```json
 {
-  "candidate_id": "new_artist_candidate_123",
+  "candidate_id": "review_item_new_artist_123",
   "status": "needs_review",
   "message": "신규 작가 후보가 등록되었습니다."
 }
@@ -441,6 +450,7 @@ response:
 주의:
 
 - `primary_market_summary`에는 원천 사이트명, 원천 URL, 원천 작품 ID를 넣지 않는다.
+- `primary_market_summary`의 데이터 출처는 `primary_market_artist_summary`이며, active deployment의 `training_snapshot_id` 또는 import manifest cutoff에 맞는 row를 조회한다.
 - `as_of`/`data_reference_date`는 active deployment가 학습/import 기준으로 기록한 cutoff 표기다(2.6 / 4.4).
 - 예측 API는 수집 DB를 직접 조회하지 않고, 승인된 snapshot과 운영 feature store를 참조한다.
 - 예측 응답에는 사용된 `model_version`, `model_route`, `deployment_id`를 남긴다. 모델이 중간에 바뀌어도 특정 예측이 어느 모델에서 나온 값인지 추적하기 위함이다.
@@ -481,6 +491,7 @@ GET /api/v1/public/artists/{artist_key}/primary-market-summary
 주의:
 
 - `as_of`는 현재 active deployment가 학습/import 기준으로 기록한 `source_cutoff_at`(2.6 / 7.0 / 7.3 / 9.3)이며, `data_reference_date`는 화면 표시용 기준일이다.
+- 조회 원천은 `primary_market_artist_summary`다. API 응답에는 집계값만 넣고 원천 사이트명/URL/원천 작품 ID는 넣지 않는다.
 - `freshness_label`의 `N`(경고 임계, 허용 지연 상한)은 10일이다. `N`=10일 초과 시 경고, 완전 차단 임계 `M`=21일(M>N) 초과 시 카드를 숨긴다. 최신성 정책은 2.6을 따른다.
 
 ## 5. 어드민 수집 API
@@ -903,7 +914,7 @@ request 예:
 - `approved` 모델만 7.3의 `promote` 대상이 될 수 있다.
 - 승인자/승인시각은 인증 컨텍스트에서 채우며 request body로 받지 않는다.
 
-### 7.3 모델 승격/롤백
+### 7.3 모델 승격/롤백/retire
 
 ```text
 POST /api/v1/admin/model-deployments
@@ -983,26 +994,57 @@ GET /api/v1/admin/model-deployments/current
 | `register_override`(8.4 전용) | review_status 전이가 아니라 확정 한글명을 override로 등록(표준화 흐름 4.6). `expected_review_status` 비대상 |
 | `recheck_candidates`(8.4) / `recheck`(8.8) | review_status 전이가 아니라 후보 재계산. conflict 검사·`expected_review_status` 비대상 |
 
+`move_to_new_artist_candidate`는 별도 `new_artist_candidate` 테이블을 의미하지 않는다. 기존 artist_key 후보 연결을 반려하고 `standardization_review_item(review_type=new_artist)` 일감을 열거나 기존 열린 일감에 연결하는 동작이다.
+
 작가명 검수(8.4)에서 alias 등록은 `decision=add_alias` 한 동사로만 한다. `approve`/`approve_with_edit`는 표시명을 승인할 뿐 alias를 등록하지 않는다. 화면의 "alias 추가" 버튼은 항상 `decision=add_alias`로만 보낸다(8.4).
 
 작품 품질 검수(8.2)의 `approve`/`approve_with_patch`/`hold`/`exclude`는 별도 `review_status` enum이 아니라 `normalized_artwork_staging.quality_flags_json`과 snapshot 포함 여부(`artwork_snapshot_item.include_status`)로 표현한다. `exclude`는 `include_status=excluded`(+`exclude_reason`)에 대응한다.
 
 큐 응답 ID와 decision 경로 정렬:
 
-각 큐 응답의 item ID는 대응 decision API의 경로 파라미터와 동일한 값이어야 한다. 화면이 큐 항목에서 받은 ID를 변환 없이 그대로 decision 호출에 쓸 수 있어야 한다.
+각 큐 응답의 item ID는 `standardization_review_item.review_item_id`다. 화면이 큐 항목에서 받은 `review_item_id`를 변환 없이 공통 decision API에 넘긴다. 화면별 `/review/artworks`, `/review/artist-names`, `/review/artist-identities`, `/review/new-artists` 조회 API는 공통 큐의 필터링 view/facade다.
 
 | 큐 조회 | 큐 item ID 필드 | decision 경로 파라미터 |
 |---|---|---|
-| 작품 품질 (8.1) | `normalized_artwork_id` | `.../review/artworks/{normalized_artwork_id}/decision` |
-| 작가명 (8.3) | `alias_id` | `.../review/artist-names/{alias_id}/decision` |
-| artist_key 연결 (8.5) | `candidate_id` | `.../review/artist-identities/{candidate_id}/decision` |
-| 신규 작가 (8.7) | `candidate_id` | `.../review/new-artists/{candidate_id}/decision` |
+| 작품 품질 (8.1) | `review_item_id` | `.../standardization-review-items/{review_item_id}/decision` |
+| 작가명 (8.3) | `review_item_id` | `.../standardization-review-items/{review_item_id}/decision` |
+| artist_key 연결 (8.5) | `review_item_id` | `.../standardization-review-items/{review_item_id}/decision` |
+| 신규 작가 (8.7) | `review_item_id` | `.../standardization-review-items/{review_item_id}/decision` |
+
+### 8.0 표준화 검수 공통 큐
+
+```text
+GET /api/v1/admin/standardization-review-items
+POST /api/v1/admin/standardization-review-items/{review_item_id}/decision
+```
+
+query:
+
+| 파라미터 | 설명 |
+|---|---|
+| `review_type` | `artist_name_ko`, `artist_name_en`, `artist_key`, `new_artist`, `nant_mapping`, `fx_rate`, `artwork_field`, `profile_meta` |
+| `status` | `open`, `claimed`, `approved`, `rejected`, `applied`, `blocked` |
+| `source` | 원천 |
+| `issue_code` | 표준화가 막힌 사유 |
+| `claim_by` | 담당자 |
+| `page` / `page_size` | 페이지 |
+
+공통 처리 원칙:
+
+- `decision=approve` 또는 `approve_with_edit`은 `decision_value_json`을 저장하고, `target_action`에 따라 도메인 SoT에 적용한다.
+- `artist_name_ko` 승인 결과는 `artist_name_alias`에 반영한다.
+- `artist_key`/`new_artist` 승인 결과는 `artist_identity_candidate`, `artist_identity`, `identity_event_log`에 반영한다.
+- `nant_mapping` 승인 결과는 active version 직접 수정이 아니라 draft `nant_material_mapping`에 반영하고, version validation/active 전환을 거친다.
+- `fx_rate` 승인 결과는 `fx_rate_daily`에 반영한다.
+- apply 완료 후 영향받은 row만 normalizer 재실행 대상이 되고, 그때 `normalized_artwork_staging` 생성이 가능해진다.
 
 ### 8.1 작품 품질 검수 큐 조회
 
 ```text
 GET /api/v1/admin/review/artworks
 ```
+
+이 조회 API는 `standardization_review_item.review_type=artwork_field` 및 작품 품질 이슈를 화면용으로 조인한 facade다.
 
 query:
 
@@ -1023,18 +1065,18 @@ query:
 - 원천값
 - 분해/정리값
 - 표준화 후보값
-- NANT 분류값(`nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status`)
+- NANT 분류값(`nant_support`, `nant_medium`, `nant_category_key`) 또는 `review_type=nant_mapping` 보류 사유
 - 품질 플래그
 - 처리 상태
 
 참조:
 
-- 읽기: `source_artwork_raw`, `source_artwork_interpreted_staging`, `normalized_artwork_staging`, `artwork_nant_classification`
+- 읽기: `standardization_review_item`, `source_artwork_raw`, `source_artwork_interpreted_staging`, `normalized_artwork_staging`
 
 ### 8.2 작품 품질 검수 처리
 
 ```text
-POST /api/v1/admin/review/artworks/{normalized_artwork_id}/decision
+POST /api/v1/admin/standardization-review-items/{review_item_id}/decision
 ```
 
 request:
@@ -1069,8 +1111,9 @@ request:
 
 쓰기:
 
-- `normalized_artwork_staging.quality_flags_json`
-- 검수 상태/메모 컬럼 또는 감사 로그
+- `standardization_review_item.decision_value_json`/`status`
+- `normalized_artwork_override`
+- `normalized_artwork_change_event`
 
 `approve_with_patch` 패치 적재(되돌리기/영향추적):
 
@@ -1087,8 +1130,9 @@ GET /api/v1/admin/review/artist-names
 목적:
 
 - 한글명/영문명 표시 후보와 alias 후보를 검수한다.
+- 이 조회 API는 `standardization_review_item.review_type=artist_name_ko` 또는 `artist_name_en`을 화면용으로 조인한 facade다. 작가명 한글화 검수는 반드시 `artist_name_ko` 타입으로 등록한다.
 
-각 큐 항목은 decision 경로 파라미터와 동일한 `alias_id`를 item ID로 반환한다(8절 큐-decision 정렬 표).
+각 큐 항목은 decision 경로 파라미터와 동일한 `review_item_id`를 item ID로 반환한다(8절 큐-decision 정렬 표). `alias_id`는 대상 row 참조로 함께 내려준다.
 
 응답에 한글화 검수 필드를 포함한다(표준화 흐름 4.8 자동 산출값):
 
@@ -1103,12 +1147,12 @@ GET /api/v1/admin/review/artist-names
 
 참조:
 
-- 읽기: `normalized_artist_staging`, `artist_name_alias`
+- 읽기: `standardization_review_item`, `normalized_artist_staging`, `artist_name_alias`
 
 ### 8.4 작가명 검수 처리
 
 ```text
-POST /api/v1/admin/review/artist-names/{alias_id}/decision
+POST /api/v1/admin/standardization-review-items/{review_item_id}/decision
 ```
 
 request:
@@ -1143,7 +1187,8 @@ request:
 - `artist_name_alias.approved_by`
 - `artist_name_alias.approved_at`
 - `artist_name_alias.approval_note`
-- `register_override` 시: override 레지스트리(`projects/art-price-data-platform/config/artist_ko_overrides.csv` 또는 동등 테이블)에 `artist_key`, `artist_name_ko`, `reason`, `approved_by/at` 기록 + `normalized_artist_staging.artist_name_ko_display`/`artist_name_ko_override_status=registered` 반영
+- `standardization_review_item.status`/`decision_value_json`/`target_id`
+- `register_override` 시: CSV를 직접 수정하지 않고 `artist_name_alias`에 승인 alias/override row를 추가한다. `artist_key`, `alias_name=artist_name_ko`, `source_name_normalized`, `reason_code`, `seed_source='admin_override'`, `approved_by/at`을 기록하고, 필요 시 `normalized_artist_staging.artist_name_ko_display`/`artist_name_ko_override_status=registered`를 반영한다.
 - 필요 시 `normalized_artist_staging.artist_name_*_display`
 
 ### 8.5 artist_key 연결 검수 큐 조회
@@ -1151,6 +1196,8 @@ request:
 ```text
 GET /api/v1/admin/review/artist-identities
 ```
+
+이 조회 API는 `standardization_review_item.review_type=artist_key`를 화면용으로 조인한 facade다. `candidate_id`는 대상 row 참조이고, decision path에는 `review_item_id`를 사용한다.
 
 query:
 
@@ -1163,12 +1210,12 @@ query:
 
 참조:
 
-- 읽기: `artist_identity_candidate`, `artist_identity`, `artist_name_alias`, `normalized_artist_staging`
+- 읽기: `standardization_review_item`, `artist_identity_candidate`, `artist_identity`, `artist_name_alias`, `normalized_artist_staging`
 
 ### 8.6 artist_key 연결 검수 처리
 
 ```text
-POST /api/v1/admin/review/artist-identities/{candidate_id}/decision
+POST /api/v1/admin/standardization-review-items/{review_item_id}/decision
 ```
 
 request:
@@ -1198,7 +1245,7 @@ request:
 동시성:
 
 - `expected_review_status`가 서버 현재 상태와 다르면 처리하지 않고 `CONFLICT`를 반환한다(2.7).
-- `move_to_new_artist_candidate`로 신규 `artist_key` 생성(8.8)으로 이어질 때는 8.8의 `idempotency_key`로 중복 생성을 막는다.
+- `move_to_new_artist_candidate`는 신규 `artist_key`를 만들지 않고 `standardization_review_item(review_type=new_artist)` 일감만 만든다. 신규 `artist_key` 생성은 8.8의 `approve`에서만 가능하며, 이때 8.8의 `idempotency_key`로 중복 생성을 막는다.
 
 쓰기:
 
@@ -1210,6 +1257,7 @@ request:
 - `artist_identity_candidate.rejected_at`
 - `artist_identity_candidate.reject_reason`
 - 승인 시 `artist_identity` 연결 근거 갱신
+- `standardization_review_item.status`/`decision_value_json`/`target_id`
 
 ### 8.7 신규 작가 후보 큐 조회
 
@@ -1221,6 +1269,7 @@ GET /api/v1/admin/review/new-artists
 
 - 기존 `artist_key` 후보가 없는 신규 작가 후보를 조회한다.
 - 이 큐는 최종 `artist_key` 테이블이 아니라 검수 대상 목록이다.
+- 이 조회 API는 `standardization_review_item.review_type=new_artist`를 화면용으로 조인한 facade다. decision path에는 `review_item_id`를 사용한다.
 
 응답 항목:
 
@@ -1237,13 +1286,13 @@ GET /api/v1/admin/review/new-artists
 
 참조:
 
-- 읽기: `normalized_artist_staging`, `artist_name_alias`
+- 읽기: `standardization_review_item`, `normalized_artist_staging`, `artist_name_alias`
 - 기준: MySQL 문서 `5.0.5 신규 작가 후보 큐 기준`
 
 ### 8.8 신규 작가 후보 결정
 
 ```text
-POST /api/v1/admin/review/new-artists/{candidate_id}/decision
+POST /api/v1/admin/standardization-review-items/{review_item_id}/decision
 ```
 
 화면(4.6)의 4개 버튼(신규 artist_key 생성 승인 / 기존 후보 재검색 / 보류 / 반려)을 단일 decision endpoint로 통합한다. `decision` 값으로 동작을 구분한다.
@@ -1284,8 +1333,9 @@ response(`decision=approve`):
 
 쓰기:
 
-- `approve` 시: `artist_identity`, `artist_profile_item`, `artist_profile_current`, 필요 시 `artist_name_alias.artist_key`
+- `approve` 시: `artist_identity`, `artist_profile_meta`, 필요 시 `artist_name_alias.artist_key`
 - `hold`/`reject` 시: 신규 작가 후보의 `review_status`, 처리자/시각/사유(2.2.1)
+- `standardization_review_item.status`/`decision_value_json`/`target_id`
 
 권한/주의:
 
@@ -1293,7 +1343,7 @@ response(`decision=approve`):
 - `decision=approve`만 신규 `artist_key`를 생성할 수 있다. `recheck`/`hold`/`reject`는 키를 만들지 않는다.
 - 일반 사용자 API에서는 호출할 수 없다.
 - `approve`는 `idempotency_key`로 중복 생성을 막는다. 같은 키의 재요청은 이미 생성된 `artist_key`를 그대로 반환한다(2.7).
-- 신규 `artist_key` 생성 시 원천에서 분해 가능한 작가 소개/학력/전시/팔로워 같은 프로필성 메타는 `artist_profile_item`에 항목 단위로 만들고, `artist_profile_current` 최소 요약도 갱신한다. 프로필성 메타는 `artist_identity`에 쓰지 않는다.
+- 신규 `artist_key` 생성 시 원천에서 분해 가능한 작가 소개/학력/전시/팔로워 같은 프로필성 메타와 현재 표시값은 `artist_profile_meta`에 항목 단위로 만든다. 프로필성 메타는 `artist_identity`에 쓰지 않는다.
 - `approve`/`hold`/`reject`는 `expected_review_status`가 서버 현재 상태와 다르면 처리하지 않고 `CONFLICT`를 반환한다(2.7). `recheck`는 상태 전이가 아니므로 충돌 검사 대상이 아니다(8.4 `recheck_candidates`와 동일 원칙).
 
 ### 8.9 NANT mapping 관리
@@ -1354,12 +1404,12 @@ mapping row 응답 항목:
 - `POST /mapping-versions/import`는 새 `draft` version을 만든다. 기존 active version을 덮어쓰지 않는다.
 - `PATCH`/`DELETE`는 `draft` version row에만 허용한다. active/archived row 수정은 `CONFLICT`로 거부한다.
 - `activate`는 validation passed 상태에서만 허용한다. 성공 시 기존 active는 `archived`, 대상 draft는 `active`가 된다.
-- snapshot 후보 query와 `artwork_nant_classification`은 active version을 사용한다. 과거 snapshot은 당시 `mapping_version_id`를 고정한다.
+- snapshot 후보 query는 `normalized_artwork_staging.nant_*` 컬럼과 mapping row 조인을 사용한다. 과거 snapshot은 당시 `nant_mapping_version_id`를 고정한다.
 
 참조:
 
 - 읽기/쓰기: `nant_mapping_version`, `nant_allowed_category`, `nant_material_mapping`
-- 읽기: `artwork_nant_classification`
+- 읽기: `normalized_artwork_staging.nant_*`
 
 ## 9. Snapshot API
 
@@ -1384,7 +1434,7 @@ GET /api/v1/admin/snapshots/candidates/summary
 
 참조:
 
-- 읽기: `normalized_artwork_staging`, `artwork_nant_classification`, `normalized_artist_staging`, `artist_identity`, `fx_rate_daily`
+- 읽기: `normalized_artwork_staging`, `normalized_artist_staging`, `artist_identity`
 
 ### 9.2 snapshot 후보 목록
 
@@ -1398,7 +1448,7 @@ query:
 |---|---|
 | `source` | 원천 사이트 |
 | `include_status` | 포함/제외 후보 |
-| `exclude_reason` | 제외 사유. NANT 제외는 `nant_learning_excluded`, 매핑 실패는 `nant_unmapped` |
+| `exclude_reason` | 제외 사유. NANT 제외는 `nant_learning_excluded`. 매핑 실패/검수 필요 재료는 snapshot 전에 `standardization_review_item(review_type=nant_mapping)`에서 해결한다 |
 | `artist_identity_status` | 작가 확정 상태 |
 | `page` / `page_size` | 페이지 |
 
@@ -1487,7 +1537,7 @@ response:
 - `collector_run.status=failed` 또는 `collector_run.quality_status=blocked`인 run은 자동 포함하지 않는다.
 - `blocked`는 수집 결과 삭제가 아니라 snapshot 자동 반영 차단 상태다. 운영자 override 사유가 있을 때만 후보에 포함할 수 있다.
 - 환율이 없어 `price_krw_normalized`를 만들 수 없는 row는 snapshot 포함 대상에서 제외한다.
-- DB active NANT mapping 기준 `learning_excluded=true` row는 `exclude_reason=nant_learning_excluded`, 매핑 실패 row는 `exclude_reason=nant_unmapped`로 제외 또는 보류한다. 기존 재료/지지체 하드코딩 학습 필터는 사용하지 않는다.
+- DB active NANT mapping 기준 `learning_excluded=true` row는 `exclude_reason=nant_learning_excluded`로 제외한다. 매핑 실패 row는 snapshot 후보가 아니라 `standardization_review_item(review_type=nant_mapping)`에 보류한다. 기존 재료/지지체 하드코딩 학습 필터는 사용하지 않는다.
 
 #### 9.3.3 서빙승인 (데이터 관리자)
 
@@ -1574,7 +1624,7 @@ query:
 
 | 파라미터 | 설명 |
 |---|---|
-| `entity_type` | `collection_run`, `artwork`, `artist_name`, `artist_identity`, `snapshot` |
+| `entity_type` | `collection_run`, `artwork`, `artist_name`, `artist_identity`, `snapshot`, `model_training_job`, `model_version`, `model_deployment`, `nant_mapping_version`, `nant_material_mapping` |
 | `entity_id` | 대상 ID |
 | `actor_id` | 처리자 |
 | `from` / `to` | 기간 |
@@ -1593,7 +1643,11 @@ query:
 
 주의:
 
-- before/after는 `8.2 approve_with_patch`가 적재하는 append-only 변경 이벤트에서 채운다. 이 before/after의 단일 기준(SoT)은 MySQL 문서 [`periodic_raw_collection_mysql_plan_20260623.md`](periodic_raw_collection_mysql_plan_20260623.md)의 §5.8.1 `normalized_artwork_change_event`(append-only)다. 별도 audit 테이블 확대는 고도화 대상이다(12.1).
+- 이 API는 1차에서 별도 audit write SoT를 만들지 않고, 도메인별 SoT 테이블의 처리자/시각/사유 컬럼을 읽는 조회 facade다. 통합 audit 테이블 확대는 고도화 대상이다(12.1).
+- 작품 field patch의 before/after 단일 기준은 MySQL 문서 [`periodic_raw_collection_mysql_plan_20260623.md`](periodic_raw_collection_mysql_plan_20260623.md)의 §5.8.1 `normalized_artwork_change_event`(append-only)다.
+- 비가역 artist identity 결정은 §5.12.1 `identity_event_log`를 source로 읽는다.
+- 모델 학습/import, 후보 승인/반려, 운영 승격/롤백/retire 이력은 `model_training_job`, `price_model_registry`, `price_model_deployment`의 상태/처리자/시각/사유 컬럼을 source로 읽는다.
+- NANT CSV import, draft row 편집, active 전환 이력은 `nant_mapping_version`과 `nant_material_mapping`의 생성/수정/활성화 처리자 컬럼을 source로 읽는다. active version row 직접 수정은 금지되므로, active 변경 이력은 새 draft 생성 후 activate 이벤트로 남긴다.
 - 처리자는 body 입력값이 아니라 인증 주체이며, `request_id`와 함께 남겨 단일 요청 단위로 추적한다.
 
 ## 11. API 작성 기준
@@ -1624,7 +1678,7 @@ API 구현 시 반드시 지켜야 할 기준:
 
 인증 방식은 "다음에 정할 항목"이 아니라 본 설계의 전제다. `actor_id` 서버 주입(`2.2.1`)과 권한 게이트가 인증 컨텍스트 위에서만 성립하기 때문이다.
 
-- 기본 인증 방식은 JWT 액세스 토큰 + 역할 claim(액세스 60분 / 리프레시 14일)으로 결정한다([운영 파라미터](operational_parameters_20260625.md) §A `AUTH-METHOD`/`AUTH-TOKEN-TTL`). `actor_id`는 토큰 claim에서 서버가 주입한다(2.2.1). 이 값은 조직 정책 확정 시 갱신한다.
+- 기본 인증 방식은 JWT 액세스 토큰 + 역할 claim(액세스 60분 / 리프레시 14일)으로 결정한다([운영 파라미터](operational_parameters_20260625.md) §A `AUTH-METHOD`/`AUTH-TOKEN-TTL`). `actor_id`는 토큰 claim에서 서버가 주입한다(2.2.1). 프론트 분리 배포의 origin/CORS/refresh cookie/CSRF 기본값도 운영 파라미터 §A의 `AUTH-ORIGIN-POLICY`/`AUTH-CORS-POLICY`/`AUTH-ADMIN-REFRESH-COOKIE`/`AUTH-CSRF-POLICY`를 따른다. 이 값은 조직 정책 확정 시 갱신한다.
 - 인증 컨텍스트에서 주체를 식별하는 방식이 운영되기 전에는 어드민 쓰기 API를 열지 않는다. 인증 미정 상태에서 쓰기 API를 열면 `actor_id` 위조 차단과 `required_role` 게이트가 무력화된다.
 - 세션/내부 관리자 계정 등 구체 구현 방식은 조직 정책 확정 시 갱신하되, "인증 컨텍스트에서 주체를 식별한다"는 전제 자체는 협상 대상이 아니다.
 
@@ -1636,8 +1690,8 @@ API 구현 시 반드시 지켜야 할 기준:
 |---|---|
 | 인증 방식 상세 | 사용자는 로그인 없이 first-party 익명 세션 + rate limit을 기본값으로 둔다. 어드민은 제공 이메일/비밀번호 로그인 후 JWT 액세스 토큰 + 역할 claim을 발급한다. SSO는 후속 도입 예정이다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.1/§3.2). 토큰 TTL은 [운영 파라미터](operational_parameters_20260625.md) 기준을 따른다. |
 | freshness 임계 `N`/`M` | 예측/가격 카드 `as_of` 경고 임계 `N`일·카드 차단 임계 `M`일(M>N)·deployment 괴리 경고 임계(2.6 / 4.4) → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신 |
-| 신규 작가 후보 저장 방식 | 사용자 신규 작가 후보 제출을 M1에 포함하므로 물리 후보 큐 테이블을 1차 DDL에 포함한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.4). |
+| 신규 작가 후보 저장 방식 | 사용자 신규 작가 후보 제출을 M1에 포함하므로 `standardization_review_item(review_type=new_artist)`를 물리 큐로 1차 DDL에 포함한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.4). 별도 `new_artist_candidate` 테이블은 만들지 않는다. |
 | 수동 CSV 업로드 파일 저장 위치 | `manual_import_file.file_uri`는 `manual/{env}/source={source}/dt={YYYY-MM-DD}/import={import_id}/original.csv` 규칙을 기본값으로 둔다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). row 처리 구조는 MySQL 문서 5.3.1의 `manual_import_file` + `collector_run` 기준으로 확정 |
-| 운영 로그 저장 방식 | 비가역 작가 identity 결정은 `identity_event_log`(MySQL 5.12.1)에 append-only로 남기고, 그 외 엔티티는 각 테이블 승인/반려 컬럼을 사용한다. 검수 큐 claim/lock TTL 등 동시성 수치 → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신. 전체 필드 변경 audit 테이블 확대는 고도화 |
+| 운영 로그 저장 방식 | `GET /api/v1/admin/audit-logs`는 별도 audit write SoT가 아니라 도메인별 SoT 읽기 facade다. 작품 field patch는 `normalized_artwork_change_event`, 비가역 작가 identity 결정은 `identity_event_log`, 모델 운영은 `model_training_job`/`price_model_registry`/`price_model_deployment`, NANT 운영은 `nant_mapping_version`/`nant_material_mapping`의 처리자·시각·사유 컬럼을 사용한다. 검수 큐 claim/lock TTL 등 동시성 수치 → [운영 파라미터](operational_parameters_20260625.md)에서 기본값 확정, 운영 실측/정책 확정 시 갱신. 전체 필드 변경 audit 테이블 확대는 고도화 |
 | 예측 API 연결 방식 | 기존 예측 API를 호출하지 않고, 데이터 수집 서비스 내부 joblib serving adapter가 active deployment의 joblib artifact를 직접 로드한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §3.6). |
-| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 집계 테이블을 만들고, API는 active deployment의 training snapshot 또는 import manifest cutoff 기준 row를 조회한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). |
+| 1차 시장 가격 카드 데이터 위치 | approved snapshot 생성 시 `primary_market_artist_summary`를 만들고, API는 active deployment의 training snapshot 또는 import manifest cutoff 기준 row를 조회한다([개발 착수 전 결정안](development_prestart_decisions_20260625.md) §2). |

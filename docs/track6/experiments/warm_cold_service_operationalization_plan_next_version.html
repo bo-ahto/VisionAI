@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warm/Cold 가격 예측 서비스 운영 적용 계획</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#warm-cold-가격-예측-서비스-운영-적용-계획">Warm/Cold 가격 예측 서비스 운영 적용 계획</a>
+<a class="toc-level-2" href="#1.-결론">1. 결론</a>
+<a class="toc-level-2" href="#2.-버전-구분">2. 버전 구분</a>
+<a class="toc-level-2" href="#3.-서비스-전체-흐름">3. 서비스 전체 흐름</a>
+<a class="toc-level-2" href="#4.-사용자-입력-정책">4. 사용자 입력 정책</a>
+<a class="toc-level-3" href="#4.1-사용자-입력-필드">4.1 사용자 입력 필드</a>
+<a class="toc-level-3" href="#4.2-cold-최소-입력-정책">4.2 Cold 최소 입력 정책</a>
+<a class="toc-level-3" href="#4.3-신뢰도-하향-조건">4.3 신뢰도 하향 조건</a>
+<a class="toc-level-2" href="#5.-작가명-기반-artist_key-매칭">5. 작가명 기반 artist_key 매칭</a>
+<a class="toc-level-3" href="#5.1-운영-원칙">5.1 운영 원칙</a>
+<a class="toc-level-3" href="#5.2-작가-확인-흐름">5.2 작가 확인 흐름</a>
+<a class="toc-level-3" href="#5.3-작가매칭신뢰도점수">5.3 작가매칭신뢰도점수</a>
+<a class="toc-level-2" href="#6.-warm-cold-라우팅-정책">6. Warm/Cold 라우팅 정책</a>
+<a class="toc-level-3" href="#6.1-다음-버전-v0.2-라우팅-공식">6.1 다음 버전(v0.2) 라우팅 공식</a>
+<a class="toc-level-3" href="#6.2-라우팅-처리표">6.2 라우팅 처리표</a>
+<a class="toc-level-2" href="#7.-warm-결과-화면과-계산-설명">7. Warm 결과 화면과 계산 설명</a>
+<a class="toc-level-3" href="#7.1-warm-계산-요약">7.1 Warm 계산 요약</a>
+<a class="toc-level-3" href="#7.2-warm-사용자-설명">7.2 Warm 사용자 설명</a>
+<a class="toc-level-3" href="#7.3-warm-응답에-포함할-설명값">7.3 Warm 응답에 포함할 설명값</a>
+<a class="toc-level-2" href="#8.-cold-예상-가격-화면과-계산-설명">8. Cold 예상 가격 화면과 계산 설명</a>
+<a class="toc-level-3" href="#8.1-cold-서비스-표시-원칙">8.1 Cold 서비스 표시 원칙</a>
+<a class="toc-level-3" href="#8.2-cold-사용자용-계산식">8.2 Cold 사용자용 계산식</a>
+<a class="toc-level-3" href="#8.3-cold-운영-계산식">8.3 Cold 운영 계산식</a>
+<a class="toc-level-3" href="#8.4-낮은쪽-40-지점-가격-설명">8.4 낮은쪽 40% 지점 가격 설명</a>
+<a class="toc-level-2" href="#9.-입력값별-예측-역할">9. 입력값별 예측 역할</a>
+<a class="toc-level-2" href="#10.-cold-결과-화면-구성">10. Cold 결과 화면 구성</a>
+<a class="toc-level-3" href="#10.1-결과-카드">10.1 결과 카드</a>
+<a class="toc-level-3" href="#10.2-cold-안내-문구">10.2 Cold 안내 문구</a>
+<a class="toc-level-3" href="#10.3-부족-정보-안내-문구">10.3 부족 정보 안내 문구</a>
+<a class="toc-level-2" href="#11.-실제-판매가-입력과-학습-개선-루프">11. 실제 판매가 입력과 학습 개선 루프</a>
+<a class="toc-level-3" href="#11.1-사용자-피드백-흐름">11.1 사용자 피드백 흐름</a>
+<a class="toc-level-3" href="#11.2-저장해야-할-필드">11.2 저장해야 할 필드</a>
+<a class="toc-level-3" href="#11.3-학습-반영-기준">11.3 학습 반영 기준</a>
+<a class="toc-level-2" href="#12.-api-변경-계획">12. API 변경 계획</a>
+<a class="toc-level-3" href="#12.1-유지할-api">12.1 유지할 API</a>
+<a class="toc-level-3" href="#12.2-추가-응답-필드">12.2 추가 응답 필드</a>
+<a class="toc-level-2" href="#13.-구현-작업-순서">13. 구현 작업 순서</a>
+<a class="toc-level-2" href="#14.-검증-기준">14. 검증 기준</a>
+<a class="toc-level-2" href="#15.-운영-모니터링">15. 운영 모니터링</a>
+<a class="toc-level-2" href="#16.-최종-운영-문구">16. 최종 운영 문구</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>docs/track6/experiments/warm_cold_service_operationalization_plan_next_version.md</code></div>
+      <h1 id="warm-cold-가격-예측-서비스-운영-적용-계획">Warm/Cold 가격 예측 서비스 운영 적용 계획</h1>
+<ul>
+<li>작성일: 2026-06-11</li>
+<li>문서 목적: 최종 Warm/Cold 리포트 모델을 실제 서비스에 적용하기 위한 운영 기준, 입력 정책, 계산 설명, 사용자 피드백 수집 방식을 정리</li>
+<li>버전 표기 원칙: 기존 구현은 <code>이전 버전(v0.1)</code>, 이번 적용 대상은 <code>다음 버전(v0.2)</code>으로 표기</li>
+<li>기준 리포트: <code>partner_warm_cold_best_model_report.md</code></li>
+</ul>
+<h2 id="1.-결론">1. 결론</h2>
+<ul>
+<li>이전 버전(v0.1)은 작가명 기반 artist_key 매칭 흐름을 이미 갖고 있음</li>
+<li>다음 버전(v0.2)은 이전 버전(v0.1)의 작가 확인 흐름을 재사용하고, 최종 리포트의 Warm/Cold 모델 기준으로 라우팅과 예측 설명을 확장</li>
+<li>사용자는 artist_key를 직접 입력하지 않음</li>
+<li>사용자는 한글 작가명 또는 영문 작가명을 입력하고, 서비스가 내부 artist_key 후보를 찾아줌</li>
+<li>Cold는 정확도 보장 모델이 아니라 입력 정보 기반 예상 가격 안내 모델로 제공</li>
+<li>Cold라도 최소 입력 정보가 부족하면 단일 예상 가격을 보여주지 않음</li>
+<li>Cold 결과 화면에는 가격뿐 아니라 어떤 정보가 예측에 쓰였고 어떤 정보가 부족한지 함께 표시</li>
+<li>실제 판매가를 나중에 입력할 수 있게 하여 모델 재학습 후보 데이터로 누적</li>
+</ul>
+<h2 id="2.-버전-구분">2. 버전 구분</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구분</th>
+<th class="align-left">이전 버전(v0.1)</th>
+<th class="align-left">다음 버전(v0.2)</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">서비스 기준</td>
+<td class="align-left"><code>price_prediction_v0.1</code> 운영 구현</td>
+<td class="align-left"><code>price_prediction_v0.2</code> 운영 적용안</td>
+</tr>
+<tr>
+<td class="align-left">작가 입력</td>
+<td class="align-left">한글명/영문명 입력 후 artist_key 후보 확인</td>
+<td class="align-left">동일하게 유지</td>
+</tr>
+<tr>
+<td class="align-left">artist_key 입력</td>
+<td class="align-left">내부 테스트 옵션으로만 존재</td>
+<td class="align-left">일반 사용자 화면에서는 숨김 유지</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭</td>
+<td class="align-left">alias/direct/fuzzy 후보 검색</td>
+<td class="align-left">매칭 점수와 Warm 가능 기준을 더 명확히 적용</td>
+</tr>
+<tr>
+<td class="align-left">Warm 기준</td>
+<td class="align-left">유효 학습 가격 이력 1건 이상이면 Warm 가능 처리</td>
+<td class="align-left"><code>작가매칭신뢰도점수 &gt;= 0.90</code> AND <code>같은작가_사용가능가격이력수 &gt;= 5</code></td>
+</tr>
+<tr>
+<td class="align-left">Warm 모델</td>
+<td class="align-left">v0.1 Warm operational blend</td>
+<td class="align-left">v0.2 최종 Warm 미세 보정 모델</td>
+</tr>
+<tr>
+<td class="align-left">Cold 처리</td>
+<td class="align-left">자동 예측 보류 또는 참고 범위 중심</td>
+<td class="align-left">예상 가격 제공 가능. 단, 참고용/낮은 신뢰도 안내 필수</td>
+</tr>
+<tr>
+<td class="align-left">Cold 계산 설명</td>
+<td class="align-left">제한적</td>
+<td class="align-left">입력값, Quantile, 낮은쪽 40% 지점 가격, 과대예측 방어 설명 제공</td>
+</tr>
+<tr>
+<td class="align-left">사용자 보완 입력</td>
+<td class="align-left">제한적</td>
+<td class="align-left">부족 정보 표시, 추가 입력, 실제 판매가 입력 흐름 제공</td>
+</tr>
+<tr>
+<td class="align-left">학습 개선 루프</td>
+<td class="align-left">별도 운영 필요</td>
+<td class="align-left">예측 결과와 실제 판매가를 연결해 재학습 후보 데이터로 축적</td>
+</tr>
+</tbody></table></div>
+<h2 id="3.-서비스-전체-흐름">3. 서비스 전체 흐름</h2>
+<pre><code>[사용자 작품 입력]
+  - 작가명
+  - 작품명
+  - 제작연도
+  - 크기
+  - 매체
+  - 지지체
+  - 작품 유형
+        |
+        v
+[작가 확인]
+  - 한글명/영문명 정규화
+  - artist_key 후보 조회
+  - 후보 단일 확정 또는 사용자 선택
+        |
+        v
+[최소 입력 정책 확인]
+  - Cold 예상 가격을 보여도 되는 입력 수준인지 확인
+        |
+        v
+[Warm/Cold 라우팅]
+  - 작가매칭신뢰도점수
+  - 같은작가_사용가능가격이력수
+        |
+        +----------------------------+
+        |                            |
+        v                            v
+[Warm 예측]                    [Cold 예상 가격]
+  - 기준가격 생성               - 작품/작가/검색 피처 생성
+  - 방향 분류                   - LightGBM Quantile 후보 생성
+  - Huber 잔차 미세 보정        - 과대예측 방어
+  - 신뢰도 계산                 - 작가 검색 보정
+        |                            |
+        +-------------+--------------+
+                      |
+                      v
+[결과 화면]
+  - 예상 가격 또는 가격 범위
+  - 신뢰도
+  - 계산 설명
+  - 부족 정보
+  - 추가 입력 요청
+  - 실제 판매가 등록</code></pre>
+<h2 id="4.-사용자-입력-정책">4. 사용자 입력 정책</h2>
+<h3 id="4.1-사용자-입력-필드">4.1 사용자 입력 필드</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">입력값</th>
+<th class="align-left">필수 여부</th>
+<th class="align-left">이전 버전(v0.1)</th>
+<th class="align-left">다음 버전(v0.2)</th>
+<th class="align-left">예측에서의 역할</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">한글 작가명</td>
+<td class="align-left">필수 중 하나</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">artist_key 후보 검색, 작가 메타/검색 피처 연결</td>
+</tr>
+<tr>
+<td class="align-left">영문 작가명</td>
+<td class="align-left">필수 중 하나</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">artist_key 후보 검색, 영문 alias 매칭</td>
+</tr>
+<tr>
+<td class="align-left">artist_key</td>
+<td class="align-left">사용자 비노출</td>
+<td class="align-left">내부 테스트 옵션</td>
+<td class="align-left">내부 식별자로만 사용</td>
+<td class="align-left">모델 내부 작가 식별자</td>
+</tr>
+<tr>
+<td class="align-left">작품명</td>
+<td class="align-left">권장</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">결과 저장, 중복 검수, 제목 기반 후속 피처 후보</td>
+</tr>
+<tr>
+<td class="align-left">제작연도</td>
+<td class="align-left">강한 권장</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">작품 시기, 작가 경력 단계와 결합</td>
+</tr>
+<tr>
+<td class="align-left">가로 cm</td>
+<td class="align-left">필수</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">면적, 크기 구간, 가격대 계산</td>
+</tr>
+<tr>
+<td class="align-left">세로 cm</td>
+<td class="align-left">필수</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">면적, 크기 구간, 가격대 계산</td>
+</tr>
+<tr>
+<td class="align-left">깊이 cm</td>
+<td class="align-left">조건부</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">입체 작품 여부 판단</td>
+</tr>
+<tr>
+<td class="align-left">매체</td>
+<td class="align-left">필수</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">재료별 가격 차이 반영</td>
+</tr>
+<tr>
+<td class="align-left">지지체</td>
+<td class="align-left">필수</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">canvas/paper/panel 등 지지체별 가격 차이 반영</td>
+</tr>
+<tr>
+<td class="align-left">작품 유형</td>
+<td class="align-left">권장</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">Painting/Sculpture/Installation 등 유형별 패턴 반영</td>
+</tr>
+<tr>
+<td class="align-left">작품 URL</td>
+<td class="align-left">선택</td>
+<td class="align-left">사용</td>
+<td class="align-left">사용</td>
+<td class="align-left">검수, 이미지/외부 정보 후속 수집</td>
+</tr>
+</tbody></table></div>
+<h3 id="4.2-cold-최소-입력-정책">4.2 Cold 최소 입력 정책</h3>
+<p>Cold라도 단일 예상 가격을 표시하려면 최소 입력 기준을 만족해야 함.</p>
+<pre><code>Cold 예상 가격 표시 가능 =
+  (한글 작가명 또는 영문 작가명 존재)
+  AND (가로 cm 존재)
+  AND (세로 cm 존재)
+  AND (매체 존재)
+  AND (지지체 존재)</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">입력 상태</th>
+<th class="align-left">서비스 처리</th>
+<th class="align-left">화면 표시</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가명 + 가로/세로 + 매체 + 지지체 존재</td>
+<td class="align-left">Cold 예상 가격 표시 가능</td>
+<td class="align-left">예상 가격, 가격 범위, 낮은 신뢰도/중간 신뢰도 안내</td>
+</tr>
+<tr>
+<td class="align-left">작가명은 있으나 크기/매체/지지체 중 일부 누락</td>
+<td class="align-left">참고 범위만 표시</td>
+<td class="align-left">단일 예상 가격 숨김, 부족 정보 요청</td>
+</tr>
+<tr>
+<td class="align-left">작가명 없음</td>
+<td class="align-left">예측 보류</td>
+<td class="align-left">작가명 입력 요청</td>
+</tr>
+<tr>
+<td class="align-left">가로/세로 모두 없음</td>
+<td class="align-left">예측 보류</td>
+<td class="align-left">작품 크기 입력 요청</td>
+</tr>
+<tr>
+<td class="align-left">매체와 지지체 모두 없음</td>
+<td class="align-left">예측 보류</td>
+<td class="align-left">재료/지지체 입력 요청</td>
+</tr>
+<tr>
+<td class="align-left">동명이인 후보가 여러 명</td>
+<td class="align-left">예측 보류</td>
+<td class="align-left">후보 선택 또는 운영 검수 요청</td>
+</tr>
+</tbody></table></div>
+<h3 id="4.3-신뢰도-하향-조건">4.3 신뢰도 하향 조건</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">조건</th>
+<th class="align-left">처리</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">제작연도 없음</td>
+<td class="align-left">예측 가능하나 신뢰도 하향</td>
+</tr>
+<tr>
+<td class="align-left">작가 생년/국적 없음</td>
+<td class="align-left">Cold 신뢰도 하향</td>
+</tr>
+<tr>
+<td class="align-left">검색 피처 없음</td>
+<td class="align-left">Cold 신뢰도 하향</td>
+</tr>
+<tr>
+<td class="align-left">동명이인 위험 있음</td>
+<td class="align-left">후보 선택 또는 검수 요청</td>
+</tr>
+<tr>
+<td class="align-left">입체 작품인데 depth 없음</td>
+<td class="align-left">예측 가능하나 신뢰도 하향</td>
+</tr>
+<tr>
+<td class="align-left">Quantile예측구간폭이 넓음</td>
+<td class="align-left">가격 범위 넓게 표시, 과대예측 방어 적용 가능</td>
+</tr>
+</tbody></table></div>
+<h2 id="5.-작가명-기반-artist_key-매칭">5. 작가명 기반 artist_key 매칭</h2>
+<h3 id="5.1-운영-원칙">5.1 운영 원칙</h3>
+<ul>
+<li>사용자는 artist_key를 입력하지 않음</li>
+<li>artist_key는 모델 내부에서 사용하는 작가 식별자</li>
+<li>사용자는 한글 작가명 또는 영문 작가명을 입력</li>
+<li>서비스는 입력 작가명을 정규화하고 학습 작가 사전에서 후보 artist_key를 찾음</li>
+<li>후보가 1명이고 매칭 신뢰도가 충분하면 자동 확정</li>
+<li>후보가 여러 명이면 사용자 선택 또는 운영 검수로 이동</li>
+</ul>
+<h3 id="5.2-작가-확인-흐름">5.2 작가 확인 흐름</h3>
+<pre><code>[입력 작가명]
+  - name_ko
+  - name_en
+        |
+        v
+[정규화]
+  - 소문자 변환
+  - 앞뒤 공백 제거
+  - 연속 공백 축소
+  - 하이픈/기호 완화
+  - 한글명 공백 제거 후보 생성
+  - 영문명 First Last / Last First 후보 생성
+        |
+        v
+[artist alias 조회]
+  - artist_key 직접 일치
+  - 한글명 alias 일치
+  - 영문명 alias 일치
+  - 영문 slug 일치
+  - fuzzy 후보 조회
+        |
+        v
+[후보 검증]
+  - 후보 수
+  - 생년
+  - 국적
+  - 외부 작가 식별자
+  - 동명이인 위험
+        |
+        v
+[artist_key 확정 또는 후보 선택]</code></pre>
+<h3 id="5.3-작가매칭신뢰도점수">5.3 작가매칭신뢰도점수</h3>
+<pre><code>작가키가 직접 일치하면:
+작가매칭신뢰도점수 = 1.00
+
+작가키가 없거나 신뢰할 수 없으면:
+작가매칭신뢰도점수 =
+  clip(
+      0.70 * 이름일치점수
+    + 0.20 * 보조정보일치점수
+    + 0.10 * 학습작가등록점수
+    - 0.15 * 동명이인위험점수
+    - 0.20 * 핵심정보충돌점수,
+    0.00,
+    0.95
+  )</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">점수 예시</th>
+<th class="align-left">의미</th>
+<th class="align-left">처리</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1.00</td>
+<td class="align-left">artist_key 직접 일치</td>
+<td class="align-left">가격 이력 수 확인 후 Warm 가능</td>
+</tr>
+<tr>
+<td class="align-right">0.95</td>
+<td class="align-left">이름 일치 + 생년 또는 외부 식별자 일치</td>
+<td class="align-left">가격 이력 수 확인 후 Warm 가능</td>
+</tr>
+<tr>
+<td class="align-right">0.80</td>
+<td class="align-left">이름은 일치하지만 보조 정보 부족</td>
+<td class="align-left">Cold 또는 검수</td>
+</tr>
+<tr>
+<td class="align-right">0.60</td>
+<td class="align-left">검색/텍스트 기반 추정</td>
+<td class="align-left">Cold</td>
+</tr>
+<tr>
+<td class="align-right">0.00</td>
+<td class="align-left">같은 작가 근거 없음</td>
+<td class="align-left">Cold 또는 예측 보류</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-warm-cold-라우팅-정책">6. Warm/Cold 라우팅 정책</h2>
+<h3 id="6.1-다음-버전-v0.2-라우팅-공식">6.1 다음 버전(v0.2) 라우팅 공식</h3>
+<pre><code>Warm 적용 여부 =
+  (작가매칭신뢰도점수 &gt;= 0.90)
+  AND
+  (같은작가_사용가능가격이력수 &gt;= 5)
+
+위 조건을 하나라도 만족하지 못하면 Cold</code></pre>
+<h3 id="6.2-라우팅-처리표">6.2 라우팅 처리표</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">조건</th>
+<th class="align-left">route</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가매칭신뢰도점수 0.90 이상 + 같은 작가 가격 이력 5건 이상</td>
+<td class="align-left">Warm</td>
+<td class="align-left">같은 작가 가격 이력을 기준가격에 반영 가능</td>
+</tr>
+<tr>
+<td class="align-left">작가매칭신뢰도점수 0.90 이상 + 같은 작가 가격 이력 1~4건</td>
+<td class="align-left">Cold</td>
+<td class="align-left">표본이 적어 Warm 기준가격 불안정</td>
+</tr>
+<tr>
+<td class="align-left">작가매칭신뢰도점수 0.90 미만</td>
+<td class="align-left">Cold</td>
+<td class="align-left">작가 오매칭 위험</td>
+</tr>
+<tr>
+<td class="align-left">후보가 여러 명</td>
+<td class="align-left">예측 보류</td>
+<td class="align-left">사용자 선택 또는 검수 필요</td>
+</tr>
+<tr>
+<td class="align-left">작가명 없음</td>
+<td class="align-left">예측 보류</td>
+<td class="align-left">최소 입력 불충족</td>
+</tr>
+</tbody></table></div>
+<h2 id="7.-warm-결과-화면과-계산-설명">7. Warm 결과 화면과 계산 설명</h2>
+<h3 id="7.1-warm-계산-요약">7.1 Warm 계산 요약</h3>
+<pre><code>최종 Warm 가격 =
+  기준가격
++ 미세보정값
+
+미세보정값 =
+  방향 분류 모델과 Huber 잔차 모델이 같은 방향을 가리킬 때만 적용</code></pre>
+<h3 id="7.2-warm-사용자-설명">7.2 Warm 사용자 설명</h3>
+<pre><code>입력 작가가 학습 데이터의 작가와 고신뢰로 매칭되었고,
+같은 작가의 사용 가능한 가격 이력이 5건 이상 있어 Warm 모델을 적용했습니다.
+
+기존 작가 가격 이력과 유사작품 통계를 기반으로 기준가격을 만든 뒤,
+방향 분류와 Huber 잔차 모델이 같은 방향을 가리키는 경우에만 미세 보정을 적용했습니다.</code></pre>
+<h3 id="7.3-warm-응답에-포함할-설명값">7.3 Warm 응답에 포함할 설명값</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">응답 항목</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>route</code></td>
+<td class="align-left"><code>warm</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>matched_artist_key</code></td>
+<td class="align-left">확정된 내부 artist_key</td>
+</tr>
+<tr>
+<td class="align-left"><code>artist_match_score</code></td>
+<td class="align-left">작가매칭신뢰도점수</td>
+</tr>
+<tr>
+<td class="align-left"><code>same_artist_training_price_count</code></td>
+<td class="align-left">같은 작가의 사용 가능한 학습 가격 이력 수</td>
+</tr>
+<tr>
+<td class="align-left"><code>baseline_price_krw</code></td>
+<td class="align-left">기준가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>micro_correction_krw</code></td>
+<td class="align-left">미세보정값</td>
+</tr>
+<tr>
+<td class="align-left"><code>final_price_krw</code></td>
+<td class="align-left">최종 예측가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>confidence_level</code></td>
+<td class="align-left">high/medium/low</td>
+</tr>
+<tr>
+<td class="align-left"><code>explanation</code></td>
+<td class="align-left">사용자용 계산 설명</td>
+</tr>
+</tbody></table></div>
+<h2 id="8.-cold-예상-가격-화면과-계산-설명">8. Cold 예상 가격 화면과 계산 설명</h2>
+<h3 id="8.1-cold-서비스-표시-원칙">8.1 Cold 서비스 표시 원칙</h3>
+<ul>
+<li>Cold는 정확 감정가가 아님</li>
+<li>Cold는 입력 정보 기반 예상 가격</li>
+<li>Cold는 신뢰도와 가격 범위를 함께 표시</li>
+<li>Cold는 어떤 정보가 예측에 쓰였는지 보여줘야 함</li>
+<li>Cold는 어떤 정보가 부족한지 보여줘야 함</li>
+<li>Cold는 실제 판매가 입력을 통해 모델 개선에 참여할 수 있게 해야 함</li>
+</ul>
+<p>권장 화면 문구:</p>
+<pre><code>입력 정보 기반 예상 가격입니다.
+동일 작가의 충분한 가격 이력이 없거나 작가 매칭이 불확실한 경우,
+작품 정보와 작가 정보, 검색 문맥을 함께 사용해 참고용 가격을 계산합니다.
+정확 감정가 또는 판매 보장 가격은 아닙니다.</code></pre>
+<h3 id="8.2-cold-사용자용-계산식">8.2 Cold 사용자용 계산식</h3>
+<pre><code>Cold 예상 가격 =
+  작품 정보 기반 기준 가격
++ 작가 정보 보정
++ 검색 문맥 보정
+- 과대예측 방어 보정</code></pre>
+<p>사용자 설명:</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">구성요소</th>
+<th class="align-left">쉬운 설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작품 정보 기반 기준 가격</td>
+<td class="align-left">크기, 매체, 지지체, 제작연도, 작품 유형을 바탕으로 기본 가격대를 계산</td>
+</tr>
+<tr>
+<td class="align-left">작가 정보 보정</td>
+<td class="align-left">작가 생년, 국적, 활동량, 작품 수, 팔로워 수 등으로 가격대를 보정</td>
+</tr>
+<tr>
+<td class="align-left">검색 문맥 보정</td>
+<td class="align-left">작가명이 미술/전시/갤러리/시장 문맥에서 얼마나 확인되는지 반영</td>
+</tr>
+<tr>
+<td class="align-left">과대예측 방어 보정</td>
+<td class="align-left">예측 범위가 넓고 가격이 높게 잡힐 위험이 있으면 낮은쪽 40% 지점 가격 기준으로 일부 낮춤</td>
+</tr>
+</tbody></table></div>
+<h3 id="8.3-cold-운영-계산식">8.3 Cold 운영 계산식</h3>
+<pre><code>검색피처포함_기초Quantile후보_로그가격
+  = LightGBM_Quantile_회귀(
+      작품피처
+      + 작가메타피처
+      + 검색피처
+      + 검색상호작용피처
+    )
+
+Quantile예측구간폭 = 저장된_Quantile예측폭
+
+낮은쪽40퍼센트기준_로그가격
+  = LightGBM_40퍼센트_Quantile로그가격</code></pre>
+<pre><code>Quantile예측구간폭_구간 = bucket(Quantile예측구간폭)
+
+구간별_잔차중앙값
+  = median(실제_로그가격 - 검색피처포함_기초Quantile후보_로그가격)
+    within same Quantile예측구간폭_구간
+
+구간별_보정값
+  = clip(구간별_잔차중앙값, -0.25, +0.25)
+
+검색포함_대표로그가격
+  = 검색피처포함_기초Quantile후보_로그가격 + 구간별_보정값</code></pre>
+<pre><code>방어조건 =
+  (Quantile예측구간폭 &gt;= 1.4612207078910142)
+  AND (검색포함_대표로그가격 - 낮은쪽40퍼센트기준_로그가격 &gt;= 0.07715547281151025)
+  AND (낮은쪽40퍼센트기준_로그가격 &lt; 검색포함_대표로그가격)</code></pre>
+<p>방어조건이 켜진 경우:</p>
+<pre><code>과대예측방어_로그가격
+  = 0.50 * 검색포함_대표로그가격
+  + 0.50 * 낮은쪽40퍼센트기준_로그가격</code></pre>
+<p>방어조건이 꺼진 경우:</p>
+<pre><code>과대예측방어_로그가격 = 검색포함_대표로그가격</code></pre>
+<p>최종 Cold 가격:</p>
+<pre><code>최종_Cold_로그가격
+  = 과대예측방어_로그가격 + 작가검색보정_로그값
+
+최종_Cold_가격_KRW
+  = exp(최종_Cold_로그가격)</code></pre>
+<h3 id="8.4-낮은쪽-40-지점-가격-설명">8.4 낮은쪽 40% 지점 가격 설명</h3>
+<pre><code>낮은쪽 40% 지점 가격 =
+모델이 예상한 가격들을 낮은 가격부터 높은 가격까지 줄 세웠을 때
+40% 지점에 해당하는 가격</code></pre>
+<ul>
+<li>40% 할인이라는 뜻이 아님</li>
+<li>가격을 40% 낮춘다는 뜻이 아님</li>
+<li>과대예측 위험이 있을 때 대표 가격을 조금 더 낮은 기준으로 당겨오는 방어 기준</li>
+</ul>
+<h2 id="9.-입력값별-예측-역할">9. 입력값별 예측 역할</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">입력값</th>
+<th class="align-left">Warm 역할</th>
+<th class="align-left">Cold 역할</th>
+<th class="align-left">사용자에게 보여줄 설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">작가명</td>
+<td class="align-left">artist_key 매칭, 같은 작가 가격 이력 확인</td>
+<td class="align-left">작가 메타와 검색 피처 연결</td>
+<td class="align-left">작가명은 예측 경로와 작가 정보 연결에 사용됩니다</td>
+</tr>
+<tr>
+<td class="align-left">작품 크기</td>
+<td class="align-left">유사작품 기준가격과 크기 효과 반영</td>
+<td class="align-left">기준가격 후보 생성의 핵심 피처</td>
+<td class="align-left">작품 크기는 가격대 계산에 큰 영향을 줍니다</td>
+</tr>
+<tr>
+<td class="align-left">매체</td>
+<td class="align-left">유사작품 비교 조건</td>
+<td class="align-left">재료별 가격 차이 반영</td>
+<td class="align-left">재료에 따라 가격 패턴이 달라집니다</td>
+</tr>
+<tr>
+<td class="align-left">지지체</td>
+<td class="align-left">유사작품 비교 조건</td>
+<td class="align-left">canvas/paper/panel 등 가격 차이 반영</td>
+<td class="align-left">지지체는 매체와 함께 가격대에 영향을 줍니다</td>
+</tr>
+<tr>
+<td class="align-left">제작연도</td>
+<td class="align-left">작품 시기 보조</td>
+<td class="align-left">작가 경력 단계와 작품 시기 반영</td>
+<td class="align-left">제작연도가 없으면 신뢰도가 낮아질 수 있습니다</td>
+</tr>
+<tr>
+<td class="align-left">작가 생년/국적</td>
+<td class="align-left">작가 매칭 검증 보조</td>
+<td class="align-left">작가 세대/시장권역 신호</td>
+<td class="align-left">동명이인 구분과 가격 보정에 도움이 됩니다</td>
+</tr>
+<tr>
+<td class="align-left">검색 문맥</td>
+<td class="align-left">최종 Warm 미세 보정층에는 직접 사용하지 않음</td>
+<td class="align-left">작가 인지도, 전시/갤러리/시장 문맥 반영</td>
+<td class="align-left">검색 결과가 미술 문맥에 가까울수록 Cold 판단에 도움됩니다</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가</td>
+<td class="align-left">재학습 후보 데이터</td>
+<td class="align-left">재학습 후보 데이터</td>
+<td class="align-left">실제 판매가는 향후 모델 개선에 가장 직접적으로 도움이 됩니다</td>
+</tr>
+</tbody></table></div>
+<h2 id="10.-cold-결과-화면-구성">10. Cold 결과 화면 구성</h2>
+<h3 id="10.1-결과-카드">10.1 결과 카드</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">화면 요소</th>
+<th class="align-left">표시 내용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">예상 가격</td>
+<td class="align-left">최종 Cold 가격</td>
+</tr>
+<tr>
+<td class="align-left">가격 범위</td>
+<td class="align-left">낮은쪽/중앙/높은쪽 Quantile 기반 범위</td>
+</tr>
+<tr>
+<td class="align-left">신뢰도</td>
+<td class="align-left">high/medium/low</td>
+</tr>
+<tr>
+<td class="align-left">예측 경로</td>
+<td class="align-left">신규/저이력 작가용 예상 가격</td>
+</tr>
+<tr>
+<td class="align-left">계산 요약</td>
+<td class="align-left">작품 정보, 작가 정보, 검색 문맥, 과대예측 방어</td>
+</tr>
+<tr>
+<td class="align-left">부족 정보</td>
+<td class="align-left">제작연도, 작가 생년, 검색 피처 등</td>
+</tr>
+<tr>
+<td class="align-left">보완 입력 버튼</td>
+<td class="align-left">정보 추가 입력</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 입력</td>
+<td class="align-left">판매 후 실제 금액 등록</td>
+</tr>
+</tbody></table></div>
+<h3 id="10.2-cold-안내-문구">10.2 Cold 안내 문구</h3>
+<pre><code>이 가격은 입력 정보 기반 예상 가격입니다.
+동일 작가의 충분한 가격 이력이 없거나 작가 매칭이 불확실한 경우,
+작품 정보와 작가 정보, 검색 문맥을 함께 사용해 계산합니다.
+정확 감정가 또는 판매 보장 가격은 아닙니다.</code></pre>
+<h3 id="10.3-부족-정보-안내-문구">10.3 부족 정보 안내 문구</h3>
+<pre><code>예상 가격의 신뢰도를 높이려면 아래 정보를 추가해 주세요.
+
+- 제작연도
+- 정확한 작품 크기
+- 매체와 지지체
+- 작가 생년 또는 국적
+- 전시/갤러리 이력
+- 실제 판매가 또는 판매 제안가</code></pre>
+<h2 id="11.-실제-판매가-입력과-학습-개선-루프">11. 실제 판매가 입력과 학습 개선 루프</h2>
+<h3 id="11.1-사용자-피드백-흐름">11.1 사용자 피드백 흐름</h3>
+<pre><code>[예상 가격 확인]
+        |
+        v
+[실제 판매 또는 거래 발생]
+        |
+        v
+[사용자가 실제 판매가 입력]
+        |
+        v
+[운영 검수]
+        |
+        v
+[학습 후보 데이터 저장]
+        |
+        v
+[다음 재학습 시 반영]</code></pre>
+<h3 id="11.2-저장해야-할-필드">11.2 저장해야 할 필드</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">필드</th>
+<th class="align-left">설명</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>prediction_id</code></td>
+<td class="align-left">예측 요청 ID</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_version</code></td>
+<td class="align-left">예측 당시 모델 버전</td>
+</tr>
+<tr>
+<td class="align-left"><code>route</code></td>
+<td class="align-left">Warm 또는 Cold</td>
+</tr>
+<tr>
+<td class="align-left"><code>input_snapshot</code></td>
+<td class="align-left">예측 당시 사용자 입력값</td>
+</tr>
+<tr>
+<td class="align-left"><code>feature_snapshot</code></td>
+<td class="align-left">예측에 사용된 파생 피처</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_price_krw</code></td>
+<td class="align-left">예측 가격</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_range_low_krw</code></td>
+<td class="align-left">예측 범위 하단</td>
+</tr>
+<tr>
+<td class="align-left"><code>prediction_range_high_krw</code></td>
+<td class="align-left">예측 범위 상단</td>
+</tr>
+<tr>
+<td class="align-left"><code>confidence_level</code></td>
+<td class="align-left">예측 신뢰도</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_price</code></td>
+<td class="align-left">실제 판매가</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_currency</code></td>
+<td class="align-left">실제 판매 통화</td>
+</tr>
+<tr>
+<td class="align-left"><code>actual_sale_price_krw</code></td>
+<td class="align-left">원화 환산 판매가</td>
+</tr>
+<tr>
+<td class="align-left"><code>sale_date</code></td>
+<td class="align-left">판매일</td>
+</tr>
+<tr>
+<td class="align-left"><code>sale_channel</code></td>
+<td class="align-left">판매 채널</td>
+</tr>
+<tr>
+<td class="align-left"><code>data_quality_status</code></td>
+<td class="align-left">검수 상태</td>
+</tr>
+<tr>
+<td class="align-left"><code>training_eligible</code></td>
+<td class="align-left">학습 반영 가능 여부</td>
+</tr>
+<tr>
+<td class="align-left"><code>user_consent_for_training</code></td>
+<td class="align-left">학습 활용 동의 여부</td>
+</tr>
+</tbody></table></div>
+<h3 id="11.3-학습-반영-기준">11.3 학습 반영 기준</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">조건</th>
+<th class="align-left">처리</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">실제 판매가 있음 + 검수 완료 + 중복 아님</td>
+<td class="align-left">학습 후보 데이터로 저장</td>
+</tr>
+<tr>
+<td class="align-left">판매가만 있고 작품 정보 부족</td>
+<td class="align-left">보완 입력 요청 후 보류</td>
+</tr>
+<tr>
+<td class="align-left">비정상 가격 또는 통화 불명확</td>
+<td class="align-left">검수 필요</td>
+</tr>
+<tr>
+<td class="align-left">사용자 학습 활용 미동의</td>
+<td class="align-left">서비스 기록만 저장, 학습 제외</td>
+</tr>
+<tr>
+<td class="align-left">동일 작품 중복 등록</td>
+<td class="align-left">중복 병합 또는 제외</td>
+</tr>
+</tbody></table></div>
+<h2 id="12.-api-변경-계획">12. API 변경 계획</h2>
+<h3 id="12.1-유지할-api">12.1 유지할 API</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">API</th>
+<th class="align-left">유지 여부</th>
+<th class="align-left">변경 내용</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left"><code>GET /api/v1/price-models/current</code></td>
+<td class="align-left">유지</td>
+<td class="align-left">이전 버전(v0.1)/다음 버전(v0.2) 모델 정책 노출</td>
+</tr>
+<tr>
+<td class="align-left"><code>POST /api/v1/artists:resolve</code></td>
+<td class="align-left">유지</td>
+<td class="align-left">작가매칭신뢰도점수, Warm 가능 여부, 후보 선택 사유 추가</td>
+</tr>
+<tr>
+<td class="align-left"><code>POST /api/v1/artworks/price-estimate</code></td>
+<td class="align-left">유지</td>
+<td class="align-left">Cold 예상 가격, 계산 설명, 부족 정보, 피드백 토큰 추가</td>
+</tr>
+</tbody></table></div>
+<h3 id="12.2-추가-응답-필드">12.2 추가 응답 필드</h3>
+<pre><code>calculation_summary
+  - route
+  - user_facing_formula
+  - model_components
+  - guard_applied
+  - explanation_text
+
+input_quality
+  - minimum_input_status
+  - missing_required_fields
+  - missing_recommended_fields
+  - confidence_penalty_reasons
+
+cold_components
+  - base_quantile_price_krw
+  - lower_40pct_reference_price_krw
+  - quantile_width_log
+  - overprediction_guard_applied
+  - search_adjustment_krw
+
+feedback
+  - prediction_id
+  - can_submit_actual_sale_price
+  - required_feedback_fields</code></pre>
+<h2 id="13.-구현-작업-순서">13. 구현 작업 순서</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right">순서</th>
+<th class="align-left">작업</th>
+<th class="align-left">산출물</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-right">1</td>
+<td class="align-left">이전 버전(v0.1) 작가 resolve 흐름 재사용 범위 확정</td>
+<td class="align-left">API 유지/변경 목록</td>
+</tr>
+<tr>
+<td class="align-right">2</td>
+<td class="align-left">다음 버전(v0.2) 라우팅 정책 적용</td>
+<td class="align-left"><code>artist_match_score</code>, <code>same_artist_training_price_count</code>, Warm/Cold route</td>
+</tr>
+<tr>
+<td class="align-right">3</td>
+<td class="align-left">Cold 최소 입력 검증 추가</td>
+<td class="align-left">입력 정책 validator</td>
+</tr>
+<tr>
+<td class="align-right">4</td>
+<td class="align-left">Warm 최종 모델 artifact 적용</td>
+<td class="align-left">Warm 예측 서비스</td>
+</tr>
+<tr>
+<td class="align-right">5</td>
+<td class="align-left">Cold 최고 성능 모델 artifact 적용</td>
+<td class="align-left">Cold 예상 가격 서비스</td>
+</tr>
+<tr>
+<td class="align-right">6</td>
+<td class="align-left">Cold 계산 설명 생성기 추가</td>
+<td class="align-left">사용자용 설명 텍스트와 계산 구성요소</td>
+</tr>
+<tr>
+<td class="align-right">7</td>
+<td class="align-left">Cold 결과 화면 개편</td>
+<td class="align-left">예상 가격, 신뢰도, 부족 정보, 계산 설명 카드</td>
+</tr>
+<tr>
+<td class="align-right">8</td>
+<td class="align-left">실제 판매가 입력 API/DB 추가</td>
+<td class="align-left">feedback 저장 테이블</td>
+</tr>
+<tr>
+<td class="align-right">9</td>
+<td class="align-left">재현/회귀 테스트 추가</td>
+<td class="align-left">고정 입력 동일 결과, 라우팅 테스트, 누락 입력 테스트</td>
+</tr>
+<tr>
+<td class="align-right">10</td>
+<td class="align-left">운영 모니터링 추가</td>
+<td class="align-left">route 비율, 누락 입력, Cold 신뢰도, feedback 수집률</td>
+</tr>
+</tbody></table></div>
+<h2 id="14.-검증-기준">14. 검증 기준</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">검증 항목</th>
+<th class="align-left">기준</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">같은 입력 반복 실행</td>
+<td class="align-left">예측값 동일</td>
+</tr>
+<tr>
+<td class="align-left">입력 순서 변경</td>
+<td class="align-left">예측값 동일</td>
+</tr>
+<tr>
+<td class="align-left">artist_key 직접 입력 없이 한글명/영문명으로 후보 확인 가능</td>
+<td class="align-left">통과</td>
+</tr>
+<tr>
+<td class="align-left">동명이인 후보</td>
+<td class="align-left">자동 예측 보류</td>
+</tr>
+<tr>
+<td class="align-left">Warm 라우팅</td>
+<td class="align-left"><code>작가매칭신뢰도점수 &gt;= 0.90</code> AND <code>같은작가_사용가능가격이력수 &gt;= 5</code></td>
+</tr>
+<tr>
+<td class="align-left">Cold 최소 입력 부족</td>
+<td class="align-left">단일 예상 가격 숨김</td>
+</tr>
+<tr>
+<td class="align-left">Cold 예상 가격 표시</td>
+<td class="align-left">정확 감정가/보장 가격 표현 없음</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 입력</td>
+<td class="align-left">prediction_id와 연결 저장</td>
+</tr>
+<tr>
+<td class="align-left">학습 후보 저장</td>
+<td class="align-left">검수 완료 후 training_eligible 관리</td>
+</tr>
+</tbody></table></div>
+<h2 id="15.-운영-모니터링">15. 운영 모니터링</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">지표</th>
+<th class="align-left">목적</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm/Cold 비율</td>
+<td class="align-left">라우팅 정상성 확인</td>
+</tr>
+<tr>
+<td class="align-left">작가 매칭 실패율</td>
+<td class="align-left">artist alias 보강 필요성 확인</td>
+</tr>
+<tr>
+<td class="align-left">동명이인 후보율</td>
+<td class="align-left">검수/작가 사전 개선 필요성 확인</td>
+</tr>
+<tr>
+<td class="align-left">Cold 최소 입력 부족률</td>
+<td class="align-left">사용자 입력 UX 개선 필요성 확인</td>
+</tr>
+<tr>
+<td class="align-left">Cold 낮은 신뢰도 비율</td>
+<td class="align-left">데이터 보강 우선순위 확인</td>
+</tr>
+<tr>
+<td class="align-left">검색 피처 누락률</td>
+<td class="align-left">검색 수집 파이프라인 확인</td>
+</tr>
+<tr>
+<td class="align-left">실제 판매가 입력률</td>
+<td class="align-left">재학습 데이터 확보 속도 확인</td>
+</tr>
+<tr>
+<td class="align-left">예측가 대비 실제 판매가 오차</td>
+<td class="align-left">운영 성능 추적</td>
+</tr>
+</tbody></table></div>
+<h2 id="16.-최종-운영-문구">16. 최종 운영 문구</h2>
+<p>Warm 결과 문구:</p>
+<pre><code>이 작품은 작가가 고신뢰로 매칭되었고 같은 작가의 가격 이력이 충분하여,
+작가 가격 이력과 유사작품 기준가격을 기반으로 예측했습니다.</code></pre>
+<p>Cold 결과 문구:</p>
+<pre><code>이 작품은 동일 작가의 충분한 가격 이력이 없거나 작가 매칭 정보가 제한적이어서,
+작품 정보와 작가 정보, 검색 문맥을 기반으로 예상 가격을 계산했습니다.
+이 가격은 정확 감정가가 아닌 참고용 추정치입니다.</code></pre>
+<p>부족 정보 문구:</p>
+<pre><code>아래 정보를 추가하면 예상 가격의 신뢰도를 높이는 데 도움이 됩니다.</code></pre>
+<p>실제 판매가 입력 문구:</p>
+<pre><code>실제 판매가를 입력하면 향후 가격 예측 모델 개선에 도움이 됩니다.
+입력된 판매가는 운영 검수 후 학습 후보 데이터로 활용됩니다.</code></pre>
+    </main>
+  </div>
+</body>
+</html>

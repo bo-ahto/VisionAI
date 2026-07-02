@@ -21,9 +21,9 @@
 - mock 필드는 API 문서의 response 필드명과 맞춘다.
 - 사용자 mock에는 source URL/internal row id를 넣지 않는다.
 - 어드민 mock에는 원천 추적 정보를 포함한다.
-- 작품 품질/snapshot 후보 mock에는 NANT 분류 필드(`nant_support`, `nant_medium`, `nant_category_key`, `nant_mapping_status`)와 제외 사유(`nant_learning_excluded`, `nant_unmapped`) 케이스를 포함한다.
+- 작품 품질/snapshot 후보 mock에는 NANT 분류 필드(`nant_support`, `nant_medium`, `nant_category_key`), 제외 사유(`nant_learning_excluded`), `standardization_review_item(review_type=nant_mapping)` 보류 케이스를 포함한다.
 - success, empty, error, conflict, forbidden, stale 상태를 모두 가진다.
-- id 값은 화면 decision path parameter와 일치해야 한다.
+- 검수 큐 id 값은 `review_item_id`이며 공통 decision path parameter와 일치해야 한다.
 - 페이지 목록 응답은 표준 envelope `{items, page, page_size, total}`를, 검색 등 비페이지 목록은 `{items, total}`를 따른다(API 기획 응답 예시 기준).
 - 필드명의 단일 기준은 API 기획 응답 예시다. 특히 작가명 검수 큐 필드는 API §8.3(`artist_name_ko_orig`, `artist_name_ko_input_type`, `artist_name_ko_reason`, `artist_name_ko_risk_score`, `artist_name_ko_roundtrip_confidence`, `artist_name_ko_override_status`)을 따른다. 아래 §5.2 예시의 `display_name_*_candidate`는 표시 후보용 보조 필드이며, API 표준 필드를 대체하지 않는다.
 
@@ -57,7 +57,7 @@ fixtures/art-price-data-platform/
     snapshots_candidates_items.json
     nant_mapping_versions.json
     nant_mappings_draft.json
-    nant_unmapped_materials.json
+    standardization_review_nant_mapping_queue.json
     model_training_jobs.json
     model_training_job_detail.json
     model_versions.json
@@ -156,7 +156,7 @@ fixtures/art-price-data-platform/
   },
   "artist": {
     "artist_key": null,
-    "artist_candidate_id": "new_artist_candidate_123",
+    "artist_candidate_id": "review_item_new_artist_123",
     "display_name_ko": "신규 후보 작가",
     "display_name_en": "New Candidate Artist"
   },
@@ -187,7 +187,7 @@ fixtures/art-price-data-platform/
   },
   "artist": {
     "artist_key": null,
-    "artist_candidate_id": "new_artist_candidate_456",
+    "artist_candidate_id": "review_item_new_artist_456",
     "display_name_ko": "후보 작가",
     "display_name_en": null
   },

@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PP-ROUTE-CF6 Full-History Retrained Warm vs Unified Warm-lite</title>
+  <style>
+:root {
+  color-scheme: light;
+  --text: #1f2933;
+  --muted: #667085;
+  --line: #d8dee4;
+  --head: #eef2f7;
+  --soft: #f8fafc;
+  --accent: #1d4ed8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: white;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #fbfdff;
+  padding: 24px 20px;
+}
+aside h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.toc a {
+  display: block;
+  color: #344054;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.toc a:hover { background: #eef4ff; color: var(--accent); }
+.toc-level-1 { font-weight: 700; margin-top: 8px; }
+.toc-level-2 { margin-left: 8px; }
+.toc-level-3 { margin-left: 18px; color: var(--muted); }
+main {
+  max-width: 1180px;
+  width: 100%;
+  padding: 36px 44px 72px;
+}
+h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 42px 0 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 23px;
+}
+h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+}
+h4, h5, h6 { margin: 24px 0 10px; }
+p { margin: 10px 0 16px; }
+ul { margin: 8px 0 18px; padding-left: 22px; }
+li { margin: 5px 0; }
+code {
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+pre {
+  overflow: auto;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.table-wrap {
+  overflow-x: auto;
+  margin: 14px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--head);
+  font-weight: 700;
+}
+tbody tr:nth-child(even) { background: var(--soft); }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-left { text-align: left; }
+.meta {
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 920px) {
+  .layout { display: block; }
+  aside { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 28px 18px 56px; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  aside { display: none; }
+  .layout { display: block; }
+  main { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>목차</h2>
+      <nav class="toc">
+        <a class="toc-level-1" href="#pp-route-cf6-full-history-retrained-warm-vs-unified-warm-lite">PP-ROUTE-CF6 Full-History Retrained Warm vs Unified Warm-lite</a>
+<a class="toc-level-2" href="#1.-목적">1. 목적</a>
+<a class="toc-level-2" href="#2.-학습-조건">2. 학습 조건</a>
+<a class="toc-level-2" href="#3.-primary-metrics">3. Primary Metrics</a>
+<a class="toc-level-2" href="#4.-warm-lite-seed-metrics">4. Warm-lite Seed Metrics</a>
+<a class="toc-level-2" href="#5.-paired-row-level-comparison">5. Paired Row-Level Comparison</a>
+<a class="toc-level-2" href="#6.-warm-route-audit">6. Warm Route Audit</a>
+<a class="toc-level-2" href="#7.-warm-lite-training-audit">7. Warm-lite Training Audit</a>
+<a class="toc-level-2" href="#8.-해석-주의">8. 해석 주의</a>
+<a class="toc-level-2" href="#9.-config">9. Config</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="meta">Generated from <code>experiments/track6/PP-ROUTE-CF6_full_history_retrained_warm_vs_unified_warm_lite/reports/result_report.md</code></div>
+      <h1 id="pp-route-cf6-full-history-retrained-warm-vs-unified-warm-lite">PP-ROUTE-CF6 Full-History Retrained Warm vs Unified Warm-lite</h1>
+<h2 id="1.-목적">1. 목적</h2>
+<p>full-history 조건에서 Warm clean stack과 unified Warm-lite를 모두 새로 학습해 Warm fixed-test 607개에서 비교한다.</p>
+<h2 id="2.-학습-조건">2. 학습 조건</h2>
+<ul>
+<li>두 후보 모두 같은 Warm train split을 사용한다.</li>
+<li>두 후보 모두 같은 Warm fixed-test 607개에서 평가한다.</li>
+<li>Warm은 CF3의 재현 가능한 clean stack 축을 full-history 조건으로 재학습한다.</li>
+<li>Warm-lite는 CF5의 unified 구조를 full Warm train distribution으로 seed 3개 재학습하고 seed-mean으로 평가한다.</li>
+<li>이 비교도 운영 WMIN8 전체 PPV8/V2 artifact의 완전 재생성은 아니다.</li>
+</ul>
+<h2 id="3.-primary-metrics">3. Primary Metrics</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">candidate</th>
+<th class="align-left">n</th>
+<th class="align-left">MdAPE</th>
+<th class="align-left">MAPE</th>
+<th class="align-left">p95_APE</th>
+<th class="align-left">RMSE_log</th>
+<th class="align-left">rank_MAPE</th>
+<th class="align-left">rank_p95_APE</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">Warm clean full-history retrained</td>
+<td class="align-left">607</td>
+<td class="align-left">0.114838</td>
+<td class="align-left">0.244538</td>
+<td class="align-left">0.816909</td>
+<td class="align-left">0.387520</td>
+<td class="align-left">5</td>
+<td class="align-left">3</td>
+</tr>
+<tr>
+<td class="align-left">Warm-lite unified full-history retrained</td>
+<td class="align-left">607</td>
+<td class="align-left">0.084485</td>
+<td class="align-left">0.225214</td>
+<td class="align-left">0.803203</td>
+<td class="align-left">0.382171</td>
+<td class="align-left">1</td>
+<td class="align-left">2</td>
+</tr>
+</tbody></table></div>
+<h2 id="4.-warm-lite-seed-metrics">4. Warm-lite Seed Metrics</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">condition</th>
+<th class="align-left">n</th>
+<th class="align-left">MdAPE</th>
+<th class="align-left">MAPE</th>
+<th class="align-left">p95_APE</th>
+<th class="align-left">RMSE_log</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">seed=20260612</td>
+<td class="align-left">607</td>
+<td class="align-left">0.084389</td>
+<td class="align-left">0.226349</td>
+<td class="align-left">0.825700</td>
+<td class="align-left">0.382537</td>
+</tr>
+<tr>
+<td class="align-left">seed=20260613</td>
+<td class="align-left">607</td>
+<td class="align-left">0.083167</td>
+<td class="align-left">0.225632</td>
+<td class="align-left">0.817600</td>
+<td class="align-left">0.383112</td>
+</tr>
+<tr>
+<td class="align-left">seed=20260614</td>
+<td class="align-left">607</td>
+<td class="align-left">0.090597</td>
+<td class="align-left">0.225277</td>
+<td class="align-left">0.791297</td>
+<td class="align-left">0.382007</td>
+</tr>
+</tbody></table></div>
+<h2 id="5.-paired-row-level-comparison">5. Paired Row-Level Comparison</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">n</th>
+<th class="align-left">warm_better_share</th>
+<th class="align-left">warm_lite_better_share</th>
+<th class="align-left">tie_share</th>
+<th class="align-left">median_ape_delta_warm_minus_warm_lite</th>
+<th class="align-left">mean_ape_delta_warm_minus_warm_lite</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">607</td>
+<td class="align-left">0.415157</td>
+<td class="align-left">0.584843</td>
+<td class="align-left">0.000000</td>
+<td class="align-left">0.010362</td>
+<td class="align-left">0.019324</td>
+</tr>
+</tbody></table></div>
+<h2 id="6.-warm-route-audit">6. Warm Route Audit</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">route_to_alt_share</th>
+<th class="align-left">median_risk_score</th>
+<th class="align-left">route_threshold</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">0.275124</td>
+<td class="align-left">0.416000</td>
+<td class="align-left">0.416000</td>
+</tr>
+</tbody></table></div>
+<h2 id="7.-warm-lite-training-audit">7. Warm-lite Training Audit</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">seed</th>
+<th class="align-left">train_rows</th>
+<th class="align-left">train_artists</th>
+<th class="align-left">median_train_rows_per_artist</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="align-left">20260612</td>
+<td class="align-left">26914</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260613</td>
+<td class="align-left">26914</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+<tr>
+<td class="align-left">20260614</td>
+<td class="align-left">26914</td>
+<td class="align-left">1773</td>
+<td class="align-left">5</td>
+</tr>
+</tbody></table></div>
+<h2 id="8.-해석-주의">8. 해석 주의</h2>
+<ul>
+<li>이 비교는 학습 조건을 full-history로 맞춘 clean-stack 비교다.</li>
+<li>현재 운영 Warm WMIN8 artifact와 직접 같지는 않다. 운영 Warm WMIN8과의 직접 비교는 CF5를 함께 본다.</li>
+<li>Cold/no-history 조건은 별도 라우트로 남는다.</li>
+</ul>
+<h2 id="9.-config">9. Config</h2>
+<pre><code>{
+  &quot;created_at&quot;: &quot;2026-06-16T14:59:41&quot;,
+  &quot;experiment_id&quot;: &quot;PP-ROUTE-CF6&quot;,
+  &quot;experiment_slug&quot;: &quot;PP-ROUTE-CF6_full_history_retrained_warm_vs_unified_warm_lite&quot;,
+  &quot;seeds&quot;: [
+    20260612,
+    20260613,
+    20260614
+  ],
+  &quot;base_eval_set&quot;: &quot;Warm fixed-test 607 rows&quot;,
+  &quot;warm_eligibility_audit&quot;: {
+    &quot;warm_fixed_test_rows_total&quot;: 607,
+    &quot;exact_k1_to_k6_eligible_rows&quot;: 607,
+    &quot;excluded_rows_with_less_than_max_k_history&quot;: 0,
+    &quot;min_full_train_artist_history_n&quot;: 5,
+    &quot;max_full_train_artist_history_n&quot;: 573,
+    &quot;validation_rows_for_refit_and_router&quot;: 519
+  },
+  &quot;warm_lite_eligibility_audit&quot;: {
+    &quot;warm_fixed_test_rows_total&quot;: 607,
+    &quot;k1_to_k6_eligible_rows&quot;: 519,
+    &quot;excluded_rows_with_less_than_6_history&quot;: 88,
+    &quot;full_history_min&quot;: 5,
+    &quot;full_history_max&quot;: 573
+  },
+  &quot;warm_training&quot;: {
+    &quot;train_distribution&quot;: &quot;actual full Warm train distribution&quot;,
+    &quot;validation&quot;: &quot;Warm validation split for Huber refit and router&quot;,
+    &quot;stack&quot;: &quot;SVC comparable Huber + L10 generated-bucket sequential + Huber refit + risk router&quot;,
+    &quot;caveat&quot;: &quot;clean stack, not exact historical WMIN8/PPV8 full artifact rebuild&quot;
+  },
+  &quot;warm_lite_training&quot;: {
+    &quot;train_distribution&quot;: &quot;actual full Warm train distribution&quot;,
+    &quot;group_stats&quot;: &quot;5-fold internal stats for train, full train stats for test&quot;,
+    &quot;stack&quot;: &quot;LightGBM Quantile full/lean + LightGBM objective=huber residual&quot;,
+    &quot;aggregation&quot;: &quot;seed-mean over three retrained seeds&quot;
+  },
+  &quot;limitations&quot;: [
+    &quot;This is a full-history retrained clean-stack comparison, not exact Warm WMIN8 operational artifact reproduction.&quot;,
+    &quot;Use CF5 for direct comparison against current Warm WMIN8 operational.&quot;,
+    &quot;Cold/no-history route remains separate.&quot;
+  ],
+  &quot;seconds&quot;: 362.56
+}</code></pre>
+    </main>
+  </div>
+</body>
+</html>
