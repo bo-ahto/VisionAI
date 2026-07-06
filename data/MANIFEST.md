@@ -42,11 +42,11 @@
 
 | path | stage | active | produced_by | consumed_by | notes |
 |---|---|:---:|---|---|---|
-| `artsy_kr_artworks.json` | training | ✓ | scripts/crawl_artsy_complete.py, crawl_artsy_full.py | scripts/prepare_primary_market_dataset.py | A 핵심 입력 |
-| `artsy_kr_artist_shows.json` | training | ✓ | scripts/crawl_artsy_complete.py, crawl_artsy_full.py | scripts/prepare_primary_market_dataset.py | A 전시 피처 |
-| `saatchi_kr_artists.json` | raw | ✓ | scripts/crawl_saatchi.py | scripts/prepare_saatchi_dataset.py | Saatchi seed |
-| `saatchi_kr_artworks.json` | raw | ✓ | scripts/crawl_saatchi.py | scripts/prepare_saatchi_dataset.py | A 보조 학습 |
-| `saatchi_kr_artworks.csv` | intermediate | ✓ | scripts/crawl_saatchi.py | (csv 형식, 추가 다운스트림 없음) | |
+| `artsy_kr_artworks.json` | training | ✓ | github.com/JRVector9/artsy-crawler/crawl_artsy_complete.py | scripts/prepare_primary_market_dataset.py | A 핵심 입력 |
+| `artsy_kr_artist_shows.json` | training | ✓ | github.com/JRVector9/artsy-crawler/crawl_artsy_complete.py | scripts/prepare_primary_market_dataset.py | A 전시 피처 |
+| `saatchi_kr_artists.json` | raw | ✓ | github.com/JRVector9/saatchi-crawler/crawl_saatchi.py | scripts/prepare_saatchi_dataset.py | Saatchi seed |
+| `saatchi_kr_artworks.json` | raw | ✓ | github.com/JRVector9/saatchi-crawler/crawl_saatchi.py | scripts/prepare_saatchi_dataset.py | A 보조 학습 |
+| `saatchi_kr_artworks.csv` | intermediate | ✓ | github.com/JRVector9/saatchi-crawler/crawl_saatchi.py | (csv 형식, 추가 다운스트림 없음) | |
 | `saatchi_cleaned.csv` | intermediate | ✓ | scripts/prepare_saatchi_dataset.py | (parquet 형식이 메인) | |
 | `saatchi_cleaned.parquet` | serving | ✓ | scripts/prepare_saatchi_dataset.py | src/visionai/price_engine/api/primary_server.py | A 서빙 시 read |
 | `primary_market_dataset.csv` | intermediate | ✓ | scripts/prepare_primary_market_dataset.py | (parquet 형식이 메인) | |
@@ -88,31 +88,31 @@
 | `image_embeddings_index.csv` | training | ✓ | scripts/extract_image_embeddings.py | scripts/train_phase5_final.py | |
 | `image_embeddings_pca128.npy` | archived | ✗ | (구 PCA) | (none) | 27MB, 이전 PCA 차원 |
 | `image_embeddings_pca32.npy.bak` | archived | ✗ | (백업) | (none) | |
-| `artist_profiles.csv` | training | ✓ | scripts/collectors/* (다수), crawl_kap.py, crawl_kada.py | scripts/train_phase5_with_profiles.py, src/visionai/price_engine/estimate_generator/hedonic_features.py | B 작가 메타 join |
-| `artsy_artist_profiles.csv` | training | ✓ | scripts/collectors/collect_artsy_profiles.py | scripts/train_phase5_with_profiles.py | B 학습용 (이름은 artsy지만 reader는 B) |
+| `artist_profiles.csv` | training | ✓ | Crawler/KADA/crawl_kada.py, Crawler/KAP/crawl_kap.py, Crawler/Wikipedia/* (enwiki/kowiki), scripts/collectors/integrate_external* | scripts/train_phase5_with_profiles.py, src/visionai/price_engine/estimate_generator/hedonic_features.py | B 작가 메타 join |
+| `artsy_artist_profiles.csv` | training | ✓ | github.com/JRVector9/artsy-crawler/collect_artsy_profiles.py | scripts/train_phase5_with_profiles.py | B 학습용 (이름은 artsy지만 reader는 B) |
 | `artsy_global_stats.csv` | training | ✓ | (수기·외부 산출) | src/visionai/price_engine/features/hedonic_stats.py | B 헤도닉 글로벌 통계 |
 | `ho_size.md` | training | ✓ | (수기 룩업) | scripts/cleanse_artmarket.py | 호수↔사이즈 룩업 |
 | `shadow_logs/` | eval | ✓ | scripts/run_shadow.py, src/visionai/price_engine/experiments/shadow_recorder.py | shadow_scorer.py, run_shadow.py, tests/price_engine/test_shadow.py | B shadow 실험 로그 |
 | `k-auction-works-20260325.csv` | training | ✓ | (외부 데이터) | scripts/run_pipeline.py, train_estimate_models.py, train_phase5_*.py (4개), train_v2_engine.py, diagnose_gap.py, merge_artmarket_data.py, scripts/collectors/* (5개) | B 학습 + collector seed (양쪽 사용) |
-| `kada_artist_profiles_unique.csv` | seed | ✓ | (외부) | scripts/crawl_kartmarket_prices.py | B 크롤러 입력 |
+| `kada_artist_profiles_unique.csv` | seed | ✓ | (외부) | Crawler/Kartmarket/crawl_kartmarket_prices.py | B 크롤러 입력 |
 | `난트기준_재료분류.csv` | manual | ✗ | (수기) | (medium_parser 룰의 참조 문서) | 구 분류 매트릭스 96행 |
 | `크롤링_난트매핑.csv` | manual | ✗ | (수기) | (medium_parser 룰의 참조 문서) | 6,057 원본 → 정규화 사전 |
 | `material_mapping_table.csv` | archived | ✗ | (수기) | (none) | 신규 분류 시트로 대체됨 |
 | `k-auction-works-merged.csv` | archived | ✗ | scripts/merge_artmarket_data.py | (none) | merge 산출, 이후 read 없음 |
 | `k-auction-artists-20260325.csv` | archived | ✗ | (외부) | (none) | works만 사용 중 |
-| `kartmarket_auction_prices.csv` | archived | ✗ | scripts/crawl_kartmarket_prices.py | (none) | crawler 산출, 후속 read 없음 |
-| `kartmarket_auction_prices.json` | archived | ✗ | scripts/crawl_kartmarket_prices.py | (none) | ⚠ `merge_artist_data.py`는 `kada_kartmarket_prices.json`을 읽음 — **이름 체인 단절** |
+| `kartmarket_auction_prices.csv` | archived | ✗ | Crawler/Kartmarket/crawl_kartmarket_prices.py | (none) | crawler 산출, 후속 read 없음 |
+| `kartmarket_auction_prices.json` | archived | ✗ | Crawler/Kartmarket/crawl_kartmarket_prices.py | (none) | ⚠ `merge_artist_data.py`는 `kada_kartmarket_prices.json`을 읽음 — **이름 체인 단절** |
 | `kada_artist_auction_prices.csv` | archived | ✗ | (외부) | (none) | |
 | `kada_artist_auction_prices.json` | archived | ✗ | (외부) | (none) | |
-| `kada_artist_profiles.csv` | archived | ✗ | scripts/crawl_kada.py | (none) | |
-| `kada_artist_profiles.json` | archived | ✗ | scripts/crawl_kada.py | (none) | |
+| `kada_artist_profiles.csv` | archived | ✗ | Crawler/KADA/crawl_kada.py | (none) | |
+| `kada_artist_profiles.json` | archived | ✗ | Crawler/KADA/crawl_kada.py | (none) | |
 | `kada_artists_korean.json` | manual | ✓ | (외부) | scripts/merge_artist_data.py | manual integration input |
 | `kada_artsy_cv.json` | manual | ✓ | (외부) | scripts/merge_artist_data.py | manual integration input |
 | `kada_kartmarket_prices.json` | manual | ✓ | (외부, ⚠ crawler 출력 이름과 다름) | scripts/merge_artist_data.py | manual integration input |
 | `kada_integrated_dataset.json` | manual | ✓ | scripts/merge_artist_data.py | scripts/merge_artist_data.py (output-only로 보임) | merge 결과물 |
 | `kartmarket_artists_for_artsy.json` | archived | ✗ | (수기) | (none) | 매핑 보조, 코드 미사용 |
-| `kap_artist_profiles.csv` | archived | ✗ | scripts/crawl_kap.py | (none) | |
-| `kap_artist_profiles.json` | manual | ✓ | scripts/crawl_kap.py | scripts/merge_artist_data.py | manual integration |
+| `kap_artist_profiles.csv` | archived | ✗ | Crawler/KAP/crawl_kap.py | (none) | |
+| `kap_artist_profiles.json` | manual | ✓ | Crawler/KAP/crawl_kap.py | scripts/merge_artist_data.py | manual integration |
 
 ---
 
@@ -122,25 +122,25 @@
 
 | path | stage | active | produced_by | consumed_by | notes |
 |---|---|:---:|---|---|---|
-| `artist_slug_mapping.csv` | seed | ✓ | (수기) | scripts/collectors/expand_artsy_mapping.py | crawler 입력 매핑 |
-| `artist_slug_mapping_expanded.csv` | seed | ✓ | scripts/collectors/expand_artsy_mapping.py, expand_artsy_english.py | scripts/collectors/collect_artsy_profiles.py, scrape_artsy_expanded.py | crawler 확장 매핑 |
-| `artsy_auctions.csv` | intermediate | ✓ | scripts/collectors/scrape_artsy_auctions.py, scrape_artsy_expanded.py | (none) | crawler 산출, 후속 없음 |
-| `artsy_auctions_test.csv` | archived | ✗ | scripts/collectors/test_scrape.py | (none) | 테스트 픽스처 |
-| `artsy_korean_artists.json` | intermediate | ✗ | scripts/crawl_artsy_graphql.py | (none) | 구 크롤 (kr_* 가 후속) |
-| `artsy_korean_artworks.json` | intermediate | ✗ | scripts/crawl_artsy_graphql.py | (none) | 구 크롤 |
-| `artsy_korean_artist_shows.json` | intermediate | ✗ | scripts/crawl_artsy_graphql.py | (none) | 구 크롤 |
-| `artsy_kr_artists.json` | intermediate | ✗ | scripts/crawl_artsy_complete.py, crawl_artsy_full.py | (none) | shows/artworks가 후속 read |
-| `artsy_kr_artists_full.csv` | intermediate | ✗ | scripts/crawl_artsy_complete.py, crawl_artsy_full.py | (none) | |
-| `artsy_kr_artists_full.json` | intermediate | ✗ | scripts/crawl_artsy_complete.py, crawl_artsy_full.py | (none) | |
-| `artsy_kr_artworks.csv` | intermediate | ✗ | scripts/crawl_artsy_complete.py, crawl_artsy_full.py | (none) | json이 후속 read |
-| `artsy_new_mappings.csv` | intermediate | ✗ | scripts/collectors/expand_artsy_mapping.py | (none) | |
-| `artsy_new_profiles.csv` | intermediate | ✗ | scripts/collectors/scrape_artsy_profiles_bulk.py | (none) | |
-| `artsy_scrape_targets.csv` | seed | ✓ | (수기) | scripts/collectors/scrape_artsy_expanded.py | crawler 타겟 |
-| `enwiki_profiles.csv` | intermediate | ✓ | scripts/collectors/scrape_enwiki_profiles.py | (artist_profiles 통합 경유) | |
-| `kowiki_profiles.csv` | intermediate | ✓ | scripts/collectors/scrape_kowiki_profiles.py | (artist_profiles 통합 경유) | |
+| `artist_slug_mapping.csv` | seed | ✓ | (수기) | github.com/JRVector9/artsy-crawler/expand_artsy_mapping.py | crawler 입력 매핑 |
+| `artist_slug_mapping_expanded.csv` | seed | ✓ | github.com/JRVector9/artsy-crawler/expand_artsy_mapping.py, expand_artsy_english.py | github.com/JRVector9/artsy-crawler/collect_artsy_profiles.py, scrape_artsy_expanded.py | crawler 확장 매핑 |
+| `artsy_auctions.csv` | intermediate | ✓ | github.com/JRVector9/artsy-crawler/scrape_artsy_auctions.py, scrape_artsy_expanded.py | (none) | crawler 산출, 후속 없음 |
+| `artsy_auctions_test.csv` | archived | ✗ | github.com/JRVector9/artsy-crawler/test_scrape.py | (none) | 테스트 픽스처 |
+| `artsy_korean_artists.json` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/crawl_artsy_graphql.py | (none) | 구 크롤 (kr_* 가 후속) |
+| `artsy_korean_artworks.json` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/crawl_artsy_graphql.py | (none) | 구 크롤 |
+| `artsy_korean_artist_shows.json` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/crawl_artsy_graphql.py | (none) | 구 크롤 |
+| `artsy_kr_artists.json` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/crawl_artsy_complete.py, crawl_artsy_full.py | (none) | shows/artworks가 후속 read |
+| `artsy_kr_artists_full.csv` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/crawl_artsy_complete.py, crawl_artsy_full.py | (none) | |
+| `artsy_kr_artists_full.json` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/crawl_artsy_complete.py, crawl_artsy_full.py | (none) | |
+| `artsy_kr_artworks.csv` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/crawl_artsy_complete.py, crawl_artsy_full.py | (none) | json이 후속 read |
+| `artsy_new_mappings.csv` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/expand_artsy_mapping.py | (none) | |
+| `artsy_new_profiles.csv` | intermediate | ✗ | github.com/JRVector9/artsy-crawler/scrape_artsy_profiles_bulk.py | (none) | |
+| `artsy_scrape_targets.csv` | seed | ✓ | (수기) | github.com/JRVector9/artsy-crawler/scrape_artsy_expanded.py | crawler 타겟 |
+| `enwiki_profiles.csv` | intermediate | ✓ | Crawler/Wikipedia/scrape_enwiki_profiles.py | (artist_profiles 통합 경유) | |
+| `kowiki_profiles.csv` | intermediate | ✓ | Crawler/Wikipedia/scrape_kowiki_profiles.py | (artist_profiles 통합 경유) | |
 | `wikidata_korean_artists.csv` | archived | ✗ | (외부) | (none) | |
-| `ecos_macro.csv` | intermediate | ✗ | scripts/collectors/collect_ecos_data.py | (macro_session이 후속) | |
-| `macro_monthly.csv` | intermediate | ✗ | scripts/collectors/collect_ecos_data.py, collect_macro_data.py | (macro_session이 후속) | |
+| `ecos_macro.csv` | intermediate | ✗ | (제거됨 — 구 collect_ecos_data.py) | (macro_session이 후속) | |
+| `macro_monthly.csv` | intermediate | ✗ | scripts/collectors/collect_macro_data.py | (macro_session이 후속) | |
 | `merged_artist_profiles.csv` | archived | ✗ | (구 산출) | (none) | |
 | `merged_artist_profiles.json` | archived | ✗ | (구 산출) | (none) | |
 | `artists_missing_birthyear.csv` | archived | ✗ | (수기) | (none) | |
@@ -184,7 +184,7 @@
 ## 알려진 문제
 
 1. **`kartmarket_auction_prices.json` ↔ `kada_kartmarket_prices.json` 이름 체인 단절**
-   - `crawl_kartmarket_prices.py:192-203`은 `kartmarket_auction_prices.json` 작성
+   - `Crawler/Kartmarket/crawl_kartmarket_prices.py:192-203`은 `kartmarket_auction_prices.json` 작성
    - `merge_artist_data.py:28`은 `kada_kartmarket_prices.json` read
    - 두 파일은 **다른 파일** — manual integration이 의도된 동작인지 확인 필요
 
@@ -195,3 +195,9 @@
 3. **archived 49개 파일** — 5GB+의 차지. 별 PR로 `data/_archive/` 이동 검토 가능 (현재 PR 범위 외).
 
 4. **신규 분류 시트 3개 (지지체/도구/실험데이터)** — 현재 코드에 reader 없음. Step 0 작업으로 `medium_parser.py`에 반영 예정.
+
+5. **artsy-crawler 저장소 정리 (2026-07-06)** — `crawl_artsy_complete.py`(당시 구버전/중복), `crawl_artsy_graphql.py`(구 크롤), `collect_artsy.py`, `collect_artsy_profiles.py`, `scrape_artsy_profiles_bulk.py`, `expand_artsy_english.py`, `expand_artsy_mapping.py`, `scrape_artsy_auctions.py`, `scrape_artsy_expanded.py`, `test_scrape.py` 9종을 제거하고 `crawl_artsy_full.py`만 유지. 위 표에서 이 스크립트들을 produced_by로 참조하는 행(주로 archived/intermediate ✗)은 **데이터 계보 기록으로만 남아있으며 해당 스크립트는 더 이상 존재하지 않는다.**
+
+6. **ECOS 크롤러 제거 (2026-07-06)** — `collect_ecos_data.py` 삭제. 산출물(`ecos_macro.csv`, `macro_monthly.csv`)이 이미 intermediate ✗(비활성)였고, 실제 학습용 매크로 피처(`macro_session.csv`)는 `collect_macro_data.py`(로컬 K-Auction 통계 기반, ECOS 미의존)에서 생성되어 영향 없음.
+
+7. **artsy-crawler: crawl_artsy_full.py → crawl_artsy_complete.py 재교체 (2026-07-06)** — 병렬 작업 사본(VisionAI2)에서 2026-06-23에 증분 수집 기능(`--baseline-csv`, `--full-refresh`, 기존 artwork_id 스킵)이 추가된 `crawl_artsy_complete.py`를 발견, 5번 항목에서 제거했던 `crawl_artsy_full.py`를 이 버전으로 교체. 출력 파일(`artsy_kr_artworks.json`, `artsy_kr_artist_shows.json` 등)은 동일하게 유지되어 핵심 입력에 영향 없음. 현재 artsy-crawler에는 `crawl_artsy_complete.py` 1개만 존재.
