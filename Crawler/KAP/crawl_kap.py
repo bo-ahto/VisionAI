@@ -16,7 +16,8 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+# Crawler/KAP/ → 저장소 루트는 3단계 위 (parent×3)
+DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 DELAY = 1.5
 ENG_BASE = "http://www.koreanartistproject.com/eng_artist.art"
 KOR_BASE = "http://www.koreanartistproject.com/kor_artist.art"

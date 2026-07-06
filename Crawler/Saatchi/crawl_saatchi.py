@@ -16,7 +16,8 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+# 이 저장소의 루트가 곧 스크립트 위치 (flat) — data/ 는 sibling
+DATA_DIR = Path(__file__).resolve().parent / "data"
 DELAY = 0.5
 
 CNSTRC_BASE = (

@@ -22,7 +22,8 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml",
     "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
 }
-OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data"
+# Crawler/KADA/ → 저장소 루트는 3단계 위 (parent×3)
+OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 DELAY = 1.5  # 요청 간 대기 (초)
 
 

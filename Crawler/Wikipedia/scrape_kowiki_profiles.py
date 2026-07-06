@@ -6,7 +6,7 @@ Wikidata ID도 수집하여 추후 SPARQL 보충 가능.
 1초 간격, 100명마다 중간 저장, 이어하기 지원.
 
 Usage:
-    PYTHONPATH=src python3 scripts/collectors/scrape_kowiki_profiles.py
+    PYTHONPATH=src python3 Crawler/Wikipedia/scrape_kowiki_profiles.py
 """
 from __future__ import annotations
 

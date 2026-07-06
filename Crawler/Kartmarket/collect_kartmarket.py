@@ -8,8 +8,8 @@ URL: https://k-artmarket.kr/
 - 작품 크기, 재료, 제작연도
 
 Usage:
-    python scripts/collectors/collect_kartmarket.py --output data/kartmarket_auctions.csv
-    python scripts/collectors/collect_kartmarket.py \
+    python Crawler/Kartmarket/collect_kartmarket.py --output data/kartmarket_auctions.csv
+    python Crawler/Kartmarket/collect_kartmarket.py \
         --artists data/k-auction-artists.txt --output data/kartmarket_auctions.csv
 """
 from __future__ import annotations
