@@ -6,7 +6,7 @@ MediaWiki API로 영문명 검색 → extract에서 생몰년 추출.
 1초 간격, 100명마다 중간 저장, 이어하기 지원.
 
 Usage:
-    PYTHONPATH=src python3 Crawler/Wikipedia/scrape_enwiki_profiles.py
+    PYTHONPATH=src python3 scripts/collectors/scrape_enwiki_profiles.py
 """
 from __future__ import annotations
 

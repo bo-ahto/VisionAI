@@ -23,8 +23,7 @@ HEADERS = {
     "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
     "Content-Type": "application/x-www-form-urlencoded",
 }
-# Crawler/Kartmarket/ → 저장소 루트는 3단계 위 (parent×3)
-DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DELAY = 2.0
 
 

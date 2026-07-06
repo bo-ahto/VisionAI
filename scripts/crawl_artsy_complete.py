@@ -10,7 +10,6 @@ import csv
 import json
 import logging
 import re
-import argparse
 import time
 import urllib.request
 from pathlib import Path
@@ -18,8 +17,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-DATA_DIR = Path(__file__).resolve().parent / "data"
-DEFAULT_BASELINE_CSV: Path | None = None
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 GRAPHQL_URL = "https://metaphysics-cdn.artsy.net/v2"
 HEADERS = {
     "Content-Type": "application/json",
@@ -177,33 +175,10 @@ def node_to_work(n: dict) -> dict:
     }
 
 
-def load_existing_artwork_ids(path: Path | None, source_family: str = "artsy") -> set[str]:
-    """증분 수집에서 건너뛸 기존 artwork_id를 읽는다."""
-    if not path or not path.exists():
-        return set()
-    ids: set[str] = set()
-    with path.open("r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if (row.get("source_family") or "").strip().lower() != source_family:
-                continue
-            artwork_id = (row.get("source_artwork_id") or "").strip()
-            if artwork_id:
-                ids.add(artwork_id)
-    return ids
-
-
-def fetch_batch(
-    extra_input: dict,
-    label: str,
-    seen_ids: set[str],
-    existing_ids: set[str],
-) -> tuple[list[dict], int, int]:
+def fetch_batch(extra_input: dict, label: str, seen_ids: set) -> list[dict]:
     """하나의 필터 조합으로 최대 10K 수집."""
     works = []
     cursor = None
-    skipped_existing = 0
-    skipped_duplicate = 0
 
     for page in range(1, 101):
         inp = {
@@ -238,11 +213,7 @@ def fetch_batch(
         for edge in edges:
             n = edge["node"]
             aid = n["internalID"]
-            if aid in existing_ids:
-                skipped_existing += 1
-                continue
             if aid in seen_ids:
-                skipped_duplicate += 1
                 continue
             seen_ids.add(aid)
             works.append(node_to_work(n))
@@ -251,41 +222,15 @@ def fetch_batch(
             break
         time.sleep(1.0)
 
-    return works, skipped_existing, skipped_duplicate
-
-
-def parse_args() -> argparse.Namespace:
-    """수집 실행 옵션을 해석한다."""
-    parser = argparse.ArgumentParser(description="Artsy 한국 작가 작품을 수집합니다.")
-    parser.add_argument(
-        "--baseline-csv",
-        type=Path,
-        default=DEFAULT_BASELINE_CSV,
-        help="증분 수집에서 이미 수집된 작품을 건너뛰기 위한 1차 정리 CSV.",
-    )
-    parser.add_argument(
-        "--full-refresh",
-        action="store_true",
-        help="baseline을 무시하고 전체 재수집합니다.",
-    )
-    return parser.parse_args()
+    return works
 
 
 def main() -> None:
-    args = parse_args()
     logger.info("=== Artsy 31K 완전 수집 시작 ===")
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     seen_ids: set = set()
-    existing_ids = set() if args.full_refresh else load_existing_artwork_ids(args.baseline_csv)
     all_works: list[dict] = []
-    total_skipped_existing = 0
-    total_skipped_duplicate = 0
-
-    if args.full_refresh:
-        logger.info("수집 모드: full-refresh")
-    else:
-        logger.info("수집 모드: incremental, baseline existing Artsy IDs=%d", len(existing_ids))
 
     # 배치 정의: 각 배치가 10K 이하가 되도록 분할
     # Non-painting categories (각각 < 10K)
@@ -324,23 +269,9 @@ def main() -> None:
 
     for extra_input, label in batches:
         # sort가 extra_input에 있으면 기본 sort 제거
-        batch_works, skipped_existing, skipped_duplicate = fetch_batch(
-            extra_input,
-            label,
-            seen_ids,
-            existing_ids,
-        )
+        batch_works = fetch_batch(extra_input, label, seen_ids)
         all_works.extend(batch_works)
-        total_skipped_existing += skipped_existing
-        total_skipped_duplicate += skipped_duplicate
-        logger.info(
-            "[%s] +%d new, skipped_existing=%d, duplicate_in_run=%d (total new: %d)",
-            label,
-            len(batch_works),
-            skipped_existing,
-            skipped_duplicate,
-            len(all_works),
-        )
+        logger.info("[%s] +%d new (total: %d)", label, len(batch_works), len(all_works))
 
     t1 = time.time()
     logger.info("Phase 1 완료: %d works in %.0fs", len(all_works), t1 - t0)
@@ -488,12 +419,9 @@ def main() -> None:
     print("Artsy 한국 작가 전체 수집 최종 결과")
     print(f"{'='*70}")
     print(f"\n  [작품]")
-    print(f"  신규 작품: {len(all_works):,}건")
-    print(f"  baseline 기존 작품 skip: {total_skipped_existing:,}건")
-    print(f"  수집 중 중복 skip: {total_skipped_duplicate:,}건")
-    denom = max(len(all_works), 1)
-    print(f"  가격 있음: {priced:,}건 ({priced*100//denom}%)")
-    print(f"  크기 있음: {has_dims:,}건 ({has_dims*100//denom}%)")
+    print(f"  총 작품: {len(all_works):,}건 / 31,044건 ({len(all_works)*100//31044}%)")
+    print(f"  가격 있음: {priced:,}건 ({priced*100//len(all_works)}%)")
+    print(f"  크기 있음: {has_dims:,}건 ({has_dims*100//len(all_works)}%)")
     print(f"  모델 학습 가능 (가격+크기+생년): {model_ok:,}건")
 
     print(f"\n  [통화]")
