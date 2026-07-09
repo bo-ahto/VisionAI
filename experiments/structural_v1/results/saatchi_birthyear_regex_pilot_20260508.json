@@ -1,0 +1,77 @@
+{
+  "verdict_reproducibility": "PASS",
+  "verdict_precision_pending_manual_review": false,
+  "reproducibility_checks": {
+    "regression_free_832_artists": true,
+    "validity_range_all_in_1920_2005": true,
+    "operational_prepare_unchanged": true,
+    "operational_saatchi_unchanged": true
+  },
+  "regression_mismatches": [],
+  "validity_range_out": [],
+  "coverage_increment": {
+    "denominator_artists": 832,
+    "old_extracted_n": 35,
+    "new_extracted_n_pilot_full": 59,
+    "added_artists_n": 24,
+    "increment_pct_artist": 2.8846,
+    "denominator_artworks": 21721,
+    "added_artwork_n": 834,
+    "increment_pct_artwork": 3.8396
+  },
+  "sample_frame": {
+    "scope": "운영 saatchi 832 unique artists / saatchi_kr_artists.json 매칭 820",
+    "operational_artists": 832,
+    "json_matched_artists": 820
+  },
+  "pre_digest": {
+    "prepare_saatchi_dataset_py_sha256": "47a4bcfa5737c2bb45240324fd0cfd5e3b4db1620990efb4ba6c874f0886d2e7",
+    "prepare_saatchi_dataset_py_git_diff_lines": 0,
+    "saatchi_cleaned_parquet_sha256": "625dce88e78d311d4cd315646d44d794207c6743dbf97fafdd2f7e38a9388870",
+    "saatchi_cleaned_parquet_git_diff_lines": 0
+  },
+  "post_digest": {
+    "prepare_saatchi_dataset_py_sha256": "47a4bcfa5737c2bb45240324fd0cfd5e3b4db1620990efb4ba6c874f0886d2e7",
+    "prepare_saatchi_dataset_py_git_diff_lines": 0,
+    "saatchi_cleaned_parquet_sha256": "625dce88e78d311d4cd315646d44d794207c6743dbf97fafdd2f7e38a9388870",
+    "saatchi_cleaned_parquet_git_diff_lines": 0
+  },
+  "decision_binding": {
+    "is_decision_binding": false,
+    "scope": "pilot 측정 reproducibility 만",
+    "not_efficacy_pass": true,
+    "not_adoption_pass": true,
+    "not_production_candidate": true,
+    "operational_code_unchanged": true,
+    "operational_data_unchanged": true
+  },
+  "precision_verdict": "FAIL",
+  "precision_summary": {
+    "n_total_added": 24,
+    "n_tp": 21,
+    "n_fp": 3,
+    "n_uncertain": 0,
+    "tp_rate_pct": 87.5,
+    "pass_threshold_pct": 95.0,
+    "binding_requires_max_fp": 1,
+    "fp_cases": [
+      {
+        "display_name": "Lee soodong",
+        "extracted_year": 2004,
+        "reason": "I came to Seoul 2004 = 서울 이주 연도 / birth year 아님"
+      },
+      {
+        "display_name": "Eunseon Kim",
+        "extracted_year": 1997,
+        "reason": "진짜 birth year = 1991 / 1997 = Birmingham 거주 시작"
+      },
+      {
+        "display_name": "Bong Jun Kim",
+        "extracted_year": 1974,
+        "reason": "진짜 birth year = 1954 / 1974 = 대학 입학"
+      }
+    ],
+    "notes": "pre-analysis 판정 / 사용자 final 판정 영역. UNCERTAIN = 보수적 FP 처리 정의 정합. P_NEW_1 의 multi-year bio 에서 \"Born in [place]\" 다음 의 첫 year 가 birth year 아닌 경우 FP — prereg §3.4 risk 영역 의 실제 발생."
+  },
+  "verdict_overall": "FAIL"
+}
