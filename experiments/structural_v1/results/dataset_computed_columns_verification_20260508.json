@@ -1,0 +1,234 @@
+{
+  "scope": "T0 (28,376 rows / Saatchi year_made enrichment 적용)",
+  "decision_binding": false,
+  "checks": {
+    "ln_price": {
+      "definition": "log(price_krw)",
+      "n_total": 28376,
+      "exact_match": 28376,
+      "max_abs_diff": 0.0,
+      "mean_abs_diff": 0.0,
+      "verdict": "EXACT"
+    },
+    "ln_area": {
+      "definition": "log(area_cm2.clip(lower=1)) — operational load_data fill",
+      "n_total": 28376,
+      "n_zero": 0,
+      "n_nonzero": 28376,
+      "max_abs_diff_nonzero": 0.0,
+      "verdict": "EXACT (nonzero subset)"
+    },
+    "ln_ho": {
+      "definition": "log(ho + 1)",
+      "n_total": 28376,
+      "max_abs_diff": 0.0,
+      "verdict": "EXACT"
+    },
+    "ho_power": {
+      "definition": "ho^0.74 (ho>0) else 0",
+      "n_total": 28376,
+      "max_abs_diff": 0.0,
+      "verdict": "EXACT"
+    },
+    "is_small": {
+      "definition": "1 if ho <= 3 else 0",
+      "n_total": 28376,
+      "n_mismatch": 0,
+      "verdict": "EXACT"
+    },
+    "is_unique": {
+      "definition": "1 if attribution_class == 'Unique' else 0",
+      "n_total": 28376,
+      "n_mismatch": 0,
+      "verdict": "EXACT"
+    },
+    "is_edition": {
+      "definition": "1 if attribution_class == 'Limited edition' else 0",
+      "n_total": 28376,
+      "n_mismatch": 0,
+      "verdict": "EXACT"
+    },
+    "is_krw": {
+      "definition": "1 if price_currency == 'KRW' else 0",
+      "n_total": 28376,
+      "n_mismatch": 0,
+      "verdict": "EXACT"
+    },
+    "work_age": {
+      "definition": "2026 - year_made (year_made notna 영역 만)",
+      "n_total_notna": 27875,
+      "n_mismatch": 0,
+      "max_abs_diff": 0.0,
+      "verdict": "EXACT"
+    },
+    "has_year_made": {
+      "definition": "1 if year_made notna else 0",
+      "n_total": 28376,
+      "n_mismatch": 0,
+      "verdict": "EXACT"
+    },
+    "has_birth_year": {
+      "definition": "1 if artist_birth_year notna else 0",
+      "n_total": 28376,
+      "n_mismatch": 0,
+      "verdict": "EXACT"
+    },
+    "ho_x_support": {
+      "definition": "ho * support_factor",
+      "n_total": 28376,
+      "n_mismatch": 0,
+      "max_abs_diff": 0.0,
+      "verdict": "EXACT"
+    },
+    "has_seoul": {
+      "definition": "1 if gallery_cities contains 'Seoul' (parsed from source)",
+      "n_total": 28376,
+      "n_one": 6414,
+      "verdict": "REQUIRES_SOURCE_AUDIT (gallery_cities raw column not in dataset)"
+    },
+    "has_international": {
+      "definition": "1 if gallery_city_count >= 2 else 0",
+      "n_total": 28376,
+      "n_mismatch": 21087,
+      "verdict": "MISMATCH n=21087 (Saatchi 의 gallery_city_count == 1 + has_international == 1 의 정의 mismatch 영역 가능)"
+    },
+    "ln_followers": {
+      "definition": "log(artist_followers + 1) — raw artist_followers column 미포함",
+      "n_total": 28376,
+      "n_zero": 2399,
+      "verdict": "REQUIRES_SOURCE_AUDIT (artist_followers raw column not in dataset)"
+    },
+    "has_depth": {
+      "definition": "1 if depth_cm notna else 0 — raw depth_cm column 미포함",
+      "n_total": 28376,
+      "n_one": 22839,
+      "verdict": "REQUIRES_SOURCE_AUDIT (depth_cm raw column not in dataset)"
+    },
+    "vintage_premium": {
+      "definition": "work_age if career_stage_int >= 3 else 0",
+      "n_total": 28376,
+      "n_zero": 28357,
+      "n_positive": 17,
+      "zero_pct": 99.93,
+      "verdict": "REQUIRES_SOURCE_AUDIT (career_stage_int missing) / 99.93% zero = 사실상 미작동"
+    },
+    "freshness_discount": {
+      "definition": "work_age if career_stage_int < 3 else 0",
+      "n_total": 28376,
+      "n_zero": 21441,
+      "n_positive": 6867,
+      "zero_pct": 75.56,
+      "verdict": "REQUIRES_SOURCE_AUDIT (career_stage_int missing)"
+    },
+    "ho_price_level": {
+      "definition": "operational load_data() 가 0.0 fill / source 미존재",
+      "n_total": 28376,
+      "n_zero": 28376,
+      "zero_pct": 100.0,
+      "verdict": "PLACEHOLDER (100% zero / 모델 noise feature)"
+    },
+    "medium_price_level": {
+      "definition": "operational load_data() 가 0.0 fill / source 미존재",
+      "n_total": 28376,
+      "n_zero": 28376,
+      "zero_pct": 100.0,
+      "verdict": "PLACEHOLDER (100% zero / 모델 noise feature)"
+    },
+    "profile_completeness": {
+      "definition": "operational load_data() 가 0.0 fill / source 미존재",
+      "n_total": 28376,
+      "n_zero": 28376,
+      "zero_pct": 100.0,
+      "verdict": "PLACEHOLDER (100% zero / 모델 noise feature)"
+    },
+    "request_ratio": {
+      "n_total": 28376,
+      "n_zero_or_false": 26870,
+      "pct": 94.69,
+      "verdict": "SPARSE (변별력 거의 없음)"
+    },
+    "artist_is_p1": {
+      "n_total": 28376,
+      "n_zero_or_false": 28285,
+      "pct": 99.68,
+      "verdict": "SPARSE (변별력 거의 없음)"
+    },
+    "has_special_finish": {
+      "n_total": 28376,
+      "n_zero_or_false": 28260,
+      "pct": 99.59,
+      "verdict": "SPARSE (변별력 거의 없음)"
+    },
+    "medium_category_distribution": {
+      "n_total": 28376,
+      "n_unique_values": 9,
+      "n_other": 1144,
+      "n_unknown": 0,
+      "verdict": "OK"
+    },
+    "support_type_distribution": {
+      "n_total": 28376,
+      "n_unique_values": 7,
+      "n_other": 1142,
+      "n_unknown": 0,
+      "verdict": "OK"
+    },
+    "gallery_type_distribution": {
+      "n_total": 28376,
+      "n_unique_values": 2,
+      "n_other": 0,
+      "n_unknown": 0,
+      "verdict": "OK"
+    },
+    "attribution_class_distribution": {
+      "n_total": 28376,
+      "n_unique_values": 4,
+      "n_other": 0,
+      "n_unknown": 0,
+      "verdict": "OK"
+    }
+  },
+  "categories": {
+    "EXACT": [
+      "ln_price",
+      "ln_area",
+      "ln_ho",
+      "ho_power",
+      "is_small",
+      "is_unique",
+      "is_edition",
+      "is_krw",
+      "work_age",
+      "has_year_made",
+      "has_birth_year",
+      "ho_x_support"
+    ],
+    "MISMATCH": [
+      "has_international"
+    ],
+    "PLACEHOLDER": [
+      "ho_price_level",
+      "medium_price_level",
+      "profile_completeness"
+    ],
+    "SPARSE": [
+      "request_ratio",
+      "artist_is_p1",
+      "has_special_finish"
+    ],
+    "REQUIRES_SOURCE_AUDIT": [
+      "has_seoul",
+      "ln_followers",
+      "has_depth",
+      "vintage_premium",
+      "freshness_discount"
+    ],
+    "OK_distribution": [
+      "medium_category_distribution",
+      "support_type_distribution",
+      "gallery_type_distribution",
+      "attribution_class_distribution"
+    ],
+    "LOW_VARIANCE": []
+  }
+}
